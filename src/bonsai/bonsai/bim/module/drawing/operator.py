@@ -137,7 +137,7 @@ class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
         element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
 
         if props.create_representation_for_type and object_type == "IMAGE":
-            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT")
 
 
 class EnableAddAnnotationType(bpy.types.Operator):
@@ -966,7 +966,9 @@ class CreateDrawing(bpy.types.Operator):
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
             contexts = self.get_linework_contexts(ifc, target_view)
             self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
-            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix)
+            self.serialize_contexts_elements(
+                ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix
+            )
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
@@ -1775,7 +1777,7 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             enable_editing=True,
         )
         if props.object_type == "IMAGE":
-            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT")
 
 
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
