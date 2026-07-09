@@ -2170,8 +2170,15 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         // rocksdb instances are assumed to be create with file.create();
         std::visit([new_entity](auto& m) {
             if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
-                // @todo not freed yet
                 m.tbyid_.insert({ new_entity->identity(), new_entity });
+                // #8070: take ownership of this freshly created non-entity (simple type)
+                // instance so that it is freed together with the file. tbyid_ is only a
+                // non-owning lookup index; read_simple_type_instances is the owner, matching
+                // how simple type instances read from a file are retained. This branch is only
+                // reached for instances with file_ == nullptr, so they are never already owned
+                // by read_simple_type_instances (avoiding a double free), and re-adds of the
+                // same instance return early via the file_ == this path above.
+                m.read_simple_type_instances.emplace_back(new_entity);
             }
         }, storage_);
     }
