@@ -2557,7 +2557,9 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         if not context.active_object:
             return {"FINISHED"}
-        for obj in self.edited_objs:
+        # When run directly (e.g. bpy.ops.bim.override_mode_set_object() from
+        # another operator), invoke never populated these lists (#8042).
+        for obj in getattr(self, "edited_objs", []):
             if self.should_save:
                 bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
                 if getattr(tool.Ifc.get_entity(obj), "HasOpenings", False):
@@ -2566,7 +2568,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry.reload_representation(obj)
             tool.Ifc.finish_edit(obj)
 
-        for obj in self.unchanged_objs_with_openings:
+        for obj in getattr(self, "unchanged_objs_with_openings", []):
             tool.Geometry.reload_representation(obj)
             tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
