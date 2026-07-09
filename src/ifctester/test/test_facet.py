@@ -211,6 +211,11 @@ class TestEntity:
         ifc = ifcopenshell.file()
         run("Entities can be specified as an enumeration 3/3", facet=facet, inst=ifc.createIfcBeam(), expected=False)
 
+        # An enumeration name that fails in IFC2X3 must report a failure, not crash (#8046).
+        # The IFC2X3 type-inference path used to call str methods on the Restriction name.
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        run("Enumeration entity that fails in IFC2X3 does not crash", facet=facet, inst=ifc.createIfcBeam(), expected=False)
+
         restriction = Restriction(options={"pattern": "IFC.*TYPE"})
         facet = Entity(name=restriction)
         ifc = ifcopenshell.file()
