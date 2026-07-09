@@ -45,6 +45,10 @@
 #define NOMCX
 #define NOSERVICE
 #include <Windows.h>
+#elif defined(Q_OS_MAC)
+// Cocoa bridge declared here, implemented in the adjacent .mm file. Must be
+// visible before createWgpuSurface() below calls wgpu_macos_attach_metal_layer.
+#include "MetalSurface_mac.h"
 #endif
 
 #include <algorithm>
@@ -832,10 +836,6 @@ bool ViewportWindow::initWgpu() {
 #    define WIN32_LEAN_AND_MEAN
 #  endif
 #  include <windows.h>
-#elif defined(Q_OS_MAC)
-// Cocoa bridge declared in MetalSurface_mac.h, implemented in the
-// adjacent .mm file. Keeps Objective-C out of this pure-C++ TU.
-#  include "MetalSurface_mac.h"
 #endif
 
 // Private bool createSurface() removed in #84-l — its body is now
