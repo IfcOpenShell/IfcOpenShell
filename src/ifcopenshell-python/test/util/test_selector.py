@@ -55,6 +55,9 @@ class TestFormat(test.bootstrap.IFC4):
         assert subject.format("round(123, 5)") == "125"
         assert subject.format('round("123", 5)') == "125"
         assert subject.format("round(-123, 5)") == "-125"
+        # Non-numeric values must pass through unchanged instead of crashing (#6776).
+        assert subject.format('round("Level 1", 0.01)') == "Level 1"
+        assert subject.format('round("12.5 m", 0.01)') == "12.5 m"
         assert subject.format("int(123.123)") == "123"
         assert subject.format("int(123)") == "123"
         assert subject.format("number(123)") == "123"
