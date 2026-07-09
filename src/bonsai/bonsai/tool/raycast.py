@@ -439,6 +439,11 @@ class Raycast(bonsai.core.tool.Raycast):
         selected_edges = {}
         for e in edges:
             p0, p1 = edge_verts[e]
+            if p0 is None or p1 is None:
+                # Both endpoints projected behind the camera (or the border
+                # intersection failed), so the edge is not on screen and
+                # offers no usable snap (#8187).
+                continue
             p0x, p0y = p0
             p1x, p1y = p1
             px, py = mouse_pos
