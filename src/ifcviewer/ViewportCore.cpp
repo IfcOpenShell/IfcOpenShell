@@ -6439,7 +6439,7 @@ void ViewportCore::render() {
     // Section-plane gizmo — shared renderer, drawn for desktop + web from here.
     // (The desktop's OverlayRenderer no longer draws it, to avoid doubling.)
     section_gizmo_.encode(pass, vp_this_frame, section_planes_,
-                          viewport_w_px, viewport_h_px, dpr_int);
+                          viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
 
     // Remaining in-pass overlays (highlight triangles, pivot, overlay
     // lines/points). QtViewportHost forwards to overlays_.X(); web host no-ops.
@@ -6728,6 +6728,8 @@ bool ViewportCore::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
     p.d             = -n.dot(point);
     p.visual_radius = (visual_radius > 0.0f) ? visual_radius : 1.0f;
     section_planes_.push_back(p);
+    // The freshly added plane becomes the selected one.
+    section_selected_index_ = int(section_planes_.size()) - 1;
     Log::info()
         << "[wgpu section] added plane #" << section_planes_.size() - 1
         << " origin=(" << point.x() << "," << point.y() << "," << point.z() << ")"
@@ -6736,9 +6738,23 @@ bool ViewportCore::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
     return true;
 }
 
+void ViewportCore::setSelectedSectionPlane(int index) {
+    const int clamped = (index >= 0 && index < int(section_planes_.size())) ? index : -1;
+    if (clamped == section_selected_index_) return;
+    section_selected_index_ = clamped;
+    host_->requestFrame();
+}
+
 void ViewportCore::removeSectionPlane(int index) {
     if (index < 0 || index >= int(section_planes_.size())) return;
     section_planes_.erase(section_planes_.begin() + index);
+    // Keep the selection pointing at the same plane: clear it if it was the one
+    // removed, shift it down if it sat after the removed index.
+    if (section_selected_index_ == index) {
+        section_selected_index_ = -1;
+    } else if (section_selected_index_ > index) {
+        --section_selected_index_;
+    }
     Log::info() << "[wgpu section] removed plane " << index;
     host_->requestFrame();
 }
@@ -6746,6 +6762,7 @@ void ViewportCore::removeSectionPlane(int index) {
 void ViewportCore::clearSectionPlanes() {
     if (section_planes_.empty()) return;
     section_planes_.clear();
+    section_selected_index_ = -1;
     Log::info() << "[wgpu section] cleared all planes";
     host_->requestFrame();
 }

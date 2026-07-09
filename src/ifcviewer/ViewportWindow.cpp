@@ -1554,6 +1554,7 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
         const Eigen::Vector2i lp = toV2i(event->position().toPoint());
         const int hit = core_.hitTestSectionGizmo(lp.x(), lp.y());
         if (hit >= 0 && core_.beginSectionDrag(hit, lp.x(), lp.y())) {
+            core_.setSelectedSectionPlane(hit);  // clicking a gizmo selects it
             nav_drag_kind_ = NavDrag::Inactive;
             Log::info().noquote().nospace()
                 << "[wgpu section] drag start: plane=" << hit;
@@ -1918,9 +1919,10 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
 
     // Section tool. K toggles the tool; Shift+K clears all planes. When
     // the tool is active, click adds a plane at the surface (handled in
-    // mouseReleaseEvent), Esc deactivates, Del/Backspace removes the
-    // most recently added plane. Mirrors GL ViewportWindow + Bonsai's
-    // bind_shortcut(K / Shift+K) bindings.
+    // mouseReleaseEvent) or selects the gizmo under the cursor, Esc
+    // deactivates, Del/Backspace removes the selected plane (or the most
+    // recent one when nothing is selected). Mirrors GL ViewportWindow +
+    // Bonsai's bind_shortcut(K / Shift+K) bindings.
     if (key == Qt::Key_K && !event->isAutoRepeat()) {
         if (mods == Qt::ShiftModifier) {
             clearSectionPlanes();
@@ -1936,7 +1938,11 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         }
         if ((key == Qt::Key_Delete || key == Qt::Key_Backspace)
             && !section_planes_.empty()) {
-            removeSectionPlane(int(section_planes_.size()) - 1);
+            // Delete the selected plane; fall back to the most recent one when
+            // nothing is selected.
+            const int selected = core_.selectedSectionPlane();
+            removeSectionPlane(selected >= 0 ? selected
+                                             : int(section_planes_.size()) - 1);
             return;
         }
     }

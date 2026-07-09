@@ -534,6 +534,11 @@ public:
     // Number of active section planes (0..kMaxSectionPlanes).
     int sectionPlaneCount() const { return int(section_planes_.size()); }
 
+    // The selected section plane (drawn highlighted; the target of a delete), or
+    // -1 for none. Index is kept valid as planes are added/removed/cleared.
+    void setSelectedSectionPlane(int index);
+    int  selectedSectionPlane() const { return section_selected_index_; }
+
     // ---- Section gizmo interaction (shared desktop + web) -------------------
     //
     // All coords are LOGICAL (CSS) pixels; the core derives the logical viewport
@@ -1057,6 +1062,7 @@ private:
     // the press point (logical px) so update can slide it along the normal.
     bool            section_drag_active_       = false;
     int             section_drag_index_        = -1;
+    int             section_selected_index_    = -1;
     Eigen::Vector3f section_drag_start_origin_ = Eigen::Vector3f::Zero();
     int             section_drag_start_mx_     = 0;
     int             section_drag_start_my_     = 0;

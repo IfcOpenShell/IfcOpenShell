@@ -172,18 +172,20 @@ bool SectionGizmoRenderer::init(WGPUDevice device, WGPUQueue queue,
     if (!device_ || !queue_) return false;
 
     // ---- Gizmo geometry: 9 line segments (quad outline + normal arrow) ----
+    // Baked white so the per-plane `tint` uniform supplies the colour (red
+    // normally, a highlight colour for the selected plane — see encode()).
     struct Seg { std::array<float, 3> s, e, c; };
-    static constexpr std::array<float, 3> kRed = { 1.000f, 0.200f, 0.322f };
+    static constexpr std::array<float, 3> kWhite = { 1.0f, 1.0f, 1.0f };
     static const Seg segs[] = {
-        { {-1, -1, 0}, { 1, -1, 0}, kRed },   // quad outline
-        { { 1, -1, 0}, { 1,  1, 0}, kRed },
-        { { 1,  1, 0}, {-1,  1, 0}, kRed },
-        { {-1,  1, 0}, {-1, -1, 0}, kRed },
-        { { 0,  0, 0}, { 0,  0, 1}, kRed },   // arrow shaft along +n
-        { { 0,  0, 1}, {-0.18f, 0,      0.78f}, kRed },  // arrow head
-        { { 0,  0, 1}, { 0.18f, 0,      0.78f}, kRed },
-        { { 0,  0, 1}, { 0,    -0.18f,  0.78f}, kRed },
-        { { 0,  0, 1}, { 0,     0.18f,  0.78f}, kRed },
+        { {-1, -1, 0}, { 1, -1, 0}, kWhite },   // quad outline
+        { { 1, -1, 0}, { 1,  1, 0}, kWhite },
+        { { 1,  1, 0}, {-1,  1, 0}, kWhite },
+        { {-1,  1, 0}, {-1, -1, 0}, kWhite },
+        { { 0,  0, 0}, { 0,  0, 1}, kWhite },   // arrow shaft along +n
+        { { 0,  0, 1}, {-0.18f, 0,      0.78f}, kWhite },  // arrow head
+        { { 0,  0, 1}, { 0.18f, 0,      0.78f}, kWhite },
+        { { 0,  0, 1}, { 0,    -0.18f,  0.78f}, kWhite },
+        { { 0,  0, 1}, { 0,     0.18f,  0.78f}, kWhite },
     };
     std::vector<float> verts;
     verts.reserve(std::size(segs) * 6 * 11);
@@ -302,7 +304,8 @@ bool SectionGizmoRenderer::init(WGPUDevice device, WGPUQueue queue,
 
 void SectionGizmoRenderer::encode(WGPURenderPassEncoder pass, const Eigen::Matrix4f& view_proj,
                                   const std::vector<SectionPlane>& planes,
-                                  int viewport_w_px, int viewport_h_px, int device_pixel_ratio) {
+                                  int viewport_w_px, int viewport_h_px, int device_pixel_ratio,
+                                  int selected_index) {
     if (!pipeline_ || planes.empty()) return;
     wgpuRenderPassEncoderSetPipeline(pass, pipeline_);
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, vertex_buffer_, 0, WGPU_WHOLE_SIZE);
@@ -321,9 +324,15 @@ void SectionGizmoRenderer::encode(WGPURenderPassEncoder pass, const Eigen::Matri
         // arrow would shoot past the eye (clip.w<0) and vanish.
         const float half = 1.0f;
 
+        // Red normally; a bright amber highlight for the selected plane.
+        const bool selected = (i == selected_index);
+        const float tr = selected ? 1.00f : 1.000f;
+        const float tg = selected ? 0.75f : 0.200f;
+        const float tb = selected ? 0.10f : 0.322f;
+
         uint8_t slot[256];
         packSectionUniform(slot, view_proj, plane.origin, half, tangent, line_w,
-                           bitangent, nn, 1.0f, 1.0f, 1.0f, 1.0f, vw, vh);
+                           bitangent, nn, tr, tg, tb, 1.0f, vw, vh);
         const uint32_t slot_offset = uint32_t(i) * kSectionUniformSlot;
         wgpuQueueWriteBuffer(queue_, uniform_buffer_, slot_offset, slot, sizeof(slot));
         wgpuRenderPassEncoderSetBindGroup(pass, 0, bind_group_, 1, &slot_offset);
