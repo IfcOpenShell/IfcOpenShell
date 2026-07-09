@@ -67,6 +67,9 @@ class TestFormat(test.bootstrap.IFC4):
         assert subject.format("metric_length(123, 5, 2)") == "125.00"
         assert subject.format("metric_length(123.123, 0.1, 2)") == "123.10"
         assert subject.format('metric_length("123", 5, 2)') == "125.00"
+        # Non-numeric values (e.g. N/A cells) pass through unchanged (#5297).
+        assert subject.format('metric_length("N/A", 0.1, 1)') == "N/A"
+        assert subject.format('imperial_length("N/A", 2)') == "N/A"
         assert subject.format("imperial_length(1, 1)") == "1'"
         assert subject.format("imperial_length(3.123, 1)") == "3' - 1\""
         assert subject.format("imperial_length(3.123, 2)") == "3' - 1 1/2\""
