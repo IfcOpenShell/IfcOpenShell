@@ -1109,6 +1109,12 @@ namespace IfcGeom {
                                 is_manifold = true;
                                 clash intersection = test_intersection(task.b, task.a, tolerance, check_all);
                                 if (intersection.clash_type != -1) {
+                                    // test_intersection() was called with the arguments swapped in
+                                    // order to test whether task.b protrudes into task.a, so it
+                                    // reports .a and .b in swapped order. Restore the canonical
+                                    // order so that result.a always refers to an element of set_a
+                                    // and result.b to an element of set_b.
+                                    std::swap(intersection.a, intersection.b);
                                     // Replace the clash result if any of these criteria apply:
                                     // - We don't have a clash yet
                                     // - Our previous clash is piercing, and our new one is a protrusion
