@@ -323,11 +323,25 @@ class IfcDiff:
                     self.change_register.setdefault(new.GlobalId, {}).update({"properties_changed": diff})
                     return True
             elif relationship == "container":
-                if ifcopenshell.util.element.get_container(old) != ifcopenshell.util.element.get_container(new):
+                old_container = ifcopenshell.util.element.get_container(old)
+                new_container = ifcopenshell.util.element.get_container(new)
+                if old_container is not None and new_container is not None:
+                    if old_container.GlobalId != new_container.GlobalId:
+                        self.change_register.setdefault(new.GlobalId, {}).update({"container_changed": True})
+                        return True
+                elif old_container != new_container:
+                    # one of the containers is None while the other is not None
                     self.change_register.setdefault(new.GlobalId, {}).update({"container_changed": True})
                     return True
             elif relationship == "aggregate":
-                if ifcopenshell.util.element.get_aggregate(old) != ifcopenshell.util.element.get_aggregate(new):
+                old_aggregate = ifcopenshell.util.element.get_aggregate(old)
+                new_aggregate = ifcopenshell.util.element.get_aggregate(new)
+                if old_aggregate is not None and new_aggregate is not None:
+                    if old_aggregate.GlobalId != new_aggregate.GlobalId:
+                        self.change_register.setdefault(new.GlobalId, {}).update({"aggregate_changed": True})
+                        return True
+                elif old_aggregate != new_aggregate:
+                    # one of the aggregates is None while the other is not None
                     self.change_register.setdefault(new.GlobalId, {}).update({"aggregate_changed": True})
                     return True
             elif relationship == "classification":
