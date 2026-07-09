@@ -189,14 +189,20 @@ def format_distance(
             if hasattr(length_unit, "Prefix") and length_unit.Prefix:
                 unit_length = length_unit.Prefix + length_unit.Name
             unit_length_mapping = {
+                "MILE": "MILES",
                 "FOOT": "FEET",
                 "INCH": "INCHES",
+                "KILOMETRE": "KILOMETERS",
                 "METRE": "METERS",
                 "DECIMETRE": "DECIMETERS",
                 "CENTIMETRE": "CENTIMETERS",
                 "MILLIMETRE": "MILLIMETERS",
+                "MICROMETRE": "MICROMETERS",
             }
-            unit_length = unit_length_mapping[unit_length]
+            # Fall through for units without a dedicated formatter (e.g.
+            # HECTOMETRE) so they use the adaptive branch instead of a
+            # KeyError (#8255).
+            unit_length = unit_length_mapping.get(unit_length, unit_length)
         # For now we only format area in IFC Units
         if area_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
             area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(area_unit)
