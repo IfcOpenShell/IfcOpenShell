@@ -354,12 +354,12 @@ class DumbProfileJoiner:
         body[1 if connection == "ATEND" else 0] = intersect
         self.recreate_profile(element1, profile1, axis, body)
 
-    def set_depth(self, profile1: bpy.types.Object, si_length: float) -> None:
+    def set_depth(self, profile1: bpy.types.Object, si_length: float, connection_type: str = "ATEND") -> None:
         element1 = tool.Ifc.get_entity(profile1)
         if not element1:
             return
 
-        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type="ATEND")
+        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type=connection_type)
 
         axis1 = self.get_profile_axis(profile1)
         axis = copy.deepcopy(axis1)
@@ -1029,6 +1029,13 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
             direction = Vector(extrusion.ExtrudedDirection.DirectionRatios).normalized()
             tool.Model.import_axis((Vector((0, 0, 0)), direction * extrusion.Depth), obj=obj, position=position)
 
+        # Remember the original endpoints so that on commit we can tell which
+        # endpoint the user actually moved. The moved endpoint must have its
+        # intelligent connection dropped, otherwise recreate_profile re-joins it
+        # and snaps it back to the connected element (see #7975).
+        obj["ifc_axis_edit_start"] = list(obj.data.vertices[0].co)
+        obj["ifc_axis_edit_end"] = list(obj.data.vertices[1].co)
+
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_axis(context))
         if not bpy.app.background:
@@ -1087,6 +1094,23 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         depth = (end - start).length
         z_axis = (end - start).normalized()
 
+        # Resize by moving an endpoint drops the intelligent connection at the
+        # moved endpoint only. If the user moved the ATSTART endpoint we must
+        # disconnect ATSTART, otherwise the connection is re-joined and snaps the
+        # endpoint back to the connected element (see #7975). The ATEND endpoint
+        # is the anchor by default, matching the resize-by-depth behaviour.
+        connection_type = "ATEND"
+        original_start = obj.get("ifc_axis_edit_start")
+        original_end = obj.get("ifc_axis_edit_end")
+        if original_start is not None and original_end is not None:
+            start_moved = not tool.Cad.are_vectors_equal(obj.data.vertices[0].co, Vector(original_start))
+            end_moved = not tool.Cad.are_vectors_equal(obj.data.vertices[1].co, Vector(original_end))
+            if start_moved and not end_moved:
+                connection_type = "ATSTART"
+        for key in ("ifc_axis_edit_start", "ifc_axis_edit_end"):
+            if key in obj:
+                del obj[key]
+
         # if z-axis didn't changed we can just reuse the previous rotation
         if not tool.Cad.are_vectors_equal(previous_z_axis, z_axis):
             y_axis = Vector((0, 0, 1))
@@ -1115,7 +1139,7 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         bpy.context.view_layer.update()
 
         joiner = DumbProfileJoiner()
-        joiner.set_depth(obj, depth)
+        joiner.set_depth(obj, depth, connection_type=connection_type)
         return {"FINISHED"}
 
 
