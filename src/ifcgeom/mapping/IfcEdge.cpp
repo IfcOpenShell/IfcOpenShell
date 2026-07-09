@@ -43,6 +43,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEdge* inst) {
 		auto basis = map(inst->as<IfcSchema::IfcEdgeCurve>()->EdgeGeometry());
 		auto loop = taxonomy::dcast<taxonomy::loop>(basis);
 		if (loop && loop->children.size() == 1) {
+			// Clone before mutating so calculate_linear_edge_curves does not write
+			// into the child edges of the shared cached loop returned by map().
+			loop.reset(loop->clone_());
 			loop->calculate_linear_edge_curves();
 			basis = loop->children[0]->basis;
 		}
