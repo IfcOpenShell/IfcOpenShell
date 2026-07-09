@@ -977,12 +977,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			if (item == nullptr) {
 				throw IfcParse::IfcException("Failed to convert placement");
 			}
-            if (st.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
-                // we pass the settings to the Transformation object, but access the data just offloads to the
-                // generic cartesian_base<Matrix4> so there's no time to apply the settings to the translation part.
-                item = ifcopenshell::geometry::taxonomy::matrix4::ptr(item->clone_());
-                item->components().col(3).head<3>() /= kernel.settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
-            }
+            // The IfcGeom::Transformation object applies the convert-back-units setting to
+            // the translation part on construction, so the scaling is handled there. Applying
+            // it here as well would scale the translation by the unit factor a second time.
 			return new IfcGeom::Transformation(kernel.settings(), item);
 		} else {
 			if (!representation) {
