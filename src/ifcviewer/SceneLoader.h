@@ -173,6 +173,10 @@ private:
     uint32_t next_session_model_id_ = 1;
     uint32_t loading_session_model_id_ = 0;
     std::thread sidecar_read_thread_;
+    // Background .ifcview compress + write, so the seconds of zstd on a big
+    // model don't freeze the UI at 100%. Joined before the next write and in
+    // the destructor so a pending write always completes.
+    std::thread sidecar_write_thread_;
     // One thread per sidecar-hit model while its .rdb/.ifc opens in the
     // background.  Joined only at destruction so a slow SPF parse on model
     // A never blocks the sidecar-hit path of model B.

@@ -45,8 +45,11 @@
 #include "SidecarCache.h"
 #include "SidecarCompress.h"
 
+#include <algorithm>
+#include <atomic>
 #include <cstdio>
 #include <cstring>
+#include <thread>
 
 // The baker (writeSidecar) compresses — desktop only; the web build never bakes
 // and links a decompress-only zstd. Everything from here to writeSidecar's end
@@ -184,20 +187,54 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
     const long geom_start = ftell(f);
 
     std::vector<SidecarChunk> chunks = data.chunks;  // fill blob offsets below
-    std::vector<std::uint8_t> vraw, iraw;
-    for (auto& sidecar_chunk : chunks) {
-        extractChunkGeometry(data, sidecar_chunk, vraw, iraw);
-        auto vz = SidecarCompress::compress(vraw.data(), vraw.size(), kSidecarZstdLevel);
-        auto iz = SidecarCompress::compress(iraw.data(), iraw.size(), kSidecarZstdLevel);
-        if ((vraw.size() && vz.empty()) || (iraw.size() && iz.empty())) { fclose(f); return false; }
+
+    // Compress every chunk's geometry in parallel — zstd is the bulk of the bake
+    // cost — then write the frames serially so their offsets stay contiguous.
+    struct ChunkBlob {
+        std::vector<std::uint8_t> vz, iz;
+        std::size_t v_raw = 0, i_raw = 0;
+    };
+    std::vector<ChunkBlob> blobs(chunks.size());
+    std::atomic<bool> compress_ok{true};
+    {
+        const unsigned hw = std::max(1u, std::thread::hardware_concurrency());
+        const std::size_t worker_count =
+            std::min<std::size_t>(hw, std::max<std::size_t>(std::size_t(1), chunks.size()));
+        std::atomic<std::size_t> next{0};
+        auto worker = [&]() {
+            std::vector<std::uint8_t> vraw, iraw;
+            for (std::size_t idx = next.fetch_add(1); idx < chunks.size();
+                 idx = next.fetch_add(1)) {
+                extractChunkGeometry(data, chunks[idx], vraw, iraw);
+                blobs[idx].v_raw = vraw.size();
+                blobs[idx].i_raw = iraw.size();
+                blobs[idx].vz = SidecarCompress::compress(vraw.data(), vraw.size(), kSidecarZstdLevel);
+                blobs[idx].iz = SidecarCompress::compress(iraw.data(), iraw.size(), kSidecarZstdLevel);
+                if ((vraw.size() && blobs[idx].vz.empty()) ||
+                    (iraw.size() && blobs[idx].iz.empty())) {
+                    compress_ok.store(false, std::memory_order_relaxed);
+                }
+            }
+        };
+        std::vector<std::thread> pool;
+        pool.reserve(worker_count > 0 ? worker_count - 1 : 0);
+        for (std::size_t i = 1; i < worker_count; ++i) pool.emplace_back(worker);
+        worker();  // the calling thread participates too
+        for (auto& th : pool) th.join();
+    }
+    if (!compress_ok.load()) { fclose(f); return false; }
+
+    for (std::size_t idx = 0; idx < chunks.size(); ++idx) {
+        auto& sidecar_chunk = chunks[idx];
+        const ChunkBlob& blob = blobs[idx];
         sidecar_chunk.v_comp_off  = std::uint64_t(ftell(f) - geom_start);
-        sidecar_chunk.v_comp_size = vz.size();
-        sidecar_chunk.v_raw_size  = vraw.size();
-        if (!vz.empty() && !write_bytes(vz.data(), vz.size())) { fclose(f); return false; }
+        sidecar_chunk.v_comp_size = blob.vz.size();
+        sidecar_chunk.v_raw_size  = blob.v_raw;
+        if (!blob.vz.empty() && !write_bytes(blob.vz.data(), blob.vz.size())) { fclose(f); return false; }
         sidecar_chunk.i_comp_off  = std::uint64_t(ftell(f) - geom_start);
-        sidecar_chunk.i_comp_size = iz.size();
-        sidecar_chunk.i_raw_size  = iraw.size();
-        if (!iz.empty() && !write_bytes(iz.data(), iz.size())) { fclose(f); return false; }
+        sidecar_chunk.i_comp_size = blob.iz.size();
+        sidecar_chunk.i_raw_size  = blob.i_raw;
+        if (!blob.iz.empty() && !write_bytes(blob.iz.data(), blob.iz.size())) { fclose(f); return false; }
     }
     const long geom_end = ftell(f);
     if (geom_start < 0 || geom_end < 0) { fclose(f); return false; }

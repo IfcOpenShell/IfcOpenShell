@@ -49,6 +49,8 @@ SceneLoader::SceneLoader(ViewportWindow* viewport, QObject* parent)
 SceneLoader::~SceneLoader() {
     joinSidecarThread();
     joinDataSourceThreads();
+    if (sidecar_write_thread_.joinable())
+        sidecar_write_thread_.join();
 }
 
 void SceneLoader::joinSidecarThread() {
@@ -389,15 +391,20 @@ void SceneLoader::onStreamerFinished() {
                 if (auto* file = model.streamer->ifcFile()) {
                     georef = computeModelGeoref(file);
                 }
-                QElapsedTimer write_timer; write_timer.start();
                 SidecarData data = model.sidecar_builder->finalize(georef, model.streamed_elements);
                 // Lay geometry out in streaming-chunk order + bake the chunk TOC
                 // (v14) so it streams as one contiguous range per chunk.
                 reorderSidecarByMorton(data);
-                const bool ok = writeSidecar(model.file_path.toStdString(), data);
-                std::fprintf(stderr,
-                    "[info]   Sidecar finalize + write: %lld ms (%s)\n",
-                    (long long)write_timer.elapsed(), ok ? "ok" : "FAILED");
+                // Compress + write the .ifcview on a background thread so the
+                // seconds of zstd on a large model don't freeze the UI right at
+                // 100%. The geometry is already on the GPU and the sidecar is
+                // only a cache for the next open, so it finishes asynchronously
+                // (joined before the next write / in the destructor).
+                if (sidecar_write_thread_.joinable()) sidecar_write_thread_.join();
+                sidecar_write_thread_ = std::thread(
+                    [ifc_path = model.file_path.toStdString(), sd = std::move(data)]() {
+                        writeSidecar(ifc_path, sd);
+                    });
                 model.sidecar_builder.reset();
             }
 
