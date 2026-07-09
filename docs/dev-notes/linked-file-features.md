@@ -190,6 +190,35 @@ stay compatible.
 - Verified headless with the window/door kit: moved window offset in the SVG by
   exactly 5m × scale; unmoved door at its native position; both links present.
 
+### Drawings — `.cut` styling for linked models (BISECT cut mode)
+
+- The default **BISECT** cut mode deletes the OpenCASCADE serializer's cut linework
+  (`remove_cut_linework`) and regenerates cuts by bisecting **Blender mesh objects**
+  (`generate_bisect_linework` over `context.visible_objects`). Linked models are
+  instanced collections with no mesh objects, so their cuts were deleted and never
+  regenerated — linked elements only ever appeared as `projection`, and the `.cut`
+  CSS rule never applied to them. Long-standing gap, unrelated to moved links
+  (A/B-tested against pre-branch code: identical).
+- Fix: `remove_cut_linework` only removes cut groups whose guid resolves in the
+  **host** file — linked elements keep the serializer's cut geometry, which the
+  merge step then classes as `cut`.
+- **Cross-file STEP-id collision**: `tool.Ifc.get_object(linked_entity)` resolves the
+  entity's STEP id against the *host* session's id map and can return an arbitrary
+  host object (in the test project: the drawing camera, crashing
+  `generate_material_layers` with "expected 'Mesh' found 'Camera'"). Guarded via
+  `element.file is tool.Ifc.get()` in `generate_material_layers` and the merge step.
+- **Paint order**: the projection-under-cut convention was enforced only in
+  OPENCASCADE mode (`move_projection_to_bottom`); BISECT appends its own cut paths
+  last so it never needed it — but the retained serializer cuts of linked models are
+  emitted *before* the projections. BISECT now runs the same pass; `BringToFront`
+  (`move_elements_to_top`) still gets the final say.
+- Known limitation: linked cut paths are raw serializer output — they skip the
+  shapely path-closing/merging and the material-layer hatching pass (both need host
+  Blender objects). Stroke + fill from `.cut` CSS apply; layered hatching inside
+  linked cuts is a candidate follow-up.
+- Debugging note: merged cut groups carry member guids as CSS *classes*, not as the
+  `ifcopenshell:guid` attribute — inspect both when checking cut output.
+
 ## Review round 1 (PR #8242, falken10vdl) — decisions
 
 - **Path-form mismatch → duplicate documents (confirmed bug, fixed).**
@@ -231,9 +260,10 @@ Plus:
 
 - `ee43ed5526` review-round path normalization in `get_linked_models_documents` /
   `LinkIfc` (see Review round 1).
-- Drawing support for moved links and per-link queries in `create_drawing`
-  (`drawing/operator.py`, `tool/project.py`) — committed together with this note
-  update.
+- `1669cbcd43` drawing support for moved links and per-link queries in
+  `create_drawing` (`drawing/operator.py`, `tool/project.py`).
+- `.cut` styling for linked models in BISECT cut mode + STEP-id collision guards +
+  paint order (`drawing/operator.py`) — committed together with this note update.
 
 End-to-end verified with a two-links-one-file kit (window/door, distinct queries):
 correct visuals on load, after save → reopen → reload, in both headless and windowed
