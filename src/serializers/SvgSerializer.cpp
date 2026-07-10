@@ -1212,7 +1212,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					if (storey) {
 						auto it = storey_hlr.find(storey);
 						if (it == storey_hlr.end()) {
-							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
+							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, geometry_settings().get<ifcopenshell::geometry::settings::MesherLinearDeflection>().get(), projection_plane) }).first;
 						}
 						it->second.add(*compound_to_hlr, data.product);
 					} else {
@@ -2079,7 +2079,7 @@ void SvgSerializer::finalize() {
 
 			// @todo do we have always have pln here?
 			if (use_hlr && pln) {
-				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, *pln);
+				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, geometry_settings().get<ifcopenshell::geometry::settings::MesherLinearDeflection>().get(), *pln);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };
