@@ -51,11 +51,11 @@ def add_positioning_referent(
         ifcopenshell.api.alignment.add_positioning_referent(model,name="Pier 1 Sta 1+00",alignment=alignment,distance_along=0.0,station=100.0,positioned_product=pier)
     """
 
-    basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
+    curve = ifcopenshell.api.alignment.get_curve(alignment)
 
     object_placement = None
     representation = None
-    if basis_curve and basis_curve.is_a("IfcCompositeCurve") and 0 < len(basis_curve.Segments):
+    if curve and curve.is_a("IfcCompositeCurve") and 0 < len(curve.Segments):
         object_placement = file.createIfcLinearPlacement(
             RelativePlacement=file.createIfcAxis2PlacementLinear(
                 Location=file.createIfcPointByDistanceExpression(
@@ -63,7 +63,7 @@ def add_positioning_referent(
                     OffsetLateral=None,
                     OffsetVertical=None,
                     OffsetLongitudinal=None,
-                    BasisCurve=basis_curve,
+                    BasisCurve=curve,
                 )
             ),
         )
