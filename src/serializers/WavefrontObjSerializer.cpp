@@ -33,6 +33,7 @@ WaveFrontOBJSerializer::WaveFrontOBJSerializer(const stream_or_filename& obj_fil
 	, mtl_stream(mtl_filename)
 	, vcount_total(1)
 	, ncount_total(1)
+	, uvcount_total(1)
 {
 	obj_stream.stream << std::setprecision(settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get());
 	mtl_stream.stream << std::setprecision(settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get());
@@ -96,6 +97,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 
 	size_t vcount = mesh.verts().size() / 3;
     size_t ncount = mesh.normals().size() / 3;
+    size_t uvcount = mesh.uvs().size() / 2;
 
 	for (auto it = mesh.verts().begin(); it != mesh.verts().end();) {
         const double x = *(it++);
@@ -130,7 +132,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 	for ( std::vector<int>::const_iterator it = mesh.faces().begin(); it != mesh.faces().end(); ) {
 		
 		const int material_id = *(material_it++);
-		if (material_id != previous_material_id) {
+		if (material_id != previous_material_id && material_id >= 0) {
 			const ifcopenshell::geometry::taxonomy::style::ptr material = mesh.materials()[material_id];
 			std::string material_name = material->name;
             IfcUtil::sanitate_material_name(material_name);
@@ -151,9 +153,12 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
         const int n3 = v3 - vcount_total + ncount_total;
 
         if (has_normals && has_uvs) {
-			obj_stream.stream << "f " << v1 << "/" << n1 << "/" << n1 << " "
-				<< v2 << "/" << n2 << "/" << n2 << " "
-				<< v3 << "/" << n3 << "/" << n3 << "\n";
+			const int t1 = v1 - vcount_total + uvcount_total;
+			const int t2 = v2 - vcount_total + uvcount_total;
+			const int t3 = v3 - vcount_total + uvcount_total;
+			obj_stream.stream << "f " << v1 << "/" << t1 << "/" << n1 << " "
+				<< v2 << "/" << t2 << "/" << n2 << " "
+				<< v3 << "/" << t3 << "/" << n3 << "\n";
 		} else if (has_normals) {
             obj_stream.stream << "f " << v1 << "//" << n1 << " "
 				<< v2 << "//" << n2 << " "
@@ -176,7 +181,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 
 		const int material_id = *(material_it++);
 
-		if (material_id != previous_material_id) {
+		if (material_id != previous_material_id && material_id >= 0) {
 			const ifcopenshell::geometry::taxonomy::style::ptr material = mesh.materials()[material_id];
 			std::string material_name = material->name;
             IfcUtil::sanitate_material_name(material_name);
@@ -196,4 +201,5 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 
 	vcount_total += vcount;
     ncount_total += ncount;
+    uvcount_total += uvcount;
 }
