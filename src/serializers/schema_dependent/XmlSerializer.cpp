@@ -822,6 +822,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 				IfcSchema::IfcMaterialLayer::list::ptr ls = layerset->MaterialLayers();
 				for (IfcSchema::IfcMaterialLayer::list::it jt = ls->begin(); jt != ls->end(); ++jt) {
 					ptree subnode;
+					subnode.put("<xmlattr>.id", qualify_unrooted_instance(*jt));
 					if ((*jt)->Material()) {
 						subnode.put("<xmlattr>.Name", (*jt)->Material()->Name());
 					}
@@ -831,6 +832,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 				IfcSchema::IfcMaterial::list::ptr mats = mat->as<IfcSchema::IfcMaterialList>()->Materials();
 				for (IfcSchema::IfcMaterial::list::it jt = mats->begin(); jt != mats->end(); ++jt) {
 					ptree subnode;
+					subnode.put("<xmlattr>.id", qualify_unrooted_instance(*jt));
 					format_entity_instance(logger_, mapping_, *jt, subnode, node);
 				}
 			}
