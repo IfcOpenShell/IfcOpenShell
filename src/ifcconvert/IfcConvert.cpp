@@ -785,6 +785,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (!serializer->ready()) {
+		logger.error("SYS", 25, "Unable to open output file '" + ifcopenshell::path::to_utf8(output_filename) + "' for writing; check that the directory exists and is writable");
 		ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 		write_log(!quiet);
 		return EXIT_FAILURE;
