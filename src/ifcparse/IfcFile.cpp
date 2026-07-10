@@ -9,6 +9,7 @@
 
 #include <fstream>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -722,6 +723,14 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
                 logger_.get().Message(Logger::LOG_ERROR, "SYN", 3, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].startPos));
                 current_id = 0;
                 goto advance;
+            } catch (const std::out_of_range&) {
+                // #6750 A malformed keyword / entity name containing a stray
+                // apostrophe makes the character decoder scan past the end of the
+                // buffer, which surfaces as std::out_of_range from the reader.
+                // Recover instead of letting it escape and crash the process.
+                logger_.get().Message(Logger::LOG_ERROR, "SYN", 3, "Premature end of file while reading entity name at offset " + std::to_string(token_stream_[2].startPos));
+                current_id = 0;
+                goto advance;
             }
 
             if (entity_type->as_entity() == nullptr) {
@@ -746,6 +755,16 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
             } catch (const IfcInvalidTokenException& e) {
                 good_ = file_open_status::INVALID_SYNTAX;
                 logger_.get().Error("SYN", 5, e);
+                break;
+            } catch (const std::out_of_range&) {
+                // #6750 Premature end of file while reading an instance's
+                // attributes, e.g. an unterminated string literal ('...) or an
+                // attribute value containing a stray apostrophe that sends the
+                // character decoder scanning past the end of the buffer. Treat as
+                // a syntax error and stop rather than letting the exception escape
+                // readInstance() and crash the process.
+                good_ = file_open_status::INVALID_SYNTAX;
+                logger_.get().Message(Logger::LOG_ERROR, "SYN", 5, "Premature end of file while reading instance #" + std::to_string(current_id));
                 break;
             }
 
