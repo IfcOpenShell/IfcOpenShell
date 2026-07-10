@@ -85,7 +85,6 @@ cmake -S "${REPO_ROOT}/cmake" -B "${BUILD_DIR}" \
     -DGMP_LIBRARY_DIR="${LIBDIR}" \
     -DMPFR_LIBRARY_DIR="${LIBDIR}" \
     -DHDF5_INCLUDE_DIR=/usr/include \
-    -DHDF5_LIBRARY_DIR="${LIBDIR}" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include \
     -DEIGEN_DIR=/usr/include/eigen3
