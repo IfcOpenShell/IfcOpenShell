@@ -274,7 +274,15 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
             set(python_package_dir "${Python_SITEARCH}")
         ENDIF()
         if (BUILD_PACKAGE)
-            set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+            # Relative install location for the Python module inside the package.
+            # Defaults to the Debian/Ubuntu layout (dist-packages); other distros
+            # can override PACKAGE_PYTHON_SUBDIR, e.g. Fedora/RHEL use
+            # lib64/pythonX.Y/site-packages. Keep it relative so it resolves under
+            # the package install prefix (/usr) rather than an absolute host path.
+            IF (NOT PACKAGE_PYTHON_SUBDIR)
+                set(PACKAGE_PYTHON_SUBDIR ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+            ENDIF()
+            set(python_package_dir "${PACKAGE_PYTHON_SUBDIR}")
         endif()
     endif()
     IF("${python_package_dir}" STREQUAL "")

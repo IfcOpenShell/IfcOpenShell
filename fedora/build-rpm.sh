@@ -55,11 +55,17 @@ fi
 # Resolve Fedora-specific locations rather than hard-coding them, so the script
 # keeps working across Fedora releases, Python versions and architectures.
 LIBDIR="$(rpm --eval '%{_libdir}')"                       # e.g. /usr/lib64
+LIB="$(rpm --eval '%{_lib}')"                             # e.g. lib64
 PY="$(command -v python3)"
 PY_INCLUDE="$(${PY} -c 'import sysconfig; print(sysconfig.get_path("include"))')"
 PY_LIBDIR="$(${PY} -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')"
 PY_LDLIBRARY="$(${PY} -c 'import sysconfig; print(sysconfig.get_config_var("LDLIBRARY"))')"
 PY_LIBRARY="${PY_LIBDIR}/${PY_LDLIBRARY}"
+PY_XY="$(${PY} -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+# Install the Python module to Fedora's system site-packages (kept relative to
+# the /usr package prefix) so `import ifcopenshell` works without PYTHONPATH.
+# Overrides the Debian-style "dist-packages" default in src/ifcwrap/CMakeLists.txt.
+PY_MODULE_SUBDIR="${LIB}/python${PY_XY}/site-packages"    # e.g. lib64/python3.14/site-packages
 
 echo "==> Configuring (build dir: ${BUILD_DIR}, type: ${BUILD_TYPE})"
 echo "    libdir=${LIBDIR} python=${PY}"
@@ -76,6 +82,7 @@ cmake -S "${REPO_ROOT}/cmake" -B "${BUILD_DIR}" \
     -DPYTHON_EXECUTABLE:FILEPATH="${PY}" \
     -DPYTHON_INCLUDE_DIR:PATH="${PY_INCLUDE}" \
     -DPYTHON_LIBRARY:FILEPATH="${PY_LIBRARY}" \
+    -DPACKAGE_PYTHON_SUBDIR="${PY_MODULE_SUBDIR}" \
     -DCOLLADA_SUPPORT=Off \
     -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
     -DLIBXML2_LIBRARIES="${LIBDIR}/libxml2.so" \
