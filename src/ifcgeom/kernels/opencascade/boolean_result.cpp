@@ -178,7 +178,9 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		}
 		r = C;
 	} else {
-		if (br->operation != taxonomy::boolean_result::SUBTRACTION && a.IsNull()) {
+		if (br->operation != taxonomy::boolean_result::SUBTRACTION && a.IsNull() && !b.IsEmpty()) {
+			// #1366 guard b.First() against an empty operand list, which would
+			// otherwise dereference a null shape and crash.
 			a = b.First();
 			b.RemoveFirst();
 		}
