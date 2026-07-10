@@ -853,11 +853,15 @@ set(CPACK_RPM_PACKAGE_VENDOR "${CPACK_PACKAGE_VENDOR}")
 set(CPACK_RPM_PACKAGE_URL "https://ifcopenshell.org")
 set(CPACK_RPM_PACKAGE_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 set(CPACK_RPM_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
-# Shared-library dependencies are resolved automatically from the installed
-# ELF binaries (CPACK_RPM_PACKAGE_AUTOREQPROV defaults to ON); only the
-# high-level runtime requirements are listed explicitly here. Package names
-# follow Fedora/RHEL conventions (opencascade + hdf5 live in EPEL on RHEL).
-set(CPACK_RPM_PACKAGE_REQUIRES "python3, libxml2, opencascade, hdf5, boost")
+# Shared-library dependencies (OpenCASCADE, Boost, HDF5, libxml2, GMP, MPFR,
+# ...) are resolved automatically from the installed ELF binaries by RPM's
+# soname dependency generator (CPACK_RPM_PACKAGE_AUTOREQPROV defaults to ON).
+# This maps each library to the correct distro (sub)package -- e.g. on Fedora
+# OpenCASCADE ships as opencascade-foundation/-modeling/-visualization/-ocaf
+# rather than a single "opencascade" package. Only the Python interpreter is
+# listed explicitly, since it is loaded by the interpreter and not linked as a
+# shared library, so the soname generator cannot infer it.
+set(CPACK_RPM_PACKAGE_REQUIRES "python3")
 
 include(CPack)
 
