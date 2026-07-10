@@ -85,7 +85,8 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
             if props.is_renaming:
                 props.is_renaming = False
                 return
-            tool.Ifc.get().by_id(ifc_definition_id).Name = obj.name
+            with IfcStore.track_transaction_outside_operator("Rename Material"):
+                tool.Ifc.get().by_id(ifc_definition_id).Name = obj.name
             refresh_ui_data()
         return
 
@@ -106,14 +107,16 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
         object_name = element.is_a() + f"/{element_name}"
         obj.name = object_name  # NOTE: doesn't trigger infinite recursion
 
-    if element.is_a("IfcGridAxis"):
-        element.AxisTag = object_name.split("/")[1]
-        refresh_ui_data()
-
-    if not element.is_a("IfcRoot"):
+    if not element.is_a("IfcGridAxis") and not element.is_a("IfcRoot"):
         return
-    element.Name = element_name
-    if props.collection:
+
+    with IfcStore.track_transaction_outside_operator("Rename"):
+        if element.is_a("IfcGridAxis"):
+            element.AxisTag = object_name.split("/")[1]
+        if element.is_a("IfcRoot"):
+            element.Name = element_name
+
+    if element.is_a("IfcRoot") and props.collection:
         props.collection.name = object_name
     refresh_ui_data()
 
