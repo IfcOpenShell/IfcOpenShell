@@ -329,47 +329,17 @@ class SheetBuilder:
         titleblock.append(g)
         titleblock.remove(image)
 
-    def ensure_drawing_unique_styles(self, svg: ET.Element, drawing_id: int) -> ET.Element:
-        """ensures all drawing's classes and ids will be unique for the whole sheet
-        by adding `drawing_id` based prefix
+    def ensure_unique_ids(self, svg: ET.Element, view_id: int) -> ET.Element:
+        """ensures all view's classes and ids will be unique for the whole sheet
+        by adding `view_id` based prefix.
+
+        Applies to both drawings and referenced documents. Referenced documents
+        (for example markdown converted to SVG) commonly define glyph symbols with
+        generic ids like `glyph-0-0` and reference them via `<use>`. Without a per
+        view prefix these ids collide across embedded views, so every `<use>`
+        resolves to the first matching id and the text is garbled.
         """
-        prefix = f"d{drawing_id}"  # just number doesn't work
-
-        # add .prefix class to all css selectors
-        style = svg.find(f"{SVG}defs/{SVG}style")
-        assert style is not None
-        style_data = style.text
-        assert style_data is not None
-        text = ""
-        brackets_level = 0
-        selector_buffer = ""  # Buffer to accumulate selectors across lines
-
-        for l in style_data:
-            if l == "{":
-                if brackets_level == 0:
-                    # Get all accumulated selector text (may span multiple lines)
-                    # Find where the last rule ended (after last }) or start of text
-                    last_close = text.rfind("}")
-                    if last_close == -1:
-                        selector_text = text
-                        text = ""
-                    else:
-                        selector_text = text[last_close + 1 :]
-                        text = text[: last_close + 1]
-
-                    # Process all selectors (split by comma)
-                    css_selectors = []
-                    for css_selector in selector_text.split(","):
-                        css_selector = css_selector.strip()
-                        if css_selector:  # Only process non-empty selectors
-                            css_selector = f"{css_selector}.{prefix}"
-                            css_selectors.append(css_selector)
-
-                    text += ", ".join(css_selectors) + " "
-                brackets_level += 1
-            elif l == "}":
-                brackets_level -= 1
-            text += l
+        prefix = f"d{view_id}"  # just number doesn't work
 
         def replace_urls(text: str) -> str:
             """replace urls `url(#marker)` with `url(#prefix-marker)`
@@ -377,7 +347,41 @@ class SheetBuilder:
             """
             return re.sub(r"url\(#([^\)]+)\)", rf"url(#{prefix}-\1)", text)
 
-        style.text = replace_urls(text)
+        # add .prefix class to all css selectors
+        style = svg.find(f"{SVG}defs/{SVG}style")
+        if style is not None and style.text is not None:
+            style_data = style.text
+            text = ""
+            brackets_level = 0
+
+            for l in style_data:
+                if l == "{":
+                    if brackets_level == 0:
+                        # Get all accumulated selector text (may span multiple lines)
+                        # Find where the last rule ended (after last }) or start of text
+                        last_close = text.rfind("}")
+                        if last_close == -1:
+                            selector_text = text
+                            text = ""
+                        else:
+                            selector_text = text[last_close + 1 :]
+                            text = text[: last_close + 1]
+
+                        # Process all selectors (split by comma)
+                        css_selectors = []
+                        for css_selector in selector_text.split(","):
+                            css_selector = css_selector.strip()
+                            if css_selector:  # Only process non-empty selectors
+                                css_selector = f"{css_selector}.{prefix}"
+                                css_selectors.append(css_selector)
+
+                        text += ", ".join(css_selectors) + " "
+                    brackets_level += 1
+                elif l == "}":
+                    brackets_level -= 1
+                text += l
+
+            style.text = replace_urls(text)
 
         for svg_element in svg.findall(f".//*"):
             if svg_element.tag in (f"{SVG}style", f"{SVG}svg"):
@@ -426,7 +430,7 @@ class SheetBuilder:
 
             if foreground is not None:
                 svg = self.parse_embedded_svg(foreground, {})
-                svg = self.ensure_drawing_unique_styles(svg, drawing_id)
+                svg = self.ensure_unique_ids(svg, drawing_id)
                 view.append(svg)
 
             if view_title is not None:
@@ -478,7 +482,9 @@ class SheetBuilder:
                     view_title = image
 
             if table is not None:
-                view.append(self.parse_embedded_svg(table, {}))
+                svg = self.parse_embedded_svg(table, {})
+                svg = self.ensure_unique_ids(svg, int(view.attrib["data-id"]))
+                view.append(svg)
 
             if view_title is not None:
                 path = self.get_href(table)
