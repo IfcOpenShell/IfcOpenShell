@@ -19,6 +19,8 @@
 #include <Standard_Version.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <BRepBndLib.hxx>
 #include <BOPAlgo_PaveFiller.hxx>
 #include <BOPAlgo_Alerts.hxx>
 #include <ShapeFix_Shape.hxx>
@@ -832,7 +834,44 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+namespace {
+	// Uniformly grow a subtraction operand by scaling it about its bounding box
+	// center so that every face moves outward by at least 'delta'. Used as a last
+	// resort when a cut fails because a tool boundary is exactly coincident with a
+	// face of the first operand (see #619). The growth is bounded to a small
+	// fraction so the subtracted region only expands by a sub-precision amount.
+	TopoDS_Shape enlarge_operand(const TopoDS_Shape& s, double delta) {
+		Bnd_Box bb;
+		BRepBndLib::Add(s, bb);
+		if (bb.IsVoid()) {
+			return s;
+		}
+		double xmin, ymin, zmin, xmax, ymax, zmax;
+		bb.Get(xmin, ymin, zmin, xmax, ymax, zmax);
+		gp_Pnt center((xmin + xmax) / 2., (ymin + ymax) / 2., (zmin + zmax) / 2.);
+		double hx = (xmax - xmin) / 2., hy = (ymax - ymin) / 2., hz = (zmax - zmin) / 2.;
+		double hmin = (std::min)(hx, (std::min)(hy, hz));
+		if (hmin <= 0.) {
+			return s;
+		}
+		// Scaling about the center moves a face outward by (factor - 1) times its
+		// distance to the center. Deriving the factor from the smallest half
+		// dimension guarantees every face moves outward by at least 'delta'.
+		double factor = 1. + delta / hmin;
+		if (factor > 1.05) {
+			factor = 1.05;
+		}
+		gp_Trsf trsf;
+		trsf.SetScale(center, factor);
+		try {
+			return BRepBuilderAPI_Transform(s, trsf, true).Shape();
+		} catch (...) {
+			return s;
+		}
+	}
+}
+
+bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness, bool enlarge_tools_on_failure) {
 	using namespace std::string_literals;
 
 	const bool do_unify = true;
@@ -1417,7 +1456,35 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 	if (!success) {
 		if (allow_retry) {
-			return boolean_operation(settings, a, b, op, result, new_fuzziness);
+			return boolean_operation(settings, a, b, op, result, new_fuzziness, enlarge_tools_on_failure);
+		} else if (op == BOPAlgo_CUT && enlarge_tools_on_failure) {
+			// Last resort robustness for #619: the cut can fail at every fuzziness
+			// when a tool boundary is exactly coincident with a face of the first
+			// operand, for example a polygonal bounded half space clip whose polygon
+			// spans the full wall thickness. Slightly enlarge the tool operands so the
+			// boundaries no longer coincide and attempt the cut once more. This only
+			// grows the subtracted region by a sub-precision amount and is only reached
+			// after all normal fuzziness attempts have already failed, so cuts that
+			// succeed normally are never affected.
+			double delta = settings.precision * 10.;
+			NCollection_List<TopoDS_Shape> b_enlarged;
+			bool any_enlarged = false;
+			for (NCollection_List<TopoDS_Shape>::Iterator it(b); it.More(); it.Next()) {
+				TopoDS_Shape e = enlarge_operand(it.Value(), delta);
+				if (!e.IsNull() && !e.IsSame(it.Value())) {
+					any_enlarged = true;
+					b_enlarged.Append(e);
+				} else {
+					b_enlarged.Append(it.Value());
+				}
+			}
+			if (any_enlarged) {
+				Logger::Root().Notice("GEO", 154, "Retrying cut with slightly enlarged tool operands");
+				if (boolean_operation(settings, a, b_enlarged, op, result, -1., false)) {
+					return true;
+				}
+			}
+			Logger::Root().Notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
 		} else {
 			Logger::Root().Notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
 		}
