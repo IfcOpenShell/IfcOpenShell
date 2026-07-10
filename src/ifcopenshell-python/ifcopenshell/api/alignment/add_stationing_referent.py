@@ -34,6 +34,7 @@ def add_stationing_referent(
     distance_along: float,
     station: float,
     incoming_station: Optional[float] = None,
+    on_basis_curve: Optional[bool] = None,
 ) -> entity_instance:
     """
     Adds an IfcReferent to the alignment that defines the stationing system.
@@ -43,6 +44,7 @@ def add_stationing_referent(
     :param distance_along: distance along the alignment basis curve
     :param station: station value
     :param incoming_station: station value of the incoming segment, only set to specify a station equation
+    :param on_basis_curve: whether the referent is positioned on the basis curve or the alignment curve, if None the function will default to the basis curve
     :return: referent
 
     Example:
@@ -53,11 +55,14 @@ def add_stationing_referent(
         ifcopenshell.api.alignment.add_stationing_referent(model,name="1+00.0",alignment=alignment,distance_along=0.0,station=100.0)
     """
 
-    basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
+    if on_basis_curve is None:
+        on_basis_curve = True
+
+    curve = ifcopenshell.api.alignment.get_basis_curve(alignment) if on_basis_curve else ifcopenshell.api.alignment.get_curve(alignment)
 
     object_placement = None
     representation = None
-    if basis_curve and basis_curve.is_a("IfcCompositeCurve") and 0 < len(basis_curve.Segments):
+    if curve and curve.is_a("IfcCompositeCurve") and 0 < len(curve.Segments):
         object_placement = file.createIfcLinearPlacement(
             RelativePlacement=file.createIfcAxis2PlacementLinear(
                 Location=file.createIfcPointByDistanceExpression(
@@ -65,7 +70,7 @@ def add_stationing_referent(
                     OffsetLateral=None,
                     OffsetVertical=None,
                     OffsetLongitudinal=None,
-                    BasisCurve=basis_curve,
+                    BasisCurve=curve,
                 )
             ),
         )
