@@ -1164,13 +1164,18 @@ class Geometry(bonsai.core.tool.Geometry):
 
         shape = None
         if elements:
-            iterator = ifcopenshell.geom.iterator(
-                settings,
-                tool.Ifc.get(),
-                multiprocessing.cpu_count(),
-                include=elements,
-                geometry_library=geometry_library,
-            )
+            if ifc_import_settings.should_use_cpu_multiprocessing:
+                iterator = ifcopenshell.geom.iterator(
+                    settings,
+                    tool.Ifc.get(),
+                    multiprocessing.cpu_count(),
+                    include=elements,
+                    geometry_library=geometry_library,
+                )
+            else:
+                iterator = ifcopenshell.geom.iterator(
+                    settings, tool.Ifc.get(), include=elements, geometry_library=geometry_library
+                )
         else:
             iterator = None  # For example, when switching representation of a type with no occurrences
         meshes = {}
