@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -90,9 +91,56 @@ class Project(bonsai.core.tool.Project):
             link.empty_handle = empty
 
     @classmethod
+    def get_link_cache_paths(cls, filepath: Union[Path, str], query: str, exclude: str = "") -> tuple[Path, Path]:
+        """Get the (blend, json) cache paths for a linked model's filter.
+
+        Cache files are per-filter so the same IFC file can be linked several
+        times with different include/exclude queries without the caches
+        overwriting each other. An empty filter keeps the legacy un-suffixed
+        names, and an include-only filter keeps the pre-exclude hash so
+        existing caches stay valid.
+        """
+        filepath = Path(filepath)
+        if not query and not exclude:
+            suffix = ""
+        elif not exclude:
+            suffix = "." + hashlib.md5(query.encode("utf-8")).hexdigest()[:8]
+        else:
+            suffix = "." + hashlib.md5(f"{query}\0{exclude}".encode("utf-8")).hexdigest()[:8]
+        return (
+            filepath.with_suffix(f".ifc.cache{suffix}.blend"),
+            filepath.with_suffix(f".ifc.cache{suffix}.json"),
+        )
+
+    @classmethod
+    def encode_link_filter(cls, query: str, exclude: str) -> Union[str, None]:
+        """Serialize a link's filter for IfcDocumentReference.Description.
+
+        A plain include query is stored as-is (backwards compatible); an
+        exclude promotes the value to a small JSON blob.
+        """
+        if exclude:
+            return json.dumps({"include": query, "exclude": exclude})
+        return query or None
+
+    @classmethod
+    def decode_link_filter(cls, description: Union[str, None]) -> tuple[str, str]:
+        """Get (query, exclude) from a reference Description written by encode_link_filter."""
+        if not description:
+            return "", ""
+        if description.startswith("{"):
+            try:
+                data = json.loads(description)
+                if isinstance(data, dict):
+                    return data.get("include", "") or "", data.get("exclude", "") or ""
+            except json.JSONDecodeError:
+                pass
+        return description, ""
+
+    @classmethod
     def calculate_link_matrix(cls, link: Link) -> Matrix:
         filepath = Path(tool.Ifc.resolve_uri(link.filepath))
-        with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
+        with open(cls.get_link_cache_paths(filepath, link.query, link.exclude)[1], "r") as f:
             metadata = json.load(f)
 
         rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
@@ -116,6 +164,86 @@ class Project(bonsai.core.tool.Project):
         local_matrix = rot @ np.eye(4)
         local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
         return Matrix(np.linalg.inv(local_matrix) @ global_matrix)
+
+    @classmethod
+    def get_link_transformation_matrix(cls, link: Link) -> Union[npt.NDArray[np.float64], None]:
+        """Get the link's saved 4x4 transformation in model coordinates, or None when identity."""
+        if tool.Ifc.get():
+            transformation = tool.Ifc.get().by_id(link.ifc_definition_id)[1]  # Identification
+        else:
+            transformation = link.transformation
+        if not transformation:
+            return None
+        matrix = np.fromstring(transformation, sep=",", dtype=np.float64).reshape(4, 4)
+        if np.allclose(matrix, np.eye(4)):
+            return None
+        return matrix
+
+    @classmethod
+    def calculate_link_delta_matrix(cls, link: Link) -> Matrix:
+        """Get the matrix mapping the link's unmoved world positions to its moved ones.
+
+        Returns identity when the link has no saved transformation.
+        """
+        if tool.Ifc.get():
+            transformation = tool.Ifc.get().by_id(link.ifc_definition_id)[1]  # Identification
+        else:
+            transformation = link.transformation
+
+        if not transformation:
+            return Matrix.Identity(4)
+        transformation = np.fromstring(transformation, sep=",", dtype=np.float64).reshape(4, 4)
+        if np.allclose(transformation, np.eye(4)):
+            return Matrix.Identity(4)
+
+        gprops = tool.Georeference.get_georeference_props()
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
+        local_matrix = rot @ np.eye(4)
+        local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
+
+        # Link empty matrix is inv(local) @ transformation @ global (see
+        # calculate_link_matrix), so moved = inv(local) @ T @ local @ unmoved.
+        return Matrix(np.linalg.inv(local_matrix) @ transformation @ local_matrix)
+
+    @classmethod
+    def save_link_transformation(cls, link: Link) -> None:
+        """Persist the link handle's current world matrix as the link's saved transformation."""
+        obj = cls.get_link_empty_handle(link)
+        assert obj
+        new_obj_matrix = np.array(obj.matrix_world)
+
+        filepath = Path(tool.Ifc.resolve_uri(link.filepath))
+        with open(cls.get_link_cache_paths(filepath, link.query, link.exclude)[1], "r") as f:
+            metadata = json.load(f)
+
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
+            radians(-float(metadata["model_project_north"])), 4, "Z"
+        )
+        global_matrix = rot @ np.eye(4)
+        global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
+
+        gprops = tool.Georeference.get_georeference_props()
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
+        local_matrix = rot @ np.eye(4)
+        local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
+
+        # obj_matrix is typically calculated as:
+        # obj_matrix = np.linalg.inv(local_matrix) @ transformation @ global_matrix
+        identity_blender_matrix = np.linalg.inv(local_matrix) @ global_matrix
+        if np.allclose(new_obj_matrix, identity_blender_matrix, atol=1e-5):
+            link.has_transformation = False
+            transformation = ",".join(map(str, np.eye(4).reshape(-1)))
+        else:
+            transformed_global_matrix = local_matrix @ new_obj_matrix
+            transformation = transformed_global_matrix @ np.linalg.inv(global_matrix)
+            link.has_transformation = True
+            transformation = ",".join(map(str, transformation.reshape(-1)))
+
+        if tool.Ifc.get():
+            reference = tool.Ifc.get().by_id(link.ifc_definition_id)
+            reference[1] = transformation
+        else:
+            link.transformation = transformation
 
     @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
@@ -309,11 +437,17 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def get_linked_models_documents(cls) -> dict[str, ifcopenshell.entity_instance]:
+        """Get linked model documents keyed by resolved absolute filepath (posix form).
+
+        Locations are stored either relative or absolute depending on how the
+        link was created - resolving before keying ensures both forms of the
+        same file match one document.
+        """
         linked_docs = {}
         for doc in tool.Ifc.get().by_type("IfcDocumentInformation"):
             if doc.Scope == "LINKED_MODEL":
                 for reference in tool.Drawing.get_document_references(doc):
-                    linked_docs[Path(reference.Location).as_posix()] = doc
+                    linked_docs[Path(tool.Ifc.resolve_uri(reference.Location)).as_posix()] = doc
                     break
         return linked_docs
 
@@ -321,27 +455,41 @@ class Project(bonsai.core.tool.Project):
     def load_linked_models_from_ifc(cls) -> None:
         links = tool.Project.get_project_props().links
         links.clear()
+        references: list[ifcopenshell.entity_instance] = []
         for doc in tool.Ifc.get().by_type("IfcDocumentInformation"):
             if doc.Scope != "LINKED_MODEL":
                 continue
-            for reference in tool.Drawing.get_document_references(doc):
-                filepath = reference.Location
-                link = links.add()
-                link.name = filepath
-                link.filepath = filepath
-                link.ifc_definition_id = reference.id()
-                link.has_transformation = False
-                if reference[1]:
-                    m = np.fromstring(reference[1], sep=",", dtype=np.float64).reshape(4, 4)
-                    link.has_transformation = not np.allclose(m, np.eye(4))
-                # The selector query used at link time is persisted only in the
-                # sidecar cache JSON; restore it so Reload/Load replay the filter.
+            references.extend(tool.Drawing.get_document_references(doc))
+        location_counts: defaultdict[str, int] = defaultdict(int)
+        for reference in references:
+            location_counts[reference.Location] += 1
+        for reference in references:
+            filepath = reference.Location
+            link = links.add()
+            link.name = filepath
+            link.filepath = filepath
+            link.ifc_definition_id = reference.id()
+            link.has_transformation = False
+            if reference[1]:
+                m = np.fromstring(reference[1], sep=",", dtype=np.float64).reshape(4, 4)
+                link.has_transformation = not np.allclose(m, np.eye(4))
+            # The selector filter used at link time is persisted per
+            # reference in its Description (IFC4+); restore it so
+            # Reload/Load replay the filter.
+            query, exclude = cls.decode_link_filter(getattr(reference, "Description", None))
+            if not query and not exclude and location_counts[filepath] == 1:
+                # Fall back to the legacy sidecar cache JSON where older
+                # versions persisted the query. Only unambiguous: with
+                # several links to one file the shared JSON can't say
+                # which link it belonged to.
                 json_filepath = Path(tool.Ifc.resolve_uri(filepath)).with_suffix(".ifc.cache.json")
                 if json_filepath.exists():
                     try:
-                        link.query = json.loads(json_filepath.read_text()).get("query", "")
+                        query = json.loads(json_filepath.read_text()).get("query", "")
                     except (OSError, json.JSONDecodeError):
                         pass
+            link.query = query
+            link.exclude = exclude
 
     @classmethod
     def get_project_library_elements(
@@ -858,8 +1006,15 @@ class Project(bonsai.core.tool.Project):
 
             selected_vertices = [obj.matrix_world @ mesh.vertices[vi].co for vi in vert_map]
             for polygon in guid_polygons:
-                selected_tris.append(tuple(vert_map[vi] for vi in polygon.vertices))
                 selected_edges.extend(tuple([vert_map[vi] for vi in e]) for e in polygon.edge_keys)
+
+            # Polygons are not necessarily triangles (e.g. layerset-sliced
+            # meshes contain ngons), so triangles come from the loop triangles.
+            mesh.calc_loop_triangles()
+            polygon_range = range(*slice_.indices(len(mesh.polygons)))
+            for tri in mesh.loop_triangles:
+                if tri.polygon_index in polygon_range:
+                    selected_tris.append(tuple(vert_map[vi] for vi in tri.vertices))
 
             obj["selected_vertices"] = selected_vertices
             obj["selected_edges"] = selected_edges
@@ -897,11 +1052,9 @@ class Project(bonsai.core.tool.Project):
             from bonsai.bim.module.project.data import LinksData
             from bonsai.bim.module.project.decorator import ProjectDecorator
 
-            # Not sure if there's a difference between `instance_matrix` coming from `ray_cast`
-            # and usual `matrix_world`, maybe we can just get it from object always.
-            if instance_matrix is None:
-                instance_matrix = obj.matrix_world
-
+            # `instance_matrix` is the world matrix of the hit collection instance
+            # from `ray_cast` (link empty matrix included). Without it, the root
+            # empty is resolved as the collection's only instance.
             cls.deselect_queried_linked_element()
             cls.set_queried_linked_element(obj, guid, instance_matrix)
             cls.select_linked_element_geom(obj, guid)
@@ -958,7 +1111,7 @@ class Project(bonsai.core.tool.Project):
             ProjectDecorator.install(context)
 
         @classmethod
-        def set_queried_linked_element(cls, obj: bpy.types.Object, guid: str, instance_matrix: Matrix) -> None:
+        def set_queried_linked_element(cls, obj: bpy.types.Object, guid: str, instance_matrix: Matrix | None) -> None:
             props = tool.Project.get_project_props()
             props.queried_obj = obj
             props.queried_obj_root = cls.find_obj_root(obj, instance_matrix)
@@ -977,17 +1130,22 @@ class Project(bonsai.core.tool.Project):
                     del obj[field]
 
         @classmethod
-        def find_obj_root(cls, obj: bpy.types.Object, matrix: Matrix) -> bpy.types.Object | None:
+        def find_obj_root(cls, obj: bpy.types.Object, matrix: Matrix | None) -> bpy.types.Object | None:
             collections = set(obj.users_collection)
-            for o in bpy.data.objects:
-                if (
-                    o.type != "EMPTY"
-                    or o.instance_type != "COLLECTION"
-                    or o.instance_collection not in collections
-                    or not np.allclose(matrix, o.matrix_world, atol=1e-4)
-                ):
-                    continue
-                return o
+            candidates = [
+                o
+                for o in bpy.data.objects
+                if o.type == "EMPTY" and o.instance_type == "COLLECTION" and o.instance_collection in collections
+            ]
+            if matrix is not None:
+                # `matrix` is the instance's world matrix - the instancing
+                # empty's matrix combined with the object's own local matrix
+                # (non-identity for instanced occurrence objects).
+                for o in candidates:
+                    if np.allclose(matrix, np.array(o.matrix_world) @ np.array(obj.matrix_world), atol=1e-4):
+                        return o
+            if len(candidates) == 1:
+                return candidates[0]
 
         class SelectedGeometry(NamedTuple):
             selected_vertices: list[tuple[float, float, float]]
@@ -996,8 +1154,11 @@ class Project(bonsai.core.tool.Project):
 
         @classmethod
         def get_selected_geometry(cls, obj: bpy.types.Object) -> SelectedGeometry:
+            # ID properties are returned as IDPropertyArrays (the whole
+            # property when empty, the items otherwise), which the GPU module
+            # rejects as batch indices - convert to plain tuples.
             return cls.SelectedGeometry(
-                obj["selected_vertices"],
-                obj["selected_edges"],
-                obj["selected_tris"],
+                [tuple(v) for v in obj["selected_vertices"]],
+                [tuple(e) for e in obj["selected_edges"]],
+                [tuple(t) for t in obj["selected_tris"]],
             )

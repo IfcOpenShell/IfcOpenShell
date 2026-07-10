@@ -602,7 +602,7 @@ class CreateDrawing(bpy.types.Operator):
         context_type: Literal["body", "annotation"],
         drawing_elements: set[ifcopenshell.entity_instance],
         target_view: str,
-        link_matrix: Optional[Matrix] = None,
+        link_transform: Optional[np.ndarray] = None,
     ) -> None:
         drawing_elements = drawing_elements.copy()
         contexts_: list[list[int]] = getattr(contexts, context_type)
@@ -614,19 +614,22 @@ class CreateDrawing(bpy.types.Operator):
                 geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
 
-                is_plan = ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view
-                z_offset = (0.002 if target_view == "PLAN_VIEW" else -0.002) if is_plan else 0.0
-
-                if link_matrix is not None:
-                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
-                    t = link_matrix.to_translation()
-                    offset = (t.x / unit_scale, t.y / unit_scale, t.z / unit_scale + z_offset)
-                    geom_settings.set("model-offset", offset)
-                    q = link_matrix.to_quaternion()
-                    geom_settings.set("model-rotation", (q.x, q.y, q.z, q.w))
-                elif z_offset:
+                offset = np.zeros(3)
+                if ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
                     # A 2mm Z offset to combat Z-fighting in plan or RCPs
-                    geom_settings.set("model-offset", (0.0, 0.0, z_offset))
+                    offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
+                if link_transform is not None:
+                    # Bake a moved link's transformation into the geometry. The
+                    # mapping composes Trans(model-offset) @ Rot(model-rotation),
+                    # matching the Trans(t) @ Rot(R) decomposition of the rigid
+                    # link matrix, so the Z offset above simply adds on.
+                    offset += link_transform[:3, 3]
+                    quaternion = Matrix(link_transform.tolist()).to_quaternion()
+                    geom_settings.set(
+                        "model-rotation", (quaternion.x, quaternion.y, quaternion.z, quaternion.w)
+                    )
+                if offset.any():
+                    geom_settings.set("model-offset", tuple(float(o) for o in offset))
 
                 geom_settings.set("context-ids", context)
                 it = ifcopenshell.geom.iterator(
@@ -679,6 +682,10 @@ class CreateDrawing(bpy.types.Operator):
             if "projection" in el.get("class", "").split():
                 continue
             element = self.get_element_by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            if element is None or element.file is not tool.Ifc.get():
+                # Linked model element - no Blender object to bisect, and its
+                # STEP id must not be resolved against the host session.
+                continue
             if not (obj := tool.Ifc.get_object(element)):
                 continue
             if not (material := ifcopenshell.util.element.get_material(element)):
@@ -934,16 +941,25 @@ class CreateDrawing(bpy.types.Operator):
 
         bim_props = tool.Blender.get_bim_props()
         prefs = tool.Blender.get_addon_preferences()
-        # Map ifc_path → (ifc_file, link_matrix); main file has no link_matrix (None)
-        files: dict[str, tuple[ifcopenshell.file, Optional[Matrix]]] = {bim_props.ifc_file: (tool.Ifc.get(), None)}
 
         props = tool.Project.get_project_props()
+        # One entry per file *and* per link - the same file can be linked
+        # several times with different queries and transformations, so links
+        # cannot be collapsed into a dict keyed by filepath.
+        # Each entry is (path, file, link transformation or None, link query, link exclude).
+        file_entries: list[tuple[str, ifcopenshell.file, Optional[np.ndarray], str, str]] = [
+            (bim_props.ifc_file, tool.Ifc.get(), None, "", "")
+        ]
         for link in props.get_loaded_links_for_drawings():
-            try:
-                link_matrix = tool.Project.calculate_link_matrix(link)
-            except Exception:
-                link_matrix = None
-            files[link.filepath] = (self.get_linked_file(link), link_matrix)
+            file_entries.append(
+                (
+                    link.filepath,
+                    self.get_linked_file(link),
+                    tool.Project.get_link_transformation_matrix(link),
+                    link.query,
+                    link.exclude,
+                )
+            )
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -957,7 +973,7 @@ class CreateDrawing(bpy.types.Operator):
         raycast_objs = set()
         elements_with_faces = set()
 
-        for ifc_path, (ifc, link_matrix) in files.items():
+        for ifc_path, ifc, link_transform, link_query, link_exclude in file_entries:
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
@@ -965,6 +981,11 @@ class CreateDrawing(bpy.types.Operator):
 
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
+            if link_query:
+                # Draw only what the link's selector filter loaded in the viewport.
+                drawing_elements &= ifcopenshell.util.selector.filter_elements(ifc, link_query)
+            if link_exclude:
+                drawing_elements -= ifcopenshell.util.selector.filter_elements(ifc, link_exclude)
 
             if self.cprops.fill_mode == "SHAPELY":
                 for element in drawing_elements.copy():
@@ -980,8 +1001,12 @@ class CreateDrawing(bpy.types.Operator):
             # A drawing prioritises a target view context first, followed by a model view context as a fallback.
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
             contexts = self.get_linework_contexts(ifc, target_view)
-            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
-            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix)
+            self.serialize_contexts_elements(
+                ifc, tree, contexts, "body", drawing_elements, target_view, link_transform
+            )
+            self.serialize_contexts_elements(
+                ifc, tree, contexts, "annotation", drawing_elements, target_view, link_transform
+            )
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
@@ -1036,6 +1061,10 @@ class CreateDrawing(bpy.types.Operator):
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
+            # Bisect cut linework is appended after the projections, but the
+            # retained serializer cuts of linked models precede them - enforce
+            # the projection-under-cut convention like OPENCASCADE mode does.
+            self.move_projection_to_bottom(root)
             self.move_elements_to_top(root)
         elif self.cprops.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
@@ -1431,9 +1460,21 @@ class CreateDrawing(bpy.types.Operator):
                     continue
 
     def remove_cut_linework(self, root):
+        """Remove host elements' cut linework so bisecting can regenerate it.
+
+        Linked model elements keep the serializer's cut geometry - bisect
+        linework is generated from Blender mesh objects, and linked models
+        are instanced collections without any.
+        """
+        ifc_file = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
-            if "projection" not in el.get("class", "").split():
-                el.getparent().remove(el)
+            if "projection" in el.get("class", "").split():
+                continue
+            try:
+                ifc_file.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            except RuntimeError:
+                continue  # Linked model element.
+            el.getparent().remove(el)
 
     def merge_linework_and_add_metadata(self, root):
         join_criteria = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinCriteria")
@@ -1468,7 +1509,9 @@ class CreateDrawing(bpy.types.Operator):
                 classes.append("cut")
                 el.set("class", " ".join(classes))
 
-            obj = tool.Ifc.get_object(element)
+            # Resolving a linked element's STEP id against the host session
+            # would return an arbitrary host object.
+            obj = tool.Ifc.get_object(element) if element is not None and element.file is tool.Ifc.get() else None
 
             if not obj:  # This is a linked model object. For now, do nothing.
                 continue

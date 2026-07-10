@@ -1360,10 +1360,18 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     )
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
     query: bpy.props.StringProperty(
-        name="Query",
+        name="Include",
         description=(
-            "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
-            "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+            "Selector query for the elements to load from the linked model. E.g. 'IfcElement'.\n\n"
+            "Default when empty - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+        ),
+    )
+    exclude: bpy.props.StringProperty(
+        name="Exclude",
+        description=(
+            "Selector query whose matches are excluded from the loaded elements.\n\n"
+            "Applied on top of the query (or the default set), providing the set "
+            "difference a single query cannot express. E.g. 'IfcSlab, parent=\"X\"'."
         ),
     )
 
@@ -1377,6 +1385,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
         use_relative_path: bool
         use_cache: bool
         query: str
+        exclude: str
 
     def draw(self, context):
         assert self.layout
@@ -1395,6 +1404,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
             row = self.layout.row()
             row.prop(pprops, "project_north")
         self.layout.prop(self, "query", placeholder="IfcElement")
+        self.layout.prop(self, "exclude", placeholder='IfcSlab, parent="..."')
 
     def _execute(self, context):
         start = time.time()
@@ -1417,18 +1427,26 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
 
             new = props.links.add()
             if tool.Ifc.get():
-                if not (document := existing_links.get(filepath)):
+                # Look up by resolved absolute path so a file already linked
+                # with a relative Location (or vice versa) reuses its document.
+                resolved_filepath = Path(tool.Ifc.resolve_uri(filepath)).as_posix()
+                if not (document := existing_links.get(resolved_filepath)):
                     document = ifcopenshell.api.document.add_information(tool.Ifc.get())
                     document.Name = Path(filepath).name
                     document.Scope = "LINKED_MODEL"
                 reference = ifcopenshell.api.document.add_reference(tool.Ifc.get(), information=document)
                 reference[1] = ",".join([str(o) for o in np.eye(4).flatten().tolist()])
                 reference.Location = filepath.replace("\\", "/")
+                # Persist the filter per reference (Description is IFC4+ only).
+                description = tool.Project.encode_link_filter(self.query, self.exclude)
+                if description and hasattr(reference, "Description"):
+                    reference.Description = description
                 new.ifc_definition_id = reference.id()
             new.name = filepath
             new.filepath = filepath
             new.query = self.query
-            bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache, query=self.query)
+            new.exclude = self.exclude
+            bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache, query=self.query, exclude=self.exclude)
 
 
 class UnlinkIfc(bpy.types.Operator, tool.Ifc.Operator):
@@ -1487,21 +1505,28 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load the selected file"
 
+    # SKIP_SAVE: Blender reuses an operator's last-used property values on the
+    # next interactive invocation, which would leak one link's query/cache
+    # settings into another link's load.
     link_index: bpy.props.IntProperty(name="Link Index")
-    use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
-    query: bpy.props.StringProperty()
+    use_cache: bpy.props.BoolProperty(name="Use Cache", default=True, options={"SKIP_SAVE"})
+    query: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    exclude: bpy.props.StringProperty(options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         link_index: int
         use_cache: bool
         query: str
+        exclude: str
 
     def _execute(self, context):
         self.link = tool.Project.get_project_props().links[self.link_index]
-        # Fall back to the Link's stored query so callers that omit it
+        # Fall back to the Link's stored filter so callers that omit it
         # still replay the filter the link was created with.
         if not self.query and self.link.query:
             self.query = self.link.query
+        if not self.exclude and self.link.exclude:
+            self.exclude = self.link.exclude
         filepath = Path(tool.Ifc.resolve_uri(self.link.filepath))
         if not filepath.exists():
             self.report({"ERROR"}, f"File does not exist: '{filepath}'")
@@ -1538,22 +1563,21 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             self.link.is_loaded = False
 
     def link_ifc(self) -> Union[set[str], None]:
-        blend_filepath = self.filepath_.with_suffix(".ifc.cache.blend")
-        h5_filepath = self.filepath_.with_suffix(".ifc.cache.h5")
-        json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
+        blend_filepath, json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query, self.exclude)
 
         def should_clear_cache() -> bool:
             if not self.use_cache:
                 return True
             if not blend_filepath.exists():
                 return False
+            if not json_filepath.exists():
+                return True
             data = json.loads(json_filepath.read_text())
             # Empty 'query' - model loaded without custom query.
             # Missing 'query' - model was loaded before custom queries were introduced in Bonsai.
-            query = data.get("query", "")
-            return query != self.query
+            return data.get("query", "") != self.query or data.get("exclude", "") != self.exclude
 
-        if should_clear_cache():
+        if should_clear_cache() and blend_filepath.exists():
             os.remove(blend_filepath)
 
         if not blend_filepath.exists():
@@ -1581,7 +1605,7 @@ def run():
     pprops.project_north = "{pprops.project_north}"
     # Use absolute path to be safe from cwd changes.
     try:
-        bpy.ops.bim.load_linked_project(filepath=r"{str(self.filepath_)}", query={repr(self.query)})
+        bpy.ops.bim.load_linked_project(filepath=r"{str(self.filepath_)}", query={repr(self.query)}, exclude={repr(self.exclude)})
     except RuntimeError as e:
         # Operator failed (returned CANCELLED with error report)
         print(f"Failed to load linked project: {{e}}")
@@ -1630,7 +1654,7 @@ except Exception as e:
         if len(tool.Project.get_project_props().links) > 1:
             return  # Only the first link sets the origin
 
-        json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
+        json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query, self.exclude)[1]
         if not json_filepath.exists():
             return
 
@@ -1649,8 +1673,7 @@ except Exception as e:
         if not (crs_name := (ifcopenshell.util.geolocation.get_crs(tool.Ifc.get()) or {}).get("Name", "")):
             self.link.georeferenced = "NONE"
             return
-        reference = tool.Ifc.get().by_id(self.link.ifc_definition_id)
-        json_filepath = Path(reference.Location).with_suffix(".ifc.cache.json")
+        json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query, self.exclude)[1]
         if not json_filepath.exists():
             self.link.georeferenced = "NONE"
             return
@@ -1662,43 +1685,209 @@ except Exception as e:
             self.link.georeferenced = "FULL_COMPATIBLE" if crs_name == data["model_crs"] else "NOT_COMPATIBLE"
 
 
-class ReloadLink(bpy.types.Operator):
+class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reload_link"
     bl_label = "Reload Link"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Reload the selected file"
+    bl_description = "Reload the selected file, optionally changing its file path and load options"
 
+    # SKIP_SAVE: this operator distinguishes "provided" from "unset" properties
+    # via is_property_set, so last-used property retention between interactive
+    # invocations would leak one link's settings into another's reload.
     link_index: bpy.props.IntProperty(name="Link Index")
+    filepath: bpy.props.StringProperty(
+        name="File Path",
+        description="Path to the linked IFC file",
+        options={"SKIP_SAVE"},
+    )
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path",
+        description="Whether to store linked model path relative to the currently opened IFC file.",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+    use_cache: bpy.props.BoolProperty(
+        name="Use Cache",
+        description="Reuse the cached geometry if it's still valid instead of reprocessing the IFC",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
     query: bpy.props.StringProperty(
-        name="Query",
+        name="Include",
         description=(
-            "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
-            "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+            "Selector query for the elements to load from the linked model. E.g. 'IfcElement'.\n\n"
+            "Default when empty - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
         ),
+        options={"SKIP_SAVE"},
+    )
+    exclude: bpy.props.StringProperty(
+        name="Exclude",
+        description=(
+            "Selector query whose matches are excluded from the loaded elements.\n\n"
+            "Applied on top of the query (or the default set), providing the set "
+            "difference a single query cannot express. E.g. 'IfcSlab, parent=\"X\"'."
+        ),
+        options={"SKIP_SAVE"},
     )
 
     if TYPE_CHECKING:
         link_index: int
+        filepath: str
+        use_relative_path: bool
+        use_cache: bool
         query: str
+        exclude: str
 
     def invoke(self, context, event):
         link = tool.Project.get_project_props().links[self.link_index]
-        self.query = link.query
+        # Properties may arrive pre-set when the dialog is reopened
+        # by bim.select_link_filepath - don't clobber them.
+        if not self.properties.is_property_set("filepath"):
+            self.filepath = link.filepath
+        if not self.properties.is_property_set("use_relative_path"):
+            self.use_relative_path = not Path(link.filepath).is_absolute()
+        if not self.properties.is_property_set("query"):
+            self.query = link.query
+        if not self.properties.is_property_set("exclude"):
+            self.exclude = link.exclude
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
         assert self.layout
+        pprops = tool.Project.get_project_props()
+        row = self.layout.row(align=True)
+        row.prop(self, "filepath")
+        op = row.operator("bim.select_link_filepath", text="", icon="FILEBROWSER")
+        op.link_index = self.link_index
+        # Carry the current dialog state through the file browser round-trip.
+        op.use_relative_path = self.use_relative_path
+        op.use_cache = self.use_cache
+        op.query = self.query
+        op.exclude = self.exclude
+        row = self.layout.row()
+        row.prop(self, "use_relative_path")
+        row = self.layout.row()
+        row.prop(self, "use_cache")
+        row = self.layout.row()
+        row.label(text="False Origin Mode:")
+        row = self.layout.row()
+        row.prop(pprops, "false_origin_mode", text="")
+        if pprops.false_origin_mode == "MANUAL":
+            row = self.layout.row()
+            row.prop(pprops, "false_origin")
+            row = self.layout.row()
+            row.prop(pprops, "project_north")
         self.layout.prop(self, "query", placeholder="IfcElement")
+        self.layout.prop(self, "exclude", placeholder='IfcSlab, parent="..."')
 
-    def execute(self, context):
+    def _execute(self, context):
         link = tool.Project.get_project_props().links[self.link_index]
-        # An unset query means the operator was called without the dialog
-        # (e.g. from a script) - preserve the link's stored query instead
-        # of overwriting it with the empty default.
+        # Unset properties mean the operator was called without the dialog
+        # (e.g. from a script) - preserve the link's stored values instead
+        # of overwriting them with the defaults.
         if self.properties.is_property_set("query"):
             link.query = self.query
+        if self.properties.is_property_set("exclude"):
+            link.exclude = self.exclude
+
+        filepath = self.filepath if self.properties.is_property_set("filepath") else link.filepath
+        if self.properties.is_property_set("use_relative_path"):
+            use_relative_path = self.use_relative_path
+        else:
+            use_relative_path = not Path(link.filepath).is_absolute()
+
+        abs_filepath = Path(tool.Ifc.resolve_uri(filepath))
+        if not abs_filepath.exists():
+            self.report({"ERROR"}, f"File does not exist: '{abs_filepath}'")
+            return {"CANCELLED"}
+        filepath = tool.Ifc.get_uri(abs_filepath, use_relative_path=use_relative_path)
+        if filepath != link.filepath:
+            link.name = filepath
+            link.filepath = filepath
+            if tool.Ifc.get() and link.ifc_definition_id:
+                reference = tool.Ifc.get().by_id(link.ifc_definition_id)
+                reference.Location = filepath.replace("\\", "/")
+                if document := tool.Document.get_reference_document(reference):
+                    document.Name = Path(filepath).name
+        if tool.Ifc.get() and link.ifc_definition_id:
+            reference = tool.Ifc.get().by_id(link.ifc_definition_id)
+            if hasattr(reference, "Description"):
+                reference.Description = tool.Project.encode_link_filter(link.query, link.exclude)
+
         bpy.ops.bim.unload_link(link_index=self.link_index)
-        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=False, query=link.query) or {"FINISHED"}
+        return bpy.ops.bim.load_link(
+            link_index=self.link_index, use_cache=self.use_cache, query=link.query, exclude=link.exclude
+        ) or {"FINISHED"}
+
+
+class ReloadAllLinks(bpy.types.Operator):
+    bl_idname = "bim.reload_all_links"
+    bl_label = "Reload All Links"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload all loaded linked models from disk, rebuilding their caches"
+
+    @classmethod
+    def poll(cls, context):
+        if not any(link.is_loaded for link in tool.Project.get_project_props().links):
+            cls.poll_message_set("No loaded links to reload.")
+            return False
+        return True
+
+    def execute(self, context):
+        props = tool.Project.get_project_props()
+        reloaded = 0
+        for i, link in enumerate(props.links):
+            if not link.is_loaded:
+                continue
+            # Called without filter properties, reload_link preserves each
+            # link's stored path, query and exclude.
+            bpy.ops.bim.reload_link(link_index=i)
+            reloaded += 1
+        self.report({"INFO"}, f"Reloaded {reloaded} linked model(s).")
+        return {"FINISHED"}
+
+
+class SelectLinkFilepath(bpy.types.Operator):
+    bl_idname = "bim.select_link_filepath"
+    bl_label = "Select Link File Path"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_description = "Select a new file path for the linked model and return to the reload dialog"
+
+    link_index: bpy.props.IntProperty(name="Link Index")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"})
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    # Reload dialog state carried through the file browser round-trip.
+    use_relative_path: bpy.props.BoolProperty(options={"HIDDEN"})
+    use_cache: bpy.props.BoolProperty(options={"HIDDEN"})
+    query: bpy.props.StringProperty(options={"HIDDEN"})
+    exclude: bpy.props.StringProperty(options={"HIDDEN"})
+
+    if TYPE_CHECKING:
+        link_index: int
+        filepath: str
+        filter_glob: str
+        use_relative_path: bool
+        use_cache: bool
+        query: str
+        exclude: str
+
+    def invoke(self, context, event):
+        link = tool.Project.get_project_props().links[self.link_index]
+        self.filepath = tool.Ifc.resolve_uri(link.filepath)
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        bpy.ops.bim.reload_link(
+            "INVOKE_DEFAULT",
+            link_index=self.link_index,
+            filepath=self.filepath,
+            use_relative_path=self.use_relative_path,
+            use_cache=self.use_cache,
+            query=self.query,
+            exclude=self.exclude,
+        )
+        return {"FINISHED"}
 
 
 class ToggleLinkSelectability(bpy.types.Operator):
@@ -1716,7 +1905,7 @@ class ToggleLinkSelectability(bpy.types.Operator):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
         self.library_filepath = tool.Blender.ensure_blender_path_is_abs(
-            Path(link.filepath).with_suffix(".ifc.cache.blend")
+            tool.Project.get_link_cache_paths(link.filepath, link.query, link.exclude)[0]
         )
         link.is_selectable = (is_selectable := not link.is_selectable)
         for collection in self.get_linked_collections():
@@ -1753,7 +1942,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
         self.library_filepath = tool.Blender.ensure_blender_path_is_abs(
-            Path(link.filepath).with_suffix(".ifc.cache.blend")
+            tool.Project.get_link_cache_paths(link.filepath, link.query, link.exclude)[0]
         )
         if self.mode == "WIREFRAME":
             self.toggle_wireframe(link)
@@ -1795,10 +1984,16 @@ class EnableEditingLink(bpy.types.Operator):
     bl_idname = "bim.enable_editing_link"
     bl_label = "Enable Editing Link"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Enable editing link location"
+    bl_description = "Unlock the link's position for editing. Any movement is saved automatically"
+
+    link_index: bpy.props.IntProperty(name="Link Index", default=-1)
+
+    if TYPE_CHECKING:
+        link_index: int
 
     def execute(self, context):
-        link = tool.Project.get_project_props().active_link
+        props = tool.Project.get_project_props()
+        link = props.active_link if self.link_index == -1 else props.links[self.link_index]
         assert link
         link.is_editing = True
         obj = tool.Project.get_link_empty_handle(link)
@@ -1807,70 +2002,25 @@ class EnableEditingLink(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class DisableEditingLink(bpy.types.Operator):
+class DisableEditingLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_link"
     bl_label = "Disable Editing Link"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Disable editing link and restore to previously saved location"
+    bl_description = "Lock the link at its current location"
 
-    def execute(self, context):
-        link = tool.Project.get_project_props().active_link
-        assert link
-        link.is_editing = False
-        obj = tool.Project.get_link_empty_handle(link)
-        assert obj
-        obj.matrix_world = tool.Project.calculate_link_matrix(link)
-        tool.Geometry.lock_object(obj)
-        return {"FINISHED"}
+    link_index: bpy.props.IntProperty(name="Link Index", default=-1)
 
-
-class EditLink(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.edit_link"
-    bl_label = "Edit Link"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Disable editing link and restore to previously saved location"
+    if TYPE_CHECKING:
+        link_index: int
 
     def _execute(self, context):
-        link = tool.Project.get_project_props().active_link
+        props = tool.Project.get_project_props()
+        link = props.active_link if self.link_index == -1 else props.links[self.link_index]
         assert link
         link.is_editing = False
         obj = tool.Project.get_link_empty_handle(link)
         assert obj
-        new_obj_matrix = obj.matrix_world
-
-        filepath = Path(tool.Ifc.resolve_uri(link.filepath))
-        with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
-            metadata = json.load(f)
-
-        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
-            radians(-float(metadata["model_project_north"])), 4, "Z"
-        )
-        global_matrix = rot @ np.eye(4)
-        global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
-
-        gprops = tool.Georeference.get_georeference_props()
-        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
-        local_matrix = rot @ np.eye(4)
-        local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
-
-        # obj_matrix is typically calculated as:
-        # obj_matrix = np.linalg.inv(local_matrix) @ transformation @ global_matrix
-        identity_blender_matrix = np.linalg.inv(local_matrix) @ global_matrix
-        if np.allclose(np.array(new_obj_matrix), identity_blender_matrix, atol=1e-5):
-            link.has_transformation = False
-            transformation = ",".join(map(str, np.eye(4).reshape(-1)))
-        else:
-            transformed_global_matrix = local_matrix @ np.array(new_obj_matrix)
-            transformation = transformed_global_matrix @ np.linalg.inv(global_matrix)
-            link.has_transformation = True
-            transformation = ",".join(map(str, transformation.reshape(-1)))
-
-        if tool.Ifc.get():
-            reference = tool.Ifc.get().by_id(link.ifc_definition_id)
-            reference[1] = transformation
-        else:
-            link.transformation = transformation
-
+        tool.Project.save_link_transformation(link)
         obj.matrix_world = tool.Project.calculate_link_matrix(link)
         tool.Geometry.lock_object(obj)
 
@@ -2119,14 +2269,23 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
 
     query: bpy.props.StringProperty()
     """See ``bim.link_ifc``."""
+    exclude: bpy.props.StringProperty()
+    """See ``bim.link_ifc``."""
 
     if TYPE_CHECKING:
         query: str
+        exclude: str
 
     file: ifcopenshell.file
     meshes: dict[str, bpy.types.Mesh]
     # Material names is derived from diffuse as in 'r-g-b-a'.
     blender_mats: dict[str, bpy.types.Material]
+    # Materials appended from external .blend styles, keyed by style id.
+    # None means the style has no loadable external .blend style.
+    external_style_mats: dict[int, Union[bpy.types.Material, None]]
+    # Appended data-blocks keyed by (filepath, data_block_type, name)
+    # so styles sharing the same external material don't append duplicates.
+    appended_external_blocks: dict[tuple[str, str, str], Union[bpy.types.Material, None]]
 
     def invoke(self, context, event):
         # Invoke is for debugging purposes, users are not intended to use this method really.
@@ -2183,6 +2342,9 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             else:
                 self.elements |= set(self.file.by_type("IfcSpatialElement"))
             self.elements -= set(self.file.by_type("IfcFeatureElement"))
+        if self.exclude:
+            # The set difference a single selector query cannot express.
+            self.elements -= ifcopenshell.util.selector.filter_elements(self.file, self.exclude)
 
         if tool.Loader.settings.false_origin_mode == "MANUAL" and tool.Loader.settings.false_origin:
             tool.Loader.set_manual_blender_offset(self.file)
@@ -2190,7 +2352,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             tool.Loader.guess_false_origin(self.file)
 
         tool.Georeference.set_model_origin()
-        self.json_filepath = self.filepath + ".cache.json"
+        self.json_filepath = str(tool.Project.get_link_cache_paths(self.filepath, self.query, self.exclude)[1])
         data = {
             "model_is_georeferenced": gprops.model_is_georeferenced,
             "model_crs": gprops.model_crs,
@@ -2208,9 +2370,13 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             "false_origin": pprops.false_origin,
             "project_north": pprops.project_north,
             "query": self.query,
+            "exclude": self.exclude,
         }
         with open(self.json_filepath, "w") as f:
             json.dump(data, f)
+
+        self.external_style_mats = {}
+        self.appended_external_blocks = {}
 
         for settings in tool.Loader.settings.context_settings:
             if not self.elements:
@@ -2251,8 +2417,10 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                     mat = tuple(mat)
                     blender_mat = blender_mats.get(mat, None)
                     if not blender_mat:
-                        blender_mat = bpy.data.materials.new("Chunk")
-                        blender_mat.diffuse_color = mat
+                        blender_mat = self.get_external_material(int(mat[4]))
+                        if not blender_mat:
+                            blender_mat = bpy.data.materials.new("Chunk")
+                            blender_mat.diffuse_color = mat[:4]
                         blender_mats[mat] = blender_mat
                     mat_results.append(blender_mat)
 
@@ -2270,11 +2438,16 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                 while True:  # Main loop.
                     shape = iterator.get()
                     assert isinstance(shape, W.TriangulationElement)
-                    results.add(self.file.by_id(shape.id))
+                    element = self.file.by_id(shape.id)
+                    results.add(element)
                     geometry = shape.geometry
 
-                    # Elements with a lot of geometry benefit from instancing to save memory
-                    if ifcopenshell.util.shape.get_faces(geometry).shape[0] > 333:  # 333 tris
+                    # Elements with a lot of geometry benefit from instancing to save memory.
+                    # Multi-layer elements also take this path as they need their own
+                    # local-space mesh to be sliced into per-layer materials.
+                    if ifcopenshell.util.shape.get_faces(geometry).shape[0] > 333 or self.is_multilayer_element(
+                        element
+                    ):  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
                             if not chunked_verts:
@@ -2291,9 +2464,15 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
 
                     ms = np.vstack([default_mat, ifcopenshell.util.shape.get_material_colors(shape.geometry)])
                     mi = ifcopenshell.util.shape.get_faces_material_style_ids(shape.geometry)
+                    # Style ids ride along as a 5th column so styles with
+                    # external .blend materials survive the per-color dedup.
+                    style_ids = np.zeros((len(ms), 1))
                     for geom_material_idx, geom_material in enumerate(shape.geometry.materials):
                         if not geom_material.instance_id():
                             ms[geom_material_idx + 1] = (0.8, 0.8, 0.8, 1)
+                        elif self.get_external_material(geom_material.instance_id()):
+                            style_ids[geom_material_idx + 1] = geom_material.instance_id()
+                    ms = np.hstack((ms, style_ids))
                     chunked_materials.append(ms)
                     chunked_material_ids.append(mi + material_offset + 1)
                     material_offset += len(ms)
@@ -2380,12 +2559,14 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                     diffuse = (material.diffuse.r(), material.diffuse.g(), material.diffuse.b(), alpha)
                 else:
                     diffuse = (0.8, 0.8, 0.8, 1)  # Blender's default material
-                material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
-                blender_mat = self.blender_mats.get(material_name, None)
+                blender_mat = self.get_external_material(material.instance_id())
                 if not blender_mat:
-                    blender_mat = bpy.data.materials.new(material_name)
-                    blender_mat.diffuse_color = diffuse
-                    self.blender_mats[material_name] = blender_mat
+                    material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
+                    blender_mat = self.blender_mats.get(material_name, None)
+                    if not blender_mat:
+                        blender_mat = bpy.data.materials.new(material_name)
+                        blender_mat.diffuse_color = diffuse
+                        self.blender_mats[material_name] = blender_mat
                 slot_index = mesh.materials.find(material.name)
                 if slot_index == -1:
                     mesh.materials.append(blender_mat)
@@ -2398,6 +2579,8 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             mesh.polygons.foreach_set("material_index", material_index)
             mesh.update()
 
+            mesh = tool.Loader.slice_layerset_mesh(element, mesh, style_to_material=self.get_style_material)
+
             self.meshes[geometry.id] = mesh
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
@@ -2409,6 +2592,88 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         obj["ifc_filepath"] = self.filepath
 
         self.collection.objects.link(obj)
+
+    def get_external_material(self, style_id: int) -> Union[bpy.types.Material, None]:
+        """Get the Blender material referenced by a style's external .blend style, if it has one.
+
+        The material is appended from the external .blend file on first use and
+        cached, so it ends up saved inside the link's .cache.blend.
+        """
+        if not style_id:
+            return None
+        if style_id in self.external_style_mats:
+            return self.external_style_mats[style_id]
+
+        material = None
+        # instance_id may also refer to an IfcMaterial when the item has
+        # a material but no style, hence the class check.
+        style = self.file.by_id(style_id)
+        external = None
+        if style.is_a("IfcSurfaceStyle"):
+            external = next((s for s in style.Styles if s.is_a("IfcExternallyDefinedSurfaceStyle")), None)
+
+        if (
+            external
+            and external.Location
+            and external.Location.endswith(".blend")
+            and external.Identification
+            and "/" in external.Identification
+        ):
+            location = Path(external.Location)
+            if not location.is_absolute():
+                # Relative locations are relative to the linked IFC, not the host.
+                location = Path(self.filepath).parent / location
+            data_block_type, data_block = external.Identification.split("/", 1)
+            key = (str(location), data_block_type, data_block)
+            if key in self.appended_external_blocks:
+                material = self.appended_external_blocks[key]
+            elif not location.exists():
+                print(f"WARNING. External style file not found for {style}: '{location}'")
+                self.appended_external_blocks[key] = None
+            else:
+                db = tool.Blender.append_data_block(str(location), data_block_type, data_block)
+                material = db["data_block"]
+                if not isinstance(material, bpy.types.Material):
+                    print(f"WARNING. Failed to load external style for {style}: {db['msg'] or 'not a material'}")
+                    material = None
+                else:
+                    # The source .blend may have been authored in a Bonsai session -
+                    # unlink any stale IFC id so it's not misinterpreted here or in the host.
+                    tool.Style.get_material_style_props(material).ifc_definition_id = 0
+                self.appended_external_blocks[key] = material
+
+        self.external_style_mats[style_id] = material
+        return material
+
+    def is_multilayer_element(self, element: ifcopenshell.entity_instance) -> bool:
+        material = ifcopenshell.util.element.get_material(element)
+        return bool(
+            material and material.is_a("IfcMaterialLayerSetUsage") and len(material.ForLayerSet.MaterialLayers) > 1
+        )
+
+    def get_style_material(self, style: ifcopenshell.entity_instance) -> Union[bpy.types.Material, None]:
+        """Resolve a style to a Blender material for slice_layerset_mesh.
+
+        Prefers the style's external .blend material, falling back to a flat
+        diffuse material as used for the rest of the linked geometry.
+        """
+        if material := self.get_external_material(style.id()):
+            return material
+        # IfcSurfaceStyleRendering is a subclass of IfcSurfaceStyleShading.
+        shading = next((s for s in style.Styles if s.is_a("IfcSurfaceStyleShading")), None)
+        if shading:
+            colour = shading.SurfaceColour
+            alpha = 1.0 - (getattr(shading, "Transparency", None) or 0.0)
+            diffuse = (colour.Red, colour.Green, colour.Blue, alpha)
+        else:
+            diffuse = (0.8, 0.8, 0.8, 1.0)
+        material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
+        material = self.blender_mats.get(material_name, None)
+        if not material:
+            material = bpy.data.materials.new(material_name)
+            material.diffuse_color = diffuse
+            self.blender_mats[material_name] = material
+        return material
 
     def create_object(
         self,
@@ -2483,7 +2748,7 @@ class QueryLinkedElement(bpy.types.Operator):
 
         guid = tool.Project.Link.get_guid_by_face_index(obj, face_index)
         assert guid is not None
-        tool.Project.Link.select_linked_element(context, obj, guid)
+        tool.Project.Link.select_linked_element(context, obj, guid, instance_matrix)
 
         self.report({"INFO"}, f"Loaded data for {guid}")
         ProjectDecorator.install(bpy.context)
@@ -2607,6 +2872,27 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and tool.Ifc.get_object(element_type) is None:
             self.import_type_from_ifc(element_type, context)
+
+        # If the link was moved, place the appended element where the link
+        # is displayed rather than at its original coordinates.
+        obj = tool.Ifc.get_object(element)
+        if isinstance(obj, bpy.types.Object):
+            # Prefer matching the link by the queried instance's root empty -
+            # the same file may be linked several times (different queries)
+            # and moved to different locations.
+            root = props.queried_obj_root
+            linked_filepath = Path(queried_obj["ifc_filepath"])
+            link_match = None
+            for link in props.links:
+                if root is not None and tool.Project.get_link_empty_handle(link) == root:
+                    link_match = link
+                    break
+                if link_match is None and Path(tool.Ifc.resolve_uri(link.filepath)) == linked_filepath:
+                    link_match = link
+            if link_match:
+                delta = tool.Project.calculate_link_delta_matrix(link_match)
+                if not delta.is_identity:
+                    obj.matrix_world = delta @ obj.matrix_world
 
         return {"FINISHED"}
 
