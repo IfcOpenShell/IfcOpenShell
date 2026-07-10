@@ -808,6 +808,12 @@ set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 
 set(CPACK_GENERATOR "TGZ;DEB")
+# Only enable the RPM generator when rpmbuild is available so that DEB-only
+# hosts (e.g. Debian/Ubuntu CI) don't fail when running `make package`.
+find_program(RPMBUILD_EXECUTABLE rpmbuild)
+if(RPMBUILD_EXECUTABLE)
+    list(APPEND CPACK_GENERATOR "RPM")
+endif()
 set(CPACK_SOURCE_GENERATOR "TGZ")
 
 foreach(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
@@ -825,6 +831,33 @@ set(CPACK_DEBIAN_PACKAGE_SECTION "science")
 set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}${EXTRA_VERSION}")
 set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
 # set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/cmake/debian/postinst")
+
+# RPM packaging (Fedora / RHEL / Rocky / openSUSE).
+# RPM versions may not contain hyphens, so any pre-release suffix in
+# EXTRA_VERSION (e.g. "-alpha.3") is folded into the RPM release field.
+string(REGEX REPLACE "^-+" "" RPM_EXTRA_VERSION "${EXTRA_VERSION}")
+if(RPM_EXTRA_VERSION)
+    set(CPACK_RPM_PACKAGE_RELEASE "0.${RPM_EXTRA_VERSION}")
+else()
+    set(CPACK_RPM_PACKAGE_RELEASE "1")
+endif()
+
+set(CPACK_RPM_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_RPM_PACKAGE_VERSION
+    "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}"
+)
+set(CPACK_RPM_PACKAGE_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_RPM_PACKAGE_LICENSE "LGPLv3+")
+set(CPACK_RPM_PACKAGE_GROUP "Applications/Engineering")
+set(CPACK_RPM_PACKAGE_VENDOR "${CPACK_PACKAGE_VENDOR}")
+set(CPACK_RPM_PACKAGE_URL "https://ifcopenshell.org")
+set(CPACK_RPM_PACKAGE_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
+set(CPACK_RPM_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
+# Shared-library dependencies are resolved automatically from the installed
+# ELF binaries (CPACK_RPM_PACKAGE_AUTOREQPROV defaults to ON); only the
+# high-level runtime requirements are listed explicitly here. Package names
+# follow Fedora/RHEL conventions (opencascade + hdf5 live in EPEL on RHEL).
+set(CPACK_RPM_PACKAGE_REQUIRES "python3, libxml2, opencascade, hdf5, boost")
 
 include(CPack)
 
