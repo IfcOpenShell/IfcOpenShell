@@ -128,7 +128,12 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
         }
     }
 	
-	auto w = convert_curve(scs->curve);
+	// Build the wire from curve, which is the directrix offset toward the origin
+	// when applied_temporary_offset is set. Using scs->curve here left the wire
+	// far from the origin yet still translated the result back by +mean, which
+	// misplaced sweeps far from the origin (#4848). When no offset is applied
+	// curve aliases scs->curve, so near-origin geometry is unaffected.
+	auto w = convert_curve(curve);
 	if (w.index() != 2) {
 		logger_.error("UNS", 9, "Unsupported directrix");
 		return false;
