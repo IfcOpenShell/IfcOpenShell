@@ -65,6 +65,58 @@ def test_advanced_brep_through_hole_volume_9570(deflection):
     assert ifcopenshell.util.shape.get_volume(shape.geometry) == pytest.approx(expected, rel=0.005)
 
 
+def revolved_square_volume(end_half_size):
+    model = ifcopenshell.file(schema="IFC4")
+    placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+    context = model.createIfcGeometricRepresentationContext(None, "Model", 3, 1e-5, placement, None)
+    units = model.createIfcUnitAssignment(
+        [
+            model.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE"),
+            model.createIfcSIUnit(None, "PLANEANGLEUNIT", None, "RADIAN"),
+        ]
+    )
+    model.createIfcProject(ifcopenshell.guid.new(), None, "Test", None, None, None, None, [context], units)
+
+    def square(half_size):
+        position = model.createIfcAxis2Placement2D(model.createIfcCartesianPoint((1.5, 0.0)))
+        return model.createIfcRectangleProfileDef("AREA", None, position, 2 * half_size, 2 * half_size)
+
+    axis = model.createIfcAxis1Placement(
+        model.createIfcCartesianPoint((0.0, 0.0, 0.0)), model.createIfcDirection((0.0, 1.0, 0.0))
+    )
+    if end_half_size is None:
+        solid = model.createIfcRevolvedAreaSolid(square(0.5), placement, axis, math.pi / 2)
+    else:
+        solid = model.createIfcRevolvedAreaSolidTapered(
+            square(0.5), placement, axis, math.pi / 2, square(end_half_size)
+        )
+    representation = model.createIfcShapeRepresentation(context, "Body", "SweptSolid", [solid])
+    product = model.createIfcBuildingElementProxy(
+        ifcopenshell.guid.new(),
+        None,
+        "Revolve",
+        None,
+        None,
+        model.createIfcLocalPlacement(None, placement),
+        model.createIfcProductDefinitionShape(None, None, [representation]),
+    )
+    settings = ifcopenshell.geom.settings()
+    settings.set("use-world-coords", True)
+    shape = ifcopenshell.geom.create_shape(settings, product, geometry_library="opencascade")
+    return ifcopenshell.util.shape.get_volume(shape.geometry)
+
+
+@pytest.mark.skipif(
+    not ifcopenshell.geom.has_geometry_library("opencascade"), reason="opencascade geometry kernel is unavailable"
+)
+@pytest.mark.parametrize("end_half_size", [None, 0.5, 0.25], ids=["plain", "same_end", "half_end"])
+def test_revolved_area_solid_tapered_volume_3540(end_half_size):
+    # https://github.com/IfcOpenShell/IfcOpenShell/issues/3540
+    end = 0.5 if end_half_size is None else end_half_size
+    expected = math.pi * (0.5**2 + 0.5 * end + end**2)
+    assert revolved_square_volume(end_half_size) == pytest.approx(expected, rel=0.02)
+
+
 @pytest.mark.parametrize("axis_first", [True, False], ids=["axis_first", "body_first"])
 def test_create_shape_prefers_body_over_axis_9771(axis_first):
     model = ifcopenshell.api.project.create_file(version="IFC4")
