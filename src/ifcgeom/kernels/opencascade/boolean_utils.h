@@ -97,7 +97,7 @@ namespace IfcGeom {
 			double precision;
 		};
 
-		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const NCollection_List<TopoDS_Shape>&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const NCollection_List<TopoDS_Shape>&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1., bool heal_operand_on_failure = true);
 
 		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
 

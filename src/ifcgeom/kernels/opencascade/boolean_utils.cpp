@@ -22,6 +22,7 @@
 #include <BOPAlgo_PaveFiller.hxx>
 #include <BOPAlgo_Alerts.hxx>
 #include <ShapeFix_Shape.hxx>
+#include <ShapeFix_Wireframe.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepCheck.hxx>
 #include <ShapeAnalysis_Edge.hxx>
@@ -832,7 +833,37 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+namespace {
+	// Merge or drop edges shorter than 'tol' from a shape. Used as a last resort
+	// when a cut fails at every fuzziness because the first operand carries
+	// sub-precision length edges, for example a wall profile whose curved inner
+	// void boundary is tessellated into a polyline containing segments only a
+	// fraction of a millimetre long (see #4118). Such tiny edges make
+	// BRepAlgoAPI_Cut return a result that trips the intersecting-wires and
+	// edge-length interference checks, so the opening is silently dropped and the
+	// wall is left uncut. ShapeFix_Wireframe removes the offending edges while
+	// keeping the shape within 'tol' of the original. The original shape is
+	// returned unchanged on any failure.
+	TopoDS_Shape heal_small_edges(const TopoDS_Shape& s, double tol) {
+		try {
+			ShapeFix_Wireframe sfw(s);
+			sfw.SetPrecision(tol);
+			sfw.SetMaxTolerance(tol);
+			sfw.ModeDropSmallEdges() = Standard_True;
+			sfw.FixSmallEdges();
+			sfw.FixWireGaps();
+			TopoDS_Shape fixed = sfw.Shape();
+			if (fixed.IsNull()) {
+				return s;
+			}
+			return fixed;
+		} catch (...) {
+			return s;
+		}
+	}
+}
+
+bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness, bool heal_operand_on_failure) {
 	using namespace std::string_literals;
 
 	const bool do_unify = true;
@@ -1417,7 +1448,27 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 	if (!success) {
 		if (allow_retry) {
-			return boolean_operation(settings, a, b, op, result, new_fuzziness);
+			return boolean_operation(settings, a, b, op, result, new_fuzziness, heal_operand_on_failure);
+		} else if (op == BOPAlgo_CUT && heal_operand_on_failure) {
+			// Last resort robustness for #4118: the cut can fail at every fuzziness
+			// when the first operand carries sub-precision length edges, for example a
+			// wall profile whose curved inner void boundary is tessellated into a
+			// polyline containing segments only a fraction of a millimetre long. The
+			// standard unify() step deliberately caps its tolerance below the smallest
+			// edge, so these tiny edges survive and keep tripping the result validity
+			// checks. Remove them from the first operand and attempt the cut once more.
+			// This only runs after every normal fuzziness attempt has already failed,
+			// so cuts that succeed normally are never affected, and if the healed
+			// operand still fails the outcome is identical to today (opening dropped).
+			const double heal_tolerance = settings.precision * 1000.;
+			TopoDS_Shape a_healed = heal_small_edges(a_input, heal_tolerance);
+			if (!a_healed.IsNull() && !a_healed.IsSame(a_input)) {
+				Logger::Root().Notice("GEO", 154, "Retrying cut with small edges removed from first operand");
+				if (boolean_operation(settings, a_healed, b_input, op, result, -1., false)) {
+					return true;
+				}
+			}
+			Logger::Root().Notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
 		} else {
 			Logger::Root().Notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
 		}
