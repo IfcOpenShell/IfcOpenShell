@@ -58,7 +58,11 @@ def add_stationing_referent(
     if on_basis_curve is None:
         on_basis_curve = True
 
-    curve = ifcopenshell.api.alignment.get_basis_curve(alignment) if on_basis_curve else ifcopenshell.api.alignment.get_curve(alignment)
+    curve = (
+        ifcopenshell.api.alignment.get_basis_curve(alignment)
+        if on_basis_curve
+        else ifcopenshell.api.alignment.get_curve(alignment)
+    )
 
     object_placement = None
     representation = None
