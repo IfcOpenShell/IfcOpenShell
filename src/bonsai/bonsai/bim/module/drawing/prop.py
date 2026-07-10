@@ -473,6 +473,17 @@ class DocProperties(PropertyGroup):
 
 def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     self.update_camera_resolution()
+    if not self.update_props:
+        return
+    assert context.scene
+    if not (camera := context.scene.camera) or camera.data != self.id_data:
+        return
+    if not tool.Ifc.get_entity(camera):
+        return
+    # Persist the new camera size into the drawing's IFC representation immediately,
+    # so it round-trips without needing to re-activate the drawing.
+    if self.update_representation(camera.matrix_world):
+        bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
 
 
 def update_camera_type(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
