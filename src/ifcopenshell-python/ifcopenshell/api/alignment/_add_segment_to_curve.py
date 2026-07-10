@@ -22,8 +22,6 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.geom
-import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._get_segment_endpoint import _get_segment_endpoint
 from ifcopenshell.api.alignment._update_zero_length_segment_placement import _update_zero_length_segment_placement

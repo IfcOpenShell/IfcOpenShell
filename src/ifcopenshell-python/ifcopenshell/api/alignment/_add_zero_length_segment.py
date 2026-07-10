@@ -18,11 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api.alignment
-import ifcopenshell.util.alignment
 from ifcopenshell import entity_instance
-from ifcopenshell.api.alignment._get_segment_start_point_label import (
-    _get_segment_start_point_label,
-)
 
 
 def _add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -> None:

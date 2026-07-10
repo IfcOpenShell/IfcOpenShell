@@ -23,7 +23,6 @@ import pytest
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
-import numpy as np
 
 
 def test_create_representation():
