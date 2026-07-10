@@ -20,15 +20,30 @@ jobs:
         run: |
           dnf update -y
           dnf install -y epel-release
-          dnf install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3 python3-pip \
+          # --enablerepo=crb: libstdc++-static (libsupc++.a, needed by the
+          # bundled FLTK link) lives in Rocky's CodeReady Builder repo, which
+          # is disabled by default.
+          dnf install -y --enablerepo=crb gcc gcc-c++ git autoconf automake bison make zip cmake python3 python3-pip \
                          bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
                          findutils xz byacc patchelf libxkbcommon-devel                 \
-                         python3.11 python3.11-pip python3.11-tkinter
+                         python3.11 python3.11-pip python3.11-tkinter \
+                         dbus-devel \
+                         libXext-devel libXinerama-devel libXcursor-devel libXrender-devel \
+                         libXfixes-devel libXft-devel pango-devel cairo-devel libstdc++-static
           python3 -m pip install typing_extensions aqtinstall
           git config --global --add safe.directory '*'
           python3.11 -c "import tkinter; print('Tk', tkinter.TkVersion)"
+
+      - name: Install Rust
+        # The bonsaiviewer-autodesk connector is a Rust crate; the "Package
+        # .zip archives" step below runs `cargo build --release` via
+        # packaging/build.py. Match the dedicated connector workflow's stable
+        # toolchain (dtolnay/rust-toolchain@stable).
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Install aws cli
         run: |
@@ -66,7 +81,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON uv run --with typing_extensions --with aqtinstall ./nix/build-all.py -v --diskcleanup 2>&1 | tee build.log
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON uv run --with typing_extensions --with aqtinstall ./nix/build-all.py -v --diskcleanup --shared 2>&1 | tee build.log
 
       - name: Upload Build Logs
         if: always()

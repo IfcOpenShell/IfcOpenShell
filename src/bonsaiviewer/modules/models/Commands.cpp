@@ -187,6 +187,22 @@ void renameGroup(SessionState& session, QWidget& host, const QString& group_id) 
     session.setStatusMessage("Models", "Group renamed");
 }
 
+void renameModel(SessionState& session, QWidget& host, const QString& model_id) {
+    const Federation::Model* model = session.federation()->findById(model_id);
+    if (!model) return;
+
+    bool ok = false;
+    const QString name = QInputDialog::getText(
+        &host, "Rename Model", "Model name:", QLineEdit::Normal, model->display_name, &ok);
+    if (!ok) return;
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty()) return;
+
+    session.federation()->setModelDisplayName(model_id, trimmed);
+    session.notifyFederationChanged();
+    session.setStatusMessage("Models", "Model renamed");
+}
+
 void moveGroup(SessionState& session, const QString& id, const QString& parent_group_id) {
     session.federation()->setGroupParent(id, parent_group_id);
     session.notifyFederationChanged();

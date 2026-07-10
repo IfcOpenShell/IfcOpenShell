@@ -55,6 +55,7 @@ namespace bonsaiviewer::modules::models::commands {
 void toggleVisibility(SessionState& session, ItemKind kind, const QString& id);
 void addGroup(SessionState& session, QWidget& host, const QString& parent_group_id);
 void renameGroup(SessionState& session, QWidget& host, const QString& group_id);
+void renameModel(SessionState& session, QWidget& host, const QString& model_id);
 void moveGroup(SessionState& session, const QString& id, const QString& parent_group_id);
 void moveModels(SessionState& session, const QStringList& ids, const QString& parent_group_id);
 void removeGroup(SessionState& session, QWidget& host, const QString& group_id);

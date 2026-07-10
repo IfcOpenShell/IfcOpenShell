@@ -321,6 +321,12 @@ ModelsPanel::ModelsPanel(bonsaiviewer::SessionState* session_state,
                 parent_group_id = idOf(parent_index);
             }
 
+            QAction* rename = menu.addAction(
+                components::icons::makeSvgIcon(":/icons/cube.svg"), "Rename");
+            connect(rename, &QAction::triggered, this, [this, id]() {
+                commands::renameModel(*session_state_, *this, id);
+            });
+
             QAction* add_group = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder-plus.svg"), "New Group");
             connect(add_group, &QAction::triggered, this, [this, parent_group_id]() {
