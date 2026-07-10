@@ -127,6 +127,9 @@ default set when empty) − exclude, applied in `LoadLinkedProject` and per link
   include string.
 - Exclude applies on top of the **default** element set too, so
   "everything except X" needs no explicit include.
+- UI labels are **Include**/**Exclude** (matching the drawing pattern), but the
+  property identifier stays `query` for script (`bpy.ops.bim.link_ifc(query=…)`)
+  and persistence compatibility.
 - Verified headless: `query=""`/`exclude="IfcDoor"` loads only the window;
   same file with a different filter gets its own cache; both filters survive
   save → reopen → reload.
