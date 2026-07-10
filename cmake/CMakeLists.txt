@@ -860,8 +860,14 @@ set(CPACK_RPM_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
 # OpenCASCADE ships as opencascade-foundation/-modeling/-visualization/-ocaf
 # rather than a single "opencascade" package. Only the Python interpreter is
 # listed explicitly, since it is loaded by the interpreter and not linked as a
-# shared library, so the soname generator cannot infer it.
-set(CPACK_RPM_PACKAGE_REQUIRES "python3")
+# shared library, so the soname generator cannot infer it. The Python
+# packages below are the third-party runtime imports of the ifcopenshell
+# Python module (see src/ifcopenshell-python/pyproject.toml); without them
+# `import ifcopenshell.util.*` fails on a clean system. Names follow Fedora's
+# python3-* convention.
+set(CPACK_RPM_PACKAGE_REQUIRES
+    "python3, python3-shapely, python3-numpy, python3-isodate, python3-dateutil, python3-lark, python3-pyparsing, python3-typing-extensions"
+)
 
 include(CPack)
 
