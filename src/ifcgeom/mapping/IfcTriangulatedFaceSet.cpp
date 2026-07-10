@@ -39,6 +39,23 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet& inst) {
 
 	int max_index = (int)points.size();
 
+	// When the optional PnIndex is present, CoordIndex values do not index into
+	// CoordList directly but into PnIndex, which in turn remaps to CoordList.
+	// Both index levels are 1-based per the IFC specification.
+	auto pn_index = inst->PnIndex();
+	auto resolve = [&](int64_t idx) -> const taxonomy::point3::ptr& {
+		if (pn_index) {
+			if (idx < 1 || idx > (int64_t)pn_index->size()) {
+				throw ifcopenshell::exception("IfcTriangulatedFaceSet PnIndex out of bounds for index " + boost::lexical_cast<std::string>(idx));
+			}
+			idx = (*pn_index)[idx - 1];
+		}
+		if (idx < 1 || idx > max_index) {
+			throw ifcopenshell::exception("IfcTriangulatedFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(idx));
+		}
+		return points[idx - 1];
+	};
+
 	auto shell = taxonomy::make<taxonomy::shell>();
 
 	for (auto& indices : indices_list) {
@@ -51,10 +68,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet& inst) {
 			loop->external = true;
 			taxonomy::point3::ptr first, previous;
 			for (std::vector<int64_t>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
-				if (*jt < 1 || *jt > max_index) {
-					throw ifcopenshell::exception("IfcTriangulatedFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
-				}
-				const taxonomy::point3::ptr& current = points[(*jt) - 1];
+				const taxonomy::point3::ptr& current = resolve(*jt);
 				if (jt == indices.begin()) {
 					first = current;
 				} else {
