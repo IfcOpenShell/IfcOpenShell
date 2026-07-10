@@ -187,6 +187,15 @@ void IfcUtil::sanitate_material_name(std::string& str) {
 }
 
 void IfcUtil::escape_xml(std::string& str) {
+    // Strip characters that are illegal in XML 1.0. Control characters other
+    // than tab (0x09), newline (0x0A) and carriage return (0x0D) are not valid
+    // XML 1.0 characters and cannot even be represented as numeric character
+    // references, so they would otherwise make the serialized XML/SVG output
+    // non-well-formed. Bytes belonging to a valid UTF-8 multibyte sequence are
+    // always >= 0x80, so filtering on the low control range leaves them intact.
+    str.erase(std::remove_if(str.begin(), str.end(), [](unsigned char c) {
+        return c < 0x20 && c != '\t' && c != '\n' && c != '\r';
+    }), str.end());
     boost::replace_all(str, "&", "&amp;");
     boost::replace_all(str, "\"", "&quot;");
     boost::replace_all(str, "'", "&apos;");
