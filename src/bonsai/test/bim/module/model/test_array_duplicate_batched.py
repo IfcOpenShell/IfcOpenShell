@@ -37,6 +37,8 @@ from unittest.mock import patch
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import pytest
 
 import bonsai.tool as tool

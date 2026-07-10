@@ -38,6 +38,7 @@ import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix, Vector
 
+import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo

@@ -27,6 +27,7 @@ import bonsai.tool as tool
 from . import (
     array,
     covering,
+    decorator,
     door,
     external,
     grid,
