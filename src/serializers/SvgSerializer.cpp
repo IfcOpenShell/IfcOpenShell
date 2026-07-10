@@ -290,9 +290,29 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 					center = ellipse->Location();
 				}
 
-				// Make sure the arc segment is entirely inside bounding box:
-				growBoundingBox(center.X() - r1, center.Y() - r1);
-				growBoundingBox(center.X() + r1, center.Y() + r1);
+				// Make sure the arc segment is entirely inside bounding box.
+				if (closed) {
+					// A full circle/ellipse: the whole conic is drawn, so grow the
+					// bounding box by its full extent.
+					growBoundingBox(center.X() - r1, center.Y() - r1);
+					growBoundingBox(center.X() + r1, center.Y() + r1);
+				} else {
+					// Only an arc segment is drawn. Growing the bounding box by the
+					// full circle (center +/- radius) massively over-counts for
+					// large-radius arcs (e.g. a curved wall with a big radius),
+					// blowing up the drawing extents and collapsing the global
+					// scale so the whole drawing shrinks (issue #2629). Instead grow
+					// by the actually drawn arc: the endpoints are already accounted
+					// for above, so here we sample the interior to catch any axis
+					// extrema that fall between the endpoints.
+					const int arc_bbox_samples = 32;
+					for (int si = 1; si < arc_bbox_samples; ++si) {
+						const double u = u1 + (u2 - u1) * (static_cast<double>(si) / arc_bbox_samples);
+						gp_Pnt pu;
+						curve->D0(u, pu);
+						growBoundingBox(pu.X(), pu.Y());
+					}
+				}
 
 				// Calculate the angle between 2d vecs to have signed result
 				const gp_Dir& d = conic->Position().XDirection();
