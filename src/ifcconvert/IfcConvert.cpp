@@ -890,6 +890,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (!serializer->ready()) {
+		logger.Error("SYS", 25, "Unable to open output file '" + IfcUtil::path::to_utf8(output_filename) + "' for writing; check that the directory exists and is writable");
 		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
 		write_log(!quiet);
 		return EXIT_FAILURE;
