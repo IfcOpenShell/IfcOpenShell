@@ -49,31 +49,31 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear* inst) 
 	}
 	*/
 
-    if (hasAxis && !hasRef) {
+    // When Axis and/or RefDirection are omitted they default to the orientation
+    // of the reference curve at the placement location:
+    //   - Axis (local Z) defaults to the curve normal,  m.col(2)
+    //   - RefDirection (local X) defaults to the curve tangent, m.col(0)
+    // Taking the curve normal (rather than recomputing an axis from the global
+    // Z direction) preserves the cant / superelevation twist that is baked into
+    // the linear placement frame, so skewed / rotated sections are swept in
+    // their correct frame. See issue #8116.
+    if (hasAxis) {
         taxonomy::direction3::ptr a = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()));
         axis = *a->components_;
-
-        refDirection = m->components().col(0).head<3>(); // RefDirection is the curve tangent when omitted
-        // refDirection is not necessarily orthogonal to axis.
-        // axis.cross(refDirection) gives y. y.cross(axis) gives x=refDirection
-        refDirection = axis.cross(refDirection).cross(axis);
-    } else if (!hasAxis && hasRef) {
-        taxonomy::direction3::ptr r = taxonomy::cast<taxonomy::direction3>(map(inst->RefDirection()));
-        refDirection = *r->components_;
-        Eigen::Vector3d up(0, 0, 1);
-        axis = refDirection.cross(up.cross(refDirection));
-    } else if (!hasAxis && !hasRef) {
-        refDirection = m->components().col(0).head<3>(); // RefDirection is the curve tangent when omitted
-        Eigen::Vector3d up(0, 0, 1);
-        axis = refDirection.cross(up.cross(refDirection));
     } else {
-        taxonomy::direction3::ptr a = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()));
-        axis = *a->components_;
+        axis = m->components().col(2).head<3>(); // Axis is the curve normal when omitted
+    }
 
+    if (hasRef) {
         taxonomy::direction3::ptr r = taxonomy::cast<taxonomy::direction3>(map(inst->RefDirection()));
         refDirection = *r->components_;
-        refDirection = axis.cross(refDirection).cross(axis); // refDirection needs to be orthogonal to axis
+    } else {
+        refDirection = m->components().col(0).head<3>(); // RefDirection is the curve tangent when omitted
     }
+
+    // refDirection is not necessarily orthogonal to axis:
+    // axis.cross(refDirection) gives y. y.cross(axis) gives x = refDirection.
+    refDirection = axis.cross(refDirection).cross(axis);
 
     // axis and refDirection need to be orthogonal
     return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection);
