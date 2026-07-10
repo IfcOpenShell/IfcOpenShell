@@ -437,6 +437,29 @@ def subscribe_to_viewport_shading_changes():
             )
 
 
+@persistent
+def save_post(scene) -> None:
+    """After saving the .blend file, convert the stored IFC path to relative if enabled."""
+    pprops = tool.Project.get_project_props()
+    if not pprops.use_relative_project_path:
+        return
+    bim_props = tool.Blender.get_bim_props()
+    ifc_path = bim_props.ifc_file
+    if not ifc_path or not os.path.isabs(ifc_path):
+        return
+    blend_dir = bpy.path.abspath("//")
+    if not blend_dir:
+        return
+    from pathlib import Path
+    from bonsai.bim.ifc import IfcStore
+    try:
+        rel_path = str(Path(ifc_path).relative_to(blend_dir))
+    except ValueError:
+        return  # IFC file is not under the blend directory; keep absolute path
+    bim_props.ifc_file = rel_path
+    IfcStore.set_path(ifc_path)  # keep IfcStore.path absolute for loading
+
+
 def _apply_save_file_invariants(scene: bpy.types.Scene) -> None:
     """Invariants enforced on every load_post: msgbus subscription, IFC owner
     settings, scene-bound caches, load-transient parametric state, and the

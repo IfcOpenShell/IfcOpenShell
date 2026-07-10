@@ -970,11 +970,11 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
     use_relative_path: bpy.props.BoolProperty(
         name="Use Relative Path",
         description="Store the IFC project path relative to the .blend file. Requires .blend file to be saved",
-        default=False,
+        default=True,
     )
     should_start_fresh_session: bpy.props.BoolProperty(
         name="Should Start Fresh Session",
-        description="Clear current Blender session before loading IFC. Not supported with 'Use Relative Path' option",
+        description="Clear current Blender session before loading IFC",
         default=True,
     )
     import_without_ifc_data: bpy.props.BoolProperty(
@@ -1082,9 +1082,6 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             bpy.app.handlers.load_post.remove(load_handler)
             self.finish_loading_project(context)
 
-        if self.use_relative_path:
-            self.should_start_fresh_session = False
-
         if self.should_start_fresh_session:
             # WARNING: wm.read_homefile clears context which could lead to some
             # operators to fail:
@@ -1157,8 +1154,6 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         return ImportHelper.invoke(self, context, event)
 
     def draw(self, context):
-        if self.use_relative_path:
-            self.should_start_fresh_session = False
         self.layout.prop(self, "is_advanced")
         self.layout.prop(self, "should_start_fresh_session")
         self.layout.prop(self, "import_without_ifc_data")
@@ -1946,7 +1941,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
 
     if TYPE_CHECKING:
         filter_glob: str
