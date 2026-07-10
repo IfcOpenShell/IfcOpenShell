@@ -2379,6 +2379,7 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	auto storeys = file->instances_by_type("IfcBuildingStorey");
 	const double lu = file->getUnit("LENGTHUNIT").second;
 	if (storeys && storeys->size() > 0) {
+		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_, logger_);
 		for (auto& s : *storeys) {
 			auto attr_value = ((IfcUtil::IfcBaseEntity*)s)->get("Elevation");
 			if (!attr_value.isNull()) {
@@ -2389,12 +2390,34 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 					logger_.Error("SER", 33, e);
 					continue;
 				}
-				if (!section_data_->empty()) {
-					boost::get<horizontal_plan>(section_data_->back()).next_elevation = elev * lu;
+				// The Elevation attribute is measured from the storey's own local
+				// placement origin and ignores any Z contributed by ancestor
+				// placements (e.g. a site or building elevation). The section cut
+				// planes must live in the same global frame as the transformed
+				// element geometry, otherwise every element of the storey fails the
+				// straddle test and is culled ("Element not written to SVG due to
+				// section heights", see #2638/#1231). Prefer the storey's globally
+				// resolved placement Z, produced by the same mapping that positions
+				// the geometry; fall back to Elevation * lengthunit if unavailable.
+				double elev_global = elev * lu;
+				auto placement = ((IfcUtil::IfcBaseEntity*)s)->get("ObjectPlacement");
+				if (mapping && !placement.isNull()) {
+					auto item = mapping->map(placement);
+					auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
+					if (matrix) {
+						elev_global = matrix->translation_part()(2);
+#ifdef TAXONOMY_USE_NAKED_PTR
+						delete matrix;
+#endif
+					}
 				}
-				section_data_->push_back(horizontal_plan{ (IfcUtil::IfcBaseEntity*)s, elev * lu, offset, std::numeric_limits<double>::infinity() });
-			}			
+				if (!section_data_->empty()) {
+					boost::get<horizontal_plan>(section_data_->back()).next_elevation = elev_global;
+				}
+				section_data_->push_back(horizontal_plan{ (IfcUtil::IfcBaseEntity*)s, elev_global, offset, std::numeric_limits<double>::infinity() });
+			}
 		}
+		delete mapping;
 	} else {
 		section_data_->push_back(horizontal_plan_at_element{});
 	}
