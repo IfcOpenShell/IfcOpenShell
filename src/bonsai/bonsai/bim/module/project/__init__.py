@@ -69,6 +69,7 @@ classes = (
     operator.QueryLinkedElement,
     operator.RefreshClippingPlanes,
     operator.RefreshLibrary,
+    operator.ReloadAllLinks,
     operator.ReloadLink,
     operator.RemoveProjectLibrary,
     operator.RevertProject,
