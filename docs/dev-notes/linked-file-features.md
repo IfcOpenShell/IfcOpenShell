@@ -105,6 +105,32 @@ no `Description` — custom queries are not restorable there (accepted).
 clearing tolerates a missing blend (a reload with a brand-new query points at a
 not-yet-existing filename).
 
+### Include/Exclude filter pair
+
+The selector grammar's only cross-group combiner is `+` (union) and the `parent`
+facet cannot express "not under X" (its `!=`/regex paths also match by GlobalId, so
+negation removes everything with any parent), which makes set differences like
+"group members minus the slabs under aggregate X" structurally inexpressible in one
+query string. Links therefore carry an **Exclude** query beside the include —
+mirroring `EPset_Drawing`'s Include/Exclude pattern: final set = include (or the
+default set when empty) − exclude, applied in `LoadLinkedProject` and per link in
+`create_drawing`.
+
+- **Cache key**: `get_link_cache_paths` hashes `md5(query + "\0" + exclude)` when an
+  exclude exists; include-only filters keep the pre-exclude `md5(query)` so existing
+  caches stay valid; empty filter keeps legacy un-suffixed names. Keying on query
+  alone would let same-include/different-exclude links silently serve each other's
+  geometry.
+- **Persistence**: `encode_link_filter`/`decode_link_filter` — a plain include is
+  stored in `Description` as-is (backwards compatible); an exclude promotes the
+  value to `{"include": …, "exclude": …}` JSON. Decode treats non-JSON as a legacy
+  include string.
+- Exclude applies on top of the **default** element set too, so
+  "everything except X" needs no explicit include.
+- Verified headless: `query=""`/`exclude="IfcDoor"` loads only the window;
+  same file with a different filter gets its own cache; both filters survive
+  save → reopen → reload.
+
 ### External styles + layerset slicing in the linked loader
 
 `LoadLinkedProject.get_external_material(style_id)` resolves a style id → appended

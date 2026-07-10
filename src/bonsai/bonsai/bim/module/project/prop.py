@@ -265,6 +265,11 @@ class Link(PropertyGroup):
         description="Selector query used to filter elements when loading the linked model",
         default="",
     )
+    exclude: StringProperty(
+        name="Exclude",
+        description="Selector query whose matches are excluded when loading the linked model",
+        default="",
+    )
 
     if TYPE_CHECKING:
         name: str
@@ -281,6 +286,7 @@ class Link(PropertyGroup):
         empty_handle: Union[bpy.types.Object, None]
         ifc_definition_id: int
         query: str
+        exclude: str
 
 
 class EditedObj(PropertyGroup):

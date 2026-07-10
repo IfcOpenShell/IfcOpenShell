@@ -946,9 +946,9 @@ class CreateDrawing(bpy.types.Operator):
         # One entry per file *and* per link - the same file can be linked
         # several times with different queries and transformations, so links
         # cannot be collapsed into a dict keyed by filepath.
-        # Each entry is (path, file, link transformation or None, link query).
-        file_entries: list[tuple[str, ifcopenshell.file, Optional[np.ndarray], str]] = [
-            (bim_props.ifc_file, tool.Ifc.get(), None, "")
+        # Each entry is (path, file, link transformation or None, link query, link exclude).
+        file_entries: list[tuple[str, ifcopenshell.file, Optional[np.ndarray], str, str]] = [
+            (bim_props.ifc_file, tool.Ifc.get(), None, "", "")
         ]
         for link in props.get_loaded_links_for_drawings():
             file_entries.append(
@@ -957,6 +957,7 @@ class CreateDrawing(bpy.types.Operator):
                     self.get_linked_file(link),
                     tool.Project.get_link_transformation_matrix(link),
                     link.query,
+                    link.exclude,
                 )
             )
 
@@ -972,7 +973,7 @@ class CreateDrawing(bpy.types.Operator):
         raycast_objs = set()
         elements_with_faces = set()
 
-        for ifc_path, ifc, link_transform, link_query in file_entries:
+        for ifc_path, ifc, link_transform, link_query, link_exclude in file_entries:
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
@@ -981,8 +982,10 @@ class CreateDrawing(bpy.types.Operator):
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
             if link_query:
-                # Draw only what the link's selector query loaded in the viewport.
+                # Draw only what the link's selector filter loaded in the viewport.
                 drawing_elements &= ifcopenshell.util.selector.filter_elements(ifc, link_query)
+            if link_exclude:
+                drawing_elements -= ifcopenshell.util.selector.filter_elements(ifc, link_exclude)
 
             if self.cprops.fill_mode == "SHAPELY":
                 for element in drawing_elements.copy():
