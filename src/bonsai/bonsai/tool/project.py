@@ -91,24 +91,56 @@ class Project(bonsai.core.tool.Project):
             link.empty_handle = empty
 
     @classmethod
-    def get_link_cache_paths(cls, filepath: Union[Path, str], query: str) -> tuple[Path, Path]:
-        """Get the (blend, json) cache paths for a linked model loaded with ``query``.
+    def get_link_cache_paths(cls, filepath: Union[Path, str], query: str, exclude: str = "") -> tuple[Path, Path]:
+        """Get the (blend, json) cache paths for a linked model's filter.
 
-        Cache files are per-query so the same IFC file can be linked several
-        times with different queries without the caches overwriting each
-        other. An empty query keeps the legacy un-suffixed names.
+        Cache files are per-filter so the same IFC file can be linked several
+        times with different include/exclude queries without the caches
+        overwriting each other. An empty filter keeps the legacy un-suffixed
+        names, and an include-only filter keeps the pre-exclude hash so
+        existing caches stay valid.
         """
         filepath = Path(filepath)
-        suffix = "" if not query else "." + hashlib.md5(query.encode("utf-8")).hexdigest()[:8]
+        if not query and not exclude:
+            suffix = ""
+        elif not exclude:
+            suffix = "." + hashlib.md5(query.encode("utf-8")).hexdigest()[:8]
+        else:
+            suffix = "." + hashlib.md5(f"{query}\0{exclude}".encode("utf-8")).hexdigest()[:8]
         return (
             filepath.with_suffix(f".ifc.cache{suffix}.blend"),
             filepath.with_suffix(f".ifc.cache{suffix}.json"),
         )
 
     @classmethod
+    def encode_link_filter(cls, query: str, exclude: str) -> Union[str, None]:
+        """Serialize a link's filter for IfcDocumentReference.Description.
+
+        A plain include query is stored as-is (backwards compatible); an
+        exclude promotes the value to a small JSON blob.
+        """
+        if exclude:
+            return json.dumps({"include": query, "exclude": exclude})
+        return query or None
+
+    @classmethod
+    def decode_link_filter(cls, description: Union[str, None]) -> tuple[str, str]:
+        """Get (query, exclude) from a reference Description written by encode_link_filter."""
+        if not description:
+            return "", ""
+        if description.startswith("{"):
+            try:
+                data = json.loads(description)
+                if isinstance(data, dict):
+                    return data.get("include", "") or "", data.get("exclude", "") or ""
+            except json.JSONDecodeError:
+                pass
+        return description, ""
+
+    @classmethod
     def calculate_link_matrix(cls, link: Link) -> Matrix:
         filepath = Path(tool.Ifc.resolve_uri(link.filepath))
-        with open(cls.get_link_cache_paths(filepath, link.query)[1], "r") as f:
+        with open(cls.get_link_cache_paths(filepath, link.query, link.exclude)[1], "r") as f:
             metadata = json.load(f)
 
         rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
@@ -181,7 +213,7 @@ class Project(bonsai.core.tool.Project):
         new_obj_matrix = np.array(obj.matrix_world)
 
         filepath = Path(tool.Ifc.resolve_uri(link.filepath))
-        with open(cls.get_link_cache_paths(filepath, link.query)[1], "r") as f:
+        with open(cls.get_link_cache_paths(filepath, link.query, link.exclude)[1], "r") as f:
             metadata = json.load(f)
 
         rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
@@ -441,11 +473,11 @@ class Project(bonsai.core.tool.Project):
             if reference[1]:
                 m = np.fromstring(reference[1], sep=",", dtype=np.float64).reshape(4, 4)
                 link.has_transformation = not np.allclose(m, np.eye(4))
-            # The selector query used at link time is persisted per
+            # The selector filter used at link time is persisted per
             # reference in its Description (IFC4+); restore it so
             # Reload/Load replay the filter.
-            query = getattr(reference, "Description", None) or ""
-            if not query and location_counts[filepath] == 1:
+            query, exclude = cls.decode_link_filter(getattr(reference, "Description", None))
+            if not query and not exclude and location_counts[filepath] == 1:
                 # Fall back to the legacy sidecar cache JSON where older
                 # versions persisted the query. Only unambiguous: with
                 # several links to one file the shared JSON can't say
@@ -457,6 +489,7 @@ class Project(bonsai.core.tool.Project):
                     except (OSError, json.JSONDecodeError):
                         pass
             link.query = query
+            link.exclude = exclude
 
     @classmethod
     def get_project_library_elements(

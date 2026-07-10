@@ -1403,6 +1403,14 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
             "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
         ),
     )
+    exclude: bpy.props.StringProperty(
+        name="Exclude",
+        description=(
+            "Selector query whose matches are excluded from the loaded elements.\n\n"
+            "Applied on top of the query (or the default set), providing the set "
+            "difference a single query cannot express. E.g. 'IfcSlab, parent=\"X\"'."
+        ),
+    )
 
     filename_ext = ".ifc"
 
@@ -1414,6 +1422,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
         use_relative_path: bool
         use_cache: bool
         query: str
+        exclude: str
 
     def draw(self, context):
         assert self.layout
@@ -1432,6 +1441,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
             row = self.layout.row()
             row.prop(pprops, "project_north")
         self.layout.prop(self, "query", placeholder="IfcElement")
+        self.layout.prop(self, "exclude", placeholder='IfcSlab, parent="..."')
 
     def _execute(self, context):
         start = time.time()
@@ -1464,14 +1474,16 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                 reference = ifcopenshell.api.document.add_reference(tool.Ifc.get(), information=document)
                 reference[1] = ",".join([str(o) for o in np.eye(4).flatten().tolist()])
                 reference.Location = filepath.replace("\\", "/")
-                # Persist the query per reference (Description is IFC4+ only).
-                if self.query and hasattr(reference, "Description"):
-                    reference.Description = self.query
+                # Persist the filter per reference (Description is IFC4+ only).
+                description = tool.Project.encode_link_filter(self.query, self.exclude)
+                if description and hasattr(reference, "Description"):
+                    reference.Description = description
                 new.ifc_definition_id = reference.id()
             new.name = filepath
             new.filepath = filepath
             new.query = self.query
-            bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache, query=self.query)
+            new.exclude = self.exclude
+            bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache, query=self.query, exclude=self.exclude)
 
 
 class UnlinkIfc(bpy.types.Operator, tool.Ifc.Operator):
@@ -1536,18 +1548,22 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
     link_index: bpy.props.IntProperty(name="Link Index")
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True, options={"SKIP_SAVE"})
     query: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    exclude: bpy.props.StringProperty(options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         link_index: int
         use_cache: bool
         query: str
+        exclude: str
 
     def _execute(self, context):
         self.link = tool.Project.get_project_props().links[self.link_index]
-        # Fall back to the Link's stored query so callers that omit it
+        # Fall back to the Link's stored filter so callers that omit it
         # still replay the filter the link was created with.
         if not self.query and self.link.query:
             self.query = self.link.query
+        if not self.exclude and self.link.exclude:
+            self.exclude = self.link.exclude
         filepath = Path(tool.Ifc.resolve_uri(self.link.filepath))
         if not filepath.exists():
             self.report({"ERROR"}, f"File does not exist: '{filepath}'")
@@ -1584,7 +1600,7 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             self.link.is_loaded = False
 
     def link_ifc(self) -> Union[set[str], None]:
-        blend_filepath, json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query)
+        blend_filepath, json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query, self.exclude)
 
         def should_clear_cache() -> bool:
             # Nothing to clear if the cache file was never created (e.g. a
@@ -1599,8 +1615,7 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             data = json.loads(json_filepath.read_text())
             # Empty 'query' - model loaded without custom query.
             # Missing 'query' - model was loaded before custom queries were introduced in Bonsai.
-            query = data.get("query", "")
-            return query != self.query
+            return data.get("query", "") != self.query or data.get("exclude", "") != self.exclude
 
         if should_clear_cache() and blend_filepath.exists():
             os.remove(blend_filepath)
@@ -1630,7 +1645,7 @@ def run():
     pprops.project_north = "{pprops.project_north}"
     # Use absolute path to be safe from cwd changes.
     try:
-        bpy.ops.bim.load_linked_project(filepath=r"{str(self.filepath_)}", query={repr(self.query)})
+        bpy.ops.bim.load_linked_project(filepath=r"{str(self.filepath_)}", query={repr(self.query)}, exclude={repr(self.exclude)})
     except RuntimeError as e:
         # Operator failed (returned CANCELLED with error report)
         print(f"Failed to load linked project: {{e}}")
@@ -1679,7 +1694,7 @@ except Exception as e:
         if len(tool.Project.get_project_props().links) > 1:
             return  # Only the first link sets the origin
 
-        json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query)[1]
+        json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query, self.exclude)[1]
         if not json_filepath.exists():
             return
 
@@ -1698,7 +1713,7 @@ except Exception as e:
         if not (crs_name := (ifcopenshell.util.geolocation.get_crs(tool.Ifc.get()) or {}).get("Name", "")):
             self.link.georeferenced = "NONE"
             return
-        json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query)[1]
+        json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query, self.exclude)[1]
         if not json_filepath.exists():
             self.link.georeferenced = "NONE"
             return
@@ -1745,6 +1760,15 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
         ),
         options={"SKIP_SAVE"},
     )
+    exclude: bpy.props.StringProperty(
+        name="Exclude",
+        description=(
+            "Selector query whose matches are excluded from the loaded elements.\n\n"
+            "Applied on top of the query (or the default set), providing the set "
+            "difference a single query cannot express. E.g. 'IfcSlab, parent=\"X\"'."
+        ),
+        options={"SKIP_SAVE"},
+    )
 
     if TYPE_CHECKING:
         link_index: int
@@ -1752,6 +1776,7 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
         use_relative_path: bool
         use_cache: bool
         query: str
+        exclude: str
 
     def invoke(self, context, event):
         link = tool.Project.get_project_props().links[self.link_index]
@@ -1763,6 +1788,8 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
             self.use_relative_path = not Path(link.filepath).is_absolute()
         if not self.properties.is_property_set("query"):
             self.query = link.query
+        if not self.properties.is_property_set("exclude"):
+            self.exclude = link.exclude
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
@@ -1776,6 +1803,7 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
         op.use_relative_path = self.use_relative_path
         op.use_cache = self.use_cache
         op.query = self.query
+        op.exclude = self.exclude
         row = self.layout.row()
         row.prop(self, "use_relative_path")
         row = self.layout.row()
@@ -1790,6 +1818,7 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
             row = self.layout.row()
             row.prop(pprops, "project_north")
         self.layout.prop(self, "query", placeholder="IfcElement")
+        self.layout.prop(self, "exclude", placeholder='IfcSlab, parent="..."')
 
     def _execute(self, context):
         link = tool.Project.get_project_props().links[self.link_index]
@@ -1798,6 +1827,8 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
         # of overwriting them with the defaults.
         if self.properties.is_property_set("query"):
             link.query = self.query
+        if self.properties.is_property_set("exclude"):
+            link.exclude = self.exclude
 
         filepath = self.filepath if self.properties.is_property_set("filepath") else link.filepath
         if self.properties.is_property_set("use_relative_path"):
@@ -1821,12 +1852,12 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Ifc.get() and link.ifc_definition_id:
             reference = tool.Ifc.get().by_id(link.ifc_definition_id)
             if hasattr(reference, "Description"):
-                reference.Description = link.query or None
+                reference.Description = tool.Project.encode_link_filter(link.query, link.exclude)
 
         bpy.ops.bim.unload_link(link_index=self.link_index)
-        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=self.use_cache, query=link.query) or {
-            "FINISHED"
-        }
+        return bpy.ops.bim.load_link(
+            link_index=self.link_index, use_cache=self.use_cache, query=link.query, exclude=link.exclude
+        ) or {"FINISHED"}
 
 
 class SelectLinkFilepath(bpy.types.Operator):
@@ -1842,6 +1873,7 @@ class SelectLinkFilepath(bpy.types.Operator):
     use_relative_path: bpy.props.BoolProperty(options={"HIDDEN"})
     use_cache: bpy.props.BoolProperty(options={"HIDDEN"})
     query: bpy.props.StringProperty(options={"HIDDEN"})
+    exclude: bpy.props.StringProperty(options={"HIDDEN"})
 
     if TYPE_CHECKING:
         link_index: int
@@ -1850,6 +1882,7 @@ class SelectLinkFilepath(bpy.types.Operator):
         use_relative_path: bool
         use_cache: bool
         query: str
+        exclude: str
 
     def invoke(self, context, event):
         link = tool.Project.get_project_props().links[self.link_index]
@@ -1865,6 +1898,7 @@ class SelectLinkFilepath(bpy.types.Operator):
             use_relative_path=self.use_relative_path,
             use_cache=self.use_cache,
             query=self.query,
+            exclude=self.exclude,
         )
         return {"FINISHED"}
 
@@ -1884,7 +1918,7 @@ class ToggleLinkSelectability(bpy.types.Operator):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
         self.library_filepath = tool.Blender.ensure_blender_path_is_abs(
-            tool.Project.get_link_cache_paths(link.filepath, link.query)[0]
+            tool.Project.get_link_cache_paths(link.filepath, link.query, link.exclude)[0]
         )
         link.is_selectable = (is_selectable := not link.is_selectable)
         for collection in self.get_linked_collections():
@@ -1921,7 +1955,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
         self.library_filepath = tool.Blender.ensure_blender_path_is_abs(
-            tool.Project.get_link_cache_paths(link.filepath, link.query)[0]
+            tool.Project.get_link_cache_paths(link.filepath, link.query, link.exclude)[0]
         )
         if self.mode == "WIREFRAME":
             self.toggle_wireframe(link)
@@ -2382,9 +2416,12 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
 
     query: bpy.props.StringProperty()
     """See ``bim.link_ifc``."""
+    exclude: bpy.props.StringProperty()
+    """See ``bim.link_ifc``."""
 
     if TYPE_CHECKING:
         query: str
+        exclude: str
 
     file: ifcopenshell.file
     meshes: dict[str, bpy.types.Mesh]
@@ -2452,6 +2489,9 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             else:
                 self.elements |= set(self.file.by_type("IfcSpatialElement"))
             self.elements -= set(self.file.by_type("IfcFeatureElement"))
+        if self.exclude:
+            # The set difference a single selector query cannot express.
+            self.elements -= ifcopenshell.util.selector.filter_elements(self.file, self.exclude)
 
         if tool.Loader.settings.false_origin_mode == "MANUAL" and tool.Loader.settings.false_origin:
             tool.Loader.set_manual_blender_offset(self.file)
@@ -2459,7 +2499,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             tool.Loader.guess_false_origin(self.file)
 
         tool.Georeference.set_model_origin()
-        self.json_filepath = str(tool.Project.get_link_cache_paths(self.filepath, self.query)[1])
+        self.json_filepath = str(tool.Project.get_link_cache_paths(self.filepath, self.query, self.exclude)[1])
         data = {
             "model_is_georeferenced": gprops.model_is_georeferenced,
             "model_crs": gprops.model_crs,
@@ -2477,6 +2517,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             "false_origin": pprops.false_origin,
             "project_north": pprops.project_north,
             "query": self.query,
+            "exclude": self.exclude,
         }
         with open(self.json_filepath, "w") as f:
             json.dump(data, f)
