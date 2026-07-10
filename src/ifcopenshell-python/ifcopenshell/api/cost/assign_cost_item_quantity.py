@@ -281,7 +281,7 @@ class FormulaEvaluator(ast.NodeVisitor):
     def visit_BinOp(self, node):
         left = self.visit(node.left)
         right = self.visit(node.right)
-        return OPERATORS[type(node.op)](left, right)
+        return OPERATORS[type(node.op)](left, right)  # ty: ignore[too-many-positional-arguments]
 
     def visit_Name(self, node):
         return self.values[node.id]

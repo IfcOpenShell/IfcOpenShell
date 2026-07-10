@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 
 

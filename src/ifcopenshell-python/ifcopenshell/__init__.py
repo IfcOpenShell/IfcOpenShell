@@ -249,7 +249,7 @@ def open(
         kwargs = {"mmap": mmap}
         if logger is not None:
             kwargs["logger"] = logger
-        f = ifcopenshell_wrapper.open(str(path.absolute()), **kwargs)  # ty: ignore[unknown-argument]
+        f = ifcopenshell_wrapper.open(str(path.absolute()), **kwargs)
     else:
         f = ifcopenshell_wrapper.open(str(path.absolute()), False, *optional_logger_args(logger))
 

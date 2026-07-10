@@ -21,8 +21,12 @@ import math
 
 import pytest
 import ifcopenshell
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
+import ifcopenshell.api.context
+import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
+import ifcopenshell.util.unit
 
 
 def test_create_representation():
