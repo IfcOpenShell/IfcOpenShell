@@ -389,6 +389,24 @@ namespace {
 	boost::optional<std::pair<const IfcUtil::IfcBaseEntity*, double>> storey_elevation_from_element(const IfcGeom::BRepElement* o) {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
+				// Prefer the storey's globally-resolved placement Z over the
+				// Elevation attribute. The Elevation attribute is measured from
+				// the storey's own local placement origin and therefore ignores
+				// any Z-offset contributed by ancestor placements (e.g. a site
+				// or building elevation). The section cut plane has to live in
+				// the same global frame as the transformed element geometry, so
+				// using the Elevation attribute alone places the cut plane at the
+				// wrong height and the element gets culled ("Element not written
+				// to SVG due to section heights", see #1231/#4828). The parent
+				// storey's transformation matrix is produced by the same mapping
+				// that positions the geometry, so its translation is unit- and
+				// frame-consistent with the element compound.
+				const auto& m = p->transformation().data();
+				if (m) {
+					double storey_elevation = m->ccomponents()(2, 3);
+					return std::make_pair(p->product(), storey_elevation);
+				}
+				// Fallback: legacy behaviour based on the Elevation attribute.
 				try {
 					double e = p->product()->get("Elevation");
 					double storey_elevation = e * o->geometry().settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
