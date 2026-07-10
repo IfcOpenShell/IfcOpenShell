@@ -18,13 +18,22 @@
 ********************************************************************************/
 
 #define _USE_MATH_DEFINES
+#include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <optional>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
 
 #include "mapping.h"
 
 #include "../../ifcparse/logger.h"
 #include "../../ifcparse/file.h"
 #include "../../ifcparse/si_prefix.h"
+
+#include <boost/algorithm/string.hpp>
+#include <boost/spirit/home/x3.hpp>
 
 using namespace ifcopenshell;
 using namespace ifcopenshell::geometry;
@@ -222,16 +231,22 @@ std::vector<express::Base> mapping::find_openings(const express::Base& inst) {
 
 void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) {
     std::vector<IfcSchema::IfcRepresentation> representations;
+    const bool has_context_ids = settings_.get<settings::ContextIds>().has();
+    const bool uses_priorities = !has_context_ids && settings_.get<settings::ContextPriorities>().has();
 
-    if (!settings_.get<settings::ContextIds>().has()) {
-        addRepresentationsFromDefaultContexts(representations);
-    } else {
+    if (has_context_ids) {
         addRepresentationsFromContextIds(representations);
+    } else if (uses_priorities) {
+        addRepresentationsFromPriorities(representations);
+    } else {
+        addRepresentationsFromDefaultContexts(representations);
     }
 
     std::vector<IfcSchema::IfcRepresentation> ok_mapped_representations;
 
     int task_index = 0;
+
+    std::set<IfcSchema::IfcProduct> products_seen;
     
     for (auto representation : representations) {
         IfcSchema::IfcRepresentationMap rmap;
@@ -279,6 +294,12 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
             // reuse_ok is taken into account in products_represented_by(), but not when
             // the same IfcRepresentation is directly assigned to multiple products.
             for (auto& p : ifcproducts) {
+                if (uses_priorities) {
+                    if (products_seen.find(p) != products_seen.end()) {
+                        continue;
+                    }
+                    products_seen.insert(p);
+                }
                 geometry_conversion_task task;
                 task.index = task_index++;
                 task.representation = representation;
@@ -286,6 +307,18 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
                 tasks.emplace_back(task);
             }
         } else {
+            if (uses_priorities) {
+                ifcproducts.erase(std::remove_if(ifcproducts.begin(), ifcproducts.end(), [&](const IfcSchema::IfcProduct& p) {
+                                      return products_seen.find(p) != products_seen.end();
+                                  }),
+                                  ifcproducts.end());
+                for (auto& p : ifcproducts) {
+                    products_seen.insert(p);
+                }
+                if (ifcproducts.empty()) {
+                    continue;
+                }
+            }
             geometry_conversion_task task;
             task.index = task_index++;
             task.representation = representation;
@@ -1300,39 +1333,225 @@ void mapping::addRepresentationsFromDefaultContexts(std::vector<IfcSchema::IfcRe
     }
 }
 
+namespace {
+
+std::string normalized_context_filter_key(std::string attribute) {
+    boost::trim(attribute);
+    auto normalized = attribute;
+    boost::to_lower(normalized);
+    normalized.erase(std::remove_if(normalized.begin(), normalized.end(), [](char c) {
+        return c == '-' || c == '_' || std::isspace(static_cast<unsigned char>(c));
+    }), normalized.end());
+    return normalized;
+}
+
+const std::unordered_map<std::string, std::string>& context_filter_attribute_names() {
+    static const auto names = [] {
+        std::unordered_map<std::string, std::string> result;
+        const auto& attributes = IfcSchema::get_schema()
+                                     .declaration_by_name("IfcGeometricRepresentationSubContext")
+                                     ->as_entity()
+                                     ->all_attributes();
+        for (const auto* attribute : attributes) {
+            result.emplace(normalized_context_filter_key(attribute->name()), attribute->name());
+        }
+        return result;
+    }();
+    return names;
+}
+
+std::string canonical_context_filter_attribute(std::string attribute) {
+    boost::trim(attribute);
+    const auto& names = context_filter_attribute_names();
+    const auto it = names.find(normalized_context_filter_key(attribute));
+    return it == names.end() ? attribute : it->second;
+}
+
+template <typename T, typename = void>
+struct has_std_to_string : std::false_type {};
+
+template <typename T>
+struct has_std_to_string<T, std::void_t<decltype(std::to_string(std::declval<T>()))>> : std::true_type {};
+
+struct compiled_context_filter {
+    std::optional<std::string> type;
+    std::vector<std::pair<std::string, std::string>> args;
+
+    bool matches(const std::optional<std::string>& actual, const std::string& expected) const;
+    bool matches(const IfcSchema::IfcGeometricRepresentationContext& context) const;
+    bool matches(
+        const IfcSchema::IfcGeometricRepresentationContext& context,
+        const std::string& key,
+        const std::string& value) const;
+
+    template <typename T>
+    bool matches(const T& actual, const std::string& expected) const;
+};
+
+template <typename T>
+bool compiled_context_filter::matches(const T& actual, const std::string& expected) const {
+    using value_t = std::decay_t<T>;
+    if constexpr (std::is_same_v<value_t, std::string>) {
+        return boost::iequals(actual, expected);
+    } else if constexpr (std::is_same_v<value_t, enumeration_reference>) {
+        return boost::iequals(actual.value(), expected);
+    } else if constexpr (has_std_to_string<value_t>::value) {
+        return std::to_string(actual) == expected;
+    } else {
+        return false;
+    }
+}
+
+bool compiled_context_filter::matches(const std::optional<std::string>& actual, const std::string& expected) const {
+    return actual && matches(*actual, expected);
+}
+
+bool compiled_context_filter::matches(
+    const IfcSchema::IfcGeometricRepresentationContext& context,
+    const std::string& key,
+    const std::string& value) const
+{
+    try {
+        attribute_value val = context.get(key);
+        return val.apply_visitor([&](const auto& v) {
+            return matches(v, value);
+        });
+    } catch (const ifcopenshell::exception&) {
+        return false;
+    }
+}
+
+bool compiled_context_filter::matches(const IfcSchema::IfcGeometricRepresentationContext& context) const {
+    if (type.has_value() && !matches(context.ContextIdentifier(), *type)) {
+        return false;
+    }
+    for (auto& [key, value] : args) {
+        if (!matches(context, key, value)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::optional<compiled_context_filter> parse_context_filter(const std::string& statement) {
+    namespace x3 = boost::spirit::x3;
+
+    std::string type;
+    std::vector<std::pair<std::string, std::string>> args;
+
+    const auto text = x3::lexeme[+(x3::char_ - '[' - ']' - '=' - ',')];
+    std::string arg_key;
+    const auto key = text[([&](auto& ctx) { arg_key = x3::_attr(ctx); })];
+    const auto value = text[([&](auto& ctx) { args.emplace_back(arg_key, x3::_attr(ctx)); })];
+    const auto assignment = key >> '=' >> value;
+    const auto assignments = assignment % ',';
+    const auto wildcard = x3::lit('*')[([&](auto&) { type.clear(); })];
+    const auto typed = text[([&](auto& ctx) { type = x3::_attr(ctx); })];
+    const auto query =
+        (wildcard | typed) >>
+        -('[' >> assignments >> ']');
+
+    auto first = statement.begin();
+    auto last = statement.end();
+    if (!x3::phrase_parse(first, last, query, x3::space) || first != last) {
+        return std::nullopt;
+    }
+
+    boost::trim(type);
+    compiled_context_filter filter;
+    if (!type.empty()) {
+        filter.type = type;
+    }
+    for (auto& arg : args) {
+        boost::trim(arg.first);
+        boost::trim(arg.second);
+        filter.args.emplace_back(canonical_context_filter_attribute(arg.first), arg.second);
+    }
+    return filter;
+}
+
+} // namespace
+
+void mapping::addRepresentationsFromPriorities(std::vector<IfcSchema::IfcRepresentation>& representations) {
+    std::vector<IfcSchema::IfcGeometricRepresentationContext> filtered_contexts;
+    std::vector<compiled_context_filter> filters;
+
+    for (auto& p : settings_.get<settings::ContextPriorities>().get()) {
+        // Parse statement below into a compiled_context_filter:
+        // - 'body' -> {'body', {}}
+        // - 'tesselation[targetscale=10]' -> {'tesselation', {'targetscale', '10'}}
+        // - '*' -> {{},{}}
+        if (auto filter = parse_context_filter(p)) {
+            filters.push_back(*filter);
+        } else {
+            logger_.warning("GEO", 325, "Ignoring invalid context filter '" + p + "'");
+        }
+    }
+
+    auto contexts = file_->instances_by_type<IfcSchema::IfcGeometricRepresentationContext>();
+    for (const auto& filter : filters) {
+        for (auto& context : contexts) {
+            if (filter.matches(context)) {
+                // Filtered contexts is in order of the priorities, so that the first context in the list is the highest priority.
+                filtered_contexts.push_back(context);
+            }
+        }
+    }
+
+    for (auto& context : filtered_contexts) {
+        auto reps_in_context = context.RepresentationsInContext();
+        representations.insert(representations.end(), reps_in_context.begin(), reps_in_context.end());
+    }
+}
+
 void mapping::ensureRepresentationContextCache_() {
     const auto has_context_ids = settings_.get<settings::ContextIds>().has();
+    const auto has_context_priorities = !has_context_ids && settings_.get<settings::ContextPriorities>().has();
     const auto dimensionality = settings_.get<settings::OutputDimensionality>().get();
     const auto context_ids = has_context_ids ? settings_.get<settings::ContextIds>().get() : std::set<int>{};
+    const auto context_priorities =
+        has_context_priorities ? settings_.get<settings::ContextPriorities>().get() : std::vector<std::string>{};
 
     std::lock_guard<std::mutex> guard(representation_context_cache_guard_);
 
     if (representation_context_cache_valid_ &&
         representation_context_cache_has_context_ids_ == has_context_ids &&
+        representation_context_cache_has_context_priorities_ == has_context_priorities &&
         representation_context_cache_dimensionality_ == dimensionality &&
-        representation_context_cache_ids_ == context_ids) {
+        representation_context_cache_ids_ == context_ids &&
+        representation_context_cache_priorities_ == context_priorities) {
         return;
     }
 
     std::vector<IfcSchema::IfcRepresentation> representations;
-    if (!has_context_ids) {
-        addRepresentationsFromDefaultContexts(representations);
-    } else {
+    if (has_context_ids) {
         addRepresentationsFromContextIds(representations);
+    } else if (has_context_priorities) {
+        addRepresentationsFromPriorities(representations);
+    } else {
+        addRepresentationsFromDefaultContexts(representations);
     }
 
     std::unordered_set<uint32_t> representation_ids;
     representation_ids.reserve(representations.size());
+    std::vector<uint32_t> representation_priority_ids;
+    representation_priority_ids.reserve(representations.size());
     for (auto& representation : representations) {
         if (representation) {
-            representation_ids.insert((uint32_t)representation.id());
+            const auto representation_id = (uint32_t)representation.id();
+            if (representation_ids.insert(representation_id).second) {
+                representation_priority_ids.push_back(representation_id);
+            }
         }
     }
 
     representation_context_cache_ = std::move(representation_ids);
+    representation_context_priority_cache_ = std::move(representation_priority_ids);
     representation_context_cache_ids_ = std::move(context_ids);
+    representation_context_cache_priorities_ = std::move(context_priorities);
     representation_context_cache_dimensionality_ = dimensionality;
     representation_context_cache_has_context_ids_ = has_context_ids;
+    representation_context_cache_has_context_priorities_ = has_context_priorities;
     representation_context_cache_valid_ = true;
 }
 
@@ -1349,9 +1568,20 @@ express::Base mapping::representation_of(const express::Base& product) {
 
     {
         std::lock_guard<std::mutex> guard(representation_context_cache_guard_);
-        for (auto& r : of_product) {
-            if (representation_context_cache_.find((uint32_t)r.id()) != representation_context_cache_.end()) {
-                intersection.push_back(r);
+        if (representation_context_cache_has_context_priorities_) {
+            for (auto representation_id : representation_context_priority_cache_) {
+                auto it = std::find_if(of_product.begin(), of_product.end(), [&](const auto& r) {
+                    return (uint32_t)r.id() == representation_id;
+                });
+                if (it != of_product.end()) {
+                    intersection.push_back(*it);
+                }
+            }
+        } else {
+            for (auto& r : of_product) {
+                if (representation_context_cache_.find((uint32_t)r.id()) != representation_context_cache_.end()) {
+                    intersection.push_back(r);
+                }
             }
         }
     }

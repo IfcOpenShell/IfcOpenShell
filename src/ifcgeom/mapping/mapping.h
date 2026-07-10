@@ -33,6 +33,7 @@ namespace geometry {
 		
 		void initialize_units_();
 		void addRepresentationsFromContextIds(std::vector<IfcSchema::IfcRepresentation>&);
+		void addRepresentationsFromPriorities(std::vector<IfcSchema::IfcRepresentation>&);
 		void addRepresentationsFromDefaultContexts(std::vector<IfcSchema::IfcRepresentation>&);
 		void ensureRepresentationContextCache_();
 
@@ -41,9 +42,12 @@ namespace geometry {
 		std::set<express::Base> failed_on_purpose_;
 		std::set<IfcSchema::IfcRepresentationMap> not_reusable_maps_;
 		std::unordered_set<uint32_t> representation_context_cache_;
+		std::vector<uint32_t> representation_context_priority_cache_;
 		std::set<int> representation_context_cache_ids_;
+		std::vector<std::string> representation_context_cache_priorities_;
 		settings::OutputDimensionalityTypes representation_context_cache_dimensionality_ = settings::SURFACES_AND_SOLIDS;
 		bool representation_context_cache_has_context_ids_ = false;
+		bool representation_context_cache_has_context_priorities_ = false;
 		bool representation_context_cache_valid_ = false;
 		std::mutex representation_context_cache_guard_;
 
