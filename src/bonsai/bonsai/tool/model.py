@@ -2640,6 +2640,9 @@ class Model(bonsai.core.tool.Model):
                         ):
                             segments.append(tmp.createIfcArcIndex([i + 1, i + 2, i + 3]))
                             i += 2
+                        elif i + 1 == total_verts and not is_closed:
+                            # Final vertex of an open curve has no outgoing segment
+                            break
                         else:
                             segments.append(tmp.createIfcLineIndex([i + 1, i + 2]))
                             i += 1
