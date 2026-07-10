@@ -382,7 +382,14 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	}
 
 	const bool setting_use_original_edges = settings.get<ifcopenshell::geometry::settings::CgalEmitOriginalEdges>().get();
-	
+
+	// When a polyhedral triangulation type is requested we do not emit a raw
+	// triangle mesh, but reconstruct planar faces (optionally with holes) from
+	// the coplanar triangle components, mirroring the OpenCascade kernel.
+	const auto triangulation_type = settings.get<ifcopenshell::geometry::settings::TriangulationType>().get();
+	const bool polyhedral_output = triangulation_type != ifcopenshell::geometry::settings::TRIANGLE_MESH;
+	const bool polyhedral_output_without_holes = triangulation_type == ifcopenshell::geometry::settings::POLYHEDRON_WITHOUT_HOLES;
+
 	std::set<std::set<Kernel_::Point_3>> original_edges;
 	if (setting_use_original_edges) {
 		for (auto it = shape_to_use->edges_begin(); it != shape_to_use->edges_end(); ++it) {
@@ -444,7 +451,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	// edges are to be registered.
 	std::vector<std::set<Facet_const_handle>> components;
 	std::map<Facet_const_handle, typename decltype(components)::const_iterator> facet_to_component;
-	if (!setting_use_original_edges) {
+	if (!setting_use_original_edges || polyhedral_output) {
 		partition_coplanar_components(*shape_to_use, components);
 		for (auto it = components.begin(); it != components.end(); ++it) {
 			for (auto& f : *it) {
@@ -474,6 +481,10 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	std::map<postion_normal, size_t> welds;
 
 	std::set<std::pair<int, int>> registered_edges;
+
+	// For polyhedral output the triangles are accumulated per coplanar component
+	// so that planar faces (optionally with holes) can be reconstructed after the loop.
+	std::map<typename decltype(components)::const_iterator, std::vector<std::tuple<int, int, int>>> component_triangles;
 
 	int num_faces = 0, num_vertices = 0;
 	for (auto &face : faces(*shape_to_use)) {
@@ -560,26 +571,47 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			++current_halfedge;
 		} while (current_halfedge != face->facet_begin());
 
-		t->addFace(item_id, surface_style_id, vertexidx[0], vertexidx[1], vertexidx[2]);
-		for (size_t i = 0; i < 3; ++i) {
-			if (is_face_boundary[i]) {
-				// In CGAL, the vertex of a halfedge is the incident vertex, i.e
-				// the second vertex of the edge, so in order to get corresponding
-				// vertex and edge indices we need to find vertexids (i-1, i) for
-				// the boundary registered in i.
-				auto a = vertexidx[(i + 2) % 3];
-				auto b = vertexidx[(i + 3) % 3];
-				if (a > b) {
-					std::swap(a, b);
-				}
-				if (registered_edges.find({ a, b }) == registered_edges.end()) {
-					registered_edges.insert({ a,b });
-					t->registerEdge(item_id, a, b);
+		if (polyhedral_output) {
+			component_triangles[facet_to_component[face]].push_back({ vertexidx[0], vertexidx[1], vertexidx[2] });
+		} else {
+			t->addFace(item_id, surface_style_id, vertexidx[0], vertexidx[1], vertexidx[2]);
+			for (size_t i = 0; i < 3; ++i) {
+				if (is_face_boundary[i]) {
+					// In CGAL, the vertex of a halfedge is the incident vertex, i.e
+					// the second vertex of the edge, so in order to get corresponding
+					// vertex and edge indices we need to find vertexids (i-1, i) for
+					// the boundary registered in i.
+					auto a = vertexidx[(i + 2) % 3];
+					auto b = vertexidx[(i + 3) % 3];
+					if (a > b) {
+						std::swap(a, b);
+					}
+					if (registered_edges.find({ a, b }) == registered_edges.end()) {
+						registered_edges.insert({ a,b });
+						t->registerEdge(item_id, a, b);
+					}
 				}
 			}
 		}
 
 		++num_faces;
+	}
+
+	if (polyhedral_output) {
+		// Reconstruct a planar face per coplanar component from its triangles,
+		// honouring the requested POLYHEDRON_WITHOUT_HOLES / POLYHEDRON_WITH_HOLES type.
+		for (auto& component : component_triangles) {
+			auto loops = IfcGeom::util::find_boundary_loops(t->verts(), component.second);
+			if (polyhedral_output_without_holes) {
+				if (!loops.empty() && !loops[0].empty()) {
+					t->addFace(item_id, surface_style_id, loops[0]);
+				}
+			} else {
+				if (!loops.empty()) {
+					t->addFace(item_id, surface_style_id, loops);
+				}
+			}
+		}
 	}
 
 }
