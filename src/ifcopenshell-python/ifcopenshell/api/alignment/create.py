@@ -88,7 +88,7 @@ def create(
 
     referent_name = ifcopenshell.util.alignment.station_as_string(file, start_station)
     referent = ifcopenshell.api.alignment.add_stationing_referent(
-        file, alignment, 0.0, start_station, referent_name, alignment
+        file, referent_name, alignment, 0.0, start_station
     )
 
     for layout in alignment_layouts:

@@ -16,33 +16,30 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Optional
-
 import ifcopenshell
 import ifcopenshell.api.alignment
 from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 import ifcopenshell.api.pset
 import ifcopenshell.guid
-import ifcopenshell.util.element
 from ifcopenshell import entity_instance
 
 
-def add_stationing_referent(
+def add_positioning_referent(
     file: ifcopenshell.file,
     name: str,
     alignment: entity_instance,
     distance_along: float,
     station: float,
-    incoming_station: Optional[float] = None,
+    positioned_product: entity_instance,
 ) -> entity_instance:
     """
-    Adds an IfcReferent to the alignment that defines the stationing system.
+    Semantically defines the position of a product along an alignment by adding an IfcReferent to the alignment that defines the stationing system.
 
-    :param name: name to assign to IfcReferent.Name, typically a stringized version of the station value
     :param alignment: the alignment to receive the referent
     :param distance_along: distance along the alignment basis curve
     :param station: station value
-    :param incoming_station: station value of the incoming segment, only set to specify a station equation
+    :param name: name to assign to IfcReferent.Name, typically a stringized version of the station value
+    :param positioned_product: the product whose position is informed by the referent
     :return: referent
 
     Example:
@@ -50,7 +47,8 @@ def add_stationing_referent(
     .. code:: python
 
         alignment = model.by_type("IfcAlignment")[0]
-        ifcopenshell.api.alignment.add_stationing_referent(model,name="1+00.0",alignment=alignment,distance_along=0.0,station=100.0)
+        pier = model.by_type("IfcBridgePart")[0]
+        ifcopenshell.api.alignment.add_positioning_referent(model,name="Pier 1 Sta 1+00",alignment=alignment,distance_along=0.0,station=100.0,positioned_product=pier)
     """
 
     basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
@@ -96,25 +94,20 @@ def add_stationing_referent(
         ObjectType=None,
         ObjectPlacement=object_placement,
         Representation=representation,
-        PredefinedType="STATION",
+        PredefinedType="POSITION",
     )
-    properties = {"Station": station}
-    if incoming_station is not None:
-        properties["IncomingStation"] = incoming_station
-
     pset_stationing = ifcopenshell.api.pset.add_pset(file, product=referent, name="Pset_Stationing")
-    ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties=properties)
+    ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties={"Station": station})
 
-    nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    if nest is None:
-        nest = file.createIfcRelNests(
-            GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=(referent,)
+    if len(referent.Positions) == 0:
+        rel_positions = file.createIfcRelPositions(
+            GlobalId=ifcopenshell.guid.new(),
+            RelatingPositioningElement=referent,
+            RelatedProducts=[
+                positioned_product,
+            ],
         )
     else:
-        nest.RelatedObjects += (referent,)
-
-    nest.RelatedObjects = sorted(
-        nest.RelatedObjects, key=lambda x: ifcopenshell.util.element.get_pset(x, name="Pset_Stationing", prop="Station")
-    )
+        referent.Positions[0].RelatedProducts += (positioned_product,)
 
     return referent

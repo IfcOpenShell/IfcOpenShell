@@ -1125,7 +1125,8 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
     """
     Retrieves all subelements of an element based on the spatial decomposition
     hierarchy. This includes all subspaces and elements contained in subspaces,
-    parts of an aggregate, all openings, and all fills of any openings.
+    parts of an aggregate, all openings, all fills of any openings, and any
+    surface features adhering to an element (IFC4.3 and above).
 
     :param element: The IFC element
     :return: The decomposition of the element
@@ -1159,6 +1160,10 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
             results.add(related)
         for rel in getattr(element, "IsNestedBy", []):
             related = rel.RelatedObjects
+            queue.extend(related)
+            results.update(related)
+        for rel in getattr(element, "HasSurfaceFeatures", []):
+            related = rel.RelatedSurfaceFeatures
             queue.extend(related)
             results.update(related)
         if not is_recursive:
@@ -1251,6 +1256,8 @@ def get_parent(
     - Nesting: components are attached to a host parent
     - Filling: the physical element fills an opening, such as a window filling a hole
     - Voiding: the opening voids another physical element, such as a hole in a wall
+    - Adherence: a surface feature adheres to a host element, such as a road
+      marking adhering to a road course (IFC4.3 and above)
 
     :param element: Any physical or spatial element in the tree
     :param ifc_class: Optionally filter the type of parent you're after. For
@@ -1270,6 +1277,7 @@ def get_parent(
         or get_nest(element)
         or get_filled_void(element)
         or get_voided_element(element)
+        or get_adhered_element(element)
     )
 
     if not ifc_class:
@@ -1319,6 +1327,28 @@ def get_voided_element(element: ifcopenshell.entity_instance) -> Union[ifcopensh
     """
     if rel := getattr(element, "VoidsElements", None):
         return rel[0].RelatingBuildingElement
+
+
+def get_adhered_element(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """If the element is a surface feature, get the element it adheres to
+
+    In IFC4.3 an IfcSurfaceFeature (such as a road marking) adheres to a host
+    element through the IfcRelAdheresToElement relationship. This is a [1:1]
+    cardinality hierarchical relationship, in the same family as aggregation,
+    containment and nesting.
+
+    :param element: The IfcSurfaceFeature
+    :return: The host element that the surface feature adheres to
+
+    Example:
+
+    .. code:: python
+
+        marking = file.by_type("IfcSurfaceFeature")[0]
+        host = ifcopenshell.util.element.get_adhered_element(marking)
+    """
+    if rel := getattr(element, "AdheresToElement", None):
+        return rel[0].RelatingElement
 
 
 def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -1412,6 +1442,29 @@ def get_contained(element: ifcopenshell.entity_instance) -> list[ifcopenshell.en
     if contains_elements := getattr(element, "ContainsElements", ()):
         for rel in contains_elements:
             objects.extend(rel.RelatedElements)
+    return objects
+
+
+def get_surface_features(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """Retrieves the surface features that adhere to an element.
+
+    In IFC4.3 an IfcSurfaceFeature (such as a road marking) adheres to a host
+    element through the IfcRelAdheresToElement relationship.
+
+    :param element: The IFC element
+    :return: The surface features adhering to the element
+
+    Example:
+
+    .. code:: python
+
+        element = file.by_type("IfcCourse")[0]
+        markings = ifcopenshell.util.element.get_surface_features(element)
+    """
+    objects: list[ifcopenshell.entity_instance] = []
+    if has_surface_features := getattr(element, "HasSurfaceFeatures", ()):
+        for rel in has_surface_features:
+            objects.extend(rel.RelatedSurfaceFeatures)
     return objects
 
 

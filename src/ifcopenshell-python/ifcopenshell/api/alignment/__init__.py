@@ -49,6 +49,7 @@ Future versions of this API may support:
 
 from ._get_segment_start_point_label import register_referent_name_callback
 from .add_stationing_referent import add_stationing_referent
+from .add_positioning_referent import add_positioning_referent
 from .add_vertical_layout import add_vertical_layout
 from .add_zero_length_segment import add_zero_length_segment
 from .create import create
@@ -94,6 +95,7 @@ from .util import *
 
 __all__ = [
     "add_stationing_referent",
+    "add_positioning_referent",
     "add_vertical_layout",
     "add_zero_length_segment",
     "create",

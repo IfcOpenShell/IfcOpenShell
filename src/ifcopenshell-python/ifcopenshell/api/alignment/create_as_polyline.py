@@ -141,7 +141,7 @@ def create_as_polyline(
 
     # define stationing
     name = ifcopenshell.util.alignment.station_as_string(file, start_station)
-    referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name, alignment)
+    referent = ifcopenshell.api.alignment.add_stationing_referent(file, name, alignment, 0.0, start_station)
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]
