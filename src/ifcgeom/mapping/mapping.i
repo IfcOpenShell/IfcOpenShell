@@ -59,6 +59,9 @@ BIND(IfcPolygonalFaceSet);
 #ifdef SCHEMA_HAS_IfcExtrudedAreaSolidTapered
 BIND(IfcExtrudedAreaSolidTapered);
 #endif
+#ifdef SCHEMA_HAS_IfcRevolvedAreaSolidTapered
+BIND(IfcRevolvedAreaSolidTapered);
+#endif
 BIND(IfcPlane);
 BIND(IfcExtrudedAreaSolid);
 BIND(IfcRevolvedAreaSolid);
