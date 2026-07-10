@@ -1785,6 +1785,15 @@ class Drawing(bonsai.core.tool.Drawing):
         im = camera.matrix_world.inverted()
         v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in [v1, v2]]
 
+        # Orient the cut line so the section's view direction lies on the marker
+        # side. The SVG section marker always points to the same perpendicular
+        # side of the line, so ordering the endpoints by local X alone makes the
+        # marker point the wrong way for sections whose frame is flipped. See #4103.
+        view_dir = im.to_3x3() @ Vector(-m[:3, 2])
+        edge_dir = v2 - v1
+        if edge_dir.x * view_dir.y - edge_dir.y * view_dir.x < 0:
+            v1, v2 = v2, v1
+
         target_view = cls.get_drawing_target_view(drawing)
         bounds = helper.ortho_view_frame(camera.data)
 
