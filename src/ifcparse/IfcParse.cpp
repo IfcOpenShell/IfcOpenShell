@@ -1099,6 +1099,21 @@ class apply_individual_instance_visitor {
     };
 };
 
+// #486 An instance assigned as an attribute value may belong to another file.
+// Bring such a foreign instance, together with its forward references, into the
+// target file so the written reference resolves on serialization instead of
+// dangling. IfcFile::addEntity is idempotent through entity_file_map_ and
+// returns the instance owned by the target file, so repeated assignment neither
+// duplicates the subgraph nor recurses. Same file and unowned instances are
+// returned unchanged. This folds the manual file.add step users previously had
+// to perform before the assignment into the assignment itself.
+static IfcUtil::IfcBaseClass* adopt_if_foreign(IfcParse::IfcFile* file, IfcUtil::IfcBaseClass* instance) {
+    if (instance != nullptr && file != nullptr && instance->file_ != nullptr && instance->file_ != file) {
+        return file->addEntity(instance);
+    }
+    return instance;
+}
+
 template <typename T>
 typename std::enable_if<
     (!(std::is_pointer<T>::value&& std::is_base_of<IfcUtil::IfcBaseClass, typename std::remove_pointer<T>::type>::value) || std::is_same_v<IfcUtil::IfcBaseClass, std::remove_pointer_t<T>>),
@@ -1149,11 +1164,37 @@ IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
     {
         void* const storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
         if constexpr (std::is_pointer_v<T>) {
-            if (t) {
-                data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, t);
+            // #486 Adopt a foreign instance into this file before writing the reference.
+            IfcUtil::IfcBaseClass* to_write = adopt_if_foreign(file_, t);
+            if (to_write) {
+                data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, to_write);
             } else {
                 data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, Blank{});
             }
+        } else if constexpr (std::is_same_v<T, aggregate_of_instance::ptr>) {
+            // #486 Adopt any foreign instances nested in the aggregate.
+            aggregate_of_instance::ptr to_write(new aggregate_of_instance);
+            if (t) {
+                to_write->reserve(t->size());
+                for (auto* instance : *t) {
+                    to_write->push(adopt_if_foreign(file_, instance));
+                }
+            }
+            data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, to_write);
+        } else if constexpr (std::is_same_v<T, aggregate_of_aggregate_of_instance::ptr>) {
+            // #486 Adopt any foreign instances nested in the aggregate.
+            aggregate_of_aggregate_of_instance::ptr to_write(new aggregate_of_aggregate_of_instance);
+            if (t) {
+                for (auto outer = t->begin(); outer != t->end(); ++outer) {
+                    std::vector<IfcUtil::IfcBaseClass*> inner;
+                    inner.reserve(outer->size());
+                    for (auto* instance : *outer) {
+                        inner.push_back(adopt_if_foreign(file_, instance));
+                    }
+                    to_write->push(inner);
+                }
+            }
+            data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, to_write);
         } else {
             data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(),i, t);
         }
