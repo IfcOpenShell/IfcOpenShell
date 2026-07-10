@@ -488,7 +488,7 @@ Ifc4x3_add2::IfcAlignment addAlignment(hierarchy_helper<Ifc4x3_add2>& file, cons
     return alignment;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentSegment& segment) {
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentSegment& segment, logger& logger) {
     std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
     auto design_parameters = segment.DesignParameters();
     auto horizontal = design_parameters.as<Ifc4x3_add2::IfcAlignmentHorizontalSegment>();
@@ -501,7 +501,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
     } else if (cant) {
         result = mapAlignmentCantSegment(file, cant);
     } else {
-        ::logger::root().error(std::string("Unexpected IfcAlignmentSegment subtype encountered"));
+        logger.error(std::string("Unexpected IfcAlignmentSegment subtype encountered"));
     }
     return result;
 }
@@ -514,7 +514,7 @@ Ifc4x3_add2::IfcLengthMeasure create_length(hierarchy_helper<Ifc4x3_add2>& file,
 }
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentHorizontalSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentHorizontalSegment& segment) {
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentHorizontalSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentHorizontalSegment& segment, logger& logger) {
     std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
     auto start_point = segment.StartPoint();
     auto start_direction = segment.StartDirection();
@@ -762,15 +762,15 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
 
         result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_VIENNESEBEND) {
-        ::logger::root().warning(std::string("mapping of AlignmentHorizontalSegmentType VIENNESEBEND not supported"));
+        logger.warning(std::string("mapping of AlignmentHorizontalSegmentType VIENNESEBEND not supported"));
     } else {
-        ::logger::root().error(std::string("unexpected AlignmentHorizontalSegmentType encountered"));
+        logger.error(std::string("unexpected AlignmentHorizontalSegmentType encountered"));
     }
 
     return result;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentVerticalSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentVerticalSegment& segment) {
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentVerticalSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentVerticalSegment& segment, logger& logger) {
     std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
     auto start_distance_along = segment.StartDistAlong();
     auto horizontal_length = segment.HorizontalLength();
@@ -830,7 +830,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
 
         result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CLOTHOID) {
-        ::logger::root().warning(std::string("mapping of AlignmentVerticalSegmentType CLOTHOID not supported"));
+        logger.warning(std::string("mapping of AlignmentVerticalSegmentType CLOTHOID not supported"));
     } else if (type == Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CIRCULARARC) {
         auto start_angle = atan(start_gradient);
         auto end_angle = atan(end_gradient);
@@ -856,31 +856,31 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
 
         result.first = curve_segment;
     } else {
-        ::logger::root().error(std::string("unexpected AlignmentVerticalSegmentType encountered"));
+        logger.error(std::string("unexpected AlignmentVerticalSegmentType encountered"));
     }
     
     return result;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentCantSegment& segment) {
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentCantSegment& segment, logger& logger) {
     std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
     auto type = segment.PredefinedType();
     if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_BLOSSCURVE) {
-        ::logger::root().warning(std::string("mapping of AlignmentCantSegmentType BLOSSCURVE not supported"));
+        logger.warning(std::string("mapping of AlignmentCantSegmentType BLOSSCURVE not supported"));
     } else if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_CONSTANTCANT) {
-        ::logger::root().warning(std::string("mapping of AlignmentCantSegmentType CONSTANTCANT not supported"));
+        logger.warning(std::string("mapping of AlignmentCantSegmentType CONSTANTCANT not supported"));
     } else if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_COSINECURVE) {
-        ::logger::root().warning(std::string("mapping of AlignmentCantSegmentType COSINECURVE not supported"));
+        logger.warning(std::string("mapping of AlignmentCantSegmentType COSINECURVE not supported"));
     } else if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_HELMERTCURVE) {
-        ::logger::root().warning(std::string("mapping of AlignmentCantSegmentType HELMERTCURVE not supported"));
+        logger.warning(std::string("mapping of AlignmentCantSegmentType HELMERTCURVE not supported"));
     } else if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_LINEARTRANSITION) {
-        ::logger::root().warning(std::string("mapping of AlignmentCantSegmentType LINEARTRANSTION not supported"));
+        logger.warning(std::string("mapping of AlignmentCantSegmentType LINEARTRANSTION not supported"));
     } else if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_SINECURVE) {
-        ::logger::root().warning(std::string("mapping of AlignmentCantSegmentType SINECURVE not supported"));
+        logger.warning(std::string("mapping of AlignmentCantSegmentType SINECURVE not supported"));
     } else if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_VIENNESEBEND) {
-        ::logger::root().warning(std::string("mapping of AlignmentCantSegmentType VIENNESEBEND not supported"));
+        logger.warning(std::string("mapping of AlignmentCantSegmentType VIENNESEBEND not supported"));
     } else {
-        ::logger::root().error(std::string("unexpected AlignmentCantSegmentType encountered"));
+        logger.error(std::string("unexpected AlignmentCantSegmentType encountered"));
     }
     return result;
 }

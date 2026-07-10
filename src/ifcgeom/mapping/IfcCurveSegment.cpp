@@ -258,12 +258,12 @@ class curve_segment_evaluator {
                 }
                 if (s == inst) {
                     emit_next = true;
+                } else {
+                    logger_.warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
                 }
-            } else {
-                mapping_->logger().warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
             }
         } else {
-            ::logger::root().warning("IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
+            logger_.warning("IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
         }
 
         bool is_horizontal = false;
@@ -283,7 +283,7 @@ class curve_segment_evaluator {
         if ((is_horizontal + is_vertical + is_cant) != 1) {
             // We have to choose the correct functor based on usage. We can't
             // support multiple, because we don't know the caller at this point.
-            mapping_->logger().error("UNS", 10, std::runtime_error("multiple uses of IfcSegmentCurve not supported"), inst_);
+            logger_.error("UNS", 10, std::runtime_error("multiple uses of IfcSegmentCurve not supported"), inst_);
         }
 
         segment_type_ = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : is_cant  ? ST_CANT : ST_HORIZONTAL;
@@ -321,7 +321,7 @@ class curve_segment_evaluator {
                     end_point = segmented_reference_curve.EndPoint();
                 }
             } else {
-                mapping_->logger().warning("GEO", 243, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the end point.");
+                logger_.warning("GEO", 243, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the end point.");
             }
             if (end_point) {
                 next_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(end_point))->ccomponents();
@@ -343,7 +343,7 @@ class curve_segment_evaluator {
 
     taxonomy::ptr get_segment_curve_function() {
         if (!parent_curve_fn_ || !parent_curve_start_point_) {
-            mapping_->logger().error("UNS", 11, std::runtime_error(inst_->ParentCurve()->declaration().name() + " not implemented"), inst_);
+            mapping_->logger().error("UNS", 11, std::runtime_error(inst_.ParentCurve().declaration().name() + " not implemented"), inst_);
         }
 
         auto length = fabs(this->length());
@@ -857,8 +857,6 @@ class curve_segment_evaluator {
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
             auto R = c.Radius() * length_unit_;
             auto parent_curve_position = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c.Position()))->ccomponents();
-
-            auto sign_l = sign(length_);
 
             auto sign_l = sign(length_);
 

@@ -6,10 +6,9 @@
 
 #include "ifcgeom/Converter.h"
 #include "ifcgeom/kernel_registry.h"
-#define IfcSchema Ifc2x3
 #include "ifcparse/hierarchy_helper.h"
 #include "ifcparse/macros.h"
-#include "ifcparse/schemas/Ifc2x3.h"
+#include IFCGEOM_TEST_SCHEMA_HEADER
 
 namespace {
 
