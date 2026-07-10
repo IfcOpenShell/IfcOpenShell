@@ -492,6 +492,7 @@ class BIM_PT_links(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
+        row.operator("bim.reload_all_links", text="", icon="FILE_REFRESH")
         if self.props.links:
             if self.props.active_link:
                 row = self.layout.row(align=True)

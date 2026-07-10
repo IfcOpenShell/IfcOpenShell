@@ -1820,6 +1820,33 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
         ) or {"FINISHED"}
 
 
+class ReloadAllLinks(bpy.types.Operator):
+    bl_idname = "bim.reload_all_links"
+    bl_label = "Reload All Links"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Reload all loaded linked models from disk, rebuilding their caches"
+
+    @classmethod
+    def poll(cls, context):
+        if not any(link.is_loaded for link in tool.Project.get_project_props().links):
+            cls.poll_message_set("No loaded links to reload.")
+            return False
+        return True
+
+    def execute(self, context):
+        props = tool.Project.get_project_props()
+        reloaded = 0
+        for i, link in enumerate(props.links):
+            if not link.is_loaded:
+                continue
+            # Called without filter properties, reload_link preserves each
+            # link's stored path, query and exclude.
+            bpy.ops.bim.reload_link(link_index=i)
+            reloaded += 1
+        self.report({"INFO"}, f"Reloaded {reloaded} linked model(s).")
+        return {"FINISHED"}
+
+
 class SelectLinkFilepath(bpy.types.Operator):
     bl_idname = "bim.select_link_filepath"
     bl_label = "Select Link File Path"

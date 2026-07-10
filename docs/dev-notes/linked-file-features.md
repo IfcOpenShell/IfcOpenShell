@@ -165,6 +165,11 @@ Path changes update `link.name`/`filepath` and, with a host IFC, the reference
 `Location` + document name — which is why `ReloadLink` became a `tool.Ifc.Operator`.
 Script calls without arguments preserve all stored link values via `is_property_set`.
 
+`bim.reload_all_links` (refresh button beside Link IFC in the panel header) reloads
+every *loaded* link via argument-less `reload_link` calls — each link's stored
+path/query/exclude replay and its cache rebuilds from disk. Unloaded links are left
+alone. Deliberately expensive: one background cache rebuild per link.
+
 ### Per-row lock toggle + auto-saved transforms
 
 Link editing moved from the panel header into each list row as a lock/unlock icon:
