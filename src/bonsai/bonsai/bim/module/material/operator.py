@@ -999,6 +999,9 @@ class SelectMaterialInMaterialsUI(bpy.types.Operator):
                 material = material.ForLayerSet
             material_id = material.id()
 
+        # Keep the materials UI in sync so the list, header and per-type
+        # operators match the material class we are about to load.
+        props.material_type = material_class
         core.load_materials(tool.Material, material_class)
 
         def get_material_item() -> Union[tuple[int, bpy.types.PropertyGroup], None]:
