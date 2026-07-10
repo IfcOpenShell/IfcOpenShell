@@ -111,6 +111,12 @@ You can modify doors using various tools:
    - Click the "Apply Void" (:kbd:`Shift` + :kbd:`O`) button in the top bar, or use the shortcut.
    - This reconnects the opening to the wall.
 
+   How it works: Regen on the door recalculates the door's fill, which repositions
+   the opening in the host wall and recuts it, so an action on the door is what
+   updates the wall geometry. Regen on the wall only re-syncs the opening while the
+   door is still in a freshly moved state, which is why selecting the door is the
+   reliable choice.
+
 
 Door Properties
 ^^^^^^^^^^^^^^^
