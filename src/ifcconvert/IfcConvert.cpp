@@ -252,6 +252,10 @@ int main(int argc, char** argv) {
 		("stderr-progress", "output progress to stderr stream")
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
+		("fail-on-error", "return a non-zero exit code when one or more errors were logged during "
+			"geometry conversion (e.g. an element failed to convert). By default IfcConvert exits "
+			"successfully as long as an output file could be written, even if some elements were "
+			"silently dropped. Enable this flag so scripts and CI can detect partial conversions.")
 		("log-format", po::value<std::string>(&log_format), "log format: plain or json")
 		("log-file", new po::typed_value<path_t, char_t>(&log_file), "redirect log output to file");
 
@@ -449,6 +453,7 @@ int main(int argc, char** argv) {
 
 	const bool mmap = vmap.count("mmap") != 0;
 	const bool no_progress = vmap.count("no-progress") != 0;
+	const bool fail_on_error = vmap.count("fail-on-error") != 0;
 	const bool quiet = vmap.count("quiet") != 0;
 	const bool stderr_progress = vmap.count("stderr-progress") != 0;
 
@@ -1217,6 +1222,11 @@ int main(int argc, char** argv) {
 
 	if (geometry_settings.get<ifcopenshell::geometry::settings::ValidateQuantities>().get() && logger.MaxSeverity() >= Logger::LOG_ERROR) {
 		logger.Error("SYS", 24, "Errors encountered during processing.");
+		successful = false;
+	}
+
+	if (fail_on_error && logger.MaxSeverity() >= Logger::LOG_ERROR) {
+		logger.Error("SYS", 26, "Errors encountered during processing, failing due to --fail-on-error.");
 		successful = false;
 	}
 
