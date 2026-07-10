@@ -1360,10 +1360,10 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     )
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
     query: bpy.props.StringProperty(
-        name="Query",
+        name="Include",
         description=(
-            "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
-            "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+            "Selector query for the elements to load from the linked model. E.g. 'IfcElement'.\n\n"
+            "Default when empty - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
         ),
     )
     exclude: bpy.props.StringProperty(
@@ -1713,10 +1713,10 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
         options={"SKIP_SAVE"},
     )
     query: bpy.props.StringProperty(
-        name="Query",
+        name="Include",
         description=(
-            "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
-            "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+            "Selector query for the elements to load from the linked model. E.g. 'IfcElement'.\n\n"
+            "Default when empty - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
         ),
         options={"SKIP_SAVE"},
     )
