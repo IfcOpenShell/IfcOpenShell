@@ -261,8 +261,8 @@ class Link(PropertyGroup):
         default=0,
     )
     query: StringProperty(
-        name="Query",
-        description="Selector query used to filter elements when loading the linked model",
+        name="Include",
+        description="Selector query for the elements to load from the linked model",
         default="",
     )
     exclude: StringProperty(
