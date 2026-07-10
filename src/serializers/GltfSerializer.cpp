@@ -99,9 +99,15 @@ int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style:
 
 	std::array<double, 4> base;
 	base.fill(1.0);
-	if (style->get_color()) {
+	// glTF's baseColorFactor is the base/albedo colour. IfcSurfaceStyleRendering's
+	// DiffuseColour is a reflectance factor that the mapping pre-multiplies into the
+	// diffuse colour (surface * factor); baking that product into baseColorFactor
+	// darkens the model compared to what PBR viewers show (#2509). Prefer the pure
+	// SurfaceColour as the albedo, falling back to the diffuse colour when absent.
+	const auto& base_color = style->surface ? style->surface : style->get_color();
+	if (base_color) {
 		for (int i = 0; i < 3; ++i) {
-			base[i] = style->get_color().ccomponents()(i);
+			base[i] = base_color.ccomponents()(i);
 		}
 	}
 	if (style->transparency == style->transparency) {
