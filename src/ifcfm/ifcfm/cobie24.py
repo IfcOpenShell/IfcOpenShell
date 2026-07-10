@@ -28,6 +28,7 @@ import ifcopenshell.util.fm
 import ifcopenshell.util.placement
 import ifcopenshell.util.shape
 import ifcopenshell.util.system
+import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import np_matrix_to_euler
 
 # The original BIMServer plugin has a function called ifcToCOBie:
@@ -920,6 +921,11 @@ def get_coordinate_data_(element: ifcopenshell.entity_instance) -> Generator[dic
     verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
     categories = ("box-lowerleft", "box-upperright")
     bbox = ifcopenshell.util.shape.get_bbox(verts)
+    # Geometry vertices are in SI metres, but Floor rows use the raw placement in
+    # project length units. Convert space points to project units so the whole
+    # Coordinate sheet is consistent with the Facility LinearUnits.
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(element.file)
+    bbox = [point / unit_scale for point in bbox]
     base_data = base_data | {
         "Category": "point",
         "SheetName": "Space",
