@@ -294,8 +294,8 @@ ptree* descend(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping,
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>
 			(log, object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
 
-#ifdef SCHEMAS_HAS_IfcPropertySetDefinitionSet
-		auto property_set_sets = get_related
+#ifdef SCHEMA_HAS_IfcPropertySetDefinitionSet
+		aggregate_of<IfcSchema::IfcPropertySetDefinitionSet>::ptr property_set_sets = get_related
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinitionSet>
 			(log, object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
 
