@@ -24,6 +24,7 @@ import time
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.element
 import pytest
 
 from bonsai import tool as tool
