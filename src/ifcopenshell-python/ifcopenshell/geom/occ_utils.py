@@ -295,8 +295,16 @@ def create_shape_from_serialization(
             ss.ReadFromString(brep_data)
             occ_shape = ss.Shape(ss.NbShapes())
         else:
+            # The single-argument breptools.ReadFromString allocates and returns
+            # a new TopoDS_Shape on every call, which pythonOCC documents as
+            # increasing memory; pass the shape by reference to reuse it instead
+            # and fall back for older bindings lacking that overload. See #6904.
             ss = BRepTools.breptools()
-            occ_shape = ss.ReadFromString(brep_data)
+            occ_shape = TopoDS.TopoDS_Shape()
+            try:
+                ss.ReadFromString(brep_data, occ_shape)
+            except TypeError:
+                occ_shape = ss.ReadFromString(brep_data)
     except BaseException as e:
         print("Error occurred parsing a shape from a string:", e)
 
