@@ -2333,7 +2333,9 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         "Activates the selected drawing view.\n\n"
         + "ALT+CLICK to keep the viewport position.\n\n"
         + "SHIFT+CLICK to load a quick preview of the drawing view.\n\n"
-        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views"
+        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views, "
+        + "then select their cameras (the first selected drawing's camera becomes active).\n\n"
+        + "SHIFT+CTRL+ALT+CLICK to do the same but also select the annotations, not just the cameras"
     )
 
     drawing: bpy.props.IntProperty()
@@ -2355,16 +2357,25 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         default=False,
         options={"SKIP_SAVE"},
     )
+    include_annotations_in_selection: bpy.props.BoolProperty(
+        name="Include Annotations In Selection",
+        description="Also select the loaded annotation objects, not just the drawing cameras.",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
 
     if TYPE_CHECKING:
         drawing: int
         should_view_from_camera: bool
         use_quick_preview: bool
         load_selected_annotations: bool
+        include_annotations_in_selection: bool
 
     def invoke(self, context, event) -> set["rna_enums.OperatorReturnItems"]:
         if event.type == "LEFTMOUSE" and event.shift and event.ctrl:
             self.load_selected_annotations = True
+            if event.alt:
+                self.include_annotations_in_selection = True
             return self.execute(context)
         if event.type == "LEFTMOUSE" and event.alt:
             self.should_view_from_camera = False
@@ -2379,15 +2390,34 @@ class ActivateDrawingBase(tool.Ifc.Operator):
             bpy.ops.bim.load_drawings()
 
         if self.load_selected_annotations:
+            objs_to_select = []
+            active_camera = None
             for d in props.drawings:
                 if not (d.is_drawing and d.is_selected):
                     continue
                 selected_drawing = tool.Ifc.get().by_id(d.ifc_definition_id)
                 # Importing the camera (if missing) ensures the drawing's
                 # collection exists so the annotations get collected into it.
-                if not tool.Ifc.get_object(selected_drawing):
-                    tool.Drawing.import_drawing(selected_drawing)
-                tool.Drawing.import_annotations_in_group(tool.Drawing.get_drawing_group(selected_drawing))
+                if not (camera := tool.Ifc.get_object(selected_drawing)):
+                    camera = tool.Drawing.import_drawing(selected_drawing)
+                group = tool.Drawing.get_drawing_group(selected_drawing)
+                tool.Drawing.import_annotations_in_group(group)
+
+                if active_camera is None:
+                    active_camera = camera
+                objs_to_select.append(camera)
+                if self.include_annotations_in_selection:
+                    for element in tool.Drawing.get_group_elements(group) or []:
+                        if element.is_a("IfcAnnotation") and element.ObjectType != "DRAWING":
+                            if annotation_obj := tool.Ifc.get_object(element):
+                                objs_to_select.append(annotation_obj)
+
+            # Select the checked drawings' objects, with the first drawing's camera as active.
+            bpy.ops.object.select_all(action="DESELECT")
+            for obj in objs_to_select:
+                obj.select_set(True)
+            if active_camera is not None:
+                context.view_layer.objects.active = active_camera
             return {"FINISHED"}
 
         drawing = tool.Ifc.get().by_id(self.drawing)
@@ -2476,7 +2506,9 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
         "Activates the selected drawing view.\n\n"
         + "ALT+CLICK to keep the viewport position.\n\n"
         + "SHIFT+CLICK to load a quick preview of the drawing view.\n\n"
-        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views"
+        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views, "
+        + "then select their cameras (the first selected drawing's camera becomes active).\n\n"
+        + "SHIFT+CTRL+ALT+CLICK to do the same but also select the annotations, not just the cameras"
     )
 
 
