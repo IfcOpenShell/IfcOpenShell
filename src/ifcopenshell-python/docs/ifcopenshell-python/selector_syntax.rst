@@ -72,6 +72,8 @@ Filtering is typically used to select any IFC element or type.
 
     "``IfcPump, location=""Level 3""``", "Locations bubble up the hierarchy. So if a pump is in a space and that space is on Level 3, then you can say ""all pumps on level 3"" which will include that pump in the space."
 
+    "``IfcElement, query:""parent.Name""=""My Site""``", "Only elements *immediately* under ""My Site"" in the spatial hierarchy. Unlike the ``location`` and ``parent`` filters, which both match at any depth, the ``parent`` query key resolves the direct parent only, so nested storeys (and their contents) are excluded."
+
 The filter elements syntax works by specifying one or more groups of filters
 separated by a ``+`` character. Each filter group will return a set of filtered
 elements, and these are unioned together.
@@ -110,6 +112,15 @@ will search through all IfcTypeProducts and IfcProducts in the IFC project.
     "Location", "Filter", "``location{{=}}{{value}}``", "``location=Foo`` specifies the criteria that elements must be contained directly or indirectly in a spatial element with a ``Name`` attribute with a value of ``Foo``."
     "Parent", "Filter", "``parent{{=}}{{value}}``", "``parent=Foo`` specifies the criteria that elements must be a direct or indirect child in the spatial hierarchy to an element with a ``Name`` attribute with a value of ``Foo``."
     "Query", "Filter", "``query:{{keys}}{{=}}{{value}}``", "``query:types.count=0`` specifies the criteria that elements must have zero type occurrences. The query keys corresponds to the syntax used in the `Getting element values`_ section"
+
+.. note::
+
+    The ``location`` and ``parent`` filters both match at **any depth** in the
+    spatial hierarchy. To match only elements *immediately* contained in (or
+    aggregated under) a spatial element, use the ``parent`` query key, which
+    resolves the direct parent only. For example,
+    ``query:"parent.Name"="My Site"`` selects elements directly under ``My
+    Site`` but excludes anything nested inside its sub-storeys or spaces.
 
 When you specify a filter with a ``{{=}}`` check, you can choose from one of
 the following comparison checks:
@@ -191,7 +202,7 @@ Valid keys are:
     "``storey``", "Gets the first IfcBuildingStorey spatial element that an element is contained in."
     "``building``", "Gets the first IfcBuilding spatial element that an element is contained in."
     "``site``", "Gets the first IfcSite spatial element that an element is contained in."
-    "``parent``", "Gets the parent element in the spatial hierarchy."
+    "``parent``", "Gets the **immediate** parent element in the spatial hierarchy (the direct spatial container, or the direct aggregate/nest/fill/void parent). Combine with ``.Name`` in a query filter to match only immediate children, e.g. ``query:""parent.Name""=""My Site""``."
     "``classification``", "Gets the element's classification reference(s)"
     "``group``", "Gets the element's group(s)"
     "``system``", "Gets the element's system(s). This is a subset of group(s)."
