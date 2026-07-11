@@ -112,7 +112,14 @@ addon_keymaps = []
 
 @bpy.app.handlers.persistent
 def _autosave_link_transforms(scene, depsgraph):
-    """Persist link transformations whenever an editing link's handle is moved."""
+    """Persist link transformations whenever an editing link's handle is moved.
+
+    Deliberate exemption from the transaction rule in
+    docs/guides/development/undo_system.rst: a handler cannot run inside
+    execute_ifc_operator, so this IFC write is not undo-tracked. It stays
+    consistent anyway because undoing the move fires another depsgraph
+    update, which re-saves the reverted matrix.
+    """
     import bonsai.tool as tool
 
     props = tool.Project.get_project_props()

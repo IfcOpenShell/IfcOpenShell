@@ -295,6 +295,26 @@ stay compatible.
 - Debugging note: merged cut groups carry member guids as CSS *classes*, not as the
   `ifcopenshell:guid` attribute — inspect both when checking cut output.
 
+## Deferred refactors (deliberate)
+
+- **Upstream `exclude=` on `filter_elements`** — the include−exclude set difference
+  is hand-rolled twice (links, drawings) because the selector grammar has no
+  difference operator and `parent` negation is broken by design (its `!=`/regex
+  paths also match GlobalIds, so negation strips everything that has a parent).
+  The right home is an `exclude=` parameter on
+  `ifcopenshell.util.selector.filter_elements`, documented in
+  `selector_syntax.rst` together with the `parent`-negation limitation. Deferred
+  to a separate ifcopenshell-python PR (different review audience; would widen
+  this PR mid-review). Once it lands, both Bonsai call sites collapse.
+- **Core/tool ceremony skipped** — the new `tool.Project` methods have no
+  `core/tool.py` interface declarations and no `bonsai/core` orchestration
+  functions, matching the pre-existing linked-model code (which bypasses the
+  core layer wholesale; `LoadLinkedProject` is flagged "prototyping" upstream).
+  Interfaces nobody calls through wouldn't add testability — the pure helpers
+  (`encode_link_filter`/`decode_link_filter`, `get_link_cache_paths`) are
+  covered directly in `test/tool/test_project.py` instead. Revisit if the
+  linked-model subsystem is ever promoted out of prototype status.
+
 ## Review round 1 (PR #8242, falken10vdl) — decisions
 
 - **Path-form mismatch → duplicate documents (confirmed bug, fixed).**

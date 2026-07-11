@@ -501,3 +501,67 @@ class TestGettingLinkedElementGeomSlice:
         obj = cast(bpy.types.Object, obj)
         slice_ = subject.Link.get_linked_element_geom_slice(obj, "aaa")
         assert range(15)[slice_] == range(5)
+
+
+class TestEncodeDecodeLinkFilter:
+    def test_plain_include_round_trip(self):
+        assert subject.encode_link_filter("IfcWall", "") == "IfcWall"
+        assert subject.decode_link_filter("IfcWall") == ("IfcWall", "", False)
+
+    def test_empty_filter_encodes_to_none(self):
+        assert subject.encode_link_filter("", "") is None
+        assert subject.decode_link_filter(None) == ("", "", False)
+        assert subject.decode_link_filter("") == ("", "", False)
+
+    def test_exclude_promotes_to_json(self):
+        encoded = subject.encode_link_filter('IfcElement, group="X"', 'IfcSlab, parent="Y"')
+        assert encoded.startswith("{")
+        assert subject.decode_link_filter(encoded) == ('IfcElement, group="X"', 'IfcSlab, parent="Y"', False)
+
+    def test_loaded_promotes_to_json(self):
+        encoded = subject.encode_link_filter("IfcWall", "", loaded=True)
+        assert encoded.startswith("{")
+        assert subject.decode_link_filter(encoded) == ("IfcWall", "", True)
+
+    def test_loaded_without_filter(self):
+        encoded = subject.encode_link_filter("", "", loaded=True)
+        assert subject.decode_link_filter(encoded) == ("", "", True)
+
+    def test_legacy_non_json_decodes_as_include(self):
+        legacy = 'IfcElement, location="House - Type B"'
+        assert subject.decode_link_filter(legacy) == (legacy, "", False)
+
+    def test_malformed_json_decodes_as_include(self):
+        assert subject.decode_link_filter("{not json") == ("{not json", "", False)
+
+
+class TestGetLinkCachePaths:
+    def test_empty_filter_keeps_legacy_names(self):
+        blend, json_ = subject.get_link_cache_paths("/x/File A.ifc", "")
+        assert blend.name == "File A.ifc.cache.blend"
+        assert json_.name == "File A.ifc.cache.json"
+
+    def test_include_only_hash_matches_pre_exclude_formula(self):
+        # Existing caches were keyed by md5(query)[:8]; they must stay valid.
+        import hashlib
+
+        blend, _ = subject.get_link_cache_paths("/x/File A.ifc", "IfcWall")
+        expected = hashlib.md5(b"IfcWall").hexdigest()[:8]
+        assert blend.name == f"File A.ifc.cache.{expected}.blend"
+
+    def test_blend_and_json_share_a_suffix(self):
+        blend, json_ = subject.get_link_cache_paths("/x/File A.ifc", "IfcWall", "IfcDoor")
+        assert blend.name.removesuffix("blend") == json_.name.removesuffix("json")
+
+    def test_same_include_different_exclude_do_not_collide(self):
+        # The reason the cache key hashes both strings: same-include links
+        # with different excludes must not serve each other's geometry.
+        a, _ = subject.get_link_cache_paths("/x/f.ifc", "IfcElement", "IfcSlab")
+        b, _ = subject.get_link_cache_paths("/x/f.ifc", "IfcElement", "IfcDoor")
+        c, _ = subject.get_link_cache_paths("/x/f.ifc", "IfcElement", "")
+        assert len({a.name, b.name, c.name}) == 3
+
+    def test_exclude_only_distinct_from_empty_filter(self):
+        a, _ = subject.get_link_cache_paths("/x/f.ifc", "", "IfcDoor")
+        b, _ = subject.get_link_cache_paths("/x/f.ifc", "", "")
+        assert a.name != b.name
