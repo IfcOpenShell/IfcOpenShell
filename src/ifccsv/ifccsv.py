@@ -105,6 +105,9 @@ class IfcCsv:
             attributes.insert(0, "GlobalId")
             headers.insert(0, "GlobalId")
 
+        elements = list(elements)
+        attributes, headers = self.expand_wildcard_attributes(attributes, headers, elements)
+
         for element in elements:
             result = []
 
@@ -383,6 +386,44 @@ class IfcCsv:
     def export_pd(self):
         self.dataframe = pd.DataFrame(self.results, columns=self.headers)
         return self.dataframe
+
+    def expand_wildcard_attributes(self, attributes, headers, elements):
+        """Expand any attribute containing ``*`` into concrete attribute names.
+
+        A bare ``*`` expands to every direct attribute of the exported elements.
+        A ``Pset_Name.*`` (or ``Qto_Name.*``) query expands to every property of
+        that named property set / quantity set, using ``get_wildcard_attributes``.
+        Attributes without a ``*`` are passed through unchanged so explicit
+        named queries keep their position and any custom header.
+        """
+        expanded_attributes = []
+        expanded_headers = []
+        for attribute, header in zip(attributes, headers):
+            if "*" not in attribute:
+                expanded_attributes.append(attribute)
+                expanded_headers.append(header)
+                continue
+            if attribute == "*":
+                expansions = self.get_element_attributes(elements)
+            else:
+                expansions = self.get_wildcard_attributes(attribute)
+            for expanded in expansions:
+                if expanded in expanded_attributes:
+                    continue  # Avoid duplicate columns (e.g. GlobalId).
+                expanded_attributes.append(expanded)
+                # Expanded columns fall back to the attribute name as header.
+                expanded_headers.append(None)
+        return expanded_attributes, expanded_headers
+
+    def get_element_attributes(self, elements):
+        results = []
+        for element in elements:
+            for name in element.get_info(recursive=False):
+                if name in ("id", "type"):
+                    continue
+                if name not in results:
+                    results.append(name)
+        return results
 
     def get_wildcard_attributes(self, attribute):
         results = set()
