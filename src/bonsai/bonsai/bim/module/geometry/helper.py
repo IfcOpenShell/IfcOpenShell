@@ -316,10 +316,18 @@ class Helper:
         return {"outer_curve": outer_loop, "inner_curves": inner_loops}
 
     # An extrusion edge is an edge that shares a single vertex with a profile
-    # face and is not on the plane of the face.
+    # face and is not on the plane of the face. Multiple such edges may exist
+    # (e.g. a slanted/stepped mesh has boundary edges that leave the profile
+    # plane only marginally); the genuine sweep edge is the one whose direction
+    # is most aligned with the profile normal. Picking the first candidate in
+    # arbitrary bmesh order could select a nearly in-plane edge, yielding a
+    # degenerate (zero-thickness) extrusion. So we pick the best-aligned edge.
     def detect_extrusion_edge(self, bm: bmesh.types.BMesh, profile_face: bmesh.types.BMFace) -> Union[list[int], None]:
         bm.edges.ensure_lookup_table()
         face_verts_set = set(profile_face.verts)
+        normal = profile_face.normal
+        best_edge = None
+        best_alignment = 0.0
         for edge in bm.edges:
             unshared_verts = set(edge.verts) - face_verts_set
             if len(unshared_verts) == 1:
@@ -327,14 +335,24 @@ class Helper:
                 if (
                     abs(
                         mathutils.geometry.distance_point_to_plane(
-                            unshared_vert.co, profile_face.verts[0].co, profile_face.normal
+                            unshared_vert.co, profile_face.verts[0].co, normal
                         )
                     )
                     > 1e-6
                 ):
-                    if unshared_vert == edge.verts[1]:
-                        return [edge.verts[0].index, edge.verts[1].index]
-                    return [edge.verts[1].index, edge.verts[0].index]
+                    direction = edge.verts[1].co - edge.verts[0].co
+                    length = direction.length
+                    if length < 1e-9:
+                        continue
+                    # 1.0 == parallel to the profile normal (a true sweep edge).
+                    alignment = abs(direction.dot(normal)) / length
+                    if alignment > best_alignment:
+                        best_alignment = alignment
+                        if unshared_vert == edge.verts[1]:
+                            best_edge = [edge.verts[0].index, edge.verts[1].index]
+                        else:
+                            best_edge = [edge.verts[1].index, edge.verts[0].index]
+        return best_edge
 
     def create_extruded_area_solid(
         self, mesh: bpy.types.Mesh, extrusion_indices: list[int], profile_def: dict[str, Any]
