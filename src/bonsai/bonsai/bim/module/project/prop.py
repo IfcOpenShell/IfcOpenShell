@@ -270,6 +270,14 @@ class Link(PropertyGroup):
         description="Selector query whose matches are excluded when loading the linked model",
         default="",
     )
+    display_name: StringProperty(
+        name="Name",
+        description=(
+            "Optional display name to tell links apart (e.g. when the same file "
+            "is linked several times). Shows the file path when empty"
+        ),
+        default="",
+    )
 
     if TYPE_CHECKING:
         name: str
@@ -287,6 +295,7 @@ class Link(PropertyGroup):
         ifc_definition_id: int
         query: str
         exclude: str
+        display_name: str
 
 
 class EditedObj(PropertyGroup):

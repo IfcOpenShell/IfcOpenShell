@@ -639,7 +639,8 @@ class BIM_UL_links(UIList):
             if item.has_transformation:
                 row.label(text="", icon="OBJECT_ORIGIN")
 
-            row.label(text=item.filepath)
+            # Double-click to rename; shows the file path while unset.
+            row.prop(item, "display_name", text="", emboss=False, placeholder=item.filepath)
             if item.is_editing:
                 row.operator("bim.disable_editing_link", text="", icon="UNLOCKED", emboss=False).link_index = index
             else:
@@ -655,7 +656,7 @@ class BIM_UL_links(UIList):
             op.link_index = index
             op.mode = "VISIBLE"
         else:
-            row.label(text=item.filepath)
+            row.prop(item, "display_name", text="", emboss=False, placeholder=item.filepath)
 
 
 class BIM_PT_purge(Panel):

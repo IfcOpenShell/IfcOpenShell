@@ -1812,7 +1812,9 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Ifc.get() and link.ifc_definition_id:
             reference = tool.Ifc.get().by_id(link.ifc_definition_id)
             if hasattr(reference, "Description"):
-                reference.Description = tool.Project.encode_link_filter(link.query, link.exclude, loaded=True)
+                reference.Description = tool.Project.encode_link_filter(
+                    link.query, link.exclude, loaded=True, display_name=link.display_name
+                )
 
         bpy.ops.bim.unload_link(link_index=self.link_index)
         return bpy.ops.bim.load_link(

@@ -122,9 +122,12 @@ default set when empty) − exclude, applied in `LoadLinkedProject` and per link
   alone would let same-include/different-exclude links silently serve each other's
   geometry.
 - **Persistence**: `encode_link_filter`/`decode_link_filter` — a plain include is
-  stored in `Description` as-is (backwards compatible); an exclude promotes the
-  value to `{"include": …, "exclude": …}` JSON. Decode treats non-JSON as a legacy
-  include string.
+  stored in `Description` as-is (backwards compatible); an exclude, a `loaded`
+  state or a custom display name promotes the value to
+  `{"include": …, "exclude": …, "loaded": …, "name": …}` JSON. Decode treats
+  non-JSON as a legacy include string. The display name (`Link.display_name`,
+  double-click the list row to rename; file path shows as placeholder while
+  unset) exists to tell apart several links of the same file.
 - Exclude applies on top of the **default** element set too, so
   "everything except X" needs no explicit include.
 - UI labels are **Include**/**Exclude** (matching the drawing pattern), but the

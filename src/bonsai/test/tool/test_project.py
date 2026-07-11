@@ -506,33 +506,38 @@ class TestGettingLinkedElementGeomSlice:
 class TestEncodeDecodeLinkFilter:
     def test_plain_include_round_trip(self):
         assert subject.encode_link_filter("IfcWall", "") == "IfcWall"
-        assert subject.decode_link_filter("IfcWall") == ("IfcWall", "", False)
+        assert subject.decode_link_filter("IfcWall") == ("IfcWall", "", False, "")
 
     def test_empty_filter_encodes_to_none(self):
         assert subject.encode_link_filter("", "") is None
-        assert subject.decode_link_filter(None) == ("", "", False)
-        assert subject.decode_link_filter("") == ("", "", False)
+        assert subject.decode_link_filter(None) == ("", "", False, "")
+        assert subject.decode_link_filter("") == ("", "", False, "")
 
     def test_exclude_promotes_to_json(self):
         encoded = subject.encode_link_filter('IfcElement, group="X"', 'IfcSlab, parent="Y"')
         assert encoded.startswith("{")
-        assert subject.decode_link_filter(encoded) == ('IfcElement, group="X"', 'IfcSlab, parent="Y"', False)
+        assert subject.decode_link_filter(encoded) == ('IfcElement, group="X"', 'IfcSlab, parent="Y"', False, "")
 
     def test_loaded_promotes_to_json(self):
         encoded = subject.encode_link_filter("IfcWall", "", loaded=True)
         assert encoded.startswith("{")
-        assert subject.decode_link_filter(encoded) == ("IfcWall", "", True)
+        assert subject.decode_link_filter(encoded) == ("IfcWall", "", True, "")
 
     def test_loaded_without_filter(self):
         encoded = subject.encode_link_filter("", "", loaded=True)
-        assert subject.decode_link_filter(encoded) == ("", "", True)
+        assert subject.decode_link_filter(encoded) == ("", "", True, "")
 
     def test_legacy_non_json_decodes_as_include(self):
         legacy = 'IfcElement, location="House - Type B"'
-        assert subject.decode_link_filter(legacy) == (legacy, "", False)
+        assert subject.decode_link_filter(legacy) == (legacy, "", False, "")
 
     def test_malformed_json_decodes_as_include(self):
-        assert subject.decode_link_filter("{not json") == ("{not json", "", False)
+        assert subject.decode_link_filter("{not json") == ("{not json", "", False, "")
+
+    def test_display_name_promotes_to_json(self):
+        encoded = subject.encode_link_filter("IfcWall", "", display_name="North Wing")
+        assert encoded.startswith("{")
+        assert subject.decode_link_filter(encoded) == ("IfcWall", "", False, "North Wing")
 
 
 class TestGetLinkCachePaths:

@@ -113,22 +113,25 @@ class Project(bonsai.core.tool.Project):
         )
 
     @classmethod
-    def encode_link_filter(cls, query: str, exclude: str, loaded: bool = False) -> Union[str, None]:
+    def encode_link_filter(
+        cls, query: str, exclude: str, loaded: bool = False, display_name: str = ""
+    ) -> Union[str, None]:
         """Serialize a link's filter and state for IfcDocumentReference.Description.
 
         A plain include query is stored as-is (backwards compatible); an
-        exclude or a loaded state promotes the value to a small JSON blob.
-        The loaded flag makes the link auto-load on the next project open.
+        exclude, a loaded state or a display name promotes the value to a
+        small JSON blob. The loaded flag makes the link auto-load on the
+        next project open.
         """
-        if exclude or loaded:
-            return json.dumps({"include": query, "exclude": exclude, "loaded": loaded})
+        if exclude or loaded or display_name:
+            return json.dumps({"include": query, "exclude": exclude, "loaded": loaded, "name": display_name})
         return query or None
 
     @classmethod
-    def decode_link_filter(cls, description: Union[str, None]) -> tuple[str, str, bool]:
-        """Get (query, exclude, loaded) from a Description written by encode_link_filter."""
+    def decode_link_filter(cls, description: Union[str, None]) -> tuple[str, str, bool, str]:
+        """Get (query, exclude, loaded, display_name) from a Description written by encode_link_filter."""
         if not description:
-            return "", "", False
+            return "", "", False, ""
         if description.startswith("{"):
             try:
                 data = json.loads(description)
@@ -137,10 +140,11 @@ class Project(bonsai.core.tool.Project):
                         data.get("include", "") or "",
                         data.get("exclude", "") or "",
                         bool(data.get("loaded", False)),
+                        data.get("name", "") or "",
                     )
             except json.JSONDecodeError:
                 pass
-        return description, "", False
+        return description, "", False, ""
 
     @classmethod
     def update_linked_models_state(cls) -> None:
@@ -160,7 +164,10 @@ class Project(bonsai.core.tool.Project):
                 continue
             if hasattr(reference, "Description"):
                 reference.Description = cls.encode_link_filter(
-                    link.query, link.exclude, loaded=link.is_loaded and not link.is_hidden
+                    link.query,
+                    link.exclude,
+                    loaded=link.is_loaded and not link.is_hidden,
+                    display_name=link.display_name,
                 )
 
     @classmethod
@@ -503,7 +510,7 @@ class Project(bonsai.core.tool.Project):
             # The selector filter used at link time is persisted per
             # reference in its Description (IFC4+); restore it so
             # Reload/Load replay the filter.
-            query, exclude, loaded = cls.decode_link_filter(getattr(reference, "Description", None))
+            query, exclude, loaded, display_name = cls.decode_link_filter(getattr(reference, "Description", None))
             if not query and not exclude and location_counts[filepath] == 1:
                 # Fall back to the legacy sidecar cache JSON where older
                 # versions persisted the query. Only unambiguous: with
@@ -517,6 +524,7 @@ class Project(bonsai.core.tool.Project):
                         pass
             link.query = query
             link.exclude = exclude
+            link.display_name = display_name
             if loaded:
                 autoload_indices.append(len(links) - 1)
 
