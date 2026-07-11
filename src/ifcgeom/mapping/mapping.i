@@ -89,7 +89,11 @@ BIND(IfcRectangleHollowProfileDef);
 BIND(IfcRectangleProfileDef);
 BIND(IfcTrapeziumProfileDef);
 BIND(IfcCShapeProfileDef);
-// IfcAsymmetricIShapeProfileDef included
+#ifdef SCHEMA_IfcAsymmetricIShapeProfileDef_HAS_BottomFlangeWidth
+// In IFC4+ IfcAsymmetricIShapeProfileDef is not a subtype of IfcIShapeProfileDef
+BIND(IfcAsymmetricIShapeProfileDef);
+#endif
+// IfcAsymmetricIShapeProfileDef included (as IfcIShapeProfileDef subtype in IFC2X3)
 BIND(IfcIShapeProfileDef);
 BIND(IfcLShapeProfileDef);
 BIND(IfcTShapeProfileDef);

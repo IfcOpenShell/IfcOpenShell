@@ -109,3 +109,56 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 		{{-x1,-y + ft1}, {fe1}}
 	});
 }
+
+#ifdef SCHEMA_IfcAsymmetricIShapeProfileDef_HAS_BottomFlangeWidth
+// In IFC4 IfcAsymmetricIShapeProfileDef is no longer a subtype of
+// IfcIShapeProfileDef, so it has its own dedicated mapping. Bottom and top
+// flanges may differ in width, thickness, fillet radius, edge radius and slope.
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAsymmetricIShapeProfileDef* inst) {
+	const double x1 = inst->BottomFlangeWidth() / 2.0 * length_unit_;
+	const double x2 = inst->TopFlangeWidth() / 2.0 * length_unit_;
+	const double y = inst->OverallDepth() / 2.0 * length_unit_;
+	const double d1 = inst->WebThickness() / 2.0 * length_unit_;
+	const double ft1 = inst->BottomFlangeThickness() * length_unit_;
+	const double ft2 = inst->TopFlangeThickness().get_value_or(inst->BottomFlangeThickness()) * length_unit_;
+
+	const double f1 = inst->BottomFlangeFilletRadius().get_value_or(0.) * length_unit_;
+	const double f2 = inst->TopFlangeFilletRadius().get_value_or(0.) * length_unit_;
+	const double fe1 = inst->BottomFlangeEdgeRadius().get_value_or(0.) * length_unit_;
+	const double fe2 = inst->TopFlangeEdgeRadius().get_value_or(0.) * length_unit_;
+
+	const double dy1 = (x1 > d1) ? (x1 - d1) * tan(inst->BottomFlangeSlope().get_value_or(0.) * angle_unit_) : 0.;
+	const double dy2 = (x2 > d1) ? (x2 - d1) * tan(inst->TopFlangeSlope().get_value_or(0.) * angle_unit_) : 0.;
+
+	const double tol = settings_.get<settings::Precision>().get();
+
+	if (x1 < tol || x2 < tol || y < tol || d1 < tol || ft1 < tol || ft2 < tol) {
+		logger_.Message(Logger::LOG_NOTICE, "GEO", 264, "Skipping zero sized profile:", inst);
+		return nullptr;
+	}
+
+	taxonomy::matrix4::ptr m4;
+	bool has_position = true;
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
+	has_position = !!inst->Position();
+#endif
+	if (has_position) {
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+	}
+
+	return profile_helper(m4, {
+		{{-x1,-y}},
+		{{x1,-y}},
+		{{x1,-y + ft1}, {fe1}},
+		{{d1,-y + ft1 + dy1},{f1}},
+		{{d1,y - ft2 - dy2},{f2}},
+		{{x2,y - ft2}, {fe2}},
+		{{x2,y}},
+		{{-x2,y}},
+		{{-x2,y - ft2}, {fe2}},
+		{{-d1,y - ft2 - dy2},{f2}},
+		{{-d1,-y + ft1 + dy1},{f1}},
+		{{-x1,-y + ft1}, {fe1}}
+	});
+}
+#endif
