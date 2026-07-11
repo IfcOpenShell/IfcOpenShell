@@ -21,6 +21,7 @@
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifcdiff.py`
 
 import argparse
+import hashlib
 import json
 import logging
 import multiprocessing
@@ -58,6 +59,18 @@ class IfcDiff:
         that comparisons will take longer.
     :param filter_elements: An IFC filter query if you only want to compare a
         subset of elements. For example: ``IfcWall`` to only compare walls.
+    :param match_by_signature: True to enable an opt-in fallback that re-pairs
+        elements whose GlobalId changed between the two files (common with some
+        authoring tools). Elements left in the added/deleted sets after the
+        GlobalId comparison are matched on a content signature (same IFC class,
+        Name, type, properties and materials) plus a placement within
+        ``signature_tolerance``. This avoids reporting a re-GlobalId'd but
+        otherwise identical element as a spurious delete + add. Default False
+        preserves the historical GlobalId-only behaviour exactly.
+    :param signature_tolerance: Placement tolerance (in the file's length unit)
+        used when ``match_by_signature`` is enabled. Two candidate elements are
+        considered to be in the same place if their placement origins are within
+        this distance. Defaults to 0.05 (the reporter's +-5cm, assuming metres).
 
     Example::
 
@@ -73,6 +86,9 @@ class IfcDiff:
     deleted_elements: set[ifcopenshell.entity_instance]
     # GlobalIds to changes dictionary.
     change_register: dict[str, dict[str, Any]]
+    # New GlobalId to {"old_global_id": ..., "moved": bool} for elements that
+    # were re-paired across a GlobalId change by the signature fallback.
+    rematched_elements: dict[str, dict[str, Any]]
 
     def __init__(
         self,
@@ -81,15 +97,20 @@ class IfcDiff:
         relationships: Optional[list[RELATIONSHIP_TYPE]] = None,
         is_shallow: bool = True,
         filter_elements: Optional[str] = None,
+        match_by_signature: bool = False,
+        signature_tolerance: float = 0.05,
     ):
         self.old = old
         self.new = new
         self.change_register = {}
+        self.rematched_elements = {}
         self.representation_ids = {}
         self.relationships = relationships or ["geometry"]
         self.precision = 1e-4
         self.is_shallow = is_shallow
         self.filter_elements = filter_elements
+        self.match_by_signature = match_by_signature
+        self.signature_tolerance = signature_tolerance
 
     def diff(self) -> None:
         logging.disable(logging.CRITICAL)
@@ -122,17 +143,33 @@ class IfcDiff:
 
         self.deleted_elements = old_elements - new_elements
         self.added_elements = new_elements - old_elements
-        same_elements = new_elements - self.added_elements
-        total_same_elements = len(same_elements)
+        same_elements = old_elements & new_elements
+
+        # Opt-in fallback: re-pair elements whose GlobalId changed but whose
+        # content and placement still match, so that GlobalId churn is not
+        # reported as spurious add + delete. This mutates added_elements /
+        # deleted_elements and returns the (old, new) pairs to diff normally.
+        rematched_pairs = self._match_by_signature() if self.match_by_signature else []
 
         print(" - {} item(s) were added".format(len(self.added_elements)))
         print(" - {} item(s) were deleted".format(len(self.deleted_elements)))
-        print(" - {} item(s) are common to both models".format(total_same_elements))
+        print(" - {} item(s) are common to both models".format(len(same_elements)))
+        if rematched_pairs:
+            print(" - {} item(s) were re-matched across a GlobalId change".format(len(rematched_pairs)))
+
+        element_pairs = [(self.old.by_id(g), self.new.by_id(g)) for g in same_elements]
+        element_pairs += rematched_pairs
+        total_same_elements = len(element_pairs)
 
         total_diffed = 0
 
         potential_old_changes = []
         potential_new_changes = []
+        # Maps an old GlobalId to its paired new GlobalId for the geometry stage.
+        # For GlobalId-matched elements this is the identity; for signature
+        # rematches the two GlobalIds differ, so the shape dicts (each keyed by
+        # their own file's GlobalId) must be paired through this map.
+        geometry_pair_map: dict[str, str] = {}
 
         should_check_attributes = False
         should_check_geometry = False
@@ -146,12 +183,10 @@ class IfcDiff:
             else:
                 should_check_other = True
 
-        for global_id in same_elements:
+        for old, new in element_pairs:
             total_diffed += 1
             if total_diffed % 250 == 0:
                 print("{}/{} diffed ...".format(total_diffed, total_same_elements), end="\r", flush=True)
-            old = self.old.by_id(global_id)
-            new = self.new.by_id(global_id)
             if should_check_attributes:
                 if self.diff_element(old, new) and self.is_shallow:
                     continue
@@ -163,6 +198,7 @@ class IfcDiff:
                 if ifcopenshell.util.representation.get_representation(new, "Model", "Body", "MODEL_VIEW"):
                     potential_old_changes.append(old)
                     potential_new_changes.append(new)
+                    geometry_pair_map[old.GlobalId] = new.GlobalId
                 # Option 2: check first using Python, then fallback to iterator (twice as slow)
                 # diff = self.diff_element_basic_geometry(old, new)
                 # if diff:
@@ -180,23 +216,159 @@ class IfcDiff:
             print("... processing new shapes ...")
             new_shapes = self.summarise_shapes(self.new, potential_new_changes)
             print("... comparing shapes ...")
-            for global_id, old_shape in old_shapes.items():
-                new_shape = new_shapes.get(global_id, None)
+            for old_global_id, old_shape in old_shapes.items():
+                new_global_id = geometry_pair_map.get(old_global_id, old_global_id)
+                new_shape = new_shapes.get(new_global_id, None)
                 if not new_shape:
-                    self.change_register.setdefault(global_id, {}).update({"geometry_changed": True})
+                    self.change_register.setdefault(new_global_id, {}).update({"geometry_changed": True})
                     continue
-                del new_shapes[global_id]
+                del new_shapes[new_global_id]
                 diff = DeepDiff(old_shape, new_shape, math_epsilon=1e-5)
                 if diff:
-                    self.change_register.setdefault(global_id, {}).update({"geometry_changed": True})
+                    self.change_register.setdefault(new_global_id, {}).update({"geometry_changed": True})
                     continue
 
-            for global_id in new_shapes.keys():
-                self.change_register.setdefault(global_id, {}).update({"geometry_changed": True})
+            for new_global_id in new_shapes.keys():
+                self.change_register.setdefault(new_global_id, {}).update({"geometry_changed": True})
 
         print(" - {} item(s) were changed".format(len(self.change_register.keys())))
 
         logging.disable(logging.NOTSET)
+
+    def _content_signature(self, element: ifcopenshell.entity_instance) -> str:
+        """Stable content hash of an element ignoring GlobalId and OwnerHistory.
+
+        Two elements sharing this signature have the same class, Name, type
+        Name, property sets (excluding internal ids) and material Names. This is
+        the "content hash" approach referenced by the maintainer; placement is
+        handled separately so it can use a tolerance.
+        """
+        parts = [element.is_a(), element.Name or ""]
+        try:
+            element_type = ifcopenshell.util.element.get_type(element)
+            parts.append((element_type.Name or "") if element_type else "")
+        except Exception:
+            parts.append("")
+        try:
+            psets = ifcopenshell.util.element.get_psets(element, should_inherit=False)
+            cleaned = {name: {k: v for k, v in props.items() if k != "id"} for name, props in psets.items()}
+            parts.append(json.dumps(cleaned, sort_keys=True, default=str))
+        except Exception:
+            parts.append("")
+        try:
+            materials = ifcopenshell.util.element.get_materials(element) or []
+            parts.append(json.dumps(sorted((m.Name or "") for m in materials)))
+        except Exception:
+            parts.append("")
+        return hashlib.sha1("\x00".join(parts).encode("utf-8")).hexdigest()
+
+    def _placement_location(self, element: ifcopenshell.entity_instance) -> Optional[np.ndarray]:
+        placement = getattr(element, "ObjectPlacement", None)
+        if placement is None:
+            return None
+        try:
+            return ifcopenshell.util.placement.get_local_placement(placement)[:3, 3]
+        except Exception:
+            return None
+
+    def _location_key(self, location: Optional[np.ndarray]) -> Optional[tuple[int, ...]]:
+        if location is None:
+            return None
+        tol = self.signature_tolerance or self.precision
+        return tuple(int(round(float(c) / tol)) for c in location)
+
+    def _match_by_signature(self) -> list[tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]]:
+        """Re-pair added/deleted elements whose GlobalId changed but content did not.
+
+        Builds an index of the added elements keyed by their content signature
+        (and a rounded placement bucket) so that each deleted element is matched
+        in roughly constant time instead of scanning every added element. A pair
+        with the same content within ``signature_tolerance`` is treated as
+        unchanged; a pair with the same content but a different placement is
+        treated as moved. Matched GlobalIds are removed from the added/deleted
+        sets. Returns the (old, new) pairs so they still flow through the normal
+        attribute/geometry/relationship diff.
+        """
+        added = list(self.added_elements)
+        deleted = list(self.deleted_elements)
+        if not added or not deleted:
+            return []
+
+        # Index added elements once (roughly O(n)).
+        added_info: dict[str, tuple[str, Optional[np.ndarray]]] = {}
+        strict_index: dict[tuple[str, Any], list[str]] = {}
+        loose_index: dict[str, list[str]] = {}
+        for guid in added:
+            element = self.new.by_id(guid)
+            sig = self._content_signature(element)
+            loc = self._placement_location(element)
+            added_info[guid] = (sig, loc)
+            strict_index.setdefault((sig, self._location_key(loc)), []).append(guid)
+            loose_index.setdefault(sig, []).append(guid)
+
+        used_added: set[str] = set()
+        pairs: list[tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance, bool]] = []
+
+        # Pass 1: same content and same location within tolerance -> unchanged.
+        # Search the target bucket and its 26 neighbours so that points near a
+        # bucket boundary but still within tolerance are not missed.
+        unmatched_deleted: list[tuple[str, str]] = []
+        for guid in deleted:
+            element = self.old.by_id(guid)
+            sig = self._content_signature(element)
+            loc = self._placement_location(element)
+            match = None
+            for neighbour in self._neighbour_keys(self._location_key(loc)):
+                for cand in strict_index.get((sig, neighbour), []):
+                    if cand in used_added:
+                        continue
+                    cand_loc = added_info[cand][1]
+                    if loc is None or cand_loc is None or np.allclose(loc, cand_loc, atol=self.signature_tolerance):
+                        match = cand
+                        break
+                if match is not None:
+                    break
+            if match is not None:
+                used_added.add(match)
+                pairs.append((element, self.new.by_id(match), False))
+            else:
+                unmatched_deleted.append((guid, sig))
+
+        # Pass 2: same content, any location -> moved.
+        for guid, sig in unmatched_deleted:
+            match = None
+            for cand in loose_index.get(sig, []):
+                if cand in used_added:
+                    continue
+                match = cand
+                break
+            if match is not None:
+                used_added.add(match)
+                pairs.append((self.old.by_id(guid), self.new.by_id(match), True))
+
+        result = []
+        for old_element, new_element, moved in pairs:
+            self.added_elements.discard(new_element.GlobalId)
+            self.deleted_elements.discard(old_element.GlobalId)
+            self.rematched_elements[new_element.GlobalId] = {
+                "old_global_id": old_element.GlobalId,
+                "moved": moved,
+            }
+            if moved:
+                self.change_register.setdefault(new_element.GlobalId, {}).update({"moved": True})
+            result.append((old_element, new_element))
+        return result
+
+    @staticmethod
+    def _neighbour_keys(key: Optional[tuple[int, ...]]) -> list[Any]:
+        if key is None:
+            return [None]
+        keys = []
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for dz in (-1, 0, 1):
+                    keys.append((key[0] + dx, key[1] + dy, key[2] + dz))
+        return keys
 
     def summarise_shapes(
         self, ifc: ifcopenshell.file, elements: list[ifcopenshell.entity_instance]
@@ -266,6 +438,7 @@ class IfcDiff:
                     "added": list(self.added_elements),
                     "deleted": list(self.deleted_elements),
                     "changed": self.change_register,
+                    "rematched": self.rematched_elements,
                 },
                 diff_file,
                 indent=4,
@@ -438,6 +611,20 @@ if __name__ == "__main__":
         help='A list of space-separated relationships, chosen from "type", "property", "container", "aggregate", "classification"',
         default="",
     )
+    parser.add_argument(
+        "-m",
+        "--match-by-signature",
+        action="store_true",
+        help="Re-pair elements whose GlobalId changed but whose content and placement still match, "
+        "instead of reporting them as add + delete (helps with GlobalId churn from some authoring tools)",
+    )
+    parser.add_argument(
+        "-t",
+        "--tolerance",
+        type=float,
+        default=0.05,
+        help="Placement tolerance (in the file's length unit) for --match-by-signature. Defaults to 0.05",
+    )
     args = parser.parse_args()
 
     print("# IFC Diff")
@@ -451,7 +638,13 @@ if __name__ == "__main__":
     print("# Loading finished in {:.2f} seconds".format(time.time() - start))
     start = time.time()
 
-    ifc_diff = IfcDiff(old, new, args.relationships.split())
+    ifc_diff = IfcDiff(
+        old,
+        new,
+        args.relationships.split(),
+        match_by_signature=args.match_by_signature,
+        signature_tolerance=args.tolerance,
+    )
     ifc_diff.diff()
 
     print("# Diff finished in {:.2f} seconds".format(time.time() - start))
