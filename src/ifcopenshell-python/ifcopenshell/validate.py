@@ -468,6 +468,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
     validate_ifc_applications(f, logger)
 
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
+    validate_uniqueness_rules(f, schema, logger)
     used_guids: dict[str, ifcopenshell.entity_instance] = dict()
 
     for inst in f:
@@ -758,6 +759,119 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_l
                     rule,
                     previous_element,
                     annotate_inst_attr_pos(previous_element, 3),
+                )
+
+
+# Entity-level EXPRESS UNIQUE (UR) clauses, curated per schema family.
+#
+# Neither the compiled schema wrapper nor the generated express rules module
+# (ifcopenshell.express.rules) retains UNIQUE clauses at runtime, so they cannot
+# be enumerated from schema metadata. The clauses below are transcribed from the
+# EXPRESS schemas. IfcRoot.UR1 and IfcApplication.UR1/UR2 are intentionally left
+# out: they are validated separately (in the main ``validate`` loop and in
+# ``validate_ifc_applications``) because they carry extra logic. Every other
+# entity-level UNIQUE clause across the supported schemas is handled here.
+#
+# Each entry maps an entity name to a tuple of ``(rule_label, attribute_names)``
+# rules. A rule is applied to all instances of the entity (subtypes included, as
+# EXPRESS uniqueness is inherited); two instances violate it when their tuple of
+# constrained attribute values is equal.
+_UNIQUENESS_RULES_IFC4: dict[str, tuple[tuple[str, tuple[str, ...]], ...]] = {
+    # Identical across IFC4, IFC4X1, IFC4X2 and IFC4X3.
+    "IfcPropertyEnumeration": (("UR1", ("Name",)),),
+}
+
+_UNIQUENESS_RULES_IFC2X3: dict[str, tuple[tuple[str, tuple[str, ...]], ...]] = {
+    "IfcActionRequest": (("UR2", ("RequestID",)),),
+    "IfcCostSchedule": (("UR2", ("ID",)),),
+    "IfcFuelProperties": (("UR11", ("Material",)),),
+    "IfcGeneralMaterialProperties": (("UR11", ("Material",)),),
+    "IfcHygroscopicMaterialProperties": (("UR11", ("Material",)),),
+    "IfcMechanicalMaterialProperties": (("UR11", ("Material",)),),
+    "IfcOpticalMaterialProperties": (("UR11", ("Material",)),),
+    "IfcOrderAction": (("UR2", ("ActionID",)),),
+    "IfcPermit": (("UR2", ("PermitID",)),),
+    "IfcProductsOfCombustionProperties": (("UR11", ("Material",)),),
+    "IfcProjectOrder": (("UR2", ("ID",)),),
+    "IfcPropertyEnumeration": (("UR1", ("Name",)),),
+    "IfcThermalMaterialProperties": (("UR11", ("Material",)),),
+    "IfcWaterProperties": (("UR11", ("Material",)),),
+}
+
+
+def validate_uniqueness_rules(
+    f: ifcopenshell.file,
+    schema: schema_definition,
+    logger: Union[Logger, json_logger],
+) -> None:
+    """Validate entity-level EXPRESS UNIQUE (UR) clauses.
+
+    Generalises the hard-coded :func:`validate_ifc_applications` check to every
+    other entity-level UNIQUE clause declared in the supported schemas (see
+    ``_UNIQUENESS_RULES_*``). For each applicable rule, all instances of the
+    entity must have a distinct tuple of the constrained attribute values.
+
+    Following the EXPRESS semantics already used for IfcApplication, an instance
+    whose value for any constrained attribute is indeterminate (unset) is not
+    compared.
+    """
+    schema_name = schema.name().upper()
+    if schema_name.startswith("IFC2X3"):
+        rules_by_entity = _UNIQUENESS_RULES_IFC2X3
+    else:
+        rules_by_entity = _UNIQUENESS_RULES_IFC4
+
+    for entity_name, rules in rules_by_entity.items():
+        try:
+            declaration = schema.declaration_by_name(entity_name)
+        except RuntimeError:
+            continue
+        if not isinstance(declaration, ifcopenshell.ifcopenshell_wrapper.entity):
+            continue
+        insts = f.by_type(entity_name)
+        if not insts:
+            continue
+
+        for rule_label, attr_names in rules:
+            attr_indices = tuple(declaration.attribute_index(name) for name in attr_names)
+            # attribute_index returns -1 when the attribute is absent from this
+            # schema variant; skip the rule rather than misreading a value.
+            if any(index < 0 for index in attr_indices):
+                continue
+
+            if len(attr_names) == 1:
+                rule = "Rule %s.%s:\n    The attribute %s should be unique" % (
+                    entity_name,
+                    rule_label,
+                    attr_names[0],
+                )
+                pos: Union[int, tuple[int, ...]] = attr_indices[0]
+            else:
+                rule = "Rule %s.%s:\n    The combination of attributes %s should be unique" % (
+                    entity_name,
+                    rule_label,
+                    " and ".join(attr_names),
+                )
+                pos = attr_indices
+
+            seen: dict[tuple[Any, ...], ifcopenshell.entity_instance] = dict()
+            for inst in insts:
+                key = tuple(inst[index] for index in attr_indices)
+                if any(value is None for value in key):
+                    continue
+                previous_element = seen.get(key)
+                if previous_element is None:
+                    seen[key] = inst
+                    continue
+                if isinstance(logger, json_logger):
+                    logger.set_state("instance", inst)
+                logger.error(
+                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
+                    inst,
+                    annotate_inst_attr_pos(inst, pos),
+                    rule,
+                    previous_element,
+                    annotate_inst_attr_pos(previous_element, pos),
                 )
 
 
