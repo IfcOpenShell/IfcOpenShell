@@ -252,19 +252,28 @@ class TestEntity:
             ifc, identification="AWB", name="Architects Without Ballpens"
         )
         user = ifcopenshell.api.owner.add_person_and_organisation(ifc, person=person, organisation=organisation)
-        ifcopenshell.api.owner.settings.get_user = lambda x: user
-        ifcopenshell.api.owner.settings.get_application = lambda x: application
+        # The owner-history settings are module-global. Save and restore them so the
+        # IFC2X3 user/application created here does not leak into later IFC4 tests,
+        # where assigning a cross-schema instance now raises (see #486).
+        original_get_user = ifcopenshell.api.owner.settings.get_user
+        original_get_application = ifcopenshell.api.owner.settings.get_application
+        try:
+            ifcopenshell.api.owner.settings.get_user = lambda x: user
+            ifcopenshell.api.owner.settings.get_application = lambda x: application
 
-        element = ifcopenshell.api.root.create_entity(ifc, "IfcFlowTerminal")
-        element_type = ifcopenshell.api.root.create_entity(ifc, "IfcAirTerminalType")
-        ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=element_type)
-        facet = Entity(name="IFCAIRTERMINAL")
-        assert facet.filter(ifc) == [element]
-        run("In IFC2X3 the type class is checked instead 1/2", facet=facet, inst=element, expected=True)
+            element = ifcopenshell.api.root.create_entity(ifc, "IfcFlowTerminal")
+            element_type = ifcopenshell.api.root.create_entity(ifc, "IfcAirTerminalType")
+            ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=element_type)
+            facet = Entity(name="IFCAIRTERMINAL")
+            assert facet.filter(ifc) == [element]
+            run("In IFC2X3 the type class is checked instead 1/2", facet=facet, inst=element, expected=True)
 
-        facet = Entity(name="IFCELECTRICAPPLIANCE")
-        assert facet.filter(ifc) == []
-        run("In IFC2X3 the type class is checked instead 2/2", facet=facet, inst=element, expected=False)
+            facet = Entity(name="IFCELECTRICAPPLIANCE")
+            assert facet.filter(ifc) == []
+            run("In IFC2X3 the type class is checked instead 2/2", facet=facet, inst=element, expected=False)
+        finally:
+            ifcopenshell.api.owner.settings.get_user = original_get_user
+            ifcopenshell.api.owner.settings.get_application = original_get_application
 
     def test_to_string_required_applicability(self):
         spec = ifctester.ids.Specification(name="Foo", minOccurs=1, maxOccurs="unbounded")
