@@ -1099,25 +1099,6 @@ class apply_individual_instance_visitor {
     };
 };
 
-// #486 An instance assigned as an attribute value may belong to another file.
-// Bring such a foreign instance, together with its forward references, into the
-// target file so the written reference resolves on serialization instead of
-// dangling. IfcFile::addEntity is idempotent through entity_file_map_ and
-// returns the instance owned by the target file, so repeated assignment neither
-// duplicates the subgraph nor recurses. Same file and unowned instances are
-// returned unchanged. This folds the manual file.add step users previously had
-// to perform before the assignment into the assignment itself.
-//
-// IfcFile::addEntity throws when the instance belongs to a file of a different
-// schema. Mixing schemas within a single file is never valid, so let that error
-// surface instead of silently storing a dangling cross-schema reference.
-static IfcUtil::IfcBaseClass* adopt_if_foreign(IfcParse::IfcFile* file, IfcUtil::IfcBaseClass* instance) {
-    if (instance != nullptr && file != nullptr && instance->file_ != nullptr && instance->file_ != file) {
-        return file->addEntity(instance);
-    }
-    return instance;
-}
-
 template <typename T>
 typename std::enable_if<
     (!(std::is_pointer<T>::value&& std::is_base_of<IfcUtil::IfcBaseClass, typename std::remove_pointer<T>::type>::value) || std::is_same_v<IfcUtil::IfcBaseClass, std::remove_pointer_t<T>>),
@@ -1167,6 +1148,20 @@ IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
     }
     {
         void* const storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
+        // #486 An instance assigned as an attribute value may belong to another file.
+        // Bring such a foreign instance into the target file (with its forward
+        // references) so the written reference resolves instead of dangling.
+        // IfcFile::addEntity is idempotent and returns the instance owned by the
+        // target file; same-file and unowned instances are returned unchanged. It
+        // throws when the instance belongs to a file of a different schema, which is
+        // never valid, so that error is allowed to surface rather than storing a
+        // dangling cross-schema reference.
+        auto adopt_if_foreign = [](IfcParse::IfcFile* file, IfcUtil::IfcBaseClass* instance) -> IfcUtil::IfcBaseClass* {
+            if (instance != nullptr && file != nullptr && instance->file_ != nullptr && instance->file_ != file) {
+                return file->addEntity(instance);
+            }
+            return instance;
+        };
         if constexpr (std::is_pointer_v<T>) {
             // #486 Adopt a foreign instance into this file before writing the reference.
             IfcUtil::IfcBaseClass* to_write = adopt_if_foreign(file_, t);
