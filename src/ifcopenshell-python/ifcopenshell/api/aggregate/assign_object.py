@@ -161,7 +161,7 @@ def assign_object(
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": list(products_set),
                 "RelatingObject": relating_object,
-            }
+            },
         )
 
     # localize placement relative to a new aggregate for affected products
