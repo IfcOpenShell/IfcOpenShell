@@ -147,6 +147,35 @@ pays the link-load cost up front (fast on cache hit; a missing cache rebuilds in
 a background Blender, same as clicking Load). Verified headless: loaded+visible
 auto-loads; unloaded and loaded-but-hidden links stay unloaded.
 
+### Long-term serialization target: STEP Part 21 Edition 3
+
+STEP p21e3 defines the standards-track version of this feature's persistence:
+`ANCHOR`/`REFERENCE` sections (clauses 9–10) let one file import entities from
+another via URI + fragment, and **anchor tags** (`{tagname: value}`) are the
+designated slot for out-of-schema metadata — a cleaner home than the
+`Description` JSON blob (see the review-round discussion). ifcopenshell does not
+implement these sections yet ([#668](https://github.com/IfcOpenShell/IfcOpenShell/issues/668),
+open, unassigned); if it ever does, the migration path is: link →
+`REFERENCE` to the linked file's project anchor, filter/transform/loaded
+metadata → anchor tags. Keeping the blob behind
+`encode_link_filter`/`decode_link_filter` makes that a two-function change.
+
+Two p21e3 design points this branch already conforms to:
+
+- **Identity**: p21e3 distinguishes volatile file-scoped entity numbers
+  (`#100` fragments) from durable anchors/UUIDs — the same lesson behind our
+  STEP-id collision fixes (GUID-based matching, `element.file` guards). Raw
+  STEP ids must never cross a file boundary; IFC GlobalIds map 1:1 onto
+  p21e3 UUID anchors.
+- **Transport** (clause A.4): exchange structures plus referenced resources
+  can ship as one ZIP archive with references resolving inside it. Our posix,
+  optionally relative `Location`s resolved via `resolve_uri` are exactly the
+  invariants a future "package project with links" export would need.
+
+Even full p21e3 support would not cover per-link transforms, filters, or load
+state — a `REFERENCE` imports entities, it does not place a model — so the
+app-level metadata remains; only its container would change.
+
 ### External styles + layerset slicing in the linked loader
 
 `LoadLinkedProject.get_external_material(style_id)` resolves a style id → appended
