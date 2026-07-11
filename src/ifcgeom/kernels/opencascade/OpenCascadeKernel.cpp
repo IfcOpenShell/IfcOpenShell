@@ -50,6 +50,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, c
 	bst.attempt_2d = settings_.get<settings::BooleanAttempt2d>().get();
 	bst.debug = settings_.get<settings::DebugBooleanOperations>().get();
 	bst.precision = settings_.get<settings::Precision>().get();
+	bst.logger = &logger_;
 
 	std::vector< std::pair<double, TopoDS_Shape> > opening_vector;
 
