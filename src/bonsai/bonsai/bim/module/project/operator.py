@@ -2169,70 +2169,40 @@ class LoadAutosavedRecoveryPopup(bpy.types.Operator):
         layout.label(text="A newer autosaved copy was found:", icon="INFO")
         layout.label(text=os.path.basename(self.autosaved_filepath))
         layout.separator()
-        layout.label(text=f"Original: {os.path.basename(self.original_filepath)}")
-        layout.label(text="Which one do you want to load?")
-
-        row = layout.row(align=True)
-        op = row.operator("bim.load_autosaved_recovery", text="Load Original", icon="LOOP_BACK")
-        op.file_type = "ORIGINAL"
-        self._pass_props(op)
-
-        op = row.operator("bim.load_autosaved_recovery", text="Load Autosave", icon="LOOP_FORWARDS")
-        op.file_type = "AUTOSAVE"
-        self._pass_props(op)
-
-    def _pass_props(self, op):
-        op.original_filepath = self.original_filepath
-        op.autosaved_filepath = self.autosaved_filepath
-        op.is_advanced = self.is_advanced
-        op.use_relative_path = self.use_relative_path
-        op.should_start_fresh_session = self.should_start_fresh_session
-        op.import_without_ifc_data = self.import_without_ifc_data
+        layout.label(text="Do you want to load the autosaved version instead?")
+        layout.label(text="(Cancel will load the original)")
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_popup(self, width=420)
+        # invoke_props_dialog is modal - unlike invoke_popup/popup_menu, it
+        # isn't dismissed by the mouse simply leaving its bounds. It always
+        # renders both a fixed "Cancel" button and this confirm_text one, so
+        # the question is framed as Yes/Cancel rather than adding separate
+        # Load buttons on top.
+        return context.window_manager.invoke_props_dialog(
+            self, width=420, title="Recover Autosaved File", confirm_text="Yes"
+        )
 
-    def execute(self, context):
-        # This should almost never run
-        self.report({"INFO"}, "Popup closed without choosing")
-        return {"FINISHED"}
-
-
-class LoadAutosavedRecovery(bpy.types.Operator):
-    bl_idname = "bim.load_autosaved_recovery"
-    bl_label = "Recover Autosaved File"
-    bl_options = {"REGISTER", "UNDO"}
-
-    file_type: bpy.props.StringProperty(default="AUTOSAVE")
-    original_filepath: bpy.props.StringProperty(options={"SKIP_SAVE"})
-    autosaved_filepath: bpy.props.StringProperty(options={"SKIP_SAVE"})
-    is_advanced: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-    use_relative_path: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-    should_start_fresh_session: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
-    import_without_ifc_data: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-
-    def execute(self, context):
-        if self.file_type == "ORIGINAL":
-            filepath = self.original_filepath
-        else:
-            filepath = self.autosaved_filepath
-
-        # Call the real loader
-        result = bpy.ops.bim.load_project(
+    def _load(self, filepath: str, skip_recent: bool) -> set["rna_enums.OperatorReturnItems"]:
+        return bpy.ops.bim.load_project(
             filepath=filepath,
             skip_autosave_recovery=True,  # Prevent infinite loop
             is_advanced=self.is_advanced,
             use_relative_path=self.use_relative_path,
             should_start_fresh_session=self.should_start_fresh_session,
             import_without_ifc_data=self.import_without_ifc_data,
-            skip_recent=(self.file_type == "AUTOSAVE")
+            skip_recent=skip_recent,
         )
 
-        # If user chose autosave, override the stored path
-        if self.file_type == "AUTOSAVE":
-            tool.Ifc.set_path(self.original_filepath)
-
+    def execute(self, context):
+        result = self._load(self.autosaved_filepath, skip_recent=True)
+        # Re-point tracking at the original path so future saves write back
+        # to it, not "_autosaved.ifc".
+        tool.Ifc.set_path(self.original_filepath)
         return result
+
+    def cancel(self, context):
+        # Also reached via Escape or a click outside the dialog, not just Cancel.
+        self._load(self.original_filepath, skip_recent=False)
 
 
 class AutosavePrompt(bpy.types.Operator):

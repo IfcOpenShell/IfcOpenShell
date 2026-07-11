@@ -61,7 +61,6 @@ classes = (
     operator.LoadLink,
     operator.AutosavePrompt,
     operator.LoadAutosavedRecoveryPopup,
-    operator.LoadAutosavedRecovery,
     operator.LoadLinkedProject,
     operator.LoadProject,
     operator.LoadProjectElements,
