@@ -71,10 +71,14 @@ def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
 def get_volume(geometry: W.Triangulation) -> float:
     """Calculates the total internal volume of a geometry
 
-    Volumes of non-manifold geometry will be unpredictable.
+    The volume is derived from the divergence theorem (summing signed
+    tetrahedra), which is only meaningful for a closed manifold (watertight)
+    mesh. For non-manifold or open geometry that value is undefined and can be
+    wildly over- or under-estimated, so ``float("nan")`` is returned instead of
+    a bogus number. See https://github.com/IfcOpenShell/IfcOpenShell/issues/6125.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: The volume in m3
+    :return: The volume in m3, or ``nan`` if the mesh is not a closed manifold
     """
 
     # https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
@@ -90,6 +94,19 @@ def get_volume(geometry: W.Triangulation) -> float:
     # Can't optimize it using buffers - performance seems to get only worse.
     verts = geometry.verts
     faces = geometry.faces
+
+    # A watertight (closed manifold) mesh shares every edge between exactly two
+    # triangles. If that does not hold the signed-tetrahedra sum below is
+    # meaningless, so bail out with nan rather than returning a wild value.
+    edge_face_count: dict[tuple[int, int], int] = {}
+    for i in range(0, len(faces), 3):
+        tri = (faces[i], faces[i + 1], faces[i + 2])
+        for a, b in ((tri[0], tri[1]), (tri[1], tri[2]), (tri[2], tri[0])):
+            edge = (a, b) if a < b else (b, a)
+            edge_face_count[edge] = edge_face_count.get(edge, 0) + 1
+    if any(count != 2 for count in edge_face_count.values()):
+        return float("nan")
+
     grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
     volumes = [
         signed_triangle_volume(grouped_verts[faces[i]], grouped_verts[faces[i + 1]], grouped_verts[faces[i + 2]])
