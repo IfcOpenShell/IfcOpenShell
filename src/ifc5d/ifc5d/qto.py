@@ -398,27 +398,34 @@ class IfcOpenShell(QtoCalculator):
             or ``None`` if element doesn't have a representation or it's not supported.
         """
         rep = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if rep and len(rep.Items or []) == 1 and rep.Items[0].is_a("IfcExtrudedAreaSolid"):
+        if rep and len(rep.Items or []) == 1:
             item = rep.Items[0]
-            if item.SweptArea.is_a("IfcRectangleProfileDef"):
-                # Revit doesn't follow the +Z extrusion rule, so the rectangle isn't the cross section
-                x = item.SweptArea.XDim
-                y = item.SweptArea.YDim
+            # Miter bends and other clipped segments wrap the swept solid in a
+            # boolean result (e.g. IfcBooleanClippingResult with a half space).
+            # Unwrap it to reach the underlying extrusion so the segment length
+            # is still derived from the sweep depth, matching plain segments.
+            while item.is_a("IfcBooleanResult"):
+                item = item.FirstOperand
+            if item.is_a("IfcExtrudedAreaSolid"):
+                if item.SweptArea.is_a("IfcRectangleProfileDef"):
+                    # Revit doesn't follow the +Z extrusion rule, so the rectangle isn't the cross section
+                    x = item.SweptArea.XDim
+                    y = item.SweptArea.YDim
+                    z = item.Depth
+                    return max([x, y, z])
+                elif item.SweptArea.is_a("IfcParameterizedProfileDef"):
+                    return item.Depth
+                settings = ifcopenshell.geom.settings()
+                settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+                try:
+                    area_shape = ifcopenshell.geom.create_shape(settings, item.SweptArea)
+                except RuntimeError:
+                    return
+                assert isinstance(area_shape, W.Triangulation)
+                x = ifcopenshell.util.shape.get_x(area_shape) / cls.unit_scale
+                y = ifcopenshell.util.shape.get_y(area_shape) / cls.unit_scale
                 z = item.Depth
                 return max([x, y, z])
-            elif item.SweptArea.is_a("IfcParameterizedProfileDef"):
-                return item.Depth
-            settings = ifcopenshell.geom.settings()
-            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-            try:
-                area_shape = ifcopenshell.geom.create_shape(settings, item.SweptArea)
-            except RuntimeError:
-                return
-            assert isinstance(area_shape, W.Triangulation)
-            x = ifcopenshell.util.shape.get_x(area_shape) / cls.unit_scale
-            y = ifcopenshell.util.shape.get_y(area_shape) / cls.unit_scale
-            z = item.Depth
-            return max([x, y, z])
 
     @classmethod
     def get_weight(
