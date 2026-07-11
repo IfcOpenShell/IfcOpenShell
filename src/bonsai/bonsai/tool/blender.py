@@ -538,6 +538,19 @@ class Blender(bonsai.core.tool.Blender):
             cls.handlers.clear()
             cls.is_installed = False
 
+        def draw_batch(self, shader_type, content_pos, color, indices=None):
+            """Submit a GPU batch through ``self.line_shader`` (for ``"LINES"``)
+            or ``self.shader`` (for any other primitive). Skips empty batches
+            via ``validate_shader_batch_data`` so Blender 4.4+ doesn't crash on
+            empty ``indices``. Subclasses bind both shaders in their draw method
+            before calling this helper."""
+            if not Blender.validate_shader_batch_data(content_pos, indices):
+                return
+            shader = self.line_shader if shader_type == "LINES" else self.shader
+            batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+            shader.uniform_float("color", color)
+            batch.draw(shader)
+
         @staticmethod
         def _lookup_active_instance(gizmo_cls: type, context: bpy.types.Context) -> Optional[Any]:
             """Return the live ``GizmoGroup`` instance registered under
@@ -1524,6 +1537,10 @@ class Blender(bonsai.core.tool.Blender):
                 bpy.ops.bim.enable_editing_railing_path()
             elif feature := tool.Parametric.is_object_editing(obj):
                 tool.Parametric.run_bim_op(feature.finish_op)
+            elif tool.Parametric.is_wall(element):
+                # Placed after the generic finish dispatch so the TAB toggle splits:
+                # wall already editing → finish above; wall not editing → enter here.
+                bpy.ops.bim.enable_editing_wall()
             else:
                 return False
             return True
@@ -2386,6 +2403,13 @@ class Blender(bonsai.core.tool.Blender):
         if len(pos) == 0 or (indices is not None and len(indices) == 0):
             return False
         return True
+
+    @staticmethod
+    def transparent_color(color: Iterable[float], alpha: float = 0.1) -> list[float]:
+        """Copy an RGBA color with its alpha channel overridden."""
+        out = [c for c in color]
+        out[3] = alpha
+        return out
 
     @classmethod
     def draw_bmesh_face_tris(

@@ -346,7 +346,9 @@ def test_active_is_flow_segment_classifies_segment_vs_fitting():
     fitting_elem.is_a = lambda c: c == "IfcFlowFitting"
 
     plain = Mock()
-    with patch("bonsai.bim.module.model.mep.tool.System.has_parametric_body", return_value=True):
+    with patch("bonsai.bim.module.model.mep.tool.System.has_parametric_body", return_value=True), patch(
+        "bonsai.bim.module.model.mep.tool.Array.is_array_child", return_value=False
+    ):
         with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment_elem):
             assert _active_is_flow_segment(plain) is True
         with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=fitting_elem):

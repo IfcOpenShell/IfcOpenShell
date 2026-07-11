@@ -86,7 +86,19 @@ class ClipBox:
     # aligned to the prior view and the edit-mode picker rejects verts
     # inside the current clip_planes after orbit/pan/zoom.
     _view_matrix_at_arm: dict[int, tuple] = {}
-    _refresh_pending: bool = False
+    _pending_refresh: Optional[Callable[[], None]] = None
+    # True from load_pre until the first on_pre_view tick of the new file
+    # (first paint = GPU contexts wired). Suppresses schedule_refresh and
+    # short-circuits on_depsgraph_update so neither path can drive
+    # RegionView3D.update() against regions whose GL state is not yet
+    # initialised — that crash inside GPU_matrix_ortho_set is a CTD, not
+    # catchable from Python. load_post fires before the first paint, so it
+    # CANNOT be the gate-clear point.
+    _file_loading: bool = False
+    # Edge-trigger consumed by on_pre_view: clears _file_loading on the
+    # first frame after load and kicks a refresh so the new file's clip
+    # box arms against now-safe regions.
+    _post_load_paint_pending: bool = False
     _last_seen_ifc_id: int = 0
     # Tracks the last matrix we persisted to the pset, keyed by Blender
     # object name. Lets the depsgraph handler detect committed transform
@@ -318,18 +330,31 @@ class ClipBox:
         from within a property write disrupts gizmo modal accounting and
         can leave the operator stack inconsistent. Deferring via a 0-delay
         timer hands the refresh to Blender's main loop, where operators are
-        legal. Debounced: a flag suppresses repeats while one is pending.
+        legal. Debounced: a pending handle suppresses repeats while one is
+        in flight, and lets the file-load gate tear it down cleanly so the
+        timer can't fire against not-yet-realised regions.
         """
-        if cls._refresh_pending:
+        if cls._file_loading:
             return
-        cls._refresh_pending = True
+        if cls._pending_refresh is not None:
+            return
 
         def _do_refresh():
-            cls._refresh_pending = False
+            cls._pending_refresh = None
             cls.refresh()
             return None
 
+        cls._pending_refresh = _do_refresh
         bpy.app.timers.register(_do_refresh, first_interval=0.0)
+
+    @classmethod
+    def _cancel_pending_refresh(cls) -> None:
+        """Cancel any pending debounced refresh. Idempotent; safe to call
+        when none is registered (e.g. on addon unregister)."""
+        pending = cls._pending_refresh
+        if pending is not None and bpy.app.timers.is_registered(pending):
+            bpy.app.timers.unregister(pending)
+        cls._pending_refresh = None
 
     @classmethod
     def reset_ownership(cls) -> None:
@@ -594,6 +619,13 @@ class ClipBox:
           so this branch fires once per commit — exactly the cadence the
           user expects for "save my latest transform".
         """
+        # During the file-load danger window (load_pre → first paint of the
+        # new file) the screen exists but its regions' GPU contexts are not
+        # yet wired; calling apply_clip_planes_direct here drives
+        # RegionView3D.update() into a CTD inside GPU_matrix_ortho_set.
+        # on_pre_view will reopen this gate on first paint.
+        if cls._file_loading:
+            return
         if getattr(bpy.context, "screen", None) is None:
             return
         if cls._active_scene_props(scene) is None:
@@ -662,6 +694,15 @@ class ClipBox:
         handler's job (it fires on transform commit and writes through
         the operator transaction path).
         """
+        # First paint after a file load is the GPU-ready signal: open the
+        # _file_loading gate and kick a refresh so the new file's clip box
+        # arms against now-safe regions. Runs BEFORE the active-clip-box
+        # check so the gate clears even when the new file has no clip box
+        # (otherwise the gate would deadlock until the next file load).
+        if cls._post_load_paint_pending:
+            cls._post_load_paint_pending = False
+            cls._file_loading = False
+            cls.schedule_refresh()
         if cls._active_scene_props() is None:
             return
         obj = cls.get_active_clip_box()

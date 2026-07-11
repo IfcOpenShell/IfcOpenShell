@@ -41,7 +41,16 @@
 #include <BRepTools.hxx>
 #include <BRepAlgoAPI_Section.hxx>
 #include <ShapeAnalysis_FreeBounds.hxx>
+
+#include <Standard_Version.hxx>
+#if OCC_VERSION_HEX >= 0x80000
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <NCollection_HSequence.hxx>
+#else
 #include <TopTools_HSequenceOfShape.hxx>
+#endif
+
 #include <TopExp.hxx>
 
 #include <BRepAdaptor_Curve.hxx>
@@ -53,7 +62,6 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <gp_Ax22d.hxx>
-#include <Standard_Version.hxx>
 #include <GeomAPI.hxx>
 #include <TopoDS_Wire.hxx>
 
@@ -134,7 +142,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 			Handle(Geom2d_Curve) curve2d;
 			if (curve.IsNull()) {
 				TopLoc_Location loc;
-				Handle_Geom_Surface surf;
+				opencascade::handle<Geom_Surface> surf;
 
 				BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
 
@@ -1119,7 +1127,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				TopoDS_Compound profile_edges;
 				if (profile_threshold_ != -1 && !(data.product->declaration().is("IfcWall") || data.product->declaration().is("IfcSlab"))) {
-					TopTools_IndexedDataMapOfShapeListOfShape map;
+                    NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 					TopExp::MapShapesAndAncestors(*compound_to_hlr, TopAbs_EDGE, TopAbs_FACE, map);
 					if (map.Extent() > profile_threshold_) {
 						BRep_Builder BB;
@@ -1434,8 +1442,13 @@ void SvgSerializer::write(const geometry_data& data) {
 				result = make_transform_mirror_.Shape();
 			}
 
+#if OCC_VERSION_HEX >= 0x80000
+			opencascade::handle<NCollection_HSequence<TopoDS_Shape>> edges = new NCollection_HSequence<TopoDS_Shape>();
+			opencascade::handle<NCollection_HSequence<TopoDS_Shape>> wires = new NCollection_HSequence<TopoDS_Shape>();
+#else
 			Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
 			Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+#endif
 			{
 				TopExp_Explorer exp(result, TopAbs_EDGE);
 				for (; exp.More(); exp.Next()) {

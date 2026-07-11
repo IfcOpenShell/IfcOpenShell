@@ -46,4 +46,4 @@ def test_file(filename):
 
 
 if __name__ == "__main__":
-    pytest.main(["-sx", __file__])
+    pytest.main(["-sx", __file__, "--import-mode=importlib"])

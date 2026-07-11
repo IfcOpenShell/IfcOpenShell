@@ -42,6 +42,46 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Blender)
 
 
+class TestTransparentColor(NewFile):
+    def test_default_alpha_overrides_to_zero_one(self):
+        assert subject.transparent_color([1.0, 0.5, 0.25, 1.0]) == [1.0, 0.5, 0.25, 0.1]
+
+    def test_explicit_alpha_is_applied(self):
+        assert subject.transparent_color([1.0, 0.5, 0.25, 1.0], alpha=0.5) == [1.0, 0.5, 0.25, 0.5]
+
+    def test_does_not_mutate_input(self):
+        original = [1.0, 0.5, 0.25, 1.0]
+        subject.transparent_color(original)
+        assert original == [1.0, 0.5, 0.25, 1.0]
+
+    def test_returns_new_list_instance(self):
+        original = [1.0, 0.5, 0.25, 1.0]
+        result = subject.transparent_color(original)
+        assert result is not original
+
+
+class TestViewportDecoratorDrawBatch(NewFile):
+    def test_empty_content_pos_skips_shader_calls(self):
+        from unittest.mock import MagicMock
+
+        decorator = subject.ViewportDecorator()
+        decorator.line_shader = MagicMock()
+        decorator.shader = MagicMock()
+        decorator.draw_batch("LINES", [], (1.0, 1.0, 1.0, 1.0))
+        decorator.line_shader.uniform_float.assert_not_called()
+        decorator.shader.uniform_float.assert_not_called()
+
+    def test_empty_indices_skips_shader_calls(self):
+        from unittest.mock import MagicMock
+
+        decorator = subject.ViewportDecorator()
+        decorator.line_shader = MagicMock()
+        decorator.shader = MagicMock()
+        decorator.draw_batch("LINES", [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)], (1.0, 1.0, 1.0, 1.0), indices=[])
+        decorator.line_shader.uniform_float.assert_not_called()
+        decorator.shader.uniform_float.assert_not_called()
+
+
 class TestCopyNodeGraph(NewFile):
     def test_run(self):
         material_to = bpy.data.materials.new("material_to")

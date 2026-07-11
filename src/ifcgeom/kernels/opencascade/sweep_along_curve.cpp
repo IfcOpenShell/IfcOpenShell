@@ -40,7 +40,7 @@ namespace {
 	bool wire_is_c1_continuous(const TopoDS_Wire& w, double tol) {
 		// NB Note that c0 continuity is NOT checked!
 
-		TopTools_IndexedDataMapOfShapeListOfShape map;
+		NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 		TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 		for (int i = 1; i <= map.Extent(); ++i) {
 			const auto& li = map.FindFromIndex(i);
@@ -188,7 +188,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	{
 		TopoDS_Vertex v0, v1;
 		TopExp::Vertices(wire, v0, v1);
-		TopTools_IndexedDataMapOfShapeListOfShape m;
+        NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> m;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, m);
 		const TopoDS_Edge& edge = TopoDS::Edge(m.FindFromKey(v0).First());
 		double u0, u1;

@@ -41,20 +41,8 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.ifc import is_cache_locked_by_other_process
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
-from bonsai.bim.module.model.prop import (
-    BIMDoorProperties,
-    BIMRailingProperties,
-    BIMRoofProperties,
-    BIMStairProperties,
-    BIMWindowProperties,
-)
-from bonsai.bim.module.model.ui import (
-    draw_door_properties,
-    draw_railing_properties,
-    draw_roof_properties,
-    draw_stair_properties,
-    draw_window_properties,
-)
+from bonsai.bim.module.model import prop as _model_prop
+from bonsai.bim.module.model import ui as _model_ui
 from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.prop import Attribute
 
@@ -279,34 +267,29 @@ class BIM_UL_panel_visibilities(bpy.types.UIList):
 class GizmoPreferences(bpy.types.PropertyGroup):
     """Aggregator for parametric gizmo visibility settings. One flat bool per
     parametric feature; controls whether that feature's gizmo group polls
-    visible in the viewport."""
+    visible in the viewport.
+
+    The per-feature ``<name>: BoolProperty`` fields are derived from
+    ``tool.Parametric.EDIT_TYPES`` at module load — adding a new parametric
+    type to the registry automatically surfaces its toggle here, with no
+    parallel hand-maintained list to keep in sync."""
 
     draw_gizmos_in_3d_viewport: BoolProperty(
         name="Draw Gizmos In 3D Viewport",
         default=True,
         description="Show interactive gizmos in the 3D viewport for parametric elements",
     )
-    door: BoolProperty(name="Door", default=True)
-    window: BoolProperty(name="Window", default=True)
-    stair: BoolProperty(name="Stair", default=True)
-    railing: BoolProperty(name="Railing", default=True)
-    roof: BoolProperty(name="Roof", default=True)
-    array: BoolProperty(name="Array", default=True)
-    pipe_segment: BoolProperty(name="Pipe Segment", default=True)
-    duct_segment: BoolProperty(name="Duct Segment", default=True)
-    wall: BoolProperty(name="Wall", default=True)
 
     if TYPE_CHECKING:
         draw_gizmos_in_3d_viewport: bool
-        door: bool
-        window: bool
-        stair: bool
-        railing: bool
-        roof: bool
-        array: bool
-        pipe_segment: bool
-        duct_segment: bool
-        wall: bool
+
+
+for _gizmo_pref_entry in tool.Parametric.EDIT_TYPES:
+    GizmoPreferences.__annotations__[_gizmo_pref_entry.name] = BoolProperty(
+        name=_gizmo_pref_entry.name.replace("_", " ").title(),
+        default=True,
+    )
+del _gizmo_pref_entry
 
 
 class DocPreferences(bpy.types.PropertyGroup):
@@ -402,11 +385,22 @@ class DocPreferences(bpy.types.PropertyGroup):
 
 
 class DefaultParameters(bpy.types.PropertyGroup):
-    door: bpy.props.PointerProperty(type=BIMDoorProperties)
-    window: bpy.props.PointerProperty(type=BIMWindowProperties)
-    railing: bpy.props.PointerProperty(type=BIMRailingProperties)
-    roof: bpy.props.PointerProperty(type=BIMRoofProperties)
-    stair: bpy.props.PointerProperty(type=BIMStairProperties)
+    """Per-type preset values used to seed new parametric instances.
+
+    The ``<name>: PointerProperty`` fields are derived from the subset of
+    ``tool.Parametric.EDIT_TYPES`` flagged ``has_default_parameters=True``,
+    each pointing at the matching ``BIM<Name>Properties`` class. Adding a
+    new entry with that flag automatically surfaces a preferences section
+    and gives the create operator a preset to copy from."""
+
+
+for _default_params_entry in tool.Parametric.EDIT_TYPES:
+    if not _default_params_entry.has_default_parameters:
+        continue
+    DefaultParameters.__annotations__[_default_params_entry.name] = bpy.props.PointerProperty(
+        type=getattr(_model_prop, _default_params_entry.props_attr),
+    )
+del _default_params_entry
 
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
@@ -583,6 +577,43 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
+
+    def update_autosave_settings(self, context: bpy.types.Context) -> None:
+        if self.autosave_enabled:
+            tool.Autosave.reset_timer()
+        else:
+            tool.Autosave.cancel_timer()
+
+    autosave_enabled: BoolProperty(
+        name="Enable IFC Autosave Timer",
+        description="Periodically remind you to save or automatically create a backup copy of the IFC file",
+        default=False,
+        update=update_autosave_settings,
+    )
+    autosave_interval_minutes: bpy.props.IntProperty(
+        name="Autosave Interval (Minutes)",
+        description="Time between autosave reminders or backups. The timer resets whenever you open or save a project",
+        default=10,
+        min=1,
+        max=1440,
+        update=update_autosave_settings,
+    )
+    autosave_mode: bpy.props.EnumProperty(
+        name="Autosave Mode",
+        items=[
+            (
+                "PROMPT",
+                "Prompt to Save",
+                "Show a dialog offering to save the IFC project when the timer expires",
+            ),
+            (
+                "BACKUP",
+                "Automatic Backup",
+                "Save a backup copy as filename_autosaved.ifc when the timer expires",
+            ),
+        ],
+        default="PROMPT",
+    )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_always_cache: BoolProperty(
         name="Always Cache Geometry",
@@ -695,6 +726,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bsdd_load_test_dictionaries: bool
         bsdd_baseurl: str
         should_disable_undo_on_save: bool
+        autosave_enabled: bool
+        autosave_interval_minutes: int
+        autosave_mode: Literal["PROMPT", "BACKUP"]
         should_stream: bool
         should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
@@ -828,40 +862,27 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
     def draw_default_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         box = layout.box()
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Door",
-            lambda _layout, _context: draw_door_properties(_layout, self.default_parameters.door),
-        )
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Window",
-            lambda _layout, _context: draw_window_properties(_layout, self.default_parameters.window),
-        )
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Railing",
-            lambda _layout, _context: draw_railing_properties(_layout, self.default_parameters.railing),
-        )
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Roof",
-            lambda _layout, _context: draw_roof_properties(_layout, self.default_parameters.roof),
-        )
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Stair",
-            lambda _layout, _context: draw_stair_properties(_layout, self.default_parameters.stair),
-        )
+        for entry in tool.Parametric.EDIT_TYPES:
+            if not entry.has_default_parameters:
+                continue
+            props = getattr(self.default_parameters, entry.name)
+            draw_props = getattr(_model_ui, f"draw_{entry.name}_properties")
+            bonsai.bim.helper.draw_expandable_panel(
+                box,
+                context,
+                entry.name.replace("_", " ").title(),
+                lambda _layout, _context, _draw=draw_props, _props=props: _draw(_layout, _props),
+            )
 
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")
         layout.prop(self, "should_disable_undo_on_save")
+        layout.separator()
+        layout.label(text="Autosave:")
+        layout.prop(self, "autosave_enabled")
+        if self.autosave_enabled:
+            layout.prop(self, "autosave_interval_minutes")
+            layout.prop(self, "autosave_mode")
         layout.prop(self, "should_stream")
         layout.prop(self, "should_always_cache")
         layout.label(text="bSDD:")

@@ -21,7 +21,6 @@ from math import radians
 import blf
 import gpu
 import ifcopenshell.util.geolocation
-from bpy.types import SpaceView3D
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
@@ -30,27 +29,11 @@ import bonsai.tool as tool
 from bonsai.bim.module.georeference.data import GeoreferenceData
 
 
-class GeoreferenceDecorator:
-    is_installed = False
-    handlers = []
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_text, (context,), "WINDOW", "POST_PIXEL"))
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_geometry, (context,), "WINDOW", "POST_VIEW"))
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
+class GeoreferenceDecorator(tool.Blender.ViewportDecorator):
+    draw_methods = (
+        ("draw_text", "POST_PIXEL"),
+        ("draw_geometry", "POST_VIEW"),
+    )
 
     def draw_batch(self, shader_type, content_pos, color, indices=None, should_scale=True):
         if not tool.Blender.validate_shader_batch_data(content_pos, indices):
@@ -197,6 +180,10 @@ class GeoreferenceDecorator:
         decorator_color_error = self.addon_prefs.decorator_color_error
 
         gpu.state.blend_set("ALPHA")
+        # The georef gizmo is a coordinate-system overlay: it must communicate
+        # orientation regardless of model contents, so depth testing is bypassed.
+        original_depth_test = gpu.state.depth_test_get()
+        gpu.state.depth_test_set("ALWAYS")
 
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()  # required to be able to change uniforms of the shader
@@ -334,6 +321,8 @@ class GeoreferenceDecorator:
                 verts = [Vector((0, 0, 0)), location * 3]
                 self.draw_batch("LINES", verts, decorator_color_special, edges)
                 self.draw_dashed_line(location * 3, location * 6, decorator_color_error)
+
+        gpu.state.depth_test_set(original_depth_test)
 
     def draw_dashed_line(self, start, end, colour, should_scale=True):
         direction = (end - start).normalized()

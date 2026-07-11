@@ -31,11 +31,17 @@ import bonsai.tool as tool
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 
-class LoadsDecorator:
+class LoadsDecorator(tool.Blender.ViewportDecorator):
     """Decorator to show structural loads in 3D"""
 
-    is_installed = False
-    handlers = []
+    # draw_methods exists to satisfy ViewportDecorator.__init_subclass__'s
+    # method-existence check; the override install below is what actually
+    # registers handlers (the POST_VIEW binding passes no context arg, which
+    # the base's generic install cannot express).
+    draw_methods = (
+        ("draw_load_values", "POST_PIXEL"),
+        ("__call__", "POST_VIEW"),
+    )
     decoration_data = None
     text_info = []
     shader_info = []
@@ -53,15 +59,6 @@ class LoadsDecorator:
         cls.decoration_data = ShaderInfo()
         cls.update()
         cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls) -> None:
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
 
     @classmethod
     def update(cls) -> None:

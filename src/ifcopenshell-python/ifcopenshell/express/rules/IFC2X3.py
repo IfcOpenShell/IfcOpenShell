@@ -4686,7 +4686,7 @@ class IfcCurveStyle_WR11:
     @staticmethod
     def __call__(self):
         curvewidth = express_getattr(self, 'CurveWidth', INDETERMINATE)
-        assert (not exists(curvewidth) or 'ifc2x3.ifcpositivelengthmeasure' in typeof(curvewidth) or ('ifc2x3.ifcdescriptivemeasure' in typeof(curvewidth) and curvewidth == 'bylayer')) is not False
+        assert (not exists(curvewidth) or 'ifc2x3.ifcpositivelengthmeasure' in typeof(curvewidth) or ('ifc2x3.ifcdescriptivemeasure' in typeof(curvewidth) and curvewidth == 'by layer')) is not False
 
 class IfcCurveStyleFontPattern_WR01:
     SCOPE = 'entity'
@@ -4947,7 +4947,7 @@ class IfcDraughtingPreDefinedColour_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'by layer']) is not False
 
 class IfcDraughtingPreDefinedCurveFont_WR31:
     SCOPE = 'entity'
@@ -4956,7 +4956,7 @@ class IfcDraughtingPreDefinedCurveFont_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chain double dash', 'dashed', 'dotted', 'by layer']) is not False
 
 class IfcDraughtingPreDefinedTextFont_WR31:
     SCOPE = 'entity'
@@ -4965,7 +4965,7 @@ class IfcDraughtingPreDefinedTextFont_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['iso3098-1fonta', 'iso3098-1fontb']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['iso 3098-1 font a', 'iso 3098-1 font b']) is not False
 
 class IfcDuctFittingType_WR2:
     SCOPE = 'entity'
@@ -5795,7 +5795,7 @@ class IfcPreDefinedDimensionSymbol_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['arclength', 'conicaltaper', 'counterbore', 'countersink', 'depth', 'diameter', 'plusminus', 'radius', 'slope', 'sphericaldiameter', 'sphericalradius', 'square']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['arc length', 'conical taper', 'counterbore', 'countersink', 'depth', 'diameter', 'plus minus', 'radius', 'slope', 'spherical diameter', 'spherical radius', 'square']) is not False
 
 class IfcPreDefinedPointMarkerSymbol_WR31:
     SCOPE = 'entity'
@@ -5813,7 +5813,7 @@ class IfcPreDefinedTerminatorSymbol_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['blankedarrow', 'blankedbox', 'blankeddot', 'dimensionorigin', 'filledarrow', 'filledbox', 'filleddot', 'integralsymbol', 'openarrow', 'slash', 'unfilledarrow']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['blanked arrow', 'blanked box', 'blanked dot', 'dimension origin', 'filled arrow', 'filled box', 'filled dot', 'integral symbol', 'open arrow', 'slash', 'unfilled arrow']) is not False
 
 class IfcProcedure_WR1:
     SCOPE = 'entity'
@@ -6799,7 +6799,7 @@ class IfcStructuredDimensionCallout_WR31:
     @staticmethod
     def __call__(self):
         contents = express_getattr(self, 'Contents', INDETERMINATE)
-        assert (sizeof([ato for ato in [con for con in express_getattr(self, 'contents', INDETERMINATE) if 'ifc2x3.ifcannotationtextoccurrence' in typeof(con)] if not express_getattr(express_getattr(ato, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['dimensionvalue', 'tolerancevalue', 'unittext', 'prefixtext', 'suffixtext']]) == 0) is not False
+        assert (sizeof([ato for ato in [con for con in express_getattr(self, 'contents', INDETERMINATE) if 'ifc2x3.ifcannotationtextoccurrence' in typeof(con)] if not express_getattr(express_getattr(ato, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['dimension value', 'tolerance value', 'unit text', 'prefix text', 'suffix text']]) == 0) is not False
 
 class IfcStyledItem_WR11:
     SCOPE = 'entity'

@@ -139,6 +139,5 @@ def test_every_cancel_ops_entry_has_a_real_preview_propertygroup() -> None:
     orphaned = [attr for attr, _op in preview_base.PREVIEW_CANCEL_OPS if attr not in declared_attrs]
     assert not orphaned, (
         "PREVIEW_CANCEL_OPS contains entries whose PointerProperty child no longer "
-        f"exists on {UMBRELLA_CLASS}. Drop the stale tuple(s):\n  "
-        + "\n  ".join(orphaned)
+        f"exists on {UMBRELLA_CLASS}. Drop the stale tuple(s):\n  " + "\n  ".join(orphaned)
     )

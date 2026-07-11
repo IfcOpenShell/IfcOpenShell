@@ -74,14 +74,29 @@ def test_opening_unicode():
 
 @pytest.mark.skipif(psutil is None, reason="psutil not installed")
 def test_memusage_partial_open():
-    m0 = psutil.Process().memory_info().rss
-    f = ifcopenshell.open(fn)
-    m1 = psutil.Process().memory_info().rss
-    g = ifcopenshell.open(fn, bypass_types=("IfcRepresentationItem",))
-    m2 = psutil.Process().memory_info().rss
-    # arbitrary...
-    expected_ratio = 0.75
-    assert (m2 - m1) < (m1 - m0) * expected_ratio
+    # Run in a subprocess to ensure the file is not already in the process page
+    # cache from earlier tests, which would make both RSS deltas read as zero.
+    import subprocess
+    import sys
+
+    script = f"""
+import psutil
+import ifcopenshell
+
+fn = {repr(fn)}
+m0 = psutil.Process().memory_info().rss
+f = ifcopenshell.open(fn)
+m1 = psutil.Process().memory_info().rss
+g = ifcopenshell.open(fn, bypass_types=("IfcRepresentationItem",))
+m2 = psutil.Process().memory_info().rss
+expected_ratio = 0.75
+assert (m2 - m1) < (m1 - m0) * expected_ratio, (
+    f"bypass_types did not reduce memory: normal open added {{m1 - m0}} bytes, "
+    f"bypass open added {{m2 - m1}} bytes (expected < {{(m1 - m0) * expected_ratio:.0f}})"
+)
+"""
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr or result.stdout
 
 
 def test_rocks():

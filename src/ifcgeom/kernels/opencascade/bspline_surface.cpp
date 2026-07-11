@@ -9,14 +9,14 @@ using namespace IfcGeom;
 bool OpenCascadeKernel::convert(const taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf) {
 	const bool is_rational = !!bs->weights;
 
-	TColgp_Array2OfPnt Poles(0, (int)bs->control_points.size() - 1, 0, (int)(*bs->control_points.begin()).size() - 1);
-	TColStd_Array2OfReal Weights(0, (int)bs->control_points.size() - 1, 0, (int)(*bs->control_points.begin()).size() - 1);
-	TColStd_Array1OfReal UKnots(0, (int)bs->knots[0].size() - 1);
-	TColStd_Array1OfReal VKnots(0, (int)bs->knots[1].size() - 1);
-	TColStd_Array1OfInteger UMults(0, (int)bs->multiplicities[0].size() - 1);
-	TColStd_Array1OfInteger VMults(0, (int)bs->multiplicities[1].size() - 1);
-	Standard_Integer UDegree = bs->degree[0];
-	Standard_Integer VDegree = bs->degree[1];
+	NCollection_Array2<gp_Pnt> Poles(0, (int)bs->control_points.size() - 1, 0, (int)(*bs->control_points.begin()).size() - 1);
+	NCollection_Array2<double> Weights(0, (int)bs->control_points.size() - 1, 0, (int)(*bs->control_points.begin()).size() - 1);
+	NCollection_Array1<double> UKnots(0, (int)bs->knots[0].size() - 1);
+	NCollection_Array1<double> VKnots(0, (int)bs->knots[1].size() - 1);
+	NCollection_Array1<int> UMults(0, (int)bs->multiplicities[0].size() - 1);
+	NCollection_Array1<int> VMults(0, (int)bs->multiplicities[1].size() - 1);
+	int UDegree = bs->degree[0];
+	int VDegree = bs->degree[1];
 
 	int i = 0, j;
 	for (auto it = bs->control_points.begin(); it != bs->control_points.end(); ++it, ++i) {

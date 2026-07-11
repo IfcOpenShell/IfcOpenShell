@@ -27,7 +27,7 @@
 bool IfcGeom::util::wire_is_c1_continuous(const TopoDS_Wire & w, double tol) {
 	// NB Note that c0 continuity is NOT checked!
 
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 	for (int i = 1; i <= map.Extent(); ++i) {
 		const auto& li = map.FindFromIndex(i);
@@ -66,7 +66,7 @@ bool IfcGeom::util::wire_to_ax(const TopoDS_Wire & wire, gp_Ax2 & directrix) {
 	// Find first edge
 	TopoDS_Vertex v0, v1;
 	TopExp::Vertices(wire, v0, v1);
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 	if (v0.IsSame(v1) && map.Contains(v0) && map.FindFromKey(v0).Extent() == 2) {
 		// Closed wire, with more than 1 edges
@@ -117,7 +117,7 @@ bool IfcGeom::util::is_single_linear_edge(const TopoDS_Wire & wire) {
 		return false;
 	}
 	double u, v;
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+	opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	return crv->DynamicType() == STANDARD_TYPE(Geom_Line);
 }
 
@@ -132,7 +132,7 @@ bool IfcGeom::util::is_single_circular_edge(const TopoDS_Wire & wire) {
 		return false;
 	}
 	double u, v;
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+    opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	return crv->DynamicType() == STANDARD_TYPE(Geom_Circle);
 }
 
@@ -140,7 +140,7 @@ void IfcGeom::util::process_sweep_as_extrusion(const TopoDS_Wire & wire, const T
 	TopExp_Explorer exp(wire, TopAbs_EDGE);
 	TopoDS_Edge e = TopoDS::Edge(exp.Current());
 	double u, v;
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+    opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	const auto& dir = Handle(Geom_Line)::DownCast(crv)->Position().Direction();
 	// OCCT line is normalized so diff in parametric coords equals length
 	const double depth = std::abs(u - v);
@@ -153,7 +153,7 @@ void IfcGeom::util::process_sweep_as_revolution(const TopoDS_Wire & wire, const 
 	TopExp_Explorer exp(wire, TopAbs_EDGE);
 	TopoDS_Edge e = TopoDS::Edge(exp.Current());
 	double u, v;
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+    opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	auto circ = Handle(Geom_Circle)::DownCast(crv);
 	// @todo we could be extruding the wire only when we know this is an intermediate edge.
 	const double depth = std::abs(u - v);
@@ -182,7 +182,7 @@ void IfcGeom::util::process_sweep_as_pipe(const TopoDS_Wire & wire, const TopoDS
 }
 
 void IfcGeom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge>& sorted_edges) {
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 
 	for (int i = 1; i <= map.Extent(); ++i) {
@@ -209,9 +209,9 @@ void IfcGeom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge
 		if (!map.Contains(v0)) {
 			throw std::runtime_error("Disconnected vertex");
 		}
-		const TopTools_ListOfShape& es = map.FindFromKey(v0);
+		const NCollection_List<TopoDS_Shape>& es = map.FindFromKey(v0);
 		TopoDS_Vertex ve0, ve1;
-		TopTools_ListIteratorOfListOfShape it(es);
+		NCollection_List<TopoDS_Shape>::Iterator it(es);
 		bool added = false;
 		for (; it.More(); it.Next()) {
 			const TopoDS_Edge& e = TopoDS::Edge(it.Value());
@@ -269,7 +269,7 @@ void IfcGeom::util::segment_adjacent_non_linear(const TopoDS_Wire & wire, std::v
 
 	for (int i = 0; i < (int)sorted_edges.size() - 1; ++i) {
 		const auto& e = sorted_edges[i];
-		Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+        opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 		const bool is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
 
 		const auto& f = sorted_edges[i + 1];

@@ -455,6 +455,7 @@ Scenario: Select Cost Schedule Products
     And I press "bim.assign_cost_item_quantity(cost_item={cost_item}, related_object_type='PRODUCT', prop_name='')"
     When I press "bim.select_cost_schedule_products(cost_schedule={cost_schedule})"
     Then nothing happens
+
 Scenario: Load Cost Item Types
     Given an empty IFC project
     And I press "bim.add_cost_schedule"
@@ -465,3 +466,30 @@ Scenario: Load Cost Item Types
     When I press "bim.add_cost_item(cost_item={cost_item})"
     And I press "bim.load_cost_item_types"
     Then nothing happens
+
+Scenario: Import one cost schedule from CSV
+  Given an empty IFC project
+  When I press "bim.import_cost_schedule_csv(filepath='{cwd}/test/files/Ex1-BoQ-without-query.csv')"
+  And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+  And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+  And I press "bim.add_summary_cost_item()"
+  And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
+  And I press "bim.add_cost_item(cost_item={cost_item})"
+  Then nothing happens
+
+Scenario: Import multiple cost schedules from CSV
+  Given an empty IFC project
+  When I press "bim.import_cost_schedule_csv(filepath='{cwd}/test/files/Ex1-BoQ-without-query.csv')"
+  When I press "bim.import_cost_schedule_csv(filepath='{cwd}/test/files/Ex2-SoR.csv')"
+  When I press "bim.import_cost_schedule_csv(filepath='{cwd}/test/files/Ex3-BoQ-with-query.csv')"
+  When I press "bim.import_cost_schedule_csv(filepath='{cwd}/test/files/Ex4-BoQ-with-description.csv')"
+  When I press "bim.import_cost_schedule_csv(filepath='{cwd}/test/files/Ex5-SoR-with-description.csv')"
+  When I press "bim.import_cost_schedule_csv(filepath='{cwd}/test/files/Ex6-BoQ-with-categories.csv')"
+  When I press "bim.import_cost_schedule_csv(filepath='{cwd}/test/files/Ex7-BoQ-with-Rates.csv')"
+  When I press "bim.import_cost_schedule_csv(filepath='{cwd}/test/files/Ex8-BoQ-with-formula.csv')"
+  And the variable "cost_schedule" is "{ifc}.by_type('IfcCostSchedule')[0].id()"
+  And I press "bim.enable_editing_cost_items(cost_schedule={cost_schedule})"
+  And I press "bim.add_summary_cost_item()"
+  And the variable "cost_item" is "{ifc}.by_type('IfcCostItem')[0].id()"
+  And I press "bim.add_cost_item(cost_item={cost_item})"
+  Then nothing happens

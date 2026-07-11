@@ -9,14 +9,15 @@
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <gp_Pnt.hxx>
-#include <TColgp_Array1OfPnt.hxx>
-#include <TColStd_Array1OfReal.hxx>
-#include <TColStd_Array1OfInteger.hxx>
 #include <Geom_BSplineCurve.hxx>
 
 #include <TopExp.hxx>
 #include <BRep_Tool.hxx>
-#include <TopTools_ListOfShape.hxx>
+
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <NCollection_List.hxx>
+
 #include <BRepTools_WireExplorer.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 
@@ -39,12 +40,12 @@ namespace {
 
 			const bool is_rational = !!bc->weights;
 
-			TColgp_Array1OfPnt      Poles(0, bc->control_points.size() - 1);
-			TColStd_Array1OfReal    Weights(0, bc->control_points.size() - 1);
-			TColStd_Array1OfReal    Knots(0, (int)bc->knots.size() - 1);
-			TColStd_Array1OfInteger Mults(0, (int)bc->knots.size() - 1);
-			Standard_Integer        Degree = bc->degree;
-			Standard_Boolean        Periodic = false;
+			NCollection_Array1<gp_Pnt> Poles(0, (int)bc->control_points.size() - 1);
+			NCollection_Array1<double> Weights(0, (int)bc->control_points.size() - 1);
+			NCollection_Array1<double> Knots(0, (int)bc->knots.size() - 1);
+			NCollection_Array1<int> Mults(0, (int)bc->knots.size() - 1);
+			int        Degree = bc->degree;
+			bool        Periodic = false;
 			// @tfk: it appears to be wrong to expect a period curve when the curve is closed, see #586
 			// Standard_Boolean     Periodic = l->ClosedCurve();
 
@@ -233,7 +234,7 @@ OpenCascadeKernel::curve_creation_visitor_result_type OpenCascadeKernel::convert
 #include "../../../ifcparse/IfcFile.h"
 
 bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wire) {
-	TopTools_ListOfShape converted_segments;
+    NCollection_List<TopoDS_Shape> converted_segments;
 
 	for (auto& segment : loop->children) {
 		TopoDS_Wire segment_wire;
@@ -273,7 +274,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	BRepBuilderAPI_MakeWire w;
 	TopoDS_Vertex wire_first_vertex, wire_last_vertex, edge_first_vertex, edge_last_vertex;
 
-	TopTools_ListIteratorOfListOfShape it(converted_segments);
+	NCollection_List<TopoDS_Shape>::Iterator it(converted_segments);
 
 	bool force_close = false;
 	if (loop->instance && loop->instance->as<IfcUtil::IfcBaseEntity>() && loop->instance->as<IfcUtil::IfcBaseEntity>()->file_) {
@@ -287,10 +288,10 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	shape_pair_enumerate(it, bld, force_close);
 	wire = bld.wire();
 
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 
-	TopTools_IndexedMapOfShape edges_to_tesselate;
+	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> edges_to_tesselate;
 
 	for (int i = 1; i <= map.Extent(); ++i) {
 		auto& edges = map.FindFromIndex(i);

@@ -55,6 +55,10 @@ class CsvHeader(TypedDict):
     RateSchedule: NotRequired[str]
     RateID: NotRequired[str]
 
+    # Formula
+    Formula: NotRequired[str]
+    # QuantityClass: NotRequired[str]
+
 
 # Currently we assume that if column is not part of the main header,
 # then it is a cost value category. So here we list any additional column
@@ -65,6 +69,8 @@ MAIN_CSV_HEADER_COLUMNS.extend(
         # Not sure what this for but it's present in sample .csv.
         "Subtotal",
         # Columns from exporter.
+        "ItemIsASum",
+        "Quantities",
         "RateSubtotal",
         "TotalPrice",
         # Deprecated columns from exporter, shouldn't be exported any longer.
@@ -91,6 +97,9 @@ class CostItem(TypedDict):
     Property: Union[str, None]
     Query: Union[str, None]
 
+    Formula: Union[str, None]
+    # QuantityClass: Union[str, None]
+
 
 class Csv2Ifc:
     # Inputs.
@@ -108,6 +117,7 @@ class Csv2Ifc:
     categories: dict[str, int]
     has_categories: bool
     has_rates: bool
+    has_formula: bool
 
     def __init__(
         self,
@@ -163,9 +173,12 @@ class Csv2Ifc:
                 if not self.headers:
                     self.has_categories = True
                     self.has_rates = False
+                    self.has_formula = False
                     self.headers = {col: i for i, col in enumerate(row) if col}
                     if "RateSchedule" in self.headers and "RateID" in self.headers:
                         self.has_rates = True
+                    if "Formula" in self.headers:
+                        self.has_formula = True
                     if "Value" in self.headers:
                         self.has_categories = False
                     else:
@@ -233,6 +246,11 @@ class Csv2Ifc:
         else:
             cost_rate = None
 
+        if self.has_formula:
+            cost_formula = row[(self.headers["Formula"])] if "Formula" in self.headers else None
+        else:
+            cost_formula = None
+
         return {
             "Identification": str(identification) if identification else None,
             "Name": str(name) if name else None,
@@ -244,6 +262,7 @@ class Csv2Ifc:
             "Query": query,
             "children": [],
             "CostRate": cost_rate,
+            "Formula": cost_formula,
         }
 
     def create_ifc(self) -> None:
@@ -320,6 +339,7 @@ class Csv2Ifc:
 
             if cost_rate.get("Schedule") and cost_rate.get("RateID"):
                 # if cost_rate["Schedule"] is not "":
+                rate_cost_schedule = None
                 schedules = self.file.by_type("IfcCostSchedule")
                 for schedule in schedules:
                     if schedule.Name == cost_rate["Schedule"]:
@@ -381,16 +401,27 @@ class Csv2Ifc:
             # and some query in "Query" column.
             # If query is provided it will override the defined value
             # due current behaviour in cost.assign_cost_item_quantity.
-            if results:
+            if results and not cost_item["Formula"]:
                 ifcopenshell.api.cost.assign_cost_item_quantity(
                     self.file,
                     cost_item=cost_item["ifc"],
                     products=results,
                     prop_name=prop_name,
                 )
-            elif not quantity:
+            elif not quantity and not cost_item["Formula"]:
                 quantity = ifcopenshell.api.cost.add_cost_item_quantity(
                     self.file, cost_item=cost_item["ifc"], ifc_class=quantity_class
+                )
+            if cost_item["Formula"]:
+                results = ifcopenshell.util.selector.filter_elements(self.file, cost_item["Query"])
+                results = [r for r in results]
+                ifc_quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["Unit"])
+                quantity = ifcopenshell.api.cost.assign_cost_item_quantity(
+                    self.file,
+                    cost_item=cost_item["ifc"],
+                    products=results,
+                    formula=cost_item["Formula"],
+                    ifc_class=ifc_quantity_class,
                 )
 
         self.create_cost_items(cost_item["children"], cost_item["ifc"])

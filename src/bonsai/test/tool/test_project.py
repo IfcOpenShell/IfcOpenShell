@@ -294,64 +294,125 @@ class TestLoadLinkedModels(NewFile):
         assert props.links[1].ifc_definition_id == reference2.id()
         assert props.links[1].has_transformation is True
 
+    def test_load_linked_models_restores_query_from_cache_json(self):
+        """The selector query used at link time is persisted only in the
+        sidecar cache JSON. Reopening the host IFC must restore it onto the
+        Link PropertyGroup so subsequent Reload/Load replay the same filter."""
+        ifc = ifcopenshell.file()
+        props = tool.Project.get_project_props()
+        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+        document = ifcopenshell.api.document.add_information(ifc)
+        document.Scope = "LINKED_MODEL"
+        with NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=False) as tmp:
+            json.dump({"query": "IfcElement, ! IfcOpeningElement"}, tmp)
+            json_path = Path(tmp.name)
+        try:
+            ifc_filepath = tmp.name.replace(".ifc.cache.json", ".ifc")
+            reference = ifcopenshell.api.document.add_reference(ifc, document)
+            reference.Location = Path(ifc_filepath).as_posix()
+            reference.Identification = ""
+            tool.Ifc.set(ifc)
+            subject.load_linked_models_from_ifc()
+            assert len(props.links) == 1
+            assert props.links[0].query == "IfcElement, ! IfcOpeningElement"
+        finally:
+            json_path.unlink(missing_ok=True)
+
+    def test_load_linked_models_query_defaults_empty_without_cache_json(self):
+        """When no sidecar cache JSON exists, the restored Link's query field
+        must default to the empty string. Empty query is the documented signal
+        for the load path to apply no selector filter."""
+        ifc = ifcopenshell.file()
+        props = tool.Project.get_project_props()
+        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+        document = ifcopenshell.api.document.add_information(ifc)
+        document.Scope = "LINKED_MODEL"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc_path = Path(tmpdir) / "no-cache.ifc"
+            reference = ifcopenshell.api.document.add_reference(ifc, document)
+            reference.Location = ifc_path.as_posix()
+            reference.Identification = ""
+            tool.Ifc.set(ifc)
+            subject.load_linked_models_from_ifc()
+            assert len(props.links) == 1
+            assert props.links[0].query == ""
+
 
 class TestCalculateLinkMatrix(NewFile):
+    def _write_cache_json(self, payload: dict) -> Path:
+        """Write ``payload`` to a fresh sidecar cache JSON path and return it.
+
+        On Windows, ``NamedTemporaryFile(delete=True)`` holds an exclusive
+        handle for the ``with`` block's duration, so the code-under-test
+        cannot open the same path — hence the manual write + unlink pattern.
+        """
+        tmp = NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=False)
+        try:
+            json.dump(payload, tmp)
+        finally:
+            tmp.close()
+        return Path(tmp.name)
+
     def test_linking_a_model_without_an_offset_to_our_session_with_no_offset(self):
         props = tool.Project.get_project_props()
         gprops = tool.Georeference.get_georeference_props()
-        with NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=True) as tmp:
+        json_path = self._write_cache_json({"model_project_north": "0", "model_origin_si": "0,0,0"})
+        try:
             link = props.links.add()
-            link.filepath = tmp.name.replace(".ifc.cache.json", ".ifc")
-            json.dump({"model_project_north": "0", "model_origin_si": "0,0,0"}, tmp)
-            tmp.flush()
+            link.filepath = str(json_path).replace(".ifc.cache.json", ".ifc")
             gprops.model_project_north = "0"
             gprops.model_origin_si = "0,0,0"
             assert np.allclose(subject.calculate_link_matrix(link), np.eye(4))
+        finally:
+            json_path.unlink(missing_ok=True)
 
     def test_linking_an_offset_model_to_our_session_with_no_offset(self):
         props = tool.Project.get_project_props()
         gprops = tool.Georeference.get_georeference_props()
-        with NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=True) as tmp:
+        json_path = self._write_cache_json({"model_project_north": "0", "model_origin_si": "5,0,0"})
+        try:
             link = props.links.add()
-            link.filepath = tmp.name.replace(".ifc.cache.json", ".ifc")
-            json.dump({"model_project_north": "0", "model_origin_si": "5,0,0"}, tmp)
-            tmp.flush()
+            link.filepath = str(json_path).replace(".ifc.cache.json", ".ifc")
             gprops.model_project_north = "0"
             gprops.model_origin_si = "0,0,0"
             m = np.eye(4)
             m[0][3] = 5
             assert np.allclose(subject.calculate_link_matrix(link), m)
+        finally:
+            json_path.unlink(missing_ok=True)
 
     def test_linking_an_offset_model_to_our_session_with_offset(self):
         props = tool.Project.get_project_props()
         gprops = tool.Georeference.get_georeference_props()
-        with NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=True) as tmp:
+        json_path = self._write_cache_json({"model_project_north": "0", "model_origin_si": "5,0,0"})
+        try:
             link = props.links.add()
-            link.filepath = tmp.name.replace(".ifc.cache.json", ".ifc")
-            json.dump({"model_project_north": "0", "model_origin_si": "5,0,0"}, tmp)
-            tmp.flush()
+            link.filepath = str(json_path).replace(".ifc.cache.json", ".ifc")
             gprops.model_project_north = "0"
             gprops.model_origin_si = "2,0,0"
             m = np.eye(4)
             m[0][3] = 3
             assert np.allclose(subject.calculate_link_matrix(link), m)
+        finally:
+            json_path.unlink(missing_ok=True)
 
     def test_linking_an_offset_model_to_our_session_with_offset_and_transformation(self):
         props = tool.Project.get_project_props()
         gprops = tool.Georeference.get_georeference_props()
-        with NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=True) as tmp:
+        json_path = self._write_cache_json({"model_project_north": "0", "model_origin_si": "5,0,0"})
+        try:
             link = props.links.add()
-            link.filepath = tmp.name.replace(".ifc.cache.json", ".ifc")
+            link.filepath = str(json_path).replace(".ifc.cache.json", ".ifc")
             transformation = np.eye(4)
             transformation[0][3] = 4
             link.transformation = ",".join(map(str, transformation.reshape(-1)))
-            json.dump({"model_project_north": "0", "model_origin_si": "5,0,0"}, tmp)
-            tmp.flush()
             gprops.model_project_north = "0"
             gprops.model_origin_si = "2,0,0"
             m = np.eye(4)
             m[0][3] = 7
             assert np.allclose(subject.calculate_link_matrix(link), m)
+        finally:
+            json_path.unlink(missing_ok=True)
 
 
 class TestLoadingIfcSqlite(NewFile):

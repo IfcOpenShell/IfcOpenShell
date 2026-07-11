@@ -329,6 +329,7 @@ class _ArrayEditMixin(ParametricEditMixinBase):
         # Unhide the (possibly newly-regenerated) children so the user sees
         # the committed result. Mirrors the hide in ``_enable_one``.
         cls._set_children_visibility(element, hidden=False)
+        tool.Array.select_only_parent(obj, context)
 
     @classmethod
     def _cancel_one(cls, obj: bpy.types.Object) -> None:
@@ -421,22 +422,28 @@ class RegenerateArray(bpy.types.Operator, tool.Ifc.Operator):
         pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
         arrays = json.loads(pset["Data"])
         pset = tool.Ifc.get().by_id(pset["id"])
-        for array in arrays:
-            for child in set(array["children"]):
-                try:
-                    child_element = tool.Ifc.get().by_guid(child)
-                except RuntimeError:
-                    continue
-                if child_obj := tool.Ifc.get_object(child_element):
-                    tool.Geometry.delete_ifc_object(child_obj)
-            array["children"].clear()
-        # Always operate on the parent — this operator can be invoked with
-        # either the parent OR any array child as active_object (the per-child
-        # gizmo group fires it from a child selection). Using ``obj`` /
-        # ``element`` directly would feed a child to ``regenerate_array`` and
-        # constrain children against a sibling, silently corrupting the array.
-        tool.Model.regenerate_array(parent, arrays)
-        tool.Array.constrain_children_to_parent(parent_element)
+        # Coalesce host recuts across the child-delete loop, the regenerate,
+        # and the per-child opening mirror: each fans out its own host body
+        # recut without the batch wrapper.
+        with tool.Geometry.batch_host_recut():
+            for array in arrays:
+                for child in set(array["children"]):
+                    try:
+                        child_element = tool.Ifc.get().by_guid(child)
+                    except RuntimeError:
+                        continue
+                    if child_obj := tool.Ifc.get_object(child_element):
+                        tool.Geometry.delete_ifc_object(child_obj)
+                array["children"].clear()
+            # Always operate on the parent — this operator can be invoked with
+            # either the parent OR any array child as active_object (the per-child
+            # gizmo group fires it from a child selection). Using ``obj`` /
+            # ``element`` directly would feed a child to ``regenerate_array`` and
+            # constrain children against a sibling, silently corrupting the array.
+            tool.Model.regenerate_array(parent, arrays)
+            tool.Array.constrain_children_to_parent(parent_element)
+
+        tool.Array.select_only_parent(parent, context)
 
 
 class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
@@ -471,23 +478,24 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         except:
             return {"FINISHED"}
 
-        if self.keep_objs:
-            tool.Array.bake_children_transform(element, self.item)
-            tool.Array.set_children_lock_state(element, self.item, False)
+        with tool.Geometry.batch_host_recut():
+            if self.keep_objs:
+                tool.Array.bake_children_transform(element, self.item)
+                tool.Array.set_children_lock_state(element, self.item, False)
 
-        if not self.keep_objs:
-            data[self.item]["count"] = 1
-        tool.Array.remove_constraints(parent_element)
-        tool.Model.regenerate_array(parent, data, array_layers_to_apply=[self.item] if self.keep_objs else [])
+            if not self.keep_objs:
+                data[self.item]["count"] = 1
+            tool.Array.remove_constraints(parent_element)
+            tool.Model.regenerate_array(parent, data, array_layers_to_apply=[self.item] if self.keep_objs else [])
 
-        pset = tool.Pset.get_element_pset(element, "BBIM_Array")
-        if len(data) == 1:
-            ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
-        else:
-            del data[self.item]
-            data = tool.Ifc.get().createIfcText(json.dumps(data))
-            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
-            tool.Array.constrain_children_to_parent(element)
+            pset = tool.Pset.get_element_pset(element, "BBIM_Array")
+            if len(data) == 1:
+                ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
+            else:
+                del data[self.item]
+                data = tool.Ifc.get().createIfcText(json.dumps(data))
+                ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
+                tool.Array.constrain_children_to_parent(element)
 
 
 class SelectArrayParent(bpy.types.Operator):

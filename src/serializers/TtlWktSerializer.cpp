@@ -22,7 +22,15 @@
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
+#include <Standard_Version.hxx>
+#if OCC_VERSION_HEX >= 0x80000
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <NCollection_HSequence.hxx>
+#else
 #include <TopTools_HSequenceOfShape.hxx>
+#endif
+
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepAlgoAPI_Section.hxx>
@@ -408,14 +416,21 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
     for (int iter = 0; iter < 10; ++iter) {
 
         gp_Pln pln(gp_Pnt(0, 0, zmin + section_height + iter * (height - 1.) / 10.), gp::DZ());
-
+#if OCC_VERSION_HEX >= 0x80000
+        opencascade::handle<NCollection_HSequence<TopoDS_Shape>> wires = new NCollection_HSequence<TopoDS_Shape>();
+#else
         Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+#endif
 
         size_t N = 0;
         TopoDS_Iterator it(compound);
         // Iterate over components of compound to have better chance of matching section edges to closed wires
         for (; it.More(); it.Next()) {
+#if OCC_VERSION_HEX >= 0x80000
+            opencascade::handle<NCollection_HSequence<TopoDS_Shape>> edges = new NCollection_HSequence<TopoDS_Shape>();
+#else
             Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
+#endif
             TopoDS_Shape result = BRepAlgoAPI_Section(it.Value(), pln);
 
             {

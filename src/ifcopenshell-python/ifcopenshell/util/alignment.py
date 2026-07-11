@@ -56,7 +56,7 @@ def append_zero_length_segments(file: ifcopenshell.file) -> ifcopenshell.file:
     for alignment in alignments:
         layouts = ifcopenshell.api.alignment.get_alignment_layouts(alignment)
         for layout in layouts:
-            ifcopenshell.api.alignment.add_zero_length_segment(patched_file, layout, include_referent=False)
+            ifcopenshell.api.alignment.add_zero_length_segment(patched_file, layout)
             curve = ifcopenshell.api.alignment.get_layout_curve(layout)
             if curve:
                 ifcopenshell.api.alignment.add_zero_length_segment(patched_file, curve)

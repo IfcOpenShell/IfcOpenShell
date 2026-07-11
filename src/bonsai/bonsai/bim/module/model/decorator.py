@@ -53,12 +53,6 @@ from bonsai.bim.module.drawing.gizmos import (
 from bonsai.bim.module.drawing.helper import format_distance
 
 
-def transparent_color(color, alpha=0.1):
-    color = [i for i in color]
-    color[3] = alpha
-    return color
-
-
 def highlight_color(color, alpha=0.1):
     color = [i + (1 - i) * 0.5 for i in color]
     return color
@@ -133,7 +127,7 @@ class ProfileDecorator:
 
     def draw_faces(self, bm, vertices_coords):
         """Submit a non-mutating beauty-triangulated TRIS batch over ``bm``'s faces."""
-        faces_color = transparent_color(self.addon_prefs.decorator_color_special)
+        faces_color = tool.Blender.transparent_color(self.addon_prefs.decorator_color_special)
         tool.Blender.draw_bmesh_face_tris(bm, vertices_coords, faces_color, self.draw_batch)
 
     def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
@@ -263,7 +257,7 @@ class ProfileDecorator:
         self.draw_batch("LINES", all_vertices, unselected_elements_color, unselected_edges)
         self.draw_batch("LINES", all_vertices, selected_elements_color, selected_edges)
 
-        self.draw_batch("POINTS", unselected_vertices, transparent_color(unselected_elements_color, 0.5))
+        self.draw_batch("POINTS", unselected_vertices, tool.Blender.transparent_color(unselected_elements_color, 0.5))
         self.draw_batch("POINTS", error_vertices, error_elements_color)
         self.draw_batch("POINTS", special_vertices, special_elements_color)
         self.draw_batch("POINTS", selected_vertices, selected_elements_color)
@@ -354,9 +348,11 @@ class ProfileDecorator:
         return points, listEdg
 
 
-class PolylineDecorator:
-    is_installed = False
-    handlers = []
+class PolylineDecorator(tool.Blender.ViewportDecorator):
+    # draw_methods declares only the always-bound handler so the base's
+    # __init_subclass__ validation passes; the override install below
+    # conditionally registers up to four more handlers based on ui_only.
+    draw_methods = (("draw_input_ui", "POST_PIXEL"),)
     event = None
     input_type = None
     input_ui = None
@@ -391,15 +387,6 @@ class PolylineDecorator:
             )
             cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
 
     @classmethod
     def update(
@@ -458,14 +445,6 @@ class PolylineDecorator:
         bm.free()
 
         return {"verts": verts, "edges": edges, "tris": tris}
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
 
     def shader_config(self, context):
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -734,7 +713,9 @@ class PolylineDecorator:
             if self.polyline_data.measurement_type == "POLY_AREA" and area:
                 if float(area) > 0:
                     tris = self.calculate_polygon(polyline_verts)["tris"]
-                    self.draw_batch("TRIS", polyline_verts, transparent_color(self.decorator_color_special), tris)
+                    self.draw_batch(
+                        "TRIS", polyline_verts, tool.Blender.transparent_color(self.decorator_color_special), tris
+                    )
 
         # Draw polyline with selected points
         self.line_shader.uniform_float("lineWidth", 2.0)
@@ -987,9 +968,8 @@ class PolylineDecorator:
             self.draw_batch("LINES", polyline_verts, decorator_color_unselected, polyline_edges)
 
 
-class ProductDecorator:
-    is_installed = False
-    handlers = []
+class ProductDecorator(tool.Blender.ViewportDecorator):
+    draw_method = "draw_product_preview"
     preview_mode: Literal["PROFILE_VERTICAL", "PROFILE_HORIZONTAL", "LAYER2", "LAYER3", "GENERIC"]
     relating_type = None
     obj_data: dict[str, list] = {}
@@ -1032,29 +1012,7 @@ class ProductDecorator:
         )
         cls.is_installed = True
 
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
-
     def draw_product_preview(self, context):
-        def transparent_color(color, alpha=0.1):
-            color = [i for i in color]
-            color[3] = alpha
-            return color
-
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()  # required to be able to change uniforms of the shader
@@ -1086,7 +1044,7 @@ class ProductDecorator:
             data = self.get_generic_preview_data()
         if data:
             self.draw_batch("LINES", data["verts"], decorator_color, data["edges"])
-            self.draw_batch("TRIS", data["verts"], transparent_color(decorator_color), data["tris"])
+            self.draw_batch("TRIS", data["verts"], tool.Blender.transparent_color(decorator_color), data["tris"])
 
     def get_wall_preview_data(self):
         relating_type = self.relating_type
@@ -1619,34 +1577,8 @@ class ProductDecorator:
         return data
 
 
-class WallAxisDecorator:
-    is_installed = False
-    handlers = []
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_wall_axis, (context,), "WINDOW", "POST_VIEW"))
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
+class WallAxisDecorator(tool.Blender.ViewportDecorator):
+    draw_method = "draw_wall_axis"
 
     def draw_wall_axis(self, context):
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -1665,7 +1597,7 @@ class WallAxisDecorator:
         self.line_shader.uniform_float("lineWidth", 2.0)
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
-            if element.is_a("IfcWall"):
+            if element and element.is_a("IfcWall"):
                 layers = tool.Model.get_material_layer_parameters(element)
                 axis = tool.Model.get_wall_axis(obj, layers)
                 side = [tuple(list(v) + [obj.location.z]) for v in axis["side"]]
@@ -1685,34 +1617,8 @@ class WallAxisDecorator:
                 self.draw_batch("LINES", arrow, unselected_elements_color, [(0, 1), (1, 2), (1, 3)])
 
 
-class SlabDirectionDecorator:
-    is_installed = False
-    handlers = []
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_wall_axis, (context,), "WINDOW", "POST_VIEW"))
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
+class SlabDirectionDecorator(tool.Blender.ViewportDecorator):
+    draw_method = "draw_wall_axis"
 
     def draw_wall_axis(self, context):
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -1742,41 +1648,10 @@ class SlabDirectionDecorator:
             self.draw_batch("LINES", base, selected_elements_color, [(0, 1)])
 
 
-class FaceAreaDecorator:
-    is_installed = False
-    handlers = []
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_face_area, (context,), "WINDOW", "POST_VIEW"))
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
+class FaceAreaDecorator(tool.Blender.ViewportDecorator):
+    draw_method = "draw_face_area"
 
     def draw_face_area(self, context):
-        def transparent_color(color, alpha=0.1):
-            color = [i for i in color]
-            color[3] = alpha
-            return color
-
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()  # required to be able to change uniforms of the shader
@@ -1797,12 +1672,16 @@ class FaceAreaDecorator:
             if data:
                 self.draw_batch("POINTS", data["verts"], decorator_color)
                 self.draw_batch("LINES", data["verts"], decorator_color, data["edges"])
-                self.draw_batch("TRIS", data["verts"], transparent_color(decorator_color, alpha=0.5), data["tris"])
+                self.draw_batch(
+                    "TRIS", data["verts"], tool.Blender.transparent_color(decorator_color, alpha=0.5), data["tris"]
+                )
 
 
-class BoundingBoxDecorator:
-    is_installed = False
-    handlers = []
+class BoundingBoxDecorator(tool.Blender.ViewportDecorator):
+    draw_methods = (
+        ("draw_bounding_box_wire_cube", "POST_VIEW"),
+        ("draw_dimension_text", "POST_PIXEL"),
+    )
 
     def __init__(self):
         context = bpy.context
@@ -1812,31 +1691,6 @@ class BoundingBoxDecorator:
         self.decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
         self.decorator_color_wire = (*theme.view_3d.bone_solid, 1)
         self.decorator_color_special = tool.Blender.get_addon_preferences().decorator_color_special
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(
-            bpy.types.SpaceView3D.draw_handler_add(
-                handler.draw_bounding_box_wire_cube, (context,), "WINDOW", "POST_VIEW"
-            )
-        )
-        cls.handlers.append(
-            bpy.types.SpaceView3D.draw_handler_add(handler.draw_dimension_text, (context,), "WINDOW", "POST_PIXEL")
-        )
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                bpy.types.SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except Exception:
-                pass
-        cls.handlers.clear()
-        cls.is_installed = False
 
     @staticmethod
     def get_combined_bounding_box_corners(objects):
@@ -1909,14 +1763,6 @@ class BoundingBoxDecorator:
             {"X": (7, 3), "Y": (7, 4), "Z": (7, 6)},
         ]
         return trihedron[best_origin]
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
 
     def draw_text_background(self, context, coords_dim, text_dim):
         padding = 5
@@ -2856,7 +2702,7 @@ class MEPSystemPathDecorator(_ConnectedNetworkPathDecorator):
         lines: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
         port_positions: list[tuple[float, float, float]] = []
         for element in connected:
-            if element.is_a("IfcFlowSegment"):
+            if element and element.is_a("IfcFlowSegment"):
                 if not tool.Geometry.has_axis_representation(element):
                     continue
                 obj = tool.Ifc.get_object(element)

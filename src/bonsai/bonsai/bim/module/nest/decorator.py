@@ -20,18 +20,11 @@ import blf
 import bpy
 import gpu
 import ifcopenshell.util.element
-from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 
 import bonsai.tool as tool
-
-
-def transparent_color(color, alpha=0.1):
-    color = [i for i in color]
-    color[3] = alpha
-    return color
 
 
 def create_bounding_box(objs):
@@ -79,26 +72,8 @@ def create_bounding_box(objs):
     return indices, edges
 
 
-class NestDecorator:
-    is_installed = False
-    handlers = []
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_nest, (context,), "WINDOW", "POST_VIEW"))
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
+class NestDecorator(tool.Blender.ViewportDecorator):
+    draw_method = "draw_nest"
 
     def dotted_line_shader(self):
         vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
@@ -152,14 +127,6 @@ class NestDecorator:
         shader.uniform_float("color", color)
         shader.uniform_float("u_ViewProjectionMatrix", matrix)
         shader.uniform_float("u_Scale", 25)
-        batch.draw(shader)
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
         batch.draw(shader)
 
     def draw_nest(self, context: bpy.types.Context) -> None:
@@ -226,35 +193,11 @@ class NestDecorator:
             self.draw_custom_batch(line, decorator_color_unselected)
 
 
-class NestModeDecorator:
-    is_installed = False
-    handlers = []
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_nest_name, (context,), "WINDOW", "POST_PIXEL"))
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_nest_empty, (context,), "WINDOW", "POST_VIEW"))
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
+class NestModeDecorator(tool.Blender.ViewportDecorator):
+    draw_methods = (
+        ("draw_nest_name", "POST_PIXEL"),
+        ("draw_nest_empty", "POST_VIEW"),
+    )
 
     def draw_nest_name(self, context):
         if context.mode == "EDIT_MESH":
