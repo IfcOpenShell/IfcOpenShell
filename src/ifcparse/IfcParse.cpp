@@ -1107,8 +1107,17 @@ class apply_individual_instance_visitor {
 // duplicates the subgraph nor recurses. Same file and unowned instances are
 // returned unchanged. This folds the manual file.add step users previously had
 // to perform before the assignment into the assignment itself.
+//
+// The adoption is restricted to instances whose schema matches the target
+// file's. IfcFile::addEntity throws when the schemas differ, and a cross-schema
+// assignment used to be permitted (the pointer was simply stored). Callers such
+// as the Python owner-history helpers still rely on assigning an instance that
+// happens to originate from a file of another schema, so preserve the previous
+// non-adopting, non-throwing behaviour in that case rather than aborting the
+// assignment.
 static IfcUtil::IfcBaseClass* adopt_if_foreign(IfcParse::IfcFile* file, IfcUtil::IfcBaseClass* instance) {
-    if (instance != nullptr && file != nullptr && instance->file_ != nullptr && instance->file_ != file) {
+    if (instance != nullptr && file != nullptr && instance->file_ != nullptr && instance->file_ != file &&
+        instance->declaration().schema() == file->schema()) {
         return file->addEntity(instance);
     }
     return instance;
