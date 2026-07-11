@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import atexit
 import logging
 import os
 from pathlib import Path
@@ -36,6 +37,9 @@ AUTOSAVING_SUFFIX = "_autosaving.ifc"
 AUTOSAVED_SUFFIX = "_autosaved.ifc"
 
 _timer_callback: Union[Callable[[], None], None] = None
+# See cleanup_stale_autosave() for why this is a cached plain string rather
+# than looked up live.
+_active_ifc_path_cache: Union[str, None] = None
 
 
 class Autosave:
@@ -60,6 +64,12 @@ class Autosave:
         return path
 
     @classmethod
+    def _update_active_ifc_path_cache(cls) -> None:
+        global _active_ifc_path_cache
+        ifc_path = cls.get_active_ifc_path()
+        _active_ifc_path_cache = ifc_path.as_posix() if ifc_path is not None else None
+
+    @classmethod
     def is_enabled(cls) -> bool:
         return bool(tool.Blender.get_addon_preferences().autosave_enabled)
 
@@ -82,6 +92,7 @@ class Autosave:
     @classmethod
     def reset_timer(cls) -> None:
         cls.cancel_timer()
+        cls._update_active_ifc_path_cache()
         if not cls.is_eligible():
             return
 
@@ -147,3 +158,31 @@ class Autosave:
         if autosaved_path.stat().st_mtime > path.stat().st_mtime:
             return autosaved_path.as_posix().replace("\\", "/")
         return None
+
+    @classmethod
+    def cleanup_stale_autosave(cls) -> None:
+        """Remove the active IFC's autosave file(s) on a graceful shutdown.
+
+        Registered via `atexit`, which only runs on a normal interpreter
+        shutdown - never on an actual crash. So a deliberate quit (whether
+        the user saved or chose "don't save") clears the recovery file and
+        won't prompt on next startup, while a genuine crash leaves it in
+        place for recovery, since no atexit callbacks fire then.
+
+        Deliberately reads only `_active_ifc_path_cache` - a plain string
+        kept up to date by `reset_timer()` - rather than touching `bpy` here.
+        By the time `atexit` fires, Blender's own C++ side is torn down far
+        enough that even reading `bpy.context.scene` aborts the process
+        (std::bad_optional_access) instead of raising a catchable exception.
+        """
+        if _active_ifc_path_cache is None:
+            return
+        try:
+            _, autosaving_path, autosaved_path = cls.get_paths(_active_ifc_path_cache)
+            autosaving_path.unlink(missing_ok=True)
+            autosaved_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+atexit.register(Autosave.cleanup_stale_autosave)
