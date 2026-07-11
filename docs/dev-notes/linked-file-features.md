@@ -134,6 +134,19 @@ default set when empty) − exclude, applied in `LoadLinkedProject` and per link
   same file with a different filter gets its own cache; both filters survive
   save → reopen → reload.
 
+### Auto-load on open
+
+Links that were **loaded and visible** at IFC save time auto-load when the project
+is reopened. `ExportIFC` calls `tool.Project.update_linked_models_state()`, which
+rewrites each reference's `Description` with a `loaded` flag
+(`is_loaded and not is_hidden`); `load_linked_models_from_ifc` replays flagged
+links via `load_link` after restoring the list (missing files warn and skip so
+they can't break project open). The flag extends the same JSON blob as the
+exclude — plain legacy strings decode as no-autoload. Trade-off: project open
+pays the link-load cost up front (fast on cache hit; a missing cache rebuilds in
+a background Blender, same as clicking Load). Verified headless: loaded+visible
+auto-loads; unloaded and loaded-but-hidden links stay unloaded.
+
 ### External styles + layerset slicing in the linked loader
 
 `LoadLinkedProject.get_external_material(style_id)` resolves a style id → appended

@@ -1438,7 +1438,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                 reference[1] = ",".join([str(o) for o in np.eye(4).flatten().tolist()])
                 reference.Location = filepath.replace("\\", "/")
                 # Persist the filter per reference (Description is IFC4+ only).
-                description = tool.Project.encode_link_filter(self.query, self.exclude)
+                description = tool.Project.encode_link_filter(self.query, self.exclude, loaded=True)
                 if description and hasattr(reference, "Description"):
                     reference.Description = description
                 new.ifc_definition_id = reference.id()
@@ -1812,7 +1812,7 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Ifc.get() and link.ifc_definition_id:
             reference = tool.Ifc.get().by_id(link.ifc_definition_id)
             if hasattr(reference, "Description"):
-                reference.Description = tool.Project.encode_link_filter(link.query, link.exclude)
+                reference.Description = tool.Project.encode_link_filter(link.query, link.exclude, loaded=True)
 
         bpy.ops.bim.unload_link(link_index=self.link_index)
         return bpy.ops.bim.load_link(
@@ -2162,6 +2162,8 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         # gizmo polls gate on each preview's is_active flag, and a stuck flag
         # persisted through the save would silently hide them on reload.
         preview_base.discard_pending_previews(context.scene)
+        # Links loaded and visible right now auto-load on the next open.
+        tool.Project.update_linked_models_state()
         # Suffix is appended to the IFC save-success report below so the auto-commit
         # info isn't immediately overwritten by the success message in Blender's
         # status bar (only the latest self.report({"INFO"}, ...) sticks).
