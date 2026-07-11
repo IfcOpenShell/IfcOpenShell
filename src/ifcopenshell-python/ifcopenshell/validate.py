@@ -46,6 +46,7 @@ Can be used to run validation on IFC file from the command line:
 from __future__ import annotations
 
 import argparse
+import ast
 import functools
 import itertools
 import json
@@ -593,6 +594,11 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
                 else:
                     logger.error("For instance:\n    %s\n%s", inst, e)
 
+    if isinstance(logger, json_logger):
+        logger.set_state("instance", None)
+        logger.set_state("attribute", None)
+    validate_uniqueness_rules(f, logger, schema)
+
     if filename:
         # IfcOpenShell uses lazy-loading, so entity instance
         # attributes aren't parsed yet, and counts aren't verified yet.
@@ -758,6 +764,125 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_l
                     rule,
                     previous_element,
                     annotate_inst_attr_pos(previous_element, 3),
+                )
+
+
+@functools.lru_cache(maxsize=None)
+def get_uniqueness_rules(schema_identifier: str) -> dict[str, list[tuple[str, tuple[str, ...]]]]:
+    """Return the entity-level EXPRESS ``UNIQUE`` clauses for a schema.
+
+    The data is read from the ``uniqueness_rules`` mapping emitted into the
+    generated schema rules module (``ifcopenshell/express/rules/<schema>.py``)
+    by ``ifcopenshell.express.rule_compiler``, i.e. straight from
+    ``express_parser`` rather than a hard-coded table. The assignment is
+    extracted statically (without importing the large rules module) and
+    literal-evaluated. Returns an empty mapping when the rules module or the
+    ``uniqueness_rules`` assignment is absent (e.g. a schema whose rules have
+    not been regenerated yet), so validation degrades gracefully.
+    """
+    rules_dir = os.path.join(os.path.dirname(ifcopenshell.express.rule_executor.__file__), "rules")
+    rules_path = os.path.join(rules_dir, f"{schema_identifier}.py")
+    try:
+        with open(rules_path, "r") as rules_file:
+            source = rules_file.read()
+    except OSError:
+        return {}
+    if "uniqueness_rules" not in source:
+        return {}
+    try:
+        module = ast.parse(source)
+    except SyntaxError:
+        return {}
+    for node in module.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "uniqueness_rules" for target in node.targets
+        ):
+            try:
+                return ast.literal_eval(node.value)
+            except (ValueError, SyntaxError):
+                return {}
+    return {}
+
+
+def _uniqueness_key_component(value: Any) -> Any:
+    # An instance reference is unique by identity (its STEP id), not by content.
+    if isinstance(value, ifcopenshell.entity_instance):
+        return ("#", value.id())
+    return value
+
+
+def validate_uniqueness_rules(
+    f: ifcopenshell.file,
+    logger: Union[Logger, json_logger],
+    schema: schema_definition,
+) -> None:
+    """Validate entity-level EXPRESS ``UNIQUE`` clauses generically.
+
+    Generalises the dedicated ``IfcApplication`` check to every other
+    entity-level ``UNIQUE`` clause of the active schema. The rules come from
+    :func:`get_uniqueness_rules` (express_parser driven). ``IfcRoot.UR1`` and
+    ``IfcApplication.UR1/UR2`` keep their dedicated passes and are skipped here
+    to avoid double reporting.
+    """
+    uniqueness_rules = get_uniqueness_rules(f.schema_identifier)
+    for entity_name, rules in uniqueness_rules.items():
+        if entity_name in ("IfcRoot", "IfcApplication"):
+            continue
+        try:
+            insts = f.by_type(entity_name)
+        except RuntimeError:
+            # Entity not present in this schema variant.
+            continue
+        if not insts:
+            continue
+        try:
+            _, attrs = get_entity_attributes(schema, entity_name)
+        except Exception:
+            continue
+        attr_names = [attr.name() for attr in attrs]
+
+        for label, rule_attrs in rules:
+            try:
+                indices = tuple(attr_names.index(name) for name in rule_attrs)
+            except ValueError:
+                # A referenced attribute is absent in this schema variant.
+                continue
+
+            if len(indices) == 1:
+                pos: Union[int, tuple[int, ...]] = indices[0]
+                description = "The attribute %s should be unique" % rule_attrs[0]
+            else:
+                pos = indices
+                description = "The combination of attributes %s should be unique" % " and ".join(rule_attrs)
+            rule = "Rule %s.%s:\n    %s" % (entity_name, label, description)
+
+            seen: dict[tuple, ifcopenshell.entity_instance] = {}
+            for inst in insts:
+                try:
+                    values = tuple(inst[i] for i in indices)
+                except Exception:
+                    continue
+                # Per EXPRESS, a rule is not enforced when a referenced value is
+                # indeterminate (?), so skip instances with a missing value.
+                if any(value is None for value in values):
+                    continue
+                try:
+                    key = tuple(_uniqueness_key_component(value) for value in values)
+                    previous_element = seen.get(key)
+                except TypeError:
+                    continue
+                if previous_element is None:
+                    seen[key] = inst
+                    continue
+                if isinstance(logger, json_logger):
+                    logger.set_state("instance", inst)
+                logger.error(
+                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
+                    inst,
+                    annotate_inst_attr_pos(inst, pos),
+                    rule,
+                    previous_element,
+                    annotate_inst_attr_pos(previous_element, pos),
                 )
 
 
