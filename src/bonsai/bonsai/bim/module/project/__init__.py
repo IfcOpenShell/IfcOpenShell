@@ -19,6 +19,7 @@
 import bpy
 
 import bonsai.tool as tool
+
 from . import decorator, gizmo, operator, prop, ui, workspace
 
 classes = (

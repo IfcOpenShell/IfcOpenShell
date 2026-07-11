@@ -23,15 +23,15 @@ from __future__ import annotations
 import atexit
 import logging
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Union
+from typing import Union
 
 import bpy
 
 import bonsai.tool as tool
 from bonsai.bim import export_ifc
 from bonsai.bim.module.model import preview_base
-
 
 AUTOSAVING_SUFFIX = "_autosaving.ifc"
 AUTOSAVED_SUFFIX = "_autosaved.ifc"
