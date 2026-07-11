@@ -44,6 +44,18 @@ APPENDABLE_ASSET_TYPES: tuple[APPENDABLE_ASSET, ...] = get_args(APPENDABLE_ASSET
 MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
 
 
+def is_reusable_name(name: Any) -> bool:
+    """Whether a name qualifies as a key for name-based deduplication.
+
+    Only a non-empty, non-blank string identifies an asset well enough to
+    reuse an existing one. An empty/blank string or ``None`` is not a real
+    name, so distinct blank-named assets (e.g. two different profiles both
+    named ``""``) must be appended as separate instances instead of collapsed
+    into one. See https://github.com/IfcOpenShell/IfcOpenShell/issues/8045.
+    """
+    return isinstance(name, str) and bool(name.strip())
+
+
 def append_asset(
     file: ifcopenshell.file,
     library: ifcopenshell.file,
@@ -315,14 +327,16 @@ class Usecase:
             return None
         elif element.is_a("IfcMaterial"):
             name = element.Name
+            if not is_reusable_name(name):
+                return None
             return next((e for e in self.file.by_type("IfcMaterial") if e.Name == name), None)
 
         elif element.is_a() in MATERIAL_SETS:
             ifc_class = element.is_a()
             name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
             material_set_name = getattr(element, name_attr)
-            if material_set_name is None:
-                return
+            if not is_reusable_name(material_set_name):
+                return None
             for candidate in self.file.by_type(ifc_class):
                 if getattr(candidate, name_attr) == material_set_name:
                     if self.material_sets_are_equal(element, candidate):
@@ -331,12 +345,12 @@ class Usecase:
 
         elif element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
-            if profile_name is None:
+            if not is_reusable_name(profile_name):
                 return None
             return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
         elif element.is_a("IfcPresentationStyle"):
             name = element.Name
-            if name is None:
+            if not is_reusable_name(name):
                 return None
             return next((e for e in self.file.by_type(element.is_a()) if e.Name == name), None)
 
@@ -707,7 +721,7 @@ class Usecase:
         # then it might create duplicated subelements.
         if element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
-            if profile_name is not None:
+            if is_reusable_name(profile_name):
                 existing_profile = next(
                     (e for e in ifc_file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None
                 )
@@ -717,15 +731,16 @@ class Usecase:
 
         elif element.is_a("IfcMaterial"):
             material_name = element.Name
-            existing_material = next((e for e in ifc_file.by_type("IfcMaterial") if e.Name == material_name), None)
-            if existing_material is not None:
-                reuse_identities[element_identity] = existing_material
-                return existing_material
+            if is_reusable_name(material_name):
+                existing_material = next((e for e in ifc_file.by_type("IfcMaterial") if e.Name == material_name), None)
+                if existing_material is not None:
+                    reuse_identities[element_identity] = existing_material
+                    return existing_material
 
         elif ifc_class in MATERIAL_SETS:
             name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
             material_set_name = getattr(element, name_attr)
-            if material_set_name is not None:
+            if is_reusable_name(material_set_name):
                 for candidate in ifc_file.by_type(ifc_class):
                     if getattr(candidate, name_attr) == material_set_name:
                         if self.material_sets_are_equal(element, candidate):
@@ -734,7 +749,7 @@ class Usecase:
 
         elif element.is_a("IfcPresentationStyle"):
             style_name = element.Name
-            if style_name is not None:
+            if is_reusable_name(style_name):
                 existing_style = next((e for e in ifc_file.by_type(ifc_class) if e.Name == style_name), None)
                 if existing_style is not None:
                     reuse_identities[element_identity] = existing_style
