@@ -30,6 +30,10 @@
 #include <TopExp.hxx>
 #include <Geom_Circle.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
+#include <BRepTools_WireExplorer.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
+#include <Geom_Line.hxx>
+#include <Geom_TrimmedCurve.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -80,6 +84,82 @@ namespace {
 			}
 		}
 		return false;
+	}
+
+	// Collapses ultra-short straight segments in an open, purely linear directrix.
+	//
+	// Revit MEP flexible-conduit exports discretize a spline directrix with chords
+	// far shorter than the swept disk radius (down to ~1/50 of the radius). Where a
+	// directrix segment is shorter than the corner trim region (which scales with
+	// the pipe radius), BRepFill_TrimShellCorner has to trim two nearly-coincident
+	// pipe surfaces; ProjLib_CompProjectedCurve's Newton walk then fails to converge
+	// and BRepOffsetAPI_MakePipeShell::Build() spins forever. No UserBreak/progress
+	// range is checked anywhere in that OCCT path, so the hang cannot be interrupted
+	// from the outside (see IfcOpenShell #8400).
+	//
+	// Interior vertices bordering a sub-threshold segment collapse to that segment's
+	// midpoint (each vertex moves at most min_len/2, i.e. below the disk radius, in a
+	// region the disk cannot resolve anyway); the directrix endpoints are pinned.
+	// Wires containing any non-linear segment, or (nearly) closed wires, are left
+	// untouched, so ordinary directrices are unaffected.
+	bool collapse_short_directrix_edges(TopoDS_Wire& w, double min_len, int& n_collapsed) {
+		std::vector<gp_Pnt> pts;
+		for (BRepTools_WireExplorer exp(w); exp.More(); exp.Next()) {
+			const TopoDS_Edge& e = exp.Current();
+			double u0, u1;
+			Handle(Geom_Curve) crv = BRep_Tool::Curve(e, u0, u1);
+			if (crv.IsNull()) {
+				return false;
+			}
+			if (crv->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+				crv = Handle(Geom_TrimmedCurve)::DownCast(crv)->BasisCurve();
+			}
+			if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+				return false;
+			}
+			if (pts.empty()) {
+				pts.push_back(BRep_Tool::Pnt(TopExp::FirstVertex(e, Standard_True)));
+			}
+			pts.push_back(BRep_Tool::Pnt(TopExp::LastVertex(e, Standard_True)));
+		}
+		// Need at least two segments, and keep genuinely closed loops out of scope.
+		if (pts.size() < 3 || pts.front().Distance(pts.back()) < min_len) {
+			return false;
+		}
+		bool changed = true;
+		while (changed) {
+			changed = false;
+			for (size_t i = 0; i + 1 < pts.size() && pts.size() > 2; ++i) {
+				if (pts[i].Distance(pts[i + 1]) >= min_len) {
+					continue;
+				}
+				if (i == 0) {
+					// keep the directrix start point fixed
+					pts.erase(pts.begin() + 1);
+				} else if (i + 2 == pts.size()) {
+					// keep the directrix end point fixed
+					pts.erase(pts.begin() + i);
+				} else {
+					pts[i] = gp_Pnt((pts[i].XYZ() + pts[i + 1].XYZ()) / 2.);
+					pts.erase(pts.begin() + i + 1);
+				}
+				++n_collapsed;
+				changed = true;
+				break;
+			}
+		}
+		if (n_collapsed == 0) {
+			return false;
+		}
+		BRepBuilderAPI_MakePolygon mp;
+		for (const auto& p : pts) {
+			mp.Add(p);
+		}
+		if (!mp.IsDone()) {
+			return false;
+		}
+		w = mp.Wire();
+		return true;
 	}
 }
 
@@ -159,6 +239,26 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 
 	gp_Trsf directrix;
 	TopoDS_Wire wire = boost::get<TopoDS_Wire>(w);
+
+	{
+		// Sanitize degenerate directrix segments that would make OCCT's
+		// MakePipeShell corner-trimming loop forever (see #8400). The threshold
+		// is kept well below the swept disk radius, so only sub-feature-scale
+		// noise (which the disk cannot resolve) is collapsed; it is floored at a
+		// small multiple of model precision for the tiny/degenerate radius case.
+		double radius = 0.;
+		if (scs->basis && scs->basis->kind() == taxonomy::FACE) {
+			auto& loops = std::static_pointer_cast<taxonomy::face>(scs->basis)->children;
+			if (!loops.empty() && loops[0]->children.size() == 1 && loops[0]->children[0]->basis && loops[0]->children[0]->basis->kind() == taxonomy::CIRCLE) {
+				radius = std::static_pointer_cast<taxonomy::circle>(loops[0]->children[0]->basis)->radius;
+			}
+		}
+		const double min_len = (std::max)(radius / 10., settings_.get<settings::Precision>().get() * 10.);
+		int n_collapsed = 0;
+		if (collapse_short_directrix_edges(wire, min_len, n_collapsed)) {
+			logger_.Message(Logger::LOG_WARNING, "GEO", 259, "Collapsed " + std::to_string(n_collapsed) + " degenerate directrix segment(s) shorter than a tenth of the swept disk radius", scs->instance);
+		}
+	}
 
 	const bool is_plane = surface && surface->DynamicType() == STANDARD_TYPE(Geom_Plane);
 
