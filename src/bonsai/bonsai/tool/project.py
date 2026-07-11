@@ -113,29 +113,55 @@ class Project(bonsai.core.tool.Project):
         )
 
     @classmethod
-    def encode_link_filter(cls, query: str, exclude: str) -> Union[str, None]:
-        """Serialize a link's filter for IfcDocumentReference.Description.
+    def encode_link_filter(cls, query: str, exclude: str, loaded: bool = False) -> Union[str, None]:
+        """Serialize a link's filter and state for IfcDocumentReference.Description.
 
         A plain include query is stored as-is (backwards compatible); an
-        exclude promotes the value to a small JSON blob.
+        exclude or a loaded state promotes the value to a small JSON blob.
+        The loaded flag makes the link auto-load on the next project open.
         """
-        if exclude:
-            return json.dumps({"include": query, "exclude": exclude})
+        if exclude or loaded:
+            return json.dumps({"include": query, "exclude": exclude, "loaded": loaded})
         return query or None
 
     @classmethod
-    def decode_link_filter(cls, description: Union[str, None]) -> tuple[str, str]:
-        """Get (query, exclude) from a reference Description written by encode_link_filter."""
+    def decode_link_filter(cls, description: Union[str, None]) -> tuple[str, str, bool]:
+        """Get (query, exclude, loaded) from a Description written by encode_link_filter."""
         if not description:
-            return "", ""
+            return "", "", False
         if description.startswith("{"):
             try:
                 data = json.loads(description)
                 if isinstance(data, dict):
-                    return data.get("include", "") or "", data.get("exclude", "") or ""
+                    return (
+                        data.get("include", "") or "",
+                        data.get("exclude", "") or "",
+                        bool(data.get("loaded", False)),
+                    )
             except json.JSONDecodeError:
                 pass
-        return description, ""
+        return description, "", False
+
+    @classmethod
+    def update_linked_models_state(cls) -> None:
+        """Persist each link's loaded/visible state onto its document reference.
+
+        Called at IFC save time so links that were loaded and visible
+        auto-load the next time the project is opened.
+        """
+        if not tool.Ifc.get():
+            return
+        for link in cls.get_project_props().links:
+            if not link.ifc_definition_id:
+                continue
+            try:
+                reference = tool.Ifc.get().by_id(link.ifc_definition_id)
+            except RuntimeError:
+                continue
+            if hasattr(reference, "Description"):
+                reference.Description = cls.encode_link_filter(
+                    link.query, link.exclude, loaded=link.is_loaded and not link.is_hidden
+                )
 
     @classmethod
     def calculate_link_matrix(cls, link: Link) -> Matrix:
@@ -463,6 +489,7 @@ class Project(bonsai.core.tool.Project):
         location_counts: defaultdict[str, int] = defaultdict(int)
         for reference in references:
             location_counts[reference.Location] += 1
+        autoload_indices: list[int] = []
         for reference in references:
             filepath = reference.Location
             link = links.add()
@@ -476,7 +503,7 @@ class Project(bonsai.core.tool.Project):
             # The selector filter used at link time is persisted per
             # reference in its Description (IFC4+); restore it so
             # Reload/Load replay the filter.
-            query, exclude = cls.decode_link_filter(getattr(reference, "Description", None))
+            query, exclude, loaded = cls.decode_link_filter(getattr(reference, "Description", None))
             if not query and not exclude and location_counts[filepath] == 1:
                 # Fall back to the legacy sidecar cache JSON where older
                 # versions persisted the query. Only unambiguous: with
@@ -490,6 +517,15 @@ class Project(bonsai.core.tool.Project):
                         pass
             link.query = query
             link.exclude = exclude
+            if loaded:
+                autoload_indices.append(len(links) - 1)
+
+        # Links that were loaded and visible at save time load automatically.
+        for i in autoload_indices:
+            if not Path(tool.Ifc.resolve_uri(links[i].filepath)).exists():
+                print(f"WARNING: Not auto-loading missing linked model: {links[i].filepath}")
+                continue
+            bpy.ops.bim.load_link(link_index=i)
 
     @classmethod
     def get_project_library_elements(
