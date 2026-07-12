@@ -474,6 +474,7 @@ def get_side_area(
     axis: AXIS_LITERAL = "Y",
     direction: Optional[VectorType] = None,
     angle: float = 90.0,
+    ignore_winding: bool = False,
 ) -> float:
     """Calculates the total surface area of surfaces that are visible from the specified axis
 
@@ -488,11 +489,18 @@ def get_side_area(
     Note that this calculates the actual area, not the projected 2D area. If
     you want the projected area, use :func:`get_footprint_area`.
 
+    Only one side is returned (e.g. the front of a wall, not the front and
+    back combined). By default, face winding determines which side faces the
+    specified direction. Set ``ignore_winding`` to accommodate tessellated
+    geometry with inconsistent or incorrect winding.
+
     :param geometry: Geometry output calculated by IfcOpenShell
     :param axis: Either X, Y, or Z. Defaults to Y, which is used for standard
         walls.
     :param angle: Accept angle difference between face and axis, in degrees.
         E.g. default angle 90 will find all faces with angle < 90 degrees.
+    :param ignore_winding: Measure both the positive and negative axis-facing
+        surfaces and return the larger result. Defaults to False.
     :return: The surface area.
     """
     if direction is None:
@@ -510,14 +518,19 @@ def get_side_area(
     triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
     direction = np.array(direction) / np.linalg.norm(direction)
 
-    # Find the faces with a normal vector pointing in the desired +Y normal direction
+    # Find the faces with a normal vector pointing towards the axis direction.
     # normal_tol < 0 is pointing away, = 0 is perpendicular, and > 0 is pointing towards.
     normal_tol = 0.01  # For angle 90 it's close to perpendicular, but with a fuzz for numerical tolerance
     acceptable_dot = cos(radians(angle)) + normal_tol
     dot_products = np.dot(triangle_normals, direction)
-    filtered_face_indices = np.where(dot_products > acceptable_dot)[0]
-    filtered_faces = faces[filtered_face_indices]
-    return get_area_vf(vertices, filtered_faces)
+
+    positive_faces = faces[np.where(dot_products > acceptable_dot)[0]]
+    positive_area = get_area_vf(vertices, positive_faces)
+    if not ignore_winding:
+        return positive_area
+
+    negative_faces = faces[np.where(dot_products < -acceptable_dot)[0]]
+    return max(positive_area, get_area_vf(vertices, negative_faces))
 
 
 def get_max_side_area(geometry: W.Triangulation) -> float:
@@ -539,6 +552,7 @@ def get_footprint_area(
     geometry: W.Triangulation,
     axis: AXIS_LITERAL = "Z",
     direction: Optional[VECTOR_3D] = None,
+    ignore_winding: bool = False,
 ) -> float:
     """Calculates the total footprint (i.e. projected) surface area visible from along an axis
 
@@ -553,10 +567,17 @@ def get_footprint_area(
     Note that this calculates the 2D projected area, not the actual surface
     area. If you want the actual area, use :func:`get_side_area`.
 
+    Only one side is returned (e.g. the top of a slab, not the top and
+    bottom combined). By default, face winding determines which side faces the
+    specified direction. Set ``ignore_winding`` to accommodate tessellated
+    geometry with inconsistent or incorrect winding.
+
     :param geometry: Geometry output calculated by IfcOpenShell
     :param axis: Either X, Y, or Z. Defaults to Z.
     :param direction: An XYZ iterable (e.g. (0., 0., 1.)). If a direction
         vector is specified, this overrides the axis argument.
+    :param ignore_winding: Measure both the positive and negative axis-facing
+        surfaces and return the larger result. Defaults to False.
     :return: The surface area.
     """
     if direction is None:
@@ -574,12 +595,12 @@ def get_footprint_area(
     triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
     direction = np.array(direction) / np.linalg.norm(direction)
 
-    # Find the faces with a normal vector pointing in the desired direction using dot product
+    # Find the faces with a normal vector pointing towards the axis direction using dot product.
     # normal_tol < 0 is pointing away, = 0 is perpendicular, and > 0 is pointing towards.
     normal_tol = 0.01  # Close to perpendicular, but with a fuzz for numerical tolerance
     dot_products = np.dot(triangle_normals, direction)
-    filtered_face_indices = np.where(dot_products > normal_tol)[0]
-    filtered_faces = faces[filtered_face_indices]
+
+    positive_faces = faces[np.where(dot_products > normal_tol)[0]]
 
     # Flatten vertices along the direction
     vertices = vertices.copy()  # Buffers are read-only.
@@ -608,10 +629,19 @@ def get_footprint_area(
     # Project the flattened vertices onto the basis to get 2D coordinates
     vertices_2d = np.array([[np.dot(v, b), np.dot(v, c)] for v in vertices])
 
-    polygons = [shapely.Polygon(vertices_2d[face]) for face in filtered_faces]
-    unioned_polygon = shapely.ops.unary_union(polygons)
+    def footprint_area(filtered_faces: npt.NDArray[np.int32]) -> float:
+        if len(filtered_faces) == 0:
+            return 0.0
+        polygons = [shapely.Polygon(vertices_2d[face]) for face in filtered_faces]
+        unioned_polygon = shapely.ops.unary_union(polygons)
+        return unioned_polygon.area
 
-    return unioned_polygon.area
+    positive_area = footprint_area(positive_faces)
+    if not ignore_winding:
+        return positive_area
+
+    negative_faces = faces[np.where(dot_products < -normal_tol)[0]]
+    return max(positive_area, footprint_area(negative_faces))
 
 
 def get_outer_surface_area(geometry: W.Triangulation) -> float:
