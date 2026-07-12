@@ -314,8 +314,12 @@ if(WASM_BUILD)
 else()
     # @todo review this, shouldn't this be all possible header-only now?
     # ... or rewritten using C++17 features?
+    # Boost.System has been header-only since 1.69 and its compiled stub library
+    # was dropped in newer Boost, so requesting it as a component makes
+    # find_package fail on Boost 1.70 and up (for example Boost 1.90). It is
+    # still pulled in transitively by thread / iostreams where needed, so do not
+    # request it explicitly.
     set(BOOST_COMPONENTS
-        system
         program_options
         regex
         thread

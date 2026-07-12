@@ -127,6 +127,7 @@ src/ifcopenshell-python/ifcopenshell/express/*.exp.cache.dat
 
 # temp files from AI coding tools
 *.claude
+CLAUDE.local.md
 *.py.tmp*
 *.json.tmp*
 
