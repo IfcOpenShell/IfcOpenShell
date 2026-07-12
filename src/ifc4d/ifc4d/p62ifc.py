@@ -28,6 +28,7 @@ class P62Ifc:
         self.file = None
         self.work_plan = None
         self.project = {}
+        self.default_calendar_id = None
         self.calendars = {}
         self.wbs = {}
         self.root_activites = []
@@ -89,6 +90,7 @@ class P62Ifc:
         self.ns = {"pr": root.tag[1:].partition("}")[0]}
         project = root.find("pr:Project", self.ns)
         self.project["Name"] = project.findtext("pr:Name") or "Unnamed"
+        self.default_calendar_id = project.findtext("pr:ActivityDefaultCalendarObjectId", namespaces=self.ns)
         self.parse_calendar_xml(root)
         self.parse_calendar_xml(project)
         self.parse_wbs_xml(project)
@@ -174,6 +176,9 @@ class P62Ifc:
                 self.wbs[wbs_id]["activities"].append(activity_id)
             else:
                 self.root_activites.append(activity_id)
+            # CalendarObjectId is optional in the P6 schema: an activity without one
+            # inherits the project's ActivityDefaultCalendarObjectId.
+            calendar_id = activity.findtext("pr:CalendarObjectId", namespaces=self.ns)
             self.activities[activity_id] = {
                 "Name": activity.find("pr:Name", self.ns).text,
                 "Identification": activity.find("pr:Id", self.ns).text,
@@ -181,7 +186,7 @@ class P62Ifc:
                 "FinishDate": datetime.datetime.fromisoformat(activity.find("pr:FinishDate", self.ns).text),
                 "PlannedDuration": activity.find("pr:PlannedDuration", self.ns).text,
                 "Status": activity.find("pr:Status", self.ns).text,
-                "CalendarObjectId": activity.find("pr:CalendarObjectId", self.ns).text,
+                "CalendarObjectId": calendar_id or self.default_calendar_id,
                 "ifc": None,
             }
 
