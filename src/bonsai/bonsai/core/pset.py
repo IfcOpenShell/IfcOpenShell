@@ -40,7 +40,11 @@ def copy_property_to_selection(
     element = ifc.get_entity(obj)
     if not element:
         return
-    ifc_pset = pset.get_element_pset(element, pset_name)
+    # Only consider the element's own property set, never one inherited from its
+    # type. Otherwise copying an occurrence override would edit the type's pset
+    # (and thus every occurrence) instead of creating/updating the override on
+    # this element. See https://github.com/IfcOpenShell/IfcOpenShell/issues/7412.
+    ifc_pset = pset.get_element_pset(element, pset_name, should_inherit=False)
     if not ifc_pset:
         ifc_pset = ifc.run("pset.add_pset" if is_pset else "pset.add_qto", product=element, name=pset_name)
     if is_pset:
