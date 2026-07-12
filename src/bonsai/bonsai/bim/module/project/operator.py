@@ -1044,13 +1044,19 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
 
         return tooltip
 
-    def check_autosave_recovery(self, context: bpy.types.Context) -> set["rna_enums.OperatorReturnItems"] | None:
+    def check_autosave_recovery(self, context: bpy.types.Context) -> bool:
         if self.skip_autosave_recovery:
-            return None
+            return False
         autosaved_filepath = tool.Autosave.get_newer_autosaved_path(self.get_filepath_abs())
         if not autosaved_filepath:
-            return None
-        return bpy.ops.bim.load_autosaved_recovery_popup(
+            return False
+        # Fire-and-forget: don't propagate this popup's own RUNNING_MODAL
+        # return value up as if *this* operator were running modally too -
+        # we never call modal_handler_add() on ourselves, so the window
+        # manager would be left tracking a modal operator with no handler,
+        # corrupting its operator bookkeeping until it crashes later when
+        # the (real) popup modal handler is closed.
+        bpy.ops.bim.load_autosaved_recovery_popup(
             "INVOKE_DEFAULT",
             original_filepath=str(self.get_filepath_abs()),
             autosaved_filepath=autosaved_filepath,
@@ -1059,10 +1065,11 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             should_start_fresh_session=self.should_start_fresh_session,
             import_without_ifc_data=self.import_without_ifc_data,
         )
+        return True
 
     def execute(self, context):
-        if recovery := self.check_autosave_recovery(context):
-            return recovery
+        if self.check_autosave_recovery(context):
+            return {"FINISHED"}
 
         if (
             tool.Blender.get_addon_preferences().save_metadata_blend_file
@@ -1177,8 +1184,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
 
     def invoke(self, context, event):
         if self.filepath:
-            if recovery := self.check_autosave_recovery(context):
-                return recovery
+            if self.check_autosave_recovery(context):
+                return {"FINISHED"}
             return self.execute(context)
         return ImportHelper.invoke(self, context, event)
 
@@ -2181,8 +2188,8 @@ class LoadAutosavedRecoveryPopup(bpy.types.Operator):
             self, width=420, title="Recover Autosaved File", confirm_text="Yes"
         )
 
-    def _load(self, filepath: str, skip_recent: bool) -> set["rna_enums.OperatorReturnItems"]:
-        return bpy.ops.bim.load_project(
+    def _load_kwargs(self, filepath: str, skip_recent: bool) -> dict:
+        return dict(
             filepath=filepath,
             skip_autosave_recovery=True,  # Prevent infinite loop
             is_advanced=self.is_advanced,
@@ -2192,16 +2199,42 @@ class LoadAutosavedRecoveryPopup(bpy.types.Operator):
             skip_recent=skip_recent,
         )
 
+    @staticmethod
+    def _defer(callback) -> None:
+        def on_timer() -> None:
+            callback()
+            return None
+
+        # bim.load_project (with should_start_fresh_session, our default)
+        # calls wm.read_homefile(), which tears down the window
+        # manager/screens/regions. Calling that synchronously from this
+        # dialog's execute()/cancel() - themselves invoked from deep inside
+        # Blender's modal handling for this popup's button click - frees
+        # data that the still-on-stack caller dereferences once we return,
+        # segfaulting Blender. Deferring by one timer tick runs the reload
+        # after the popup's own modal handling has fully unwound. The
+        # callback only closes over plain values (not `self`), since the
+        # operator instance itself may no longer be valid by the time the
+        # timer fires.
+        bpy.app.timers.register(on_timer, first_interval=0.0)
+
     def execute(self, context):
-        result = self._load(self.autosaved_filepath, skip_recent=True)
-        # Re-point tracking at the original path so future saves write back
-        # to it, not "_autosaved.ifc".
-        tool.Ifc.set_path(self.original_filepath)
-        return result
+        kwargs = self._load_kwargs(self.autosaved_filepath, skip_recent=True)
+        original_filepath = self.original_filepath
+
+        def load_and_repoint() -> None:
+            bpy.ops.bim.load_project(**kwargs)
+            # Re-point tracking at the original path so future saves write
+            # back to it, not "_autosaved.ifc".
+            tool.Ifc.set_path(original_filepath)
+
+        self._defer(load_and_repoint)
+        return {"FINISHED"}
 
     def cancel(self, context):
         # Also reached via Escape or a click outside the dialog, not just Cancel.
-        self._load(self.original_filepath, skip_recent=False)
+        kwargs = self._load_kwargs(self.original_filepath, skip_recent=False)
+        self._defer(lambda: bpy.ops.bim.load_project(**kwargs))
 
 
 class AutosavePrompt(bpy.types.Operator):
