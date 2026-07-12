@@ -25,18 +25,18 @@ def _toposort(graph: dict[int, set[int]], logger: logging.Logger) -> list[int]:
     """Flatten a dependency graph of entity ids into dependency order.
 
     Uses igraph's C-backed topological sort when available, otherwise falls
-    back to the pure python toposort package with a warning.
+    back to the stdlib graphlib topological sort with a warning.
     """
     try:
         import igraph
     except ImportError:
         logger.warning(
-            "igraph is not installed, falling back to the slower pure python toposort. "
+            "igraph is not installed, falling back to the slower stdlib graphlib. "
             "Install python-igraph for better performance."
         )
-        from toposort import toposort_flatten
+        from graphlib import TopologicalSorter
 
-        return toposort_flatten(graph)
+        return list(TopologicalSorter(graph).static_order())
 
     ids = list(graph)
     index = {id_: i for i, id_ in enumerate(ids)}
