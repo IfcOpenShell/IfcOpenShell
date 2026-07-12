@@ -254,13 +254,16 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, Foobar./Fo.*/!=Bar") == {element2}
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Bar": False})
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Bar=FALSE") == {element}
-        # Boolean keywords are case-insensitive (#6116).
-        assert subject.filter_elements(self.file, "IfcWall, Foobar.Bar=False") == {element}
-        assert subject.filter_elements(self.file, "IfcWall, Foobar.Bar=false") == {element}
+        # The boolean keywords in the filter query grammar are strictly
+        # uppercase TRUE / FALSE (#6116, #8100). Any other spelling is not a
+        # boolean literal in this grammar and falls through to a string
+        # comparison, which never matches a boolean property.
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Bar=False") == set()
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Bar=false") == set()
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Qux": True})
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Qux=TRUE") == {element}
-        assert subject.filter_elements(self.file, "IfcWall, Foobar.Qux=True") == {element}
-        assert subject.filter_elements(self.file, "IfcWall, Foobar.Qux=true") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Qux=True") == set()
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Qux=true") == set()
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": 123})
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz=123") == {element}
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Bay": 123.3})

@@ -128,6 +128,20 @@ class FilterValueSuggestions(Operator):
     suggestion_type: StringProperty(default="value")
 
     first_launch: BoolProperty(default=True, options={"SKIP_SAVE"})
+
+    @staticmethod
+    def value_to_query_string(value: Any) -> str:
+        """Stringify a raw IFC value for use as a filter query suggestion.
+
+        Booleans are rendered as the query language's TRUE / FALSE keywords
+        rather than Python's str(bool) capitalisation ("True" / "False"),
+        since the filter grammar only accepts the former as a literal and
+        would otherwise silently fail to match the property (#6116, #8100).
+        """
+        if isinstance(value, bool):
+            return "TRUE" if value else "FALSE"
+        return str(value)
+
     search_value: StringProperty(
         name="Search",
         description="Search for filter values",
@@ -457,12 +471,18 @@ class FilterValueSuggestions(Operator):
                                                 enum_reference = prop.EnumerationReference
                                                 if hasattr(enum_reference, "EnumerationValues"):
                                                     for enum_value in enum_reference.EnumerationValues:
-                                                        property_values.add(str(enum_value.wrappedValue))
+                                                        property_values.add(
+                                                            self.value_to_query_string(enum_value.wrappedValue)
+                                                        )
                                             if hasattr(prop, "EnumerationValues") and prop.EnumerationValues:
                                                 for enum_value in prop.EnumerationValues:
-                                                    property_values.add(str(enum_value.wrappedValue))
+                                                    property_values.add(
+                                                        self.value_to_query_string(enum_value.wrappedValue)
+                                                    )
                                         elif hasattr(prop, "NominalValue") and prop.NominalValue:
-                                            property_values.add(str(prop.NominalValue.wrappedValue))
+                                            property_values.add(
+                                                self.value_to_query_string(prop.NominalValue.wrappedValue)
+                                            )
             except:
                 continue
         return property_values
@@ -506,7 +526,7 @@ class FilterValueSuggestions(Operator):
 
                     if value is not None and value != "":
                         if not hasattr(value, "is_a") and not isinstance(value, (tuple, list)):
-                            str_value = str(value)
+                            str_value = self.value_to_query_string(value)
                             if not str_value.startswith("#") and not str_value.startswith("("):
                                 attribute_values.add(str_value)
             except:
