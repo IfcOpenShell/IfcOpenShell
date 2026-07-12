@@ -24,28 +24,60 @@ set_env
 
 function create() {
     echo "⭐ Creating image: ifcopenshell-build-env"
-    docker build -f Dockerfile_init -t ifcopenshell-build-env:updated .
+    docker build -f Dockerfile \
+        --build-arg USER_UID="$(id -u)" --build-arg USER_GID="$(id -g)" \
+        -t ifcopenshell-build-env:updated .
 }
 
 function update() {
+    # The Dockerfile always builds FROM a clean rockylinux:9 and does
+    # `dnf update -y` as its first step, so re-running create() is enough
+    # to get fresh packages.
     echo "⚡ Updating image: ifcopenshell-build-env"
-    docker build -f Dockerfile_update -t ifcopenshell-build-env:updated .
+    create
 }
 
 function up() {
-    echo "🚀 Starting stack: ifcopenshell-${UNIQUE_ID}"
+    # Creates the container if it doesn't exist yet (and starts it either
+    # way) - this is the one that needs ready_repo, since a freshly created
+    # container has no submodules/dependency cache in place yet.
+    echo "🚀 Creating/starting stack: ifcopenshell-${UNIQUE_ID}"
     unique          # Update UNIQUE_ID first
     docker compose up -d "$@"   # Container must exist before ready_repo can exec into it.
     ready_repo      # Ensure repo is recursive, and the build repo is in place.
 }
 
 function down() {
-    echo "🛑 Stopping stack: ifcopenshell-${UNIQUE_ID}"
+    # Removes the container (and its network) entirely. Named volumes
+    # (ccache) and the bind-mounted repo/build/ survive; up() will recreate
+    # the container from scratch next time.
+    echo "🔥 Removing stack: ifcopenshell-${UNIQUE_ID}"
     docker compose down "$@"
 }
 
+function stop() {
+    # Stops the existing container without removing it - the container,
+    # its filesystem layer, and its exec history all remain intact.
+    echo "🛑 Stopping stack: ifcopenshell-${UNIQUE_ID}"
+    docker compose stop "$@"
+}
+
+function start() {
+    # Starts a previously-stopped container back up. Does nothing (and
+    # won't create anything) if the container doesn't exist - use up() for
+    # that.
+    echo "▶️  Starting stack: ifcopenshell-${UNIQUE_ID}"
+    docker compose start "$@"
+}
+
 function restart() {
-    echo "🔄 Restarting stack..."
+    echo "🔄 Restarting stack (stop, then start)..."
+    stop
+    start
+}
+
+function recreate() {
+    echo "♻️  Recreating stack (down, then up)..."
     down
     up
 }
@@ -65,21 +97,23 @@ function config() {
 }
 
 function remove() {
-    echo "🔥 Removing stack: ifcopenshell-${UNIQUE_ID}"
+    # Lower-level than down(): removes already-stopped containers without
+    # touching the compose network. Mostly useful after a plain stop().
+    echo "🗑️  Removing stopped containers: ifcopenshell-${UNIQUE_ID}"
     docker compose rm "$@"
 }
 
 function unique() {
     echo "🔧 Making stack name folder specific..."
-    
+
     REGEX="^UNIQUE_ID="
-    
-    if [[ ! -f "$FILE" ]] || ! grep -qE "$REGEX" "$ENV_FILE"; then
+
+    if [[ ! -f "$ENV_FILE" ]] || ! grep -qE "$REGEX" "$ENV_FILE"; then
         echo -e "\nUNIQUE_ID=dummy\n" >> "$ENV_FILE"
     fi
-    
-    export UNIQUE_ID="$(pwd | sha256sum | cut -c -8)" && sed -sin "s/^UNIQUE_ID=.*$/UNIQUE_ID=${UNIQUE_ID}/" .env
-    
+
+    export UNIQUE_ID="$(pwd | sha256sum | cut -c -8)" && sed -si "s/^UNIQUE_ID=.*$/UNIQUE_ID=${UNIQUE_ID}/" "$ENV_FILE"
+
     set_env
 }
 
@@ -162,19 +196,70 @@ function attach() {
 }
 
 function try() {
-    echo "🚴 Push artefacts to the Blender so you can test"
-    # check if SRC and TGT set if not explain what to do.
-    #if [[ ! -f "$FILE" ]] || ! grep -qE "$REGEX" "$ENV_FILE"; then
-    #    echo -e "\nUNIQUE_ID=dummy\n" >> "$ENV_FILE"
-    #fi
+    # Copies the freshly built wrapper into your actual Blender/Bonsai
+    # installation for manual, in-Blender testing. This is a human-only
+    # convenience: it overwrites files in your live Blender setup, so it's
+    # not something that should run unattended as part of an automated or
+    # AI-driven build/test loop (which should instead copy the wrapper into
+    # the repo's own src/ifcopenshell-python/ifcopenshell/ - see SKILL.md).
+    echo "🚴 Copying build artifacts into your Blender resource folder for testing"
+
+    if [[ -z "${BLENDER_USER_RESOURCE:-}" ]]; then
+        echo "❌ BLENDER_USER_RESOURCE is not set in .env."
+        echo "   Add a line pointing at wherever Blender's user resource folder for"
+        echo "   the Bonsai extension actually is on your system, e.g.:"
+        echo "     BLENDER_USER_RESOURCE=~/.config/blender/bonsai/"
+        return 1
+    fi
+
+    # Normalise: expand a leading ~ (in case it was quoted in .env and so
+    # never went through shell tilde-expansion when set_env sourced it),
+    # then resolve to an absolute, symlink-free path.
+    local resource="${BLENDER_USER_RESOURCE/#\~/$HOME}"
+    resource="$(realpath -m "$resource")"
+
+    local install_dir="../build/Linux/x86_64/install"
+    local py_dirs=("$install_dir"/python-*)
+    if [[ ${#py_dirs[@]} -gt 1 && -n "${PY_TGT:-}" ]]; then
+        # PY_TGT is compact (py-311); the install dirs are dotted
+        # (python-3.11.8) - reinsert the dot (assumes a single-digit major
+        # version, true for the Python 3.x line) before matching.
+        local py_tgt_digits="${PY_TGT#py-}"
+        local py_tgt_dotted="${py_tgt_digits:0:1}.${py_tgt_digits:1}"
+        local filtered=() d
+        for d in "${py_dirs[@]}"; do
+            [[ "$(basename "$d")" == "python-${py_tgt_dotted}."* ]] && filtered+=("$d")
+        done
+        [[ ${#filtered[@]} -gt 0 ]] && py_dirs=("${filtered[@]}")
+    fi
+    if [[ ${#py_dirs[@]} -ne 1 || ! -d "${py_dirs[0]}" ]]; then
+        echo "❌ Expected exactly one built python-* dir under $install_dir, found ${#py_dirs[@]}."
+        echo "   Run 'build' first, or set PY_TGT in .env to disambiguate a multi-version build."
+        return 1
+    fi
+
+    local py_minor
+    py_minor="$(basename "${py_dirs[0]}" | grep -oE '[0-9]+\.[0-9]+')"
+    local wrapper_dir="${py_dirs[0]}/lib/python${py_minor}/site-packages/ifcopenshell"
+    if [[ ! -f "$wrapper_dir/ifcopenshell_wrapper.py" ]]; then
+        echo "❌ Built wrapper not found at $wrapper_dir - run 'build' first."
+        return 1
+    fi
+
+    local target="$resource/extensions/.local/lib/python${py_minor}/site-packages/ifcopenshell"
+    mkdir -p "$target"
+    cp "$wrapper_dir"/_ifcopenshell_wrapper*.so "$target/"
+    cp "$wrapper_dir"/ifcopenshell_wrapper.py "$target/"
+    echo "✅ Copied wrapper into $target"
 }
 
 function clean() {
+    # Host-side only - doesn't touch the container, image, or ccache volume.
     echo "💎 Clean the build and output folder up"
-    if [[  -d "../build" ]]; then
+    if [[ -d "../build" ]]; then
         rm -rf ../build
     fi
-    if [[  -d "../output" ]]; then
+    if [[ -d "../output" ]]; then
         rm -rf ../output
     fi
 }
@@ -185,22 +270,31 @@ function help() {
 Usage: ./$SCRIPT_NAME <command>
 
 Available commands:
-  create      Create the image based on rocky9
-  update      Update installed packages
-  up          Start services (docker compose up -d)
-  down        Stop and remove containers
-  restart     Restart the stack
-  build       Execute the build
-  attach      Connect to interactive shell
-  try         Copy wrapper files to Blender
-  clean       Remove build and output folders
-  logs        Follow logs
+  create      Build the rocky9-based image
+  update      Rebuild the image fresh, picking up OS package updates
+  up          Create the container if it doesn't exist yet, and start it
+  down        Remove the container entirely (docker compose down)
+  stop        Stop the container without removing it
+  start       Start a previously-stopped container
+  restart     stop, then start (same container, no recreation)
+  recreate    down, then up (fresh container)
+  build       Execute the IfcOpenShell build
+  attach      Connect to an interactive shell in the container
+  try         Copy the built wrapper into your Blender resource folder
+              (human-only - see BLENDER_USER_RESOURCE below, and SKILL.md
+              for the AI/automated-testing equivalent)
+  clean       Remove the build and output folders
+  logs        Follow container logs
   ps          Show running containers
   config      Validate and show compose config
-  remove      Remove the stack
+  remove      Remove stopped containers (docker compose rm)
   help        Show this help
 
-Environment variables from .env are automatically loaded.
+Environment variables from .env are automatically loaded, including:
+  PY_TGT                  Restrict the build to one Python version, e.g. py-311
+  UNIQUE_ID               Recalculated automatically on every 'up', don't set by hand
+  BLENDER_USER_RESOURCE   Where 'try' copies the wrapper for manual testing, e.g.
+                          ~/.config/blender/bonsai/
 EOF
 }
 
@@ -209,9 +303,12 @@ EOF
 case "$1" in
     create)         create ;;
     update)         update ;;
-    up|start)       up "${@:2}" ;;
-    down|stop)      down "${@:2}" ;;
+    up)             up "${@:2}" ;;
+    down)           down "${@:2}" ;;
+    stop)           stop "${@:2}" ;;
+    start)          start "${@:2}" ;;
     restart)        restart ;;
+    recreate)       recreate ;;
     build)          build "${@:2}" ;;
     attach)         attach ;;
     try)            try ;;
