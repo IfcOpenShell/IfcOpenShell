@@ -3,6 +3,7 @@ services:
   ifcopenshell:
     container_name: ifcopenshell-${UNIQUE_ID}
     image: ifcopenshell-build-env:updated
+    platform: linux/amd64
     volumes:
       - type: bind
         source: ../
