@@ -483,6 +483,8 @@ class Model(bonsai.core.tool.Model):
                         cls.convert_curve_to_mesh(obj, position, inner_curve, x_angle=x_angle)
             elif profile.is_a() == "IfcRectangleProfileDef":
                 cls.import_rectangle(obj, position, profile)
+            elif profile.is_a("IfcCircleProfileDef"):
+                cls.import_circle(obj, position, profile)
             elif profile.is_a() == "IfcAnnotationFillArea":
                 cls.convert_curve_to_mesh(obj, position, profile.OuterBoundary)
                 for inner_boundary in profile.InnerBoundaries or []:
@@ -684,6 +686,36 @@ class Model(bonsai.core.tool.Model):
         )
         cls.edges.extend([(i, i + 1) for i in range(0, len(cls.vertices))])
         cls.edges[-1] = (len(cls.vertices) - 1, 0)  # Close the loop
+
+    @classmethod
+    def import_circle(cls, obj: bpy.types.Object, position: Matrix, profile: ifcopenshell.entity_instance) -> None:
+        """Import IfcCircleProfileDef/IfcCircleHollowProfileDef.
+
+        Uses the 2-vertex diameter representation used throughout this module
+        (see `convert_curve_to_mesh`'s `IfcCircle` branch and
+        `auto_detect_profiles`), so a no-op edit round-trips to an equivalent
+        circle.
+        """
+        if profile.Position:
+            p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
+            p_position.translation *= cls.unit_scale
+        else:
+            p_position = Matrix()
+
+        def add_circle(radius: float) -> None:
+            offset = len(cls.vertices)
+            cls.vertices.extend(
+                [
+                    position @ p_position @ Vector((0.0, -radius, 0.0)),
+                    position @ p_position @ Vector((0.0, radius, 0.0)),
+                ]
+            )
+            cls.circles.append([offset, offset + 1])
+            cls.edges.append((offset, offset + 1))
+
+        add_circle(cls.convert_unit_to_si(profile.Radius))
+        if profile.is_a("IfcCircleHollowProfileDef"):
+            add_circle(cls.convert_unit_to_si(profile.Radius - profile.WallThickness))
 
     @classmethod
     def load_openings(cls, openings: list[ifcopenshell.entity_instance]) -> Iterable[bpy.types.Object]:
