@@ -265,6 +265,33 @@ class DocExtractor:
         description = description.strip()
         return description
 
+    def extract_full_description(self, html: str) -> str:
+        """Extract the full definition text from markdown-derived HTML.
+
+        Entity/type documentation often introduces a bulleted list mid-definition
+        (e.g. "... may include:" followed by a `<ul>`), or continues with another
+        paragraph after it. Naively taking only the first `<p>` silently drops
+        that content (see #4624). Instead, walk all top-level paragraph/list
+        elements in document order, stopping before any `<blockquote>` (which in
+        these docs holds the HISTORY/NOTE remarks).
+        """
+        soup = BeautifulSoup(html, features="lxml")
+        body = soup.body or soup
+        parts = []
+        for child in body.find_all(["p", "ul", "ol"], recursive=False):
+            if child.name in ("ul", "ol"):
+                items = [li.get_text() for li in child.find_all("li", recursive=False)]
+                parts.append(" ".join(f"- {item}" for item in items))
+            else:
+                parts.append(child.get_text())
+        text = " ".join(parts)
+        # strip inline kramdown/pandoc attribute-list markers that survive as literal
+        # text once we're no longer limited to the first paragraph, e.g.
+        # "{ .change-ifc2x4}", "{ .note}", "{: .extDef}".
+        text = re.sub(r"\{[^{}]*\}", "", text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
     def extract_ifc2x3(self):
         print("Parsing data for Ifc2.3.0.1")
         if not IFC2x3_DOCS_LOCATION.is_dir():
@@ -337,7 +364,7 @@ class DocExtractor:
                 with open(md_path, "r", encoding="utf-8-sig") as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read())
-                    entity_description = BeautifulSoup(html, features="lxml").find("p").text
+                    entity_description = self.extract_full_description(html)
                     entity_description = entity_description.replace("\n", " ")
                     entity_description = entity_description.replace("\u00a0", " ")
 
@@ -550,7 +577,7 @@ class DocExtractor:
                 with open(md_path, "r", encoding="utf-8-sig") as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read())
-                    type_description = BeautifulSoup(html, features="lxml").find("p").text
+                    type_description = self.extract_full_description(html)
                     type_description = type_description.replace("\n", " ")
                     type_description = type_description.replace("\u00a0", " ")
                     type_description = type_description.replace("Definition from ISO/CD 10303-46:1992: ", "")
@@ -662,7 +689,7 @@ class DocExtractor:
                 with open(md_path, "r", encoding="utf-8-sig") as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read())
-                    entity_description = BeautifulSoup(html, features="lxml").find("p").text
+                    entity_description = self.extract_full_description(html)
                     entity_description = entity_description.replace("\n", " ")
                     entity_description = entity_description.replace("\u00a0", " ")
                     entity_description = entity_description.replace("{ .extDef}", "")
@@ -888,7 +915,7 @@ class DocExtractor:
                 with open(md_path, "r", encoding="utf-8-sig") as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read().replace("{ .extDef}", ""))
-                    type_description = BeautifulSoup(html, features="lxml").find("p").text
+                    type_description = self.extract_full_description(html)
                     type_description = type_description.replace("\n", " ")
                     type_description = type_description.replace("\u00a0", " ")
                     type_description = type_description.replace("{ .extDef}", "")
