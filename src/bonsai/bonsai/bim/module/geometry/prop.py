@@ -20,10 +20,14 @@ from typing import TYPE_CHECKING, Literal, Optional, Union
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
+    FloatProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -218,6 +222,40 @@ def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: b
     self.property_unset("is_editing_item_layer")
 
 
+def get_storey_world_z(obj: bpy.types.Object) -> Union[float, None]:
+    """World-space Z (meters) of the IfcBuildingStorey containing ``obj``, or None."""
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return None
+    storey = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuildingStorey")
+    if not storey:
+        return None
+    if storey_obj := tool.Ifc.get_object(storey):
+        return storey_obj.matrix_world.translation.z
+    if not getattr(storey, "ObjectPlacement", None):
+        return None
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    matrix = ifcopenshell.util.placement.get_local_placement(storey.ObjectPlacement)
+    return matrix[2][3] * unit_scale
+
+
+def get_storey_relative_elevation(self: "BIMObjectGeometryProperties") -> float:
+    obj = self.id_data
+    storey_z = get_storey_world_z(obj)
+    if storey_z is None:
+        return 0.0
+    return obj.matrix_world.translation.z - storey_z
+
+
+def set_storey_relative_elevation(self: "BIMObjectGeometryProperties", value: float) -> None:
+    obj = self.id_data
+    storey_z = get_storey_world_z(obj)
+    if storey_z is None:
+        return
+    # Nudge the object's local Z by the difference between the desired and current world Z.
+    obj.location.z += (storey_z + value) - obj.matrix_world.translation.z
+
+
 class BIMObjectGeometryProperties(PropertyGroup):
     # Representations UI.
     contexts: EnumProperty(items=get_contexts, name="Contexts")
@@ -252,6 +290,15 @@ class BIMObjectGeometryProperties(PropertyGroup):
     )
     representation_item_layer: EnumProperty(items=get_layers, name="Representation Item's Layer")
 
+    # Editable elevation of the object relative to its IfcBuildingStorey level.
+    storey_relative_elevation: FloatProperty(
+        name="Elevation from Storey",
+        description="Height of the object origin above its building storey's elevation. Editing moves the object vertically.",
+        unit="LENGTH",
+        get=get_storey_relative_elevation,
+        set=set_storey_relative_elevation,
+    )
+
     @property
     def active_item(self) -> Union[RepresentationItem, None]:
         return tool.Blender.get_active_uilist_element(self.items, self.active_item_index)
@@ -270,6 +317,7 @@ class BIMObjectGeometryProperties(PropertyGroup):
         shape_aspect_attrs: ShapeAspect
         is_editing_item_layer: bool
         representation_item_layer: str
+        storey_relative_elevation: float
 
 
 GeometryMode = Literal["OBJECT", "ITEM", "EDIT"]

@@ -30,6 +30,7 @@ from bonsai.bim.module.geometry.data import (
     RepresentationItemsData,
     RepresentationsData,
 )
+from bonsai.bim.module.geometry.prop import get_storey_world_z
 from bonsai.bim.module.layer.data import LayersData
 
 
@@ -493,18 +494,32 @@ class BIM_PT_placement(Panel):
         row = self.layout.row()
         row.label(text="Location:")
 
+        gprops = tool.Geometry.get_object_geometry_props(obj)
+        # Editable Z elevation relative to the containing storey; shown for both unit systems.
+        has_storey = get_storey_world_z(obj) is not None
+
         if is_imperial:
-            loc = context.active_object.location
+            loc = obj.location
             for i, (axis, comp) in enumerate(zip("XYZ", (loc.x, loc.y, loc.z))):
-                split = self.layout.split(factor=0.6)
-                split.prop(context.active_object, "location", index=i, text=axis)
-                sub = split.row()
-                sub.enabled = False
-                sub.alignment = "LEFT"
-                sub.label(text=tool.Unit.format_distance(comp))
+                split = self.layout.split(factor=0.5)
+                split.prop(obj, "location", index=i, text=axis)
+                abs_col = split.row()
+                abs_col.enabled = False
+                abs_col.alignment = "LEFT"
+                abs_col.label(text=tool.Unit.format_distance(comp))
         else:
             for i, axis in enumerate("XYZ"):
-                self.layout.prop(context.active_object, "location", index=i, text=axis)
+                self.layout.prop(obj, "location", index=i, text=axis)
+
+        if has_storey:
+            split = self.layout.split(factor=0.5)
+            split.prop(gprops, "storey_relative_elevation", text="Elevation from Storey")
+            if is_imperial:
+                # Read-only feet-and-inches formatting of the value in the editable field.
+                rel_col = split.row()
+                rel_col.enabled = False
+                rel_col.alignment = "LEFT"
+                rel_col.label(text=tool.Unit.format_distance(gprops.storey_relative_elevation))
 
         row = self.layout.row()
         row.label(text="Rotation:")
