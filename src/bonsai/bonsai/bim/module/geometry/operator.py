@@ -2683,6 +2683,19 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 self.enable_edit_mode(bpy.context)
                 return
 
+            if item.is_a("IfcGeometricCurveSet"):
+                # The set itself is the edited representation item (e.g. a dimension
+                # annotation). Keep the same set entity and just swap out its nested
+                # curve Elements, rather than replacing the set with a bare curve.
+                old_elements = list(item.Elements)
+                item.Elements = tuple(new)
+                for old_element in old_elements:
+                    ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_element)
+                tool.Ifc.link(item, obj.data)
+                tool.Geometry.import_item(obj)
+                tool.Geometry.reload_representation(props.representation_obj)
+                return
+
             additional_curves = []
             if len(new) > 1:
                 additional_curves = new[1:]
@@ -2886,12 +2899,27 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                     ProfileDecorator.install(context)
                     return {"CANCELLED"}
 
+                ifc_file = tool.Ifc.get()
+
+                if item.is_a("IfcGeometricCurveSet"):
+                    # The set itself is the edited representation item (e.g. a dimension
+                    # annotation). Keep the same set entity and just swap out its nested
+                    # curve Elements, rather than replacing the set with a bare curve.
+                    old_elements = list(item.Elements)
+                    item.Elements = tuple(new)
+                    for old_element in old_elements:
+                        ifcopenshell.util.element.remove_deep2(ifc_file, old_element)
+                    tool.Ifc.link(item, obj.data)
+                    tool.Geometry.import_item(obj)
+                    tool.Geometry.reload_representation(props.representation_obj)
+                    tool.Geometry.disable_item_mode()
+                    return {"FINISHED"}
+
                 additional_curves = []
                 if len(new) > 1:
                     additional_curves = new[1:]
                 new = new[0]
 
-                ifc_file = tool.Ifc.get()
                 for inverse in ifc_file.get_inverse(item):
                     ifcopenshell.util.element.replace_attribute(inverse, item, new)
                 ifcopenshell.util.element.remove_deep2(ifc_file, item)
