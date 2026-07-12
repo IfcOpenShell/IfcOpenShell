@@ -36,7 +36,13 @@ def assign_type(
     usage_attributes = type_tool.record_material_usage_attributes(element)
     ifc.run("type.assign_type", related_objects=[element], relating_type=type)
     obj = ifc.get_object(element)
-    if (usage := model.get_usage_type(type)) and usage_attributes:
+    # Reassigning the type recreates the material usage from scratch, defaulting
+    # its LayerSetDirection/DirectionSense/offset to the values derived from the
+    # occurrence class (e.g. AXIS3 for IfcCovering). Restore the recorded usage
+    # attributes so a manually-set direction (e.g. AXIS2) is preserved. The
+    # restore is a no-op when the element no longer carries a matching usage, so
+    # it is safe regardless of what get_usage_type() reports for the new type.
+    if usage_attributes:
         type_tool.restore_material_usage_attributes(element, usage_attributes)
     if (usage := model.get_usage_type(type)) == "PROFILE":
         model.regenerate_profile(obj)
