@@ -480,9 +480,14 @@ class DocExtractor:
                     with open(md_path, "r", encoding="utf-8-sig") as fi:
                         # convert markdown to html for easier parsing
                         html = markdown(fi.read())
-                        property_set_description = BeautifulSoup(html, features="lxml").find("p").text
+                        property_set_description = self.extract_full_description(html)
                         property_set_description = property_set_description.replace("\n", " ")
-                        property_set_description = property_set_description.split("HISTORY:", 1)[0]
+                        # case-insensitive: some pset docs use "History:" instead of "HISTORY:",
+                        # which only becomes reachable now that extract_full_description() walks
+                        # past the first paragraph.
+                        property_set_description = re.split(
+                            r"HISTORY:", property_set_description, maxsplit=1, flags=re.IGNORECASE
+                        )[0]
                         property_set_description = property_set_description.strip()
                         property_set_dict["description"] = property_set_description
                 else:
@@ -554,7 +559,7 @@ class DocExtractor:
                 with open(md_path, "r", encoding="utf-8-sig") as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read())
-                    description = BeautifulSoup(html, features="lxml").find("p").text
+                    description = self.extract_full_description(html)
                     description = description.replace("\n", " ")
                     description = description.replace("\u00a0", " ")
                     property_dict["description"] = description
@@ -807,9 +812,14 @@ class DocExtractor:
                     with open(md_path, "r", encoding="utf-8-sig") as fi:
                         # convert markdown to html for easier parsing
                         html = markdown(fi.read())
-                        property_set_description = BeautifulSoup(html, features="lxml").find("p").text
+                        property_set_description = self.extract_full_description(html)
                         property_set_description = property_set_description.replace("\n", " ")
-                        property_set_description = property_set_description.split("HISTORY:", 1)[0]
+                        # case-insensitive: some pset docs use "History:" instead of "HISTORY:",
+                        # which only becomes reachable now that extract_full_description() walks
+                        # past the first paragraph.
+                        property_set_description = re.split(
+                            r"HISTORY:", property_set_description, maxsplit=1, flags=re.IGNORECASE
+                        )[0]
                         property_set_description = property_set_description.strip()
                         property_set_dict["description"] = property_set_description
                 else:
@@ -892,7 +902,7 @@ class DocExtractor:
                 with open(md_path, "r", encoding="utf-8-sig") as fi:
                     # convert markdown to html for easier parsing
                     html = markdown(fi.read())
-                    description = BeautifulSoup(html, features="lxml").find("p").text
+                    description = self.extract_full_description(html)
                     description = description.replace("\n", " ")
                     description = description.replace("\u00a0", " ")
                     property_dict["description"] = description
