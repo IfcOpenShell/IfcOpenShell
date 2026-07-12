@@ -2603,19 +2603,27 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 return
 
             old_profile = item.SweptArea
-            profile.ProfileName = old_profile.ProfileName
-            for inverse in tool.Ifc.get().get_inverse(old_profile):
-                ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
-            tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
-            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
+            profile_unchanged = tool.Model.profile_shape_is_unchanged(old_profile, profile)
+            if profile_unchanged:
+                # Keep the parametric profile that an edit mode round trip would otherwise
+                # rewrite as an arbitrary profile (see #6481).
+                ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), profile)
+                profile = old_profile
+            else:
+                profile.ProfileName = old_profile.ProfileName
+                for inverse in tool.Ifc.get().get_inverse(old_profile):
+                    ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
+                tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
+                ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
             tool.Geometry.reload_representation(props.representation_obj)
             tool.Geometry.import_item(obj)
             tool.Geometry.import_item_attributes(obj)
 
             element = tool.Ifc.get_entity(props.representation_obj)
-            # Only certain classes should have a footprint
-            if element.is_a() in ("IfcSlab", "IfcRamp"):
+            # Only certain classes should have a footprint. An unchanged parametric profile keeps
+            # its existing footprint and has no OuterCurve to rebuild one from anyway.
+            if not profile_unchanged and element.is_a() in ("IfcSlab", "IfcRamp"):
                 footprint_context = ifcopenshell.util.representation.get_context(
                     tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
                 )
@@ -2853,14 +2861,18 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                     return {"CANCELLED"}
 
                 old_profile = item.SweptArea
-                profile.ProfileName = old_profile.ProfileName
-
                 ifc_file = tool.Ifc.get()
-                for inverse in ifc_file.get_inverse(old_profile):
-                    ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
 
-                tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
-                ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
+                if tool.Model.profile_shape_is_unchanged(old_profile, profile):
+                    # Keep the parametric profile that an edit mode round trip would otherwise
+                    # rewrite as an arbitrary profile (see #6481).
+                    ifcopenshell.util.element.remove_deep2(ifc_file, profile)
+                else:
+                    profile.ProfileName = old_profile.ProfileName
+                    for inverse in ifc_file.get_inverse(old_profile):
+                        ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
+                    tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
+                    ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
 
                 if props.representation_obj:
                     tool.Geometry.reload_representation(props.representation_obj)
