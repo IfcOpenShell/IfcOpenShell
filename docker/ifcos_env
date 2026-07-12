@@ -1,0 +1,233 @@
+#!/bin/bash
+
+# ================== CONFIG ==================
+SCRIPT_NAME=$(basename "$0")
+ENV_FILE=".env"
+WORKDIR="/__w/IfcOpenShell/IfcOpenShell"
+NAMEPREFIX=ifcopenshell
+
+function set_env() {
+    # Load .env file if it exists
+    if [[ -f "$ENV_FILE" ]]; then
+        set -a
+        source "$ENV_FILE"
+        set +a
+        echo "✅ Loaded environment variables from $ENV_FILE"
+    else
+        echo "⚠️  No $ENV_FILE found, proceeding without it."
+    fi
+}
+
+set_env
+
+# ================ FUNCTIONS =================
+
+function create() {
+    echo "⭐ Creating image: ifcopenshell-build-env"
+    docker build -f Dockerfile_init -t ifcopenshell-build-env:updated .
+}
+
+function update() {
+    echo "⚡ Updating image: ifcopenshell-build-env"
+    docker build -f Dockerfile_update -t ifcopenshell-build-env:updated .
+}
+
+function up() {
+    echo "🚀 Starting stack: ifcopenshell-${UNIQUE_ID}"
+    unique          # Update UNIQUE_ID first
+    docker compose up -d "$@"   # Container must exist before ready_repo can exec into it.
+    ready_repo      # Ensure repo is recursive, and the build repo is in place.
+}
+
+function down() {
+    echo "🛑 Stopping stack: ifcopenshell-${UNIQUE_ID}"
+    docker compose down "$@"
+}
+
+function restart() {
+    echo "🔄 Restarting stack..."
+    down
+    up
+}
+
+function logs() {
+    echo "📜 Showing logs..."
+    docker compose logs -f "$@"
+}
+
+function ps() {
+    docker compose ps
+}
+
+function config() {
+    echo "🔍 Validated compose configuration:"
+    docker compose config
+}
+
+function remove() {
+    echo "🔥 Removing stack: ifcopenshell-${UNIQUE_ID}"
+    docker compose rm "$@"
+}
+
+function unique() {
+    echo "🔧 Making stack name folder specific..."
+    
+    REGEX="^UNIQUE_ID="
+    
+    if [[ ! -f "$FILE" ]] || ! grep -qE "$REGEX" "$ENV_FILE"; then
+        echo -e "\nUNIQUE_ID=dummy\n" >> "$ENV_FILE"
+    fi
+    
+    export UNIQUE_ID="$(pwd | sha256sum | cut -c -8)" && sed -sin "s/^UNIQUE_ID=.*$/UNIQUE_ID=${UNIQUE_ID}/" .env
+    
+    set_env
+}
+
+function ready_repo() {
+    echo "👍 Getting the repo ready to build..."
+    docker exec -i -w "${WORKDIR}" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
+        set -euo pipefail   # Recommended for robustness
+
+        git submodule update --init --recursive
+
+        if [[ ! -d "build" ]]; then
+            git clone -b rockylinux9-x64 https://github.com/IfcOpenShell/build-outputs.git build
+        else
+            cd build
+            git pull
+            cd ..
+        fi
+
+        if [[ ! -d "build/Linux/x86_64/install/boost-1.86.0/" ]]; then
+            cd build
+            uv run ../nix/cache_dependencies.py unpack
+            cd ..
+        fi
+    '
+}
+
+function build() {
+    echo "☕ Execute the build, go make yourself a cuppa... I'll be a while"
+    local BUILD_TARGET="$1"
+    
+    docker exec -i -w "${WORKDIR}" -e PY_TGT="${PY_TGT}" -e BUILD_TARGET="${BUILD_TARGET}" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
+        set -o pipefail
+        CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release uv run ./nix/build-all.py -v ${PY_TGT:+-$PY_TGT} --diskcleanup ${BUILD_TARGET} 2>&1 | tee build.log
+    '
+    echo "🎒 Pack Dependencies"
+    docker exec -i -w "${WORKDIR}" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
+        cd build
+        uv run ../nix/cache_dependencies.py pack
+    '
+
+    echo "🎁 Package .zip archives"
+    docker exec -i -w "${WORKDIR}" -e GITHUB_SHA="$(git rev-parse HEAD)" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
+        OUTPUT_DIR=${PWD}/output
+        VERSION=v`cat VERSION`
+        mkdir -p ${OUTPUT_DIR}
+        cd ./build/`uname`/*/install/ifcopenshell
+
+        ls -d python-* | while read py_version; do
+            postfix=`echo ${py_version: -1} | sed s/[0-9]//`
+            numbers=`echo $py_version | grep -oE "[0-9]+\.[0-9]+" | tr -d "."`
+            py_version_major=python-${numbers}$postfix
+            pushd . > /dev/null
+            cd $py_version
+            if [ ! -d ifcopenshell ]; then
+                mkdir ../ifcopenshell_
+                mv * ../ifcopenshell_
+                mv ../ifcopenshell_ ifcopenshell
+            fi
+            [ -d ifcopenshell/__pycache__ ] && rm -rf ifcopenshell/__pycache__
+            find ifcopenshell -name "*.pyc" -delete
+            zip -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip ifcopenshell/*
+            mv *.zip ${OUTPUT_DIR}/
+            popd > /dev/null
+        done
+
+        cd bin
+        if compgen -G "./*.zip" > /dev/null; then
+            rm *.zip 2>&1 >/dev/null || true
+        ls | while read exe; do
+            zip -qq -r ${exe}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip $exe
+        done
+        mv *.zip ${OUTPUT_DIR}/
+        cd ..
+      '
+}
+
+function attach() {
+    echo "🔦 Connect to interactive shell"
+    docker exec -it  -w "${WORKDIR}" "${NAMEPREFIX}-${UNIQUE_ID}" /bin/bash
+}
+
+function try() {
+    echo "🚴 Push artefacts to the Blender so you can test"
+    # check if SRC and TGT set if not explain what to do.
+    #if [[ ! -f "$FILE" ]] || ! grep -qE "$REGEX" "$ENV_FILE"; then
+    #    echo -e "\nUNIQUE_ID=dummy\n" >> "$ENV_FILE"
+    #fi
+}
+
+function clean() {
+    echo "💎 Clean the build and output folder up"
+    if [[  -d "../build" ]]; then
+        rm -rf ../build
+    fi
+    if [[  -d "../output" ]]; then
+        rm -rf ../output
+    fi
+}
+
+
+function help() {
+    cat <<EOF
+Usage: ./$SCRIPT_NAME <command>
+
+Available commands:
+  create      Create the image based on rocky9
+  update      Update installed packages
+  up          Start services (docker compose up -d)
+  down        Stop and remove containers
+  restart     Restart the stack
+  build       Execute the build
+  attach      Connect to interactive shell
+  try         Copy wrapper files to Blender
+  clean       Remove build and output folders
+  logs        Follow logs
+  ps          Show running containers
+  config      Validate and show compose config
+  remove      Remove the stack
+  help        Show this help
+
+Environment variables from .env are automatically loaded.
+EOF
+}
+
+# ================= MAIN =================
+
+case "$1" in
+    create)         create ;;
+    update)         update ;;
+    up|start)       up "${@:2}" ;;
+    down|stop)      down "${@:2}" ;;
+    restart)        restart ;;
+    build)          build "${@:2}" ;;
+    attach)         attach ;;
+    try)            try ;;
+    clean)          clean ;;
+    logs)           logs "${@:2}" ;;
+    ps)             ps ;;
+    config)         config ;;
+    remove)         remove ;;
+    help|-h|--help) help ;;
+    "")
+        echo "❌ No command provided."
+        help
+        ;;
+    *)
+        echo "❌ Unknown command: $1"
+        echo "Type './$SCRIPT_NAME help' for available commands."
+        exit 1
+        ;;
+esac
