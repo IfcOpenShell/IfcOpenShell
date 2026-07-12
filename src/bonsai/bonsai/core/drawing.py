@@ -475,6 +475,11 @@ def remove_drawing(
 def update_drawing_name(
     ifc: type[tool.Ifc], drawing_tool: type[tool.Drawing], drawing: ifcopenshell.entity_instance, name: str
 ) -> None:
+    # A drawing's Name is used to derive its SVG filename, so two drawings
+    # sharing a name would resolve to the same file and overwrite each other
+    # (and tangle the sheet references). Uniquify the name on rename, just like
+    # new drawings do, ignoring this drawing's own current name.
+    name = drawing_tool.ensure_unique_drawing_name(name, ignore=drawing)
     if drawing_tool.get_name(drawing) != name:
         ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})
 
