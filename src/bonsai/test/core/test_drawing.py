@@ -20,6 +20,38 @@ import bonsai.core.drawing as subject
 from test.core.bootstrap import Prophecy, blender, collector, drawing, geometry, ifc
 
 
+class _FakeEntity(str):
+    """A ``str`` stand-in for an IFC entity (e.g. an ``IfcGroup`` or
+    ``IfcDocumentInformation``).
+
+    It serializes and compares as its identifier, so it can be passed straight
+    into ``ifc.run(...)`` calls just like the plain strings used elsewhere in
+    these Prophecy-based tests, while also exposing arbitrary attributes (e.g.
+    ``Name``/``ObjectType``/``Scope``) for the plain-Python ``by_type()``
+    lookups in ``core.drawing`` (the "find or create the DRAWINGS parent
+    group/document" logic).
+    """
+
+    def __new__(cls, identifier: str, **attributes):
+        instance = super().__new__(cls, identifier)
+        instance.__dict__.update(attributes)
+        return instance
+
+
+class _FakeIfcFile:
+    """Minimal stand-in for the ``ifcopenshell.file`` returned by ``ifc.get()``.
+
+    It only implements ``by_type()``, which is all that ``core.drawing``'s
+    "find or create the DRAWINGS parent group/document" logic needs.
+    """
+
+    def __init__(self, groups=(), documents=()):
+        self._by_type = {"IfcGroup": list(groups), "IfcDocumentInformation": list(documents)}
+
+    def by_type(self, ifc_class: str):
+        return self._by_type[ifc_class]
+
+
 class TestEnableEditingText:
     def test_run(self, drawing):
         drawing.enable_editing_text("obj").should_be_called()
@@ -334,6 +366,7 @@ class TestDisableEditingDrawings:
 
 class TestAddDrawing:
     def test_run(self, ifc: Prophecy, collector: Prophecy, drawing: Prophecy):
+        """No pre-existing "DRAWINGS" parent group/document: both get created."""
         drawing.generate_drawing_name("target_view", "location_hint").should_be_called().will_return("drawing_name")
         drawing.ensure_unique_drawing_name("drawing_name").should_be_called().will_return("name")
         drawing.generate_drawing_matrix("target_view", "location_hint").should_be_called().will_return("matrix")
@@ -347,11 +380,18 @@ class TestAddDrawing:
             context="context",
             ifc_representation_class=None,
         ).should_be_called().will_return("element")
+
+        ifc.get().should_be_called().will_return(_FakeIfcFile())
+
         ifc.run("group.add_group").should_be_called().will_return("group")
+        ifc.run(
+            "group.edit_group", group="group", attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"}
+        ).should_be_called()
         ifc.run(
             "group.edit_group", group="group", attributes={"Name": "name", "ObjectType": "DRAWING"}
         ).should_be_called()
         ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
+        ifc.run("group.assign_group", group="group", products=["group"]).should_be_called()
         collector.assign("obj").should_be_called()
         ifc.run("pset.add_pset", product="element", name="EPset_Drawing").should_be_called().will_return("pset")
         drawing.get_default_drawing_resource_path("Stylesheet").should_be_called().will_return("stylesheet.css")
@@ -383,6 +423,81 @@ class TestAddDrawing:
         ).should_be_called()
         drawing.get_default_drawing_path("name").should_be_called().will_return("uri")
         ifc.run("document.add_information").should_be_called().will_return("information")
+        ifc.run(
+            "document.edit_information",
+            information="information",
+            attributes={"Identification": "DRAWINGS", "Name": "DRAWINGS", "Scope": "DRAWINGS"},
+        ).should_be_called()
+        ifc.run("document.add_information", parent="information").should_be_called().will_return("information")
+        ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC4")
+        ifc.run(
+            "document.edit_information",
+            information="information",
+            attributes={"Identification": "X", "Name": "name", "Scope": "DRAWING"},
+        ).should_be_called()
+        ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
+        ifc.run("document.assign_document", products=["element"], document="reference").should_be_called()
+        drawing.import_drawings().should_be_called()
+        subject.add_drawing(ifc, collector, drawing, target_view="target_view", location_hint="location_hint")
+
+    def test_reuses_existing_drawings_group_and_document(self, ifc: Prophecy, collector: Prophecy, drawing: Prophecy):
+        """A "DRAWINGS" parent group/document already exists: both get reused."""
+        drawing.generate_drawing_name("target_view", "location_hint").should_be_called().will_return("drawing_name")
+        drawing.ensure_unique_drawing_name("drawing_name").should_be_called().will_return("name")
+        drawing.generate_drawing_matrix("target_view", "location_hint").should_be_called().will_return("matrix")
+        drawing.create_camera("name", "matrix", "location_hint", "target_view").should_be_called().will_return("obj")
+        drawing.get_body_context().should_be_called().will_return("context")
+        drawing.run_root_assign_class(
+            obj="obj",
+            ifc_class="IfcAnnotation",
+            predefined_type="DRAWING",
+            should_add_representation=True,
+            context="context",
+            ifc_representation_class=None,
+        ).should_be_called().will_return("element")
+
+        existing_group = _FakeEntity("existing_group", Name="DRAWINGS", ObjectType="DRAWINGS")
+        existing_document = _FakeEntity("existing_document", Name="DRAWINGS", Scope="DRAWINGS")
+        ifc.get().should_be_called().will_return(_FakeIfcFile(groups=[existing_group], documents=[existing_document]))
+
+        ifc.run("group.add_group").should_be_called().will_return("group")
+        ifc.run(
+            "group.edit_group", group="group", attributes={"Name": "name", "ObjectType": "DRAWING"}
+        ).should_be_called()
+        ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
+        ifc.run("group.assign_group", group=existing_group, products=["group"]).should_be_called()
+        collector.assign("obj").should_be_called()
+        ifc.run("pset.add_pset", product="element", name="EPset_Drawing").should_be_called().will_return("pset")
+        drawing.get_default_drawing_resource_path("Stylesheet").should_be_called().will_return("stylesheet.css")
+        drawing.get_default_drawing_resource_path("Markers").should_be_called().will_return("markers.svg")
+        drawing.get_default_drawing_resource_path("Symbols").should_be_called().will_return("symbols.svg")
+        drawing.get_default_drawing_resource_path("Patterns").should_be_called().will_return("patterns.svg")
+        drawing.get_default_drawing_resource_path("ShadingStyles").should_be_called().will_return("shading_styles.json")
+        drawing.get_default_shading_style().should_be_called().will_return("Blender Default")
+        drawing.setup_shading_styles_path("shading_styles.json").should_be_called()
+        drawing.get_unit_system().should_be_called().will_return("METRIC")
+        ifc.run(
+            "pset.edit_pset",
+            pset="pset",
+            properties={
+                "TargetView": "target_view",
+                "Scale": "1/100",
+                "HumanScale": "1:100",
+                "HasUnderlay": False,
+                "HasLinework": True,
+                "HasAnnotation": True,
+                "GlobalReferencing": True,
+                "Stylesheet": "stylesheet.css",
+                "Markers": "markers.svg",
+                "Symbols": "symbols.svg",
+                "Patterns": "patterns.svg",
+                "ShadingStyles": "shading_styles.json",
+                "CurrentShadingStyle": "Blender Default",
+            },
+        ).should_be_called()
+        drawing.get_default_drawing_path("name").should_be_called().will_return("uri")
+        ifc.run("document.add_information", parent=existing_document).should_be_called().will_return("information")
         ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")
         ifc.get_schema().should_be_called().will_return("IFC4")
         ifc.run(
@@ -398,6 +513,7 @@ class TestAddDrawing:
 
 class TestDuplicateDrawing:
     def test_run(self, ifc: Prophecy, blender: Prophecy, drawing: Prophecy, geometry: Prophecy):
+        """No pre-existing "DRAWINGS" parent group/document: both get created."""
         drawing.get_name("drawing").should_be_called().will_return("name")
         drawing.ensure_unique_drawing_name("name").should_be_called().will_return("unique_name")
         ifc.run("root.copy_class", product="drawing").should_be_called().will_return("new_drawing")
@@ -406,11 +522,18 @@ class TestDuplicateDrawing:
         drawing.set_name("new_drawing", "unique_name").should_be_called()
         drawing.get_drawing_group("new_drawing").should_be_called().will_return("group")
         ifc.run("group.unassign_group", group="group", products=["new_drawing"]).should_be_called()
+
+        ifc.get().should_be_called().will_return(_FakeIfcFile())
+
         ifc.run("group.add_group").should_be_called().will_return("new_group")
+        ifc.run(
+            "group.edit_group", group="new_group", attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"}
+        ).should_be_called()
         ifc.run(
             "group.edit_group", group="new_group", attributes={"Name": "unique_name", "ObjectType": "DRAWING"}
         ).should_be_called()
         ifc.run("group.assign_group", group="new_group", products=["new_drawing"]).should_be_called()
+        ifc.run("group.assign_group", group="new_group", products=["new_group"]).should_be_called()
         drawing.get_group_elements("group").should_be_called().will_return(["drawing", "annotation"])
         ifc.get_object("annotation").should_be_called().will_return("annotation_obj")
         geometry.duplicate_ifc_objects(["annotation_obj"]).should_be_called().will_return(
@@ -426,6 +549,12 @@ class TestDuplicateDrawing:
         ifc.run("document.unassign_document", products=["new_drawing"], document="old_reference").should_be_called()
 
         ifc.run("document.add_information").should_be_called().will_return("information")
+        ifc.run(
+            "document.edit_information",
+            information="information",
+            attributes={"Identification": "DRAWINGS", "Name": "DRAWINGS", "Scope": "DRAWINGS"},
+        ).should_be_called()
+        ifc.run("document.add_information", parent="information").should_be_called().will_return("information")
         ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")
         ifc.get_schema().should_be_called().will_return("IFC4")
         drawing.get_default_drawing_path("unique_name").should_be_called().will_return("drawing_path")
@@ -441,6 +570,52 @@ class TestDuplicateDrawing:
 
         drawing.import_drawings().should_be_called()
         subject.duplicate_drawing(ifc, blender, drawing, geometry, drawing="drawing", should_duplicate_annotations=True)
+
+    def test_reuses_existing_drawings_group_and_document(
+        self, ifc: Prophecy, blender: Prophecy, drawing: Prophecy, geometry: Prophecy
+    ):
+        """A "DRAWINGS" parent group/document already exists: both get reused."""
+        drawing.get_name("drawing").should_be_called().will_return("name")
+        drawing.ensure_unique_drawing_name("name").should_be_called().will_return("unique_name")
+        ifc.run("root.copy_class", product="drawing").should_be_called().will_return("new_drawing")
+        drawing.clear_annotation_relationships("new_drawing").should_be_called()
+        drawing.copy_representation("drawing", "new_drawing").should_be_called()
+        drawing.set_name("new_drawing", "unique_name").should_be_called()
+        drawing.get_drawing_group("new_drawing").should_be_called().will_return("group")
+        ifc.run("group.unassign_group", group="group", products=["new_drawing"]).should_be_called()
+
+        existing_group = _FakeEntity("existing_group", Name="DRAWINGS", ObjectType="DRAWINGS")
+        existing_document = _FakeEntity("existing_document", Name="DRAWINGS", Scope="DRAWINGS")
+        ifc.get().should_be_called().will_return(_FakeIfcFile(groups=[existing_group], documents=[existing_document]))
+
+        ifc.run("group.add_group").should_be_called().will_return("new_group")
+        ifc.run(
+            "group.edit_group", group="new_group", attributes={"Name": "unique_name", "ObjectType": "DRAWING"}
+        ).should_be_called()
+        ifc.run("group.assign_group", group="new_group", products=["new_drawing"]).should_be_called()
+        ifc.run("group.assign_group", group=existing_group, products=["new_group"]).should_be_called()
+
+        drawing.get_drawing_document("new_drawing").should_be_called().will_return("old_reference")
+        ifc.run("document.unassign_document", products=["new_drawing"], document="old_reference").should_be_called()
+
+        ifc.run("document.add_information", parent=existing_document).should_be_called().will_return("information")
+        ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")
+        ifc.get_schema().should_be_called().will_return("IFC4")
+        drawing.get_default_drawing_path("unique_name").should_be_called().will_return("drawing_path")
+        ifc.run(
+            "document.edit_information",
+            information="information",
+            attributes={"Identification": "X", "Name": "unique_name", "Scope": "DRAWING"},
+        ).should_be_called()
+        ifc.run(
+            "document.edit_reference", reference="reference", attributes={"Location": "drawing_path"}
+        ).should_be_called()
+        ifc.run("document.assign_document", products=["new_drawing"], document="reference").should_be_called()
+
+        drawing.import_drawings().should_be_called()
+        subject.duplicate_drawing(
+            ifc, blender, drawing, geometry, drawing="drawing", should_duplicate_annotations=False
+        )
 
 
 class TestRemoveDrawing:
