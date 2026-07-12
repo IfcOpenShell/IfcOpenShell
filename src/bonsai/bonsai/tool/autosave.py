@@ -96,9 +96,16 @@ class Autosave:
         if not cls.is_eligible():
             return
 
-        def on_timer() -> None:
+        def on_timer() -> Union[float, None]:
             cls._on_timer_expired()
-            return None
+            # Reschedule by returning the next interval rather than calling
+            # reset_timer(), which would unregister this timer from within
+            # its own callback. Blender frees the timer's internal registry
+            # entry on that manual unregister, then frees it again when the
+            # callback returns - a double free that corrupts the heap and
+            # crashes Blender shortly after (e.g. when the prompt dialog
+            # spawned below is next interacted with).
+            return cls.get_interval_seconds() if cls.is_eligible() else None
 
         global _timer_callback
         _timer_callback = on_timer
@@ -120,7 +127,6 @@ class Autosave:
                     cls.perform_backup(bpy.context)
                 except Exception as error:
                     print(f"Bonsai: autosave backup failed: {error}")
-        cls.reset_timer()
 
     @classmethod
     def perform_backup(cls, context: bpy.types.Context) -> None:
