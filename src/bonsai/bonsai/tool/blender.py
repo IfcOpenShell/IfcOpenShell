@@ -2315,10 +2315,23 @@ class Blender(bonsai.core.tool.Blender):
             bpy.ops.object.hide_view_clear(select=False)
 
         bpy.ops.object.select_all(action="DESELECT")
-        for obj in objs:
-            obj.select_set(True)
-        with bpy.context.temp_override(**override):
-            bpy.ops.object.hide_view_set(unselected=True)
+        # Objects with "disable selection" (hide_select) enabled cannot be
+        # selected, so they would be treated as unselected and hidden by
+        # hide_view_set(unselected=True) below - see #7681. Temporarily clear
+        # hide_select so they can be selected (and thus kept visible), then
+        # restore it afterwards.
+        unselectable = []
+        try:
+            for obj in objs:
+                if obj.hide_select:
+                    obj.hide_select = False
+                    unselectable.append(obj)
+                obj.select_set(True)
+            with bpy.context.temp_override(**override):
+                bpy.ops.object.hide_view_set(unselected=True)
+        finally:
+            for obj in unselectable:
+                obj.hide_select = True
 
         bpy.ops.object.select_all(action="DESELECT")
         for name in previously_selected:
