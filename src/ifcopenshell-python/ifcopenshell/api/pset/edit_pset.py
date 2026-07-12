@@ -80,6 +80,12 @@ def edit_pset(
         left as None but not removed. If set to true, properties set to None
         will actually be removed. The default of true is the same behaviour as
         :func:`ifcopenshell.api.pset.edit_qto`.
+
+        The exception is a LOGICAL property (IfcLogical), which is
+        three-valued: TRUE, FALSE, and UNKNOWN. For a LOGICAL property, a
+        value of None always means UNKNOWN, regardless of `should_purge`; it
+        is never deleted or left blank, since UNKNOWN is a real, meaningful
+        value and not merely the absence of one.
     :return: None
 
     Example:
@@ -298,16 +304,18 @@ class Usecase:
         """
         value = self.settings["properties"][prop.Name]
         unit, value = self.unpack_unit_value(value)
-        if value is None:
+        primary_measure_type = self.get_primary_measure_type(prop.Name, old_value=prop.NominalValue, new_value=value)
+        if value is None and primary_measure_type != "IfcLogical":
             if self._try_purge(prop):
                 return
             prop.NominalValue = None
         elif isinstance(value, ifcopenshell.entity_instance):
             prop.NominalValue = value
         else:
-            primary_measure_type = self.get_primary_measure_type(
-                prop.Name, old_value=prop.NominalValue, new_value=value
-            )
+            # A LOGICAL property (IfcLogical) is three-valued: TRUE, FALSE, and
+            # UNKNOWN. None is its UNKNOWN state, not a request to blank/delete
+            # the property, so it is routed through casting instead of the
+            # purge/blank branch above.
             value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
             prop.NominalValue = self.file.create_entity(primary_measure_type, value)
         if unit:
@@ -318,8 +326,12 @@ class Usecase:
     def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
         properties: list[ifcopenshell.entity_instance] = []
         for name, value in self.settings["properties"].items():
+            # None is skipped entirely for a brand new property (there is nothing
+            # to blank), except for a LOGICAL property, where None is the
+            # meaningful UNKNOWN state rather than "no value".
             if value is None and self.settings["should_purge"]:
-                continue
+                if self.get_primary_measure_type(name, new_value=value) != "IfcLogical":
+                    continue
             unit, value = self.unpack_unit_value(value)
 
             if isinstance(value, ifcopenshell.entity_instance):
@@ -383,7 +395,7 @@ class Usecase:
 
             else:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
-                if value is None:
+                if value is None and primary_measure_type != "IfcLogical":
                     nominal_value = value
                 else:
                     value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
@@ -467,9 +479,17 @@ class Usecase:
             "DOUBLE": float,
             "STRING": str,
         }[type_str]
-        if type_str == "LOGICAL" and isinstance(value, bool):
-            # str(True) would store "True", which IfcLogical reads as UNKNOWN.
-            return value
+        if type_str == "LOGICAL":
+            if isinstance(value, bool):
+                # str(True) would store "True", which IfcLogical reads as UNKNOWN.
+                return value
+            if value is None:
+                # None is IfcLogical's third state, UNKNOWN. str(None) would store
+                # the wrong string "None", and the underlying wrapper only accepts
+                # a bool or the literal string "UNKNOWN" for a LOGICAL attribute
+                # (passing Python None straight through crashes it), so translate
+                # here.
+                return "UNKNOWN"
         if type_str == "AGGREGATE OF DOUBLE":
             return [float(i) for i in value]
         elif type_str == "AGGREGATE OF INT":

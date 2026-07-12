@@ -168,7 +168,7 @@ class Pset(bonsai.core.tool.Pset):
     @classmethod
     def get_special_type_for_prop(
         cls, prop_or_prop_template: ifcopenshell.entity_instance
-    ) -> Literal["LENGTH"] | Literal["AREA"] | Literal["VOLUME"] | Literal["URI"] | Literal[""]:
+    ) -> Literal["LENGTH"] | Literal["AREA"] | Literal["VOLUME"] | Literal["URI"] | Literal["LOGICAL"] | Literal[""]:
         special_type = ""
         if prop_or_prop_template.is_a("IfcPropertyTemplate"):
             primary_measure_type = prop_or_prop_template.PrimaryMeasureType
@@ -181,6 +181,8 @@ class Pset(bonsai.core.tool.Pset):
                 special_type = "VOLUME"
             elif primary_measure_type == "IfcURIReference":
                 special_type = "URI"
+            elif primary_measure_type == "IfcLogical":
+                special_type = "LOGICAL"
         else:
             if prop_or_prop_template.is_a("IfcPropertySingleValue"):
                 value = prop_or_prop_template.NominalValue
@@ -192,6 +194,8 @@ class Pset(bonsai.core.tool.Pset):
                         special_type = "AREA"
                     elif value_type == "IfcVolumeMeasure":
                         special_type = "VOLUME"
+                    elif value_type == "IfcLogical":
+                        special_type = "LOGICAL"
             elif prop_or_prop_template.is_a("IfcPhysicalSimpleQuantity"):
                 prop_class = prop_or_prop_template.is_a()
                 if prop_class == "IfcQuantityArea":
@@ -275,12 +279,20 @@ class Pset(bonsai.core.tool.Pset):
                 new_prop = props.properties.add()
                 new_prop.name = prop.Name
                 metadata = new_prop.metadata
-                metadata.set_value(value)
                 metadata.name = prop.Name
                 metadata.is_null = value is None
                 metadata.is_optional = True
                 metadata.special_type = cls.get_special_type_for_prop(prop)
-                metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
+                if metadata.special_type == "LOGICAL":
+                    # IfcLogical is three-valued (TRUE / FALSE / UNKNOWN), so it is edited
+                    # as an enum rather than a two-state checkbox.
+                    metadata.data_type = "enum"
+                    enum_value = bonsai.bim.helper.set_logical_enum_items(metadata, value)
+                    if enum_value is not None:
+                        metadata.enum_value = enum_value
+                else:
+                    metadata.set_value(value)
+                    metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
                 process_prop_description(metadata)
 
     @classmethod
@@ -366,6 +378,13 @@ class Pset(bonsai.core.tool.Pset):
             metadata.float_value = 0.0 if metadata.is_null else float(data[prop_template.Name])
         elif metadata.data_type == "boolean":
             metadata.bool_value = False if metadata.is_null else bool(data[prop_template.Name])
+        elif metadata.data_type == "enum" and metadata.special_type == "LOGICAL":
+            # IfcLogical is three-valued (TRUE / FALSE / UNKNOWN), so it is proposed here
+            # as an enum, defaulting to UNKNOWN until the user picks a value.
+            enum_value = bonsai.bim.helper.set_logical_enum_items(
+                metadata, None if metadata.is_null else data[prop_template.Name]
+            )
+            metadata.enum_value = enum_value or "UNKNOWN"
 
         metadata.ifc_class = pset_template.Name
         bonsai.bim.helper.add_attribute_description(metadata, prop_template)
