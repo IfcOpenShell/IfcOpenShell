@@ -89,6 +89,11 @@ The filters are chained and apply from left to right.
 
     filter[, filter]*
 
+Any part of a query may be commented out using a ``/* ... */`` block comment.
+This lets you temporarily disable part of a query without deleting the text, for
+example ``IfcWall + /* IfcSlab, material=concrete */`` selects only walls while
+keeping the slab criteria on hand. Block comments may span multiple lines.
+
 Below is the table of filters to choose from. Most of these filters will filter
 previously added elements in your filter group based on their criteria.
 
