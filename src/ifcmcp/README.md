@@ -255,7 +255,7 @@ ifc_quantify(rule="IFC4QtoBaseQuantities", selector="IfcWall")
 Available rules: `IFC4QtoBaseQuantities`, `IFC4X3QtoBaseQuantities`.
 
 `selector` is an optional ifcopenshell selector to restrict which elements
-are quantified (default: all `IfcElement`).
+are quantified (default: all `IfcElement` and `IfcSpace`).
 
 Returns `{"ok": true, "rule": "...", "elements_quantified": 42}`.
 

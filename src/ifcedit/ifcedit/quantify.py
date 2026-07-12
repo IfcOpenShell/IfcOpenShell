@@ -30,7 +30,7 @@ def run_quantify(model: ifcopenshell.file, rule: str, selector: str | None = Non
     if selector:
         elements = set(ifcopenshell.util.selector.filter_elements(model, selector))
     else:
-        elements = set(model.by_type("IfcElement"))
+        elements = set(model.by_type("IfcElement")) | set(model.by_type("IfcSpace"))
 
     results = quantify(model, elements, rule_sets[rule])
     edit_qtos(model, results)
