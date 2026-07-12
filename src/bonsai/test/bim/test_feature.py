@@ -187,7 +187,14 @@ class PanelSpy:
             after = ""
             if self.spied_labels:
                 after = self.spied_labels[-1]
-            spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}, "after": after}
+            spied_operator = {
+                "operator": operator,
+                "icon": icon,
+                "text": text,
+                "kwargs": {},
+                "after": after,
+                "bl_idname": bl_idname,
+            }
             self.spied_operators.append(spied_operator)
             return OperatorSpy(spied_operator)
         elif self.spied_attr == "panel":
@@ -209,6 +216,14 @@ class OperatorSpy:
             super().__setattr__(name, value)
         else:
             self.spied_data["kwargs"][name] = value
+
+    @property
+    def bl_rna(self) -> Any:
+        # Mirror the real `UILayout.operator()` return value (an OperatorProperties
+        # instance), which exposes `.bl_rna` so panel code such as
+        # `"module" in op.bl_rna.properties` (bonsai/bim/helper.py) also works when
+        # drawing is spied on during BDD tests.
+        return getattr(bpy.types, self.spied_data["bl_idname"]).bl_rna
 
 
 class TemplateListSpy(PanelSpy):
@@ -773,7 +788,11 @@ def i_create_default_mep_types():
     with bpy.context.temp_override(active_object=bpy.data.objects["IfcActuatorType/ACTUATOR"]):
         bpy.ops.bim.add_port()
         # port at cube's left side
-        bpy.data.objects["IfcDistributionPort/Port"].location = (-0.5, 0, 0)
+        # Newly created ports are never given an explicit IFC `.Name` (see
+        # `core/system.py:create_port_at_cursor` / `tool/system.py`), so
+        # `tool.Loader.get_name()` falls back to the standard "Unnamed" convention
+        # used throughout Bonsai for freshly-created, not-yet-named elements.
+        bpy.data.objects["IfcDistributionPort/Unnamed"].location = (-0.5, 0, 0)
         bpy.ops.bim.hide_ports()
 
 
