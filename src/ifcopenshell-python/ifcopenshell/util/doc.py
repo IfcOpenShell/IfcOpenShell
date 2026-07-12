@@ -283,8 +283,19 @@ class DocExtractor:
                 items = [li.get_text() for li in child.find_all("li", recursive=False)]
                 parts.append(" ".join(f"- {item}" for item in items))
             else:
-                parts.append(child.get_text())
+                part = child.get_text()
+                # Some IFC2X3 docs put the HISTORY remark in a plain leading
+                # paragraph rather than a blockquote; it is metadata, not part
+                # of the definition.
+                if re.match(r"\s*(HISTORY|IFC2x Edition)\b", part):
+                    continue
+                parts.append(part)
         text = " ".join(parts)
+        # A remark can also be a "lazy" blockquote continuation inside a
+        # paragraph (a literal "> HISTORY ..." tail that markdown does not
+        # turn into a <blockquote>) or an inline "HISTORY: ..." sentence; cut
+        # the definition there.
+        text = re.split(r"\s*(?:>\s*)?(?:HISTORY\s*:|>\s*HISTORY\b|(?:>\s*)?IFC2x Edition\b)", text)[0]
         # strip inline kramdown/pandoc attribute-list markers that survive as literal
         # text once we're no longer limited to the first paragraph, e.g.
         # "{ .change-ifc2x4}", "{ .note}", "{: .extDef}".

@@ -416,7 +416,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcproductextension/lexical/ifcelementcompositionenum.htm"
     },
     "IfcEnergyMeasure": {
-        "description": "A measure of energy required or used. Usually measured in Joules, (J, Nm). Type: REAL > HISTORY New type in IFC Release 2.0.",
+        "description": "A measure of energy required or used. Usually measured in Joules, (J, Nm). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcenergymeasure.htm"
     },
     "IfcEnergySequenceEnum": {
@@ -520,7 +520,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifchvacdomain/lexical/ifcheatexchangertypeenum.htm"
     },
     "IfcHeatFluxDensityMeasure": {
-        "description": "A measure of the density of heat flux within a body. Usually measured in W/m2 (J/s m2). Type: REAL > HISTORY New type in IFC Release 2.0.",
+        "description": "A measure of the density of heat flux within a body. Usually measured in W/m2 (J/s m2). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcmeasureresource/lexical/ifcheatfluxdensitymeasure.htm"
     },
     "IfcHeatingValueMeasure": {
@@ -696,7 +696,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcsharedbldgelements/lexical/ifcmembertypeenum.htm"
     },
     "IfcMetricValueSelect": {
-        "description": "An IfcMetricValueSelect is a select type that enables selection of the data type for the value component of an IfcMetric. HISTORY: New type in IFC Release 2.0 Select - IfcCostValue - IfcDateTimeSelect - IfcMetricBoundedValue - IfcMeasureWithUnit - IfcTable - IfcText - IfcTimeSeries",
+        "description": "An IfcMetricValueSelect is a select type that enables selection of the data type for the value component of an IfcMetric.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ifcconstraintresource/lexical/ifcmetricvalueselect.htm"
     },
     "IfcMinuteInHour": {
