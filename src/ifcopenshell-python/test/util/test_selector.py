@@ -351,6 +351,22 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, Name=Foo + IfcSlab") == {element, element2}
         assert subject.filter_elements(self.file, "IfcWall, Name=Foo + IfcSlab, Name=Bar") == {element, element2}
 
+    def test_block_comments_are_ignored(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.Name = "Foo"
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        element2.Name = "Bar"
+        # A /* ... */ block comment lets a query be toggled off without deleting the text.
+        assert subject.filter_elements(self.file, "IfcWall /* + IfcSlab */") == {element}
+        assert subject.filter_elements(self.file, "IfcWall + /* IfcSlab */") == {element}
+        assert subject.filter_elements(self.file, "/* IfcWall + */ IfcSlab") == {element2}
+        assert subject.filter_elements(self.file, "IfcWall /* commented */ + IfcSlab") == {element, element2}
+        # Comments may span multiple lines.
+        assert subject.filter_elements(self.file, "IfcWall + /* multi\nline\ncomment */ IfcSlab") == {element, element2}
+        # A /* sequence inside a quoted string is not treated as a comment.
+        element.Name = "a/*b"
+        assert subject.filter_elements(self.file, 'IfcWall, Name="a/*b"') == {element}
+
     def test_using_elements_argument(self):
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
