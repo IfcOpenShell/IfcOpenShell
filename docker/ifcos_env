@@ -24,18 +24,7 @@ set_env
 
 function create() {
     echo "⭐ Creating image: ifcopenshell-build-env"
-    # compose.yaml pins the service to platform: linux/amd64 (this stack
-    # always targets the rockylinux9-x64 build-outputs branch and produces
-    # linux64 artifacts, regardless of host arch). Building without
-    # --platform would tag the image for the host's native arch instead -
-    # harmless on an amd64 host, but on an arm64 host (e.g. Apple Silicon)
-    # it leaves a local image that doesn't match what compose asked for, so
-    # `docker compose up` decides the requested platform is "missing" and
-    # tries to pull ifcopenshell-build-env:updated from Docker Hub instead
-    # of using the image just built. Pinning the build platform here keeps
-    # the local image's arch in sync with compose's pin on every host.
     docker build -f Dockerfile \
-        --platform linux/amd64 \
         --build-arg USER_UID="$(id -u)" --build-arg USER_GID="$(id -g)" \
         -t ifcopenshell-build-env:updated .
 }
