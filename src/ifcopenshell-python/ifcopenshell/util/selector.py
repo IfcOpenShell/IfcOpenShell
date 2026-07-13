@@ -713,7 +713,17 @@ def set_element_value(
             return
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
-        elif key in ("x", "y", "z", "easting", "northing", "elevation", "rotation_x", "rotation_y", "rotation_z") and hasattr(element, "ObjectPlacement"):
+        elif key in (
+            "x",
+            "y",
+            "z",
+            "easting",
+            "northing",
+            "elevation",
+            "rotation_x",
+            "rotation_y",
+            "rotation_z",
+        ) and hasattr(element, "ObjectPlacement"):
             # TODO: add support
             if key in ("easting", "northing", "elevation", "rotation_x", "rotation_y", "rotation_z"):
                 return
