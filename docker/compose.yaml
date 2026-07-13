@@ -4,6 +4,14 @@ services:
     container_name: ifcopenshell-${UNIQUE_ID}
     image: ifcopenshell-build-env:updated
     platform: linux/amd64
+    # There's no `build:` section - the image is always produced ahead of
+    # time by `./ifcos_env create` (`docker build`, not `docker compose
+    # build`). Without this, a platform mismatch between the pin above and
+    # whatever's in the local image store makes compose treat the image as
+    # absent and fall back to pulling ifcopenshell-build-env:updated from
+    # Docker Hub, where it doesn't exist. Fail fast with a clear "not
+    # found" instead of an obscure registry access-denied error.
+    pull_policy: never
     volumes:
       - type: bind
         source: ../
