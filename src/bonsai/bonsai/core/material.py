@@ -130,10 +130,23 @@ def assign_material(
 
         if can_be_usage and not material_tool.is_type_product(element):
             element_material_type = material_type + "Usage"
+            # A "...Usage" type always wraps an existing material *set*
+            # (IfcMaterialLayerSet/IfcMaterialProfileSet), never a plain
+            # IfcMaterial. `material` here is whatever single IfcMaterial is
+            # selected in the Object Materials UI, so it can't be passed
+            # through as-is or ifcopenshell.api.material.assign_material will
+            # assert (e.g. "IfcMaterial cannot be assiged as a
+            # IfcMaterialLayerSetUsage."). Passing None lets the API derive
+            # (or create) the proper set from the element's type; the
+            # selected material is added into that set below instead.
+            material_for_assignment = None
         else:
             element_material_type = material_type
+            material_for_assignment = material
 
-        ifc.run("material.assign_material", products=[element], type=element_material_type, material=material)
+        ifc.run(
+            "material.assign_material", products=[element], type=element_material_type, material=material_for_assignment
+        )
         assigned_material = material_tool.get_material(element)
         assert assigned_material  # Type checker.
 
