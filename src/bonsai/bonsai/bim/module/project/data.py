@@ -165,6 +165,12 @@ class ProjectLibraryData:
         root = tool.Project.get_root_context(library_file)
         results.append((str(root.id()), f"{root.is_a()} {root.Name or 'Unnamed'}", root.Description or ""))
         for library_id, data in cls.data["project_libraries"].items():
+            # Library-only files have an IfcProjectLibrary as their root context, and
+            # project_libraries() collects every IfcProjectLibrary in the file (root
+            # included). Skip it here since it was already added above, otherwise the
+            # root library is listed twice with colliding enum keys.
+            if library_id == root.id():
+                continue
             results.append((str(library_id), data["Name"] or "Unnamed", data["Description"] or ""))
         return results
 
