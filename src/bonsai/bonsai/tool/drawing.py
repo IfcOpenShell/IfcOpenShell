@@ -26,6 +26,7 @@ import platform
 import re
 import shutil
 import subprocess
+import tempfile
 from collections.abc import Iterable, Sequence
 from fractions import Fraction
 from pathlib import Path
@@ -2924,11 +2925,13 @@ class Drawing(bonsai.core.tool.Drawing):
         # The sheet layout SVG is edited directly on disk and isn't tracked by
         # Blender's undo system. Snapshot it so an undo/redo of `operator` can
         # restore the file to match the reverted/reapplied IFC state (#7275).
+        # Snapshots are written to disk rather than kept as bytes in the
+        # rollback/commit closures, so they don't sit on the Python heap for
+        # as long as the undo history entry is alive.
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT") if sheet else None
-        previous_layout: Optional[bytes] = None
+        previous_layout_path: Optional[str] = None
         if layout_path and os.path.exists(layout_path):
-            with open(layout_path, "rb") as f:
-                previous_layout = f.read()
+            previous_layout_path = cls.snapshot_layout_svg(layout_path)
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.remove_drawing(reference, sheet)
@@ -2937,21 +2940,34 @@ class Drawing(bonsai.core.tool.Drawing):
 
         tool.Drawing.import_sheets()
 
-        if operator is not None and previous_layout is not None and layout_path and os.path.exists(layout_path):
-            with open(layout_path, "rb") as f:
-                new_layout = f.read()
+        if operator is not None and previous_layout_path is not None and layout_path and os.path.exists(layout_path):
+            new_layout_path = cls.snapshot_layout_svg(layout_path)
 
-            def rollback(data: Any, path: str = layout_path, content: bytes = previous_layout) -> None:
-                with open(path, "wb") as f:
-                    f.write(content)
+            def rollback(data: Any, path: str = layout_path, snapshot: str = previous_layout_path) -> None:
+                shutil.copyfile(snapshot, path)
 
-            def commit(data: Any, path: str = layout_path, content: bytes = new_layout) -> None:
-                with open(path, "wb") as f:
-                    f.write(content)
+            def commit(data: Any, path: str = layout_path, snapshot: str = new_layout_path) -> None:
+                shutil.copyfile(snapshot, path)
 
             from bonsai.bim.ifc import IfcStore
 
             IfcStore.add_transaction_operation(operator, rollback=rollback, commit=commit)
+
+    @classmethod
+    def snapshot_layout_svg(cls, layout_path: str) -> str:
+        """Copy a sheet layout SVG into a temp file and return its path.
+
+        Used to snapshot undo/redo state for #7275 without holding the SVG
+        contents as bytes for the lifetime of the undo history entry. These
+        are ordinary OS temp files (same convention as
+        tool.Blender.temp_file_with_traceback) and aren't explicitly
+        tracked/cleaned up; they're small and rely on the OS's normal temp
+        directory lifecycle.
+        """
+        fd, snapshot_path = tempfile.mkstemp(prefix="bonsai_sheet_layout_", suffix=".svg")
+        os.close(fd)
+        shutil.copyfile(layout_path, snapshot_path)
+        return snapshot_path
 
     @classmethod
     def hide_all_drawing_collections(cls) -> None:
