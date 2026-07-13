@@ -112,7 +112,16 @@ function unique() {
         echo -e "\nUNIQUE_ID=dummy\n" >> "$ENV_FILE"
     fi
 
-    export UNIQUE_ID="$(pwd | sha256sum | cut -c -8)" && sed -si "s/^UNIQUE_ID=.*$/UNIQUE_ID=${UNIQUE_ID}/" "$ENV_FILE"
+    export UNIQUE_ID="$(pwd | sha256sum | cut -c -8)"
+
+    # `sed -i` takes incompatible syntax between GNU sed (Linux) and BSD sed
+    # (macOS) - `-si` is GNU-only and errors as "illegal option -- s" under
+    # BSD/macOS sed. Avoid -i altogether and do the in-place edit via a temp
+    # file + mv instead, which behaves identically with either sed.
+    local tmp_file
+    tmp_file="$(mktemp "${ENV_FILE}.XXXXXX")"
+    sed "s/^UNIQUE_ID=.*$/UNIQUE_ID=${UNIQUE_ID}/" "$ENV_FILE" > "$tmp_file"
+    mv "$tmp_file" "$ENV_FILE"
 
     set_env
 }
