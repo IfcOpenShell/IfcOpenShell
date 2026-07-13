@@ -94,6 +94,17 @@ def assign_class(
             obj=obj, context=context, ifc_representation_class=ifc_representation_class, profile_set_usage=None
         )
 
+    if (
+        root.is_element_a(element, "IfcStructuralCurveMember")
+        or root.is_element_a(element, "IfcStructuralCurveConnection")
+    ) and not element.Axis:
+        # Axis is a mandatory attribute for these classes (the local Z axis
+        # used together with the curve's own tangent to orient the cross
+        # section). Leaving it unset produces a schema-invalid file, so give
+        # it a sensible default that the user can later correct via the
+        # "Edit Axis" UI.
+        root.set_default_structural_axis(element, obj)
+
     if not root.is_drawing_annotation(element) and (default_container := root.get_default_container()):
         if root.is_spatial_element(element):
             ifc.run("aggregate.assign_object", products=[element], relating_object=default_container)

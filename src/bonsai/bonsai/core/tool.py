@@ -905,6 +905,7 @@ class Root:
     def is_spatial_element(cls, element): pass
     def link_object_data(cls, source_obj, destination_obj): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
+    def set_default_structural_axis(cls, element, obj): pass
     def set_object_name(cls, obj, element): pass
 
 
