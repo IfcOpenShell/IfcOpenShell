@@ -72,9 +72,12 @@ class PsetTemplate(bonsai.core.tool.PsetTemplate):
                 if prop.Name in added_prop_names:
                     continue
                 added_prop_names.add(prop.Name)
-                # IFC4X3 renamed IfcProperty.Description to IfcProperty.Specification,
-                # so read whichever attribute the current schema provides.
-                description = getattr(prop, "Description", None) or getattr(prop, "Specification", None)
+                # IFC4X3 renamed IfcProperty.Description to IfcProperty.Specification.
+                # Access it positionally instead of by name: in both IFC4 and IFC4X3,
+                # IfcProperty's second attribute (index 1, after Name) is this
+                # description/specification field, so the EXPRESS attribute position
+                # is stable across schema versions even though the name isn't.
+                description = prop[1]
                 ifcopenshell.api.pset_template.add_prop_template(
                     template_file,
                     pset_template,
