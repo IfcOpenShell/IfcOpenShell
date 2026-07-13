@@ -12,7 +12,7 @@ Scenario: Ensure added booleans are marked as manual
     And I click "OK"
     And the object "IfcFurniture/Unnamed" exists
     And I toggle edit mode
-    And the object "Item/IfcExtrudedAreaSolid/77" exists
+    And the object "Item/IfcExtrudedAreaSolid/73" exists
     And I open the "Add Item" menu
     When I click "Half Space Solid"
     And the object "Item/IfcHalfSpaceSolid/90" exists
@@ -33,7 +33,7 @@ Scenario: Ensure removed booleans are unmarked as manual
     And I click "OK"
     And the object "IfcFurniture/Unnamed" exists
     And I toggle edit mode
-    And the object "Item/IfcExtrudedAreaSolid/77" exists
+    And the object "Item/IfcExtrudedAreaSolid/73" exists
     And I open the "Add Item" menu
     And I click "Half Space Solid"
     And I deselect all objects
