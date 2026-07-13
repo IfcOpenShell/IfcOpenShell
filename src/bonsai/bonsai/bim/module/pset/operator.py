@@ -88,6 +88,44 @@ class DisablePsetEditing(bpy.types.Operator, tool.Ifc.Operator):
         props.active_pset_type = "-"
 
 
+def _regenerate_parametric_dimension(file, annotation):
+    """Regenerate a single parametric dimension annotation after a pset edit."""
+    try:
+        import json
+        import numpy as np
+        import ifcopenshell.util.element
+        import ifcopenshell.api.drawing as drawing_api
+        import bonsai.tool as _tool
+        from bonsai.bim.module.drawing.operator import _update_blender_curve
+
+        pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
+        if not pset_data or not pset_data.get("Anchors"):
+            return
+
+        anchors = json.loads(pset_data["Anchors"])
+        placement_override = {}
+        for a in anchors:
+            guid = a.get("guid")
+            if not guid:
+                continue
+            try:
+                elem = file.by_guid(guid)
+                elem_obj = _tool.Ifc.get_object(elem)
+                if elem_obj:
+                    placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+            except Exception:
+                pass
+
+        resolved_pts = drawing_api.regenerate_dimension(
+            file, annotation, placement_override=placement_override
+        )
+        if resolved_pts:
+            _update_blender_curve(annotation, resolved_pts)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+
+
 class EditPset(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_pset"
     bl_label = "Edit Pset"
@@ -150,7 +188,12 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
             )
             if tool.Cost.has_schedules():
                 tool.Cost.update_cost_items(pset=pset)
+        is_bbim_dimension = props.active_pset_name == "BBIM_Dimension" and element.is_a("IfcAnnotation")
+
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
+        if is_bbim_dimension:
+            _regenerate_parametric_dimension(self.file, element)
+
         tool.Blender.update_viewport()
 
 
