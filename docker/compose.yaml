@@ -20,3 +20,4 @@ services:
 
 volumes:
   ccache:
+    name: ifcopenshell-ccache-shared
