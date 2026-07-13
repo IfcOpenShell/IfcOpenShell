@@ -28,8 +28,11 @@ RUN git config --system --add safe.directory '*'
 # volume mount point at runtime - anything `ccache -M` writes to a config
 # file under it during this build gets shadowed once the real volume is
 # mounted, so the size cap only actually takes effect via the env var.
+# 2G is generous: a full build (IfcParse+IfcGeom+IfcConvert+wrapper, one
+# Python version) measures ~300MB, and the volume is now shared across all
+# checkouts (see compose.yaml), so this covers several diverging branches.
 ENV CCACHE_DIR=/ccache
-ENV CCACHE_MAXSIZE=5G
+ENV CCACHE_MAXSIZE=2G
 ENV PATH="/usr/lib/ccache:$PATH"
 
 # Non-root user matching the host UID/GID that bind-mounts the repo (default
