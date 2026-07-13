@@ -2914,10 +2914,21 @@ class Drawing(bonsai.core.tool.Drawing):
         finalize_dxf()
 
     @classmethod
-    def remove_drawing_from_sheet(cls, reference: ifcopenshell.entity_instance) -> None:
+    def remove_drawing_from_sheet(
+        cls, reference: ifcopenshell.entity_instance, operator: Optional[bpy.types.Operator] = None
+    ) -> None:
         import bonsai.bim.module.drawing.sheeter as sheeter
 
         sheet = tool.Drawing.get_reference_document(reference)
+
+        # The sheet layout SVG is edited directly on disk and isn't tracked by
+        # Blender's undo system. Snapshot it so an undo/redo of `operator` can
+        # restore the file to match the reverted/reapplied IFC state (#7275).
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT") if sheet else None
+        previous_layout: Optional[bytes] = None
+        if layout_path and os.path.exists(layout_path):
+            with open(layout_path, "rb") as f:
+                previous_layout = f.read()
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.remove_drawing(reference, sheet)
@@ -2925,6 +2936,22 @@ class Drawing(bonsai.core.tool.Drawing):
         ifcopenshell.api.document.remove_reference(tool.Ifc.get(), reference=reference)
 
         tool.Drawing.import_sheets()
+
+        if operator is not None and previous_layout is not None and layout_path and os.path.exists(layout_path):
+            with open(layout_path, "rb") as f:
+                new_layout = f.read()
+
+            def rollback(data: Any, path: str = layout_path, content: bytes = previous_layout) -> None:
+                with open(path, "wb") as f:
+                    f.write(content)
+
+            def commit(data: Any, path: str = layout_path, content: bytes = new_layout) -> None:
+                with open(path, "wb") as f:
+                    f.write(content)
+
+            from bonsai.bim.ifc import IfcStore
+
+            IfcStore.add_transaction_operation(operator, rollback=rollback, commit=commit)
 
     @classmethod
     def hide_all_drawing_collections(cls) -> None:

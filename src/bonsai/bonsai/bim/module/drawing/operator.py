@@ -2045,7 +2045,7 @@ class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
-        tool.Drawing.remove_drawing_from_sheet(ifc_file.by_id(self.reference))
+        tool.Drawing.remove_drawing_from_sheet(ifc_file.by_id(self.reference), operator=self)
 
 
 class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
@@ -2579,7 +2579,7 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
         for drawing in drawings:
             sheet_references = tool.Drawing.get_sheet_references(drawing)
             for reference in sheet_references:
-                tool.Drawing.remove_drawing_from_sheet(reference)
+                tool.Drawing.remove_drawing_from_sheet(reference, operator=self)
             core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
 
         # In case we removed the active drawing.
