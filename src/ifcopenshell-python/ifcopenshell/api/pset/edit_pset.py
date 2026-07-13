@@ -23,6 +23,11 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.pset
 
+#: Keys recognized in a dict value to describe an ``IfcPropertyBoundedValue``.
+#: A property value is treated as a bounded value specification if it's a dict
+#: containing at least one of these keys.
+BOUNDED_VALUE_KEYS = ("LowerBoundValue", "UpperBoundValue", "SetPointValue")
+
 
 def edit_pset(
     file: ifcopenshell.file,
@@ -73,6 +78,11 @@ def edit_pset(
         become IfcBoolean, and integers will become IfcInteger. If more
         control is desired, you may explicitly specify IFC data objects
         directly. Note that provided `properties` might be mutated in the process.
+        An ``IfcPropertyBoundedValue`` may be added or edited by providing a
+        dictionary containing any of the keys ``LowerBoundValue``,
+        ``UpperBoundValue``, or ``SetPointValue`` (at least one is required).
+        Values may be plain Python types (cast using the property set
+        template, if available) or explicit IFC data objects.
     :param pset_template: If a property set template is provided, this will
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
@@ -150,6 +160,14 @@ def edit_pset(
         # Editing existing properties will retain their current data types
         # if possible. So this will still be a length measure.
         ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"ExplicitLength": 12.3})
+
+        # Bounded values (IfcPropertyBoundedValue) are described using a
+        # dictionary with LowerBoundValue / UpperBoundValue / SetPointValue keys.
+        # Any subset of these keys may be provided, and existing values are
+        # retained unless a new dictionary is passed.
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_ElectricalDeviceCommon")
+        ifcopenshell.api.pset.edit_pset(model, pset=pset,
+            properties={"RatedCurrent": {"LowerBoundValue": 1.0, "UpperBoundValue": 2.0}})
     """
     usecase = Usecase()
     usecase.file = file
@@ -224,6 +242,10 @@ class Usecase:
                     existing_props.append(prop)
             elif prop.is_a("IfcPropertySingleValue"):
                 prop = self.update_existing_prop_single_value(prop)
+                if prop:
+                    existing_props.append(prop)
+            elif prop.is_a("IfcPropertyBoundedValue"):
+                prop = self.update_existing_prop_bounded_value(prop)
                 if prop:
                     existing_props.append(prop)
             else:
@@ -315,10 +337,63 @@ class Usecase:
         del self.settings["properties"][prop.Name]
         return prop
 
+    def update_existing_prop_bounded_value(
+        self, prop: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """
+        NOTE: Assumes the prop exists
+        """
+        value = self.settings["properties"][prop.Name]
+
+        if value is None:
+            if self._try_purge(prop):
+                return
+            for ifc_attribute in BOUNDED_VALUE_KEYS:
+                setattr(prop, ifc_attribute, None)
+        elif isinstance(value, dict) and any(k in value for k in BOUNDED_VALUE_KEYS):
+            primary_measure_type = None
+            for ifc_attribute in BOUNDED_VALUE_KEYS:
+                if existing_value := getattr(prop, ifc_attribute):
+                    primary_measure_type = existing_value.is_a()
+                    break
+
+            for ifc_attribute in BOUNDED_VALUE_KEYS:
+                if ifc_attribute not in value:
+                    continue
+                new_value = value[ifc_attribute]
+                if new_value is None:
+                    setattr(prop, ifc_attribute, None)
+                    continue
+                if not isinstance(new_value, ifcopenshell.entity_instance):
+                    measure_type = primary_measure_type or self.get_primary_measure_type(prop.Name)
+                    assert measure_type, f"Couldn't find primary measure type for the prop value: '{prop.Name}'."
+                    new_value = self.file.create_entity(
+                        measure_type, self.cast_value_to_primary_measure_type(new_value, measure_type)
+                    )
+                setattr(prop, ifc_attribute, new_value)
+
+            if all(getattr(prop, k) is None for k in BOUNDED_VALUE_KEYS):
+                if self._try_purge(prop):
+                    return
+
+            if unit := value.get("Unit"):
+                prop.Unit = unit
+        else:
+            raise ValueError(
+                f'Value "{value}" is not a valid value for bounded property {prop.Name}. '
+                f"Expected None or a dict with any of {BOUNDED_VALUE_KEYS} keys."
+            )
+
+        del self.settings["properties"][prop.Name]
+        return prop
+
     def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
         properties: list[ifcopenshell.entity_instance] = []
         for name, value in self.settings["properties"].items():
             if value is None and self.settings["should_purge"]:
+                continue
+            if isinstance(value, dict) and any(k in value for k in BOUNDED_VALUE_KEYS):
+                properties.append(self.create_bounded_value_prop(name, value))
                 continue
             unit, value = self.unpack_unit_value(value)
 
@@ -394,6 +469,34 @@ class Usecase:
 
                 properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
         return properties
+
+    def create_bounded_value_prop(self, name: str, value: dict[str, Any]) -> ifcopenshell.entity_instance:
+        """Creates a new IfcPropertyBoundedValue from a dict of LowerBoundValue /
+        UpperBoundValue / SetPointValue (and optionally Unit).
+        """
+        primary_measure_type = None
+        for ifc_attribute in BOUNDED_VALUE_KEYS:
+            existing_value = value.get(ifc_attribute)
+            if isinstance(existing_value, ifcopenshell.entity_instance):
+                primary_measure_type = existing_value.is_a()
+                break
+
+        kwargs: dict[str, Any] = {"Name": name}
+        for ifc_attribute in BOUNDED_VALUE_KEYS:
+            if (bound_value := value.get(ifc_attribute)) is None:
+                continue
+            if not isinstance(bound_value, ifcopenshell.entity_instance):
+                measure_type = primary_measure_type or self.get_primary_measure_type(name)
+                assert measure_type, f"Couldn't find primary measure type for the prop value: '{name}'."
+                bound_value = self.file.create_entity(
+                    measure_type, self.cast_value_to_primary_measure_type(bound_value, measure_type)
+                )
+            kwargs[ifc_attribute] = bound_value
+
+        if unit := value.get("Unit"):
+            kwargs["Unit"] = unit
+
+        return self.file.create_entity("IfcPropertyBoundedValue", **kwargs)
 
     def assign_new_properties(self, props: list[ifcopenshell.entity_instance]) -> None:
         if hasattr(self.settings["pset"], "HasProperties"):

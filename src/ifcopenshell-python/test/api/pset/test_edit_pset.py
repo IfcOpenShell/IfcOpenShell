@@ -330,3 +330,43 @@ class TestEditPsetIFC4(test.bootstrap.IFC4, TestEditPsetIFC2X3):
         assert len(pset.HasProperties[0].ListValues) == 3
         assert set(map(ifcopenshell.entity_instance.is_a, pset.HasProperties[0].ListValues)) == {"IfcIdentifier"}
         assert list(map(operator.itemgetter(0), pset.HasProperties[0].ListValues)) == ["One", "Two", "Three"]
+
+    def test_adding_a_bounded_valued_property(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElectricDistributionBoard")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_ElectricalDeviceCommon")
+        ifcopenshell.api.pset.edit_pset(
+            self.file,
+            pset=pset,
+            properties={"RatedCurrent": {"LowerBoundValue": 1.0, "UpperBoundValue": 2.5}},
+        )
+        prop = pset.HasProperties[0]
+        assert prop.is_a("IfcPropertyBoundedValue")
+        assert prop.Name == "RatedCurrent"
+        assert prop.LowerBoundValue.is_a("IfcElectricCurrentMeasure")
+        assert prop.LowerBoundValue.wrappedValue == 1.0
+        assert prop.UpperBoundValue.wrappedValue == 2.5
+        assert prop.SetPointValue is None
+
+    def test_editing_an_existing_bounded_valued_property(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElectricDistributionBoard")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_ElectricalDeviceCommon")
+        ifcopenshell.api.pset.edit_pset(
+            self.file,
+            pset=pset,
+            properties={"RatedCurrent": {"LowerBoundValue": 1.0, "UpperBoundValue": 2.5}},
+        )
+        # Editing only one bound retains the others.
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"RatedCurrent": {"SetPointValue": 3.3}})
+        prop = pset.HasProperties[0]
+        assert prop.LowerBoundValue.wrappedValue == 1.0
+        assert prop.UpperBoundValue.wrappedValue == 2.5
+        assert prop.SetPointValue.wrappedValue == 3.3
+
+    def test_removing_a_bounded_valued_property_if_specified(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElectricDistributionBoard")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_ElectricalDeviceCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"RatedCurrent": {"LowerBoundValue": 1.0}})
+        assert len(pset.HasProperties) == 1
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"RatedCurrent": None})
+        pset = element.IsDefinedBy[0].RelatingPropertyDefinition
+        assert len(pset.HasProperties) == 0

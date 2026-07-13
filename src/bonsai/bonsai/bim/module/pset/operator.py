@@ -125,6 +125,8 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                     properties[prop.metadata.name] = [
                         e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected
                     ]
+                elif prop.value_type == "IfcPropertyBoundedValue":
+                    properties[prop.metadata.name] = tool.Pset.get_bounded_value_dict(prop) or None
 
         if pset.is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
             ifcopenshell.api.pset.edit_pset(
@@ -260,6 +262,8 @@ class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
         elif prop.value_type == "IfcPropertyEnumeratedValue":
             value_name = prop.metadata.get_value_name()
             prop_value = [e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected]
+        elif prop.value_type == "IfcPropertyBoundedValue":
+            prop_value = tool.Pset.get_bounded_value_dict(prop) or None
         else:
             self.report({"ERROR"}, f"Unsupport value type: '{prop.value_type}'.")
             return {"CANCELLED"}
