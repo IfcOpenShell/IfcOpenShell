@@ -531,7 +531,7 @@ def main(
 
             arranged = W.arrange_polygons(
                 *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
-                polies,  # ty: ignore[too-many-positional-arguments]
+                polies,
                 *ifcopenshell.optional_logger_args(logger),
             )
             svg_data_3 = W.polygons_to_svg(arranged, False)
