@@ -562,6 +562,26 @@ def add_annotation(
     return obj
 
 
+def assign_manual_drawing_reference(
+    ifc: type[tool.Ifc],
+    drawing_tool: type[tool.Drawing],
+    element: ifcopenshell.entity_instance,
+    drawing: Optional[ifcopenshell.entity_instance],
+) -> None:
+    for existing in drawing_tool.get_assigned_product_workaround(element):
+        ifc.run("drawing.unassign_product", relating_product=existing, related_object=element)
+    if drawing:
+        ifc.run("drawing.assign_product", relating_product=drawing, related_object=element)
+
+
+def assign_manual_reference_document(
+    drawing_tool: type[tool.Drawing],
+    element: ifcopenshell.entity_instance,
+    document: Optional[ifcopenshell.entity_instance],
+) -> None:
+    drawing_tool.set_annotation_reference_doc(element, document)
+
+
 def build_schedule(drawing: type[tool.Drawing], schedule: ifcopenshell.entity_instance) -> None:
     drawing.create_svg_schedule(schedule)
     drawing.open_svg(drawing.get_path_with_ext(drawing.get_document_uri(schedule), "svg"))

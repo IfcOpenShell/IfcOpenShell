@@ -112,6 +112,7 @@ class Drawing(bonsai.core.tool.Drawing):
         "FILL_AREA":     AnnotationObjectType("Fill Area",        "", "NODE_TEXTURE", "mesh"),
         "FALL":          AnnotationObjectType("Fall",             "", "SORT_ASC", "curve"),
         "IMAGE":         AnnotationObjectType("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
+        "MANUAL_DRAWING_REFERENCE": AnnotationObjectType("Manual Drawing Reference", "Add manual elevation or section reference tag that will not be moved or deleted during drawing regeneration", "EMPTY_ARROWS", "empty"),
     }
     # fmt: on
 
@@ -178,6 +179,10 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_annotation_data_type(cls, object_type: str) -> ANNOTATION_DATA_TYPE:
+        if object_type == "ELEVATION":
+            return "empty"
+        if object_type == "SECTION":
+            return "mesh"
         return cls.ANNOTATION_TYPES_DATA[object_type].data_type
 
     @classmethod
@@ -208,6 +213,14 @@ class Drawing(bonsai.core.tool.Drawing):
             co_end = co1 + vec * scaled_length
             obj = annotation.Annotator.add_line_to_annotation(obj, co_end, co1)
             obj.matrix_world = obj.matrix_world @ Matrix.Rotation(math.radians(-90), 4, "Z")
+        elif object_type == "ELEVATION":
+            obj.matrix_world = Matrix.Translation(bpy.context.scene.cursor.location.copy()) @ Matrix.Rotation(
+                math.radians(90), 4, "X"
+            )
+        elif object_type == "SECTION":
+            camera = tool.Ifc.get_object(drawing)
+            obj.matrix_world = cls.get_default_annotation_matrix(camera)
+            obj = annotation.Annotator.add_line_to_annotation(obj)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
 
@@ -1581,8 +1594,16 @@ class Drawing(bonsai.core.tool.Drawing):
         return elements
 
     @classmethod
+    def is_manual_drawing_reference(cls, element: ifcopenshell.entity_instance) -> bool:
+        return bool(ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsManualDrawingReference"))
+
+    @classmethod
     def is_auto_annotation(cls, element: ifcopenshell.entity_instance):
-        return element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
+        if not (element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")):
+            return False
+        if ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsManualDrawingReference"):
+            return False
+        return True
 
     @classmethod
     def get_drawing_reference_annotation(
@@ -1913,6 +1934,57 @@ class Drawing(bonsai.core.tool.Drawing):
             )
             element.Name = elevation.Name or "Unnamed"
             return element
+
+    @classmethod
+    def set_manual_drawing_reference(cls, element: ifcopenshell.entity_instance) -> None:
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"IsManualDrawingReference": True})
+
+    @classmethod
+    def is_document_reference(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Return True if this annotation links to an external document (not a Bonsai drawing camera)."""
+        return bool(ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsDocumentReference"))
+
+    @classmethod
+    def set_document_reference_flag(cls, element: ifcopenshell.entity_instance) -> None:
+        """Mark this annotation as pointing to an external document reference."""
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"IsDocumentReference": True})
+
+    @classmethod
+    def get_annotation_reference_doc(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Return the IfcDocumentInformation linked to a document-reference annotation."""
+        for rel in element.HasAssociations:
+            if rel.is_a("IfcRelAssociatesDocument"):
+                doc = rel.RelatingDocument
+                if doc.is_a("IfcDocumentInformation"):
+                    return doc
+        return None
+
+    @classmethod
+    def set_annotation_reference_doc(
+        cls,
+        element: ifcopenshell.entity_instance,
+        document: Union[ifcopenshell.entity_instance, None],
+    ) -> None:
+        """Associate (or clear) an IfcDocumentInformation on a document-reference annotation."""
+        ifc_file = tool.Ifc.get()
+        # Remove existing document associations on this annotation.
+        for rel in list(element.HasAssociations):
+            if rel.is_a("IfcRelAssociatesDocument"):
+                ifcopenshell.api.document.unassign_document(
+                    ifc_file, products=[element], document=rel.RelatingDocument
+                )
+        if document:
+            ifcopenshell.api.document.assign_document(ifc_file, products=[element], document=document)
 
     @classmethod
     def regenerate_elevation_reference_annotation(

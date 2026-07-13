@@ -490,7 +490,7 @@ class BaseDecorator:
         self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
     @cache
-    def format_value(self, context, value, suppress_zero_inches=False, custom_unit=None, in_unit_length=False):
+    def format_value(self, context, value, suppress_zero_inches=False, suppress_zero_feet=False, custom_unit=None, in_unit_length=False):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         precision = drawing_pset_data.get("MetricPrecision", None)
         if not precision:
@@ -502,6 +502,7 @@ class BaseDecorator:
             precision=precision,
             decimal_places=decimal_places,
             suppress_zero_inches=suppress_zero_inches,
+            suppress_zero_feet=suppress_zero_feet,
             custom_unit=custom_unit,
             in_unit_length=in_unit_length,
         )
@@ -718,11 +719,13 @@ class DimensionDecorator(BaseDecorator):
         if not dimension_data:
             return
         show_description_only = dimension_data["show_description_only"]
+        is_ordinate = dimension_data["is_ordinate"]
         text_prefix = dimension_data["text_prefix"]
         text_suffix = dimension_data["text_suffix"]
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
         text_offset_value = viewportDrawingScale * 3
 
+        ordinate_total = 0.0
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
@@ -741,16 +744,25 @@ class DimensionDecorator(BaseDecorator):
                 "multiline": True,
                 "text_dir": text_dir,
             }
-            base_pos = p0 + text_dir * 0.5
+            base_pos = p1 if is_ordinate else p0 + text_dir * 0.5
 
             if not show_description_only:
-                length = (v1 - v0).length
-                text = self.format_value(
-                    context,
-                    length,
-                    suppress_zero_inches=dimension_data["suppress_zero_inches"],
-                    custom_unit=dimension_data["custom_unit"],
-                )
+                segment_length = (v1 - v0).length
+                if is_ordinate:
+                    ordinate_total += segment_length
+                length = ordinate_total if is_ordinate else segment_length
+                units_to_format = dimension_data["custom_units"] if dimension_data["custom_units"] else [None]
+                parts = [
+                    self.format_value(
+                        context,
+                        length,
+                        suppress_zero_inches=dimension_data["suppress_zero_inches"],
+                        suppress_zero_feet=dimension_data["suppress_zero_feet"],
+                        custom_unit=unit,
+                    )
+                    for unit in units_to_format
+                ]
+                text = dimension_data["separator"].join(str(p) for p in parts)
                 if isinstance(self, DiameterDecorator):
                     text = "D" + text
                 text = text_prefix + text + text_suffix
@@ -761,15 +773,18 @@ class DimensionDecorator(BaseDecorator):
 
             self.draw_label(
                 text=text,
-                pos=base_pos + text_offset,
-                box_alignment="bottom-middle",
+                pos=base_pos + text_offset + (Vector((0, text_offset_value)) if is_ordinate else Vector((0, 0))),
+                box_alignment="bottom-right" if is_ordinate else "bottom-middle",
                 multiline_to_bottom=False,
                 **common_label_attrs,
             )
 
             if not show_description_only and description:
                 self.draw_label(
-                    text=description, pos=base_pos - text_offset, box_alignment="top-middle", **common_label_attrs
+                    text=description,
+                    pos=base_pos - text_offset + (Vector((0, text_offset_value)) if is_ordinate else Vector((0, 0))),
+                    box_alignment="top-right" if is_ordinate else "top-middle",
+                    **common_label_attrs,
                 )
 
 
@@ -965,7 +980,9 @@ class RadiusDecorator(BaseDecorator):
 
         def get_text():
             length = (spline_points[-1] - spline_points[-2]).length
-            return "R" + self.format_value(context, length, custom_unit=dimension_data["custom_unit"])
+            units_to_format = dimension_data["custom_units"] if dimension_data["custom_units"] else [None]
+            parts = [self.format_value(context, length, suppress_zero_feet=dimension_data["suppress_zero_feet"], custom_unit=unit) for unit in units_to_format]
+            return "R" + dimension_data["separator"].join(str(p) for p in parts)
 
         self.draw_dimension_text(
             context, get_text, description, dimension_data, pos=pos, text_dir=Vector((1, 0)), box_alignment="center"
@@ -1497,6 +1514,20 @@ class ElevationDecorator(BaseDecorator):
             "output_edges": output_edges,
         }
 
+        # Determine the arrow direction in camera-image-plane (XY) space.
+        # The elevation tag's local -Z is intentionally parallel to the drawing
+        # camera's view direction, so projecting it always gives a near-zero XY
+        # delta.  Fall through to local +X (which is perpendicular to the view
+        # and rotates visibly when the user spins the tag).
+        view_mat = context.region_data.view_matrix
+        edge_dir_2d = Vector((1.0, 0.0))  # final fallback
+        for local_axis in (Vector((0, 0, -1)), Vector((1, 0, 0)), Vector((0, 1, 0))):
+            world_axis = obj.matrix_world.to_3x3() @ local_axis
+            cam_xy = (view_mat.to_3x3() @ world_axis).xy
+            if cam_xy.length > 1e-6:
+                edge_dir_2d = cam_xy.normalized()
+                break
+
         # process edges
         for edge in edges_original:
             v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
@@ -1505,7 +1536,7 @@ class ElevationDecorator(BaseDecorator):
             circle_head = get_circle_head(circle_size)
             start_i = add_verts_sequence(add_offsets(v0, circle_head), start_i, **out_kwargs, closed=True)
 
-            edge_dir = (v1 - v0).normalized()
+            edge_dir = edge_dir_2d.to_3d()
             side = (edge_dir.yx * Vector((1, -1))).to_3d()
             triangle_head = get_triangle_head(side, edge_dir, triangle_length, triangle_width)
             start_i = add_verts_sequence(add_offsets(v0, triangle_head), start_i, **out_kwargs, closed=True)
@@ -2090,4 +2121,8 @@ class DecorationsHandler:
 
         object_decorators = DecoratorData.data.get("object_decorators", [])
         for obj, decorator in object_decorators:
-            decorator.decorate(context, obj)
+            try:
+                decorator.decorate(context, obj)
+            except ReferenceError:
+                DecoratorData.is_loaded = False
+                break
