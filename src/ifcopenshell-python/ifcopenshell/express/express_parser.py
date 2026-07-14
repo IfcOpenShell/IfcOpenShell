@@ -17,7 +17,7 @@ def parse(fn: str) -> mapping.Mapping:
     if os.path.exists(cache_file) and os.path.getmtime(cache_file) >= os.path.getmtime(fn):
         with open(cache_file, "rb") as f:
             m = pickle.load(f)
-    else:      
+    else:
         ABS = (CaselessKeyword("abs")).setParseAction(lambda s, loc, t: Node(s, loc, t, rule="ABS"))("ABS")
         ABSTRACT = (CaselessKeyword("abstract")).setParseAction(lambda s, loc, t: Node(s, loc, t, rule="ABSTRACT"))("ABSTRACT")
         ACOS = (CaselessKeyword("acos")).setParseAction(lambda s, loc, t: Node(s, loc, t, rule="ACOS"))("ACOS")
@@ -479,7 +479,7 @@ def parse(fn: str) -> mapping.Mapping:
         with open(cache_file, "wb") as f:
             pickle.dump(m, f, protocol=0)
     return m
-            
+
 if __name__ == "__main__":
     m = parse(sys.argv[1])
     import importlib

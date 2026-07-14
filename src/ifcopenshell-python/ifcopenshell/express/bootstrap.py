@@ -228,7 +228,7 @@ def parse(fn: str) -> mapping.Mapping:
     if os.path.exists(cache_file) and os.path.getmtime(cache_file) >= os.path.getmtime(fn):
         with open(cache_file, "rb") as f:
             m = pickle.load(f)
-    else:      
+    else:
         %s
 
         syntax.ignore("--" + restOfLine)
@@ -240,7 +240,7 @@ def parse(fn: str) -> mapping.Mapping:
         with open(cache_file, "wb") as f:
             pickle.dump(m, f, protocol=0)
     return m
-            
+
 if __name__ == "__main__":
     m = parse(sys.argv[1])
     import importlib

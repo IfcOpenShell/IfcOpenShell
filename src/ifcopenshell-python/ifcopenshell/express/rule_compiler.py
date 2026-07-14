@@ -292,7 +292,7 @@ def process_rule_decl(context):
 class {context.rule_head.rule_id}:
     SCOPE = "file"
 
-    @staticmethod    
+    @staticmethod
     def __call__(file):
         {context.rule_head.entity_ref} = file.by_type("{context.rule_head.entity_ref}")
 {indent(8, context.algorithm_head.local_decl)}
@@ -335,7 +335,7 @@ class {class_name}_{domain_rule.rule_label_id}:
     TYPE_NAME = "{class_name}"
     RULE_NAME = "{domain_rule.rule_label_id}"
 
-    @staticmethod    
+    @staticmethod
     def __call__(self):
 {indent(8, (f"{a.lower()} = self.{a}" for a in attributes if re.search(f'{wb}{a.lower()}{wb}', str(domain_rule))))}
 {indent(8, domain_rule)}
