@@ -1,6 +1,8 @@
 [project]
 name = "IfcOpenShell"
 version = "0.0.0"
+# Don't provide requires-python explicitly
+# allowing pyprojects to set their own (e.g. bonsai and general ifcopenshell version differ).
 
 [tool.black]
 line-length = 120
@@ -207,6 +209,16 @@ exclude = [
 ]
 
 [tool.poe.tasks]
+
+dev-setup.sequence = [
+    {cmd = "uv sync"},
+    {cmd = "uv pip install -e ./src/ifcopenshell-python/[advanced,dev]"},
+    {cmd = "uv pip install -e ./src/ifcedit/"},
+    {cmd = "uv pip install -e ./src/ifcquery/"},
+    {cmd = "uv pip install -e './src/ifcmcp/[mcp]'"},
+    {cmd = "uv pip install -r src/bonsai/requirements-dev.txt"},
+]
+dev-setup.help = "Install repo packages in editable mode"
 
 ruff = "ruff check"
 
