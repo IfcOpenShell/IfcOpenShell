@@ -161,6 +161,8 @@ statements = []
 
 terminals = reduce(lambda x, y: x | y, (find_bytype(e, Terminal) for id, e in express))
 keywords = list(filter(operator.attrgetter("is_keyword"), terminals))
+# terminals is identity-ordered (no __eq__/__hash__), so sort for determinism
+keywords.sort(key=lambda x: repr(x))
 negated_keywords = map(lambda s: "~%s" % s, keywords)
 no_action = {"letter", "digit", "digits", "real_literal", "integer_literal", "string_literal", "simple_string_literal", "letter", "not_quote", "not_paren_star_quote_special"}
 
@@ -187,10 +189,10 @@ while True:
     if not emitted_in_loop:
         break
 
-for id in to_emit:
+for id in sorted(to_emit):
     statements.append('%s = Forward()("%s")' % (id, id))
 
-for id in to_emit:
+for id in sorted(to_emit):
     expr = [e for k, e in express if k == id][0]
     stmt = "(%s)" % expr
     if id in to_combine:
