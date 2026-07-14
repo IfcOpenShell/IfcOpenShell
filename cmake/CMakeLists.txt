@@ -215,6 +215,9 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIR})
+
 if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
     add_definitions(-DIFOPSH_WITH_OPENCASCADE)
@@ -277,6 +280,15 @@ if(WITH_ROCKSDB)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
         target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE zstd::libzstd_static)
     endif()
+
+    find_package(Snappy)
+    find_package(lz4)
+    find_package(BZip2)
+    find_package(ZLIB)
+    target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE Snappy::snappy)
+    target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE lz4::lz4)
+    target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE BZip2::BZip2)
+    target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE ZLIB::ZLIB)
 
     install(TARGETS IFCOPENSHELL_RocksDB EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endif()
@@ -343,8 +355,7 @@ endif()
 # Do `find_package(Boost)` only after this, to make sure `FindBoost` finds correct components.
 # Otherwise it will find components needed for CGAL and we might some libraries.
 if(WITH_CGAL)
-    find_package(CGAL REQUIRED)
-    set(CGAL_LIBRARIES IFCOPENSHELL_CGAL)
+    find_package(CGAL REQUIRED CONFIG)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
