@@ -5,7 +5,7 @@ dependencies = [
     "black==26.3.1",
     "ruff==0.15.12",
     "poethepoet",
-    "ty==0.0.32",
+    "ty==0.0.59",
     "gersemi==0.26.1",
 ]
 
@@ -159,7 +159,6 @@ unused-awaitable = "error"
 # Function argument rules:
 # Conflicts with `ifcopenshell.api.geometry.add_representation` type of callables we have, confusing them with a module.
 # call-non-callable = "error"
-conflicting-argument-forms = "error"
 # Too many false positives.
 # invalid-argument-type = "error"
 missing-argument = "error"
