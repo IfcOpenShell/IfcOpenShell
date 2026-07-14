@@ -1171,8 +1171,6 @@ class Style:
 @interface
 class Surveyor:
     def get_absolute_matrix(cls, obj): pass
-    def get_z_rotation(cls, obj): pass
-    def set_z_rotation(cls, obj, z): pass
 
 
 @interface
