@@ -264,18 +264,12 @@ float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
     return (xmax - xmin) * (ymax - ymin);
 }
 
-void ViewportCore::recomposeAndUploadModel(uint32_t session_model_id) {
-    if (!wgpu_initialized_) return;
-    auto it = models_gpu_.find(session_model_id);
-    if (it == models_gpu_.end()) return;
-    ModelGpuData& m = it->second;
-    if (m.instances.empty() || m.instance_storage == nullptr) return;
+void ViewportCore::uploadInstanceRecords(ModelGpuData& m) {
+    if (!wgpu_initialized_ || m.instances.empty() || m.instance_storage == nullptr) return;
 
     std::vector<InstanceGpu> gpu(m.instances.size());
     for (size_t i = 0; i < m.instances.size(); ++i) {
-        InstanceInfo& inst = m.instances[i];
-        composeInstanceFromPlacement(inst, m);
-
+        const InstanceInfo& inst = m.instances[i];
         InstanceGpu& dst = gpu[i];
         std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
         dst.object_id            = inst.object_id;
@@ -285,6 +279,17 @@ void ViewportCore::recomposeAndUploadModel(uint32_t session_model_id) {
     }
     wgpuQueueWriteBuffer(queue_, m.instance_storage, 0,
                          gpu.data(), gpu.size() * sizeof(InstanceGpu));
+}
+
+void ViewportCore::recomposeAndUploadModel(uint32_t session_model_id) {
+    if (!wgpu_initialized_) return;
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end()) return;
+    ModelGpuData& m = it->second;
+    if (m.instances.empty() || m.instance_storage == nullptr) return;
+
+    for (auto& inst : m.instances) composeInstanceFromPlacement(inst, m);
+    uploadInstanceRecords(m);
 
     // Per-chunk world AABBs are derived from instance world AABBs; they
     // drive chunk-level frustum cull and the streaming priority, so they
@@ -637,6 +642,10 @@ ViewportCore::CameraState ViewportCore::cameraState() const {
     s.yaw      = camera_yaw_deg_;
     s.pitch    = camera_pitch_deg_;
     return s;
+}
+
+Eigen::Vector3f ViewportCore::cameraEye() const {
+    return orbitEye(camera_target_, camera_distance_, camera_yaw_deg_, camera_pitch_deg_);
 }
 
 bool ViewportCore::computeObjectAabb(uint32_t object_id,
@@ -1769,6 +1778,10 @@ void ViewportCore::initWgpuAsyncWeb(std::function<void(bool)> on_complete) {
             Log::info() << "[web init] wgpu device + surface ready (format="
                         << int(c->core->surface_format_) << " view format="
                         << int(c->core->surface_view_format_) << ")";
+            // Device + queue are live: the buffer-upload paths guarded on this
+            // (uploadInstanceRecords, recomposeAndUploadModel) are now safe. The
+            // desktop host latches the same flag after its own initWgpu returns.
+            c->core->wgpu_initialized_ = true;
             c->on_complete(true);
             delete c;
         };
@@ -3184,6 +3197,19 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.meshes    = std::move(metadata.meta.meshes);
     model_gpu_data.instances = std::move(metadata.meta.instances);
 
+    // Element metadata, when the caller already read it. readSidecarMetadata
+    // parses the block up front, so a path-based load arrives with it in hand;
+    // the web byte-range path deliberately skips it (first paint must not wait
+    // on it) and fetches later via loadElementMetadataWeb, arriving here empty.
+    // Either way the rebase is the same and happens here — this function is the
+    // sole authority on object_id_base.
+    if (!metadata.meta.elements.empty()) {
+        model_gpu_data.elements     = std::move(metadata.meta.elements);
+        model_gpu_data.string_table = std::move(metadata.meta.string_table);
+        for (auto& e : model_gpu_data.elements) e.object_id += object_id_base;
+        model_gpu_data.element_metadata_loaded = true;
+    }
+
     // Streaming defers per-mesh vertex data until the owning chunk is
     // loaded. Both volumes + Area-tool CPU shadow fill in per-chunk
     // inside applyStreamedChunk as the bytes arrive.
@@ -3731,43 +3757,39 @@ void ViewportCore::loadElementMetadataWeb(std::uint32_t session_model_id,
         });
 }
 
+void ViewportCore::loadAllElementMetadataWeb(std::function<void(bool)> done) {
+    const std::vector<std::uint32_t> ids = modelIdsInLoadOrder();
+    if (ids.empty()) { if (done) done(true); return; }
+    // Fan out one lazy fetch per model and join on a shared counter. The
+    // fetches complete through the JS event loop, so `pending` is only ever
+    // touched from the main thread — no synchronisation needed.
+    struct Join { std::size_t pending; bool ok; std::function<void(bool)> done; };
+    auto join = std::make_shared<Join>(Join{ ids.size(), true, std::move(done) });
+    for (std::uint32_t session_model_id : ids) {
+        loadElementMetadataWeb(session_model_id, [join](bool ok) {
+            join->ok = join->ok && ok;
+            if (--join->pending == 0 && join->done) join->done(join->ok);
+        });
+    }
+}
+
 void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
     InstanceCompose::InstanceLookup lk;
     if (!findInstance(object_id, lk)) return;  // empty pick / unknown id
     const std::uint32_t session_model_id = lk.session_model_id;
-    loadElementMetadataWeb(session_model_id, [this, object_id, session_model_id](bool ok) {
-        if (!ok) {
-            Log::warn() << "pick: element metadata fetch failed for object " << object_id;
+    loadElementMetadataWeb(session_model_id, [this, object_id](bool ok) {
+        ElementRef e;
+        if (!ok || !elementForObject(object_id, e)) {
+            Log::warn() << "pick: no element metadata for object " << object_id;
             return;
         }
-        auto it = models_gpu_.find(session_model_id);
-        if (it == models_gpu_.end()) return;
-        const ModelGpuData& m = it->second;
-        for (const auto& e : m.elements) {
-            if (e.object_id != object_id) continue;
-            std::string guid =
-                (e.guid_length > 0 &&
-                 std::size_t(e.guid_offset) + e.guid_length <= m.string_table.size())
-                    ? m.string_table.substr(e.guid_offset, e.guid_length)
-                    : std::string("(none)");
-            Log::info() << "pick: object " << object_id << " GUID " << guid;
-            // Load-order index of the object's model (sorted by session id — the
-            // same order as streamingModelProgress and the JS model list); -1 if
-            // not found. Lets host pages show which model the pick belongs to.
-            std::vector<std::uint32_t> model_ids;
-            model_ids.reserve(models_gpu_.size());
-            for (const auto& [id, mm] : models_gpu_) model_ids.push_back(id);
-            std::sort(model_ids.begin(), model_ids.end());
-            const auto pos = std::find(model_ids.begin(), model_ids.end(), session_model_id);
-            const int model_index = (pos != model_ids.end()) ? int(pos - model_ids.begin()) : -1;
-            // Surface the selection to JS so host pages can react (e.g. show the
-            // GUID + model). Fires Module.__ifcvOnSelect(object_id, guid, modelIndex).
-            EM_ASM({
-                if (Module.__ifcvOnSelect) Module.__ifcvOnSelect($0, UTF8ToString($1), $2);
-            }, object_id, guid.c_str(), model_index);
-            return;
-        }
-        Log::info() << "pick: object " << object_id << " not in element table";
+        Log::info() << "pick: object " << object_id << " GUID " << e.guid;
+        // Surface the selection to JS so host pages can react (e.g. show the
+        // GUID + model). Fires Module.__ifcvOnSelect(object_id, guid, modelIndex);
+        // model_index is the load-order slot, matching the JS model list.
+        EM_ASM({
+            if (Module.__ifcvOnSelect) Module.__ifcvOnSelect($0, UTF8ToString($1), $2);
+        }, object_id, e.guid.c_str(), e.model_index);
     });
 }
 #endif  // __EMSCRIPTEN__
@@ -3787,23 +3809,82 @@ int ViewportCore::streamingModelCount() const {
     return int(models_gpu_.size());
 }
 
+std::vector<std::uint32_t> ViewportCore::modelIdsInLoadOrder() const {
+    std::vector<std::uint32_t> ids;
+    ids.reserve(models_gpu_.size());
+    for (const auto& [session_model_id, m] : models_gpu_) ids.push_back(session_model_id);
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
+int ViewportCore::modelLoadIndex(std::uint32_t session_model_id) const {
+    const std::vector<std::uint32_t> ids = modelIdsInLoadOrder();
+    const auto it = std::find(ids.begin(), ids.end(), session_model_id);
+    return (it == ids.end()) ? -1 : int(it - ids.begin());
+}
+
 void ViewportCore::streamingModelProgress(int idx, int& resident_chunks,
                                           int& total_chunks) const {
     resident_chunks = 0;
     total_chunks    = 0;
     if (idx < 0 || idx >= int(models_gpu_.size())) return;
-    // Order by session_model_id (= load order) so a model keeps the same UI slot as it
-    // streams, instead of hopping with unordered_map iteration order.
-    std::vector<std::uint32_t> ids;
-    ids.reserve(models_gpu_.size());
-    for (const auto& [session_model_id, m] : models_gpu_) ids.push_back(session_model_id);
-    std::sort(ids.begin(), ids.end());
-    auto it = models_gpu_.find(ids[std::size_t(idx)]);
+    auto it = models_gpu_.find(modelIdsInLoadOrder()[std::size_t(idx)]);
     if (it == models_gpu_.end()) return;
     for (const auto& c : it->second.chunks) {
         ++total_chunks;
         if (c.is_resident) ++resident_chunks;
     }
+}
+
+namespace {
+
+// Resolve one element record against its model's string table. Offsets that run
+// past the table (or carry zero length) yield an empty string rather than a
+// fabricated one — the sidecar writes no string for an unnamed element.
+ViewportCore::ElementRef makeElementRef(const ModelGpuData& m, int model_index,
+                                        const ElementTableRecord& e) {
+    auto str = [&m](std::uint32_t offset, std::uint32_t length) {
+        return (length > 0 && std::size_t(offset) + length <= m.string_table.size())
+                   ? m.string_table.substr(offset, length)
+                   : std::string();
+    };
+    ViewportCore::ElementRef ref;
+    ref.object_id   = e.object_id;
+    ref.model_index = model_index;
+    ref.guid        = str(e.guid_offset, e.guid_length);
+    ref.name        = str(e.name_offset, e.name_length);
+    ref.type        = str(e.type_offset, e.type_length);
+    return ref;
+}
+
+}  // namespace
+
+std::vector<ViewportCore::ElementRef> ViewportCore::elements() const {
+    std::vector<ElementRef> out;
+    const std::vector<std::uint32_t> ids = modelIdsInLoadOrder();
+    for (std::size_t model_index = 0; model_index < ids.size(); ++model_index) {
+        auto it = models_gpu_.find(ids[model_index]);
+        if (it == models_gpu_.end()) continue;
+        const ModelGpuData& m = it->second;
+        out.reserve(out.size() + m.elements.size());
+        for (const ElementTableRecord& e : m.elements)
+            out.push_back(makeElementRef(m, int(model_index), e));
+    }
+    return out;
+}
+
+bool ViewportCore::elementForObject(std::uint32_t object_id, ElementRef& out) const {
+    InstanceCompose::InstanceLookup lk;
+    if (!findInstance(object_id, lk)) return false;
+    auto it = models_gpu_.find(lk.session_model_id);
+    if (it == models_gpu_.end()) return false;
+    const ModelGpuData& m = it->second;
+    for (const ElementTableRecord& e : m.elements) {
+        if (e.object_id != object_id) continue;
+        out = makeElementRef(m, modelLoadIndex(lk.session_model_id), e);
+        return true;
+    }
+    return false;
 }
 
 void ViewportCore::streamingByteProgress(std::uint64_t& total_bytes,
@@ -5186,6 +5267,59 @@ void ViewportCore::showAll() {
     if (visibility_.hiddenCount() == 0) return;
     visibility_.clear();
     Log::info() << "[wgpu] show all";
+    host_->requestFrame();
+}
+
+void ViewportCore::hideAll() {
+    // Element-level hide of everything in a visible model — the inverse of
+    // showAll, and isolateSelected with an empty selection. Model-hidden
+    // models are already gone from the cull, so they contribute nothing.
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const InstanceInfo& inst : m.instances) visibility_.hide(inst.object_id);
+    }
+    Log::info().noquote().nospace() << "[wgpu] hid all (" << visibility_.hiddenCount() << ")";
+    host_->requestFrame();
+}
+
+void ViewportCore::setObjectsVisible(const std::vector<std::uint32_t>& object_ids, bool visible) {
+    for (std::uint32_t id : object_ids) {
+        if (visible) visibility_.show(id);
+        else         visibility_.hide(id);
+    }
+    host_->requestFrame();
+}
+
+void ViewportCore::setObjectsColor(const std::vector<std::uint32_t>& object_ids,
+                                   std::uint32_t rgba8) {
+    if (object_ids.empty()) return;
+    const std::unordered_set<std::uint32_t> wanted(object_ids.begin(), object_ids.end());
+
+    // One pass per model: patch the CPU mirror, then re-upload that model's
+    // instance records only if it actually owned one of the ids.
+    for (auto& [session_model_id, m] : models_gpu_) {
+        bool touched = false;
+        for (InstanceInfo& inst : m.instances) {
+            if (inst.color_override_rgba8 == rgba8) continue;
+            if (wanted.find(inst.object_id) == wanted.end()) continue;
+            inst.color_override_rgba8 = rgba8;
+            touched = true;
+        }
+        if (touched) uploadInstanceRecords(m);
+    }
+    host_->requestFrame();
+}
+
+void ViewportCore::clearObjectColors() {
+    for (auto& [session_model_id, m] : models_gpu_) {
+        bool touched = false;
+        for (InstanceInfo& inst : m.instances) {
+            if (inst.color_override_rgba8 == 0u) continue;
+            inst.color_override_rgba8 = 0u;
+            touched = true;
+        }
+        if (touched) uploadInstanceRecords(m);
+    }
     host_->requestFrame();
 }
 

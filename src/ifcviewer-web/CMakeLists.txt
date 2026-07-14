@@ -107,14 +107,18 @@ target_link_options(IfcViewerWeb PRIVATE
     # byte-range Blob.slice reads; _load_sidecar_from_url_c streams a remote
     # sidecar via HTTP Range; _ifcv_on_range_done / _ifcv_source_ready are the
     # JS→C completion callbacks for a landed range / a resolved URL size.
+    # The _ifcv_{get,set,apply}_* family is the scripting API (camera, selection,
+    # visibility, colour override, object enumeration) that web/ifcviewer.js
+    # wraps; _malloc/_free let it marshal id arrays into the wasm heap.
     # EMSCRIPTEN_KEEPALIVE alone keeps the symbols in the binary but doesn't
     # add them to Module. ccall lets the host page (web/ifcviewer.js) pass a JS string (the ?model
     # URL) to load_sidecar_from_url_c without manual heap marshalling.
-    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c','_load_sidecar_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c']"
+    "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free','_raf_tick_c','_load_sidecar_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_hide_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c','_ifcv_get_camera_c','_ifcv_set_camera_c','_ifcv_set_ortho_c','_ifcv_get_selection_c','_ifcv_get_active_object_c','_ifcv_apply_selection_c','_ifcv_set_visible_c','_ifcv_get_hidden_c','_ifcv_set_color_c','_ifcv_clear_colors_c','_ifcv_request_objects_c']"
     # ccall: the host page (web/ifcviewer.js) passes the ?model URL string to load_sidecar_from_url_c.
     # HEAPU8: lets tooling/tests read the wasm heap size (e.g. to verify a large
-    # sidecar streams by range instead of loading whole). Standard, zero-cost.
-    "-sEXPORTED_RUNTIME_METHODS=['ccall','HEAPU8','UTF8ToString']"
+    # sidecar streams by range instead of loading whole). HEAPU32/HEAPF32: the
+    # scripting API marshals object-id arrays and the camera state through them.
+    "-sEXPORTED_RUNTIME_METHODS=['ccall','HEAPU8','HEAPU32','HEAPF32','UTF8ToString']"
     # Streaming + chunked geometry want a heap that can grow as buffers
     # arrive. 256 MB initial, 2 GB ceiling (matches the wasm32 pointer
     # cap; --shared64 / MEMORY64 would lift this later if we need it).
@@ -134,18 +138,49 @@ target_link_options(IfcViewerWeb PRIVATE
 # MODULARIZE emits IfcViewerWeb.js (the createIfcViewer factory) + .wasm.
 set_target_properties(IfcViewerWeb PROPERTIES SUFFIX ".js")
 
+# --embed-file above is a link-time input, but it lives inside a link OPTION, so
+# CMake cannot see it as a dependency: regenerating sample.ifcview (make_sample.py)
+# would otherwise leave the previous model baked into the wasm with ninja
+# reporting "no work to do". Name it explicitly so a changed sample relinks.
+set_property(TARGET IfcViewerWeb APPEND
+    PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/sample.ifcview")
+
 # Copy the static example pages + the JS integration helper next to the wasm so
 # a plain `python3 -m http.server --directory build-web` serves the whole demo:
 #   /IfcViewerWeb.html  fullscreen example
 #   /embedded.html      embedded viewer + DOM model list / selection (JS API)
-#   /index.html         links to both
+#   /scripting.html     the full scripting API — camera, selection, visibility, colour
+#   /index.html         links to all three
 set(IFCVIEWERWEB_STATIC
     "${CMAKE_CURRENT_SOURCE_DIR}/web/ifcviewer.js"
     "${CMAKE_CURRENT_SOURCE_DIR}/web/IfcViewerWeb.html"
     "${CMAKE_CURRENT_SOURCE_DIR}/web/embedded.html"
+    "${CMAKE_CURRENT_SOURCE_DIR}/web/scripting.html"
     "${CMAKE_CURRENT_SOURCE_DIR}/web/index.html"
 )
-add_custom_command(TARGET IfcViewerWeb POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${IFCVIEWERWEB_STATIC} "$<TARGET_FILE_DIR:IfcViewerWeb>"
-    COMMENT "Copying web example pages next to IfcViewerWeb.js")
+# One copy rule per page, each DEPENDing on its own source, so editing a page or
+# ifcviewer.js re-copies it. The previous POST_BUILD command on IfcViewerWeb only
+# fired when the wasm itself relinked, which left a stale copy in the build dir —
+# the served demo (and the Playwright tests, which run against it) kept the old
+# file with ninja reporting "no work to do".
+#
+# The copies go next to the wasm, i.e. the executable's output directory. Pin
+# that to the build root rather than reading it back through
+# $<TARGET_FILE_DIR:IfcViewerWeb>: a generator expression in a custom command's
+# OUTPUT may not reference a target.
+set_target_properties(IfcViewerWeb PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+set(IFCVIEWERWEB_STATIC_OUT)
+foreach(static_src IN LISTS IFCVIEWERWEB_STATIC)
+    get_filename_component(static_name "${static_src}" NAME)
+    set(static_dst "${CMAKE_CURRENT_BINARY_DIR}/${static_name}")
+    add_custom_command(
+        OUTPUT  "${static_dst}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${static_src}" "${static_dst}"
+        DEPENDS "${static_src}"
+        COMMENT "Copying ${static_name} next to IfcViewerWeb.js"
+        VERBATIM)
+    list(APPEND IFCVIEWERWEB_STATIC_OUT "${static_dst}")
+endforeach()
+add_custom_target(IfcViewerWebStatic ALL DEPENDS ${IFCVIEWERWEB_STATIC_OUT})

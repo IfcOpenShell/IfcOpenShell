@@ -43,6 +43,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -159,6 +160,12 @@ public:
     // the model is unknown, has no instances, or wgpu init hasn't
     // completed.
     void recomposeAndUploadModel(uint32_t session_model_id);
+
+    // Re-pack m.instances into InstanceGpu[] and write the whole array back to
+    // m.instance_storage. Reads the already-composed inst.transform, so unlike
+    // recomposeAndUploadModel it does no matrix work and touches no AABB —
+    // it is the upload half, shared with the colour-override path.
+    void uploadInstanceRecords(ModelGpuData& m);
 
     // ---- Camera math --------------------------------------------------------
     //
@@ -277,6 +284,10 @@ public:
     bool projectionOrtho() const { return projection_ortho_; }
     std::string cameraString() const;
     CameraState cameraState() const;
+    // The orbit camera's world-space eye, derived from (target, distance, yaw,
+    // pitch). Exposed so hosts reporting camera position don't re-implement the
+    // orbit convention — buildViewProj feeds lookAt from exactly this point.
+    Eigen::Vector3f cameraEye() const;
 
     // Re-aim the orbit camera so [mn, mx] fits the view with `padding`
     // headroom (1.10 typical). Used by viewAll and focusOnSelectedObject.
@@ -446,6 +457,11 @@ public:
     void loadElementMetadataWeb(std::uint32_t session_model_id,
                                 std::function<void(bool)> done = {});
 
+    // loadElementMetadataWeb fanned out over every model in the scene, firing
+    // done(ok) once the last one lands (ok = every model resolved). Backs the
+    // JS getObjects() API, which needs the whole federation's element tables.
+    void loadAllElementMetadataWeb(std::function<void(bool)> done);
+
     // Demo consumer of the element metadata fetch: on pick, ensure the owning model's
     // property block is loaded (loadElementMetadataWeb — fetched once, on
     // demand), then log the picked object's IFC GUID. The first pick triggers
@@ -471,6 +487,32 @@ public:
     int  streamingModelCount() const;
     void streamingModelProgress(int idx, int& resident_chunks,
                                 int& total_chunks) const;
+
+    // A model's slot in that load order, i.e. the `idx` streamingModelProgress
+    // wants, for a session_model_id. -1 when the model is gone. The one place
+    // the session-id → UI-slot mapping is derived.
+    int modelLoadIndex(std::uint32_t session_model_id) const;
+
+    // One row of the element table: the IFC identity behind a rendered
+    // object_id. `model_index` is the load-order slot (modelLoadIndex), so a
+    // host UI can attribute an object to the file it came from.
+    struct ElementRef {
+        std::uint32_t object_id   = 0;
+        int           model_index = -1;
+        std::string   guid;
+        std::string   name;
+        std::string   type;
+    };
+
+    // Every object in the scene, across every model whose element metadata is
+    // resident. On web that means calling loadAllElementMetadataWeb first —
+    // models still lazily un-fetched simply contribute nothing.
+    std::vector<ElementRef> elements() const;
+
+    // The single element behind one object_id — the pick path's lookup, which
+    // must not pay for materialising the whole table. Scans only the model that
+    // owns the id. False when the id is unknown or its metadata isn't resident.
+    bool elementForObject(std::uint32_t object_id, ElementRef& out) const;
 
     // Byte-level streaming progress for a combined loading bar. total = all
     // geometry bytes; needed = bytes the current view wants (contribution-
@@ -718,9 +760,16 @@ public:
     void applyPickToSelection(std::uint32_t object_id, bool add, bool remove);
 
     // Apply a marquee box-pick result to the selection: plain = replace with
-    // `ids`, add = union, remove = subtract. Schedules a frame.
+    // `ids`, add = union, remove = subtract. Schedules a frame. Also the
+    // programmatic selection primitive for host UIs (an empty `ids` with
+    // add=remove=false clears).
     void applyMarqueeToSelection(const std::vector<std::uint32_t>& ids,
                                  bool add, bool remove);
+
+    // Selection accessor. Mirrors ViewportWindow::selection() so hosts can read
+    // selectionIds() / activeId(); mutation goes through the apply*ToSelection
+    // paths above (they own the dirty flag + frame scheduling).
+    const SelectionState& selection() const { return selection_; }
 
     // Visibility + X-ray, shared by desktop (H / Shift+H / Alt+H / Alt+X) and
     // web. Hidden objects are skipped by the cull and xray_alpha_cap_ is read
@@ -729,7 +778,25 @@ public:
     void hideSelected();      // hide the selected objects, then clear selection
     void isolateSelected();   // hide everything that is NOT selected
     void showAll();           // clear the hidden set
+    void hideAll();           // hide every object in every loaded model
+    // Explicit per-object visibility, for host UIs driving a model tree /
+    // filter rather than the current selection.
+    void setObjectsVisible(const std::vector<std::uint32_t>& object_ids, bool visible);
+    bool isObjectHidden(std::uint32_t object_id) const { return visibility_.isHidden(object_id); }
+    const std::unordered_set<std::uint32_t>& hiddenIds() const { return visibility_.hiddenIds(); }
     size_t hiddenCount() const { return visibility_.hiddenCount(); }
+
+    // Runtime colour override. `rgba8` is packed 0xAABBGGRR (the byte order the
+    // WGSL unpacks); 0 is the sentinel for "no override — use the baked vertex
+    // colour", so clearing is just setObjectsColor(ids, 0). An alpha below 255
+    // routes the instance through the transparent pass on the next cull, which
+    // re-reads the byte every frame — nothing else to invalidate.
+    //
+    // Writes the CPU instance mirror and re-uploads the touched models' instance
+    // records. Cost is one buffer write per model that actually changed, so
+    // colouring a whole model is one upload, not one per object.
+    void setObjectsColor(const std::vector<std::uint32_t>& object_ids, std::uint32_t rgba8);
+    void clearObjectColors();   // drop every override in every model
     // Global X-ray: translucent everything. Flips the frame uniform's alpha cap;
     // the cull classifier routes every instance through the transparent pass.
     void toggleXray();
@@ -864,6 +931,11 @@ public:
 
 private:
     bool createPool();
+
+    // The scene's models in load order (ascending session_model_id). Every
+    // per-model API indexes against this, so a model keeps a stable UI slot
+    // instead of hopping with unordered_map iteration order.
+    std::vector<std::uint32_t> modelIdsInLoadOrder() const;
 
 public:
 

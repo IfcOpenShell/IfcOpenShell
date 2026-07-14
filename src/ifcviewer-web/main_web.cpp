@@ -38,8 +38,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace {
@@ -154,6 +157,62 @@ void canvasClientOrigin(double& left, double& top) {
         var c = document.getElementById('viewer-canvas');
         return c ? c.getBoundingClientRect().top : 0;
     });
+}
+
+// Tell the page the selection changed; it pulls the new id set back through
+// ifcv_get_selection_c. Every wasm-side mutation (single pick, marquee, hide-
+// selected) fires this, so a host UI tracking multi-selection never has to poll.
+// The JS API layer (web/ifcviewer.js) also fires it after its own programmatic
+// mutations, so listeners see one event stream regardless of the source.
+void notifySelectionChanged() {
+    EM_ASM({ if (Module.__ifcvOnSelectionChange) Module.__ifcvOnSelectionChange(); });
+}
+
+// The (pointer, count) id array the JS side marshals into the wasm heap. A null
+// pointer with a zero count is a legitimate empty list — "clear the selection"
+// arrives that way — so it must not be turned into pointer arithmetic on null.
+std::vector<std::uint32_t> idsFrom(const std::uint32_t* ids, int n) {
+    if (!ids || n <= 0) return {};
+    return std::vector<std::uint32_t>(ids, ids + n);
+}
+
+// The reading half of the same convention: write `ids` ascending into `out`
+// (at most `max` of them) and return the TOTAL, so a caller that passed a
+// too-small buffer — or none at all — knows what to allocate and can ask again.
+int fillIdsAscending(const std::unordered_set<std::uint32_t>& ids,
+                     std::uint32_t* out, int max) {
+    std::vector<std::uint32_t> sorted(ids.begin(), ids.end());
+    std::sort(sorted.begin(), sorted.end());
+    const int n = std::min(int(sorted.size()), std::max(0, max));
+    if (out && n > 0) std::copy_n(sorted.begin(), n, out);
+    return int(sorted.size());
+}
+
+// Quote `s` as a JSON string literal. IFC names come straight from the model
+// and can hold quotes, backslashes and control characters; UTF-8 continuation
+// bytes are already legal JSON and pass through untouched.
+std::string jsonString(const std::string& s) {
+    std::string out = "\"";
+    for (unsigned char c : s) {
+        switch (c) {
+            case '"':  out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\b': out += "\\b";  break;
+            case '\f': out += "\\f";  break;
+            case '\n': out += "\\n";  break;
+            case '\r': out += "\\r";  break;
+            case '\t': out += "\\t";  break;
+            default:
+                if (c < 0x20) {
+                    char esc[7];
+                    std::snprintf(esc, sizeof(esc), "\\u%04x", c);
+                    out += esc;
+                } else {
+                    out += char(c);
+                }
+        }
+    }
+    return out + '"';
 }
 
 NavKind classifyPress(const ViewportCore::NavBindings& b, int em_button,
@@ -274,6 +333,7 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
             app->core.picksInRectAsync(rx, ry, rw, rh,
                 [app, add, remove](std::vector<std::uint32_t> ids) {
                     app->core.applyMarqueeToSelection(ids, add, remove);
+                    notifySelectionChanged();
                     app->host.requestFrame();
                 });
         } else {
@@ -281,6 +341,7 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
             const int px = int(app->down_x * dpr), py = int(app->down_y * dpr);
             app->core.pickObjectAtAsync(px, py, [app, add, remove](std::uint32_t id) {
                 app->core.applyPickToSelection(id, add, remove);
+                notifySelectionChanged();
                 // Surface the pick to JS: resolve + emit the GUID for a real hit;
                 // emit an empty selection when a plain click deselects (id 0).
                 if (id != 0) {
@@ -521,11 +582,117 @@ extern "C" EMSCRIPTEN_KEEPALIVE int fly_is_active_c() {
 }
 
 // Visibility + X-ray, for the toolbar (same ops as the H/Shift+H/Alt+H/Alt+X keys).
-extern "C" EMSCRIPTEN_KEEPALIVE void hide_selected_c()    { if (g_app && g_app->ready) g_app->core.hideSelected(); }
+extern "C" EMSCRIPTEN_KEEPALIVE void hide_selected_c() {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.hideSelected();   // hiding deselects
+    notifySelectionChanged();
+}
 extern "C" EMSCRIPTEN_KEEPALIVE void isolate_selected_c() { if (g_app && g_app->ready) g_app->core.isolateSelected(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void show_all_c()         { if (g_app && g_app->ready) g_app->core.showAll(); }
+extern "C" EMSCRIPTEN_KEEPALIVE void hide_all_c()         { if (g_app && g_app->ready) g_app->core.hideAll(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_xray_c()      { if (g_app && g_app->ready) g_app->core.toggleXray(); }
 extern "C" EMSCRIPTEN_KEEPALIVE int  xray_is_active_c()   { return (g_app && g_app->ready && g_app->core.xrayActive()) ? 1 : 0; }
+
+// ===========================================================================
+// Scripting API (web/ifcviewer.js wraps these into the IfcViewer object)
+// ===========================================================================
+//
+// Arrays cross the boundary as (pointer, count) into the wasm heap; JS
+// allocates with _malloc, fills HEAPU32, calls, frees. The getters follow the
+// "ask twice" convention: they always return the TOTAL count and fill at most
+// `max` entries, so a caller can size a buffer with (null, 0) and call again.
+// Ids are object_ids — globally unique across federated models. The JS layer
+// maps IFC GUIDs onto them from the element table (ifcv_request_objects_c).
+
+// Camera state, as 9 floats: target xyz, distance, yaw°, pitch°, eye xyz. Eye
+// comes from the core rather than being re-derived in JS, so the orbit
+// convention has exactly one definition.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_get_camera_c(float* out) {
+    if (!g_app || !g_app->ready || !out) return;
+    const ViewportCore::CameraState s = g_app->core.cameraState();
+    const Eigen::Vector3f eye = g_app->core.cameraEye();
+    out[0] = s.target.x(); out[1] = s.target.y(); out[2] = s.target.z();
+    out[3] = s.distance;   out[4] = s.yaw;        out[5] = s.pitch;
+    out[6] = eye.x();      out[7] = eye.y();      out[8] = eye.z();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_camera_c(float tx, float ty, float tz,
+                                                       float dist, float yaw, float pitch) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setCamera(tx, ty, tz, dist, yaw, pitch);
+}
+// toggleProjection is the only projection mutator in the core; drive it to the
+// requested state so JS doesn't have to read-then-toggle.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_ortho_c(int on) {
+    if (!g_app || !g_app->ready) return;
+    if (bool(on) != g_app->core.projectionOrtho()) g_app->core.toggleProjection();
+}
+
+// Selection.
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_selection_c(std::uint32_t* out, int max) {
+    if (!g_app || !g_app->ready) return 0;
+    return fillIdsAscending(g_app->core.selection().selectionIds(), out, max);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE std::uint32_t ifcv_get_active_object_c() {
+    return (g_app && g_app->ready) ? g_app->core.selection().activeId() : 0u;
+}
+// mode: 0 replace (n == 0 clears), 1 add, 2 remove. applyMarqueeToSelection is
+// the core's selection primitive and already means exactly this.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_apply_selection_c(const std::uint32_t* ids,
+                                                            int n, int mode) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.applyMarqueeToSelection(idsFrom(ids, n), mode == 1, mode == 2);
+}
+
+// Per-object visibility. show_all_c / hide_all_c above cover the bulk cases.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_visible_c(const std::uint32_t* ids,
+                                                        int n, int visible) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setObjectsVisible(idsFrom(ids, n), visible != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_hidden_c(std::uint32_t* out, int max) {
+    if (!g_app || !g_app->ready) return 0;
+    return fillIdsAscending(g_app->core.hiddenIds(), out, max);
+}
+
+// Colour override. rgba8 is packed 0xAABBGGRR; 0 restores the baked colour.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_color_c(const std::uint32_t* ids, int n,
+                                                      std::uint32_t rgba8) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setObjectsColor(idsFrom(ids, n), rgba8);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_clear_colors_c() {
+    if (g_app && g_app->ready) g_app->core.clearObjectColors();
+}
+
+// Every object in the scene, as JSON. Asynchronous: the element tables are
+// fetched lazily per model on web (first paint must not wait on them), so this
+// makes sure they are all resident and only then hands the page its array via
+// Module.__ifcvOnObjects(token, json). `token` correlates the reply with the
+// Promise the JS layer is holding.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_request_objects_c(int token) {
+    if (!g_app || !g_app->ready) {
+        EM_ASM({ if (Module.__ifcvOnObjects) Module.__ifcvOnObjects($0, '[]'); }, token);
+        return;
+    }
+    g_app->core.loadAllElementMetadataWeb([token](bool) {
+        // Partial failures are not fatal: a model whose element block failed to
+        // fetch simply contributes no rows, and the rest still resolve.
+        std::string json = "[";
+        bool first = true;
+        for (const ViewportCore::ElementRef& e : g_app->core.elements()) {
+            if (!first) json += ',';
+            first = false;
+            json += "{\"objectId\":" + std::to_string(e.object_id)
+                  + ",\"model\":"    + std::to_string(e.model_index)
+                  + ",\"guid\":"     + jsonString(e.guid)
+                  + ",\"name\":"     + jsonString(e.name)
+                  + ",\"type\":"     + jsonString(e.type) + '}';
+        }
+        json += ']';
+        EM_ASM({ if (Module.__ifcvOnObjects) Module.__ifcvOnObjects($0, UTF8ToString($1)); },
+               token, json.c_str());
+    });
+}
 
 // Section-cut tool: toggle the drop-a-plane mode, clear all planes, query state.
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_section_c() {
