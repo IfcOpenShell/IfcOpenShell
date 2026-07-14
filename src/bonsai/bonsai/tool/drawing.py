@@ -38,6 +38,7 @@ import ifcopenshell.api.context
 import ifcopenshell.api.document
 import ifcopenshell.api.drawing
 import ifcopenshell.api.geometry
+import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.geom
@@ -772,6 +773,32 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_drawing_target_view(cls, drawing: ifcopenshell.entity_instance) -> str:
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("TargetView", "MODEL_VIEW")
+
+    @classmethod
+    def ensure_drawings_parent_document(cls) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        for document in ifc_file.by_type("IfcDocumentInformation"):
+            if document.Name == "DRAWINGS" and document.Scope == "DRAWINGS":
+                return document
+        document = ifcopenshell.api.document.add_information(ifc_file)
+        if ifc_file.schema == "IFC2X3":
+            attributes = {"DocumentId": "DRAWINGS", "Name": "DRAWINGS", "Scope": "DRAWINGS"}
+        else:
+            attributes = {"Identification": "DRAWINGS", "Name": "DRAWINGS", "Scope": "DRAWINGS"}
+        ifcopenshell.api.document.edit_information(ifc_file, information=document, attributes=attributes)
+        return document
+
+    @classmethod
+    def ensure_drawings_parent_group(cls) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        for group in ifc_file.by_type("IfcGroup"):
+            if group.Name == "DRAWINGS" and group.ObjectType == "DRAWINGS":
+                return group
+        group = ifcopenshell.api.group.add_group(ifc_file)
+        ifcopenshell.api.group.edit_group(
+            ifc_file, group=group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"}
+        )
+        return group
 
     @classmethod
     def get_group_elements(cls, group: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
