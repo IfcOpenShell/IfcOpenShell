@@ -165,6 +165,11 @@ public:
     // setCamera was already invoked); clients can re-invoke to re-frame.
     void viewAll();
 
+    // viewAll scoped to specific models — "view selected model" in a federation
+    // browser. Returns whether it framed anything (unloaded / empty models
+    // leave the camera where it was).
+    bool viewModels(const std::vector<uint32_t>& session_model_ids);
+
     // Explicit camera state, mirroring the GL ViewportWindow API. Suppresses
     // the auto-viewAll on first load so a script-driven camera survives
     // model loading. Parameters match the GL --camera tx,ty,tz,dist,yaw,pitch

@@ -342,3 +342,106 @@ TEST_CASE("findInstanceInModels skips a corrupt instance-index entry", "[instanc
     InstanceCompose::InstanceLookup out;
     REQUIRE_FALSE(InstanceCompose::findInstanceInModels(42u, models, out));
 }
+
+// ---------------------------------------------------------------------------
+// sceneWorldAabb / modelsWorldAabb — the boxes viewAll and "View Selected
+// Model" frame. Both fold per-instance world AABBs; the difference is which
+// models they fold, and that difference is exactly what these pin down.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// A model holding one instance whose world AABB is the unit box translated to
+// (tx, 0, 0), so each model occupies a distinct, easily-checked slab of space.
+ModelGpuData make_model_at(float tx, bool hidden = false) {
+    ModelGpuData m;
+    m.hidden = hidden;
+    InstanceInfo inst;
+    inst.world_aabb_min[0] = tx - 1.0f;
+    inst.world_aabb_min[1] = -1.0f;
+    inst.world_aabb_min[2] = -1.0f;
+    inst.world_aabb_max[0] = tx + 1.0f;
+    inst.world_aabb_max[1] = 1.0f;
+    inst.world_aabb_max[2] = 1.0f;
+    m.instances.push_back(inst);
+    return m;
+}
+
+} // namespace
+
+TEST_CASE("sceneWorldAabb unions every visible model", "[instance_compose][aabb]") {
+    std::unordered_map<uint32_t, ModelGpuData> models;
+    models.emplace(1u, make_model_at(0.0f));
+    models.emplace(2u, make_model_at(10.0f));
+
+    float mn[3], mx[3];
+    REQUIRE(InstanceCompose::sceneWorldAabb(models, mn, mx));
+    REQUIRE(mn[0] == -1.0f);   // model 1's left face
+    REQUIRE(mx[0] == 11.0f);   // model 2's right face
+}
+
+TEST_CASE("sceneWorldAabb skips hidden models", "[instance_compose][aabb]") {
+    std::unordered_map<uint32_t, ModelGpuData> models;
+    models.emplace(1u, make_model_at(0.0f));
+    models.emplace(2u, make_model_at(10.0f, /*hidden*/true));
+
+    float mn[3], mx[3];
+    REQUIRE(InstanceCompose::sceneWorldAabb(models, mn, mx));
+    REQUIRE(mx[0] == 1.0f);    // the hidden model at x=10 contributed nothing
+}
+
+TEST_CASE("sceneWorldAabb reports empty for a scene with no geometry",
+          "[instance_compose][aabb]") {
+    const std::unordered_map<uint32_t, ModelGpuData> empty;
+    float mn[3], mx[3];
+    REQUIRE_FALSE(InstanceCompose::sceneWorldAabb(empty, mn, mx));
+
+    // A model whose metadata is up but whose instances haven't landed yet is
+    // just as empty — the caller must not frame it.
+    std::unordered_map<uint32_t, ModelGpuData> no_instances;
+    no_instances.emplace(1u, ModelGpuData{});
+    REQUIRE_FALSE(InstanceCompose::sceneWorldAabb(no_instances, mn, mx));
+}
+
+TEST_CASE("modelsWorldAabb folds only the named models", "[instance_compose][aabb]") {
+    std::unordered_map<uint32_t, ModelGpuData> models;
+    models.emplace(1u, make_model_at(0.0f));
+    models.emplace(2u, make_model_at(10.0f));
+    models.emplace(3u, make_model_at(20.0f));
+
+    float mn[3], mx[3];
+    REQUIRE(InstanceCompose::modelsWorldAabb(models, {2u}, mn, mx));
+    REQUIRE(mn[0] == 9.0f);
+    REQUIRE(mx[0] == 11.0f);   // model 2 alone — not the whole scene
+
+    // Several at once unions just those.
+    REQUIRE(InstanceCompose::modelsWorldAabb(models, {1u, 3u}, mn, mx));
+    REQUIRE(mn[0] == -1.0f);
+    REQUIRE(mx[0] == 21.0f);
+}
+
+TEST_CASE("modelsWorldAabb honours a hidden model the caller named",
+          "[instance_compose][aabb]") {
+    // Unlike sceneWorldAabb: "view this model" was asked for explicitly, so a
+    // hidden model still frames rather than silently reporting nothing.
+    std::unordered_map<uint32_t, ModelGpuData> models;
+    models.emplace(1u, make_model_at(10.0f, /*hidden*/true));
+
+    float mn[3], mx[3];
+    REQUIRE(InstanceCompose::modelsWorldAabb(models, {1u}, mn, mx));
+    REQUIRE(mx[0] == 11.0f);
+}
+
+TEST_CASE("modelsWorldAabb reports empty for unloaded / unnamed models",
+          "[instance_compose][aabb]") {
+    std::unordered_map<uint32_t, ModelGpuData> models;
+    models.emplace(1u, make_model_at(0.0f));
+
+    float mn[3], mx[3];
+    REQUIRE_FALSE(InstanceCompose::modelsWorldAabb(models, {}, mn, mx));      // nothing named
+    REQUIRE_FALSE(InstanceCompose::modelsWorldAabb(models, {99u}, mn, mx));   // not loaded
+
+    // A partially-resolvable list still frames what it can.
+    REQUIRE(InstanceCompose::modelsWorldAabb(models, {99u, 1u}, mn, mx));
+    REQUIRE(mx[0] == 1.0f);
+}

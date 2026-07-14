@@ -30,6 +30,7 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 #include "ModelGpuData.h"
 
@@ -84,6 +85,23 @@ bool findInstanceInModels(
     uint32_t object_id,
     const std::unordered_map<uint32_t, ModelGpuData>& models,
     InstanceLookup& out);
+
+// Union of every instance's world AABB across every VISIBLE model — the box
+// viewAll frames. Model-hidden models are excluded (framing them would fly the
+// camera at geometry you cannot see).
+//
+// Returns false when nothing contributed, in which case [mn, mx] is left as the
+// empty box (min = +inf, max = -inf) and the caller must not use it.
+bool sceneWorldAabb(const std::unordered_map<uint32_t, ModelGpuData>& models,
+                    float world_min_out[3], float world_max_out[3]);
+
+// The same union restricted to the named models — the box "view selected model"
+// frames. Ids naming a model that isn't loaded contribute nothing. Hidden
+// models are NOT skipped here: the caller named these specifically, so honour
+// the request rather than second-guessing it.
+bool modelsWorldAabb(const std::unordered_map<uint32_t, ModelGpuData>& models,
+                     const std::vector<uint32_t>& session_model_ids,
+                     float world_min_out[3], float world_max_out[3]);
 
 } // namespace InstanceCompose
 

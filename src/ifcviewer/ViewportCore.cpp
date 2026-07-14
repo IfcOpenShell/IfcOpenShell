@@ -193,22 +193,12 @@ void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
 }
 
 bool ViewportCore::computeSceneAabb(float mn[3], float mx[3]) const {
-    bool any = false;
-    for (int i = 0; i < 3; ++i) {
-        mn[i] =  std::numeric_limits<float>::infinity();
-        mx[i] = -std::numeric_limits<float>::infinity();
-    }
-    for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
-        for (const auto& inst : m.instances) {
-            for (int i = 0; i < 3; ++i) {
-                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
-                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
-            }
-            any = true;
-        }
-    }
-    return any;
+    return InstanceCompose::sceneWorldAabb(models_gpu_, mn, mx);
+}
+
+bool ViewportCore::computeModelsAabb(const std::vector<uint32_t>& session_model_ids,
+                                     float mn[3], float mx[3]) const {
+    return InstanceCompose::modelsWorldAabb(models_gpu_, session_model_ids, mn, mx);
 }
 
 float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
@@ -436,6 +426,15 @@ void ViewportCore::viewAll() {
     std::fprintf(stderr,
         "[info] [wgpu] viewAll target=(%g, %g, %g) distance=%g (scene radius=%g)\n",
         cx, cy, cz, camera_distance_, radius);
+}
+
+bool ViewportCore::viewModels(const std::vector<uint32_t>& session_model_ids) {
+    float mn[3], mx[3];
+    if (!computeModelsAabb(session_model_ids, mn, mx)) return false;
+    frameAabb(mn, mx, 1.10f);   // same padding as viewAll
+    Log::info().noquote().nospace()
+        << "[wgpu] viewModels framed " << session_model_ids.size() << " model(s)";
+    return true;
 }
 
 void ViewportCore::setCamera(float tx, float ty, float tz,

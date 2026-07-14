@@ -1402,6 +1402,9 @@ void ViewportWindow::setCamera(float tx, float ty, float tz,
 // viewAll / frameAabb / computeObjectAabb moved to ViewportCore (#84-i).
 
 void ViewportWindow::viewAll() { core_.viewAll(); }
+bool ViewportWindow::viewModels(const std::vector<uint32_t>& session_model_ids) {
+    return core_.viewModels(session_model_ids);
+}
 void ViewportWindow::frameAabb(const float mn[3], const float mx[3], float padding) {
     core_.frameAabb(mn, mx, padding);
 }

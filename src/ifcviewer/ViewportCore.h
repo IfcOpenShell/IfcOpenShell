@@ -179,6 +179,12 @@ public:
     void buildViewProj(Eigen::Matrix4f& view_out,
                        Eigen::Matrix4f& proj_out) const;
     bool computeSceneAabb(float mn[3], float mx[3]) const;
+    // The same union restricted to `session_model_ids`. Unknown ids contribute
+    // nothing; false means none of them resolved to any geometry. Unlike
+    // computeSceneAabb this does NOT skip hidden models — the caller asked for
+    // these models specifically.
+    bool computeModelsAabb(const std::vector<uint32_t>& session_model_ids,
+                           float mn[3], float mx[3]) const;
     float chunkScreenAreaPx(const ModelGpuData::Chunk& c,
                             const Eigen::Matrix4f& vp_mat) const;
 
@@ -195,6 +201,12 @@ public:
     // ---- Camera mutators / getters ------------------------------------------
 
     void viewAll();
+    // viewAll scoped to specific models: frame the union of their world AABBs
+    // with the same 1.10 padding, so "view this model" and "view everything"
+    // sit the camera the same way. Returns whether it framed anything (an
+    // unloaded or empty model leaves the camera alone rather than flying it to
+    // the origin).
+    bool viewModels(const std::vector<uint32_t>& session_model_ids);
     void setCamera(float tx, float ty, float tz,
                    float dist, float yaw_deg, float pitch_deg);
     void setStandardView(float yaw_deg, float pitch_deg);

@@ -262,6 +262,30 @@ void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host,
     session.setStatusMessage("Models", "Model removed");
 }
 
+void viewModels(SessionState& session, ViewportWindow& viewport, const QStringList& model_ids) {
+    // Federation ids are the panel's currency; the viewport speaks session
+    // model ids. sessionModelIdForModelId returns 0 for a model the viewport
+    // has never been given geometry for — skip those rather than framing id 0.
+    std::vector<uint32_t> session_model_ids;
+    session_model_ids.reserve(std::size_t(model_ids.size()));
+    for (const QString& model_id : model_ids) {
+        const uint32_t session_model_id = session.sessionModelIdForModelId(model_id);
+        if (session_model_id != 0) session_model_ids.push_back(session_model_id);
+    }
+
+    if (!viewport.viewModels(session_model_ids)) {
+        session.setStatusMessage("Models", "Nothing to view — no loaded geometry");
+        return;
+    }
+
+    QString label = QString("%1 models").arg(model_ids.size());
+    if (model_ids.size() == 1) {
+        const Federation::Model* model = session.federation()->findById(model_ids.front());
+        label = model ? model->display_name : model_ids.front();
+    }
+    session.setStatusMessage("Models", QString("Viewing %1").arg(label));
+}
+
 namespace detail {
 
 void loadModels(SessionState& session, const QStringList& paths, const QStringList& model_ids) {

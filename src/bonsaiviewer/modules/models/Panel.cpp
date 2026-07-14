@@ -321,6 +321,19 @@ ModelsPanel::ModelsPanel(bonsaiviewer::SessionState* session_state,
                 parent_group_id = idOf(parent_index);
             }
 
+            const QStringList selected_model_ids = selectedModelIdsAt(tree_, index);
+
+            // Frame the camera on just these models — View All, scoped. Right
+            // above Rename so the two "do something with this model" actions
+            // that need no dialog sit together at the top.
+            QAction* view_models = menu.addAction(
+                components::icons::makeSvgIcon(":/icons/cube-scan.svg"),
+                selected_model_ids.size() > 1 ? "View Selected Models"
+                                             : "View Selected Model");
+            connect(view_models, &QAction::triggered, this, [this, selected_model_ids]() {
+                commands::viewModels(*session_state_, *viewport_, selected_model_ids);
+            });
+
             QAction* rename = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/cube.svg"), "Rename");
             connect(rename, &QAction::triggered, this, [this, id]() {
@@ -332,8 +345,6 @@ ModelsPanel::ModelsPanel(bonsaiviewer::SessionState* session_state,
             connect(add_group, &QAction::triggered, this, [this, parent_group_id]() {
                 commands::addGroup(*session_state_, *this, parent_group_id);
             });
-
-            const QStringList selected_model_ids = selectedModelIdsAt(tree_, index);
 
             QMenu* move_menu = menu.addMenu("Move to Group");
             QAction* move_root = move_menu->addAction("(Root)");
