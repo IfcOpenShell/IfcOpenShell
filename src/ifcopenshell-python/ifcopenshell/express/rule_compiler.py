@@ -741,7 +741,7 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
                 func=ast.Name(id="express_getattr", ctx=ast.Load()),
                 args=[
                     new_value,
-                    ast.Str(s=node.attr),
+                    ast.Constant(value=node.attr),
                     ast.Name(id="INDETERMINATE", ctx=ast.Load()),
                 ],
                 keywords=[],
