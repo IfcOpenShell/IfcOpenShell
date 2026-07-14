@@ -23,10 +23,7 @@ import itertools
 
 from pyparsing import *
 
-try:
-    from functools import reduce
-except:
-    pass
+from functools import reduce
 
 
 class Expression:
