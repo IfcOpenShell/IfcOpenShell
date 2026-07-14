@@ -44,8 +44,6 @@ When a new Blender version is released and supported:
 
    * - File
      - What to update
-   * - ``.github/workflows/ci-bonsai.yml``
-     - ``pyver`` matrix
    * - ``.github/workflows/ci-bonsai-daily.yml``
      - Blender download URL
 
@@ -61,6 +59,10 @@ When Blender ships with a new Python version:
      - What to update
    * - ``.github/workflows/ci-lint.yaml``
      - ``MIN_BLENDER_PY_VERSION``
+   * - ``.github/workflows/ci-bonsai.yml``
+     - ``pyver`` matrix
+   * - ``.github/workflows/ci-bonsai-daily.yml``
+     - ``pyver`` matrix
    * - ``.github/scripts/publish-bonsai-releases.py``
      - ``CURRENT_PYTHON_VERSION``
    * - ``src/bonsai/Makefile``
