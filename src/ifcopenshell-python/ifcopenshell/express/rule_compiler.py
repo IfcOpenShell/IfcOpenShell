@@ -263,7 +263,7 @@ context_class = context
 
 class codegen_rule:
     def __init__(self, pattern, fn):
-        self.pattern = tuple(rule.parseString(pattern))
+        self.pattern = tuple(rule.parse_string(pattern))
         self.fn = fn
         if not hasattr(codegen_rule, "all_rules"):
             codegen_rule.all_rules = []

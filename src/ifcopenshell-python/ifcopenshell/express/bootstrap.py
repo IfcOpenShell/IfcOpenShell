@@ -94,15 +94,15 @@ PERIOD = Suppress(".")
 HASH = Suppress("#")
 
 identifier = Word(alphanums + "_")
-keyword = Word(alphanums + "_").setParseAction(Keyword)
+keyword = Word(alphanums + "_").set_parse_action(Keyword)
 expression = Forward()
-optional = Group(LBRACK + expression + RBRACK).setParseAction(Optional)
-repeated = Group(LBRACE + expression + RBRACE).setParseAction(Repeated)
-terminal = quotedString.setParseAction(Terminal)
-term = (keyword | terminal | optional | repeated | (LPAREN + expression + RPAREN)).setParseAction(Term)
-concat = Group(term + OneOrMore(term)).setParseAction(Concat)
+optional = Group(LBRACK + expression + RBRACK).set_parse_action(Optional)
+repeated = Group(LBRACE + expression + RBRACE).set_parse_action(Repeated)
+terminal = quotedString.set_parse_action(Terminal)
+term = (keyword | terminal | optional | repeated | (LPAREN + expression + RPAREN)).set_parse_action(Term)
+concat = Group(term + OneOrMore(term)).set_parse_action(Concat)
 factor = concat | term
-union = Group(factor + OneOrMore(VBAR + factor)).setParseAction(Union)
+union = Group(factor + OneOrMore(VBAR + factor)).set_parse_action(Union)
 rule = identifier + EQUALS + expression + PERIOD
 
 expression << (union | factor)
@@ -110,7 +110,7 @@ expression << (union | factor)
 grammar = OneOrMore(Group(rule))
 grammar.ignore(HASH + restOfLine)
 
-express = grammar.parseFile(os.path.join(os.path.dirname(__file__), "express.bnf"))
+express = grammar.parse_file(os.path.join(os.path.dirname(__file__), "express.bnf"))
 
 
 def find_bytype(expr, ty, li=None):
@@ -184,14 +184,14 @@ while True:
             emitted.add(id)
             stmt = "(%s)" % expr
             if id in to_combine:
-                stmt = " + ".join(itertools.chain(negated_keywords, ("originalTextFor(Combine%s)" % stmt,)))
+                stmt = " + ".join(itertools.chain(negated_keywords, ("original_text_for(Combine%s)" % stmt,)))
             elif id in to_original_text:
                 # We use lower() because it better matches the previous default of the CaselessLiterals for individual lexemes and express dictates case-insensitive comparisons anyway
-                stmt = "(originalTextFor%s).addParseAction(tokenMap(str.lower))" % stmt
+                stmt = "(original_text_for%s).add_parse_action(token_map(str.lower))" % stmt
             if id not in no_action and not isinstance(expr.contents, Keyword) and not id in to_combine:
                 node_type = "ListNode" if "ZeroOrMore" in stmt else "Node"
                 action = actions.get(id, 'lambda s, loc, t: %s(s, loc, t, rule="%s")' % (node_type, id))
-                stmt = "%s.setParseAction(%s)" % (stmt, action)
+                stmt = "%s.set_parse_action(%s)" % (stmt, action)
             statements.append('%s = %s("%s")' % (id, stmt, id))
     to_emit -= emitted_in_loop
     if not emitted_in_loop:
@@ -206,14 +206,14 @@ for id in sorted(to_emit):
     if id in to_combine:
         stmt = "Suppress%s" % stmt
     elif id in to_original_text:
-        stmt = "(originalTextFor%s).addParseAction(tokenMap(str.lower))" % stmt
+        stmt = "(original_text_for%s).add_parse_action(token_map(str.lower))" % stmt
     if id not in no_action and not isinstance(expr.contents, Keyword):
         children = list(
             map(operator.attrgetter("contents"), reduce(lambda x, y: x | y, (find_bytype(e, Keyword) for e in [expr])))
         )
         has_duplicates = len(children) > len(set(children))
         node_type = "ListNode" if ("ZeroOrMore" in stmt or has_duplicates) else "Node"
-        action = ".setParseAction(%s)" % (
+        action = ".set_parse_action(%s)" % (
             actions[id] if id in actions else 'lambda s, loc, t: %s(s, loc, t, rule="%s")' % (node_type, id)
         )
         stmt = "(%s)%s" % (stmt, action)
@@ -244,7 +244,7 @@ def parse(fn: str) -> mapping.Mapping:
 
         syntax.ignore("--" + restOfLine)
         syntax.ignore(Regex(r"\((?:\*(?:[^*]*\*+)+?\))"))
-        ast = syntax.parseFile(fn)
+        ast = syntax.parse_file(fn)
         s = schema.Schema(ast)
         m = mapping.Mapping(s)
 
