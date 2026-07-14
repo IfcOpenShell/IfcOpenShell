@@ -18,14 +18,9 @@
 
 
 import nodes
-import platform
 import collections
 import pyparsing
 
-if tuple(map(int, platform.python_version_tuple())) < (2, 7):
-    import ordereddict
-
-    collections.OrderedDict = ordereddict.OrderedDict
 
 # According to ISO 10303-11 7.1.2: Letters: "... The case of
 # letters is significant only within explicit string literals."
@@ -101,7 +96,7 @@ class Schema:
             for d in schema_declarations
             if d.rule == "RuleDeclaration"
         ]
-        
+
         self.types = sort([(t.name, t) for t in declarations if isinstance(t, nodes.TypeDeclaration)])
         self.entities = sort([(t.name, t) for t in declarations if isinstance(t, nodes.EntityDeclaration)])
         self.rules = sort([(t.name, t) for t in declarations if isinstance(t, nodes.RuleDeclaration)])
