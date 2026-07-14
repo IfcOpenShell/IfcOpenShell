@@ -1167,10 +1167,7 @@ class Drawing(bonsai.core.tool.Drawing):
             new = documents_collection.add()
             new.ifc_definition_id = schedule.id()
             new.name = schedule.Name or "Unnamed"
-            if tool.Ifc.get_schema() == "IFC2X3":
-                new.identification = schedule.DocumentId
-            else:
-                new.identification = schedule.Identification
+            new.identification = tool.Document.get_document_information_id(schedule) or ""
 
     @classmethod
     def get_sheet_identification(cls, sheet: ifcopenshell.entity_instance) -> str:
@@ -1211,10 +1208,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 new.ifc_definition_id = reference.id()
                 new.is_sheet = False
 
-                if tool.Ifc.get_schema() == "IFC2X3":
-                    new.identification = reference.ItemReference or ""
-                else:
-                    new.identification = reference.Identification or ""
+                new.identification = tool.Document.get_external_reference_id(reference) or ""
 
                 new.name = os.path.basename(reference.Location)
                 new.reference_type = reference_description
@@ -2450,9 +2444,8 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_reference_document(
         cls, reference: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
-        if tool.Ifc.get_schema() == "IFC2X3":
-            return reference.ReferenceToDocument[0]
-        return reference.ReferencedDocument
+        # TODO: migrate to document.get_reference_document.
+        return tool.Document.get_reference_document(reference)
 
     @classmethod
     def select_assigned_product(cls, context: bpy.types.Context) -> None:
