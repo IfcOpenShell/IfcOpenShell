@@ -27,10 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv tool install ruff
-          uv tool install black
-          uv tool install poethepoet
-          uv tool install ty==0.0.59
+          cat requirements-tools.txt | xargs -L1 uv tool install
 
       # black doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
