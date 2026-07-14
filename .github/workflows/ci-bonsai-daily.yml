@@ -179,8 +179,7 @@ jobs:
           blender --online-mode --command extension install --enable --sync sun_position
 
           cd IfcOpenShell/src/bonsai
-          pip install pytest-blender
-          pip install pytest-bdd
+          pip install -r requirements-dev.txt
           blender --background --python scripts/setup_pytest.py
           blender --python-expr "import bonsai; print(bonsai.bbim_semver); import ifcopenshell; print(ifcopenshell.version)" --background
           make test
