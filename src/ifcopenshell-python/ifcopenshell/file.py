@@ -773,8 +773,15 @@ class file_mixin:
         self,
         inst: ifcopenshell.entity_instance,
         allow_duplicate: Literal[True],
-        with_attribute_indices: bool = False,
+        with_attribute_indices: Literal[False] = False,
     ) -> list[ifcopenshell.entity_instance]: ...
+    @overload
+    def get_inverse(
+        self,
+        inst: ifcopenshell.entity_instance,
+        allow_duplicate: Literal[True],
+        with_attribute_indices: Literal[True],
+    ) -> list[tuple[ifcopenshell.entity_instance, int]]: ...
     @overload
     def get_inverse(
         self,
@@ -787,7 +794,11 @@ class file_mixin:
         inst: ifcopenshell.entity_instance,
         allow_duplicate: bool = False,
         with_attribute_indices: bool = False,
-    ) -> Union[list[ifcopenshell.entity_instance], set[ifcopenshell.entity_instance]]:
+    ) -> (
+        list[ifcopenshell.entity_instance]
+        | set[ifcopenshell.entity_instance]
+        | list[tuple[ifcopenshell.entity_instance, int]]
+    ):
         """Return a list of entities that reference this entity
 
         Warning: this is a slow function, especially when there is a large
