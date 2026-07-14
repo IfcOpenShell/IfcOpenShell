@@ -208,7 +208,7 @@ class settings_mixin:
     def set(self: settings, k: SETTING, v: Any) -> None: ...
     @overload
     def set(self: serializer_settings, k: SERIALIZER_SETTING, v: Any) -> None: ...
-    def set(self, k: SETTING, v: Any) -> None:
+    def set(self, k: Union[SETTING, SERIALIZER_SETTING], v: Any) -> None:
         """
         Set value of the setting named `k` to `v`.
 
