@@ -3586,7 +3586,7 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
         if sheet.is_a("IfcDocumentInformation"):
             self.document_type = "SHEET"
             self.name = sheet.Name
-            self.identification = sheet.DocumentId if tool.Ifc.get_schema() == "IFC2X3" else sheet.Identification
+            self.identification = tool.Document.get_document_information_id(sheet)
         elif sheet.is_a("IfcDocumentReference") and tool.Drawing.get_reference_description(sheet) == "TITLEBLOCK":
             self.document_type = "TITLEBLOCK"
         else:

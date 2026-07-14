@@ -903,12 +903,8 @@ class SvgWriter:
                     continue
                 sheet = tool.Drawing.get_reference_document(sheet_reference)
                 if sheet:
-                    if tool.Ifc.get_schema() == "IFC2X3":
-                        reference_id = sheet_reference.ItemReference or "-"
-                        sheet_id = sheet.DocumentId or "-"
-                    else:
-                        reference_id = sheet_reference.Identification or "-"
-                        sheet_id = sheet.Identification or "-"
+                    reference_id = tool.Document.get_external_reference_id(sheet_reference) or "-"
+                    sheet_id = tool.Document.get_document_information_id(sheet) or "-"
                     return (reference_id, sheet_id)
                 break
         return ("-", "-")
