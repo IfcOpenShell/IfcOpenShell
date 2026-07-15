@@ -24,6 +24,12 @@ import ifcopenshell.util.element
 import bonsai.bim.handler
 import bonsai.core.spatial as core
 import bonsai.tool as tool
+from bonsai.bim.helper import (
+    SELECT_FILTER_TOOLTIP,
+    SELECT_REMOVE_TOOLTIP,
+    SELECT_UNHIDE_TOOLTIP,
+    decode_select_click,
+)
 
 
 class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
@@ -284,7 +290,13 @@ class SelectContainer(bpy.types.Operator):
 class SelectSimilarContainer(bpy.types.Operator):
     bl_idname = "bim.select_similar_container"
     bl_label = "Select Similar Container"
-    bl_description = "Recursively selects all objects in the container.\n\nShift+click to remove from selection set\nCtrl+click to filter selection to matching objects only\nCtrl+Shift+click to select only one level deep\nAlt+click to also unhide hidden objects (viewport and local hide)"
+    bl_description = (
+        "Recursively selects all objects in the container."
+        + f"\n\n{SELECT_REMOVE_TOOLTIP}"
+        + f"\n{SELECT_FILTER_TOOLTIP}"
+        + "\nCTRL+SHIFT+Click to select only one level deep"
+        + f"\n{SELECT_UNHIDE_TOOLTIP}"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     container: bpy.props.IntProperty(default=0)
@@ -294,11 +306,11 @@ class SelectSimilarContainer(bpy.types.Operator):
     filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        if event.type == "LEFTMOUSE" and event.ctrl and event.shift:
-            self.is_recursive = False
-        self.should_unhide = event.alt
-        self.remove_from_selection = event.shift and not event.ctrl
-        self.filter_selection = event.ctrl and not event.shift
+        mods = decode_select_click(event)
+        self.is_recursive = not mods.legacy
+        self.should_unhide = mods.unhide
+        self.remove_from_selection = mods.remove
+        self.filter_selection = mods.filter
         return self.execute(context)
 
     def execute(self, context):
@@ -469,18 +481,18 @@ class SelectDecomposedElements(bpy.types.Operator):
     def description(cls, context, operator):
         return (
             "Select the active item"
-            + "\nSHIFT+CLICK to remove from selection set.\nCTRL+CLICK to filter selection to matching objects only"
-            + "\nCTRL+SHIFT+CLICK to select only one level deep"
-            + "\nALT+CLICK to also unhide hidden objects (viewport and local hide)"
+            + f"\n{SELECT_REMOVE_TOOLTIP}"
+            + f"\n{SELECT_FILTER_TOOLTIP}"
+            + "\nCTRL+SHIFT+Click to select only one level deep"
+            + f"\n{SELECT_UNHIDE_TOOLTIP}"
         )
 
     def invoke(self, context, event):
-        if event.type == "LEFTMOUSE":
-            if event.ctrl and event.shift:
-                self.is_recursive = False
-            self.should_unhide = event.alt
-            self.remove_from_selection = event.shift and not event.ctrl
-            self.filter_selection = event.ctrl and not event.shift
+        mods = decode_select_click(event)
+        self.is_recursive = not mods.legacy
+        self.should_unhide = mods.unhide
+        self.remove_from_selection = mods.remove
+        self.filter_selection = mods.filter
         return self.execute(context)
 
     def execute(self, context):

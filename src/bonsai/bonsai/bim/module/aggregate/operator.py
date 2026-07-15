@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 from typing import TYPE_CHECKING
 
 import bpy
@@ -28,6 +27,14 @@ import ifcopenshell.util.element
 import bonsai.core.aggregate as core
 import bonsai.core.spatial
 import bonsai.tool as tool
+from bonsai.bim.helper import (
+    SELECT_FILTER_TOOLTIP,
+    SELECT_REMOVE_TOOLTIP,
+    SELECT_UNHIDE_TOOLTIP,
+    RegexSelectMixin,
+    decode_select_click,
+    select_regex_tooltip,
+)
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -255,7 +262,7 @@ class BIM_OT_select_parts(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_select_aggregate(bpy.types.Operator):
+class BIM_OT_select_aggregate(RegexSelectMixin, bpy.types.Operator):
     """Select Aggregate"""
 
     bl_idname = "bim.select_aggregate"
@@ -270,61 +277,46 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-    use_regex: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-    regex_pattern: bpy.props.StringProperty(
-        name="Pattern",
-        description='Python regular expression matched anywhere in each aggregate\'s name, e.g. "foo" matches ".*foo.*"',
-    )
-    regex_mode: bpy.props.EnumProperty(
-        name="Action",
-        items=[
-            ("ADD", "Add to Selection", "Select aggregates whose name matches the pattern"),
-            ("REMOVE", "Remove from Selection", "Deselect aggregates whose name matches the pattern"),
-            ("FILTER", "Filter Selection", "Keep only already selected aggregates whose name matches the pattern"),
-        ],
-        default="ADD",
-    )
+
+    regex_clipboard_key = "parent"
+    regex_count_noun = "aggregates"
 
     @classmethod
     def description(cls, context, properties):
-        if properties.select_parts:
-            return "Select Aggregate and Parts.\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nCTRL+SHIFT+Click to select only one level deep\nCTRL+ALT+Click to search aggregate names by regex in a dialog\nALT+Click to also unhide hidden objects (viewport and local hide)"
-        else:
-            return "Select Aggregate\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nCTRL+ALT+Click to search aggregate names by regex in a dialog\nALT+Click to also unhide hidden objects (viewport and local hide)"
+        base = "Select Aggregate and Parts." if properties.select_parts else "Select Aggregate"
+        one_level_deep = "\nCTRL+SHIFT+Click to select only one level deep" if properties.select_parts else ""
+        return (
+            base
+            + f"\n\n{SELECT_REMOVE_TOOLTIP}"
+            + f"\n{SELECT_FILTER_TOOLTIP}"
+            + one_level_deep
+            + f"\n{select_regex_tooltip('aggregate names')}"
+            + f"\n{SELECT_UNHIDE_TOOLTIP}"
+        )
 
     def invoke(self, context, event):
-        if event.type == "LEFTMOUSE" and event.ctrl and event.alt and not event.shift:
-            self.use_regex = True
-            if context.active_object and (element := tool.Ifc.get_entity(context.active_object)):
-                aggregate = ifcopenshell.util.element.get_aggregate(element)
-                if aggregate and aggregate.Name:
-                    self.regex_pattern = aggregate.Name
-            return context.window_manager.invoke_props_dialog(self)
-        if event.type == "LEFTMOUSE" and event.ctrl and event.shift:
-            self.one_level_deep = True
-        self.should_unhide = event.alt
-        self.remove_from_selection = event.shift and not event.ctrl
-        self.filter_selection = event.ctrl and not event.shift
+        mods = decode_select_click(event)
+        if mods.regex_dialog:
+            return self.invoke_regex_dialog(context)
+        self.one_level_deep = mods.legacy
+        self.should_unhide = mods.unhide
+        self.remove_from_selection = mods.remove
+        self.filter_selection = mods.filter
         return self.execute(context)
 
-    def draw(self, context):
-        layout = self.layout
-        if not self.use_regex:
-            return
-        layout.prop(self, "regex_pattern")
-        layout.prop(self, "regex_mode")
+    def get_regex_prefill(self, context):
+        if context.active_object and (element := tool.Ifc.get_entity(context.active_object)):
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if aggregate:
+                return aggregate.Name
+        return None
+
+    def draw_regex_options(self, context, layout):
         layout.prop(self, "select_parts", text="Also Select Parts")
         if self.select_parts:
             layout.prop(self, "one_level_deep")
-        layout.prop(self, "should_unhide", text="Also Unhide Hidden Objects")
 
-    def _execute_regex(self, context):
-        try:
-            pattern = re.compile(self.regex_pattern)
-        except re.error as e:
-            self.report({"ERROR"}, f"Invalid regular expression: {e}")
-            return {"CANCELLED"}
-
+    def apply_regex(self, context, pattern):
         aggregates = {}
         for rel in tool.Ifc.get().by_type("IfcRelAggregates"):
             aggregate = rel.RelatingObject
@@ -343,30 +335,12 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
                 else:
                     products.update(ifcopenshell.util.element.get_decomposition(aggregate))
 
-        tool.Spatial.select_products(
-            products,
-            unhide=self.should_unhide,
-            remove=self.regex_mode == "REMOVE",
-            filter_selection=self.regex_mode == "FILTER",
-        )
-
-        if self.regex_mode == "FILTER":
-            verb = "Filtered selection to"
-        elif self.regex_mode == "REMOVE":
-            verb = "Deselected"
-        else:
-            verb = "Selected"
-        result = f"parent = /.*{self.regex_pattern}.*/"
-        bpy.context.window_manager.clipboard = result
-        self.report(
-            {"INFO"},
-            f"{verb} {len(aggregates)} aggregates matching ({result}); query copied to the clipboard.",
-        )
-        return {"FINISHED"}
+        self.select_regex_products(products)
+        return len(aggregates)
 
     def execute(self, context):
         if self.use_regex:
-            return self._execute_regex(context)
+            return self.execute_regex(context)
         keep_current_selection = self.remove_from_selection or self.filter_selection
         if keep_current_selection:
             objects = [context.active_object] if context.active_object else []
@@ -527,15 +501,18 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
 
     @classmethod
     def description(cls, context, properties):
-        if properties.select_parts:
-            return "Select all aggregates, subaggregates and all their parts\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nALT+Click to also unhide hidden objects (viewport and local hide)"
-        else:
-            return "Select all aggregates\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nALT+Click to also unhide hidden objects (viewport and local hide)"
+        base = (
+            "Select all aggregates, subaggregates and all their parts"
+            if properties.select_parts
+            else "Select all aggregates"
+        )
+        return base + f"\n\n{SELECT_REMOVE_TOOLTIP}" + f"\n{SELECT_FILTER_TOOLTIP}" + f"\n{SELECT_UNHIDE_TOOLTIP}"
 
     def invoke(self, context, event):
-        self.should_unhide = event.alt
-        self.remove_from_selection = event.shift and not event.ctrl
-        self.filter_selection = event.ctrl and not event.shift
+        mods = decode_select_click(event)
+        self.should_unhide = mods.unhide
+        self.remove_from_selection = mods.remove
+        self.filter_selection = mods.filter
         return self.execute(context)
 
     def execute(self, context):

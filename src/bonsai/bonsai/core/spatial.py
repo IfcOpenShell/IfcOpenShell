@@ -119,22 +119,6 @@ def select_container(
     spatial.set_active_object(ifc.get_object(container), selection_mode=selection_mode)
 
 
-def select_similar_container(
-    spatial: type[tool.Spatial],
-    container: ifcopenshell.entity_instance,
-    is_recursive: bool = True,
-    should_unhide: bool = False,
-    remove_from_selection: bool = False,
-    filter_selection: bool = False,
-) -> None:
-    spatial.select_products(
-        spatial.get_decomposed_elements(container, is_recursive),
-        unhide=should_unhide,
-        remove=remove_from_selection,
-        filter_selection=filter_selection,
-    )
-
-
 def select_product(spatial: type[tool.Spatial], product: ifcopenshell.entity_instance) -> None:
     spatial.select_products([product])
 
