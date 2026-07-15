@@ -872,38 +872,82 @@ namespace {
 			return edge_style_class::outline;
 		}
 
-		const double d0 = projection_direction.Dot(n0);
-		const double d1 = projection_direction.Dot(n1);
+		// Note the negation: `projection_direction` (as constructed by the caller from the
+		// drawing plane's axis) points from the scene *towards the camera*, not into the scene.
+		// A face that's actually front-facing (visible, facing the viewer) has an outward normal
+		// pointing the same general way as that -- i.e. a *positive* dot product -- so negate
+		// here to get the more intuitive "front-facing is negative" convention used below.
+		// Confirmed against this feature's own real-world test scene: the SOUTH ELEVATION
+		// camera's placement matrix transforms local +Z (what the un-negated projection_direction
+		// is built from) to world (0, 1, 0), while the camera's actual Blender-convention view
+		// direction (local -Z) transforms to world (0, -1, 0) -- i.e. exactly opposite.
+		const double d0 = -projection_direction.Dot(n0);
+		const double d1 = -projection_direction.Dot(n1);
 
-		// Outline: silhouette, either against the background or self-occluding -- one face
-		// turns toward the viewer while the other turns away.
-		if ((d0 < 0.0) != (d1 < 0.0)) {
+		// Front/back/edge-on classification of each face relative to the view direction, using
+		// a tolerance band around zero rather than a bare sign comparison. A face at or near
+		// edge-on to the camera (|d| within the band) is common for regular/symmetric
+		// tessellations viewed from "nice" angles (icospheres, N-gon cylinder/cone
+		// approximations) and must count as outline on both its edges, not just the one that
+		// happens to pair it with a clearly front-facing neighbour.
+		constexpr double kOutlineDotEps = 1.e-5;
+		const bool front0 = d0 < -kOutlineDotEps;
+		const bool back0 = d0 > kOutlineDotEps;
+		const bool front1 = d1 < -kOutlineDotEps;
+		const bool back1 = d1 > kOutlineDotEps;
+
+		// Outline: silhouette, either a genuine front/back flip, or either face is at/near
+		// edge-on to the view direction (also covers both faces edge-on at once).
+		if (!(front0 && front1) && !(back0 && back1)) {
 			return edge_style_class::outline;
 		}
 
-		// Signed deviation from flat (180 degrees between outward normals = perfectly flat).
-		// Positive = convex (ridge/sharp), negative = concave (valley/crease). The sign comes
-		// from the rotation of n0 onto n1 about the edge tangent.
-		const double angle_between_normals_deg = std::acos(clamp_dot(n0.Dot(n1))) * 180.0 / M_PI;
-		double deviation_deg = 180.0 - angle_between_normals_deg;
+		// Signed deviation from flat (0 degrees between outward normals = perfectly flat, i.e.
+		// coplanar faces have identical outward normals). Positive = convex (ridge/sharp),
+		// negative = concave (valley/crease).
+		//
+		// Sign via a position-based (not orientation-based) test: find a vertex of f1 that
+		// isn't one of the shared edge's own endpoints, and check which side of f0's plane it
+		// falls on. If it's behind f0's plane (opposite side from f0's outward normal), f1
+		// curves back towards the solid's interior relative to f0 -- a convex fold, like a box
+		// corner. This avoids relying on TopoDS_Edge/wire orientation semantics (which proved
+		// unreliable in practice: an earlier attempt using edge.Orientation() combined with
+		// cross(n0, n1) gave a self-consistent-looking but wrong sign on real BRep topology --
+		// verified against known-convex geometry, e.g. every edge of a convex icosphere, where
+		// that approach misclassified a majority of edges as concave).
+		double deviation_deg = std::acos(clamp_dot(n0.Dot(n1))) * 180.0 / M_PI;
 
-		double u0, u1;
-		Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, u0, u1);
-		if (!curve.IsNull()) {
-			gp_Pnt p_mid;
-			gp_Vec tangent;
-			curve->D1((u0 + u1) / 2.0, p_mid, tangent);
-			if (tangent.SquareMagnitude() > 1.e-10) {
-				tangent.Normalize();
-				if (edge.Orientation() == TopAbs_REVERSED) {
-					tangent.Reverse();
-				}
-				const gp_Vec cross = gp_Vec(n0.XYZ()).Crossed(gp_Vec(n1.XYZ()));
-				if (cross.Dot(tangent) < 0.0) {
+		TopoDS_Vertex ev0, ev1;
+		TopExp::Vertices(edge, ev0, ev1);
+		const gp_Pnt edge_p0 = BRep_Tool::Pnt(ev0);
+		const gp_Pnt edge_p1 = BRep_Tool::Pnt(ev1);
+
+		for (TopExp_Explorer vexp(f1, TopAbs_VERTEX); vexp.More(); vexp.Next()) {
+			const gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+			if (p.Distance(edge_p0) > Precision::Confusion() && p.Distance(edge_p1) > Precision::Confusion()) {
+				const bool convex = gp_Vec(edge_p0, p).Dot(gp_Vec(n0.XYZ())) < 0.0;
+				if (!convex) {
 					deviation_deg = -deviation_deg;
 				}
+				break;
 			}
 		}
+
+		// NOTE: an attempt to flip the sign when "both faces back-facing" (viewing a fold's
+		// reverse/inside surface through an opening, e.g. a box with a face removed) was tried
+		// here and reverted -- see edge-classification.md follow-up notes. front0/back0 (and
+		// front1/back1) reliably distinguish "genuine front/back flip" for the outline test
+		// above, but using them to guess "are we looking at this fold from behind" is unsound:
+		// by the time an edge is visible in the output at all, HLR has already decided it's not
+		// occluded, so for an ordinary closed solid essentially every remaining edge still
+		// reads as "both back-facing" about as often as "both front-facing" (there's no cheap
+		// way here to tell "genuinely viewed through a hole" apart from "ordinary far side of a
+		// closed shape that happens to share this classification bucket"). Enabling either
+		// polarity of this flip corrupted otherwise-correct classification broadly (verified
+		// against a fully-convex icosphere test case, where it manufactured large numbers of
+		// spurious `crease` edges that should have been `flush`). Needs a different approach
+		// (e.g. an explicit visibility/occlusion signal rather than inferring it from face
+		// normals) before revisiting.
 
 		if (deviation_deg >= 0.0) {
 			return (deviation_deg >= ridge_angle_min_deg) ? edge_style_class::sharp : edge_style_class::flush;
