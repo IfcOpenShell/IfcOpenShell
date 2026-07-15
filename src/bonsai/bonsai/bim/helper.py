@@ -20,9 +20,10 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 from collections.abc import Callable, Iterable, Sequence
 from types import EllipsisType
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional, Union
 
 import bpy
 import ifcopenshell
@@ -54,6 +55,150 @@ if TYPE_CHECKING:
     # - True  - property should be skipped entirely from export
     # - False - property should be exproted by default workflow
     ExportCallback = Callable[[dict[str, Any], bonsai.bim.prop.Attribute], bool]
+
+
+# Shared scaffolding for the select-operator modifier scheme
+# (see docs/dev-notes/Additional_Selection_and_Deselection_Tools.md):
+# Click = select, SHIFT = remove from selection, CTRL = filter selection,
+# CTRL+SHIFT = legacy CTRL function (one-level-deep / exclude-children /
+# calculate-sum), ALT = also unhide, CTRL+ALT = regex-search dialog.
+
+SELECT_REMOVE_TOOLTIP = "SHIFT+Click to remove from selection set"
+SELECT_FILTER_TOOLTIP = "CTRL+Click to filter selection to matching objects only"
+SELECT_UNHIDE_TOOLTIP = "ALT+Click to also unhide hidden objects (viewport and local hide)"
+
+
+def select_regex_tooltip(subject: str = "values") -> str:
+    return f"CTRL+ALT+Click to search {subject} by regex in a dialog"
+
+
+class SelectClickModifiers(NamedTuple):
+    unhide: bool
+    remove: bool
+    filter: bool
+    legacy: bool  # CTRL+SHIFT: one-level-deep / exclude-children / calculate-sum
+    regex_dialog: bool  # CTRL+ALT
+
+
+def decode_select_click(event: bpy.types.Event) -> SelectClickModifiers:
+    return SelectClickModifiers(
+        unhide=event.alt,
+        remove=event.shift and not event.ctrl,
+        filter=event.ctrl and not event.shift,
+        legacy=event.ctrl and event.shift,
+        regex_dialog=event.ctrl and event.alt and not event.shift,
+    )
+
+
+class RegexSelectMixin:
+    """Scaffold for select operators offering the CTRL+ALT+Click regex-search dialog.
+
+    Subclasses must be Operators that also define a ``should_unhide`` BoolProperty,
+    implement :meth:`apply_regex`, and override :attr:`regex_clipboard_key` /
+    :attr:`regex_count_noun` as needed. From ``invoke``, return
+    :meth:`invoke_regex_dialog` when ``decode_select_click(event).regex_dialog`` is
+    set; from ``execute``, return :meth:`execute_regex` while ``use_regex`` is on.
+    """
+
+    use_regex: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    regex_pattern: bpy.props.StringProperty(
+        name="Pattern",
+        description='Python regular expression matched anywhere in the value, e.g. "foo" matches ".*foo.*"',
+    )
+    regex_mode: bpy.props.EnumProperty(
+        name="Action",
+        items=[
+            ("ADD", "Add to Selection", "Select objects whose value matches the pattern"),
+            ("REMOVE", "Remove from Selection", "Deselect objects whose value matches the pattern"),
+            ("FILTER", "Filter Selection", "Keep only already selected objects whose value matches the pattern"),
+        ],
+        default="ADD",
+    )
+
+    regex_clipboard_key = "Name"
+    regex_count_noun = "objects"
+
+    def get_regex_prefill(self, context: bpy.types.Context) -> Union[str, None]:
+        """Initial pattern shown in the dialog; None keeps the previous pattern."""
+        return None
+
+    def draw_regex_options(self, context: bpy.types.Context, layout: bpy.types.UILayout) -> None:
+        """Hook for extra dialog rows between the action dropdown and the unhide toggle."""
+
+    def get_regex_clipboard_key(self) -> str:
+        return self.regex_clipboard_key
+
+    def invoke_regex_dialog(self, context: bpy.types.Context):
+        self.use_regex = True
+        prefill = self.get_regex_prefill(context)
+        if prefill is not None:
+            self.regex_pattern = prefill
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context: bpy.types.Context) -> None:
+        if not self.use_regex:
+            return
+        layout = self.layout
+        layout.prop(self, "regex_pattern")
+        layout.prop(self, "regex_mode")
+        self.draw_regex_options(context, layout)
+        layout.prop(self, "should_unhide", text="Also Unhide Hidden Objects")
+
+    def execute_regex(self, context: bpy.types.Context):
+        try:
+            pattern = re.compile(self.regex_pattern)
+        except re.error as e:
+            self.report({"ERROR"}, f"Invalid regular expression: {e}")
+            return {"CANCELLED"}
+        count = self.apply_regex(context, pattern)
+        verb = {"ADD": "Selected", "REMOVE": "Deselected", "FILTER": "Filtered selection to"}[self.regex_mode]
+        result = f"{self.get_regex_clipboard_key()} = /.*{self.regex_pattern}.*/"
+        bpy.context.window_manager.clipboard = result
+        self.report(
+            {"INFO"}, f"{verb} {count} {self.regex_count_noun} matching ({result}); query copied to the clipboard."
+        )
+        return {"FINISHED"}
+
+    def apply_regex(self, context: bpy.types.Context, pattern: re.Pattern) -> int:
+        """Apply the pattern per regex_mode; return the matched count."""
+        raise NotImplementedError
+
+    def apply_regex_by_value(
+        self,
+        context: bpy.types.Context,
+        pattern: re.Pattern,
+        get_value: Callable[[bpy.types.Object], Union[str, None]],
+    ) -> int:
+        """Generic per-object matching against get_value(obj)."""
+        count = 0
+        if self.regex_mode == "FILTER":
+            for obj in context.selected_objects:
+                value = get_value(obj)
+                if value is not None and pattern.search(value):
+                    count += 1
+                else:
+                    obj.select_set(False)
+            return count
+        remove = self.regex_mode == "REMOVE"
+        objects = context.scene.objects if self.should_unhide else context.visible_objects
+        for obj in objects:
+            value = get_value(obj)
+            if value is not None and pattern.search(value):
+                if self.should_unhide:
+                    obj.hide_viewport = False
+                    obj.hide_set(False)
+                obj.select_set(not remove)
+                count += 1
+        return count
+
+    def select_regex_products(self, products: Iterable[ifcopenshell.entity_instance]) -> None:
+        """Apply regex_mode + unhide to IFC products via Spatial.select_products."""
+        tool.Spatial.select_products(
+            products,
+            unhide=self.should_unhide,
+            remove=self.regex_mode == "REMOVE",
+            filter_selection=self.regex_mode == "FILTER",
+        )
 
 
 def draw_attributes(

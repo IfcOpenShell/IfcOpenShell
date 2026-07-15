@@ -34,6 +34,31 @@ Operators covered: `bim.select_similar`, `bim.select_ifc_class`,
 `bim.select_decomposed_elements`, `bim.select_group_elements`,
 `bim.select_aggregate`, `bim.select_linked_aggregates`.
 
+### Shared scaffolding (`bonsai.bim.helper`)
+
+All of the scheme's cross-operator plumbing lives in `bonsai/bim/helper.py`:
+
+- `decode_select_click(event)` → `SelectClickModifiers` named tuple (`unhide`,
+  `remove`, `filter`, `legacy`, `regex_dialog`) — the single place the modifier
+  scheme is defined; all nine `invoke`s use it. The per-operator
+  `event.type == "LEFTMOUSE"` guards were dropped in the process, so keyboard
+  invocation now honors modifiers uniformly.
+- `SELECT_REMOVE_TOOLTIP` / `SELECT_FILTER_TOOLTIP` / `SELECT_UNHIDE_TOOLTIP` +
+  `select_regex_tooltip(subject)` — tooltip lines composed into every
+  `bl_description` / `description()`, ending the casing drift; `SelectIfcClass` and
+  `SelectSimilarType` switched from class docstrings to `bl_description` to allow
+  composition.
+- `RegexSelectMixin` — the whole regex-dialog scaffold (properties, `draw()`,
+  compile-with-error-handling, verb/clipboard/report tail) plus two reusable
+  strategies: `apply_regex_by_value(context, pattern, get_value)` for per-object
+  matching and `select_regex_products(products)` for union-of-products operators.
+  Subclasses implement `apply_regex` + `get_regex_prefill` and set
+  `regex_clipboard_key` / `regex_count_noun`; `draw_regex_options` is the hook for
+  extra dialog rows (used by `select_aggregate`).
+
+`core.select_similar_container` was deleted — dead since the #7940 merge made
+`SelectSimilarContainer` loop `Spatial.select_products` directly.
+
 ### Key decisions and the why
 
 - **Remove/filter criteria come from the active object only** (not all selected
