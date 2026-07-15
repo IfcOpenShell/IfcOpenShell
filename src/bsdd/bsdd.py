@@ -21,6 +21,7 @@ import http.server
 import time
 import urllib.parse
 import uuid
+import warnings
 import webbrowser
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict
 
@@ -769,6 +770,16 @@ class Client:
         Get Class details
         this API replaces Classification
         """
+        # Not very well documented on bsdd side,
+        # the deprecation note only occurs when you run into rate limit.
+        # See https://github.com/buildingSMART/bSDD/issues/149
+        if include_class_properties:
+            warnings.warn(
+                "include_class_properties=True is deprecated and heavily rate-limited by the bSDD API. "
+                "Use get_class_properties() instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         endpoint = f"Class/v{version}"
         params = {
             "Uri": class_uri,

@@ -31,6 +31,7 @@ def test_get_nbs_classes():
 
 def test_get_class():
     uri_light_fixture = next(l for l in get_ifc_classes()["classes"] if "IfcLightFixture" == l["code"])["uri"]
+    # TODO: fix deprecation warning.
     ifc4x3_light_fixture = client.get_class(uri_light_fixture)
     assert "Maintenance Factor" and "Light Fixture Mounting Type" in [
         l["name"] for l in ifc4x3_light_fixture["classProperties"]
