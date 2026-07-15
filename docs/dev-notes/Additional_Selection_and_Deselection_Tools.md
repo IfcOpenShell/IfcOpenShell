@@ -134,6 +134,14 @@ value — values containing regex metacharacters (e.g. `(`) need escaping before
 Overriding `draw()` for the dialog means the F9 redo panel no longer auto-lists the
 operator's internal properties for normal runs (it was exposing internals anyway).
 
+### Type Attributes panel hooks into the scheme
+
+`BIM_PT_type_attributes` (type/ui.py) now renders each attribute value as a
+`bim.select_similar` button with `key = "type.<Attribute>"` — the same
+label-as-button pattern the object Attributes panel uses (attribute/ui.py). The
+selector walks `type.` natively, so the full scheme (SHIFT/CTRL/CTRL+SHIFT
+sum/ALT/CTRL+ALT regex) applies to type attributes with no operator changes.
+
 ### Deliberately overwritten SHIFT bindings (to be reworked later)
 
 Two operators already used SHIFT; the owner chose to overwrite them and revisit with

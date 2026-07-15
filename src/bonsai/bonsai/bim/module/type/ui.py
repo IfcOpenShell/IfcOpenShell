@@ -151,7 +151,8 @@ class BIM_PT_type_attributes(Panel):
                 row = layout.row(align=True)
                 row.label(text=attribute["name"])
                 value = get_display_value(attribute["value"])
-                row.label(text=value)
+                op = row.operator("bim.select_similar", text=value, icon="NONE", emboss=False)
+                op.key = f"type.{attribute['name']}"
 
 
 def add_object_button(self, context):
