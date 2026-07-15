@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 from typing import TYPE_CHECKING, get_args
 
 import bpy
@@ -200,6 +201,7 @@ class SelectGroupElements(bpy.types.Operator):
         "\nSHIFT + CLICK to remove from selection set"
         "\nCTRL + CLICK to filter selection to matching objects only"
         "\nCTRL + SHIFT + CLICK to exclude children"
+        "\nCTRL + ALT + CLICK to search group names by regex in a dialog"
         "\nALT + CLICK to also unhide hidden objects (viewport and local hide)"
     )
     group: bpy.props.IntProperty()
@@ -207,15 +209,80 @@ class SelectGroupElements(bpy.types.Operator):
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    use_regex: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    regex_pattern: bpy.props.StringProperty(
+        name="Pattern",
+        description='Python regular expression matched anywhere in each group\'s name, e.g. "foo" matches ".*foo.*"',
+    )
+    regex_mode: bpy.props.EnumProperty(
+        name="Action",
+        items=[
+            ("ADD", "Add to Selection", "Select elements of groups whose name matches the pattern"),
+            ("REMOVE", "Remove from Selection", "Deselect elements of groups whose name matches the pattern"),
+            ("FILTER", "Filter Selection", "Keep only already selected elements of groups whose name matches the pattern"),
+        ],
+        default="ADD",
+    )
 
     def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.ctrl and event.alt and not event.shift:
+            self.use_regex = True
+            if self.group and (name := tool.Ifc.get().by_id(self.group).Name):
+                self.regex_pattern = name
+            return context.window_manager.invoke_props_dialog(self)
         self.is_recursive = not (event.ctrl and event.shift)
         self.should_unhide = event.alt
         self.remove_from_selection = event.shift and not event.ctrl
         self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
+    def draw(self, context):
+        layout = self.layout
+        if not self.use_regex:
+            return
+        layout.prop(self, "regex_pattern")
+        layout.prop(self, "regex_mode")
+        layout.prop(self, "should_unhide", text="Also Unhide Hidden Objects")
+
+    def _execute_regex(self, context):
+        try:
+            pattern = re.compile(self.regex_pattern)
+        except re.error as e:
+            self.report({"ERROR"}, f"Invalid regular expression: {e}")
+            return {"CANCELLED"}
+
+        products = set()
+        matched_groups = 0
+        for group in tool.Ifc.get().by_type("IfcGroup"):
+            if not group.Name or not pattern.search(group.Name):
+                continue
+            matched_groups += 1
+            products.update(ifcopenshell.util.element.get_grouped_by(group, is_recursive=self.is_recursive))
+
+        tool.Spatial.select_products(
+            products,
+            unhide=self.should_unhide,
+            remove=self.regex_mode == "REMOVE",
+            filter_selection=self.regex_mode == "FILTER",
+        )
+
+        if self.regex_mode == "FILTER":
+            verb = "Filtered selection to"
+        elif self.regex_mode == "REMOVE":
+            verb = "Deselected"
+        else:
+            verb = "Selected"
+        result = f"group = /.*{self.regex_pattern}.*/"
+        bpy.context.window_manager.clipboard = result
+        self.report(
+            {"INFO"},
+            f"{verb} elements of {matched_groups} groups matching ({result}); query copied to the clipboard.",
+        )
+        return {"FINISHED"}
+
     def execute(self, context):
+        if self.use_regex:
+            return self._execute_regex(context)
         tool.Spatial.select_products(
             ifcopenshell.util.element.get_grouped_by(tool.Ifc.get().by_id(self.group), is_recursive=self.is_recursive),
             unhide=self.should_unhide,

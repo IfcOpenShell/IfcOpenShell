@@ -18,6 +18,7 @@
 
 import bisect
 import json
+import re
 import traceback
 from typing import TYPE_CHECKING, Any, Literal, assert_never, get_args
 
@@ -1469,10 +1470,24 @@ class SelectSimilar(Operator):
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    use_regex: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    regex_pattern: bpy.props.StringProperty(
+        name="Pattern",
+        description='Python regular expression matched anywhere in each object\'s value, e.g. "foo" matches ".*foo.*"',
+    )
+    regex_mode: bpy.props.EnumProperty(
+        name="Action",
+        items=[
+            ("ADD", "Add to Selection", "Select objects whose value matches the pattern"),
+            ("REMOVE", "Remove from Selection", "Deselect objects whose value matches the pattern"),
+            ("FILTER", "Filter Selection", "Keep only already selected objects whose value matches the pattern"),
+        ],
+        default="ADD",
+    )
 
     @classmethod
     def description(cls, context, properties):
-        base = "Select objects with a similar value\n\nSHIFT+CLICK remove from selection set.\nCTRL+CLICK filter selection to matching objects only.\nALT+CLICK also unhide hidden objects (viewport and local hide)."
+        base = "Select objects with a similar value\n\nSHIFT+CLICK remove from selection set.\nCTRL+CLICK filter selection to matching objects only.\nCTRL+ALT+CLICK search by regex in a dialog.\nALT+CLICK also unhide hidden objects (viewport and local hide)."
 
         key = getattr(properties, "key", None)
         active = context.active_object
@@ -1497,11 +1512,26 @@ class SelectSimilar(Operator):
         return False
 
     def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.ctrl and event.alt and not event.shift:
+            self.use_regex = True
+            key = "predefined_type" if self.key == "PredefinedType" else self.key
+            value = self._get_value(context.active_object, key) if context.active_object else None
+            if value is not None:
+                self.regex_pattern = str(value)
+            return context.window_manager.invoke_props_dialog(self)
         self.calculate_sum = event.ctrl and event.shift and event.type == "LEFTMOUSE"
         self.remove_from_selection = event.shift and not event.ctrl and event.type == "LEFTMOUSE"
         self.filter_selection = event.ctrl and not event.shift and event.type == "LEFTMOUSE"
         self.should_unhide = event.alt
         return self.execute(context)
+
+    def draw(self, context):
+        layout = self.layout
+        if not self.use_regex:
+            return
+        layout.prop(self, "regex_pattern")
+        layout.prop(self, "regex_mode")
+        layout.prop(self, "should_unhide", text="Also Unhide Hidden Objects")
 
     def execute(self, context):
         self.calculated_sum = 0  # reset if run before
@@ -1509,6 +1539,9 @@ class SelectSimilar(Operator):
         prefs = tool.Blender.get_addon_preferences()
         tolerance = prefs.doc.tolerance
         formatted_tolerance = f"{tolerance:.{max(0, -int(f'{tolerance:.1e}'.split('e')[-1])) if tolerance < 1 else 1}f}"
+
+        if self.use_regex:
+            return self._execute_regex(context, key)
 
         if self.calculate_sum:
             self._calculate_sum(context, key)
@@ -1546,6 +1579,45 @@ class SelectSimilar(Operator):
         if not element:
             return None
         return ifcopenshell.util.selector.get_element_value(element, key)
+
+    def _execute_regex(self, context, key):
+        try:
+            pattern = re.compile(self.regex_pattern)
+        except re.error as e:
+            self.report({"ERROR"}, f"Invalid regular expression: {e}")
+            return {"CANCELLED"}
+
+        count = 0
+        if self.regex_mode == "FILTER":
+            for obj in context.selected_objects:
+                obj_value = self._get_value(obj, key)
+                if obj_value is not None and pattern.search(str(obj_value)):
+                    count += 1
+                else:
+                    obj.select_set(False)
+        else:
+            remove = self.regex_mode == "REMOVE"
+            objects = context.scene.objects if self.should_unhide else context.visible_objects
+            for obj in objects:
+                obj_value = self._get_value(obj, key)
+                if obj_value is not None and pattern.search(str(obj_value)):
+                    if self.should_unhide:
+                        obj.hide_viewport = False
+                        obj.hide_set(False)
+                    obj.select_set(not remove)
+                    count += 1
+
+        if self.regex_mode == "FILTER":
+            verb = "Filtered selection to"
+        elif self.regex_mode == "REMOVE":
+            verb = "Deselected"
+        else:
+            verb = "Selected"
+        clip_key = "PredefinedType" if key == "predefined_type" else key
+        result = f"{clip_key} = /.*{self.regex_pattern}.*/"
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"{verb} {count} objects matching ({result}); query copied to the clipboard.")
+        return {"FINISHED"}
 
     def _get_reference_values(self, context, key):
         objects = (

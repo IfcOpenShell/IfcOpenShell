@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 from typing import TYPE_CHECKING
 
 import bpy
@@ -221,7 +222,7 @@ class SelectType(bpy.types.Operator):
 
 
 class SelectSimilarType(bpy.types.Operator):
-    """Select Similar Type\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nALT+Click to also unhide hidden objects (viewport and local hide)"""
+    """Select Similar Type\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nCTRL+ALT+Click to search type names by regex in a dialog\nALT+Click to also unhide hidden objects (viewport and local hide)"""
 
     bl_idname = "bim.select_similar_type"
     bl_label = "Select Similar Type"
@@ -230,15 +231,93 @@ class SelectSimilarType(bpy.types.Operator):
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    use_regex: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    regex_pattern: bpy.props.StringProperty(
+        name="Pattern",
+        description='Python regular expression matched anywhere in each type\'s name, e.g. "foo" matches ".*foo.*"',
+    )
+    regex_mode: bpy.props.EnumProperty(
+        name="Action",
+        items=[
+            ("ADD", "Add to Selection", "Select occurrences whose type name matches the pattern"),
+            ("REMOVE", "Remove from Selection", "Deselect occurrences whose type name matches the pattern"),
+            ("FILTER", "Filter Selection", "Keep only already selected occurrences whose type name matches the pattern"),
+        ],
+        default="ADD",
+    )
 
     def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.ctrl and event.alt and not event.shift:
+            self.use_regex = True
+            if context.active_object and (element := tool.Ifc.get_entity(context.active_object)):
+                relating_type = ifcopenshell.util.element.get_type(element)
+                if relating_type and relating_type.Name:
+                    self.regex_pattern = relating_type.Name
+            return context.window_manager.invoke_props_dialog(self)
         self.should_unhide = event.alt
         self.remove_from_selection = event.shift and not event.ctrl
         self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
+    def draw(self, context):
+        layout = self.layout
+        if not self.use_regex:
+            return
+        layout.prop(self, "regex_pattern")
+        layout.prop(self, "regex_mode")
+        layout.prop(self, "should_unhide", text="Also Unhide Hidden Objects")
+
+    def _get_type_name(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return None
+        relating_type = ifcopenshell.util.element.get_type(element)
+        if not relating_type:
+            return None
+        return relating_type.Name
+
+    def _execute_regex(self, context):
+        try:
+            pattern = re.compile(self.regex_pattern)
+        except re.error as e:
+            self.report({"ERROR"}, f"Invalid regular expression: {e}")
+            return {"CANCELLED"}
+
+        count = 0
+        if self.regex_mode == "FILTER":
+            for obj in context.selected_objects:
+                name = self._get_type_name(obj)
+                if name is not None and pattern.search(name):
+                    count += 1
+                else:
+                    obj.select_set(False)
+        else:
+            remove = self.regex_mode == "REMOVE"
+            objects = context.scene.objects if self.should_unhide else context.visible_objects
+            for obj in objects:
+                name = self._get_type_name(obj)
+                if name is not None and pattern.search(name):
+                    if self.should_unhide:
+                        obj.hide_viewport = False
+                        obj.hide_set(False)
+                    obj.select_set(not remove)
+                    count += 1
+
+        if self.regex_mode == "FILTER":
+            verb = "Filtered selection to"
+        elif self.regex_mode == "REMOVE":
+            verb = "Deselected"
+        else:
+            verb = "Selected"
+        result = f"type = /.*{self.regex_pattern}.*/"
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"{verb} {count} objects matching ({result}); query copied to the clipboard.")
+        return {"FINISHED"}
+
     def execute(self, context):
         self.file = tool.Ifc.get()
+        if self.use_regex:
+            return self._execute_regex(context)
         if self.remove_from_selection or self.filter_selection:
             objects = [context.active_object] if context.active_object else []
         else:
