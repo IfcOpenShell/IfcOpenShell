@@ -286,7 +286,8 @@ class Clasher:
 
             positions = []
             for clash in clashes.values():
-                positions.append(clash["position"])
+                # Midpoint of p1/p2 as an approximation of the clash location for clustering purposes.
+                positions.append([(a + b) / 2 for a, b in zip(clash["p1"], clash["p2"])])
 
             data = np.array(positions)
 
