@@ -90,6 +90,15 @@ def decode_select_click(event: bpy.types.Event) -> SelectClickModifiers:
     )
 
 
+def selection_mode(remove_from_selection: bool, filter_selection: bool) -> str:
+    """Map the two modifier flags to a Spatial.select_products mode."""
+    if remove_from_selection:
+        return "REMOVE"
+    if filter_selection:
+        return "FILTER"
+    return "ADD"
+
+
 class RegexSelectMixin:
     """Scaffold for select operators offering the CTRL+ALT+Click regex-search dialog.
 
@@ -193,12 +202,7 @@ class RegexSelectMixin:
 
     def select_regex_products(self, products: Iterable[ifcopenshell.entity_instance]) -> None:
         """Apply regex_mode + unhide to IFC products via Spatial.select_products."""
-        tool.Spatial.select_products(
-            products,
-            unhide=self.should_unhide,
-            remove=self.regex_mode == "REMOVE",
-            filter_selection=self.regex_mode == "FILTER",
-        )
+        tool.Spatial.select_products(products, unhide=self.should_unhide, mode=self.regex_mode)
 
 
 def draw_attributes(
