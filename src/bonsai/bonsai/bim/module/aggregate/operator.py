@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 from typing import TYPE_CHECKING
 
 import bpy
@@ -269,15 +270,36 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    use_regex: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    regex_pattern: bpy.props.StringProperty(
+        name="Pattern",
+        description='Python regular expression matched anywhere in each aggregate\'s name, e.g. "foo" matches ".*foo.*"',
+    )
+    regex_mode: bpy.props.EnumProperty(
+        name="Action",
+        items=[
+            ("ADD", "Add to Selection", "Select aggregates whose name matches the pattern"),
+            ("REMOVE", "Remove from Selection", "Deselect aggregates whose name matches the pattern"),
+            ("FILTER", "Filter Selection", "Keep only already selected aggregates whose name matches the pattern"),
+        ],
+        default="ADD",
+    )
 
     @classmethod
     def description(cls, context, properties):
         if properties.select_parts:
-            return "Select Aggregate and Parts.\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nCTRL+SHIFT+Click to select only one level deep\nALT+Click to also unhide hidden objects (viewport and local hide)"
+            return "Select Aggregate and Parts.\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nCTRL+SHIFT+Click to select only one level deep\nCTRL+ALT+Click to search aggregate names by regex in a dialog\nALT+Click to also unhide hidden objects (viewport and local hide)"
         else:
-            return "Select Aggregate\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nALT+Click to also unhide hidden objects (viewport and local hide)"
+            return "Select Aggregate\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nCTRL+ALT+Click to search aggregate names by regex in a dialog\nALT+Click to also unhide hidden objects (viewport and local hide)"
 
     def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.ctrl and event.alt and not event.shift:
+            self.use_regex = True
+            if context.active_object and (element := tool.Ifc.get_entity(context.active_object)):
+                aggregate = ifcopenshell.util.element.get_aggregate(element)
+                if aggregate and aggregate.Name:
+                    self.regex_pattern = aggregate.Name
+            return context.window_manager.invoke_props_dialog(self)
         if event.type == "LEFTMOUSE" and event.ctrl and event.shift:
             self.one_level_deep = True
         self.should_unhide = event.alt
@@ -285,7 +307,66 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
         self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
+    def draw(self, context):
+        layout = self.layout
+        if not self.use_regex:
+            return
+        layout.prop(self, "regex_pattern")
+        layout.prop(self, "regex_mode")
+        layout.prop(self, "select_parts", text="Also Select Parts")
+        if self.select_parts:
+            layout.prop(self, "one_level_deep")
+        layout.prop(self, "should_unhide", text="Also Unhide Hidden Objects")
+
+    def _execute_regex(self, context):
+        try:
+            pattern = re.compile(self.regex_pattern)
+        except re.error as e:
+            self.report({"ERROR"}, f"Invalid regular expression: {e}")
+            return {"CANCELLED"}
+
+        aggregates = {}
+        for rel in tool.Ifc.get().by_type("IfcRelAggregates"):
+            aggregate = rel.RelatingObject
+            if not aggregate.is_a("IfcElement"):
+                continue
+            if not aggregate.Name or not pattern.search(aggregate.Name):
+                continue
+            aggregates[aggregate.id()] = aggregate
+
+        products = set()
+        for aggregate in aggregates.values():
+            products.add(aggregate)
+            if self.select_parts:
+                if self.one_level_deep:
+                    products.update(ifcopenshell.util.element.get_parts(aggregate))
+                else:
+                    products.update(ifcopenshell.util.element.get_decomposition(aggregate))
+
+        tool.Spatial.select_products(
+            products,
+            unhide=self.should_unhide,
+            remove=self.regex_mode == "REMOVE",
+            filter_selection=self.regex_mode == "FILTER",
+        )
+
+        if self.regex_mode == "FILTER":
+            verb = "Filtered selection to"
+        elif self.regex_mode == "REMOVE":
+            verb = "Deselected"
+        else:
+            verb = "Selected"
+        result = f"parent = /.*{self.regex_pattern}.*/"
+        bpy.context.window_manager.clipboard = result
+        self.report(
+            {"INFO"},
+            f"{verb} {len(aggregates)} aggregates matching ({result}); query copied to the clipboard.",
+        )
+        return {"FINISHED"}
+
     def execute(self, context):
+        if self.use_regex:
+            return self._execute_regex(context)
         keep_current_selection = self.remove_from_selection or self.filter_selection
         if keep_current_selection:
             objects = [context.active_object] if context.active_object else []

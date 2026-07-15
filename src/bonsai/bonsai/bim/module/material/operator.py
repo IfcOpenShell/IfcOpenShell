@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import re
 from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
@@ -61,20 +62,111 @@ class DisableEditingMaterials(bpy.types.Operator):
 class SelectByMaterial(bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
-    bl_description = "Select objects using the provided material\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nALT+Click to also unhide hidden objects (viewport and local hide)"
+    bl_description = "Select objects using the provided material\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nCTRL+ALT+Click to search material names by regex in a dialog\nALT+Click to also unhide hidden objects (viewport and local hide)"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    use_regex: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    regex_pattern: bpy.props.StringProperty(
+        name="Pattern",
+        description='Python regular expression matched anywhere in each object\'s material name, e.g. "foo" matches ".*foo.*"',
+    )
+    regex_mode: bpy.props.EnumProperty(
+        name="Action",
+        items=[
+            ("ADD", "Add to Selection", "Select objects whose material name matches the pattern"),
+            ("REMOVE", "Remove from Selection", "Deselect objects whose material name matches the pattern"),
+            ("FILTER", "Filter Selection", "Keep only already selected objects whose material name matches the pattern"),
+        ],
+        default="ADD",
+    )
 
     def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.ctrl and event.alt and not event.shift:
+            self.use_regex = True
+            layer_index = None
+            if self.material:
+                layer_index = self._get_layer_index(tool.Ifc.get().by_id(self.material))
+            name = None
+            if context.active_object:
+                name = self._get_material_name(context.active_object, layer_index)
+            if name is None and self.material:
+                name = self._get_name(tool.Ifc.get().by_id(self.material))
+            if name is not None:
+                self.regex_pattern = name
+            return context.window_manager.invoke_props_dialog(self)
         self.should_unhide = event.alt
         self.remove_from_selection = event.shift and not event.ctrl
         self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
+    def draw(self, context):
+        layout = self.layout
+        if not self.use_regex:
+            return
+        layout.prop(self, "regex_pattern")
+        layout.prop(self, "regex_mode")
+        layout.prop(self, "should_unhide", text="Also Unhide Hidden Objects")
+
+    def _get_material_name(self, obj, layer_index):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return None
+        mat = ifcopenshell.util.element.get_material(element)
+        if not mat:
+            return None
+        resolved = self._resolve_material(mat, layer_index)
+        if not resolved:
+            return None
+        return self._get_name(resolved)
+
+    def _execute_regex(self, context):
+        try:
+            pattern = re.compile(self.regex_pattern)
+        except re.error as e:
+            self.report({"ERROR"}, f"Invalid regular expression: {e}")
+            return {"CANCELLED"}
+
+        layer_index = None
+        if self.material:
+            layer_index = self._get_layer_index(tool.Ifc.get().by_id(self.material))
+
+        count = 0
+        if self.regex_mode == "FILTER":
+            for obj in context.selected_objects:
+                name = self._get_material_name(obj, layer_index)
+                if name is not None and pattern.search(name):
+                    count += 1
+                else:
+                    obj.select_set(False)
+        else:
+            remove = self.regex_mode == "REMOVE"
+            objects = context.scene.objects if self.should_unhide else context.visible_objects
+            for obj in objects:
+                name = self._get_material_name(obj, layer_index)
+                if name is not None and pattern.search(name):
+                    if self.should_unhide:
+                        obj.hide_viewport = False
+                        obj.hide_set(False)
+                    obj.select_set(not remove)
+                    count += 1
+
+        if self.regex_mode == "FILTER":
+            verb = "Filtered selection to"
+        elif self.regex_mode == "REMOVE":
+            verb = "Deselected"
+        else:
+            verb = "Selected"
+        result = f"material = /.*{self.regex_pattern}.*/"
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"{verb} {count} objects matching ({result}); query copied to the clipboard.")
+        return {"FINISHED"}
+
     def execute(self, context):
+        if self.use_regex:
+            return self._execute_regex(context)
         # Determine the layer index hint from the explicit material prop, if any.
         # When the user clicks a specific layer in the UI, self.material is that
         # layer's IfcMaterial. We find its index so we can pull the same layer

@@ -27,6 +27,7 @@ One modifier scheme, applied uniformly across nine operators:
 | CTRL+Click | **filter** the selection to matches only (selects nothing new) |
 | CTRL+SHIFT+Click | legacy plain-CTRL function, where one existed |
 | ALT+Click | also unhide matches (viewport + local hide) — from the base branch |
+| CTRL+ALT+Click | `select_similar`, `select_similar_type`, `select_by_material`, `select_group_elements`, `select_aggregate`: regex-search dialog (see below) |
 
 Operators covered: `bim.select_similar`, `bim.select_ifc_class`,
 `bim.select_similar_type`, `bim.select_by_material`, `bim.select_similar_container`,
@@ -62,6 +63,40 @@ Operators covered: `bim.select_similar`, `bim.select_ifc_class`,
   (`keep_current_selection` in `aggregate/operator.py`).
 - **`select_ifc_class` filter matches subtypes** (`element.is_a(cls)`), consistent
   with normal select mode which uses `file.by_type(cls)` (also subtype-inclusive).
+
+### Regex-search dialog on `select_similar`, `select_similar_type`, `select_by_material`, `select_group_elements`, `select_aggregate` (CTRL+ALT+Click)
+
+On `select_aggregate` the pattern is prefilled with the active object's **aggregate
+name** and matched against every `IfcRelAggregates.RelatingObject` that `is_a
+IfcElement` (spatial decomposition — project/site/storey — deliberately excluded);
+the dialog additionally exposes "Also Select Parts" (+ "One Level Deep") since the
+panel's two button variants collapse into one dialog. Union of matched aggregates
+(+ parts via `get_parts`/`get_decomposition`) through one `Spatial.select_products`
+call; clipboard query `parent = /.*foo.*/`.
+
+On `select_similar_type` the pattern is prefilled with (and matched against) the active
+object's **type name**; the clipboard query is `type = /.*foo.*/`. On
+`select_by_material` it is the active object's **resolved material name** (via the
+#7940 helpers: usage → set, clicked-layer index as hint, `_get_name`), falling back to
+the clicked material row's name; clipboard query `material = /.*foo.*/`. On
+`select_group_elements` it is the clicked group row's **name**, matched against all
+`IfcGroup` names in the file (unnamed groups never match); the union of the matching
+groups' elements (recursive by default) goes through a single
+`Spatial.select_products` call — union first, so FILTER cannot wrongly intersect
+per-group; clipboard query `group = /.*foo.*/`. Otherwise identical to the
+`select_similar` behavior below.
+
+Opens a props dialog prefilled with the active object's value for the clicked key; the
+(possibly edited) text is compiled as an unanchored Python regex (`re.search`, so
+entering `foo` behaves like `.*foo.*`) and applied via an Add / Remove / Filter
+dropdown, plus an "Also Unhide Hidden Objects" checkbox (reuses `should_unhide`; in
+Add/Remove it sweeps `scene.objects` instead of `visible_objects` and clears both
+hide flags on matches; a no-op in Filter since selected objects are visible). CTRL+ALT was free in practice: ALT (unhide) is a no-op in filter mode, which
+plain CTRL triggers. Invalid patterns error out and cancel. The equivalent selector
+query (`Key = /.*foo.*/`) is copied to the clipboard. Note the prefill is the raw
+value — values containing regex metacharacters (e.g. `(`) need escaping before OK.
+Overriding `draw()` for the dialog means the F9 redo panel no longer auto-lists the
+operator's internal properties for normal runs (it was exposing internals anyway).
 
 ### Deliberately overwritten SHIFT bindings (to be reworked later)
 
