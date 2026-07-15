@@ -29,6 +29,7 @@ from bonsai.bim.helper import (
     SELECT_REMOVE_TOOLTIP,
     SELECT_UNHIDE_TOOLTIP,
     decode_select_click,
+    selection_mode,
 )
 
 
@@ -337,12 +338,12 @@ class SelectSimilarContainer(bpy.types.Operator):
         if not containers:
             return {"CANCELLED"}
 
+        mode = selection_mode(self.remove_from_selection, self.filter_selection)
         for container in containers.values():
             tool.Spatial.select_products(
                 tool.Spatial.get_decomposed_elements(container, self.is_recursive),
                 unhide=self.should_unhide,
-                remove=self.remove_from_selection,
-                filter_selection=self.filter_selection,
+                mode=mode,
             )
 
         result = " + ".join(f'location = "{c.Name}"' for c in containers.values())
@@ -499,8 +500,7 @@ class SelectDecomposedElements(bpy.types.Operator):
         tool.Spatial.select_products(
             tool.Spatial.get_filtered_elements(self.should_filter, self.is_recursive),
             unhide=self.should_unhide,
-            remove=self.remove_from_selection,
-            filter_selection=self.filter_selection,
+            mode=selection_mode(self.remove_from_selection, self.filter_selection),
         )
 
         # Make selected active element in list, the active object

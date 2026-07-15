@@ -36,6 +36,7 @@ from bonsai.bim.helper import (
     RegexSelectMixin,
     decode_select_click,
     select_regex_tooltip,
+    selection_mode,
 )
 
 
@@ -293,32 +294,27 @@ class SelectSimilarType(RegexSelectMixin, bpy.types.Operator):
                 continue
             relating_types.add(relating_type)
 
-        if self.filter_selection:
-            for obj in context.selected_objects:
-                element = tool.Ifc.get_entity(obj)
-                if not element or ifcopenshell.util.element.get_type(element) not in relating_types:
-                    obj.select_set(False)
-            return {"FINISHED"}
-
+        elements = []
         result = ""
         for relating_type in relating_types:
             related_objects = ifcopenshell.util.element.get_types(relating_type)
+            elements.extend(related_objects)
 
-            for element in related_objects:
-                obj = tool.Ifc.get_object(element)
-                if obj and (self.should_unhide or obj in context.visible_objects):
-                    if self.should_unhide:
-                        obj.hide_viewport = False
-                        obj.hide_set(False)
-                    obj.select_set(not self.remove_from_selection)
-
-            # copy selection query to clipboard
+            # build selection query for the clipboard
             related_objects_class = related_objects[0].is_a()
             relating_type_name = relating_type.Name
             if not result:
                 result = f'{related_objects_class}, type="{relating_type_name}"'
             else:
                 result += f' + {related_objects_class}, type="{relating_type_name}"'
+
+        tool.Spatial.select_products(
+            elements,
+            unhide=self.should_unhide,
+            mode=selection_mode(self.remove_from_selection, self.filter_selection),
+        )
+
+        if result:
             bpy.context.window_manager.clipboard = result
             self.report({"INFO"}, f"({result}) was copied to the clipboard.")
 

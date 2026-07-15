@@ -37,6 +37,7 @@ from bonsai.bim.helper import (
     RegexSelectMixin,
     decode_select_click,
     select_regex_tooltip,
+    selection_mode,
 )
 from bonsai.bim.module.model import slab, wall
 
@@ -158,14 +159,10 @@ class SelectByMaterial(RegexSelectMixin, bpy.types.Operator):
         if not materials:
             return {"FINISHED"}
 
+        mode = selection_mode(self.remove_from_selection, self.filter_selection)
         for mat in materials.values():
             core.select_by_material(
-                tool.Material,
-                tool.Spatial,
-                material=mat,
-                should_unhide=self.should_unhide,
-                remove_from_selection=self.remove_from_selection,
-                filter_selection=self.filter_selection,
+                tool.Material, tool.Spatial, material=mat, should_unhide=self.should_unhide, mode=mode
             )
 
         result = " + ".join(f'material = "{self._get_name(m)}"' for m in materials.values())

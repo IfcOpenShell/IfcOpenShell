@@ -34,6 +34,7 @@ from bonsai.bim.helper import (
     RegexSelectMixin,
     decode_select_click,
     select_regex_tooltip,
+    selection_mode,
 )
 
 
@@ -362,57 +363,24 @@ class BIM_OT_select_aggregate(RegexSelectMixin, bpy.types.Operator):
 
         all_parts = list(aggregates.values())
 
+        products = set(all_parts)
         if self.select_parts:
-            selected_parts = []
+            for aggregate in all_parts:
+                if self.one_level_deep:
+                    products.update(ifcopenshell.util.element.get_parts(aggregate))
+                else:
+                    products.update(ifcopenshell.util.element.get_decomposition(aggregate))
 
-            for part in all_parts:
-                if part.IsDecomposedBy:
-                    for rel in part.IsDecomposedBy:
-                        for subpart in rel.RelatedObjects:
-                            selected_parts.append(subpart)
+        tool.Spatial.select_products(
+            products,
+            unhide=self.should_unhide,
+            mode=selection_mode(self.remove_from_selection, self.filter_selection),
+        )
 
-                            # If not limited to one level, traverse deeper
-                            if not self.one_level_deep:
-
-                                def add_descendants(elem):
-                                    if elem.IsDecomposedBy:
-                                        for rel in elem.IsDecomposedBy:
-                                            for deeper in rel.RelatedObjects:
-                                                selected_parts.append(deeper)
-                                                add_descendants(deeper)
-
-                                add_descendants(subpart)
-
-            if self.filter_selection:
-                matched_objs = {tool.Ifc.get_object(element) for element in set(selected_parts + all_parts)}
-                for obj in context.selected_objects:
-                    if obj not in matched_objs:
-                        obj.select_set(False)
-            else:
-                for element in set(selected_parts + all_parts):
-                    obj = tool.Ifc.get_object(element)
-                    if obj:
-                        if self.should_unhide:
-                            obj.hide_viewport = False
-                            obj.hide_set(False)
-                        obj.select_set(not self.remove_from_selection)
-
-        else:
-            if self.filter_selection:
-                matched_objs = {tool.Ifc.get_object(element) for element in all_parts}
-                for obj in context.selected_objects:
-                    if obj not in matched_objs:
-                        obj.select_set(False)
-            else:
-                for aggregate_element in all_parts:
-                    aggregate_obj = tool.Ifc.get_object(aggregate_element)
-                    if aggregate_obj:
-                        if self.should_unhide:
-                            aggregate_obj.hide_viewport = False
-                            aggregate_obj.hide_set(False)
-                        aggregate_obj.select_set(not self.remove_from_selection)
-                        if not self.remove_from_selection:
-                            bpy.context.view_layer.objects.active = aggregate_obj
+        if not self.select_parts and not keep_current_selection:
+            for aggregate_element in all_parts:
+                if aggregate_obj := tool.Ifc.get_object(aggregate_element):
+                    bpy.context.view_layer.objects.active = aggregate_obj
 
         # copy selection query to clipboard
         result = ""
@@ -521,7 +489,7 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
             objects = [context.active_object] if context.active_object else []
         else:
             objects = context.selected_objects
-        matched_objs = set()
+        products = set()
         for obj in objects:
             if not keep_current_selection:
                 obj.select_set(False)
@@ -543,39 +511,17 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
             for group_link in group_rel:
                 parts = list(group_link.RelatedObjects)
                 if self.select_parts:
-                    parts_objs = []
                     for part in parts:
                         if part.IsDecomposedBy:
                             for subpart in part.IsDecomposedBy[0].RelatedObjects:
                                 parts.append(subpart)
-                        parts_objs.append(part)
+                products.update(parts)
 
-                    for element in parts_objs:
-                        obj = tool.Ifc.get_object(element)
-                        if obj:
-                            if self.filter_selection:
-                                matched_objs.add(obj)
-                                continue
-                            if self.should_unhide:
-                                obj.hide_viewport = False
-                                obj.hide_set(False)
-                            obj.select_set(not self.remove_from_selection)
-                else:
-                    for element in parts:
-                        obj = tool.Ifc.get_object(element)
-                        if obj:
-                            if self.filter_selection:
-                                matched_objs.add(obj)
-                                continue
-                            if self.should_unhide:
-                                obj.hide_viewport = False
-                                obj.hide_set(False)
-                            obj.select_set(not self.remove_from_selection)
-
-        if self.filter_selection:
-            for obj in context.selected_objects:
-                if obj not in matched_objs:
-                    obj.select_set(False)
+        tool.Spatial.select_products(
+            products,
+            unhide=self.should_unhide,
+            mode=selection_mode(self.remove_from_selection, self.filter_selection),
+        )
 
         return {"FINISHED"}
 

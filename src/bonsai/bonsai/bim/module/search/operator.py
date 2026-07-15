@@ -45,6 +45,7 @@ from bonsai.bim.helper import (
     RegexSelectMixin,
     decode_select_click,
     select_regex_tooltip,
+    selection_mode,
 )
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty
@@ -1304,12 +1305,8 @@ class SelectIfcClass(Operator):
             if element := tool.Ifc.get_entity(obj):
                 classes.add(element.is_a())
                 predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
-        if self.filter_selection:
-            for obj in context.selected_objects:
-                element = tool.Ifc.get_entity(obj)
-                if not element or not any(element.is_a(cls) for cls in classes):
-                    obj.select_set(False)
-            return {"FINISHED"}
+
+        elements = []
         for cls in classes:
             for element in tool.Ifc.get().by_type(cls):
                 if (
@@ -1317,14 +1314,12 @@ class SelectIfcClass(Operator):
                     and ifcopenshell.util.element.get_predefined_type(element) not in predefined_types
                 ):
                     continue
-                if obj := tool.Ifc.get_object(element):
-                    if self.should_unhide:
-                        obj.hide_viewport = False
-                        obj.hide_set(False)
-                    if self.remove_from_selection:
-                        tool.Blender.deselect_object(obj)
-                    else:
-                        tool.Blender.select_object(obj)
+                elements.append(element)
+        tool.Spatial.select_products(
+            elements,
+            unhide=self.should_unhide,
+            mode=selection_mode(self.remove_from_selection, self.filter_selection),
+        )
 
         # copy selection query to clipboard
         result = " + ".join(classes)

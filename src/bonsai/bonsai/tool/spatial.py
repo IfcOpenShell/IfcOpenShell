@@ -196,13 +196,12 @@ class Spatial(bonsai.core.tool.Spatial):
         cls,
         products: Iterable[ifcopenshell.entity_instance],
         unhide: bool = False,
-        remove: bool = False,
-        filter_selection: bool = False,
+        mode: Literal["ADD", "REMOVE", "FILTER"] = "ADD",
     ) -> None:
         assert (view_layer := bpy.context.view_layer)
         # Update view layer, otherwise `objects` might be missing just created objects.
         view_layer.update()
-        if filter_selection:
+        if mode == "FILTER":
             # Keep only the already selected objects that match, select nothing new.
             matched_objs = set()
             for product in products:
@@ -219,7 +218,7 @@ class Spatial(bonsai.core.tool.Spatial):
                 if unhide:
                     obj.hide_viewport = False
                     obj.hide_set(False)
-                obj.select_set(not remove)
+                obj.select_set(mode != "REMOVE")
 
     @classmethod
     def filter_products(

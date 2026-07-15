@@ -48,6 +48,8 @@ All of the scheme's cross-operator plumbing lives in `bonsai/bim/helper.py`:
   `bl_description` / `description()`, ending the casing drift; `SelectIfcClass` and
   `SelectSimilarType` switched from class docstrings to `bl_description` to allow
   composition.
+- `selection_mode(remove, filter)` — maps the two operator flags to the
+  `select_products` mode enum (`"ADD"|"REMOVE"|"FILTER"`).
 - `RegexSelectMixin` — the whole regex-dialog scaffold (properties, `draw()`,
   compile-with-error-handling, verb/clipboard/report tail) plus two reusable
   strategies: `apply_regex_by_value(context, pattern, get_value)` for per-object
@@ -69,10 +71,19 @@ All of the scheme's cross-operator plumbing lives in `bonsai/bim/helper.py`:
   clicked UI item (material, group, container row) are unaffected by this rule.
 - **Filter mode selects nothing new.** It computes the matched set and deselects
   already-selected objects outside it. Implemented centrally in
-  `Spatial.select_products(products, unhide=..., remove=..., filter_selection=...)`
-  (`tool/spatial.py`) for the UI-item operators, and as small per-operator branches
-  where selection is done with bespoke loops (`select_similar`, `select_ifc_class`,
-  `select_similar_type`, the two aggregate operators).
+  `Spatial.select_products(products, unhide=..., mode="ADD"|"REMOVE"|"FILTER")`
+  (`tool/spatial.py`); every operator except `select_similar` (whose per-value
+  tolerance matching stays bespoke) now collects elements and delegates to it,
+  computing the mode from its two flags via `helper.selection_mode()`.
+- **Consolidation trade-offs** (routing `select_ifc_class`, `select_similar_type`
+  and the two aggregate operators through `select_products`): remove mode uses a
+  plain `select_set(False)` — `select_ifc_class` no longer re-anchors the active
+  object via `tool.Blender.deselect_object`; `select_similar_type` lost its
+  O(n²) `obj in context.visible_objects` gate, so like the other operators it may
+  latently select hidden occurrences (they appear selected when unhidden); the
+  aggregate parts walk uses `get_parts`/`get_decomposition` instead of a manual
+  `IsDecomposedBy` recursion; `select_ifc_class` and `select_similar_type` now
+  write the clipboard query in every mode (previously skipped in filter mode).
 - **CTRL = filter, CTRL+SHIFT = legacy CTRL function.** Originally implemented the
   other way around; swapped after review because the two selection-set operations
   (subtract, intersect) belong on the simple modifiers. The demoted plain-CTRL

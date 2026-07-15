@@ -31,6 +31,7 @@ from bonsai.bim.helper import (
     RegexSelectMixin,
     decode_select_click,
     select_regex_tooltip,
+    selection_mode,
 )
 
 
@@ -252,8 +253,7 @@ class SelectGroupElements(RegexSelectMixin, bpy.types.Operator):
         tool.Spatial.select_products(
             ifcopenshell.util.element.get_grouped_by(tool.Ifc.get().by_id(self.group), is_recursive=self.is_recursive),
             unhide=self.should_unhide,
-            remove=self.remove_from_selection,
-            filter_selection=self.filter_selection,
+            mode=selection_mode(self.remove_from_selection, self.filter_selection),
         )
         return {"FINISHED"}
 
