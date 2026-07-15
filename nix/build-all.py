@@ -627,9 +627,10 @@ def build_dependency(
     build_tool_args: "list[str]",
     download_url: str,
     download_name: str,
+    *,
     download_tool: Literal["py", "git"] = download_tool_default,
     revision: "Union[str, None]" = None,
-    patch: "Union[str, list[str], None]" = None,
+    patch: list[str] | None = None,
     shell=None,
     pre_compile_subs: "Sequence[tuple[str, str, str]]" = (),
     additional_files: "Union[dict[str, str], None]" = None,
@@ -714,8 +715,6 @@ def build_dependency(
                 urlretrieve(url, os.path.join(extract_dir, path))
 
     if patch is not None:
-        if isinstance(patch, str):
-            patch = [patch]
         for p in patch:
             patch_abs = (SCRIPT_PATH / p).absolute().__str__()
             if os.path.exists(patch_abs):
@@ -724,6 +723,8 @@ def build_dependency(
                 except Exception as e:
                     # Assert that the patch has already been applied
                     run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
+            else:
+                raise FileNotFoundError(patch_abs)
 
     if shell is not None:
         sp.run(shell, shell=True, check=True, cwd=extract_dir)
