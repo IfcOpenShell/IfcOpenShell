@@ -933,21 +933,44 @@ namespace {
 			}
 		}
 
-		// NOTE: an attempt to flip the sign when "both faces back-facing" (viewing a fold's
-		// reverse/inside surface through an opening, e.g. a box with a face removed) was tried
-		// here and reverted -- see edge-classification.md follow-up notes. front0/back0 (and
-		// front1/back1) reliably distinguish "genuine front/back flip" for the outline test
-		// above, but using them to guess "are we looking at this fold from behind" is unsound:
-		// by the time an edge is visible in the output at all, HLR has already decided it's not
-		// occluded, so for an ordinary closed solid essentially every remaining edge still
-		// reads as "both back-facing" about as often as "both front-facing" (there's no cheap
-		// way here to tell "genuinely viewed through a hole" apart from "ordinary far side of a
-		// closed shape that happens to share this classification bucket"). Enabling either
-		// polarity of this flip corrupted otherwise-correct classification broadly (verified
-		// against a fully-convex icosphere test case, where it manufactured large numbers of
-		// spurious `crease` edges that should have been `flush`). Needs a different approach
-		// (e.g. an explicit visibility/occlusion signal rather than inferring it from face
-		// normals) before revisiting.
+		// View-relative flip for folds seen from behind through an opening (e.g. the "Rotated
+		// Box w/Boundary" test object -- a box with one face removed; the 3 interior lines
+		// visible through the opening read as the *inside* of an ordinary convex box corner,
+		// which should look like a crease, not a sharp ridge). Two earlier unconditional
+		// versions of this flip (triggered on plain back0&&back1, with no further gate) were
+		// tried and reverted -- see edge-classification.md follow-up notes -- because they
+		// corrupted otherwise-correct classification broadly, manifesting as spurious `crease`
+		// edges on a fully-convex icosphere test case that has no opening at all.
+		//
+		// That corruption wasn't a fundamental inability to distinguish "genuinely seen through
+		// a hole" from "ordinary far side of closed geometry": bucket membership here is purely
+		// a post-hoc query key into an already-completed, correct HLR visibility computation,
+		// so reclassifying an edge can never make a genuinely hidden edge appear or vice versa.
+		// The real cause is a threshold-crossing artifact: near the silhouette, facet-normal
+		// noise on regular/symmetric tessellations (icospheres, N-gon cylinder/cone
+		// approximations) makes some genuinely near-edge-on facets test as "back" under the
+		// flat-normal-based back0/back1 test even though they're still visible. An unconditional
+		// negate then took their small, correctly-`flush` solid-relative deviation and re-tested
+		// it against the *other* threshold -- `ridge_angle_min_deg` (45 degrees by default) and
+		// `valley_angle_min_deg` (12 degrees by default) are deliberately asymmetric, so a gentle
+		// ~20 degree convex facet transition that safely sits under the ridge threshold crosses
+		// well over the much smaller valley threshold once flipped, becoming a spurious `crease`.
+		//
+		// Fix: gate the flip so it can only reinterpret a fold that would already be visible
+		// (sharp or crease) under its own pre-flip threshold -- i.e. only folds sharp/deep
+		// enough to draw from the front get reinterpreted as the opposite class from behind.
+		// Gentle tessellation-noise deviations that are correctly `flush` either way never cross
+		// the asymmetric threshold gap, because they never reach the flip at all. Verified
+		// against the full test scene: every object's classification is byte-for-byte unchanged
+		// except "Rotated Box w/Boundary", whose 3 interior lines now correctly read `crease`
+		// (previously all 4 non-boundary edges read `sharp`).
+		if (back0 && back1) {
+			const bool would_show_unflipped =
+				(deviation_deg >= 0.0) ? (deviation_deg >= ridge_angle_min_deg) : (-deviation_deg >= valley_angle_min_deg);
+			if (would_show_unflipped) {
+				deviation_deg = -deviation_deg;
+			}
+		}
 
 		if (deviation_deg >= 0.0) {
 			return (deviation_deg >= ridge_angle_min_deg) ? edge_style_class::sharp : edge_style_class::flush;
