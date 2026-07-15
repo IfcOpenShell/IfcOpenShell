@@ -1171,6 +1171,14 @@ if "cgal" in targets:
         os.environ["CC"] = MAC_CROSS_COMPILE_INTEL_CC
         gmp_args.extend(MAC_CROSS_COMPILE_INTEL_AUTOCONF_HOST_ARGS)
 
+    # Fixes configure failing to find a working compiler under GCC 15's default -std=gnu23.
+    # Issue presumably will be resolved in any next gmp version, but currently the last one is 6.3.0.
+    # Patch is just applying fix from upstream meantion below:
+    # https://gmplib.org/list-archives/gmp-bugs/2025-February/005561.html
+    gmp_patches = ["./patches/gmp/001-fix-std23.patch"]
+    if GMP_VERSION != "6.3.0":
+        raise Exception(f"GMP_VERSION changed to {GMP_VERSION}, check whether {gmp_patches} is still needed.")
+
     build_dependency(
         name=f"gmp-{GMP_VERSION}",
         mode="autoconf",
@@ -1178,6 +1186,7 @@ if "cgal" in targets:
         pre_compile_subs=(
             [("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if "wasm" in flags else []
         ),
+        patch=gmp_patches,
         # Sometimes ftp.gnu.org is very slow, use ftpmirror.gnu.org as a workaround.
         download_url="https://ftpmirror.gnu.org/gnu/gmp/",
         download_name=f"gmp-{GMP_VERSION}.tar.bz2",
