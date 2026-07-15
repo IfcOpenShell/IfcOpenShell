@@ -77,10 +77,14 @@ class BIM_PT_Boundary(Panel):
             self.draw_relation_editor(boundary, "RelatedBuildingElement", "related_building_element")
             self.draw_relation_editor(boundary, "ParentBoundary", "parent_boundary")
             self.draw_relation_editor(boundary, "CorrespondingBoundary", "corresponding_boundary")
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             row.prop(self.bprops, "physical_or_virtual")
-            row = self.layout.row()
+            op = row.operator("bim.copy_boundary_attribute_to_selection", text="", icon="COPYDOWN")
+            op.name = "PhysicalOrVirtualBoundary"
+            row = self.layout.row(align=True)
             row.prop(self.bprops, "internal_or_external")
+            op = row.operator("bim.copy_boundary_attribute_to_selection", text="", icon="COPYDOWN")
+            op.name = "InternalOrExternalBoundary"
         else:
             row = self.layout.row()
             row.operator("bim.enable_editing_boundary", icon="GREASEPENCIL", text="Edit")
@@ -125,6 +129,8 @@ class BIM_PT_Boundary(Panel):
         if hasattr(boundary, ifc_attribute):
             row = self.layout.row(align=True)
             row.prop(self.bprops, blender_property)
+            op = row.operator("bim.copy_boundary_attribute_to_selection", text="", icon="COPYDOWN")
+            op.name = ifc_attribute
 
 
 class BIM_PT_SpaceBoundaries(Panel):
