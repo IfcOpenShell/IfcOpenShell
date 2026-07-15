@@ -50,7 +50,7 @@ Used environment variables:
     - ``NO_CLEAN`` - do not clean `ifcopenshell` build directories but continue working on current build
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
-    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (IFC2X3; IFC4; IFC4X3_ADD2) - to be supplied as `2x3;4`
+    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (8 schemas), to be supplied as `2x3;4;4x3_add2`
     - ``USE_OCCT`` - whether to use official Open CASCADE instead of Community Edition
     (`true` by default, any other value is considered `false`)
     - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
