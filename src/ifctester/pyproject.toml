@@ -15,7 +15,17 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["ifcopenshell", "python-dateutil", "xmlschema", "numpy", "odfpy", "pystache", "bcf-client", "flask"]
+dependencies = [
+    "ifcopenshell",
+    "python-dateutil",
+    "xmlschema",
+    "numpy",
+    "odfpy",
+    "pystache",
+    "bcf-client",
+    "flask",
+    "typing_extensions",
+]
 
 [project.optional-dependencies]
 advanced = [

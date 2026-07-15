@@ -71,7 +71,11 @@ class LoadByDirection(TypedDict):
 
 ProcessedLoad = TypedDict(
     "ProcessedLoad",
-    {"linear loads": LoadByDirection, "max linear load": float, "discrete loads": list[list[DiscreteConfigItem]]},
+    {
+        "linear loads": dict[str, LoadByDirection] | None,
+        "max linear load": float,
+        "discrete loads": list[list[DiscreteConfigItem]],
+    },
 )
 
 
@@ -845,13 +849,16 @@ class ShaderInfo:
         v = l1[1] + fac * (pos - l1[0])
         return v
 
-    def interpolate(self, pos: float, loadinfo: list[LoadConfigItem], start: int, end: int, key: str) -> np.ndarray:
+    def interpolate(self, pos: float, loadinfo: list[LoadConfigItem], start: int, end: int) -> np.ndarray:
         """interpolate the result vectors between load poits"""
         result = np.zeros(6)
         for i in range(6):
-            value1 = [loadinfo[start]["pos"], loadinfo[start][key][i]]  # [position, force_component]
-            value2 = [loadinfo[end]["pos"], loadinfo[end][key][i]]  #      [position, force_component]
-            result[i] = self.interp1d(value1, value2, pos)  #             interpolated [position, force_component]
+            # [position, force_component]
+            value1 = [loadinfo[start]["pos"], loadinfo[start]["load values"][i]]
+            # [position, force_component]
+            value2 = [loadinfo[end]["pos"], loadinfo[end]["load values"][i]]
+            # interpolated [position, force_component]
+            result[i] = self.interp1d(value1, value2, pos)
         return result
 
     def get_before_and_after(self, pos: float, load_config_list: list[list[LoadConfigItem]]) -> dict[str, list[float]]:
@@ -895,8 +902,8 @@ class ShaderInfo:
                         load_before += config[end]["load values"]
 
                 elif end - start == 1:
-                    load_before += self.interpolate(pos, config, start, end, "load values")
-                    load_after += self.interpolate(pos, config, start, end, "load values")
+                    load_before += self.interpolate(pos, config, start, end)
+                    load_after += self.interpolate(pos, config, start, end)
                 start += 1
                 end -= 1
         return_value = {"before": load_before.tolist(), "after": load_after.tolist()}
