@@ -252,6 +252,7 @@ cmake-format = "gersemi . --in-place"
 # --ignore unresolved-reference: walrus operator false positives in ty.
 cmd = """
     ty check
+    nix/
     src/bcf
     src/bsdd
     src/ifc2ca
