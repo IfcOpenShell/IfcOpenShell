@@ -371,6 +371,24 @@ namespace ifcopenshell {
 				static constexpr double defaultvalue = -1.;
 			};
 
+			struct SvgRidgeAngleMinDegrees : public SettingBase<SvgRidgeAngleMinDegrees, double> {
+				static constexpr const char* const name = "svg-ridge-angle-min-degrees";
+				static constexpr const char* const description = "SVG edge classification (issue #3668): minimum convex dihedral deviation from flat, in degrees, for a projection edge to be classified as 'sharp' rather than 'flush'.";
+				static constexpr double defaultvalue = 45.;
+			};
+
+			struct SvgValleyAngleMinDegrees : public SettingBase<SvgValleyAngleMinDegrees, double> {
+				static constexpr const char* const name = "svg-valley-angle-min-degrees";
+				static constexpr const char* const description = "SVG edge classification (issue #3668): minimum concave dihedral deviation from flat, in degrees, for a projection edge to be classified as 'crease' rather than 'flush'.";
+				static constexpr double defaultvalue = 12.;
+			};
+
+			struct SvgEmitFlushEdges : public SettingBase<SvgEmitFlushEdges, bool> {
+				static constexpr const char* const name = "svg-emit-flush-edges";
+				static constexpr const char* const description = "SVG edge classification (issue #3668): whether to emit 'flush' projection edges (dihedral deviation below both ridge/valley thresholds). Defaults to false, i.e. flush edges are omitted from the output.";
+				static constexpr bool defaultvalue = false;
+			};
+
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
 				static constexpr const char* const name = "keep-bounding-boxes";
 				static constexpr const char* const description =
@@ -653,7 +671,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }

@@ -24,6 +24,14 @@ a text, a tspan {  fill: blue !important;  text-decoration: underline;}
 a:hover { cursor: pointer; }
 .cut { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; fill-rule: evenodd; }
 .projection { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
+/* SVG edge classification (issue #3668): see edge-classification.md. These select directly on
+   the <path> element (each classified projection edge carries its own class), so they win over
+   the inherited .projection rule above regardless of specificity. */
+path.outline { stroke: black; stroke-width: 0.35; stroke-opacity: 1; }
+path.boundary { stroke: black; stroke-width: 0.3; stroke-opacity: 0.9; }
+path.sharp { stroke: black; stroke-width: 0.25; stroke-opacity: 0.85; }
+path.crease { stroke: black; stroke-width: 0.18; stroke-opacity: 0.7; }
+path.flush { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; }
 .surface { stroke: none; fill: #fff; fill-rule: evenodd; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .IfcAnnotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }

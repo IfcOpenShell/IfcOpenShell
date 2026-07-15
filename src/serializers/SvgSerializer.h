@@ -56,6 +56,7 @@
 #include <string>
 #include <limits>
 #include <array>
+#include <tuple>
 
 typedef std::pair<const IfcUtil::IfcBaseEntity*, std::string> drawing_key;
 
@@ -212,9 +213,16 @@ namespace {
 	private:
 		const HLRAlgo_Projector& projector_;
 		const std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>* product_shapes_ = nullptr;
+		// SVG edge classification (issue #3668): per-(product, class) edge-only sub-shapes,
+		// classified pre-HLR on the original (real-face) topology. Queried via
+		// VCompound(S)/OutLineVCompound(S), which correlate by the identity of the *original*
+		// edges added to the algorithm -- not by the reconstructed output -- so this works even
+		// though HLR's own output compounds carry no face topology at all. Empty class string
+		// means "unclassified" (used for the two fallback cases below).
+		const std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>>* classified_shapes_ = nullptr;
 
 	public:
-		typedef std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> result_type;
+		typedef std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> result_type;
 
 		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
 		{}
@@ -223,8 +231,29 @@ namespace {
 			product_shapes_ = product_shapes;
 		}
 
+		void set_classified_shapes(const std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>>* classified_shapes) {
+			classified_shapes_ = classified_shapes;
+		}
+
 		result_type operator()(boost::blank&) const {
 			throw std::runtime_error("");
+		}
+
+		template <typename HlrToShapeT>
+		result_type extract(HlrToShapeT& hlr_shapes) {
+			result_type r;
+			if (classified_shapes_ && !classified_shapes_->empty()) {
+				for (auto& t : *classified_shapes_) {
+					r.push_back({ std::get<0>(t), std::get<1>(t), occt_join(hlr_shapes.OutLineVCompound(std::get<2>(t)), hlr_shapes.VCompound(std::get<2>(t))) });
+				}
+			} else if (product_shapes_) {
+				for (auto& p : *product_shapes_) {
+					r.push_back({ p.first, std::string(), occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
+				}
+			} else {
+				r.push_back({ nullptr, std::string(), occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound()) });
+			}
+			return r;
 		}
 
 		result_type operator()(opencascade::handle<HLRBRep_Algo>& algo) {
@@ -232,15 +261,7 @@ namespace {
 			algo->Update();
 			algo->Hide();
 			HLRBRep_HLRToShape hlr_shapes(algo);
-			if (product_shapes_) {
-				std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> r;
-				for (auto& p : *product_shapes_) {
-					r.push_back({ p.first, occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
-				}
-				return r;
-			} else {
-				return { {nullptr, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound())}};
-			}
+			return extract(hlr_shapes);
 		}
 
 		result_type operator()(opencascade::handle<HLRBRep_PolyAlgo>& algo) {
@@ -248,15 +269,7 @@ namespace {
 			algo->Update();
 			HLRBRep_PolyHLRToShape hlr_shapes;
 			hlr_shapes.Update(algo);
-			if (product_shapes_) {
-				std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> r;
-				for (auto& p : *product_shapes_) {
-					r.push_back({ p.first, occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
-				}
-				return r;
-			} else {
-				return { {nullptr, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound()) } };
-			}
+			return extract(hlr_shapes);
 		}
 	};
 
@@ -367,6 +380,8 @@ namespace {
 
 		std::multimap<double, face_info> large_ortho_faces_;
 		std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> items_;
+		// SVG edge classification (issue #3668): see add_classified_edges().
+		std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> classified_items_;
 
 		Logger& logger_;
 
@@ -389,6 +404,16 @@ namespace {
 			gp_Trsf trsf;
 			trsf.SetTransformation(view_direction.Position());
 			projector_ = HLRAlgo_Projector(trsf, false, 1.);
+		}
+
+		// SVG edge classification (issue #3668): register an edge-only sub-shape of `product`'s
+		// original (pre-HLR, real-face) geometry under a given class name (e.g. "outline",
+		// "sharp"). The full shape must still be added via add() as usual for correct occlusion;
+		// this only affects which *class* each edge's visible portion is later extracted as, via
+		// HLRBRep_HLRToShape::VCompound(S)/OutLineVCompound(S) in hlr_calc, which correlate by the
+		// identity of the original edges within S.
+		void add_classified_edges(const IfcUtil::IfcBaseEntity* product, const std::string& cls, const TopoDS_Shape& edges) {
+			classified_items_.push_back({ product, cls, edges });
 		}
 
 		bool is_obscured_(TopoDS_Shape* sit) {
@@ -510,7 +535,7 @@ namespace {
 			}
 		}
 
-		std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> build() {
+		std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> build() {
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
 				if (!use_prefiltering_ || !is_obscured_(&it->second)) {
@@ -522,11 +547,12 @@ namespace {
 			if (use_prefiltering_) {
 				logger_.Notice("SER", 35, "Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
 			}
-			
+
 			hlr_calc vis(projector_);
 			if (segment_projection_) {
 				vis.set_product_shape(&items_);
 			}
+			vis.set_classified_shapes(&classified_items_);
 			return boost::apply_visitor(vis, engine_);
 		}
 	};
@@ -569,6 +595,11 @@ protected:
 	bool only_valid_ = false;
 
 	int profile_threshold_;
+
+	// SVG edge classification (issue #3668): see classify_edge_from_faces() in SvgSerializer.cpp.
+	double svg_ridge_angle_min_deg_;
+	double svg_valley_angle_min_deg_;
+	bool svg_emit_flush_edges_;
 
 	IfcParse::IfcFile* file;
 	const IfcUtil::IfcBaseEntity* storey_;
@@ -623,6 +654,9 @@ public:
 		, mirror_x_(false)
 		, unify_inputs_(false)
 		, profile_threshold_(-1)
+		, svg_ridge_angle_min_deg_(45.)
+		, svg_valley_angle_min_deg_(12.)
+		, svg_emit_flush_edges_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -641,7 +675,7 @@ public:
     bool ready();
     void write(const IfcGeom::TriangulationElement* /*o*/) {}
     void write(const IfcGeom::BRepElement* o);
-    void write(path_object& p, const TopoDS_Shape& wire, boost::optional<std::vector<double>> dash_array=boost::none);
+    void write(path_object& p, const TopoDS_Shape& wire, boost::optional<std::vector<double>> dash_array=boost::none, boost::optional<std::string> css_class=boost::none);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, const IfcUtil::IfcBaseEntity* storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
