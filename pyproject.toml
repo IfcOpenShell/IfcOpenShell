@@ -212,8 +212,10 @@ exclude = [
 
 dev-setup.sequence = [
     {cmd = "uv sync"},
+    {cmd = "uv pip install -e ./src/bsdd/"},
     {cmd = "uv pip install -e ./src/ifcopenshell-python/[advanced,dev]"},
     {cmd = "uv pip install -e ./src/ifcedit/"},
+    {cmd = "uv pip install -e ./src/ifcpatch/"},
     {cmd = "uv pip install -e ./src/ifcquery/"},
     {cmd = "uv pip install -e './src/ifcmcp/[mcp]'"},
     {cmd = "uv pip install -r src/bonsai/requirements-dev.txt"},
