@@ -3446,45 +3446,35 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Couldn't find any styles associated with the active representation item.")
             return {"CANCELLED"}
 
-        # Helper function to get all representation items (including mapped)
-        def get_all_representation_items(obj):
-            items = set()
-            element = tool.Ifc.get_entity(obj)
-            if not element or not element.Representation:
-                return items
+        # Resolve an object's active representation down to its base geometry items,
+        # unwrapping mapped items (Revit families) and boolean results (openings/cuts)
+        # so we reach the items that actually carry styles.
+        def get_base_representation_items(obj):
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation or not representation.is_a("IfcRepresentation"):
+                return
+            yield from ifcopenshell.util.representation.resolve_base_items(representation)
 
-            for rep in element.Representation.Representations:
-                for item in rep.Items:
-                    if item.is_a("IfcMappedItem"):
-                        mapped = item.MappingSource.MappedRepresentation
-                        items.update(mapped.Items)
-                    else:
-                        items.add(item)
-            return items
+        # Unassign the style from the active representation item.
+        tool.Style.assign_style_to_representation_item(active_representation_item, None)
+        tool.Geometry.reload_representation(active_obj)
 
-        # Unassign styles from the active representation item
-        for style in active_styles:
-            tool.Style.assign_style_to_representation_item(active_representation_item, None)
-            tool.Geometry.reload_representation(active_obj)
-            break
-
-        # Iterate over other selected objects and unassign matching styles
+        # Iterate over other selected objects and unassign matching styles.
         for obj in context.selected_objects:
             if obj == active_obj:
                 continue
 
-            for item in get_all_representation_items(obj):
+            for item in get_base_representation_items(obj):
                 item_styles = set()
                 if hasattr(item, "StyledByItem"):
                     for styled_by_item in item.StyledByItem:
                         if hasattr(styled_by_item, "Styles"):
                             item_styles.update(styled_by_item.Styles)
 
-                for style in item_styles:
-                    if style in active_styles:
-                        tool.Style.assign_style_to_representation_item(item, None)
-                        tool.Geometry.reload_representation(obj)
-                        break  # Only remove one matching style per object
+                if item_styles & active_styles:
+                    tool.Style.assign_style_to_representation_item(item, None)
+                    tool.Geometry.reload_representation(obj)
+                    break  # Only remove one matching style per object
 
         bpy.ops.bim.disable_editing_representation_items()
         bpy.ops.bim.enable_editing_representation_items()
