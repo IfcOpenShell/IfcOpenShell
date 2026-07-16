@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import calendar
 import datetime
 import json
 import os
@@ -43,7 +44,6 @@ from bonsai.bim.module.light.data import SolarData
 from bonsai.bim.module.light.decorator import SolarDecorator
 
 sun_position = tool.Blender.get_addon("sun_position")
-now = datetime.datetime.now()
 
 with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
     spectraldb: dict[str, dict[str, str]] = json.load(f)
@@ -72,8 +72,8 @@ def update_coordinates(self: "BIMSolarProperties", context: bpy.types.Context) -
 def update_latlong(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
     sun_props = tool.Blender.get_sun_props()
     assert sun_props
-    sun_props.longitude = sun_props.longitude
-    sun_props.latitude = sun_props.latitude
+    sun_props.longitude = self.longitude
+    sun_props.latitude = self.latitude
     self["coordinates"] = sun_props.coordinates
     update_sun_path(self)
 
@@ -135,6 +135,14 @@ def update_resolution(self: "RadianceExporterProperties", context: bpy.types.Con
     context.scene.render.resolution_y = self.radiance_resolution_y
 
 
+def update_day(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
+    """Clamp the day to the valid range for the current month/year."""
+    max_day = calendar.monthrange(self.year, self.month)[1]
+    if self.day > max_day:
+        self["day"] = max_day
+    update_sun_path(self)
+
+
 def update_sun_path(self: "BIMSolarProperties", context: Union[bpy.types.Context, None] = None) -> None:
     if not SolarData.is_loaded:
         SolarData.load()
@@ -152,9 +160,13 @@ def update_sun_path(self: "BIMSolarProperties", context: Union[bpy.types.Context
     sun_props.sun_distance = self.sun_path_size
     sun_props.latitude = self.latitude
     sun_props.longitude = self.longitude
+    # Clamp day to valid range for the current month/year
+    max_day = calendar.monthrange(self.year, self.month)[1]
+    day = min(self.day, max_day)
+
     sun_props.year = self.year
     sun_props.month = self.month
-    sun_props.day = self.day
+    sun_props.day = day
     sun_props.time = self.hour + (self.minute / 60)
     # Preserve IFC sign convention
     sun_props.north_offset = self.true_north * -1
@@ -181,8 +193,11 @@ def update_sun_path(self: "BIMSolarProperties", context: Union[bpy.types.Context
     )
     sun_vector = sun_position.sun_calc.get_sun_vector(azimuth, elevation) * sun_props.sun_distance
     props.sun_position = sun_vector
-    # sun_vector.z = max(0, sun_vector.z)
-    # Light direction is a bit weird?
+
+    # Update Blender viewport light direction for shadow visualization
+    # This coordinate transformation converts from sun_position addon's coordinate system
+    # to Blender's display.light_direction coordinate system
+    # Note: This only affects viewport shading, not the Radiance rendering
     mat = Matrix(((-1.0, 0.0, 0.0, 0.0), (0.0, 0, 1.0, 0.0), (-0.0, -1.0, 0, 0.0), (0.0, 0.0, 0.0, 1.0))).inverted()
     rotation_euler = Euler((elevation - pi / 2, 0, -azimuth))
     rotation_quaternion = rotation_euler.to_quaternion()
@@ -193,6 +208,9 @@ def update_sun_path(self: "BIMSolarProperties", context: Union[bpy.types.Context
 
     assert bpy.context.scene
     assert bpy.context.scene.display
+    # Set viewport light direction based on sun position
+    # If sun is below horizon (z < 0), use default upward direction
+    # Otherwise, use calculated direction from sun position
     if sun_vector.z < 0:
         bpy.context.scene.display.light_direction = mat @ Vector((0, 0, 1))
     else:
@@ -223,6 +241,106 @@ class RadianceMaterial(PropertyGroup):
         color: tuple[float, float, float]
 
 
+class IESLight(PropertyGroup):
+    """Represents a mapping between an IES light file and scene Empty objects.
+
+    Supports two targeting modes:
+    - Object mode: target a single Empty object
+    - Collection mode: target all Empty objects in a collection
+    """
+
+    ies_file_path: StringProperty(
+        name="IES File Path",
+        description="Path to the IES luminaire data file",
+        subtype="FILE_PATH",
+        default="",
+    )
+    use_collection: BoolProperty(
+        name="Use Collection",
+        description="Apply this light to all Empty objects in a collection instead of a single object",
+        default=False,
+    )
+    target_object: PointerProperty(
+        type=bpy.types.Object,
+        name="Target Object",
+        description="Empty object where the light fixture will be placed",
+        poll=lambda self, obj: obj.type == "EMPTY",
+    )
+    target_collection: PointerProperty(
+        type=bpy.types.Collection,
+        name="Target Collection",
+        description="Collection of Empty objects where the light fixture will be placed",
+    )
+    rotation_z: FloatProperty(
+        name="Rotation Z",
+        description="Rotation around Z-axis in degrees (-180 to 180)",
+        min=-180.0,
+        max=180.0,
+        default=0.0,
+        subtype="ANGLE",
+    )
+    is_enabled: BoolProperty(
+        name="Enabled",
+        description="Include this light in the Radiance export",
+        default=True,
+    )
+
+    # Additional lamp properties for customization
+    lamp_type: StringProperty(
+        name="Lamp Type",
+        description="Type of lamp (e.g., 'LED', 'metal halide', 'fluorescent')",
+        default="",
+    )
+    lamp_color: FloatVectorProperty(
+        name="Lamp Color",
+        description="Lamp color (RGB) for custom color adjustments",
+        subtype="COLOR",
+        default=(1.0, 1.0, 1.0),
+        min=0.0,
+        max=1.0,
+        size=3,
+    )
+    multiply_factor: FloatProperty(
+        name="Brightness Factor",
+        description="Multiply all output quantities by this factor (0.1 to 10.0)",
+        min=0.1,
+        max=10.0,
+        default=1.0,
+    )
+    radius: FloatProperty(
+        name="Illum Sphere Radius",
+        description="Radius of illum sphere (ignores geometry from IES file). 0 = use IES geometry",
+        min=0.0,
+        max=10.0,
+        default=0.0,
+    )
+
+    def get_target_empties(self) -> list[bpy.types.Object]:
+        """Return all Empty objects this light targets."""
+        if self.use_collection and self.target_collection is not None:
+            return [obj for obj in self.target_collection.all_objects if obj.type == "EMPTY" and not obj.hide_get()]
+        elif not self.use_collection and self.target_object is not None:
+            try:
+                _ = self.target_object.name
+                if not self.target_object.hide_get():
+                    return [self.target_object]
+            except ReferenceError:
+                pass
+        return []
+
+    if TYPE_CHECKING:
+        ies_file_path: str
+        use_collection: bool
+        target_object: Union[bpy.types.Object, None]
+        target_collection: Union[bpy.types.Collection, None]
+        rotation_z: float
+        is_enabled: bool
+        lamp_type: str
+        lamp_color: tuple[float, float, float]
+        multiply_factor: float
+        radius: float
+
+
 class RadianceExporterProperties(PropertyGroup):
 
     def update_output_dir(self, context) -> None:
@@ -232,6 +350,9 @@ class RadianceExporterProperties(PropertyGroup):
     def update_ifc_file(self, context) -> None:
         if self.ifc_file:
             self.ifc_file = bpy.path.abspath(self.ifc_file)
+
+    def get_categories(self, context):
+        return sorted([(k, k, "") for k in spectraldb.keys()])
 
     def add_material_mapping(self, style_id: str, style_name: str) -> RadianceMaterial:
         item = self.materials.add()
@@ -247,7 +368,10 @@ class RadianceExporterProperties(PropertyGroup):
             mappings = json.load(f)
 
         for style_id, mapping in mappings.items():
-            material = self.get_material_mapping(mapping["name"])
+            # Try matching by style_id first, fall back to name
+            material = self.get_material_mapping_by_id(style_id)
+            if material is None:
+                material = self.get_material_mapping(mapping["name"])
             if material:
                 material.style_id = style_id
                 material.category = mapping["category"]
@@ -259,11 +383,14 @@ class RadianceExporterProperties(PropertyGroup):
                 new_material.subcategory = mapping["subcategory"]
                 new_material.is_mapped = True
 
+    def get_material_mapping_by_id(self, style_id: str) -> Union[RadianceMaterial, None]:
+        return next((item for item in self.materials if item.style_id == style_id), None)
+
     def get_material_mapping(self, style_name: str) -> Union[RadianceMaterial, None]:
         return next((item for item in self.materials if item.name == style_name), None)
 
     def set_material_mapping(self, style_id: str, style_name: str, category: str, subcategory: str) -> None:
-        item = self.get_material_mapping(style_name)
+        item = self.get_material_mapping_by_id(style_id) or self.get_material_mapping(style_name)
         if item:
             item.category = category
             item.subcategory = subcategory
@@ -279,8 +406,12 @@ class RadianceExporterProperties(PropertyGroup):
             if item.category and item.subcategory
         }
 
-    def unmap_material(self, style_name: str) -> None:
-        item = self.get_material_mapping(style_name)
+    def unmap_material(self, style_name: str, style_id: str = "") -> None:
+        item = None
+        if style_id:
+            item = self.get_material_mapping_by_id(style_id)
+        if item is None:
+            item = self.get_material_mapping(style_name)
         if item:
             item.category = ""
             item.subcategory = ""
@@ -288,6 +419,14 @@ class RadianceExporterProperties(PropertyGroup):
 
     is_exporting: bpy.props.BoolProperty(
         name="Is Exporting", description="Whether the OBJ export is in progress", default=False
+    )
+
+    is_preparing: bpy.props.BoolProperty(
+        name="Is Preparing", description="Whether scene preparation is in progress", default=False
+    )
+
+    is_rendering: bpy.props.BoolProperty(
+        name="Is Rendering", description="Whether a Radiance render is in progress", default=False
     )
 
     categories = [
@@ -316,16 +455,13 @@ class RadianceExporterProperties(PropertyGroup):
             print(f"Material '{active_material.name}' mapped to {self.category} - {self.subcategory}")
 
     category: bpy.props.EnumProperty(
-        items=categories, name="Category", description="Material category", update=update_material_mapping
+        items=get_categories, name="Category", description="Material category", update=update_material_mapping
     )
 
     def get_subcategories(self, context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
-        global SUBCATEGORIES_ENUM_ITEMS  # ty: ignore[unresolved-global]
         if self.category in spectraldb:
-            SUBCATEGORIES_ENUM_ITEMS = [(k, k, "") for k in spectraldb[self.category].keys()]
-        else:
-            SUBCATEGORIES_ENUM_ITEMS = []
-        return SUBCATEGORIES_ENUM_ITEMS
+            return sorted([(k, k, "") for k in spectraldb[self.category].keys()])
+        return []
 
     subcategory: bpy.props.EnumProperty(
         items=get_subcategories, name="Subcategory", description="Material subcategory", update=update_material_mapping
@@ -334,12 +470,9 @@ class RadianceExporterProperties(PropertyGroup):
     materials: CollectionProperty(type=RadianceMaterial)
     active_material_index: IntProperty()
 
-    # material_mappings: bpy.props.CollectionProperty(type=bpy.types.PropertyGroup, name="Material Mappings")
-    # material_mappings: CollectionProperty(type=MaterialMapping)
-
     should_load_from_memory: BoolProperty(
         name="Load from Memory",
-        default=False,
+        default=True,
     )
 
     radiance_resolution_x: IntProperty(
@@ -348,6 +481,13 @@ class RadianceExporterProperties(PropertyGroup):
     radiance_resolution_y: IntProperty(
         name="Y", description="Vertical resolution of the output image", default=1080, min=1, update=update_resolution
     )
+    radiance_bin_dir: StringProperty(
+        name="Radiance Bin",
+        description="Path to the Radiance bin folder (containing falsecolor, pcomb, etc.)",
+        default="",
+        subtype="DIR_PATH",
+    )
+
     output_dir: StringProperty(
         name="Output Directory",
         description="Directory to output Radiance files",
@@ -361,6 +501,15 @@ class RadianceExporterProperties(PropertyGroup):
         default="",
         subtype="FILE_PATH",
         update=lambda self, context: self.update_ifc_file(context),
+    )
+
+    ambient_bounces: IntProperty(
+        name="Ambient Bounces",
+        description="Number of indirect light bounces. Higher = more light fills dark areas but slower. "
+        "1 is minimal, 2-3 recommended for IES-only scenes, 4+ for complex interiors",
+        min=0,
+        max=8,
+        default=2,
     )
 
     radiance_quality: EnumProperty(
@@ -393,14 +542,15 @@ class RadianceExporterProperties(PropertyGroup):
         name="Output File Format",
         description="Format of the output image file",
         items=[
-            ("HDR", "HDR + Tiff", "High Dynamic Range"),
+            ("HDR", "HDR", "High Dynamic Range (HDR) file only"),
+            ("HDR_TIFF", "HDR + Tiff", "High Dynamic Range (HDR) and Tiff files"),
         ],
-        default="HDR",
+        default="HDR_TIFF",
     )
 
     use_hdr: BoolProperty(
-        name="Use HDR",
-        description="Use HDR image format",
+        name="HDR Environment Map",
+        description="Use an HDR image as the sky dome for realistic environment lighting and reflections",
         default=True,
     )
 
@@ -411,6 +561,40 @@ class RadianceExporterProperties(PropertyGroup):
             ("Noon", "Noon", "Noon"),
         ],
         default="Noon",
+    )
+
+    use_sun: BoolProperty(
+        name="Use Sun",
+        description="Use sun position data to generate sky. If disabled, generates a default sky without sun",
+        default=True,
+    )
+
+    # Sky generation parameters
+    sky_condition: EnumProperty(
+        name="Sky Condition",
+        description="Type of sky condition to generate",
+        items=[
+            ("SUNNY_WITH_SUN", "Sunny with Sun", "Clear sky with direct sun"),
+            ("SUNNY_WITHOUT_SUN", "Sunny without Sun", "Clear sky without direct sun"),
+            ("CLOUDY", "Cloudy", "Overcast sky condition"),
+        ],
+        default="SUNNY_WITH_SUN",
+    )
+
+    ground_reflectance: FloatProperty(
+        name="Ground Reflectance",
+        description="Ground reflectance value (0.0 to 1.0)",
+        min=0.0,
+        max=1.0,
+        default=0.2,
+    )
+
+    turbidity: FloatProperty(
+        name="Turbidity",
+        description="Atmospheric turbidity (1.0 to 10.0). Lower values = clearer sky",
+        min=1.0,
+        max=10.0,
+        default=3.0,
     )
 
     use_active_camera: BoolProperty(
@@ -424,8 +608,90 @@ class RadianceExporterProperties(PropertyGroup):
         poll=lambda self, object: object.type == "CAMERA",
     )
 
+    ies_lights: CollectionProperty(
+        type=IESLight,
+        name="IES Lights",
+        description="Collection of IES light fixtures mapped to scene objects",
+    )
+    active_ies_light_index: IntProperty(
+        name="Active IES Light Index",
+        description="Index of the active IES light in the collection",
+        default=-1,
+    )
+
+    # False color analysis properties
+    use_false_color: BoolProperty(
+        name="Generate False Color Image",
+        description="Generate a false color HDR image for illuminance analysis",
+        default=False,
+    )
+
+    false_color_label: EnumProperty(
+        name="Legend Label Unit",
+        description="Unit for the false color legend",
+        items=[
+            ("fc", "Foot-Candles", "US lighting standard unit"),
+            ("lux", "Lux", "International lighting standard unit"),
+            ("cd/m2", "Candela per m²", "Luminance unit"),
+        ],
+        default="fc",
+    )
+
+    false_color_scale: FloatProperty(
+        name="Scale Factor",
+        description="Maximum scale value for the false color legend",
+        min=0.1,
+        max=100000.0,
+        default=3.0,
+    )
+
+    false_color_steps: IntProperty(
+        name="Legend Steps",
+        description="Number of divisions on the legend. Contour increment = Scale / Steps. "
+        "E.g. Scale=20, Steps=10 → contours at 2, 4, 6, 8...",
+        min=2,
+        max=50,
+        default=10,
+    )
+
+    false_color_contour_lines: BoolProperty(
+        name="Enable Contour Lines",
+        description="Add contour lines to the false color image",
+        default=True,
+    )
+
+    false_color_contour_mode: EnumProperty(
+        name="Contour Mode",
+        description="Contour line display mode",
+        items=[
+            (
+                "WITH_BG",
+                "Contour Lines with Background",
+                "Show contour lines overlaid on the colored false color background",
+            ),
+            ("WITHOUT_BG", "Contour Lines Only", "Show only contour lines without the false color background"),
+        ],
+        default="WITH_BG",
+    )
+
+    false_color_multiplier: FloatProperty(
+        name="Multiplier",
+        description="Conversion multiplier (179.0 for lux, 16.6295 for foot-candles)",
+        min=0.1,
+        max=1000.0,
+        default=16.629505759940542,
+    )
+
+    false_color_output_name: StringProperty(
+        name="False Color Output Name",
+        description="Name of the false color output file (without extension)",
+        default="false_color",
+    )
+
     if TYPE_CHECKING:
         is_exporting: bool
+        is_preparing: bool
+        is_rendering: bool
         category: str
         subcategory: str
         materials: bpy.types.bpy_prop_collection_idprop[RadianceMaterial]
@@ -433,8 +699,10 @@ class RadianceExporterProperties(PropertyGroup):
         should_load_from_memory: bool
         radiance_resolution_x: int
         radiance_resolution_y: int
+        radiance_bin_dir: str
         output_dir: str
         ifc_file: str
+        ambient_bounces: int
         radiance_quality: Literal["LOW", "MEDIUM", "HIGH"]
         radiance_detail: Literal["LOW", "MEDIUM", "HIGH"]
         radiance_variability: Literal["LOW", "MEDIUM", "HIGH"]
@@ -442,8 +710,22 @@ class RadianceExporterProperties(PropertyGroup):
         output_file_format: Literal["HDR"]
         use_hdr: bool
         choose_hdr_image: Literal["Noon"]
+        use_sun: bool
+        sky_condition: Literal["SUNNY_WITH_SUN", "SUNNY_WITHOUT_SUN", "CLOUDY"]
+        ground_reflectance: float
+        turbidity: float
         use_active_camera: bool
         selected_camera: Union[bpy.types.Object, None]
+        ies_lights: bpy.types.bpy_prop_collection_idprop[IESLight]
+        active_ies_light_index: int
+        use_false_color: bool
+        false_color_label: Literal["fc", "lux", "cd/m2"]
+        false_color_scale: float
+        false_color_steps: int
+        false_color_contour_lines: bool
+        false_color_contour_mode: Literal["WITH_BG", "WITHOUT_BG"]
+        false_color_multiplier: float
+        false_color_output_name: str
 
 
 class BIMSolarProperties(PropertyGroup):
@@ -470,11 +752,12 @@ class BIMSolarProperties(PropertyGroup):
     )
     timezone: StringProperty(name="Timezone", default="Etc/GMT")
     true_north: FloatProperty(name="True North", min=-pi, max=pi, subtype="ANGLE", update=update_sun_path)
-    year: IntProperty(name="Year", min=1, max=9999, default=now.year, update=update_sun_path)
-    month: IntProperty(name="Month", min=1, max=12, default=now.month, update=update_sun_path)
-    day: IntProperty(name="Date", min=1, max=31, default=now.day, update=update_sun_path)
-    hour: IntProperty(name="Hour", min=0, max=23, default=now.hour, update=update_sun_path)
-    minute: IntProperty(name="Minute", min=0, max=59, default=now.minute, update=update_sun_path)
+    # Defaults are static; use the "Now" button (LightSetTimeToNow) to set current time.
+    year: IntProperty(name="Year", min=1, max=9999, default=2025, update=update_day)
+    month: IntProperty(name="Month", min=1, max=12, default=1, update=update_day)
+    day: IntProperty(name="Date", min=1, max=31, default=1, update=update_day)
+    hour: IntProperty(name="Hour", min=0, max=23, default=12, update=update_sun_path)
+    minute: IntProperty(name="Minute", min=0, max=59, default=0, update=update_sun_path)
     sun_position: FloatVectorProperty(name="Sun Position", subtype="XYZ", default=(0, 0, 0))
     sun_path_origin: FloatVectorProperty(name="Sun Path Origin", subtype="XYZ", default=(0, 0, 0))
     sun_path_size: FloatProperty(name="Sun Path Size", min=0.1, default=50, update=update_sun_path)
