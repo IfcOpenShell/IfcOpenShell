@@ -432,12 +432,26 @@ class DocProperties(PropertyGroup):
     active_sheet_index: IntProperty(name="Active Sheet Index")
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=update_should_draw_decorations)
+    should_use_hlr_poly: BoolProperty(
+        name="Use Polygonal Hidden Line Removal",
+        description=(
+            "Compute hidden line removal on a coarsely faceted mesh, which is fast and reliable but renders "
+            "circles, arcs, and other curves as choppy straight-edged polygons.\n\n"
+            "Disable this to run hidden line removal on the exact curved geometry instead, producing smoother "
+            "round elements in the SVG. This is slower and more experimental (e.g. on very large or complex "
+            "models), so it is recommended to only disable this if you notice choppy curves in your drawings.\n\n"
+            "Global option for all drawings."
+        ),
+        default=True,
+        options=set(),
+    )
 
     if TYPE_CHECKING:
         should_use_underlay_cache: bool
         should_use_linework_cache: bool
         should_use_annotation_cache: bool
         should_draw_linked_projects: bool
+        should_use_hlr_poly: bool
         is_editing_drawings: bool
         is_editing_schedules: bool
         is_editing_references: bool
