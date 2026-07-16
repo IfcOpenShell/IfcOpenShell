@@ -3,11 +3,12 @@
 apt update && apt install git wget curl ptpython mono-devel micro
 mkdir -p /home/runner/work/IfcOpenShell && cd /home/runner/work/IfcOpenShell
 git clone https://github.com/IfcOpenShell/IfcOpenShell
-cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/
+cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/bonsai/
 micro choco_release.py # paste this script, comment out push command
 export CHOCO_TOKEN="secret_choco_release_token"
 python3 choco_release.py
 """
+
 import datetime
 import hashlib
 import os
@@ -28,7 +29,7 @@ def get_repo_tag_names() -> list[str]:
 
 
 def request_repo_info(url: str):
-    req  = request.Request(url)
+    req = request.Request(url)
     resp = request.urlopen(req)
     if not resp.status == 200:
         print(f"[ERROR] could not contact server: {url}")
@@ -85,13 +86,15 @@ def run(command: str) -> None:
 
 start = datetime.datetime.now()
 
-URL_CHOCO_PACKAGE  = "https://community.chocolatey.org/packages/blender"
-URL_BLENDER_CMAKE  = "https://raw.githubusercontent.com/blender/blender/{}/build_files/cmake/Modules/FindPythonLibsUnix.cmake"
-RE_BLENDER_VERSION_MIN_MAJ        = r"Latest Version.+<span>Blender (\d+\.\d+)\..+</span>"
-RE_BLENDER_VERSION_MIN_MAJ_PAT    = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
+URL_CHOCO_PACKAGE = "https://community.chocolatey.org/packages/blender"
+URL_BLENDER_CMAKE = (
+    "https://raw.githubusercontent.com/blender/blender/{}/build_files/cmake/Modules/FindPythonLibsUnix.cmake"
+)
+RE_BLENDER_VERSION_MIN_MAJ = r"Latest Version.+<span>Blender (\d+\.\d+)\..+</span>"
+RE_BLENDER_VERSION_MIN_MAJ_PAT = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
 RE_BLENDER_PYTHON_VERSION_MAJ_MIN = r"\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)"
 
-BLENDERBIM_DIR = pathlib.Path("/home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/")
+BLENDERBIM_DIR = pathlib.Path("/home/runner/work/IfcOpenShell/IfcOpenShell/choco/bonsai/")
 
 print("_____ check choco release needed?")
 
@@ -148,7 +151,7 @@ print(f"{blender_python_version_maj_min=}")
 python_version = f"py{found[0].replace('.', '')}"
 print(f"{python_version=}")
 
-blenderbim_build_version = target_release_tag.replace("blenderbim-", "")
+blenderbim_build_version = target_release_tag.replace("bonsai-", "")
 
 # url_blenderbim_py3x_win_zip
 release_zip_file_name, url_blenderbim_py3x_win_zip = get_release_zip(target_release_tag)
@@ -166,15 +169,15 @@ topics = {
         "path": HERE_DIR / "blenderbim.nuspec",
         "key_values": {
             "latest_blender_version_maj_min_pat": latest_blender_release_maj_min_pat,
-            "blenderbim_build_version"          : blenderbim_build_version,
+            "blenderbim_build_version": blenderbim_build_version,
         },
     },
     "install": {
         "path": HERE_DIR / "tools" / "chocolateyinstall.ps1",
         "key_values": {
-            "url_blenderbim_py3x_win_zip"      : url_blenderbim_py3x_win_zip,
+            "url_blenderbim_py3x_win_zip": url_blenderbim_py3x_win_zip,
             "sha256sum_blenderbim_py3x_win_zip": sha256sum_blenderbim_py3x_win_zip,
-            "latest_blender_version_maj_min"   : blender_version_min_maj,
+            "latest_blender_version_maj_min": blender_version_min_maj,
         },
     },
     "uninstall": {
