@@ -27,6 +27,7 @@ import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
@@ -129,13 +130,25 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
             same_ifc_product = element.is_a(ifc_product)
 
             if not same_ifc_product:
-                if not (element.is_a("IfcElement") and ifc_product == "IfcElementType") and not (
-                    element.is_a("IfcElementType") and ifc_product == "IfcElement"
-                ):
-                    self.report(
-                        {"ERROR"}, f"Not supported class reassignment for object '{obj.name}' -> {ifc_product}."
+                # A spatial element (e.g. IfcSite) anchors the containment
+                # hierarchy, so only allow reassigning it to another family when
+                # it actually carries geometry - i.e. it's a real modelled thing
+                # (a bench dropped onto IfcSite -> IfcFurniture) rather than an
+                # empty spatial container we'd be turning into a loose element.
+                # IfcSpatialStructureElement covers IFC2X3, which has no
+                # IfcSpatialElement supertype.
+                is_spatial = element.is_a("IfcSpatialElement") or element.is_a("IfcSpatialStructureElement")
+                if is_spatial:
+                    has_geometry = (
+                        next(ifcopenshell.util.representation.get_representations_iter(element), None) is not None
                     )
-                    return {"CANCELLED"}
+                    if not has_geometry:
+                        self.report(
+                            {"ERROR"},
+                            f"Cannot reassign '{obj.name}' ({element.is_a()}) to {ifc_product}: "
+                            "a spatial element can only be reassigned to another class when it has geometry.",
+                        )
+                        return {"CANCELLED"}
 
             props = tool.Blender.get_object_bim_props(obj)
             props.is_reassigning_class = False
