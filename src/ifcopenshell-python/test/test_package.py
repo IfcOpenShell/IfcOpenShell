@@ -47,6 +47,10 @@ class TestPackageSupportedPlatforms:
 
         BINARY_VERSION = find_make_var("BINARY_VERSION")
         BUILD_COMMIT = find_make_var("BUILD_COMMIT")
+        # Build workflows upload artifacts using a 7-char short SHA.
+        assert (
+            l := len(BUILD_COMMIT)
+        ) == 7, f"BUILD_COMMIT must be a 7-char short SHA, got {BUILD_COMMIT!r} (length {l})"
 
         required_urls: list[str] = []
 
