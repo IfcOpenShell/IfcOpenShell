@@ -576,6 +576,8 @@ assign_matrix_access(revolve);
 
 %template(clashes) std::vector<IfcGeom::clash>;
 
+%ignore IfcGeom::tree::uint8_to_b64;
+
 %include "../ifcgeom/tree.h"
 
 %extend IfcGeom::tree {
