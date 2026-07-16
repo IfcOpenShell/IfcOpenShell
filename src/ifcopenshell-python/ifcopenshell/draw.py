@@ -107,8 +107,7 @@ def main(
     progress_function: Callable = DO_NOTHING,
     logger=None,
 ):
-    if logger is None and ifcopenshell.logger is not None:
-        logger = ifcopenshell.logger.Root()
+    logger = ifcopenshell.logger_or_root(logger)
 
     def by_guid(g):
         for f in files:

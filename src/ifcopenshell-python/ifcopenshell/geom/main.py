@@ -22,6 +22,8 @@ from __future__ import annotations
 from collections.abc import Generator, Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
+import ifcopenshell
+
 from .. import ifcopenshell_wrapper, open
 from ..entity_instance import entity_instance
 from ..file import file
@@ -302,8 +304,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
         logger=None,
     ):
         self.settings = settings
-        if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
-            logger = logger_type.Root()
+        logger = ifcopenshell.logger_or_root(logger)
         if isinstance(file_or_filename, file):
             self.file = file
             file_or_filename = file_or_filename.wrapped_data
@@ -344,10 +345,10 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 include is not None,
                 num_threads,
             )
-            self.this = initializer(*args, *((logger,) if logger is not None else ()))
+            self.this = initializer(*args, *ifcopenshell.optional_logger_args(logger))
         else:
             args = (geometry_library, self.settings, file_or_filename, num_threads)
-            self.this = ifcopenshell_wrapper.construct_iterator(*args, *((logger,) if logger is not None else ()))
+            self.this = ifcopenshell_wrapper.construct_iterator(*args, *ifcopenshell.optional_logger_args(logger))
 
     if has_occ:
 
