@@ -189,7 +189,14 @@ def geometry_classes_introduced_after(target_schema: IFC_SCHEMA, source_schema: 
     (``IfcPolygonalFaceSet``, ``IfcTriangulatedFaceSet``, ``IfcAdvancedBrep``,
     B-splines, advanced surfaces, alignment curves on IFC4X3 → 2X3, …) or
     purge. Defaults match the IFC4 → IFC2X3 case for backwards compatibility
-    with the original caller."""
+    with the original caller.
+
+    Uses :func:`ifcopenshell.schema_by_name` (not the raw
+    ``ifcopenshell_wrapper.schema_by_name``) because the latter has no
+    "IFC4X3" schema registered under that exact identifier in builds that
+    only compile the latest IFC4X3 addendum (e.g. ``IFC4X3_ADD2``, as CI
+    does). Only ``ifcopenshell.schema_by_name`` knows to resolve the bare
+    ISO name to the concrete compiled schema."""
     source = ifcopenshell.schema_by_name(source_schema)
     target = ifcopenshell.schema_by_name(target_schema)
     target_names = {decl.name() for decl in target.entities()}

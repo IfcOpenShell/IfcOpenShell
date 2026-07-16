@@ -208,13 +208,26 @@ class Usecase:
                 allowed_occurrences.add(occurrence_class)
             except RuntimeError:
                 pass
-        mismatched_classes = sorted({o.is_a() for o in related_objects if o.is_a() not in allowed_occurrences})
-        if mismatched_classes:
-            raise TypeError(
-                f"{relating_type.is_a()} cannot type {', '.join(mismatched_classes)} "
-                f"in schema {self.file.schema} (allowed occurrence classes: "
-                f"{', '.join(sorted(allowed_occurrences)) or '<none>'})"
-            )
+        # The buildingSMART implementer agreement map is generated only from
+        # (and only guaranteed complete for) the CorrectTypeAssigned /
+        # CorrectStyleAssigned WHERE rules, which the EXPRESS schema only
+        # declares on IfcElement occurrence/type pairs. Every class the map
+        # does cover has at least one applicable occurrence class by
+        # construction (see bonsai/scripts/generate_util_type_json.py), so an
+        # empty result here always means "outside the map's scope" (e.g.
+        # IfcTask/IfcTaskType, IfcCrewResource/IfcCrewResourceType,
+        # IfcController/IfcControllerType), never "no valid pairing exists".
+        # Only enforce the check when we have positive data to enforce it
+        # with, otherwise every process/resource/control type assignment
+        # would be wrongly rejected.
+        if allowed_occurrences:
+            mismatched_classes = sorted({o.is_a() for o in related_objects if o.is_a() not in allowed_occurrences})
+            if mismatched_classes:
+                raise TypeError(
+                    f"{relating_type.is_a()} cannot type {', '.join(mismatched_classes)} "
+                    f"in schema {self.file.schema} (allowed occurrence classes: "
+                    f"{', '.join(sorted(allowed_occurrences)) or '<none>'})"
+                )
 
         ifc2x3 = self.file.schema == "IFC2X3"
         related_objects_set = set(related_objects)
