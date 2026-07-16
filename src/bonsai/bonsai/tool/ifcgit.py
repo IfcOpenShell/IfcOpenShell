@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 import bpy
 
+import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
 from bonsai.bim.ifc import IfcStore
@@ -50,7 +51,7 @@ if TYPE_CHECKING:
     from bonsai.bim.module.ifcgit.prop import IfcGitProperties
 
 
-class IfcGit:
+class IfcGit(bonsai.core.tool.IfcGit):
     STEP_IDS = dict[str, set[int]]
 
     @classmethod

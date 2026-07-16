@@ -38,6 +38,7 @@ import ifcopenshell.api.context
 import ifcopenshell.api.document
 import ifcopenshell.api.drawing
 import ifcopenshell.api.geometry
+import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.geom
@@ -774,6 +775,32 @@ class Drawing(bonsai.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("TargetView", "MODEL_VIEW")
 
     @classmethod
+    def ensure_drawings_parent_document(cls) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        for document in ifc_file.by_type("IfcDocumentInformation"):
+            if document.Name == "DRAWINGS" and document.Scope == "DRAWINGS":
+                return document
+        document = ifcopenshell.api.document.add_information(ifc_file)
+        if ifc_file.schema == "IFC2X3":
+            attributes = {"DocumentId": "DRAWINGS", "Name": "DRAWINGS", "Scope": "DRAWINGS"}
+        else:
+            attributes = {"Identification": "DRAWINGS", "Name": "DRAWINGS", "Scope": "DRAWINGS"}
+        ifcopenshell.api.document.edit_information(ifc_file, information=document, attributes=attributes)
+        return document
+
+    @classmethod
+    def ensure_drawings_parent_group(cls) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        for group in ifc_file.by_type("IfcGroup"):
+            if group.Name == "DRAWINGS" and group.ObjectType == "DRAWINGS":
+                return group
+        group = ifcopenshell.api.group.add_group(ifc_file)
+        ifcopenshell.api.group.edit_group(
+            ifc_file, group=group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"}
+        )
+        return group
+
+    @classmethod
     def get_group_elements(cls, group: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         for rel in group.IsGroupedBy or []:
             return rel.RelatedObjects
@@ -1140,10 +1167,7 @@ class Drawing(bonsai.core.tool.Drawing):
             new = documents_collection.add()
             new.ifc_definition_id = schedule.id()
             new.name = schedule.Name or "Unnamed"
-            if tool.Ifc.get_schema() == "IFC2X3":
-                new.identification = schedule.DocumentId
-            else:
-                new.identification = schedule.Identification
+            new.identification = tool.Document.get_document_information_id(schedule) or ""
 
     @classmethod
     def get_sheet_identification(cls, sheet: ifcopenshell.entity_instance) -> str:
@@ -1184,10 +1208,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 new.ifc_definition_id = reference.id()
                 new.is_sheet = False
 
-                if tool.Ifc.get_schema() == "IFC2X3":
-                    new.identification = reference.ItemReference or ""
-                else:
-                    new.identification = reference.Identification or ""
+                new.identification = tool.Document.get_external_reference_id(reference) or ""
 
                 new.name = os.path.basename(reference.Location)
                 new.reference_type = reference_description
@@ -2423,9 +2444,8 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_reference_document(
         cls, reference: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
-        if tool.Ifc.get_schema() == "IFC2X3":
-            return reference.ReferenceToDocument[0]
-        return reference.ReferencedDocument
+        # TODO: migrate to document.get_reference_document.
+        return tool.Document.get_reference_document(reference)
 
     @classmethod
     def select_assigned_product(cls, context: bpy.types.Context) -> None:

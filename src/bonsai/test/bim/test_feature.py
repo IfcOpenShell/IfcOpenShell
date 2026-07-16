@@ -30,7 +30,7 @@ from collections.abc import Generator
 from inspect import signature
 from math import radians
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, cast
 
 import bpy
 import ifcopenshell
@@ -140,7 +140,7 @@ class PanelSpy:
             else:
                 props = kwargs.get("data")
                 name = kwargs.get("property")
-            props: bpy.types.bpy_struct
+            props = cast(bpy.types.bpy_struct, props)
             text = kwargs.get("text", props.bl_rna.properties[name].name)
             icon = kwargs.get("icon", None)
             prop_type = props.bl_rna.properties[name].type

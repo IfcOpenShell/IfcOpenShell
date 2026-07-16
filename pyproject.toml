@@ -1,13 +1,8 @@
 [project]
 name = "IfcOpenShell"
 version = "0.0.0"
-dependencies = [
-    "black==26.3.1",
-    "ruff==0.15.12",
-    "poethepoet",
-    "ty==0.0.32",
-    "gersemi==0.26.1",
-]
+# Don't provide requires-python explicitly
+# allowing pyprojects to set their own (e.g. bonsai and general ifcopenshell version differ).
 
 [tool.black]
 line-length = 120
@@ -43,6 +38,7 @@ exclude = [
 # then they will be inherited by projects' .toml files.
 # This allows using assuming different Python version for different projects.
 [tool.ruff]
+line-length = 120
 exclude = [
     # Submodules.
     "src/ifcopenshell-python/ifcopenshell/express",
@@ -83,92 +79,39 @@ ignore = [
 ]
 
 [tool.ty.rules]
-all = "ignore"
+all = "error"
 
 # Structural rules (no deep type inference needed, easier to adapt).
-abstract-method-in-final-class = "error"
-ambiguous-protocol-member = "error"
-conflicting-declarations = "error"
-conflicting-metaclass = "error"
-cyclic-class-definition = "error"
-cyclic-type-alias-definition = "error"
-dataclass-field-order = "error"
-duplicate-base = "error"
-duplicate-kw-only = "error"
-empty-body = "error"
-escape-character-in-forward-annotation = "error"
-final-on-non-method = "error"
-final-without-value = "error"
-ignore-comment-unknown-rule = "error"
-implicit-concatenated-string-type-annotation = "error"
-inconsistent-mro = "error"
-ineffective-final = "error"
-instance-layout-conflict = "error"
-invalid-dataclass = "error"
-invalid-dataclass-override = "error"
-invalid-enum-member-annotation = "error"
-invalid-explicit-override = "error"
-invalid-frozen-dataclass-subclass = "error"
-invalid-generic-class = "error"
-invalid-generic-enum = "error"
-invalid-ignore-comment = "error"
-invalid-legacy-positional-parameter = "error"
-invalid-legacy-type-variable = "error"
-invalid-named-tuple = "error"
-invalid-newtype = "error"
-invalid-overload = "error"
-invalid-paramspec = "error"
-invalid-protocol = "error"
-invalid-syntax-in-forward-annotation = "error"
-invalid-total-ordering = "error"
-invalid-type-alias-type = "error"
-invalid-type-checking-constant = "error"
-invalid-type-guard-definition = "error"
-invalid-type-variable-bound = "error"
-invalid-type-variable-constraints = "error"
-invalid-typed-dict-header = "error"
-invalid-typed-dict-statement = "error"
-override-of-final-method = "error"
-override-of-final-variable = "error"
-possibly-missing-import = "error"
-possibly-missing-submodule = "error"
 # Has false positives due to ty walrus operator bug.
-# possibly-unresolved-reference = "error"
-raw-string-type-annotation = "error"
-redundant-final-classvar = "error"
-shadowed-type-variable = "error"
-subclass-of-final-class = "error"
-super-call-in-named-tuple-method = "error"
-unavailable-implicit-super-arguments = "error"
-unbound-type-variable = "error"
-undefined-reveal = "error"
-unresolved-global = "error"
-unresolved-import = "error"
-unresolved-reference = "error"
-unused-ignore-comment = "error"
-unused-type-ignore-comment = "error"
-useless-overload-body = "error"
+possibly-unresolved-reference = "ignore"
+# Maybe later, requires to specify element types for all generics.
+missing-type-argument = "ignore"
+# Conflicts with `bpy` props defined using annotations.
+invalid-type-form = "ignore"
 
 # Non-structural rules:
-deprecated = "error"
-zero-stepsize-in-slice = "error"
-possibly-missing-implicit-call = "error"
-unused-awaitable = "error"
-
-# Function argument rules:
 # Conflicts with `ifcopenshell.api.geometry.add_representation` type of callables we have, confusing them with a module.
-# call-non-callable = "error"
-conflicting-argument-forms = "error"
+call-non-callable = "ignore"
+# bpy is missing some context manager implementations.
+invalid-context-manager = "ignore"
+# Doesn't go well with `bpy.ops.xxx.yyy`.
+unresolved-attribute = "ignore"
 # Too many false positives.
-# invalid-argument-type = "error"
-missing-argument = "error"
-parameter-already-assigned = "error"
-positional-only-parameter-as-kwarg = "error"
-too-many-positional-arguments = "error"
-unknown-argument = "error"
-# Has a lot of warnings due to current ty walrus operator issues.
-# index-out-of-bounds = "error"
-# unresolved-attribute = "error"
+invalid-argument-type = "ignore"
+invalid-method-override = "ignore"
+invalid-assignment = "ignore"
+invalid-parameter-default = "ignore"
+missing-override-decorator = "ignore"
+invalid-yield = "ignore"
+invalid-return-type = "ignore"
+non-callable-init-subclass = "ignore"
+not-iterable = "ignore"
+possibly-missing-attribute = "ignore"
+no-matching-overload = "ignore"
+not-subscriptable = "ignore"
+unsupported-dynamic-base = "ignore"
+unsupported-operator = "ignore"
+type-assertion-failure = "ignore"
 
 [tool.ty.environment]
 extra-paths = [
@@ -215,6 +158,18 @@ exclude = [
 
 [tool.poe.tasks]
 
+dev-setup.sequence = [
+    {cmd = "uv sync"},
+    {cmd = "uv pip install -e ./src/bsdd/"},
+    {cmd = "uv pip install -e ./src/ifcopenshell-python/[advanced,dev]"},
+    {cmd = "uv pip install -e ./src/ifcedit/"},
+    {cmd = "uv pip install -e ./src/ifcpatch/"},
+    {cmd = "uv pip install -e ./src/ifcquery/"},
+    {cmd = "uv pip install -e './src/ifcmcp/[mcp]'"},
+    {cmd = "uv pip install -r src/bonsai/requirements-dev.txt"},
+]
+dev-setup.help = "Install repo packages in editable mode"
+
 ruff = "ruff check"
 
 black = "black ."
@@ -243,6 +198,7 @@ cmake-format = "gersemi . --in-place"
 # --ignore unresolved-reference: walrus operator false positives in ty.
 cmd = """
     ty check
+    nix/
     src/bcf
     src/bsdd
     src/ifc2ca

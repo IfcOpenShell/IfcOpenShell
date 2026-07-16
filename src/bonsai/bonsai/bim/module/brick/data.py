@@ -156,16 +156,13 @@ class BrickschemaReferencesData:
         for rel in getattr(tool.Ifc.get_entity(bpy.context.active_object), "HasAssociations", []):
             if rel.is_a("IfcRelAssociatesLibrary"):
                 reference = rel.RelatingLibrary
-                if tool.Ifc.get_schema() == "IFC2X3" and "#" not in reference.ItemReference:
-                    continue
-                if tool.Ifc.get_schema() != "IFC2X3" and "#" not in reference.Identification:
+                identification = tool.Document.get_external_reference_id(reference)
+                if not identification or "#" not in identification:
                     continue
                 results.append(
                     {
                         "id": reference.id(),
-                        "identification": (
-                            reference.ItemReference if tool.Ifc.get_schema() == "IFC2X3" else reference.Identification
-                        ),
+                        "identification": identification,
                         "name": reference.Name or "Unnamed",
                     }
                 )

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Setup IfcOpenShell Development Environment.
 
 Scripts creates symlinks in current user's site-packages to the IfcOpenShell repository.

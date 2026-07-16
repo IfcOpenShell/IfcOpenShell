@@ -980,8 +980,13 @@ class IfcImporter:
                     if unit.Name == "METRE":
                         if not unit.Prefix:
                             bpy.context.scene.unit_settings.length_unit = "METERS"
-                        else:
+                        elif f"{unit.Prefix}METERS" in ("KILOMETERS", "CENTIMETERS", "MILLIMETERS", "MICROMETERS"):
                             bpy.context.scene.unit_settings.length_unit = f"{unit.Prefix}METERS"
+                        else:
+                            # Blender's length_unit enum has no entry for other
+                            # SI prefixes (e.g. DECIMETERS), so fall back to
+                            # adaptive display instead of failing to open.
+                            bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
                 else:
                     bpy.context.scene.unit_settings.system = "IMPERIAL"
                     name = unit.Name.lower()

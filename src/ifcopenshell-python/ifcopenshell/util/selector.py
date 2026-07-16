@@ -18,7 +18,7 @@
 
 import re
 from collections.abc import Iterable
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from types import EllipsisType
 from typing import Any, Optional, Union
 
@@ -36,11 +36,12 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.pset
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 
 filter_elements_grammar = lark.Lark("""start: filter_group
-    filter_group: facet_list ("+" facet_list)*
+    filter_group: facet_list ("+" facet_list)* "+"?
     facet_list: facet ("," facet)*
 
     facet: instance | entity | attribute | type | material | query | classification | location | property | group | parent
@@ -108,8 +109,10 @@ filter_elements_grammar = lark.Lark("""start: filter_group
     CR : /\\r/
     LF : /\\n/
     NEWLINE: (CR? LF)+
+    COMMENT: "/*" /.*?/s "*/"
 
     %ignore WS // Disregard spaces in text
+    %ignore COMMENT // Allow /* ... */ block comments to toggle parts of a query
 """)
 
 get_element_grammar = lark.Lark("""start: keys
@@ -314,7 +317,13 @@ class FormatTransformer(lark.Transformer):
         return value in ("true", "1", "yes")
 
     def round(self, args):
-        value = Decimal(0.0 if args[0] == "None" else args[0] or 0.0)
+        try:
+            value = Decimal(0.0 if args[0] == "None" else args[0] or 0.0)
+        except InvalidOperation:
+            # The value is not numeric (e.g. a text property, or a value with
+            # a unit suffix like "12.5 m"). Rounding is meaningless here, so
+            # return it unchanged instead of crashing the whole expression.
+            return args[0]
         nearest = Decimal(args[1])
         result = round(value / nearest) * nearest
         if nearest % 1 == 0:
@@ -481,6 +490,13 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                 else:
                     enh = ifcopenshell.util.geolocation.auto_xyz2enh(element.wrapped_data.file, *xyz)
                     value = enh[("easting", "northing", "elevation").index(key)]
+            else:
+                value = None
+        elif key in ("rotation_x", "rotation_y", "rotation_z") and hasattr(value, "ObjectPlacement"):
+            if getattr(value, "ObjectPlacement", None):
+                matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                euler = ifcopenshell.util.shape_builder.np_matrix_to_euler(matrix)
+                value = float(np.degrees(euler[("rotation_x", "rotation_y", "rotation_z").index(key)]))
             else:
                 value = None
         elif isinstance(value, ifcopenshell.entity_instance):
@@ -691,9 +707,19 @@ def set_element_value(
             return
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
-        elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
+        elif key in (
+            "x",
+            "y",
+            "z",
+            "easting",
+            "northing",
+            "elevation",
+            "rotation_x",
+            "rotation_y",
+            "rotation_z",
+        ) and hasattr(element, "ObjectPlacement"):
             # TODO: add support
-            if key in ("easting", "northing", "elevation"):
+            if key in ("easting", "northing", "elevation", "rotation_x", "rotation_y", "rotation_z"):
                 return
 
             placement = element.ObjectPlacement

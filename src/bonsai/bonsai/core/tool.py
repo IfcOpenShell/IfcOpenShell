@@ -254,7 +254,6 @@ class Cost:
     def get_cost_schedule(cls, cost_schedule): pass
     def get_cost_value_attributes(cls): pass
     def get_cost_value_unit_component(cls): pass
-    def get_direct_cost_item_products(cls): pass
     def get_highlighted_cost_item(cls): pass
     def get_products(cls, related_object_type): pass
     def get_schedule_cost_items(cls, cost_schedule): pass
@@ -355,6 +354,8 @@ class Drawing:
     def enable_editing_schedules(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
+    def ensure_drawings_parent_document(cls): pass
+    def ensure_drawings_parent_group(cls): pass
     def ensure_unique_drawing_name(cls, name): pass
     def ensure_unique_identification(cls, identification): pass
     def export_font_size(cls, obj): pass
@@ -1170,8 +1171,6 @@ class Style:
 @interface
 class Surveyor:
     def get_absolute_matrix(cls, obj): pass
-    def get_z_rotation(cls, obj): pass
-    def set_z_rotation(cls, obj, z): pass
 
 
 @interface

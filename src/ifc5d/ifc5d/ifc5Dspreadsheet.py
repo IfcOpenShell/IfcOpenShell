@@ -26,7 +26,8 @@ import logging
 import os
 import time
 from collections import Counter
-from typing import Optional, TypedDict, Union
+from typing import Optional, Union
+from typing_extensions import TypedDict
 
 import ifcopenshell
 import ifcopenshell.util.cost
@@ -35,7 +36,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 
 
-class CostItem(TypedDict):
+class CostItem(TypedDict, extra_items=float):
     # Exported columns.
     Index: int
     Hierarchy: str

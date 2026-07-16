@@ -33,7 +33,6 @@ from typing import (
     Optional,
     TypeGuard,
     Union,
-    cast,
     get_args,
 )
 
@@ -2187,7 +2186,7 @@ class Geometry(bonsai.core.tool.Geometry):
             setattr(item, attribute.name, attribute.get_value())
 
         if item.is_a("IfcSweptAreaSolid"):
-            item_profile = cast(str, props.item_profile)
+            item_profile = props.item_profile
             profile = item.SweptArea
             profile_name: Union[str, None] = profile.ProfileName
             if item_profile == "-":

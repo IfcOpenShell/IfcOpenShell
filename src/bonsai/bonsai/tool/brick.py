@@ -192,10 +192,9 @@ class Brick(bonsai.core.tool.Brick):
     def get_brick(cls, element: ifcopenshell.entity_instance) -> Union[str, None]:
         for rel in element.HasAssociations:
             if rel.is_a("IfcRelAssociatesLibrary"):
-                if tool.Ifc.get_schema() == "IFC2X3" and "#" in rel.RelatingLibrary.ItemReference:
-                    return rel.RelatingLibrary.ItemReference
-                if tool.Ifc.get_schema() != "IFC2X3" and "#" in rel.RelatingLibrary.Identification:
-                    return rel.RelatingLibrary.Identification
+                identification = tool.Document.get_external_reference_id(rel.RelatingLibrary)
+                if identification and "#" in identification:
+                    return identification
 
     @classmethod
     def get_brick_class(cls, element: ifcopenshell.entity_instance) -> Union[str, None]:

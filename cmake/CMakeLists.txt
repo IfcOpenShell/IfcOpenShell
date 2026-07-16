@@ -563,8 +563,8 @@ if(COMPILE_SCHEMA)
     # Bootstrap the parser
     message(STATUS "Compiling schema, this will take a while...")
     execute_process(
-        COMMAND ${PYTHON_EXECUTABLE} bootstrap.py express.bnf
-        WORKING_DIRECTORY ../src/ifcexpressparser
+        COMMAND ${PYTHON_EXECUTABLE} bootstrap.py
+        WORKING_DIRECTORY ../src/ifcopenshell-python/ifcopenshell/express
         OUTPUT_FILE express_parser.py
         RESULT_VARIABLE SUCCESS
     )
@@ -575,7 +575,7 @@ if(COMPILE_SCHEMA)
 
     # Generate code
     execute_process(
-        COMMAND ${PYTHON_EXECUTABLE} ../ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
+        COMMAND ${PYTHON_EXECUTABLE} ../ifcopenshell-python/ifcopenshell/express/express_parser.py ../../${COMPILE_SCHEMA}
         WORKING_DIRECTORY ../src/ifcparse
         OUTPUT_VARIABLE COMPILED_SCHEMA_NAME
     )

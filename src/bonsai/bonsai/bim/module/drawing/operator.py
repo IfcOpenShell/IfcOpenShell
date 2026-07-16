@@ -1706,6 +1706,12 @@ class CreateDrawing(bpy.types.Operator):
             key=lambda a: (
                 tool.Drawing.get_annotation_z_index(a),
                 1 if ifcopenshell.util.element.get_predefined_type(a) == "TEXT" else 0,
+                # Deterministic tiebreaker so equal-priority annotations keep a
+                # stable order across sessions. Without it the order comes from
+                # the set union above, which depends on entity hashes (and thus
+                # the file pointer), shuffling annotations between Blender
+                # restarts. See #6608.
+                a.id(),
             ),
         )
 
@@ -3580,7 +3586,7 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
         if sheet.is_a("IfcDocumentInformation"):
             self.document_type = "SHEET"
             self.name = sheet.Name
-            self.identification = sheet.DocumentId if tool.Ifc.get_schema() == "IFC2X3" else sheet.Identification
+            self.identification = tool.Document.get_document_information_id(sheet)
         elif sheet.is_a("IfcDocumentReference") and tool.Drawing.get_reference_description(sheet) == "TITLEBLOCK":
             self.document_type = "TITLEBLOCK"
         else:

@@ -197,7 +197,6 @@ class Loader(bonsai.core.tool.Loader):
         cls, blender_material: bpy.types.Material, surface_style: ifcopenshell.entity_instance
     ) -> None:
         surface_style = cls.surface_style_to_dict(surface_style)
-        surface_style: dict[str, Any]
 
         cls.create_surface_style_shading(blender_material, surface_style)
 

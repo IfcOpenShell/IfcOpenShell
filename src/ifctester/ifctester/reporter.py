@@ -24,6 +24,7 @@ import os
 import re
 import sys
 from typing import Literal, Optional, TypedDict, Union
+from typing_extensions import NotRequired
 
 import ifcopenshell
 import ifcopenshell.util.element
@@ -96,6 +97,12 @@ class ResultsSpecification(TypedDict):
     applicability: list[str]
     requirements: list[ResultsRequirement]
 
+    # Filled in by `Html.report()`.
+    is_prohibited: NotRequired[bool]
+    has_requirements: NotRequired[bool]
+    has_omitted_applicable: NotRequired[bool]
+    total_omitted_applicable: NotRequired[int]
+
 
 class ResultsRequirement(TypedDict):
     facet_type: str
@@ -110,6 +117,15 @@ class ResultsRequirement(TypedDict):
     total_pass: int
     total_fail: int
     percent_pass: ResultsPercent
+
+    # Filled in by `Html.report()`.
+    total_failed_entities: NotRequired[int]
+    total_omitted_failures: NotRequired[int]
+    has_omitted_failures: NotRequired[bool]
+    total_passed_entities: NotRequired[int]
+    total_omitted_passes: NotRequired[int]
+    has_omitted_passes: NotRequired[bool]
+    instructions: NotRequired[str | None]
 
 
 # use different syntax because of the "class" key
@@ -244,7 +260,7 @@ class Txt(Console):
 class Json(Reporter):
     def __init__(self, ids: Ids, hide_skipped=False):
         super().__init__(ids)
-        self.results = Results()
+        self.results = Results()  # ty:ignore[missing-typed-dict-key]
         self.results["hide_skipped"] = hide_skipped
 
     def report(self) -> Results:
@@ -410,7 +426,7 @@ class Json(Reporter):
                     "id": e.id(),
                     "global_id": getattr(e, "GlobalId", None),
                     "tag": getattr(e, "Tag", None),
-                }
+                }  # ty:ignore[missing-typed-dict-key]
             )
             for e in specification.applicable_entities
         ]
@@ -428,7 +444,7 @@ class Json(Reporter):
                     "id": e.id(),
                     "global_id": getattr(e, "GlobalId", None),
                     "tag": getattr(e, "Tag", None),
-                }
+                }  # ty:ignore[missing-typed-dict-key]
             )
             for e in requirement.passed_entities
         ]

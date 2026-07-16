@@ -89,6 +89,11 @@ The filters are chained and apply from left to right.
 
     filter[, filter]*
 
+Any part of a query may be commented out using a ``/* ... */`` block comment.
+This lets you temporarily disable part of a query without deleting the text, for
+example ``IfcWall + /* IfcSlab, material=concrete */`` selects only walls while
+keeping the slab criteria on hand. Block comments may span multiple lines.
+
 Below is the table of filters to choose from. Most of these filters will filter
 previously added elements in your filter group based on their criteria.
 
@@ -217,6 +222,9 @@ Valid keys are:
     "``easting``", "Gets the map easting of the element's placement"
     "``northing``", "Gets the map northing of the element's placement"
     "``elevation``", "Gets the map elevation of the element's placement"
+    "``rotation_x``", "Gets the X Euler rotation of the element's placement in degrees"
+    "``rotation_y``", "Gets the Y Euler rotation of the element's placement in degrees"
+    "``rotation_z``", "Gets the Z Euler rotation of the element's placement in degrees (e.g. plan rotation of a symbol)"
     "``count``", "If the previous key returns multiple things, count that list. Otherwise, return 1."
     "``{{number}}``", "If the previous key returns multiple things, fetch the ``{{number}}`` index (e.g. 0, 1, 2, 3, etc) item in that list."
 
