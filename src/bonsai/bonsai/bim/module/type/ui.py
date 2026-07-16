@@ -107,13 +107,10 @@ class BIM_PT_type(Panel):
                 row.label(text="No Relating Type")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
 
-        # Offer converting a typed/shared profile length to a per-instance editable length.
-        if TypeData.data.get("is_typed_length_profile"):
-            row = layout.row(align=True)
-            row.label(text="Length is typed (shared)", icon="INFO")
-            row.operator(
-                "bim.make_profile_length_per_instance", icon="ARROW_LEFTRIGHT", text="Make Length Per-Instance"
-            )
+        # Length checkbox: ticked = per-instance editable length, unticked = typed/shared length.
+        # The checkbox state is read from the IFC (get/set property); ticking runs the conversion.
+        if TypeData.data.get("is_typed_length_profile") or TypeData.data.get("can_make_length_type_driven"):
+            layout.row(align=True).prop(props, "length_per_instance", text="Per-instance Length")
 
 
 class BIM_PT_type_attributes(Panel):
