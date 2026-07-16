@@ -22,10 +22,6 @@ from urllib.parse import urlparse
 
 from typing_extensions import assert_never
 
-# Where it's also reflected:
-# - .github/workflows/ci-ifcopenshell-python.yml
-# - .github/workflows/ci-ifcopenshell-python-pypi.yml
-# - src/ifcopenshell-python/Makefile (PYVERSION check)
 SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314")
 SUPPORTED_PLATFORMS = ("win64", "linux64", "macos64", "macosm164")
 
