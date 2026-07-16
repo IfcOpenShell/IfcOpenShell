@@ -272,8 +272,14 @@ class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
             representation = tool.Geometry.get_active_representation(obj)
             if not representation:
                 continue
-            representation = ifcopenshell.util.representation.resolve_representation(representation)
-            if not tool.Geometry.is_meshlike(representation):
+            # NOTE: previously this also required tool.Geometry.is_meshlike(representation),
+            # which excludes common representation types such as SweptSolid (e.g. a plain
+            # extruded profile with no material). That meant Origin Set silently did nothing
+            # for most simple, non-material-based objects (see #6205). update_representation()
+            # already safely no-ops (with an INFO report) for representations that are
+            # parametrically driven by a material profile/layer set, so it's not necessary to
+            # pre-filter by representation type here.
+            if not tool.Geometry.is_geometric_data(obj.data):
                 continue
             bpy.ops.object.origin_set(type=self.origin_type)
             bpy.ops.bim.update_representation(obj=obj.name)
