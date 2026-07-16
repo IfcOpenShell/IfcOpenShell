@@ -107,6 +107,14 @@ class BIM_PT_type(Panel):
                 row.label(text="No Relating Type")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
 
+        # Offer converting a typed/shared profile length to a per-instance editable length.
+        if TypeData.data.get("is_typed_length_profile"):
+            row = layout.row(align=True)
+            row.label(text="Length is typed (shared)", icon="INFO")
+            row.operator(
+                "bim.make_profile_length_per_instance", icon="ARROW_LEFTRIGHT", text="Make Length Per-Instance"
+            )
+
 
 class BIM_PT_type_attributes(Panel):
     bl_label = "Type Attributes"

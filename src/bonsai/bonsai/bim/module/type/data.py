@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.type
 from ifcopenshell.util.doc import get_entity_doc
 
@@ -44,8 +45,27 @@ class TypeData:
                 "total_instances": cls.total_instances(),
                 "relating_type": cls.relating_type(),
                 "relating_type_attributes": cls.relating_type_attributes(),
+                "is_typed_length_profile": cls.is_typed_length_profile(),
             }
         )
+
+    @classmethod
+    def is_typed_length_profile(cls):
+        """True if the active occurrence is a profile-based element whose length is 'typed'/shared
+        (its body is a mapped/shared representation and/or it only inherits the type's material
+        profile set), so it could be converted to per-instance editable length."""
+        if not (obj := bpy.context.active_object):
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcProduct"):
+            return False
+        material = ifcopenshell.util.element.get_material(element, should_inherit=True)
+        if not (material and "Profile" in material.is_a()):  # IfcMaterialProfileSet(Usage)
+            return False
+        has_own_usage = bool(ifcopenshell.util.element.get_material(element, should_inherit=False))
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        body_is_mapped = bool(body and any(i.is_a("IfcMappedItem") for i in (body.Items or [])))
+        return (not has_own_usage) or body_is_mapped
 
     @classmethod
     def relating_type_classes(cls):
