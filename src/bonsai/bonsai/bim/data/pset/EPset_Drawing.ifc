@@ -5,7 +5,7 @@ FILE_NAME('EPset_Drawing.ifc','2020-01-01T00:00:00',$,$,'EPset_Drawing','EPset_D
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
-#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation/DRAWING',(#23,#22,#27,#24,#29,#30,#19,#12,#26,#9,#8,#7,#6,#4,#18,#11,#5,#20,#25,#14,#10,#17,#28,#16,#3,#21,#13,#15,#2));
+#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation/DRAWING',(#23,#22,#27,#24,#29,#30,#19,#12,#26,#9,#8,#7,#6,#4,#18,#11,#5,#20,#31,#25,#14,#10,#17,#28,#16,#3,#21,#13,#15,#2));
 #2=IFCSIMPLEPROPERTYTEMPLATE('23JavTMk98ZxXhrUEnjAcf',$,'TargetView','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #3=IFCSIMPLEPROPERTYTEMPLATE('1yVWUt5H9DAOuu0OaMMLpe',$,'Scale','The scale of this drawing represented as a numerator and denominator, such as 1/100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #4=IFCSIMPLEPROPERTYTEMPLATE('3gsuPBtU93b8f0gg1pjkq6',$,'HumanScale','The scale of this drawing in human readable format, such as 1:100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
@@ -35,5 +35,6 @@ DATA;
 #28=IFCSIMPLEPROPERTYTEMPLATE('1YSnFzurrEyRNtoLdmmddP',$,'BringToFront','The objects with these SVG classes will render in front of all other objects.Ex: IfcBeam, IfcColumn',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
 #29=IFCSIMPLEPROPERTYTEMPLATE('0lP6Y8q9v2QhDnR4sT7uVx',$,'PerspectiveShiftX','Horizontal perspective camera shift stored as drawing metadata using Blender camera shift units.',.P_SINGLEVALUE.,'IfcReal',$,$,$,$,$,.READWRITE.);
 #30=IFCSIMPLEPROPERTYTEMPLATE('2mR8b1NcW5EoFyG7hJ9kLp',$,'PerspectiveShiftY','Vertical perspective camera shift stored as drawing metadata using Blender camera shift units.',.P_SINGLEVALUE.,'IfcReal',$,$,$,$,$,.READWRITE.);
+#31=IFCSIMPLEPROPERTYTEMPLATE('1zM9sia2L8RQDnWZxgUwlZ',$,'JoinClasses','Comma separated list of IFC classes whose cut linework will be joined together when they meet (e.g. mitred at a corner).\X2\000A\X0\Defaults to ''IfcWall,IfcSlab'' if not set. Override to also join other classes, such as ''IfcWall,IfcSlab,IfcCovering''.',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
 ENDSEC;
 END-ISO-10303-21;
