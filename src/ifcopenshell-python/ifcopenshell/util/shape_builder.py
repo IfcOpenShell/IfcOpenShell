@@ -2199,7 +2199,15 @@ class ShapeBuilder:
         assert profile_dim is not None
 
         rounded_bend_vector = np_round_to_precision(bend_vector, si_conversion)
-        lateral_axis = next(i for i in range(2) if not is_x(rounded_bend_vector[i], 0))
+        try:
+            lateral_axis = next(i for i in range(2) if not is_x(rounded_bend_vector[i], 0))
+        except StopIteration:
+            raise ValueError(
+                "Cannot determine mep bend lateral axis: `bend_vector` has no offset along either "
+                f"local X or Y axis (bend_vector = {tuple(bend_vector)}). The bend direction between "
+                "the two segments must have a lateral (X or Y) component in the start segment's local "
+                "space; an offset purely along the start segment's local Z axis does not define a bend."
+            )
         non_lateral_axis = 1 if lateral_axis == 0 else 0
         lateral_sign = np.sign(bend_vector[lateral_axis])
         z_sign = -1 if flip_z_axis else 1
