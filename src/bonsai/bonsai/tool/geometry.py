@@ -1094,7 +1094,10 @@ class Geometry(bonsai.core.tool.Geometry):
             else:
                 obj = cls.recreate_object_with_data(obj, data, is_global=False)
             cls.record_object_materials(obj)
-            if not cls.has_data_users(old_data):
+            # old_data is None when the object had no mesh (e.g. an EMPTY being given geometry);
+            # recreate_object_with_data already handled that transition above, so there is nothing to
+            # clean up. Guard has_data_users/delete_data, which both assume a non-None datablock.
+            if old_data is not None and not cls.has_data_users(old_data):
                 cls.delete_data(old_data)
             cls.clear_modifiers(obj)
             cls.clear_cache(element)
