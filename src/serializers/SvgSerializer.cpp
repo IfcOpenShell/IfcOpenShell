@@ -1436,6 +1436,29 @@ void SvgSerializer::write(const geometry_data& data) {
 						}
 						BBcls.Add(bucket_it->second, cls_edge);
 					}
+
+					// Non-planar faces (e.g. a real analytic cylindrical wall from a
+					// circular-profile column/pile, swept via BRepPrimAPI_MakePrism rather than
+					// faceted) have a silhouette that HLR synthesizes on the fly -- it is not a
+					// pre-existing topological edge, so the edge-only loop above can never bucket
+					// it. OutLineVCompound(S) correlates a curved face's silhouette by the
+					// identity of the originating *face*, not any edge, so add the non-planar
+					// face itself into the outline bucket alongside whatever edges it already
+					// contributed (top/bottom/seam), giving HLR's per-face OutLine reconstruction
+					// something to match against.
+					for (TopExp_Explorer fexp(*compound_to_hlr, TopAbs_FACE); fexp.More(); fexp.Next()) {
+						const TopoDS_Face& f = TopoDS::Face(fexp.Current());
+						if (BRep_Tool::Surface(f)->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+							std::string name = edge_style_class_name(edge_style_class::outline);
+							auto bucket_it = classified_edge_buckets.find(name);
+							if (bucket_it == classified_edge_buckets.end()) {
+								TopoDS_Compound c;
+								BBcls.MakeCompound(c);
+								bucket_it = classified_edge_buckets.emplace(name, c).first;
+							}
+							BBcls.Add(bucket_it->second, f);
+						}
+					}
 				}
 
 				if (is_floor_plan_) {
