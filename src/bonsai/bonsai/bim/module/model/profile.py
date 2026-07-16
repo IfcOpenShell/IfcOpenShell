@@ -21,8 +21,10 @@ from math import atan2, degrees, pi, radians
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bpy
+import numpy as np
 import ifcopenshell
 import ifcopenshell.api.geometry
+import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.type
 import ifcopenshell.util.element
@@ -869,6 +871,103 @@ class RecalculateProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         DumbProfileRecalculator().recalculate(context.selected_objects)
         return {"FINISHED"}
+
+
+class MakeProfileLengthPerInstance(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.make_profile_length_per_instance"
+    bl_label = "Make Profile Length Per Instance"
+    bl_description = (
+        "Un-map typed/shared profile geometry so each selected occurrence gets its own body "
+        "(the extrusion length lives on the instance instead of being typed/shared via a "
+        "RepresentationMap). Geometry is preserved exactly and sibling instances are left untouched"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return bool(context.selected_objects)
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        unmapped = 0
+        print(f"[make_length_per_instance] {len(context.selected_objects)} object(s) selected")
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                print(f"[make_length_per_instance] SKIP {getattr(obj, 'name', obj)!r}: not an IFC element")
+                continue
+            if self.unmap_element_body(ifc_file, element, obj):
+                unmapped += 1
+        print(f"[make_length_per_instance] done: un-mapped {unmapped} object(s)")
+        self.report({"INFO"}, f"Length made per-instance for {unmapped} object(s)")
+        return {"FINISHED"}
+
+    def unmap_element_body(
+        self, ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance, obj: bpy.types.Object
+    ) -> bool:
+        name = getattr(obj, "name", obj)
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not body:
+            print(f"[make_length_per_instance] SKIP #{element.id()} {name!r}: no Body/MODEL_VIEW representation")
+            return False
+
+        changed = False
+
+        # (1) Un-map the body if it is a shared/mapped representation.
+        mapped_items = [i for i in (body.Items or []) if i.is_a("IfcMappedItem")]
+        if mapped_items:
+            # Only identity mapping transforms are handled; refuse rather than move geometry.
+            for mi in mapped_items:
+                if not np.allclose(ifcopenshell.util.placement.get_mappeditem_transformation(mi), np.eye(4)):
+                    print(f"[make_length_per_instance] SKIP #{element.id()} {name!r}: non-identity mapping transform")
+                    return False
+            print(f"[make_length_per_instance] un-mapping body of #{element.id()} {name!r} (body #{body.id()})")
+
+            # Give this object its own mesh so sibling instances (sharing the mapped mesh) are not disturbed.
+            if obj.data is not None and obj.data.users > 1:
+                obj.data = obj.data.copy()
+
+            # Per-instance copy of the mapped geometry items, keeping the shared IfcProfileDef.
+            new_items = []
+            for mi in mapped_items:
+                for src_item in (mi.MappingSource.MappedRepresentation.Items or []):
+                    new_items.append(ifcopenshell.util.element.copy_deep(ifc_file, src_item, exclude=["IfcProfileDef"]))
+
+            # New per-instance SweptSolid body replacing the mapped wrapper; retarget the product shape to it.
+            # The old mapped IfcShapeRepresentation is left as a harmless orphan (purgeable later) rather than
+            # deleted -- deleting it would either cascade to siblings (via the shared RepresentationMap) or
+            # leave Bonsai's Blender-side links dangling.
+            new_body = ifcopenshell.util.element.copy(ifc_file, body)
+            new_body.Items = new_items
+            new_body.RepresentationType = "SweptSolid"
+            for inverse in ifc_file.get_inverse(body):
+                ifcopenshell.util.element.replace_attribute(inverse, body, new_body)
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc, tool.Geometry, obj=obj, representation=new_body, apply_openings=True
+            )
+            changed = True
+        else:
+            print(f"[make_length_per_instance] #{element.id()} {name!r}: body already per-instance ({body.RepresentationType})")
+
+        # (2) Give the occurrence its OWN IfcMaterialProfileSetUsage if it only inherits one. Bonsai gates the
+        # per-instance profile-editing UI on get_usage_type(should_inherit=False) == "PROFILE", so an occurrence
+        # that merely inherits the type's IfcMaterialProfileSet never shows the Length control. This runs even
+        # when the body was already un-mapped, so re-running repairs earlier partial conversions.
+        if not ifcopenshell.util.element.get_material(element, should_inherit=False):
+            profile_set = ifcopenshell.util.element.get_material(element, should_inherit=True)
+            if profile_set and profile_set.is_a("IfcMaterialProfileSet"):
+                usage = ifcopenshell.api.material.assign_material(
+                    ifc_file, products=[element], type="IfcMaterialProfileSetUsage", material=profile_set
+                )
+                usage = usage[0] if isinstance(usage, (list, tuple)) else usage
+                if usage is not None and usage.is_a("IfcMaterialProfileSetUsage"):
+                    usage.CardinalPoint = 5  # geometric centroid (Bonsai default)
+                print(f"[make_length_per_instance] #{element.id()} {name!r}: added per-instance IfcMaterialProfileSetUsage")
+                changed = True
+
+        if not changed:
+            print(f"[make_length_per_instance] #{element.id()} {name!r}: nothing to do (already per-instance with its own usage)")
+        return changed
 
 
 class DumbProfileRecalculator:
