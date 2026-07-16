@@ -234,7 +234,15 @@ class CadHotkey(bpy.types.Operator):
 
     def execute(self, context):
         self.props = tool.Cad.get_cad_props()
-        getattr(self, f"hotkey_{self.hotkey}")()
+        try:
+            getattr(self, f"hotkey_{self.hotkey}")()
+        except RuntimeError as e:
+            # Nested operators (e.g. bpy.ops.bim.cad_arc_from_2_points) that report
+            # an ERROR and return CANCELLED surface here as a RuntimeError instead
+            # of a clean report. Convert it back into a report so the user sees a
+            # readable message instead of a Python traceback.
+            self.report({"ERROR"}, str(e).replace("Error: ", "", 1))
+            return {"CANCELLED"}
         return {"FINISHED"}
 
     def draw(self, context):
