@@ -2230,16 +2230,33 @@ class Geometry(bonsai.core.tool.Geometry):
             obj.data.from_pydata([co], [], [])
         else:
             geometry = tool.Loader.create_generic_shape(item)
-            verts = ifcopenshell.util.shape.get_vertices(geometry)
-            if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
-                verts = verts - cartesian_point_offset
-            tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
+            if geometry is None:
+                # The geometry kernel can legitimately fail to produce a shape for an
+                # item (e.g. an invalid or degenerate boolean/clipping result). Every
+                # other caller of create_generic_shape already guards against this
+                # (see import_ifc.py and tool/loader.py). Without the same guard here,
+                # get_vertices(None) raises an unhandled AttributeError which aborts
+                # mid-edit after obj.data.clear_geometry() already ran, leaving the
+                # item's mesh empty/corrupted instead of failing gracefully.
+                logging.getLogger("ImportIFC").error(
+                    "Failed to regenerate geometry for representation item #%d (%s). "
+                    "Its mesh has been cleared - check for invalid geometry, such as "
+                    "a boolean or clipping result with no remaining volume.",
+                    item.id(),
+                    item.is_a(),
+                )
+                obj.matrix_world = rep_obj.matrix_world.copy()
+            else:
+                verts = ifcopenshell.util.shape.get_vertices(geometry)
+                if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
+                    verts = verts - cartesian_point_offset
+                tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
 
-            if ios_materials := list(obj.data["ios_materials"]):
-                material = tool.Ifc.get_object(tool.Ifc.get().by_id(ios_materials[0]))
-                obj.data.materials.append(material)
+                if ios_materials := list(obj.data["ios_materials"]):
+                    material = tool.Ifc.get_object(tool.Ifc.get().by_id(ios_materials[0]))
+                    obj.data.materials.append(material)
 
-            obj.matrix_world = rep_obj.matrix_world.copy()
+                obj.matrix_world = rep_obj.matrix_world.copy()
 
         if is_swept_area := item.is_a("IfcSweptAreaSolid"):
             position = item.Position
