@@ -261,36 +261,11 @@ class CreateDrawing(bpy.types.Operator):
         description="Could save some time if you're sure IFC and current Blender session are already in sync",
         default=True,
     )
-    svg_ridge_angle_min_deg: bpy.props.FloatProperty(
-        name="Ridge Angle Minimum",
-        description="Minimum convex dihedral deviation from flat, in degrees, for a projection "
-        "edge to be classified as 'sharp' rather than 'flush'. See edge-classification.md",
-        default=45.0,
-        min=0.0,
-        max=180.0,
-    )
-    svg_valley_angle_min_deg: bpy.props.FloatProperty(
-        name="Valley Angle Minimum",
-        description="Minimum concave dihedral deviation from flat, in degrees, for a projection "
-        "edge to be classified as 'crease' rather than 'flush'. See edge-classification.md",
-        default=12.0,
-        min=0.0,
-        max=180.0,
-    )
-    svg_emit_flush_edges: bpy.props.BoolProperty(
-        name="Emit Flush Edges",
-        description="Include projection edges whose dihedral deviation is below both the ridge "
-        "and valley thresholds (class 'flush'). Omitted by default",
-        default=False,
-    )
 
     if TYPE_CHECKING:
         print_all: bool
         open_viewer: bool
         sync: bool
-        svg_ridge_angle_min_deg: float
-        svg_valley_angle_min_deg: float
-        svg_emit_flush_edges: bool
 
     drawing_name: str
     is_manifold_cache: dict[str, bool]
@@ -1334,11 +1309,15 @@ class CreateDrawing(bpy.types.Operator):
         self.svg_settings = ifcopenshell.geom.settings()
         self.svg_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         self.svg_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
-        # SVG edge classification (issue #3668). See edge-classification.md.
+        # SVG edge classification (issue #3668). See edge-classification.md. Settings are
+        # per-drawing, stored in EPset_Drawing and read into self.cprops by import_camera_props.
         try:
-            self.svg_settings.set("svg-ridge-angle-min-degrees", self.svg_ridge_angle_min_deg)
-            self.svg_settings.set("svg-valley-angle-min-degrees", self.svg_valley_angle_min_deg)
-            self.svg_settings.set("svg-emit-flush-edges", self.svg_emit_flush_edges)
+            self.svg_settings.set("svg-use-edge-classification", self.cprops.use_edge_classification)
+            self.svg_settings.set("svg-render-crease-edges", self.cprops.render_creases)
+            self.svg_settings.set("svg-valley-angle-min-degrees", self.cprops.valley_angle_min_degrees)
+            self.svg_settings.set("svg-render-sharp-edges", self.cprops.render_sharp)
+            self.svg_settings.set("svg-ridge-angle-min-degrees", self.cprops.ridge_angle_min_degrees)
+            self.svg_settings.set("svg-emit-flush-edges", self.cprops.render_flush)
         except Exception:
             # Backwards compatibility with older ifcopenshell builds that don't expose these keys.
             pass
