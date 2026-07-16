@@ -17,16 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import http.client
-from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import urlparse
 
 from typing_extensions import assert_never
-
-try:
-    from bs4 import BeautifulSoup
-except:
-    pass
 
 # Where it's also reflected:
 # - .github/workflows/ci-ifcopenshell-python.yml
@@ -41,17 +35,11 @@ WASM_TEMPLATE = "https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-{BINA
 
 
 class TestPackageSupportedPlatforms:
-    def test_run(self) -> None:
+    @staticmethod
+    def get_required_urls() -> list[str]:
         IOS_REPO = Path(__file__).parents[3]
         makefile = IOS_REPO / "src/ifcopenshell-python/Makefile"
         text = makefile.read_text()
-
-        # We don't use requests in ifcopenshell, so we use Python builtin stuff.
-        parsed = urlparse("https://builds.ifcopenshell.org")
-        conn = http.client.HTTPSConnection(parsed.netloc)
-        conn.request("GET", parsed.path)
-        response = conn.getresponse()
-        build_html = response.read().decode("utf-8")
 
         def find_make_var(var_name: str) -> str:
             line = next(l for l in text.splitlines() if l.startswith(f"{var_name}:="))
@@ -97,14 +85,47 @@ class TestPackageSupportedPlatforms:
             )
             required_urls.append(url)
 
-        # Verify all required URLs are present in the build HTML.
-        missing_urls: Sequence[str]
-        if "BeautifulSoup" in globals():
-            missing_urls = set(required_urls) - set(a["href"] for a in BeautifulSoup(build_html).find_all("a"))
-        else:
-            missing_urls = []
-            for url in required_urls:
-                if url not in build_html:
-                    missing_urls.append(url)
+        return required_urls
+
+    @staticmethod
+    def get_missing_urls_fast(urls: list[str]) -> list[str]:
+        """Check `urls` against the build listing page.
+
+        Fast, but the listing page can lag behind what's actually on S3, so this may report URLs as
+        missing that do exist.
+        """
+        # We don't use requests in ifcopenshell, so we use Python builtin stuff.
+        parsed = urlparse("https://builds.ifcopenshell.org")
+        conn = http.client.HTTPSConnection(parsed.netloc)
+        conn.request("GET", parsed.path)
+        response = conn.getresponse()
+        build_html = response.read().decode("utf-8")
+        conn.close()
+
+        return [url for url in urls if url not in build_html]
+
+    @staticmethod
+    def get_missing_urls_slow(urls: list[str]) -> list[str]:
+        """Check `urls` directly with a HEAD request each.
+
+        Slow, but more reliable.
+        """
+        missing_urls: list[str] = []
+        for url in urls:
+            parsed = urlparse(url)
+            conn = http.client.HTTPSConnection(parsed.netloc)
+            conn.request("HEAD", parsed.path)
+            response = conn.getresponse()
+            response.read()
+            conn.close()
+            if response.status != 200:
+                missing_urls.append(url)
+
+        return missing_urls
+
+    def test_run(self) -> None:
+        required_urls = self.get_required_urls()
+        maybe_missing_urls = self.get_missing_urls_fast(required_urls)
+        missing_urls = self.get_missing_urls_slow(maybe_missing_urls)
 
         assert not missing_urls
