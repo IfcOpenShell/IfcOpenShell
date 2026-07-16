@@ -1259,9 +1259,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if self.file:
             self.set_viewpoint_components(viewpoint, context)
 
-        gp = bpy.data.grease_pencils.get("BCF")
-        if gp:
-            bpy.data.grease_pencils.remove(gp)
+        self.delete_lines()
         if viewpoint.visualization_info.lines:
             self.draw_lines(viewpoint, context)
 
@@ -1434,24 +1432,58 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             if obj:
                 obj.color = self.hex_to_rgb(color)
 
+    def delete_lines(self) -> None:
+        if obj := bpy.data.objects.get("BCF"):
+            bpy.data.objects.remove(obj)
+        for grease_pencils in (bpy.data.grease_pencils, getattr(bpy.data, "grease_pencils_v3", None)):
+            if grease_pencils is not None and (gp := grease_pencils.get("BCF")):
+                grease_pencils.remove(gp)
+
     def draw_lines(self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler, context: bpy.types.Context) -> None:
-        gp = bpy.data.grease_pencils.new("BCF")
-        scene = context.scene
-        scene.grease_pencil = gp
-        scene.frame_set(1)
+        # Blender 4.3+ moved the object-based Grease Pencil to its own
+        # `grease_pencils_v3` collection (merged back into `grease_pencils`
+        # in 5.1+, which also dropped the legacy Annotation API used below).
+        grease_pencils = getattr(bpy.data, "grease_pencils_v3", None)
+        if grease_pencils is None:
+            grease_pencils = bpy.data.grease_pencils
+        gp = grease_pencils.new("BCF")
         layer = gp.layers.new("BCF Annotation", set_active=True)
-        layer.thickness = 3
-        layer.color = (1, 0, 0)
         frame = layer.frames.new(1)
-        stroke = frame.strokes.new()
-        stroke.display_mode = "3DSPACE"
-        stroke.points.add(len(viewpoint.visualization_info.lines.line) * 2)
-        coords = []
-        for l in viewpoint.visualization_info.lines.line:
-            coords.extend(
-                [l.start_point.x, l.start_point.y, l.start_point.z, l.end_point.x, l.end_point.y, l.end_point.z]
-            )
-        stroke.points.foreach_set("co", coords)
+        lines = viewpoint.visualization_info.lines.line
+        if (drawing := getattr(frame, "drawing", None)) is not None:
+            obj = bpy.data.objects.new("BCF", gp)
+            context.scene.collection.objects.link(obj)
+            drawing.add_strokes(sizes=[2] * len(lines))
+            coords = []
+            for l in lines:
+                coords.extend(
+                    [l.start_point.x, l.start_point.y, l.start_point.z, l.end_point.x, l.end_point.y, l.end_point.z]
+                )
+            drawing.attributes["position"].data.foreach_set("vector", coords)
+            radius = drawing.attributes.new("radius", "FLOAT", "POINT")
+            radius.data.foreach_set("value", [0.01] * (len(lines) * 2))
+            drawing.tag_positions_changed()
+            mat = bpy.data.materials.get("BCF Annotation")
+            if mat is None:
+                mat = bpy.data.materials.new("BCF Annotation")
+                bpy.data.materials.create_gpencil_data(mat)
+            mat.grease_pencil.color = (1, 0, 0, 1)
+            gp.materials.append(mat)
+        else:
+            scene = context.scene
+            scene.grease_pencil = gp
+            scene.frame_set(1)
+            layer.thickness = 3
+            layer.color = (1, 0, 0)
+            stroke = frame.strokes.new()
+            stroke.display_mode = "3DSPACE"
+            stroke.points.add(len(lines) * 2)
+            coords = []
+            for l in lines:
+                coords.extend(
+                    [l.start_point.x, l.start_point.y, l.start_point.z, l.end_point.x, l.end_point.y, l.end_point.z]
+                )
+            stroke.points.foreach_set("co", coords)
 
     def create_clipping_planes(self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler) -> None:
         n = 0
