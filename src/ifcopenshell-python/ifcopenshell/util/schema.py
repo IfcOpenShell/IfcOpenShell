@@ -175,8 +175,8 @@ def geometry_classes_introduced_after(target_schema: IFC_SCHEMA, source_schema: 
     B-splines, advanced surfaces, alignment curves on IFC4X3 → 2X3, …) or
     purge. Defaults match the IFC4 → IFC2X3 case for backwards compatibility
     with the original caller."""
-    source = ifcopenshell_wrapper.schema_by_name(source_schema)
-    target = ifcopenshell_wrapper.schema_by_name(target_schema)
+    source = ifcopenshell.schema_by_name(source_schema)
+    target = ifcopenshell.schema_by_name(target_schema)
     target_names = {decl.name() for decl in target.entities()}
     result: set[str] = set()
     for decl in source.entities():
