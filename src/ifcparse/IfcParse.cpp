@@ -39,7 +39,6 @@
 #include <stdlib.h>
 #include <string>
 #include <iomanip>
-#include <charconv>
 
 #ifdef USE_MMAP
 #include <boost/filesystem/path.hpp>
@@ -733,6 +732,41 @@ void IfcParse::impl::rocks_db_file_storage::remove_type_ref(IfcUtil::IfcBaseClas
 }
 
 namespace {
+    // Shortest decimal representation of 'd' that round-trips back to the
+    // exact same double (like std::to_chars, or Python's repr).
+    // Using actual `std::to_chars` requires macOS 13.3+, so we implement this manually,
+    // until we drop support for older targets.
+    //
+    // Mirrors libstdc++'s notation-choice bounds (floating_to_chars.cc,
+    // __floating_to_chars_shortest) to pick whichever of fixed/scientific is
+    // shorter for a given digit count and exponent.
+    static inline void format_double_shortest(char (&buf)[64], double d) {
+        char sci[64];
+        int mantissa_length = 17;
+        for (int prec = 1; prec <= 17; ++prec) {
+            snprintf(sci, sizeof(sci), "%.*e", prec - 1, d);
+            if (strtod(sci, nullptr) == d) {
+                mantissa_length = prec;
+                break;
+            }
+        }
+        const char* exp_str = strchr(sci, 'e');
+        const int scientific_exponent = exp_str ? atoi(exp_str + 1) : 0;
+        const int fd_exponent = scientific_exponent - (mantissa_length - 1);
+        int lower_bound = -(mantissa_length + 3);
+        int upper_bound = 5;
+        if (mantissa_length == 1) {
+            ++lower_bound;
+            --upper_bound;
+        }
+        if (fd_exponent >= lower_bound && fd_exponent <= upper_bound) {
+            const int fixed_precision = fd_exponent < 0 ? -fd_exponent : 0;
+            snprintf(buf, 64, "%.*f", fixed_precision, d);
+        } else {
+            snprintf(buf, 64, "%.*e", mantissa_length - 1, d);
+        }
+    }
+
     class StringBuilderVisitor : public boost::static_visitor<void> {
     private:
         StringBuilderVisitor(const StringBuilderVisitor&);            //N/A
@@ -759,11 +793,9 @@ namespace {
             // values with noise digits (0.0174532925199433 -> 0.017453292519943299),
             // which rewrote every REAL and produced huge diffs when a file was
             // re-saved. See #7696.
-            // std::to_chars is locale-independent, so no ostringstream/imbue is
-            // needed here.
             char buf[64];
-            const auto res = std::to_chars(buf, buf + sizeof(buf), d);
-            const std::string str(buf, res.ptr);
+            format_double_shortest(buf, d);
+            const std::string str(buf);
             std::string::size_type e = str.find('e');
             if (e == std::string::npos) {
                 e = str.find('E');
