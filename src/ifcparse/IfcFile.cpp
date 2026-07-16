@@ -273,9 +273,18 @@ IfcEntityInstanceData IfcParse::parse_context::construct(boost::optional<size_t>
         return IfcEntityInstanceData(in_memory_attribute_storage(0));
     }
 
+    // When the schema declaration is known, size the storage to the schema's
+    // attribute count rather than the (possibly smaller) number of tokens
+    // actually found. Attributes are only assigned for indices covered by
+    // tokens_ below; any remaining trailing indices stay at their
+    // default-constructed blank value. This keeps every instance's storage
+    // consistent with its schema arity, so that a malformed/truncated
+    // instance (e.g. corrupted STEP syntax dropping a trailing attribute)
+    // degrades to a blank value for the missing attribute instead of an
+    // out-of-range access when that attribute is later read by index.
     in_memory_attribute_storage storage(coerce_attribute_count
         ? (decl != nullptr
-        ? (std::min)(parameter_types.size(), tokens_.size())
+        ? parameter_types.size()
         : tokens_.size())
 		: tokens_.size()
     );
