@@ -381,6 +381,7 @@ class Drawing:
     def get_document_uri(cls, document, description=None): pass
     def get_drawing_collection(cls, drawing): pass
     def get_drawing_document(cls, drawing): pass
+    def get_drawing_for_sheet_reference(cls, reference): pass
     def get_drawing_group(cls, drawing): pass
     def get_drawing_references(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
