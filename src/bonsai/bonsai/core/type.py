@@ -33,8 +33,27 @@ def assign_type(
     element: ifcopenshell.entity_instance,
     type: ifcopenshell.entity_instance,
 ) -> None:
+    import ifcopenshell.util.element
+    import ifcopenshell.util.representation
+
+    # A per-instance profile occurrence (its own non-mapped body + own profile usage) should keep its
+    # own geometry/length when reassigned to another type. Mapping the new type's shared representation
+    # over it (the default) would convert it to typed/length-driven. Detect this and skip the mapping.
+    def _is_per_instance_profile(el: ifcopenshell.entity_instance) -> bool:
+        mat = ifcopenshell.util.element.get_material(el, should_inherit=False)
+        if not (mat and "Profile" in mat.is_a()):
+            return False
+        body = ifcopenshell.util.representation.get_representation(el, "Model", "Body", "MODEL_VIEW")
+        return bool(body) and not any(i.is_a("IfcMappedItem") for i in (body.Items or []))
+
+    should_map = not _is_per_instance_profile(element)
     usage_attributes = type_tool.record_material_usage_attributes(element)
-    ifc.run("type.assign_type", related_objects=[element], relating_type=type)
+    ifc.run(
+        "type.assign_type",
+        related_objects=[element],
+        relating_type=type,
+        should_map_representations=should_map,
+    )
     obj = ifc.get_object(element)
     if (usage := model.get_usage_type(type)) and usage_attributes:
         type_tool.restore_material_usage_attributes(element, usage_attributes)

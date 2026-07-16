@@ -144,6 +144,17 @@ class DumbProfileGenerator:
         material = ifcopenshell.util.element.get_material(element)
         material.CardinalPoint = self.cardinal_point
 
+        # assign_type maps the type's shared geometry onto the occurrence when the type has a
+        # RepresentationMap (e.g. Revit-exported profiles). We build a per-instance extrusion below,
+        # so drop those inherited mapped representations first -- new occurrences then default to
+        # per-instance (editable) length. The IfcMaterialProfileSetUsage assign_type created is kept.
+        if element.Representation:
+            for representation in list(element.Representation.Representations):
+                ifcopenshell.api.geometry.unassign_representation(
+                    tool.Ifc.get(), product=element, representation=representation
+                )
+                ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=representation)
+
         obj.matrix_world = matrix_world
         bpy.context.view_layer.update()
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
@@ -445,6 +456,21 @@ class DumbProfileJoiner:
         self.recreate_profile(element2, profile2, axis2, axis2)
 
     def recreate_profile(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None):
+        _body_rep = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        _mapped = bool(_body_rep and any(i.is_a("IfcMappedItem") for i in (_body_rep.Items or [])))
+        # A mapped/shared body means this occurrence is typed-length (its geometry is driven by the
+        # type's RepresentationMap). Regenerating a per-instance profile here would remove the shared
+        # mapped body, which cascades to every sibling instance of the type (leaving them empty) and
+        # surfaces as a generic "Failed to set value". Leave typed geometry alone; converting to
+        # per-instance is an explicit action (bim.make_profile_length_per_instance).
+        if _mapped:
+            # The mapped body may have just changed (e.g. assign_type mapped a new type's geometry),
+            # but the Blender mesh is stale. Reload it so the display matches the typed geometry
+            # instead of skipping silently.
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc, tool.Geometry, obj=obj, representation=_body_rep, apply_openings=True
+            )
+            return
         if axis is None or body is None:
             axis = body = self.get_profile_axis(obj)
         self.axis = copy.deepcopy(axis)
@@ -853,10 +879,11 @@ class DumbProfileJoiner:
 
     def get_profile_axis(self, obj: bpy.types.Object) -> list[Vector]:
         z_values = [v[2] for v in obj.bound_box]
-        return [
+        axis = [
             (obj.matrix_world @ Vector((0.0, 0.0, min(z_values)))),
             (obj.matrix_world @ Vector((0.0, 0.0, max(z_values)))),
         ]
+        return axis
 
 
 class RecalculateProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -890,25 +917,20 @@ class MakeProfileLengthPerInstance(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
         unmapped = 0
-        print(f"[make_length_per_instance] {len(context.selected_objects)} object(s) selected")
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
-                print(f"[make_length_per_instance] SKIP {getattr(obj, 'name', obj)!r}: not an IFC element")
                 continue
             if self.unmap_element_body(ifc_file, element, obj):
                 unmapped += 1
-        print(f"[make_length_per_instance] done: un-mapped {unmapped} object(s)")
         self.report({"INFO"}, f"Length made per-instance for {unmapped} object(s)")
         return {"FINISHED"}
 
     def unmap_element_body(
         self, ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance, obj: bpy.types.Object
     ) -> bool:
-        name = getattr(obj, "name", obj)
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not body:
-            print(f"[make_length_per_instance] SKIP #{element.id()} {name!r}: no Body/MODEL_VIEW representation")
             return False
 
         changed = False
@@ -919,9 +941,7 @@ class MakeProfileLengthPerInstance(bpy.types.Operator, tool.Ifc.Operator):
             # Only identity mapping transforms are handled; refuse rather than move geometry.
             for mi in mapped_items:
                 if not np.allclose(ifcopenshell.util.placement.get_mappeditem_transformation(mi), np.eye(4)):
-                    print(f"[make_length_per_instance] SKIP #{element.id()} {name!r}: non-identity mapping transform")
                     return False
-            print(f"[make_length_per_instance] un-mapping body of #{element.id()} {name!r} (body #{body.id()})")
 
             # Give this object its own mesh so sibling instances (sharing the mapped mesh) are not disturbed.
             if obj.data is not None and obj.data.users > 1:
@@ -946,8 +966,6 @@ class MakeProfileLengthPerInstance(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Ifc, tool.Geometry, obj=obj, representation=new_body, apply_openings=True
             )
             changed = True
-        else:
-            print(f"[make_length_per_instance] #{element.id()} {name!r}: body already per-instance ({body.RepresentationType})")
 
         # (2) Give the occurrence its OWN IfcMaterialProfileSetUsage if it only inherits one. Bonsai gates the
         # per-instance profile-editing UI on get_usage_type(should_inherit=False) == "PROFILE", so an occurrence
@@ -962,12 +980,114 @@ class MakeProfileLengthPerInstance(bpy.types.Operator, tool.Ifc.Operator):
                 usage = usage[0] if isinstance(usage, (list, tuple)) else usage
                 if usage is not None and usage.is_a("IfcMaterialProfileSetUsage"):
                     usage.CardinalPoint = 5  # geometric centroid (Bonsai default)
-                print(f"[make_length_per_instance] #{element.id()} {name!r}: added per-instance IfcMaterialProfileSetUsage")
                 changed = True
 
-        if not changed:
-            print(f"[make_length_per_instance] #{element.id()} {name!r}: nothing to do (already per-instance with its own usage)")
+        # (3) Normalize a freshly un-mapped body to Bonsai's native profile convention. The copied Revit
+        # extrusion can leave the object's local +Z pointing AWAY from the extrusion (geometry in local
+        # -Z, origin at the far end). get_profile_axis/recreate_profile then plant the origin at the
+        # min-local-Z end, so extend/join relocate ("flip") the origin. Detect that case, flip the
+        # object 180deg about local X so local +Z runs along the axis (origin unchanged), and rebuild a
+        # native 0 -> depth extrusion. Only touches the just-un-mapped (per-instance, non-cascading) body.
+        if mapped_items:
+            z_vals = [v[2] for v in obj.bound_box]
+            length = (max(z_vals) - min(z_vals)) if z_vals else 0.0
+            if length > 1e-6 and abs(max(z_vals)) <= abs(min(z_vals)):
+                usage = ifcopenshell.util.element.get_material(element, should_inherit=False)
+                profile_set = usage.ForProfileSet if usage and usage.is_a("IfcMaterialProfileSetUsage") else None
+                profile = (profile_set.CompositeProfile or profile_set.MaterialProfiles[0].Profile) if profile_set else None
+                body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+                if profile and body_context:
+                    obj.matrix_world = obj.matrix_world @ Matrix.Rotation(pi, 4, "X")
+                    bpy.context.view_layer.update()
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                    native_body = ifcopenshell.api.geometry.add_profile_representation(
+                        ifc_file,
+                        context=body_context,
+                        profile=profile,
+                        depth=length,
+                        cardinal_point=(usage.CardinalPoint or 5),
+                    )
+                    old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                    for inverse in ifc_file.get_inverse(old_body):
+                        ifcopenshell.util.element.replace_attribute(inverse, old_body, native_body)
+                    ifcopenshell.api.geometry.remove_representation(ifc_file, old_body)
+                    bonsai.core.geometry.switch_representation(
+                        tool.Ifc, tool.Geometry, obj=obj, representation=native_body, apply_openings=True
+                    )
+
         return changed
+
+
+class MakeProfileLengthTypeDriven(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.make_profile_length_type_driven"
+    bl_label = "Make Profile Length Type Driven"
+    bl_description = (
+        "Re-map selected profile occurrences onto their type's shared representation so the extrusion "
+        "length is driven by the type again (typed length). The per-instance length is discarded and "
+        "the occurrence snaps to the type's length. This is the inverse of 'Make Length Per-Instance'"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return bool(context.selected_objects)
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        remapped = 0
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if self.remap_element_body(ifc_file, element, obj):
+                remapped += 1
+        self.report({"INFO"}, f"Length made type-driven for {remapped} object(s)")
+        return {"FINISHED"}
+
+    def remap_element_body(
+        self, ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance, obj: bpy.types.Object
+    ) -> bool:
+        element_type = ifcopenshell.util.element.get_type(element)
+        if not element_type:
+            return False
+
+        # Ensure the type carries a body representation to drive the length. If it has none (e.g. a
+        # Bonsai-authored profile type, where occurrences carry their own geometry), promote a copy of
+        # this occurrence's current body onto the type. Siblings toggled later snap to this length.
+        if not getattr(element_type, "RepresentationMaps", None):
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not body:
+                return False
+            template = ifcopenshell.util.element.copy_deep(
+                ifc_file, body, exclude=["IfcProfileDef", "IfcGeometricRepresentationContext"]
+            )
+            origin = ifc_file.create_entity(
+                "IfcAxis2Placement3D",
+                Location=ifc_file.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+            )
+            rep_map = ifc_file.create_entity(
+                "IfcRepresentationMap", MappingOrigin=origin, MappedRepresentation=template
+            )
+            element_type.RepresentationMaps = list(element_type.RepresentationMaps or []) + [rep_map]
+
+
+        # Drop the occurrence's own material association so it inherits the type's IfcMaterialProfileSet again.
+        if ifcopenshell.util.element.get_material(element, should_inherit=False):
+            ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+
+        # Replace the occurrence's per-instance representation(s) with mapped items pointing at the type's
+        # RepresentationMaps (this removes the per-instance body and maps the shared/typed geometry).
+        ifcopenshell.api.type.map_type_representations(
+            ifc_file, related_object=element, relating_type=element_type
+        )
+
+        # Reload the object's geometry from the (now mapped) body representation.
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if body:
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc, tool.Geometry, obj=obj, representation=body, apply_openings=True
+            )
+        return True
 
 
 class DumbProfileRecalculator:

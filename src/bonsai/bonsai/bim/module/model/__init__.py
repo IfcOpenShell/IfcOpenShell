@@ -152,6 +152,7 @@ classes = (
     profile.EnableEditingExtrusionAxis,
     profile.ExtendProfile,
     profile.MakeProfileLengthPerInstance,
+    profile.MakeProfileLengthTypeDriven,
     profile.RecalculateProfile,
     profile.Rotate90,
     profile.PatchNonParametricMepSegment,

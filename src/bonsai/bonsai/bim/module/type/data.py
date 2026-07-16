@@ -46,8 +46,27 @@ class TypeData:
                 "relating_type": cls.relating_type(),
                 "relating_type_attributes": cls.relating_type_attributes(),
                 "is_typed_length_profile": cls.is_typed_length_profile(),
+                "can_make_length_type_driven": cls.can_make_length_type_driven(),
             }
         )
+
+    @classmethod
+    def can_make_length_type_driven(cls):
+        """True if the active occurrence is a per-instance profile (its own body + usage) that has a
+        type, so its length can be re-driven by the type. If the type has no shared representation
+        yet, the conversion promotes this occurrence's body onto the type."""
+        if not (obj := bpy.context.active_object):
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcProduct"):
+            return False
+        own_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+        if not (own_material and "Profile" in own_material.is_a()):
+            return False
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if body and any(i.is_a("IfcMappedItem") for i in (body.Items or [])):
+            return False  # already mapped/typed
+        return bool(ifcopenshell.util.element.get_type(element))
 
     @classmethod
     def is_typed_length_profile(cls):
