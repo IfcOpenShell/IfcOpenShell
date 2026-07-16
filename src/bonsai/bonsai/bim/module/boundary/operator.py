@@ -843,7 +843,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                         settings = ifcopenshell.geom.settings()
                         shape = ifcopenshell.geom.create_shape(settings, opening)
                         mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
-                        mat.translation = (0, 0, 0)
                         opening_bm = bmesh.new()
                         verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
                         for vert in verts:
