@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Literal, Union
+from typing import Any, Literal, Sequence, Union
 
 from typing_extensions import Self
 
@@ -370,7 +370,7 @@ class Iterator:
         ...
 
     def process_concurrently(self): ...
-    def process_finished_rep(self, rep): ...
+    def process_finished_rep(self, rep, kernel=None): ...
     def progress(self) -> int:
         """Return current progress (0-100).
 
@@ -655,6 +655,15 @@ class aggregation_type(parameter_type):
     def type_of_aggregation(self): ...
     def type_of_aggregation_string(self): ...
     def type_of_element(self) -> parameter_type: ...
+
+class arrange_polygon_settings:
+    debug_output: bool
+    line_cleaning_algo: int
+    outer_perimiter_algo: int
+    perform_cleanup: bool
+    polygon_offset_distance: float
+    subdivision_factor: float
+    topology_reconstruction_algo: int
 
 class attribute:
     def __init__(self, name, type_of_attribute, optional): ...
@@ -1746,7 +1755,9 @@ class type_declaration(declaration):
 
 class uninitialized_tag: ...
 
-def arrange_polygons(settings, polygons, logger=None): ...
+def arrange_polygons(
+    settings: arrange_polygon_settings, polygons: Sequence[polygon_2], logger: logger | None = None
+) -> tuple[polygon_2, ...]: ...
 def clear_schemas(): ...
 def construct_iterator(geometry_library, settings, file, num_threads, logger=None): ...
 def construct_iterator_with_include_exclude(
