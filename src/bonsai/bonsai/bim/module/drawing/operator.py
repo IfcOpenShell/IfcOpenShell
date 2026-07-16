@@ -981,7 +981,9 @@ class CreateDrawing(bpy.types.Operator):
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
             contexts = self.get_linework_contexts(ifc, target_view)
             self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
-            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix)
+            self.serialize_contexts_elements(
+                ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix
+            )
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
@@ -1845,6 +1847,13 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
         sheet_item = tool.Drawing.get_active_sheet_item()
         assert sheet_item
         sheet = tool.Ifc.get().by_id(sheet_item.ifc_definition_id)
+        # The layout SVG may be missing from disk (e.g. deleted by removing the
+        # sheet in another IFC file that shared the same layouts folder, #5881).
+        # Report it cleanly instead of crashing in ET.parse below.
+        missing = [w for w in tool.Drawing.validate_sheet_files(sheet) if w.warning_type == "MISSING_LAYOUT"]
+        if missing:
+            self.report({"ERROR"}, "; ".join(str(w) for w in missing))
+            return
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
         core.open_layout(tool.Drawing, sheet=sheet)
@@ -2940,7 +2949,10 @@ class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
             self,
             event,
             title="Remove Sheet",
-            message="This permanently deletes the sheet's layout files from disk and cannot be undone.",
+            message=(
+                "This permanently deletes the sheet's layout files from disk and cannot be undone. "
+                "If another IFC file is saved in the same folder, it may share these layouts."
+            ),
             confirm_text="Remove Sheet",
             icon="WARNING",
         )
