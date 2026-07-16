@@ -606,13 +606,13 @@
             },
             "IfcWall": {
                 "Qto_WallBaseQuantities": {
-                    "GrossFootprintArea": null,
+                    "GrossFootprintArea": "gross_get_footprint_area",
                     "GrossSideArea": "gross_get_side_area",
                     "GrossVolume": "gross_get_volume",
                     "GrossWeight": "gross_get_weight",
                     "Height": "net_get_z",
                     "Length": "net_get_x",
-                    "NetFootprintArea": null,
+                    "NetFootprintArea": "net_get_footprint_area",
                     "NetSideArea": "net_get_side_area",
                     "NetVolume": "net_get_volume",
                     "NetWeight": "net_get_weight",
