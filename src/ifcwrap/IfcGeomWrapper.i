@@ -1166,6 +1166,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %ignore svgfill::svg_to_polygons;
 %ignore svgfill::arrange_polygons;
 %ignore svgfill::abstract_arrangement;
+%ignore svgfill::context::delete_same_facet_edge_pairs;
 
 %template(svg_line_segments) std::vector<std::array<svgfill::point_2, 2>>;
 %template(svg_groups_of_line_segments) std::vector<std::vector<std::array<svgfill::point_2, 2>>>;
