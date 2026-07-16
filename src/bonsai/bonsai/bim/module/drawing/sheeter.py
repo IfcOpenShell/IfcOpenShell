@@ -319,7 +319,12 @@ class SheetBuilder:
     def build_titleblock(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
         image = titleblock.findall(f"{SVG}image")[0]
-        g = self.parse_embedded_svg(image, sheet.get_info())
+        # Extend the raw IFC attribute dict with extra, non-IFC substitution
+        # keys available to custom titleblock templates. This does not
+        # change what sheet.get_info() itself returns elsewhere.
+        titleblock_data = dict(sheet.get_info())
+        titleblock_data["GitDescribe"] = tool.IfcGit.get_repo_description(tool.Ifc.get_path()) or ""
+        g = self.parse_embedded_svg(image, titleblock_data)
         grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
         true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
         for north in g.iterfind(f'.//{SVG}g[@data-type="grid-north"]'):
