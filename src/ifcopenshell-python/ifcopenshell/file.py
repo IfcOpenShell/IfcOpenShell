@@ -594,11 +594,12 @@ class file:
             # A poweruser testing out a particular version of IFC4X3
             model = ifcopenshell.file(schema_version=(4, 3, 0, 1))
         """
+        import ifcopenshell.util.schema
+
         if schema_version:
-            prefixes = ("IFC", "X", "_ADD", "_TC")
-            schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+            schema = ifcopenshell.util.schema.get_schema_name_from_version(schema_version)
         else:
-            schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
+            schema = ifcopenshell.util.schema.get_schema_identifier(schema)
         if f is not None:
             self.wrapped_data = f
             if not f.good():

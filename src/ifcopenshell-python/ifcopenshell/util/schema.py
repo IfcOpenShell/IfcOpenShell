@@ -50,6 +50,21 @@ def get_fallback_schema(version: str) -> IFC_SCHEMA:
     return version
 
 
+def get_schema_identifier(schema: IFC_SCHEMA) -> str:
+    """Resolve a general schema name to the specific identifier used internally
+    (as in ``file.schema_identifier``).
+
+    E.g. ``IFC4X3`` -> ``IFC4X3_ADD2``.
+    """
+    return {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
+
+
+def get_schema_name_from_version(schema_version: tuple[int, ...]) -> str:
+    """Build a schema name from a version tuple, e.g. (4, 3, 0, 1) -> "IFC4X3_TC1"."""
+    prefixes = ("IFC", "X", "_ADD", "_TC")
+    return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+
+
 def get_declaration(element: ifcopenshell.entity_instance):
     """Get the schema declaration of an actively used entity instance
 

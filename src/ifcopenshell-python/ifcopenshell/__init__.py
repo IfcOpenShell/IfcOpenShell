@@ -305,12 +305,13 @@ def schema_by_name(
         you are testing non-ISO IFC releases.
     :return: Schema definition object.
     """
+    import ifcopenshell.util.schema
+
     assert schema_version or schema, "Either schema or schema_version must be specified."
     if schema_version:
-        prefixes = ("IFC", "X", "_ADD", "_TC")
-        schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+        schema = ifcopenshell.util.schema.get_schema_name_from_version(schema_version)
     else:
-        schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
+        schema = ifcopenshell.util.schema.get_schema_identifier(schema)
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
