@@ -1531,8 +1531,13 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
             all_old_to_new.update(old_to_new)  # Collect all duplicates
 
-            # Recreate aggregate structure
-            tool.Root.recreate_aggregate(old_to_new)
+            # Note: execute_ifc_duplicate_operator() above already recreates the aggregate
+            # structure for us (including reassigning to an unduplicated parent aggregate, see
+            # its "Restore parent aggregate relationships" step). Calling
+            # tool.Root.recreate_aggregate() again here is not just redundant: since the parent
+            # aggregate is never part of `old_to_new` when it wasn't itself duplicated,
+            # recreate_aggregate()'s "parent not found" branch actively *unassigns* the just
+            # restored parent link, stranding a duplicated nested aggregate outside its parent (#6663).
 
             # Copy linked aggregate data
             copy_linked_aggregate_data(old_to_new)
