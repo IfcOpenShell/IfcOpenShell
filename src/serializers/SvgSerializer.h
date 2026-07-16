@@ -600,6 +600,9 @@ protected:
 	double svg_ridge_angle_min_deg_;
 	double svg_valley_angle_min_deg_;
 	bool svg_emit_flush_edges_;
+	bool svg_use_edge_classification_;
+	bool svg_render_crease_edges_;
+	bool svg_render_sharp_edges_;
 
 	IfcParse::IfcFile* file;
 	const IfcUtil::IfcBaseEntity* storey_;
@@ -657,6 +660,9 @@ public:
 		, svg_ridge_angle_min_deg_(45.)
 		, svg_valley_angle_min_deg_(12.)
 		, svg_emit_flush_edges_(false)
+		, svg_use_edge_classification_(false)
+		, svg_render_crease_edges_(true)
+		, svg_render_sharp_edges_(true)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
@@ -665,7 +671,17 @@ public:
 		, hlr(nullptr)
 		, namespace_prefix_("data-")
 		, subtraction_settings_(ON_SLABS_AT_FLOORPLANS)
-	{}
+	{
+		// ready() only reads geometry_settings() (already valid at this point, since the base
+		// WriteOnlyGeometrySerializer initializer above has run) and has no other side effects,
+		// so it's safe to call here. This is needed because ready() is otherwise only invoked
+		// explicitly by IfcConvert.cpp's CLI driver -- callers that construct this serializer
+		// directly via the Python bindings (e.g. Bonsai's drawing generation, which never calls
+		// a ready()-equivalent because it isn't exposed via SWIG) would otherwise silently keep
+		// every settings::Svg* member at its hardcoded constructor default forever, regardless
+		// of what ifcopenshell.geom.settings().set(...) was actually configured to.
+		ready();
+	}
     void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
     void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
     void addSizeComponent(const boost::shared_ptr<util::string_buffer::float_item>& fi) { radii.push_back(fi); }

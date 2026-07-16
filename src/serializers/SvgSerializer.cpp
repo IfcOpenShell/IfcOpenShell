@@ -105,6 +105,9 @@ bool SvgSerializer::ready() {
 	svg_ridge_angle_min_deg_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRidgeAngleMinDegrees>().get();
 	svg_valley_angle_min_deg_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgValleyAngleMinDegrees>().get();
 	svg_emit_flush_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgEmitFlushEdges>().get();
+	svg_use_edge_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseEdgeClassification>().get();
+	svg_render_crease_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderCreaseEdges>().get();
+	svg_render_sharp_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderSharpEdges>().get();
 	return true;
 }
 
@@ -1398,8 +1401,20 @@ void SvgSerializer::write(const geometry_data& data) {
 				// is still registered via add()/it->second.add() below, unchanged, for correct
 				// occlusion; these buckets only affect which class each edge's visible portion is
 				// later extracted as (see hlr_calc::extract() in SvgSerializer.h).
+				//
+				// Gated behind svg_use_edge_classification_ (default false): the whole block must
+				// be skipped, not just individually suppressed per-edge, so that when disabled
+				// classified_edge_buckets stays empty for *every* product in the document, not
+				// just this one. hlr_calc::extract() only takes the classified-buckets branch
+				// when its shared classified_shapes_ list is non-empty; if even one product added
+				// classified buckets while others didn't, those others would silently fall back
+				// to unclassified linework while this one used classification, an inconsistent
+				// mix. Leaving classified_edge_buckets empty here means add_classified_edges() is
+				// never called for this product either, so every product uniformly falls through
+				// to the pre-existing product_shapes_ fallback -- the original, pre-classification
+				// linework.
 				std::map<std::string, TopoDS_Compound> classified_edge_buckets;
-				{
+				if (svg_use_edge_classification_) {
 					NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> edge_face_map;
 					TopExp::MapShapesAndAncestors(*compound_to_hlr, TopAbs_EDGE, TopAbs_FACE, edge_face_map);
 
@@ -1424,6 +1439,12 @@ void SvgSerializer::write(const geometry_data& data) {
 						}
 
 						if (cls == edge_style_class::flush && !svg_emit_flush_edges_) {
+							continue;
+						}
+						if (cls == edge_style_class::crease && !svg_render_crease_edges_) {
+							continue;
+						}
+						if (cls == edge_style_class::sharp && !svg_render_sharp_edges_) {
 							continue;
 						}
 
