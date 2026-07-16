@@ -204,9 +204,9 @@
             },
             "IfcCovering + IfcCoveringType": {
                 "Qto_CoveringBaseQuantities": {
-                    "GrossArea": "gross_get_max_side_area",
-                    "NetArea": "net_get_max_side_area",
-                    "Width": "gross_get_min_xyz"
+                    "GrossArea": "gross_get_covering_area",
+                    "NetArea": "net_get_covering_area",
+                    "Width": "gross_get_covering_width"
                 }
             },
             "IfcCurtainWall + IfcCurtainWallType": {
