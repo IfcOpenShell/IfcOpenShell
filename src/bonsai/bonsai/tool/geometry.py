@@ -2229,6 +2229,7 @@ class Geometry(bonsai.core.tool.Geometry):
             co = np.array(item.VertexGeometry.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             obj.data.from_pydata([co], [], [])
         else:
+            cartesian_point_offset = cls.get_cartesian_point_offset(rep_obj)
             geometry = tool.Loader.create_generic_shape(item)
             if geometry is None:
                 # The geometry kernel can legitimately fail to produce a shape for an
@@ -2248,7 +2249,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 obj.matrix_world = rep_obj.matrix_world.copy()
             else:
                 verts = ifcopenshell.util.shape.get_vertices(geometry)
-                if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
+                if cartesian_point_offset is not None:
                     verts = verts - cartesian_point_offset
                 tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
 
