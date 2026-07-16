@@ -149,7 +149,6 @@ class CostSchedulesData:
         data["UnitBasisUnitSymbol"] = None
         data["TotalAppliedValue"] = 0.0
         data["TotalCost"] = 0.0
-        has_unit_basis = False
         is_sum = False
         values: list[ifcopenshell.entity_instance]
         if root_element.is_a("IfcCostItem"):
@@ -158,25 +157,26 @@ class CostSchedulesData:
             values = root_element.BaseCosts
         else:
             assert False, root_element
+        cost_quantity = 1 if data["TotalCostQuantity"] is None else data["TotalCostQuantity"]
         for cost_value in values or []:
             cls._load_cost_value(root_element, data, cost_value)
             # data["CostValues"].append(cost_value.id())
-            data["TotalAppliedValue"] += cls._cost_values[cost_value.id()]["AppliedValue"]
+            applied_value = cls._cost_values[cost_value.id()]["AppliedValue"]
+            data["TotalAppliedValue"] += applied_value
             if cost_value.UnitBasis:
                 cost_value_data = cls._cost_values[cost_value.id()]
-                data["UnitBasisValueComponent"] = cost_value_data["UnitBasis"]["ValueComponent"]
+                unit_basis_value_component = cost_value_data["UnitBasis"]["ValueComponent"]
+                data["UnitBasisValueComponent"] = unit_basis_value_component
                 data["UnitBasisUnitSymbol"] = cost_value_data["UnitBasis"]["UnitSymbol"]
-                has_unit_basis = True
             else:
+                unit_basis_value_component = 1
                 data["UnitBasisValueComponent"] = 1
                 data["UnitBasisUnitSymbol"] = "U"
+            # Each cost value must be extended by the cost quantity and its OWN unit basis
+            # before being summed, since different cost values may use different unit bases.
+            data["TotalCost"] += applied_value * cost_quantity / unit_basis_value_component
             if cost_value.Category == "*":
                 is_sum = True
-        cost_quantity = 1 if data["TotalCostQuantity"] is None else data["TotalCostQuantity"]
-        if has_unit_basis:
-            data["TotalCost"] = data["TotalAppliedValue"] * cost_quantity / data["UnitBasisValueComponent"]
-        else:
-            data["TotalCost"] = data["TotalAppliedValue"] * cost_quantity
         if is_sum:
             pass  # If it is None it doesn't allow me to assign a cost rate composed by sum
             # data["TotalAppliedValue"] = None
