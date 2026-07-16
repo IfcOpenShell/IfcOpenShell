@@ -289,13 +289,13 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def export_curves(
-        cls, obj: bpy.types.Object, position: Optional[Matrix] = None
+        cls, obj: bpy.types.Object, position: Optional[Matrix] = None, preserve_z: bool = False
     ) -> list[ifcopenshell.entity_instance] | None:
         if position is None:
             position = Matrix()
 
         results = []
-        result = cls.auto_detect_curves(obj, obj.data, position)
+        result = cls.auto_detect_curves(obj, obj.data, position, preserve_z=preserve_z)
         if isinstance(result, dict) and result["curves"]:
             for curve in result["curves"]:
                 results.append(tool.Ifc.get().add(curve))
@@ -2494,8 +2494,17 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def auto_detect_curves(
-        cls, obj: bpy.types.Object, mesh: bpy.types.Mesh, position: Matrix | None = None
+        cls,
+        obj: bpy.types.Object,
+        mesh: bpy.types.Mesh,
+        position: Matrix | None = None,
+        preserve_z: bool = False,
     ) -> Union[tuple, dict]:
+        """
+        :param preserve_z: Keep each point's Z coordinate instead of flattening
+            to a 2D curve. Used for annotations whose geometry has a meaningful
+            Z difference between points, such as a FALL/slope indicator.
+        """
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         if position is None:
@@ -2651,18 +2660,20 @@ class Model(bonsai.core.tool.Model):
                         segments[-1][0] = last_segment_indices
                     curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
                 elif tmp.schema == "IFC2X3":
-                    points = [
-                        tmp.createIfcCartesianPoint(list(((position_i @ v.co) / unit_scale).to_2d()))
-                        for v in loop_verts
-                    ]
+                    coords = [(position_i @ v.co) / unit_scale for v in loop_verts]
+                    points = [tmp.createIfcCartesianPoint(list(co if preserve_z else co.to_2d())) for co in coords]
                     if is_closed:
                         points.append(points[0])
                     curves.append(tmp.createIfcPolyline(points))
                 else:  # Pure straight polyline, no segments required
-                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
+                    coords = [(position_i @ v.co) / unit_scale for v in loop_verts]
+                    coord_list = [list(co if preserve_z else co.to_2d()) for co in coords]
                     if is_closed:
                         coord_list.append(coord_list[0])
-                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    if preserve_z:
+                        points = tmp.createIfcCartesianPointList3D(coord_list)
+                    else:
+                        points = tmp.createIfcCartesianPointList2D(coord_list)
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
 
         return {"ifc_file": tmp, "curves": curves}
