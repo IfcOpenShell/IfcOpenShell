@@ -63,6 +63,7 @@ def mode_menu(self, context):
 def object_menu(self, context):
     self.layout.separator()
     self.layout.operator("bim.override_object_duplicate_move", icon="PLUGIN")
+    self.layout.operator("bim.override_object_join", icon="PLUGIN")
     self.layout.operator("bim.override_object_delete", icon="PLUGIN")
     self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
     self.layout.menu("BIM_MT_object_set_origin", icon="PLUGIN")
