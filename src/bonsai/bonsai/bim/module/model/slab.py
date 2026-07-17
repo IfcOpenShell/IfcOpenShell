@@ -712,6 +712,11 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         else:
             position = Matrix()
 
+        if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) and tool.Model.realign_to_triangle_profile(
+            obj, position
+        ):
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
         profile = tool.Model.export_profile(obj, position=position, x_angle=existing_x_angle)
 
         if not profile:
