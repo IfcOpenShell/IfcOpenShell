@@ -34,6 +34,7 @@ import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 try:
     from OCC.Core import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         AIS,
+        BRep,
         BRepTools,
         Graphic3d,
         Quantity,
@@ -46,6 +47,7 @@ try:
 except ImportError:
     from OCC import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         AIS,
+        BRep,
         BRepTools,
         Graphic3d,
         Quantity,
@@ -242,7 +244,16 @@ def serialize_shape(shape):
     # see whether this is necessary
     shapes.SetFormatNb(2)
 
-    shapes.Add(shape)
+    # BRepTools_ShapeSet does not persist the location of the outermost shape
+    # (it is only written for shapes referenced by a parent). Wrap in an
+    # identity-located compound so the original shape becomes a referenced
+    # child and its location round-trips. See issue #2992.
+    compound = TopoDS.TopoDS_Compound()
+    builder = BRep.BRep_Builder()
+    builder.MakeCompound(compound)
+    builder.Add(compound, shape)
+
+    shapes.Add(compound)
 
     # Check if WriteToString method exists and has the correct signature
     # In PythonOCC >= 7.8.0, WriteToString signature changed and requires additional arguments
