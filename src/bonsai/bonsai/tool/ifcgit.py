@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Union
 
 import bpy
+import ifcopenshell.util.element
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -147,6 +148,74 @@ class IfcGit(bonsai.core.tool.IfcGit):
             cls.dos2unix(path_file)
         repo.index.add(os.path.normpath(path_file))
         repo.index.commit(message=commit_message)
+
+    ASSET_RESOURCE_KEYS = ("Stylesheet", "Markers", "Symbols", "Patterns")
+
+    @classmethod
+    def get_project_asset_paths(cls, path_ifc: str) -> list[str]:
+        """Drawing asset files referenced by the loaded IFC, as absolute normalised paths"""
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return []
+        base_dir = cls.get_path_dir(path_ifc)
+        assets: set[str] = set()
+
+        def add_location(location: Any) -> None:
+            if not location or not isinstance(location, str) or "://" in location:
+                return
+            if not os.path.isabs(location):
+                location = os.path.join(base_dir, location)
+            assets.add(os.path.normpath(location))
+
+        for drawing in ifc_file.by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing") or {}
+            for key in cls.ASSET_RESOURCE_KEYS:
+                add_location(pset.get(key))
+
+        for sheet in ifc_file.by_type("IfcDocumentInformation"):
+            if sheet.Scope != "SHEET":
+                continue
+            for reference in tool.Drawing.get_document_references(sheet):
+                if tool.Drawing.get_reference_description(reference) == "TITLEBLOCK":
+                    add_location(getattr(reference, "Location", None))
+
+        if project := next(iter(ifc_file.by_type("IfcProject")), None):
+            titleblocks_dir = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
+            if not titleblocks_dir:
+                titleblocks_dir = tool.Blender.get_addon_preferences().doc.titleblocks_dir
+            if titleblocks_dir and isinstance(titleblocks_dir, str) and "://" not in titleblocks_dir:
+                if not os.path.isabs(titleblocks_dir):
+                    titleblocks_dir = os.path.join(base_dir, titleblocks_dir)
+                if os.path.isdir(titleblocks_dir):
+                    for root, _, files in os.walk(titleblocks_dir):
+                        for name in files:
+                            if not name.startswith("."):
+                                assets.add(os.path.normpath(os.path.join(root, name)))
+        return sorted(assets)
+
+    @classmethod
+    def stage_asset_files(cls, asset_paths: list[str]) -> list[str]:
+        """Stage assets that live inside the repo, returning those that exist outside it"""
+        repo = IfcGitRepo.repo
+        working_dir = os.path.normpath(repo.working_dir)
+        to_stage = []
+        outside = []
+        for path in asset_paths:
+            if not os.path.isfile(path):
+                continue
+            try:
+                inside = os.path.commonpath([working_dir, path]) == working_dir
+            except ValueError:
+                inside = False
+            if inside:
+                to_stage.append(path)
+            else:
+                outside.append(path)
+        if to_stage:
+            repo.index.add(to_stage)
+        return outside
 
     @classmethod
     def add_tag(cls, repo: git.Repo, hexsha: str, tag_name: str, tag_message: str = "") -> None:

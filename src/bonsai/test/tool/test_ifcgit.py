@@ -20,7 +20,12 @@
 import os
 import tempfile
 
+import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.guid
+
 import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.tool.ifcgit import IfcGit, IfcGitRepo
 from test.bim.bootstrap import NewFile
 
@@ -454,6 +459,133 @@ class TestIfcDiffIds(NewFile):
             result = IfcGit.ifc_diff_ids(repo, sha_a, sha_b, ifc_path)
             assert 1 in result["modified"]
             assert 2 in result["modified"]
+
+
+# ---------------------------------------------------------------------------
+# Project asset tracking
+# ---------------------------------------------------------------------------
+
+
+def _make_drawing_with_resources(ifc: "ifcopenshell.file", properties: dict) -> None:
+    annotation = ifc.createIfcAnnotation(ifcopenshell.guid.new(), None, "PLAN", None, "DRAWING")
+    pset = ifcopenshell.api.pset.add_pset(ifc, product=annotation, name="EPset_Drawing")
+    ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties=properties)
+
+
+class TestGetProjectAssetPaths(NewFile):
+    def test_returns_empty_list_without_a_file(self):
+        # NewFile leaves no IFC loaded
+        assert IfcGit.get_project_asset_paths("/repo/model.ifc") == []
+
+    def test_collects_drawing_resources_relative_to_the_ifc(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        _make_drawing_with_resources(
+            ifc,
+            {
+                "Stylesheet": "drawings/assets/default.css",
+                "Markers": "drawings/assets/markers.svg",
+                "Symbols": "drawings/assets/symbols.svg",
+                "Patterns": "drawings/assets/patterns.svg",
+            },
+        )
+        result = IfcGit.get_project_asset_paths("/repo/sub/model.ifc")
+        assert result == sorted(
+            [
+                os.path.normpath("/repo/sub/drawings/assets/default.css"),
+                os.path.normpath("/repo/sub/drawings/assets/markers.svg"),
+                os.path.normpath("/repo/sub/drawings/assets/symbols.svg"),
+                os.path.normpath("/repo/sub/drawings/assets/patterns.svg"),
+            ]
+        )
+
+    def test_deduplicates_resources_shared_by_drawings(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        _make_drawing_with_resources(ifc, {"Stylesheet": "assets/default.css"})
+        _make_drawing_with_resources(ifc, {"Stylesheet": "assets/default.css"})
+        result = IfcGit.get_project_asset_paths("/repo/model.ifc")
+        assert result == [os.path.normpath("/repo/assets/default.css")]
+
+    def test_keeps_absolute_paths_and_skips_urls_and_generated_outputs(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        _make_drawing_with_resources(
+            ifc,
+            {
+                "Stylesheet": "/absolute/style.css",
+                "Markers": "https://example.com/markers.svg",
+                "ShadingStyles": "assets/shading_styles.json",
+            },
+        )
+        result = IfcGit.get_project_asset_paths("/repo/model.ifc")
+        assert result == [os.path.normpath("/absolute/style.css")]
+
+    def test_ignores_annotations_that_are_not_drawings(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcAnnotation(ifcopenshell.guid.new(), None, "text", None, "TEXT")
+        assert IfcGit.get_project_asset_paths("/repo/model.ifc") == []
+
+    def test_collects_sheet_titleblocks_but_not_generated_layouts(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        sheet = ifc.createIfcDocumentInformation("A01", "Sheet", None, None, None, None, "SHEET")
+        ifc.createIfcDocumentReference("layouts/titleblocks/A1.svg", None, None, "TITLEBLOCK", sheet)
+        ifc.createIfcDocumentReference("layouts/A01 - Sheet.svg", None, None, "LAYOUT", sheet)
+        ifc.createIfcDocumentReference("sheets/A01 - Sheet.svg", None, None, "SHEET", sheet)
+        result = IfcGit.get_project_asset_paths("/repo/model.ifc")
+        assert result == [os.path.normpath("/repo/layouts/titleblocks/A1.svg")]
+
+    def test_collects_all_files_in_the_titleblocks_dir(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc = ifcopenshell.file()
+            tool.Ifc.set(ifc)
+            project = ifc.createIfcProject(ifcopenshell.guid.new(), None, "My Project")
+            pset = ifcopenshell.api.pset.add_pset(ifc, product=project, name="BBIM_Documentation")
+            ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"TitleblocksDir": "titleblocks"})
+            titleblocks_dir = os.path.join(tmpdir, "titleblocks")
+            os.makedirs(titleblocks_dir)
+            titleblock = os.path.join(titleblocks_dir, "A1.svg")
+            open(titleblock, "w").close()
+            open(os.path.join(titleblocks_dir, ".hidden"), "w").close()
+            result = IfcGit.get_project_asset_paths(os.path.join(tmpdir, "model.ifc"))
+            assert result == [os.path.normpath(titleblock)]
+
+
+class TestStageAssetFiles(NewFile):
+    @requires_git
+    def test_stages_assets_inside_the_repo_and_returns_outside_ones(self):
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            tempfile.TemporaryDirectory() as elsewhere,
+        ):
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            inside = os.path.join(tmpdir, "assets", "default.css")
+            os.makedirs(os.path.dirname(inside))
+            open(inside, "w").close()
+            outside = os.path.join(elsewhere, "shared.css")
+            open(outside, "w").close()
+            missing = os.path.join(tmpdir, "assets", "missing.svg")
+            try:
+                result = IfcGit.stage_asset_files(sorted([inside, outside, missing]))
+                assert result == [outside]
+                staged = [entry[0] for entry in repo.index.entries]
+                assert "assets/default.css" in staged
+            finally:
+                IfcGitRepo.repo = None
+
+    @requires_git
+    def test_stages_nothing_for_empty_input(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            try:
+                assert IfcGit.stage_asset_files([]) == []
+                assert len(repo.index.entries) == 0
+            finally:
+                IfcGitRepo.repo = None
 
 
 # ---------------------------------------------------------------------------
