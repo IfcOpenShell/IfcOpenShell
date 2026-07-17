@@ -267,6 +267,10 @@ class DumbProfileRegenerator:
         return results
 
 
+class MissingExtrudedProfileError(Exception):
+    pass
+
+
 class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_profile"
     bl_label = "Extend Profile"
@@ -284,7 +288,10 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
         joiner = DumbProfileJoiner()
         if self.join_type == "-":
             for obj in selected_objs:
-                joiner.unjoin(obj)
+                try:
+                    joiner.unjoin(obj)
+                except MissingExtrudedProfileError as e:
+                    self.report({"ERROR"}, str(e))
             return {"FINISHED"}
         if not context.active_object:
             return {"FINISHED"}
@@ -292,21 +299,32 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.clear_scale(obj)
 
         if len(selected_objs) == 1:
-            joiner.join_E(context.active_object, context.scene.cursor.location)
+            try:
+                joiner.join_E(context.active_object, context.scene.cursor.location)
+            except MissingExtrudedProfileError as e:
+                self.report({"ERROR"}, str(e))
+                return {"CANCELLED"}
             return {"FINISHED"}
 
         if len(selected_objs) == 2:
-            if self.join_type == "L":
-                joiner.join_L(next(o for o in selected_objs if o != context.active_object), context.active_object)
-            elif self.join_type == "V":
-                joiner.join_V(next(o for o in selected_objs if o != context.active_object), context.active_object)
+            try:
+                if self.join_type == "L":
+                    joiner.join_L(next(o for o in selected_objs if o != context.active_object), context.active_object)
+                elif self.join_type == "V":
+                    joiner.join_V(next(o for o in selected_objs if o != context.active_object), context.active_object)
+            except MissingExtrudedProfileError as e:
+                self.report({"ERROR"}, str(e))
+                return {"CANCELLED"}
         if len(selected_objs) < 2:
             return {"FINISHED"}
         if self.join_type == "T":
             for obj in selected_objs:
                 if obj == context.active_object:
                     continue
-                joiner.join_T(obj, context.active_object)
+                try:
+                    joiner.join_T(obj, context.active_object)
+                except MissingExtrudedProfileError as e:
+                    self.report({"ERROR"}, str(e))
 
         return {"FINISHED"}
 
@@ -449,14 +467,23 @@ class DumbProfileJoiner:
         self.body = copy.deepcopy(body)
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
         usage = None
-        if not material:
-            return
-        if "ProfileSet" not in material.is_a():
-            return
-        if material.is_a("IfcMaterialProfileSetUsage"):
-            usage = material
-            material = material.ForProfileSet
-        self.profile = material.CompositeProfile or material.MaterialProfiles[0].Profile
+        if material and "ProfileSet" in material.is_a():
+            if material.is_a("IfcMaterialProfileSetUsage"):
+                usage = material
+                material = material.ForProfileSet
+            self.profile = material.CompositeProfile or material.MaterialProfiles[0].Profile
+        else:
+            # No profile set material (e.g. an ad-hoc extrusion): fall back to the
+            # element's own body extrusion so joins still work without a typed profile.
+            body_representation = ifcopenshell.util.representation.get_representation(
+                element, "Model", "Body", "MODEL_VIEW"
+            )
+            extrusion = tool.Model.get_extrusion(body_representation) if body_representation else None
+            if not extrusion:
+                raise MissingExtrudedProfileError(
+                    f"{element} has no profile set material and no extruded body representation to extend."
+                )
+            self.profile = extrusion.SweptArea
         self.clippings = []
 
         for rel in element.ConnectedTo:

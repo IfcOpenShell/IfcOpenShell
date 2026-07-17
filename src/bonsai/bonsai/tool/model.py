@@ -1081,6 +1081,11 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
             elif material.is_a("IfcMaterialProfileSet"):
                 return "PROFILE"
+        # No layer/profile set material (e.g. an ad-hoc extrusion): treat a plain
+        # extruded body as a profile too, so join/extend tools still apply to it.
+        body = tool.Geometry.get_body_representation(element)
+        if body and cls.get_extrusion(body):
+            return "PROFILE"
 
     @classmethod
     def get_wall_axis(
