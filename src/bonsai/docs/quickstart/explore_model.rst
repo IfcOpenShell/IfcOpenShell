@@ -142,12 +142,13 @@ find objects, and use the **Select Icon** to select them.
 
 .. note::
 
-   The **Isolate** button and **Hide / Show Icons** shown above next to the
-   **Spatial Container** list are not enabled by default, since they can
-   conflict with active status filters (see
-   :menuselection:`Properties --> Scheduling --> Status`). To bring them
-   back, enable **Container hide/show/isolate** under
-   :menuselection:`Edit --> Preferences --> Add-ons --> Bonsai --> Extras`.
+   The **Element** list **Isolate** button and **Hide / Show Icons** shown
+   above do not currently respect an active status filter (see
+   :menuselection:`Properties --> Scheduling --> Status`), and vice versa.
+   The older **Spatial Container** list versions of these buttons do not
+   have this problem, which is why they are still available as an opt in
+   under :menuselection:`Edit --> Preferences --> Add-ons --> Bonsai -->
+   Extras`, enable **Container hide/show/isolate** to bring them back.
 
 **Elements** are grouped into IFC **Classes**, such as Wall, Slab, or Door.
 Within that, **Elements** are grouped into **Construction Types**. You'll see a
