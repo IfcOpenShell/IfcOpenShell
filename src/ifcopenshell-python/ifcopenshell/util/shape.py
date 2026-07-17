@@ -68,14 +68,43 @@ def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
     return abs(x - value) < tolerance
 
 
+def is_manifold(geometry: W.Triangulation) -> bool:
+    """Checks whether a triangulated geometry is a closed, consistently oriented manifold
+
+    Two conditions are checked for every edge of every triangle:
+
+    - Unoriented use: as an unordered pair of vertices, an edge must be shared
+      by exactly two triangles. A count of 1 means an open hole or boundary,
+      a count above 2 means more than two triangles meet at that edge.
+    - Oriented use: as an ordered pair of vertices, an edge must be used by at
+      most one triangle. If two triangles use the same ordered edge, their
+      windings are inconsistent (e.g. a flipped or duplicated face), which
+      also invalidates volume calculations that rely on consistent winding.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :return: ``True`` if the geometry is a closed, consistently oriented manifold
+    """
+    faces = geometry.faces
+    directed_use: dict[tuple[int, int], int] = {}
+    undirected_use: dict[tuple[int, int], int] = {}
+    for i in range(0, len(faces), 3):
+        tri = (faces[i], faces[i + 1], faces[i + 2])
+        for a, b in ((tri[0], tri[1]), (tri[1], tri[2]), (tri[2], tri[0])):
+            directed_use[(a, b)] = directed_use.get((a, b), 0) + 1
+            edge = (a, b) if a < b else (b, a)
+            undirected_use[edge] = undirected_use.get(edge, 0) + 1
+    return all(count == 2 for count in undirected_use.values()) and all(count == 1 for count in directed_use.values())
+
+
 def get_volume(geometry: W.Triangulation) -> float:
     """Calculates the total internal volume of a geometry
 
     The volume is derived from the divergence theorem (summing signed
-    tetrahedra), which is only meaningful for a closed manifold (watertight)
-    mesh. For non-manifold or open geometry that value is undefined and can be
-    wildly over- or under-estimated, so ``float("nan")`` is returned instead of
-    a bogus number. See https://github.com/IfcOpenShell/IfcOpenShell/issues/6125.
+    tetrahedra), which is only meaningful for a closed, consistently oriented
+    manifold (watertight) mesh. For non-manifold or open geometry that value
+    is undefined and can be wildly over- or under-estimated, so
+    ``float("nan")`` is returned instead of a bogus number. See
+    https://github.com/IfcOpenShell/IfcOpenShell/issues/6125.
 
     :param geometry: Geometry output calculated by IfcOpenShell
     :return: The volume in m3, or ``nan`` if the mesh is not a closed manifold
@@ -91,22 +120,12 @@ def get_volume(geometry: W.Triangulation) -> float:
         v123 = p1[0] * p2[1] * p3[2]
         return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
 
+    if not is_manifold(geometry):
+        return float("nan")
+
     # Can't optimize it using buffers - performance seems to get only worse.
     verts = geometry.verts
     faces = geometry.faces
-
-    # A watertight (closed manifold) mesh shares every edge between exactly two
-    # triangles. If that does not hold the signed-tetrahedra sum below is
-    # meaningless, so bail out with nan rather than returning a wild value.
-    edge_face_count: dict[tuple[int, int], int] = {}
-    for i in range(0, len(faces), 3):
-        tri = (faces[i], faces[i + 1], faces[i + 2])
-        for a, b in ((tri[0], tri[1]), (tri[1], tri[2]), (tri[2], tri[0])):
-            edge = (a, b) if a < b else (b, a)
-            edge_face_count[edge] = edge_face_count.get(edge, 0) + 1
-    if any(count != 2 for count in edge_face_count.values()):
-        return float("nan")
-
     grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
     volumes = [
         signed_triangle_volume(grouped_verts[faces[i]], grouped_verts[faces[i + 1]], grouped_verts[faces[i + 2]])
