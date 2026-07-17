@@ -85,6 +85,7 @@ modules = {
     "covetool": None,
     "augin": None,
     "debug": None,
+    "ifc_graph": None,
     "ifcgit": None,
     "covering": None,
     "web": None,
