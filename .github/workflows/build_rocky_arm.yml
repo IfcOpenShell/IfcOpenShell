@@ -43,7 +43,7 @@ jobs:
                          python3-tkinter dbus-devel \
                          libXext-devel libXinerama-devel libXcursor-devel libXrender-devel \
                          libXfixes-devel libXft-devel pango-devel cairo-devel libstdc++-static
-          python3 -m pip install typing_extensions aqtinstall
+          python3 -m pip install aqtinstall
           git config --global --add safe.directory '*'
           python3 -c "import tkinter; print('Tk', tkinter.TkVersion)"
 
@@ -92,7 +92,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON uv run --with typing_extensions --with aqtinstall ./nix/build-all.py -v --diskcleanup --shared 2>&1 | tee build.log
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON uv run --with aqtinstall ./nix/build-all.py -v --diskcleanup --shared 2>&1 | tee build.log
 
       - name: Upload Build Logs
         if: always()
