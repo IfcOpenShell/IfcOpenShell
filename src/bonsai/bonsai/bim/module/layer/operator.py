@@ -38,6 +38,7 @@ def get_active_mesh(context: bpy.types.Context, mesh_name: str) -> bpy.types.Mes
 class LoadLayers(bpy.types.Operator):
     bl_idname = "bim.load_layers"
     bl_label = "Load Layers"
+    bl_description = "Load the list of presentation layers in the project for editing"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -63,6 +64,7 @@ class LoadLayers(bpy.types.Operator):
 class DisableLayerEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_layer_editing_ui"
     bl_label = "Disable Layer Editing UI"
+    bl_description = "Close the presentation layers list"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -74,6 +76,7 @@ class DisableLayerEditingUI(bpy.types.Operator):
 class EnableEditingLayer(bpy.types.Operator):
     bl_idname = "bim.enable_editing_layer"
     bl_label = "Enable Editing Layer"
+    bl_description = "Load the attributes of the selected presentation layer for editing"
     bl_options = {"REGISTER", "UNDO"}
     layer: bpy.props.IntProperty()
 
@@ -91,6 +94,7 @@ class EnableEditingLayer(bpy.types.Operator):
 class DisableEditingLayer(bpy.types.Operator):
     bl_idname = "bim.disable_editing_layer"
     bl_label = "Disable Editing Layer"
+    bl_description = "Close the presentation layer editing form without saving changes"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -120,6 +124,7 @@ class AddPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 class EditPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_presentation_layer"
     bl_label = "Edit Layer"
+    bl_description = "Save the edited attributes to the presentation layer"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -134,6 +139,7 @@ class EditPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 class RemovePresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_presentation_layer"
     bl_label = "Remove Presentation Layer"
+    bl_description = "Remove the presentation layer from the project"
     bl_options = {"REGISTER", "UNDO"}
     layer: bpy.props.IntProperty()
 
@@ -194,6 +200,7 @@ class UnassignPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 class SelectLayerProducts(bpy.types.Operator):
     bl_idname = "bim.select_layer_products"
     bl_label = "Select Layer Products"
+    bl_description = "Select all visible objects assigned to the presentation layer"
     bl_options = {"REGISTER", "UNDO"}
     layer: bpy.props.IntProperty()
 
@@ -213,6 +220,7 @@ class SelectLayerProducts(bpy.types.Operator):
 class SelectLayerInLayerUI(bpy.types.Operator):
     bl_idname = "bim.layer_ui_select"
     bl_label = "Select Layer In Layers UI"
+    bl_description = "Highlight the layer in the Layers UI list"
     bl_options = {"REGISTER", "UNDO"}
     layer_id: bpy.props.IntProperty()
 

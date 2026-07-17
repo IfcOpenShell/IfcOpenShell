@@ -43,6 +43,7 @@ class LoadClassificationLibrary(bpy.types.Operator, tool.Ifc.Operator, ImportHel
 class AddClassification(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_classification"
     bl_label = "Add Classification"
+    bl_description = "Add the classification selected from the loaded classification library to the project"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -56,6 +57,7 @@ class AddClassification(bpy.types.Operator, tool.Ifc.Operator):
 class AddManualClassification(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_manual_classification"
     bl_label = "Add Manual Classification"
+    bl_description = "Add a new classification to the project with attributes entered manually"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -71,6 +73,7 @@ class AddManualClassification(bpy.types.Operator, tool.Ifc.Operator):
 class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_manual_classification_reference"
     bl_label = "Add Manual Classification Reference"
+    bl_description = "Add a manually defined classification reference and assign it to the selected objects"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
@@ -106,6 +109,7 @@ class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_classification_from_bsdd"
     bl_label = "Add Classification From bSDD"
+    bl_description = "Add the classification system(s) selected from bSDD to the project"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -138,6 +142,7 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
 class EnableAddingManualClassification(bpy.types.Operator):
     bl_idname = "bim.enable_adding_manual_classification"
     bl_label = "Enable Adding Manual Classification"
+    bl_description = "Show the form to manually add a new classification"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -152,6 +157,7 @@ class EnableAddingManualClassification(bpy.types.Operator):
 class DisableAddingManualClassification(bpy.types.Operator):
     bl_idname = "bim.disable_adding_manual_classification"
     bl_label = "Disable Adding Manual Classification"
+    bl_description = "Hide the form for manually adding a new classification"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -163,6 +169,7 @@ class DisableAddingManualClassification(bpy.types.Operator):
 class EnableAddingManualClassificationReference(bpy.types.Operator):
     bl_idname = "bim.enable_adding_manual_classification_reference"
     bl_label = "Enable Adding Manual Classification Reference"
+    bl_description = "Show the form to manually add a new classification reference"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -176,6 +183,7 @@ class EnableAddingManualClassificationReference(bpy.types.Operator):
 class DisableAddingManualClassificationReference(bpy.types.Operator):
     bl_idname = "bim.disable_adding_manual_classification_reference"
     bl_label = "Disable Adding Manual Classification Reference"
+    bl_description = "Hide the form for manually adding a new classification reference"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -187,6 +195,7 @@ class DisableAddingManualClassificationReference(bpy.types.Operator):
 class EnableEditingClassification(bpy.types.Operator):
     bl_idname = "bim.enable_editing_classification"
     bl_label = "Enable Editing Classification"
+    bl_description = "Load the attributes of the selected classification for editing"
     bl_options = {"REGISTER", "UNDO"}
     classification: bpy.props.IntProperty()
 
@@ -204,6 +213,7 @@ class EnableEditingClassification(bpy.types.Operator):
 class DisableEditingClassification(bpy.types.Operator):
     bl_idname = "bim.disable_editing_classification"
     bl_label = "Disable Editing Classification"
+    bl_description = "Close the classification editing form without saving changes"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -233,6 +243,7 @@ class RemoveClassification(bpy.types.Operator, tool.Ifc.Operator):
 class EditClassification(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_classification"
     bl_label = "Edit Classification"
+    bl_description = "Save the edited attributes to the classification"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -250,6 +261,7 @@ class EditClassification(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingClassificationReference(bpy.types.Operator):
     bl_idname = "bim.enable_editing_classification_reference"
     bl_label = "Enable Editing Classification Reference"
+    bl_description = "Load the attributes of the selected classification reference for editing"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
@@ -267,6 +279,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
 class DisableEditingClassificationReference(bpy.types.Operator):
     bl_idname = "bim.disable_editing_classification_reference"
     bl_label = "Disable Editing Classification Reference"
+    bl_description = "Close the classification reference editing form without saving changes"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
@@ -278,6 +291,7 @@ class DisableEditingClassificationReference(bpy.types.Operator):
 class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_classification_reference"
     bl_label = "Remove Classification Reference"
+    bl_description = "Remove the classification reference from the selected objects"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
@@ -319,6 +333,7 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_classification_reference"
     bl_label = "Edit Classification Reference"
+    bl_description = "Save the edited attributes to the classification reference"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
@@ -341,6 +356,7 @@ class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_classification_reference"
     bl_label = "Add Classification Reference"
+    bl_description = "Assign the selected reference from the loaded classification library to the selected objects"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
     obj: bpy.props.StringProperty()
@@ -472,6 +488,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
 class ChangeClassificationLevel(bpy.types.Operator):
     bl_idname = "bim.change_classification_level"
     bl_label = "Change Classification Level"
+    bl_description = "Browse into the child references of the selected classification library reference"
     bl_options = {"REGISTER", "UNDO"}
     parent_id: bpy.props.IntProperty()
 
@@ -495,6 +512,7 @@ class ChangeClassificationLevel(bpy.types.Operator):
 class DisableEditingClassificationReferences(bpy.types.Operator):
     bl_idname = "bim.disable_editing_classification_references"
     bl_label = "Disable Editing Classification References"
+    bl_description = "Clear the list of classification library references currently being browsed"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
