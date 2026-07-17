@@ -2286,6 +2286,14 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
     for (const auto& p : streamer.references()) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
+
+        auto owner_it = byid_.find(ref);
+        if (owner_it == byid_.end()) {
+            logger_.get().error("Instance #" + std::to_string(ref) + " referenced at attribute index " + std::to_string(refattr) + " not found");
+            continue;
+        }
+        auto& owner = owner_it->second;
+
         if (auto* v = std::get_if<reference_or_simple_type>(&p.second)) {
             if (auto* name = std::get_if<instance_reference>(v)) {
                 if (std::binary_search(bypassed.begin(), bypassed.end(), *name)) {
@@ -2295,12 +2303,12 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 if (it == byid_.end()) {
                     logger_.get().error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                 } else {
-                    auto& storage = byid_[p.first.name_];
+                    auto& storage = owner;
                     auto attr_index = p.first.index_;
                     
                     if (storage->template has_attribute_value<express::Base>(attr_index)) {
                         express::Base inst = storage->get_attribute_value(attr_index);
-                        if (!inst.declaration().as_entity()) {
+                        if (inst && !inst.declaration().as_entity()) {
                             // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
 #ifdef IFOPSH_SAFE_INSTANCE
                             storage = inst.data_weak().lock();
@@ -2318,7 +2326,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                     }
                 }
             } else if (auto inst = std::get_if<express::Base>(v)) {
-                byid_[p.first.name_]->set_attribute_value(p.first.index_, *inst);
+                owner->set_attribute_value(p.first.index_, *inst);
             }
         } else if (auto* vv = std::get_if<std::vector<reference_or_simple_type>>(&p.second)) {
             std::vector<express::Base> instances;
@@ -2339,12 +2347,12 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 }
             }
 
-            auto& storage = byid_[p.first.name_];
+            auto& storage = owner;
             auto attr_index = p.first.index_;
             
             if (storage->template has_attribute_value<express::Base>(attr_index)) {
                 express::Base inst = storage->get_attribute_value(attr_index);
-                if (!inst.declaration().as_entity()) {
+                if (inst && !inst.declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
 #ifdef IFOPSH_SAFE_INSTANCE
                     storage = inst.data_weak().lock();
@@ -2381,12 +2389,12 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 }
             }
 
-            auto& storage = byid_[p.first.name_];
+            auto& storage = owner;
             auto attr_index = p.first.index_;
             
             if (storage->template has_attribute_value<express::Base>(attr_index)) {
                 express::Base inst = storage->get_attribute_value(attr_index);
-                if (!inst.declaration().as_entity()) {
+                if (inst && !inst.declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
 #ifdef IFOPSH_SAFE_INSTANCE
                     storage = inst.data_weak().lock();
