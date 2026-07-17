@@ -23,7 +23,6 @@ import numbers
 import os
 import re
 import time
-import types
 import weakref
 import zipfile
 from collections.abc import Callable, Generator
@@ -251,12 +250,7 @@ READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
-
-# TODO: Workaround for old builds, remove after build stabilizes.
-try:
-    UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
-except:
-    UNKNOWN = 5  # Workaround
+UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
 
 import struct
 
@@ -1066,13 +1060,8 @@ class file:
 
     @property
     def header(self) -> file_header:
-        # TODO: Workaround for old builds, remove after build stabilizes.
         # TODO: No need for `wrapped_data.header` to be a method - should use `@property`?
-        header = self.wrapped_data.header
-        if isinstance(header, types.MethodType):
-            return file_header(self, self.wrapped_data.header())
-        else:
-            return self.wrapped_data.header
+        return file_header(self, self.wrapped_data.header())
 
     @property
     def storage(self) -> Optional[rocksdb_file_storage]:
