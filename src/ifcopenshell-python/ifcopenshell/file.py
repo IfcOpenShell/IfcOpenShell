@@ -22,8 +22,6 @@ import functools
 import numbers
 import os
 import re
-import types
-import weakref
 import zipfile
 from collections.abc import Callable, Generator
 from pathlib import Path

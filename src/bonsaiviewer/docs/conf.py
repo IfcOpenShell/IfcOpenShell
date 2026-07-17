@@ -3,7 +3,6 @@
 import os
 from datetime import datetime
 
-
 project = "Bonsai Viewer"
 copyright = f"2020-{datetime.now().year} IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"

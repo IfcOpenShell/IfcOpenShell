@@ -29,7 +29,6 @@ try:
     import ifcopenshell.util.schema
 
     from . import ifcopenshell_wrapper
-    from . import entity_instance
     from . import file
 
     class StreamTransformer(Transformer):

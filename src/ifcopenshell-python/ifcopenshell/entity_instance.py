@@ -22,18 +22,14 @@ from __future__ import annotations
 import functools
 import importlib
 import itertools
-import numbers
 import operator
 import subprocess
 import sys
 import time
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, Union, cast, overload
+from typing import Any, TypeVar, Union
 
 from . import ifcopenshell_wrapper, settings
-
-if TYPE_CHECKING:
-    import ifcopenshell
 
 try:
     import logging

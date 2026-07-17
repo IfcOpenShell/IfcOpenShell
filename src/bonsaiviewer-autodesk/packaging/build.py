@@ -28,7 +28,6 @@ import subprocess
 import zipfile
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DIST_DIR     = PROJECT_ROOT / "dist"
 TARGET_DIR   = PROJECT_ROOT / "target" / "release"

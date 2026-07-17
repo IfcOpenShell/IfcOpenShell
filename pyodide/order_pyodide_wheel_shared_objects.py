@@ -11,7 +11,6 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-
 SCHEMA_ORDER = {
     "ifc2x3": 0,
     "ifc4": 1,

@@ -16,7 +16,6 @@ import zipfile
 from email.parser import Parser
 from pathlib import Path
 
-
 MAIN_SHARED_OBJECT_RE = re.compile(r"(^|/)_ifcopenshell_wrapper(?:\.|$)")
 PURE_PYTHON_PACKAGE_NAME = "ifcopenshell-pure-python"
 PURE_PYTHON_PREFIXES = (
@@ -132,14 +131,14 @@ def build_wheel(
         "License-File: COPYING\n"
         "License-File: COPYING.LESSER\n"
         "\n"
-    ).encode("utf-8")
+    ).encode()
     wheel = (
         "Wheel-Version: 1.0\n"
         "Generator: split_pyodide_ifcopenshell_wheel.py\n"
         f"Root-Is-Purelib: {str(root_is_purelib).lower()}\n"
         f"Tag: {tag}\n"
         "\n"
-    ).encode("utf-8")
+    ).encode()
 
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for info, data in payloads:

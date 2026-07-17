@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from collections import defaultdict
 from collections.abc import Iterable

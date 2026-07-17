@@ -18,7 +18,14 @@ from .conventions import (
     sequence_adapter_name,
     strip_pointer,
 )
-from .model import CallableModel, ClassModel, EnumModel, EnumValueModel, ModuleModel, ParameterModel
+from .model import (
+    CallableModel,
+    ClassModel,
+    EnumModel,
+    EnumValueModel,
+    ModuleModel,
+    ParameterModel,
+)
 
 
 def _require_clang():

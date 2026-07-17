@@ -4,6 +4,7 @@ from enum import IntEnum
 
 import _ifcopenshell_experimental as _native
 
+
 class FileType(IntEnum):
     FT_IFCSPF = _native.FT_IFCSPF
     FT_IFCXML = _native.FT_IFCXML

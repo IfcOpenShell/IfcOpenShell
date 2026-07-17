@@ -3,7 +3,6 @@ from __future__ import annotations
 import keyword
 import re
 
-
 INTEGER_CPP_TYPES = {"int", "size_t", "std::size_t", "unsigned int", "uint32_t"}
 
 
