@@ -394,6 +394,7 @@ class LibraryGenerator:
         constituent_name_map = {
             "Frame": "Framing",
             "Glass": "Glazing",
+            "Panel": "Framing",
         }
 
         for rep_name, obj_name in representations.items():
@@ -428,11 +429,13 @@ class LibraryGenerator:
                 if rep_name == "model_body":
                     constituent_name = constituent_name_map.get(material.name, material.name)
                     constituent_names.append(constituent_name)
-                    ifc_material = ifcopenshell.api.material.add_material(self.file, name=constituent_name)
+                    ifc_material = materials_for_constituents.get(constituent_name)
+                    if ifc_material is None:
+                        ifc_material = ifcopenshell.api.material.add_material(self.file, name=constituent_name)
+                        materials_for_constituents[constituent_name] = ifc_material
                     ifcopenshell.api.style.assign_material_style(
                         self.file, material=ifc_material, style=style, context=self.representations[rep_name]
                     )
-                    materials_for_constituents[constituent_name] = ifc_material
 
             if styles:
                 ifcopenshell.api.style.assign_representation_styles(
