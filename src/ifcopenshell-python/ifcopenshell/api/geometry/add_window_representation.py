@@ -47,6 +47,8 @@ WINDOW_TYPE = Literal[
     "TRIPLE_PANEL_VERTICAL",
 ]
 
+WINDOW_SHAPE = Literal["RECTANGLE", "ROUND", "ARCH"]
+
 DEFAULT_PANEL_SCHEMAS = {
     "SINGLE_PANEL": [[0]],
     "DOUBLE_PANEL_HORIZONTAL": [[0], [1]],
@@ -234,6 +236,123 @@ def create_ifc_window(
     return {"Lining": lining_items, "Framing": frame_extruded_items, "Glazing": [glass]}
 
 
+def create_fan_curve(
+    builder: ShapeBuilder, center_x: float, radius: float, chord_z: float
+) -> ifcopenshell.entity_instance:
+    """Closed fanlight boundary: chord at `chord_z` topped by an arc of `radius`.
+
+    Coordinates are local, arc center at (center_x, 0)."""
+    chord_half = max(radius**2 - chord_z**2, 0) ** 0.5
+    p_left = (center_x - chord_half, chord_z)
+    p_right = (center_x + chord_half, chord_z)
+    if builder.file.schema == "IFC2X3":
+        # arcs in polylines are not supported in IFC2X3, use polygonal approximation
+        segments = 16
+        start_angle = np.arctan2(chord_z, chord_half)
+        angles = np.linspace(start_angle, np.pi - start_angle, segments + 1)[1:-1]
+        arc_points = [(center_x + radius * np.cos(a), radius * np.sin(a)) for a in angles]
+        return builder.polyline([p_left, p_right, *arc_points], closed=True)
+    return builder.polyline([p_left, p_right, (center_x, radius)], arc_points=(2,), closed=True)
+
+
+def create_ifc_round_window(
+    builder: ShapeBuilder,
+    overall_diameter: float,
+    lining_thickness: float,
+    lining_depth: float,
+    lining_to_panel_offset_x: float,
+    lining_to_panel_offset_y_full: float,
+    frame_depth: float,
+    frame_thickness: float,
+    glass_thickness: float,
+) -> dict[str, list[ifcopenshell.entity_instance]]:
+    """Create a circular (porthole) window: annular lining, annular frame and a glass disk."""
+    radius = overall_diameter / 2
+    center = (radius, radius)
+
+    lining_profile = builder.profile(
+        builder.circle(center, radius), inner_curves=[builder.circle(center, radius - lining_thickness)]
+    )
+    lining = builder.extrude(lining_profile, lining_depth, **builder.extrude_kwargs("Y"))
+
+    frame_radius = radius - lining_to_panel_offset_x
+    frame_inner = builder.circle(center, frame_radius - frame_thickness)
+    frame_profile = builder.profile(builder.circle(center, frame_radius), inner_curves=[frame_inner])
+    frame_position = V(0, lining_to_panel_offset_y_full, 0)
+    frame = builder.extrude(frame_profile, frame_depth, position=frame_position, **builder.extrude_kwargs("Y"))
+
+    glass_position = V(0, lining_to_panel_offset_y_full + frame_depth / 2 - glass_thickness / 2, 0)
+    glass = builder.extrude(
+        builder.deep_copy(frame_inner), glass_thickness, position=glass_position, **builder.extrude_kwargs("Y")
+    )
+
+    return {"Lining": [lining], "Framing": [frame], "Glazing": [glass]}
+
+
+def create_ifc_arch_fan(
+    builder: ShapeBuilder,
+    width: float,
+    bottom_lining_thickness: float,
+    lining_thickness: float,
+    lining_depth: float,
+    lining_to_panel_offset_x: float,
+    bottom_frame_offset: float,
+    lining_to_panel_offset_y_full: float,
+    frame_depth: float,
+    frame_thickness: float,
+    glass_thickness: float,
+    muntin_count: int,
+    muntin_thickness: float,
+    position: np.ndarray,
+) -> dict[str, list[ifcopenshell.entity_instance]]:
+    """Create a semicircular fanlight panel with radiating muntin bars.
+
+    Local origin is at the arch center (left edge of the panel on the spring line)."""
+    radius = width / 2
+    center_x = radius
+
+    lining_outer = create_fan_curve(builder, center_x, radius, 0)
+    lining_inner = create_fan_curve(builder, center_x, radius - lining_thickness, bottom_lining_thickness)
+    lining_profile = builder.profile(lining_outer, inner_curves=[lining_inner])
+    lining = builder.extrude(lining_profile, lining_depth, position=position, **builder.extrude_kwargs("Y"))
+
+    frame_radius = radius - lining_to_panel_offset_x
+    frame_outer = create_fan_curve(builder, center_x, frame_radius, bottom_frame_offset)
+    frame_inner = create_fan_curve(
+        builder, center_x, frame_radius - frame_thickness, bottom_frame_offset + frame_thickness
+    )
+    frame_profile = builder.profile(frame_outer, inner_curves=[frame_inner])
+    frame_position = position + V(0, lining_to_panel_offset_y_full, 0)
+    frame = builder.extrude(frame_profile, frame_depth, position=frame_position, **builder.extrude_kwargs("Y"))
+    framing_items = [frame]
+
+    glass_position = position + V(0, lining_to_panel_offset_y_full + frame_depth / 2 - glass_thickness / 2, 0)
+    glass = builder.extrude(
+        builder.deep_copy(frame_inner), glass_thickness, position=glass_position, **builder.extrude_kwargs("Y")
+    )
+
+    # radiating muntin bars, from the arch center to the middle of the frame ring
+    bar_length = frame_radius - frame_thickness / 2
+    half = muntin_thickness / 2
+    for bar_i in range(1, muntin_count + 1):
+        angle = np.pi * bar_i / (muntin_count + 1)
+        direction = np.array((np.cos(angle), np.sin(angle)))
+        normal = np.array((-np.sin(angle), np.cos(angle)))
+        start = np.array((center_x, 0.0))
+        bar_points = [
+            start - normal * half,
+            start - normal * half + direction * bar_length,
+            start + normal * half + direction * bar_length,
+            start + normal * half,
+        ]
+        bar_profile = builder.profile(builder.polyline(bar_points, closed=True))
+        framing_items.append(
+            builder.extrude(bar_profile, frame_depth, position=frame_position, **builder.extrude_kwargs("Y"))
+        )
+
+    return {"Lining": [lining], "Framing": framing_items, "Glazing": [glass]}
+
+
 # we use dataclass as we need default values for arguments
 # it's okay to use slots since we don't need dynamic attributes
 @dataclasses.dataclass(slots=True)
@@ -364,6 +483,8 @@ def add_window_representation(
     panel_properties: Optional[list[Union[WindowPanelProperties, dict[str, Any]]]] = None,
     part_of_product: Optional[ifcopenshell.entity_instance] = None,
     unit_scale: Optional[float] = None,
+    window_shape: WINDOW_SHAPE = "RECTANGLE",
+    arch_muntin_count: int = 4,
 ) -> ifcopenshell.entity_instance:
     """units in usecase_settings expected to be in ifc project units
 
@@ -371,6 +492,12 @@ def add_window_representation(
     :param overall_height: Overall window height. Defaults to 0.9m.
     :param overall_width: Overall window width. Defaults to 0.6m.
     :param partition_type: Type of the window. Defaults to SINGLE_PANEL.
+    :param window_shape: Overall window shape. Defaults to RECTANGLE.
+        ROUND is a circular window, overall_width is the diameter and overall_height is ignored.
+        ARCH is a rectangular window topped by a semicircular fanlight, the arch radius
+        is half the overall width and the arch apex is at overall_height.
+        Non-rectangular shapes are always single-partition, partition_type is forced to SINGLE_PANEL.
+    :param arch_muntin_count: Number of radiating muntin bars in the ARCH fanlight.
     :param lining_properties: WindowLiningProperties or a dictionary to create one.
         See WindowLiningProperties description for details.
     :param panel_properties: A list of WindowPanelProperties or dictionaries to create one.
@@ -389,6 +516,8 @@ def add_window_representation(
     # define unit_scale first as it's going to be used setting default arguments
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file) if unit_scale is None else unit_scale
     settings: dict[str, Any] = {"unit_scale": unit_scale}
+    # assign before convert_si_to_unit is used for the default arguments below
+    usecase.settings = settings
 
     if lining_properties is None:
         lining_properties = WindowLiningProperties()
@@ -407,6 +536,9 @@ def add_window_representation(
         properties.initialize_properties(unit_scale)
         panel_properties[i] = dataclasses.asdict(properties)
 
+    if window_shape != "RECTANGLE":
+        partition_type = "SINGLE_PANEL"
+
     settings.update(
         {
             "context": context,
@@ -416,10 +548,11 @@ def add_window_representation(
             "lining_properties": lining_properties,
             "panel_properties": panel_properties,
             "part_of_product": part_of_product,
+            "window_shape": window_shape,
+            "arch_muntin_count": arch_muntin_count,
         }
     )
 
-    usecase.settings = settings
     usecase.settings["panel_schema"] = DEFAULT_PANEL_SCHEMAS[usecase.settings["partition_type"]]
     return usecase.execute()
 
@@ -636,112 +769,184 @@ class Usecase:
         if self.settings["context"].TargetView == "PLAN_VIEW":
             return create_ifc_window_2d_representation()
 
-        # TODO: need more readable way to define panel width and height
-        unique_rows_in_col = [
-            len(set(row[column_i] for row in panel_schema)) for column_i in range(len(panel_schema[0]))
-        ]
-
-        for row_i, panel_row in enumerate(panel_schema):
-            accumulated_width = 0
-            unique_cols = len(set(panel_row))
-
-            for column_i, panel_i in enumerate(panel_row):
-                # detect mullion
-                has_mullion = unique_cols > 1
-                first_column = column_i == 0
-                last_column = column_i == unique_cols - 1
-                left_to_mullion = has_mullion and not last_column
-                right_to_mullion = has_mullion and not first_column
-
-                # detect transom
-                has_transom = unique_rows_in_col[column_i] > 1
-                first_row = row_i == 0
-                last_row = row_i == unique_rows_in_col[column_i] - 1
-                top_to_transom = has_transom and not first_row
-                bottom_to_transom = has_transom and not last_row
-
-                # calculate current panel dimensions
-                if has_mullion:
-                    # panel_width
-                    if first_column:
-                        panel_width = first_mullion_offset
-                    elif last_column:
-                        panel_width = overall_width - accumulated_width
-                    else:
-                        panel_width = second_mullion_offset - accumulated_width
-                else:
-                    panel_width = overall_width
-
-                if has_transom:
-                    if first_row:
-                        panel_height = first_transom_offset
-                    elif last_row:
-                        panel_height = overall_height - accumulated_height[column_i]
-                    else:
-                        panel_height = second_transom_offset - accumulated_height[column_i]
-                else:
-                    panel_height = overall_height
-
-                if panel_i in built_panels:
-                    accumulated_height[column_i] += panel_height
-                    accumulated_width += panel_width
-                    continue
-
-                cur_panel = panels[panel_i]
-                frame_depth = cur_panel["FrameDepth"]
-                frame_thickness = cur_panel["FrameThickness"]
-                lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
-
-                # fmt: off
-                # calculate lining thickness and frame size / offset
-                # taking into account mullions and transoms
-                window_lining_thickness = [
-                    mullion_thickness if right_to_mullion  else lining_thickness,
-                    transom_thickness if bottom_to_transom else lining_thickness,
-                    mullion_thickness if left_to_mullion   else lining_thickness,
-                    transom_thickness if top_to_transom    else lining_thickness,
-                ]
-
-                # x offsets can differ if there are mullions or transoms because we're trying to maintain symmetry
-                base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
-                current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
-                current_offset_z = base_frame_clear - frame_thickness + transom_thickness
-                x_offsets = [
-                    current_offset_x if right_to_mullion  else lining_to_panel_offset_x,  # LEFT
-                    current_offset_z if bottom_to_transom else lining_to_panel_offset_x,  # TOP
-                    current_offset_x if left_to_mullion   else lining_to_panel_offset_x,  # RIGHT
-                    current_offset_z if top_to_transom    else lining_to_panel_offset_x,  # BOTTOM
-                ]
-                # fmt: on
-
-                window_lining_size = V(panel_width, lining_depth, panel_height)
-                frame_size = window_lining_size.copy()
-                frame_size[np_Y] = frame_depth
-                frame_size[np_X] -= x_offsets[0] + x_offsets[2]
-                frame_size[np_Z] -= x_offsets[1] + x_offsets[3]
-
-                window_panel_position = V(accumulated_width, 0, accumulated_height[column_i])
-                # create window panel
-                current_window_items = create_ifc_window(
+        window_shape: WINDOW_SHAPE = self.settings["window_shape"]
+        if window_shape in ("ROUND", "ARCH"):
+            frame_depth = panels[0]["FrameDepth"]
+            frame_thickness = panels[0]["FrameThickness"]
+            lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
+            if window_shape == "ROUND":
+                shaped_items = create_ifc_round_window(
                     builder,
-                    window_lining_size,
-                    window_lining_thickness,
+                    overall_width,
+                    lining_thickness,
+                    lining_depth,
                     lining_to_panel_offset_x,
                     lining_to_panel_offset_y_full,
-                    frame_size,
+                    frame_depth,
                     frame_thickness,
                     glass_thickness,
-                    window_panel_position,
-                    x_offsets,
                 )
-                built_panels.append(panel_i)
-                window_items.extend(chain(*current_window_items.values()))
-                lining_items.extend(current_window_items["Lining"])
-                framing_items.extend(current_window_items["Framing"])
-                glazing_items.extend(current_window_items["Glazing"])
+            else:
+                radius = overall_width / 2
+                spring_height = overall_height - radius
+                base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+                offset_z_top = base_frame_clear - frame_thickness + transom_thickness
+                if spring_height > 0:
+                    x_offsets = [lining_to_panel_offset_x, offset_z_top] + [lining_to_panel_offset_x] * 2
+                    lower_lining_thickness = [lining_thickness, transom_thickness] + [lining_thickness] * 2
+                    frame_size = V(
+                        overall_width - x_offsets[0] - x_offsets[2],
+                        frame_depth,
+                        spring_height - x_offsets[1] - x_offsets[3],
+                    )
+                    lower_items = create_ifc_window(
+                        builder,
+                        V(overall_width, lining_depth, spring_height),
+                        lower_lining_thickness,
+                        lining_to_panel_offset_x,
+                        lining_to_panel_offset_y_full,
+                        frame_size,
+                        frame_thickness,
+                        glass_thickness,
+                        V(0, 0, 0),
+                        x_offsets,
+                    )
+                    fan_bottom_lining = transom_thickness
+                    fan_bottom_frame_offset = offset_z_top
+                else:
+                    # degenerate arch (lunette): no lower panel, fan sits on the sill
+                    spring_height = 0
+                    lower_items = {"Lining": [], "Framing": [], "Glazing": []}
+                    fan_bottom_lining = lining_thickness
+                    fan_bottom_frame_offset = lining_to_panel_offset_x
+                fan_items = create_ifc_arch_fan(
+                    builder,
+                    overall_width,
+                    fan_bottom_lining,
+                    lining_thickness,
+                    lining_depth,
+                    lining_to_panel_offset_x,
+                    fan_bottom_frame_offset,
+                    lining_to_panel_offset_y_full,
+                    frame_depth,
+                    frame_thickness,
+                    glass_thickness,
+                    self.settings["arch_muntin_count"],
+                    lining_props["MullionThickness"],
+                    V(0, 0, spring_height),
+                )
+                shaped_items = {key: lower_items[key] + fan_items[key] for key in fan_items}
+            lining_items.extend(shaped_items["Lining"])
+            framing_items.extend(shaped_items["Framing"])
+            glazing_items.extend(shaped_items["Glazing"])
+            window_items.extend(chain(*shaped_items.values()))
+        else:
+            # TODO: need more readable way to define panel width and height
+            unique_rows_in_col = [
+                len(set(row[column_i] for row in panel_schema)) for column_i in range(len(panel_schema[0]))
+            ]
 
-                accumulated_height[column_i] += panel_height
-                accumulated_width += panel_width
+            for row_i, panel_row in enumerate(panel_schema):
+                accumulated_width = 0
+                unique_cols = len(set(panel_row))
+
+                for column_i, panel_i in enumerate(panel_row):
+                    # detect mullion
+                    has_mullion = unique_cols > 1
+                    first_column = column_i == 0
+                    last_column = column_i == unique_cols - 1
+                    left_to_mullion = has_mullion and not last_column
+                    right_to_mullion = has_mullion and not first_column
+
+                    # detect transom
+                    has_transom = unique_rows_in_col[column_i] > 1
+                    first_row = row_i == 0
+                    last_row = row_i == unique_rows_in_col[column_i] - 1
+                    top_to_transom = has_transom and not first_row
+                    bottom_to_transom = has_transom and not last_row
+
+                    # calculate current panel dimensions
+                    if has_mullion:
+                        # panel_width
+                        if first_column:
+                            panel_width = first_mullion_offset
+                        elif last_column:
+                            panel_width = overall_width - accumulated_width
+                        else:
+                            panel_width = second_mullion_offset - accumulated_width
+                    else:
+                        panel_width = overall_width
+
+                    if has_transom:
+                        if first_row:
+                            panel_height = first_transom_offset
+                        elif last_row:
+                            panel_height = overall_height - accumulated_height[column_i]
+                        else:
+                            panel_height = second_transom_offset - accumulated_height[column_i]
+                    else:
+                        panel_height = overall_height
+
+                    if panel_i in built_panels:
+                        accumulated_height[column_i] += panel_height
+                        accumulated_width += panel_width
+                        continue
+
+                    cur_panel = panels[panel_i]
+                    frame_depth = cur_panel["FrameDepth"]
+                    frame_thickness = cur_panel["FrameThickness"]
+                    lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
+
+                    # fmt: off
+                    # calculate lining thickness and frame size / offset
+                    # taking into account mullions and transoms
+                    window_lining_thickness = [
+                        mullion_thickness if right_to_mullion  else lining_thickness,
+                        transom_thickness if bottom_to_transom else lining_thickness,
+                        mullion_thickness if left_to_mullion   else lining_thickness,
+                        transom_thickness if top_to_transom    else lining_thickness,
+                    ]
+
+                    # x offsets can differ if there are mullions or transoms because we're trying to maintain symmetry
+                    base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+                    current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
+                    current_offset_z = base_frame_clear - frame_thickness + transom_thickness
+                    x_offsets = [
+                        current_offset_x if right_to_mullion  else lining_to_panel_offset_x,  # LEFT
+                        current_offset_z if bottom_to_transom else lining_to_panel_offset_x,  # TOP
+                        current_offset_x if left_to_mullion   else lining_to_panel_offset_x,  # RIGHT
+                        current_offset_z if top_to_transom    else lining_to_panel_offset_x,  # BOTTOM
+                    ]
+                    # fmt: on
+
+                    window_lining_size = V(panel_width, lining_depth, panel_height)
+                    frame_size = window_lining_size.copy()
+                    frame_size[np_Y] = frame_depth
+                    frame_size[np_X] -= x_offsets[0] + x_offsets[2]
+                    frame_size[np_Z] -= x_offsets[1] + x_offsets[3]
+
+                    window_panel_position = V(accumulated_width, 0, accumulated_height[column_i])
+                    # create window panel
+                    current_window_items = create_ifc_window(
+                        builder,
+                        window_lining_size,
+                        window_lining_thickness,
+                        lining_to_panel_offset_x,
+                        lining_to_panel_offset_y_full,
+                        frame_size,
+                        frame_thickness,
+                        glass_thickness,
+                        window_panel_position,
+                        x_offsets,
+                    )
+                    built_panels.append(panel_i)
+                    window_items.extend(chain(*current_window_items.values()))
+                    lining_items.extend(current_window_items["Lining"])
+                    framing_items.extend(current_window_items["Framing"])
+                    glazing_items.extend(current_window_items["Glazing"])
+
+                    accumulated_height[column_i] += panel_height
+                    accumulated_width += panel_width
 
         builder.translate(window_items, (0, lining_offset, 0))  # wall offset
         representation = builder.get_representation(self.settings["context"], window_items)

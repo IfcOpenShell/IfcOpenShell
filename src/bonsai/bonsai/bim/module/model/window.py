@@ -19,6 +19,7 @@
 
 import collections.abc
 import json
+import math
 from typing import TYPE_CHECKING
 
 import bmesh
@@ -59,9 +60,14 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
     ifc_file = tool.Ifc.get()
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
+    # a round window is geometrically defined by its diameter (overall width)
+    overall_height = props.overall_width if props.window_shape == "ROUND" else props.overall_height
+
     representation_data = {
         "partition_type": props.window_type,
-        "overall_height": props.overall_height / si_conversion,
+        "window_shape": props.window_shape,
+        "arch_muntin_count": props.arch_muntin_count,
+        "overall_height": overall_height / si_conversion,
         "overall_width": props.overall_width / si_conversion,
         "lining_properties": {
             "LiningDepth": props.lining_depth / si_conversion,
@@ -141,7 +147,7 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
     occurrences = tool.Ifc.get_all_element_occurrences(element)
     for occurrence in occurrences:
         occurrence.OverallWidth = props.overall_width / si_conversion
-        occurrence.OverallHeight = props.overall_height / si_conversion
+        occurrence.OverallHeight = overall_height / si_conversion
 
     tool.Model.update_simple_openings(element)
 
@@ -262,13 +268,168 @@ def create_bm_window(
     return (window_lining_verts, frame_verts, glass_verts)
 
 
-def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
-    obj = context.active_object
-    assert obj
-    props = tool.Model.get_window_props(obj)
-    if not props.is_editing:
-        return
+def create_bm_circle_points(
+    center_x: float, center_z: float, radius: float, segments: int = 32
+) -> list[tuple[float, float]]:
+    return [
+        (
+            center_x + radius * math.cos(2 * math.pi * i / segments),
+            center_z + radius * math.sin(2 * math.pi * i / segments),
+        )
+        for i in range(segments)
+    ]
 
+
+def create_bm_fan_points(
+    center_x: float, radius: float, chord_z: float, segments: int = 24
+) -> list[tuple[float, float]]:
+    """Fanlight outline: chord at `chord_z` topped by an arc of `radius` centered at (center_x, 0)"""
+    chord_half = max(radius**2 - chord_z**2, 0) ** 0.5
+    start_angle = math.atan2(chord_z, chord_half)
+    points = [(center_x - chord_half, chord_z), (center_x + chord_half, chord_z)]
+    for i in range(1, segments):
+        angle = start_angle + (math.pi - 2 * start_angle) * i / segments
+        points.append((center_x + radius * math.cos(angle), radius * math.sin(angle)))
+    return points
+
+
+def create_bm_extruded_ring(
+    bm: bmesh.types.BMesh,
+    outer_points: list[tuple[float, float]],
+    inner_points: list[tuple[float, float]],
+    depth: float,
+    position: Vector = V_(0, 0, 0).freeze(),
+) -> list[bmesh.types.BMVert]:
+    """`outer_points` and `inner_points` are matched length 2D (X, Z) loops"""
+    outer_verts = [bm.verts.new((x, 0, z)) for x, z in outer_points]
+    inner_verts = [bm.verts.new((x, 0, z)) for x, z in inner_points]
+    n_verts = len(outer_verts)
+    faces = [
+        bm.faces.new((outer_verts[i], outer_verts[(i + 1) % n_verts], inner_verts[(i + 1) % n_verts], inner_verts[i]))
+        for i in range(n_verts)
+    ]
+    extruded = bmesh.ops.extrude_face_region(bm, geom=faces)
+    translate_verts = [v for v in extruded["geom"] if isinstance(v, BMVert)]
+    bmesh.ops.translate(bm, vec=Vector((0, depth, 0)), verts=translate_verts)
+    all_verts = outer_verts + inner_verts + translate_verts
+    bmesh.ops.translate(bm, vec=position, verts=all_verts)
+    return all_verts
+
+
+def create_bm_prism(
+    bm: bmesh.types.BMesh,
+    points: list[tuple[float, float]],
+    depth: float,
+    position: Vector = V_(0, 0, 0).freeze(),
+) -> list[bmesh.types.BMVert]:
+    """extrude a 2D (X, Z) polygon along +Y by `depth`"""
+    verts = [bm.verts.new((x, 0, z)) for x, z in points]
+    face = bm.faces.new(verts)
+    extruded = bmesh.ops.extrude_face_region(bm, geom=[face])
+    translate_verts = [v for v in extruded["geom"] if isinstance(v, BMVert)]
+    bmesh.ops.translate(bm, vec=Vector((0, depth, 0)), verts=translate_verts)
+    all_verts = verts + translate_verts
+    bmesh.ops.translate(bm, vec=position, verts=all_verts)
+    return all_verts
+
+
+def create_bm_round_window(bm: bmesh.types.BMesh, props: "BIMWindowProperties") -> None:
+    glass_thickness = 0.01
+    radius = props.overall_width / 2
+    frame_depth = props.frame_depth[0]
+    frame_thickness = props.frame_thickness[0]
+    lining_to_panel_offset_y_full = (props.lining_depth - frame_depth) + props.lining_to_panel_offset_y
+
+    outer_points = create_bm_circle_points(radius, radius, radius)
+    inner_points = create_bm_circle_points(radius, radius, radius - props.lining_thickness)
+    create_bm_extruded_ring(bm, outer_points, inner_points, props.lining_depth)
+
+    frame_radius = radius - props.lining_to_panel_offset_x
+    frame_outer_points = create_bm_circle_points(radius, radius, frame_radius)
+    frame_inner_points = create_bm_circle_points(radius, radius, frame_radius - frame_thickness)
+    create_bm_extruded_ring(
+        bm, frame_outer_points, frame_inner_points, frame_depth, V_(0, lining_to_panel_offset_y_full, 0)
+    )
+
+    glass_y = lining_to_panel_offset_y_full + frame_depth / 2 - glass_thickness / 2
+    create_bm_prism(bm, frame_inner_points, glass_thickness, V_(0, glass_y, 0))
+
+
+def create_bm_arch_window(bm: bmesh.types.BMesh, props: "BIMWindowProperties") -> None:
+    glass_thickness = 0.01
+    width = props.overall_width
+    radius = width / 2
+    lining_thickness = props.lining_thickness
+    transom_thickness = props.transom_thickness / 2
+    frame_depth = props.frame_depth[0]
+    frame_thickness = props.frame_thickness[0]
+    lining_to_panel_offset_x = props.lining_to_panel_offset_x
+    lining_to_panel_offset_y_full = (props.lining_depth - frame_depth) + props.lining_to_panel_offset_y
+
+    spring_height = props.overall_height - radius
+    base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
+    offset_z_top = base_frame_clear - frame_thickness + transom_thickness
+
+    if spring_height > 0:
+        x_offsets = [lining_to_panel_offset_x, offset_z_top] + [lining_to_panel_offset_x] * 2
+        frame_size = V_(
+            width - x_offsets[0] - x_offsets[2],
+            frame_depth,
+            spring_height - x_offsets[1] - x_offsets[3],
+        )
+        create_bm_window(
+            bm,
+            V_(width, props.lining_depth, spring_height),
+            [lining_thickness, transom_thickness] + [lining_thickness] * 2,
+            lining_to_panel_offset_x,
+            lining_to_panel_offset_y_full,
+            frame_size,
+            frame_thickness,
+            glass_thickness,
+            V_(0, 0, 0),
+            x_offsets,
+        )
+        fan_bottom_lining = transom_thickness
+        fan_bottom_frame_offset = offset_z_top
+    else:
+        # degenerate arch (lunette): no lower panel, fan sits on the sill
+        spring_height = 0
+        fan_bottom_lining = lining_thickness
+        fan_bottom_frame_offset = lining_to_panel_offset_x
+
+    outer_points = create_bm_fan_points(radius, radius, 0)
+    inner_points = create_bm_fan_points(radius, radius - lining_thickness, fan_bottom_lining)
+    create_bm_extruded_ring(bm, outer_points, inner_points, props.lining_depth, V_(0, 0, spring_height))
+
+    frame_radius = radius - lining_to_panel_offset_x
+    frame_outer_points = create_bm_fan_points(radius, frame_radius, fan_bottom_frame_offset)
+    frame_inner_points = create_bm_fan_points(
+        radius, frame_radius - frame_thickness, fan_bottom_frame_offset + frame_thickness
+    )
+    frame_position = V_(0, lining_to_panel_offset_y_full, spring_height)
+    create_bm_extruded_ring(bm, frame_outer_points, frame_inner_points, frame_depth, frame_position)
+
+    glass_y = lining_to_panel_offset_y_full + frame_depth / 2 - glass_thickness / 2
+    create_bm_prism(bm, frame_inner_points, glass_thickness, V_(0, glass_y, spring_height))
+
+    # radiating muntin bars, from the arch center to the middle of the frame ring
+    bar_length = frame_radius - frame_thickness / 2
+    half = props.mullion_thickness / 2
+    for bar_i in range(1, props.arch_muntin_count + 1):
+        angle = math.pi * bar_i / (props.arch_muntin_count + 1)
+        direction = Vector((math.cos(angle), math.sin(angle)))
+        normal = Vector((-math.sin(angle), math.cos(angle)))
+        start = Vector((radius, 0))
+        bar_points = [
+            tuple(start - normal * half),
+            tuple(start - normal * half + direction * bar_length),
+            tuple(start + normal * half + direction * bar_length),
+            tuple(start + normal * half),
+        ]
+        create_bm_prism(bm, bar_points, frame_depth, frame_position)
+
+
+def create_bm_rect_window(bm: bmesh.types.BMesh, props: "BIMWindowProperties") -> None:
     panel_schema = DEFAULT_PANEL_SCHEMAS[props.window_type]
     accumulated_height = [0] * len(panel_schema[0])
     built_panels = []
@@ -279,7 +440,6 @@ def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
     lining_to_panel_offset_x = props.lining_to_panel_offset_x
     lining_to_panel_offset_y = props.lining_to_panel_offset_y
     lining_thickness = props.lining_thickness
-    lining_offset = props.lining_offset
 
     mullion_thickness = props.mullion_thickness / 2
     first_mullion_offset = props.first_mullion_offset
@@ -290,7 +450,6 @@ def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
 
     glass_thickness = 0.01
 
-    bm = bmesh.new()
     panel_schema = list(reversed(panel_schema))
 
     # TODO: need more readable way to define panel width and height
@@ -397,7 +556,23 @@ def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
             accumulated_height[column_i] += panel_height
             accumulated_width += panel_width
 
-    bmesh.ops.translate(bm, vec=V_(0, lining_offset, 0), verts=bm.verts)
+
+def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
+    obj = context.active_object
+    assert obj
+    props = tool.Model.get_window_props(obj)
+    if not props.is_editing:
+        return
+
+    bm = bmesh.new()
+    if props.window_shape == "ROUND":
+        create_bm_round_window(bm, props)
+    elif props.window_shape == "ARCH":
+        create_bm_arch_window(bm, props)
+    else:
+        create_bm_rect_window(bm, props)
+
+    bmesh.ops.translate(bm, vec=V_(0, props.lining_offset, 0), verts=bm.verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 
@@ -619,6 +794,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             axis=(0, 0, 1),
             min_value=0.01,
             text_alignment="start",
+            visibility_condition=lambda p: p.window_shape != "ROUND",
             matrix_position=lambda p: V_(p.overall_width + _G.GIZMO_OFFSET, p.lining_offset - _G.GIZMO_OFFSET, 0),
         ),
         DimensionGizmoConfig(
