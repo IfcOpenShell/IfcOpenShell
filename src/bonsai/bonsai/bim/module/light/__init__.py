@@ -58,27 +58,42 @@ classes = (
 )
 
 
+def ensure_pyradiance_binaries_executable() -> None:
+    """Restore the exec bit on the pyradiance binaries we bundle.
+
+    pyradiance's wheels already ship their ``bin/`` binaries with the exec bit
+    set, but Blender installs bundled wheels with a plain ``zipfile`` extraction
+    (see Blender's ``_bpy_internal/extensions/wheel_manager.py``) that discards
+    unix permissions, so the binaries arrive non-executable and radiance
+    rendering fails. This mirrors what ``tool.Blender.ensure_bin_in_path`` already
+    does for the bundled ifcmerge binary.
+
+    We only ever touch a pyradiance we own. Anything already executable is left
+    untouched, which covers a distro/AUR package installed system-wide: the
+    packager is responsible for its permissions, it is already correct, and it
+    typically lives on a read-only filesystem. Any failure is best effort only and
+    must never break registration. See #7156.
+    """
+    if not pyradiance:
+        return
+    bin_path = Path(get_pyradiance_path()) / "bin"
+    if not bin_path.exists():
+        return
+    for file in bin_path.iterdir():
+        if not file.is_file() or os.access(file, os.X_OK):
+            continue
+        try:
+            file.chmod(file.stat().st_mode | stat.S_IEXEC)
+        except OSError as e:
+            # eg. a read-only or otherwise unwritable third-party install.
+            logger.warning(f"Could not set exec permission on '{file}': {e}. Radiance rendering may not work.")
+
+
 def register():
     bpy.types.Scene.BIMRadianceExporeterProperies = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
     bpy.types.Scene.BIMSolarProperties = bpy.props.PointerProperty(type=prop.BIMSolarProperties)
 
-    if pyradiance:
-        pyradiance_path = Path(get_pyradiance_path())
-        bin_path = pyradiance_path / "bin"
-        if bin_path.exists():
-            for file in bin_path.iterdir():
-                if not file.is_file() or os.access(file, os.X_OK):
-                    # Already executable (eg. a read-only systemwide/AUR install
-                    # that ships pyradiance's binaries with exec bits already set).
-                    # Skip the chmod entirely so we never touch a read-only filesystem.
-                    continue
-                try:
-                    file.chmod(file.stat().st_mode | stat.S_IEXEC)
-                except PermissionError:
-                    # Best effort only: some installs (eg. systemwide/AUR packages)
-                    # are not writable by the running user. Registration must not
-                    # fail because of it. See #7156.
-                    logger.warning(f"Failed to set exec permission on '{file}'. Radiance rendering may not work.")
+    ensure_pyradiance_binaries_executable()
 
 
 def unregister():
