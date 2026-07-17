@@ -255,6 +255,30 @@ def create_fan_curve(
     return builder.polyline([p_left, p_right, (center_x, radius)], arc_points=(2,), closed=True)
 
 
+def create_circle_profile(
+    builder: ShapeBuilder, center: tuple[float, float], radius: float
+) -> ifcopenshell.entity_instance:
+    """A solid circular profile, for the glass disk."""
+    position = builder.create_axis2_placement_2d(center)
+    return builder.file.create_entity("IfcCircleProfileDef", ProfileType="AREA", Position=position, Radius=radius)
+
+
+def create_circle_hollow_profile(
+    builder: ShapeBuilder, center: tuple[float, float], radius: float, wall_thickness: float
+) -> ifcopenshell.entity_instance:
+    """A concentric annular ring, for the lining/frame. One profile entity instead of an
+    outer circle plus an inner void, per https://github.com/IfcOpenShell/IfcOpenShell/pull/8695#issuecomment-5002906597.
+    """
+    position = builder.create_axis2_placement_2d(center)
+    return builder.file.create_entity(
+        "IfcCircleHollowProfileDef",
+        ProfileType="AREA",
+        Position=position,
+        Radius=radius,
+        WallThickness=wall_thickness,
+    )
+
+
 def create_ifc_round_window(
     builder: ShapeBuilder,
     overall_diameter: float,
@@ -270,20 +294,21 @@ def create_ifc_round_window(
     radius = overall_diameter / 2
     center = (radius, radius)
 
-    lining_profile = builder.profile(
-        builder.circle(center, radius), inner_curves=[builder.circle(center, radius - lining_thickness)]
-    )
+    lining_profile = create_circle_hollow_profile(builder, center, radius, lining_thickness)
     lining = builder.extrude(lining_profile, lining_depth, **builder.extrude_kwargs("Y"))
 
     frame_radius = radius - lining_to_panel_offset_x
-    frame_inner = builder.circle(center, frame_radius - frame_thickness)
-    frame_profile = builder.profile(builder.circle(center, frame_radius), inner_curves=[frame_inner])
+    frame_profile = create_circle_hollow_profile(builder, center, frame_radius, frame_thickness)
     frame_position = V(0, lining_to_panel_offset_y_full, 0)
     frame = builder.extrude(frame_profile, frame_depth, position=frame_position, **builder.extrude_kwargs("Y"))
 
+    glass_radius = frame_radius - frame_thickness
     glass_position = V(0, lining_to_panel_offset_y_full + frame_depth / 2 - glass_thickness / 2, 0)
     glass = builder.extrude(
-        builder.deep_copy(frame_inner), glass_thickness, position=glass_position, **builder.extrude_kwargs("Y")
+        create_circle_profile(builder, center, glass_radius),
+        glass_thickness,
+        position=glass_position,
+        **builder.extrude_kwargs("Y"),
     )
 
     return {"Lining": [lining], "Framing": [frame], "Glazing": [glass]}
