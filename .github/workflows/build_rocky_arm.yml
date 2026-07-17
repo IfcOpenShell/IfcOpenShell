@@ -92,7 +92,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON \
+          CXXFLAGS="-O3" CFLAGS="-O3" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON \
             uv run --with aqtinstall ./nix/build-all.py \
             -v --diskcleanup --shared 2>&1 \
             | tee build.log
