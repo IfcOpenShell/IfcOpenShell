@@ -220,8 +220,12 @@ def generate_space(
         else:
             assert space_polygon
 
+    follow_ceiling = spatial.should_follow_ceiling()
+
     if element and element.is_a("IfcSpace"):
-        spatial.set_space_representation_from_polygon(active_obj, element, space_polygon, h, polygon_is_si=True)
+        spatial.set_space_representation_from_polygon(
+            active_obj, element, space_polygon, h, polygon_is_si=True, follow_ceiling=follow_ceiling, base_z=z
+        )
         spatial.translate_obj_to_z_location(active_obj, z)
     else:
         if relating_type:
@@ -235,7 +239,9 @@ def generate_space(
         spatial.assign_ifcspace_class_to_obj(obj)
 
         element = ifc.get_entity(obj)
-        spatial.set_space_representation_from_polygon(obj, element, space_polygon, h, polygon_is_si=True)
+        spatial.set_space_representation_from_polygon(
+            obj, element, space_polygon, h, polygon_is_si=True, follow_ceiling=follow_ceiling, base_z=z
+        )
 
         if relating_type:
             spatial.assign_relating_type_to_element(ifc, type, element, relating_type)
@@ -248,6 +254,7 @@ def generate_spaces_from_walls(
 ) -> None:
     z = spatial.get_active_obj_z()
     h = spatial.get_active_obj_height()
+    follow_ceiling = spatial.should_follow_ceiling()
 
     union = spatial.get_union_shape_from_selected_objects()
 
@@ -262,7 +269,9 @@ def generate_spaces_from_walls(
         spatial.assign_ifcspace_class_to_obj(obj)
 
         element = ifc.get_entity(obj)
-        spatial.set_space_representation_from_polygon(obj, element, poly, h, polygon_is_si=False)
+        spatial.set_space_representation_from_polygon(
+            obj, element, poly, h, polygon_is_si=False, follow_ceiling=follow_ceiling, base_z=z
+        )
 
 
 def toggle_space_visibility(ifc: type[tool.Ifc], spatial: type[tool.Spatial]) -> None:
