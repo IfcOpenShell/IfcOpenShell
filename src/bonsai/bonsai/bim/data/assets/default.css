@@ -29,13 +29,23 @@ a:hover { cursor: pointer; }
    the inherited .projection rule above regardless of specificity. */
 path.outline { stroke: black; stroke-width: 0.35; stroke-opacity: 1; }
 path.boundary { stroke: black; stroke-width: 0.3; stroke-opacity: 0.9; }
-path.sharp { stroke: black; stroke-width: 0.25; stroke-opacity: 0.85; }
-path.crease { stroke: black; stroke-width: 0.18; stroke-opacity: 0.7; }
+path.crease { stroke: black; stroke-width: 0.25; stroke-opacity: 0.85; }
+path.sharp { stroke: black; stroke-width: 0.18; stroke-opacity: 0.7; }
 path.flush { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; }
-.surface { stroke: none; fill: #fff; fill-rule: evenodd; }
-.annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
-.IfcAnnotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
-.IfcGeographicElement { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 1; }
+
+/* Debug CSS for troubleshooting edge classification */
+/*
+path.outline { stroke: black; stroke-width: 0.35; stroke-opacity: 1; }
+path.boundary { stroke: orange; stroke-width: 0.3; stroke-opacity: 0.9; }
+path.crease { stroke: green; stroke-width: 0.25; stroke-opacity: 0.85; }
+path.sharp { stroke: red; stroke-width: 0.18; stroke-opacity: 0.7; }
+path.flush { stroke: blue; stroke-width: 0.1; stroke-opacity: 0.4; }
+*/
+
+.surface {fill: white; stroke-width: 0.1;}
+.annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.3; }
+.IfcAnnotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.3; }
+/* .IfcGeographicElement { fill: none; stroke: rgb(150, 150, 150); stroke-linecap: 'round'; stroke-dasharray: 1, 2;} */
 .PredefinedType-LINEWORK { stroke: black; stroke-width: 0.25; }
 .PredefinedType-LINEWORK.dashed { stroke-dasharray: 3, 2; }
 .PredefinedType-LINEWORK.fine { stroke-width: 0.18; stroke: #777777; }
