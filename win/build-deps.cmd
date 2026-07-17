@@ -90,6 +90,34 @@ IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 :: If we use VS2008, framework path (for MSBuild) may not be correctly set. Manually attempt to add in that case
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
+:: Work around Andrej730/mpir-vs2026's unconstrained "vswhere -latest" detection picking a newer VS
+:: when multiple are installed, see #8631. Pre-set msbdir here so msvc\vs17\msbuild.bat's own
+:: (broken) detection is skipped, since it already honors a pre-set msbdir.
+IF NOT %VS_VER%==2017 GOTO :Msbdir2017Done
+IF DEFINED msbdir GOTO :Msbdir2017Done
+
+set "VSWHERE_EXE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+IF NOT EXIST "%VSWHERE_EXE%" (
+    call utils\cecho.cmd 0 12 "%~nx0: vswhere.exe not found at `"%VSWHERE_EXE%`", needed to detect the VS2017 MSBuild path for the mpir dependency (see #8631)- cannot proceed."
+    GOTO :ErrorAndPrintUsage
+)
+
+"%VSWHERE_EXE%" -latest -version "[15.0,16.0)" -products * -requires Microsoft.Component.MSBuild -property installationPath > vswhere_out.txt
+set /p VS2017_INSTALL_DIR=<vswhere_out.txt
+del vswhere_out.txt
+IF NOT DEFINED VS2017_INSTALL_DIR (
+    call utils\cecho.cmd 0 12 "%~nx0: vswhere could not find a Visual Studio 2017 installation with the MSBuild component- cannot proceed."
+    GOTO :ErrorAndPrintUsage
+)
+
+set "msbdir=%VS2017_INSTALL_DIR%\MSBuild\15.0\Bin"
+IF NOT EXIST "%msbdir%\MSBuild.exe" (
+    call utils\cecho.cmd 0 12 "%~nx0: Detected Visual Studio 2017 at `"%VS2017_INSTALL_DIR%`" but `"%msbdir%\MSBuild.exe`" was not found- cannot proceed."
+    GOTO :ErrorAndPrintUsage
+)
+
+:Msbdir2017Done
+
 :: User-configurable build options
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
 
