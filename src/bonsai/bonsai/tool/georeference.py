@@ -417,3 +417,19 @@ class Georeference(bonsai.core.tool.Georeference):
     @classmethod
     def has_blender_offset(cls) -> bool:
         return tool.Georeference.get_georeference_props().has_blender_offset
+
+    @classmethod
+    def get_blendergis_map_conversion(cls) -> Union[tuple[dict[str, Any], dict[str, Any]], None]:
+        from bonsai.bim.module.georeference import blendergis
+
+        data = blendergis.read_blendergis_scene(bpy.context.scene)
+        if data is None:
+            return None
+        props = cls.get_georeference_props()
+        offset = (
+            (float(props.blender_offset_x), float(props.blender_offset_y), float(props.blender_offset_z))
+            if props.has_blender_offset
+            else (0.0, 0.0, 0.0)
+        )
+        coordinate_operation = blendergis.compute_map_conversion(data, offset)
+        return {"Name": data.crs_name}, coordinate_operation
