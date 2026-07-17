@@ -678,10 +678,14 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
         # Identify all potential building elements
         # TODO: don't select everything, use AABB culling in Blender
+        # Windows filling an opening are already bound through their host
+        # element, so only standalone windows are gathered here.
+        standalone_windows = [w for w in ifc_file.by_type("IfcWindow") if not tool.Spatial.get_host_element(w)]
         building_elements = (
             tool.Ifc.get().by_type("IfcWall")
             + tool.Ifc.get().by_type("IfcSlab")
             + tool.Ifc.get().by_type("IfcVirtualElement")
+            + standalone_windows
         )
 
         for building_element in building_elements:
@@ -827,6 +831,14 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                                 parent_boundary.InternalOrExternalBoundary = "EXTERNAL"
                             elif is_external is False:
                                 parent_boundary.InternalOrExternalBoundary = "INTERNAL"
+                    elif building_element.is_a("IfcWindow"):
+                        is_external = ifcopenshell.util.element.get_pset(
+                            building_element, "Pset_WindowCommon", "IsExternal"
+                        )
+                        if is_external is True:
+                            parent_boundary.InternalOrExternalBoundary = "EXTERNAL"
+                        elif is_external is False:
+                            parent_boundary.InternalOrExternalBoundary = "INTERNAL"
                     parent_boundary.RelatingSpace = space
                     parent_boundary.RelatedBuildingElement = building_element
                     parent_boundary.ConnectionGeometry = self.create_connection_geometry_from_polygon(
