@@ -1443,9 +1443,6 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_task_type_color(cls, colors, product_frame):
-        """Pick a colour for a product frame, preferring a colour keyed by the task's
-        ObjectType over the generic USERDEFINED colour, so that users can assign distinct
-        colours to tasks that share PredefinedType USERDEFINED but differ by ObjectType."""
         object_type = product_frame.get("object_type")
         if product_frame["type"] == "USERDEFINED" and object_type and object_type in colors:
             return colors[object_type].color
