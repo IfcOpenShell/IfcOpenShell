@@ -274,6 +274,7 @@ class LinkedReference:
     def import_dxf(cls, filepath: Path, collection: bpy.types.Collection) -> list[bpy.types.Object]:
         try:
             import ezdxf
+            import ezdxf.entities
             import ezdxf.path
             import ezdxf.units
         except ImportError as e:
