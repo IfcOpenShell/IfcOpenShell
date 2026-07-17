@@ -80,7 +80,7 @@ class IFC_PARSE_API TokenFunc {
     /// Returns whether the token can be interpreted as a binary type
     static bool isBinary(const Token& token);
     /// Returns the token interpreted as an integer
-    static int asInt(const Token& token);
+    static int64_t asInt(const Token& token);
     /// Returns the token interpreted as an identifier
     static int asIdentifier(const Token& token);
     /// Returns the token interpreted as an boolean (.T. or .F.)

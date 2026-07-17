@@ -151,7 +151,7 @@ namespace IfcParse {
         TokenType type;
         union {
             char value_char;     //types: OPERATOR
-            int value_int;       //types: INT, IDENTIFIER
+            int64_t value_int;   //types: INT, IDENTIFIER
             double value_double; //types: FLOAT
         };
 

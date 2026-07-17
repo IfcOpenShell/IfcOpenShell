@@ -531,12 +531,12 @@ private:
 		}
 	}
 
-	void setArgumentAsInt(unsigned int i, int v) {
+	void setArgumentAsInt(unsigned int i, int64_t v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_INT) {
-			self->set_attribute_value(i, v);	
+			self->set_attribute_value(i, v);
 		} else if ( (arg_type == IfcUtil::Argument_BOOL) && ( (v == 0) || (v == 1) ) ) {
-			self->set_attribute_value(i, v);	
+			self->set_attribute_value(i, (bool)v);
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}

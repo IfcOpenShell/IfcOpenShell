@@ -169,6 +169,7 @@
 	}
 
 	PyObject* pythonize(const int& t)                   { return PyInt_FromLong(t);                                                                  }
+	PyObject* pythonize(const int64_t& t)               { return PyLong_FromLongLong(t);                                                             }
 	PyObject* pythonize(const unsigned int& t)          { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const bool& t)                  { return PyBool_FromLong(t);                                                                 }
 	PyObject* pythonize(const boost::logic::tribool& t) { return boost::logic::indeterminate(t) ? PyUnicode_FromString("UNKNOWN") : PyBool_FromLong((bool)t) ;}

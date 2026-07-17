@@ -266,13 +266,13 @@ inline void RemoveTokenSeparators(FileReader* stream, size_t start, size_t end, 
 }
 */
 
-bool ParseInt(const char* pStart, int& val) {
+bool ParseInt(const char* pStart, int64_t& val) {
     char* pEnd;
-    long result = strtol(pStart, &pEnd, 10);
+    long long result = strtoll(pStart, &pEnd, 10);
     if (*pEnd != 0) {
         return false;
     }
-    val = (int)result;
+    val = (int64_t)result;
     return true;
 }
 
@@ -290,7 +290,7 @@ bool ParseFloat(const char* pStart, double& val) {
     return true;
 }
 
-bool ParseBool(const char* pStart, int& val) {
+bool ParseBool(const char* pStart, int64_t& val) {
     if (strlen(pStart) != 3 || pStart[0] != '.' || pStart[2] != '.') {
         return false;
     }
@@ -397,7 +397,7 @@ bool TokenFunc::isFloat(const Token& token) {
 #endif
 }
 
-int TokenFunc::asInt(const Token& token) {
+int64_t TokenFunc::asInt(const Token& token) {
     if (token.type != Token_INT) {
         throw IfcInvalidTokenException(token.startPos, toString(token), "integer");
     }
@@ -408,7 +408,7 @@ int TokenFunc::asIdentifier(const Token& token) {
     if (token.type != Token_IDENTIFIER) {
         throw IfcInvalidTokenException(token.startPos, toString(token), "instance name");
     }
-    return token.value_int;
+    return (int)token.value_int;
 }
 
 bool TokenFunc::asBool(const Token& token) {
@@ -808,7 +808,7 @@ namespace {
             upper_(upper) {}
         void operator()(const Blank& /*i*/) { data_ << "$"; }
         void operator()(const Derived& /*i*/) { data_ << "*"; }
-        void operator()(const int& i) { data_ << i; }
+        void operator()(const int64_t& i) { data_ << i; }
         void operator()(const bool& i) { data_ << (i ? ".T." : ".F."); }
         void operator()(const boost::logic::tribool& i) { data_ << (i ? ".T." : (boost::logic::indeterminate(i) ? ".U." : ".F.")); }
         void operator()(const double& i) { data_ << format_double(i); }
@@ -1154,6 +1154,9 @@ IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
             } else {
                 data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, Blank{});
             }
+        } else if constexpr (std::is_same_v<std::decay_t<T>, int>) {
+            // Integer attributes are stored as int64_t; widen the schema-generated int here.
+            data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, (int64_t)t);
         } else {
             data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(),i, t);
         }
@@ -2951,6 +2954,7 @@ void IfcUtil::IfcBaseClass::set_attribute_value(const std::string& name, IfcUtil
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Blank>(size_t index, const Blank& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Derived>(size_t index, const Derived& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<int>(size_t index, const int& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<int64_t>(size_t index, const int64_t& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<bool>(size_t index, const bool& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::logic::tribool>(size_t index, const boost::logic::tribool& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<double>(size_t index, const double& value);
@@ -2970,6 +2974,7 @@ template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<aggregate
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Blank>(const std::string& name, const Blank& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Derived>(const std::string& name, const Derived& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<int>(const std::string& name, const int& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<int64_t>(const std::string& name, const int64_t& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<bool>(const std::string& name, const bool& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::logic::tribool>(const std::string& name, const boost::logic::tribool& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<double>(const std::string& name, const double& value);

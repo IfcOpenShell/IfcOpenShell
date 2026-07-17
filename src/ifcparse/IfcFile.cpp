@@ -135,7 +135,7 @@ namespace {
 
         possible_aggregation_types_t aggregate_storage;
 
-        auto append_to_aggregate_storage = [&aggregate_storage, &logger](const auto& v) {
+        auto append_impl = [&aggregate_storage, &logger](const auto& v) {
             if constexpr (is_type_in_variant_v<possible_aggregation_types_t, std::vector<std::decay_t<decltype(v)>>>) {
                 if (aggregate_storage.index() == 0) {
                     aggregate_storage = std::vector<std::decay_t<decltype(v)>>{ v };
@@ -214,6 +214,15 @@ namespace {
             } else {
                 // @todo would be cool if we can trace this back to file offset
                 logger.Error("UNS", 31, std::string("Aggregates of ") + typeid(decltype(v)).name() + " are not supported in the IfcOpenShell parser");
+            }
+        };
+
+        // Scalar integers are parsed as int64_t, but integer aggregates remain 32-bit; narrow here.
+        auto append_to_aggregate_storage = [&append_impl](const auto& v) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(v)>, int64_t>) {
+                append_impl((int)v);
+            } else {
+                append_impl(v);
             }
         };
 
