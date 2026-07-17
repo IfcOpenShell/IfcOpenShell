@@ -82,6 +82,8 @@ BIND(IfcSurfaceCurveSweptAreaSolid);
 BIND(IfcSweptDiskSolid);
 
 BIND(IfcAnnotationFillArea);
+// IfcTextLiteralWithExtent included
+BIND(IfcTextLiteral);
 // IfcArbitraryProfileDefWithVoids included
 BIND(IfcArbitraryClosedProfileDef);
 BIND(IfcRoundedRectangleProfileDef);

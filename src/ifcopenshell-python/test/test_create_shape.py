@@ -9,6 +9,7 @@ import pytest
 
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
 import ifcopenshell.api.root
@@ -235,6 +236,53 @@ def test_logging():
     assert ("GEO089", "Non-positive extrusion height encountered for:") in [
         (msg.code, msg.message) for msg in new_items
     ]
+
+
+def test_text_literal_skipped_gracefully():
+    # https://github.com/IfcOpenShell/IfcOpenShell/issues/431
+    ifc_file = ifcopenshell.file()
+    ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+    context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+
+    builder = ShapeBuilder(ifc_file)
+
+    def make_text_literal():
+        placement = ifc_file.create_entity(
+            "IfcAxis2Placement2D", ifc_file.create_entity("IfcCartesianPoint", (0.0, 0.0))
+        )
+        extent = ifc_file.create_entity("IfcPlanarExtent", 1.0, 0.3)
+        return ifc_file.create_entity("IfcTextLiteralWithExtent", "Hello", placement, "LEFT", extent, "top-left")
+
+    settings = ifcopenshell.geom.settings()
+    settings.set("dimensionality", W.CURVES_SURFACES_AND_SOLIDS)
+
+    logger = ifcopenshell.logger()
+    logger.OutputFormat(logger.FMT_INMEMORY)
+
+    # A representation mixing text with curves converts the curves and skips the text.
+    curve = builder.rectangle()
+    representation = builder.get_representation(context, (curve, make_text_literal()))
+    shape = ifcopenshell.geom.create_shape(settings, representation, logger=logger)
+    edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(shape)
+    assert set(edges_item_ids) == {curve.id()}
+
+    codes = [msg.code for msg in logger]
+    assert "GEO328" in codes
+    assert "GEO307" not in codes  # no "No operation defined for:" error
+
+    # A text-only annotation has no convertible geometry and raises,
+    # but with the explicit warning instead of conversion errors.
+    annotation = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcAnnotation")
+    ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=annotation)
+    representation = builder.get_representation(context, make_text_literal())
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=annotation, representation=representation)
+    num_log_items = len(list(logger))
+    with pytest.raises(RuntimeError):
+        ifcopenshell.geom.create_shape(settings, annotation, logger=logger)
+    new_items = list(logger)[num_log_items:]
+    assert "GEO328" in [msg.code for msg in new_items]
+    assert "GEO307" not in [msg.code for msg in new_items]
+    assert "GEO326" not in [msg.code for msg in new_items]  # no "Failed to convert:" error
 
 
 if __name__ == "__main__":
