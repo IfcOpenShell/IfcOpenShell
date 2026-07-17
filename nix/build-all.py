@@ -22,7 +22,7 @@
 
 """
 Example usage:
-    # Build all targets by default.
+    # Build all targets by default, except BonsaiViewer (it's set explicitly).
     python build-all.py
 
     # Build just the provided targets.
@@ -60,6 +60,7 @@ Used environment variables:
     Example value: 'pyodide/cpython/installs/python-3.13.2'
     - ``ADD_COMMIT_SHA`` - if defined with any non-empty value then
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
+    - ``BUILD_BONSAIVIEWER`` - enable building BonsaiViewer, value of the env variable has to be truthy.
 
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
