@@ -1112,6 +1112,8 @@ class Spatial:
 @interface
 class Covering:
     def get_z_from_ceiling_height(cls): pass
+    def get_relating_type_layer_thickness(cls): pass
+    def create_wall_covering(cls, wall_obj, facing_cursor=True): pass
 
 
 @interface
