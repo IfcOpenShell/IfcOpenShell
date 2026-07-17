@@ -137,7 +137,7 @@ class CommitChanges(bpy.types.Operator):
         props = tool.IfcGit.get_ifcgit_props()
         commit_message = props.commit_message
         new_branch_name = props.new_branch_name
-        core.commit_changes(tool.IfcGit, tool.Ifc, commit_message, new_branch_name)
+        core.commit_changes(tool.IfcGit, tool.Ifc, commit_message, new_branch_name, operator=self)
         props.new_branch_name = ""
         props.commit_message = ""
         core.refresh_revision_list(tool.IfcGit, tool.Ifc)
