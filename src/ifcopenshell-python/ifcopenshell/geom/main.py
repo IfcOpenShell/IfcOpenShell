@@ -482,8 +482,8 @@ def create_shape(
     """
     Returns a geometric interpretation of the IFC entity instance
 
-    Note that in Python, you must store a reference to the element returned by this function to prevent garbage
-    collection when you access its children. See #1124.
+    The returned element's ``geometry`` keeps a reference to its owning element, so accessing children
+    (e.g. ``create_shape(...).geometry.verts``) no longer requires holding onto the element. See #1124.
 
     :raises RuntimeError: If failed to process shape. You can turn detailed logging to get more details.
 

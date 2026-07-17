@@ -793,14 +793,24 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %extend IfcGeom::TriangulationElement {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
-        geometry = property(geometry)
+        # Keep the owning element alive while its geometry is referenced (#1124).
+        def _geometry_with_backref(self, _f=geometry):
+            result = _f(self)
+            result._parent = self
+            return result
+        geometry = property(_geometry_with_backref)
 	%}
 };
 
 %extend IfcGeom::SerializedElement {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
-        geometry = property(geometry)
+        # Keep the owning element alive while its geometry is referenced (#1124).
+        def _geometry_with_backref(self, _f=geometry):
+            result = _f(self)
+            result._parent = self
+            return result
+        geometry = property(_geometry_with_backref)
 	%}
 };
 
@@ -825,10 +835,15 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
     %pythoncode %{
         # Hide the getters with read-only property implementations
-        geometry = property(geometry)
+        # Keep the owning element alive while its geometry is referenced (#1124).
+        def _geometry_with_backref(self, _f=geometry):
+            result = _f(self)
+            result._parent = self
+            return result
+        geometry = property(_geometry_with_backref)
         volume = property(calc_volume_)
         surface_area = property(calc_surface_area_)
-    %}    
+    %}
 };
 
 /*
