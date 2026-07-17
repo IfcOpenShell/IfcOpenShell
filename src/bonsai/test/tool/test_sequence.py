@@ -71,3 +71,69 @@ class TestAssignStatus(NewFile):
 
         bpy.ops.bim.assign_status(status="EXISTING", should_unassign_status=True)
         assert subject.get_element_status(element) == set()
+
+
+class TestGetTaskTypeColor(NewFile):
+    """A task's PredefinedType USERDEFINED collapses every custom task into a single
+    grey colour. These tests cover ObjectType being consulted as a finer colour key
+    in that case, per https://github.com/IfcOpenShell/IfcOpenShell/issues/2748."""
+
+    def test_uses_the_object_type_colour_when_predefined_type_is_userdefined_and_it_exists(self):
+        from unittest.mock import Mock
+
+        colors = {"USERDEFINED": Mock(color="grey"), "COLORRED": Mock(color="red")}
+        product_frame = {"type": "USERDEFINED", "object_type": "COLORRED"}
+        assert subject.get_task_type_color(colors, product_frame) == "red"
+
+    def test_falls_back_to_the_userdefined_colour_when_no_object_type_colour_exists(self):
+        from unittest.mock import Mock
+
+        colors = {"USERDEFINED": Mock(color="grey")}
+        product_frame = {"type": "USERDEFINED", "object_type": "COLORRED"}
+        assert subject.get_task_type_color(colors, product_frame) == "grey"
+
+    def test_falls_back_to_the_userdefined_colour_when_object_type_is_empty(self):
+        from unittest.mock import Mock
+
+        colors = {"USERDEFINED": Mock(color="grey")}
+        product_frame = {"type": "USERDEFINED", "object_type": ""}
+        assert subject.get_task_type_color(colors, product_frame) == "grey"
+
+    def test_ignores_object_type_for_a_regular_predefined_type(self):
+        from unittest.mock import Mock
+
+        colors = {"CONSTRUCTION": Mock(color="green"), "COLORRED": Mock(color="red")}
+        product_frame = {"type": "CONSTRUCTION", "object_type": "COLORRED"}
+        assert subject.get_task_type_color(colors, product_frame) == "green"
+
+
+class TestAddAnimationTaskTypeColor(NewFile):
+    def test_adds_a_new_colour_keyed_by_object_type(self):
+        bpy.ops.bim.create_project()
+        props = tool.Sequence.get_animation_props()
+        subject.add_animation_task_type_color("input", "COLORRED")
+        assert "COLORRED" in props.task_input_colors
+        assert "COLORRED" not in props.task_output_colors
+
+    def test_does_not_add_a_blank_object_type(self):
+        bpy.ops.bim.create_project()
+        props = tool.Sequence.get_animation_props()
+        subject.add_animation_task_type_color("output", "  ")
+        assert len(props.task_output_colors) == 0
+
+    def test_does_not_duplicate_an_existing_entry(self):
+        bpy.ops.bim.create_project()
+        props = tool.Sequence.get_animation_props()
+        subject.add_animation_task_type_color("input", "COLORRED")
+        subject.add_animation_task_type_color("input", "COLORRED")
+        assert len(props.task_input_colors) == 1
+
+
+class TestRemoveAnimationTaskTypeColor(NewFile):
+    def test_removes_the_active_colour(self):
+        bpy.ops.bim.create_project()
+        props = tool.Sequence.get_animation_props()
+        subject.add_animation_task_type_color("input", "COLORRED")
+        props.active_color_component_inputs_index = 0
+        subject.remove_animation_task_type_color("input")
+        assert "COLORRED" not in props.task_input_colors

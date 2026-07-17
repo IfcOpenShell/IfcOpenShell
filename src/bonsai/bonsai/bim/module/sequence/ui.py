@@ -662,7 +662,8 @@ class BIM_PT_animation_Color_Scheme(Panel):
         row1 = col.row(align=True)
         row1.label(text="INPUT COLORS", icon="COLLECTION_COLOR_01")
         row1 = col.row()
-        row1.template_list(
+        split = row1.split(factor=0.9)
+        split.template_list(
             BIM_UL_animation_colors.__name__,
             BIM_UL_animation_colors.__name__ + "_task_input_colors",
             self.animation_props,
@@ -670,11 +671,17 @@ class BIM_PT_animation_Color_Scheme(Panel):
             self.animation_props,
             "active_color_component_inputs_index",
         )
+        button_col = split.column(align=True)
+        op = button_col.operator("bim.add_animation_task_type_color", text="", icon="ADD")
+        op.group = "input"
+        op = button_col.operator("bim.remove_animation_task_type_color", text="", icon="REMOVE")
+        op.group = "input"
         col = grid.column()
         row1 = col.row(align=True)
         row1.label(text="OUTPUT COLORS", icon="COLLECTION_COLOR_04")
         row1 = col.row()
-        row1.template_list(
+        split = row1.split(factor=0.9)
+        split.template_list(
             BIM_UL_animation_colors.__name__,
             BIM_UL_animation_colors.__name__ + "_task_output_colors",
             self.animation_props,
@@ -682,6 +689,11 @@ class BIM_PT_animation_Color_Scheme(Panel):
             self.animation_props,
             "active_color_component_outputs_index",
         )
+        button_col = split.column(align=True)
+        op = button_col.operator("bim.add_animation_task_type_color", text="", icon="ADD")
+        op.group = "output"
+        op = button_col.operator("bim.remove_animation_task_type_color", text="", icon="REMOVE")
+        op.group = "output"
 
 
 class BIM_PT_task_icom(Panel):

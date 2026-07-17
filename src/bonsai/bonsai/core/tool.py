@@ -921,6 +921,7 @@ class Search:
 @interface
 class Sequence:
     def add_animation_camera(cls): pass
+    def add_animation_task_type_color(cls, group, object_type): pass
     def add_task_column(cls, column_type, name, data_type): pass
     def add_text_animation_handler(cls, settings): pass
     def animate_consumption(cls, obj, start_frame, product_frame, color, animation_type): pass
@@ -988,6 +989,7 @@ class Sequence:
     def get_task_resources(cls, task):pass
     def get_task_time_attributes(cls): pass
     def get_task_time(cls, task): pass
+    def get_task_type_color(cls, colors, product_frame): pass
     def get_tasks_for_product(cls, product, work_schedule): pass
     def get_user_predefined_type(cls): pass
     def get_work_calendar_attributes(cls): pass
@@ -1019,6 +1021,7 @@ class Sequence:
     def load_work_time_attributes(cls, work_time): pass
     def process_construction_state(cls, work_schedule, date): pass
     def process_task_status(cls, task, date): pass
+    def remove_animation_task_type_color(cls, group): pass
     def remove_task_column(cls, name): pass
     def reset_time_period(cls): pass
     def save_animation_color_scheme(cls, name): pass
