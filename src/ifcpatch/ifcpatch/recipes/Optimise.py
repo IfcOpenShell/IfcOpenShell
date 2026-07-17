@@ -36,8 +36,10 @@ class Patcher:
         can usually be solved through other means. Consult the bonsai Add-on
         documentation on dealing with large models for more details.
 
-        Warning: this optimise recipe is very, very slow. Please consider using
-        RecycleNonRootedElements instead.
+        Warning: this optimise recipe is slower than RecycleNonRootedElements,
+        as it performs a full, transitive fold instead of a single pass.
+        Consider RecycleNonRootedElements first if a quicker, partial
+        optimisation is acceptable.
 
         Example:
 
@@ -58,27 +60,30 @@ class Patcher:
             the set of all of its references contained in its attributes.
             """
             for inst in self.file:
-                yield inst.id(), set(i.id() for i in self.file.traverse(inst)[1:] if i.id())
+                yield inst.id(), set(i.id() for i in self.file.traverse(inst, max_levels=1)[1:] if i.id())
 
         instance_mapping = {}
 
-        def map_value(v):
+        def map_value(v, as_key=False):
             """
-            Recursive function which replicates an entity instance, with
-            its attributes, mapping references to already registered
-            instances. Indeed, because of the toposort we know that
-            forward attribute value instances are mapped before the instances
-            that reference them.
+            Recursive function which either replicates an entity instance
+            with its attributes mapped to already registered instances
+            (as_key=False), or builds a hashable canonical key for it
+            (as_key=True), reusing already-folded references instead of
+            re-expanding their attribute subtrees.
             """
             if isinstance(v, (list, tuple)):
-                # lists are recursively traversed
-                return type(v)(map(map_value, v))
+                return type(v)(map_value(item, as_key=as_key) for item in v)
             elif isinstance(v, ifcopenshell.entity_instance):
                 if v.id() == 0:
                     # express simple types are not part of the toposort and just copied
+                    if as_key:
+                        return ("__type__", v.is_a(), v[0])
                     return self.optimized_file.create_entity(v.is_a(), v[0])
-
-                return instance_mapping[v]
+                mapped = instance_mapping[v]
+                if as_key:
+                    return ("__id__", mapped.id())
+                return mapped
             else:
                 # a plain python value can just be returned
                 return v
@@ -87,7 +92,7 @@ class Patcher:
 
         for id in toposort(dict(generate_instances_and_references())):
             inst = self.file[id]
-            info = inst.get_info(include_identifier=False, recursive=True, return_type=frozenset)
+            info = map_value(inst.get_info(include_identifier=False, recursive=False, return_type=tuple), as_key=True)
             if info in info_to_id:
                 mapped = instance_mapping[inst] = instance_mapping[self.file[info_to_id[info]]]
 
