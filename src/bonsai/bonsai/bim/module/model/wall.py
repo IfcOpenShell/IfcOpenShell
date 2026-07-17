@@ -20,7 +20,6 @@
 #
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
-import copy
 import math
 import weakref
 from collections.abc import Iterable
@@ -1538,13 +1537,25 @@ class DumbWallJoiner:
         if not element1:
             return
 
+        # Collect the walls joined to element1 before disconnecting, so their
+        # geometry can be regenerated too, not just element1's.
+        neighbours = set()
+        for rel in element1.ConnectedTo:
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatingConnectionType in ("ATSTART", "ATEND"):
+                neighbours.add(rel.RelatedElement)
+        for rel in element1.ConnectedFrom:
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatedConnectionType in ("ATSTART", "ATEND"):
+                neighbours.add(rel.RelatingElement)
+
         ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type="ATSTART")
         ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type="ATEND")
 
-        axis1 = tool.Model.get_wall_axis(wall1)
-        axis = copy.deepcopy(axis1["reference"])
-        body = copy.deepcopy(axis1["reference"])
         tool.Model.recreate_wall(element1, wall1)
+
+        for neighbour in neighbours:
+            neighbour_obj = tool.Ifc.get_object(neighbour)
+            if neighbour_obj:
+                tool.Model.recreate_wall(neighbour, neighbour_obj)
 
     def split(self, wall1: bpy.types.Object, target: Vector) -> "bpy.types.Object | None":
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
