@@ -1070,6 +1070,13 @@ class CreateDrawing(bpy.types.Operator):
             unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
             closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
 
+            # Candidate element pairs whose fill cells look ambiguous, keyed by
+            # GlobalId pair so the same pair isn't queued twice. Confirmed below.
+            overlap_candidates: dict[
+                frozenset[str], tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]
+            ] = {}
+            scanned_surface_elements: set[str] = set()
+
             for polygon in closed_polygons.geoms:
                 # Less than 0.1mm2 is not worth styling on sheet
                 if polygon.area < 0.1:
@@ -1107,6 +1114,14 @@ class CreateDrawing(bpy.types.Operator):
                             classes.append("surface")
                             path.set("class", " ".join(list(classes)))
                             group.insert(0, path)
+
+                            if raycast_element.GlobalId not in scanned_surface_elements:
+                                scanned_surface_elements.add(raycast_element.GlobalId)
+                                self.flag_fill_overlap_candidates(
+                                    raycast_element, raycast_obj, raycast_objs, overlap_candidates
+                                )
+
+            self.warn_about_confirmed_fill_overlaps(context, overlap_candidates)
 
         if self.cprops.fill_mode == "SVGFILL":
             results = etree.tostring(root).decode("utf8")
@@ -1661,6 +1676,81 @@ class CreateDrawing(bpy.types.Operator):
         if best_obj is not None:
             return best_obj, best_hit, best_face_index
         return None, None, None
+
+    def flag_fill_overlap_candidates(
+        self,
+        primary_element: ifcopenshell.entity_instance,
+        primary_obj: bpy.types.Object,
+        raycast_objs: set[bpy.types.Object],
+        candidates: dict[frozenset[str], tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]],
+    ) -> None:
+        # A fill cell is only styled with one element, but if another
+        # element's bounding box occupies the same 3D space, that element's
+        # own separating edge may have gone missing from the same cause.
+        # Confirmed with an exact solid check below. See #3642.
+        primary_corners = [primary_obj.matrix_world @ Vector(c) for c in primary_obj.bound_box]
+        primary_min = Vector(map(min, zip(*primary_corners)))
+        primary_max = Vector(map(max, zip(*primary_corners)))
+        for obj in raycast_objs:
+            if obj == primary_obj:
+                continue
+            other_corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
+            other_min = Vector(map(min, zip(*other_corners)))
+            other_max = Vector(map(max, zip(*other_corners)))
+            if any(primary_min[i] > other_max[i] or other_min[i] > primary_max[i] for i in range(3)):
+                continue
+            other_element = tool.Ifc.get_entity(obj)
+            if other_element:
+                key = frozenset((primary_element.GlobalId, other_element.GlobalId))
+                candidates.setdefault(key, (primary_element, other_element))
+
+    def solids_overlap(self, context: bpy.types.Context, obj_a: bpy.types.Object, obj_b: bpy.types.Object) -> bool:
+        # An exact boolean intersection is empty for elements that merely
+        # touch along a coincident face (normal, valid modelling) and
+        # non-empty only when they genuinely share 3D volume. See #3642.
+        probe = obj_a.copy()
+        probe_mesh = obj_a.data.copy()
+        probe.data = probe_mesh
+        context.scene.collection.objects.link(probe)
+        try:
+            modifier = probe.modifiers.new(name="fill_overlap_probe", type="BOOLEAN")
+            modifier.operation = "INTERSECT"
+            modifier.solver = "EXACT"
+            modifier.object = obj_b
+            depsgraph = context.evaluated_depsgraph_get()
+            evaluated = probe.evaluated_get(depsgraph)
+            mesh = evaluated.to_mesh()
+            has_overlap = len(mesh.polygons) > 0
+            evaluated.to_mesh_clear()
+        finally:
+            bpy.data.objects.remove(probe, do_unlink=True)
+            bpy.data.meshes.remove(probe_mesh)
+        return has_overlap
+
+    def warn_about_confirmed_fill_overlaps(
+        self,
+        context: bpy.types.Context,
+        candidates: dict[frozenset[str], tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]],
+    ) -> None:
+        if not candidates:
+            return
+        overlapping_pairs = []
+        for element_a, element_b in candidates.values():
+            obj_a = tool.Ifc.get_object(element_a)
+            obj_b = tool.Ifc.get_object(element_b)
+            if obj_a and obj_b and self.solids_overlap(context, obj_a, obj_b):
+                overlapping_pairs.append((element_a, element_b))
+        if not overlapping_pairs:
+            return
+        pairs_text = "; ".join(
+            f"{a.is_a()} '{a.Name or a.GlobalId}' ({a.GlobalId}) and {b.is_a()} '{b.Name or b.GlobalId}' ({b.GlobalId})"
+            for a, b in overlapping_pairs
+        )
+        self.report(
+            {"WARNING"},
+            f"Drawing '{self.drawing_name}': physically overlapping elements are causing an incorrect hatch "
+            f"fill: {pairs_text}. Consider adjusting their geometry so they no longer overlap.",
+        )
 
     def move_projection_to_bottom(self, root):
         # IfcConvert puts the projection afterwards which is not correct since
