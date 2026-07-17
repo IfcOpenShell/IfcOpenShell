@@ -114,6 +114,11 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
             pset = ifcopenshell.api.pset.add_qto(self.file, product=element, name=props.active_pset_name)
             props.active_pset_id = pset.id()
 
+        if not tool.Pset.is_editable(pset):
+            self.report({"WARNING"}, f"Editing '{pset.is_a()}' is not supported yet.")
+            bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
+            return
+
         if self.properties:
             properties = json.loads(self.properties)
         else:
