@@ -243,7 +243,7 @@ file_dict: dict[int, tuple[weakref.ReferenceType[file], int]] = {}
 """Mapping of internal IfcFile pointer address to existing ``ifcopenshell.file``
 and the timestamp when it was created.
 
-Needed only to quickly access related from ``entity_instance`` it's ``file``.
+Needed only to quickly access from ``entity_instance`` its ``file``.
 """
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
