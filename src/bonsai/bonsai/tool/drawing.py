@@ -985,6 +985,21 @@ class Drawing(bonsai.core.tool.Drawing):
         return assigned_products
 
     @classmethod
+    def get_dimension_text_annotations(
+        cls, element: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
+        """TEXT annotations related to a DIMENSION/DIAMETER annotation through IfcRelAssignsToProduct."""
+
+        results: list[ifcopenshell.entity_instance] = []
+        for rel in element.ReferencedBy or []:
+            if not rel.is_a("IfcRelAssignsToProduct"):
+                continue
+            for related in rel.RelatedObjects:
+                if related.is_a("IfcAnnotation") and related.ObjectType == "TEXT":
+                    results.append(related)
+        return results
+
+    @classmethod
     def import_annotations_in_group(cls, group: ifcopenshell.entity_instance) -> None:
         elements = set(
             [
