@@ -111,7 +111,6 @@ no-matching-overload = "ignore"
 not-subscriptable = "ignore"
 unsupported-dynamic-base = "ignore"
 unsupported-operator = "ignore"
-type-assertion-failure = "ignore"
 
 [tool.ty.environment]
 extra-paths = [
