@@ -16,7 +16,38 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 import ifcopenshell
+
+
+def _toposort(graph: dict[int, set[int]], logger: logging.Logger) -> list[int]:
+    """Flatten a dependency graph of entity ids into dependency order.
+
+    Uses igraph's C-backed topological sort when available, otherwise falls
+    back to the pure python toposort package with a warning.
+    """
+    try:
+        import igraph
+    except ImportError:
+        logger.warning(
+            "igraph is not installed, falling back to the slower pure python toposort. "
+            "Install python-igraph for better performance."
+        )
+        from toposort import toposort_flatten
+
+        return toposort_flatten(graph)
+
+    ids = list(graph)
+    index = {id_: i for i, id_ in enumerate(ids)}
+    for references in graph.values():
+        for reference in references:
+            if reference not in index:
+                index[reference] = len(ids)
+                ids.append(reference)
+    edges = [(index[reference], index[id_]) for id_, references in graph.items() for reference in references]
+    order = igraph.Graph(n=len(ids), edges=edges, directed=True).topological_sorting(mode="out")
+    return [ids[i] for i in order]
 
 
 class Patcher:
@@ -52,8 +83,6 @@ class Patcher:
         self.optimized_file = ifcopenshell.file(schema=self.file.schema)
 
     def patch(self):
-        from toposort import toposort_flatten as toposort
-
         def generate_instances_and_references():
             """
             Generator which yields an entity id and
@@ -90,7 +119,7 @@ class Patcher:
 
         info_to_id = {}
 
-        for id in toposort(dict(generate_instances_and_references())):
+        for id in _toposort(dict(generate_instances_and_references()), self.logger):
             inst = self.file[id]
             info = map_value(inst.get_info(include_identifier=False, recursive=False, return_type=tuple), as_key=True)
             if info in info_to_id:
