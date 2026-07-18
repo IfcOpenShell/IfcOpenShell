@@ -654,7 +654,7 @@ class AlignWall(bpy.types.Operator):
     bl_idname = "bim.align_wall"
     bl_label = "Align Wall"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = """ Align the selected walls to the active wall:
+    bl_description = """ Align the selected walls (or hosted windows/doors) to the active wall:
     'Ext.': align to the EXTERIOR face
     'C/L': align to wall CENTER
     'Int.': align to the INTERIOR face"""
