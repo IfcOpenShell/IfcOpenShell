@@ -3982,6 +3982,9 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        # See AddBoolean.climb_through_unions.
+        explicitly_selected = bool(context.selected_objects)
+
         if (
             not tool.Blender.get_selected_objects()
             or not (active_obj := tool.Blender.get_active_object())
@@ -4027,7 +4030,7 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         # TODO refactor to core and not rely on selection
         tool.Blender.select_and_activate_single_object(context, active_obj)
         tool.Blender.select_object(obj)
-        bpy.ops.bim.add_boolean()
+        bpy.ops.bim.add_boolean(climb_through_unions=not explicitly_selected)
 
 
 class OverrideMoveMacro(bpy.types.Macro):
