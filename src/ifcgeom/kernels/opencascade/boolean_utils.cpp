@@ -1301,6 +1301,27 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					success = operands_nonmanifold;
 				}
 
+				if (success && op == BOPAlgo_CUT && !is_2d) {
+					PERF("boolean operation: cut no-op check");
+
+					// Tool operands surviving the elimination steps above genuinely
+					// overlap operand A's volume, so a real cut must remove material.
+					const double vol_a = shape_volume(a);
+					const double vol_r = shape_volume(r);
+
+					if (vol_a > Precision::Confusion() && (vol_a - vol_r) < vol_a * 1.e-9) {
+						Logger::Root().Notice("GEO", 403, "Boolean cut result has unchanged volume despite overlapping operands, suspected silent no-op cut");
+
+						TopoDS_Shape cgal_result;
+						if (boolean_operation_cgal_fallback(a, b, op, cgal_result, fuzz)) {
+							Logger::Root().Notice("GEO", 404, "Recovered a cut boolean operation result using the CGAL kernel");
+							r = cgal_result;
+						} else {
+							success = false;
+						}
+					}
+				}
+
 				if (success) {
 
 					bool all_faces_included_in_result = true;
