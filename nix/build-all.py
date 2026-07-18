@@ -444,6 +444,8 @@ if "wasm" in flags:
     required_commands.append("pyodide")
     required_commands.remove(yacc)
     required_commands.remove(bison)
+if platform.system() == "Linux" and "BonsaiViewer" in targets:
+    required_commands.append("patchelf")
 
 for cmd in required_commands:
     if shutil.which(cmd) is None:

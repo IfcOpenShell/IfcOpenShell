@@ -82,6 +82,7 @@ FetchContent_MakeAvailable(wgpu_native)
 # the SONAME in once at configure time so dependents get a clean
 # libwgpu_native.so reference, and pin the executable's rpath to the lib dir.
 if(UNIX AND NOT APPLE)
+    # Critical: skipping this makes installation fail later.
     find_program(PATCHELF_EXECUTABLE patchelf)
     if(PATCHELF_EXECUTABLE)
         execute_process(
@@ -90,10 +91,10 @@ if(UNIX AND NOT APPLE)
             RESULT_VARIABLE _patchelf_rc
         )
         if(NOT _patchelf_rc EQUAL 0)
-            message(WARNING "patchelf --set-soname failed on libwgpu_native.so")
+            message(FATAL_ERROR "patchelf --set-soname failed on libwgpu_native.so")
         endif()
     else()
-        message(WARNING
+        message(FATAL_ERROR
             "patchelf not found; libwgpu_native.so will be linked with a "
             "relative DT_NEEDED. Install patchelf to fix.")
     endif()
