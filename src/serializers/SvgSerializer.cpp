@@ -642,8 +642,14 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 				gp_Pnt P;
 				gp_Vec V;
 				crv->D1((u0 + u1) / 2., P, V);
-				auto N = V.Crossed(gp::DZ());
-				pln = gp_Pln(gp_Ax3(P, N, V));
+				if (V.Magnitude() > Precision::Confusion()) {
+					// Avoid a degenerate cross product when V is (anti-)parallel to Z,
+					// same fallback axis as OpenCascadeConversionResult.cpp.
+					const gp_Dir V_dir(V);
+					const gp_Dir& ref_axis = std::fabs(V_dir.Z()) < 0.5 ? gp::DZ() : gp::DY();
+					auto N = V.Crossed(ref_axis);
+					pln = gp_Pln(gp_Ax3(P, N, V));
+				}
 			}
 		}
 		else if (boost::optional<box_t> b = box_from_compound(compound_local)) {
