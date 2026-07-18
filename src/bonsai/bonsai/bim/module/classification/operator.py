@@ -478,6 +478,7 @@ class ChangeClassificationLevel(bpy.types.Operator):
     def execute(self, context):
         props = tool.Classification.get_classification_props()
         props.available_library_references.clear()
+        reference = None
         for reference in IfcStore.classification_file.by_id(self.parent_id).HasReferences:
             new = props.available_library_references.add()
             new.identification = reference.Identification or ""
@@ -485,6 +486,7 @@ class ChangeClassificationLevel(bpy.types.Operator):
             new.ifc_definition_id = reference.id()
             new.has_references = bool(reference.HasReferences)
             new.referenced_source
+        assert reference
         if reference.ReferencedSource.is_a("IfcClassificationReference"):
             props.active_library_referenced_source = reference.ReferencedSource.ReferencedSource.id()
         else:

@@ -698,6 +698,8 @@ class CreateDrawing(bpy.types.Operator):
                 layer_set = material
                 offset = 0
                 sense_factor = 1
+            else:
+                assert False, material
 
             camera_matrix_i = context.scene.camera.matrix_world.inverted()
 
@@ -722,7 +724,6 @@ class CreateDrawing(bpy.types.Operator):
             bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.000001)
             bmesh.ops.triangle_fill(bm, use_dissolve=True, edges=bm.edges)
 
-            prev_co = None
             if not usage:
                 sense_factor = 1  # Assume the extrusion vector points in the direction sense
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
@@ -739,6 +740,8 @@ class CreateDrawing(bpy.types.Operator):
                 co = Vector((0.0, 0.0, offset))
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
                 no = Vector([1.0, 0.0, 0.0])
+            else:
+                assert False, usage
             no *= sense_factor
             last_i = len(layer_set.MaterialLayers) - 1
             for i, layer in enumerate(layer_set.MaterialLayers):
@@ -905,6 +908,10 @@ class CreateDrawing(bpy.types.Operator):
         svg_path = self.get_svg_path(cache_type="linework")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
+
+        ifc = tool.Ifc.get()
+        semantics = None
+        pairs = None
 
         # in case of printing multiple drawings we need to sync just once
         if self.sync and self.drawing_index == 0:

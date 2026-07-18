@@ -425,10 +425,12 @@ class BaseDecorator:
 
         blf.size(font_id, font_size_px)
 
+        w, h = None, None
         if box_alignment or center or vcenter:
             w, h = blf.dimensions(font_id, text)
 
         if box_alignment:
+            assert w is not None and h is not None
             box_alignment_offset = Vector((0, 0))
             if "bottom" in box_alignment:
                 pass
@@ -450,10 +452,12 @@ class BaseDecorator:
         else:
             # horizontal centering
             if center:
+                assert w is not None
                 pos -= Vector((cos, sin)) * w * 0.5
 
             # vertical centering
             if vcenter:
+                assert h is not None
                 pos -= Vector((-sin, cos)) * h * 0.5
 
             # side-shifting
@@ -1001,6 +1005,8 @@ class FallDecorator(BaseDecorator):
             O = A.copy()
             O.z = B.z
             run = (B - O).length
+
+            angle_tg = None
             if run != 0:
                 angle_tg = rise / run
                 angle = round(degrees(atan(angle_tg)))
@@ -1018,6 +1024,7 @@ class FallDecorator(BaseDecorator):
             elif object_type == "SLOPE_PERCENT":
                 if angle == 90:
                     return "-"
+                assert angle_tg is not None
                 return f"{round(angle_tg * 100)} %"
             return "NO DATA"
 
@@ -1249,6 +1256,7 @@ class SectionLevelDecorator(BaseDecorator):
         }
 
         # process edges
+        text_position, text_dir = None, None
         for edge in edges_original:
             v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
             start_i = len(output_verts)
@@ -1554,32 +1562,39 @@ class SectionDecorator(BaseDecorator):
             v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
             start_i = len(output_verts)
 
+            circle_head = None
             if display_start_circle or display_end_circle:
                 circle_head = get_circle_head(circle_size)
 
-            if display_start_symbol or display_end_symbol or connect_markers:
+            triangle_head, divider_offset, edge_dir_circle = None, None, None
+            display_symbol = display_start_symbol or display_end_symbol
+            if display_symbol or connect_markers:
                 edge_dir = (v1 - v0).normalized()
                 side = (edge_dir.yx * Vector((1, -1))).to_3d()
                 edge_dir_circle = edge_dir * circle_size
 
-            if display_start_symbol or display_end_symbol:
-                triangle_head = get_triangle_head(edge_dir, -side, triangle_length, triangle_width)
-                divider_offset = []
-                divider_offset.append(edge_dir_circle if connect_markers else edge_dir_circle * 3)
-                divider_offset.append(edge_dir_circle)
+                if display_symbol:
+                    triangle_head = get_triangle_head(edge_dir, -side, triangle_length, triangle_width)
+                    divider_offset = []
+                    divider_offset.append(edge_dir_circle if connect_markers else edge_dir_circle * 3)
+                    divider_offset.append(edge_dir_circle)
 
             if display_start_circle:
+                assert circle_head is not None
                 start_i = add_verts_sequence([v + v0 for v in circle_head], start_i, **out_kwargs, closed=True)
                 # circle middle divider
                 if not display_start_symbol:
+                    assert divider_offset is not None
                     start_i = add_verts_sequence(
                         [v0 + divider_offset[0], v0 - divider_offset[1]], start_i, **out_kwargs
                     )
 
             if display_start_symbol:
+                assert triangle_head is not None
                 start_i = add_verts_sequence([v + v0 for v in triangle_head], start_i, **out_kwargs, closed=True)
 
             if display_end_circle:
+                assert circle_head is not None
                 start_i = add_verts_sequence([v + v1 for v in circle_head], start_i, **out_kwargs, closed=True)
                 # circle middle divider
                 if not display_end_symbol:
@@ -1588,9 +1603,11 @@ class SectionDecorator(BaseDecorator):
                     )
 
             if display_end_symbol:
+                assert triangle_head is not None
                 start_i = add_verts_sequence([v + v1 for v in triangle_head], start_i, **out_kwargs, closed=True)
 
             if connect_markers:
+                assert edge_dir_circle is not None
                 gap = []
                 gap.append(edge_dir_circle if display_start_symbol else Vector((0, 0, 0)))
                 gap.append(edge_dir_circle if display_end_symbol else Vector((0, 0, 0)))
@@ -1871,6 +1888,8 @@ class CutDecorator:
             layer_set = material
             offset = 0
             sense_factor = 1
+        else:
+            assert False, material
 
         if len(layer_set.MaterialLayers) == 1:
             material = layer_set.MaterialLayers[0].Material
@@ -1897,6 +1916,8 @@ class CutDecorator:
             co = Vector((0.0, 0.0, offset))
             no = tool.Drawing.get_extrusion_vector(element).normalized()
             no = Vector([1.0, 0.0, 0.0])
+        else:
+            assert False, usage
         no *= sense_factor
         last_i = len(layer_set.MaterialLayers) - 1
 

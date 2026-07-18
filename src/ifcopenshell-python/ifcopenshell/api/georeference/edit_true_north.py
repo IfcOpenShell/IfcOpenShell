@@ -52,6 +52,7 @@ def edit_true_north(file: ifcopenshell.file, true_north: Optional[Union[tuple[fl
         # This unsets true north
         ifcopenshell.api.georeference.edit_true_north(model, true_north=None)
     """
+    x, y = None, None
     if isinstance(true_north, (float, int)):
         x, y = ifcopenshell.util.geolocation.angle2yaxis(true_north)
     elif true_north is not None:
@@ -73,4 +74,5 @@ def edit_true_north(file: ifcopenshell.file, true_north: Optional[Union[tuple[fl
                 context.TrueNorth = file.create_entity("IfcDirection")
         else:
             context.TrueNorth = file.create_entity("IfcDirection")
+        assert x is not None and y is not None
         context.TrueNorth.DirectionRatios = (x, y)

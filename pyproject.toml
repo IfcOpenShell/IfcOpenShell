@@ -82,8 +82,6 @@ ignore = [
 all = "error"
 
 # Structural rules (no deep type inference needed, easier to adapt).
-# Has false positives due to ty walrus operator bug.
-possibly-unresolved-reference = "ignore"
 # Maybe later, requires to specify element types for all generics.
 missing-type-argument = "ignore"
 # Conflicts with `bpy` props defined using annotations.
@@ -194,7 +192,6 @@ format.sequence = ["black", "ruff"]
 cmake-format = "gersemi . --in-place"
 
 [tool.poe.tasks.ty-ios]
-# --ignore unresolved-reference: walrus operator false positives in ty.
 cmd = """
     ty check
     nix/
@@ -212,7 +209,6 @@ cmd = """
     src/ifcpatch
     src/ifctester
     --python=src/ifcopenshell-python/.venv
-    --ignore unresolved-reference
 """
 
 [tool.poe.tasks.bonsai-deps]

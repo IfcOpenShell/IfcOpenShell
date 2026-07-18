@@ -296,6 +296,7 @@ def main(
         else:
             num_passes = 0
 
+        g2 = None
         for iteration in range(num_passes + 1):
 
             # initialize empty group, note that in the current approach only one
@@ -316,6 +317,7 @@ def main(
                 plt.fill(numpy.array(x.boundary).T[0], numpy.array(x.boundary).T[1])
             """
 
+            semantics, pairs = None, None
             if iteration != num_passes:
                 pairs = svgfill_context.get_face_pairs()
                 semantics = [None] * (max(pairs) + 1)
@@ -377,6 +379,7 @@ def main(
                 if inside_elements:
                     elements = None
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = (inside_elements[0], -1)
                 else:
                     elements = tree.select_ray(pythonize(a), pythonize(b - a))
@@ -409,6 +412,7 @@ def main(
                     svg_fill = "rgb(%s)" % ", ".join(str(f * 255.0) for f in clr[0:3])
 
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = elements[0]
                 else:
                     svg_fill = "none"
@@ -418,6 +422,8 @@ def main(
             if iteration != num_passes:
                 to_remove = []
 
+                assert pairs is not None
+                assert semantics is not None
                 for he_idx in range(0, len(pairs), 2):
                     # @todo instead of ray_distance, better do (x.point - y.point).dot(x.normal)
                     # to see if they're coplanar, because ray-distance will be different in case
@@ -445,6 +451,7 @@ def main(
 
         # Swap the XML nodes from the files
         # Remove the original hidden line node we still have in the serializer output
+        assert g2 is not None
         g1.removeChild(projection)
         g2.setAttribute("class", "projection")
         # Find the children of the projection node parent

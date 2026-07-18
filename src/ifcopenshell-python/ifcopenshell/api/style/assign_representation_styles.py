@@ -126,6 +126,7 @@ class Usecase:
         use_style_assignment = self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]
         replace_previous_same_type_style = self.settings["replace_previous_same_type_style"]
 
+        style: ifcopenshell.entity_instance | None = None
         for element in self.file.traverse(self.settings["shape_representation"]):
             if not element.is_a("IfcShapeModel"):
                 continue
@@ -137,6 +138,7 @@ class Usecase:
                 if self.settings["styles"]:
                     # If there are more items than styles, fallback to using the last style
                     style = self.settings["styles"].pop(0)
+                assert style is not None
                 name = style.Name
                 current_style_type = style.is_a()
 

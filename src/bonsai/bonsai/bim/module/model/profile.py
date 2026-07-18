@@ -593,6 +593,8 @@ class DumbProfileJoiner:
             axisl = (profile2.matrix_world.inverted() @ axis1[1]) - (profile2.matrix_world.inverted() @ axis1[0])
         elif connection1 == "ATSTART":
             axisl = (profile2.matrix_world.inverted() @ axis1[0]) - (profile2.matrix_world.inverted() @ axis1[1])
+        else:
+            assert False, connection1
         xy_angle = degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
         if xy_angle >= -135 and xy_angle <= -45:
             closest_plane = "bottom"
@@ -617,6 +619,8 @@ class DumbProfileJoiner:
                 axisl = (profile1.matrix_world.inverted() @ axis2[1]) - (profile1.matrix_world.inverted() @ axis2[0])
             elif connection2 == "ATSTART":
                 axisl = (profile1.matrix_world.inverted() @ axis2[0]) - (profile1.matrix_world.inverted() @ axis2[1])
+            else:
+                assert False, connection2
             xy_angle2 = degrees(Vector((1, 0)).angle_signed(axisl.normalized().to_2d()))
             if xy_angle2 >= -135 and xy_angle2 <= -45:
                 closest_plane2 = "bottom"
@@ -844,6 +848,8 @@ class DumbProfileJoiner:
             else:
                 y_axis = obj.matrix_world.to_quaternion() @ Vector((0, 1, 0))
                 z_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
+        else:
+            assert False, plane
         return self.create_matrix(p, x_axis, y_axis, z_axis)
 
     def create_matrix(self, p: Vector, x: Vector, y: Vector, z: Vector) -> Matrix:
