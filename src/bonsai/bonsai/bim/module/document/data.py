@@ -19,7 +19,12 @@
 import os
 
 import bpy
-from natsort import natsorted
+
+try:
+    from natsort import natsorted
+except Exception:
+    # See #6900: don't let a broken natsort disable all of Bonsai.
+    natsorted = sorted
 
 import bonsai.tool as tool
 

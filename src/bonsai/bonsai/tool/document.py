@@ -23,7 +23,12 @@ from typing import TYPE_CHECKING, Any, Union
 
 import bpy
 import ifcopenshell.util.system
-from natsort import natsorted
+
+try:
+    from natsort import natsorted
+except Exception:
+    # See #6900: don't let a broken natsort disable all of Bonsai.
+    natsorted = sorted
 
 import bonsai.bim.helper
 import bonsai.core.tool
