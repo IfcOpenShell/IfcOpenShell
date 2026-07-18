@@ -113,6 +113,19 @@ class BIM_PT_camera(Panel):
             row.prop(props, "fill_mode")
             row = self.layout.row()
             row.prop(props, "cut_mode")
+
+        row = self.layout.row()
+        row.prop(props, "use_edge_classification")
+        if props.use_edge_classification:
+            row = self.layout.row()
+            row.prop(props, "render_creases")
+            row.prop(props, "valley_angle_min_degrees")
+            row = self.layout.row()
+            row.prop(props, "render_sharp")
+            row.prop(props, "ridge_angle_min_degrees")
+            row = self.layout.row()
+            row.prop(props, "render_flush")
+
         row = self.layout.row()
         row.prop(props, "width")
         row = self.layout.row()
