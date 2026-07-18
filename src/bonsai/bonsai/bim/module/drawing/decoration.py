@@ -1825,23 +1825,35 @@ class CutDecorator:
 
         # Currently selected objects must be recalculated as they may be being moved / edited.
         # If the camera is selected, we also recalculate as the user may be moving the camera.
+        is_selected = obj.select_get()
+        recalc_cut = not has_cut_cache or is_selected or self.camera_moved
+        recalc_fill = not has_fill_cache or is_selected or self.camera_moved
+        if not (recalc_cut or recalc_fill):
+            return
 
-        if not has_cut_cache or obj.select_get() or self.camera_moved:
-            self.recalculate_cut(context, obj, element)
-        if not has_fill_cache or obj.select_get() or self.camera_moved:
-            self.recalculate_fill(context, obj, element)
+        # The intersection test builds a bmesh and scans every vertex; both recalculations need
+        # the same answer, so compute it once here rather than once in each.
+        is_intersecting = tool.Drawing.is_intersecting_camera(obj, context.scene.camera)
+        if recalc_cut:
+            self.recalculate_cut(context, obj, element, is_intersecting)
+        if recalc_fill:
+            self.recalculate_fill(context, obj, element, is_intersecting)
 
-    def recalculate_cut(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
-        if tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
+    def recalculate_cut(
+        self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance, is_intersecting: bool
+    ) -> None:
+        if is_intersecting:
             verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
             DecoratorData.cut_cache[element.id()] = (verts, edges)
         else:
             DecoratorData.cut_cache[element.id()] = (False, False)
 
-    def recalculate_fill(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
+    def recalculate_fill(
+        self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance, is_intersecting: bool
+    ) -> None:
         element_id = element.id()
 
-        if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
+        if not is_intersecting:
             DecoratorData.fill_cache[element_id] = {}
             return
 
