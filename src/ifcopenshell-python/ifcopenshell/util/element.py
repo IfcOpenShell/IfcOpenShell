@@ -1151,8 +1151,26 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
         element = file.by_type("IfcProject")[0]
         decomposition = ifcopenshell.util.element.get_decomposition(element)
     """
+
+    def add_fillings(opening: ifcopenshell.entity_instance, host_container: Union[ifcopenshell.entity_instance, None]):
+        for fill_rel in getattr(opening, "HasFillings", []):
+            filling = fill_rel.RelatedBuildingElement
+            filling_container = get_container(filling, should_get_direct=True)
+            if host_container is not None and filling_container is not None and filling_container != host_container:
+                # A single opening may void multiple elements across different
+                # containers, e.g. a continuous opening cutting through walls
+                # on separate storeys. The filling element's (e.g. a window's)
+                # own explicit container is authoritative and takes priority
+                # over an unrelated container that the shared opening also
+                # happens to void. See #6770.
+                continue
+            queue.append(filling)
+            results.add(filling)
+
     queue = [element]
     results = set()
+    if element.is_a("IfcOpeningElement"):
+        add_fillings(element, get_container(element, should_get_direct=True))
     while queue:
         element = queue.pop()
         for rel in getattr(element, "ContainsElements", []):
@@ -1167,10 +1185,7 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
             related = rel.RelatedOpeningElement
             queue.append(related)
             results.add(related)
-        for rel in getattr(element, "HasFillings", []):
-            related = rel.RelatedBuildingElement
-            queue.append(related)
-            results.add(related)
+            add_fillings(related, get_container(element, should_get_direct=True))
         for rel in getattr(element, "IsNestedBy", []):
             related = rel.RelatedObjects
             queue.extend(related)
