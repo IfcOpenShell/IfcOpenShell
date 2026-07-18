@@ -211,7 +211,46 @@ class TestReassignClass(NewFile):
             assert isinstance(obj := tool.Ifc.get_object(wall), bpy.types.Object)
             assert obj.name.startswith("IfcWall/")
 
-    def test_reassigning_multiple_occurrences_of_the_same_type(self):
+    def test_reassigning_some_occurrences_of_the_same_type_keeps_the_others_untouched(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        context = bpy.context
+        relating_type = ifc_file.by_type("IfcSlabType")[0]
+        relating_type_id = relating_type.id()
+        n_wall_types = len(ifc_file.by_type("IfcWallType"))
+        n_slab_types = len(ifc_file.by_type("IfcSlabType"))
+
+        # create 3 slabs
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+
+        slabs = [
+            obj for e in ifc_file.by_type("IfcSlab") if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)
+        ]
+        assert len(slabs) == 3
+        # select only 2 of the 3 occurrences
+        tool.Blender.set_objects_selection(context, slabs[0], (slabs[1],))
+
+        props = tool.Root.get_root_props()
+        props.ifc_product = "IfcElement"
+        props.ifc_class = "IfcWall"
+        bpy.ops.bim.reassign_class()
+
+        # only the selected occurrences are reassigned, detached from their type
+        walls = ifc_file.by_type("IfcWall")
+        assert len(walls) == 2
+        assert all(ifcopenshell.util.element.get_type(wall) is None for wall in walls)
+
+        # the unselected occurrence and the shared type are untouched
+        remaining_slabs = ifc_file.by_type("IfcSlab")
+        assert len(remaining_slabs) == 1
+        assert ifcopenshell.util.element.get_type(remaining_slabs[0]) == relating_type
+        assert len(ifc_file.by_type("IfcWallType")) == n_wall_types
+        assert len(ifc_file.by_type("IfcSlabType")) == n_slab_types
+
+    def test_reassigning_all_occurrences_of_the_same_type_reassigns_the_type(self):
         tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
@@ -229,7 +268,7 @@ class TestReassignClass(NewFile):
             obj for e in ifc_file.by_type("IfcSlab") if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)
         ]
         assert len(slabs) == 3
-        tool.Blender.set_objects_selection(context, slabs[0], (slabs[1],))
+        tool.Blender.set_objects_selection(context, slabs[0], slabs[1:])
 
         props = tool.Root.get_root_props()
         props.ifc_product = "IfcElement"

@@ -78,27 +78,44 @@ class TestReassignClass(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcWall")) == 0
         assert len(self.file.by_type("IfcWallType")) == 0
 
-    def test_reassigning_type_class_and_its_occurrences_classes_if_entity_was_typed(self):
+    def test_reassigning_type_class_if_entity_was_the_only_occurrence_of_the_type(self):
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
-        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type)
-        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.type.assign_type(self.file, related_objects=[element2], relating_type=element_type)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
 
-        element1 = ifcopenshell.api.root.reassign_class(self.file, product=element1, ifc_class="IfcSlab")
+        element = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlab")
 
         # occurrence type has reassigned class
-        element_type = ifcopenshell.util.element.get_type(element1)
+        element_type = ifcopenshell.util.element.get_type(element)
         assert element_type.is_a("IfcSlabType")
-
-        # other type occurrences have reassigned classes
-        occurrences = ifcopenshell.util.element.get_types(element_type)
-        assert len(occurrences) == 2
-        assert all(o.is_a("IfcSlab") for o in occurrences)
+        assert list(ifcopenshell.util.element.get_types(element_type)) == [element]
 
         # original clases are gone
         assert len(self.file.by_type("IfcWall")) == 0
         assert len(self.file.by_type("IfcWallType")) == 0
+
+    def test_reassigning_one_occurrence_of_a_shared_type_without_affecting_other_occurrences(self):
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Wall1")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Wall2")
+        wall3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Wall3")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[wall1, wall2, wall3], relating_type=element_type)
+
+        slab = ifcopenshell.api.root.reassign_class(self.file, product=wall1, ifc_class="IfcSlab")
+
+        # only the requested occurrence is reassigned,
+        # and it's detached from the now-mismatched type
+        assert slab.is_a("IfcSlab")
+        assert ifcopenshell.util.element.get_type(slab) is None
+
+        # shared type and its other occurrences are untouched
+        assert element_type.is_a("IfcWallType")
+        assert set(ifcopenshell.util.element.get_types(element_type)) == {wall2, wall3}
+        assert wall2.is_a("IfcWall") and wall3.is_a("IfcWall")
+        assert len(self.file.by_type("IfcWall")) == 2
+        assert len(self.file.by_type("IfcWallType")) == 1
+        assert len(self.file.by_type("IfcSlab")) == 1
+        assert len(self.file.by_type("IfcSlabType")) == 0
 
     # Switching between occurrence / type classes.
     def test_unassign_type_from_occurrences_if_switching_from_type_class_to_occurrence_class(self):
