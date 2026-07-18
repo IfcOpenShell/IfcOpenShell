@@ -288,3 +288,74 @@ class TestGenerateSpace(NewFile):
             )
         )
         assert np.allclose(TEST_VERTS, sorted([tuple(v.co) for v in mesh.vertices]))
+
+
+class TestToggleSpacesVisibilityWiredAndTextured(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        space = ifc.createIfcSpace()
+        obj = bpy.data.objects.new("Space", None)
+        obj.display_type = "TEXTURED"
+        tool.Ifc.link(space, obj)
+        subject.toggle_spaces_visibility_wired_and_textured([space])
+        assert obj.display_type == "WIRE"
+        assert obj.show_wire is True
+        subject.toggle_spaces_visibility_wired_and_textured([space])
+        assert obj.display_type == "TEXTURED"
+        assert obj.show_wire is False
+
+    def test_a_space_with_no_blender_object_is_skipped_instead_of_crashing(self):
+        # Regression test for https://github.com/IfcOpenShell/IfcOpenShell/issues/7477
+        # A space's Blender object may be removed directly (e.g. via Blender's own
+        # object delete, bypassing Bonsai's IFC-aware delete), orphaning the IfcSpace.
+        # Toggling visibility should skip it instead of crashing on the whole operation.
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        orphaned_space = ifc.createIfcSpace()
+        space = ifc.createIfcSpace()
+        obj = bpy.data.objects.new("Space", None)
+        obj.display_type = "TEXTURED"
+        tool.Ifc.link(space, obj)
+        subject.toggle_spaces_visibility_wired_and_textured([orphaned_space, space])
+        assert obj.display_type == "WIRE"
+        assert obj.show_wire is True
+
+    def test_does_nothing_if_every_space_is_orphaned(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        orphaned_space = ifc.createIfcSpace()
+        subject.toggle_spaces_visibility_wired_and_textured([orphaned_space])
+
+
+class TestToggleHideSpaces(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        space = ifc.createIfcSpace()
+        obj = bpy.data.objects.new("Space", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(space, obj)
+        assert obj.hide_get() is False
+        subject.toggle_hide_spaces([space])
+        assert obj.hide_get() is True
+        subject.toggle_hide_spaces([space])
+        assert obj.hide_get() is False
+
+    def test_a_space_with_no_blender_object_is_skipped_instead_of_crashing(self):
+        # Regression test for https://github.com/IfcOpenShell/IfcOpenShell/issues/7477
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        orphaned_space = ifc.createIfcSpace()
+        space = ifc.createIfcSpace()
+        obj = bpy.data.objects.new("Space", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(space, obj)
+        subject.toggle_hide_spaces([orphaned_space, space])
+        assert obj.hide_get() is True
+
+    def test_does_nothing_if_every_space_is_orphaned(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        orphaned_space = ifc.createIfcSpace()
+        subject.toggle_hide_spaces([orphaned_space])
