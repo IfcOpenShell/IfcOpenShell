@@ -196,9 +196,11 @@ class Model(bonsai.core.tool.Model):
         for prop_name in data:
             if prop_name in non_si_props:
                 continue
-            prop_value = data[prop_name]
+            # `None` is used by `custom_first_last_tread_run` (e.g. a locked
+            # stair tread) and must be passed through unconverted.
+            prop_value: Iterable[float | None] | float = data[prop_name]
             if isinstance(prop_value, collections.abc.Iterable):
-                data[prop_name] = [v / si_conversion for v in prop_value]
+                data[prop_name] = [v if v is None else v / si_conversion for v in prop_value]
             else:
                 data[prop_name] = prop_value / si_conversion
         return data
@@ -1761,7 +1763,8 @@ class Model(bonsai.core.tool.Model):
 
         return bool((DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"])
 
-    CustomTreadRunType = Union[tuple[float, float], tuple[None, None]]
+    # Each side is independently `None` (follows tread_run) or a custom float.
+    CustomTreadRunType = Union[tuple[Optional[float], Optional[float]]]
 
     @classmethod
     def get_active_stair_calculated_params(cls, pset_data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
@@ -1773,10 +1776,13 @@ class Model(bonsai.core.tool.Model):
             number_of_treads = props.number_of_treads
             height = props.height / si_conversion
             tread_run = props.tread_run / si_conversion
-            first_tread_run = props.custom_first_last_tread_run[0] / si_conversion
-            last_tread_run = props.custom_first_last_tread_run[1] / si_conversion
+            first_tread_run = (
+                None if props.custom_first_tread_lock else props.custom_first_last_tread_run[0] / si_conversion
+            )
+            last_tread_run = (
+                None if props.custom_last_tread_lock else props.custom_first_last_tread_run[1] / si_conversion
+            )
             nosing_length = props.nosing_length / si_conversion
-            use_custom_first_last_tread_run = not props.custom_tread_lock
         else:
             assert pset_data
             number_of_treads: int = pset_data["number_of_treads"]
@@ -1784,11 +1790,24 @@ class Model(bonsai.core.tool.Model):
             tread_run: float = pset_data["tread_run"]
             # use .get to not break the old .ifc models
             custom_first_last_tread_run: tool.Model.CustomTreadRunType = pset_data.get(
-                "custom_first_last_tread_run", (0, 0)
+                "custom_first_last_tread_run", (None, None)
             )
             first_tread_run, last_tread_run = custom_first_last_tread_run
             nosing_length = pset_data.get("nosing_length", 0)
-            use_custom_first_last_tread_run = not pset_data.get("custom_tread_lock", True)
+
+            # Migrated the same way as BIMStairProperties.set_props_kwargs_from_ifc_data.
+            if "custom_first_tread_lock" in pset_data and "custom_last_tread_lock" in pset_data:
+                first_locked = pset_data["custom_first_tread_lock"]
+                last_locked = pset_data["custom_last_tread_lock"]
+            elif "custom_tread_lock" in pset_data:
+                first_locked = last_locked = pset_data["custom_tread_lock"]
+            else:
+                first_locked = first_tread_run in (None, 0.0, tread_run)
+                last_locked = last_tread_run in (None, 0.0, tread_run)
+            if first_locked:
+                first_tread_run = None
+            if last_locked:
+                last_tread_run = None
 
         calculated_params: dict[str, Any] = {}
         number_of_rises = number_of_treads + 1
@@ -1798,10 +1817,10 @@ class Model(bonsai.core.tool.Model):
         # Calculate total length taking into account custom first/last tread runs :
         length = 0.0
         default_rises = number_of_rises
-        if use_custom_first_last_tread_run and first_tread_run is not None:
+        if first_tread_run is not None:
             default_rises -= 1
             length += first_tread_run
-        if use_custom_first_last_tread_run and last_tread_run is not None:
+        if last_tread_run is not None:
             default_rises -= 1
             length += last_tread_run
         length += tread_run * default_rises
@@ -1864,7 +1883,7 @@ class Model(bonsai.core.tool.Model):
         has_top_nib: Union[bool, None] = None,
         top_slab_depth: Union[float, None] = None,
         base_slab_depth: Union[float, None] = None,
-        custom_first_last_tread_run: Union[tuple[float, float], tuple[None, None]] = (None, None),
+        custom_first_last_tread_run: tuple[Optional[float], Optional[float]] = (None, None),
         nosing_length: float = 0.0,
         # CONCRETE GENERIC STAIR ARGUMENTS
         nosing_depth: float = 0.0,
