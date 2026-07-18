@@ -1070,6 +1070,21 @@ class CreateDrawing(bpy.types.Operator):
                 f"{len(self.failed_linework_elements)} element(s) failed to serialize and were skipped "
                 f"from '{self.drawing_name}': {skipped}",
             )
+            if not bpy.app.background:
+                failed_count = len(self.failed_linework_elements)
+
+                def draw_failed_elements_popup(popup_self, context):
+                    col = popup_self.layout.column()
+                    col.label(
+                        text=f"{failed_count} element(s) failed to serialize and were skipped from '{self.drawing_name}':"
+                    )
+                    for t, g, _ in self.failed_linework_elements:
+                        col.label(text=f"  {t} {g}")
+                    col.label(text="See the System Console / Info log for the full error.")
+
+                bpy.context.window_manager.popup_menu(
+                    draw_failed_elements_popup, title="Drawing incomplete", icon="ERROR"
+                )
 
         root = etree.fromstring(results)
 
