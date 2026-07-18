@@ -65,6 +65,9 @@ def edit_true_north(file: ifcopenshell.file, true_north: Optional[Union[tuple[fl
                 ifcopenshell.util.element.remove_deep2(file, old_true_north)
             continue
 
+        if true_north is None:
+            continue
+
         if context.TrueNorth:
             if file.get_total_inverses(context.TrueNorth) != 1:
                 context.TrueNorth = file.create_entity("IfcDirection")
