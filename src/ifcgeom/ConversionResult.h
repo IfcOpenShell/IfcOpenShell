@@ -508,6 +508,7 @@ namespace IfcGeom {
 		ifcopenshell::geometry::taxonomy::matrix4::ptr placement_;
 		std::shared_ptr<ConversionResultShape> shape_;
 		ifcopenshell::geometry::taxonomy::style::ptr style_;
+		bool suspicious_ = false;
 	public:
 		ConversionResult(int id, ifcopenshell::geometry::taxonomy::matrix4::ptr placement, ConversionResultShape* shape, ifcopenshell::geometry::taxonomy::style::ptr style)
 			: id(id), placement_(placement ? placement : ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape), style_(style)
@@ -529,6 +530,8 @@ namespace IfcGeom {
 		const ifcopenshell::geometry::taxonomy::style& Style() const { return *style_; }
 		ifcopenshell::geometry::taxonomy::style::ptr StylePtr() const { return style_; }
 		void setStyle(ifcopenshell::geometry::taxonomy::style::ptr newStyle) { style_ = newStyle; }
+		bool isSuspicious() const { return suspicious_; }
+		void setSuspicious(bool v) { suspicious_ = v; }
 		int ItemId() const { return id; }
 		ConversionResultShape* apply_transform(double unit_scale = 1.) const {
 			if (unit_scale != 1.) {

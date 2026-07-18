@@ -37,6 +37,15 @@
 #endif
 
 namespace {
+	inline bool any_suspicious(const IfcGeom::ConversionResults& rs) {
+		for (auto& r : rs) {
+			if (r.isSuspicious()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	inline bool is_valid_for_kernel(const ifcopenshell::geometry::kernels::AbstractKernel* k, const IfcGeom::ConversionResult& shp) {
 #ifdef IFOPSH_WITH_OPENCASCADE
 		if (k->geometry_library() == "opencascade") {
@@ -84,6 +93,10 @@ namespace ifcopenshell {
 				{
 					auto ops = mapping_->find_openings(item->instance->as<IfcUtil::IfcBaseEntity>());
 					bool has_openings = ops && ops->size();
+
+					IfcGeom::ConversionResults best;
+					bool have_best = false;
+
 					for (auto& k : kernels_) {
 #ifdef IFOPSH_WITH_CGAL
 						if (has_openings && !k->supports_boolean_operations()) {
@@ -96,14 +109,32 @@ namespace ifcopenshell {
 							continue;
 						}
 #endif
+						IfcGeom::ConversionResults candidate;
 						bool success = false;
 						try {
-							success = k->convert(item, rs);
+							success = k->convert(item, candidate);
 						} catch (...) {}
-						if (success) {
+						if (!success) {
+							continue;
+						}
+						if (!any_suspicious(candidate)) {
+							rs.insert(rs.end(), candidate.begin(), candidate.end());
 							return true;
 						}
+						// A kernel further down the chain gets a chance to clear this up;
+						// keep the first suspicious success in case none of them do.
+						if (!have_best) {
+							best = std::move(candidate);
+							have_best = true;
+						}
 					}
+
+					if (have_best) {
+						logger_.Warning("SYS", 36, "Hybrid kernel chain has no non-suspicious result, using the first suspicious one", item->instance);
+						rs.insert(rs.end(), best.begin(), best.end());
+						return true;
+					}
+
 					return false;
 				}
 				virtual bool apply_layerset(IfcGeom::ConversionResults& items, const ifcopenshell::geometry::layerset_information& layers)
@@ -135,6 +166,11 @@ namespace ifcopenshell {
 				virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 					const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes)
 				{
+					// @todo entity_shapes already commits to one kernel's native shape type,
+					// so is_valid_for_kernel() below usually leaves only one candidate.
+					IfcGeom::ConversionResults best;
+					bool have_best = false;
+
 					for (auto& k : kernels_) {
 						bool is_valid = true;
 						for (auto& s : entity_shapes) {
@@ -146,14 +182,30 @@ namespace ifcopenshell {
 						if (!is_valid) {
 							continue;
 						}
+						IfcGeom::ConversionResults candidate;
 						bool success = false;
 						try {
-							success = k->convert_openings(entity, openings, entity_shapes, entity_trsf, cut_shapes);
+							success = k->convert_openings(entity, openings, entity_shapes, entity_trsf, candidate);
 						} catch (...) {}
-						if (success) {
+						if (!success) {
+							continue;
+						}
+						if (!any_suspicious(candidate)) {
+							cut_shapes.insert(cut_shapes.end(), candidate.begin(), candidate.end());
 							return true;
 						}
+						if (!have_best) {
+							best = std::move(candidate);
+							have_best = true;
+						}
 					}
+
+					if (have_best) {
+						logger_.Warning("SYS", 36, "Hybrid kernel chain has no non-suspicious opening cut, using the first suspicious one", entity);
+						cut_shapes.insert(cut_shapes.end(), best.begin(), best.end());
+						return true;
+					}
+
 					return false;
 				}
 				virtual AbstractKernel* clone(Logger& logger) const

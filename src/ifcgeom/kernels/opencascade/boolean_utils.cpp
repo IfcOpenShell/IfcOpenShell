@@ -832,7 +832,7 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness, bool* suspicious) {
 	using namespace std::string_literals;
 
 	const bool do_unify = true;
@@ -1386,6 +1386,11 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 					if (success) {
 						result = r;
+
+						if (suspicious && has_coincident_edges(r, Precision::Confusion())) {
+							Logger::Root().Warning("GEO", 155, "Boolean operation result has coincident faces at possibly non-manifold locations, flagging as suspicious for hybrid kernel chaining");
+							*suspicious = true;
+						}
 					}
 
 				} else {
@@ -1417,7 +1422,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 	if (!success) {
 		if (allow_retry) {
-			return boolean_operation(settings, a, b, op, result, new_fuzziness);
+			return boolean_operation(settings, a, b, op, result, new_fuzziness, suspicious);
 		} else {
 			Logger::Root().Notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
 		}
@@ -1425,10 +1430,10 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	return success && !result.IsNull();
 }
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness, bool* suspicious) {
 	NCollection_List<TopoDS_Shape> bs;
 	bs.Append(b);
-	return boolean_operation(settings, a, bs, op, result, fuzziness);
+	return boolean_operation(settings, a, bs, op, result, fuzziness, suspicious);
 }
 
 TopoDS_Shape IfcGeom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol) {

@@ -113,6 +113,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 		BRep_Builder B;
 		B.MakeCompound(C);
 		TopoDS_Shape combined_result;
+		bool it3_suspicious = false;
 
 		std::list<TopoDS_Shape> parts;
 
@@ -211,7 +212,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 						}
 
 						TopoDS_Shape intermediate_result;
-						if (util::boolean_operation(bst, result, opening_list, BOPAlgo_CUT, intermediate_result)) {
+						if (util::boolean_operation(bst, result, opening_list, BOPAlgo_CUT, intermediate_result, -1., &it3_suspicious)) {
 							result = intermediate_result;
 						} else {
 							Logger::Root().Message(Logger::LOG_ERROR, "GEO", 192, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
@@ -260,6 +261,9 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 		}
 
 		cut_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), new OpenCascadeShape(combined_result), it3->StylePtr()));
+		if (it3_suspicious) {
+			cut_shapes.back().setSuspicious(true);
+		}
 	}
 	return true;
 }

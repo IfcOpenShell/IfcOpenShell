@@ -1,5 +1,9 @@
 #include "base_utils.h"
 
+#include <array>
+#include <cmath>
+#include <map>
+
 #include "../../../ifcparse/IfcLogger.h"
 #include "OpenCascadeConversionResult.h"
 #include "boolean_utils.h"
@@ -133,6 +137,49 @@ bool IfcGeom::util::is_manifold(const TopoDS_Shape& a) {
 	}
 }
 
+
+namespace {
+	std::array<long long, 3> rounded_key(const gp_Pnt& p, double tol) {
+		return {
+			(long long) std::llround(p.X() / tol),
+			(long long) std::llround(p.Y() / tol),
+			(long long) std::llround(p.Z() / tol)
+		};
+	}
+}
+
+bool IfcGeom::util::has_coincident_edges(const TopoDS_Shape& a, double tol) {
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
+	TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
+
+	std::map<std::pair<std::array<long long, 3>, std::array<long long, 3>>, int> face_count_by_location;
+
+	for (int i = 1; i <= map.Extent(); ++i) {
+		const TopoDS_Edge& e = TopoDS::Edge(map.FindKey(i));
+
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(e, v0, v1);
+		if (v0.IsNull() || v1.IsNull() || v0.IsSame(v1)) {
+			continue;
+		}
+
+		auto k0 = rounded_key(BRep_Tool::Pnt(v0), tol);
+		auto k1 = rounded_key(BRep_Tool::Pnt(v1), tol);
+		if (k1 < k0) {
+			std::swap(k0, k1);
+		}
+
+		face_count_by_location[{k0, k1}] += map.FindFromIndex(i).Extent();
+	}
+
+	for (auto& kv : face_count_by_location) {
+		if (kv.second > 2) {
+			return true;
+		}
+	}
+
+	return false;
+}
 
 bool IfcGeom::util::is_nested_compound_of_solid(const TopoDS_Shape& s, int depth) {
 	if (s.ShapeType() == TopAbs_COMPOUND) {

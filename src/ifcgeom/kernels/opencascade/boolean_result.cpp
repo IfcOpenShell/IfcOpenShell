@@ -161,6 +161,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	bst.precision = settings_.get<settings::Precision>().get();
 
 	TopoDS_Shape r;
+	bool suspicious = false;
 
 	if (br->operation == taxonomy::boolean_result::SUBTRACTION && !a.IsNull() && a.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(a).More() && util::is_nested_compound_of_solid(a)) {
 		TopoDS_Compound C;
@@ -170,7 +171,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		valid_result = true;
 		for (; it.More(); it.Next()) {
 			TopoDS_Shape part;
-			if (util::boolean_operation(bst, it.Value(), b, op_to_occt(br->operation), part)) {
+			if (util::boolean_operation(bst, it.Value(), b, op_to_occt(br->operation), part, -1., &suspicious)) {
 				B.Add(C, part);
 			} else {
 				valid_result = false;
@@ -182,7 +183,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 			a = b.First();
 			b.RemoveFirst();
 		}
-		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r);
+		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r, -1., &suspicious);
 	}
 
 	if (valid_result) {
@@ -195,6 +196,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		new OpenCascadeShape(a),
 		br->surface_style ? br->surface_style : first_item_style
 	));
+
+	if (suspicious) {
+		results.back().setSuspicious(true);
+	}
 
 	return true;
     });

@@ -97,9 +97,11 @@ namespace IfcGeom {
 			double precision;
 		};
 
-		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const NCollection_List<TopoDS_Shape>&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+		// Non-null 'suspicious' is set (never cleared) when has_coincident_edges()
+		// flags the accepted result; the return value is unaffected.
+		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const NCollection_List<TopoDS_Shape>&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1., bool* suspicious = nullptr);
 
-		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1., bool* suspicious = nullptr);
 
 		TopoDS_Shape ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol);
 	}
