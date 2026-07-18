@@ -1677,6 +1677,12 @@ class CutDecorator:
         selected_elements_color = self.addon_prefs.decorator_color_selected
         self.fallback_colour = (0.3, 0.3, 0.3, 1)
 
+        # Evaluate camera movement once per redraw rather than twice per object: is_camera_moved()
+        # runs eval()/numpy on the camera matrix and, as a side effect, refreshes the stored
+        # checksum on the first True result - so calling it per object also made the second call
+        # (fill) see an already-updated checksum and skip recalculating when it shouldn't.
+        self.camera_moved = self.is_camera_moved()
+
         all_vertices = []
         all_edges = []
         selected_vertices = []
@@ -1803,9 +1809,9 @@ class CutDecorator:
         # Currently selected objects must be recalculated as they may be being moved / edited.
         # If the camera is selected, we also recalculate as the user may be moving the camera.
 
-        if not has_cut_cache or obj.select_get() or self.is_camera_moved():
+        if not has_cut_cache or obj.select_get() or self.camera_moved:
             self.recalculate_cut(context, obj, element)
-        if not has_fill_cache or obj.select_get() or self.is_camera_moved():
+        if not has_fill_cache or obj.select_get() or self.camera_moved:
             self.recalculate_fill(context, obj, element)
 
     def recalculate_cut(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
