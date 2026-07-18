@@ -564,11 +564,18 @@ class SetElementVisibility(bpy.types.Operator):
         filtered_elements = set(tool.Spatial.get_filtered_elements(self.should_filter))
 
         if self.mode == "ISOLATE":
+            # Bulk-hide the whole view layer natively rather than per-object hide_set().
+            context_override = tool.Blender.get_viewport_context()
+            with context.temp_override(**context_override):
+                bpy.ops.object.hide_view_set(unselected=True)
+                bpy.ops.object.hide_view_set(unselected=False)
+
+            # Record is_manually_hidden so a later Status filter change still composes (#6664).
             for element in tool.Ifc.get().by_type("IfcProduct"):
                 if element in filtered_elements:
                     continue
                 if obj := tool.Ifc.get_object(element):
-                    tool.Blender.set_object_manual_visibility(obj, True)
+                    tool.Blender.get_object_bim_props(obj).is_manually_hidden = True
             should_hide = False
         else:
             should_hide = self.mode == "HIDE"
