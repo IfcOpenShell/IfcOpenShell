@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import radians
 from typing import TYPE_CHECKING
 
 import bmesh
@@ -32,7 +33,7 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 import bonsai.bim.module.root.prop as root_prop
 import bonsai.core.geometry
@@ -323,6 +324,19 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     if is_negative and bpy.app.version >= (5, 1, 0):
                         for polygon in obj.data.polygons:
                             polygon.flip()
+
+                # Realign so the longer footprint axis carries local X, per tool.Model.get_wall_axis's convention.
+                if ifc_class == "IfcWall":
+                    xs = [v[0] for v in obj.bound_box]
+                    ys = [v[1] for v in obj.bound_box]
+                    x_extent = max(xs) - min(xs)
+                    y_extent = max(ys) - min(ys)
+                    if y_extent > x_extent * (1 + 1e-4):
+                        ensure_single_user_mesh(obj.data)
+                        rotation = Matrix.Rotation(radians(90.0), 4, "Z")
+                        obj.data.transform(rotation)
+                        obj.data.update()
+                        obj.matrix_world = obj.matrix_world @ rotation.inverted()
 
                 if tool.Geometry.mesh_has_loose_geometry(obj.data):
                     self.report(
