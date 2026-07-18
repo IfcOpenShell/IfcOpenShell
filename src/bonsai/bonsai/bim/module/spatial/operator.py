@@ -561,18 +561,21 @@ class SetElementVisibility(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
+        filtered_elements = set(tool.Spatial.get_filtered_elements(self.should_filter))
+
         if self.mode == "ISOLATE":
-            context_override = tool.Blender.get_viewport_context()
-            with context.temp_override(**context_override):
-                bpy.ops.object.hide_view_set(unselected=True)
-                bpy.ops.object.hide_view_set(unselected=False)
+            for element in tool.Ifc.get().by_type("IfcProduct"):
+                if element in filtered_elements:
+                    continue
+                if obj := tool.Ifc.get_object(element):
+                    tool.Blender.set_object_manual_visibility(obj, True)
             should_hide = False
         else:
             should_hide = self.mode == "HIDE"
 
-        for element in tool.Spatial.get_filtered_elements(self.should_filter):
+        for element in filtered_elements:
             if obj := tool.Ifc.get_object(element):
-                obj.hide_set(should_hide)
+                tool.Blender.set_object_manual_visibility(obj, should_hide)
                 for collection in obj.users_collection:
                     collection.hide_viewport = False
         return {"FINISHED"}

@@ -2226,6 +2226,28 @@ class Blender(bonsai.core.tool.Blender):
         return obj.BIMObjectProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
+    def set_object_manual_visibility(cls, obj: bpy.types.Object, is_hidden: bool) -> None:
+        """Hide or show `obj` as requested by the Isolate/Show/Hide element visibility tools.
+
+        The object also stays subject to the active Status filter, if any, so that neither
+        mechanism overwrites the visibility state set by the other.
+        """
+        props = cls.get_object_bim_props(obj)
+        props.is_manually_hidden = is_hidden
+        obj.hide_set(is_hidden or props.is_hidden_by_status)
+
+    @classmethod
+    def set_object_status_visibility(cls, obj: bpy.types.Object, is_hidden: bool) -> None:
+        """Hide or show `obj` as requested by the active Status filter.
+
+        The object also stays subject to any manual Isolate/Show/Hide state, so that neither
+        mechanism overwrites the visibility state set by the other.
+        """
+        props = cls.get_object_bim_props(obj)
+        props.is_hidden_by_status = is_hidden
+        obj.hide_set(is_hidden or props.is_manually_hidden)
+
+    @classmethod
     def get_object_attribute_props(cls, obj: bpy.types.Object) -> BIMAttributeProperties:
         return obj.BIMAttributeProperties  # pyright: ignore[reportAttributeAccessIssue]
 
