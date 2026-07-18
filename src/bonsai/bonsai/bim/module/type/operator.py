@@ -305,14 +305,43 @@ class SelectTypeObjects(bpy.types.Operator):
 
 class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_type"
-    bl_label = "Remove Type"
+    bl_label = "Delete Type"
+    bl_description = (
+        "Delete this type. Its occurrences are kept but become untyped.\n\n"
+        "SHIFT+Click to also delete every occurrence of this type in the project"
+    )
     bl_options = {"REGISTER", "UNDO"}
     element: bpy.props.IntProperty()
+    also_delete_instances: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    if TYPE_CHECKING:
+        element: int
+        also_delete_instances: bool
+
+    def invoke(self, context, event):
+        self.also_delete_instances = event.shift
+        if self.also_delete_instances:
+            element = tool.Ifc.get().by_id(self.element)
+            count = len(ifcopenshell.util.element.get_types(element))
+            return context.window_manager.invoke_confirm(
+                self,
+                event,
+                title="Delete Type and Occurrences",
+                message=f"This will delete the type and all {count} of its occurrences.",
+                confirm_text="Delete",
+            )
+        return self.execute(context)
 
     def _execute(self, context):
         element = tool.Ifc.get().by_id(self.element)
+        if self.also_delete_instances:
+            for occurrence in ifcopenshell.util.element.get_types(element):
+                occurrence_obj = tool.Ifc.get_object(occurrence)
+                if occurrence_obj:
+                    tool.Geometry.delete_ifc_object(occurrence_obj)
         obj = tool.Ifc.get_object(element)
-        tool.Geometry.delete_ifc_object(obj)
+        if obj:
+            tool.Geometry.delete_ifc_object(obj)
 
 
 class RenameType(bpy.types.Operator, tool.Ifc.Operator):
