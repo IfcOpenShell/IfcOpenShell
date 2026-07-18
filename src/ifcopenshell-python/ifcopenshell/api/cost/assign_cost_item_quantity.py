@@ -150,20 +150,22 @@ class Usecase:
                 collector.visit(tree)
                 variables = collector.variables
 
+                values: dict[str, float | None] = {}
                 for variable in variables:
                     getter = self.get_value_from_pset if "." in variable else self.get_value_from_qset
                     value = getter(product, variable)
+                    values[variable] = value
 
-                if value is None:
-                    print(
-                        f"WARNING: Variable '{variable}' in product '{product.Name}' "
-                        f"is missing (None). Check Pset/Qset or property name."
-                    )
-                elif value == 0:
-                    print(
-                        f"WARNING: Variable '{variable}' in product '{product.Name}' "
-                        f"has value 0. Verify if this is correct."
-                    )
+                    if value is None:
+                        print(
+                            f"WARNING: Variable '{variable}' in product '{product.Name}' "
+                            f"is missing (None). Check Pset/Qset or property name."
+                        )
+                    elif value == 0:
+                        print(
+                            f"WARNING: Variable '{variable}' in product '{product.Name}' "
+                            f"has value 0. Verify if this is correct."
+                        )
 
                 evaluator = FormulaEvaluator(values)
                 result = evaluator.visit(tree.body)
