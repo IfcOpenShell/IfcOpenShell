@@ -37,12 +37,18 @@ APPENDABLE_ASSET = Literal[
     "IfcProduct",
     "IfcMaterial",
     "IfcCostSchedule",
+    "IfcWorkSchedule",
+    "IfcWorkCalendar",
     "IfcProfileDef",
     "IfcPresentationStyle",
+    "IfcConstructionResource",
 ]
 APPENDABLE_ASSET_TYPES: tuple[APPENDABLE_ASSET, ...] = get_args(APPENDABLE_ASSET)
-MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
-
+MATERIAL_SETS = (
+    "IfcMaterialLayerSet",
+    "IfcMaterialConstituentSet",
+    "IfcMaterialProfileSet",
+)
 
 def append_asset(
     file: ifcopenshell.file,
@@ -215,7 +221,11 @@ class Usecase:
         self.added_elements: dict[int, ifcopenshell.entity_instance] = {}
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings["reuse_identities"]
         self.whitelisted_inverse_attributes = {}
-        self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
+        self.base_material_class = (
+            "IfcMaterial"
+            if self.file.schema == "IFC2X3"
+            else "IfcMaterialDefinition"
+        )
         self.assume_asset_uniqueness_by_name = self.settings["assume_asset_uniqueness_by_name"]
 
         if self.settings["element"].is_a("IfcTypeProduct"):
@@ -230,6 +240,15 @@ class Usecase:
         elif self.settings["element"].is_a("IfcCostSchedule"):
             self.target_class = "IfcCostSchedule"
             return self.append_cost_schedule()
+        elif self.settings["element"].is_a("IfcWorkSchedule"):
+            self.target_class = "IfcWorkSchedule"
+            return self.append_work_schedule()
+        elif self.settings["element"].is_a("IfcConstructionResource"):
+            self.target_class = "IfcConstructionResource"
+            return self.append_construction_resource()
+        elif self.settings["element"].is_a("IfcWorkCalendar"):
+            self.target_class = "IfcWorkCalendar"
+            return self.append_work_calendar()
         elif self.settings["element"].is_a("IfcProfileDef"):
             self.target_class = "IfcProfileDef"
             return self.append_profile_def()
@@ -243,7 +262,11 @@ class Usecase:
         except RuntimeError:
             return None
 
-    def material_sets_are_equal(self, set1: ifcopenshell.entity_instance, set2: ifcopenshell.entity_instance) -> bool:
+    def material_sets_are_equal(
+        self,
+        set1: ifcopenshell.entity_instance,
+        set2: ifcopenshell.entity_instance,
+    ) -> bool:
         """Check if two material sets are structurally equivalent."""
         if set1.is_a() != set2.is_a():
             return False
@@ -296,7 +319,8 @@ class Usecase:
 
         return True
 
-    def get_existing_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    def get_existing_element(self, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """Get existing element for a library element.
 
         Return element if it was already added with ``add_element``
@@ -319,7 +343,7 @@ class Usecase:
 
         elif element.is_a() in MATERIAL_SETS:
             ifc_class = element.is_a()
-            name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
+            name_attr = ("LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name")
             material_set_name = getattr(element, name_attr)
             if material_set_name is None:
                 return
@@ -333,32 +357,42 @@ class Usecase:
             profile_name = element.ProfileName
             if profile_name is None:
                 return None
-            return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
+            return next(
+                (e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name),
+                None,
+            )
         elif element.is_a("IfcPresentationStyle"):
             name = element.Name
             if name is None:
                 return None
-            return next((e for e in self.file.by_type(element.is_a()) if e.Name == name), None)
+            return next(
+                (e for e in self.file.by_type(element.is_a()) if e.Name == name),
+                None,
+            )
 
         # Not really assets but if we don't check them here,
         # their subgraph entities may be appended twice.
         elif (ifc_class := element.is_a()) == "IfcOrganization":
-            attr_name = "Id" if self.file.schema == "IFC2X3" else "Identification"
+            attr_name = ("Id" if self.file.schema == "IFC2X3" else "Identification")
             org_id = getattr(element, attr_name)
             if org_id is not None:
-                return next((e for e in self.file.by_type("IfcOrganization") if getattr(e, attr_name) == org_id), None)
+                return next((e for e in self.file.by_type("IfcOrganization") if getattr(e, attr_name) == org_id), None,)
         elif ifc_class == "IfcPerson":
-            attr_name = "Id" if self.file.schema == "IFC2X3" else "Identification"
+            attr_name = ("Id" if self.file.schema == "IFC2X3" else "Identification")
             person_id = getattr(element, attr_name)
             if person_id is not None:
-                return next((e for e in self.file.by_type("IfcPerson") if getattr(e, attr_name) == person_id), None)
+                return next((e for e in self.file.by_type("IfcPerson") if getattr(e, attr_name) == person_id), None,)
 
         else:
             return None
 
     def append_material(self):
         self.whitelisted_inverse_attributes = {
-            "IfcMaterial": ["HasExternalReferences", "HasProperties", "HasRepresentation"]
+            "IfcMaterial": [
+                "HasExternalReferences",
+                "HasProperties",
+                "HasRepresentation",
+            ]
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
@@ -367,11 +401,80 @@ class Usecase:
         return element
 
     def append_cost_schedule(self):
-        self.whitelisted_inverse_attributes = {"IfcCostSchedule": ["Controls"], "IfcCostItem": ["IsNestedBy"]}
+        self.whitelisted_inverse_attributes = {
+            "IfcCostSchedule": ["Controls"],
+            "IfcCostItem": [
+                "IsNestedBy",
+                "Nests",
+                "HasAssociations",
+                "Controls",
+            ],
+            "IfcClassificationReference": ["ClassificationRefForObjects"],
+            "IfcBuildingElement": ["IsDefinedBy"],
+            "IfcConstructionResource": [
+                "HasContext",
+                "IsDefinedBy",
+                "IsNestedBy",
+                "Nests",
+                "HasAssignments",
+                "HasAssociations",
+            ],
+        }
         return self.add_element(self.settings["element"])
 
+    def append_work_schedule(self):
+        self.whitelisted_inverse_attributes = {
+            "IfcWorkSchedule": ["Controls"],
+            "IfcTask": [
+                "IsDefinedBy",
+                "IsNestedBy",
+                "Nests",
+                "HasAssociations",
+                "Controls",
+                "IsPredecessorTo",
+                "IsSuccessorFrom",
+                "HasAssignments",
+            ],
+            "IfcClassificationReference": ["ClassificationRefForObjects"],
+            "IfcBuildingElement": ["IsDefinedBy"],
+            "IfcConstructionResource": [
+                "HasContext",
+                "IsDefinedBy",
+                "IsNestedBy",
+                "Nests",
+                "HasAssignments",
+                "HasAssociations",
+            ],
+        }
+        return self.add_element(self.settings["element"])
+
+    def append_construction_resource(self):
+        self.whitelisted_inverse_attributes = {
+            "IfcConstructionResource": [
+                "HasContext",
+                "IsNestedBy",
+                "Nests",
+                "HasAssociations",
+                "IsDefinedBy",
+                # "HasAssignments"
+            ],
+            "IfcClassificationReference": ["ClassificationRefForObjects"],
+            "IfcBuildingElement": ["IsDefinedBy"],
+        }
+        return self.add_element(self.settings["element"])
+
+    def append_work_calendar(self):
+        self.whitelisted_inverse_attributes = {
+            "IfcWorkCalendar": [
+                "HasContext",
+            ],
+            "IfcWorkTime": [],
+        }
+
     def append_profile_def(self):
-        self.whitelisted_inverse_attributes = {"IfcProfileDef": ["HasProperties"]}
+        self.whitelisted_inverse_attributes = {
+            "IfcProfileDef": ["HasProperties"]
+        }
         return self.add_element(self.settings["element"])
 
     def append_presentation_style(self):
@@ -382,13 +485,19 @@ class Usecase:
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcDistributionElementType": ["IsNestedBy"],
-            self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
+            self.base_material_class: [
+                "HasExternalReferences",
+                "HasProperties",
+                "HasRepresentation",
+            ],
             "IfcRepresentationItem": ["StyledByItem", "LayerAssignment"],
             "IfcRepresentation": ["LayerAssignments"],
             "IfcProductDefinitionShape": ["HasShapeAspects"],
             "IfcRepresentationMap": ["HasShapeAspects"],
         }
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        self.existing_contexts = self.file.by_type(
+            "IfcGeometricRepresentationContext"
+        )
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()
         return element
@@ -399,28 +508,48 @@ class Usecase:
             "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
             "IfcElement": ["HasOpenings"],
             "IfcDistributionElement": ["IsNestedBy"],
-            self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
+            self.base_material_class: [
+                "HasExternalReferences",
+                "HasProperties",
+                "HasRepresentation",
+            ],
             "IfcRepresentationItem": [
                 "StyledByItem",
-                "LayerAssignments" if self.file.schema == "IFC2X3" else "LayerAssignment",
+                "LayerAssignments"
+                if self.file.schema == "IFC2X3"
+                else "LayerAssignment",
             ],
             "IfcRepresentation": ["LayerAssignments"],
             "IfcProductDefinitionShape": ["HasShapeAspects"],
             "IfcRepresentationMap": ["HasShapeAspects"],
         }
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        self.existing_contexts = self.file.by_type(
+            "IfcGeometricRepresentationContext"
+        )
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()
 
         placement = element.ObjectPlacement
         if placement is not None:
             matrix = ifcopenshell.util.placement.get_local_placement(placement)
-            matrix = ifcopenshell.util.geolocation.auto_local2global(self.settings["library"], matrix)
-            matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
-            with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):
-                ifcopenshell.api.geometry.edit_object_placement(self.file, element, matrix, is_si=False)
+            matrix = ifcopenshell.util.geolocation.auto_local2global(
+                self.settings["library"], matrix
+            )
+            matrix = ifcopenshell.util.geolocation.auto_global2local(
+                self.file, matrix
+            )
+            with SafeRemovalContext(
+                self.file,
+                self.reuse_identities,
+                self.assume_asset_uniqueness_by_name,
+            ):
+                ifcopenshell.api.geometry.edit_object_placement(
+                    self.file, element, matrix, is_si=False
+                )
 
-        element_type = ifcopenshell.util.element.get_type(self.settings["element"])
+        element_type = ifcopenshell.util.element.get_type(
+            self.settings["element"]
+        )
         if element_type:
             ifcopenshell.api.owner.settings.factory_reset()
             new_type = ifcopenshell.api.project.append_asset(
@@ -440,7 +569,9 @@ class Usecase:
 
         return element
 
-    def add_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    def add_element(
+        self, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """Add element and check all it's subgraph inverses."""
         if element.id() == 0:
             return
@@ -450,7 +581,9 @@ class Usecase:
         new = self.file_add(element)
         self.added_elements[element.id()] = new
         self.check_inverses(element)
-        subelement_queue = self.settings["library"].traverse(element, max_levels=1)[1:]
+        subelement_queue = self.settings["library"].traverse(element, max_levels=1)[
+            1:
+        ]
         while subelement_queue:
             subelement = subelement_queue.pop(0)
             existing_element = self.get_existing_element(subelement)
@@ -461,10 +594,14 @@ class Usecase:
             else:
                 self.added_elements[subelement.id()] = self.file_add(subelement)
                 self.check_inverses(subelement)
-                subelement_queue.extend(self.settings["library"].traverse(subelement, max_levels=1)[1:])
+                subelement_queue.extend(
+                    self.settings["library"].traverse(subelement, max_levels=1)[1:]
+                )
         return new
 
-    def has_whitelisted_inverses(self, element: ifcopenshell.entity_instance) -> bool:
+    def has_whitelisted_inverses(
+        self, element: ifcopenshell.entity_instance
+    ) -> bool:
         for source_class, attributes in self.whitelisted_inverse_attributes.items():
             if not element.is_a(source_class):
                 continue
@@ -523,7 +660,9 @@ class Usecase:
             # Currently known cases requiring attributes reassignment are rels.
             if not new.is_a("IfcRelationship"):
                 return
-        elif element.is_a("IfcRelationship") and (existing_rel := self.by_guid(element.GlobalId)):
+        elif element.is_a("IfcRelationship") and (
+            existing_rel := self.by_guid(element.GlobalId)
+        ):
             new = existing_rel
         else:
             new = self.file.create_entity(element.is_a())
@@ -539,16 +678,24 @@ class Usecase:
                 # IfcRelAssociatesClassification to openings! We only ever want
                 # to consider IfcFeatureElements in IfcRelVoidsElements and
                 # IfcRelProjectsElements.
-                if element.is_a() in ("IfcRelVoidsElement", "IfcRelProjectsElement") or not self.is_another_asset(
-                    attribute
-                ):
+                if element.is_a() in (
+                    "IfcRelVoidsElement",
+                    "IfcRelProjectsElement",
+                ) or not self.is_another_asset(attribute):
                     new_attribute = self.add_element(attribute)
-            elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
+            elif (
+                isinstance(attribute, tuple)
+                and attribute
+                and isinstance(attribute[0], ifcopenshell.entity_instance)
+            ):
                 new_attribute = []
                 for item in attribute:
                     if self.is_another_asset(item):
                         continue
-                    if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
+                    if (
+                        skip_not_reused_entities_attr_i is not None
+                        and i == skip_not_reused_entities_attr_i
+                    ):
                         identity = item.wrapped_data.identity()
                         if (item := self.reuse_identities.get(identity)) is None:
                             continue
@@ -582,18 +729,42 @@ class Usecase:
         return False
 
     def reuse_existing_contexts(self) -> None:
-        added_contexts = set([e for e in self.added_elements.values() if e.is_a("IfcGeometricRepresentationContext")])
+        added_contexts = set(
+            [
+                e
+                for e in self.added_elements.values()
+                if e.is_a("IfcGeometricRepresentationContext")
+            ]
+        )
         added_contexts -= set(self.existing_contexts)
-        sorted_added_contexts = [c for c in added_contexts if c.is_a() == "IfcGeometricRepresentationContext"]
-        sorted_added_contexts.extend([c for c in added_contexts if c.is_a() == "IfcGeometricRepresentationSubContext"])
+        sorted_added_contexts = [
+            c
+            for c in added_contexts
+            if c.is_a() == "IfcGeometricRepresentationContext"
+        ]
+        sorted_added_contexts.extend(
+            [
+                c
+                for c in added_contexts
+                if c.is_a() == "IfcGeometricRepresentationSubContext"
+            ]
+        )
         for added_context in sorted_added_contexts:
-            equivalent_existing_context = self.get_equivalent_existing_context(added_context)
+            equivalent_existing_context = self.get_equivalent_existing_context(
+                added_context
+            )
             if not equivalent_existing_context:
-                equivalent_existing_context = self.create_equivalent_context(added_context)
+                equivalent_existing_context = self.create_equivalent_context(
+                    added_context
+                )
             for inverse in self.file.get_inverse(added_context):
-                ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
+                ifcopenshell.util.element.replace_attribute(
+                    inverse, added_context, equivalent_existing_context
+                )
 
-        with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):
+        with SafeRemovalContext(
+            self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name
+        ):
             for added_context in added_contexts:
                 ifcopenshell.util.element.remove_deep2(self.file, added_context)
 
@@ -606,7 +777,8 @@ class Usecase:
             if context.is_a("IfcGeometricRepresentationSubContext"):
                 if (
                     context.ContextType == added_context.ContextType
-                    and context.ContextIdentifier == added_context.ContextIdentifier
+                    and context.ContextIdentifier
+                    == added_context.ContextIdentifier
                     and context.TargetView == added_context.TargetView
                 ):
                     return context
@@ -616,9 +788,13 @@ class Usecase:
             ):
                 return context
 
-    def create_equivalent_context(self, added_context: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    def create_equivalent_context(
+        self, added_context: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         if added_context.is_a("IfcGeometricRepresentationSubContext"):
-            parent = self.get_equivalent_existing_context(added_context.ParentContext)
+            parent = self.get_equivalent_existing_context(
+                added_context.ParentContext
+            )
             if not parent:
                 parent = self.create_equivalent_context(added_context.ParentContext)
                 self.existing_contexts.append(parent)
@@ -639,7 +815,9 @@ class Usecase:
         return context
 
     def file_add(
-        self, element: ifcopenshell.entity_instance, conversion_factor: Optional[float] = None
+        self,
+        element: ifcopenshell.entity_instance,
+        conversion_factor: Optional[float] = None,
     ) -> ifcopenshell.entity_instance:
         """Reimplementation of `file.add` but taking into account that some elements (profiles, materials)
         are already existing (checking by their name) and shouldn't be duplicated.
@@ -652,7 +830,9 @@ class Usecase:
             nonlocal conversion_factor
             if conversion_factor is not None:
                 return conversion_factor
-            library_scale = ifcopenshell.util.unit.calculate_unit_scale(self.settings["library"])
+            library_scale = ifcopenshell.util.unit.calculate_unit_scale(
+                self.settings["library"]
+            )
             current_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             conversion_factor = library_scale / current_scale
             return conversion_factor
@@ -661,7 +841,10 @@ class Usecase:
         if not self.assume_asset_uniqueness_by_name or element.id() == 0:
             # file.add doesn't convert units for IfcLengthMeasure entities.
             if element.is_a("IfcLengthMeasure"):
-                return ifc_file.create_entity(element.is_a(), element.wrappedValue * get_conversion_factor())
+                return ifc_file.create_entity(
+                    element.is_a(),
+                    element.wrappedValue * get_conversion_factor(),
+                )
             return ifc_file.add(element)
 
         reuse_identities = self.reuse_identities
@@ -690,12 +873,21 @@ class Usecase:
 
             ifc_class = subelement.is_a()
             assert ifc_class in ("IfcOrganization", "IfcPerson")
-            attr_name = "Id" if ifc_file.schema == "IFC2X3" else "Identification"
+            attr_name = (
+                "Id"
+                if ifc_file.schema == "IFC2X3"
+                else "Identification"
+            )
             subelement_id = getattr(subelement, attr_name)
 
             if subelement_id is not None:
                 existing_org = next(
-                    (e for e in ifc_file.by_type(ifc_class) if getattr(e, attr_name) == subelement_id), None
+                    (
+                        e
+                        for e in ifc_file.by_type(ifc_class)
+                        if getattr(e, attr_name) == subelement_id
+                    ),
+                    None,
                 )
                 if existing_org is not None:
                     reuse_identities[element_identity] = existing_org
@@ -709,7 +901,12 @@ class Usecase:
             profile_name = element.ProfileName
             if profile_name is not None:
                 existing_profile = next(
-                    (e for e in ifc_file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None
+                    (
+                        e
+                        for e in ifc_file.by_type("IfcProfileDef")
+                        if e.ProfileName == profile_name
+                    ),
+                    None,
                 )
                 if existing_profile is not None:
                     reuse_identities[element_identity] = existing_profile
@@ -717,13 +914,24 @@ class Usecase:
 
         elif element.is_a("IfcMaterial"):
             material_name = element.Name
-            existing_material = next((e for e in ifc_file.by_type("IfcMaterial") if e.Name == material_name), None)
+            existing_material = next(
+                (
+                    e
+                    for e in ifc_file.by_type("IfcMaterial")
+                    if e.Name == material_name
+                ),
+                None,
+            )
             if existing_material is not None:
                 reuse_identities[element_identity] = existing_material
                 return existing_material
 
         elif ifc_class in MATERIAL_SETS:
-            name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
+            name_attr = (
+                "LayerSetName"
+                if ifc_class == "IfcMaterialLayerSet"
+                else "Name"
+            )
             material_set_name = getattr(element, name_attr)
             if material_set_name is not None:
                 for candidate in ifc_file.by_type(ifc_class):
@@ -735,7 +943,14 @@ class Usecase:
         elif element.is_a("IfcPresentationStyle"):
             style_name = element.Name
             if style_name is not None:
-                existing_style = next((e for e in ifc_file.by_type(ifc_class) if e.Name == style_name), None)
+                existing_style = next(
+                    (
+                        e
+                        for e in ifc_file.by_type(ifc_class)
+                        if e.Name == style_name
+                    ),
+                    None,
+                )
                 if existing_style is not None:
                     reuse_identities[element_identity] = existing_style
                     return existing_style
@@ -744,7 +959,12 @@ class Usecase:
             app_id = element.ApplicationIdentifier
             if app_id is not None:
                 existing_app = next(
-                    (e for e in ifc_file.by_type("IfcApplication") if e.ApplicationIdentifier == app_id), None
+                    (
+                        e
+                        for e in ifc_file.by_type("IfcApplication")
+                        if e.ApplicationIdentifier == app_id
+                    ),
+                    None,
                 )
                 if existing_app is not None:
                     reuse_identities[element_identity] = existing_app
@@ -780,7 +1000,9 @@ class Usecase:
             return type(tuple_)
 
         def is_length_measure(attribute: W.attribute) -> bool:
-            return "<type IfcLengthMeasure: <real>>" in str(attribute.type_of_attribute())
+            return "<type IfcLengthMeasure: <real>>" in str(
+                attribute.type_of_attribute()
+            )
 
         def apply_to_array(arr: Any, func: Callable[[Any], Any]) -> Any:
             if isinstance(arr, tuple):
