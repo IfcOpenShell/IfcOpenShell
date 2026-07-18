@@ -74,8 +74,20 @@ class Patcher:
                     "Merging %s duplicate(s) of %s into #%s", len(duplicates), key, survivor.id()
                 )
                 for duplicate in duplicates:
-                    ifcopenshell.util.element.replace_element(duplicate, survivor)
-                    self.file.remove(duplicate)
+                    try:
+                        # An upstream partial removal (e.g. MergeProjects'
+                        # order-sensitive remove_deep2 cleanup) can leave an entity
+                        # that by_type still returns but that the file can no longer
+                        # resolve. Re-fetching by id raises for such a stale entity,
+                        # and replace_element -> get_inverse also raises; either way
+                        # there is nothing valid to collapse, so skip it.
+                        duplicate = self.file.by_id(duplicate.id())
+                        ifcopenshell.util.element.replace_element(duplicate, survivor)
+                        self.file.remove(duplicate)
+                    except RuntimeError:
+                        self.logger.warning(
+                            "MergeDuplicateContexts: skipping context the file cannot resolve (%s)", key
+                        )
                 # Repointing may leave the survivor listed twice in a SET-typed
                 # attribute (e.g. IfcProject.RepresentationContexts), which is
                 # non-conformant. Dedupe those aggregates.
