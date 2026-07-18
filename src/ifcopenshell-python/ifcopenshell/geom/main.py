@@ -292,7 +292,7 @@ class settings_mixin:
         }
         for nm in self.setting_names():
             if nm == "use-python-opencascade":
-                ty == "bool"
+                ty = "bool"
             else:
                 ty = self.get_type(nm)
             if ty == "bool":
