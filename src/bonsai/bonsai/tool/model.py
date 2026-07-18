@@ -2184,6 +2184,26 @@ class Model(bonsai.core.tool.Model):
                 bpy.ops.bim.recalculate_fill()
 
     @classmethod
+    def resync_hosted_fillings(cls, elements: Iterable[ifcopenshell.entity_instance]) -> None:
+        """Refresh every filled opening voiding any of ``elements``.
+
+        Meant to run after a host's layer thickness changed (e.g. an edit to
+        an ``IfcWallType``'s ``IfcMaterialLayerSet``), so doors and windows
+        already placed in that host keep cutting all the way through its new
+        body instead of being left at their old depth."""
+        fillings = []
+        for element in elements:
+            for rel in getattr(element, "HasOpenings", None) or []:
+                for fill_rel in getattr(rel.RelatedOpeningElement, "HasFillings", None) or []:
+                    obj = tool.Ifc.get_object(fill_rel.RelatedBuildingElement)
+                    if obj:
+                        fillings.append(obj)
+        if not fillings:
+            return
+        with bpy.context.temp_override(selected_objects=fillings):
+            bpy.ops.bim.recalculate_fill()
+
+    @classmethod
     def apply_ifc_material_changes(
         cls,
         elements: list[ifcopenshell.entity_instance],
