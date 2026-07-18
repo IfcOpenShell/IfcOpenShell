@@ -71,29 +71,32 @@ def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
 def is_manifold(geometry: W.Triangulation) -> bool:
     """Checks whether a triangulated geometry is a closed, consistently oriented manifold
 
-    Two conditions are checked for every edge of every triangle:
-
-    - Unoriented use: as an unordered pair of vertices, an edge must be shared
-      by exactly two triangles. A count of 1 means an open hole or boundary,
-      a count above 2 means more than two triangles meet at that edge.
-    - Oriented use: as an ordered pair of vertices, an edge must be used by at
-      most one triangle. If two triangles use the same ordered edge, their
-      windings are inconsistent (e.g. a flipped or duplicated face), which
-      also invalidates volume calculations that rely on consistent winding.
+    Every edge, as an unordered pair of vertices, must be shared by exactly
+    two triangles, and those two triangles must traverse it in opposite
+    directions. A single use means an open hole or boundary; a third use, or
+    two uses in the same direction, means the winding is inconsistent (e.g. a
+    flipped or duplicated face) - both invalidate volume calculations that
+    rely on a closed, consistently wound mesh.
 
     :param geometry: Geometry output calculated by IfcOpenShell
     :return: ``True`` if the geometry is a closed, consistently oriented manifold
     """
     faces = geometry.faces
-    directed_use: dict[tuple[int, int], int] = {}
-    undirected_use: dict[tuple[int, int], int] = {}
+    edge_state: dict[tuple[int, int], int] = {}
     for i in range(0, len(faces), 3):
-        tri = (faces[i], faces[i + 1], faces[i + 2])
-        for a, b in ((tri[0], tri[1]), (tri[1], tri[2]), (tri[2], tri[0])):
-            directed_use[(a, b)] = directed_use.get((a, b), 0) + 1
-            edge = (a, b) if a < b else (b, a)
-            undirected_use[edge] = undirected_use.get(edge, 0) + 1
-    return all(count == 2 for count in undirected_use.values()) and all(count == 1 for count in directed_use.values())
+        a, b, c = faces[i], faces[i + 1], faces[i + 2]
+        for u, v in ((a, b), (b, c), (c, a)):
+            if u == v:
+                return False
+            edge, direction = ((u, v), 1) if u < v else ((v, u), -1)
+            state = edge_state.get(edge)
+            if state is None:
+                edge_state[edge] = direction
+            elif state == -direction:
+                edge_state[edge] = 0
+            else:
+                return False
+    return all(state == 0 for state in edge_state.values())
 
 
 def get_volume(geometry: W.Triangulation) -> float:
