@@ -718,6 +718,11 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
 class UpdateParametricRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_parametric_representation"
     bl_label = "Update Parametric Representation"
+    bl_description = (
+        "Apply the edited parameter to the active object.\n"
+        "If other objects are selected, the same named parameter is also applied to those "
+        "of them that have a matching parameter"
+    )
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
@@ -731,17 +736,61 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         assert obj and tool.Geometry.has_mesh_properties(obj.data)
         props = tool.Geometry.get_mesh_props(obj.data)
         parameter = props.ifc_parameters[self.index]
-        self.file.by_id(parameter.step_id)[parameter.index] = parameter.value
+        name = parameter.name
+        occurrence = self.get_occurrence(props.ifc_parameters, self.index)
+        value = parameter.value
+
+        updated_objects = 1
+        self.apply_parameter(obj, parameter, value)
+
+        other_objects = [o for o in context.selected_objects if o != obj]
+        for other in other_objects:
+            if other.mode != "OBJECT" or not tool.Geometry.has_mesh_properties(other.data):
+                continue
+            if not tool.Ifc.get_entity(other):
+                continue
+            other_props = tool.Geometry.get_mesh_props(other.data)
+            core.get_representation_ifc_parameters(tool.Geometry, obj=other)
+            other_parameter = self.find_parameter(other_props.ifc_parameters, name, occurrence)
+            if other_parameter is None:
+                continue
+            self.apply_parameter(other, other_parameter, value)
+            updated_objects += 1
+
+        if other_objects:
+            total_objects = len(other_objects) + 1
+            self.report({"INFO"}, f"Parameter updated on {updated_objects} of {total_objects} selected object(s).")
+        return {"FINISHED"}
+
+    def apply_parameter(self, obj: bpy.types.Object, parameter, value: float) -> None:
+        parameter.value = value
+        self.file.by_id(parameter.step_id)[parameter.index] = value
+        props = tool.Geometry.get_mesh_props(obj.data)
         show_representation_parameters = bool(props.ifc_parameters)
         core.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
-            representation=tool.Ifc.get().by_id(props.ifc_definition_id),
+            representation=self.file.by_id(props.ifc_definition_id),
         )
         if show_representation_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
-        return {"FINISHED"}
+
+    @staticmethod
+    def get_occurrence(parameters, index: int) -> int:
+        name = parameters[index].name
+        return sum(1 for i in range(index) if parameters[i].name == name)
+
+    @staticmethod
+    def find_parameter(parameters, name: str, occurrence: int):
+        seen = 0
+        for parameter in parameters:
+            if parameter.name != name:
+                continue
+            if seen == occurrence:
+                return parameter
+            seen += 1
+        return None
 
 
 class GetRepresentationIfcParameters(bpy.types.Operator, tool.Ifc.Operator):
