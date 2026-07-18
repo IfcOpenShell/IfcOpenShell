@@ -834,6 +834,16 @@ def install_qt6() -> str:
         return str(qt_dir)
 
     os.makedirs(qt_install_root, exist_ok=True)
+
+    try:
+        import aqt
+    except ModuleNotFoundError:
+        logger.error(
+            "Could not find an existing Qt6 install, so aqtinstall is needed to fetch it automatically. "
+            "Install the `aqtinstall` PyPI package or set QT_DIR."
+        )
+        exit(1)
+
     run(
         [
             sys.executable,
