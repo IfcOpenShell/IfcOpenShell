@@ -478,6 +478,16 @@ namespace ifcopenshell {
 				static constexpr const char* const name = "apply-offset";
 				static constexpr const char* const description = "Slight variation of --model-offset where large offsets are applied by negating existing large offsets to retain maximum precision. Requires --no-parallel-mapping.";
 			};
+
+			struct SignalHandlerCrashRecovery : public SettingBase<SignalHandlerCrashRecovery, bool> {
+				static constexpr const char* const name = "signal-handler-crash-recovery";
+				static constexpr const char* const description =
+					"Install temporary SIGSEGV/SIGBUS signal handlers around geometry kernel "
+					"calls in the hybrid kernel to attempt crash recovery by falling back to "
+					"the next kernel. Disabled by default as continuing after a crash may lead "
+					"to undefined behavior due to corrupted state.";
+				static constexpr bool defaultvalue = false;
+			};
 		}
 		
 		namespace impl {
@@ -653,7 +663,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume, SignalHandlerCrashRecovery>
 		>
 		{};
 }
