@@ -88,8 +88,23 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
 
    If you have Python 3.11, then you probably downloaded build for wrong Python
    version by accident. To fix it uninstall it and download Python 3.11 build
-   from `Github Releases <https://github.com/IfcOpenShell/IfcOpenShell/releases>`__ 
+   from `Github Releases <https://github.com/IfcOpenShell/IfcOpenShell/releases>`__
    or from Blender extensions platform.
+
+5. **Blender crashes outright ("Illegal instruction" / SIGILL) as soon as I open an
+   IFC file, with no Bonsai error message at all**
+
+   This happens on CPUs older than about 2013 (e.g. Intel Ivy Bridge and earlier)
+   that don't support the AVX2 instruction set, which the CGAL-based geometry
+   engine relies on. Bonsai will warn you about this at startup if it detects
+   such a CPU, since the crash itself cannot be caught or reported like a normal
+   error.
+
+   In :menuselection:`Scene Properties --> Bonsai tab --> Current Project`,
+   enable **Advanced** and set **Geometry Library** to **OpenCASCADE** before
+   loading a project. This avoids the CGAL code path entirely. Alternatively,
+   build IfcOpenShell from source for your CPU. See `issue #7458
+   <https://github.com/IfcOpenShell/IfcOpenShell/issues/7458>`__ for details.
 
 Saving and loading blend files
 ------------------------------

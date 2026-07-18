@@ -223,6 +223,17 @@ if IN_BLENDER:
 
     initialize_bbim_semver()
 
+    # CPU feature check before any native code runs, see cpu_check.py and issue #7458.
+    from bonsai import cpu_check
+
+    try:
+        cpu_warning = cpu_check.get_cpu_warning()
+    except Exception:
+        cpu_warning = None
+
+    if cpu_warning:
+        print(f"\n{'=' * 78}\nBONSAI CPU COMPATIBILITY WARNING\n{'=' * 78}\n{cpu_warning}\n{'=' * 78}\n")
+
     def get_binary_info() -> dict[str, Any]:
         info = {}
         py_version = sys.version_info
@@ -294,6 +305,39 @@ if IN_BLENDER:
 
             tool.Blender.get_bonsai_version.cache_clear()
 
+        if cpu_warning:
+
+            def draw_cpu_warning(self: Any, context: Any) -> None:
+                import textwrap
+
+                for line in textwrap.wrap(cpu_warning, 70):
+                    self.layout.label(text=line)
+                op = self.layout.operator("bim.open_uri", text="Learn More (GitHub Issue)", icon="URL")
+                op.uri = cpu_check.ISSUE_URL
+
+            class BIM_PT_cpu_warning(bpy.types.Panel):
+                bl_label = "CPU Compatibility Warning"
+                bl_idname = "SCENE_PT_bonsai_cpu_warning"
+                bl_space_type = "PROPERTIES"
+                bl_region_type = "WINDOW"
+                bl_context = "scene"
+
+                def draw(self, context):
+                    self.layout.alert = True
+                    self.layout.label(text="Bonsai may crash opening IFC files on this CPU", icon="ERROR")
+                    draw_cpu_warning(self, context)
+
+            def show_cpu_warning_popup() -> None:
+                # popup_menu can crash Blender itself (not just raise) with no window.
+                if bpy.app.background:
+                    return
+                try:
+                    bpy.context.window_manager.popup_menu(
+                        draw_cpu_warning, title="Bonsai CPU Compatibility Warning", icon="ERROR"
+                    )
+                except Exception:
+                    pass
+
         def register():
             if platform.system() == "Windows":
                 clean_up_dlls_safe_links()
@@ -313,7 +357,14 @@ if IN_BLENDER:
             bonsai.bim.register()
             purge_cache()
 
+            if cpu_warning:
+                bpy.utils.register_class(BIM_PT_cpu_warning)
+                bpy.app.timers.register(show_cpu_warning_popup, first_interval=0.5)
+
         def unregister():
+            if cpu_warning:
+                bpy.utils.unregister_class(BIM_PT_cpu_warning)
+
             import bonsai.bim
 
             bonsai.bim.unregister()
