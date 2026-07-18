@@ -453,6 +453,59 @@ class TestDuplicateDrawing:
         subject.duplicate_drawing(ifc, blender, drawing, geometry, drawing="drawing", should_duplicate_annotations=True)
 
 
+class TestCopyAnnotationsToDrawing:
+    def test_run(self, ifc: Prophecy, collector: Prophecy, drawing: Prophecy, geometry: Prophecy):
+        drawing.get_drawing_group("target_drawing").should_be_called().will_return("target_group")
+        drawing.get_annotation_drawing("annotation").should_be_called().will_return("source_drawing")
+        ifc.get_object("annotation").should_be_called().will_return("annotation_obj")
+        ifc.get_object("target_drawing").should_be_called().will_return("camera")
+        geometry.duplicate_ifc_objects(["annotation_obj"]).should_be_called().will_return(
+            ({"annotation": ["new_annotation"]}, None)
+        )
+        drawing.get_drawing_group("new_annotation").should_be_called().will_return("source_group")
+        ifc.run("group.unassign_group", group="source_group", products=["new_annotation"]).should_be_called()
+        ifc.run("group.assign_group", group="target_group", products=["new_annotation"]).should_be_called()
+        ifc.get_object("new_annotation").should_be_called().will_return("new_annotation_obj")
+        drawing.ensure_annotation_in_drawing_plane("new_annotation_obj", "camera").should_be_called()
+        collector.assign("new_annotation_obj", should_clean_users_collection=True).should_be_called()
+        assert subject.copy_annotations_to_drawing(
+            ifc, collector, drawing, geometry, annotations=["annotation"], target_drawing="target_drawing"
+        ) == ["new_annotation"]
+
+    def test_skipping_annotations_already_in_the_target_drawing(
+        self, ifc: Prophecy, collector: Prophecy, drawing: Prophecy, geometry: Prophecy
+    ):
+        drawing.get_drawing_group("target_drawing").should_be_called().will_return("target_group")
+        drawing.get_annotation_drawing("annotation").should_be_called().will_return("target_drawing")
+        assert (
+            subject.copy_annotations_to_drawing(
+                ifc, collector, drawing, geometry, annotations=["annotation"], target_drawing="target_drawing"
+            )
+            == []
+        )
+
+    def test_importing_the_target_camera_when_it_is_not_loaded(
+        self, ifc: Prophecy, collector: Prophecy, drawing: Prophecy, geometry: Prophecy
+    ):
+        drawing.get_drawing_group("target_drawing").should_be_called().will_return("target_group")
+        drawing.get_annotation_drawing("annotation").should_be_called().will_return("source_drawing")
+        ifc.get_object("annotation").should_be_called().will_return("annotation_obj")
+        ifc.get_object("target_drawing").should_be_called().will_return(None)
+        drawing.import_drawing("target_drawing").should_be_called().will_return("camera")
+        geometry.duplicate_ifc_objects(["annotation_obj"]).should_be_called().will_return(
+            ({"annotation": ["new_annotation"]}, None)
+        )
+        drawing.get_drawing_group("new_annotation").should_be_called().will_return("source_group")
+        ifc.run("group.unassign_group", group="source_group", products=["new_annotation"]).should_be_called()
+        ifc.run("group.assign_group", group="target_group", products=["new_annotation"]).should_be_called()
+        ifc.get_object("new_annotation").should_be_called().will_return("new_annotation_obj")
+        drawing.ensure_annotation_in_drawing_plane("new_annotation_obj", "camera").should_be_called()
+        collector.assign("new_annotation_obj", should_clean_users_collection=True).should_be_called()
+        assert subject.copy_annotations_to_drawing(
+            ifc, collector, drawing, geometry, annotations=["annotation"], target_drawing="target_drawing"
+        ) == ["new_annotation"]
+
+
 class TestRemoveDrawing:
     def test_run(self, ifc, drawing):
         drawing.is_active_drawing("drawing").should_be_called().will_return(True)
