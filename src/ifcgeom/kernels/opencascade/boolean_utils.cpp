@@ -1,4 +1,5 @@
 #include "boolean_utils.h"
+#include "boolean_cgal_fallback.h"
 
 #include "IfcGeomTree.h"
 #include "base_utils.h"
@@ -1223,7 +1224,21 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				{
 					PERF("boolean operation: manifoldness check");
 
-					success = !is_manifold(a) || is_manifold(r);
+					success = !is_manifold(a) || (is_manifold(r) && !has_coincident_edges(r, Precision::Confusion()));
+				}
+
+				if (!success) {
+					PERF("boolean operation: cgal fallback");
+
+					// Recompute through the exact arithmetic CGAL kernel and use
+					// that result when it is actually clean, before falling back
+					// to the heuristic exemption below.
+					TopoDS_Shape cgal_result;
+					if (boolean_operation_cgal_fallback(a, b, op, cgal_result, Precision::Confusion())) {
+						Logger::Root().Notice("GEO", 155, "Boolean operation result had coincident faces, recovered a manifold result using the CGAL kernel");
+						r = cgal_result;
+						success = true;
+					}
 				}
 
 				if (!success) {
