@@ -418,6 +418,55 @@ class SelectConnection(bpy.types.Operator, tool.Ifc.Operator):
         core.select_connection(tool.Geometry, connection=tool.Ifc.get().by_id(self.connection))
 
 
+class SelectByRepresentationType(bpy.types.Operator):
+    bl_idname = "bim.select_by_representation_type"
+    bl_label = "Select By Representation Type"
+    bl_description = (
+        "Select objects whose active representation matches this type. "
+        "Ctrl+Click to also include objects that have this type in any representation (active or not)"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    representation_type: bpy.props.StringProperty()
+    select_inactive: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.select_inactive = event.ctrl
+        return self.execute(context)
+
+    def execute(self, context):
+        ifc = tool.Ifc.get()
+        if not ifc:
+            return {"CANCELLED"}
+        # Strip the "*" suffix used for mapped/resolved representations.
+        target_type = self.representation_type.rstrip("*")
+        matched = 0
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                obj.select_set(False)
+                continue
+            if self.select_inactive:
+                # Ctrl: match any representation on the element, active or not.
+                has_type = any(
+                    (ifcopenshell.util.representation.resolve_representation(rep).RepresentationType or "") == target_type
+                    for rep in ifcopenshell.util.representation.get_representations_iter(element)
+                )
+            else:
+                # Default: match only the currently active (displayed) representation.
+                active_rep = tool.Geometry.get_active_representation(obj)
+                if active_rep is None:
+                    obj.select_set(False)
+                    continue
+                resolved = ifcopenshell.util.representation.resolve_representation(active_rep)
+                has_type = (resolved.RepresentationType or "") == target_type
+            obj.select_set(has_type)
+            if has_type:
+                matched += 1
+        mode = "any representation" if self.select_inactive else "active representation"
+        self.report({"INFO"}, f"Selected {matched} object(s) with RepresentationType '{target_type}' ({mode})")
+        return {"FINISHED"}
+
+
 class RemoveConnection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_connection"
     bl_label = "Remove Connection"
@@ -713,6 +762,16 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
         if mprops.ifc_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
+
+        # Persist an edited opening void onto its filling type's 'Reference' template so the
+        # change survives type duplication/append/switching and propagates to siblings. This
+        # catches the edited_objs commit path; the in-place item edit is caught in
+        # bim.override_mode_set_object.
+        edited_element = tool.Ifc.get_entity(obj)
+        if edited_element and edited_element.is_a("IfcOpeningElement"):
+            from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+            FilledOpeningGenerator().update_type_template_from_opening(edited_element)
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):
@@ -2493,6 +2552,15 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 return bpy.ops.bim.edit_boundary_geometry()
             elif tool.Geometry.is_representation_item(context.active_object):
                 self.edit_representation_item(context.active_object)
+                # If we just edited an opening's void item, persist the new shape onto the
+                # filling type's 'Reference' template so it survives type duplication/append/
+                # switching and propagates to siblings.
+                rep_obj = tool.Geometry.get_geometry_props().representation_obj
+                edited_element = tool.Ifc.get_entity(rep_obj) if rep_obj else None
+                if edited_element and edited_element.is_a("IfcOpeningElement"):
+                    from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+                    FilledOpeningGenerator().update_type_template_from_opening(edited_element)
                 tool.Root.reload_item_decorator()
                 # So you can keep hitting tab to cycle out of edit mode
                 context.active_object.select_set(False)

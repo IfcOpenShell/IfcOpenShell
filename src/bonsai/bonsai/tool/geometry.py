@@ -1216,7 +1216,23 @@ class Geometry(bonsai.core.tool.Geometry):
 
         for element in element_types:
             if obj := tool.Ifc.get_object(element):
-                if representation := ifcopenshell.util.representation.get_representation(element, context):
+                # A type may hold several representations in one context (e.g. a 'Body' body
+                # plus a 'Reference' opening template), and get_representation() matches only
+                # by context. When base_representation is one of this type's own
+                # representations - i.e. we are reimporting it directly, such as switching to
+                # the Reference rep - render exactly that, otherwise the context lookup could
+                # return the wrong one. But element_types also contains each occurrence's
+                # type (see above), for which base_representation is not theirs; fall back to
+                # the context lookup there (and skip, as before, when it has none).
+                type_representations = [
+                    ifcopenshell.util.representation.resolve_representation(rm.MappedRepresentation)
+                    for rm in (element.RepresentationMaps or [])
+                ]
+                if base_representation in type_representations:
+                    representation = base_representation
+                else:
+                    representation = ifcopenshell.util.representation.get_representation(element, context)
+                if representation:
                     geometry = ifcopenshell.geom.create_shape(settings, representation)
                     mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
                     mesh = meshes.get(mesh_name)
