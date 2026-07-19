@@ -225,6 +225,9 @@ class AnnotationToolUI:
     def draw_edit_object_interface(cls, context):
         if DecoratorData.get_text_data(bpy.context.active_object):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
+        if bpy.ops.bim.copy_annotation_to_drawing.poll():
+            row = cls.layout.row(align=True)
+            row.operator("bim.copy_annotation_to_drawing", icon="PASTEDOWN", text="Copy To Drawing")
 
     @classmethod
     def draw_type_selection_interface(cls):

@@ -227,6 +227,90 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
         )
 
 
+def get_copy_annotation_target_drawings(self, context):
+    global COPY_ANNOTATION_TARGET_DRAWINGS_ENUM
+    drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+    drawings.sort(key=lambda d: d.Name or "")
+    COPY_ANNOTATION_TARGET_DRAWINGS_ENUM = [(str(d.id()), d.Name or "Unnamed", "") for d in drawings]
+    return COPY_ANNOTATION_TARGET_DRAWINGS_ENUM
+
+
+COPY_ANNOTATION_TARGET_DRAWINGS_ENUM = []
+
+
+class CopyAnnotationToDrawing(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_annotation_to_drawing"
+    bl_label = "Copy Annotation To Drawing"
+    bl_description = (
+        "Copy the selected annotations to another drawing.\n\n"
+        "The copies become independent annotations assigned to the chosen drawing, "
+        "placed in its view plane. The originals stay in their current drawing"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    target_drawing: bpy.props.EnumProperty(name="Target Drawing", items=get_copy_annotation_target_drawings)
+
+    if TYPE_CHECKING:
+        target_drawing: str
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded.")
+            return False
+        if not cls.get_selected_annotations(context):
+            cls.poll_message_set("No annotation selected.")
+            return False
+        return True
+
+    @classmethod
+    def get_selected_annotations(cls, context) -> list[ifcopenshell.entity_instance]:
+        return [
+            element
+            for obj in context.selected_objects
+            if (element := tool.Ifc.get_entity(obj))
+            and element.is_a("IfcAnnotation")
+            and element.ObjectType != "DRAWING"
+        ]
+
+    def invoke(self, context, event):
+        assert context.window_manager
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        assert self.layout
+        row = self.layout.row()
+        row.prop(self, "target_drawing")
+
+    def _execute(self, context):
+        if not self.target_drawing:
+            self.report({"ERROR"}, "No target drawing selected.")
+            return {"CANCELLED"}
+        target_drawing = tool.Ifc.get().by_id(int(self.target_drawing))
+        annotations = self.get_selected_annotations(context)
+        previous_selection = [obj for a in annotations if (obj := tool.Ifc.get_object(a))]
+        previous_active = context.view_layer.objects.active
+        copied = core.copy_annotations_to_drawing(
+            tool.Ifc,
+            tool.Collector,
+            tool.Drawing,
+            tool.Geometry,
+            annotations=annotations,
+            target_drawing=target_drawing,
+        )
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        for obj in previous_selection:
+            if obj.name in context.view_layer.objects:
+                obj.select_set(True)
+        if previous_active and previous_active.name in context.view_layer.objects:
+            context.view_layer.objects.active = previous_active
+        skipped = len(annotations) - len(copied)
+        message = f"Copied {len(copied)} annotations to {target_drawing.Name or 'Unnamed'}."
+        if skipped:
+            message += f" Skipped {skipped} already in that drawing."
+        self.report({"INFO"}, message)
+
+
 class CreateDrawing(bpy.types.Operator):
     """Creates/refreshes a .svg drawing
 

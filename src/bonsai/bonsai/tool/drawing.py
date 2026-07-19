@@ -757,6 +757,17 @@ class Drawing(bonsai.core.tool.Drawing):
                 return rel.RelatingGroup
 
     @classmethod
+    def get_group_drawing(cls, group: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the drawing that owns this group, if the group represents a drawing."""
+        if group.ObjectType != "DRAWING":
+            return None
+        for rel in group.IsGroupedBy or []:
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcAnnotation") and related_object.ObjectType == "DRAWING":
+                    return related_object
+        return None
+
+    @classmethod
     def get_drawing_document(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         for rel in drawing.HasAssociations:
             if rel.is_a("IfcRelAssociatesDocument"):
