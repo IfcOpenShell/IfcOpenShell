@@ -68,6 +68,13 @@ inline namespace settings {
 		static constexpr bool defaultvalue = false;
 	};
 
+	struct GltfExtras : public SettingBase<GltfExtras, bool> {
+		static constexpr const char* const name = "gltf-extras";
+		static constexpr const char* const description = "Write the IFC GlobalId, entity type and name of every element into the "
+			"glTF node extras, so the output is self-describing without a sidecar file. Applicable to GLB output.";
+		static constexpr bool defaultvalue = false;
+	};
+
 	struct FloatingPointDigits : public SettingBase<FloatingPointDigits, int> {
 		static constexpr const char* const name = "digits";
 		static constexpr const char* const description = "Sets the precision to be used to format floating-point values, 15 by default. "
@@ -97,7 +104,7 @@ inline namespace settings {
 
 class SerializerSettings : public SettingsContainer <
 	// @todo should we use tuple_cat here to unify the settings into a single class?
-    std::tuple<UseElementNames, UseElementGuids, UseElementStepIds, UseElementTypes, UseYUp, WriteGltfEcef, FloatingPointDigits, BaseUri, WktUseSection, SeparateZUpNode>>
+    std::tuple<UseElementNames, UseElementGuids, UseElementStepIds, UseElementTypes, UseYUp, WriteGltfEcef, GltfExtras, FloatingPointDigits, BaseUri, WktUseSection, SeparateZUpNode>>
 {};
 
 }

@@ -250,6 +250,9 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
             node_indices_[(*it)->product()] = new_node_index;
             node_array_.push_back(new_node_index);
             parent_node["name"] = object_id(*it);
+            if (settings_.get<ifcopenshell::geometry::settings::GltfExtras>().get()) {
+                parent_node["extras"] = { {"GlobalId", (*it)->guid()}, {"IfcType", (*it)->type()}, {"Name", (*it)->name()} };
+            }
             parent_node["children"] = json::array({current_node_index});
             json_["nodes"].push_back(parent_node);
 
@@ -290,7 +293,10 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 		}
 	}
 	node["name"] = object_id(o);
-	
+	if (settings_.get<ifcopenshell::geometry::settings::GltfExtras>().get()) {
+		node["extras"] = { {"GlobalId", o->guid()}, {"IfcType", o->type()}, {"Name", o->name()} };
+	}
+
 	int current_mesh_index;
 
 	// See if this mesh has already been processed
