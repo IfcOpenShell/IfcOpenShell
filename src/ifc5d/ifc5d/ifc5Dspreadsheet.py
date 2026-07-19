@@ -478,6 +478,8 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
                 cell.addElement(P(text=value))
             elif type == "formula":
                 cell = TableCell(formula=value, stylename=style)
+            else:
+                assert False, type
             row.addElement(cell)
 
         def add_cost_item_rows(table, cost_data):
@@ -715,6 +717,8 @@ if __name__ == "__main__":
         writer = Ifc5DOdsWriter(args["input"], args["output"])
     elif args["format"] == "XLSX":
         writer = Ifc5DXlsxWriter(args["input"], args["output"])
+    else:
+        assert False, args
     writer.write()
 
     logger.info("Finished conversion in %ss", time.time() - start)

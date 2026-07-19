@@ -51,7 +51,8 @@ def assign_system(
         # This duct is part of the system
         ifcopenshell.api.system.assign_system(model, products=[duct], system=system)
     """
-    if not all(ifcopenshell.util.system.is_assignable(failed_product := product, system) for product in products):
-        raise TypeError(f"You cannot assign an {failed_product.is_a()} to an {system.is_a()}")
+    for product in products:
+        if not ifcopenshell.util.system.is_assignable(product, system):
+            raise TypeError(f"You cannot assign an {product.is_a()} to an {system.is_a()}")
 
     return ifcopenshell.api.group.assign_group(file, products=products, group=system)

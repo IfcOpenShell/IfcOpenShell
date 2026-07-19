@@ -102,16 +102,16 @@ void angle_circle_head(
     in vec4 circle_start, in float circle_angle,
     in bool counterclockwise,
     out vec4 head[CIRCLE_SEGS+1], out float angle_segs) {
-    
+
     // 1 added to CIRCLE_SEGS because we're number of vertices
     // for n segments is n+1
-    
+
     float angle_d;
     angle_d = PI * 2 / CIRCLE_SEGS; // 30d
     // need to bottom clamp it to 1, otherwise it causes Blender crash at extruding the curve
     angle_segs = max(1, ceil(circle_angle / angle_d));
     angle_d = circle_angle / angle_segs;
-    
+
     for(int i = 0; i < (angle_segs + 1); i++) {
         float angle = angle_d * i;
         if (counterclockwise) {
@@ -143,7 +143,7 @@ void cross_head(in vec4 dir, in float size, out vec4 head[3]) {
 #define do_vertex(pos, e) (do_vertex_util(pos, vec2(-(e).y, (e).x) / winsize.xy))
 #define do_vertex_win(pos, e) ( do_vertex( WIN2CLIP( pos ), e ) )
 
-// if vertex is shared by two segments of the line still need to emit it twice 
+// if vertex is shared by two segments of the line still need to emit it twice
 // to avoid smoothing artifacts
 // don't forget to initialize `vec2 EDGE_DIR` for macro to work
 // `pos0` / `pos1` - vertex position in clip space
@@ -197,10 +197,13 @@ void do_circle_head(vec4 pos_w, vec4 head[CIRCLE_SEGS]) {
 
 def add_verts_sequence(verts, start_i, output_verts, output_edges, closed=False):
     """Add sequence of verts to output lists, returns next vertex index"""
+    i = None
     for i, v in enumerate(verts[:-1], start_i):
         output_verts.append(v)
         output_edges.append((i, i + 1))
     output_verts.append(verts[-1])
+    assert i is not None
+
     if closed:
         output_edges.append((i + 1, start_i))
     return i + 2
@@ -273,7 +276,7 @@ class BaseShader:
     FRAG_GLSL = """
     uniform vec4 color;
     uniform float lineWidth;
-    
+
     in float smoothline;
     out vec4 fragColor;
     void main() {

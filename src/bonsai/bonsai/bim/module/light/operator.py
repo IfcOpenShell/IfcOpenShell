@@ -156,6 +156,7 @@ class RadianceRender(bpy.types.Operator):
         print(f"Quality: {quality}, Detail: {detail}, Variability: {variability}")
         print(f"Output directory: {output_dir}")
 
+        hdr_image_path, hdr_mask_path, sky_map_cal_path = None, None
         if use_hdr:
             hdr_image = "noon_grass_2k.hdr"
             hdr_mask = "noon_grass_2k_mask.hdr"
@@ -254,6 +255,9 @@ class RadianceRender(bpy.types.Operator):
         # 4 0 0 -1 180
 
         if use_hdr and choose_hdr_image == "Noon":
+            assert hdr_image_path is not None
+            assert hdr_mask_path is not None
+            assert sky_map_cal_path is not None
 
             with open(sky_file_path, "w") as f:
                 f.write(sky_description_str)

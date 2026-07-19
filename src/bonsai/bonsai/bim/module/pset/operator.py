@@ -113,6 +113,8 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
         elif props.active_pset_type == "QTO":
             pset = ifcopenshell.api.pset.add_qto(self.file, product=element, name=props.active_pset_name)
             props.active_pset_id = pset.id()
+        else:
+            assert False
 
         if self.properties:
             properties = json.loads(self.properties)
