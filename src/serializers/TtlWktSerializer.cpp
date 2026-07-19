@@ -233,8 +233,8 @@ namespace {
     }
 }
 
-TtlWktSerializer::TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger)
-    : WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
+TtlWktSerializer::TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger* logger)
+    : WriteOnlyGeometrySerializer(geometry_settings, settings, logger_or_root(logger))
     , filename_(filename)
 {
     const auto& tri_setting = geometry_settings.get<ifcopenshell::geometry::settings::TriangulationType>().get();

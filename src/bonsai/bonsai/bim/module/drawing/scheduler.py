@@ -110,12 +110,14 @@ class Scheduler:
         y = self.margin
         rows = list(sheet.iter_rows())
         total_rows = len(rows)
+        x = None
         for i, row in enumerate(rows):
             # The last row may contain only null values
             if i == (total_rows - 1) and not [c for c in row if c.value is not None]:
                 continue
 
             x = self.margin
+            unmerged_height = None
             for cell in row:
                 if isinstance(cell, openpyxl.cell.cell.MergedCell):
                     column_letter = openpyxl.utils.get_column_letter(cell.column)
@@ -230,8 +232,11 @@ class Scheduler:
                 )
 
                 x += unmerged_width
+
+            assert unmerged_height is not None
             y += unmerged_height
 
+        assert x is not None
         total_width = x + self.margin
         total_height = y + self.margin
         self.svg["width"] = "{}mm".format(total_width)
@@ -375,6 +380,7 @@ class Scheduler:
         tri = 0
         stop_iterating_over_rows = False
         # TODO: row spans support?
+        x = None
         for tr in table.getElementsByType(TableRow):
             if stop_iterating_over_rows:
                 break
@@ -491,6 +497,7 @@ class Scheduler:
                 tri += 1
                 y += height
 
+        assert x is not None
         total_width = x + self.margin
         total_height = y + self.margin
         self.svg["width"] = "{}mm".format(total_width)

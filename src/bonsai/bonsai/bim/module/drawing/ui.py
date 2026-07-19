@@ -113,6 +113,19 @@ class BIM_PT_camera(Panel):
             row.prop(props, "fill_mode")
             row = self.layout.row()
             row.prop(props, "cut_mode")
+
+        row = self.layout.row()
+        row.prop(props, "use_edge_classification")
+        if props.use_edge_classification:
+            row = self.layout.row()
+            row.prop(props, "render_creases")
+            row.prop(props, "valley_angle_min_degrees")
+            row = self.layout.row()
+            row.prop(props, "render_sharp")
+            row.prop(props, "ridge_angle_min_degrees")
+            row = self.layout.row()
+            row.prop(props, "render_flush")
+
         row = self.layout.row()
         row.prop(props, "width")
         row = self.layout.row()
@@ -964,14 +977,14 @@ class BIM_UL_sheets(bpy.types.UIList):
 
         if self.filter_name:
             filter_name = self.filter_name.lower()
-            active_sheet = None
+            active_sheet_index = None
             for sheet in data.sheets:
                 if sheet.is_sheet:
-                    active_sheet = sheet
                     active_sheet_index = len(flt_flags)
                 if filter_name in sheet.name.lower() or filter_name in sheet.identification.lower():
                     flt_flags.append(self.bitflag_filter_item)
                     if not sheet.is_sheet:
+                        assert active_sheet_index is not None
                         flt_flags[active_sheet_index] = self.bitflag_filter_item
                 else:
                     flt_flags.append(0)

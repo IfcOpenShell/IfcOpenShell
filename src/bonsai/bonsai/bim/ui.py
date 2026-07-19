@@ -284,11 +284,13 @@ class GizmoPreferences(bpy.types.PropertyGroup):
         draw_gizmos_in_3d_viewport: bool
 
 
+_gizmo_pref_entry = None
 for _gizmo_pref_entry in tool.Parametric.EDIT_TYPES:
     GizmoPreferences.__annotations__[_gizmo_pref_entry.name] = BoolProperty(
         name=_gizmo_pref_entry.name.replace("_", " ").title(),
         default=True,
     )
+assert _gizmo_pref_entry is not None
 del _gizmo_pref_entry
 
 
@@ -394,12 +396,14 @@ class DefaultParameters(bpy.types.PropertyGroup):
     and gives the create operator a preset to copy from."""
 
 
+_default_params_entry = None
 for _default_params_entry in tool.Parametric.EDIT_TYPES:
     if not _default_params_entry.has_default_parameters:
         continue
     DefaultParameters.__annotations__[_default_params_entry.name] = bpy.props.PointerProperty(
         type=getattr(_model_prop, _default_params_entry.props_attr),
     )
+assert _default_params_entry is not None
 del _default_params_entry
 
 

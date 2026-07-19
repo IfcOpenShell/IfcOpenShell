@@ -360,6 +360,10 @@ class Style(bonsai.core.tool.Style):
         material_output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL", {"is_active_output": True})
         surface_output = get_input_node(material_output, "Surface")
 
+        # TODO: this variable is not really needed,
+        # just workaround a for ty issue detecting unresolved refs.
+        bsdf = None
+
         if surface_output and surface_output.type == "MIX_SHADER":
             mix_shader = surface_output
             if (
@@ -388,6 +392,7 @@ class Style(bonsai.core.tool.Style):
                 and (bsdf := get_input_node(surface_output, input_index=1, of_type="BSDF_PRINCIPLED"))
             )
         ):
+            assert bsdf
             report(f"Because of {BLUE}BSDF_PRINCIPLED{R} node reflectance method identified as {BLUE}PHYSICAL{R}")
             attributes["ReflectanceMethod"] = "NOTDEFINED" if tool.Ifc.get_schema() != "IFC4X3" else "PHYSICAL"
 

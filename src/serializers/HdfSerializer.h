@@ -96,7 +96,7 @@ private:
 	void write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style::ptr& s);
 
 public:
-	HdfSerializer(const std::string& hdf_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, bool read_only=false, Logger& logger = Logger::Root());
+	HdfSerializer(const std::string& hdf_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, bool read_only=false, Logger* logger = nullptr);
 	virtual ~HdfSerializer() {}
 	bool ready();
 	void writeHeader();

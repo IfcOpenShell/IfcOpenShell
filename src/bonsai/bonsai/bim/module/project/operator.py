@@ -714,6 +714,8 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             representations = element.RepresentationMaps or []
         elif element.is_a("IfcProduct"):
             representations = [element.Representation] if element.Representation else []
+        else:
+            assert False, element
         for representation in representations or []:
             for element in self.file.traverse(representation):
                 if not element.is_a("IfcRepresentationItem") or not element.StyledByItem:
@@ -2029,6 +2031,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         project_props = tool.Project.get_project_props()
         prefs = tool.Blender.get_addon_preferences()
         project_props.use_relative_project_path = self.use_relative_path
+        old_history_size, old_undo_steps = None, None
         if prefs.should_disable_undo_on_save:
             old_history_size = tool.Ifc.get().history_size
             old_undo_steps = context.preferences.edit.undo_steps
@@ -2036,6 +2039,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
             context.preferences.edit.undo_steps = 0
         IfcStore.execute_ifc_operator(self, context)
         if prefs.should_disable_undo_on_save:
+            assert old_history_size is not None and old_undo_steps is not None
             tool.Ifc.get().history_size = old_history_size
             context.preferences.edit.undo_steps = old_undo_steps
         return {"FINISHED"}

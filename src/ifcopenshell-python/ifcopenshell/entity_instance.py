@@ -192,7 +192,7 @@ class entity_instance:
             return
 
     @property
-    def file(self):
+    def file(self) -> "ifcopenshell.file":
         # ugh circular imports, name collisions
         from . import file
 

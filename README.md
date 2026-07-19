@@ -18,7 +18,7 @@ and many other libraries, CLI apps, and more. Support is also provided for auxil
 
 For more information, see:
 
-* [IfcOpenShell Website](http://ifcopenshell.org)
+* [IfcOpenShell Website](https://ifcopenshell.org)
 * [IfcOpenShell Documentation](https://docs.ifcopenshell.org)
   * [IfcOpenShell C++ Installation](https://docs.ifcopenshell.org/ifcopenshell/installation.html)
   * [IfcOpenShell Python Installation](https://docs.ifcopenshell.org/ifcopenshell-python/installation.html)

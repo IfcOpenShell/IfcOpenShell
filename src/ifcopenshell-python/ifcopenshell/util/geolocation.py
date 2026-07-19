@@ -260,6 +260,8 @@ def get_helmert_transformation_parameters(ifc_file: ifcopenshell.file) -> Option
             xaa = 1.0
             xao = 0.0
             scale = factor_x = factor_y = factor_z = 1
+        else:
+            assert False, conversion
 
     if not xaa and not xao:
         xaa = 1.0

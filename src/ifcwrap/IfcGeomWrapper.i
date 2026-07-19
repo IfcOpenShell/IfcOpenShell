@@ -630,29 +630,33 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 // I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 // anyway it does not matter as SWIG generates C code without actual constructors
 %inline %{
-	IfcGeom::Iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, int num_threads, Logger& logger = Logger::Root()) {
-		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger), settings, file, num_threads, logger);
+	IfcGeom::Iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, int num_threads, Logger* logger = nullptr) {
+		Logger& logger_ = logger_or_root(logger);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger_), settings, file, num_threads, logger_);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads, Logger& logger = Logger::Root()) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads, Logger* logger = nullptr) {
+		Logger& logger_ = logger_or_root(logger);
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::entity_filter ef{ include, false, elems_set };
-		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger), settings, file, {ef}, num_threads, logger);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger_), settings, file, {ef}, num_threads, logger_);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads, Logger& logger = Logger::Root()) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads, Logger* logger = nullptr) {
+		Logger& logger_ = logger_or_root(logger);
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::attribute_filter af;
 		af.attribute_name = "GlobalId";
 		af.populate(elems_set);
 		af.include = include;
-		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger), settings, file, {af}, num_threads, logger);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger_), settings, file, {af}, num_threads, logger_);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads, Logger& logger = Logger::Root()) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads, Logger* logger = nullptr) {
+		Logger& logger_ = logger_or_root(logger);
 		std::set<int> elems_set(elems.begin(), elems.end());
 		IfcGeom::instance_id_filter af(include, false, elems_set);
-		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger), settings, file, {af}, num_threads, logger);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger_), settings, file, {af}, num_threads, logger_);
 	}
 %}
 
@@ -789,14 +793,24 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %extend IfcGeom::TriangulationElement {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
-        geometry = property(geometry)
+        # Keep the owning element alive while its geometry is referenced (#1124).
+        def _geometry_with_backref(self, _f=geometry):
+            result = _f(self)
+            result._parent = self
+            return result
+        geometry = property(_geometry_with_backref)
 	%}
 };
 
 %extend IfcGeom::SerializedElement {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
-        geometry = property(geometry)
+        # Keep the owning element alive while its geometry is referenced (#1124).
+        def _geometry_with_backref(self, _f=geometry):
+            result = _f(self)
+            result._parent = self
+            return result
+        geometry = property(_geometry_with_backref)
 	%}
 };
 
@@ -821,10 +835,15 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
     %pythoncode %{
         # Hide the getters with read-only property implementations
-        geometry = property(geometry)
+        # Keep the owning element alive while its geometry is referenced (#1124).
+        def _geometry_with_backref(self, _f=geometry):
+            result = _f(self)
+            result._parent = self
+            return result
+        geometry = property(_geometry_with_backref)
         volume = property(calc_volume_)
         surface_area = property(calc_surface_area_)
-    %}    
+    %}
 };
 
 /*
@@ -1162,6 +1181,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %ignore svgfill::svg_to_polygons;
 %ignore svgfill::arrange_polygons;
 %ignore svgfill::abstract_arrangement;
+%ignore svgfill::context::delete_same_facet_edge_pairs;
 
 %template(svg_line_segments) std::vector<std::array<svgfill::point_2, 2>>;
 %template(svg_groups_of_line_segments) std::vector<std::vector<std::array<svgfill::point_2, 2>>>;
@@ -1295,9 +1315,9 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 		}	
 	}
 
-	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons, Logger& logger = Logger::Root()) {
+	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons, Logger* logger = nullptr) {
 		std::vector<svgfill::polygon_2> r;
-		if (svgfill::arrange_polygons(settings, polygons, r, logger)) {
+		if (svgfill::arrange_polygons(settings, polygons, r, logger_or_root(logger))) {
 			return r;
 		} else {
 			throw std::runtime_error("Failed to arrange polygons");

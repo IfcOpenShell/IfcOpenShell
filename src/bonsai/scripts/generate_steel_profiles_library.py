@@ -143,6 +143,7 @@ class LibraryGenerator:
                     if "unused" in ifc_params:
                         del ifc_params["unused"]
 
+                    profiles_gap = ...
                     if prof_type == "profile_hollow*_square":
                         ifc_params["YDim"] = ifc_params["XDim"]
                     elif ifc_profile_name == "IfcCircleHollowProfileDef":
@@ -160,6 +161,7 @@ class LibraryGenerator:
                     profile = self.file.create_entity(ifc_profile_name, ProfileName=prof_name, ProfileType="AREA", **ifc_params)
 
                     if prof_type == "profile_l*lbeam_2l":
+                        assert profiles_gap is not ...
                         profile.ProfileName = None # to avoid name confusion
                         mode = "SLBB" if prof_name.endswith("_SLBB") else "LLBB"
                         profile = self.create_double_l_profile(profile, prof_name, profiles_gap, mode)

@@ -68,6 +68,7 @@ def unpack_dependencies(install_dir: Path) -> None:
 
 
 if __name__ == "__main__":
+    action = None
     if len(sys.argv) != 2 or (action := sys.argv[1].lower()) not in ("pack", "unpack"):
         print(__doc__)
         sys.exit(1)
