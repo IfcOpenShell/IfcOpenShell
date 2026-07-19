@@ -9,6 +9,9 @@
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
 
+#include <algorithm>
+#include <limits>
+
 using IfcGeom::OpaqueNumber;
 using IfcGeom::OpaqueCoordinate;
 using IfcGeom::ConversionResultShape;
@@ -618,10 +621,12 @@ void ifcopenshell::geometry::CgalShape::Serialize(const ifcopenshell::geometry::
 #include <CGAL/Polygon_mesh_processing/bbox.h>
 
 double ifcopenshell::geometry::CgalShape::bounding_box(void *& b) const {
+	static const double inf = std::numeric_limits<double>::infinity();
 	if (b == nullptr) {
-		b = new CGAL::Bbox_3;
+		b = new double[6]{ +inf, +inf, +inf, -inf, -inf, -inf };
 	}
-	auto& bb = (*((CGAL::Bbox_3*)b));
+	double* box = static_cast<double*>(b);
+	CGAL::Bbox_3 bb;
 	if (is_point()) {
 		bb += point().bbox();
 	} else if (is_wire()) {
@@ -631,7 +636,16 @@ double ifcopenshell::geometry::CgalShape::bounding_box(void *& b) const {
 	} else {
 		bb += CGAL::Polygon_mesh_processing::bbox(poly());
 	}
-	return (bb.xmax() - bb.xmin()) * (bb.ymax() - bb.ymin()) * (bb.zmax() - bb.zmin());
+	box[0] = std::min(box[0], bb.xmin());
+	box[1] = std::min(box[1], bb.ymin());
+	box[2] = std::min(box[2], bb.zmin());
+	box[3] = std::max(box[3], bb.xmax());
+	box[4] = std::max(box[4], bb.ymax());
+	box[5] = std::max(box[5], bb.zmax());
+	if (box[0] > box[3] || box[1] > box[4] || box[2] > box[5]) {
+		return 0.;
+	}
+	return (box[3] - box[0]) * (box[4] - box[1]) * (box[5] - box[2]);
 }
 
 int ifcopenshell::geometry::CgalShape::num_vertices() const {
@@ -645,10 +659,13 @@ int ifcopenshell::geometry::CgalShape::num_vertices() const {
 }
 
 void ifcopenshell::geometry::CgalShape::set_box(void * b) {
-	auto& bb = (*((CGAL::Bbox_3*)b));
-	Kernel_::Point_3 lower(bb.xmin(), bb.ymin(), bb.zmin());
-	Kernel_::Point_3 upper(bb.xmax(), bb.ymax(), bb.zmax());
+	const double* box = static_cast<const double*>(b);
+	Kernel_::Point_3 lower(box[0], box[1], box[2]);
+	Kernel_::Point_3 upper(box[3], box[4], box[5]);
 	shape_ = ifcopenshell::geometry::utils::create_cube(lower, upper);
+#ifndef IFOPSH_SIMPLE_KERNEL
+	nef_.reset();
+#endif
 }
 
 int ifcopenshell::geometry::CgalShape::surface_genus() const {

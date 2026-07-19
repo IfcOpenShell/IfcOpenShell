@@ -59,13 +59,9 @@ namespace ifcopenshell {
 				return new OpenCascadeShape(shape_);
 			}
 
-			virtual double bounding_box(void*&) const {
-				throw std::runtime_error("Not implemented");
-			}
+			virtual double bounding_box(void*&) const;
 
-			virtual void set_box(void*) {
-				throw std::runtime_error("Not implemented");
-			}
+			virtual void set_box(void*);
 
 			virtual int surface_genus() const;
 			virtual bool is_manifold() const;

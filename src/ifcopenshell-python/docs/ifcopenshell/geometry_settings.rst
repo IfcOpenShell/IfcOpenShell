@@ -199,6 +199,21 @@ The interactive session below shows how with this setting enabled you will get a
 
 This is enabled by default for the IfcConvert serializers as they will not gracefully handle -1 material indices and allows users to quickly assign colours based on entity types in their modelling applications.
 
+bbox-substitution-threshold
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++--------+-------------------------------------+---------+
+| Type   | IfcConvert Option                   | Default |
++========+=====================================+=========+
+| DOUBLE | ``--bbox-substitution-threshold``   |         |
++--------+-------------------------------------+---------+
+
+Substitutes the geometry of individual representation items with their axis-aligned bounding box when the vertex density (mesh vertices per cubic unit of bounding box volume) exceeds this threshold. Greatly reduces processing time on models with overly detailed elements, for example manufacturer models of equipment inserted into a building model. Disabled when not provided.
+
+::
+
+    IfcConvert model.ifc model.svg --bbox-substitution-threshold 1000
+
 boolean-attempt-2d
 ^^^^^^^^^^^^^^^^^^
 

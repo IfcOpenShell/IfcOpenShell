@@ -464,6 +464,8 @@ namespace IfcGeom {
 		virtual int num_faces() const = 0;
 			
 		// @todo choose one prototype
+		// b points to a double[6] of (xmin, ymin, zmin, xmax, ymax, zmax), allocated by the
+		// callee when passed as null and merged into otherwise; ownership stays with the caller
 		virtual double bounding_box(void*&) const = 0;
 		// @todo this must be something with a virtual dtor so that we can delete it.
 		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const = 0;
