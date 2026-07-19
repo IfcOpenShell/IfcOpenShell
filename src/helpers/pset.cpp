@@ -88,7 +88,7 @@ property_value from_attribute(const attribute_value& value) {
 
     switch (value.type()) {
     case ifcopenshell::Argument_INT:
-        return static_cast<int>(value);
+        return static_cast<int64_t>(value);
     case ifcopenshell::Argument_BOOL:
         return static_cast<bool>(value);
     case ifcopenshell::Argument_LOGICAL: {
@@ -120,7 +120,7 @@ property_value from_attribute(const attribute_value& value) {
         return instance;
     }
     case ifcopenshell::Argument_AGGREGATE_OF_INT:
-        return scalar_list(static_cast<std::vector<int>>(value));
+        return scalar_list(static_cast<std::vector<int64_t>>(value));
     case ifcopenshell::Argument_AGGREGATE_OF_DOUBLE:
         return scalar_list(static_cast<std::vector<double>>(value));
     case ifcopenshell::Argument_AGGREGATE_OF_STRING:

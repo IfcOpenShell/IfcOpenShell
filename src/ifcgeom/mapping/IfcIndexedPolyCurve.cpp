@@ -54,9 +54,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve& inst) {
 		auto segments = inst.Segments();
         for (auto& segment : *segments) {
             if (auto line = segment.as<IfcSchema::IfcLineIndex>()) {
-				std::vector<int> indices = line;
+				std::vector<int64_t> indices = line;
 				taxonomy::point3::ptr previous;
-				for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
+				for (std::vector<int64_t>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 					if (*jt < 1 || *jt > max_index) {
 						throw ifcopenshell::exception("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 					}
@@ -67,12 +67,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve& inst) {
 					previous = current;
 				}
             } else if (auto arc = segment.as<IfcSchema::IfcArcIndex>()) {
-				std::vector<int> indices = arc;
+				std::vector<int64_t> indices = arc;
 				if (indices.size() != 3) {
 					throw ifcopenshell::exception("Invalid IfcArcIndex encountered");
 				}
 				for (int i = 0; i < 3; ++i) {
-					const int& idx = indices[i];
+					const int64_t& idx = indices[i];
 					if (idx < 1 || idx > max_index) {
 						throw ifcopenshell::exception("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(idx));
 					}

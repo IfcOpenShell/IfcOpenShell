@@ -47,7 +47,7 @@ std::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_map
 	if (argument_name == "IfcSite.RefLatitude" ||
 		argument_name == "IfcSite.RefLongitude")
 	{
-		std::vector<int> angle = argument;
+		std::vector<int64_t> angle = argument;
 		double deg;
 		if (angle.size() >= 3) {
 			deg = angle[0] + angle[1] / 60. + angle[2] / 3600.;

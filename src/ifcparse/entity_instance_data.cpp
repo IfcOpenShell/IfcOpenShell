@@ -18,9 +18,9 @@ public:
     int operator()(const boost::dynamic_bitset<>& /*i*/) const { return -1; }
     int operator()(const empty_aggregate_t& /*unused*/) const { return 0; }
     int operator()(const empty_aggregate_of_aggregate_t& /*unused*/) const { return 0; }
-    int operator()(const std::vector<int>& i) const { return (int)i.size(); }
+    int operator()(const std::vector<int64_t>& i) const { return (int)i.size(); }
     int operator()(const std::vector<double>& i) const { return (int)i.size(); }
-    int operator()(const std::vector<std::vector<int>>& i) const { return (int)i.size(); }
+    int operator()(const std::vector<std::vector<int64_t>>& i) const { return (int)i.size(); }
     int operator()(const std::vector<std::vector<double>>& i) const { return (int)i.size(); }
     int operator()(const std::vector<std::string>& i) const { return (int)i.size(); }
     int operator()(const std::vector<boost::dynamic_bitset<>>& i) const { return (int)i.size(); }
@@ -122,11 +122,6 @@ namespace {
         }
 #endif 
     }
-}
-
-attribute_value::operator int() const
-{
-    return (int)dispatch_get_<int64_t>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
 attribute_value::operator int64_t() const
@@ -234,9 +229,9 @@ attribute_value::operator express::Base () const
 #endif
 }
 
-attribute_value::operator std::vector<int>() const
+attribute_value::operator std::vector<int64_t>() const
 {
-    return dispatch_get_<std::vector<int>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
+    return dispatch_get_<std::vector<int64_t>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
 attribute_value::operator std::vector<double>() const
@@ -259,9 +254,9 @@ attribute_value::operator std::vector<express::Base>() const
     return dispatch_get_<std::vector<express::Base>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
-attribute_value::operator std::vector<std::vector<int>>() const
+attribute_value::operator std::vector<std::vector<int64_t>>() const
 {
-    return dispatch_get_<std::vector<std::vector<int>>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
+    return dispatch_get_<std::vector<std::vector<int64_t>>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
 attribute_value::operator std::vector<std::vector<double>>() const
@@ -536,12 +531,12 @@ template IFC_PARSE_API void rocks_db_attribute_storage::set<std::string>(void* s
 template IFC_PARSE_API void rocks_db_attribute_storage::set<boost::dynamic_bitset<>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const boost::dynamic_bitset<>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<enumeration_reference>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const enumeration_reference& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<express::Base>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, express::Base const& value);
-template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<int>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<int>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<int64_t>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<int64_t>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<double>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<double>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::string>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::string>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<boost::dynamic_bitset<>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<boost::dynamic_bitset<>>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<express::Base>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<express::Base>& value);
-template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<int>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<int>>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<int64_t>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<int64_t>>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<double>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<double>>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<express::Base>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<express::Base>>& value);
 
@@ -559,12 +554,12 @@ template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::string>(void* s
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<boost::dynamic_bitset<>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<enumeration_reference>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<express::Base>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
-template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<int>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<int64_t>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<double>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::string>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<boost::dynamic_bitset<>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<express::Base>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
-template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<int>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<int64_t>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<double>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<express::Base>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 

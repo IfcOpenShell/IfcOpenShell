@@ -6185,8 +6185,8 @@ Ifc4::IfcAngularVelocityMeasure::operator double() const { return get_attribute_
 
 // Function implementations for IfcArcIndex
 const ifcopenshell::type_declaration& Ifc4::IfcArcIndex::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[43]); }
-Ifc4::IfcArcIndex Ifc4::IfcArcIndex::initialize(std::vector< int > /*[3:3]*/ v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcArcIndex::operator std::vector< int > /*[3:3]*/() const { return get_attribute_value(0); }
+Ifc4::IfcArcIndex Ifc4::IfcArcIndex::initialize(std::vector< int64_t > /*[3:3]*/ v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcArcIndex::operator std::vector< int64_t > /*[3:3]*/() const { return get_attribute_value(0); }
 
 // Function implementations for IfcAreaDensityMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcAreaDensityMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[44]); }
@@ -6215,8 +6215,8 @@ Ifc4::IfcBoxAlignment::operator std::string() const { return get_attribute_value
 
 // Function implementations for IfcCardinalPointReference
 const ifcopenshell::type_declaration& Ifc4::IfcCardinalPointReference::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[118]); }
-Ifc4::IfcCardinalPointReference Ifc4::IfcCardinalPointReference::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcCardinalPointReference::operator int() const { return get_attribute_value(0); }
+Ifc4::IfcCardinalPointReference Ifc4::IfcCardinalPointReference::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcCardinalPointReference::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcComplexNumber
 const ifcopenshell::type_declaration& Ifc4::IfcComplexNumber::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[161]); }
@@ -6225,8 +6225,8 @@ Ifc4::IfcComplexNumber::operator std::vector< double > /*[1:2]*/() const { retur
 
 // Function implementations for IfcCompoundPlaneAngleMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcCompoundPlaneAngleMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[169]); }
-Ifc4::IfcCompoundPlaneAngleMeasure Ifc4::IfcCompoundPlaneAngleMeasure::initialize(std::vector< int > /*[3:4]*/ v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcCompoundPlaneAngleMeasure::operator std::vector< int > /*[3:4]*/() const { return get_attribute_value(0); }
+Ifc4::IfcCompoundPlaneAngleMeasure Ifc4::IfcCompoundPlaneAngleMeasure::initialize(std::vector< int64_t > /*[3:4]*/ v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcCompoundPlaneAngleMeasure::operator std::vector< int64_t > /*[3:4]*/() const { return get_attribute_value(0); }
 
 // Function implementations for IfcContextDependentMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcContextDependentMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[199]); }
@@ -6255,13 +6255,13 @@ Ifc4::IfcDateTime::operator std::string() const { return get_attribute_value(0);
 
 // Function implementations for IfcDayInMonthNumber
 const ifcopenshell::type_declaration& Ifc4::IfcDayInMonthNumber::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[256]); }
-Ifc4::IfcDayInMonthNumber Ifc4::IfcDayInMonthNumber::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcDayInMonthNumber::operator int() const { return get_attribute_value(0); }
+Ifc4::IfcDayInMonthNumber Ifc4::IfcDayInMonthNumber::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcDayInMonthNumber::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDayInWeekNumber
 const ifcopenshell::type_declaration& Ifc4::IfcDayInWeekNumber::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[257]); }
-Ifc4::IfcDayInWeekNumber Ifc4::IfcDayInWeekNumber::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcDayInWeekNumber::operator int() const { return get_attribute_value(0); }
+Ifc4::IfcDayInWeekNumber Ifc4::IfcDayInWeekNumber::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcDayInWeekNumber::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDescriptiveMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcDescriptiveMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[264]); }
@@ -6270,8 +6270,8 @@ Ifc4::IfcDescriptiveMeasure::operator std::string() const { return get_attribute
 
 // Function implementations for IfcDimensionCount
 const ifcopenshell::type_declaration& Ifc4::IfcDimensionCount::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[266]); }
-Ifc4::IfcDimensionCount Ifc4::IfcDimensionCount::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcDimensionCount::operator int() const { return get_attribute_value(0); }
+Ifc4::IfcDimensionCount Ifc4::IfcDimensionCount::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcDimensionCount::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDoseEquivalentMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcDoseEquivalentMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[304]); }
@@ -6380,13 +6380,13 @@ Ifc4::IfcInductanceMeasure::operator double() const { return get_attribute_value
 
 // Function implementations for IfcInteger
 const ifcopenshell::type_declaration& Ifc4::IfcInteger::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[486]); }
-Ifc4::IfcInteger Ifc4::IfcInteger::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcInteger::operator int() const { return get_attribute_value(0); }
+Ifc4::IfcInteger Ifc4::IfcInteger::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcInteger::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIntegerCountRateMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcIntegerCountRateMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[487]); }
-Ifc4::IfcIntegerCountRateMeasure Ifc4::IfcIntegerCountRateMeasure::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcIntegerCountRateMeasure::operator int() const { return get_attribute_value(0); }
+Ifc4::IfcIntegerCountRateMeasure Ifc4::IfcIntegerCountRateMeasure::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcIntegerCountRateMeasure::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIonConcentrationMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcIonConcentrationMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[495]); }
@@ -6420,8 +6420,8 @@ Ifc4::IfcLengthMeasure::operator double() const { return get_attribute_value(0);
 
 // Function implementations for IfcLineIndex
 const ifcopenshell::type_declaration& Ifc4::IfcLineIndex::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[539]); }
-Ifc4::IfcLineIndex Ifc4::IfcLineIndex::initialize(std::vector< int > /*[2:?]*/ v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcLineIndex::operator std::vector< int > /*[2:?]*/() const { return get_attribute_value(0); }
+Ifc4::IfcLineIndex Ifc4::IfcLineIndex::initialize(std::vector< int64_t > /*[2:?]*/ v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcLineIndex::operator std::vector< int64_t > /*[2:?]*/() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLinearForceMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcLinearForceMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[535]); }
@@ -6535,8 +6535,8 @@ Ifc4::IfcMonetaryMeasure::operator double() const { return get_attribute_value(0
 
 // Function implementations for IfcMonthInYearNumber
 const ifcopenshell::type_declaration& Ifc4::IfcMonthInYearNumber::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[605]); }
-Ifc4::IfcMonthInYearNumber Ifc4::IfcMonthInYearNumber::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcMonthInYearNumber::operator int() const { return get_attribute_value(0); }
+Ifc4::IfcMonthInYearNumber Ifc4::IfcMonthInYearNumber::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcMonthInYearNumber::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcNonNegativeLengthMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcNonNegativeLengthMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[610]); }
@@ -6575,8 +6575,8 @@ Ifc4::IfcPlaneAngleMeasure::operator double() const { return get_attribute_value
 
 // Function implementations for IfcPositiveInteger
 const ifcopenshell::type_declaration& Ifc4::IfcPositiveInteger::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[684]); }
-Ifc4::IfcPositiveInteger Ifc4::IfcPositiveInteger::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcPositiveInteger::operator int() const { return get_attribute_value(0); }
+Ifc4::IfcPositiveInteger Ifc4::IfcPositiveInteger::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcPositiveInteger::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPositiveLengthMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcPositiveLengthMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[685]); }
@@ -6775,8 +6775,8 @@ Ifc4::IfcTimeMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTimeStamp
 const ifcopenshell::type_declaration& Ifc4::IfcTimeStamp::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[1084]); }
-Ifc4::IfcTimeStamp Ifc4::IfcTimeStamp::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc4::IfcTimeStamp::operator int() const { return get_attribute_value(0); }
+Ifc4::IfcTimeStamp Ifc4::IfcTimeStamp::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc4::IfcTimeStamp::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTorqueMeasure
 const ifcopenshell::type_declaration& Ifc4::IfcTorqueMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC4_types[1088]); }
@@ -7180,8 +7180,8 @@ const ifcopenshell::entity& Ifc4::IfcAxis2Placement3D::Class() { return *((ifcop
 Ifc4::IfcAxis2Placement3D Ifc4::IfcAxis2Placement3D::initialize(::Ifc4::IfcCartesianPoint v1_Location, ::Ifc4::IfcDirection v2_Axis, ::Ifc4::IfcDirection v3_RefDirection) { set_attribute_value(0, (v1_Location));set_attribute_value(1, (v2_Axis));set_attribute_value(2, (v3_RefDirection));; return *this; }
 
 // Function implementations for IfcBSplineCurve
-int Ifc4::IfcBSplineCurve::Degree() const {  int v = get_attribute_value(0); return v; }
-void Ifc4::IfcBSplineCurve::setDegree(const int& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
+int64_t Ifc4::IfcBSplineCurve::Degree() const {  int64_t v = get_attribute_value(0); return v; }
+void Ifc4::IfcBSplineCurve::setDegree(const int64_t& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
 std::vector< ::Ifc4::IfcCartesianPoint > Ifc4::IfcBSplineCurve::ControlPointsList() const {  std::vector<express::Base> es = get_attribute_value(1); return cast_vector<::Ifc4::IfcCartesianPoint>(es); }
 void Ifc4::IfcBSplineCurve::setControlPointsList(const std::vector< ::Ifc4::IfcCartesianPoint >& v) { set_attribute_value(1, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(1); }
 ::Ifc4::IfcBSplineCurveForm::Value Ifc4::IfcBSplineCurve::CurveForm() const {  return ::Ifc4::IfcBSplineCurveForm::FromString(get_attribute_value(2)); }
@@ -7193,11 +7193,11 @@ void Ifc4::IfcBSplineCurve::setSelfIntersect(const boost::logic::tribool& v) { s
 
 
 const ifcopenshell::entity& Ifc4::IfcBSplineCurve::Class() { return *((ifcopenshell::entity*)IFC4_types[85]); }
-Ifc4::IfcBSplineCurve Ifc4::IfcBSplineCurve::initialize(int v1_Degree, std::vector< ::Ifc4::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc4::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));; return *this; }
+Ifc4::IfcBSplineCurve Ifc4::IfcBSplineCurve::initialize(int64_t v1_Degree, std::vector< ::Ifc4::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc4::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));; return *this; }
 
 // Function implementations for IfcBSplineCurveWithKnots
-std::vector< int > /*[2:?]*/ Ifc4::IfcBSplineCurveWithKnots::KnotMultiplicities() const {  std::vector< int > /*[2:?]*/ v = get_attribute_value(5); return v; }
-void Ifc4::IfcBSplineCurveWithKnots::setKnotMultiplicities(const std::vector< int > /*[2:?]*/& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
+std::vector< int64_t > /*[2:?]*/ Ifc4::IfcBSplineCurveWithKnots::KnotMultiplicities() const {  std::vector< int64_t > /*[2:?]*/ v = get_attribute_value(5); return v; }
+void Ifc4::IfcBSplineCurveWithKnots::setKnotMultiplicities(const std::vector< int64_t > /*[2:?]*/& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
 std::vector< double > /*[2:?]*/ Ifc4::IfcBSplineCurveWithKnots::Knots() const {  std::vector< double > /*[2:?]*/ v = get_attribute_value(6); return v; }
 void Ifc4::IfcBSplineCurveWithKnots::setKnots(const std::vector< double > /*[2:?]*/& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
 ::Ifc4::IfcKnotType::Value Ifc4::IfcBSplineCurveWithKnots::KnotSpec() const {  return ::Ifc4::IfcKnotType::FromString(get_attribute_value(7)); }
@@ -7205,13 +7205,13 @@ void Ifc4::IfcBSplineCurveWithKnots::setKnotSpec(const ::Ifc4::IfcKnotType::Valu
 
 
 const ifcopenshell::entity& Ifc4::IfcBSplineCurveWithKnots::Class() { return *((ifcopenshell::entity*)IFC4_types[87]); }
-Ifc4::IfcBSplineCurveWithKnots Ifc4::IfcBSplineCurveWithKnots::initialize(int v1_Degree, std::vector< ::Ifc4::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, ::Ifc4::IfcKnotType::Value v8_KnotSpec) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc4::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));set_attribute_value(5, (v6_KnotMultiplicities));set_attribute_value(6, (v7_Knots));set_attribute_value(7, (enumeration_reference(&::Ifc4::IfcKnotType::Class(),(size_t)v8_KnotSpec)));; return *this; }
+Ifc4::IfcBSplineCurveWithKnots Ifc4::IfcBSplineCurveWithKnots::initialize(int64_t v1_Degree, std::vector< ::Ifc4::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int64_t > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, ::Ifc4::IfcKnotType::Value v8_KnotSpec) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc4::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));set_attribute_value(5, (v6_KnotMultiplicities));set_attribute_value(6, (v7_Knots));set_attribute_value(7, (enumeration_reference(&::Ifc4::IfcKnotType::Class(),(size_t)v8_KnotSpec)));; return *this; }
 
 // Function implementations for IfcBSplineSurface
-int Ifc4::IfcBSplineSurface::UDegree() const {  int v = get_attribute_value(0); return v; }
-void Ifc4::IfcBSplineSurface::setUDegree(const int& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
-int Ifc4::IfcBSplineSurface::VDegree() const {  int v = get_attribute_value(1); return v; }
-void Ifc4::IfcBSplineSurface::setVDegree(const int& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
+int64_t Ifc4::IfcBSplineSurface::UDegree() const {  int64_t v = get_attribute_value(0); return v; }
+void Ifc4::IfcBSplineSurface::setUDegree(const int64_t& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
+int64_t Ifc4::IfcBSplineSurface::VDegree() const {  int64_t v = get_attribute_value(1); return v; }
+void Ifc4::IfcBSplineSurface::setVDegree(const int64_t& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
 std::vector< std::vector< ::Ifc4::IfcCartesianPoint > > Ifc4::IfcBSplineSurface::ControlPointsList() const {  std::vector<std::vector<express::Base>> es = get_attribute_value(2); return cast_vector<::Ifc4::IfcCartesianPoint>(es); }
 void Ifc4::IfcBSplineSurface::setControlPointsList(const std::vector< std::vector< ::Ifc4::IfcCartesianPoint > >& v) { set_attribute_value(2, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(2); }
 ::Ifc4::IfcBSplineSurfaceForm::Value Ifc4::IfcBSplineSurface::SurfaceForm() const {  return ::Ifc4::IfcBSplineSurfaceForm::FromString(get_attribute_value(3)); }
@@ -7225,13 +7225,13 @@ void Ifc4::IfcBSplineSurface::setSelfIntersect(const boost::logic::tribool& v) {
 
 
 const ifcopenshell::entity& Ifc4::IfcBSplineSurface::Class() { return *((ifcopenshell::entity*)IFC4_types[88]); }
-Ifc4::IfcBSplineSurface Ifc4::IfcBSplineSurface::initialize(int v1_UDegree, int v2_VDegree, std::vector< std::vector< ::Ifc4::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect) { set_attribute_value(0, (v1_UDegree));set_attribute_value(1, (v2_VDegree));set_attribute_value(2, cast_vector<express::Base>(v3_ControlPointsList));set_attribute_value(3, (enumeration_reference(&::Ifc4::IfcBSplineSurfaceForm::Class(),(size_t)v4_SurfaceForm)));set_attribute_value(4, (v5_UClosed));set_attribute_value(5, (v6_VClosed));set_attribute_value(6, (v7_SelfIntersect));; return *this; }
+Ifc4::IfcBSplineSurface Ifc4::IfcBSplineSurface::initialize(int64_t v1_UDegree, int64_t v2_VDegree, std::vector< std::vector< ::Ifc4::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect) { set_attribute_value(0, (v1_UDegree));set_attribute_value(1, (v2_VDegree));set_attribute_value(2, cast_vector<express::Base>(v3_ControlPointsList));set_attribute_value(3, (enumeration_reference(&::Ifc4::IfcBSplineSurfaceForm::Class(),(size_t)v4_SurfaceForm)));set_attribute_value(4, (v5_UClosed));set_attribute_value(5, (v6_VClosed));set_attribute_value(6, (v7_SelfIntersect));; return *this; }
 
 // Function implementations for IfcBSplineSurfaceWithKnots
-std::vector< int > /*[2:?]*/ Ifc4::IfcBSplineSurfaceWithKnots::UMultiplicities() const {  std::vector< int > /*[2:?]*/ v = get_attribute_value(7); return v; }
-void Ifc4::IfcBSplineSurfaceWithKnots::setUMultiplicities(const std::vector< int > /*[2:?]*/& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
-std::vector< int > /*[2:?]*/ Ifc4::IfcBSplineSurfaceWithKnots::VMultiplicities() const {  std::vector< int > /*[2:?]*/ v = get_attribute_value(8); return v; }
-void Ifc4::IfcBSplineSurfaceWithKnots::setVMultiplicities(const std::vector< int > /*[2:?]*/& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
+std::vector< int64_t > /*[2:?]*/ Ifc4::IfcBSplineSurfaceWithKnots::UMultiplicities() const {  std::vector< int64_t > /*[2:?]*/ v = get_attribute_value(7); return v; }
+void Ifc4::IfcBSplineSurfaceWithKnots::setUMultiplicities(const std::vector< int64_t > /*[2:?]*/& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
+std::vector< int64_t > /*[2:?]*/ Ifc4::IfcBSplineSurfaceWithKnots::VMultiplicities() const {  std::vector< int64_t > /*[2:?]*/ v = get_attribute_value(8); return v; }
+void Ifc4::IfcBSplineSurfaceWithKnots::setVMultiplicities(const std::vector< int64_t > /*[2:?]*/& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
 std::vector< double > /*[2:?]*/ Ifc4::IfcBSplineSurfaceWithKnots::UKnots() const {  std::vector< double > /*[2:?]*/ v = get_attribute_value(9); return v; }
 void Ifc4::IfcBSplineSurfaceWithKnots::setUKnots(const std::vector< double > /*[2:?]*/& v) { set_attribute_value(9, v);if constexpr (false)unset_attribute_value(9); }
 std::vector< double > /*[2:?]*/ Ifc4::IfcBSplineSurfaceWithKnots::VKnots() const {  std::vector< double > /*[2:?]*/ v = get_attribute_value(10); return v; }
@@ -7241,7 +7241,7 @@ void Ifc4::IfcBSplineSurfaceWithKnots::setKnotSpec(const ::Ifc4::IfcKnotType::Va
 
 
 const ifcopenshell::entity& Ifc4::IfcBSplineSurfaceWithKnots::Class() { return *((ifcopenshell::entity*)IFC4_types[90]); }
-Ifc4::IfcBSplineSurfaceWithKnots Ifc4::IfcBSplineSurfaceWithKnots::initialize(int v1_UDegree, int v2_VDegree, std::vector< std::vector< ::Ifc4::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, ::Ifc4::IfcKnotType::Value v12_KnotSpec) { set_attribute_value(0, (v1_UDegree));set_attribute_value(1, (v2_VDegree));set_attribute_value(2, cast_vector<express::Base>(v3_ControlPointsList));set_attribute_value(3, (enumeration_reference(&::Ifc4::IfcBSplineSurfaceForm::Class(),(size_t)v4_SurfaceForm)));set_attribute_value(4, (v5_UClosed));set_attribute_value(5, (v6_VClosed));set_attribute_value(6, (v7_SelfIntersect));set_attribute_value(7, (v8_UMultiplicities));set_attribute_value(8, (v9_VMultiplicities));set_attribute_value(9, (v10_UKnots));set_attribute_value(10, (v11_VKnots));set_attribute_value(11, (enumeration_reference(&::Ifc4::IfcKnotType::Class(),(size_t)v12_KnotSpec)));; return *this; }
+Ifc4::IfcBSplineSurfaceWithKnots Ifc4::IfcBSplineSurfaceWithKnots::initialize(int64_t v1_UDegree, int64_t v2_VDegree, std::vector< std::vector< ::Ifc4::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int64_t > /*[2:?]*/ v8_UMultiplicities, std::vector< int64_t > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, ::Ifc4::IfcKnotType::Value v12_KnotSpec) { set_attribute_value(0, (v1_UDegree));set_attribute_value(1, (v2_VDegree));set_attribute_value(2, cast_vector<express::Base>(v3_ControlPointsList));set_attribute_value(3, (enumeration_reference(&::Ifc4::IfcBSplineSurfaceForm::Class(),(size_t)v4_SurfaceForm)));set_attribute_value(4, (v5_UClosed));set_attribute_value(5, (v6_VClosed));set_attribute_value(6, (v7_SelfIntersect));set_attribute_value(7, (v8_UMultiplicities));set_attribute_value(8, (v9_VMultiplicities));set_attribute_value(9, (v10_UKnots));set_attribute_value(10, (v11_VKnots));set_attribute_value(11, (enumeration_reference(&::Ifc4::IfcKnotType::Class(),(size_t)v12_KnotSpec)));; return *this; }
 
 // Function implementations for IfcBeam
 std::optional< ::Ifc4::IfcBeamTypeEnum::Value > Ifc4::IfcBeam::PredefinedType() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } return ::Ifc4::IfcBeamTypeEnum::FromString(get_attribute_value(8)); }
@@ -8499,32 +8499,32 @@ Ifc4::IfcDerivedUnit Ifc4::IfcDerivedUnit::initialize(std::vector< ::Ifc4::IfcDe
 // Function implementations for IfcDerivedUnitElement
 ::Ifc4::IfcNamedUnit Ifc4::IfcDerivedUnitElement::Unit() const {  return ((express::Base)(get_attribute_value(0))).as<::Ifc4::IfcNamedUnit>(); }
 void Ifc4::IfcDerivedUnitElement::setUnit(const ::Ifc4::IfcNamedUnit& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
-int Ifc4::IfcDerivedUnitElement::Exponent() const {  int v = get_attribute_value(1); return v; }
-void Ifc4::IfcDerivedUnitElement::setExponent(const int& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
+int64_t Ifc4::IfcDerivedUnitElement::Exponent() const {  int64_t v = get_attribute_value(1); return v; }
+void Ifc4::IfcDerivedUnitElement::setExponent(const int64_t& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
 
 
 const ifcopenshell::entity& Ifc4::IfcDerivedUnitElement::Class() { return *((ifcopenshell::entity*)IFC4_types[262]); }
-Ifc4::IfcDerivedUnitElement Ifc4::IfcDerivedUnitElement::initialize(::Ifc4::IfcNamedUnit v1_Unit, int v2_Exponent) { set_attribute_value(0, (v1_Unit));set_attribute_value(1, (v2_Exponent));; return *this; }
+Ifc4::IfcDerivedUnitElement Ifc4::IfcDerivedUnitElement::initialize(::Ifc4::IfcNamedUnit v1_Unit, int64_t v2_Exponent) { set_attribute_value(0, (v1_Unit));set_attribute_value(1, (v2_Exponent));; return *this; }
 
 // Function implementations for IfcDimensionalExponents
-int Ifc4::IfcDimensionalExponents::LengthExponent() const {  int v = get_attribute_value(0); return v; }
-void Ifc4::IfcDimensionalExponents::setLengthExponent(const int& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
-int Ifc4::IfcDimensionalExponents::MassExponent() const {  int v = get_attribute_value(1); return v; }
-void Ifc4::IfcDimensionalExponents::setMassExponent(const int& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
-int Ifc4::IfcDimensionalExponents::TimeExponent() const {  int v = get_attribute_value(2); return v; }
-void Ifc4::IfcDimensionalExponents::setTimeExponent(const int& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
-int Ifc4::IfcDimensionalExponents::ElectricCurrentExponent() const {  int v = get_attribute_value(3); return v; }
-void Ifc4::IfcDimensionalExponents::setElectricCurrentExponent(const int& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
-int Ifc4::IfcDimensionalExponents::ThermodynamicTemperatureExponent() const {  int v = get_attribute_value(4); return v; }
-void Ifc4::IfcDimensionalExponents::setThermodynamicTemperatureExponent(const int& v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
-int Ifc4::IfcDimensionalExponents::AmountOfSubstanceExponent() const {  int v = get_attribute_value(5); return v; }
-void Ifc4::IfcDimensionalExponents::setAmountOfSubstanceExponent(const int& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
-int Ifc4::IfcDimensionalExponents::LuminousIntensityExponent() const {  int v = get_attribute_value(6); return v; }
-void Ifc4::IfcDimensionalExponents::setLuminousIntensityExponent(const int& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
+int64_t Ifc4::IfcDimensionalExponents::LengthExponent() const {  int64_t v = get_attribute_value(0); return v; }
+void Ifc4::IfcDimensionalExponents::setLengthExponent(const int64_t& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
+int64_t Ifc4::IfcDimensionalExponents::MassExponent() const {  int64_t v = get_attribute_value(1); return v; }
+void Ifc4::IfcDimensionalExponents::setMassExponent(const int64_t& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
+int64_t Ifc4::IfcDimensionalExponents::TimeExponent() const {  int64_t v = get_attribute_value(2); return v; }
+void Ifc4::IfcDimensionalExponents::setTimeExponent(const int64_t& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
+int64_t Ifc4::IfcDimensionalExponents::ElectricCurrentExponent() const {  int64_t v = get_attribute_value(3); return v; }
+void Ifc4::IfcDimensionalExponents::setElectricCurrentExponent(const int64_t& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
+int64_t Ifc4::IfcDimensionalExponents::ThermodynamicTemperatureExponent() const {  int64_t v = get_attribute_value(4); return v; }
+void Ifc4::IfcDimensionalExponents::setThermodynamicTemperatureExponent(const int64_t& v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
+int64_t Ifc4::IfcDimensionalExponents::AmountOfSubstanceExponent() const {  int64_t v = get_attribute_value(5); return v; }
+void Ifc4::IfcDimensionalExponents::setAmountOfSubstanceExponent(const int64_t& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
+int64_t Ifc4::IfcDimensionalExponents::LuminousIntensityExponent() const {  int64_t v = get_attribute_value(6); return v; }
+void Ifc4::IfcDimensionalExponents::setLuminousIntensityExponent(const int64_t& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
 
 
 const ifcopenshell::entity& Ifc4::IfcDimensionalExponents::Class() { return *((ifcopenshell::entity*)IFC4_types[265]); }
-Ifc4::IfcDimensionalExponents Ifc4::IfcDimensionalExponents::initialize(int v1_LengthExponent, int v2_MassExponent, int v3_TimeExponent, int v4_ElectricCurrentExponent, int v5_ThermodynamicTemperatureExponent, int v6_AmountOfSubstanceExponent, int v7_LuminousIntensityExponent) { set_attribute_value(0, (v1_LengthExponent));set_attribute_value(1, (v2_MassExponent));set_attribute_value(2, (v3_TimeExponent));set_attribute_value(3, (v4_ElectricCurrentExponent));set_attribute_value(4, (v5_ThermodynamicTemperatureExponent));set_attribute_value(5, (v6_AmountOfSubstanceExponent));set_attribute_value(6, (v7_LuminousIntensityExponent));; return *this; }
+Ifc4::IfcDimensionalExponents Ifc4::IfcDimensionalExponents::initialize(int64_t v1_LengthExponent, int64_t v2_MassExponent, int64_t v3_TimeExponent, int64_t v4_ElectricCurrentExponent, int64_t v5_ThermodynamicTemperatureExponent, int64_t v6_AmountOfSubstanceExponent, int64_t v7_LuminousIntensityExponent) { set_attribute_value(0, (v1_LengthExponent));set_attribute_value(1, (v2_MassExponent));set_attribute_value(2, (v3_TimeExponent));set_attribute_value(3, (v4_ElectricCurrentExponent));set_attribute_value(4, (v5_ThermodynamicTemperatureExponent));set_attribute_value(5, (v6_AmountOfSubstanceExponent));set_attribute_value(6, (v7_LuminousIntensityExponent));; return *this; }
 
 // Function implementations for IfcDirection
 std::vector< double > /*[2:3]*/ Ifc4::IfcDirection::DirectionRatios() const {  std::vector< double > /*[2:3]*/ v = get_attribute_value(0); return v; }
@@ -9666,8 +9666,8 @@ const ifcopenshell::entity& Ifc4::IfcGeometricCurveSet::Class() { return *((ifco
 Ifc4::IfcGeometricCurveSet Ifc4::IfcGeometricCurveSet::initialize(std::vector< ::Ifc4::IfcGeometricSetSelect > v1_Elements) { set_attribute_value(0, cast_vector<express::Base>(v1_Elements));; return *this; }
 
 // Function implementations for IfcGeometricRepresentationContext
-int Ifc4::IfcGeometricRepresentationContext::CoordinateSpaceDimension() const {  int v = get_attribute_value(2); return v; }
-void Ifc4::IfcGeometricRepresentationContext::setCoordinateSpaceDimension(const int& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
+int64_t Ifc4::IfcGeometricRepresentationContext::CoordinateSpaceDimension() const {  int64_t v = get_attribute_value(2); return v; }
+void Ifc4::IfcGeometricRepresentationContext::setCoordinateSpaceDimension(const int64_t& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
 std::optional< double > Ifc4::IfcGeometricRepresentationContext::Precision() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } double v = get_attribute_value(3); return v; }
 void Ifc4::IfcGeometricRepresentationContext::setPrecision(const std::optional< double >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
 ::Ifc4::IfcAxis2Placement Ifc4::IfcGeometricRepresentationContext::WorldCoordinateSystem() const {  return ((express::Base)(get_attribute_value(4))).as<::Ifc4::IfcAxis2Placement>(); }
@@ -9679,7 +9679,7 @@ std::vector<::Ifc4::IfcGeometricRepresentationSubContext> Ifc4::IfcGeometricRepr
 std::vector<::Ifc4::IfcCoordinateOperation> Ifc4::IfcGeometricRepresentationContext::HasCoordinateOperation() const { return cast_vector<IfcCoordinateOperation>(file()->get_inverse(data()->id(), IFC4_types[213], 0)); }
 
 const ifcopenshell::entity& Ifc4::IfcGeometricRepresentationContext::Class() { return *((ifcopenshell::entity*)IFC4_types[453]); }
-Ifc4::IfcGeometricRepresentationContext Ifc4::IfcGeometricRepresentationContext::initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, int v3_CoordinateSpaceDimension, std::optional< double > v4_Precision, ::Ifc4::IfcAxis2Placement v5_WorldCoordinateSystem, ::Ifc4::IfcDirection v6_TrueNorth) {  if (v1_ContextIdentifier) {set_attribute_value(0, (*v1_ContextIdentifier)); } if (v2_ContextType) {set_attribute_value(1, (*v2_ContextType)); }set_attribute_value(2, (v3_CoordinateSpaceDimension)); if (v4_Precision) {set_attribute_value(3, (*v4_Precision)); }set_attribute_value(4, (v5_WorldCoordinateSystem));set_attribute_value(5, (v6_TrueNorth));; return *this; }
+Ifc4::IfcGeometricRepresentationContext Ifc4::IfcGeometricRepresentationContext::initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, int64_t v3_CoordinateSpaceDimension, std::optional< double > v4_Precision, ::Ifc4::IfcAxis2Placement v5_WorldCoordinateSystem, ::Ifc4::IfcDirection v6_TrueNorth) {  if (v1_ContextIdentifier) {set_attribute_value(0, (*v1_ContextIdentifier)); } if (v2_ContextType) {set_attribute_value(1, (*v2_ContextType)); }set_attribute_value(2, (v3_CoordinateSpaceDimension)); if (v4_Precision) {set_attribute_value(3, (*v4_Precision)); }set_attribute_value(4, (v5_WorldCoordinateSystem));set_attribute_value(5, (v6_TrueNorth));; return *this; }
 
 // Function implementations for IfcGeometricRepresentationItem
 
@@ -9834,12 +9834,12 @@ std::optional< double > Ifc4::IfcIndexedColourMap::Opacity() const { if(get_attr
 void Ifc4::IfcIndexedColourMap::setOpacity(const std::optional< double >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 ::Ifc4::IfcColourRgbList Ifc4::IfcIndexedColourMap::Colours() const {  return ((express::Base)(get_attribute_value(2))).as<::Ifc4::IfcColourRgbList>(); }
 void Ifc4::IfcIndexedColourMap::setColours(const ::Ifc4::IfcColourRgbList& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
-std::vector< int > /*[1:?]*/ Ifc4::IfcIndexedColourMap::ColourIndex() const {  std::vector< int > /*[1:?]*/ v = get_attribute_value(3); return v; }
-void Ifc4::IfcIndexedColourMap::setColourIndex(const std::vector< int > /*[1:?]*/& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
+std::vector< int64_t > /*[1:?]*/ Ifc4::IfcIndexedColourMap::ColourIndex() const {  std::vector< int64_t > /*[1:?]*/ v = get_attribute_value(3); return v; }
+void Ifc4::IfcIndexedColourMap::setColourIndex(const std::vector< int64_t > /*[1:?]*/& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
 
 
 const ifcopenshell::entity& Ifc4::IfcIndexedColourMap::Class() { return *((ifcopenshell::entity*)IFC4_types[479]); }
-Ifc4::IfcIndexedColourMap Ifc4::IfcIndexedColourMap::initialize(::Ifc4::IfcTessellatedFaceSet v1_MappedTo, std::optional< double > v2_Opacity, ::Ifc4::IfcColourRgbList v3_Colours, std::vector< int > /*[1:?]*/ v4_ColourIndex) { set_attribute_value(0, (v1_MappedTo)); if (v2_Opacity) {set_attribute_value(1, (*v2_Opacity)); }set_attribute_value(2, (v3_Colours));set_attribute_value(3, (v4_ColourIndex));; return *this; }
+Ifc4::IfcIndexedColourMap Ifc4::IfcIndexedColourMap::initialize(::Ifc4::IfcTessellatedFaceSet v1_MappedTo, std::optional< double > v2_Opacity, ::Ifc4::IfcColourRgbList v3_Colours, std::vector< int64_t > /*[1:?]*/ v4_ColourIndex) { set_attribute_value(0, (v1_MappedTo)); if (v2_Opacity) {set_attribute_value(1, (*v2_Opacity)); }set_attribute_value(2, (v3_Colours));set_attribute_value(3, (v4_ColourIndex));; return *this; }
 
 // Function implementations for IfcIndexedPolyCurve
 ::Ifc4::IfcCartesianPointList Ifc4::IfcIndexedPolyCurve::Points() const {  return ((express::Base)(get_attribute_value(0))).as<::Ifc4::IfcCartesianPointList>(); }
@@ -9854,21 +9854,21 @@ const ifcopenshell::entity& Ifc4::IfcIndexedPolyCurve::Class() { return *((ifcop
 Ifc4::IfcIndexedPolyCurve Ifc4::IfcIndexedPolyCurve::initialize(::Ifc4::IfcCartesianPointList v1_Points, std::optional< std::vector< ::Ifc4::IfcSegmentIndexSelect > > v2_Segments, std::optional< bool > v3_SelfIntersect) { set_attribute_value(0, (v1_Points)); if (v2_Segments) {set_attribute_value(1, cast_vector<express::Base>(*v2_Segments)); } if (v3_SelfIntersect) {set_attribute_value(2, (*v3_SelfIntersect)); }; return *this; }
 
 // Function implementations for IfcIndexedPolygonalFace
-std::vector< int > /*[3:?]*/ Ifc4::IfcIndexedPolygonalFace::CoordIndex() const {  std::vector< int > /*[3:?]*/ v = get_attribute_value(0); return v; }
-void Ifc4::IfcIndexedPolygonalFace::setCoordIndex(const std::vector< int > /*[3:?]*/& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
+std::vector< int64_t > /*[3:?]*/ Ifc4::IfcIndexedPolygonalFace::CoordIndex() const {  std::vector< int64_t > /*[3:?]*/ v = get_attribute_value(0); return v; }
+void Ifc4::IfcIndexedPolygonalFace::setCoordIndex(const std::vector< int64_t > /*[3:?]*/& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
 
 std::vector<::Ifc4::IfcPolygonalFaceSet> Ifc4::IfcIndexedPolygonalFace::ToFaceSet() const { return cast_vector<IfcPolygonalFaceSet>(file()->get_inverse(data()->id(), IFC4_types[680], 2)); }
 
 const ifcopenshell::entity& Ifc4::IfcIndexedPolygonalFace::Class() { return *((ifcopenshell::entity*)IFC4_types[481]); }
-Ifc4::IfcIndexedPolygonalFace Ifc4::IfcIndexedPolygonalFace::initialize(std::vector< int > /*[3:?]*/ v1_CoordIndex) { set_attribute_value(0, (v1_CoordIndex));; return *this; }
+Ifc4::IfcIndexedPolygonalFace Ifc4::IfcIndexedPolygonalFace::initialize(std::vector< int64_t > /*[3:?]*/ v1_CoordIndex) { set_attribute_value(0, (v1_CoordIndex));; return *this; }
 
 // Function implementations for IfcIndexedPolygonalFaceWithVoids
-std::vector< std::vector< int > > Ifc4::IfcIndexedPolygonalFaceWithVoids::InnerCoordIndices() const {  std::vector< std::vector< int > > v = get_attribute_value(1); return v; }
-void Ifc4::IfcIndexedPolygonalFaceWithVoids::setInnerCoordIndices(const std::vector< std::vector< int > >& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
+std::vector< std::vector< int64_t > > Ifc4::IfcIndexedPolygonalFaceWithVoids::InnerCoordIndices() const {  std::vector< std::vector< int64_t > > v = get_attribute_value(1); return v; }
+void Ifc4::IfcIndexedPolygonalFaceWithVoids::setInnerCoordIndices(const std::vector< std::vector< int64_t > >& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
 
 
 const ifcopenshell::entity& Ifc4::IfcIndexedPolygonalFaceWithVoids::Class() { return *((ifcopenshell::entity*)IFC4_types[482]); }
-Ifc4::IfcIndexedPolygonalFaceWithVoids Ifc4::IfcIndexedPolygonalFaceWithVoids::initialize(std::vector< int > /*[3:?]*/ v1_CoordIndex, std::vector< std::vector< int > > v2_InnerCoordIndices) { set_attribute_value(0, (v1_CoordIndex));set_attribute_value(1, (v2_InnerCoordIndices));; return *this; }
+Ifc4::IfcIndexedPolygonalFaceWithVoids Ifc4::IfcIndexedPolygonalFaceWithVoids::initialize(std::vector< int64_t > /*[3:?]*/ v1_CoordIndex, std::vector< std::vector< int64_t > > v2_InnerCoordIndices) { set_attribute_value(0, (v1_CoordIndex));set_attribute_value(1, (v2_InnerCoordIndices));; return *this; }
 
 // Function implementations for IfcIndexedTextureMap
 ::Ifc4::IfcTessellatedFaceSet Ifc4::IfcIndexedTextureMap::MappedTo() const {  return ((express::Base)(get_attribute_value(1))).as<::Ifc4::IfcTessellatedFaceSet>(); }
@@ -9881,12 +9881,12 @@ const ifcopenshell::entity& Ifc4::IfcIndexedTextureMap::Class() { return *((ifco
 Ifc4::IfcIndexedTextureMap Ifc4::IfcIndexedTextureMap::initialize(std::vector< ::Ifc4::IfcSurfaceTexture > v1_Maps, ::Ifc4::IfcTessellatedFaceSet v2_MappedTo, ::Ifc4::IfcTextureVertexList v3_TexCoords) { set_attribute_value(0, cast_vector<express::Base>(v1_Maps));set_attribute_value(1, (v2_MappedTo));set_attribute_value(2, (v3_TexCoords));; return *this; }
 
 // Function implementations for IfcIndexedTriangleTextureMap
-std::optional< std::vector< std::vector< int > > > Ifc4::IfcIndexedTriangleTextureMap::TexCoordIndex() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::vector< std::vector< int > > v = get_attribute_value(3); return v; }
-void Ifc4::IfcIndexedTriangleTextureMap::setTexCoordIndex(const std::optional< std::vector< std::vector< int > > >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
+std::optional< std::vector< std::vector< int64_t > > > Ifc4::IfcIndexedTriangleTextureMap::TexCoordIndex() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::vector< std::vector< int64_t > > v = get_attribute_value(3); return v; }
+void Ifc4::IfcIndexedTriangleTextureMap::setTexCoordIndex(const std::optional< std::vector< std::vector< int64_t > > >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
 
 
 const ifcopenshell::entity& Ifc4::IfcIndexedTriangleTextureMap::Class() { return *((ifcopenshell::entity*)IFC4_types[484]); }
-Ifc4::IfcIndexedTriangleTextureMap Ifc4::IfcIndexedTriangleTextureMap::initialize(std::vector< ::Ifc4::IfcSurfaceTexture > v1_Maps, ::Ifc4::IfcTessellatedFaceSet v2_MappedTo, ::Ifc4::IfcTextureVertexList v3_TexCoords, std::optional< std::vector< std::vector< int > > > v4_TexCoordIndex) { set_attribute_value(0, cast_vector<express::Base>(v1_Maps));set_attribute_value(1, (v2_MappedTo));set_attribute_value(2, (v3_TexCoords)); if (v4_TexCoordIndex) {set_attribute_value(3, (*v4_TexCoordIndex)); }; return *this; }
+Ifc4::IfcIndexedTriangleTextureMap Ifc4::IfcIndexedTriangleTextureMap::initialize(std::vector< ::Ifc4::IfcSurfaceTexture > v1_Maps, ::Ifc4::IfcTessellatedFaceSet v2_MappedTo, ::Ifc4::IfcTextureVertexList v3_TexCoords, std::optional< std::vector< std::vector< int64_t > > > v4_TexCoordIndex) { set_attribute_value(0, cast_vector<express::Base>(v1_Maps));set_attribute_value(1, (v2_MappedTo));set_attribute_value(2, (v3_TexCoords)); if (v4_TexCoordIndex) {set_attribute_value(3, (*v4_TexCoordIndex)); }; return *this; }
 
 // Function implementations for IfcInterceptor
 std::optional< ::Ifc4::IfcInterceptorTypeEnum::Value > Ifc4::IfcInterceptor::PredefinedType() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } return ::Ifc4::IfcInterceptorTypeEnum::FromString(get_attribute_value(8)); }
@@ -10315,13 +10315,13 @@ std::optional< std::string > Ifc4::IfcMaterialLayer::Description() const { if(ge
 void Ifc4::IfcMaterialLayer::setDescription(const std::optional< std::string >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 std::optional< std::string > Ifc4::IfcMaterialLayer::Category() const { if(get_attribute_value(5).isNull()) { return std::nullopt; } std::string v = get_attribute_value(5); return v; }
 void Ifc4::IfcMaterialLayer::setCategory(const std::optional< std::string >& v) { if (v) {set_attribute_value(5, *v);} else {unset_attribute_value(5);} }
-std::optional< int > Ifc4::IfcMaterialLayer::Priority() const { if(get_attribute_value(6).isNull()) { return std::nullopt; } int v = get_attribute_value(6); return v; }
-void Ifc4::IfcMaterialLayer::setPriority(const std::optional< int >& v) { if (v) {set_attribute_value(6, *v);} else {unset_attribute_value(6);} }
+std::optional< int64_t > Ifc4::IfcMaterialLayer::Priority() const { if(get_attribute_value(6).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(6); return v; }
+void Ifc4::IfcMaterialLayer::setPriority(const std::optional< int64_t >& v) { if (v) {set_attribute_value(6, *v);} else {unset_attribute_value(6);} }
 
 std::vector<::Ifc4::IfcMaterialLayerSet> Ifc4::IfcMaterialLayer::ToMaterialLayerSet() const { return cast_vector<IfcMaterialLayerSet>(file()->get_inverse(data()->id(), IFC4_types[565], 0)); }
 
 const ifcopenshell::entity& Ifc4::IfcMaterialLayer::Class() { return *((ifcopenshell::entity*)IFC4_types[564]); }
-Ifc4::IfcMaterialLayer Ifc4::IfcMaterialLayer::initialize(::Ifc4::IfcMaterial v1_Material, double v2_LayerThickness, std::optional< boost::logic::tribool > v3_IsVentilated, std::optional< std::string > v4_Name, std::optional< std::string > v5_Description, std::optional< std::string > v6_Category, std::optional< int > v7_Priority) { set_attribute_value(0, (v1_Material));set_attribute_value(1, (v2_LayerThickness)); if (v3_IsVentilated) {set_attribute_value(2, (*v3_IsVentilated)); } if (v4_Name) {set_attribute_value(3, (*v4_Name)); } if (v5_Description) {set_attribute_value(4, (*v5_Description)); } if (v6_Category) {set_attribute_value(5, (*v6_Category)); } if (v7_Priority) {set_attribute_value(6, (*v7_Priority)); }; return *this; }
+Ifc4::IfcMaterialLayer Ifc4::IfcMaterialLayer::initialize(::Ifc4::IfcMaterial v1_Material, double v2_LayerThickness, std::optional< boost::logic::tribool > v3_IsVentilated, std::optional< std::string > v4_Name, std::optional< std::string > v5_Description, std::optional< std::string > v6_Category, std::optional< int64_t > v7_Priority) { set_attribute_value(0, (v1_Material));set_attribute_value(1, (v2_LayerThickness)); if (v3_IsVentilated) {set_attribute_value(2, (*v3_IsVentilated)); } if (v4_Name) {set_attribute_value(3, (*v4_Name)); } if (v5_Description) {set_attribute_value(4, (*v5_Description)); } if (v6_Category) {set_attribute_value(5, (*v6_Category)); } if (v7_Priority) {set_attribute_value(6, (*v7_Priority)); }; return *this; }
 
 // Function implementations for IfcMaterialLayerSet
 std::vector< ::Ifc4::IfcMaterialLayer > Ifc4::IfcMaterialLayerSet::MaterialLayers() const {  std::vector<express::Base> es = get_attribute_value(0); return cast_vector<::Ifc4::IfcMaterialLayer>(es); }
@@ -10359,7 +10359,7 @@ void Ifc4::IfcMaterialLayerWithOffsets::setOffsetValues(const std::vector< doubl
 
 
 const ifcopenshell::entity& Ifc4::IfcMaterialLayerWithOffsets::Class() { return *((ifcopenshell::entity*)IFC4_types[567]); }
-Ifc4::IfcMaterialLayerWithOffsets Ifc4::IfcMaterialLayerWithOffsets::initialize(::Ifc4::IfcMaterial v1_Material, double v2_LayerThickness, std::optional< boost::logic::tribool > v3_IsVentilated, std::optional< std::string > v4_Name, std::optional< std::string > v5_Description, std::optional< std::string > v6_Category, std::optional< int > v7_Priority, ::Ifc4::IfcLayerSetDirectionEnum::Value v8_OffsetDirection, std::vector< double > /*[1:2]*/ v9_OffsetValues) { set_attribute_value(0, (v1_Material));set_attribute_value(1, (v2_LayerThickness)); if (v3_IsVentilated) {set_attribute_value(2, (*v3_IsVentilated)); } if (v4_Name) {set_attribute_value(3, (*v4_Name)); } if (v5_Description) {set_attribute_value(4, (*v5_Description)); } if (v6_Category) {set_attribute_value(5, (*v6_Category)); } if (v7_Priority) {set_attribute_value(6, (*v7_Priority)); }set_attribute_value(7, (enumeration_reference(&::Ifc4::IfcLayerSetDirectionEnum::Class(),(size_t)v8_OffsetDirection)));set_attribute_value(8, (v9_OffsetValues));; return *this; }
+Ifc4::IfcMaterialLayerWithOffsets Ifc4::IfcMaterialLayerWithOffsets::initialize(::Ifc4::IfcMaterial v1_Material, double v2_LayerThickness, std::optional< boost::logic::tribool > v3_IsVentilated, std::optional< std::string > v4_Name, std::optional< std::string > v5_Description, std::optional< std::string > v6_Category, std::optional< int64_t > v7_Priority, ::Ifc4::IfcLayerSetDirectionEnum::Value v8_OffsetDirection, std::vector< double > /*[1:2]*/ v9_OffsetValues) { set_attribute_value(0, (v1_Material));set_attribute_value(1, (v2_LayerThickness)); if (v3_IsVentilated) {set_attribute_value(2, (*v3_IsVentilated)); } if (v4_Name) {set_attribute_value(3, (*v4_Name)); } if (v5_Description) {set_attribute_value(4, (*v5_Description)); } if (v6_Category) {set_attribute_value(5, (*v6_Category)); } if (v7_Priority) {set_attribute_value(6, (*v7_Priority)); }set_attribute_value(7, (enumeration_reference(&::Ifc4::IfcLayerSetDirectionEnum::Class(),(size_t)v8_OffsetDirection)));set_attribute_value(8, (v9_OffsetValues));; return *this; }
 
 // Function implementations for IfcMaterialList
 std::vector< ::Ifc4::IfcMaterial > Ifc4::IfcMaterialList::Materials() const {  std::vector<express::Base> es = get_attribute_value(0); return cast_vector<::Ifc4::IfcMaterial>(es); }
@@ -10378,15 +10378,15 @@ void Ifc4::IfcMaterialProfile::setDescription(const std::optional< std::string >
 void Ifc4::IfcMaterialProfile::setMaterial(const ::Ifc4::IfcMaterial& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
 ::Ifc4::IfcProfileDef Ifc4::IfcMaterialProfile::Profile() const {  return ((express::Base)(get_attribute_value(3))).as<::Ifc4::IfcProfileDef>(); }
 void Ifc4::IfcMaterialProfile::setProfile(const ::Ifc4::IfcProfileDef& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
-std::optional< int > Ifc4::IfcMaterialProfile::Priority() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int v = get_attribute_value(4); return v; }
-void Ifc4::IfcMaterialProfile::setPriority(const std::optional< int >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
+std::optional< int64_t > Ifc4::IfcMaterialProfile::Priority() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(4); return v; }
+void Ifc4::IfcMaterialProfile::setPriority(const std::optional< int64_t >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 std::optional< std::string > Ifc4::IfcMaterialProfile::Category() const { if(get_attribute_value(5).isNull()) { return std::nullopt; } std::string v = get_attribute_value(5); return v; }
 void Ifc4::IfcMaterialProfile::setCategory(const std::optional< std::string >& v) { if (v) {set_attribute_value(5, *v);} else {unset_attribute_value(5);} }
 
 std::vector<::Ifc4::IfcMaterialProfileSet> Ifc4::IfcMaterialProfile::ToMaterialProfileSet() const { return cast_vector<IfcMaterialProfileSet>(file()->get_inverse(data()->id(), IFC4_types[570], 2)); }
 
 const ifcopenshell::entity& Ifc4::IfcMaterialProfile::Class() { return *((ifcopenshell::entity*)IFC4_types[569]); }
-Ifc4::IfcMaterialProfile Ifc4::IfcMaterialProfile::initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc4::IfcMaterial v3_Material, ::Ifc4::IfcProfileDef v4_Profile, std::optional< int > v5_Priority, std::optional< std::string > v6_Category) {  if (v1_Name) {set_attribute_value(0, (*v1_Name)); } if (v2_Description) {set_attribute_value(1, (*v2_Description)); }set_attribute_value(2, (v3_Material));set_attribute_value(3, (v4_Profile)); if (v5_Priority) {set_attribute_value(4, (*v5_Priority)); } if (v6_Category) {set_attribute_value(5, (*v6_Category)); }; return *this; }
+Ifc4::IfcMaterialProfile Ifc4::IfcMaterialProfile::initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc4::IfcMaterial v3_Material, ::Ifc4::IfcProfileDef v4_Profile, std::optional< int64_t > v5_Priority, std::optional< std::string > v6_Category) {  if (v1_Name) {set_attribute_value(0, (*v1_Name)); } if (v2_Description) {set_attribute_value(1, (*v2_Description)); }set_attribute_value(2, (v3_Material));set_attribute_value(3, (v4_Profile)); if (v5_Priority) {set_attribute_value(4, (*v5_Priority)); } if (v6_Category) {set_attribute_value(5, (*v6_Category)); }; return *this; }
 
 // Function implementations for IfcMaterialProfileSet
 std::optional< std::string > Ifc4::IfcMaterialProfileSet::Name() const { if(get_attribute_value(0).isNull()) { return std::nullopt; } std::string v = get_attribute_value(0); return v; }
@@ -10405,24 +10405,24 @@ Ifc4::IfcMaterialProfileSet Ifc4::IfcMaterialProfileSet::initialize(std::optiona
 // Function implementations for IfcMaterialProfileSetUsage
 ::Ifc4::IfcMaterialProfileSet Ifc4::IfcMaterialProfileSetUsage::ForProfileSet() const {  return ((express::Base)(get_attribute_value(0))).as<::Ifc4::IfcMaterialProfileSet>(); }
 void Ifc4::IfcMaterialProfileSetUsage::setForProfileSet(const ::Ifc4::IfcMaterialProfileSet& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
-std::optional< int > Ifc4::IfcMaterialProfileSetUsage::CardinalPoint() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } int v = get_attribute_value(1); return v; }
-void Ifc4::IfcMaterialProfileSetUsage::setCardinalPoint(const std::optional< int >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
+std::optional< int64_t > Ifc4::IfcMaterialProfileSetUsage::CardinalPoint() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(1); return v; }
+void Ifc4::IfcMaterialProfileSetUsage::setCardinalPoint(const std::optional< int64_t >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 std::optional< double > Ifc4::IfcMaterialProfileSetUsage::ReferenceExtent() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } double v = get_attribute_value(2); return v; }
 void Ifc4::IfcMaterialProfileSetUsage::setReferenceExtent(const std::optional< double >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
 
 
 const ifcopenshell::entity& Ifc4::IfcMaterialProfileSetUsage::Class() { return *((ifcopenshell::entity*)IFC4_types[571]); }
-Ifc4::IfcMaterialProfileSetUsage Ifc4::IfcMaterialProfileSetUsage::initialize(::Ifc4::IfcMaterialProfileSet v1_ForProfileSet, std::optional< int > v2_CardinalPoint, std::optional< double > v3_ReferenceExtent) { set_attribute_value(0, (v1_ForProfileSet)); if (v2_CardinalPoint) {set_attribute_value(1, (*v2_CardinalPoint)); } if (v3_ReferenceExtent) {set_attribute_value(2, (*v3_ReferenceExtent)); }; return *this; }
+Ifc4::IfcMaterialProfileSetUsage Ifc4::IfcMaterialProfileSetUsage::initialize(::Ifc4::IfcMaterialProfileSet v1_ForProfileSet, std::optional< int64_t > v2_CardinalPoint, std::optional< double > v3_ReferenceExtent) { set_attribute_value(0, (v1_ForProfileSet)); if (v2_CardinalPoint) {set_attribute_value(1, (*v2_CardinalPoint)); } if (v3_ReferenceExtent) {set_attribute_value(2, (*v3_ReferenceExtent)); }; return *this; }
 
 // Function implementations for IfcMaterialProfileSetUsageTapering
 ::Ifc4::IfcMaterialProfileSet Ifc4::IfcMaterialProfileSetUsageTapering::ForProfileEndSet() const {  return ((express::Base)(get_attribute_value(3))).as<::Ifc4::IfcMaterialProfileSet>(); }
 void Ifc4::IfcMaterialProfileSetUsageTapering::setForProfileEndSet(const ::Ifc4::IfcMaterialProfileSet& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
-std::optional< int > Ifc4::IfcMaterialProfileSetUsageTapering::CardinalEndPoint() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int v = get_attribute_value(4); return v; }
-void Ifc4::IfcMaterialProfileSetUsageTapering::setCardinalEndPoint(const std::optional< int >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
+std::optional< int64_t > Ifc4::IfcMaterialProfileSetUsageTapering::CardinalEndPoint() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(4); return v; }
+void Ifc4::IfcMaterialProfileSetUsageTapering::setCardinalEndPoint(const std::optional< int64_t >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 
 
 const ifcopenshell::entity& Ifc4::IfcMaterialProfileSetUsageTapering::Class() { return *((ifcopenshell::entity*)IFC4_types[572]); }
-Ifc4::IfcMaterialProfileSetUsageTapering Ifc4::IfcMaterialProfileSetUsageTapering::initialize(::Ifc4::IfcMaterialProfileSet v1_ForProfileSet, std::optional< int > v2_CardinalPoint, std::optional< double > v3_ReferenceExtent, ::Ifc4::IfcMaterialProfileSet v4_ForProfileEndSet, std::optional< int > v5_CardinalEndPoint) { set_attribute_value(0, (v1_ForProfileSet)); if (v2_CardinalPoint) {set_attribute_value(1, (*v2_CardinalPoint)); } if (v3_ReferenceExtent) {set_attribute_value(2, (*v3_ReferenceExtent)); }set_attribute_value(3, (v4_ForProfileEndSet)); if (v5_CardinalEndPoint) {set_attribute_value(4, (*v5_CardinalEndPoint)); }; return *this; }
+Ifc4::IfcMaterialProfileSetUsageTapering Ifc4::IfcMaterialProfileSetUsageTapering::initialize(::Ifc4::IfcMaterialProfileSet v1_ForProfileSet, std::optional< int64_t > v2_CardinalPoint, std::optional< double > v3_ReferenceExtent, ::Ifc4::IfcMaterialProfileSet v4_ForProfileEndSet, std::optional< int64_t > v5_CardinalEndPoint) { set_attribute_value(0, (v1_ForProfileSet)); if (v2_CardinalPoint) {set_attribute_value(1, (*v2_CardinalPoint)); } if (v3_ReferenceExtent) {set_attribute_value(2, (*v3_ReferenceExtent)); }set_attribute_value(3, (v4_ForProfileEndSet)); if (v5_CardinalEndPoint) {set_attribute_value(4, (*v5_CardinalEndPoint)); }; return *this; }
 
 // Function implementations for IfcMaterialProfileWithOffsets
 std::vector< double > /*[1:2]*/ Ifc4::IfcMaterialProfileWithOffsets::OffsetValues() const {  std::vector< double > /*[1:2]*/ v = get_attribute_value(6); return v; }
@@ -10430,7 +10430,7 @@ void Ifc4::IfcMaterialProfileWithOffsets::setOffsetValues(const std::vector< dou
 
 
 const ifcopenshell::entity& Ifc4::IfcMaterialProfileWithOffsets::Class() { return *((ifcopenshell::entity*)IFC4_types[573]); }
-Ifc4::IfcMaterialProfileWithOffsets Ifc4::IfcMaterialProfileWithOffsets::initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc4::IfcMaterial v3_Material, ::Ifc4::IfcProfileDef v4_Profile, std::optional< int > v5_Priority, std::optional< std::string > v6_Category, std::vector< double > /*[1:2]*/ v7_OffsetValues) {  if (v1_Name) {set_attribute_value(0, (*v1_Name)); } if (v2_Description) {set_attribute_value(1, (*v2_Description)); }set_attribute_value(2, (v3_Material));set_attribute_value(3, (v4_Profile)); if (v5_Priority) {set_attribute_value(4, (*v5_Priority)); } if (v6_Category) {set_attribute_value(5, (*v6_Category)); }set_attribute_value(6, (v7_OffsetValues));; return *this; }
+Ifc4::IfcMaterialProfileWithOffsets Ifc4::IfcMaterialProfileWithOffsets::initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc4::IfcMaterial v3_Material, ::Ifc4::IfcProfileDef v4_Profile, std::optional< int64_t > v5_Priority, std::optional< std::string > v6_Category, std::vector< double > /*[1:2]*/ v7_OffsetValues) {  if (v1_Name) {set_attribute_value(0, (*v1_Name)); } if (v2_Description) {set_attribute_value(1, (*v2_Description)); }set_attribute_value(2, (v3_Material));set_attribute_value(3, (v4_Profile)); if (v5_Priority) {set_attribute_value(4, (*v5_Priority)); } if (v6_Category) {set_attribute_value(5, (*v6_Category)); }set_attribute_value(6, (v7_OffsetValues));; return *this; }
 
 // Function implementations for IfcMaterialProperties
 ::Ifc4::IfcMaterialDefinition Ifc4::IfcMaterialProperties::Material() const {  return ((express::Base)(get_attribute_value(3))).as<::Ifc4::IfcMaterialDefinition>(); }
@@ -10757,18 +10757,18 @@ std::optional< ::Ifc4::IfcStateEnum::Value > Ifc4::IfcOwnerHistory::State() cons
 void Ifc4::IfcOwnerHistory::setState(const std::optional< ::Ifc4::IfcStateEnum::Value >& v) { if (v) {set_attribute_value(2, enumeration_reference(&::Ifc4::IfcStateEnum::Class(), (size_t) *v));} else {unset_attribute_value(2);} }
 std::optional< ::Ifc4::IfcChangeActionEnum::Value > Ifc4::IfcOwnerHistory::ChangeAction() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } return ::Ifc4::IfcChangeActionEnum::FromString(get_attribute_value(3)); }
 void Ifc4::IfcOwnerHistory::setChangeAction(const std::optional< ::Ifc4::IfcChangeActionEnum::Value >& v) { if (v) {set_attribute_value(3, enumeration_reference(&::Ifc4::IfcChangeActionEnum::Class(), (size_t) *v));} else {unset_attribute_value(3);} }
-std::optional< int > Ifc4::IfcOwnerHistory::LastModifiedDate() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int v = get_attribute_value(4); return v; }
-void Ifc4::IfcOwnerHistory::setLastModifiedDate(const std::optional< int >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
+std::optional< int64_t > Ifc4::IfcOwnerHistory::LastModifiedDate() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(4); return v; }
+void Ifc4::IfcOwnerHistory::setLastModifiedDate(const std::optional< int64_t >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 ::Ifc4::IfcPersonAndOrganization Ifc4::IfcOwnerHistory::LastModifyingUser() const { if(get_attribute_value(5).isNull()) { return ::Ifc4::IfcPersonAndOrganization{}; } return ((express::Base)(get_attribute_value(5))).as<::Ifc4::IfcPersonAndOrganization>(); }
 void Ifc4::IfcOwnerHistory::setLastModifyingUser(const ::Ifc4::IfcPersonAndOrganization& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
 ::Ifc4::IfcApplication Ifc4::IfcOwnerHistory::LastModifyingApplication() const { if(get_attribute_value(6).isNull()) { return ::Ifc4::IfcApplication{}; } return ((express::Base)(get_attribute_value(6))).as<::Ifc4::IfcApplication>(); }
 void Ifc4::IfcOwnerHistory::setLastModifyingApplication(const ::Ifc4::IfcApplication& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
-int Ifc4::IfcOwnerHistory::CreationDate() const {  int v = get_attribute_value(7); return v; }
-void Ifc4::IfcOwnerHistory::setCreationDate(const int& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
+int64_t Ifc4::IfcOwnerHistory::CreationDate() const {  int64_t v = get_attribute_value(7); return v; }
+void Ifc4::IfcOwnerHistory::setCreationDate(const int64_t& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
 
 
 const ifcopenshell::entity& Ifc4::IfcOwnerHistory::Class() { return *((ifcopenshell::entity*)IFC4_types[636]); }
-Ifc4::IfcOwnerHistory Ifc4::IfcOwnerHistory::initialize(::Ifc4::IfcPersonAndOrganization v1_OwningUser, ::Ifc4::IfcApplication v2_OwningApplication, std::optional< ::Ifc4::IfcStateEnum::Value > v3_State, std::optional< ::Ifc4::IfcChangeActionEnum::Value > v4_ChangeAction, std::optional< int > v5_LastModifiedDate, ::Ifc4::IfcPersonAndOrganization v6_LastModifyingUser, ::Ifc4::IfcApplication v7_LastModifyingApplication, int v8_CreationDate) { set_attribute_value(0, (v1_OwningUser));set_attribute_value(1, (v2_OwningApplication)); if (v3_State) {set_attribute_value(2, (enumeration_reference(&::Ifc4::IfcStateEnum::Class(),(size_t)*v3_State))); } if (v4_ChangeAction) {set_attribute_value(3, (enumeration_reference(&::Ifc4::IfcChangeActionEnum::Class(),(size_t)*v4_ChangeAction))); } if (v5_LastModifiedDate) {set_attribute_value(4, (*v5_LastModifiedDate)); }set_attribute_value(5, (v6_LastModifyingUser));set_attribute_value(6, (v7_LastModifyingApplication));set_attribute_value(7, (v8_CreationDate));; return *this; }
+Ifc4::IfcOwnerHistory Ifc4::IfcOwnerHistory::initialize(::Ifc4::IfcPersonAndOrganization v1_OwningUser, ::Ifc4::IfcApplication v2_OwningApplication, std::optional< ::Ifc4::IfcStateEnum::Value > v3_State, std::optional< ::Ifc4::IfcChangeActionEnum::Value > v4_ChangeAction, std::optional< int64_t > v5_LastModifiedDate, ::Ifc4::IfcPersonAndOrganization v6_LastModifyingUser, ::Ifc4::IfcApplication v7_LastModifyingApplication, int64_t v8_CreationDate) { set_attribute_value(0, (v1_OwningUser));set_attribute_value(1, (v2_OwningApplication)); if (v3_State) {set_attribute_value(2, (enumeration_reference(&::Ifc4::IfcStateEnum::Class(),(size_t)*v3_State))); } if (v4_ChangeAction) {set_attribute_value(3, (enumeration_reference(&::Ifc4::IfcChangeActionEnum::Class(),(size_t)*v4_ChangeAction))); } if (v5_LastModifiedDate) {set_attribute_value(4, (*v5_LastModifiedDate)); }set_attribute_value(5, (v6_LastModifyingUser));set_attribute_value(6, (v7_LastModifyingApplication));set_attribute_value(7, (v8_CreationDate));; return *this; }
 
 // Function implementations for IfcParameterizedProfileDef
 ::Ifc4::IfcAxis2Placement2D Ifc4::IfcParameterizedProfileDef::Position() const { if(get_attribute_value(2).isNull()) { return ::Ifc4::IfcAxis2Placement2D{}; } return ((express::Base)(get_attribute_value(2))).as<::Ifc4::IfcAxis2Placement2D>(); }
@@ -10954,18 +10954,18 @@ const ifcopenshell::entity& Ifc4::IfcPipeSegmentType::Class() { return *((ifcope
 Ifc4::IfcPipeSegmentType Ifc4::IfcPipeSegmentType::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc4::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc4::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc4::IfcPipeSegmentTypeEnum::Value v10_PredefinedType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ApplicableOccurrence) {set_attribute_value(4, (*v5_ApplicableOccurrence)); } if (v6_HasPropertySets) {set_attribute_value(5, cast_vector<express::Base>(*v6_HasPropertySets)); } if (v7_RepresentationMaps) {set_attribute_value(6, cast_vector<express::Base>(*v7_RepresentationMaps)); } if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); } if (v9_ElementType) {set_attribute_value(8, (*v9_ElementType)); }set_attribute_value(9, (enumeration_reference(&::Ifc4::IfcPipeSegmentTypeEnum::Class(),(size_t)v10_PredefinedType)));; return *this; }
 
 // Function implementations for IfcPixelTexture
-int Ifc4::IfcPixelTexture::Width() const {  int v = get_attribute_value(5); return v; }
-void Ifc4::IfcPixelTexture::setWidth(const int& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
-int Ifc4::IfcPixelTexture::Height() const {  int v = get_attribute_value(6); return v; }
-void Ifc4::IfcPixelTexture::setHeight(const int& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
-int Ifc4::IfcPixelTexture::ColourComponents() const {  int v = get_attribute_value(7); return v; }
-void Ifc4::IfcPixelTexture::setColourComponents(const int& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
+int64_t Ifc4::IfcPixelTexture::Width() const {  int64_t v = get_attribute_value(5); return v; }
+void Ifc4::IfcPixelTexture::setWidth(const int64_t& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
+int64_t Ifc4::IfcPixelTexture::Height() const {  int64_t v = get_attribute_value(6); return v; }
+void Ifc4::IfcPixelTexture::setHeight(const int64_t& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
+int64_t Ifc4::IfcPixelTexture::ColourComponents() const {  int64_t v = get_attribute_value(7); return v; }
+void Ifc4::IfcPixelTexture::setColourComponents(const int64_t& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
 std::vector< boost::dynamic_bitset<> > /*[1:?]*/ Ifc4::IfcPixelTexture::Pixel() const {  std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v = get_attribute_value(8); return v; }
 void Ifc4::IfcPixelTexture::setPixel(const std::vector< boost::dynamic_bitset<> > /*[1:?]*/& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
 
 
 const ifcopenshell::entity& Ifc4::IfcPixelTexture::Class() { return *((ifcopenshell::entity*)IFC4_types[664]); }
-Ifc4::IfcPixelTexture Ifc4::IfcPixelTexture::initialize(bool v1_RepeatS, bool v2_RepeatT, std::optional< std::string > v3_Mode, ::Ifc4::IfcCartesianTransformationOperator2D v4_TextureTransform, std::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, int v6_Width, int v7_Height, int v8_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v9_Pixel) { set_attribute_value(0, (v1_RepeatS));set_attribute_value(1, (v2_RepeatT)); if (v3_Mode) {set_attribute_value(2, (*v3_Mode)); }set_attribute_value(3, (v4_TextureTransform)); if (v5_Parameter) {set_attribute_value(4, (*v5_Parameter)); }set_attribute_value(5, (v6_Width));set_attribute_value(6, (v7_Height));set_attribute_value(7, (v8_ColourComponents));set_attribute_value(8, (v9_Pixel));; return *this; }
+Ifc4::IfcPixelTexture Ifc4::IfcPixelTexture::initialize(bool v1_RepeatS, bool v2_RepeatT, std::optional< std::string > v3_Mode, ::Ifc4::IfcCartesianTransformationOperator2D v4_TextureTransform, std::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, int64_t v6_Width, int64_t v7_Height, int64_t v8_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v9_Pixel) { set_attribute_value(0, (v1_RepeatS));set_attribute_value(1, (v2_RepeatT)); if (v3_Mode) {set_attribute_value(2, (*v3_Mode)); }set_attribute_value(3, (v4_TextureTransform)); if (v5_Parameter) {set_attribute_value(4, (*v5_Parameter)); }set_attribute_value(5, (v6_Width));set_attribute_value(6, (v7_Height));set_attribute_value(7, (v8_ColourComponents));set_attribute_value(8, (v9_Pixel));; return *this; }
 
 // Function implementations for IfcPlacement
 ::Ifc4::IfcCartesianPoint Ifc4::IfcPlacement::Location() const {  return ((express::Base)(get_attribute_value(0))).as<::Ifc4::IfcCartesianPoint>(); }
@@ -11072,12 +11072,12 @@ std::optional< bool > Ifc4::IfcPolygonalFaceSet::Closed() const { if(get_attribu
 void Ifc4::IfcPolygonalFaceSet::setClosed(const std::optional< bool >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 std::vector< ::Ifc4::IfcIndexedPolygonalFace > Ifc4::IfcPolygonalFaceSet::Faces() const {  std::vector<express::Base> es = get_attribute_value(2); return cast_vector<::Ifc4::IfcIndexedPolygonalFace>(es); }
 void Ifc4::IfcPolygonalFaceSet::setFaces(const std::vector< ::Ifc4::IfcIndexedPolygonalFace >& v) { set_attribute_value(2, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(2); }
-std::optional< std::vector< int > /*[1:?]*/ > Ifc4::IfcPolygonalFaceSet::PnIndex() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::vector< int > /*[1:?]*/ v = get_attribute_value(3); return v; }
-void Ifc4::IfcPolygonalFaceSet::setPnIndex(const std::optional< std::vector< int > /*[1:?]*/ >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
+std::optional< std::vector< int64_t > /*[1:?]*/ > Ifc4::IfcPolygonalFaceSet::PnIndex() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::vector< int64_t > /*[1:?]*/ v = get_attribute_value(3); return v; }
+void Ifc4::IfcPolygonalFaceSet::setPnIndex(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
 
 
 const ifcopenshell::entity& Ifc4::IfcPolygonalFaceSet::Class() { return *((ifcopenshell::entity*)IFC4_types[680]); }
-Ifc4::IfcPolygonalFaceSet Ifc4::IfcPolygonalFaceSet::initialize(::Ifc4::IfcCartesianPointList3D v1_Coordinates, std::optional< bool > v2_Closed, std::vector< ::Ifc4::IfcIndexedPolygonalFace > v3_Faces, std::optional< std::vector< int > /*[1:?]*/ > v4_PnIndex) { set_attribute_value(0, (v1_Coordinates)); if (v2_Closed) {set_attribute_value(1, (*v2_Closed)); }set_attribute_value(2, cast_vector<express::Base>(v3_Faces)); if (v4_PnIndex) {set_attribute_value(3, (*v4_PnIndex)); }; return *this; }
+Ifc4::IfcPolygonalFaceSet Ifc4::IfcPolygonalFaceSet::initialize(::Ifc4::IfcCartesianPointList3D v1_Coordinates, std::optional< bool > v2_Closed, std::vector< ::Ifc4::IfcIndexedPolygonalFace > v3_Faces, std::optional< std::vector< int64_t > /*[1:?]*/ > v4_PnIndex) { set_attribute_value(0, (v1_Coordinates)); if (v2_Closed) {set_attribute_value(1, (*v2_Closed)); }set_attribute_value(2, cast_vector<express::Base>(v3_Faces)); if (v4_PnIndex) {set_attribute_value(3, (*v4_PnIndex)); }; return *this; }
 
 // Function implementations for IfcPolyline
 std::vector< ::Ifc4::IfcCartesianPoint > Ifc4::IfcPolyline::Points() const {  std::vector<express::Base> es = get_attribute_value(0); return cast_vector<::Ifc4::IfcCartesianPoint>(es); }
@@ -11677,7 +11677,7 @@ void Ifc4::IfcRationalBSplineCurveWithKnots::setWeightsData(const std::vector< d
 
 
 const ifcopenshell::entity& Ifc4::IfcRationalBSplineCurveWithKnots::Class() { return *((ifcopenshell::entity*)IFC4_types[773]); }
-Ifc4::IfcRationalBSplineCurveWithKnots Ifc4::IfcRationalBSplineCurveWithKnots::initialize(int v1_Degree, std::vector< ::Ifc4::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, ::Ifc4::IfcKnotType::Value v8_KnotSpec, std::vector< double > /*[2:?]*/ v9_WeightsData) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc4::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));set_attribute_value(5, (v6_KnotMultiplicities));set_attribute_value(6, (v7_Knots));set_attribute_value(7, (enumeration_reference(&::Ifc4::IfcKnotType::Class(),(size_t)v8_KnotSpec)));set_attribute_value(8, (v9_WeightsData));; return *this; }
+Ifc4::IfcRationalBSplineCurveWithKnots Ifc4::IfcRationalBSplineCurveWithKnots::initialize(int64_t v1_Degree, std::vector< ::Ifc4::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int64_t > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, ::Ifc4::IfcKnotType::Value v8_KnotSpec, std::vector< double > /*[2:?]*/ v9_WeightsData) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc4::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));set_attribute_value(5, (v6_KnotMultiplicities));set_attribute_value(6, (v7_Knots));set_attribute_value(7, (enumeration_reference(&::Ifc4::IfcKnotType::Class(),(size_t)v8_KnotSpec)));set_attribute_value(8, (v9_WeightsData));; return *this; }
 
 // Function implementations for IfcRationalBSplineSurfaceWithKnots
 std::vector< std::vector< double > > Ifc4::IfcRationalBSplineSurfaceWithKnots::WeightsData() const {  std::vector< std::vector< double > > v = get_attribute_value(12); return v; }
@@ -11685,7 +11685,7 @@ void Ifc4::IfcRationalBSplineSurfaceWithKnots::setWeightsData(const std::vector<
 
 
 const ifcopenshell::entity& Ifc4::IfcRationalBSplineSurfaceWithKnots::Class() { return *((ifcopenshell::entity*)IFC4_types[774]); }
-Ifc4::IfcRationalBSplineSurfaceWithKnots Ifc4::IfcRationalBSplineSurfaceWithKnots::initialize(int v1_UDegree, int v2_VDegree, std::vector< std::vector< ::Ifc4::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, ::Ifc4::IfcKnotType::Value v12_KnotSpec, std::vector< std::vector< double > > v13_WeightsData) { set_attribute_value(0, (v1_UDegree));set_attribute_value(1, (v2_VDegree));set_attribute_value(2, cast_vector<express::Base>(v3_ControlPointsList));set_attribute_value(3, (enumeration_reference(&::Ifc4::IfcBSplineSurfaceForm::Class(),(size_t)v4_SurfaceForm)));set_attribute_value(4, (v5_UClosed));set_attribute_value(5, (v6_VClosed));set_attribute_value(6, (v7_SelfIntersect));set_attribute_value(7, (v8_UMultiplicities));set_attribute_value(8, (v9_VMultiplicities));set_attribute_value(9, (v10_UKnots));set_attribute_value(10, (v11_VKnots));set_attribute_value(11, (enumeration_reference(&::Ifc4::IfcKnotType::Class(),(size_t)v12_KnotSpec)));set_attribute_value(12, (v13_WeightsData));; return *this; }
+Ifc4::IfcRationalBSplineSurfaceWithKnots Ifc4::IfcRationalBSplineSurfaceWithKnots::initialize(int64_t v1_UDegree, int64_t v2_VDegree, std::vector< std::vector< ::Ifc4::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int64_t > /*[2:?]*/ v8_UMultiplicities, std::vector< int64_t > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, ::Ifc4::IfcKnotType::Value v12_KnotSpec, std::vector< std::vector< double > > v13_WeightsData) { set_attribute_value(0, (v1_UDegree));set_attribute_value(1, (v2_VDegree));set_attribute_value(2, cast_vector<express::Base>(v3_ControlPointsList));set_attribute_value(3, (enumeration_reference(&::Ifc4::IfcBSplineSurfaceForm::Class(),(size_t)v4_SurfaceForm)));set_attribute_value(4, (v5_UClosed));set_attribute_value(5, (v6_VClosed));set_attribute_value(6, (v7_SelfIntersect));set_attribute_value(7, (v8_UMultiplicities));set_attribute_value(8, (v9_VMultiplicities));set_attribute_value(9, (v10_UKnots));set_attribute_value(10, (v11_VKnots));set_attribute_value(11, (enumeration_reference(&::Ifc4::IfcKnotType::Class(),(size_t)v12_KnotSpec)));set_attribute_value(12, (v13_WeightsData));; return *this; }
 
 // Function implementations for IfcRectangleHollowProfileDef
 double Ifc4::IfcRectangleHollowProfileDef::WallThickness() const {  double v = get_attribute_value(5); return v; }
@@ -11744,24 +11744,24 @@ Ifc4::IfcRectangularTrimmedSurface Ifc4::IfcRectangularTrimmedSurface::initializ
 // Function implementations for IfcRecurrencePattern
 ::Ifc4::IfcRecurrenceTypeEnum::Value Ifc4::IfcRecurrencePattern::RecurrenceType() const {  return ::Ifc4::IfcRecurrenceTypeEnum::FromString(get_attribute_value(0)); }
 void Ifc4::IfcRecurrencePattern::setRecurrenceType(const ::Ifc4::IfcRecurrenceTypeEnum::Value& v) { set_attribute_value(0, enumeration_reference(&::Ifc4::IfcRecurrenceTypeEnum::Class(), (size_t) v));if constexpr (false)unset_attribute_value(0); }
-std::optional< std::vector< int > /*[1:?]*/ > Ifc4::IfcRecurrencePattern::DayComponent() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } std::vector< int > /*[1:?]*/ v = get_attribute_value(1); return v; }
-void Ifc4::IfcRecurrencePattern::setDayComponent(const std::optional< std::vector< int > /*[1:?]*/ >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
-std::optional< std::vector< int > /*[1:?]*/ > Ifc4::IfcRecurrencePattern::WeekdayComponent() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } std::vector< int > /*[1:?]*/ v = get_attribute_value(2); return v; }
-void Ifc4::IfcRecurrencePattern::setWeekdayComponent(const std::optional< std::vector< int > /*[1:?]*/ >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
-std::optional< std::vector< int > /*[1:?]*/ > Ifc4::IfcRecurrencePattern::MonthComponent() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::vector< int > /*[1:?]*/ v = get_attribute_value(3); return v; }
-void Ifc4::IfcRecurrencePattern::setMonthComponent(const std::optional< std::vector< int > /*[1:?]*/ >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
-std::optional< int > Ifc4::IfcRecurrencePattern::Position() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int v = get_attribute_value(4); return v; }
-void Ifc4::IfcRecurrencePattern::setPosition(const std::optional< int >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
-std::optional< int > Ifc4::IfcRecurrencePattern::Interval() const { if(get_attribute_value(5).isNull()) { return std::nullopt; } int v = get_attribute_value(5); return v; }
-void Ifc4::IfcRecurrencePattern::setInterval(const std::optional< int >& v) { if (v) {set_attribute_value(5, *v);} else {unset_attribute_value(5);} }
-std::optional< int > Ifc4::IfcRecurrencePattern::Occurrences() const { if(get_attribute_value(6).isNull()) { return std::nullopt; } int v = get_attribute_value(6); return v; }
-void Ifc4::IfcRecurrencePattern::setOccurrences(const std::optional< int >& v) { if (v) {set_attribute_value(6, *v);} else {unset_attribute_value(6);} }
+std::optional< std::vector< int64_t > /*[1:?]*/ > Ifc4::IfcRecurrencePattern::DayComponent() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } std::vector< int64_t > /*[1:?]*/ v = get_attribute_value(1); return v; }
+void Ifc4::IfcRecurrencePattern::setDayComponent(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
+std::optional< std::vector< int64_t > /*[1:?]*/ > Ifc4::IfcRecurrencePattern::WeekdayComponent() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } std::vector< int64_t > /*[1:?]*/ v = get_attribute_value(2); return v; }
+void Ifc4::IfcRecurrencePattern::setWeekdayComponent(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
+std::optional< std::vector< int64_t > /*[1:?]*/ > Ifc4::IfcRecurrencePattern::MonthComponent() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::vector< int64_t > /*[1:?]*/ v = get_attribute_value(3); return v; }
+void Ifc4::IfcRecurrencePattern::setMonthComponent(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
+std::optional< int64_t > Ifc4::IfcRecurrencePattern::Position() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(4); return v; }
+void Ifc4::IfcRecurrencePattern::setPosition(const std::optional< int64_t >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
+std::optional< int64_t > Ifc4::IfcRecurrencePattern::Interval() const { if(get_attribute_value(5).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(5); return v; }
+void Ifc4::IfcRecurrencePattern::setInterval(const std::optional< int64_t >& v) { if (v) {set_attribute_value(5, *v);} else {unset_attribute_value(5);} }
+std::optional< int64_t > Ifc4::IfcRecurrencePattern::Occurrences() const { if(get_attribute_value(6).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(6); return v; }
+void Ifc4::IfcRecurrencePattern::setOccurrences(const std::optional< int64_t >& v) { if (v) {set_attribute_value(6, *v);} else {unset_attribute_value(6);} }
 std::optional< std::vector< ::Ifc4::IfcTimePeriod > > Ifc4::IfcRecurrencePattern::TimePeriods() const { if(get_attribute_value(7).isNull()) { return std::nullopt; } std::vector<express::Base> es = get_attribute_value(7); return cast_vector<::Ifc4::IfcTimePeriod>(es); }
 void Ifc4::IfcRecurrencePattern::setTimePeriods(const std::optional< std::vector< ::Ifc4::IfcTimePeriod > >& v) { if (v) {set_attribute_value(7, cast_vector<express::Base>(*v));} else {unset_attribute_value(7);} }
 
 
 const ifcopenshell::entity& Ifc4::IfcRecurrencePattern::Class() { return *((ifcopenshell::entity*)IFC4_types[780]); }
-Ifc4::IfcRecurrencePattern Ifc4::IfcRecurrencePattern::initialize(::Ifc4::IfcRecurrenceTypeEnum::Value v1_RecurrenceType, std::optional< std::vector< int > /*[1:?]*/ > v2_DayComponent, std::optional< std::vector< int > /*[1:?]*/ > v3_WeekdayComponent, std::optional< std::vector< int > /*[1:?]*/ > v4_MonthComponent, std::optional< int > v5_Position, std::optional< int > v6_Interval, std::optional< int > v7_Occurrences, std::optional< std::vector< ::Ifc4::IfcTimePeriod > > v8_TimePeriods) { set_attribute_value(0, (enumeration_reference(&::Ifc4::IfcRecurrenceTypeEnum::Class(),(size_t)v1_RecurrenceType))); if (v2_DayComponent) {set_attribute_value(1, (*v2_DayComponent)); } if (v3_WeekdayComponent) {set_attribute_value(2, (*v3_WeekdayComponent)); } if (v4_MonthComponent) {set_attribute_value(3, (*v4_MonthComponent)); } if (v5_Position) {set_attribute_value(4, (*v5_Position)); } if (v6_Interval) {set_attribute_value(5, (*v6_Interval)); } if (v7_Occurrences) {set_attribute_value(6, (*v7_Occurrences)); } if (v8_TimePeriods) {set_attribute_value(7, cast_vector<express::Base>(*v8_TimePeriods)); }; return *this; }
+Ifc4::IfcRecurrencePattern Ifc4::IfcRecurrencePattern::initialize(::Ifc4::IfcRecurrenceTypeEnum::Value v1_RecurrenceType, std::optional< std::vector< int64_t > /*[1:?]*/ > v2_DayComponent, std::optional< std::vector< int64_t > /*[1:?]*/ > v3_WeekdayComponent, std::optional< std::vector< int64_t > /*[1:?]*/ > v4_MonthComponent, std::optional< int64_t > v5_Position, std::optional< int64_t > v6_Interval, std::optional< int64_t > v7_Occurrences, std::optional< std::vector< ::Ifc4::IfcTimePeriod > > v8_TimePeriods) { set_attribute_value(0, (enumeration_reference(&::Ifc4::IfcRecurrenceTypeEnum::Class(),(size_t)v1_RecurrenceType))); if (v2_DayComponent) {set_attribute_value(1, (*v2_DayComponent)); } if (v3_WeekdayComponent) {set_attribute_value(2, (*v3_WeekdayComponent)); } if (v4_MonthComponent) {set_attribute_value(3, (*v4_MonthComponent)); } if (v5_Position) {set_attribute_value(4, (*v5_Position)); } if (v6_Interval) {set_attribute_value(5, (*v6_Interval)); } if (v7_Occurrences) {set_attribute_value(6, (*v7_Occurrences)); } if (v8_TimePeriods) {set_attribute_value(7, cast_vector<express::Base>(*v8_TimePeriods)); }; return *this; }
 
 // Function implementations for IfcReference
 std::optional< std::string > Ifc4::IfcReference::TypeIdentifier() const { if(get_attribute_value(0).isNull()) { return std::nullopt; } std::string v = get_attribute_value(0); return v; }
@@ -11770,14 +11770,14 @@ std::optional< std::string > Ifc4::IfcReference::AttributeIdentifier() const { i
 void Ifc4::IfcReference::setAttributeIdentifier(const std::optional< std::string >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 std::optional< std::string > Ifc4::IfcReference::InstanceName() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } std::string v = get_attribute_value(2); return v; }
 void Ifc4::IfcReference::setInstanceName(const std::optional< std::string >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
-std::optional< std::vector< int > /*[1:?]*/ > Ifc4::IfcReference::ListPositions() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::vector< int > /*[1:?]*/ v = get_attribute_value(3); return v; }
-void Ifc4::IfcReference::setListPositions(const std::optional< std::vector< int > /*[1:?]*/ >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
+std::optional< std::vector< int64_t > /*[1:?]*/ > Ifc4::IfcReference::ListPositions() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::vector< int64_t > /*[1:?]*/ v = get_attribute_value(3); return v; }
+void Ifc4::IfcReference::setListPositions(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
 ::Ifc4::IfcReference Ifc4::IfcReference::InnerReference() const { if(get_attribute_value(4).isNull()) { return ::Ifc4::IfcReference{}; } return ((express::Base)(get_attribute_value(4))).as<::Ifc4::IfcReference>(); }
 void Ifc4::IfcReference::setInnerReference(const ::Ifc4::IfcReference& v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
 
 
 const ifcopenshell::entity& Ifc4::IfcReference::Class() { return *((ifcopenshell::entity*)IFC4_types[782]); }
-Ifc4::IfcReference Ifc4::IfcReference::initialize(std::optional< std::string > v1_TypeIdentifier, std::optional< std::string > v2_AttributeIdentifier, std::optional< std::string > v3_InstanceName, std::optional< std::vector< int > /*[1:?]*/ > v4_ListPositions, ::Ifc4::IfcReference v5_InnerReference) {  if (v1_TypeIdentifier) {set_attribute_value(0, (*v1_TypeIdentifier)); } if (v2_AttributeIdentifier) {set_attribute_value(1, (*v2_AttributeIdentifier)); } if (v3_InstanceName) {set_attribute_value(2, (*v3_InstanceName)); } if (v4_ListPositions) {set_attribute_value(3, (*v4_ListPositions)); }set_attribute_value(4, (v5_InnerReference));; return *this; }
+Ifc4::IfcReference Ifc4::IfcReference::initialize(std::optional< std::string > v1_TypeIdentifier, std::optional< std::string > v2_AttributeIdentifier, std::optional< std::string > v3_InstanceName, std::optional< std::vector< int64_t > /*[1:?]*/ > v4_ListPositions, ::Ifc4::IfcReference v5_InnerReference) {  if (v1_TypeIdentifier) {set_attribute_value(0, (*v1_TypeIdentifier)); } if (v2_AttributeIdentifier) {set_attribute_value(1, (*v2_AttributeIdentifier)); } if (v3_InstanceName) {set_attribute_value(2, (*v3_InstanceName)); } if (v4_ListPositions) {set_attribute_value(3, (*v4_ListPositions)); }set_attribute_value(4, (v5_InnerReference));; return *this; }
 
 // Function implementations for IfcRegularTimeSeries
 double Ifc4::IfcRegularTimeSeries::TimeStep() const {  double v = get_attribute_value(8); return v; }
@@ -12076,10 +12076,10 @@ const ifcopenshell::entity& Ifc4::IfcRelConnectsElements::Class() { return *((if
 Ifc4::IfcRelConnectsElements Ifc4::IfcRelConnectsElements::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc4::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc4::IfcElement v6_RelatingElement, ::Ifc4::IfcElement v7_RelatedElement) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); }set_attribute_value(4, (v5_ConnectionGeometry));set_attribute_value(5, (v6_RelatingElement));set_attribute_value(6, (v7_RelatedElement));; return *this; }
 
 // Function implementations for IfcRelConnectsPathElements
-std::vector< int > /*[0:?]*/ Ifc4::IfcRelConnectsPathElements::RelatingPriorities() const {  std::vector< int > /*[0:?]*/ v = get_attribute_value(7); return v; }
-void Ifc4::IfcRelConnectsPathElements::setRelatingPriorities(const std::vector< int > /*[0:?]*/& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
-std::vector< int > /*[0:?]*/ Ifc4::IfcRelConnectsPathElements::RelatedPriorities() const {  std::vector< int > /*[0:?]*/ v = get_attribute_value(8); return v; }
-void Ifc4::IfcRelConnectsPathElements::setRelatedPriorities(const std::vector< int > /*[0:?]*/& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
+std::vector< int64_t > /*[0:?]*/ Ifc4::IfcRelConnectsPathElements::RelatingPriorities() const {  std::vector< int64_t > /*[0:?]*/ v = get_attribute_value(7); return v; }
+void Ifc4::IfcRelConnectsPathElements::setRelatingPriorities(const std::vector< int64_t > /*[0:?]*/& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
+std::vector< int64_t > /*[0:?]*/ Ifc4::IfcRelConnectsPathElements::RelatedPriorities() const {  std::vector< int64_t > /*[0:?]*/ v = get_attribute_value(8); return v; }
+void Ifc4::IfcRelConnectsPathElements::setRelatedPriorities(const std::vector< int64_t > /*[0:?]*/& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
 ::Ifc4::IfcConnectionTypeEnum::Value Ifc4::IfcRelConnectsPathElements::RelatedConnectionType() const {  return ::Ifc4::IfcConnectionTypeEnum::FromString(get_attribute_value(9)); }
 void Ifc4::IfcRelConnectsPathElements::setRelatedConnectionType(const ::Ifc4::IfcConnectionTypeEnum::Value& v) { set_attribute_value(9, enumeration_reference(&::Ifc4::IfcConnectionTypeEnum::Class(), (size_t) v));if constexpr (false)unset_attribute_value(9); }
 ::Ifc4::IfcConnectionTypeEnum::Value Ifc4::IfcRelConnectsPathElements::RelatingConnectionType() const {  return ::Ifc4::IfcConnectionTypeEnum::FromString(get_attribute_value(10)); }
@@ -12087,7 +12087,7 @@ void Ifc4::IfcRelConnectsPathElements::setRelatingConnectionType(const ::Ifc4::I
 
 
 const ifcopenshell::entity& Ifc4::IfcRelConnectsPathElements::Class() { return *((ifcopenshell::entity*)IFC4_types[816]); }
-Ifc4::IfcRelConnectsPathElements Ifc4::IfcRelConnectsPathElements::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc4::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc4::IfcElement v6_RelatingElement, ::Ifc4::IfcElement v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, ::Ifc4::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc4::IfcConnectionTypeEnum::Value v11_RelatingConnectionType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); }set_attribute_value(4, (v5_ConnectionGeometry));set_attribute_value(5, (v6_RelatingElement));set_attribute_value(6, (v7_RelatedElement));set_attribute_value(7, (v8_RelatingPriorities));set_attribute_value(8, (v9_RelatedPriorities));set_attribute_value(9, (enumeration_reference(&::Ifc4::IfcConnectionTypeEnum::Class(),(size_t)v10_RelatedConnectionType)));set_attribute_value(10, (enumeration_reference(&::Ifc4::IfcConnectionTypeEnum::Class(),(size_t)v11_RelatingConnectionType)));; return *this; }
+Ifc4::IfcRelConnectsPathElements Ifc4::IfcRelConnectsPathElements::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc4::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc4::IfcElement v6_RelatingElement, ::Ifc4::IfcElement v7_RelatedElement, std::vector< int64_t > /*[0:?]*/ v8_RelatingPriorities, std::vector< int64_t > /*[0:?]*/ v9_RelatedPriorities, ::Ifc4::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc4::IfcConnectionTypeEnum::Value v11_RelatingConnectionType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); }set_attribute_value(4, (v5_ConnectionGeometry));set_attribute_value(5, (v6_RelatingElement));set_attribute_value(6, (v7_RelatedElement));set_attribute_value(7, (v8_RelatingPriorities));set_attribute_value(8, (v9_RelatedPriorities));set_attribute_value(9, (enumeration_reference(&::Ifc4::IfcConnectionTypeEnum::Class(),(size_t)v10_RelatedConnectionType)));set_attribute_value(10, (enumeration_reference(&::Ifc4::IfcConnectionTypeEnum::Class(),(size_t)v11_RelatingConnectionType)));; return *this; }
 
 // Function implementations for IfcRelConnectsPortToElement
 ::Ifc4::IfcPort Ifc4::IfcRelConnectsPortToElement::RelatingPort() const {  return ((express::Base)(get_attribute_value(4))).as<::Ifc4::IfcPort>(); }
@@ -12784,10 +12784,10 @@ const ifcopenshell::entity& Ifc4::IfcSimplePropertyTemplate::Class() { return *(
 Ifc4::IfcSimplePropertyTemplate Ifc4::IfcSimplePropertyTemplate::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< ::Ifc4::IfcSimplePropertyTemplateTypeEnum::Value > v5_TemplateType, std::optional< std::string > v6_PrimaryMeasureType, std::optional< std::string > v7_SecondaryMeasureType, ::Ifc4::IfcPropertyEnumeration v8_Enumerators, ::Ifc4::IfcUnit v9_PrimaryUnit, ::Ifc4::IfcUnit v10_SecondaryUnit, std::optional< std::string > v11_Expression, std::optional< ::Ifc4::IfcStateEnum::Value > v12_AccessState) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_TemplateType) {set_attribute_value(4, (enumeration_reference(&::Ifc4::IfcSimplePropertyTemplateTypeEnum::Class(),(size_t)*v5_TemplateType))); } if (v6_PrimaryMeasureType) {set_attribute_value(5, (*v6_PrimaryMeasureType)); } if (v7_SecondaryMeasureType) {set_attribute_value(6, (*v7_SecondaryMeasureType)); }set_attribute_value(7, (v8_Enumerators));set_attribute_value(8, (v9_PrimaryUnit));set_attribute_value(9, (v10_SecondaryUnit)); if (v11_Expression) {set_attribute_value(10, (*v11_Expression)); } if (v12_AccessState) {set_attribute_value(11, (enumeration_reference(&::Ifc4::IfcStateEnum::Class(),(size_t)*v12_AccessState))); }; return *this; }
 
 // Function implementations for IfcSite
-std::optional< std::vector< int > /*[3:4]*/ > Ifc4::IfcSite::RefLatitude() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } std::vector< int > /*[3:4]*/ v = get_attribute_value(9); return v; }
-void Ifc4::IfcSite::setRefLatitude(const std::optional< std::vector< int > /*[3:4]*/ >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
-std::optional< std::vector< int > /*[3:4]*/ > Ifc4::IfcSite::RefLongitude() const { if(get_attribute_value(10).isNull()) { return std::nullopt; } std::vector< int > /*[3:4]*/ v = get_attribute_value(10); return v; }
-void Ifc4::IfcSite::setRefLongitude(const std::optional< std::vector< int > /*[3:4]*/ >& v) { if (v) {set_attribute_value(10, *v);} else {unset_attribute_value(10);} }
+std::optional< std::vector< int64_t > /*[3:4]*/ > Ifc4::IfcSite::RefLatitude() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } std::vector< int64_t > /*[3:4]*/ v = get_attribute_value(9); return v; }
+void Ifc4::IfcSite::setRefLatitude(const std::optional< std::vector< int64_t > /*[3:4]*/ >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
+std::optional< std::vector< int64_t > /*[3:4]*/ > Ifc4::IfcSite::RefLongitude() const { if(get_attribute_value(10).isNull()) { return std::nullopt; } std::vector< int64_t > /*[3:4]*/ v = get_attribute_value(10); return v; }
+void Ifc4::IfcSite::setRefLongitude(const std::optional< std::vector< int64_t > /*[3:4]*/ >& v) { if (v) {set_attribute_value(10, *v);} else {unset_attribute_value(10);} }
 std::optional< double > Ifc4::IfcSite::RefElevation() const { if(get_attribute_value(11).isNull()) { return std::nullopt; } double v = get_attribute_value(11); return v; }
 void Ifc4::IfcSite::setRefElevation(const std::optional< double >& v) { if (v) {set_attribute_value(11, *v);} else {unset_attribute_value(11);} }
 std::optional< std::string > Ifc4::IfcSite::LandTitleNumber() const { if(get_attribute_value(12).isNull()) { return std::nullopt; } std::string v = get_attribute_value(12); return v; }
@@ -12797,7 +12797,7 @@ void Ifc4::IfcSite::setSiteAddress(const ::Ifc4::IfcPostalAddress& v) { set_attr
 
 
 const ifcopenshell::entity& Ifc4::IfcSite::Class() { return *((ifcopenshell::entity*)IFC4_types[901]); }
-Ifc4::IfcSite Ifc4::IfcSite::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, std::optional< ::Ifc4::IfcElementCompositionEnum::Value > v9_CompositionType, std::optional< std::vector< int > /*[3:4]*/ > v10_RefLatitude, std::optional< std::vector< int > /*[3:4]*/ > v11_RefLongitude, std::optional< double > v12_RefElevation, std::optional< std::string > v13_LandTitleNumber, ::Ifc4::IfcPostalAddress v14_SiteAddress) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_LongName) {set_attribute_value(7, (*v8_LongName)); } if (v9_CompositionType) {set_attribute_value(8, (enumeration_reference(&::Ifc4::IfcElementCompositionEnum::Class(),(size_t)*v9_CompositionType))); } if (v10_RefLatitude) {set_attribute_value(9, (*v10_RefLatitude)); } if (v11_RefLongitude) {set_attribute_value(10, (*v11_RefLongitude)); } if (v12_RefElevation) {set_attribute_value(11, (*v12_RefElevation)); } if (v13_LandTitleNumber) {set_attribute_value(12, (*v13_LandTitleNumber)); }set_attribute_value(13, (v14_SiteAddress));; return *this; }
+Ifc4::IfcSite Ifc4::IfcSite::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, std::optional< ::Ifc4::IfcElementCompositionEnum::Value > v9_CompositionType, std::optional< std::vector< int64_t > /*[3:4]*/ > v10_RefLatitude, std::optional< std::vector< int64_t > /*[3:4]*/ > v11_RefLongitude, std::optional< double > v12_RefElevation, std::optional< std::string > v13_LandTitleNumber, ::Ifc4::IfcPostalAddress v14_SiteAddress) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_LongName) {set_attribute_value(7, (*v8_LongName)); } if (v9_CompositionType) {set_attribute_value(8, (enumeration_reference(&::Ifc4::IfcElementCompositionEnum::Class(),(size_t)*v9_CompositionType))); } if (v10_RefLatitude) {set_attribute_value(9, (*v10_RefLatitude)); } if (v11_RefLongitude) {set_attribute_value(10, (*v11_RefLongitude)); } if (v12_RefElevation) {set_attribute_value(11, (*v12_RefElevation)); } if (v13_LandTitleNumber) {set_attribute_value(12, (*v13_LandTitleNumber)); }set_attribute_value(13, (v14_SiteAddress));; return *this; }
 
 // Function implementations for IfcSlab
 std::optional< ::Ifc4::IfcSlabTypeEnum::Value > Ifc4::IfcSlab::PredefinedType() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } return ::Ifc4::IfcSlabTypeEnum::FromString(get_attribute_value(8)); }
@@ -12991,10 +12991,10 @@ const ifcopenshell::entity& Ifc4::IfcStair::Class() { return *((ifcopenshell::en
 Ifc4::IfcStair Ifc4::IfcStair::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< ::Ifc4::IfcStairTypeEnum::Value > v9_PredefinedType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); } if (v9_PredefinedType) {set_attribute_value(8, (enumeration_reference(&::Ifc4::IfcStairTypeEnum::Class(),(size_t)*v9_PredefinedType))); }; return *this; }
 
 // Function implementations for IfcStairFlight
-std::optional< int > Ifc4::IfcStairFlight::NumberOfRisers() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } int v = get_attribute_value(8); return v; }
-void Ifc4::IfcStairFlight::setNumberOfRisers(const std::optional< int >& v) { if (v) {set_attribute_value(8, *v);} else {unset_attribute_value(8);} }
-std::optional< int > Ifc4::IfcStairFlight::NumberOfTreads() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } int v = get_attribute_value(9); return v; }
-void Ifc4::IfcStairFlight::setNumberOfTreads(const std::optional< int >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
+std::optional< int64_t > Ifc4::IfcStairFlight::NumberOfRisers() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(8); return v; }
+void Ifc4::IfcStairFlight::setNumberOfRisers(const std::optional< int64_t >& v) { if (v) {set_attribute_value(8, *v);} else {unset_attribute_value(8);} }
+std::optional< int64_t > Ifc4::IfcStairFlight::NumberOfTreads() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(9); return v; }
+void Ifc4::IfcStairFlight::setNumberOfTreads(const std::optional< int64_t >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
 std::optional< double > Ifc4::IfcStairFlight::RiserHeight() const { if(get_attribute_value(10).isNull()) { return std::nullopt; } double v = get_attribute_value(10); return v; }
 void Ifc4::IfcStairFlight::setRiserHeight(const std::optional< double >& v) { if (v) {set_attribute_value(10, *v);} else {unset_attribute_value(10);} }
 std::optional< double > Ifc4::IfcStairFlight::TreadLength() const { if(get_attribute_value(11).isNull()) { return std::nullopt; } double v = get_attribute_value(11); return v; }
@@ -13004,7 +13004,7 @@ void Ifc4::IfcStairFlight::setPredefinedType(const std::optional< ::Ifc4::IfcSta
 
 
 const ifcopenshell::entity& Ifc4::IfcStairFlight::Class() { return *((ifcopenshell::entity*)IFC4_types[945]); }
-Ifc4::IfcStairFlight Ifc4::IfcStairFlight::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< int > v9_NumberOfRisers, std::optional< int > v10_NumberOfTreads, std::optional< double > v11_RiserHeight, std::optional< double > v12_TreadLength, std::optional< ::Ifc4::IfcStairFlightTypeEnum::Value > v13_PredefinedType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); } if (v9_NumberOfRisers) {set_attribute_value(8, (*v9_NumberOfRisers)); } if (v10_NumberOfTreads) {set_attribute_value(9, (*v10_NumberOfTreads)); } if (v11_RiserHeight) {set_attribute_value(10, (*v11_RiserHeight)); } if (v12_TreadLength) {set_attribute_value(11, (*v12_TreadLength)); } if (v13_PredefinedType) {set_attribute_value(12, (enumeration_reference(&::Ifc4::IfcStairFlightTypeEnum::Class(),(size_t)*v13_PredefinedType))); }; return *this; }
+Ifc4::IfcStairFlight Ifc4::IfcStairFlight::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< int64_t > v9_NumberOfRisers, std::optional< int64_t > v10_NumberOfTreads, std::optional< double > v11_RiserHeight, std::optional< double > v12_TreadLength, std::optional< ::Ifc4::IfcStairFlightTypeEnum::Value > v13_PredefinedType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); } if (v9_NumberOfRisers) {set_attribute_value(8, (*v9_NumberOfRisers)); } if (v10_NumberOfTreads) {set_attribute_value(9, (*v10_NumberOfTreads)); } if (v11_RiserHeight) {set_attribute_value(10, (*v11_RiserHeight)); } if (v12_TreadLength) {set_attribute_value(11, (*v12_TreadLength)); } if (v13_PredefinedType) {set_attribute_value(12, (enumeration_reference(&::Ifc4::IfcStairFlightTypeEnum::Class(),(size_t)*v13_PredefinedType))); }; return *this; }
 
 // Function implementations for IfcStairFlightType
 ::Ifc4::IfcStairFlightTypeEnum::Value Ifc4::IfcStairFlightType::PredefinedType() const {  return ::Ifc4::IfcStairFlightTypeEnum::FromString(get_attribute_value(9)); }
@@ -13747,8 +13747,8 @@ std::optional< std::string > Ifc4::IfcTask::WorkMethod() const { if(get_attribut
 void Ifc4::IfcTask::setWorkMethod(const std::optional< std::string >& v) { if (v) {set_attribute_value(8, *v);} else {unset_attribute_value(8);} }
 bool Ifc4::IfcTask::IsMilestone() const {  bool v = get_attribute_value(9); return v; }
 void Ifc4::IfcTask::setIsMilestone(const bool& v) { set_attribute_value(9, v);if constexpr (false)unset_attribute_value(9); }
-std::optional< int > Ifc4::IfcTask::Priority() const { if(get_attribute_value(10).isNull()) { return std::nullopt; } int v = get_attribute_value(10); return v; }
-void Ifc4::IfcTask::setPriority(const std::optional< int >& v) { if (v) {set_attribute_value(10, *v);} else {unset_attribute_value(10);} }
+std::optional< int64_t > Ifc4::IfcTask::Priority() const { if(get_attribute_value(10).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(10); return v; }
+void Ifc4::IfcTask::setPriority(const std::optional< int64_t >& v) { if (v) {set_attribute_value(10, *v);} else {unset_attribute_value(10);} }
 ::Ifc4::IfcTaskTime Ifc4::IfcTask::TaskTime() const { if(get_attribute_value(11).isNull()) { return ::Ifc4::IfcTaskTime{}; } return ((express::Base)(get_attribute_value(11))).as<::Ifc4::IfcTaskTime>(); }
 void Ifc4::IfcTask::setTaskTime(const ::Ifc4::IfcTaskTime& v) { set_attribute_value(11, v);if constexpr (false)unset_attribute_value(11); }
 std::optional< ::Ifc4::IfcTaskTypeEnum::Value > Ifc4::IfcTask::PredefinedType() const { if(get_attribute_value(12).isNull()) { return std::nullopt; } return ::Ifc4::IfcTaskTypeEnum::FromString(get_attribute_value(12)); }
@@ -13756,7 +13756,7 @@ void Ifc4::IfcTask::setPredefinedType(const std::optional< ::Ifc4::IfcTaskTypeEn
 
 
 const ifcopenshell::entity& Ifc4::IfcTask::Class() { return *((ifcopenshell::entity*)IFC4_types[1036]); }
-Ifc4::IfcTask Ifc4::IfcTask::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_Identification, std::optional< std::string > v7_LongDescription, std::optional< std::string > v8_Status, std::optional< std::string > v9_WorkMethod, bool v10_IsMilestone, std::optional< int > v11_Priority, ::Ifc4::IfcTaskTime v12_TaskTime, std::optional< ::Ifc4::IfcTaskTypeEnum::Value > v13_PredefinedType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); } if (v6_Identification) {set_attribute_value(5, (*v6_Identification)); } if (v7_LongDescription) {set_attribute_value(6, (*v7_LongDescription)); } if (v8_Status) {set_attribute_value(7, (*v8_Status)); } if (v9_WorkMethod) {set_attribute_value(8, (*v9_WorkMethod)); }set_attribute_value(9, (v10_IsMilestone)); if (v11_Priority) {set_attribute_value(10, (*v11_Priority)); }set_attribute_value(11, (v12_TaskTime)); if (v13_PredefinedType) {set_attribute_value(12, (enumeration_reference(&::Ifc4::IfcTaskTypeEnum::Class(),(size_t)*v13_PredefinedType))); }; return *this; }
+Ifc4::IfcTask Ifc4::IfcTask::initialize(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_Identification, std::optional< std::string > v7_LongDescription, std::optional< std::string > v8_Status, std::optional< std::string > v9_WorkMethod, bool v10_IsMilestone, std::optional< int64_t > v11_Priority, ::Ifc4::IfcTaskTime v12_TaskTime, std::optional< ::Ifc4::IfcTaskTypeEnum::Value > v13_PredefinedType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); } if (v6_Identification) {set_attribute_value(5, (*v6_Identification)); } if (v7_LongDescription) {set_attribute_value(6, (*v7_LongDescription)); } if (v8_Status) {set_attribute_value(7, (*v8_Status)); } if (v9_WorkMethod) {set_attribute_value(8, (*v9_WorkMethod)); }set_attribute_value(9, (v10_IsMilestone)); if (v11_Priority) {set_attribute_value(10, (*v11_Priority)); }set_attribute_value(11, (v12_TaskTime)); if (v13_PredefinedType) {set_attribute_value(12, (enumeration_reference(&::Ifc4::IfcTaskTypeEnum::Class(),(size_t)*v13_PredefinedType))); }; return *this; }
 
 // Function implementations for IfcTaskTime
 std::optional< ::Ifc4::IfcTaskDurationEnum::Value > Ifc4::IfcTaskTime::DurationType() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } return ::Ifc4::IfcTaskDurationEnum::FromString(get_attribute_value(3)); }
@@ -14142,14 +14142,14 @@ std::optional< std::vector< std::vector< double > > > Ifc4::IfcTriangulatedFaceS
 void Ifc4::IfcTriangulatedFaceSet::setNormals(const std::optional< std::vector< std::vector< double > > >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 std::optional< bool > Ifc4::IfcTriangulatedFaceSet::Closed() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } bool v = get_attribute_value(2); return v; }
 void Ifc4::IfcTriangulatedFaceSet::setClosed(const std::optional< bool >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
-std::vector< std::vector< int > > Ifc4::IfcTriangulatedFaceSet::CoordIndex() const {  std::vector< std::vector< int > > v = get_attribute_value(3); return v; }
-void Ifc4::IfcTriangulatedFaceSet::setCoordIndex(const std::vector< std::vector< int > >& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
-std::optional< std::vector< int > /*[1:?]*/ > Ifc4::IfcTriangulatedFaceSet::PnIndex() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } std::vector< int > /*[1:?]*/ v = get_attribute_value(4); return v; }
-void Ifc4::IfcTriangulatedFaceSet::setPnIndex(const std::optional< std::vector< int > /*[1:?]*/ >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
+std::vector< std::vector< int64_t > > Ifc4::IfcTriangulatedFaceSet::CoordIndex() const {  std::vector< std::vector< int64_t > > v = get_attribute_value(3); return v; }
+void Ifc4::IfcTriangulatedFaceSet::setCoordIndex(const std::vector< std::vector< int64_t > >& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
+std::optional< std::vector< int64_t > /*[1:?]*/ > Ifc4::IfcTriangulatedFaceSet::PnIndex() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } std::vector< int64_t > /*[1:?]*/ v = get_attribute_value(4); return v; }
+void Ifc4::IfcTriangulatedFaceSet::setPnIndex(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 
 
 const ifcopenshell::entity& Ifc4::IfcTriangulatedFaceSet::Class() { return *((ifcopenshell::entity*)IFC4_types[1098]); }
-Ifc4::IfcTriangulatedFaceSet Ifc4::IfcTriangulatedFaceSet::initialize(::Ifc4::IfcCartesianPointList3D v1_Coordinates, std::optional< std::vector< std::vector< double > > > v2_Normals, std::optional< bool > v3_Closed, std::vector< std::vector< int > > v4_CoordIndex, std::optional< std::vector< int > /*[1:?]*/ > v5_PnIndex) { set_attribute_value(0, (v1_Coordinates)); if (v2_Normals) {set_attribute_value(1, (*v2_Normals)); } if (v3_Closed) {set_attribute_value(2, (*v3_Closed)); }set_attribute_value(3, (v4_CoordIndex)); if (v5_PnIndex) {set_attribute_value(4, (*v5_PnIndex)); }; return *this; }
+Ifc4::IfcTriangulatedFaceSet Ifc4::IfcTriangulatedFaceSet::initialize(::Ifc4::IfcCartesianPointList3D v1_Coordinates, std::optional< std::vector< std::vector< double > > > v2_Normals, std::optional< bool > v3_Closed, std::vector< std::vector< int64_t > > v4_CoordIndex, std::optional< std::vector< int64_t > /*[1:?]*/ > v5_PnIndex) { set_attribute_value(0, (v1_Coordinates)); if (v2_Normals) {set_attribute_value(1, (*v2_Normals)); } if (v3_Closed) {set_attribute_value(2, (*v3_Closed)); }set_attribute_value(3, (v4_CoordIndex)); if (v5_PnIndex) {set_attribute_value(4, (*v5_PnIndex)); }; return *this; }
 
 // Function implementations for IfcTrimmedCurve
 ::Ifc4::IfcCurve Ifc4::IfcTrimmedCurve::BasisCurve() const {  return ((express::Base)(get_attribute_value(0))).as<::Ifc4::IfcCurve>(); }

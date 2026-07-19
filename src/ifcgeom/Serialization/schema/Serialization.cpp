@@ -169,7 +169,7 @@ int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>&
 	else if (c->DynamicType() == STANDARD_TYPE(Geom_BezierCurve)) {
 		opencascade::handle<Geom_BezierCurve> bezier = opencascade::handle<Geom_BezierCurve>::DownCast(c);
 
-		std::vector<int> mults;
+		std::vector<int64_t> mults;
 		std::vector<double> knots;
 		std::vector<double> weights;
 
@@ -227,7 +227,7 @@ int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>&
 		}
 		IfcSchema::IfcKnotType::Value knot_spec = opencascade_knotspec_to_ifc(bspline->KnotDistribution());
 
-		std::vector<int> mults;
+		std::vector<int64_t> mults;
 		std::vector<double> knots;
 		std::vector<double> weights;
 
@@ -340,8 +340,8 @@ int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Surface
 			knot_spec_u = IfcSchema::IfcKnotType::IfcKnotType_UNSPECIFIED;
 		}
 
-		std::vector<int> umults;
-		std::vector<int> vmults;
+		std::vector<int64_t> umults;
+		std::vector<int64_t> vmults;
 		std::vector<double> uknots;
 		std::vector<double> vknots;
 		std::vector< std::vector<double> > weights;

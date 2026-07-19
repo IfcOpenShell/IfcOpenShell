@@ -23,12 +23,13 @@ import nodes
 import templates
 import schema
 
+
 class Mapping:
 
     express_to_cpp_typemapping = {
         "boolean": "bool",
         "logical": "boost::logic::tribool",
-        "integer": "int",
+        "integer": "int64_t",
         "real": "double",
         "number": "double",
         "string": "std::string",

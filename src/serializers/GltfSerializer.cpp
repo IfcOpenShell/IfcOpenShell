@@ -585,10 +585,10 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 			auto lon_attr = sites.front().as<express::Entity>().get("RefLongitude");
 
 			if (!lat_attr.isNull() && !lon_attr.isNull()) {
-				std::vector<int> lat_dms = lat_attr;
-				std::vector<int> lon_dms = lon_attr;
+				std::vector<int64_t> lat_dms = lat_attr;
+				std::vector<int64_t> lon_dms = lon_attr;
 
-				auto to_decimal = [](const std::vector<int>& dms) {
+				auto to_decimal = [](const std::vector<int64_t>& dms) {
 					double val = dms[0] + dms[1] / 60. + dms[2] / 3600.;
 					if (dms.size() == 4) {
 						val += dms[3] / 3600.e6;

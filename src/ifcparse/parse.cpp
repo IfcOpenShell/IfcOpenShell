@@ -684,13 +684,13 @@ void dispatch_token_direct(ifcopenshell::token token, ifcopenshell::declaration*
 typedef std::variant<
     blank,
 
-    std::vector<int>,
+    std::vector<int64_t>,
     std::vector<double>,
     std::vector<std::string>,
     std::vector<boost::dynamic_bitset<>>,
     std::vector<ifcopenshell::reference_or_simple_type>,
 
-    std::vector<std::vector<int>>,
+    std::vector<std::vector<int64_t>>,
     std::vector<std::vector<double>>,
     std::vector<std::vector<ifcopenshell::reference_or_simple_type>>
 > direct_aggregate_storage;
@@ -709,7 +709,7 @@ struct direct_aggregate {
         ++values;
         if constexpr (is_type_in_variant_v<direct_aggregate_storage, std::vector<std::decay_t<T>>>) {
             if constexpr (
-                std::is_same_v<std::decay_t<T>, std::vector<int>> ||
+                std::is_same_v<std::decay_t<T>, std::vector<int64_t>> ||
                 std::is_same_v<std::decay_t<T>, std::vector<double>> ||
                 std::is_same_v<std::decay_t<T>, std::vector<ifcopenshell::reference_or_simple_type>>
             ) {
@@ -736,7 +736,7 @@ struct direct_aggregate {
 
     void append_empty_nested() {
         ++values;
-        if (auto* int_vector = std::get_if<std::vector<std::vector<int>>>(&storage)) {
+        if (auto* int_vector = std::get_if<std::vector<std::vector<int64_t>>>(&storage)) {
             int_vector->emplace_back();
         } else if (auto* double_vector = std::get_if<std::vector<std::vector<double>>>(&storage)) {
             double_vector->emplace_back();
@@ -752,29 +752,29 @@ struct direct_aggregate {
 private:
     template <typename T>
     void append_promoted(const T& value) {
-        if constexpr (std::is_same_v<std::decay_t<T>, int>) {
+        if constexpr (std::is_same_v<std::decay_t<T>, int64_t>) {
             if (auto* vector = std::get_if<std::vector<double>>(&storage)) {
                 vector->push_back((double) value);
                 return;
             }
         }
         if constexpr (std::is_same_v<std::decay_t<T>, double>) {
-            if (auto* vector = std::get_if<std::vector<int>>(&storage)) {
+            if (auto* vector = std::get_if<std::vector<int64_t>>(&storage)) {
                 std::vector<double> promoted(vector->begin(), vector->end());
                 promoted.push_back(value);
                 storage = std::move(promoted);
                 return;
             }
         }
-        if constexpr (std::is_same_v<std::decay_t<T>, std::vector<int>>) {
+        if constexpr (std::is_same_v<std::decay_t<T>, std::vector<int64_t>>) {
             if (storage.index() == 0) {
-                std::vector<std::vector<int>> promoted(pending_empty_aggregates);
+                std::vector<std::vector<int64_t>> promoted(pending_empty_aggregates);
                 pending_empty_aggregates = 0;
                 promoted.push_back(value);
                 storage = std::move(promoted);
                 return;
             }
-            if (auto* vector = std::get_if<std::vector<std::vector<int>>>(&storage)) {
+            if (auto* vector = std::get_if<std::vector<std::vector<int64_t>>>(&storage)) {
                 vector->push_back(value);
                 return;
             }
@@ -796,7 +796,7 @@ private:
                 vector->push_back(value);
                 return;
             }
-            if (auto* vector = std::get_if<std::vector<std::vector<int>>>(&storage)) {
+            if (auto* vector = std::get_if<std::vector<std::vector<int64_t>>>(&storage)) {
                 std::vector<std::vector<double>> promoted;
                 promoted.reserve(vector->size() + 1);
                 for (const auto& nested : *vector) {
@@ -840,7 +840,7 @@ void append_empty_direct_aggregate(const ifcopenshell::aggregation_type* aggrega
 
     auto argument_type = ifcopenshell::make_aggregate(ifcopenshell::from_parameter_type(aggregate_type->type_of_element()));
     if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_INT) {
-        target.storage = std::vector<int>{};
+        target.storage = std::vector<int64_t>{};
     } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_DOUBLE) {
         target.storage = std::vector<double>{};
     } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_STRING) {
@@ -850,7 +850,7 @@ void append_empty_direct_aggregate(const ifcopenshell::aggregation_type* aggrega
     } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
         target.storage = std::vector<ifcopenshell::reference_or_simple_type>{};
     } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
-        target.storage = std::vector<std::vector<int>>{};
+        target.storage = std::vector<std::vector<int64_t>>{};
     } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
         target.storage = std::vector<std::vector<double>>{};
     } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
@@ -948,12 +948,7 @@ direct_aggregate read_direct_aggregate(
                 storage.register_inverse((unsigned)*entity_instance_name, entity, next.value_int, attribute_index);
             }
             dispatch_token_direct(next, aggregate_type && aggregate_type->type_of_element()->as_named_type() ? aggregate_type->type_of_element()->as_named_type()->declared_type() : nullptr, attribute_index, logger, [&aggregate](const auto& value) {
-                // Scalar integers are parsed as int64_t, but integer aggregates remain 32-bit; narrow here.
-                if constexpr (std::is_same_v<std::decay_t<decltype(value)>, int64_t>) {
-                    aggregate.append((int)value);
-                } else {
-                    aggregate.append(value);
-                }
+                aggregate.append(value);
             });
         }
         next = tokens->next();
@@ -1255,7 +1250,7 @@ namespace {
                 data_ << '\'' << s << '\'';
             }
         }
-        void operator()(const std::vector<int>& i);
+        void operator()(const std::vector<int64_t>& i);
         void operator()(const std::vector<double>& i);
         void operator()(const std::vector<std::string>& i);
         void operator()(const std::vector<boost::dynamic_bitset<>>& i);
@@ -1279,7 +1274,7 @@ namespace {
             }
             data_ << ")";
         }
-        void operator()(const std::vector<std::vector<int>>& i);
+        void operator()(const std::vector<std::vector<int64_t>>& i);
         void operator()(const std::vector<std::vector<double>>& i);
         void operator()(const std::vector<std::vector<express::Base>>& i) {
             data_ << "(";
@@ -1339,13 +1334,13 @@ namespace {
         data_ << ")";
     }
 
-    void StringBuilderVisitor::operator()(const std::vector<int>& i) { serialize(i); }
+    void StringBuilderVisitor::operator()(const std::vector<int64_t>& i) { serialize(i); }
     void StringBuilderVisitor::operator()(const std::vector<double>& i) { serialize(i); }
     void StringBuilderVisitor::operator()(const std::vector<std::string>& i) { serialize(i); }
     void StringBuilderVisitor::operator()(const std::vector<boost::dynamic_bitset<>>& i) { serialize(i); }
-    void StringBuilderVisitor::operator()(const std::vector<std::vector<int>>& i) {
+    void StringBuilderVisitor::operator()(const std::vector<std::vector<int64_t>>& i) {
         data_ << "(";
-        for (std::vector<std::vector<int>>::const_iterator it = i.begin(); it != i.end(); ++it) {
+        for (std::vector<std::vector<int64_t>>::const_iterator it = i.begin(); it != i.end(); ++it) {
             if (it != i.begin()) {
                 data_ << ",";
             }
@@ -1583,12 +1578,7 @@ express::Base::set_attribute_value(size_t i, const T& t) {
 
     {
         void* const storage = std::visit([](const auto& m) { return (void*)&m; }, file()->storage_);
-        if constexpr (std::is_same_v<std::decay_t<T>, int>) {
-            // Integer attributes are stored as int64_t; widen the schema-generated int here.
-            data()->set_attribute_value(i, (int64_t)t);
-        } else {
-            data()->set_attribute_value(i, t);
-        }
+        data()->set_attribute_value(i, t);
     }
     auto new_attribute = get_attribute_value(i);
 
@@ -3430,7 +3420,6 @@ void express::Base::set_attribute_value(const std::string& name, const express::
 
 template void IFC_PARSE_API express::Base::set_attribute_value<blank>(size_t index, const blank& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<derived>(size_t index, const derived& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<int>(size_t index, const int& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<int64_t>(size_t index, const int64_t& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<bool>(size_t index, const bool& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<boost::logic::tribool>(size_t index, const boost::logic::tribool& value);
@@ -3438,18 +3427,17 @@ template void IFC_PARSE_API express::Base::set_attribute_value<double>(size_t in
 template void IFC_PARSE_API express::Base::set_attribute_value<std::string>(size_t index, const std::string& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<boost::dynamic_bitset<>>(size_t index, const boost::dynamic_bitset<>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<enumeration_reference>(size_t index, const enumeration_reference& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<int>>(size_t index, const std::vector<int>& value);
+template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<int64_t>>(size_t index, const std::vector<int64_t>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<double>>(size_t index, const std::vector<double>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::string>>(size_t index, const std::vector<std::string>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<boost::dynamic_bitset<>>>(size_t index, const std::vector<boost::dynamic_bitset<>>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<express::Base>>(size_t index, const std::vector<express::Base>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<int>>>(size_t index, const std::vector<std::vector<int>>& value);
+template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<int64_t>>>(size_t index, const std::vector<std::vector<int64_t>>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<double>>>(size_t index, const std::vector<std::vector<double>>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<express::Base>>>(size_t index, const std::vector<std::vector<express::Base>>& value);
 
 template void IFC_PARSE_API express::Base::set_attribute_value<blank>(const std::string& name, const blank& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<derived>(const std::string& name, const derived& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<int>(const std::string& name, const int& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<int64_t>(const std::string& name, const int64_t& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<bool>(const std::string& name, const bool& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<boost::logic::tribool>(const std::string& name, const boost::logic::tribool& value);
@@ -3457,12 +3445,12 @@ template void IFC_PARSE_API express::Base::set_attribute_value<double>(const std
 template void IFC_PARSE_API express::Base::set_attribute_value<std::string>(const std::string& name, const std::string& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<boost::dynamic_bitset<>>(const std::string& name, const boost::dynamic_bitset<>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<enumeration_reference>(const std::string& name, const enumeration_reference& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<int>>(const std::string& name, const std::vector<int>& value);
+template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<int64_t>>(const std::string& name, const std::vector<int64_t>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<double>>(const std::string& name, const std::vector<double>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::string>>(const std::string& name, const std::vector<std::string>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<boost::dynamic_bitset<>>>(const std::string& name, const std::vector<boost::dynamic_bitset<>>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<express::Base>>(const std::string& name, const std::vector<express::Base>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<int>>>(const std::string& name, const std::vector<std::vector<int>>& value);
+template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<int64_t>>>(const std::string& name, const std::vector<std::vector<int64_t>>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<double>>>(const std::string& name, const std::vector<std::vector<double>>& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<express::Base>>>(const std::string& name, const std::vector<std::vector<express::Base>>& value);
 
@@ -3485,7 +3473,7 @@ T Entity::get_value(const std::string& name, const T& default_value) const {
 }
 } // namespace express
 
-template int IFC_PARSE_API express::Entity::get_value<int>(const std::string&) const;
+template int64_t IFC_PARSE_API express::Entity::get_value<int64_t>(const std::string&) const;
 template bool IFC_PARSE_API express::Entity::get_value<bool>(const std::string&) const;
 template boost::logic::tribool IFC_PARSE_API express::Entity::get_value<boost::logic::tribool>(const std::string&) const;
 template double IFC_PARSE_API express::Entity::get_value<double>(const std::string&) const;
@@ -3493,16 +3481,16 @@ template std::string IFC_PARSE_API express::Entity::get_value<std::string>(const
 template express::Base IFC_PARSE_API express::Entity::get_value<express::Base>(const std::string&) const;
 template boost::dynamic_bitset<> IFC_PARSE_API express::Entity::get_value<boost::dynamic_bitset<>>(const std::string&) const;
 template enumeration_reference IFC_PARSE_API express::Entity::get_value<enumeration_reference>(const std::string&) const;
-template std::vector<int> IFC_PARSE_API express::Entity::get_value<std::vector<int>>(const std::string&) const;
+template std::vector<int64_t> IFC_PARSE_API express::Entity::get_value<std::vector<int64_t>>(const std::string&) const;
 template std::vector<double> IFC_PARSE_API express::Entity::get_value<std::vector<double>>(const std::string&) const;
 template std::vector<std::string> IFC_PARSE_API express::Entity::get_value<std::vector<std::string>>(const std::string&) const;
 template std::vector<boost::dynamic_bitset<>> IFC_PARSE_API express::Entity::get_value<std::vector<boost::dynamic_bitset<>>>(const std::string&) const;
 template std::vector<express::Base> IFC_PARSE_API express::Entity::get_value<std::vector<express::Base>>(const std::string&) const;
-template std::vector<std::vector<int>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<int>>>(const std::string&) const;
+template std::vector<std::vector<int64_t>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<int64_t>>>(const std::string&) const;
 template std::vector<std::vector<double>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<double>>>(const std::string&) const;
 template std::vector<std::vector<express::Base>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<express::Base>>>(const std::string&) const;
 
-template int IFC_PARSE_API express::Entity::get_value<int>(const std::string&, const int&) const;
+template int64_t IFC_PARSE_API express::Entity::get_value<int64_t>(const std::string&, const int64_t&) const;
 template bool IFC_PARSE_API express::Entity::get_value<bool>(const std::string&, const bool&) const;
 template boost::logic::tribool IFC_PARSE_API express::Entity::get_value<boost::logic::tribool>(const std::string&, const boost::logic::tribool&) const;
 template double IFC_PARSE_API express::Entity::get_value<double>(const std::string&, const double&) const;
@@ -3510,11 +3498,11 @@ template std::string IFC_PARSE_API express::Entity::get_value<std::string>(const
 template express::Base IFC_PARSE_API express::Entity::get_value<express::Base>(const std::string&, const express::Base&) const;
 template boost::dynamic_bitset<> IFC_PARSE_API express::Entity::get_value<boost::dynamic_bitset<>>(const std::string&, const boost::dynamic_bitset<>&) const;
 template enumeration_reference IFC_PARSE_API express::Entity::get_value<enumeration_reference>(const std::string&, const enumeration_reference&) const;
-template std::vector<int> IFC_PARSE_API express::Entity::get_value<std::vector<int>>(const std::string&, const std::vector<int>&) const;
+template std::vector<int64_t> IFC_PARSE_API express::Entity::get_value<std::vector<int64_t>>(const std::string&, const std::vector<int64_t>&) const;
 template std::vector<double> IFC_PARSE_API express::Entity::get_value<std::vector<double>>(const std::string&, const std::vector<double>&) const;
 template std::vector<std::string> IFC_PARSE_API express::Entity::get_value<std::vector<std::string>>(const std::string&, const std::vector<std::string>&) const;
 template std::vector<boost::dynamic_bitset<>> IFC_PARSE_API express::Entity::get_value<std::vector<boost::dynamic_bitset<>>>(const std::string&, const std::vector<boost::dynamic_bitset<>>&) const;
 template std::vector<express::Base> IFC_PARSE_API express::Entity::get_value<std::vector<express::Base>>(const std::string&, const std::vector<express::Base>&) const;
-template std::vector<std::vector<int>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<int>>>(const std::string&, const std::vector<std::vector<int>>&) const;
+template std::vector<std::vector<int64_t>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<int64_t>>>(const std::string&, const std::vector<std::vector<int64_t>>&) const;
 template std::vector<std::vector<double>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<double>>>(const std::string&, const std::vector<std::vector<double>>&) const;
 template std::vector<std::vector<express::Base>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<express::Base>>>(const std::string&, const std::vector<std::vector<express::Base>>&) const;
