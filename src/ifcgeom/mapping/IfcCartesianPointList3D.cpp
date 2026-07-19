@@ -29,8 +29,8 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcCartesianPointList3D
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianPointList3D* inst) {
-	auto coord_list = inst->CoordList();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianPointList3D& inst) {
+	auto coord_list = inst.CoordList();
 	if (coord_list.empty()) {
 		return nullptr;
 	}
@@ -42,8 +42,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianPointList3D* inst) 
 			coords.size() < 1 ? 0. : coords[0] * length_unit_,
 			coords.size() < 2 ? 0. : coords[1] * length_unit_,
 			coords.size() < 3 ? 0. : coords[2] * length_unit_);
-		// No entity per point, so id() lookups in the per-child fallback path
-		// stay safe by sharing the list's own instance.
+		// No entity per point, so id() lookups share the list's own instance.
 		p->instance = inst;
 		c->children.push_back(p);
 	}

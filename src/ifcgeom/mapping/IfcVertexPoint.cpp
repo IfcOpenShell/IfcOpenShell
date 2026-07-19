@@ -26,10 +26,10 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcVertexPoint* inst) {
-	IfcSchema::IfcPoint* pnt = inst->VertexGeometry();
-	if (!pnt->declaration().is(IfcSchema::IfcCartesianPoint::Class())) {
-		logger_.Message(Logger::LOG_ERROR, "GEO", 257, "Only IfcCartesianPoints are supported for VertexGeometry", inst);
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcVertexPoint& inst) {
+	auto pnt = inst.VertexGeometry();
+	if (!pnt.declaration().is(IfcSchema::IfcCartesianPoint::Class())) {
+		logger_.message(::logger::LOG_ERROR, "GEO", 411, "Only IfcCartesianPoints are supported for VertexGeometry", inst);
 		return nullptr;
 	}
 	return map(pnt);
