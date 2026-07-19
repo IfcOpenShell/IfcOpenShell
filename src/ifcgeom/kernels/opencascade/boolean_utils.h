@@ -35,6 +35,7 @@
 
 #include <BOPAlgo_Operation.hxx>
 
+#include "../../../ifcparse/IfcLogger.h"
 #include "../ifc_geomlibrary_api.h"
 
 namespace IfcGeom {
@@ -88,13 +89,19 @@ namespace IfcGeom {
 
 		int eliminate_touching_operands(double prec, const TopoDS_Shape& a, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape>& c);
 
-		int eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c);
+		int eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, Logger& logger = Logger::Root());
 
-		bool boolean_subtraction_2d_using_builder(const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, TopoDS_Shape& result, double eps);
+		bool boolean_subtraction_2d_using_builder(const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, TopoDS_Shape& result, double eps, Logger& logger = Logger::Root());
 
 		struct boolean_settings {
 			bool debug, attempt_2d;
 			double precision;
+			// Set by callers that carry a per-conversion Logger (e.g. kernels deriving
+			// from AbstractKernel). Falls back to the global Logger::Root() singleton,
+			// which IfcConvert never wires to its --log-file output, so messages logged
+			// through that fallback are effectively silently dropped.
+			Logger* logger = nullptr;
+			Logger& log() const { return logger ? *logger : Logger::Root(); }
 		};
 
 		// Non-null 'suspicious' is set (never cleared) when has_coincident_edges()

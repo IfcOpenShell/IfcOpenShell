@@ -1700,6 +1700,14 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
     for (const auto& p : streamer.references()) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
+
+        auto owner_it = byid_.find(ref);
+        if (owner_it == byid_.end()) {
+            logger().Error("SYN", 28, "Instance #" + std::to_string(ref) + " referenced at attribute index " + std::to_string(refattr) + " not found");
+            continue;
+        }
+        IfcUtil::IfcBaseClass* owner = owner_it->second;
+
         if (auto* v = std::get_if<reference_or_simple_type>(&p.second)) {
             if (auto* name = std::get_if<InstanceReference>(v)) {
                 if (std::binary_search(bypassed.begin(), bypassed.end(), *name)) {
@@ -1709,12 +1717,12 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                 if (it == byid_.end()) {
                     logger().Error("SYN", 19, "Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                 } else {
-                    auto* storage = &byid_[p.first.name_]->data();
+                    auto* storage = &owner->data();
                     auto attr_index = p.first.index_;
                     
                     if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
                         IfcUtil::IfcBaseClass* inst = storage->get_attribute_value(nullptr, nullptr, 0, attr_index);
-                        if (!inst->declaration().as_entity()) {
+                        if (inst != nullptr && !inst->declaration().as_entity()) {
                             // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
                             storage = &inst->data();
                             attr_index = 0;
@@ -1728,7 +1736,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                     }
                 }
             } else if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(v)) {
-                byid_[p.first.name_]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, *inst);
+                owner->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, *inst);
             }
         } else if (auto* vv = std::get_if<std::vector<reference_or_simple_type>>(&p.second)) {
             aggregate_of_instance::ptr instances(new aggregate_of_instance);
@@ -1749,12 +1757,12 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                 }
             }
 
-            auto* storage = &byid_[p.first.name_]->data();
+            auto* storage = &owner->data();
             auto attr_index = p.first.index_;
             
             if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
                 IfcUtil::IfcBaseClass* inst = storage->get_attribute_value(nullptr, nullptr, 0, attr_index);
-                if (!inst->declaration().as_entity()) {
+                if (inst != nullptr && !inst->declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
                     storage = &inst->data();
                     attr_index = 0;
@@ -1788,12 +1796,12 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                 instances->push(inner);
             }
 
-            auto* storage = &byid_[p.first.name_]->data();
+            auto* storage = &owner->data();
             auto attr_index = p.first.index_;
             
             if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
                 IfcUtil::IfcBaseClass* inst = storage->get_attribute_value(nullptr, nullptr, 0, attr_index);
-                if (!inst->declaration().as_entity()) {
+                if (inst != nullptr && !inst->declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
                     storage = &inst->data();
                     attr_index = 0;

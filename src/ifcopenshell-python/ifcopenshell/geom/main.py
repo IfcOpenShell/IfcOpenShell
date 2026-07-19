@@ -109,6 +109,12 @@ SETTING = Literal[
     "reorient-shells",
     "site-local-placement",
     "surface-colour",
+    "svg-emit-flush-edges",
+    "svg-render-crease-edges",
+    "svg-render-sharp-edges",
+    "svg-ridge-angle-min-degrees",
+    "svg-use-edge-classification",
+    "svg-valley-angle-min-degrees",
     "triangulation-type",
     "unify-shapes",
     "use-material-names",
@@ -254,7 +260,7 @@ class settings_mixin:
         }
         for nm in self.setting_names():
             if nm == "use-python-opencascade":
-                ty == "bool"
+                ty = "bool"
             else:
                 ty = self.get_type(nm)
             if ty == "bool":
@@ -326,10 +332,11 @@ class iterator(ifcopenshell_wrapper.Iterator):
             if include_or_exclude_type == {"entity_instance"}:
                 include_or_exclude = cast(set[entity_instance], include_or_exclude)
 
-                if not all((last_inst := inst).is_a("IfcProduct") for inst in include_or_exclude):
-                    raise ValueError(
-                        f"include and exclude need to be an aggregate of IfcProduct. Violating element: '{last_inst}'."
-                    )
+                for inst in include_or_exclude:
+                    if not inst.is_a("IfcProduct"):
+                        raise ValueError(
+                            f"include and exclude need to be an aggregate of IfcProduct. Violating element: '{inst}'."
+                        )
 
                 initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude_id
 
