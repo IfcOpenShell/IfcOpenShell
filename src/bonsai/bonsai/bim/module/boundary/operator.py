@@ -1059,6 +1059,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get().createIfcConnectionSurfaceGeometry(surface)
 
     def export_surface(self, polygon, target_face_matrix):
+        ifc_file = tool.Ifc.get()
         x_axis = target_face_matrix.col[0][:3]
         z_axis = target_face_matrix.col[2][:3]
         p1 = target_face_matrix.translation
@@ -1071,18 +1072,20 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         placement = builder.create_axis2_placement_3d([o / self.unit_scale for o in p1], z_axis, x_axis)
         surface.BasisSurface = tool.Ifc.get().create_entity("IfcPlane", placement)
 
-        if tool.Ifc.get().schema != "IFC2X3":
+        schema = ifc_file.schema
+        if schema != "IFC2X3":
             points = [tool.Model.convert_si_to_unit(list(co)) for co in polygon.exterior.coords]
             point_list = tool.Ifc.get().createIfcCartesianPointList2D(points)
             outer_boundary = tool.Ifc.get().createIfcIndexedPolyCurve(point_list, None, False)
 
-            inner_boundaries = []
+            inner_boundaries: list[ifcopenshell.entity_instance] = []
             for interior in polygon.interiors:
                 points = [tool.Model.convert_si_to_unit(list(co)) for co in interior.coords]
                 point_list = tool.Ifc.get().createIfcCartesianPointList2D(points)
                 inner_boundaries.append(tool.Ifc.get().createIfcIndexedPolyCurve(point_list, None, False))
         else:
-            pass  # TODO
+            # TODO:
+            raise NotImplementedError(schema)
 
         surface.OuterBoundary = outer_boundary
         surface.InnerBoundaries = inner_boundaries

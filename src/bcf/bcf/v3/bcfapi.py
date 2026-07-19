@@ -188,6 +188,8 @@ class BcfClient:
                 response.raise_for_status()
             return response.status_code, response.text
         except requests.exceptions.HTTPError as errh:
+            response = errh.response
+            assert response is not None
             print(f"message: {response.reason}'  '{response.status_code}, {errh}")
             return response.status_code, response.reason
 
@@ -206,6 +208,8 @@ class BcfClient:
                 response.raise_for_status()
             return response.status_code, response.text
         except requests.exceptions.HTTPError as errh:
+            response = errh.response
+            assert response is not None
             print(f"message: {response.reason}'  '{response.status_code}, {errh}")
             return response.status_code, response.reason
 
@@ -222,6 +226,8 @@ class BcfClient:
                 response.raise_for_status()
             return response.status_code, response.text
         except requests.exceptions.HTTPError as errh:
+            response = errh.response
+            assert response is not None
             print(f"message: {response.reason}'  '{response.status_code}, {errh}")
             return response.status_code, response.reason
 

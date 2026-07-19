@@ -1103,12 +1103,14 @@ class IfcImporter:
         vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
         edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
         v2 = None
+        polyline = None
         for edge in edges:
             v1 = vertices[edge[0]]
             if v1 != v2:
                 polyline = curve.splines.new("POLY")
                 polyline.points[-1].co = mathutils.Vector(v1)
             v2 = vertices[edge[1]]
+            assert polyline is not None
             polyline.points.add(1)
             polyline.points[-1].co = mathutils.Vector(v2)
         edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()

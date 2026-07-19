@@ -400,6 +400,7 @@ class CadOffset(bpy.types.Operator):
         [verts.update(e.verts) for e in edges]
 
         # Use the viewport angle to determine the offset direction
+        wp = None
         for area in bpy.context.screen.areas:
             if area.type == "VIEW_3D":
                 # Don't ask me, I don't know.
@@ -409,6 +410,7 @@ class CadOffset(bpy.types.Operator):
                 z = area.spaces.active.region_3d.view_rotation @ Vector((0, 0, 1))
                 wp = Matrix([x, y, z, Vector((0, 0, 0))]).to_4x4().transposed()
                 break
+        assert wp is not None
 
         rotation = Matrix.Rotation(pi / 2, 2, "Z")
         rotation_i = Matrix.Rotation(-pi / 2, 2, "Z")

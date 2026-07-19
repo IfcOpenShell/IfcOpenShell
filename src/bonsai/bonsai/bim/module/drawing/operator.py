@@ -698,6 +698,8 @@ class CreateDrawing(bpy.types.Operator):
                 layer_set = material
                 offset = 0
                 sense_factor = 1
+            else:
+                assert False, material
 
             camera_matrix_i = context.scene.camera.matrix_world.inverted()
 
@@ -722,7 +724,6 @@ class CreateDrawing(bpy.types.Operator):
             bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.000001)
             bmesh.ops.triangle_fill(bm, use_dissolve=True, edges=bm.edges)
 
-            prev_co = None
             if not usage:
                 sense_factor = 1  # Assume the extrusion vector points in the direction sense
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
@@ -739,6 +740,8 @@ class CreateDrawing(bpy.types.Operator):
                 co = Vector((0.0, 0.0, offset))
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
                 no = Vector([1.0, 0.0, 0.0])
+            else:
+                assert False, usage
             no *= sense_factor
             last_i = len(layer_set.MaterialLayers) - 1
             for i, layer in enumerate(layer_set.MaterialLayers):
@@ -905,6 +908,10 @@ class CreateDrawing(bpy.types.Operator):
         svg_path = self.get_svg_path(cache_type="linework")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
+
+        ifc = tool.Ifc.get()
+        semantics = None
+        pairs = None
 
         # in case of printing multiple drawings we need to sync just once
         if self.sync and self.drawing_index == 0:
@@ -1309,6 +1316,18 @@ class CreateDrawing(bpy.types.Operator):
         self.svg_settings = ifcopenshell.geom.settings()
         self.svg_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         self.svg_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
+        # SVG edge classification (issue #3668). See edge-classification.md. Settings are
+        # per-drawing, stored in EPset_Drawing and read into self.cprops by import_camera_props.
+        try:
+            self.svg_settings.set("svg-use-edge-classification", self.cprops.use_edge_classification)
+            self.svg_settings.set("svg-render-crease-edges", self.cprops.render_creases)
+            self.svg_settings.set("svg-valley-angle-min-degrees", self.cprops.valley_angle_min_degrees)
+            self.svg_settings.set("svg-render-sharp-edges", self.cprops.render_sharp)
+            self.svg_settings.set("svg-ridge-angle-min-degrees", self.cprops.ridge_angle_min_degrees)
+            self.svg_settings.set("svg-emit-flush-edges", self.cprops.render_flush)
+        except Exception:
+            # Backwards compatibility with older ifcopenshell builds that don't expose these keys.
+            pass
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser_settings = ifcopenshell.geom.serializer_settings()
         self.serialiser = ifcopenshell.geom.serializers.svg(
