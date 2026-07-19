@@ -430,7 +430,26 @@ CLI Manual
       --use-element-types                   Use element types instead of unique IDs
                                             for naming elements upon serialization.
                                             Applicable to DAE output.
-      --y-up                                Change the 'up' axis to positive Y, 
+      --name-template arg                   Generic printf/find-style template to
+                                            derive per-entity identifiers/names
+                                            upon serialization, superseding
+                                            --use-element-names,
+                                            --use-element-guids,
+                                            --use-element-step-ids, and
+                                            --use-element-types when specified.
+                                            Recognized placeholders: %N
+                                            (IfcRoot.Name), %G (GlobalId,
+                                            compressed IFC form), %g (GlobalId,
+                                            uncompressed/decoded UUID form), %T
+                                            (entity class, e.g. IfcWall), %t (Tag
+                                            attribute, empty when not applicable),
+                                            %i (numeric STEP instance id), %u (the
+                                            default unique id scheme), and %% (a
+                                            literal percent sign). Example:
+                                            --name-template '%T-%N (%G)'.
+                                            Applicable for OBJ, DAE, GLTF, STP,
+                                            SVG, and TTL output.
+      --y-up                                Change the 'up' axis to positive Y,
                                             default is Z UP. Applicable to OBJ 
                                             output.
       --ecef                                Write glTF in Earth-Centered 
