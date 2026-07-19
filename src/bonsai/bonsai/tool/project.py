@@ -185,6 +185,10 @@ class Project(bonsai.core.tool.Project):
         bpy.ops.object.select_all(action="DESELECT")
         # The session now matches the file on disk.
         tool.Blender.get_bim_props().is_dirty = False
+        # Every caller reimports from disk here (including IfcGit checkout/
+        # merge/revert, which bypass the bim.reload_project operator), so
+        # the watcher's baseline must be refreshed here, not per-caller.
+        tool.FileWatcher.take_snapshot()
 
     @classmethod
     def load_project_pset_templates(cls) -> None:

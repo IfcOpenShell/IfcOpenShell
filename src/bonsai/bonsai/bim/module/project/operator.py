@@ -1268,7 +1268,6 @@ class ReloadProject(bpy.types.Operator):
             self.report({"ERROR"}, f"IFC file not found: {path_ifc}")
             return {"CANCELLED"}
         tool.Project.reload_ifc_file(path_ifc)
-        tool.FileWatcher.take_snapshot()
         self.report({"INFO"}, f'Reloaded "{os.path.basename(path_ifc)}" from disk')
         return {"FINISHED"}
 
