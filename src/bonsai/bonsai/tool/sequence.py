@@ -1158,11 +1158,11 @@ class Sequence(bonsai.core.tool.Sequence):
         props.task_input_colors.clear()
         for group, data in groups.items():
             for predefined_type in data["PredefinedType"]:
-                if group in ["CREATION", "OPERATION", "MOVEMENT_TO"]:
+                if group in ("CREATION", "OPERATION", "MOVEMENT_TO"):
                     predefined_type_item = props.task_output_colors.add()
-                elif group in ["MOVEMENT_FROM"]:
+                elif group in ("MOVEMENT_FROM",):
                     predefined_type_item = props.task_input_colors.add()
-                elif group in ["USERDEFINED", "DESTRUCTION"]:
+                elif group in ("USERDEFINED", "DESTRUCTION"):
                     predefined_type_item = props.task_input_colors.add()
                     predefined_type_item2 = props.task_output_colors.add()
                     predefined_type_item2.name = predefined_type
