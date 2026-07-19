@@ -161,18 +161,18 @@ namespace ifcopenshell {
 
         union {
             char value_char;     //types: OPERATOR
-            int value_int;       //types: INT, IDENTIFIER
+            int64_t value_int;   //types: INT, IDENTIFIER
             double value_double; //types: FLOAT
             const std::string* value_string;  //types: STR, ENUM, KEYWORD; lifetime managed by spf_lexer::string_pool_
         };
 
         token() : start_pos(0),
                   type(Token_NONE) {}
-        
+
         token(size_t start_position, token_type token_kind, const std::string& string_value)
             : start_pos(start_position), type(token_kind), value_string(&string_value) {}
 
-        token(size_t start_position, token_type token_kind, int integer_value)
+        token(size_t start_position, token_type token_kind, int64_t integer_value)
             : start_pos(start_position), type(token_kind), value_int(integer_value) {}
 
         token(size_t start_position, double floating_value)
@@ -196,7 +196,7 @@ namespace ifcopenshell {
         bool is_float();
         bool is_binary();
 
-        int as_int();
+        int64_t as_int();
         unsigned as_identifier();
         bool as_bool();
         boost::logic::tribool as_logical();
