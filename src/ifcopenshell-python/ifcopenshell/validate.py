@@ -61,6 +61,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import ifcopenshell
 import ifcopenshell.express.rule_executor
 import ifcopenshell.ifcopenshell_wrapper
+import ifcopenshell.util.unit
 
 if TYPE_CHECKING:
     import ifcopenshell.simple_spf
@@ -229,6 +230,88 @@ def get_select_members(schema: schema_definition, ty: select_type) -> set[str]:
 
     v = select_members_cache[cache_key] = set(inner(ty))
     return v
+
+
+measure_unit_type_cache: dict[str, dict[str, str]] = {}
+
+
+def get_measure_unit_types(schema: schema_definition) -> dict[str, str]:
+    """Map instantiable measure type names to the unit type a project unit needs to be defined for.
+
+    Some measure types (e.g. ratios, counts, descriptive or monetary measures) have no
+    corresponding entry in IfcUnitEnum / IfcDerivedUnitEnum, so they are excluded: their
+    value is meaningful without any project unit being defined.
+
+    :return: A mapping of measure type name (e.g. "IfcLengthMeasure") to unit type
+        (e.g. "LENGTHUNIT").
+    """
+    cache_key = schema.name()
+    if (from_cache := measure_unit_type_cache.get(cache_key)) is not None:
+        return from_cache
+
+    valid_unit_types: set[str] = set()
+    for enum_name in ("IfcUnitEnum", "IfcDerivedUnitEnum"):
+        try:
+            decl = schema.declaration_by_name(enum_name)
+        except RuntimeError:
+            continue
+        valid_unit_types.update(decl.enumeration_items())
+    valid_unit_types.discard("USERDEFINED")
+
+    mapping: dict[str, str] = {}
+    for decl in schema.declarations():
+        if isinstance(decl, type_declaration) and decl.name().endswith("Measure"):
+            unit_type = ifcopenshell.util.unit.get_measure_unit_type(decl.name())
+            if unit_type in valid_unit_types:
+                mapping[decl.name()] = unit_type
+
+    measure_unit_type_cache[cache_key] = mapping
+    return mapping
+
+
+def get_project_units_by_type(f: ifcopenshell.file) -> dict[str, ifcopenshell.entity_instance]:
+    """Get the project's units, keyed by their unit type (e.g. "LENGTHUNIT")."""
+    projects = f.by_type("IfcProject")
+    if not projects or not (assignment := projects[0].UnitsInContext):
+        return {}
+    return {unit_type: u for u in assignment.Units or [] if (unit_type := getattr(u, "UnitType", None))}
+
+
+# Attributes that, of a measure occurrence's containing instance, may carry an explicit unit
+# that supersedes the need for a project unit.
+measure_unit_override_attr = {
+    ("IfcPropertySingleValue", "NominalValue"): "Unit",
+    ("IfcPropertyListValue", "ListValues"): "Unit",
+    ("IfcPropertyBoundedValue", "UpperBoundValue"): "Unit",
+    ("IfcPropertyBoundedValue", "LowerBoundValue"): "Unit",
+    ("IfcPropertyBoundedValue", "SetPointValue"): "Unit",
+    ("IfcPropertyEnumeration", "EnumerationValues"): "Unit",
+    ("IfcPropertyTableValue", "DefiningValues"): "DefiningUnit",
+    ("IfcPropertyTableValue", "DefinedValues"): "DefinedUnit",
+    ("IfcAppliedValue", "AppliedValue"): "UnitBasis",
+}
+
+
+def has_explicit_measure_unit(inst: ifcopenshell.entity_instance, entity_name: str, attr_name: str) -> bool:
+    """Check whether an instantiated measure occurrence is exempt from needing a project unit."""
+    if entity_name == "IfcMeasureWithUnit" and attr_name == "ValueComponent":
+        # The sibling UnitComponent attribute is the unit for this exact value.
+        return True
+    if entity_name == "IfcPropertyEnumeratedValue" and attr_name == "EnumerationValues":
+        ref = inst.EnumerationReference
+        return bool(ref is not None and ref.Unit is not None)
+    if override_attr := measure_unit_override_attr.get((entity_name, attr_name)):
+        return getattr(inst, override_attr, None) is not None
+    return False
+
+
+def iter_measure_instances(val: Any) -> Iterator[ifcopenshell.entity_instance]:
+    """Recursively yield the instantiated measure values (e.g. IfcLengthMeasure) within `val`."""
+    if isinstance(val, tuple):
+        for v in val:
+            yield from iter_measure_instances(v)
+    elif isinstance(val, ifcopenshell.entity_instance):
+        yield val
 
 
 def assert_valid(
@@ -471,6 +554,8 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
 
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
     used_guids: dict[str, ifcopenshell.entity_instance] = dict()
+    measure_unit_types = get_measure_unit_types(schema)
+    project_units = get_project_units_by_type(f)
 
     for inst in f:
         if isinstance(logger, json_logger):
@@ -575,6 +660,27 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
                                 annotate_inst_attr_pos(inst, i),
                                 e,
                             )
+                    else:
+                        for measure_inst in iter_measure_instances(val):
+                            unit_type = measure_unit_types.get(measure_inst.is_a())
+                            if not unit_type or unit_type in project_units:
+                                continue
+                            if has_explicit_measure_unit(inst, entity.name(), attr.name()):
+                                continue
+                            if isinstance(logger, json_logger):
+                                logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
+                                logger.error("Instantiated measure %s has no corresponding unit", measure_inst)
+                            else:
+                                logger.error(
+                                    "For instance:\n    %s\n    %s\nWith attribute:\n    %s\n"
+                                    "Instantiated measure:\n    %s\nHas no project unit (%s), is not "
+                                    "wrapped in IfcMeasureWithUnit, and has no explicit property unit\n",
+                                    inst,
+                                    annotate_inst_attr_pos(inst, i),
+                                    attr,
+                                    measure_inst,
+                                    unit_type,
+                                )
 
         for attr in entity.all_inverse_attributes():
             try:
