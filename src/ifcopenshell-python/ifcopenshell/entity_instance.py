@@ -441,6 +441,20 @@ class entity_instance:
         """Return the STEP numerical identifier"""
         return self.wrapped_data.id()
 
+    def is_deleted(self) -> bool:
+        """Return True if this instance has been removed from its file via ``file.remove()``.
+
+        Safe to call even on a reference to a removed instance (whether it is
+        the reference that was passed to ``file.remove()``, or a separate
+        reference fetched beforehand, e.g. via ``file.by_id()``): unlike
+        every other attribute or method access, this never raises.
+
+        Once an instance has been removed, any other access to it (reading
+        or writing an attribute, ``id()``, ``is_a()``, ``repr()``, etc.)
+        raises ``RuntimeError`` instead of crashing the process.
+        """
+        return self.wrapped_data.is_deleted()
+
     def __eq__(self, other: entity_instance) -> bool:
         if not isinstance(self, type(other)):
             if not self.is_entity():

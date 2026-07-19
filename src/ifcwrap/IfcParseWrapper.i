@@ -363,7 +363,16 @@ private:
 		file = None
 	%}
 
+	// True if this instance has been removed from its file via file.remove().
+	// The underlying storage is intentionally kept alive (not freed) once
+	// this is true, so calling this is always well-defined - unlike other
+	// operations on a removed instance, it never raises. See #2797 / #4033.
+	bool is_deleted() const {
+		return $self->is_deleted();
+	}
+
 	int get_attribute_category(const std::string& name) const {
+		$self->check_not_deleted();
 		if (!$self->declaration().as_entity()) {
 			return name == "wrappedValue";
 		}
@@ -395,12 +404,14 @@ private:
 	// to expose it to the Python wrapper it is simply duplicated here.
 	// Same applies to the two methods reimplemented below.
 	int id() const {
+		$self->check_not_deleted();
 		return $self->as<IfcUtil::IfcBaseEntity>() != nullptr
 			? $self->as<IfcUtil::IfcBaseEntity>()->id()
 			: 0;
 	}
 
 	int __len__() const {
+		$self->check_not_deleted();
 		if ($self->declaration().as_entity()) {
 			return $self->declaration().as_entity()->attribute_count();
 		} else {
@@ -409,6 +420,7 @@ private:
 	}
 
 	std::vector<std::string> get_attribute_names() const {
+		$self->check_not_deleted();
 		if (!$self->declaration().as_entity()) {
 			return std::vector<std::string>(1, "wrappedValue");
 		}
@@ -427,6 +439,7 @@ private:
 	}
 
 	std::vector<std::string> get_inverse_attribute_names() const {
+		$self->check_not_deleted();
 		if (!$self->declaration().as_entity()) {
 			return std::vector<std::string>(0);
 		}
@@ -445,10 +458,12 @@ private:
 	}
 	
 	bool is_a(const std::string& s) {
+		self->check_not_deleted();
 		return self->declaration().is(s);
 	}
 
 	std::string is_a(bool with_schema=false) const {
+		self->check_not_deleted();
 		auto t = self->declaration().name();
 		if (with_schema) {
 			t = self->declaration().schema()->name() + "." + t;
@@ -461,6 +476,7 @@ private:
 	}
 
 	AttributeValue get_argument(const std::string& a) {
+		$self->check_not_deleted();
 		auto i = $self->declaration().as_entity()->attribute_index(a);
 		if (i == -1) {
 			throw std::runtime_error("Attribute '" + a + "' not found on entity named " + $self->declaration().name());
@@ -490,6 +506,7 @@ private:
 	}
 
 	unsigned get_argument_index(const std::string& a) const {
+		$self->check_not_deleted();
 		if ($self->declaration().as_entity()) {
 			return $self->declaration().as_entity()->attribute_index(a);
 		} else if (a == "wrappedValue") {
@@ -500,6 +517,7 @@ private:
 	}
 
 	aggregate_of_instance::ptr get_inverse(const std::string& a) {
+		$self->check_not_deleted();
 		if ($self->declaration().as_entity()) {
 			return ((IfcUtil::IfcBaseEntity*)$self)->get_inverse(a);
 		} else {
@@ -508,10 +526,12 @@ private:
 	}
 
 	const char* const get_argument_type(unsigned int i) const {
+		$self->check_not_deleted();
 		return IfcUtil::ArgumentTypeToString(helper_fn_attribute_type($self, i));
 	}
 
 	const std::string& get_argument_name(unsigned int i) const {
+		$self->check_not_deleted();
 		if ($self->declaration().as_entity()) {
 			return $self->declaration().as_entity()->attribute_by_index(i)->name();
 		} else if (i == 0) {
@@ -523,6 +543,7 @@ private:
 	}
 
 	void setArgumentAsNull(unsigned int i) {
+		$self->check_not_deleted();
 		bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
 		if (is_optional) {
 			self->set_attribute_value(i, Blank{});
@@ -995,6 +1016,7 @@ private:
 %}
 %inline %{
 	PyObject* get_info_cpp(IfcUtil::IfcBaseClass* v, bool include_identifier = true) {
+		v->check_not_deleted();
 		PyObject *d = PyDict_New();
 
 		if (v->declaration().as_entity()) {

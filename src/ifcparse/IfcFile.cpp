@@ -600,6 +600,13 @@ IfcParse::IfcFile::~IfcFile() {
     for (const auto& p : byid_) {
         delete p.second;
     }
+    // Instances removed via remove() during the file's lifetime were kept
+    // alive (not freed) so that stale references could still be recognised
+    // and rejected with a clean exception instead of crashing; now that the
+    // file itself is going away, actually free them.
+    for (auto* entity : deleted_instances_) {
+        delete entity;
+    }
 }
 
 namespace {

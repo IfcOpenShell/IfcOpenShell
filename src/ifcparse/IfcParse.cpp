@@ -1136,6 +1136,7 @@ typename std::enable_if<
     (!(std::is_pointer<T>::value&& std::is_base_of<IfcUtil::IfcBaseClass, typename std::remove_pointer<T>::type>::value) || std::is_same_v<IfcUtil::IfcBaseClass, std::remove_pointer_t<T>>),
     void>::type
 IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
+    check_not_deleted();
     if constexpr (std::is_same_v<std::decay_t<T>, double>) {
         if (!std::isfinite(t)) {
             throw IfcParse::IfcException("Only finite values are allowed");
@@ -2349,7 +2350,17 @@ void IfcFile::process_deletion_(IfcUtil::IfcBaseClass* entity) {
         }
     }
 
-    delete entity;
+    // Don't free the instance here. A Python (or other client) reference
+    // obtained before the removal - either the one passed to remove(), or a
+    // separate reference fetched earlier via by_id()/by_guid()/by_type() -
+    // is a naked pointer to this exact object and can still be dereferenced
+    // at any later point. Freeing it here would turn that into a
+    // use-after-free (see #2797 / #4033). Instead, mark it deleted_ and keep
+    // it alive until the file itself is destroyed, so that any further
+    // access can raise a clean, catchable exception (via check_not_deleted())
+    // rather than crash.
+    entity->deleted_ = true;
+    deleted_instances_.push_back(entity);
 }
 
 void IfcParse::impl::in_memory_file_storage::process_deletion_inverse(IfcUtil::IfcBaseClass* entity) {
@@ -2906,17 +2917,20 @@ std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_(0);
 // bool IfcParse::IfcFile::guid_map_ = true;
 
 void IfcUtil::IfcBaseClass::unset_attribute_value(size_t index) {
+    check_not_deleted();
     void* storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
     data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), index, Blank{});
 }
 
 AttributeValue IfcUtil::IfcBaseClass::get_attribute_value(size_t index) const {
+    check_not_deleted();
     void* storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
     return data_.get_attribute_value(storage, &declaration(), id() ? id() : identity(), index);
 }
 
 void IfcUtil::IfcBaseClass::toString(std::ostream& out, bool upper) const
 {
+    check_not_deleted();
     const auto *ent = declaration().as_entity();
     if (ent != nullptr && declaration().schema() != &Header_section_schema::get_schema()) {
         out << "#" << as<IfcUtil::IfcBaseEntity>()->id() << "=";

@@ -274,6 +274,43 @@ class TestFile(test.bootstrap.IFC4):
         self.file.unbatch()
         assert len(list(self.file)) == 0
 
+    def test_accessing_a_removed_element_raises_instead_of_crashing(self):
+        # https://github.com/IfcOpenShell/IfcOpenShell/issues/2797
+        element = self.file.createIfcWall(GlobalId="global_id", Name="a wall")
+        self.file.remove(element)
+        with pytest.raises(RuntimeError):
+            element.Name
+        with pytest.raises(RuntimeError):
+            repr(element)
+        with pytest.raises(RuntimeError):
+            element.id()
+        with pytest.raises(RuntimeError):
+            element.is_a()
+        with pytest.raises(RuntimeError):
+            element.Name = "b wall"
+
+    def test_accessing_a_separately_fetched_reference_to_a_removed_element_raises(self):
+        # https://github.com/IfcOpenShell/IfcOpenShell/issues/4033 - a reference
+        # obtained before removal via a different lookup than the one that was
+        # passed to remove() must be caught too, not just the original reference.
+        element = self.file.createIfcWall(GlobalId="global_id", Name="a wall")
+        other_ref = self.file.by_guid("global_id")
+        assert other_ref == element
+        self.file.remove(element)
+        with pytest.raises(RuntimeError):
+            other_ref.Name
+        with pytest.raises(RuntimeError):
+            repr(other_ref)
+
+    def test_is_deleted_reports_removal_without_raising(self):
+        element = self.file.createIfcWall(GlobalId="global_id")
+        other_ref = self.file.by_guid("global_id")
+        assert element.is_deleted() is False
+        assert other_ref.is_deleted() is False
+        self.file.remove(element)
+        assert element.is_deleted() is True
+        assert other_ref.is_deleted() is True
+
     def test_creating_ifc_data_from_a_string(self):
         element = self.file.createIfcWall()
         g = ifcopenshell.file.from_string(self.file.wrapped_data.to_string())

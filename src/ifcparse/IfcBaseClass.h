@@ -23,6 +23,7 @@
 #include "Argument.h"
 #include "ifc_parse_api.h"
 #include "IfcEntityInstanceData.h"
+#include "IfcException.h"
 #include "IfcSchema.h"
 #include "utils.h"
 
@@ -94,6 +95,14 @@ class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
 public:
     uint32_t id_;
     IfcParse::IfcFile* file_;
+    // Set by IfcFile::process_deletion_() on file.remove(). The underlying
+    // storage is intentionally kept alive (not delete-d) once this is set,
+    // so that reading it is always well-defined, never a use-after-free.
+    // A dangling naked pointer (the original reference passed to remove(),
+    // or a separate reference fetched before removal, e.g. via by_id()/
+    // by_guid()) can then be recognised and turned into a catchable
+    // IfcException/RuntimeError instead of a crash. See #2797 / #4033.
+    bool deleted_ = false;
 protected:
     IfcEntityInstanceData data_;
 
@@ -102,6 +111,21 @@ public:
 
     const IfcEntityInstanceData& data() const { return data_; }
     IfcEntityInstanceData& data() { return data_; }
+
+    // Non-virtual: safe to call even after deleted_ has been set, since it
+    // never dereferences the vtable.
+    bool is_deleted() const { return deleted_; }
+
+    // Non-virtual: safe to call even after deleted_ has been set, since it
+    // never dereferences the vtable. Call at the start of any operation that
+    // needs a still-live instance (i.e. anything that goes on to touch a
+    // virtual function such as declaration()).
+    void check_not_deleted() const {
+        if (deleted_) {
+            throw IfcParse::IfcException(
+                "Instance #" + std::to_string(id_) + " has been removed from the file and is no longer available");
+        }
+    }
 
     virtual const IfcParse::declaration& declaration() const = 0;
 

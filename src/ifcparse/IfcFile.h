@@ -35,6 +35,7 @@
 #include <boost/circular_buffer.hpp>
 #include <iterator>
 #include <map>
+#include <vector>
 #include <cstdint>
 
 #ifdef IFOPSH_WITH_ROCKSDB
@@ -224,6 +225,14 @@ public:
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
     void process_deletion_(IfcUtil::IfcBaseClass* entity);
+
+    // Instances removed via removeEntity()/remove(). Kept alive (flagged
+    // IfcUtil::IfcBaseClass::deleted_, not freed) so that a naked pointer
+    // still held elsewhere (the original reference passed to remove(), or a
+    // separate reference fetched before removal) is never a dangling
+    // use-after-free; only actually deleted once this file itself is
+    // destroyed. See #2797 / #4033.
+    std::vector<IfcUtil::IfcBaseClass*> deleted_instances_;
 
   public:
 #ifdef USE_MMAP
