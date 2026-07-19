@@ -35,6 +35,9 @@ _snapshot: Union[tuple[str, int, int], None] = None
 # so we never reload a file an external tool is still writing.
 _pending_change: Union[tuple[str, int, int], None] = None
 _is_prompt_active = False
+# Consecutive polls that found the file unchanged, used to back off the
+# poll interval while idle. Reset to 0 by take_snapshot().
+_idle_polls = 0
 
 
 class FileWatcher:
@@ -44,7 +47,15 @@ class FileWatcher:
     size on disk against a snapshot taken at load/save time. On a change it
     either asks the user to reload (default) or reloads silently ("viewer
     mode"), always via the view-preserving ``tool.Project.reload_ifc_file``.
+
+    The poll interval backs off (doubling, capped at ``IDLE_BACKOFF_CAP``)
+    after consecutive polls find no change, so a long idle session wakes up
+    far less often than the configured interval. Any detected change (or a
+    fresh load/save/reload) resets it back to the configured interval.
     """
+
+    # Doubling per idle poll, capped at 2**IDLE_BACKOFF_CAP x the configured interval.
+    IDLE_BACKOFF_CAP = 3
 
     @classmethod
     def is_enabled(cls) -> bool:
@@ -83,8 +94,9 @@ class FileWatcher:
     @classmethod
     def take_snapshot(cls) -> None:
         """Record the current on-disk state as the baseline for change detection."""
-        global _snapshot, _pending_change
+        global _snapshot, _pending_change, _idle_polls
         _pending_change = None
+        _idle_polls = 0
         path = cls.get_active_ifc_path()
         stat = cls.stat_file(path) if path is not None else None
         _snapshot = None if path is None or stat is None else (path.as_posix(), *stat)
@@ -114,15 +126,20 @@ class FileWatcher:
             # reset_timer(), which would unregister this timer from within
             # its own callback and corrupt Blender's timer registry (see the
             # matching comment in tool.Autosave.reset_timer).
-            return cls.get_interval_seconds() if cls.is_eligible() else None
+            return cls._next_interval_seconds() if cls.is_eligible() else None
 
         global _timer_callback
         _timer_callback = on_timer
         bpy.app.timers.register(on_timer, first_interval=cls.get_interval_seconds())
 
     @classmethod
+    def _next_interval_seconds(cls) -> float:
+        base = cls.get_interval_seconds()
+        return base * (2**_idle_polls)
+
+    @classmethod
     def _on_timer_expired(cls) -> None:
-        global _snapshot, _pending_change
+        global _snapshot, _pending_change, _idle_polls
         if _is_prompt_active or not cls.is_eligible():
             return
         path = cls.get_active_ifc_path()
@@ -137,14 +154,18 @@ class FileWatcher:
         current = (path.as_posix(), *stat)
         if current == _snapshot:
             _pending_change = None
+            _idle_polls = min(_idle_polls + 1, cls.IDLE_BACKOFF_CAP)
             return
         if _pending_change != current:
             # A change was detected, but wait until two consecutive polls
-            # agree so we never reload a half-written file.
+            # agree so we never reload a half-written file. Keep polling at
+            # the base interval until it settles.
             _pending_change = current
+            _idle_polls = 0
             return
         _snapshot = current
         _pending_change = None
+        _idle_polls = 0
         cls._handle_external_change()
 
     @classmethod
