@@ -1454,6 +1454,15 @@ class CreateDrawing(bpy.types.Operator):
                 "Material.Name",
             ]
 
+        join_classes = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinClasses")
+        if join_classes:
+            join_classes = tuple(c.strip() for c in join_classes.split(",") if c.strip())
+        else:
+            # Architectural convention only merges these objects by default. E.g. pipe
+            # segments and fittings shouldn't merge. Users may override this per-drawing
+            # via the EPset_Drawing.JoinClasses property (e.g. to also join IfcCovering).
+            join_classes = ("IfcWall", "IfcSlab")
+
         group = root.find("{http://www.w3.org/2000/svg}g")
         joined_paths = {}
         self.is_manifold_cache = {}
@@ -1555,8 +1564,7 @@ class CreateDrawing(bpy.types.Operator):
                             )
                         path.attrib["d"] = d
 
-            # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
-            if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
+            if not any(element.is_a(c) for c in join_classes):
                 continue
 
             keys = []
