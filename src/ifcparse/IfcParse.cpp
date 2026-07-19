@@ -1584,10 +1584,6 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
         return;
     }
 
-    // Owned via RAII so that any early return or exception while scanning
-    // the file (e.g. a malformed header, see fuzzer-z6u) still frees the
-    // lexer instead of leaking it; `tokens` itself stays a raw pointer since
-    // it's read by in_memory_file_storage::load() during the scan below.
     std::unique_ptr<IfcSpfLexer> tokens_owner(new IfcSpfLexer(s, logger()));
     tokens = tokens_owner.get();
 
@@ -1693,9 +1689,6 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
     }
 
     logger().Status("\rDone scanning file   ");
-
-    tokens_owner.reset();
-    tokens = nullptr;
 
     if (good_ != file_open_status::SUCCESS) {
         return;
