@@ -102,11 +102,31 @@ class RepresentationsData:
     def load(cls):
         cls.data = {"representations": cls.representations()}
         cls.data["contexts"] = cls.contexts()
+        cls.data["element_is_type"] = cls.element_is_type()
+        cls.data["element_has_type"] = cls.element_has_type()
 
         # Only after cls.representations().
         cls.data["shape_aspects"] = cls.shape_aspects()
 
         cls.is_loaded = True
+
+    @classmethod
+    def element_is_type(cls) -> bool:
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        return bool(element and element.is_a("IfcTypeProduct"))
+
+    @classmethod
+    def element_has_type(cls) -> bool:
+        """True when the active element is an occurrence with a type — i.e. a
+        local representation could be promoted onto that type."""
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        if not element or element.is_a("IfcTypeProduct"):
+            return False
+        return bool(ifcopenshell.util.element.get_type(element))
 
     @classmethod
     def representations(cls) -> list[dict[str, Any]]:
@@ -122,11 +142,8 @@ class RepresentationsData:
             active_representation_id = active_representation.id()
 
         for representation in tool.Geometry.get_representations_iter(element):
-            representation_type = representation.RepresentationType
             resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
-
-            if resolved_representation != representation:
-                representation_type = resolved_representation.RepresentationType + "*"
+            representation_type = resolved_representation.RepresentationType
 
             is_active = (
                 representation.id() == active_representation_id
@@ -145,6 +162,10 @@ class RepresentationsData:
                 "RepresentationIdentifier": representation.RepresentationIdentifier or "",
                 "RepresentationType": representation_type or "",
                 "is_active": is_active,
+                # True when this representation is an IfcMappedItem resolving to
+                # the type's MappedRepresentation, i.e. inherited from the type
+                # rather than local to the occurrence.
+                "is_mapped": resolved_representation != representation,
             }
             if representation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
                 data["ContextIdentifier"] = representation.ContextOfItems.ContextIdentifier or ""

@@ -118,6 +118,52 @@ class Root(bonsai.core.tool.Root):
         return copied_entities
 
     @classmethod
+    def copy_occurrence_only_representations(
+        cls,
+        source: ifcopenshell.entity_instance,
+        dest: ifcopenshell.entity_instance,
+        relating_type: ifcopenshell.entity_instance,
+    ) -> None:
+        """Re-add representations that belong to the occurrence but not the type.
+
+        ``type.map_type_representations`` rebuilds ``dest``'s representations
+        purely from the type's ``RepresentationMaps``, discarding any
+        occurrence-specific representation (e.g. a per-occurrence
+        Model/Body/PLAN_VIEW). This copies those occurrence-only
+        representations from ``source`` onto ``dest`` so a duplicated
+        occurrence keeps them."""
+        if not source.Representation:
+            return
+        type_contexts = {
+            rm.MappedRepresentation.ContextOfItems
+            for rm in (relating_type.RepresentationMaps or [])
+            if rm.MappedRepresentation
+        }
+
+        def exclude_callback(attribute: ifcopenshell.entity_instance) -> bool:
+            return attribute.is_a("IfcProfileDef") and attribute.ProfileName
+
+        for representation in source.Representation.Representations:
+            if representation.ContextOfItems in type_contexts:
+                continue
+            copied = ifcopenshell.util.element.copy_deep(
+                tool.Ifc.get(),
+                representation,
+                exclude=["IfcGeometricRepresentationContext"],
+                exclude_callback=exclude_callback,
+            )
+            # Append directly rather than via geometry.assign_representation:
+            # that API redirects a non-mapped representation to the type when
+            # the occurrence has a type with RepresentationMaps, which would
+            # wrongly push this occurrence-only representation onto the type
+            # (and thus onto every occurrence).
+            definition = dest.Representation
+            if not definition:
+                definition = tool.Ifc.get().createIfcProductDefinitionShape()
+                dest.Representation = definition
+            definition.Representations = list(definition.Representations or []) + [copied]
+
+    @classmethod
     def does_type_have_representations(cls, element: ifcopenshell.entity_instance) -> bool:
         return bool(element.RepresentationMaps)
 

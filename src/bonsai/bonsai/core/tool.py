@@ -445,6 +445,10 @@ class Geometry:
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
     def copy_data_links(cls, data, copied_entities) -> None: pass
+    def copy_representation_deep(cls, representation): pass
+    def assign_representation_to_occurrence(cls, element, representation): pass
+    def add_type_representation_map(cls, element_type, representation): pass
+    def representations_are_identical(cls, a, b): pass
     def delete_data(cls, data): pass
     def delete_ifc_object(cls, obj): pass
     def delete_opening_object_placement(cls, opening): pass
@@ -890,6 +894,7 @@ class Root:
     def add_tracked_opening(cls, obj): pass
     def assign_body_styles(cls, element, obj): pass
     def copy_representation(cls, source, dest): pass
+    def copy_occurrence_only_representations(cls, source, dest, relating_type): pass
     def does_type_have_representations(cls, element): pass
     def get_default_container(cls): pass
     def get_element_representation(cls, element, context): pass

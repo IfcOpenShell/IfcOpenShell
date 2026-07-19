@@ -889,6 +889,76 @@ class Geometry(bonsai.core.tool.Geometry):
         return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
+    def copy_representation_deep(cls, representation: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """Deep copy a representation, sharing geometric contexts and preserving
+        named profiles (mirrors ``tool.Root.copy_representation``'s exclusions)."""
+
+        def exclude_callback(attribute: ifcopenshell.entity_instance) -> bool:
+            return attribute.is_a("IfcProfileDef") and attribute.ProfileName
+
+        return ifcopenshell.util.element.copy_deep(
+            tool.Ifc.get(),
+            representation,
+            exclude=["IfcGeometricRepresentationContext"],
+            exclude_callback=exclude_callback,
+        )
+
+    @classmethod
+    def assign_representation_to_occurrence(
+        cls, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
+        """Append ``representation`` directly to an occurrence's shape, bypassing
+        ``geometry.assign_representation``'s redirect-to-type behaviour so the
+        representation stays local to this occurrence."""
+        ifc_file = tool.Ifc.get()
+        definition = element.Representation
+        if not definition:
+            definition = ifc_file.createIfcProductDefinitionShape()
+            element.Representation = definition
+        definition.Representations = list(definition.Representations or []) + [representation]
+
+    @classmethod
+    def add_type_representation_map(
+        cls, element_type: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
+        """Register ``representation`` on ``element_type`` as a new
+        ``IfcRepresentationMap`` (mapping origin at the type's local origin).
+        Subsequent ``geometry.map_representation`` calls reuse this map."""
+        ifc_file = tool.Ifc.get()
+        origin = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+        rep_map = ifc_file.createIfcRepresentationMap(origin, representation)
+        element_type.RepresentationMaps = list(element_type.RepresentationMaps or []) + [rep_map]
+        return rep_map
+
+    @classmethod
+    def representations_are_identical(
+        cls, a: ifcopenshell.entity_instance, b: ifcopenshell.entity_instance
+    ) -> bool:
+        """True if two representations have identical geometry, ignoring entity
+        identity (STEP ids) and their shared geometric context. Styles, which
+        attach via inverse ``IfcStyledItem``, are not part of this comparison."""
+
+        def canon(inst: Any, seen: frozenset[int]) -> Any:
+            if isinstance(inst, ifcopenshell.entity_instance):
+                if inst.is_a("IfcRepresentationContext"):
+                    return ("<context>",)
+                eid = inst.id()
+                if eid and eid in seen:
+                    return ("<cycle>", inst.is_a())
+                if eid:
+                    seen = seen | {eid}
+                return (inst.is_a(), tuple(canon(inst[i], seen) for i in range(len(inst))))
+            if isinstance(inst, (list, tuple)):
+                return tuple(canon(x, seen) for x in inst)
+            return inst
+
+        return canon(a, frozenset()) == canon(b, frozenset())
+
+    @classmethod
     def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64] | None:
         props = tool.Blender.get_object_bim_props(obj)
         if props.blender_offset_type == "CARTESIAN_POINT" and props.cartesian_point_offset:

@@ -314,6 +314,16 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         ],
         name="Representation Conversion Method",
     )
+    add_to_occurrence: bpy.props.BoolProperty(
+        name="Add to Occurrence",
+        description=(
+            "Keep the new representation local to this occurrence instead of adding it to its type.\n"
+            "By default a representation added to a typed occurrence is placed on the type so all\n"
+            "occurrences inherit it; enable this to create an occurrence-specific override"
+        ),
+        default=False,
+        options={"SKIP_SAVE"},
+    )
 
     def _execute(self, context):
         obj = context.active_object
@@ -382,6 +392,7 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 context=ifc_context,
                 ifc_representation_class=None,
                 profile_set_usage=None,
+                add_to_occurrence=self.add_to_occurrence,
             )
             # Object might be recreated, need to set it as active again.
             if context.active_object != obj:
@@ -406,6 +417,15 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         if self.representation_conversion_method == "OBJECT":
             row = self.layout.row()
             row.prop(props, "representation_from_object", text="")
+        # Only meaningful for an occurrence that has a type to add to.
+        obj = context.active_object
+        if (
+            obj
+            and (element := tool.Ifc.get_entity(obj))
+            and not element.is_a("IfcTypeProduct")
+            and ifcopenshell.util.element.get_type(element)
+        ):
+            self.layout.prop(self, "add_to_occurrence")
 
 
 class SelectConnection(bpy.types.Operator, tool.Ifc.Operator):
@@ -543,6 +563,36 @@ class RemoveRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         operator_time = time() - start_time
         if operator_time > 10:
             self.report({"INFO"}, f"{self.bl_label} was finished in {operator_time:.2f} seconds.")
+
+
+class PromoteRepresentationToType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.promote_representation_to_type"
+    bl_label = "Promote Representation to Type"
+    bl_description = (
+        "Move this occurrence-local representation onto its type so occurrences can inherit it.\n"
+        "Occurrences with an identical local representation inherit from the type;\n"
+        "occurrences with a divergent local representation keep their own override"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    representation_id: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        representation_id: int
+
+    def _execute(self, context):
+        assert context.active_object
+        counts = core.promote_representation_to_type(
+            tool.Ifc,
+            tool.Geometry,
+            obj=context.active_object,
+            representation=tool.Ifc.get().by_id(self.representation_id),
+        )
+        self.report(
+            {"INFO"},
+            "Representation promoted to type. "
+            f"{counts['removed']} occurrence representation(s) consolidated, "
+            f"{counts['kept']} divergent override(s) kept.",
+        )
 
 
 class PurgeUnusedRepresentations(bpy.types.Operator, tool.Ifc.Operator):
