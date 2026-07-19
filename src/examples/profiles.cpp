@@ -37,9 +37,10 @@
 #include INCLUDE_SCHEMA_DEFINITIONS(ifcparse/schemas, IfcSchema)
 
 #include "ifcparse/hierarchy_helper.h"
+#include "ifcparse/global_id.h"
 
 typedef std::string S;
-typedef IfcWrite::IfcGuidHelper guid;
+typedef ifcopenshell::global_id guid;
 boost::none_t const null = (static_cast<boost::none_t>(0));
 
 #ifdef SCHEMA_IfcUShapeProfileDef_HAS_CentreOfGravityInX
