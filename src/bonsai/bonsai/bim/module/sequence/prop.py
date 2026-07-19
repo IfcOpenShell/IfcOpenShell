@@ -434,10 +434,12 @@ class IFCStatus(PropertyGroup):
     is_visible: BoolProperty(
         name="Is Visible", default=True, update=lambda x, y: (None, bpy.ops.bim.activate_status_filters())[0]
     )
+    has_elements: BoolProperty(name="Has Elements")
 
     if TYPE_CHECKING:
         name: tool.Sequence.ElementStatusUI
         is_visible: bool
+        has_elements: bool
 
 
 class BIMStatusProperties(PropertyGroup):
