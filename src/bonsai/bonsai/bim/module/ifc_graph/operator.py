@@ -94,6 +94,42 @@ def find_referencing_attribute(inverse: ifcopenshell.entity_instance, element: i
     return "Ref"
 
 
+def find_inverse_attribute_label(
+    element: ifcopenshell.entity_instance, referencing: ifcopenshell.entity_instance
+) -> Union[str, None]:
+    """Label an incoming reference the way the Inspector does, e.g. ContainedInStructure[0]."""
+    info = element.get_info()
+    for key in dir(element):
+        if not key[0].isalpha() or key[0] != key[0].upper() or key in info:
+            continue
+        value = getattr(element, key)
+        if not isinstance(value, tuple):
+            continue
+        for i, item in enumerate(value):
+            if item == referencing:
+                return f"{key}[{i}]"
+    return None
+
+
+def get_or_create_ref_input(
+    node: bpy.types.Node, element: ifcopenshell.entity_instance, referencing: ifcopenshell.entity_instance
+) -> bpy.types.NodeSocket:
+    """Get the input socket for a reference from referencing to element, creating it if needed.
+
+    Named after element's inverse attribute holding the reference, so the same
+    socket is used whichever side's expansion creates the link, with the plain
+    Ref socket as the fallback for references without an inverse attribute.
+    """
+    label = find_inverse_attribute_label(element, referencing)
+    if label is None:
+        return node.inputs["Ref"]
+    socket = node.inputs.get(label)
+    if not socket:
+        socket = node.inputs.new(SOCKET_TYPE, label)
+        socket.link_limit = 0
+    return socket
+
+
 def estimate_node_height(node: bpy.types.Node) -> float:
     sockets = len(node.inputs) + len(node.outputs)
     return 60.0 + 22.0 * sockets + 20.0 * len(node.attributes) + 30.0
@@ -175,8 +211,9 @@ def expand_entity_node(tree: bpy.types.NodeTree, ifc_file: ifcopenshell.file, no
             child, created = add_entity_node(tree, ref)
             if created:
                 place_node(tree, child, parent_x + COLUMN_PITCH, parent_y)
-            if create_link(tree, socket, child.inputs[0]):
-                created_links.append((node.name, attr_name, child.name, "Ref"))
+            ref_input = get_or_create_ref_input(child, ref, element)
+            if create_link(tree, socket, ref_input):
+                created_links.append((node.name, attr_name, child.name, ref_input.name))
     inverses = sorted(ifc_file.get_inverse(element), key=lambda e: e.id())
     shown_inverses = inverses[:MAX_INVERSE_REFS]
     if len(shown_inverses) < len(inverses):
@@ -187,8 +224,9 @@ def expand_entity_node(tree: bpy.types.NodeTree, ifc_file: ifcopenshell.file, no
             place_node(tree, child, parent_x - COLUMN_PITCH, parent_y)
         attr_name = find_referencing_attribute(inverse, element)
         socket = get_or_create_output(child, attr_name)
-        if create_link(tree, socket, node.inputs[0]):
-            created_links.append((child.name, attr_name, node.name, "Ref"))
+        ref_input = get_or_create_ref_input(node, element, inverse)
+        if create_link(tree, socket, ref_input):
+            created_links.append((child.name, attr_name, node.name, ref_input.name))
     node.is_expanded = True
     node.expansion_base_attr_count = base_attr_count
     node.expansion_links = json.dumps(created_links)
@@ -207,11 +245,15 @@ def remove_link_and_orphaned_socket(
             tree.links.remove(link)
             break
     from_node = tree.nodes.get(from_name)
-    if not from_node:
-        return
-    socket = from_node.outputs.get(from_socket_name)
-    if socket and not socket.is_linked:
-        from_node.outputs.remove(socket)
+    if from_node:
+        socket = from_node.outputs.get(from_socket_name)
+        if socket and not socket.is_linked:
+            from_node.outputs.remove(socket)
+    to_node = tree.nodes.get(to_name)
+    if to_node and to_socket_name != "Ref":
+        socket = to_node.inputs.get(to_socket_name)
+        if socket and not socket.is_linked:
+            to_node.inputs.remove(socket)
 
 
 def collapse_entity_node(tree: bpy.types.NodeTree, node: bpy.types.Node) -> None:
