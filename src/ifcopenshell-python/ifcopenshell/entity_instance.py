@@ -34,6 +34,7 @@ from . import ifcopenshell_wrapper, settings
 
 if TYPE_CHECKING:
     import ifcopenshell
+    import ifcopenshell.util.schema
 
 try:
     import logging
@@ -197,6 +198,11 @@ class entity_instance:
         from . import file
 
         return file.from_pointer(self.wrapped_data.file_pointer())
+
+    @property
+    def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
+        """General IFC schema version this instance belongs to: IFC2X3, IFC4, IFC4X3."""
+        return self.file.schema
 
     def __getattr__(self, name: str) -> Any:
         """

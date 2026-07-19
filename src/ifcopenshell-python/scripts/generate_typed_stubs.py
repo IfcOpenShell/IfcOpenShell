@@ -20,9 +20,11 @@ Known simplifications (documented, not silently wrong):
   subtype constraints are not represented.
 - ``entity_instance.__getattr__`` returns ``Any``, so misspelled attribute
   names still silently type as ``Any``; declared attributes get real types.
-- ``file.schema`` is narrowed to a ``Literal`` of this one schema, so a type
-  checker can discriminate a ``Union[ifc2x3.file, ifc4.file, ifc4x3.file]``
-  on ``f.schema == "..."`` and get schema-specific ``by_type()`` results.
+- ``file.schema`` and every entity's inherited ``.schema`` are narrowed to a
+  ``Literal`` of this one schema, so a type checker can discriminate a
+  ``Union[ifc2x3.file, ifc4.file, ifc4x3.file]`` on ``f.schema == "..."`` (or
+  a per-instance ``Union`` on ``inst.schema == "..."``) with plain inference
+  and get schema-specific attributes, no cast needed.
 
 Usage:
     python generate_typed_stubs.py            # print this message
@@ -121,15 +123,15 @@ def emit_aliases(schema: wrapper.schema_definition, lines: list[str]) -> None:
             lines.append(f"{decl.name()}: TypeAlias = {type_expr(type_declaration.declared_type(), quote=True)}")
 
 
-def emit_entity(entity: wrapper.entity, lines: list[str], emitted: set[str]) -> None:
+def emit_entity(entity: wrapper.entity, lines: list[str], emitted: set[str], root_base: str) -> None:
     if entity.name() in emitted:
         return
     supertype = entity.supertype()
     if supertype is not None:
-        emit_entity(supertype, lines, emitted)
+        emit_entity(supertype, lines, emitted, root_base)
     emitted.add(entity.name())
 
-    base = supertype.name() if supertype is not None else "entity_instance"
+    base = supertype.name() if supertype is not None else root_base
     body: list[str] = []
     for attribute in entity.attributes():
         annotation = type_expr(attribute.type_of_attribute(), quote=False)
@@ -173,10 +175,20 @@ def generate(schema_name: str) -> Path:
     lines = [HEADER.format(schema=schema.name(), module=module)]
 
     emit_aliases(schema, lines)
+
+    # A synthetic root so every entity in this schema (not just `file`) carries
+    # a schema-specific `Literal` for `.schema`, letting a type checker narrow
+    # a cross-schema `Union[ifc4.X, ifc4x3.X]` instance on `inst.schema == "..."`
+    # with plain inference, the same discriminated-union technique as `file`.
+    root_base = "_RootEntity"
+    lines.append("")
+    lines.append(f"class {root_base}(entity_instance):")
+    lines.append(f'    schema: Literal["{schema.name()}"]')
+
     entities = [d.as_entity() for d in schema.declarations() if d.as_entity() is not None]
     emitted: set[str] = set()
     for entity in entities:
-        emit_entity(entity, lines, emitted)
+        emit_entity(entity, lines, emitted, root_base)
     emit_file_class(schema.name(), entities, lines)
 
     output = PACKAGE_DIR / f"{module}.pyi"

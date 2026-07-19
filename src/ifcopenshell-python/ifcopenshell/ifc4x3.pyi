@@ -2225,7 +2225,10 @@ IfcWorkCalendarTypeEnum: TypeAlias = Literal["FIRSTSHIFT", "SECONDSHIFT", "THIRD
 IfcWorkPlanTypeEnum: TypeAlias = Literal["ACTUAL", "BASELINE", "PLANNED", "USERDEFINED", "NOTDEFINED"]
 IfcWorkScheduleTypeEnum: TypeAlias = Literal["ACTUAL", "BASELINE", "PLANNED", "USERDEFINED", "NOTDEFINED"]
 
-class IfcRoot(entity_instance):
+class _RootEntity(entity_instance):
+    schema: Literal["IFC4X3"]
+
+class IfcRoot(_RootEntity):
     GlobalId: IfcGloballyUniqueId
     OwnerHistory: IfcOwnerHistory | None
     Name: IfcLabel | None
@@ -2260,7 +2263,7 @@ class IfcActor(IfcObject):
     TheActor: IfcActorSelect
     IsActingUpon: tuple[IfcRelAssignsToActor, ...]
 
-class IfcActorRole(entity_instance):
+class IfcActorRole(_RootEntity):
     Role: IfcRoleEnum
     UserDefinedRole: IfcLabel | None
     Description: IfcText | None
@@ -2316,14 +2319,14 @@ class IfcDistributionControlElementType(IfcDistributionElementType): ...
 class IfcActuatorType(IfcDistributionControlElementType):
     PredefinedType: IfcActuatorTypeEnum
 
-class IfcAddress(entity_instance):
+class IfcAddress(_RootEntity):
     Purpose: IfcAddressTypeEnum | None
     Description: IfcText | None
     UserDefinedPurpose: IfcLabel | None
     OfPerson: tuple[IfcPerson, ...]
     OfOrganization: tuple[IfcOrganization, ...]
 
-class IfcRepresentationItem(entity_instance):
+class IfcRepresentationItem(_RootEntity):
     LayerAssignment: tuple[IfcPresentationLayerAssignment, ...]
     StyledByItem: tuple[IfcStyledItem, ...]
 
@@ -2404,7 +2407,7 @@ class IfcLinearElement(IfcProduct): ...
 class IfcAlignmentCant(IfcLinearElement):
     RailHeadDistance: IfcPositiveLengthMeasure
 
-class IfcAlignmentParameterSegment(entity_instance):
+class IfcAlignmentParameterSegment(_RootEntity):
     StartTag: IfcLabel | None
     EndTag: IfcLabel | None
 
@@ -2450,13 +2453,13 @@ class IfcAnnotationFillArea(IfcGeometricRepresentationItem):
     OuterBoundary: IfcCurve
     InnerBoundaries: tuple[IfcCurve, ...] | None
 
-class IfcApplication(entity_instance):
+class IfcApplication(_RootEntity):
     ApplicationDeveloper: IfcOrganization
     Version: IfcLabel
     ApplicationFullName: IfcLabel
     ApplicationIdentifier: IfcIdentifier
 
-class IfcAppliedValue(entity_instance):
+class IfcAppliedValue(_RootEntity):
     Name: IfcLabel | None
     Description: IfcText | None
     AppliedValue: IfcAppliedValueSelect | None
@@ -2469,7 +2472,7 @@ class IfcAppliedValue(entity_instance):
     Components: tuple[IfcAppliedValue, ...] | None
     HasExternalReference: tuple[IfcExternalReferenceRelationship, ...]
 
-class IfcApproval(entity_instance):
+class IfcApproval(_RootEntity):
     Identifier: IfcIdentifier | None
     Name: IfcLabel | None
     Description: IfcText | None
@@ -2485,7 +2488,7 @@ class IfcApproval(entity_instance):
     IsRelatedWith: tuple[IfcApprovalRelationship, ...]
     Relates: tuple[IfcApprovalRelationship, ...]
 
-class IfcResourceLevelRelationship(entity_instance):
+class IfcResourceLevelRelationship(_RootEntity):
     Name: IfcLabel | None
     Description: IfcText | None
 
@@ -2493,7 +2496,7 @@ class IfcApprovalRelationship(IfcResourceLevelRelationship):
     RelatingApproval: IfcApproval
     RelatedApprovals: tuple[IfcApproval, ...]
 
-class IfcProfileDef(entity_instance):
+class IfcProfileDef(_RootEntity):
     ProfileType: IfcProfileTypeEnum
     ProfileName: IfcLabel | None
     HasExternalReference: tuple[IfcExternalReferenceRelationship, ...]
@@ -2579,7 +2582,7 @@ class IfcBearing(IfcBuiltElement):
 class IfcBearingType(IfcBuiltElementType):
     PredefinedType: IfcBearingTypeEnum
 
-class IfcPresentationItem(entity_instance): ...
+class IfcPresentationItem(_RootEntity): ...
 
 class IfcSurfaceTexture(IfcPresentationItem):
     RepeatS: IfcBoolean
@@ -2618,7 +2621,7 @@ class IfcGeotechnicalElement(IfcElement): ...
 class IfcGeotechnicalAssembly(IfcGeotechnicalElement): ...
 class IfcBorehole(IfcGeotechnicalAssembly): ...
 
-class IfcBoundaryCondition(entity_instance):
+class IfcBoundaryCondition(_RootEntity):
     Name: IfcLabel | None
 
 class IfcCurve(IfcGeometricRepresentationItem): ...
@@ -2867,7 +2870,7 @@ class IfcCircleHollowProfileDef(IfcCircleProfileDef):
 
 class IfcCivilElement(IfcElement): ...
 class IfcCivilElementType(IfcElementType): ...
-class IfcExternalInformation(entity_instance): ...
+class IfcExternalInformation(_RootEntity): ...
 
 class IfcClassification(IfcExternalInformation):
     Source: IfcLabel | None
@@ -2880,7 +2883,7 @@ class IfcClassification(IfcExternalInformation):
     ClassificationForObjects: tuple[IfcRelAssociatesClassification, ...]
     HasReferences: tuple[IfcClassificationReference, ...]
 
-class IfcExternalReference(entity_instance):
+class IfcExternalReference(_RootEntity):
     Location: IfcURIReference | None
     Identification: IfcIdentifier | None
     Name: IfcLabel | None
@@ -2933,7 +2936,7 @@ class IfcCommunicationsAppliance(IfcFlowTerminal):
 class IfcCommunicationsApplianceType(IfcFlowTerminalType):
     PredefinedType: IfcCommunicationsApplianceTypeEnum
 
-class IfcPropertyAbstraction(entity_instance):
+class IfcPropertyAbstraction(_RootEntity):
     HasExternalReferences: tuple[IfcExternalReferenceRelationship, ...]
 
 class IfcProperty(IfcPropertyAbstraction):
@@ -2993,7 +2996,7 @@ class IfcCondenser(IfcEnergyConversionDevice):
 class IfcCondenserType(IfcEnergyConversionDeviceType):
     PredefinedType: IfcCondenserTypeEnum
 
-class IfcConnectionGeometry(entity_instance): ...
+class IfcConnectionGeometry(_RootEntity): ...
 
 class IfcConnectionCurveGeometry(IfcConnectionGeometry):
     CurveOnRelatingElement: IfcCurveOrEdgeCurve
@@ -3016,7 +3019,7 @@ class IfcConnectionVolumeGeometry(IfcConnectionGeometry):
     VolumeOnRelatingElement: IfcSolidOrShell
     VolumeOnRelatedElement: IfcSolidOrShell | None
 
-class IfcConstraint(entity_instance):
+class IfcConstraint(_RootEntity):
     Name: IfcLabel
     Description: IfcText | None
     ConstraintGrade: IfcConstraintEnum
@@ -3074,7 +3077,7 @@ class IfcContext(IfcObjectDefinition):
     IsDefinedBy: tuple[IfcRelDefinesByProperties, ...]
     Declares: tuple[IfcRelDeclares, ...]
 
-class IfcNamedUnit(entity_instance):
+class IfcNamedUnit(_RootEntity):
     Dimensions: IfcDimensionalExponents
     UnitType: IfcUnitEnum
 
@@ -3114,11 +3117,11 @@ class IfcCoolingTower(IfcEnergyConversionDevice):
 class IfcCoolingTowerType(IfcEnergyConversionDeviceType):
     PredefinedType: IfcCoolingTowerTypeEnum
 
-class IfcCoordinateOperation(entity_instance):
+class IfcCoordinateOperation(_RootEntity):
     SourceCRS: IfcCoordinateReferenceSystemSelect
     TargetCRS: IfcCoordinateReferenceSystem
 
-class IfcCoordinateReferenceSystem(entity_instance):
+class IfcCoordinateReferenceSystem(_RootEntity):
     Name: IfcLabel
     Description: IfcText | None
     GeodeticDatum: IfcIdentifier | None
@@ -3201,7 +3204,7 @@ class IfcCurveSegment(IfcSegment):
     SegmentLength: IfcCurveMeasureSelect
     ParentCurve: IfcCurve
 
-class IfcPresentationStyle(entity_instance):
+class IfcPresentationStyle(_RootEntity):
     Name: IfcLabel | None
 
 class IfcCurveStyle(IfcPresentationStyle):
@@ -3240,17 +3243,17 @@ class IfcDerivedProfileDef(IfcProfileDef):
     Operator: IfcCartesianTransformationOperator2D
     Label: IfcLabel | None
 
-class IfcDerivedUnit(entity_instance):
+class IfcDerivedUnit(_RootEntity):
     Elements: tuple[IfcDerivedUnitElement, ...]
     UnitType: IfcDerivedUnitEnum
     UserDefinedType: IfcLabel | None
     Name: IfcLabel | None
 
-class IfcDerivedUnitElement(entity_instance):
+class IfcDerivedUnitElement(_RootEntity):
     Unit: IfcNamedUnit
     Exponent: int
 
-class IfcDimensionalExponents(entity_instance):
+class IfcDimensionalExponents(_RootEntity):
     LengthExponent: int
     MassExponent: int
     TimeExponent: int
@@ -3539,7 +3542,7 @@ class IfcEvent(IfcProcess):
     UserDefinedEventTriggerType: IfcLabel | None
     EventOccurenceTime: IfcEventTime | None
 
-class IfcSchedulingTime(entity_instance):
+class IfcSchedulingTime(_RootEntity):
     Name: IfcLabel | None
     DataOrigin: IfcDataOriginEnum | None
     UserDefinedDataOrigin: IfcLabel | None
@@ -3603,7 +3606,7 @@ class IfcFacetedBrepWithVoids(IfcFacetedBrep):
 class IfcFacilityPartCommon(IfcFacilityPart):
     PredefinedType: IfcFacilityPartCommonTypeEnum | None
 
-class IfcStructuralConnectionCondition(entity_instance):
+class IfcStructuralConnectionCondition(_RootEntity):
     Name: IfcLabel | None
 
 class IfcFailureConnectionCondition(IfcStructuralConnectionCondition):
@@ -3696,7 +3699,7 @@ class IfcGeometricSet(IfcGeometricRepresentationItem):
 
 class IfcGeometricCurveSet(IfcGeometricSet): ...
 
-class IfcRepresentationContext(entity_instance):
+class IfcRepresentationContext(_RootEntity):
     ContextIdentifier: IfcLabel | None
     ContextType: IfcLabel | None
     RepresentationsInContext: tuple[IfcRepresentation, ...]
@@ -3731,7 +3734,7 @@ class IfcGrid(IfcPositioningElement):
     WAxes: tuple[IfcGridAxis, ...] | None
     PredefinedType: IfcGridTypeEnum | None
 
-class IfcGridAxis(entity_instance):
+class IfcGridAxis(_RootEntity):
     AxisTag: IfcLabel | None
     AxisCurve: IfcCurve
     SameSense: IfcBoolean
@@ -3740,7 +3743,7 @@ class IfcGridAxis(entity_instance):
     PartOfU: tuple[IfcGrid, ...]
     HasIntersections: tuple[IfcVirtualGridIntersection, ...]
 
-class IfcObjectPlacement(entity_instance):
+class IfcObjectPlacement(_RootEntity):
     PlacementRelTo: IfcObjectPlacement | None
     PlacesObject: tuple[IfcProduct, ...]
     ReferencedByPlacements: tuple[IfcObjectPlacement, ...]
@@ -3825,7 +3828,7 @@ class IfcInventory(IfcGroup):
     CurrentValue: IfcCostValue | None
     OriginalValue: IfcCostValue | None
 
-class IfcTimeSeries(entity_instance):
+class IfcTimeSeries(_RootEntity):
     Name: IfcLabel
     Description: IfcText | None
     StartTime: IfcDateTime
@@ -3839,7 +3842,7 @@ class IfcTimeSeries(entity_instance):
 class IfcIrregularTimeSeries(IfcTimeSeries):
     Values: tuple[IfcIrregularTimeSeriesValue, ...]
 
-class IfcIrregularTimeSeriesValue(entity_instance):
+class IfcIrregularTimeSeriesValue(_RootEntity):
     TimeStamp: IfcDateTime
     ListValues: tuple[IfcValue, ...]
 
@@ -3896,7 +3899,7 @@ class IfcLibraryReference(IfcExternalReference):
     ReferencedLibrary: IfcLibraryInformation | None
     LibraryRefForObjects: tuple[IfcRelAssociatesLibrary, ...]
 
-class IfcLightDistributionData(entity_instance):
+class IfcLightDistributionData(_RootEntity):
     MainPlaneAngle: IfcPlaneAngleMeasure
     SecondaryPlaneAngle: tuple[IfcPlaneAngleMeasure, ...]
     LuminousIntensity: tuple[IfcLuminousIntensityDistributionMeasure, ...]
@@ -3907,7 +3910,7 @@ class IfcLightFixture(IfcFlowTerminal):
 class IfcLightFixtureType(IfcFlowTerminalType):
     PredefinedType: IfcLightFixtureTypeEnum
 
-class IfcLightIntensityDistribution(entity_instance):
+class IfcLightIntensityDistribution(_RootEntity):
     LightDistributionCurve: IfcLightDistributionCurveEnum
     DistributionData: tuple[IfcLightDistributionData, ...]
 
@@ -3988,7 +3991,7 @@ class IfcMarineFacility(IfcFacility):
 class IfcMarinePart(IfcFacilityPart):
     PredefinedType: IfcMarinePartTypeEnum | None
 
-class IfcMaterialDefinition(entity_instance):
+class IfcMaterialDefinition(_RootEntity):
     AssociatedTo: tuple[IfcRelAssociatesMaterial, ...]
     HasExternalReferences: tuple[IfcExternalReferenceRelationship, ...]
     HasProperties: tuple[IfcMaterialProperties, ...]
@@ -4001,7 +4004,7 @@ class IfcMaterial(IfcMaterialDefinition):
     IsRelatedWith: tuple[IfcMaterialRelationship, ...]
     RelatesTo: tuple[IfcMaterialRelationship, ...]
 
-class IfcMaterialClassificationRelationship(entity_instance):
+class IfcMaterialClassificationRelationship(_RootEntity):
     MaterialClassifications: tuple[IfcClassificationSelect, ...]
     ClassifiedMaterial: IfcMaterial
 
@@ -4018,7 +4021,7 @@ class IfcMaterialConstituentSet(IfcMaterialDefinition):
     Description: IfcText | None
     MaterialConstituents: tuple[IfcMaterialConstituent, ...] | None
 
-class IfcProductRepresentation(entity_instance):
+class IfcProductRepresentation(_RootEntity):
     Name: IfcLabel | None
     Description: IfcText | None
     Representations: tuple[IfcRepresentation, ...]
@@ -4041,7 +4044,7 @@ class IfcMaterialLayerSet(IfcMaterialDefinition):
     LayerSetName: IfcLabel | None
     Description: IfcText | None
 
-class IfcMaterialUsageDefinition(entity_instance):
+class IfcMaterialUsageDefinition(_RootEntity):
     AssociatedTo: tuple[IfcRelAssociatesMaterial, ...]
 
 class IfcMaterialLayerSetUsage(IfcMaterialUsageDefinition):
@@ -4055,7 +4058,7 @@ class IfcMaterialLayerWithOffsets(IfcMaterialLayer):
     OffsetDirection: IfcLayerSetDirectionEnum
     OffsetValues: tuple[IfcLengthMeasure, ...]
 
-class IfcMaterialList(entity_instance):
+class IfcMaterialList(_RootEntity):
     Materials: tuple[IfcMaterial, ...]
 
 class IfcMaterialProfile(IfcMaterialDefinition):
@@ -4093,7 +4096,7 @@ class IfcMaterialRelationship(IfcResourceLevelRelationship):
     RelatedMaterials: tuple[IfcMaterial, ...]
     MaterialExpression: IfcLabel | None
 
-class IfcMeasureWithUnit(entity_instance):
+class IfcMeasureWithUnit(_RootEntity):
     ValueComponent: IfcValue
     UnitComponent: IfcUnit
 
@@ -4133,7 +4136,7 @@ class IfcMobileTelecommunicationsAppliance(IfcFlowTerminal):
 class IfcMobileTelecommunicationsApplianceType(IfcFlowTerminalType):
     PredefinedType: IfcMobileTelecommunicationsApplianceTypeEnum
 
-class IfcMonetaryUnit(entity_instance):
+class IfcMonetaryUnit(_RootEntity):
     Currency: IfcLabel
 
 class IfcMooringDevice(IfcBuiltElement):
@@ -4192,7 +4195,7 @@ class IfcOpeningElement(IfcFeatureElementSubtraction):
 
 class IfcOpenShell(IfcConnectedFaceSet): ...
 
-class IfcOrganization(entity_instance):
+class IfcOrganization(_RootEntity):
     Identification: IfcIdentifier | None
     Name: IfcLabel
     Description: IfcText | None
@@ -4218,7 +4221,7 @@ class IfcOutlet(IfcFlowTerminal):
 class IfcOutletType(IfcFlowTerminalType):
     PredefinedType: IfcOutletTypeEnum
 
-class IfcOwnerHistory(entity_instance):
+class IfcOwnerHistory(_RootEntity):
     OwningUser: IfcPersonAndOrganization
     OwningApplication: IfcApplication
     State: IfcStateEnum | None
@@ -4257,7 +4260,7 @@ class IfcPermit(IfcControl):
     Status: IfcLabel | None
     LongDescription: IfcText | None
 
-class IfcPerson(entity_instance):
+class IfcPerson(_RootEntity):
     Identification: IfcIdentifier | None
     FamilyName: IfcLabel | None
     GivenName: IfcLabel | None
@@ -4268,12 +4271,12 @@ class IfcPerson(entity_instance):
     Addresses: tuple[IfcAddress, ...] | None
     EngagedIn: tuple[IfcPersonAndOrganization, ...]
 
-class IfcPersonAndOrganization(entity_instance):
+class IfcPersonAndOrganization(_RootEntity):
     ThePerson: IfcPerson
     TheOrganization: IfcOrganization
     Roles: tuple[IfcActorRole, ...] | None
 
-class IfcPhysicalQuantity(entity_instance):
+class IfcPhysicalQuantity(_RootEntity):
     Name: IfcLabel
     Description: IfcText | None
     HasExternalReferences: tuple[IfcExternalReferenceRelationship, ...]
@@ -4382,7 +4385,7 @@ class IfcPostalAddress(IfcAddress):
 class IfcPreDefinedProperties(IfcPropertyAbstraction): ...
 class IfcPreDefinedTextFont(IfcPreDefinedItem): ...
 
-class IfcPresentationLayerAssignment(entity_instance):
+class IfcPresentationLayerAssignment(_RootEntity):
     Name: IfcLabel
     Description: IfcText | None
     AssignedItems: tuple[IfcLayeredItem, ...]
@@ -4580,7 +4583,7 @@ class IfcRectangularTrimmedSurface(IfcBoundedSurface):
     Usense: IfcBoolean
     Vsense: IfcBoolean
 
-class IfcRecurrencePattern(entity_instance):
+class IfcRecurrencePattern(_RootEntity):
     RecurrenceType: IfcRecurrenceTypeEnum
     DayComponent: tuple[IfcDayInMonthNumber, ...] | None
     WeekdayComponent: tuple[IfcDayInWeekNumber, ...] | None
@@ -4590,7 +4593,7 @@ class IfcRecurrencePattern(entity_instance):
     Occurrences: IfcInteger | None
     TimePeriods: tuple[IfcTimePeriod, ...] | None
 
-class IfcReference(entity_instance):
+class IfcReference(_RootEntity):
     TypeIdentifier: IfcIdentifier | None
     AttributeIdentifier: IfcIdentifier | None
     InstanceName: IfcLabel | None
@@ -4867,7 +4870,7 @@ class IfcRelVoidsElement(IfcRelDecomposes):
 class IfcReparametrisedCompositeCurveSegment(IfcCompositeCurveSegment):
     ParamLength: IfcParameterValue
 
-class IfcRepresentation(entity_instance):
+class IfcRepresentation(_RootEntity):
     ContextOfItems: IfcRepresentationContext
     RepresentationIdentifier: IfcLabel | None
     RepresentationType: IfcLabel | None
@@ -4876,7 +4879,7 @@ class IfcRepresentation(entity_instance):
     LayerAssignments: tuple[IfcPresentationLayerAssignment, ...]
     OfProductRepresentation: tuple[IfcProductRepresentation, ...]
 
-class IfcRepresentationMap(entity_instance):
+class IfcRepresentationMap(_RootEntity):
     MappingOrigin: IfcAxis2Placement
     MappedRepresentation: IfcRepresentation
     HasShapeAspects: tuple[IfcShapeAspect, ...]
@@ -5006,7 +5009,7 @@ class IfcShadingDevice(IfcBuiltElement):
 class IfcShadingDeviceType(IfcBuiltElementType):
     PredefinedType: IfcShadingDeviceTypeEnum
 
-class IfcShapeAspect(entity_instance):
+class IfcShapeAspect(_RootEntity):
     ShapeRepresentations: tuple[IfcShapeModel, ...]
     Name: IfcLabel | None
     Description: IfcText | None
@@ -5177,7 +5180,7 @@ class IfcStructuralCurveReaction(IfcStructuralReaction):
 
 class IfcStructuralLinearAction(IfcStructuralCurveAction): ...
 
-class IfcStructuralLoad(entity_instance):
+class IfcStructuralLoad(_RootEntity):
     Name: IfcLabel | None
 
 class IfcStructuralLoadGroup(IfcGroup):
@@ -5360,19 +5363,19 @@ class IfcSystemFurnitureElement(IfcFurnishingElement):
 class IfcSystemFurnitureElementType(IfcFurnishingElementType):
     PredefinedType: IfcSystemFurnitureElementTypeEnum | None
 
-class IfcTable(entity_instance):
+class IfcTable(_RootEntity):
     Name: IfcLabel | None
     Rows: tuple[IfcTableRow, ...] | None
     Columns: tuple[IfcTableColumn, ...] | None
 
-class IfcTableColumn(entity_instance):
+class IfcTableColumn(_RootEntity):
     Identifier: IfcIdentifier | None
     Name: IfcLabel | None
     Description: IfcText | None
     Unit: IfcUnit | None
     ReferencePath: IfcReference | None
 
-class IfcTableRow(entity_instance):
+class IfcTableRow(_RootEntity):
     RowCells: tuple[IfcValue, ...] | None
     IsHeading: IfcBoolean | None
 
@@ -5491,7 +5494,7 @@ class IfcTextureCoordinateGenerator(IfcTextureCoordinate):
     Mode: IfcLabel
     Parameter: tuple[IfcReal, ...] | None
 
-class IfcTextureCoordinateIndices(entity_instance):
+class IfcTextureCoordinateIndices(_RootEntity):
     TexCoordIndex: tuple[IfcPositiveInteger, ...]
     TexCoordsOf: IfcIndexedPolygonalFace
     ToTexMap: tuple[IfcIndexedPolygonalTextureMap, ...]
@@ -5515,11 +5518,11 @@ class IfcThirdOrderPolynomialSpiral(IfcSpiral):
     LinearTerm: IfcLengthMeasure | None
     ConstantTerm: IfcLengthMeasure | None
 
-class IfcTimePeriod(entity_instance):
+class IfcTimePeriod(_RootEntity):
     StartTime: IfcTime
     EndTime: IfcTime
 
-class IfcTimeSeriesValue(entity_instance):
+class IfcTimeSeriesValue(_RootEntity):
     ListValues: tuple[IfcValue, ...]
 
 class IfcTopologyRepresentation(IfcShapeModel): ...
@@ -5599,7 +5602,7 @@ class IfcUnitaryEquipment(IfcEnergyConversionDevice):
 class IfcUnitaryEquipmentType(IfcEnergyConversionDeviceType):
     PredefinedType: IfcUnitaryEquipmentTypeEnum
 
-class IfcUnitAssignment(entity_instance):
+class IfcUnitAssignment(_RootEntity):
     Units: tuple[IfcUnit, ...]
 
 class IfcUShapeProfileDef(IfcParameterizedProfileDef):
@@ -5650,7 +5653,7 @@ class IfcVibrationIsolatorType(IfcElementComponentType):
 class IfcVirtualElement(IfcElement):
     PredefinedType: IfcVirtualElementTypeEnum | None
 
-class IfcVirtualGridIntersection(entity_instance):
+class IfcVirtualGridIntersection(_RootEntity):
     IntersectingAxes: tuple[IfcGridAxis, ...]
     OffsetDistances: tuple[IfcLengthMeasure, ...]
 

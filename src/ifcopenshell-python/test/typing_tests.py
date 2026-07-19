@@ -116,6 +116,23 @@ def multi_schema_file_narrowing_test(f: Union[ifc4.file, ifc4x3.file]):
             assert_type(inst, ifc4.IfcCartesianPointList3D)
 
 
+def multi_schema_instance_schema_property_test(
+    insts: list[Union[ifc4.IfcCartesianPointList3D, ifc4x3.IfcCartesianPointList3D]],
+):
+    # aothms's follow-up: does adding a `.schema` property to entity_instance
+    # (mirroring `file.schema`) let an already-fetched instance narrow
+    # directly, without going through `.file`? Unlike `inst.file.schema`
+    # (snippet 1, a *different* expression from `inst`), `inst.schema` is
+    # checked on `inst` itself, so plain discriminated-union narrowing
+    # applies here too: no cast, no TypeIs predicate needed.
+    for inst in insts:
+        if inst.schema == "IFC4X3":
+            assert_type(inst, ifc4x3.IfcCartesianPointList3D)
+            assert_type(inst.TagList, Union[tuple[ifc4x3.IfcLabel, ...], None])
+        else:
+            assert_type(inst, ifc4.IfcCartesianPointList3D)
+
+
 def _is_ifc4x3_point_list(
     inst: Union[ifc4.IfcCartesianPointList3D, ifc4x3.IfcCartesianPointList3D],
 ) -> TypeIs[ifc4x3.IfcCartesianPointList3D]:
