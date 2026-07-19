@@ -194,6 +194,29 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 		obj_stream.stream << "l " << v1 << " " << v2 << "\n";
 	}
 
+	// Standalone points (Vertex/Point/PointCloud representations, no owning
+	// face or edge), see #134/#1409/#5218. OBJ's "p" element is the only way
+	// to mark a vertex as a rendered primitive in its own right. Points have
+	// their own material id array (not material_ids_/material_it above).
+	auto point_material_it = mesh.points_material_ids().begin();
+	for (int point_index : mesh.points()) {
+		const int material_id = *(point_material_it++);
+
+		if (material_id != previous_material_id) {
+			const ifcopenshell::geometry::taxonomy::style::ptr material = mesh.materials()[material_id];
+			std::string material_name = material->name;
+			ifcopenshell::sanitate_material_name(material_name);
+			obj_stream.stream << "usemtl " << material_name << "\n";
+			if (materials.find(material_name) == materials.end()) {
+				writeMaterial(material);
+				materials.insert(material_name);
+			}
+			previous_material_id = material_id;
+		}
+
+		obj_stream.stream << "p " << (point_index + vcount_total) << "\n";
+	}
+
 	vcount_total += vcount;
     ncount_total += ncount;
 }
