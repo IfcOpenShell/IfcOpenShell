@@ -1,10 +1,11 @@
 # ifcparse_fuzzer
 
-A libFuzzer harness for `IfcParse::IfcFile`. It parses fuzzer input entirely
+A libFuzzer harness for `ifcopenshell::file`. It parses fuzzer input entirely
 in-memory (no subprocess, no temp files), then walks every parsed instance
-and calls `toString()` on it to force full lazy attribute evaluation -
-IfcOpenShell only tokenizes/evaluates on demand, so just constructing
-`IfcFile` barely exercises the parser.
+and calls `to_string()` on it. Constructing the file already tokenizes,
+type-checks, and resolves every attribute of every instance, so
+`to_string()` mainly adds coverage of the reserialization/formatting code
+path rather than the parser itself.
 
 Disabled by default (`BUILD_FUZZERS=OFF`); building it needs Clang, not GCC.
 

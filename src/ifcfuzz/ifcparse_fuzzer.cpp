@@ -17,12 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
-// libFuzzer entry point for IfcParse::IfcFile. Parses the input entirely
+// libFuzzer entry point for ifcopenshell::file. Parses the input entirely
 // in-memory (no subprocess, no temp files) so a coverage-guided fuzzer can
 // reach the tokenizer and argument parser directly instead of only ever
 // observing IfcConvert's exit code.
 
-#include "ifcparse/IfcFile.h"
+#include "ifcparse/file.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -35,19 +35,19 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     }
 
     try {
-        IfcParse::IfcFile file(const_cast<void*>(static_cast<const void*>(data)), static_cast<int>(size));
+        ifcopenshell::file ifc_file(const_cast<void*>(static_cast<const void*>(data)), static_cast<int>(size));
 
-        if (file.good()) {
-            // Constructing IfcFile already tokenizes and type-checks every
+        if (ifc_file.good()) {
+            // Constructing the file already tokenizes and type-checks every
             // attribute of every instance (and resolves references), so
             // most tokenizer/argument bugs are reachable without going any
-            // further. toString() is still exercised here since
+            // further. to_string() is still exercised here since
             // reserialization walks a different code path and may surface
             // additional faults.
             std::ostringstream discard;
-            for (const auto& entity : file) {
+            for (const auto& entity : ifc_file) {
                 try {
-                    entity.second->toString(discard);
+                    entity.second.to_string(discard);
                 } catch (const std::exception&) {
                     // Malformed attributes are expected on fuzzed input.
                 }
