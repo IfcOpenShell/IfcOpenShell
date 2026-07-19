@@ -117,9 +117,7 @@ class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
         related_object: str
 
     @staticmethod
-    def _reattach_styles(
-        file: ifcopenshell.file, copied_entities: dict[int, ifcopenshell.entity_instance]
-    ) -> None:
+    def _reattach_styles(file: ifcopenshell.file, copied_entities: dict[int, ifcopenshell.entity_instance]) -> None:
         """copy_deep only follows forward references, so IfcStyledItem (an inverse,
         ``StyledByItem``) is not carried onto the copied geometry. Re-create a
         styled item on each copy that points at the same presentation styles as
