@@ -62,7 +62,7 @@ import tempfile
 import zipfile
 from collections.abc import Generator, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union, overload
+from typing import TYPE_CHECKING, Literal, Optional, Union, overload
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
@@ -93,8 +93,10 @@ except Exception:
 from . import guid
 from .ifcopenshell_wrapper import entity_instance, file
 from .file import rocksdb_lazy_instance
+
 # Hacks!
 from .entity_instance import _patch_swig_comparisons
+
 _patch_swig_comparisons()
 del _patch_swig_comparisons
 # End hacks!
@@ -215,7 +217,7 @@ def open(
     if format is None:
         format = guess_format(path)
     if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
-        logger = logger_type.Root()
+        logger = logger_type.root()
     if format == ".ifcXML":
         f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()), *((logger,) if logger is not None else ()))
         if f:

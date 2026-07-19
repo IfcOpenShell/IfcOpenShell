@@ -304,7 +304,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
     ):
         self.settings = settings
         if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
-            logger = logger_type.Root()
+            logger = logger_type.root()
         if isinstance(file_or_filename, file):
             self.file = file
             file_or_filename = file_or_filename
@@ -509,9 +509,20 @@ def create_shape(
     return wrap_shape_creation(
         settings,
         (
-            ifcopenshell_wrapper.create_shape(settings, inst, repr, geometry_library, *((logger,) if logger is not None else ()),)
+            ifcopenshell_wrapper.create_shape(
+                settings,
+                inst,
+                repr,
+                geometry_library,
+                *((logger,) if logger is not None else ()),
+            )
             if repr
-            else ifcopenshell_wrapper.create_shape(settings, inst, geometry_library, *((logger,) if logger is not None else ()),)
+            else ifcopenshell_wrapper.create_shape(
+                settings,
+                inst,
+                geometry_library,
+                *((logger,) if logger is not None else ()),
+            )
         ),
     )
 

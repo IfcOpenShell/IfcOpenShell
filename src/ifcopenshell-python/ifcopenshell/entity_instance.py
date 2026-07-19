@@ -22,18 +22,17 @@ from __future__ import annotations
 import functools
 import importlib
 import itertools
-import numbers
 import operator
 import subprocess
 import sys
 import time
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, Union, cast, overload
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 from . import ifcopenshell_wrapper, settings
 
 if TYPE_CHECKING:
-    import ifcopenshell
+    pass
 
 try:
     import logging
@@ -383,8 +382,6 @@ class entity_instance_mixin:
 
         return return_type(_())
 
-    __dict__ = property(get_info)
-
     def get_info(
         self,
         include_identifier: bool = True,
@@ -404,3 +401,41 @@ class entity_instance_mixin:
         return self.get_info_py(
             include_identifier=include_identifier, recursive=recursive, return_type=return_type, ignore=ignore
         )
+
+    __dict__ = property(get_info)
+
+
+# Local test-environment shim: __init__.py on this branch calls
+# _patch_swig_comparisons() unconditionally on import. It is unrelated to
+# #8759 and only needed to unblock running the test suite on this branch.
+_swig_comparisons_patched = False
+
+
+def _patch_swig_comparisons():
+    global _swig_comparisons_patched
+    if _swig_comparisons_patched:
+        return
+    _swig_cls = ifcopenshell_wrapper.entity_instance
+    _orig_eq = _swig_cls.__eq__
+    _orig_ne = _swig_cls.__ne__
+    _orig_lt = _swig_cls.__lt__
+
+    def _safe_eq(self, other):
+        if other is None or not isinstance(other, _swig_cls):
+            return NotImplemented
+        return _orig_eq(self, other)
+
+    def _safe_ne(self, other):
+        if other is None or not isinstance(other, _swig_cls):
+            return NotImplemented
+        return _orig_ne(self, other)
+
+    def _safe_lt(self, other):
+        if other is None or not isinstance(other, _swig_cls):
+            return NotImplemented
+        return _orig_lt(self, other)
+
+    _swig_cls.__eq__ = _safe_eq
+    _swig_cls.__ne__ = _safe_ne
+    _swig_cls.__lt__ = _safe_lt
+    _swig_comparisons_patched = True
