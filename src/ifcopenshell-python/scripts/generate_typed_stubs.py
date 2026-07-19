@@ -20,6 +20,9 @@ Known simplifications (documented, not silently wrong):
   subtype constraints are not represented.
 - ``entity_instance.__getattr__`` returns ``Any``, so misspelled attribute
   names still silently type as ``Any``; declared attributes get real types.
+- ``file.schema`` is narrowed to a ``Literal`` of this one schema, so a type
+  checker can discriminate a ``Union[ifc2x3.file, ifc4.file, ifc4x3.file]``
+  on ``f.schema == "..."`` and get schema-specific ``by_type()`` results.
 
 Usage:
     python generate_typed_stubs.py            # print this message
@@ -148,9 +151,10 @@ def emit_entity(entity: wrapper.entity, lines: list[str], emitted: set[str]) -> 
         lines.append(f"class {entity.name()}({base}): ...")
 
 
-def emit_file_class(entities: list[wrapper.entity], lines: list[str]) -> None:
+def emit_file_class(schema_name: str, entities: list[wrapper.entity], lines: list[str]) -> None:
     lines.append("")
     lines.append("class file(ifcopenshell.file):")
+    lines.append(f'    schema: Literal["{schema_name}"]')
     lines.append("    @overload")
     lines.append("    def by_type(self, type: type[_T], include_subtypes: bool = True) -> list[_T]: ...")
     for entity in entities:
@@ -173,7 +177,7 @@ def generate(schema_name: str) -> Path:
     emitted: set[str] = set()
     for entity in entities:
         emit_entity(entity, lines, emitted)
-    emit_file_class(entities, lines)
+    emit_file_class(schema.name(), entities, lines)
 
     output = PACKAGE_DIR / f"{module}.pyi"
     output.write_text("\n".join(lines) + "\n")
