@@ -22,6 +22,7 @@
 #include "wire_utils.h"
 
 #include <BRepOffsetAPI_MakePipeShell.hxx>
+#include <BRepFill_PipeShell.hxx>
 #include <Geom_Plane.hxx>
 #include <ShapeAnalysis_Surface.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
@@ -355,20 +356,22 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 				continue;
 			}
 
-			BRepOffsetAPI_MakePipeShell builder(wire);
-			builder.Add(section);
-            builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
+			// Raise Angmin so near-tangent corners butt-join instead of hanging in
+			// BRepFill_TrimShellCorner (#8400); not exposed via BRepOffsetAPI_MakePipeShell.
+			const double transition_angmin = 0.1; // rad, ~5.7 deg
+			Handle(BRepFill_PipeShell) builder = new BRepFill_PipeShell(wire);
+			builder->Add(section);
+			builder->SetTransition(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepFill_Modified : BRepFill_Right, transition_angmin);
 			if (directrix_on_plane) {
-				builder.SetMode(pln.Axis().Direction());
+				builder->Set(pln.Axis().Direction());
 			} else if (!is_plane) {
-				builder.SetMode(surface_face);
+				builder->Set(surface_face);
 			}
-			builder.Build();
-			if (!builder.IsDone()) {
+			if (!builder->Build()) {
 				return false;
 			}
-			auto w0 = TopoDS::Wire(builder.FirstShape());
-			auto w1 = TopoDS::Wire(builder.LastShape());
+			auto w0 = TopoDS::Wire(builder->FirstShape());
+			auto w1 = TopoDS::Wire(builder->LastShape());
 			if (mf0) {
 				mf0->Add(w0);
 				mf1->Add(w1);
@@ -382,7 +385,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 				mf1.reset(new BRepBuilderAPI_MakeFace(f1));
 			}
 
-			for (TopExp_Explorer exp2(builder.Shape(), TopAbs_FACE); exp2.More(); exp2.Next()) {
+			for (TopExp_Explorer exp2(builder->Shape(), TopAbs_FACE); exp2.More(); exp2.Next()) {
 				BB.Add(comp, exp2.Current());
 			}
 		}
