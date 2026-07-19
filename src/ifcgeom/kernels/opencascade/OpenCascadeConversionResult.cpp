@@ -343,6 +343,14 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				previous = current;
 			}
 		}
+
+		// Emit vertices with no owning edge (point.cpp's Vertex/Point/PointCloud
+		// compounds), see #134 / #1409 / #5218.
+		for (TopExp_Explorer texp(shape_, TopAbs_VERTEX, TopAbs_EDGE); texp.More(); texp.Next()) {
+			gp_XYZ p = BRep_Tool::Pnt(TopoDS::Vertex(texp.Current())).XYZ();
+			taxonomy_transform(place.components_, p);
+			t->addVertex(item_id, surface_style_id, p.X(), p.Y(), p.Z());
+		}
 	}
 
 	if (!settings.get<settings::OcctNoCleanTriangulation>().get()) {
