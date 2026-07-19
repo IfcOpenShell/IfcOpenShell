@@ -38,11 +38,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         IfcParse::IfcFile file(const_cast<void*>(static_cast<const void*>(data)), static_cast<int>(size));
 
         if (file.good()) {
-            // IfcOpenShell parses lazily: merely constructing IfcFile only
-            // tokenizes the header and indexes instance byte offsets.
-            // toString() forces every attribute of every instance to be
-            // fully parsed, which is where most tokenizer/argument bugs
-            // would actually be reachable.
+            // Constructing IfcFile already tokenizes and type-checks every
+            // attribute of every instance (and resolves references), so
+            // most tokenizer/argument bugs are reachable without going any
+            // further. toString() is still exercised here since
+            // reserialization walks a different code path and may surface
+            // additional faults.
             std::ostringstream discard;
             for (const auto& entity : file) {
                 try {
