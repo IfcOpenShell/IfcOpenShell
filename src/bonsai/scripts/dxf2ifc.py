@@ -16,20 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import argparse
+
 import ezdxf
 import ifcopenshell
 import ifcopenshell.guid
 
 
 class Dxf2Ifc:
+    def __init__(self, dxf_path, outfile):
+        self.dxf_path = dxf_path
+        self.outfile = outfile
+
     def execute(self):
         self.create_ifc_file()
-        doc = ezdxf.readfile("input.dxf")
+        doc = ezdxf.readfile(self.dxf_path)
         model = doc.modelspace()
         products = []
         for entity in model:
             print(entity)
-            if entity.get_mode() == "AcDbPolyFaceMesh":
+            if entity.dxftype() == "POLYLINE" and entity.is_poly_face_mesh:
                 ifc_faces = []
                 for face in entity.faces():
                     ifc_faces.append(
@@ -67,15 +73,18 @@ class Dxf2Ifc:
                             "Name": entity.dxf.layer,
                             "ObjectPlacement": self.placement,
                             "Representation": representation,
-                        }
+                        },
                     )
                 )
             else:
-                print("Not yet implemented")
-        self.file.createIfcRelContainedInSpatialStructure(
-            ifcopenshell.guid.new(), None, None, None, products, self.site
-        )
-        self.file.write("test.ifc")
+                print(f"Skipping unsupported entity: {entity.dxftype()}")
+        if products:
+            self.file.createIfcRelContainedInSpatialStructure(
+                ifcopenshell.guid.new(), None, None, None, products, self.site
+            )
+        else:
+            print("No AcDbPolyFaceMesh entities found, writing an empty IFC")
+        self.file.write(self.outfile)
 
     def create_ifc_file(self):
         self.file = ifcopenshell.file()
@@ -97,14 +106,20 @@ class Dxf2Ifc:
                 "Name": "DXF Conversion",
                 "RepresentationContexts": [self.context],
                 "UnitsInContext": units,
-            }
+            },
         )
         self.site = self.file.create_entity(
             "IfcSite",
-            **{"GlobalId": ifcopenshell.guid.new(), "Name": "DXF Conversion Site", "ObjectPlacement": self.placement}
+            **{"GlobalId": ifcopenshell.guid.new(), "Name": "DXF Conversion Site", "ObjectPlacement": self.placement},
         )
         self.file.createIfcRelAggregates(ifcopenshell.guid.new(), None, None, None, self.project, [self.site])
 
 
-dxf2ifc = Dxf2Ifc()
-dxf2ifc.execute()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Converts DXF polyface meshes (AcDbPolyFaceMesh) to an IFC")
+    parser.add_argument("dxf", type=str, help="The input DXF file")
+    parser.add_argument("-o", "--output", type=str, help="The output IFC file", default="out.ifc")
+    args = parser.parse_args()
+
+    dxf2ifc = Dxf2Ifc(args.dxf, args.output)
+    dxf2ifc.execute()
