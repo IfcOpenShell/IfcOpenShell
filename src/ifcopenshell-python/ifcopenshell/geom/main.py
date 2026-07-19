@@ -109,6 +109,7 @@ SETTING = Literal[
     "mesher-linear-deflection",
     "model-offset",
     "model-rotation",
+    "name-template",
     "no-clean-triangulation",
     "no-normals",
     "no-parallel-mapping",

@@ -115,6 +115,7 @@
 %ignore UseElementGuids;
 %ignore UseElementStepIds;
 %ignore UseElementTypes;
+%ignore NameTemplate;
 %ignore UseYUp;
 %ignore WriteGltfEcef;
 %ignore FloatingPointDigits;

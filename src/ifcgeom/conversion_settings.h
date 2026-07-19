@@ -704,6 +704,17 @@ namespace ifcopenshell {
 		static constexpr bool defaultvalue = false;
 	};
 
+	struct NameTemplate : public settings_detail::SettingBase<NameTemplate, std::string> {
+		static constexpr const char* const name = "name-template";
+		static constexpr const char* const description = "Generic printf/find-style template to derive per-entity identifiers/names upon serialization, "
+			"superseding --use-element-names, --use-element-guids, --use-element-step-ids, and --use-element-types when specified. "
+			"Recognized placeholders: %N (IfcRoot.Name), %G (GlobalId, compressed IFC form), "
+			"%g (GlobalId, uncompressed/decoded UUID form), %T (entity class, e.g. IfcWall), "
+			"%t (Tag attribute, empty when not applicable), %i (numeric STEP instance id), "
+			"%u (the default unique id scheme), and %% (a literal percent sign). "
+			"Example: --name-template '%T-%N (%G)'. Applicable for OBJ, DAE, GLTF, STP, SVG, and TTL output.";
+	};
+
 	struct UseYUp : public settings_detail::SettingBase<UseYUp, bool> {
 		static constexpr const char* const name = "y-up";
 		static constexpr const char* const description = "Change the 'up' axis to positive Y, default is Z UP. Applicable to OBJ output.";
@@ -970,6 +981,7 @@ using geometry_setting_types = std::tuple<
 			settings_detail::UseElementGuids,
 			settings_detail::UseElementStepIds,
 			settings_detail::UseElementTypes,
+			settings_detail::NameTemplate,
 			settings_detail::UseYUp,
 			settings_detail::WriteGltfEcef,
 			settings_detail::FloatingPointDigits,
@@ -1075,6 +1087,7 @@ using geometry_setting_types = std::tuple<
 			using UseElementGuids = settings_detail::UseElementGuids;
 			using UseElementStepIds = settings_detail::UseElementStepIds;
 			using UseElementTypes = settings_detail::UseElementTypes;
+			using NameTemplate = settings_detail::NameTemplate;
 			using UseYUp = settings_detail::UseYUp;
 			using WriteGltfEcef = settings_detail::WriteGltfEcef;
 			using FloatingPointDigits = settings_detail::FloatingPointDigits;

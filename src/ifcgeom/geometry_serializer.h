@@ -64,6 +64,67 @@ public:
 
 namespace ifcopenshell::geom {
 
+// See ifcopenshell::geom::settings::NameTemplate for supported placeholders.
+inline std::string format_name_template(const std::string& tmpl, const ifcopenshell::geom::element* o) {
+	std::string result;
+	result.reserve(tmpl.size());
+	for (std::string::size_type i = 0; i < tmpl.size(); ++i) {
+		char c = tmpl[i];
+		if (c != '%' || i + 1 >= tmpl.size()) {
+			result += c;
+			continue;
+		}
+		char spec = tmpl[++i];
+		switch (spec) {
+		case 'N':
+			result += o->name();
+			break;
+		case 'G':
+			result += o->guid();
+			break;
+		case 'g':
+			try {
+				result += ifcopenshell::global_id(o->guid()).formatted();
+			} catch (const std::exception&) {
+				result += o->guid();
+			}
+			break;
+		case 'T':
+			result += o->type();
+			break;
+		case 't': {
+			const express::entity& product = o->product();
+			const ifcopenshell::entity* decl = product ? product.declaration().as_entity() : nullptr;
+			ptrdiff_t idx = decl ? decl->attribute_index("Tag") : -1;
+			if (idx >= 0) {
+				ifcopenshell::attribute_value v = product.get_attribute_value((size_t) idx);
+				if (!v.isNull()) {
+					try {
+						result += (std::string) v;
+					} catch (const std::exception&) {
+					}
+				}
+			}
+			break;
+		}
+		case 'i':
+			result += std::to_string(o->id());
+			break;
+		case 'u':
+			result += o->unique_id();
+			break;
+		case '%':
+			result += '%';
+			break;
+		default:
+			result += '%';
+			result += spec;
+			break;
+		}
+	}
+	return result;
+}
+
 class IFC_GEOM_API geometry_serializer : public serializer {
 public:
 	enum read_type { READ_BREP, READ_TRIANGULATION };
@@ -86,6 +147,9 @@ public:
     /// Returns ID for the object depending on the used setting.
     virtual std::string object_id(const ifcopenshell::geom::element* o)
     {
+        if (settings_.get<ifcopenshell::geom::settings::NameTemplate>().has()) {
+            return format_name_template(settings_.get<ifcopenshell::geom::settings::NameTemplate>().get(), o);
+        }
         if (settings_.get<ifcopenshell::geom::settings::UseElementGuids>().get()) return o->guid();
         if (settings_.get<ifcopenshell::geom::settings::UseElementNames>().get()) return o->name();
 		if (settings_.get<ifcopenshell::geom::settings::UseElementStepIds>().get()) return "id-" + boost::lexical_cast<std::string>(o->id());
