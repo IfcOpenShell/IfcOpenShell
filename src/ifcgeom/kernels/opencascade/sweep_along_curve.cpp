@@ -30,10 +30,10 @@
 #include <TopExp.hxx>
 #include <Geom_Circle.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
-#include <BRepBuilderAPI_Sewing.hxx>
-#include <ShapeFix_Solid.hxx>
 #include <BRepCheck_Analyzer.hxx>
-#include <Standard_Failure.hxx>
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
+#include <ShapeFix_Solid.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -132,11 +132,6 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
         }
     }
 	
-	// Build the wire from curve, which is the directrix offset toward the origin
-	// when applied_temporary_offset is set. Using scs->curve here left the wire
-	// far from the origin yet still translated the result back by +mean, which
-	// misplaced sweeps far from the origin (#4848). When no offset is applied
-	// curve aliases scs->curve, so near-origin geometry is unaffected.
 	auto w = convert_curve(curve);
 	if (w.which() != 2) {
 		Logger::Root().Error("UNS", 9, "Unsupported directrix");
@@ -241,6 +236,10 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 		}
 	}
 
+	BRep_Builder BB;
+	TopoDS_Shell comp;
+	BB.MakeShell(comp);
+
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
@@ -250,39 +249,36 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	// constructed using MakeFace.
 
 	auto outer = BRepTools::OuterWire(face);
+	std::unique_ptr<BRepBuilderAPI_MakeFace> mf0, mf1;
+	TopoDS_Face f0, f1;
 
-	// Build the swept solid for a given corner transition mode. Returns 0 on a hard
-	// failure (nothing produced), 1 when a solid is produced but not topologically
-	// valid, and 2 when a valid closed solid is produced. On sharp directrix corners
-	// BRepBuilderAPI_RightCorner (mitre) can leave the tube open or self-intersecting,
-	// so the caller retries with the other mode when the result is not valid.
-	auto build_with_mode = [&](BRepBuilderAPI_TransitionMode transition, TopoDS_Shape& out) -> int {
-		BRep_Builder BB;
-		TopoDS_Shell comp;
-		BB.MakeShell(comp);
+	// A closed directrix yields a tube whose first and last sections coincide
+	// on the bisector plane of the seam corner, so that the tube is already a
+	// closed shell. End caps would duplicate that internal face and make the
+	// shell non-manifold.
+	const bool directrix_is_closed = wire.Closed() != 0;
 
-		std::unique_ptr<BRepBuilderAPI_MakeFace> mf0, mf1;
-		TopoDS_Face f0, f1;
+	for (int i = 0; i < 2; ++i) {
+		for (TopExp_Explorer exp(face, TopAbs_WIRE); exp.More(); exp.Next()) {
+			const auto& section = TopoDS::Wire(exp.Current());
+			if (section.IsSame(outer) != (i == 0)) {
+				continue;
+			}
 
-		for (int i = 0; i < 2; ++i) {
-			for (TopExp_Explorer exp(face, TopAbs_WIRE); exp.More(); exp.Next()) {
-				const auto& section = TopoDS::Wire(exp.Current());
-				if (section.IsSame(outer) != (i == 0)) {
-					continue;
-				}
+			BRepOffsetAPI_MakePipeShell builder(wire);
+			builder.Add(section);
+            builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
+			if (directrix_on_plane) {
+				builder.SetMode(pln.Axis().Direction());
+			} else if (!is_plane) {
+				builder.SetMode(surface_face);
+			}
+			builder.Build();
+			if (!builder.IsDone()) {
+				return false;
+			}
 
-				BRepOffsetAPI_MakePipeShell builder(wire);
-				builder.Add(section);
-				builder.SetTransitionMode(transition);
-				if (directrix_on_plane) {
-					builder.SetMode(pln.Axis().Direction());
-				} else if (!is_plane) {
-					builder.SetMode(surface_face);
-				}
-				builder.Build();
-				if (!builder.IsDone()) {
-					return 0;
-				}
+			if (!directrix_is_closed) {
 				auto w0 = TopoDS::Wire(builder.FirstShape());
 				auto w1 = TopoDS::Wire(builder.LastShape());
 				if (mf0) {
@@ -292,102 +288,61 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 					f0 = BRepBuilderAPI_MakeFace(w0).Face();
 					f1 = BRepBuilderAPI_MakeFace(w1).Face();
 					if (f0.IsNull() || f1.IsNull()) {
-						return 0;
+						return false;
 					}
 					mf0.reset(new BRepBuilderAPI_MakeFace(f0));
 					mf1.reset(new BRepBuilderAPI_MakeFace(f1));
 				}
+			}
 
-				for (TopExp_Explorer exp2(builder.Shape(), TopAbs_FACE); exp2.More(); exp2.Next()) {
-					BB.Add(comp, exp2.Current());
-				}
+			for (TopExp_Explorer exp2(builder.Shape(), TopAbs_FACE); exp2.More(); exp2.Next()) {
+				BB.Add(comp, exp2.Current());
 			}
 		}
+	}
 
-		if (!mf0) {
-			return 0;
-		}
-
+	if (!directrix_is_closed) {
+		// The cap at the start of the sweep bounds the solid against the sweep
+		// direction, so it is reversed relative to the section wire, the same
+		// convention as BRepOffsetAPI_MakePipeShell::MakeSolid. Adding both
+		// caps unreversed left the shell orientation inconsistent, which
+		// showed up as inside-out or non-manifold solids.
+		TopoDS_Face cap0, cap1;
 		if (mf0->IsDone() && mf1->IsDone()) {
-			BB.Add(comp, mf0->Face());
-			BB.Add(comp, mf1->Face());
+			cap0 = mf0->Face();
+			cap1 = mf1->Face();
 		} else {
-			BB.Add(comp, f0);
-			BB.Add(comp, f1);
+			cap0 = f0;
+			cap1 = f1;
 		}
-
-		// Fast path: the plain assembly is already a valid closed solid for the
-		// common case, so keep the original output untouched there.
-		TopoDS_Solid direct = BRepBuilderAPI_MakeSolid(comp).Solid();
-		if (!direct.IsNull() && BRepCheck_Analyzer(direct).IsValid()) {
-			out = direct;
-			return 2;
-		}
-
-		// Otherwise the lateral tube (from MakePipeShell) and the end caps (built
-		// separately with MakeFace) are only geometrically coincident along their
-		// shared boundary; BRep_Builder::Add does not merge those edges, so the
-		// shell is left topologically open. Sew the faces so the caps and tube
-		// share edges, then rebuild and orient the solid.
-		BRepBuilderAPI_Sewing sewer(settings_.get<settings::Precision>().get());
-		sewer.Add(comp);
-		sewer.Perform();
-		TopoDS_Shape sewed = sewer.SewedShape();
-
-		TopoDS_Shell shell = comp;
-		if (!sewed.IsNull()) {
-			if (sewed.ShapeType() == TopAbs_SHELL) {
-				shell = TopoDS::Shell(sewed);
-			} else {
-				TopExp_Explorer se(sewed, TopAbs_SHELL);
-				if (se.More()) {
-					shell = TopoDS::Shell(se.Current());
-				}
-			}
-		}
-
-		TopoDS_Solid solid = BRepBuilderAPI_MakeSolid(shell).Solid();
-		if (solid.IsNull()) {
-			out = direct;
-			return direct.IsNull() ? 0 : 1;
-		}
-		ShapeFix_Solid sfs;
-		sfs.Init(solid);
-		sfs.Perform();
-		TopoDS_Shape fixed = sfs.Solid();
-		if (fixed.IsNull()) {
-			fixed = solid;
-		}
-		out = fixed;
-		return BRepCheck_Analyzer(fixed).IsValid() ? 2 : 1;
-	};
-
-	auto primary_mode = (contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2)) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner;
-	auto secondary_mode = (primary_mode == BRepBuilderAPI_RightCorner) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner;
-
-	int rc = 0;
-	try {
-		rc = build_with_mode(primary_mode, result);
-	} catch (const Standard_Failure&) {
-		rc = 0;
+		cap0.Reverse();
+		BB.Add(comp, cap0);
+		BB.Add(comp, cap1);
 	}
-	if (rc < 2) {
-		// The mitre/transformed choice produced an open or invalid solid; retry
-		// with the other transition mode and prefer whichever is valid.
-		TopoDS_Shape alt;
-		int rc2 = 0;
-		try {
-			rc2 = build_with_mode(secondary_mode, alt);
-		} catch (const Standard_Failure&) {
-			rc2 = 0;
-		}
-		if (rc2 == 2 || (rc == 0 && rc2 >= 1)) {
-			result = alt;
-			rc = rc2;
+
+	result = BRepBuilderAPI_MakeSolid(comp).Solid();
+
+	if (!BRepCheck_Analyzer(result).IsValid()) {
+		// Sharp corners under the RightCorner transition can leave individual
+		// trimmed faces with self-intersecting wires; ShapeFix_Solid repairs
+		// those in place without altering the mitred geometry.
+		ShapeFix_Solid fix;
+		fix.Init(TopoDS::Solid(result));
+		fix.Perform();
+		if (!fix.Solid().IsNull()) {
+			result = fix.Solid();
 		}
 	}
-	if (rc == 0 || result.IsNull()) {
-		return false;
+
+	{
+		// The orientation of the section wire determines whether the swept
+		// faces point inward or outward, so the assembled solid can come out
+		// inside-out as a whole. A negative volume identifies that case.
+		GProp_GProps props;
+		BRepGProp::VolumeProperties(result, props);
+		if (props.Mass() < 0.) {
+			result.Complement();
+		}
 	}
 
 	if (applied_temporary_offset) {
