@@ -28,6 +28,7 @@ classes = (
     ui.BIM_PT_ifc_graph,
     operator.LoadIfcGraph,
     operator.ExpandIfcGraphNode,
+    operator.CollapseIfcGraphNode,
 )
 
 

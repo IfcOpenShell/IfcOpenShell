@@ -21,7 +21,7 @@
 from typing import TYPE_CHECKING
 
 import bpy
-from bpy.props import BoolProperty, CollectionProperty, IntProperty
+from bpy.props import BoolProperty, CollectionProperty, IntProperty, StringProperty
 from bpy.types import Node, NodeSocket, NodeTree, Panel
 
 import bonsai.tool as tool
@@ -75,12 +75,16 @@ class IfcGraphEntityNode(Node):
     is_expanded: BoolProperty(name="Expanded", default=False)
     is_origin: BoolProperty(name="Origin", default=False)
     attributes: CollectionProperty(name="Attributes", type=IfcGraphAttribute)
+    expansion_links: StringProperty(default="[]")
+    expansion_base_attr_count: IntProperty(default=0)
 
     if TYPE_CHECKING:
         step_id: int
         is_expanded: bool
         is_origin: bool
         attributes: bpy.types.bpy_prop_collection_idprop[IfcGraphAttribute]
+        expansion_links: str
+        expansion_base_attr_count: int
 
     @classmethod
     def poll(cls, ntree):
@@ -91,7 +95,10 @@ class IfcGraphEntityNode(Node):
         for attribute in self.attributes:
             col.label(text=f"{attribute.name}: {attribute.value}")
         row = layout.row(align=True)
-        if not self.is_expanded:
+        if self.is_expanded:
+            op = row.operator("bim.collapse_ifc_graph_node", text="Collapse", icon="ZOOM_OUT")
+            op.node_name = self.name
+        else:
             op = row.operator("bim.expand_ifc_graph_node", text="Expand", icon="ZOOM_IN")
             op.node_name = self.name
         op = row.operator("bim.inspect_from_step_id", text="Inspect", icon="VIEWZOOM")

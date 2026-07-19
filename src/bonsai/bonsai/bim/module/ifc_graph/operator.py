@@ -18,6 +18,7 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
+import json
 from typing import Union
 
 import bpy
@@ -150,17 +151,21 @@ def get_or_create_output(node: bpy.types.Node, name: str) -> bpy.types.NodeSocke
     return socket
 
 
-def create_link(tree: bpy.types.NodeTree, from_socket: bpy.types.NodeSocket, to_socket: bpy.types.NodeSocket) -> None:
+def create_link(tree: bpy.types.NodeTree, from_socket: bpy.types.NodeSocket, to_socket: bpy.types.NodeSocket) -> bool:
+    """Create the link if missing. Returns whether a new link was actually made."""
     for link in tree.links:
         if link.from_socket == from_socket and link.to_socket == to_socket:
-            return
+            return False
     tree.links.new(from_socket, to_socket)
+    return True
 
 
 def expand_entity_node(tree: bpy.types.NodeTree, ifc_file: ifcopenshell.file, node: bpy.types.Node) -> None:
     """Add one more degree of separation (forward and inverse) around a node."""
     element = ifc_file.by_id(node.step_id)
     parent_x, parent_y = node.location
+    base_attr_count = len(node.attributes)
+    created_links: list[tuple[str, str, str, str]] = []
     for attr_name, refs in get_forward_refs(element):
         shown = refs[:MAX_FORWARD_REFS]
         if len(shown) < len(refs):
@@ -170,7 +175,8 @@ def expand_entity_node(tree: bpy.types.NodeTree, ifc_file: ifcopenshell.file, no
             child, created = add_entity_node(tree, ref)
             if created:
                 place_node(tree, child, parent_x + COLUMN_PITCH, parent_y)
-            create_link(tree, socket, child.inputs[0])
+            if create_link(tree, socket, child.inputs[0]):
+                created_links.append((node.name, attr_name, child.name, "Ref"))
     inverses = sorted(ifc_file.get_inverse(element), key=lambda e: e.id())
     shown_inverses = inverses[:MAX_INVERSE_REFS]
     if len(shown_inverses) < len(inverses):
@@ -179,9 +185,58 @@ def expand_entity_node(tree: bpy.types.NodeTree, ifc_file: ifcopenshell.file, no
         child, created = add_entity_node(tree, inverse)
         if created:
             place_node(tree, child, parent_x - COLUMN_PITCH, parent_y)
-        socket = get_or_create_output(child, find_referencing_attribute(inverse, element))
-        create_link(tree, socket, node.inputs[0])
+        attr_name = find_referencing_attribute(inverse, element)
+        socket = get_or_create_output(child, attr_name)
+        if create_link(tree, socket, node.inputs[0]):
+            created_links.append((child.name, attr_name, node.name, "Ref"))
     node.is_expanded = True
+    node.expansion_base_attr_count = base_attr_count
+    node.expansion_links = json.dumps(created_links)
+
+
+def remove_link_and_orphaned_socket(
+    tree: bpy.types.NodeTree, from_name: str, from_socket_name: str, to_name: str, to_socket_name: str
+) -> None:
+    for link in list(tree.links):
+        if (
+            link.from_node.name == from_name
+            and link.from_socket.name == from_socket_name
+            and link.to_node.name == to_name
+            and link.to_socket.name == to_socket_name
+        ):
+            tree.links.remove(link)
+            break
+    from_node = tree.nodes.get(from_name)
+    if not from_node:
+        return
+    socket = from_node.outputs.get(from_socket_name)
+    if socket and not socket.is_linked:
+        from_node.outputs.remove(socket)
+
+
+def collapse_entity_node(tree: bpy.types.NodeTree, node: bpy.types.Node) -> None:
+    """Undo one node's own Expand call, removing satellites left with no links at all."""
+    if not node.is_expanded:
+        return
+    links = json.loads(node.expansion_links or "[]")
+    touched = {name for pair in links for name in (pair[0], pair[2])}
+    touched.discard(node.name)
+    for from_name, from_socket_name, to_name, to_socket_name in links:
+        remove_link_and_orphaned_socket(tree, from_name, from_socket_name, to_name, to_socket_name)
+    while len(node.attributes) > node.expansion_base_attr_count:
+        node.attributes.remove(len(node.attributes) - 1)
+    for other_name in touched:
+        other = tree.nodes.get(other_name)
+        if not other or other.is_origin:
+            continue
+        if any(socket.is_linked for socket in other.inputs) or any(socket.is_linked for socket in other.outputs):
+            continue
+        if other.is_expanded:
+            collapse_entity_node(tree, other)
+        tree.nodes.remove(other)
+    node.is_expanded = False
+    node.expansion_links = "[]"
+    node.expansion_base_attr_count = 0
 
 
 def get_ifc_graph_tree(context: bpy.types.Context) -> Union[bpy.types.NodeTree, None]:
@@ -267,4 +322,28 @@ class ExpandIfcGraphNode(bpy.types.Operator):
             self.report({"ERROR"}, "Entity no longer exists, reload the graph")
             return {"CANCELLED"}
         expand_entity_node(tree, ifc_file, node)
+        return {"FINISHED"}
+
+
+class CollapseIfcGraphNode(bpy.types.Operator):
+    bl_idname = "bim.collapse_ifc_graph_node"
+    bl_label = "Collapse IFC Graph Node"
+    bl_description = "Remove the related entities this node's Expand added, keeping ones still referenced elsewhere"
+    bl_options = {"REGISTER", "UNDO"}
+    node_name: bpy.props.StringProperty(name="Node Name")
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded")
+            return False
+        return True
+
+    def execute(self, context):
+        tree = get_ifc_graph_tree(context)
+        node = tree.nodes.get(self.node_name) if tree else None
+        if not node:
+            self.report({"ERROR"}, "Graph node not found, reload the graph")
+            return {"CANCELLED"}
+        collapse_entity_node(tree, node)
         return {"FINISHED"}
