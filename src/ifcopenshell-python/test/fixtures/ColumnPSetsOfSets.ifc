@@ -2,7 +2,7 @@ ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('ViewDefinition [CoordinationView]','RevitIdentifiers [ContentGUID: a0df3484-2dab-42c5-b806-8c10d313bee0, VersionGUID: 658c1394-f3a4-43d1-9b3c-eee44a0cd67a, NumberOfSaves: 2]','CoordinateReference [CoordinateBase: Shared Coordinates]'),'2;1');
 FILE_NAME('Column_4x3.ifc','2025-03-12T13:53:30+00:00',(''),(''),'ODA SDAI 24.12','Autodesk Revit 25.4.0.32 (ENG) - IFC 25.4.0.32','');
-FILE_SCHEMA(('IFC4X3_ADD2'));
+FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
 #1=IFCORGANIZATION($,'Autodesk Revit 2025 (ENG)',$,$,$);
