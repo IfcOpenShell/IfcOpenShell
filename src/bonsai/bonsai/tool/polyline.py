@@ -168,6 +168,7 @@ class Polyline(bonsai.core.tool.Polyline):
         distance = (mouse_vector - last_point).length
         if distance < 0:
             return
+        angle, orientation_angle, angle_round_threshold = None, None, None
         if distance > 0:
             angle = tool.Cad.angle_3_vectors(
                 second_to_last_point, last_point, mouse_vector, new_angle=None, degrees=True
