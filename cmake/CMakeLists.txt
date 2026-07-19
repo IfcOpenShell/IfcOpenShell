@@ -79,7 +79,6 @@ option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
 option(BUILD_EXAMPLES "Build example applications." ON)
 option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is required)." ON)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
-option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
 option(BUILD_IFCMODEL_UI "Build minimal Qt IFC model UI prototype" OFF)
 option(BUILD_BONSAIVIEWER "Build Bonsai Viewer" OFF) # Requires Qt6 + OpenGL 4.5
 option(BUILD_IFCOPENSHELL_PARSE_TESTS "Build C++ unit tests for IfcParse (fetches Catch2 v3)" OFF)
@@ -706,10 +705,6 @@ endif()
 
 if(BUILD_IFCPYTHON)
     add_subdirectory(../src/ifcwrap ifcwrap)
-endif()
-
-if(BUILD_QTVIEWER)
-    add_subdirectory(../src/qtviewer qtviewer)
 endif()
 
 if(BUILD_IFCMODEL_UI)
