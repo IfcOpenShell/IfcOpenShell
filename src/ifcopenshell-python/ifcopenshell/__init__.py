@@ -85,8 +85,19 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "lib", p
 
 try:
     from . import ifcopenshell_wrapper
-except Exception:
-    raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
+except Exception as e:
+    import importlib.machinery
+
+    if any(
+        os.path.exists(os.path.join(directory, "_ifcopenshell_wrapper" + suffix))
+        for directory in (
+            os.path.dirname(__file__),
+            os.path.join(os.path.dirname(__file__), "lib", python_distribution),
+        )
+        for suffix in importlib.machinery.EXTENSION_SUFFIXES
+    ):
+        raise ImportError("IfcOpenShell for '%s' failed to load: %s" % (python_distribution, e)) from e
+    raise ImportError("IfcOpenShell not built for '%s'" % python_distribution) from e
 
 # `_file`, `_stream` is used only for annotations inside this file,
 # see https://github.com/microsoft/pyright/discussions/9065.
