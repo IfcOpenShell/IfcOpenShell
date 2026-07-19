@@ -90,6 +90,11 @@ namespace impl {
     };
 
     template <>
+    struct VariantTypeName<int64_t> {
+        static std::string get() { return "int"; }
+    };
+
+    template <>
     struct VariantTypeName<bool> {
         static std::string get() { return "bool"; }
     };
@@ -154,7 +159,9 @@ typedef parameter_pack <
     // An integer argument, e.g. 123
 
     // SCALARS:
-    int,
+    // Stored as int64_t so integer attributes (IfcInteger, IfcTimeStamp)
+    // can hold values outside the signed 32-bit range.
+    int64_t,
     // A boolean argument, it will serialize to either .T. or .F.
     bool,
     // A logical argument, it will serialize to either .T. or .F. or .U.
@@ -395,6 +402,7 @@ public:
     {}
 
     operator int() const;
+    operator int64_t() const;
     operator bool() const;
     operator boost::logic::tribool() const;
     operator double() const;
@@ -425,7 +433,7 @@ public:
             case ifcopenshell::Argument_DERIVED:
                 return visitor(derived{});
             case ifcopenshell::Argument_INT:
-                return visitor((int)*this);
+                return visitor((int64_t)*this);
             case ifcopenshell::Argument_BOOL:
                 return visitor((bool)*this);
             case ifcopenshell::Argument_LOGICAL: {

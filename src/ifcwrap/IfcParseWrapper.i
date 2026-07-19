@@ -646,6 +646,21 @@ private:
 			return v;
 		};
 
+		auto to_index_i64 = [&](PyObject* o) -> long long {
+			PyObject* idx = PyNumber_Index(o);  // accepts numpy ints, bools, etc.
+			if (!idx) {
+				PyErr_Clear();
+				throw ifcopenshell::exception("Attribute not set");
+			}
+			long long v = PyLong_AsLongLong(idx);
+			Py_DECREF(idx);
+			if (PyErr_Occurred()) {
+				PyErr_Clear();
+				throw ifcopenshell::exception("Attribute not set");
+			}
+			return v;
+		};
+
 		auto to_double = [&](PyObject* o) -> double {
 			double v = PyFloat_AsDouble(o); // accepts ints and float-like objects
 			if (PyErr_Occurred()) {
@@ -819,7 +834,7 @@ private:
 
 		switch (arg_type) {
 			case ifcopenshell::Argument_INT: {
-				self->set_attribute_value(i, static_cast<int>(to_index_long(value)));
+				self->set_attribute_value(i, static_cast<int64_t>(to_index_i64(value)));
 				return;
 			}
 			case ifcopenshell::Argument_BOOL: {

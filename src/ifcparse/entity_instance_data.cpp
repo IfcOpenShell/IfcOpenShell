@@ -10,7 +10,7 @@ public:
 
     int operator()(const blank& /*i*/) const { return -1; }
     int operator()(const derived& /*i*/) const { return -1; }
-    int operator()(const int& /*i*/) const { return -1; }
+    int operator()(const int64_t& /*i*/) const { return -1; }
     int operator()(const bool& /*i*/) const { return -1; }
     int operator()(const boost::logic::tribool& /*i*/) const { return -1; }
     int operator()(const double& /*i*/) const { return -1; }
@@ -126,7 +126,12 @@ namespace {
 
 attribute_value::operator int() const
 {
-    return dispatch_get_<int>(array_, storage_model_, instance_name_, entity_or_type_, index_);
+    return (int)dispatch_get_<int64_t>(array_, storage_model_, instance_name_, entity_or_type_, index_);
+}
+
+attribute_value::operator int64_t() const
+{
+    return dispatch_get_<int64_t>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
 attribute_value::operator bool() const
@@ -523,7 +528,7 @@ void rocks_db_attribute_storage::set(void* storage, const ifcopenshell::declarat
 }
 
 template IFC_PARSE_API void rocks_db_attribute_storage::set<blank>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const blank& value);
-template IFC_PARSE_API void rocks_db_attribute_storage::set<int>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const int& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<int64_t>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const int64_t& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<bool>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const bool& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<boost::logic::tribool>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const boost::logic::tribool& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<double>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const double& value);
@@ -546,7 +551,7 @@ template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate_t>(v
 template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate_of_aggregate_t>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_of_aggregate_t& value);
 
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<blank>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
-template IFC_PARSE_API bool rocks_db_attribute_storage::has<int>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<int64_t>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<bool>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<boost::logic::tribool>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<double>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;

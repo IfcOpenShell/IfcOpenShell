@@ -363,9 +363,9 @@ token spf_lexer<Reader>::next() {
                 throw invalid_token_exception(pos, str, "instance name");
             }
             pop_pool_entry();
-            return token(pos, ttype, int_val);
+            return token(pos, ttype, (int64_t)int_val);
         } else if (ttype == token::Token_NONE && !str.empty()) {
-            int int_val;
+            int64_t int_val;
             double float_val;
             auto& first = str.front();
             if ((first >= 'A' && first <= 'Z') || (first >= 'a' && first <= 'z')) {
@@ -446,7 +446,7 @@ bool token::is_float() {
 #endif
 }
 
-int token::as_int() {
+int64_t token::as_int() {
     if (type != Token_INT) {
         throw invalid_token_exception(start_pos, to_string(), "integer");
     }
@@ -948,7 +948,12 @@ direct_aggregate read_direct_aggregate(
                 storage.register_inverse((unsigned)*entity_instance_name, entity, next.value_int, attribute_index);
             }
             dispatch_token_direct(next, aggregate_type && aggregate_type->type_of_element()->as_named_type() ? aggregate_type->type_of_element()->as_named_type()->declared_type() : nullptr, attribute_index, logger, [&aggregate](const auto& value) {
-                aggregate.append(value);
+                // Scalar integers are parsed as int64_t, but integer aggregates remain 32-bit; narrow here.
+                if constexpr (std::is_same_v<std::decay_t<decltype(value)>, int64_t>) {
+                    aggregate.append((int)value);
+                } else {
+                    aggregate.append(value);
+                }
             });
         }
         next = tokens->next();
@@ -1237,7 +1242,7 @@ namespace {
             upper_(upper) {}
         void operator()(const blank& /*i*/) { data_ << "$"; }
         void operator()(const derived& /*i*/) { data_ << "*"; }
-        void operator()(const int& i) { data_ << i; }
+        void operator()(const int64_t& i) { data_ << i; }
         void operator()(const bool& i) { data_ << (i ? ".T." : ".F."); }
         void operator()(const boost::logic::tribool& i) { data_ << (i ? ".T." : (boost::logic::indeterminate(i) ? ".U." : ".F.")); }
         void operator()(const double& i) { data_ << format_double(i); }
@@ -1578,7 +1583,12 @@ express::Base::set_attribute_value(size_t i, const T& t) {
 
     {
         void* const storage = std::visit([](const auto& m) { return (void*)&m; }, file()->storage_);
-        data()->set_attribute_value(i, t);
+        if constexpr (std::is_same_v<std::decay_t<T>, int>) {
+            // Integer attributes are stored as int64_t; widen the schema-generated int here.
+            data()->set_attribute_value(i, (int64_t)t);
+        } else {
+            data()->set_attribute_value(i, t);
+        }
     }
     auto new_attribute = get_attribute_value(i);
 
@@ -3421,6 +3431,7 @@ void express::Base::set_attribute_value(const std::string& name, const express::
 template void IFC_PARSE_API express::Base::set_attribute_value<blank>(size_t index, const blank& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<derived>(size_t index, const derived& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<int>(size_t index, const int& value);
+template void IFC_PARSE_API express::Base::set_attribute_value<int64_t>(size_t index, const int64_t& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<bool>(size_t index, const bool& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<boost::logic::tribool>(size_t index, const boost::logic::tribool& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<double>(size_t index, const double& value);
@@ -3439,6 +3450,7 @@ template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::
 template void IFC_PARSE_API express::Base::set_attribute_value<blank>(const std::string& name, const blank& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<derived>(const std::string& name, const derived& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<int>(const std::string& name, const int& value);
+template void IFC_PARSE_API express::Base::set_attribute_value<int64_t>(const std::string& name, const int64_t& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<bool>(const std::string& name, const bool& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<boost::logic::tribool>(const std::string& name, const boost::logic::tribool& value);
 template void IFC_PARSE_API express::Base::set_attribute_value<double>(const std::string& name, const double& value);
