@@ -4124,6 +4124,31 @@ class OverrideMoveSelect(bpy.types.Operator):
                 self.new_active_obj = obj
             return {"FINISHED"}
 
+        # Get arrays
+        ifc_file = tool.Ifc.get()
+        array_parents_to_move: list[bpy.types.Object] = []
+        for obj in list(context.selected_objects):
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset:
+                continue
+            parent_element = ifc_file.by_guid(pset["Parent"])
+            parent_obj = tool.Ifc.get_object(parent_element)
+            if parent_obj not in array_parents_to_move:
+                array_parents_to_move.append(parent_obj)
+            if element.GlobalId != pset["Parent"]:
+                obj.select_set(False)
+
+        if array_parents_to_move:
+            for parent_obj in array_parents_to_move:
+                parent_element = tool.Ifc.get_entity(parent_obj)
+                for array_obj in tool.Array.get_all_objects(parent_element):
+                    array_obj.select_set(True)
+                self.new_active_obj = parent_obj
+            return {"FINISHED"}
+
         # Get nests
         props = tool.Nest.get_nest_props()
         not_editing_objs = [o.obj for o in props.not_editing_objects]
