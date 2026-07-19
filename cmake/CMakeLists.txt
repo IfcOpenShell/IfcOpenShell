@@ -110,6 +110,11 @@ endif()
 option(BUILD_PACKAGE "" OFF)
 
 option(
+    BUILD_FUZZERS
+    "Build libFuzzer security-fuzzing harnesses. Requires a Clang toolchain configured with -fsanitize=fuzzer (typically also address,undefined) via CMAKE_CXX_FLAGS."
+    OFF
+)
+option(
     IFCOPENSHELL_DEPLOY_QT_RUNTIME
     "Deploy Qt runtime dependencies for installed Qt applications."
     ON
@@ -756,6 +761,10 @@ if(BUILD_BONSAIVIEWER)
         add_subdirectory(../src/ifcviewer-minimal ifcviewer-minimal)
     endif()
     add_subdirectory(../src/bonsaiviewer bonsaiviewer)
+endif()
+
+if(BUILD_FUZZERS)
+    add_subdirectory(../src/ifcfuzz ifcfuzz)
 endif()
 
 # Cmake uninstall target
