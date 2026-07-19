@@ -108,6 +108,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 
 		vertex_mapping_.clear();
 		duplicates_.clear();
+		duplicate_skips_remaining_.clear();
 
 		edge_use.clear();
 
@@ -174,6 +175,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 			if (edge_sets.find({loop->external.get_value_or(false), segment_set}) != edge_sets.end()) {
 				duplicate_faces++;
 				duplicates_.insert(loop->identity());
+				duplicate_skips_remaining_[loop->identity()]++;
 				continue;
 			}
             edge_sets.insert({loop->external.get_value_or(false), segment_set});
@@ -250,7 +252,10 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const ifcopenshell::geomet
 }
 
 bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, NCollection_List<TopoDS_Shape>& wires) {
-	if (duplicates_.find(loop->identity()) != duplicates_.end()) {
+	// Skip only the redundant occurrences, keep one copy of the face.
+	auto it = duplicate_skips_remaining_.find(loop->identity());
+	if (it != duplicate_skips_remaining_.end() && it->second > 0) {
+		--it->second;
 		return false;
 	}
 	TopoDS_Wire wire;
