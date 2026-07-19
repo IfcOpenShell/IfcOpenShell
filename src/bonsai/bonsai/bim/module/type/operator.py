@@ -20,10 +20,12 @@ from typing import TYPE_CHECKING
 
 import bpy
 import ifcopenshell.api.attribute
+import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import ifcopenshell.util.type
 
 import bonsai.bim.helper
 import bonsai.core.geometry
@@ -106,6 +108,103 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
                 obj.name = tool.Model.generate_occurrence_name(relating_type, element.is_a())
 
 
+class ConvertToType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.convert_to_type"
+    bl_label = "Convert to Type"
+    bl_description = (
+        "Create a new type from this object's own geometry, and assign this object to it.\n\n"
+        "Equivalent to launching the Type Manager, creating a type using this object's tessellation, "
+        "then assigning this object to that type."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty(name="Name")
+
+    if TYPE_CHECKING:
+        name: str
+
+    @classmethod
+    def poll(cls, context):
+        if not (obj := context.active_object):
+            return False
+        if not (element := tool.Ifc.get_entity(obj)):
+            return False
+        if not element.is_a("IfcProduct") or element.is_a("IfcTypeProduct"):
+            return False
+        if not element.Representation:
+            cls.poll_message_set("Object has no geometry to convert into a type.")
+            return False
+        if ifcopenshell.util.element.get_type(element):
+            cls.poll_message_set("Object already has a type. Unassign it first, or duplicate its type instead.")
+            return False
+        if not ifcopenshell.util.type.get_applicable_types(element.is_a(), tool.Ifc.get().schema):
+            cls.poll_message_set(f"{element.is_a()} has no applicable type class.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        assert (obj := context.active_object)
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        self.name = element.Name or "Unnamed"
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "name")
+
+    def _execute(self, context):
+        assert (obj := context.active_object)
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        ifc_file = tool.Ifc.get()
+
+        type_class = ifcopenshell.util.type.get_applicable_types(element.is_a(), ifc_file.schema)[0]
+
+        ifc_context = None
+        if active_representation := tool.Geometry.get_active_representation(obj):
+            ifc_context = active_representation.ContextOfItems
+        ifc_context = ifc_context or tool.Type.get_body_context()
+        if not ifc_context:
+            self.report({"ERROR"}, "No representation context is available to build the type's geometry.")
+            return {"CANCELLED"}
+
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+
+        type_obj = bpy.data.objects.new(self.name or "Unnamed", bpy.data.meshes.new("Mesh"))
+        type_element = bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=type_obj,
+            ifc_class=type_class,
+            predefined_type=predefined_type,
+            should_add_representation=False,
+        )
+        assert type_element
+
+        type_obj.matrix_world = obj.matrix_world.copy()
+        type_obj.scale = (1, 1, 1)
+        representation = tool.Geometry.export_mesh_to_tessellation(obj, ifc_context)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, type_element, representation)
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=type_obj,
+            representation=representation,
+        )
+
+        context.view_layer.update()  # Ensures type_obj.matrix_world is correct
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=type_obj)
+
+        core.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=type_element)
+
+        prefs = tool.Blender.get_addon_preferences()
+        if prefs.occurrence_name_style == "TYPE":
+            obj.name = tool.Model.generate_occurrence_name(type_element, element.is_a())
+
+        bpy.ops.bim.load_type_thumbnails()
+        self.report({"INFO"}, f"Created and assigned type '{type_element.Name or 'Unnamed'}'.")
+
+
 class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_type"
     bl_label = "Unassign Type"
@@ -117,9 +216,7 @@ class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
         related_object: str
 
     @staticmethod
-    def _reattach_styles(
-        file: ifcopenshell.file, copied_entities: dict[int, ifcopenshell.entity_instance]
-    ) -> None:
+    def _reattach_styles(file: ifcopenshell.file, copied_entities: dict[int, ifcopenshell.entity_instance]) -> None:
         """copy_deep only follows forward references, so IfcStyledItem (an inverse,
         ``StyledByItem``) is not carried onto the copied geometry. Re-create a
         styled item on each copy that points at the same presentation styles as
