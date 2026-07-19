@@ -42,29 +42,15 @@ def copy_class(
         ifc.link(new, obj)
         return new
     representation = root.get_object_representation(obj)
-
-    def _ctx_str(rep):
-        c = rep.ContextOfItems
-        return f"{c.ContextType}/{c.ContextIdentifier}/{getattr(c, 'TargetView', None)}"
-
-    _src_reps = element.Representation.Representations if element.Representation else []
-    print(f"[copy_class] source {element.is_a()} #{element.id()} reps: {[_ctx_str(r) for r in _src_reps]}")
-
     new = ifc.run("root.copy_class", product=element)
     ifc.link(new, obj)
     relating_type = root.get_element_type(new)
     if relating_type and root.does_type_have_representations(relating_type):
-        _type_ctxs = [_ctx_str(rm.MappedRepresentation) for rm in (relating_type.RepresentationMaps or [])]
-        print(f"[copy_class] TYPE branch: type #{relating_type.id()} RepresentationMaps ctxs: {_type_ctxs}")
-        _dropped = [_ctx_str(r) for r in _src_reps if _ctx_str(r) not in _type_ctxs]
-        print(f"[copy_class] TYPE branch: occurrence-only reps that will be DROPPED: {_dropped}")
         ifc.run("type.map_type_representations", related_object=new, relating_type=relating_type)
         # map_type_representations wipes the occurrence's own representations and
         # only re-maps the type's, so occurrence-specific representations (e.g. a
         # per-occurrence Model/Body/PLAN_VIEW) would be lost. Re-add them.
         root.copy_occurrence_only_representations(element, new, relating_type)
-        _new_reps = new.Representation.Representations if new.Representation else []
-        print(f"[copy_class] TYPE branch: new #{new.id()} reps after mapping+merge: {[_ctx_str(r) for r in _new_reps]}")
         root.link_object_data(ifc.get_object(relating_type), obj)
     elif representation:
         copied_entities = root.copy_representation(element, new)

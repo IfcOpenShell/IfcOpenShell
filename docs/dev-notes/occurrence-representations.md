@@ -107,9 +107,8 @@ local occurrence override.
 
 ## Status — implemented (algorithm verified standalone; not yet driven in live Blender)
 
-- `core/root.py` `copy_class`: calls `copy_occurrence_only_representations`; **diagnostic
-  `print("[copy_class] …")` statements + `_ctx_str` helper are still in** (kept intentionally
-  for repro — strip before merge).
+- `core/root.py` `copy_class`: calls `copy_occurrence_only_representations` (diagnostic
+  `[copy_class]` prints removed).
 - `tool/root.py`: `copy_occurrence_only_representations`.
 - `tool/geometry.py`: `copy_representation_deep`, `assign_representation_to_occurrence`,
   `add_type_representation_map`, `representations_are_identical`.
@@ -146,4 +145,3 @@ divergent = False, context-ignored = True.
 - Panel: Type vs Occurrence grouping correct for occurrence, typed occurrence with no local
   reps (only Type header), typeless element (only Occurrence), and a type element (flat list);
   columns still align with the stack's header row.
-- Strip the `copy_class` diagnostic prints before merge.
