@@ -506,6 +506,25 @@ class TestGetDrawingGroup(NewFile):
         assert subject.get_drawing_group(element) == group
 
 
+class TestGetGroupDrawing(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        group = ifcopenshell.api.group.add_group(ifc)
+        group.ObjectType = "DRAWING"
+        ifcopenshell.api.group.assign_group(ifc, products=[drawing], group=group)
+        assert subject.get_group_drawing(group) == drawing
+
+    def test_ignores_groups_that_are_not_drawings(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        group = ifcopenshell.api.group.add_group(ifc)
+        ifcopenshell.api.group.assign_group(ifc, products=[drawing], group=group)
+        assert subject.get_group_drawing(group) is None
+
+
 class TestGetDrawingTargetView(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
