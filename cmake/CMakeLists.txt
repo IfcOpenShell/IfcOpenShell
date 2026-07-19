@@ -104,7 +104,6 @@ option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
-option(WITH_RELATIONSHIP_VALIDATION "Build IfcConvert with option to validate geometrical relationships." OFF)
 option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcOpenShell" OFF)
 option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
 
