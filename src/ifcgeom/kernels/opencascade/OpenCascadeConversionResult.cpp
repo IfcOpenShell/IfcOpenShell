@@ -371,7 +371,8 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		for (TopExp_Explorer texp(shape_, TopAbs_VERTEX, TopAbs_EDGE); texp.More(); texp.Next()) {
 			gp_XYZ p = BRep_Tool::Pnt(TopoDS::Vertex(texp.Current())).XYZ();
 			taxonomy_transform(place.components_, p);
-			t->addVertex(item_id, surface_style_id, p.X(), p.Y(), p.Z());
+			int idx = t->addVertex(item_id, surface_style_id, p.X(), p.Y(), p.Z());
+			t->addPoint(item_id, surface_style_id, idx);
 		}
 	}
 
@@ -605,6 +606,22 @@ ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::concat(Conversi
 	
 	builder.Add(compound, right);
 
+	return new OpenCascadeShape(std::move(compound));
+}
+
+ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::concat_many(const std::vector<ConversionResultShape*>& others)
+{
+	// Unlike concat(), which is called pairwise and therefore re-classifies
+	// its (potentially large) receiver on every call, this builds one flat
+	// compound in a single O(n) pass: linear time and constant nesting depth
+	// regardless of how many shapes are combined.
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+	builder.Add(compound, shape_);
+	for (auto* other : others) {
+		builder.Add(compound, static_cast<OpenCascadeShape*>(other)->shape_);
+	}
 	return new OpenCascadeShape(std::move(compound));
 }
 

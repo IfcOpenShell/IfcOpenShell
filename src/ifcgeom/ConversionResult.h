@@ -549,6 +549,22 @@ namespace IfcGeom {
 		virtual ConversionResultShape* intersect(ConversionResultShape*) = 0;
 		virtual ConversionResultShape* concat(ConversionResultShape*) = 0;
 
+		// Bulk variant of concat(), combining `this` with every shape in
+		// `others` into a single result. Used by AbstractKernel to reduce a
+		// homogeneous collection (e.g. a point cloud) into one shape, see
+		// #134/#1409/#5218. Default falls back to repeated concat() (correct
+		// but potentially quadratic); kernels can override with a flat,
+		// linear-time bulk implementation.
+		virtual ConversionResultShape* concat_many(const std::vector<ConversionResultShape*>& others) {
+			ConversionResultShape* result = wrap_in_compound();
+			for (auto* other : others) {
+				auto* next = result->concat(other);
+				delete result;
+				result = next;
+			}
+			return result;
+		}
+
 		virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) = 0;
 		virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) = 0;
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const = 0;
