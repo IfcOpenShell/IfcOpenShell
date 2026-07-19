@@ -255,6 +255,7 @@ jobs:
           cd ../bsdd && make test || ERROR=1
           pip install deepdiff
           cd ../ifcdiff && make test || ERROR=1
+          pip install toposort igraph
           cd ../ifcpatch && make test || ERROR=1
           pip install -e ../ifc5d --no-deps
           pip install odfpy xlsxwriter
