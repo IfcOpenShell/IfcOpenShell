@@ -447,6 +447,9 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 
 std::string ColladaSerializer::object_id(const IfcGeom::Element* o) /*override*/
 {
+    if (settings_.get<ifcopenshell::geometry::settings::NameTemplate>().has()) {
+        return GeometrySerializer::object_id(o);
+    }
     if (settings_.get<ifcopenshell::geometry::settings::UseElementTypes>().get()) {
         const std::string slabSuffix = (o->product() && o->product()->declaration().name() == "IfcSlab")
             ? differentiateSlabTypes(o->product())
