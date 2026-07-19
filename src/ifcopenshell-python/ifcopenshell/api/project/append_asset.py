@@ -237,11 +237,15 @@ class Usecase:
             self.target_class = "IfcPresentationStyle"
             return self.append_presentation_style()
 
-    def by_guid(self, guid: str) -> Union[ifcopenshell.entity_instance, None]:
+    def by_guid(self, guid: str, ifc_class: Optional[str] = None) -> Union[ifcopenshell.entity_instance, None]:
         try:
-            return self.file.by_guid(guid)
+            existing = self.file.by_guid(guid)
         except RuntimeError:
             return None
+        # A GlobalId collision with an incompatible class is not the same asset.
+        if ifc_class is not None and not existing.is_a(ifc_class):
+            return None
+        return existing
 
     def material_sets_are_equal(self, set1: ifcopenshell.entity_instance, set2: ifcopenshell.entity_instance) -> bool:
         """Check if two material sets are structurally equivalent."""
@@ -310,7 +314,7 @@ class Usecase:
         if element.id() in self.added_elements:
             return self.added_elements[element.id()]
         if element.is_a("IfcRoot"):
-            return self.by_guid(element.GlobalId)
+            return self.by_guid(element.GlobalId, element.is_a())
         elif not self.assume_asset_uniqueness_by_name:
             return None
         elif element.is_a("IfcMaterial"):
@@ -523,7 +527,7 @@ class Usecase:
             # Currently known cases requiring attributes reassignment are rels.
             if not new.is_a("IfcRelationship"):
                 return
-        elif element.is_a("IfcRelationship") and (existing_rel := self.by_guid(element.GlobalId)):
+        elif element.is_a("IfcRelationship") and (existing_rel := self.by_guid(element.GlobalId, element.is_a())):
             new = existing_rel
         else:
             new = self.file.create_entity(element.is_a())
@@ -569,7 +573,7 @@ class Usecase:
         """Is IFC entity from inverse attribute is another asset to append that should be skipped."""
         if element == self.settings["element"]:
             return False
-        elif element.is_a("IfcRoot") and self.by_guid(element.GlobalId) is not None:
+        elif element.is_a("IfcRoot") and self.by_guid(element.GlobalId, element.is_a()) is not None:
             return False
         elif element.is_a("IfcDistributionPort"):
             return False
