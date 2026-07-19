@@ -21,7 +21,9 @@ END-ISO-10303-21;
 
 
 def test_reference_to_undefined_owning_instance():
-    data = "ISO-10303-21;HEADER;FILE_DESCRIPTION();FILE_NAME();FILE_SCHEMA(('IFC4'));#=IFCRELAGGREGATES((#))#5=IFCPOINT)"
+    data = (
+        "ISO-10303-21;HEADER;FILE_DESCRIPTION();FILE_NAME();FILE_SCHEMA(('IFC4'));#=IFCRELAGGREGATES((#))#5=IFCPOINT)"
+    )
     ifcopenshell.file.from_string(data)
     print(ifcopenshell.get_log())
 
