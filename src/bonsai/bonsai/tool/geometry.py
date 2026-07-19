@@ -1158,6 +1158,9 @@ class Geometry(bonsai.core.tool.Geometry):
         settings.set("layerset-first", True)
         settings.set("keep-bounding-boxes", True)
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+        settings.set("mesher-linear-deflection", ifc_import_settings.deflection_tolerance)
+        settings.set("mesher-angular-deflection", ifc_import_settings.angular_tolerance)
+        geometry_library = ifc_import_settings.geometry_library
 
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
@@ -1169,7 +1172,11 @@ class Geometry(bonsai.core.tool.Geometry):
         shape = None
         if elements:
             iterator = ifcopenshell.geom.iterator(
-                settings, tool.Ifc.get(), multiprocessing.cpu_count(), include=elements
+                settings,
+                tool.Ifc.get(),
+                multiprocessing.cpu_count(),
+                include=elements,
+                geometry_library=geometry_library,
             )
         else:
             iterator = None  # For example, when switching representation of a type with no occurrences
@@ -1224,7 +1231,9 @@ class Geometry(bonsai.core.tool.Geometry):
         for element in element_types:
             if obj := tool.Ifc.get_object(element):
                 if representation := ifcopenshell.util.representation.get_representation(element, context):
-                    geometry = ifcopenshell.geom.create_shape(settings, representation)
+                    geometry = ifcopenshell.geom.create_shape(
+                        settings, representation, geometry_library=geometry_library
+                    )
                     mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
                     mesh = meshes.get(mesh_name)
                     if mesh is None:
