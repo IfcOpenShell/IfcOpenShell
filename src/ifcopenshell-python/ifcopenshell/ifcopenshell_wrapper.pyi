@@ -484,6 +484,26 @@ class Settings:
     def set_(self, *args): ...
     def setting_names(self): ...
 
+class SvgEmitFlushEdges:
+    defaultvalue: Any
+    description: Any
+    name: Any
+
+class SvgRenderCreaseEdges:
+    defaultvalue: Any
+    description: Any
+    name: Any
+
+class SvgRenderSharpEdges:
+    defaultvalue: Any
+    description: Any
+    name: Any
+
+class SvgRidgeAngleMinDegrees:
+    defaultvalue: Any
+    description: Any
+    name: Any
+
 class SvgSerializer(WriteOnlyGeometrySerializer):
     def __init__(self, out_filename, geometry_settings, settings, logger=None): ...
     SH_NONE: Any
@@ -547,6 +567,16 @@ class SvgSerializer(WriteOnlyGeometrySerializer):
     def start_path(self, *args): ...
     def write(self, *args): ...
     def writeHeader(self): ...
+
+class SvgUseEdgeClassification:
+    defaultvalue: Any
+    description: Any
+    name: Any
+
+class SvgValleyAngleMinDegrees:
+    defaultvalue: Any
+    description: Any
+    name: Any
 
 class SwigPyIterator:
     def __init__(self, *args, **kwargs): ...
