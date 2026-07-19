@@ -70,7 +70,6 @@ The IfcOpenShell C++ codebase is split into multiple interal libraries:
 | ifcjni                    | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | ifcparse                  | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | ifcwrap                   | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
-| qtviewer                  | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | serializers               | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 
 [LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING.LESSER "LGPL-3.0-or-later"

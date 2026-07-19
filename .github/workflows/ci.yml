@@ -18,7 +18,6 @@ on:
       - 'src/ifcparse/**'
       - 'src/ifcquery/**'
       - 'src/ifcwrap/**'
-      - 'src/qtviewer/**'
       - 'src/svgfill/**'
       - 'src/serializers/**'
       - 'conda/**'
