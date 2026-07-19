@@ -178,7 +178,7 @@ class IfcGit(bonsai.core.tool.IfcGit):
             if sheet.Scope != "SHEET":
                 continue
             for reference in tool.Drawing.get_document_references(sheet):
-                if tool.Drawing.get_reference_description(reference) == "TITLEBLOCK":
+                if tool.Drawing.get_reference_description(reference) in ("TITLEBLOCK", "LAYOUT"):
                     add_location(getattr(reference, "Location", None))
 
         if project := next(iter(ifc_file.by_type("IfcProject")), None):

@@ -527,7 +527,7 @@ class TestGetProjectAssetPaths(NewFile):
         ifc.createIfcAnnotation(ifcopenshell.guid.new(), None, "text", None, "TEXT")
         assert IfcGit.get_project_asset_paths("/repo/model.ifc") == []
 
-    def test_collects_sheet_titleblocks_but_not_generated_layouts(self):
+    def test_collects_sheet_titleblocks_and_layouts_but_not_generated_sheets(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         sheet = ifc.createIfcDocumentInformation("A01", "Sheet", None, None, None, None, "SHEET")
@@ -535,7 +535,12 @@ class TestGetProjectAssetPaths(NewFile):
         ifc.createIfcDocumentReference("layouts/A01 - Sheet.svg", None, None, "LAYOUT", sheet)
         ifc.createIfcDocumentReference("sheets/A01 - Sheet.svg", None, None, "SHEET", sheet)
         result = IfcGit.get_project_asset_paths("/repo/model.ifc")
-        assert result == [os.path.normpath("/repo/layouts/titleblocks/A1.svg")]
+        assert result == sorted(
+            [
+                os.path.normpath("/repo/layouts/titleblocks/A1.svg"),
+                os.path.normpath("/repo/layouts/A01 - Sheet.svg"),
+            ]
+        )
 
     def test_collects_all_files_in_the_titleblocks_dir(self):
         with tempfile.TemporaryDirectory() as tmpdir:
