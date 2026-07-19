@@ -26,7 +26,7 @@ using namespace ifcopenshell::geometry;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet& inst) {
 	auto point_list = inst.Coordinates();
 	auto coordinates = point_list.CoordList();
-	std::vector<std::vector<int>> indices_list = inst.CoordIndex();
+	std::vector<std::vector<int64_t>> indices_list = inst.CoordIndex();
 
 	std::vector<taxonomy::point3::ptr> points;
 	points.reserve(coordinates.size());
@@ -50,7 +50,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet& inst) {
 			fa->children = { loop };
 			loop->external = true;
 			taxonomy::point3::ptr first, previous;
-			for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
+			for (std::vector<int64_t>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 				if (*jt < 1 || *jt > max_index) {
 					throw ifcopenshell::exception("IfcTriangulatedFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 				}

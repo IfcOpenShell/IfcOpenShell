@@ -701,15 +701,15 @@ private:
 			return fast; // new ref
 		};
 
-		auto to_vec_int = [&](PyObject* o) -> std::vector<int> {
+		auto to_vec_int = [&](PyObject* o) -> std::vector<int64_t> {
 			PyObject* fast = seq_fast(o);
 			Py_ssize_t n = PySequence_Fast_GET_SIZE(fast);
 			PyObject** items = PySequence_Fast_ITEMS(fast);
 
-			std::vector<int> out;
+			std::vector<int64_t> out;
 			out.reserve(static_cast<size_t>(n));
 			for (Py_ssize_t k = 0; k < n; ++k) {
-				out.push_back(static_cast<int>(to_index_long(items[k])));
+				out.push_back(static_cast<int64_t>(to_index_i64(items[k])));
 			}
 
 			Py_DECREF(fast);
@@ -784,12 +784,12 @@ private:
 			return out;
 		};
 
-		auto to_vec_vec_int = [&](PyObject* o) -> std::vector<std::vector<int>> {
+		auto to_vec_vec_int = [&](PyObject* o) -> std::vector<std::vector<int64_t>> {
 			PyObject* fast = seq_fast(o);
 			Py_ssize_t n = PySequence_Fast_GET_SIZE(fast);
 			PyObject** items = PySequence_Fast_ITEMS(fast);
 
-			std::vector<std::vector<int>> out;
+			std::vector<std::vector<int64_t>> out;
 			out.reserve(static_cast<size_t>(n));
 			for (Py_ssize_t k = 0; k < n; ++k) {
 				out.push_back(to_vec_int(items[k]));

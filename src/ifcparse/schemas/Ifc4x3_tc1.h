@@ -11594,8 +11594,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcArcIndex initialize(std::vector< int > /*[3:3]*/ v);
-    operator std::vector< int > /*[3:3]*/() const;
+    IfcArcIndex initialize(std::vector< int64_t > /*[3:3]*/ v);
+    operator std::vector< int64_t > /*[3:3]*/() const;
 };
 
 class IFC_SCHEMA_API IfcAreaDensityMeasure : public express::DeclaredType {
@@ -11691,8 +11691,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcCardinalPointReference initialize(int v);
-    operator int() const;
+    IfcCardinalPointReference initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcComplexNumber is a representation of a complex number expressed as an array with two elements.
 ///   The first element (index 1) denotes the real component which is the numerical
@@ -11766,8 +11766,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcCompoundPlaneAngleMeasure initialize(std::vector< int > /*[3:4]*/ v);
-    operator std::vector< int > /*[3:4]*/() const;
+    IfcCompoundPlaneAngleMeasure initialize(std::vector< int64_t > /*[3:4]*/ v);
+    operator std::vector< int64_t > /*[3:4]*/() const;
 };
 /// Definition from ISO/CD 10303-41:1992: Is the value of a physical quantity as defined by an application context.
 /// Type: REAL
@@ -11794,8 +11794,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcCountMeasure initialize(int v);
-    operator int() const;
+    IfcCountMeasure initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcCurvatureMeasure is a measure for curvature, which is defined as the change of slope per length.
 ///   This is typically a computed value in structural analysis.
@@ -11869,8 +11869,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcDayInMonthNumber initialize(int v);
-    operator int() const;
+    IfcDayInMonthNumber initialize(int64_t v);
+    operator int64_t() const;
 };
 /// Definition from IAI: The IfcDayInWeekNumber is
 /// an integer that defines the position of the specified day in a
@@ -11911,8 +11911,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcDayInWeekNumber initialize(int v);
-    operator int() const;
+    IfcDayInWeekNumber initialize(int64_t v);
+    operator int64_t() const;
 };
 /// Definition from ISO/CD 10303-41:1992: A descriptive measure is a human interpretable definition of a quantifiable value.
 /// Type: STRING
@@ -11940,8 +11940,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcDimensionCount initialize(int v);
-    operator int() const;
+    IfcDimensionCount initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcDoseEquivalentMeasure is a measure of the radioactive dose equivalent.
 /// Usually measured in Sievert (Sv, J/kg).
@@ -12280,8 +12280,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcInteger initialize(int v);
-    operator int() const;
+    IfcInteger initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcIntegerCountRateMeasure is a measure of the integer number of units flowing per unit time.
 /// 
@@ -12295,8 +12295,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcIntegerCountRateMeasure initialize(int v);
-    operator int() const;
+    IfcIntegerCountRateMeasure initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcIonConcentrationMeasure is a measure of particular ion concentration in a liquid, given in mg/L.
 /// 
@@ -12396,8 +12396,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcLineIndex initialize(std::vector< int > /*[2:?]*/ v);
-    operator std::vector< int > /*[2:?]*/() const;
+    IfcLineIndex initialize(std::vector< int64_t > /*[2:?]*/ v);
+    operator std::vector< int64_t > /*[2:?]*/() const;
 };
 /// IfcLinearForceMeasure is a measure of linear force.
 /// Usually measured in N/m.
@@ -12757,8 +12757,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcMonthInYearNumber initialize(int v);
-    operator int() const;
+    IfcMonthInYearNumber initialize(int64_t v);
+    operator int64_t() const;
 };
 /// A non-negative length measure is a length measure that is greater than or equal to zero.
 /// 
@@ -12851,8 +12851,8 @@ public:
     using IfcInteger::IfcInteger;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcPositiveInteger initialize(int v);
-    operator int() const;
+    IfcPositiveInteger initialize(int64_t v);
+    operator int64_t() const;
 };
 /// Definition from ISO/CD 10303-41:1992: A positive length measure is a length measure that is greater than zero.
 /// Type: IfcLengthMeasure
@@ -13419,8 +13419,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcTimeStamp initialize(int v);
-    operator int() const;
+    IfcTimeStamp initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcTorqueMeasure is a measure of the torque or moment of a couple.
 /// Usually measured in N m.
@@ -14293,11 +14293,11 @@ public:
     ::Ifc4x3_tc1::IfcNamedUnit Unit() const;
     void setUnit(const ::Ifc4x3_tc1::IfcNamedUnit& v);
     /// The power that is applied to the unit attribute.
-    int Exponent() const;
-    void setExponent(const int& v);
+    int64_t Exponent() const;
+    void setExponent(const int64_t& v);
     
     static const ifcopenshell::entity& Class();
-    IfcDerivedUnitElement initialize(::Ifc4x3_tc1::IfcNamedUnit v1_Unit, int v2_Exponent);
+    IfcDerivedUnitElement initialize(::Ifc4x3_tc1::IfcNamedUnit v1_Unit, int64_t v2_Exponent);
 };
 /// Definition from ISO/CD 10303-41:1992: The dimensionality of any quantity can be expressed as a product of powers of the dimensions of base quantities. 
 /// The dimensional exponents entity defines the powers of the dimensions of the base quantities. All the physical 
@@ -14321,29 +14321,29 @@ public:
     using express::Entity::Entity;
 
     /// The power of the length base quantity.
-    int LengthExponent() const;
-    void setLengthExponent(const int& v);
+    int64_t LengthExponent() const;
+    void setLengthExponent(const int64_t& v);
     /// The power of the mass base quantity.
-    int MassExponent() const;
-    void setMassExponent(const int& v);
+    int64_t MassExponent() const;
+    void setMassExponent(const int64_t& v);
     /// The power of the time base quantity.
-    int TimeExponent() const;
-    void setTimeExponent(const int& v);
+    int64_t TimeExponent() const;
+    void setTimeExponent(const int64_t& v);
     /// The power of the electric current base quantity.
-    int ElectricCurrentExponent() const;
-    void setElectricCurrentExponent(const int& v);
+    int64_t ElectricCurrentExponent() const;
+    void setElectricCurrentExponent(const int64_t& v);
     /// The power of the thermodynamic temperature base quantity.
-    int ThermodynamicTemperatureExponent() const;
-    void setThermodynamicTemperatureExponent(const int& v);
+    int64_t ThermodynamicTemperatureExponent() const;
+    void setThermodynamicTemperatureExponent(const int64_t& v);
     /// The power of the amount of substance base quantity.
-    int AmountOfSubstanceExponent() const;
-    void setAmountOfSubstanceExponent(const int& v);
+    int64_t AmountOfSubstanceExponent() const;
+    void setAmountOfSubstanceExponent(const int64_t& v);
     /// The power of the luminous intensity base quantity.
-    int LuminousIntensityExponent() const;
-    void setLuminousIntensityExponent(const int& v);
+    int64_t LuminousIntensityExponent() const;
+    void setLuminousIntensityExponent(const int64_t& v);
     
     static const ifcopenshell::entity& Class();
-    IfcDimensionalExponents initialize(int v1_LengthExponent, int v2_MassExponent, int v3_TimeExponent, int v4_ElectricCurrentExponent, int v5_ThermodynamicTemperatureExponent, int v6_AmountOfSubstanceExponent, int v7_LuminousIntensityExponent);
+    IfcDimensionalExponents initialize(int64_t v1_LengthExponent, int64_t v2_MassExponent, int64_t v3_TimeExponent, int64_t v4_ElectricCurrentExponent, int64_t v5_ThermodynamicTemperatureExponent, int64_t v6_AmountOfSubstanceExponent, int64_t v7_LuminousIntensityExponent);
 };
 /// An IfcExternalInformation is the identification of an information source that is not explicitly represented in the current model or in the project database (as an implementation of the current model). The IfcExternalInformation identifies the external source (classification, document, or library), but not the particular items such as a dictionary entry, a classification notation, or a document reference within the external source
 /// 
@@ -14778,12 +14778,12 @@ public:
     std::optional< std::string > Category() const;
     void setCategory(const std::optional< std::string >& v);
     /// The relative priority of the layer, expressed as ratio measure, normalised to 0..1. Controls how layers intersect in connections and corners of building elements: a layer from one element protrudes into (i.e. displaces) a layer from another element in a joint of these elements if the former element's layer has higher priority than the latter. The priorty value for a material layer in an element has to be set and maintained by software applications, in relation to the material layers in connected elements. The usage has to be further specified for each element, especially to avoid simultanious use with IfcLayerOffset.
-    std::optional< int > Priority() const;
-    void setPriority(const std::optional< int >& v);
+    std::optional< int64_t > Priority() const;
+    void setPriority(const std::optional< int64_t >& v);
         std::vector< IfcMaterialLayerSet > ToMaterialLayerSet() const; // INVERSE IfcMaterialLayerSet::MaterialLayers
 
     static const ifcopenshell::entity& Class();
-    IfcMaterialLayer initialize(::Ifc4x3_tc1::IfcMaterial v1_Material, double v2_LayerThickness, std::optional< boost::logic::tribool > v3_IsVentilated, std::optional< std::string > v4_Name, std::optional< std::string > v5_Description, std::optional< std::string > v6_Category, std::optional< int > v7_Priority);
+    IfcMaterialLayer initialize(::Ifc4x3_tc1::IfcMaterial v1_Material, double v2_LayerThickness, std::optional< boost::logic::tribool > v3_IsVentilated, std::optional< std::string > v4_Name, std::optional< std::string > v5_Description, std::optional< std::string > v6_Category, std::optional< int64_t > v7_Priority);
 };
 /// IfcMaterialLayerSet is a designation by which materials of an element constructed of a number of material layers is known and through which the relative positioning of individual layers can be expressed.
 /// 
@@ -14892,7 +14892,7 @@ public:
     void setOffsetValues(const std::vector< double > /*[1:2]*/& v);
     
     static const ifcopenshell::entity& Class();
-    IfcMaterialLayerWithOffsets initialize(::Ifc4x3_tc1::IfcMaterial v1_Material, double v2_LayerThickness, std::optional< boost::logic::tribool > v3_IsVentilated, std::optional< std::string > v4_Name, std::optional< std::string > v5_Description, std::optional< std::string > v6_Category, std::optional< int > v7_Priority, ::Ifc4x3_tc1::IfcLayerSetDirectionEnum::Value v8_OffsetDirection, std::vector< double > /*[1:2]*/ v9_OffsetValues);
+    IfcMaterialLayerWithOffsets initialize(::Ifc4x3_tc1::IfcMaterial v1_Material, double v2_LayerThickness, std::optional< boost::logic::tribool > v3_IsVentilated, std::optional< std::string > v4_Name, std::optional< std::string > v5_Description, std::optional< std::string > v6_Category, std::optional< int64_t > v7_Priority, ::Ifc4x3_tc1::IfcLayerSetDirectionEnum::Value v8_OffsetDirection, std::vector< double > /*[1:2]*/ v9_OffsetValues);
 };
 /// IfcMaterialList is a list of the different materials
 /// that are used in an element.
@@ -14944,15 +14944,15 @@ public:
     ::Ifc4x3_tc1::IfcProfileDef Profile() const;
     void setProfile(const ::Ifc4x3_tc1::IfcProfileDef& v);
     /// The relative priority of the profile, expressed as ratio measure, normalised to 0..1. Controls how profiles intersect in connections and corners of building elements: a profile from one element protrudes into (i.e. displaces) a profile from another element in a joint of these elements if the former element's profile has higher priority than the latter. The priorty value for a material profile in an element has to be set and maintained by software applications, in relation to the material profiles in connected elements.
-    std::optional< int > Priority() const;
-    void setPriority(const std::optional< int >& v);
+    std::optional< int64_t > Priority() const;
+    void setPriority(const std::optional< int64_t >& v);
     /// Category of the material profile, e.g. the role it has in the profile set it belongs to.
     std::optional< std::string > Category() const;
     void setCategory(const std::optional< std::string >& v);
         std::vector< IfcMaterialProfileSet > ToMaterialProfileSet() const; // INVERSE IfcMaterialProfileSet::MaterialProfiles
 
     static const ifcopenshell::entity& Class();
-    IfcMaterialProfile initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc4x3_tc1::IfcMaterial v3_Material, ::Ifc4x3_tc1::IfcProfileDef v4_Profile, std::optional< int > v5_Priority, std::optional< std::string > v6_Category);
+    IfcMaterialProfile initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc4x3_tc1::IfcMaterial v3_Material, ::Ifc4x3_tc1::IfcProfileDef v4_Profile, std::optional< int64_t > v5_Priority, std::optional< std::string > v6_Category);
 };
 /// IfcMaterialProfileSet is a designation by which individual material(s) of a prismatic element (for example, beam or column) constructed of a single or multiple material profiles is known. If only a single material profile is used (the most typical case) then no CompositeProfile is asserted.
 /// 
@@ -14996,7 +14996,7 @@ public:
     void setOffsetValues(const std::vector< double > /*[1:2]*/& v);
     
     static const ifcopenshell::entity& Class();
-    IfcMaterialProfileWithOffsets initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc4x3_tc1::IfcMaterial v3_Material, ::Ifc4x3_tc1::IfcProfileDef v4_Profile, std::optional< int > v5_Priority, std::optional< std::string > v6_Category, std::vector< double > /*[1:2]*/ v7_OffsetValues);
+    IfcMaterialProfileWithOffsets initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc4x3_tc1::IfcMaterial v3_Material, ::Ifc4x3_tc1::IfcProfileDef v4_Profile, std::optional< int64_t > v5_Priority, std::optional< std::string > v6_Category, std::vector< double > /*[1:2]*/ v7_OffsetValues);
 };
 /// IfcMaterialUsageDefinition is a general supertype for all
 /// material related information items in IFC that have occurrence
@@ -15281,8 +15281,8 @@ public:
     std::optional< ::Ifc4x3_tc1::IfcChangeActionEnum::Value > ChangeAction() const;
     void setChangeAction(const std::optional< ::Ifc4x3_tc1::IfcChangeActionEnum::Value >& v);
     /// Date and Time expressed in UTC (Universal Time Coordinated, formerly Greenwich Mean Time or GMT) at which the last modification was made by LastModifyingUser and LastModifyingApplication.
-    std::optional< int > LastModifiedDate() const;
-    void setLastModifiedDate(const std::optional< int >& v);
+    std::optional< int64_t > LastModifiedDate() const;
+    void setLastModifiedDate(const std::optional< int64_t >& v);
     /// User who carried out the last modification using LastModifyingApplication.
     ::Ifc4x3_tc1::IfcPersonAndOrganization LastModifyingUser() const;
     void setLastModifyingUser(const ::Ifc4x3_tc1::IfcPersonAndOrganization& v);
@@ -15290,11 +15290,11 @@ public:
     ::Ifc4x3_tc1::IfcApplication LastModifyingApplication() const;
     void setLastModifyingApplication(const ::Ifc4x3_tc1::IfcApplication& v);
     /// The date and time expressed in UTC (Universal Time Coordinated, formerly Greenwich Mean Time or GMT) when first created by the original OwningApplication. Once defined this value remains unchanged through the lifetime of the entity.
-    int CreationDate() const;
-    void setCreationDate(const int& v);
+    int64_t CreationDate() const;
+    void setCreationDate(const int64_t& v);
     
     static const ifcopenshell::entity& Class();
-    IfcOwnerHistory initialize(::Ifc4x3_tc1::IfcPersonAndOrganization v1_OwningUser, ::Ifc4x3_tc1::IfcApplication v2_OwningApplication, std::optional< ::Ifc4x3_tc1::IfcStateEnum::Value > v3_State, std::optional< ::Ifc4x3_tc1::IfcChangeActionEnum::Value > v4_ChangeAction, std::optional< int > v5_LastModifiedDate, ::Ifc4x3_tc1::IfcPersonAndOrganization v6_LastModifyingUser, ::Ifc4x3_tc1::IfcApplication v7_LastModifyingApplication, int v8_CreationDate);
+    IfcOwnerHistory initialize(::Ifc4x3_tc1::IfcPersonAndOrganization v1_OwningUser, ::Ifc4x3_tc1::IfcApplication v2_OwningApplication, std::optional< ::Ifc4x3_tc1::IfcStateEnum::Value > v3_State, std::optional< ::Ifc4x3_tc1::IfcChangeActionEnum::Value > v4_ChangeAction, std::optional< int64_t > v5_LastModifiedDate, ::Ifc4x3_tc1::IfcPersonAndOrganization v6_LastModifyingUser, ::Ifc4x3_tc1::IfcApplication v7_LastModifyingApplication, int64_t v8_CreationDate);
 };
 /// Definition: an individual human being.
 /// 
@@ -15913,8 +15913,8 @@ public:
     using IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity;
 
     /// Count measure value of this quantity.
-    int CountValue() const;
-    void setCountValue(const int& v);
+    int64_t CountValue() const;
+    void setCountValue(const int64_t& v);
     /// A formula by which the quantity has been calculated. It can be assigned in addition to the actual value of the quantity. Formulas could be mathematic calculations (like width x height), database links, or a combination. The formula is for informational purposes only.
     /// 
     /// IFC2x4 CHANGE  Attribute added to the end of the attribute list.
@@ -15922,7 +15922,7 @@ public:
     void setFormula(const std::optional< std::string >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcQuantityCount initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc4x3_tc1::IfcNamedUnit v3_Unit, int v4_CountValue, std::optional< std::string > v5_Formula);
+    IfcQuantityCount initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc4x3_tc1::IfcNamedUnit v3_Unit, int64_t v4_CountValue, std::optional< std::string > v5_Formula);
 };
 /// IfcQuantityLength is a physical quantity that defines a derived length measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement.
 /// 
@@ -16038,31 +16038,31 @@ public:
     ::Ifc4x3_tc1::IfcRecurrenceTypeEnum::Value RecurrenceType() const;
     void setRecurrenceType(const ::Ifc4x3_tc1::IfcRecurrenceTypeEnum::Value& v);
     /// The position of the specified day in a month.
-    std::optional< std::vector< int > /*[1:?]*/ > DayComponent() const;
-    void setDayComponent(const std::optional< std::vector< int > /*[1:?]*/ >& v);
+    std::optional< std::vector< int64_t > /*[1:?]*/ > DayComponent() const;
+    void setDayComponent(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v);
     /// The weekday name of the specified day in a week.
-    std::optional< std::vector< int > /*[1:?]*/ > WeekdayComponent() const;
-    void setWeekdayComponent(const std::optional< std::vector< int > /*[1:?]*/ >& v);
+    std::optional< std::vector< int64_t > /*[1:?]*/ > WeekdayComponent() const;
+    void setWeekdayComponent(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v);
     /// The position of the specified month in a year.
-    std::optional< std::vector< int > /*[1:?]*/ > MonthComponent() const;
-    void setMonthComponent(const std::optional< std::vector< int > /*[1:?]*/ >& v);
+    std::optional< std::vector< int64_t > /*[1:?]*/ > MonthComponent() const;
+    void setMonthComponent(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v);
     /// The position of the specified component, e.g. the 3rd
     ///   (position=3) Tuesday (weekday component) in a month. A
     ///   negative position value is used to define the last position 
     ///   of the component (-1), the next to last position (-2) etc.
-    std::optional< int > Position() const;
-    void setPosition(const std::optional< int >& v);
+    std::optional< int64_t > Position() const;
+    void setPosition(const std::optional< int64_t >& v);
     /// An interval can be given according to the pattern type. An
     ///   interval value of 2 can for instance every two days, weeks,
     ///   months, years. An empty interval value is regarded as 1. The
     ///   used interval values should be in a reasonable range, e.g.
     ///   not 0 or <0.
-    std::optional< int > Interval() const;
-    void setInterval(const std::optional< int >& v);
+    std::optional< int64_t > Interval() const;
+    void setInterval(const std::optional< int64_t >& v);
     /// Defines the number of occurrences of this pattern, e.g. a weekly 
     ///   event might be defined to occur 5 times before it stops.
-    std::optional< int > Occurrences() const;
-    void setOccurrences(const std::optional< int >& v);
+    std::optional< int64_t > Occurrences() const;
+    void setOccurrences(const std::optional< int64_t >& v);
     /// List of time periods that are defined by a start and end time
     ///   of the recurring element (day). The order of the list should
     ///   reflect the sequence of the time periods.
@@ -16070,7 +16070,7 @@ public:
     void setTimePeriods(const std::optional< std::vector< ::Ifc4x3_tc1::IfcTimePeriod > >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcRecurrencePattern initialize(::Ifc4x3_tc1::IfcRecurrenceTypeEnum::Value v1_RecurrenceType, std::optional< std::vector< int > /*[1:?]*/ > v2_DayComponent, std::optional< std::vector< int > /*[1:?]*/ > v3_WeekdayComponent, std::optional< std::vector< int > /*[1:?]*/ > v4_MonthComponent, std::optional< int > v5_Position, std::optional< int > v6_Interval, std::optional< int > v7_Occurrences, std::optional< std::vector< ::Ifc4x3_tc1::IfcTimePeriod > > v8_TimePeriods);
+    IfcRecurrencePattern initialize(::Ifc4x3_tc1::IfcRecurrenceTypeEnum::Value v1_RecurrenceType, std::optional< std::vector< int64_t > /*[1:?]*/ > v2_DayComponent, std::optional< std::vector< int64_t > /*[1:?]*/ > v3_WeekdayComponent, std::optional< std::vector< int64_t > /*[1:?]*/ > v4_MonthComponent, std::optional< int64_t > v5_Position, std::optional< int64_t > v6_Interval, std::optional< int64_t > v7_Occurrences, std::optional< std::vector< ::Ifc4x3_tc1::IfcTimePeriod > > v8_TimePeriods);
 };
 
 class IFC_SCHEMA_API IfcReference : public express::Entity {
@@ -16083,13 +16083,13 @@ public:
     void setAttributeIdentifier(const std::optional< std::string >& v);
     std::optional< std::string > InstanceName() const;
     void setInstanceName(const std::optional< std::string >& v);
-    std::optional< std::vector< int > /*[1:?]*/ > ListPositions() const;
-    void setListPositions(const std::optional< std::vector< int > /*[1:?]*/ >& v);
+    std::optional< std::vector< int64_t > /*[1:?]*/ > ListPositions() const;
+    void setListPositions(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v);
     ::Ifc4x3_tc1::IfcReference InnerReference() const;
     void setInnerReference(const ::Ifc4x3_tc1::IfcReference& v);
     
     static const ifcopenshell::entity& Class();
-    IfcReference initialize(std::optional< std::string > v1_TypeIdentifier, std::optional< std::string > v2_AttributeIdentifier, std::optional< std::string > v3_InstanceName, std::optional< std::vector< int > /*[1:?]*/ > v4_ListPositions, ::Ifc4x3_tc1::IfcReference v5_InnerReference);
+    IfcReference initialize(std::optional< std::string > v1_TypeIdentifier, std::optional< std::string > v2_AttributeIdentifier, std::optional< std::string > v3_InstanceName, std::optional< std::vector< int64_t > /*[1:?]*/ > v4_ListPositions, ::Ifc4x3_tc1::IfcReference v5_InnerReference);
 };
 /// Definition from ISO/CD 10303-43:1992: A
 ///   representation is one or more representation items that are
@@ -17494,25 +17494,25 @@ class IFC_SCHEMA_API IfcTextureCoordinateIndices : public express::Entity {
 public:
     using express::Entity::Entity;
 
-    std::vector< int > /*[3:?]*/ TexCoordIndex() const;
-    void setTexCoordIndex(const std::vector< int > /*[3:?]*/& v);
+    std::vector< int64_t > /*[3:?]*/ TexCoordIndex() const;
+    void setTexCoordIndex(const std::vector< int64_t > /*[3:?]*/& v);
     ::Ifc4x3_tc1::IfcIndexedPolygonalFace TexCoordsOf() const;
     void setTexCoordsOf(const ::Ifc4x3_tc1::IfcIndexedPolygonalFace& v);
         std::vector< IfcIndexedPolygonalTextureMap > ToTexMap() const; // INVERSE IfcIndexedPolygonalTextureMap::TexCoordIndices
 
     static const ifcopenshell::entity& Class();
-    IfcTextureCoordinateIndices initialize(std::vector< int > /*[3:?]*/ v1_TexCoordIndex, ::Ifc4x3_tc1::IfcIndexedPolygonalFace v2_TexCoordsOf);
+    IfcTextureCoordinateIndices initialize(std::vector< int64_t > /*[3:?]*/ v1_TexCoordIndex, ::Ifc4x3_tc1::IfcIndexedPolygonalFace v2_TexCoordsOf);
 };
 
 class IFC_SCHEMA_API IfcTextureCoordinateIndicesWithVoids : public IfcTextureCoordinateIndices {
 public:
     using IfcTextureCoordinateIndices::IfcTextureCoordinateIndices;
 
-    std::vector< std::vector< int > > InnerTexCoordIndices() const;
-    void setInnerTexCoordIndices(const std::vector< std::vector< int > >& v);
+    std::vector< std::vector< int64_t > > InnerTexCoordIndices() const;
+    void setInnerTexCoordIndices(const std::vector< std::vector< int64_t > >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcTextureCoordinateIndicesWithVoids initialize(std::vector< int > /*[3:?]*/ v1_TexCoordIndex, ::Ifc4x3_tc1::IfcIndexedPolygonalFace v2_TexCoordsOf, std::vector< std::vector< int > > v3_InnerTexCoordIndices);
+    IfcTextureCoordinateIndicesWithVoids initialize(std::vector< int64_t > /*[3:?]*/ v1_TexCoordIndex, ::Ifc4x3_tc1::IfcIndexedPolygonalFace v2_TexCoordsOf, std::vector< std::vector< int64_t > > v3_InnerTexCoordIndices);
 };
 /// An IfcTextureMap provides the mapping of the
 /// 2-dimensional texture coordinates to the surface onto which it is
@@ -19350,8 +19350,8 @@ public:
     using IfcRepresentationContext::IfcRepresentationContext;
 
     /// The integer dimension count of the coordinate space modeled in a geometric representation context.
-    int CoordinateSpaceDimension() const;
-    void setCoordinateSpaceDimension(const int& v);
+    int64_t CoordinateSpaceDimension() const;
+    void setCoordinateSpaceDimension(const int64_t& v);
     /// Value of the model precision for geometric models. It is a double value (REAL), typically in 1E-5 to 1E-8 range, that indicates the tolerance under which two given points are still assumed to be identical. The value can be used e.g. to sets the maximum distance from an edge curve to the underlying face surface in brep models.
     std::optional< double > Precision() const;
     void setPrecision(const std::optional< double >& v);
@@ -19367,7 +19367,7 @@ public:
     std::vector< IfcCoordinateOperation > HasCoordinateOperation() const; // INVERSE IfcCoordinateOperation::SourceCRS
 
     static const ifcopenshell::entity& Class();
-    IfcGeometricRepresentationContext initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, int v3_CoordinateSpaceDimension, std::optional< double > v4_Precision, ::Ifc4x3_tc1::IfcAxis2Placement v5_WorldCoordinateSystem, ::Ifc4x3_tc1::IfcDirection v6_TrueNorth);
+    IfcGeometricRepresentationContext initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, int64_t v3_CoordinateSpaceDimension, std::optional< double > v4_Precision, ::Ifc4x3_tc1::IfcAxis2Placement v5_WorldCoordinateSystem, ::Ifc4x3_tc1::IfcDirection v6_TrueNorth);
 };
 /// Definition from ISO/CD 10303-43:1992: An geometric representation item is a representation item that has the additional meaning of having geometric position or orientation or both. This meaning is present by virtue of:  
 /// 
@@ -19604,11 +19604,11 @@ public:
     void setOpacity(const std::optional< double >& v);
     ::Ifc4x3_tc1::IfcColourRgbList Colours() const;
     void setColours(const ::Ifc4x3_tc1::IfcColourRgbList& v);
-    std::vector< int > /*[1:?]*/ ColourIndex() const;
-    void setColourIndex(const std::vector< int > /*[1:?]*/& v);
+    std::vector< int64_t > /*[1:?]*/ ColourIndex() const;
+    void setColourIndex(const std::vector< int64_t > /*[1:?]*/& v);
     
     static const ifcopenshell::entity& Class();
-    IfcIndexedColourMap initialize(::Ifc4x3_tc1::IfcTessellatedFaceSet v1_MappedTo, std::optional< double > v2_Opacity, ::Ifc4x3_tc1::IfcColourRgbList v3_Colours, std::vector< int > /*[1:?]*/ v4_ColourIndex);
+    IfcIndexedColourMap initialize(::Ifc4x3_tc1::IfcTessellatedFaceSet v1_MappedTo, std::optional< double > v2_Opacity, ::Ifc4x3_tc1::IfcColourRgbList v3_Colours, std::vector< int64_t > /*[1:?]*/ v4_ColourIndex);
 };
 
 class IFC_SCHEMA_API IfcIndexedTextureMap : public IfcTextureCoordinate {
@@ -19628,11 +19628,11 @@ class IFC_SCHEMA_API IfcIndexedTriangleTextureMap : public IfcIndexedTextureMap 
 public:
     using IfcIndexedTextureMap::IfcIndexedTextureMap;
 
-    std::optional< std::vector< std::vector< int > > > TexCoordIndex() const;
-    void setTexCoordIndex(const std::optional< std::vector< std::vector< int > > >& v);
+    std::optional< std::vector< std::vector< int64_t > > > TexCoordIndex() const;
+    void setTexCoordIndex(const std::optional< std::vector< std::vector< int64_t > > >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcIndexedTriangleTextureMap initialize(std::vector< ::Ifc4x3_tc1::IfcSurfaceTexture > v1_Maps, ::Ifc4x3_tc1::IfcTessellatedFaceSet v2_MappedTo, ::Ifc4x3_tc1::IfcTextureVertexList v3_TexCoords, std::optional< std::vector< std::vector< int > > > v4_TexCoordIndex);
+    IfcIndexedTriangleTextureMap initialize(std::vector< ::Ifc4x3_tc1::IfcSurfaceTexture > v1_Maps, ::Ifc4x3_tc1::IfcTessellatedFaceSet v2_MappedTo, ::Ifc4x3_tc1::IfcTextureVertexList v3_TexCoords, std::optional< std::vector< std::vector< int64_t > > > v4_TexCoordIndex);
 };
 /// In an irregular time series, unpredictable bursts of data arrive at unspecified points in time, or most time stamps cannot be characterized by a repeating pattern.
 /// 
@@ -20329,8 +20329,8 @@ public:
     ::Ifc4x3_tc1::IfcMaterialProfileSet ForProfileSet() const;
     void setForProfileSet(const ::Ifc4x3_tc1::IfcMaterialProfileSet& v);
     /// Index reference to a significant point in the section profile. Describes how the section is aligned relative to the (longitudinal) axis of the member it is associated with. This parametric specification of profile alignment can be provided redundantly to the explicit alignment defined by ForProfileSet.MaterialProfiles[*].Profile.
-    std::optional< int > CardinalPoint() const;
-    void setCardinalPoint(const std::optional< int >& v);
+    std::optional< int64_t > CardinalPoint() const;
+    void setCardinalPoint(const std::optional< int64_t >& v);
     /// EPM-HTML>
     /// Extent of the extrusion of the elements body shape representation to which the IfcMaterialProfileSetUsage applies. It is used as the reference value for the upper OffsetValues[2] provided by the IfcMaterialProfileSetWithOffsets subtype for included material profiles.
     /// 
@@ -20341,7 +20341,7 @@ public:
     void setReferenceExtent(const std::optional< double >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcMaterialProfileSetUsage initialize(::Ifc4x3_tc1::IfcMaterialProfileSet v1_ForProfileSet, std::optional< int > v2_CardinalPoint, std::optional< double > v3_ReferenceExtent);
+    IfcMaterialProfileSetUsage initialize(::Ifc4x3_tc1::IfcMaterialProfileSet v1_ForProfileSet, std::optional< int64_t > v2_CardinalPoint, std::optional< double > v3_ReferenceExtent);
 };
 /// IfcMaterialProfileSetUsageTapering specifies dual material profile sets in association with tapered prismatic (beam- or column-like) elements.
 /// 
@@ -20376,11 +20376,11 @@ public:
     ::Ifc4x3_tc1::IfcMaterialProfileSet ForProfileEndSet() const;
     void setForProfileEndSet(const ::Ifc4x3_tc1::IfcMaterialProfileSet& v);
     /// Index reference to a significant point in the second section profile. Describes how this section is aligned relative to the axis of the member it is associated with. This parametric specification of profile alignment can be provided redundantly to the explicit alignment defined by ForProfileSet.MaterialProfiles[*].Profile.
-    std::optional< int > CardinalEndPoint() const;
-    void setCardinalEndPoint(const std::optional< int >& v);
+    std::optional< int64_t > CardinalEndPoint() const;
+    void setCardinalEndPoint(const std::optional< int64_t >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcMaterialProfileSetUsageTapering initialize(::Ifc4x3_tc1::IfcMaterialProfileSet v1_ForProfileSet, std::optional< int > v2_CardinalPoint, std::optional< double > v3_ReferenceExtent, ::Ifc4x3_tc1::IfcMaterialProfileSet v4_ForProfileEndSet, std::optional< int > v5_CardinalEndPoint);
+    IfcMaterialProfileSetUsageTapering initialize(::Ifc4x3_tc1::IfcMaterialProfileSet v1_ForProfileSet, std::optional< int64_t > v2_CardinalPoint, std::optional< double > v3_ReferenceExtent, ::Ifc4x3_tc1::IfcMaterialProfileSet v4_ForProfileEndSet, std::optional< int64_t > v5_CardinalEndPoint);
 };
 /// IfcMaterialProperties is defined as an abstract
 /// supertype for entities that apply material properties to material
@@ -20793,14 +20793,14 @@ public:
     using IfcSurfaceTexture::IfcSurfaceTexture;
 
     /// The number of pixels in width (S) direction.
-    int Width() const;
-    void setWidth(const int& v);
+    int64_t Width() const;
+    void setWidth(const int64_t& v);
     /// The number of pixels in height (T) direction.
-    int Height() const;
-    void setHeight(const int& v);
+    int64_t Height() const;
+    void setHeight(const int64_t& v);
     /// Indication whether the pixel values contain a 1, 2, 3, or 4 colour component.
-    int ColourComponents() const;
-    void setColourComponents(const int& v);
+    int64_t ColourComponents() const;
+    void setColourComponents(const int64_t& v);
     /// Flat list of hexadecimal values, each describing one pixel by 1, 2, 3, or 4 components.
     /// 
     /// IFC2x Edition 3 CHANGE  The data type has been changed from STRING to BINARY.
@@ -20808,7 +20808,7 @@ public:
     void setPixel(const std::vector< boost::dynamic_bitset<> > /*[1:?]*/& v);
     
     static const ifcopenshell::entity& Class();
-    IfcPixelTexture initialize(bool v1_RepeatS, bool v2_RepeatT, std::optional< std::string > v3_Mode, ::Ifc4x3_tc1::IfcCartesianTransformationOperator2D v4_TextureTransform, std::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, int v6_Width, int v7_Height, int v8_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v9_Pixel);
+    IfcPixelTexture initialize(bool v1_RepeatS, bool v2_RepeatT, std::optional< std::string > v3_Mode, ::Ifc4x3_tc1::IfcCartesianTransformationOperator2D v4_TextureTransform, std::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, int64_t v6_Width, int64_t v7_Height, int64_t v8_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v9_Pixel);
 };
 /// Definition from ISO/CD 10303-42:1992: A placement entity defines the local environment for the definition of a geometry item. It locates the item to be defined and, in the case of the axis placement subtypes, gives its orientation. 
 /// 
@@ -21436,11 +21436,11 @@ public:
     std::optional< double > NominalBarDiameter() const;
     void setNominalBarDiameter(const std::optional< double >& v);
     /// The number of bars with identical nominal diameter and steel grade included in the specific reinforcement configuration.
-    std::optional< int > BarCount() const;
-    void setBarCount(const std::optional< int >& v);
+    std::optional< int64_t > BarCount() const;
+    void setBarCount(const std::optional< int64_t >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcReinforcementBarProperties initialize(double v1_TotalCrossSectionArea, std::string v2_SteelGrade, std::optional< ::Ifc4x3_tc1::IfcReinforcingBarSurfaceEnum::Value > v3_BarSurface, std::optional< double > v4_EffectiveDepth, std::optional< double > v5_NominalBarDiameter, std::optional< int > v6_BarCount);
+    IfcReinforcementBarProperties initialize(double v1_TotalCrossSectionArea, std::string v2_SteelGrade, std::optional< ::Ifc4x3_tc1::IfcReinforcingBarSurfaceEnum::Value > v3_BarSurface, std::optional< double > v4_EffectiveDepth, std::optional< double > v5_NominalBarDiameter, std::optional< int64_t > v6_BarCount);
 };
 /// IfcRelationship is the abstract generalization of all objectified relationships in IFC. Objectified relationships are the preferred way to handle relationships among objects. This allows to keep relationship specific properties directly at the relationship and opens the possibility to later handle relationship specific behavior.  
 /// 
@@ -24789,24 +24789,24 @@ class IFC_SCHEMA_API IfcIndexedPolygonalFace : public IfcTessellatedItem {
 public:
     using IfcTessellatedItem::IfcTessellatedItem;
 
-    std::vector< int > /*[3:?]*/ CoordIndex() const;
-    void setCoordIndex(const std::vector< int > /*[3:?]*/& v);
+    std::vector< int64_t > /*[3:?]*/ CoordIndex() const;
+    void setCoordIndex(const std::vector< int64_t > /*[3:?]*/& v);
         std::vector< IfcPolygonalFaceSet > ToFaceSet() const; // INVERSE IfcPolygonalFaceSet::Faces
     std::vector< IfcTextureCoordinateIndices > HasTexCoords() const; // INVERSE IfcTextureCoordinateIndices::TexCoordsOf
 
     static const ifcopenshell::entity& Class();
-    IfcIndexedPolygonalFace initialize(std::vector< int > /*[3:?]*/ v1_CoordIndex);
+    IfcIndexedPolygonalFace initialize(std::vector< int64_t > /*[3:?]*/ v1_CoordIndex);
 };
 
 class IFC_SCHEMA_API IfcIndexedPolygonalFaceWithVoids : public IfcIndexedPolygonalFace {
 public:
     using IfcIndexedPolygonalFace::IfcIndexedPolygonalFace;
 
-    std::vector< std::vector< int > > InnerCoordIndices() const;
-    void setInnerCoordIndices(const std::vector< std::vector< int > >& v);
+    std::vector< std::vector< int64_t > > InnerCoordIndices() const;
+    void setInnerCoordIndices(const std::vector< std::vector< int64_t > >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcIndexedPolygonalFaceWithVoids initialize(std::vector< int > /*[3:?]*/ v1_CoordIndex, std::vector< std::vector< int > > v2_InnerCoordIndices);
+    IfcIndexedPolygonalFaceWithVoids initialize(std::vector< int64_t > /*[3:?]*/ v1_CoordIndex, std::vector< std::vector< int64_t > > v2_InnerCoordIndices);
 };
 
 class IFC_SCHEMA_API IfcIndexedPolygonalTextureMap : public IfcIndexedTextureMap {
@@ -27104,11 +27104,11 @@ public:
     using IfcRelConnectsElements::IfcRelConnectsElements;
 
     /// Priorities for connection. It refers to the layers of the RelatingObject.
-    std::vector< int > /*[0:?]*/ RelatingPriorities() const;
-    void setRelatingPriorities(const std::vector< int > /*[0:?]*/& v);
+    std::vector< int64_t > /*[0:?]*/ RelatingPriorities() const;
+    void setRelatingPriorities(const std::vector< int64_t > /*[0:?]*/& v);
     /// Priorities for connection. It refers to the layers of the RelatedObject.
-    std::vector< int > /*[0:?]*/ RelatedPriorities() const;
-    void setRelatedPriorities(const std::vector< int > /*[0:?]*/& v);
+    std::vector< int64_t > /*[0:?]*/ RelatedPriorities() const;
+    void setRelatedPriorities(const std::vector< int64_t > /*[0:?]*/& v);
     /// Indication of the connection type in relation to the path of the RelatingObject.
     ::Ifc4x3_tc1::IfcConnectionTypeEnum::Value RelatedConnectionType() const;
     void setRelatedConnectionType(const ::Ifc4x3_tc1::IfcConnectionTypeEnum::Value& v);
@@ -27117,7 +27117,7 @@ public:
     void setRelatingConnectionType(const ::Ifc4x3_tc1::IfcConnectionTypeEnum::Value& v);
     
     static const ifcopenshell::entity& Class();
-    IfcRelConnectsPathElements initialize(std::string v1_GlobalId, ::Ifc4x3_tc1::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc4x3_tc1::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc4x3_tc1::IfcElement v6_RelatingElement, ::Ifc4x3_tc1::IfcElement v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, ::Ifc4x3_tc1::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc4x3_tc1::IfcConnectionTypeEnum::Value v11_RelatingConnectionType);
+    IfcRelConnectsPathElements initialize(std::string v1_GlobalId, ::Ifc4x3_tc1::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc4x3_tc1::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc4x3_tc1::IfcElement v6_RelatingElement, ::Ifc4x3_tc1::IfcElement v7_RelatedElement, std::vector< int64_t > /*[0:?]*/ v8_RelatingPriorities, std::vector< int64_t > /*[0:?]*/ v9_RelatedPriorities, ::Ifc4x3_tc1::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc4x3_tc1::IfcConnectionTypeEnum::Value v11_RelatingConnectionType);
 };
 /// The objectified relationship
 /// IfcRelConnectsPortToElement defines the relationship that
@@ -30241,8 +30241,8 @@ public:
     void setIsMilestone(const bool& v);
     /// A value that indicates the relative priority of the task (in
     ///   comparison to the priorities of other tasks).
-    std::optional< int > Priority() const;
-    void setPriority(const std::optional< int >& v);
+    std::optional< int64_t > Priority() const;
+    void setPriority(const std::optional< int64_t >& v);
     /// Time related information for the task.
     /// 
     /// Added in IFC 2x4
@@ -30256,7 +30256,7 @@ public:
     void setPredefinedType(const std::optional< ::Ifc4x3_tc1::IfcTaskTypeEnum::Value >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcTask initialize(std::string v1_GlobalId, ::Ifc4x3_tc1::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_Identification, std::optional< std::string > v7_LongDescription, std::optional< std::string > v8_Status, std::optional< std::string > v9_WorkMethod, bool v10_IsMilestone, std::optional< int > v11_Priority, ::Ifc4x3_tc1::IfcTaskTime v12_TaskTime, std::optional< ::Ifc4x3_tc1::IfcTaskTypeEnum::Value > v13_PredefinedType);
+    IfcTask initialize(std::string v1_GlobalId, ::Ifc4x3_tc1::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_Identification, std::optional< std::string > v7_LongDescription, std::optional< std::string > v8_Status, std::optional< std::string > v9_WorkMethod, bool v10_IsMilestone, std::optional< int64_t > v11_Priority, ::Ifc4x3_tc1::IfcTaskTime v12_TaskTime, std::optional< ::Ifc4x3_tc1::IfcTaskTypeEnum::Value > v13_PredefinedType);
 };
 /// An IfcTaskType defines a
 ///   particular type of task that may be specified for use
@@ -30374,24 +30374,24 @@ public:
     void setNormals(const std::optional< std::vector< std::vector< double > > >& v);
     std::optional< bool > Closed() const;
     void setClosed(const std::optional< bool >& v);
-    std::vector< std::vector< int > > CoordIndex() const;
-    void setCoordIndex(const std::vector< std::vector< int > >& v);
-    std::optional< std::vector< int > /*[1:?]*/ > PnIndex() const;
-    void setPnIndex(const std::optional< std::vector< int > /*[1:?]*/ >& v);
+    std::vector< std::vector< int64_t > > CoordIndex() const;
+    void setCoordIndex(const std::vector< std::vector< int64_t > >& v);
+    std::optional< std::vector< int64_t > /*[1:?]*/ > PnIndex() const;
+    void setPnIndex(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcTriangulatedFaceSet initialize(::Ifc4x3_tc1::IfcCartesianPointList3D v1_Coordinates, std::optional< std::vector< std::vector< double > > > v2_Normals, std::optional< bool > v3_Closed, std::vector< std::vector< int > > v4_CoordIndex, std::optional< std::vector< int > /*[1:?]*/ > v5_PnIndex);
+    IfcTriangulatedFaceSet initialize(::Ifc4x3_tc1::IfcCartesianPointList3D v1_Coordinates, std::optional< std::vector< std::vector< double > > > v2_Normals, std::optional< bool > v3_Closed, std::vector< std::vector< int64_t > > v4_CoordIndex, std::optional< std::vector< int64_t > /*[1:?]*/ > v5_PnIndex);
 };
 
 class IFC_SCHEMA_API IfcTriangulatedIrregularNetwork : public IfcTriangulatedFaceSet {
 public:
     using IfcTriangulatedFaceSet::IfcTriangulatedFaceSet;
 
-    std::vector< int > /*[1:?]*/ Flags() const;
-    void setFlags(const std::vector< int > /*[1:?]*/& v);
+    std::vector< int64_t > /*[1:?]*/ Flags() const;
+    void setFlags(const std::vector< int64_t > /*[1:?]*/& v);
     
     static const ifcopenshell::entity& Class();
-    IfcTriangulatedIrregularNetwork initialize(::Ifc4x3_tc1::IfcCartesianPointList3D v1_Coordinates, std::optional< std::vector< std::vector< double > > > v2_Normals, std::optional< bool > v3_Closed, std::vector< std::vector< int > > v4_CoordIndex, std::optional< std::vector< int > /*[1:?]*/ > v5_PnIndex, std::vector< int > /*[1:?]*/ v6_Flags);
+    IfcTriangulatedIrregularNetwork initialize(::Ifc4x3_tc1::IfcCartesianPointList3D v1_Coordinates, std::optional< std::vector< std::vector< double > > > v2_Normals, std::optional< bool > v3_Closed, std::vector< std::vector< int64_t > > v4_CoordIndex, std::optional< std::vector< int64_t > /*[1:?]*/ > v5_PnIndex, std::vector< int64_t > /*[1:?]*/ v6_Flags);
 };
 
 class IFC_SCHEMA_API IfcVehicleType : public IfcTransportationDeviceType {
@@ -30981,11 +30981,11 @@ public:
     using IfcBoundedSurface::IfcBoundedSurface;
 
     /// Algebraic degree of basis functions in u.
-    int UDegree() const;
-    void setUDegree(const int& v);
+    int64_t UDegree() const;
+    void setUDegree(const int64_t& v);
     /// Algebraic degree of basis functions in v.
-    int VDegree() const;
-    void setVDegree(const int& v);
+    int64_t VDegree() const;
+    void setVDegree(const int64_t& v);
     /// This is a list of lists of control points.
     std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > > ControlPointsList() const;
     void setControlPointsList(const std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > >& v);
@@ -31003,7 +31003,7 @@ public:
     void setSelfIntersect(const boost::logic::tribool& v);
     
     static const ifcopenshell::entity& Class();
-    IfcBSplineSurface initialize(int v1_UDegree, int v2_VDegree, std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect);
+    IfcBSplineSurface initialize(int64_t v1_UDegree, int64_t v2_VDegree, std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect);
 };
 /// Definition from ISO 10303:42:1994: This is a B-spline surface in which the knot values are explicitly given. This subtype shall be used to represent non-uniform B-spline surfaces, and may also be used for other knot types.
 /// 
@@ -31017,11 +31017,11 @@ public:
     using IfcBSplineSurface::IfcBSplineSurface;
 
     /// The multiplicities of the knots in the u parameter direction.
-    std::vector< int > /*[2:?]*/ UMultiplicities() const;
-    void setUMultiplicities(const std::vector< int > /*[2:?]*/& v);
+    std::vector< int64_t > /*[2:?]*/ UMultiplicities() const;
+    void setUMultiplicities(const std::vector< int64_t > /*[2:?]*/& v);
     /// The multiplicities of the knots in the v parameter direction.
-    std::vector< int > /*[2:?]*/ VMultiplicities() const;
-    void setVMultiplicities(const std::vector< int > /*[2:?]*/& v);
+    std::vector< int64_t > /*[2:?]*/ VMultiplicities() const;
+    void setVMultiplicities(const std::vector< int64_t > /*[2:?]*/& v);
     /// The list of the distinct knots in the u parameter direction.
     std::vector< double > /*[2:?]*/ UKnots() const;
     void setUKnots(const std::vector< double > /*[2:?]*/& v);
@@ -31033,7 +31033,7 @@ public:
     void setKnotSpec(const ::Ifc4x3_tc1::IfcKnotType::Value& v);
     
     static const ifcopenshell::entity& Class();
-    IfcBSplineSurfaceWithKnots initialize(int v1_UDegree, int v2_VDegree, std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, ::Ifc4x3_tc1::IfcKnotType::Value v12_KnotSpec);
+    IfcBSplineSurfaceWithKnots initialize(int64_t v1_UDegree, int64_t v2_VDegree, std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int64_t > /*[2:?]*/ v8_UMultiplicities, std::vector< int64_t > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, ::Ifc4x3_tc1::IfcKnotType::Value v12_KnotSpec);
 };
 /// The IfcBlock is a Construction Solid Geometry (CSG) 3D
 /// primitive. It is defined by a position and a positve distance along
@@ -35798,11 +35798,11 @@ public:
     void setClosed(const std::optional< bool >& v);
     std::vector< ::Ifc4x3_tc1::IfcIndexedPolygonalFace > Faces() const;
     void setFaces(const std::vector< ::Ifc4x3_tc1::IfcIndexedPolygonalFace >& v);
-    std::optional< std::vector< int > /*[1:?]*/ > PnIndex() const;
-    void setPnIndex(const std::optional< std::vector< int > /*[1:?]*/ >& v);
+    std::optional< std::vector< int64_t > /*[1:?]*/ > PnIndex() const;
+    void setPnIndex(const std::optional< std::vector< int64_t > /*[1:?]*/ >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcPolygonalFaceSet initialize(::Ifc4x3_tc1::IfcCartesianPointList3D v1_Coordinates, std::optional< bool > v2_Closed, std::vector< ::Ifc4x3_tc1::IfcIndexedPolygonalFace > v3_Faces, std::optional< std::vector< int > /*[1:?]*/ > v4_PnIndex);
+    IfcPolygonalFaceSet initialize(::Ifc4x3_tc1::IfcCartesianPointList3D v1_Coordinates, std::optional< bool > v2_Closed, std::vector< ::Ifc4x3_tc1::IfcIndexedPolygonalFace > v3_Faces, std::optional< std::vector< int64_t > /*[1:?]*/ > v4_PnIndex);
 };
 /// Definition from ISO/CD 10303-42:1992: A polyline
 ///   is a bounded curve of n - 1 linear segments, defined by a
@@ -36456,7 +36456,7 @@ public:
     void setWeightsData(const std::vector< std::vector< double > >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcRationalBSplineSurfaceWithKnots initialize(int v1_UDegree, int v2_VDegree, std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, ::Ifc4x3_tc1::IfcKnotType::Value v12_KnotSpec, std::vector< std::vector< double > > v13_WeightsData);
+    IfcRationalBSplineSurfaceWithKnots initialize(int64_t v1_UDegree, int64_t v2_VDegree, std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > > v3_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineSurfaceForm::Value v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int64_t > /*[2:?]*/ v8_UMultiplicities, std::vector< int64_t > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, ::Ifc4x3_tc1::IfcKnotType::Value v12_KnotSpec, std::vector< std::vector< double > > v13_WeightsData);
 };
 
 class IFC_SCHEMA_API IfcReferent : public IfcPositioningElement {
@@ -37102,13 +37102,13 @@ public:
 
     /// World Latitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84.
     ///   Latitudes are measured relative to the geodetic equator, north of the equator by positive values - from 0 till +90,   south of the equator by negative values - from 0 till  -90.
-    std::optional< std::vector< int > /*[3:4]*/ > RefLatitude() const;
-    void setRefLatitude(const std::optional< std::vector< int > /*[3:4]*/ >& v);
+    std::optional< std::vector< int64_t > /*[3:4]*/ > RefLatitude() const;
+    void setRefLatitude(const std::optional< std::vector< int64_t > /*[3:4]*/ >& v);
     /// World Longitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84.
     ///   Longitudes are measured relative to the geodetic zero meridian, nominally the same as the Greenwich prime meridian: longitudes west of the zero meridian have negative values - from 0 till -180, longitudes east of the zero meridian have positive values - from 0 till -180.
     /// Example: Chicago Harbor Light has according to WGS84 a longitude -87.35.40 (or 87.35.40W) and a latitude 41.53.30 (or 41.53.30N).
-    std::optional< std::vector< int > /*[3:4]*/ > RefLongitude() const;
-    void setRefLongitude(const std::optional< std::vector< int > /*[3:4]*/ >& v);
+    std::optional< std::vector< int64_t > /*[3:4]*/ > RefLongitude() const;
+    void setRefLongitude(const std::optional< std::vector< int64_t > /*[3:4]*/ >& v);
     /// Datum elevation relative to sea level.
     std::optional< double > RefElevation() const;
     void setRefElevation(const std::optional< double >& v);
@@ -37120,7 +37120,7 @@ public:
     void setSiteAddress(const ::Ifc4x3_tc1::IfcPostalAddress& v);
     
     static const ifcopenshell::entity& Class();
-    IfcSite initialize(std::string v1_GlobalId, ::Ifc4x3_tc1::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4x3_tc1::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4x3_tc1::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, std::optional< ::Ifc4x3_tc1::IfcElementCompositionEnum::Value > v9_CompositionType, std::optional< std::vector< int > /*[3:4]*/ > v10_RefLatitude, std::optional< std::vector< int > /*[3:4]*/ > v11_RefLongitude, std::optional< double > v12_RefElevation, std::optional< std::string > v13_LandTitleNumber, ::Ifc4x3_tc1::IfcPostalAddress v14_SiteAddress);
+    IfcSite initialize(std::string v1_GlobalId, ::Ifc4x3_tc1::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4x3_tc1::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4x3_tc1::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, std::optional< ::Ifc4x3_tc1::IfcElementCompositionEnum::Value > v9_CompositionType, std::optional< std::vector< int64_t > /*[3:4]*/ > v10_RefLatitude, std::optional< std::vector< int64_t > /*[3:4]*/ > v11_RefLongitude, std::optional< double > v12_RefElevation, std::optional< std::string > v13_LandTitleNumber, ::Ifc4x3_tc1::IfcPostalAddress v14_SiteAddress);
 };
 /// The element type IfcSlabType defines commonly shared
 /// information for occurrences of slabs. The set of shared information
@@ -40253,8 +40253,8 @@ public:
     using IfcBoundedCurve::IfcBoundedCurve;
 
     /// The algebraic degree of the basis functions.
-    int Degree() const;
-    void setDegree(const int& v);
+    int64_t Degree() const;
+    void setDegree(const int64_t& v);
     /// The list of control points for the curve.
     std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > ControlPointsList() const;
     void setControlPointsList(const std::vector< ::Ifc4x3_tc1::IfcCartesianPoint >& v);
@@ -40269,7 +40269,7 @@ public:
     void setSelfIntersect(const boost::logic::tribool& v);
     
     static const ifcopenshell::entity& Class();
-    IfcBSplineCurve initialize(int v1_Degree, std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
+    IfcBSplineCurve initialize(int64_t v1_Degree, std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
 };
 /// Definition from ISO 10303:42:1994: This is the type of b-spline curve for which the knot values are explicitly given. This subtype shall be used to represent non-uniform B-spline curves and may be used for other knot types.
 /// 
@@ -40293,8 +40293,8 @@ public:
     using IfcBSplineCurve::IfcBSplineCurve;
 
     /// The multiplicities of the knots. This list defines the number of times each knot in the knots list is to be repeated in constructing the knot array.
-    std::vector< int > /*[2:?]*/ KnotMultiplicities() const;
-    void setKnotMultiplicities(const std::vector< int > /*[2:?]*/& v);
+    std::vector< int64_t > /*[2:?]*/ KnotMultiplicities() const;
+    void setKnotMultiplicities(const std::vector< int64_t > /*[2:?]*/& v);
     /// The list of distinct knots used to define the B-spline basis functions.
     std::vector< double > /*[2:?]*/ Knots() const;
     void setKnots(const std::vector< double > /*[2:?]*/& v);
@@ -40303,7 +40303,7 @@ public:
     void setKnotSpec(const ::Ifc4x3_tc1::IfcKnotType::Value& v);
     
     static const ifcopenshell::entity& Class();
-    IfcBSplineCurveWithKnots initialize(int v1_Degree, std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, ::Ifc4x3_tc1::IfcKnotType::Value v8_KnotSpec);
+    IfcBSplineCurveWithKnots initialize(int64_t v1_Degree, std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int64_t > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, ::Ifc4x3_tc1::IfcKnotType::Value v8_KnotSpec);
 };
 /// Definition from IAI: The element type
 /// IfcBeamType defines commonly shared information for
@@ -46864,7 +46864,7 @@ public:
     void setWeightsData(const std::vector< double > /*[2:?]*/& v);
     
     static const ifcopenshell::entity& Class();
-    IfcRationalBSplineCurveWithKnots initialize(int v1_Degree, std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, ::Ifc4x3_tc1::IfcKnotType::Value v8_KnotSpec, std::vector< double > /*[2:?]*/ v9_WeightsData);
+    IfcRationalBSplineCurveWithKnots initialize(int64_t v1_Degree, std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > v2_ControlPointsList, ::Ifc4x3_tc1::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int64_t > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, ::Ifc4x3_tc1::IfcKnotType::Value v8_KnotSpec, std::vector< double > /*[2:?]*/ v9_WeightsData);
 };
 
 class IFC_SCHEMA_API IfcReinforcedSoil : public IfcEarthworksElement {
@@ -48169,13 +48169,13 @@ class IFC_SCHEMA_API IfcStairFlight : public IfcBuiltElement {
 public:
     using IfcBuiltElement::IfcBuiltElement;
 
-    std::optional< int > NumberOfRisers() const;
-    void setNumberOfRisers(const std::optional< int >& v);
+    std::optional< int64_t > NumberOfRisers() const;
+    void setNumberOfRisers(const std::optional< int64_t >& v);
     /// Number of treads included in the stair flight.
     /// 
     /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.NumberOfTreads instead.
-    std::optional< int > NumberOfTreads() const;
-    void setNumberOfTreads(const std::optional< int >& v);
+    std::optional< int64_t > NumberOfTreads() const;
+    void setNumberOfTreads(const std::optional< int64_t >& v);
     /// Vertical distance from tread to tread. The riser height is supposed to be equal for all stairs in a stair flight.
     /// 
     /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.RiserHeight instead.
@@ -48194,7 +48194,7 @@ public:
     void setPredefinedType(const std::optional< ::Ifc4x3_tc1::IfcStairFlightTypeEnum::Value >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcStairFlight initialize(std::string v1_GlobalId, ::Ifc4x3_tc1::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4x3_tc1::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4x3_tc1::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< int > v9_NumberOfRisers, std::optional< int > v10_NumberOfTreads, std::optional< double > v11_RiserHeight, std::optional< double > v12_TreadLength, std::optional< ::Ifc4x3_tc1::IfcStairFlightTypeEnum::Value > v13_PredefinedType);
+    IfcStairFlight initialize(std::string v1_GlobalId, ::Ifc4x3_tc1::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4x3_tc1::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4x3_tc1::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< int64_t > v9_NumberOfRisers, std::optional< int64_t > v10_NumberOfTreads, std::optional< double > v11_RiserHeight, std::optional< double > v12_TreadLength, std::optional< ::Ifc4x3_tc1::IfcStairFlightTypeEnum::Value > v13_PredefinedType);
 };
 /// Definition from IAI: The IfcStructuralAnalysisModel is used to assemble all information needed to represent a structural analysis model.  It encompasses certain general properties (such as analysis type), references to all contained structural members, structural supports or connections, as well as loads and the respective load results.
 /// 

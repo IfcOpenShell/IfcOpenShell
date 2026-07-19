@@ -35,12 +35,15 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcBSplineSurfaceWithKnots& ins
 		return ps;
 	});
 
-	bs->multiplicities = { inst.UMultiplicities(), inst.VMultiplicities() };
+	auto to_int_vector = [](const std::vector<int64_t>& v) {
+		return std::vector<int>(v.begin(), v.end());
+	};
+	bs->multiplicities = { to_int_vector(inst.UMultiplicities()), to_int_vector(inst.VMultiplicities()) };
 	bs->knots = { inst.UKnots(), inst.VKnots() };
 	if (inst.as<IfcSchema::IfcRationalBSplineSurfaceWithKnots>()) {
 		bs->weights = inst.as<IfcSchema::IfcRationalBSplineSurfaceWithKnots>().WeightsData();
 	}
-	bs->degree = { inst.UDegree(), inst.VDegree() };
+	bs->degree = { (int) inst.UDegree(), (int) inst.VDegree() };
 
 	return bs;
 }

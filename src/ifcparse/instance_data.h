@@ -186,8 +186,9 @@ typedef parameter_pack <
 
     // AGGREGATES:
     empty_aggregate_t,
-    // An aggregate of integers, e.g. (1,2,3)
-    std::vector<int>,
+    // An aggregate of integers, e.g. (1,2,3). Stored as int64_t for the
+    // same reason as the scalar int64_t above.
+    std::vector<int64_t>,
     // An aggregate of floats, e.g. (12.3,4.)
     std::vector<double>,
     // An aggregate of strings, e.g. ('Ifc','Open','Shell')
@@ -202,7 +203,7 @@ typedef parameter_pack <
     // AGGREGATES OF AGGREGATES:
     empty_aggregate_of_aggregate_t,
     // An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
-    std::vector<std::vector<int>>,
+    std::vector<std::vector<int64_t>>,
     // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
     std::vector<std::vector<double>>,
     // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
@@ -401,7 +402,6 @@ public:
         , array_(storage)
     {}
 
-    operator int() const;
     operator int64_t() const;
     operator bool() const;
     operator boost::logic::tribool() const;
@@ -410,13 +410,13 @@ public:
     operator boost::dynamic_bitset<>() const;
     operator express::Base() const;
 
-    operator std::vector<int>() const;
+    operator std::vector<int64_t>() const;
     operator std::vector<double>() const;
     operator std::vector<std::string>() const;
     operator std::vector<boost::dynamic_bitset<>>() const;
     operator std::vector<express::Base>() const;
 
-    operator std::vector<std::vector<int>>() const;
+    operator std::vector<std::vector<int64_t>>() const;
     operator std::vector<std::vector<double>>() const;
     operator std::vector<std::vector<express::Base>>() const;
 
@@ -451,7 +451,7 @@ public:
             case ifcopenshell::Argument_ENTITY_INSTANCE:
                 return visitor((express::Base) * this);
             case ifcopenshell::Argument_AGGREGATE_OF_INT:
-                return visitor((std::vector<int>)*this);
+                return visitor((std::vector<int64_t>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_DOUBLE:
                 return visitor((std::vector<double>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_STRING:
@@ -461,7 +461,7 @@ public:
             case ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE:
                 return visitor((std::vector<express::Base>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_INT:
-                return visitor((std::vector<std::vector<int>>)*this);
+                return visitor((std::vector<std::vector<int64_t>>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE:
                 return visitor((std::vector<std::vector<double>>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE:

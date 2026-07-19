@@ -4930,8 +4930,8 @@ Ifc2x3::IfcComplexNumber::operator std::vector< double > /*[1:2]*/() const { ret
 
 // Function implementations for IfcCompoundPlaneAngleMeasure
 const ifcopenshell::type_declaration& Ifc2x3::IfcCompoundPlaneAngleMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[135]); }
-Ifc2x3::IfcCompoundPlaneAngleMeasure Ifc2x3::IfcCompoundPlaneAngleMeasure::initialize(std::vector< int > /*[3:4]*/ v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcCompoundPlaneAngleMeasure::operator std::vector< int > /*[3:4]*/() const { return get_attribute_value(0); }
+Ifc2x3::IfcCompoundPlaneAngleMeasure Ifc2x3::IfcCompoundPlaneAngleMeasure::initialize(std::vector< int64_t > /*[3:4]*/ v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcCompoundPlaneAngleMeasure::operator std::vector< int64_t > /*[3:4]*/() const { return get_attribute_value(0); }
 
 // Function implementations for IfcContextDependentMeasure
 const ifcopenshell::type_declaration& Ifc2x3::IfcContextDependentMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[161]); }
@@ -4950,13 +4950,13 @@ Ifc2x3::IfcCurvatureMeasure::operator double() const { return get_attribute_valu
 
 // Function implementations for IfcDayInMonthNumber
 const ifcopenshell::type_declaration& Ifc2x3::IfcDayInMonthNumber::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[207]); }
-Ifc2x3::IfcDayInMonthNumber Ifc2x3::IfcDayInMonthNumber::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcDayInMonthNumber::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcDayInMonthNumber Ifc2x3::IfcDayInMonthNumber::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcDayInMonthNumber::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDaylightSavingHour
 const ifcopenshell::type_declaration& Ifc2x3::IfcDaylightSavingHour::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[208]); }
-Ifc2x3::IfcDaylightSavingHour Ifc2x3::IfcDaylightSavingHour::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcDaylightSavingHour::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcDaylightSavingHour Ifc2x3::IfcDaylightSavingHour::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcDaylightSavingHour::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDescriptiveMeasure
 const ifcopenshell::type_declaration& Ifc2x3::IfcDescriptiveMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[216]); }
@@ -4965,8 +4965,8 @@ Ifc2x3::IfcDescriptiveMeasure::operator std::string() const { return get_attribu
 
 // Function implementations for IfcDimensionCount
 const ifcopenshell::type_declaration& Ifc2x3::IfcDimensionCount::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[220]); }
-Ifc2x3::IfcDimensionCount Ifc2x3::IfcDimensionCount::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcDimensionCount::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcDimensionCount Ifc2x3::IfcDimensionCount::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcDimensionCount::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDoseEquivalentMeasure
 const ifcopenshell::type_declaration& Ifc2x3::IfcDoseEquivalentMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[255]); }
@@ -5055,8 +5055,8 @@ Ifc2x3::IfcHeatingValueMeasure::operator double() const { return get_attribute_v
 
 // Function implementations for IfcHourInDay
 const ifcopenshell::type_declaration& Ifc2x3::IfcHourInDay::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[408]); }
-Ifc2x3::IfcHourInDay Ifc2x3::IfcHourInDay::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcHourInDay::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcHourInDay Ifc2x3::IfcHourInDay::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcHourInDay::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIdentifier
 const ifcopenshell::type_declaration& Ifc2x3::IfcIdentifier::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[412]); }
@@ -5075,13 +5075,13 @@ Ifc2x3::IfcInductanceMeasure::operator double() const { return get_attribute_val
 
 // Function implementations for IfcInteger
 const ifcopenshell::type_declaration& Ifc2x3::IfcInteger::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[416]); }
-Ifc2x3::IfcInteger Ifc2x3::IfcInteger::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcInteger::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcInteger Ifc2x3::IfcInteger::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcInteger::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIntegerCountRateMeasure
 const ifcopenshell::type_declaration& Ifc2x3::IfcIntegerCountRateMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[417]); }
-Ifc2x3::IfcIntegerCountRateMeasure Ifc2x3::IfcIntegerCountRateMeasure::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcIntegerCountRateMeasure::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcIntegerCountRateMeasure Ifc2x3::IfcIntegerCountRateMeasure::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcIntegerCountRateMeasure::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIonConcentrationMeasure
 const ifcopenshell::type_declaration& Ifc2x3::IfcIonConcentrationMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[421]); }
@@ -5180,8 +5180,8 @@ Ifc2x3::IfcMassPerLengthMeasure::operator double() const { return get_attribute_
 
 // Function implementations for IfcMinuteInHour
 const ifcopenshell::type_declaration& Ifc2x3::IfcMinuteInHour::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[497]); }
-Ifc2x3::IfcMinuteInHour Ifc2x3::IfcMinuteInHour::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcMinuteInHour::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcMinuteInHour Ifc2x3::IfcMinuteInHour::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcMinuteInHour::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcModulusOfElasticityMeasure
 const ifcopenshell::type_declaration& Ifc2x3::IfcModulusOfElasticityMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[498]); }
@@ -5225,8 +5225,8 @@ Ifc2x3::IfcMonetaryMeasure::operator double() const { return get_attribute_value
 
 // Function implementations for IfcMonthInYearNumber
 const ifcopenshell::type_declaration& Ifc2x3::IfcMonthInYearNumber::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[507]); }
-Ifc2x3::IfcMonthInYearNumber Ifc2x3::IfcMonthInYearNumber::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcMonthInYearNumber::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcMonthInYearNumber Ifc2x3::IfcMonthInYearNumber::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcMonthInYearNumber::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcNormalisedRatioMeasure
 const ifcopenshell::type_declaration& Ifc2x3::IfcNormalisedRatioMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[512]); }
@@ -5435,8 +5435,8 @@ Ifc2x3::IfcTimeMeasure::operator double() const { return get_attribute_value(0);
 
 // Function implementations for IfcTimeStamp
 const ifcopenshell::type_declaration& Ifc2x3::IfcTimeStamp::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[914]); }
-Ifc2x3::IfcTimeStamp Ifc2x3::IfcTimeStamp::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcTimeStamp::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcTimeStamp Ifc2x3::IfcTimeStamp::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcTimeStamp::operator int64_t() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTorqueMeasure
 const ifcopenshell::type_declaration& Ifc2x3::IfcTorqueMeasure::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[917]); }
@@ -5470,8 +5470,8 @@ Ifc2x3::IfcWarpingMomentMeasure::operator double() const { return get_attribute_
 
 // Function implementations for IfcYearNumber
 const ifcopenshell::type_declaration& Ifc2x3::IfcYearNumber::Class() { return *((ifcopenshell::type_declaration*)IFC2X3_types[977]); }
-Ifc2x3::IfcYearNumber Ifc2x3::IfcYearNumber::initialize(int v) { set_attribute_value(0, (v));; return *this; }
-Ifc2x3::IfcYearNumber::operator int() const { return get_attribute_value(0); }
+Ifc2x3::IfcYearNumber Ifc2x3::IfcYearNumber::initialize(int64_t v) { set_attribute_value(0, (v));; return *this; }
+Ifc2x3::IfcYearNumber::operator int64_t() const { return get_attribute_value(0); }
 
 
 // Function implementations for Ifc2DCompositeCurve
@@ -5835,8 +5835,8 @@ const ifcopenshell::entity& Ifc2x3::IfcAxis2Placement3D::Class() { return *((ifc
 Ifc2x3::IfcAxis2Placement3D Ifc2x3::IfcAxis2Placement3D::initialize(::Ifc2x3::IfcCartesianPoint v1_Location, ::Ifc2x3::IfcDirection v2_Axis, ::Ifc2x3::IfcDirection v3_RefDirection) { set_attribute_value(0, (v1_Location));set_attribute_value(1, (v2_Axis));set_attribute_value(2, (v3_RefDirection));; return *this; }
 
 // Function implementations for IfcBSplineCurve
-int Ifc2x3::IfcBSplineCurve::Degree() const {  int v = get_attribute_value(0); return v; }
-void Ifc2x3::IfcBSplineCurve::setDegree(const int& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
+int64_t Ifc2x3::IfcBSplineCurve::Degree() const {  int64_t v = get_attribute_value(0); return v; }
+void Ifc2x3::IfcBSplineCurve::setDegree(const int64_t& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
 std::vector< ::Ifc2x3::IfcCartesianPoint > Ifc2x3::IfcBSplineCurve::ControlPointsList() const {  std::vector<express::Base> es = get_attribute_value(1); return cast_vector<::Ifc2x3::IfcCartesianPoint>(es); }
 void Ifc2x3::IfcBSplineCurve::setControlPointsList(const std::vector< ::Ifc2x3::IfcCartesianPoint >& v) { set_attribute_value(1, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(1); }
 ::Ifc2x3::IfcBSplineCurveForm::Value Ifc2x3::IfcBSplineCurve::CurveForm() const {  return ::Ifc2x3::IfcBSplineCurveForm::FromString(get_attribute_value(2)); }
@@ -5848,7 +5848,7 @@ void Ifc2x3::IfcBSplineCurve::setSelfIntersect(const boost::logic::tribool& v) {
 
 
 const ifcopenshell::entity& Ifc2x3::IfcBSplineCurve::Class() { return *((ifcopenshell::entity*)IFC2X3_types[80]); }
-Ifc2x3::IfcBSplineCurve Ifc2x3::IfcBSplineCurve::initialize(int v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));; return *this; }
+Ifc2x3::IfcBSplineCurve Ifc2x3::IfcBSplineCurve::initialize(int64_t v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));; return *this; }
 
 // Function implementations for IfcBeam
 
@@ -5868,7 +5868,7 @@ Ifc2x3::IfcBeamType Ifc2x3::IfcBeamType::initialize(std::string v1_GlobalId, ::I
 
 
 const ifcopenshell::entity& Ifc2x3::IfcBezierCurve::Class() { return *((ifcopenshell::entity*)IFC2X3_types[60]); }
-Ifc2x3::IfcBezierCurve Ifc2x3::IfcBezierCurve::initialize(int v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));; return *this; }
+Ifc2x3::IfcBezierCurve Ifc2x3::IfcBezierCurve::initialize(int64_t v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));; return *this; }
 
 // Function implementations for IfcBlobTexture
 std::string Ifc2x3::IfcBlobTexture::RasterFormat() const {  std::string v = get_attribute_value(4); return v; }
@@ -6119,16 +6119,16 @@ const ifcopenshell::entity& Ifc2x3::IfcCableSegmentType::Class() { return *((ifc
 Ifc2x3::IfcCableSegmentType Ifc2x3::IfcCableSegmentType::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableSegmentTypeEnum::Value v10_PredefinedType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ApplicableOccurrence) {set_attribute_value(4, (*v5_ApplicableOccurrence)); } if (v6_HasPropertySets) {set_attribute_value(5, cast_vector<express::Base>(*v6_HasPropertySets)); } if (v7_RepresentationMaps) {set_attribute_value(6, cast_vector<express::Base>(*v7_RepresentationMaps)); } if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); } if (v9_ElementType) {set_attribute_value(8, (*v9_ElementType)); }set_attribute_value(9, (enumeration_reference(&::Ifc2x3::IfcCableSegmentTypeEnum::Class(),(size_t)v10_PredefinedType)));; return *this; }
 
 // Function implementations for IfcCalendarDate
-int Ifc2x3::IfcCalendarDate::DayComponent() const {  int v = get_attribute_value(0); return v; }
-void Ifc2x3::IfcCalendarDate::setDayComponent(const int& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
-int Ifc2x3::IfcCalendarDate::MonthComponent() const {  int v = get_attribute_value(1); return v; }
-void Ifc2x3::IfcCalendarDate::setMonthComponent(const int& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
-int Ifc2x3::IfcCalendarDate::YearComponent() const {  int v = get_attribute_value(2); return v; }
-void Ifc2x3::IfcCalendarDate::setYearComponent(const int& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
+int64_t Ifc2x3::IfcCalendarDate::DayComponent() const {  int64_t v = get_attribute_value(0); return v; }
+void Ifc2x3::IfcCalendarDate::setDayComponent(const int64_t& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
+int64_t Ifc2x3::IfcCalendarDate::MonthComponent() const {  int64_t v = get_attribute_value(1); return v; }
+void Ifc2x3::IfcCalendarDate::setMonthComponent(const int64_t& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
+int64_t Ifc2x3::IfcCalendarDate::YearComponent() const {  int64_t v = get_attribute_value(2); return v; }
+void Ifc2x3::IfcCalendarDate::setYearComponent(const int64_t& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
 
 
 const ifcopenshell::entity& Ifc2x3::IfcCalendarDate::Class() { return *((ifcopenshell::entity*)IFC2X3_types[97]); }
-Ifc2x3::IfcCalendarDate Ifc2x3::IfcCalendarDate::initialize(int v1_DayComponent, int v2_MonthComponent, int v3_YearComponent) { set_attribute_value(0, (v1_DayComponent));set_attribute_value(1, (v2_MonthComponent));set_attribute_value(2, (v3_YearComponent));; return *this; }
+Ifc2x3::IfcCalendarDate Ifc2x3::IfcCalendarDate::initialize(int64_t v1_DayComponent, int64_t v2_MonthComponent, int64_t v3_YearComponent) { set_attribute_value(0, (v1_DayComponent));set_attribute_value(1, (v2_MonthComponent));set_attribute_value(2, (v3_YearComponent));; return *this; }
 
 // Function implementations for IfcCartesianPoint
 std::vector< double > /*[1:3]*/ Ifc2x3::IfcCartesianPoint::Coordinates() const {  std::vector< double > /*[1:3]*/ v = get_attribute_value(0); return v; }
@@ -6648,16 +6648,16 @@ const ifcopenshell::entity& Ifc2x3::IfcCoolingTowerType::Class() { return *((ifc
 Ifc2x3::IfcCoolingTowerType Ifc2x3::IfcCoolingTowerType::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoolingTowerTypeEnum::Value v10_PredefinedType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ApplicableOccurrence) {set_attribute_value(4, (*v5_ApplicableOccurrence)); } if (v6_HasPropertySets) {set_attribute_value(5, cast_vector<express::Base>(*v6_HasPropertySets)); } if (v7_RepresentationMaps) {set_attribute_value(6, cast_vector<express::Base>(*v7_RepresentationMaps)); } if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); } if (v9_ElementType) {set_attribute_value(8, (*v9_ElementType)); }set_attribute_value(9, (enumeration_reference(&::Ifc2x3::IfcCoolingTowerTypeEnum::Class(),(size_t)v10_PredefinedType)));; return *this; }
 
 // Function implementations for IfcCoordinatedUniversalTimeOffset
-int Ifc2x3::IfcCoordinatedUniversalTimeOffset::HourOffset() const {  int v = get_attribute_value(0); return v; }
-void Ifc2x3::IfcCoordinatedUniversalTimeOffset::setHourOffset(const int& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
-std::optional< int > Ifc2x3::IfcCoordinatedUniversalTimeOffset::MinuteOffset() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } int v = get_attribute_value(1); return v; }
-void Ifc2x3::IfcCoordinatedUniversalTimeOffset::setMinuteOffset(const std::optional< int >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
+int64_t Ifc2x3::IfcCoordinatedUniversalTimeOffset::HourOffset() const {  int64_t v = get_attribute_value(0); return v; }
+void Ifc2x3::IfcCoordinatedUniversalTimeOffset::setHourOffset(const int64_t& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
+std::optional< int64_t > Ifc2x3::IfcCoordinatedUniversalTimeOffset::MinuteOffset() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(1); return v; }
+void Ifc2x3::IfcCoordinatedUniversalTimeOffset::setMinuteOffset(const std::optional< int64_t >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 ::Ifc2x3::IfcAheadOrBehind::Value Ifc2x3::IfcCoordinatedUniversalTimeOffset::Sense() const {  return ::Ifc2x3::IfcAheadOrBehind::FromString(get_attribute_value(2)); }
 void Ifc2x3::IfcCoordinatedUniversalTimeOffset::setSense(const ::Ifc2x3::IfcAheadOrBehind::Value& v) { set_attribute_value(2, enumeration_reference(&::Ifc2x3::IfcAheadOrBehind::Class(), (size_t) v));if constexpr (false)unset_attribute_value(2); }
 
 
 const ifcopenshell::entity& Ifc2x3::IfcCoordinatedUniversalTimeOffset::Class() { return *((ifcopenshell::entity*)IFC2X3_types[171]); }
-Ifc2x3::IfcCoordinatedUniversalTimeOffset Ifc2x3::IfcCoordinatedUniversalTimeOffset::initialize(int v1_HourOffset, std::optional< int > v2_MinuteOffset, ::Ifc2x3::IfcAheadOrBehind::Value v3_Sense) { set_attribute_value(0, (v1_HourOffset)); if (v2_MinuteOffset) {set_attribute_value(1, (*v2_MinuteOffset)); }set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcAheadOrBehind::Class(),(size_t)v3_Sense)));; return *this; }
+Ifc2x3::IfcCoordinatedUniversalTimeOffset Ifc2x3::IfcCoordinatedUniversalTimeOffset::initialize(int64_t v1_HourOffset, std::optional< int64_t > v2_MinuteOffset, ::Ifc2x3::IfcAheadOrBehind::Value v3_Sense) { set_attribute_value(0, (v1_HourOffset)); if (v2_MinuteOffset) {set_attribute_value(1, (*v2_MinuteOffset)); }set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcAheadOrBehind::Class(),(size_t)v3_Sense)));; return *this; }
 
 // Function implementations for IfcCostItem
 
@@ -6938,12 +6938,12 @@ Ifc2x3::IfcDerivedUnit Ifc2x3::IfcDerivedUnit::initialize(std::vector< ::Ifc2x3:
 // Function implementations for IfcDerivedUnitElement
 ::Ifc2x3::IfcNamedUnit Ifc2x3::IfcDerivedUnitElement::Unit() const {  return ((express::Base)(get_attribute_value(0))).as<::Ifc2x3::IfcNamedUnit>(); }
 void Ifc2x3::IfcDerivedUnitElement::setUnit(const ::Ifc2x3::IfcNamedUnit& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
-int Ifc2x3::IfcDerivedUnitElement::Exponent() const {  int v = get_attribute_value(1); return v; }
-void Ifc2x3::IfcDerivedUnitElement::setExponent(const int& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
+int64_t Ifc2x3::IfcDerivedUnitElement::Exponent() const {  int64_t v = get_attribute_value(1); return v; }
+void Ifc2x3::IfcDerivedUnitElement::setExponent(const int64_t& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
 
 
 const ifcopenshell::entity& Ifc2x3::IfcDerivedUnitElement::Class() { return *((ifcopenshell::entity*)IFC2X3_types[214]); }
-Ifc2x3::IfcDerivedUnitElement Ifc2x3::IfcDerivedUnitElement::initialize(::Ifc2x3::IfcNamedUnit v1_Unit, int v2_Exponent) { set_attribute_value(0, (v1_Unit));set_attribute_value(1, (v2_Exponent));; return *this; }
+Ifc2x3::IfcDerivedUnitElement Ifc2x3::IfcDerivedUnitElement::initialize(::Ifc2x3::IfcNamedUnit v1_Unit, int64_t v2_Exponent) { set_attribute_value(0, (v1_Unit));set_attribute_value(1, (v2_Exponent));; return *this; }
 
 // Function implementations for IfcDiameterDimension
 
@@ -6985,24 +6985,24 @@ const ifcopenshell::entity& Ifc2x3::IfcDimensionPair::Class() { return *((ifcope
 Ifc2x3::IfcDimensionPair Ifc2x3::IfcDimensionPair::initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout v4_RelatedDraughtingCallout) {  if (v1_Name) {set_attribute_value(0, (*v1_Name)); } if (v2_Description) {set_attribute_value(1, (*v2_Description)); }set_attribute_value(2, (v3_RelatingDraughtingCallout));set_attribute_value(3, (v4_RelatedDraughtingCallout));; return *this; }
 
 // Function implementations for IfcDimensionalExponents
-int Ifc2x3::IfcDimensionalExponents::LengthExponent() const {  int v = get_attribute_value(0); return v; }
-void Ifc2x3::IfcDimensionalExponents::setLengthExponent(const int& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
-int Ifc2x3::IfcDimensionalExponents::MassExponent() const {  int v = get_attribute_value(1); return v; }
-void Ifc2x3::IfcDimensionalExponents::setMassExponent(const int& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
-int Ifc2x3::IfcDimensionalExponents::TimeExponent() const {  int v = get_attribute_value(2); return v; }
-void Ifc2x3::IfcDimensionalExponents::setTimeExponent(const int& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
-int Ifc2x3::IfcDimensionalExponents::ElectricCurrentExponent() const {  int v = get_attribute_value(3); return v; }
-void Ifc2x3::IfcDimensionalExponents::setElectricCurrentExponent(const int& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
-int Ifc2x3::IfcDimensionalExponents::ThermodynamicTemperatureExponent() const {  int v = get_attribute_value(4); return v; }
-void Ifc2x3::IfcDimensionalExponents::setThermodynamicTemperatureExponent(const int& v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
-int Ifc2x3::IfcDimensionalExponents::AmountOfSubstanceExponent() const {  int v = get_attribute_value(5); return v; }
-void Ifc2x3::IfcDimensionalExponents::setAmountOfSubstanceExponent(const int& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
-int Ifc2x3::IfcDimensionalExponents::LuminousIntensityExponent() const {  int v = get_attribute_value(6); return v; }
-void Ifc2x3::IfcDimensionalExponents::setLuminousIntensityExponent(const int& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
+int64_t Ifc2x3::IfcDimensionalExponents::LengthExponent() const {  int64_t v = get_attribute_value(0); return v; }
+void Ifc2x3::IfcDimensionalExponents::setLengthExponent(const int64_t& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
+int64_t Ifc2x3::IfcDimensionalExponents::MassExponent() const {  int64_t v = get_attribute_value(1); return v; }
+void Ifc2x3::IfcDimensionalExponents::setMassExponent(const int64_t& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
+int64_t Ifc2x3::IfcDimensionalExponents::TimeExponent() const {  int64_t v = get_attribute_value(2); return v; }
+void Ifc2x3::IfcDimensionalExponents::setTimeExponent(const int64_t& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
+int64_t Ifc2x3::IfcDimensionalExponents::ElectricCurrentExponent() const {  int64_t v = get_attribute_value(3); return v; }
+void Ifc2x3::IfcDimensionalExponents::setElectricCurrentExponent(const int64_t& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
+int64_t Ifc2x3::IfcDimensionalExponents::ThermodynamicTemperatureExponent() const {  int64_t v = get_attribute_value(4); return v; }
+void Ifc2x3::IfcDimensionalExponents::setThermodynamicTemperatureExponent(const int64_t& v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
+int64_t Ifc2x3::IfcDimensionalExponents::AmountOfSubstanceExponent() const {  int64_t v = get_attribute_value(5); return v; }
+void Ifc2x3::IfcDimensionalExponents::setAmountOfSubstanceExponent(const int64_t& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
+int64_t Ifc2x3::IfcDimensionalExponents::LuminousIntensityExponent() const {  int64_t v = get_attribute_value(6); return v; }
+void Ifc2x3::IfcDimensionalExponents::setLuminousIntensityExponent(const int64_t& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
 
 
 const ifcopenshell::entity& Ifc2x3::IfcDimensionalExponents::Class() { return *((ifcopenshell::entity*)IFC2X3_types[218]); }
-Ifc2x3::IfcDimensionalExponents Ifc2x3::IfcDimensionalExponents::initialize(int v1_LengthExponent, int v2_MassExponent, int v3_TimeExponent, int v4_ElectricCurrentExponent, int v5_ThermodynamicTemperatureExponent, int v6_AmountOfSubstanceExponent, int v7_LuminousIntensityExponent) { set_attribute_value(0, (v1_LengthExponent));set_attribute_value(1, (v2_MassExponent));set_attribute_value(2, (v3_TimeExponent));set_attribute_value(3, (v4_ElectricCurrentExponent));set_attribute_value(4, (v5_ThermodynamicTemperatureExponent));set_attribute_value(5, (v6_AmountOfSubstanceExponent));set_attribute_value(6, (v7_LuminousIntensityExponent));; return *this; }
+Ifc2x3::IfcDimensionalExponents Ifc2x3::IfcDimensionalExponents::initialize(int64_t v1_LengthExponent, int64_t v2_MassExponent, int64_t v3_TimeExponent, int64_t v4_ElectricCurrentExponent, int64_t v5_ThermodynamicTemperatureExponent, int64_t v6_AmountOfSubstanceExponent, int64_t v7_LuminousIntensityExponent) { set_attribute_value(0, (v1_LengthExponent));set_attribute_value(1, (v2_MassExponent));set_attribute_value(2, (v3_TimeExponent));set_attribute_value(3, (v4_ElectricCurrentExponent));set_attribute_value(4, (v5_ThermodynamicTemperatureExponent));set_attribute_value(5, (v6_AmountOfSubstanceExponent));set_attribute_value(6, (v7_LuminousIntensityExponent));; return *this; }
 
 // Function implementations for IfcDirection
 std::vector< double > /*[2:3]*/ Ifc2x3::IfcDirection::DirectionRatios() const {  std::vector< double > /*[2:3]*/ v = get_attribute_value(0); return v; }
@@ -7402,12 +7402,12 @@ std::optional< double > Ifc2x3::IfcElectricalBaseProperties::MaximumPowerInput()
 void Ifc2x3::IfcElectricalBaseProperties::setMaximumPowerInput(const std::optional< double >& v) { if (v) {set_attribute_value(11, *v);} else {unset_attribute_value(11);} }
 std::optional< double > Ifc2x3::IfcElectricalBaseProperties::RatedPowerInput() const { if(get_attribute_value(12).isNull()) { return std::nullopt; } double v = get_attribute_value(12); return v; }
 void Ifc2x3::IfcElectricalBaseProperties::setRatedPowerInput(const std::optional< double >& v) { if (v) {set_attribute_value(12, *v);} else {unset_attribute_value(12);} }
-int Ifc2x3::IfcElectricalBaseProperties::InputPhase() const {  int v = get_attribute_value(13); return v; }
-void Ifc2x3::IfcElectricalBaseProperties::setInputPhase(const int& v) { set_attribute_value(13, v);if constexpr (false)unset_attribute_value(13); }
+int64_t Ifc2x3::IfcElectricalBaseProperties::InputPhase() const {  int64_t v = get_attribute_value(13); return v; }
+void Ifc2x3::IfcElectricalBaseProperties::setInputPhase(const int64_t& v) { set_attribute_value(13, v);if constexpr (false)unset_attribute_value(13); }
 
 
 const ifcopenshell::entity& Ifc2x3::IfcElectricalBaseProperties::Class() { return *((ifcopenshell::entity*)IFC2X3_types[273]); }
-Ifc2x3::IfcElectricalBaseProperties Ifc2x3::IfcElectricalBaseProperties::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, std::optional< std::string > v6_UserDefinedEnergySequence, std::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > v7_ElectricCurrentType, double v8_InputVoltage, double v9_InputFrequency, std::optional< double > v10_FullLoadCurrent, std::optional< double > v11_MinimumCircuitCurrent, std::optional< double > v12_MaximumPowerInput, std::optional< double > v13_RatedPowerInput, int v14_InputPhase) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_EnergySequence) {set_attribute_value(4, (enumeration_reference(&::Ifc2x3::IfcEnergySequenceEnum::Class(),(size_t)*v5_EnergySequence))); } if (v6_UserDefinedEnergySequence) {set_attribute_value(5, (*v6_UserDefinedEnergySequence)); } if (v7_ElectricCurrentType) {set_attribute_value(6, (enumeration_reference(&::Ifc2x3::IfcElectricCurrentEnum::Class(),(size_t)*v7_ElectricCurrentType))); }set_attribute_value(7, (v8_InputVoltage));set_attribute_value(8, (v9_InputFrequency)); if (v10_FullLoadCurrent) {set_attribute_value(9, (*v10_FullLoadCurrent)); } if (v11_MinimumCircuitCurrent) {set_attribute_value(10, (*v11_MinimumCircuitCurrent)); } if (v12_MaximumPowerInput) {set_attribute_value(11, (*v12_MaximumPowerInput)); } if (v13_RatedPowerInput) {set_attribute_value(12, (*v13_RatedPowerInput)); }set_attribute_value(13, (v14_InputPhase));; return *this; }
+Ifc2x3::IfcElectricalBaseProperties Ifc2x3::IfcElectricalBaseProperties::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, std::optional< std::string > v6_UserDefinedEnergySequence, std::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > v7_ElectricCurrentType, double v8_InputVoltage, double v9_InputFrequency, std::optional< double > v10_FullLoadCurrent, std::optional< double > v11_MinimumCircuitCurrent, std::optional< double > v12_MaximumPowerInput, std::optional< double > v13_RatedPowerInput, int64_t v14_InputPhase) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_EnergySequence) {set_attribute_value(4, (enumeration_reference(&::Ifc2x3::IfcEnergySequenceEnum::Class(),(size_t)*v5_EnergySequence))); } if (v6_UserDefinedEnergySequence) {set_attribute_value(5, (*v6_UserDefinedEnergySequence)); } if (v7_ElectricCurrentType) {set_attribute_value(6, (enumeration_reference(&::Ifc2x3::IfcElectricCurrentEnum::Class(),(size_t)*v7_ElectricCurrentType))); }set_attribute_value(7, (v8_InputVoltage));set_attribute_value(8, (v9_InputFrequency)); if (v10_FullLoadCurrent) {set_attribute_value(9, (*v10_FullLoadCurrent)); } if (v11_MinimumCircuitCurrent) {set_attribute_value(10, (*v11_MinimumCircuitCurrent)); } if (v12_MaximumPowerInput) {set_attribute_value(11, (*v12_MaximumPowerInput)); } if (v13_RatedPowerInput) {set_attribute_value(12, (*v13_RatedPowerInput)); }set_attribute_value(13, (v14_InputPhase));; return *this; }
 
 // Function implementations for IfcElectricalCircuit
 
@@ -8030,8 +8030,8 @@ const ifcopenshell::entity& Ifc2x3::IfcGeometricCurveSet::Class() { return *((if
 Ifc2x3::IfcGeometricCurveSet Ifc2x3::IfcGeometricCurveSet::initialize(std::vector< ::Ifc2x3::IfcGeometricSetSelect > v1_Elements) { set_attribute_value(0, cast_vector<express::Base>(v1_Elements));; return *this; }
 
 // Function implementations for IfcGeometricRepresentationContext
-int Ifc2x3::IfcGeometricRepresentationContext::CoordinateSpaceDimension() const {  int v = get_attribute_value(2); return v; }
-void Ifc2x3::IfcGeometricRepresentationContext::setCoordinateSpaceDimension(const int& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
+int64_t Ifc2x3::IfcGeometricRepresentationContext::CoordinateSpaceDimension() const {  int64_t v = get_attribute_value(2); return v; }
+void Ifc2x3::IfcGeometricRepresentationContext::setCoordinateSpaceDimension(const int64_t& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
 std::optional< double > Ifc2x3::IfcGeometricRepresentationContext::Precision() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } double v = get_attribute_value(3); return v; }
 void Ifc2x3::IfcGeometricRepresentationContext::setPrecision(const std::optional< double >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
 ::Ifc2x3::IfcAxis2Placement Ifc2x3::IfcGeometricRepresentationContext::WorldCoordinateSystem() const {  return ((express::Base)(get_attribute_value(4))).as<::Ifc2x3::IfcAxis2Placement>(); }
@@ -8042,7 +8042,7 @@ void Ifc2x3::IfcGeometricRepresentationContext::setTrueNorth(const ::Ifc2x3::Ifc
 std::vector<::Ifc2x3::IfcGeometricRepresentationSubContext> Ifc2x3::IfcGeometricRepresentationContext::HasSubContexts() const { return cast_vector<IfcGeometricRepresentationSubContext>(file()->get_inverse(data()->id(), IFC2X3_types[393], 6)); }
 
 const ifcopenshell::entity& Ifc2x3::IfcGeometricRepresentationContext::Class() { return *((ifcopenshell::entity*)IFC2X3_types[391]); }
-Ifc2x3::IfcGeometricRepresentationContext Ifc2x3::IfcGeometricRepresentationContext::initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, int v3_CoordinateSpaceDimension, std::optional< double > v4_Precision, ::Ifc2x3::IfcAxis2Placement v5_WorldCoordinateSystem, ::Ifc2x3::IfcDirection v6_TrueNorth) {  if (v1_ContextIdentifier) {set_attribute_value(0, (*v1_ContextIdentifier)); } if (v2_ContextType) {set_attribute_value(1, (*v2_ContextType)); }set_attribute_value(2, (v3_CoordinateSpaceDimension)); if (v4_Precision) {set_attribute_value(3, (*v4_Precision)); }set_attribute_value(4, (v5_WorldCoordinateSystem));set_attribute_value(5, (v6_TrueNorth));; return *this; }
+Ifc2x3::IfcGeometricRepresentationContext Ifc2x3::IfcGeometricRepresentationContext::initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, int64_t v3_CoordinateSpaceDimension, std::optional< double > v4_Precision, ::Ifc2x3::IfcAxis2Placement v5_WorldCoordinateSystem, ::Ifc2x3::IfcDirection v6_TrueNorth) {  if (v1_ContextIdentifier) {set_attribute_value(0, (*v1_ContextIdentifier)); } if (v2_ContextType) {set_attribute_value(1, (*v2_ContextType)); }set_attribute_value(2, (v3_CoordinateSpaceDimension)); if (v4_Precision) {set_attribute_value(3, (*v4_Precision)); }set_attribute_value(4, (v5_WorldCoordinateSystem));set_attribute_value(5, (v6_TrueNorth));; return *this; }
 
 // Function implementations for IfcGeometricRepresentationItem
 
@@ -8422,20 +8422,20 @@ const ifcopenshell::entity& Ifc2x3::IfcLocalPlacement::Class() { return *((ifcop
 Ifc2x3::IfcLocalPlacement Ifc2x3::IfcLocalPlacement::initialize(::Ifc2x3::IfcObjectPlacement v1_PlacementRelTo, ::Ifc2x3::IfcAxis2Placement v2_RelativePlacement) { set_attribute_value(0, (v1_PlacementRelTo));set_attribute_value(1, (v2_RelativePlacement));; return *this; }
 
 // Function implementations for IfcLocalTime
-int Ifc2x3::IfcLocalTime::HourComponent() const {  int v = get_attribute_value(0); return v; }
-void Ifc2x3::IfcLocalTime::setHourComponent(const int& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
-std::optional< int > Ifc2x3::IfcLocalTime::MinuteComponent() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } int v = get_attribute_value(1); return v; }
-void Ifc2x3::IfcLocalTime::setMinuteComponent(const std::optional< int >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
+int64_t Ifc2x3::IfcLocalTime::HourComponent() const {  int64_t v = get_attribute_value(0); return v; }
+void Ifc2x3::IfcLocalTime::setHourComponent(const int64_t& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
+std::optional< int64_t > Ifc2x3::IfcLocalTime::MinuteComponent() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(1); return v; }
+void Ifc2x3::IfcLocalTime::setMinuteComponent(const std::optional< int64_t >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 std::optional< double > Ifc2x3::IfcLocalTime::SecondComponent() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } double v = get_attribute_value(2); return v; }
 void Ifc2x3::IfcLocalTime::setSecondComponent(const std::optional< double >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
 ::Ifc2x3::IfcCoordinatedUniversalTimeOffset Ifc2x3::IfcLocalTime::Zone() const { if(get_attribute_value(3).isNull()) { return ::Ifc2x3::IfcCoordinatedUniversalTimeOffset{}; } return ((express::Base)(get_attribute_value(3))).as<::Ifc2x3::IfcCoordinatedUniversalTimeOffset>(); }
 void Ifc2x3::IfcLocalTime::setZone(const ::Ifc2x3::IfcCoordinatedUniversalTimeOffset& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
-std::optional< int > Ifc2x3::IfcLocalTime::DaylightSavingOffset() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int v = get_attribute_value(4); return v; }
-void Ifc2x3::IfcLocalTime::setDaylightSavingOffset(const std::optional< int >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
+std::optional< int64_t > Ifc2x3::IfcLocalTime::DaylightSavingOffset() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(4); return v; }
+void Ifc2x3::IfcLocalTime::setDaylightSavingOffset(const std::optional< int64_t >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 
 
 const ifcopenshell::entity& Ifc2x3::IfcLocalTime::Class() { return *((ifcopenshell::entity*)IFC2X3_types[460]); }
-Ifc2x3::IfcLocalTime Ifc2x3::IfcLocalTime::initialize(int v1_HourComponent, std::optional< int > v2_MinuteComponent, std::optional< double > v3_SecondComponent, ::Ifc2x3::IfcCoordinatedUniversalTimeOffset v4_Zone, std::optional< int > v5_DaylightSavingOffset) { set_attribute_value(0, (v1_HourComponent)); if (v2_MinuteComponent) {set_attribute_value(1, (*v2_MinuteComponent)); } if (v3_SecondComponent) {set_attribute_value(2, (*v3_SecondComponent)); }set_attribute_value(3, (v4_Zone)); if (v5_DaylightSavingOffset) {set_attribute_value(4, (*v5_DaylightSavingOffset)); }; return *this; }
+Ifc2x3::IfcLocalTime Ifc2x3::IfcLocalTime::initialize(int64_t v1_HourComponent, std::optional< int64_t > v2_MinuteComponent, std::optional< double > v3_SecondComponent, ::Ifc2x3::IfcCoordinatedUniversalTimeOffset v4_Zone, std::optional< int64_t > v5_DaylightSavingOffset) { set_attribute_value(0, (v1_HourComponent)); if (v2_MinuteComponent) {set_attribute_value(1, (*v2_MinuteComponent)); } if (v3_SecondComponent) {set_attribute_value(2, (*v3_SecondComponent)); }set_attribute_value(3, (v4_Zone)); if (v5_DaylightSavingOffset) {set_attribute_value(4, (*v5_DaylightSavingOffset)); }; return *this; }
 
 // Function implementations for IfcLoop
 
@@ -8674,7 +8674,7 @@ void Ifc2x3::IfcMove::setPunchList(const std::optional< std::vector< std::string
 
 
 const ifcopenshell::entity& Ifc2x3::IfcMove::Class() { return *((ifcopenshell::entity*)IFC2X3_types[510]); }
-Ifc2x3::IfcMove Ifc2x3::IfcMove::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int > v10_Priority, ::Ifc2x3::IfcSpatialStructureElement v11_MoveFrom, ::Ifc2x3::IfcSpatialStructureElement v12_MoveTo, std::optional< std::vector< std::string > /*[1:?]*/ > v13_PunchList) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_TaskId)); if (v7_Status) {set_attribute_value(6, (*v7_Status)); } if (v8_WorkMethod) {set_attribute_value(7, (*v8_WorkMethod)); }set_attribute_value(8, (v9_IsMilestone)); if (v10_Priority) {set_attribute_value(9, (*v10_Priority)); }set_attribute_value(10, (v11_MoveFrom));set_attribute_value(11, (v12_MoveTo)); if (v13_PunchList) {set_attribute_value(12, (*v13_PunchList)); }; return *this; }
+Ifc2x3::IfcMove Ifc2x3::IfcMove::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int64_t > v10_Priority, ::Ifc2x3::IfcSpatialStructureElement v11_MoveFrom, ::Ifc2x3::IfcSpatialStructureElement v12_MoveTo, std::optional< std::vector< std::string > /*[1:?]*/ > v13_PunchList) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_TaskId)); if (v7_Status) {set_attribute_value(6, (*v7_Status)); } if (v8_WorkMethod) {set_attribute_value(7, (*v8_WorkMethod)); }set_attribute_value(8, (v9_IsMilestone)); if (v10_Priority) {set_attribute_value(9, (*v10_Priority)); }set_attribute_value(10, (v11_MoveFrom));set_attribute_value(11, (v12_MoveTo)); if (v13_PunchList) {set_attribute_value(12, (*v13_PunchList)); }; return *this; }
 
 // Function implementations for IfcNamedUnit
 ::Ifc2x3::IfcDimensionalExponents Ifc2x3::IfcNamedUnit::Dimensions() const {  return ((express::Base)(get_attribute_value(0))).as<::Ifc2x3::IfcDimensionalExponents>(); }
@@ -8812,7 +8812,7 @@ void Ifc2x3::IfcOrderAction::setActionID(const std::string& v) { set_attribute_v
 
 
 const ifcopenshell::entity& Ifc2x3::IfcOrderAction::Class() { return *((ifcopenshell::entity*)IFC2X3_types[530]); }
-Ifc2x3::IfcOrderAction Ifc2x3::IfcOrderAction::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int > v10_Priority, std::string v11_ActionID) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_TaskId)); if (v7_Status) {set_attribute_value(6, (*v7_Status)); } if (v8_WorkMethod) {set_attribute_value(7, (*v8_WorkMethod)); }set_attribute_value(8, (v9_IsMilestone)); if (v10_Priority) {set_attribute_value(9, (*v10_Priority)); }set_attribute_value(10, (v11_ActionID));; return *this; }
+Ifc2x3::IfcOrderAction Ifc2x3::IfcOrderAction::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int64_t > v10_Priority, std::string v11_ActionID) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_TaskId)); if (v7_Status) {set_attribute_value(6, (*v7_Status)); } if (v8_WorkMethod) {set_attribute_value(7, (*v8_WorkMethod)); }set_attribute_value(8, (v9_IsMilestone)); if (v10_Priority) {set_attribute_value(9, (*v10_Priority)); }set_attribute_value(10, (v11_ActionID));; return *this; }
 
 // Function implementations for IfcOrganization
 std::optional< std::string > Ifc2x3::IfcOrganization::Id() const { if(get_attribute_value(0).isNull()) { return std::nullopt; } std::string v = get_attribute_value(0); return v; }
@@ -8874,18 +8874,18 @@ std::optional< ::Ifc2x3::IfcStateEnum::Value > Ifc2x3::IfcOwnerHistory::State() 
 void Ifc2x3::IfcOwnerHistory::setState(const std::optional< ::Ifc2x3::IfcStateEnum::Value >& v) { if (v) {set_attribute_value(2, enumeration_reference(&::Ifc2x3::IfcStateEnum::Class(), (size_t) *v));} else {unset_attribute_value(2);} }
 ::Ifc2x3::IfcChangeActionEnum::Value Ifc2x3::IfcOwnerHistory::ChangeAction() const {  return ::Ifc2x3::IfcChangeActionEnum::FromString(get_attribute_value(3)); }
 void Ifc2x3::IfcOwnerHistory::setChangeAction(const ::Ifc2x3::IfcChangeActionEnum::Value& v) { set_attribute_value(3, enumeration_reference(&::Ifc2x3::IfcChangeActionEnum::Class(), (size_t) v));if constexpr (false)unset_attribute_value(3); }
-std::optional< int > Ifc2x3::IfcOwnerHistory::LastModifiedDate() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int v = get_attribute_value(4); return v; }
-void Ifc2x3::IfcOwnerHistory::setLastModifiedDate(const std::optional< int >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
+std::optional< int64_t > Ifc2x3::IfcOwnerHistory::LastModifiedDate() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(4); return v; }
+void Ifc2x3::IfcOwnerHistory::setLastModifiedDate(const std::optional< int64_t >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 ::Ifc2x3::IfcPersonAndOrganization Ifc2x3::IfcOwnerHistory::LastModifyingUser() const { if(get_attribute_value(5).isNull()) { return ::Ifc2x3::IfcPersonAndOrganization{}; } return ((express::Base)(get_attribute_value(5))).as<::Ifc2x3::IfcPersonAndOrganization>(); }
 void Ifc2x3::IfcOwnerHistory::setLastModifyingUser(const ::Ifc2x3::IfcPersonAndOrganization& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
 ::Ifc2x3::IfcApplication Ifc2x3::IfcOwnerHistory::LastModifyingApplication() const { if(get_attribute_value(6).isNull()) { return ::Ifc2x3::IfcApplication{}; } return ((express::Base)(get_attribute_value(6))).as<::Ifc2x3::IfcApplication>(); }
 void Ifc2x3::IfcOwnerHistory::setLastModifyingApplication(const ::Ifc2x3::IfcApplication& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
-int Ifc2x3::IfcOwnerHistory::CreationDate() const {  int v = get_attribute_value(7); return v; }
-void Ifc2x3::IfcOwnerHistory::setCreationDate(const int& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
+int64_t Ifc2x3::IfcOwnerHistory::CreationDate() const {  int64_t v = get_attribute_value(7); return v; }
+void Ifc2x3::IfcOwnerHistory::setCreationDate(const int64_t& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
 
 
 const ifcopenshell::entity& Ifc2x3::IfcOwnerHistory::Class() { return *((ifcopenshell::entity*)IFC2X3_types[537]); }
-Ifc2x3::IfcOwnerHistory Ifc2x3::IfcOwnerHistory::initialize(::Ifc2x3::IfcPersonAndOrganization v1_OwningUser, ::Ifc2x3::IfcApplication v2_OwningApplication, std::optional< ::Ifc2x3::IfcStateEnum::Value > v3_State, ::Ifc2x3::IfcChangeActionEnum::Value v4_ChangeAction, std::optional< int > v5_LastModifiedDate, ::Ifc2x3::IfcPersonAndOrganization v6_LastModifyingUser, ::Ifc2x3::IfcApplication v7_LastModifyingApplication, int v8_CreationDate) { set_attribute_value(0, (v1_OwningUser));set_attribute_value(1, (v2_OwningApplication)); if (v3_State) {set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcStateEnum::Class(),(size_t)*v3_State))); }set_attribute_value(3, (enumeration_reference(&::Ifc2x3::IfcChangeActionEnum::Class(),(size_t)v4_ChangeAction))); if (v5_LastModifiedDate) {set_attribute_value(4, (*v5_LastModifiedDate)); }set_attribute_value(5, (v6_LastModifyingUser));set_attribute_value(6, (v7_LastModifyingApplication));set_attribute_value(7, (v8_CreationDate));; return *this; }
+Ifc2x3::IfcOwnerHistory Ifc2x3::IfcOwnerHistory::initialize(::Ifc2x3::IfcPersonAndOrganization v1_OwningUser, ::Ifc2x3::IfcApplication v2_OwningApplication, std::optional< ::Ifc2x3::IfcStateEnum::Value > v3_State, ::Ifc2x3::IfcChangeActionEnum::Value v4_ChangeAction, std::optional< int64_t > v5_LastModifiedDate, ::Ifc2x3::IfcPersonAndOrganization v6_LastModifyingUser, ::Ifc2x3::IfcApplication v7_LastModifyingApplication, int64_t v8_CreationDate) { set_attribute_value(0, (v1_OwningUser));set_attribute_value(1, (v2_OwningApplication)); if (v3_State) {set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcStateEnum::Class(),(size_t)*v3_State))); }set_attribute_value(3, (enumeration_reference(&::Ifc2x3::IfcChangeActionEnum::Class(),(size_t)v4_ChangeAction))); if (v5_LastModifiedDate) {set_attribute_value(4, (*v5_LastModifiedDate)); }set_attribute_value(5, (v6_LastModifyingUser));set_attribute_value(6, (v7_LastModifyingApplication));set_attribute_value(7, (v8_CreationDate));; return *this; }
 
 // Function implementations for IfcParameterizedProfileDef
 ::Ifc2x3::IfcAxis2Placement2D Ifc2x3::IfcParameterizedProfileDef::Position() const {  return ((express::Base)(get_attribute_value(2))).as<::Ifc2x3::IfcAxis2Placement2D>(); }
@@ -9030,18 +9030,18 @@ const ifcopenshell::entity& Ifc2x3::IfcPipeSegmentType::Class() { return *((ifco
 Ifc2x3::IfcPipeSegmentType Ifc2x3::IfcPipeSegmentType::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPipeSegmentTypeEnum::Value v10_PredefinedType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ApplicableOccurrence) {set_attribute_value(4, (*v5_ApplicableOccurrence)); } if (v6_HasPropertySets) {set_attribute_value(5, cast_vector<express::Base>(*v6_HasPropertySets)); } if (v7_RepresentationMaps) {set_attribute_value(6, cast_vector<express::Base>(*v7_RepresentationMaps)); } if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); } if (v9_ElementType) {set_attribute_value(8, (*v9_ElementType)); }set_attribute_value(9, (enumeration_reference(&::Ifc2x3::IfcPipeSegmentTypeEnum::Class(),(size_t)v10_PredefinedType)));; return *this; }
 
 // Function implementations for IfcPixelTexture
-int Ifc2x3::IfcPixelTexture::Width() const {  int v = get_attribute_value(4); return v; }
-void Ifc2x3::IfcPixelTexture::setWidth(const int& v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
-int Ifc2x3::IfcPixelTexture::Height() const {  int v = get_attribute_value(5); return v; }
-void Ifc2x3::IfcPixelTexture::setHeight(const int& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
-int Ifc2x3::IfcPixelTexture::ColourComponents() const {  int v = get_attribute_value(6); return v; }
-void Ifc2x3::IfcPixelTexture::setColourComponents(const int& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
+int64_t Ifc2x3::IfcPixelTexture::Width() const {  int64_t v = get_attribute_value(4); return v; }
+void Ifc2x3::IfcPixelTexture::setWidth(const int64_t& v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
+int64_t Ifc2x3::IfcPixelTexture::Height() const {  int64_t v = get_attribute_value(5); return v; }
+void Ifc2x3::IfcPixelTexture::setHeight(const int64_t& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
+int64_t Ifc2x3::IfcPixelTexture::ColourComponents() const {  int64_t v = get_attribute_value(6); return v; }
+void Ifc2x3::IfcPixelTexture::setColourComponents(const int64_t& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
 std::vector< boost::dynamic_bitset<> > /*[1:?]*/ Ifc2x3::IfcPixelTexture::Pixel() const {  std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v = get_attribute_value(7); return v; }
 void Ifc2x3::IfcPixelTexture::setPixel(const std::vector< boost::dynamic_bitset<> > /*[1:?]*/& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
 
 
 const ifcopenshell::entity& Ifc2x3::IfcPixelTexture::Class() { return *((ifcopenshell::entity*)IFC2X3_types[559]); }
-Ifc2x3::IfcPixelTexture Ifc2x3::IfcPixelTexture::initialize(bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_TextureTransform, int v5_Width, int v6_Height, int v7_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v8_Pixel) { set_attribute_value(0, (v1_RepeatS));set_attribute_value(1, (v2_RepeatT));set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcSurfaceTextureEnum::Class(),(size_t)v3_TextureType)));set_attribute_value(3, (v4_TextureTransform));set_attribute_value(4, (v5_Width));set_attribute_value(5, (v6_Height));set_attribute_value(6, (v7_ColourComponents));set_attribute_value(7, (v8_Pixel));; return *this; }
+Ifc2x3::IfcPixelTexture Ifc2x3::IfcPixelTexture::initialize(bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_TextureTransform, int64_t v5_Width, int64_t v6_Height, int64_t v7_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v8_Pixel) { set_attribute_value(0, (v1_RepeatS));set_attribute_value(1, (v2_RepeatT));set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcSurfaceTextureEnum::Class(),(size_t)v3_TextureType)));set_attribute_value(3, (v4_TextureTransform));set_attribute_value(4, (v5_Width));set_attribute_value(5, (v6_Height));set_attribute_value(6, (v7_ColourComponents));set_attribute_value(7, (v8_Pixel));; return *this; }
 
 // Function implementations for IfcPlacement
 ::Ifc2x3::IfcCartesianPoint Ifc2x3::IfcPlacement::Location() const {  return ((express::Base)(get_attribute_value(0))).as<::Ifc2x3::IfcCartesianPoint>(); }
@@ -9670,7 +9670,7 @@ void Ifc2x3::IfcRationalBezierCurve::setWeightsData(const std::vector< double > 
 
 
 const ifcopenshell::entity& Ifc2x3::IfcRationalBezierCurve::Class() { return *((ifcopenshell::entity*)IFC2X3_types[651]); }
-Ifc2x3::IfcRationalBezierCurve Ifc2x3::IfcRationalBezierCurve::initialize(int v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));set_attribute_value(5, (v6_WeightsData));; return *this; }
+Ifc2x3::IfcRationalBezierCurve Ifc2x3::IfcRationalBezierCurve::initialize(int64_t v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData) { set_attribute_value(0, (v1_Degree));set_attribute_value(1, cast_vector<express::Base>(v2_ControlPointsList));set_attribute_value(2, (enumeration_reference(&::Ifc2x3::IfcBSplineCurveForm::Class(),(size_t)v3_CurveForm)));set_attribute_value(3, (v4_ClosedCurve));set_attribute_value(4, (v5_SelfIntersect));set_attribute_value(5, (v6_WeightsData));; return *this; }
 
 // Function implementations for IfcRectangleHollowProfileDef
 double Ifc2x3::IfcRectangleHollowProfileDef::WallThickness() const {  double v = get_attribute_value(5); return v; }
@@ -10003,10 +10003,10 @@ const ifcopenshell::entity& Ifc2x3::IfcRelConnectsElements::Class() { return *((
 Ifc2x3::IfcRelConnectsElements Ifc2x3::IfcRelConnectsElements::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc2x3::IfcElement v6_RelatingElement, ::Ifc2x3::IfcElement v7_RelatedElement) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); }set_attribute_value(4, (v5_ConnectionGeometry));set_attribute_value(5, (v6_RelatingElement));set_attribute_value(6, (v7_RelatedElement));; return *this; }
 
 // Function implementations for IfcRelConnectsPathElements
-std::vector< int > /*[0:?]*/ Ifc2x3::IfcRelConnectsPathElements::RelatingPriorities() const {  std::vector< int > /*[0:?]*/ v = get_attribute_value(7); return v; }
-void Ifc2x3::IfcRelConnectsPathElements::setRelatingPriorities(const std::vector< int > /*[0:?]*/& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
-std::vector< int > /*[0:?]*/ Ifc2x3::IfcRelConnectsPathElements::RelatedPriorities() const {  std::vector< int > /*[0:?]*/ v = get_attribute_value(8); return v; }
-void Ifc2x3::IfcRelConnectsPathElements::setRelatedPriorities(const std::vector< int > /*[0:?]*/& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
+std::vector< int64_t > /*[0:?]*/ Ifc2x3::IfcRelConnectsPathElements::RelatingPriorities() const {  std::vector< int64_t > /*[0:?]*/ v = get_attribute_value(7); return v; }
+void Ifc2x3::IfcRelConnectsPathElements::setRelatingPriorities(const std::vector< int64_t > /*[0:?]*/& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
+std::vector< int64_t > /*[0:?]*/ Ifc2x3::IfcRelConnectsPathElements::RelatedPriorities() const {  std::vector< int64_t > /*[0:?]*/ v = get_attribute_value(8); return v; }
+void Ifc2x3::IfcRelConnectsPathElements::setRelatedPriorities(const std::vector< int64_t > /*[0:?]*/& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
 ::Ifc2x3::IfcConnectionTypeEnum::Value Ifc2x3::IfcRelConnectsPathElements::RelatedConnectionType() const {  return ::Ifc2x3::IfcConnectionTypeEnum::FromString(get_attribute_value(9)); }
 void Ifc2x3::IfcRelConnectsPathElements::setRelatedConnectionType(const ::Ifc2x3::IfcConnectionTypeEnum::Value& v) { set_attribute_value(9, enumeration_reference(&::Ifc2x3::IfcConnectionTypeEnum::Class(), (size_t) v));if constexpr (false)unset_attribute_value(9); }
 ::Ifc2x3::IfcConnectionTypeEnum::Value Ifc2x3::IfcRelConnectsPathElements::RelatingConnectionType() const {  return ::Ifc2x3::IfcConnectionTypeEnum::FromString(get_attribute_value(10)); }
@@ -10014,7 +10014,7 @@ void Ifc2x3::IfcRelConnectsPathElements::setRelatingConnectionType(const ::Ifc2x
 
 
 const ifcopenshell::entity& Ifc2x3::IfcRelConnectsPathElements::Class() { return *((ifcopenshell::entity*)IFC2X3_types[690]); }
-Ifc2x3::IfcRelConnectsPathElements Ifc2x3::IfcRelConnectsPathElements::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc2x3::IfcElement v6_RelatingElement, ::Ifc2x3::IfcElement v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, ::Ifc2x3::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc2x3::IfcConnectionTypeEnum::Value v11_RelatingConnectionType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); }set_attribute_value(4, (v5_ConnectionGeometry));set_attribute_value(5, (v6_RelatingElement));set_attribute_value(6, (v7_RelatedElement));set_attribute_value(7, (v8_RelatingPriorities));set_attribute_value(8, (v9_RelatedPriorities));set_attribute_value(9, (enumeration_reference(&::Ifc2x3::IfcConnectionTypeEnum::Class(),(size_t)v10_RelatedConnectionType)));set_attribute_value(10, (enumeration_reference(&::Ifc2x3::IfcConnectionTypeEnum::Class(),(size_t)v11_RelatingConnectionType)));; return *this; }
+Ifc2x3::IfcRelConnectsPathElements Ifc2x3::IfcRelConnectsPathElements::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc2x3::IfcElement v6_RelatingElement, ::Ifc2x3::IfcElement v7_RelatedElement, std::vector< int64_t > /*[0:?]*/ v8_RelatingPriorities, std::vector< int64_t > /*[0:?]*/ v9_RelatedPriorities, ::Ifc2x3::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc2x3::IfcConnectionTypeEnum::Value v11_RelatingConnectionType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); }set_attribute_value(4, (v5_ConnectionGeometry));set_attribute_value(5, (v6_RelatingElement));set_attribute_value(6, (v7_RelatedElement));set_attribute_value(7, (v8_RelatingPriorities));set_attribute_value(8, (v9_RelatedPriorities));set_attribute_value(9, (enumeration_reference(&::Ifc2x3::IfcConnectionTypeEnum::Class(),(size_t)v10_RelatedConnectionType)));set_attribute_value(10, (enumeration_reference(&::Ifc2x3::IfcConnectionTypeEnum::Class(),(size_t)v11_RelatingConnectionType)));; return *this; }
 
 // Function implementations for IfcRelConnectsPortToElement
 ::Ifc2x3::IfcPort Ifc2x3::IfcRelConnectsPortToElement::RelatingPort() const {  return ((express::Base)(get_attribute_value(4))).as<::Ifc2x3::IfcPort>(); }
@@ -10623,10 +10623,10 @@ const ifcopenshell::entity& Ifc2x3::IfcSimpleProperty::Class() { return *((ifcop
 Ifc2x3::IfcSimpleProperty Ifc2x3::IfcSimpleProperty::initialize(std::string v1_Name, std::optional< std::string > v2_Description) { set_attribute_value(0, (v1_Name)); if (v2_Description) {set_attribute_value(1, (*v2_Description)); }; return *this; }
 
 // Function implementations for IfcSite
-std::optional< std::vector< int > /*[3:4]*/ > Ifc2x3::IfcSite::RefLatitude() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } std::vector< int > /*[3:4]*/ v = get_attribute_value(9); return v; }
-void Ifc2x3::IfcSite::setRefLatitude(const std::optional< std::vector< int > /*[3:4]*/ >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
-std::optional< std::vector< int > /*[3:4]*/ > Ifc2x3::IfcSite::RefLongitude() const { if(get_attribute_value(10).isNull()) { return std::nullopt; } std::vector< int > /*[3:4]*/ v = get_attribute_value(10); return v; }
-void Ifc2x3::IfcSite::setRefLongitude(const std::optional< std::vector< int > /*[3:4]*/ >& v) { if (v) {set_attribute_value(10, *v);} else {unset_attribute_value(10);} }
+std::optional< std::vector< int64_t > /*[3:4]*/ > Ifc2x3::IfcSite::RefLatitude() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } std::vector< int64_t > /*[3:4]*/ v = get_attribute_value(9); return v; }
+void Ifc2x3::IfcSite::setRefLatitude(const std::optional< std::vector< int64_t > /*[3:4]*/ >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
+std::optional< std::vector< int64_t > /*[3:4]*/ > Ifc2x3::IfcSite::RefLongitude() const { if(get_attribute_value(10).isNull()) { return std::nullopt; } std::vector< int64_t > /*[3:4]*/ v = get_attribute_value(10); return v; }
+void Ifc2x3::IfcSite::setRefLongitude(const std::optional< std::vector< int64_t > /*[3:4]*/ >& v) { if (v) {set_attribute_value(10, *v);} else {unset_attribute_value(10);} }
 std::optional< double > Ifc2x3::IfcSite::RefElevation() const { if(get_attribute_value(11).isNull()) { return std::nullopt; } double v = get_attribute_value(11); return v; }
 void Ifc2x3::IfcSite::setRefElevation(const std::optional< double >& v) { if (v) {set_attribute_value(11, *v);} else {unset_attribute_value(11);} }
 std::optional< std::string > Ifc2x3::IfcSite::LandTitleNumber() const { if(get_attribute_value(12).isNull()) { return std::nullopt; } std::string v = get_attribute_value(12); return v; }
@@ -10636,7 +10636,7 @@ void Ifc2x3::IfcSite::setSiteAddress(const ::Ifc2x3::IfcPostalAddress& v) { set_
 
 
 const ifcopenshell::entity& Ifc2x3::IfcSite::Class() { return *((ifcopenshell::entity*)IFC2X3_types[764]); }
-Ifc2x3::IfcSite Ifc2x3::IfcSite::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, std::optional< std::vector< int > /*[3:4]*/ > v10_RefLatitude, std::optional< std::vector< int > /*[3:4]*/ > v11_RefLongitude, std::optional< double > v12_RefElevation, std::optional< std::string > v13_LandTitleNumber, ::Ifc2x3::IfcPostalAddress v14_SiteAddress) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_LongName) {set_attribute_value(7, (*v8_LongName)); }set_attribute_value(8, (enumeration_reference(&::Ifc2x3::IfcElementCompositionEnum::Class(),(size_t)v9_CompositionType))); if (v10_RefLatitude) {set_attribute_value(9, (*v10_RefLatitude)); } if (v11_RefLongitude) {set_attribute_value(10, (*v11_RefLongitude)); } if (v12_RefElevation) {set_attribute_value(11, (*v12_RefElevation)); } if (v13_LandTitleNumber) {set_attribute_value(12, (*v13_LandTitleNumber)); }set_attribute_value(13, (v14_SiteAddress));; return *this; }
+Ifc2x3::IfcSite Ifc2x3::IfcSite::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, std::optional< std::vector< int64_t > /*[3:4]*/ > v10_RefLatitude, std::optional< std::vector< int64_t > /*[3:4]*/ > v11_RefLongitude, std::optional< double > v12_RefElevation, std::optional< std::string > v13_LandTitleNumber, ::Ifc2x3::IfcPostalAddress v14_SiteAddress) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_LongName) {set_attribute_value(7, (*v8_LongName)); }set_attribute_value(8, (enumeration_reference(&::Ifc2x3::IfcElementCompositionEnum::Class(),(size_t)v9_CompositionType))); if (v10_RefLatitude) {set_attribute_value(9, (*v10_RefLatitude)); } if (v11_RefLongitude) {set_attribute_value(10, (*v11_RefLongitude)); } if (v12_RefElevation) {set_attribute_value(11, (*v12_RefElevation)); } if (v13_LandTitleNumber) {set_attribute_value(12, (*v13_LandTitleNumber)); }set_attribute_value(13, (v14_SiteAddress));; return *this; }
 
 // Function implementations for IfcSlab
 std::optional< ::Ifc2x3::IfcSlabTypeEnum::Value > Ifc2x3::IfcSlab::PredefinedType() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } return ::Ifc2x3::IfcSlabTypeEnum::FromString(get_attribute_value(8)); }
@@ -10812,10 +10812,10 @@ const ifcopenshell::entity& Ifc2x3::IfcStair::Class() { return *((ifcopenshell::
 Ifc2x3::IfcStair Ifc2x3::IfcStair::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcStairTypeEnum::Value v9_ShapeType) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); }set_attribute_value(8, (enumeration_reference(&::Ifc2x3::IfcStairTypeEnum::Class(),(size_t)v9_ShapeType)));; return *this; }
 
 // Function implementations for IfcStairFlight
-std::optional< int > Ifc2x3::IfcStairFlight::NumberOfRiser() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } int v = get_attribute_value(8); return v; }
-void Ifc2x3::IfcStairFlight::setNumberOfRiser(const std::optional< int >& v) { if (v) {set_attribute_value(8, *v);} else {unset_attribute_value(8);} }
-std::optional< int > Ifc2x3::IfcStairFlight::NumberOfTreads() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } int v = get_attribute_value(9); return v; }
-void Ifc2x3::IfcStairFlight::setNumberOfTreads(const std::optional< int >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
+std::optional< int64_t > Ifc2x3::IfcStairFlight::NumberOfRiser() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(8); return v; }
+void Ifc2x3::IfcStairFlight::setNumberOfRiser(const std::optional< int64_t >& v) { if (v) {set_attribute_value(8, *v);} else {unset_attribute_value(8);} }
+std::optional< int64_t > Ifc2x3::IfcStairFlight::NumberOfTreads() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(9); return v; }
+void Ifc2x3::IfcStairFlight::setNumberOfTreads(const std::optional< int64_t >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
 std::optional< double > Ifc2x3::IfcStairFlight::RiserHeight() const { if(get_attribute_value(10).isNull()) { return std::nullopt; } double v = get_attribute_value(10); return v; }
 void Ifc2x3::IfcStairFlight::setRiserHeight(const std::optional< double >& v) { if (v) {set_attribute_value(10, *v);} else {unset_attribute_value(10);} }
 std::optional< double > Ifc2x3::IfcStairFlight::TreadLength() const { if(get_attribute_value(11).isNull()) { return std::nullopt; } double v = get_attribute_value(11); return v; }
@@ -10823,7 +10823,7 @@ void Ifc2x3::IfcStairFlight::setTreadLength(const std::optional< double >& v) { 
 
 
 const ifcopenshell::entity& Ifc2x3::IfcStairFlight::Class() { return *((ifcopenshell::entity*)IFC2X3_types[796]); }
-Ifc2x3::IfcStairFlight Ifc2x3::IfcStairFlight::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< int > v9_NumberOfRiser, std::optional< int > v10_NumberOfTreads, std::optional< double > v11_RiserHeight, std::optional< double > v12_TreadLength) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); } if (v9_NumberOfRiser) {set_attribute_value(8, (*v9_NumberOfRiser)); } if (v10_NumberOfTreads) {set_attribute_value(9, (*v10_NumberOfTreads)); } if (v11_RiserHeight) {set_attribute_value(10, (*v11_RiserHeight)); } if (v12_TreadLength) {set_attribute_value(11, (*v12_TreadLength)); }; return *this; }
+Ifc2x3::IfcStairFlight Ifc2x3::IfcStairFlight::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< int64_t > v9_NumberOfRiser, std::optional< int64_t > v10_NumberOfTreads, std::optional< double > v11_RiserHeight, std::optional< double > v12_TreadLength) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_ObjectPlacement));set_attribute_value(6, (v7_Representation)); if (v8_Tag) {set_attribute_value(7, (*v8_Tag)); } if (v9_NumberOfRiser) {set_attribute_value(8, (*v9_NumberOfRiser)); } if (v10_NumberOfTreads) {set_attribute_value(9, (*v10_NumberOfTreads)); } if (v11_RiserHeight) {set_attribute_value(10, (*v11_RiserHeight)); } if (v12_TreadLength) {set_attribute_value(11, (*v12_TreadLength)); }; return *this; }
 
 // Function implementations for IfcStairFlightType
 ::Ifc2x3::IfcStairFlightTypeEnum::Value Ifc2x3::IfcStairFlightType::PredefinedType() const {  return ::Ifc2x3::IfcStairFlightTypeEnum::FromString(get_attribute_value(9)); }
@@ -11499,12 +11499,12 @@ std::optional< std::string > Ifc2x3::IfcTask::WorkMethod() const { if(get_attrib
 void Ifc2x3::IfcTask::setWorkMethod(const std::optional< std::string >& v) { if (v) {set_attribute_value(7, *v);} else {unset_attribute_value(7);} }
 bool Ifc2x3::IfcTask::IsMilestone() const {  bool v = get_attribute_value(8); return v; }
 void Ifc2x3::IfcTask::setIsMilestone(const bool& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
-std::optional< int > Ifc2x3::IfcTask::Priority() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } int v = get_attribute_value(9); return v; }
-void Ifc2x3::IfcTask::setPriority(const std::optional< int >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
+std::optional< int64_t > Ifc2x3::IfcTask::Priority() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } int64_t v = get_attribute_value(9); return v; }
+void Ifc2x3::IfcTask::setPriority(const std::optional< int64_t >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
 
 
 const ifcopenshell::entity& Ifc2x3::IfcTask::Class() { return *((ifcopenshell::entity*)IFC2X3_types[872]); }
-Ifc2x3::IfcTask Ifc2x3::IfcTask::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int > v10_Priority) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_TaskId)); if (v7_Status) {set_attribute_value(6, (*v7_Status)); } if (v8_WorkMethod) {set_attribute_value(7, (*v8_WorkMethod)); }set_attribute_value(8, (v9_IsMilestone)); if (v10_Priority) {set_attribute_value(9, (*v10_Priority)); }; return *this; }
+Ifc2x3::IfcTask Ifc2x3::IfcTask::initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int64_t > v10_Priority) { set_attribute_value(0, (v1_GlobalId));set_attribute_value(1, (v2_OwnerHistory)); if (v3_Name) {set_attribute_value(2, (*v3_Name)); } if (v4_Description) {set_attribute_value(3, (*v4_Description)); } if (v5_ObjectType) {set_attribute_value(4, (*v5_ObjectType)); }set_attribute_value(5, (v6_TaskId)); if (v7_Status) {set_attribute_value(6, (*v7_Status)); } if (v8_WorkMethod) {set_attribute_value(7, (*v8_WorkMethod)); }set_attribute_value(8, (v9_IsMilestone)); if (v10_Priority) {set_attribute_value(9, (*v10_Priority)); }; return *this; }
 
 // Function implementations for IfcTelecomAddress
 std::optional< std::vector< std::string > /*[1:?]*/ > Ifc2x3::IfcTelecomAddress::TelephoneNumbers() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::vector< std::string > /*[1:?]*/ v = get_attribute_value(3); return v; }

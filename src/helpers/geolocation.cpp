@@ -95,7 +95,7 @@ double selected_number(const express::Base& selected, double fallback) {
         return static_cast<double>(value);
     }
     if (value.type() == ifcopenshell::Argument_INT) {
-        return static_cast<double>(static_cast<int>(value));
+        return static_cast<double>(static_cast<int64_t>(value));
     }
     return fallback;
 }

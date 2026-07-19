@@ -1411,7 +1411,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 	latebound_access::set(ownerhist, "OwningUser", pando);
 	latebound_access::set(ownerhist, "OwningApplication", application);
 	latebound_access::set(ownerhist, "ChangeAction", std::string("MODIFIED"));
-	latebound_access::set(ownerhist, "CreationDate", (int)time(0));
+	latebound_access::set(ownerhist, "CreationDate", (int64_t)time(0));
 
 	express::Base quantity;
 	std::vector<express::Base> objects;
@@ -1476,7 +1476,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
 				latebound_access::set(quantity_count, "Name", std::string("Surface Genus"));
 				latebound_access::set(quantity_count, "Description", '#' + boost::lexical_cast<std::string>(part.ItemId()));
-				latebound_access::set(quantity_count, "CountValue", part.Shape()->surface_genus());
+				latebound_access::set(quantity_count, "CountValue", (int64_t) part.Shape()->surface_genus());
 
 				quantities_2.push_back(quantity_count);				
 			}

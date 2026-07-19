@@ -33,12 +33,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcBSplineCurveWithKnots& inst)
 	std::transform(cps.begin(), cps.end(), std::back_inserter(points), [this](const IfcSchema::IfcCartesianPoint& cp) { return taxonomy::cast<taxonomy::point3>(map(cp)); });
 	bc->control_points = points;
 		
-	bc->multiplicities = inst.KnotMultiplicities();
+	auto knot_multiplicities = inst.KnotMultiplicities();
+	bc->multiplicities.assign(knot_multiplicities.begin(), knot_multiplicities.end());
 	bc->knots = inst.Knots();
 	if (inst.as<IfcSchema::IfcRationalBSplineCurveWithKnots>()) {
 		bc->weights = inst.as<IfcSchema::IfcRationalBSplineCurveWithKnots>().WeightsData();
 	}
-	bc->degree = inst.Degree();
+	bc->degree = (int) inst.Degree();
 
 	return bc;
 }

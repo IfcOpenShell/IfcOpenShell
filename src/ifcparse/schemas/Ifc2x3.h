@@ -8092,8 +8092,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcCompoundPlaneAngleMeasure initialize(std::vector< int > /*[3:4]*/ v);
-    operator std::vector< int > /*[3:4]*/() const;
+    IfcCompoundPlaneAngleMeasure initialize(std::vector< int64_t > /*[3:4]*/ v);
+    operator std::vector< int64_t > /*[3:4]*/() const;
 };
 /// Definition from ISO/CD 10303-41:1992: Is the value of a physical quantity as defined by an application context.
 /// Type: REAL
@@ -8155,8 +8155,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcDayInMonthNumber initialize(int v);
-    operator int() const;
+    IfcDayInMonthNumber initialize(int64_t v);
+    operator int64_t() const;
 };
 
 class IFC_SCHEMA_API IfcDaylightSavingHour : public express::DeclaredType {
@@ -8164,8 +8164,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcDaylightSavingHour initialize(int v);
-    operator int() const;
+    IfcDaylightSavingHour initialize(int64_t v);
+    operator int64_t() const;
 };
 /// Definition from ISO/CD 10303-41:1992: A descriptive measure is a human interpretable definition of a quantifiable value.
 /// Type: STRING
@@ -8193,8 +8193,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcDimensionCount initialize(int v);
-    operator int() const;
+    IfcDimensionCount initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcDoseEquivalentMeasure is a measure of the radioactive dose equivalent.
 /// Usually measured in Sievert (Sv, J/kg).
@@ -8466,8 +8466,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcHourInDay initialize(int v);
-    operator int() const;
+    IfcHourInDay initialize(int64_t v);
+    operator int64_t() const;
 };
 /// Definition from ISO/CD 10303-41:1992: An identifier is an alphanumeric string which allows an individual thing to be identified. It may not provide natural-language meaning.
 /// 
@@ -8529,8 +8529,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcInteger initialize(int v);
-    operator int() const;
+    IfcInteger initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcIntegerCountRateMeasure is a measure of the integer number of units flowing per unit time.
 /// 
@@ -8544,8 +8544,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcIntegerCountRateMeasure initialize(int v);
-    operator int() const;
+    IfcIntegerCountRateMeasure initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcIonConcentrationMeasure is a measure of particular ion concentration in a liquid, given in mg/L.
 /// 
@@ -8817,8 +8817,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcMinuteInHour initialize(int v);
-    operator int() const;
+    IfcMinuteInHour initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcModulusOfElasticityMeasure is a measure of modulus of elasticity.
 /// Usually measured in N/m2.
@@ -8988,8 +8988,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcMonthInYearNumber initialize(int v);
-    operator int() const;
+    IfcMonthInYearNumber initialize(int64_t v);
+    operator int64_t() const;
 };
 /// Definition from ISO/CD 10303-41:1992: A numeric measure is the numeric value of a physical quantity.
 /// Type: NUMBER
@@ -9572,8 +9572,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcTimeStamp initialize(int v);
-    operator int() const;
+    IfcTimeStamp initialize(int64_t v);
+    operator int64_t() const;
 };
 /// IfcTorqueMeasure is a measure of the torque or moment of a couple.
 /// Usually measured in N m.
@@ -9661,8 +9661,8 @@ public:
     using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    IfcYearNumber initialize(int v);
-    operator int() const;
+    IfcYearNumber initialize(int64_t v);
+    operator int64_t() const;
 };
 /// The box alignment specifies the alignment of the text box relative to its position. The following string values shall be used:
 /// 
@@ -10129,15 +10129,15 @@ class IFC_SCHEMA_API IfcCalendarDate : public express::Entity {
 public:
     using express::Entity::Entity;
 
-    int DayComponent() const;
-    void setDayComponent(const int& v);
-    int MonthComponent() const;
-    void setMonthComponent(const int& v);
-    int YearComponent() const;
-    void setYearComponent(const int& v);
+    int64_t DayComponent() const;
+    void setDayComponent(const int64_t& v);
+    int64_t MonthComponent() const;
+    void setMonthComponent(const int64_t& v);
+    int64_t YearComponent() const;
+    void setYearComponent(const int64_t& v);
     
     static const ifcopenshell::entity& Class();
-    IfcCalendarDate initialize(int v1_DayComponent, int v2_MonthComponent, int v3_YearComponent);
+    IfcCalendarDate initialize(int64_t v1_DayComponent, int64_t v2_MonthComponent, int64_t v3_YearComponent);
 };
 /// An IfcClassification is used for the arrangement of objects into a class or category according to a common purpose or their possession of common
 /// characteristics. A classification in the sense of IfcClassification is taxonomy, or taxonomic scheme, arranged in a hierarchical structure. A category of objects relates to other categories in a generalization-specialization relationship. Therefore the classification items in an
@@ -10472,15 +10472,15 @@ class IFC_SCHEMA_API IfcCoordinatedUniversalTimeOffset : public express::Entity 
 public:
     using express::Entity::Entity;
 
-    int HourOffset() const;
-    void setHourOffset(const int& v);
-    std::optional< int > MinuteOffset() const;
-    void setMinuteOffset(const std::optional< int >& v);
+    int64_t HourOffset() const;
+    void setHourOffset(const int64_t& v);
+    std::optional< int64_t > MinuteOffset() const;
+    void setMinuteOffset(const std::optional< int64_t >& v);
     ::Ifc2x3::IfcAheadOrBehind::Value Sense() const;
     void setSense(const ::Ifc2x3::IfcAheadOrBehind::Value& v);
     
     static const ifcopenshell::entity& Class();
-    IfcCoordinatedUniversalTimeOffset initialize(int v1_HourOffset, std::optional< int > v2_MinuteOffset, ::Ifc2x3::IfcAheadOrBehind::Value v3_Sense);
+    IfcCoordinatedUniversalTimeOffset initialize(int64_t v1_HourOffset, std::optional< int64_t > v2_MinuteOffset, ::Ifc2x3::IfcAheadOrBehind::Value v3_Sense);
 };
 /// IfcCostValue is an amount of money or a value that affects an amount of money. 
 /// 
@@ -10701,11 +10701,11 @@ public:
     ::Ifc2x3::IfcNamedUnit Unit() const;
     void setUnit(const ::Ifc2x3::IfcNamedUnit& v);
     /// The power that is applied to the unit attribute.
-    int Exponent() const;
-    void setExponent(const int& v);
+    int64_t Exponent() const;
+    void setExponent(const int64_t& v);
     
     static const ifcopenshell::entity& Class();
-    IfcDerivedUnitElement initialize(::Ifc2x3::IfcNamedUnit v1_Unit, int v2_Exponent);
+    IfcDerivedUnitElement initialize(::Ifc2x3::IfcNamedUnit v1_Unit, int64_t v2_Exponent);
 };
 /// Definition from ISO/CD 10303-41:1992: The dimensionality of any quantity can be expressed as a product of powers of the dimensions of base quantities. 
 /// The dimensional exponents entity defines the powers of the dimensions of the base quantities. All the physical 
@@ -10729,29 +10729,29 @@ public:
     using express::Entity::Entity;
 
     /// The power of the length base quantity.
-    int LengthExponent() const;
-    void setLengthExponent(const int& v);
+    int64_t LengthExponent() const;
+    void setLengthExponent(const int64_t& v);
     /// The power of the mass base quantity.
-    int MassExponent() const;
-    void setMassExponent(const int& v);
+    int64_t MassExponent() const;
+    void setMassExponent(const int64_t& v);
     /// The power of the time base quantity.
-    int TimeExponent() const;
-    void setTimeExponent(const int& v);
+    int64_t TimeExponent() const;
+    void setTimeExponent(const int64_t& v);
     /// The power of the electric current base quantity.
-    int ElectricCurrentExponent() const;
-    void setElectricCurrentExponent(const int& v);
+    int64_t ElectricCurrentExponent() const;
+    void setElectricCurrentExponent(const int64_t& v);
     /// The power of the thermodynamic temperature base quantity.
-    int ThermodynamicTemperatureExponent() const;
-    void setThermodynamicTemperatureExponent(const int& v);
+    int64_t ThermodynamicTemperatureExponent() const;
+    void setThermodynamicTemperatureExponent(const int64_t& v);
     /// The power of the amount of substance base quantity.
-    int AmountOfSubstanceExponent() const;
-    void setAmountOfSubstanceExponent(const int& v);
+    int64_t AmountOfSubstanceExponent() const;
+    void setAmountOfSubstanceExponent(const int64_t& v);
     /// The power of the luminous intensity base quantity.
-    int LuminousIntensityExponent() const;
-    void setLuminousIntensityExponent(const int& v);
+    int64_t LuminousIntensityExponent() const;
+    void setLuminousIntensityExponent(const int64_t& v);
     
     static const ifcopenshell::entity& Class();
-    IfcDimensionalExponents initialize(int v1_LengthExponent, int v2_MassExponent, int v3_TimeExponent, int v4_ElectricCurrentExponent, int v5_ThermodynamicTemperatureExponent, int v6_AmountOfSubstanceExponent, int v7_LuminousIntensityExponent);
+    IfcDimensionalExponents initialize(int64_t v1_LengthExponent, int64_t v2_MassExponent, int64_t v3_TimeExponent, int64_t v4_ElectricCurrentExponent, int64_t v5_ThermodynamicTemperatureExponent, int64_t v6_AmountOfSubstanceExponent, int64_t v7_LuminousIntensityExponent);
 };
 /// IfcDocumentElectronicFormat captures the type of document being referenced as an external source, and for which metadata is specified by IfcDocumentInformation. 
 /// 
@@ -11160,19 +11160,19 @@ class IFC_SCHEMA_API IfcLocalTime : public express::Entity {
 public:
     using express::Entity::Entity;
 
-    int HourComponent() const;
-    void setHourComponent(const int& v);
-    std::optional< int > MinuteComponent() const;
-    void setMinuteComponent(const std::optional< int >& v);
+    int64_t HourComponent() const;
+    void setHourComponent(const int64_t& v);
+    std::optional< int64_t > MinuteComponent() const;
+    void setMinuteComponent(const std::optional< int64_t >& v);
     std::optional< double > SecondComponent() const;
     void setSecondComponent(const std::optional< double >& v);
     ::Ifc2x3::IfcCoordinatedUniversalTimeOffset Zone() const;
     void setZone(const ::Ifc2x3::IfcCoordinatedUniversalTimeOffset& v);
-    std::optional< int > DaylightSavingOffset() const;
-    void setDaylightSavingOffset(const std::optional< int >& v);
+    std::optional< int64_t > DaylightSavingOffset() const;
+    void setDaylightSavingOffset(const std::optional< int64_t >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcLocalTime initialize(int v1_HourComponent, std::optional< int > v2_MinuteComponent, std::optional< double > v3_SecondComponent, ::Ifc2x3::IfcCoordinatedUniversalTimeOffset v4_Zone, std::optional< int > v5_DaylightSavingOffset);
+    IfcLocalTime initialize(int64_t v1_HourComponent, std::optional< int64_t > v2_MinuteComponent, std::optional< double > v3_SecondComponent, ::Ifc2x3::IfcCoordinatedUniversalTimeOffset v4_Zone, std::optional< int64_t > v5_DaylightSavingOffset);
 };
 /// IfcMaterial is a homogeneous or inhomogeneous
 /// substance that can be used to form elements (physical products or
@@ -11855,8 +11855,8 @@ public:
     ::Ifc2x3::IfcChangeActionEnum::Value ChangeAction() const;
     void setChangeAction(const ::Ifc2x3::IfcChangeActionEnum::Value& v);
     /// Date and Time expressed in UTC (Universal Time Coordinated, formerly Greenwich Mean Time or GMT) at which the last modification was made by LastModifyingUser and LastModifyingApplication.
-    std::optional< int > LastModifiedDate() const;
-    void setLastModifiedDate(const std::optional< int >& v);
+    std::optional< int64_t > LastModifiedDate() const;
+    void setLastModifiedDate(const std::optional< int64_t >& v);
     /// User who carried out the last modification using LastModifyingApplication.
     ::Ifc2x3::IfcPersonAndOrganization LastModifyingUser() const;
     void setLastModifyingUser(const ::Ifc2x3::IfcPersonAndOrganization& v);
@@ -11864,11 +11864,11 @@ public:
     ::Ifc2x3::IfcApplication LastModifyingApplication() const;
     void setLastModifyingApplication(const ::Ifc2x3::IfcApplication& v);
     /// The date and time expressed in UTC (Universal Time Coordinated, formerly Greenwich Mean Time or GMT) when first created by the original OwningApplication. Once defined this value remains unchanged through the lifetime of the entity.
-    int CreationDate() const;
-    void setCreationDate(const int& v);
+    int64_t CreationDate() const;
+    void setCreationDate(const int64_t& v);
     
     static const ifcopenshell::entity& Class();
-    IfcOwnerHistory initialize(::Ifc2x3::IfcPersonAndOrganization v1_OwningUser, ::Ifc2x3::IfcApplication v2_OwningApplication, std::optional< ::Ifc2x3::IfcStateEnum::Value > v3_State, ::Ifc2x3::IfcChangeActionEnum::Value v4_ChangeAction, std::optional< int > v5_LastModifiedDate, ::Ifc2x3::IfcPersonAndOrganization v6_LastModifyingUser, ::Ifc2x3::IfcApplication v7_LastModifyingApplication, int v8_CreationDate);
+    IfcOwnerHistory initialize(::Ifc2x3::IfcPersonAndOrganization v1_OwningUser, ::Ifc2x3::IfcApplication v2_OwningApplication, std::optional< ::Ifc2x3::IfcStateEnum::Value > v3_State, ::Ifc2x3::IfcChangeActionEnum::Value v4_ChangeAction, std::optional< int64_t > v5_LastModifiedDate, ::Ifc2x3::IfcPersonAndOrganization v6_LastModifyingUser, ::Ifc2x3::IfcApplication v7_LastModifyingApplication, int64_t v8_CreationDate);
 };
 /// Definition: an individual human being.
 /// 
@@ -15616,8 +15616,8 @@ public:
     using IfcRepresentationContext::IfcRepresentationContext;
 
     /// The integer dimension count of the coordinate space modeled in a geometric representation context.
-    int CoordinateSpaceDimension() const;
-    void setCoordinateSpaceDimension(const int& v);
+    int64_t CoordinateSpaceDimension() const;
+    void setCoordinateSpaceDimension(const int64_t& v);
     /// Value of the model precision for geometric models. It is a double value (REAL), typically in 1E-5 to 1E-8 range, that indicates the tolerance under which two given points are still assumed to be identical. The value can be used e.g. to sets the maximum distance from an edge curve to the underlying face surface in brep models.
     std::optional< double > Precision() const;
     void setPrecision(const std::optional< double >& v);
@@ -15632,7 +15632,7 @@ public:
         std::vector< IfcGeometricRepresentationSubContext > HasSubContexts() const; // INVERSE IfcGeometricRepresentationSubContext::ParentContext
 
     static const ifcopenshell::entity& Class();
-    IfcGeometricRepresentationContext initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, int v3_CoordinateSpaceDimension, std::optional< double > v4_Precision, ::Ifc2x3::IfcAxis2Placement v5_WorldCoordinateSystem, ::Ifc2x3::IfcDirection v6_TrueNorth);
+    IfcGeometricRepresentationContext initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, int64_t v3_CoordinateSpaceDimension, std::optional< double > v4_Precision, ::Ifc2x3::IfcAxis2Placement v5_WorldCoordinateSystem, ::Ifc2x3::IfcDirection v6_TrueNorth);
 };
 /// Definition from ISO/CD 10303-43:1992: An geometric representation item is a representation item that has the additional meaning of having geometric position or orientation or both. This meaning is present by virtue of:  
 /// 
@@ -16561,14 +16561,14 @@ public:
     using IfcSurfaceTexture::IfcSurfaceTexture;
 
     /// The number of pixels in width (S) direction.
-    int Width() const;
-    void setWidth(const int& v);
+    int64_t Width() const;
+    void setWidth(const int64_t& v);
     /// The number of pixels in height (T) direction.
-    int Height() const;
-    void setHeight(const int& v);
+    int64_t Height() const;
+    void setHeight(const int64_t& v);
     /// Indication whether the pixel values contain a 1, 2, 3, or 4 colour component.
-    int ColourComponents() const;
-    void setColourComponents(const int& v);
+    int64_t ColourComponents() const;
+    void setColourComponents(const int64_t& v);
     /// Flat list of hexadecimal values, each describing one pixel by 1, 2, 3, or 4 components.
     /// 
     /// IFC2x Edition 3 CHANGE  The data type has been changed from STRING to BINARY.
@@ -16576,7 +16576,7 @@ public:
     void setPixel(const std::vector< boost::dynamic_bitset<> > /*[1:?]*/& v);
     
     static const ifcopenshell::entity& Class();
-    IfcPixelTexture initialize(bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_TextureTransform, int v5_Width, int v6_Height, int v7_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v8_Pixel);
+    IfcPixelTexture initialize(bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_TextureTransform, int64_t v5_Width, int64_t v6_Height, int64_t v7_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v8_Pixel);
 };
 /// Definition from ISO/CD 10303-42:1992: A placement entity defines the local environment for the definition of a geometry item. It locates the item to be defined and, in the case of the axis placement subtypes, gives its orientation. 
 /// 
@@ -22452,11 +22452,11 @@ public:
     using IfcRelConnectsElements::IfcRelConnectsElements;
 
     /// Priorities for connection. It refers to the layers of the RelatingObject.
-    std::vector< int > /*[0:?]*/ RelatingPriorities() const;
-    void setRelatingPriorities(const std::vector< int > /*[0:?]*/& v);
+    std::vector< int64_t > /*[0:?]*/ RelatingPriorities() const;
+    void setRelatingPriorities(const std::vector< int64_t > /*[0:?]*/& v);
     /// Priorities for connection. It refers to the layers of the RelatedObject.
-    std::vector< int > /*[0:?]*/ RelatedPriorities() const;
-    void setRelatedPriorities(const std::vector< int > /*[0:?]*/& v);
+    std::vector< int64_t > /*[0:?]*/ RelatedPriorities() const;
+    void setRelatedPriorities(const std::vector< int64_t > /*[0:?]*/& v);
     /// Indication of the connection type in relation to the path of the RelatingObject.
     ::Ifc2x3::IfcConnectionTypeEnum::Value RelatedConnectionType() const;
     void setRelatedConnectionType(const ::Ifc2x3::IfcConnectionTypeEnum::Value& v);
@@ -22465,7 +22465,7 @@ public:
     void setRelatingConnectionType(const ::Ifc2x3::IfcConnectionTypeEnum::Value& v);
     
     static const ifcopenshell::entity& Class();
-    IfcRelConnectsPathElements initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc2x3::IfcElement v6_RelatingElement, ::Ifc2x3::IfcElement v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, ::Ifc2x3::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc2x3::IfcConnectionTypeEnum::Value v11_RelatingConnectionType);
+    IfcRelConnectsPathElements initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc2x3::IfcElement v6_RelatingElement, ::Ifc2x3::IfcElement v7_RelatedElement, std::vector< int64_t > /*[0:?]*/ v8_RelatingPriorities, std::vector< int64_t > /*[0:?]*/ v9_RelatedPriorities, ::Ifc2x3::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc2x3::IfcConnectionTypeEnum::Value v11_RelatingConnectionType);
 };
 /// The objectified relationship
 /// IfcRelConnectsPortToElement defines the relationship that
@@ -24855,11 +24855,11 @@ public:
     void setIsMilestone(const bool& v);
     /// A value that indicates the relative priority of the task (in
     ///   comparison to the priorities of other tasks).
-    std::optional< int > Priority() const;
-    void setPriority(const std::optional< int >& v);
+    std::optional< int64_t > Priority() const;
+    void setPriority(const std::optional< int64_t >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcTask initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int > v10_Priority);
+    IfcTask initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int64_t > v10_Priority);
 };
 /// Definition from IAI: The element type
 /// IfcTransportElementType defines commonly shared
@@ -26489,11 +26489,11 @@ public:
     void setMaximumPowerInput(const std::optional< double >& v);
     std::optional< double > RatedPowerInput() const;
     void setRatedPowerInput(const std::optional< double >& v);
-    int InputPhase() const;
-    void setInputPhase(const int& v);
+    int64_t InputPhase() const;
+    void setInputPhase(const int64_t& v);
     
     static const ifcopenshell::entity& Class();
-    IfcElectricalBaseProperties initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, std::optional< std::string > v6_UserDefinedEnergySequence, std::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > v7_ElectricCurrentType, double v8_InputVoltage, double v9_InputFrequency, std::optional< double > v10_FullLoadCurrent, std::optional< double > v11_MinimumCircuitCurrent, std::optional< double > v12_MaximumPowerInput, std::optional< double > v13_RatedPowerInput, int v14_InputPhase);
+    IfcElectricalBaseProperties initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, std::optional< std::string > v6_UserDefinedEnergySequence, std::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > v7_ElectricCurrentType, double v8_InputVoltage, double v9_InputFrequency, std::optional< double > v10_FullLoadCurrent, std::optional< double > v11_MinimumCircuitCurrent, std::optional< double > v12_MaximumPowerInput, std::optional< double > v13_RatedPowerInput, int64_t v14_InputPhase);
 };
 /// Definition from IAI: Generalization of all components
 /// that make up an AEC product. Those elements can be logically
@@ -28315,7 +28315,7 @@ public:
     void setPunchList(const std::optional< std::vector< std::string > /*[1:?]*/ >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcMove initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int > v10_Priority, ::Ifc2x3::IfcSpatialStructureElement v11_MoveFrom, ::Ifc2x3::IfcSpatialStructureElement v12_MoveTo, std::optional< std::vector< std::string > /*[1:?]*/ > v13_PunchList);
+    IfcMove initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int64_t > v10_Priority, ::Ifc2x3::IfcSpatialStructureElement v11_MoveFrom, ::Ifc2x3::IfcSpatialStructureElement v12_MoveTo, std::optional< std::vector< std::string > /*[1:?]*/ > v13_PunchList);
 };
 /// An occupant is a type of actor that defines the form of occupancy of a property. 
 /// 
@@ -28557,7 +28557,7 @@ public:
     void setActionID(const std::string& v);
     
     static const ifcopenshell::entity& Class();
-    IfcOrderAction initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int > v10_Priority, std::string v11_ActionID);
+    IfcOrderAction initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int64_t > v10_Priority, std::string v11_ActionID);
 };
 /// The flow terminal type IfcOutletType defines commonly shared information for occurrences of outlets.  The set of shared information may include: 
 /// 
@@ -29737,13 +29737,13 @@ public:
 
     /// World Latitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84.
     ///   Latitudes are measured relative to the geodetic equator, north of the equator by positive values - from 0 till +90,   south of the equator by negative values - from 0 till  -90.
-    std::optional< std::vector< int > /*[3:4]*/ > RefLatitude() const;
-    void setRefLatitude(const std::optional< std::vector< int > /*[3:4]*/ >& v);
+    std::optional< std::vector< int64_t > /*[3:4]*/ > RefLatitude() const;
+    void setRefLatitude(const std::optional< std::vector< int64_t > /*[3:4]*/ >& v);
     /// World Longitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84.
     ///   Longitudes are measured relative to the geodetic zero meridian, nominally the same as the Greenwich prime meridian: longitudes west of the zero meridian have negative values - from 0 till -180, longitudes east of the zero meridian have positive values - from 0 till -180.
     /// Example: Chicago Harbor Light has according to WGS84 a longitude -87.35.40 (or 87.35.40W) and a latitude 41.53.30 (or 41.53.30N).
-    std::optional< std::vector< int > /*[3:4]*/ > RefLongitude() const;
-    void setRefLongitude(const std::optional< std::vector< int > /*[3:4]*/ >& v);
+    std::optional< std::vector< int64_t > /*[3:4]*/ > RefLongitude() const;
+    void setRefLongitude(const std::optional< std::vector< int64_t > /*[3:4]*/ >& v);
     /// Datum elevation relative to sea level.
     std::optional< double > RefElevation() const;
     void setRefElevation(const std::optional< double >& v);
@@ -29755,7 +29755,7 @@ public:
     void setSiteAddress(const ::Ifc2x3::IfcPostalAddress& v);
     
     static const ifcopenshell::entity& Class();
-    IfcSite initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, std::optional< std::vector< int > /*[3:4]*/ > v10_RefLatitude, std::optional< std::vector< int > /*[3:4]*/ > v11_RefLongitude, std::optional< double > v12_RefElevation, std::optional< std::string > v13_LandTitleNumber, ::Ifc2x3::IfcPostalAddress v14_SiteAddress);
+    IfcSite initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, std::optional< std::vector< int64_t > /*[3:4]*/ > v10_RefLatitude, std::optional< std::vector< int64_t > /*[3:4]*/ > v11_RefLongitude, std::optional< double > v12_RefElevation, std::optional< std::string > v13_LandTitleNumber, ::Ifc2x3::IfcPostalAddress v14_SiteAddress);
 };
 /// The element type IfcSlabType defines commonly shared
 /// information for occurrences of slabs. The set of shared information
@@ -32116,8 +32116,8 @@ public:
     using IfcBoundedCurve::IfcBoundedCurve;
 
     /// The algebraic degree of the basis functions.
-    int Degree() const;
-    void setDegree(const int& v);
+    int64_t Degree() const;
+    void setDegree(const int64_t& v);
     /// The list of control points for the curve.
     std::vector< ::Ifc2x3::IfcCartesianPoint > ControlPointsList() const;
     void setControlPointsList(const std::vector< ::Ifc2x3::IfcCartesianPoint >& v);
@@ -32132,7 +32132,7 @@ public:
     void setSelfIntersect(const boost::logic::tribool& v);
     
     static const ifcopenshell::entity& Class();
-    IfcBSplineCurve initialize(int v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
+    IfcBSplineCurve initialize(int64_t v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
 };
 /// Definition from IAI: The element type
 /// IfcBeamType defines commonly shared information for
@@ -32250,7 +32250,7 @@ public:
 
     
     static const ifcopenshell::entity& Class();
-    IfcBezierCurve initialize(int v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
+    IfcBezierCurve initialize(int64_t v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
 };
 /// The energy conversion device type IfcBoilerType defines commonly shared information for occurrences of boilers.  The set of shared information may include: 
 /// 
@@ -37099,7 +37099,7 @@ public:
     void setWeightsData(const std::vector< double > /*[2:?]*/& v);
     
     static const ifcopenshell::entity& Class();
-    IfcRationalBezierCurve initialize(int v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData);
+    IfcRationalBezierCurve initialize(int64_t v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData);
 };
 /// Definition from IAI: Bars, wires, strands, meshes, tendons, and other components embedded in concrete in such a manner that the reinforcement and the concrete act together in resisting forces.
 /// 
@@ -38015,13 +38015,13 @@ public:
     /// Number of the risers included in the stair flight
     /// 
     /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.NumberOfRisers instead.
-    std::optional< int > NumberOfRiser() const;
-    void setNumberOfRiser(const std::optional< int >& v);
+    std::optional< int64_t > NumberOfRiser() const;
+    void setNumberOfRiser(const std::optional< int64_t >& v);
     /// Number of treads included in the stair flight.
     /// 
     /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.NumberOfTreads instead.
-    std::optional< int > NumberOfTreads() const;
-    void setNumberOfTreads(const std::optional< int >& v);
+    std::optional< int64_t > NumberOfTreads() const;
+    void setNumberOfTreads(const std::optional< int64_t >& v);
     /// Vertical distance from tread to tread. The riser height is supposed to be equal for all stairs in a stair flight.
     /// 
     /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.RiserHeight instead.
@@ -38034,7 +38034,7 @@ public:
     void setTreadLength(const std::optional< double >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcStairFlight initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< int > v9_NumberOfRiser, std::optional< int > v10_NumberOfTreads, std::optional< double > v11_RiserHeight, std::optional< double > v12_TreadLength);
+    IfcStairFlight initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< int64_t > v9_NumberOfRiser, std::optional< int64_t > v10_NumberOfTreads, std::optional< double > v11_RiserHeight, std::optional< double > v12_TreadLength);
 };
 /// Definition from IAI: The IfcStructuralAnalysisModel is used to assemble all information needed to represent a structural analysis model.  It encompasses certain general properties (such as analysis type), references to all contained structural members, structural supports or connections, as well as loads and the respective load results.
 /// 
