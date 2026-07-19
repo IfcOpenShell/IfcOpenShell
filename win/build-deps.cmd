@@ -90,9 +90,11 @@ IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 :: If we use VS2008, framework path (for MSBuild) may not be correctly set. Manually attempt to add in that case
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
-:: Work around Andrej730/mpir-vs2026's unconstrained "vswhere -latest" detection picking a newer VS
-:: when multiple are installed, see #8631. Pre-set msbdir here so msvc\vs17\msbuild.bat's own
-:: (broken) detection is skipped, since it already honors a pre-set msbdir.
+:: Belt-and-braces workaround for IfcOpenShell/mpir-vs2026's unconstrained "vswhere -latest"
+:: detection picking a newer VS when multiple are installed, see #8631. A logic fix for this
+:: has been proposed upstream in that fork directly, but keep this local pre-detection too so
+:: the build isn't dependent on that fix being merged (or correct). Pre-set msbdir here so
+:: msvc\vs17\msbuild.bat's own detection is skipped, since it already honors a pre-set msbdir.
 IF NOT %VS_VER%==2017 GOTO :Msbdir2017Done
 IF DEFINED msbdir GOTO :Msbdir2017Done
 
@@ -335,7 +337,7 @@ IF EXIST "%INSTALL_DIR%\mpir" (
 set DEPENDENCY_NAME=mpir
 :: `mpfr` depends on relative path `..\mpir\config.h`, so dependency name should match exactly.
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
-call :GitCloneAndCheckoutRevision https://github.com/Andrej730/mpir-vs2026.git "%DEPENDENCY_DIR%"
+call :GitCloneAndCheckoutRevision https://github.com/IfcOpenShell/mpir-vs2026.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
