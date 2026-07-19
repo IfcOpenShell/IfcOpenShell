@@ -633,6 +633,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         if not element:
             return {"FINISHED"}
         if element.is_a("IfcTypeProduct"):
+            self.harvest_opening_template(element, library_file)
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcProduct"):
             # NOTE: Non-types are not exposed in UI directly
@@ -657,6 +658,57 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             pass
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
+
+    def harvest_opening_template(
+        self, type_element: ifcopenshell.entity_instance, library_file: ifcopenshell.file
+    ) -> None:
+        """Seed the appended type's 'Reference' opening template from a library instance.
+
+        A type carries no opening of its own (openings are occurrence-level via
+        IfcRelVoidsElement), so a custom opening would otherwise be lost on append and
+        regenerated as a default extrusion when occurrences are placed. If the library
+        file has an instance of this type whose opening is custom (non-extrusion), copy
+        that opening body onto the appended type as its 'Reference' template. No-op when
+        the type already carries a template (e.g. a Bonsai-authored library) or the
+        library has no such instance.
+        """
+        from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+        generator = FilledOpeningGenerator()
+        if generator.get_type_opening_representation(type_element):
+            return
+
+        library_type = library_file.by_id(self.definition)
+        if not library_type.is_a("IfcTypeProduct"):
+            return
+
+        for occurrence in ifcopenshell.util.element.get_types(library_type):
+            if not getattr(occurrence, "FillsVoids", None):
+                continue
+            opening = occurrence.FillsVoids[0].RelatingOpeningElement
+            library_representation = ifcopenshell.util.representation.get_representation(
+                opening, "Model", "Body", "MODEL_VIEW"
+            )
+            if not library_representation:
+                continue
+            library_representation = ifcopenshell.util.representation.resolve_representation(library_representation)
+            if all(item.is_a("IfcExtrudedAreaSolid") for item in library_representation.Items):
+                continue  # A generated extrusion - nothing custom worth preserving.
+
+            project_file = tool.Ifc.get()
+            representation = project_file.add(library_representation)
+            # file.add brings the library's own representation context across; point the
+            # copy at the project's Body context and drop the now-orphaned duplicate.
+            body_context = ifcopenshell.util.representation.get_context(
+                project_file, "Model", "Body", "MODEL_VIEW"
+            )
+            if body_context and representation.ContextOfItems != body_context:
+                orphan_context = representation.ContextOfItems
+                representation.ContextOfItems = body_context
+                if not project_file.get_inverse(orphan_context):
+                    project_file.remove(orphan_context)
+            generator.set_type_opening_representation(type_element, representation)
+            return
 
     def import_material_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
         self.file = tool.Ifc.get()

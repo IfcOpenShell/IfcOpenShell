@@ -489,6 +489,14 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         obj = tool.Ifc.get_object(element)
         if not obj:
             return {"FINISHED"}
+        # Anchor any custom (non-extrusion) opening on the source type before the
+        # copy so it is carried to the duplicate as a 'Reference' template, rather
+        # than regenerated as a default extrusion on the new type's occurrences.
+        if element.is_a("IfcElementType"):
+            from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+            FilledOpeningGenerator().promote_opening_to_type(element)
+
         new_obj = obj.copy()
         if obj.data:
             new_obj.data = obj.data.copy()
