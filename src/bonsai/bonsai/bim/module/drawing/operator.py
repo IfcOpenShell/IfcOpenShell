@@ -104,6 +104,7 @@ class profile:
 class LineworkContexts(NamedTuple):
     body: list[list[int]]
     annotation: list[list[int]]
+    axis: list[list[int]]
 
 
 class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
@@ -618,8 +619,15 @@ class CreateDrawing(bpy.types.Operator):
         model_annotation_target_contexts: list[int] = []
         model_annotation_model_contexts: list[int] = []
 
+        axis_contexts: list[int] = []
+
         for rep_context in ifc.by_type("IfcGeometricRepresentationContext"):
             if rep_context.is_a("IfcGeometricRepresentationSubContext"):
+                if rep_context.ContextIdentifier == "Axis":
+                    # Axis geometry is a view independent reference line, so unlike
+                    # body and annotation it isn't bucketed by target view.
+                    axis_contexts.append(rep_context.id())
+                    continue
                 if rep_context.ContextType == "Plan":
                     if rep_context.ContextIdentifier in ["Body", "Facetation"]:
                         if rep_context.TargetView == target_view:
@@ -676,7 +684,7 @@ class CreateDrawing(bpy.types.Operator):
             ]
         )
 
-        return LineworkContexts(body_contexts, annotation_contexts)
+        return LineworkContexts(body_contexts, annotation_contexts, [axis_contexts] if axis_contexts else [])
 
     def serialize_contexts_elements(
         self,
@@ -722,6 +730,63 @@ class CreateDrawing(bpy.types.Operator):
                     self.serialiser.write(elem)
                     tree.add_element(elem)
                 drawing_elements -= processed
+
+    def collect_axis_linework(
+        self,
+        ifc: ifcopenshell.file,
+        contexts: LineworkContexts,
+        drawing_elements: set[ifcopenshell.entity_instance],
+        link_matrix: Optional[Matrix] = None,
+    ) -> None:
+        context_ids = [i for context in contexts.axis for i in context]
+        if not context_ids or not drawing_elements:
+            return
+        with profile("Processing axis context"):
+            geom_settings = ifcopenshell.geom.settings()
+            geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES)
+            geom_settings.set("context-ids", context_ids)
+            if link_matrix is not None:
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+                t = link_matrix.to_translation()
+                geom_settings.set("model-offset", (t.x / unit_scale, t.y / unit_scale, t.z / unit_scale))
+                q = link_matrix.to_quaternion()
+                geom_settings.set("model-rotation", (q.x, q.y, q.z, q.w))
+            it = ifcopenshell.geom.iterator(
+                geom_settings, ifc, multiprocessing.cpu_count(), include=list(drawing_elements)
+            )
+            for shape in it:
+                edges = shape.geometry.edges
+                if not len(edges):
+                    continue
+                element = ifc.by_id(shape.id)
+                self.axis_linework.append((element, list(shape.geometry.verts), list(edges)))
+
+    def generate_axis_linework(self, context: bpy.types.Context, root) -> None:
+        if not self.axis_linework:
+            return
+        camera_matrix_i = context.scene.camera.matrix_world.inverted()
+        group = root.find("{http://www.w3.org/2000/svg}g")
+        if group is None:
+            return
+        raw_width, raw_height = self.get_camera_dimensions()
+        x_offset = raw_width / 2
+        y_offset = raw_height / 2
+        svg_scale = self.scale * 1000  # IFC is in meters, SVG is in mm
+
+        for element, verts, edges in self.axis_linework:
+            g = etree.SubElement(group, "{http://www.w3.org/2000/svg}g")
+            g.attrib["{http://www.ifcopenshell.org/ns}guid"] = element.GlobalId
+            g.attrib["{http://www.ifcopenshell.org/ns}name"] = element.Name or ""
+            classes = self.get_svg_classes(element)
+            classes.append("axis")
+            g.set("class", " ".join(classes))
+            for i in range(0, len(edges), 2):
+                coords = []
+                for vi in (edges[i], edges[i + 1]):
+                    co = camera_matrix_i @ Vector((verts[vi * 3], verts[vi * 3 + 1], verts[vi * 3 + 2]))
+                    coords.append(((x_offset + co.x) * svg_scale, (y_offset - co.y) * svg_scale))
+                path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
+                path.attrib["d"] = "M{},{} L{},{}".format(*coords[0], *coords[1])
 
     def generate_bisect_linework(self, context: bpy.types.Context, root) -> None:
         camera_matrix_i = context.scene.camera.matrix_world.inverted()
@@ -1048,6 +1113,11 @@ class CreateDrawing(bpy.types.Operator):
         raycast_objs = set()
         elements_with_faces = set()
 
+        # Reference lines an element already carries in its Axis representation, drawn
+        # as their own layer so they can be styled independently. See #6423.
+        self.axis_linework: list[tuple[ifcopenshell.entity_instance, list[float], list[int]]] = []
+        has_axis_linework = ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAxisLinework")
+
         for ifc_path, (ifc, link_matrix) in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
@@ -1075,6 +1145,8 @@ class CreateDrawing(bpy.types.Operator):
             self.serialize_contexts_elements(
                 ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix
             )
+            if has_axis_linework:
+                self.collect_axis_linework(ifc, contexts, drawing_elements, link_matrix)
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
@@ -1136,6 +1208,10 @@ class CreateDrawing(bpy.types.Operator):
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
+
+        # After merge_linework_and_add_metadata, which would otherwise reclassify these
+        # groups as cut or projection linework.
+        self.generate_axis_linework(context, root)
 
         if self.cprops.fill_mode == "SHAPELY":
             # shapely variant

@@ -374,6 +374,7 @@ class TestAddDrawing:
                 "HasUnderlay": False,
                 "HasLinework": True,
                 "HasAnnotation": True,
+                "HasAxisLinework": False,
                 "GlobalReferencing": True,
                 "Stylesheet": "stylesheet.css",
                 "Markers": "markers.svg",
