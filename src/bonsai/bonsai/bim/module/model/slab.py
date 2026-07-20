@@ -42,7 +42,6 @@ from bonsai.bim.module.model.decorator import (
     ProfileDecorator,
 )
 from bonsai.bim.module.model.polyline import PolylineOperator
-from bonsai.tool.cad import WELD_TOLERANCE
 
 
 class DumbSlabGenerator:
@@ -670,53 +669,6 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-def realign_placement_to_triangle_profile(obj: bpy.types.Object, position: Matrix) -> None:
-    """Realign the element when a 3 point profile was edited out of plane.
-
-    Any 3 non collinear points define a plane, so instead of flattening the
-    edit back onto the old extrusion plane (losing the user's 3D node
-    positions), rotate the object so the extrusion plane matches the new
-    triangle, keeping all 3 nodes at their edited world positions.
-    """
-    assert isinstance(obj.data, bpy.types.Mesh)
-    mesh = obj.data
-    if len(mesh.vertices) != 3 or len(mesh.edges) != 3:
-        return
-    edge_keys = {frozenset(e.vertices) for e in mesh.edges}
-    if len(edge_keys) != 3 or any(len(k) != 2 for k in edge_keys):
-        return
-    if any(v.groups for v in mesh.vertices):  # Arcs and circles keep the flattening behaviour.
-        return
-    points = [v.co.copy() for v in mesh.vertices]
-    if any((points[i] - points[j]).length <= WELD_TOLERANCE for i, j in ((0, 1), (0, 2), (1, 2))):
-        return  # Would weld into a degenerate profile, keep the legacy failure path.
-    position_i = position.inverted()
-    # 0.1mm, matching the profile rounding tolerance in auto_detect_profiles.
-    if max(abs((position_i @ p).z) for p in points) <= 1e-4:
-        return
-    normal = (points[1] - points[0]).cross(points[2] - points[0])
-    if normal.length < 1e-8:
-        return  # Degenerate triangle, existing profile validation will report it.
-    normal.normalize()
-    if normal.dot(position.col[2].to_3d()) < 0:
-        normal.negate()  # Keep the extrusion on the same side as before.
-    x_axis = position.col[0].to_3d()
-    x_axis -= normal * x_axis.dot(normal)
-    if x_axis.length < 1e-6:
-        x_axis = points[1] - points[0]
-    x_axis.normalize()
-    y_axis = normal.cross(x_axis)
-    origin = position.translation - normal * normal.dot(position.translation - points[0])
-    plane = Matrix([x_axis, y_axis, normal, origin]).to_4x4().transposed()
-    plane_i = plane.inverted()
-    for vert in mesh.vertices:
-        local = plane_i @ vert.co
-        vert.co = position @ Vector((local.x, local.y, 0.0))
-    obj.matrix_world = obj.matrix_world @ plane @ position_i
-    bpy.context.view_layer.update()
-    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-
-
 class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_extrusion_profile"
     bl_label = "Edit Extrusion Profile"
@@ -758,8 +710,10 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         else:
             position = Matrix()
 
-        if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001):
-            realign_placement_to_triangle_profile(obj, position)
+        if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) and tool.Model.realign_to_triangle_profile(
+            obj, position
+        ):
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         profile = tool.Model.export_profile(obj, position=position, x_angle=existing_x_angle)
 

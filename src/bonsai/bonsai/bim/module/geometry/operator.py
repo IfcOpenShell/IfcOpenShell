@@ -2596,6 +2596,12 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
             ProfileDecorator.uninstall()
+            if (
+                item.is_a("IfcExtrudedAreaSolid")
+                and tool.Cad.is_x(tool.Model.get_existing_x_angle(item), 0, tolerance=0.001)
+                and tool.Model.realign_to_triangle_profile(obj, Matrix())
+            ):
+                tool.Geometry.sync_item_positions()
             if not (profile := tool.Model.export_profile(obj)):
 
                 def msg(self, context):
