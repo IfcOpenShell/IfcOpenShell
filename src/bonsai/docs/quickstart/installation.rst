@@ -37,17 +37,6 @@ Your interface will now look similar to below. If you check the ``File`` menu yo
 
 You can enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
 
-.. note::
-
-    **Upgrading Blender?** When a new Blender version changes its Python
-    version (for example Blender 5.1 moved from Python 3.11 to 3.13),
-    importing your preferences from the previous Blender carries over a
-    Bonsai build that is incompatible with the new Python. Bonsai will
-    silently not load, or show an "incompatible" error when enabled. To fix
-    this, go to ``Preferences > Get Extensions``, uninstall Bonsai, and
-    install it again: the correct build for your Blender is picked
-    automatically.
-
 .. seealso::
 
     If you are a poweruser, you may be interested in the :ref:`guides/development/installation:Unstable installation` to help with testing.

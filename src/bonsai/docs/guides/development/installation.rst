@@ -24,13 +24,7 @@ Blender versions:
 - 64-bit MacOS Intel (``macos-x64``)
 - 64-bit MacOS Silicon (``macos-arm64``)
 - 64-bit Windows (``windows-x64``)
-- Blender 5.0 or older with Python 3.11
-- Blender 5.1 or newer with Python 3.13
-
-The Python version of a Bonsai build must match the Python version of your
-Blender. Installing through ``Get Extensions`` (or the unstable repository)
-picks the correct build automatically; manually installing a downloaded zip
-does not check this and fails at enable time with an "incompatible" error.
+- Blender 5.1 or 5.2 with Python 3.13
 
 Developer builds may exist for different versions of Python but there will be
 no guarantee of the uptime or stability of these builds.
