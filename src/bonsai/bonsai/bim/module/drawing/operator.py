@@ -1708,7 +1708,7 @@ class CreateDrawing(bpy.types.Operator):
                             coords.append(coords[0])
                         if len(coords) > 2 and coords[0] == coords[-1]:
                             is_closed_polygon = True
-                            queue.append((shapely.Polygon(coords), classes))
+                            queue.append((shapely.Polygon(coords), set(classes)))
                 if is_closed_polygon:
                     el.getparent().remove(el)
 
