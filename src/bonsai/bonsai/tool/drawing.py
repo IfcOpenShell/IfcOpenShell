@@ -1998,8 +1998,10 @@ class Drawing(bonsai.core.tool.Drawing):
         verts = ifcopenshell.util.shape.get_vertices(geometry)
         grid = (axis.PartOfU or axis.PartOfV or axis.PartOfW)[0]
         m = ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)
+        # Convert from project units (e.g. feet) to meters for Blender world space.
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         im = camera.matrix_world.inverted()
-        v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in verts[:2]]
+        v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3] * unit_scale) for v in verts[:2]]
 
         target_view = tool.Drawing.get_drawing_target_view(drawing)
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
