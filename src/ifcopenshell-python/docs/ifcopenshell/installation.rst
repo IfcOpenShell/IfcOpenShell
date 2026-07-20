@@ -58,7 +58,7 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
    .. code-block:: bash
 
-       sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev
+       sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev libeigen3-dev
 
    The CGAL version that ships with Ubuntu 20.04 is too old. Users on Ubuntu 20.04 are advised to manually install CGAL 5.3.
 
