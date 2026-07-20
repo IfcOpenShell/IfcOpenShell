@@ -3382,6 +3382,93 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
         tool.Blender.update_viewport()
 
 
+MULTILINE_TEXT_DATABLOCK = "BonsaiAnnotationText"
+
+
+def draw_text_editor_header(self: bpy.types.TEXT_HT_header, context: bpy.types.Context) -> None:
+    space = context.space_data
+    if not isinstance(space, bpy.types.SpaceTextEditor):
+        return
+    if space.text and space.text.name == MULTILINE_TEXT_DATABLOCK:
+        layout = self.layout
+        layout.separator()
+        layout.operator("bim.apply_multiline_text_literal", text="Apply Text", icon="CHECKMARK")
+
+
+class EditTextLiteralMultiline(bpy.types.Operator):
+    bl_idname = "bim.edit_text_literal_multiline"
+    bl_label = "Edit Multiline Text"
+    bl_description = (
+        "Edit this text literal in Blender's text editor,\n"
+        "where Enter and Tab insert real line breaks and tabs.\n"
+        "Click 'Apply Text' in the text editor header when done"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+        props = tool.Drawing.get_text_props(obj)
+        if not props.is_editing:
+            bpy.ops.bim.enable_editing_text()
+        if self.literal_prop_id >= len(props.literals):
+            self.report({"ERROR"}, "Text literal not found.")
+            return {"CANCELLED"}
+
+        text = bpy.data.texts.get(MULTILINE_TEXT_DATABLOCK) or bpy.data.texts.new(MULTILINE_TEXT_DATABLOCK)
+        text.clear()
+        literal_value = props.literals[self.literal_prop_id].attributes["Literal"].string_value
+        text.write(tool.Drawing.unescape_literal_newlines(literal_value))
+        text["bonsai_text_object"] = obj.name
+        text["bonsai_text_literal"] = self.literal_prop_id
+
+        if bpy.app.background:
+            return {"FINISHED"}
+
+        bpy.ops.wm.window_new()
+        new_area = context.window_manager.windows[-1].screen.areas[0]
+        new_area.type = "TEXT_EDITOR"
+        for space in new_area.spaces:
+            if space.type == "TEXT_EDITOR":
+                space.text = text
+                break
+        self.report({"INFO"}, "Text editor opened, click 'Apply Text' in the header when done.")
+        return {"FINISHED"}
+
+
+class ApplyMultilineTextLiteral(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.apply_multiline_text_literal"
+    bl_label = "Apply Text"
+    bl_description = "Save the edited text back to the text annotation"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        space = context.space_data
+        if not isinstance(space, bpy.types.SpaceTextEditor):
+            return False
+        return bool(space.text and space.text.name == MULTILINE_TEXT_DATABLOCK)
+
+    def _execute(self, context):
+        text = context.space_data.text
+        obj = bpy.data.objects.get(text.get("bonsai_text_object", ""))
+        if not obj:
+            self.report({"ERROR"}, "The edited text annotation is no longer available.")
+            return {"CANCELLED"}
+        core.edit_text_literal_value(
+            tool.Drawing,
+            obj=obj,
+            literal_index=text.get("bonsai_text_literal", 0),
+            value=text.as_string(),
+        )
+        tool.Blender.update_viewport()
+        if len(context.window_manager.windows) > 1:
+            bpy.ops.wm.window_close()
+
+
 class CopyTextToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_text_to_selection"
     bl_label = "Copy Text To Selection"
