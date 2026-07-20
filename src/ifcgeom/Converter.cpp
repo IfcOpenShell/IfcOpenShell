@@ -212,7 +212,9 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 			logger_.Message(Logger::LOG_ERROR, "GEO", 33, std::string("Error processing openings for: ") + e.what() + ":", product);
 			caught_error = true;
 		} catch (...) {
+			// Non-std::exception (e.g. OCCT's Standard_Failure) also counts as caught_error.
 			logger_.Message(Logger::LOG_ERROR, "GEO", 34, "Error processing openings for:", product);
+			caught_error = true;
 		}
 
 		if (!(caught_error && opened_shapes.size() < shapes.size())) {
