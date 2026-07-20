@@ -85,8 +85,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "lib", p
 
 try:
     from . import ifcopenshell_wrapper
-except Exception:
-    raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
+except Exception as e:
+    raise ImportError("IfcOpenShell not built for '%s' (%s)" % (python_distribution, e)) from e
 
 from . import guid
 from .ifcopenshell_wrapper import entity_instance, file
