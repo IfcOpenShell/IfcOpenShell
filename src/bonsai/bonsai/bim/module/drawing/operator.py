@@ -1480,6 +1480,9 @@ class CreateDrawing(bpy.types.Operator):
                     tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
                 )
 
+        # ─── Custom ────────────────────────────────────────────────
+        classes.extend(tool.Drawing.get_element_classes(element))
+
         return classes
 
     def is_manifold(self, obj) -> bool:
@@ -3645,6 +3648,53 @@ class DisableEditingAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         assert context.active_object
         core.disable_editing_assigned_product(tool.Drawing, obj=context.active_object)
+
+
+class AddElementDrawingClass(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_element_drawing_class"
+    bl_label = "Add Drawing Class"
+    bl_description = (
+        "Assign a CSS class to this element so it can be styled individually in drawings.\n"
+        "Applies to all selected IFC objects"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    name: bpy.props.StringProperty(name="Class", default="")
+
+    if TYPE_CHECKING:
+        name: str
+
+    def invoke(self, context, event):
+        if self.name:
+            return self.execute(context)
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        name = tool.Drawing.sanitise_class_name(self.name)
+        if not name:
+            self.report({"ERROR"}, "A valid CSS class name is required.")
+            return {"CANCELLED"}
+        for obj in tool.Blender.get_selected_objects():
+            if element := tool.Ifc.get_entity(obj):
+                core.add_element_class(tool.Drawing, element=element, name=name)
+        self.name = ""
+
+
+class RemoveElementDrawingClass(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_element_drawing_class"
+    bl_label = "Remove Drawing Class"
+    bl_description = "Unassign this CSS class from all selected IFC objects"
+    bl_options = {"REGISTER", "UNDO"}
+
+    name: bpy.props.StringProperty(name="Class")
+
+    if TYPE_CHECKING:
+        name: str
+
+    def _execute(self, context):
+        for obj in tool.Blender.get_selected_objects():
+            if element := tool.Ifc.get_entity(obj):
+                core.remove_element_class(tool.Drawing, element=element, name=self.name)
 
 
 class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):

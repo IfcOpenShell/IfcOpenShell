@@ -26,9 +26,11 @@ from bpy.types import Panel
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import (
+    ELEMENT_CLASSES,
     DecoratorData,
     DocumentsData,
     DrawingsData,
+    ElementClassesData,
     ElementFiltersData,
     ProductAssignmentsData,
     SheetsData,
@@ -569,6 +571,55 @@ class BIM_PT_product_assignments(Panel):
             col = row.column()
             col.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
             col.enabled = bool(ProductAssignmentsData.data["relating_product"])
+
+
+class BIM_MT_element_drawing_classes(bpy.types.Menu):
+    bl_label = "Add Drawing Class"
+    bl_idname = "BIM_MT_element_drawing_classes"
+
+    def draw(self, context):
+        assert self.layout
+        for category, names in ELEMENT_CLASSES.items():
+            self.layout.label(text=category)
+            for name in names:
+                self.layout.operator("bim.add_element_drawing_class", text=name).name = name
+            self.layout.separator()
+        self.layout.operator("bim.add_element_drawing_class", text="Custom Class...", icon="ADD").name = ""
+
+
+class BIM_PT_element_drawing_classes(Panel):
+    bl_label = "Drawing Classes"
+    bl_idname = "BIM_PT_element_drawing_classes"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_order = 2
+    bl_parent_id = "BIM_PT_tab_object_metadata"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get() or not context.active_object:
+            return False
+        return bool(tool.Ifc.get_entity(context.active_object))
+
+    def draw(self, context):
+        if not ElementClassesData.is_loaded:
+            ElementClassesData.load()
+
+        assert self.layout
+        row = self.layout.row(align=True)
+        row.menu("BIM_MT_element_drawing_classes", icon="ADD", text="Add Class")
+
+        classes = ElementClassesData.data["classes"]
+        if not classes:
+            self.layout.label(text="No Classes Assigned", icon="BRUSH_DATA")
+            return
+
+        for name in classes:
+            row = self.layout.row(align=True)
+            row.label(text=name, icon="BRUSH_DATA")
+            row.operator("bim.remove_element_drawing_class", icon="X", text="").name = name
 
 
 def get_category_icon(category_name):

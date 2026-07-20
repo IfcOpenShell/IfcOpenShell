@@ -537,9 +537,7 @@ class SvgWriter:
             str(ifcopenshell.util.element.get_predefined_type(element))
         )
         classes = [global_id, element.is_a(), predefined_type]
-        custom_classes: str = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
-        if custom_classes:
-            classes.extend(custom_classes.split())
+        classes.extend(tool.Drawing.get_element_classes(element))
         for key in self.metadata:
             value = ifcopenshell.util.selector.get_element_value(element, key)
             if value:

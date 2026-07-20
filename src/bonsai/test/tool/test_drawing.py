@@ -1126,3 +1126,49 @@ class TestIsDrawingActive(NewFile):
         # addresses, so this assertion documents that assumption.
         assert bpy.app.background is True
         assert subject.is_drawing_active() is True
+
+
+class TestElementClasses(NewFile):
+    def test_no_classes_by_default(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
+        assert subject.get_element_classes(element) == []
+
+    def test_add_and_remove_classes(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
+
+        subject.add_element_class(element, "dashed")
+        subject.add_element_class(element, "fill-grey")
+        assert subject.get_element_classes(element) == ["dashed", "fill-grey"]
+        assert ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes") == "dashed fill-grey"
+
+        # Adding a duplicate is a no-op.
+        subject.add_element_class(element, "dashed")
+        assert subject.get_element_classes(element) == ["dashed", "fill-grey"]
+
+        subject.remove_element_class(element, "dashed")
+        assert subject.get_element_classes(element) == ["fill-grey"]
+
+        # Removing an unassigned class is a no-op.
+        subject.remove_element_class(element, "dashed")
+        assert subject.get_element_classes(element) == ["fill-grey"]
+
+    def test_classes_are_sanitised(self):
+        assert subject.sanitise_class_name("  fill grey  ") == "fill-grey"
+        assert subject.sanitise_class_name("fill-grey") == "fill-grey"
+        assert subject.sanitise_class_name("Wall_1") == "Wall_1"
+        assert subject.sanitise_class_name("2thick") == "thick"
+        assert subject.sanitise_class_name("!!!") == ""
+
+    def test_preserves_existing_annotation_pset(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcAnnotation")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Classes": "small", "Symbol": "dot"})
+        subject.add_element_class(element, "dashed")
+        assert subject.get_element_classes(element) == ["small", "dashed"]
+        assert ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Symbol") == "dot"
