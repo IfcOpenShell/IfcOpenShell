@@ -516,6 +516,7 @@ class BIM_PT_sheets(Panel):
             row3.separator(factor=0.5, type="SPACE")
 
             row3.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
+            row3.operator("bim.edit_sheet_item_position", icon="ORIENTATION_VIEW", text="")
             row3.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row3.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
             row3.operator("bim.add_reference_to_sheet", icon="IMAGE_REFERENCE", text="")

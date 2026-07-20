@@ -2165,6 +2165,54 @@ class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
         tool.Drawing.remove_drawing_from_sheet(ifc_file.by_id(self.reference))
 
 
+class EditSheetItemPosition(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_sheet_item_position"
+    bl_label = "Edit Position On Sheet"
+    bl_description = "Set the position of the selected drawing, schedule or reference on its sheet layout"
+    bl_options = {"REGISTER", "UNDO"}
+
+    x: bpy.props.FloatProperty(name="X", description="Distance in mm from the left edge of the sheet", unit="NONE")
+    y: bpy.props.FloatProperty(name="Y", description="Distance in mm from the top edge of the sheet", unit="NONE")
+
+    @classmethod
+    def poll(cls, context):
+        active_item = tool.Drawing.get_active_sheet_item()
+        if active_item is None or active_item.is_sheet:
+            cls.poll_message_set("No sheet item selected.")
+            return False
+        if active_item.reference_type not in ("DRAWING", "SCHEDULE", "REFERENCE"):
+            cls.poll_message_set("Only drawings, schedules and references can be positioned.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        assert context.window_manager
+        position = self.get_position()
+        if position is None:
+            self.report({"ERROR"}, "Item was not found in the sheet layout.")
+            return {"CANCELLED"}
+        self.x, self.y = position
+        return context.window_manager.invoke_props_dialog(self)
+
+    def get_position(self):
+        sheet_item = tool.Drawing.get_active_sheet_item()
+        assert sheet_item
+        reference = tool.Ifc.get().by_id(sheet_item.ifc_definition_id)
+        sheet = tool.Drawing.get_reference_document(reference)
+        if sheet is None:
+            return None
+        return sheeter.SheetBuilder().get_sheet_item_position(reference, sheet)
+
+    def _execute(self, context):
+        sheet_item = tool.Drawing.get_active_sheet_item()
+        assert sheet_item
+        reference = tool.Ifc.get().by_id(sheet_item.ifc_definition_id)
+        sheet = tool.Drawing.get_reference_document(reference)
+        if sheet is None or not sheeter.SheetBuilder().set_sheet_item_position(reference, sheet, self.x, self.y):
+            self.report({"ERROR"}, "Item was not found in the sheet layout.")
+            return {"CANCELLED"}
+
+
 class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
