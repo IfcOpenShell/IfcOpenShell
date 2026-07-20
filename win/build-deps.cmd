@@ -99,8 +99,9 @@ IF NOT %VS_VER%==2017 GOTO :Msbdir2017Done
 IF DEFINED msbdir GOTO :Msbdir2017Done
 
 set "VSWHERE_EXE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-IF NOT EXIST "%VSWHERE_EXE%" (
-    call utils\cecho.cmd 0 12 "%~nx0: vswhere.exe not found at `"%VSWHERE_EXE%`", needed to detect the VS2017 MSBuild path for the mpir dependency (see #8631)- cannot proceed."
+:: Delayed expansion here, not immediate: VSWHERE_EXE contains "(x86)".
+IF NOT EXIST "!VSWHERE_EXE!" (
+    call utils\cecho.cmd 0 12 "%~nx0: vswhere.exe not found at `"!VSWHERE_EXE!`", needed to detect the VS2017 MSBuild path for the mpir dependency (see #8631)- cannot proceed."
     GOTO :ErrorAndPrintUsage
 )
 
@@ -113,8 +114,9 @@ IF NOT DEFINED VS2017_INSTALL_DIR (
 )
 
 set "msbdir=%VS2017_INSTALL_DIR%\MSBuild\15.0\Bin"
-IF NOT EXIST "%msbdir%\MSBuild.exe" (
-    call utils\cecho.cmd 0 12 "%~nx0: Detected Visual Studio 2017 at `"%VS2017_INSTALL_DIR%`" but `"%msbdir%\MSBuild.exe`" was not found- cannot proceed."
+:: Same reasoning: delayed expansion, not immediate.
+IF NOT EXIST "!msbdir!\MSBuild.exe" (
+    call utils\cecho.cmd 0 12 "%~nx0: Detected Visual Studio 2017 at `"!VS2017_INSTALL_DIR!`" but `"!msbdir!\MSBuild.exe`" was not found- cannot proceed."
     GOTO :ErrorAndPrintUsage
 )
 
