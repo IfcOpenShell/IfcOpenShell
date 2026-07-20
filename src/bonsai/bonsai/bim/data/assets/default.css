@@ -32,6 +32,8 @@ path.boundary { stroke: black; stroke-width: 0.3; stroke-opacity: 0.9; }
 path.crease { stroke: black; stroke-width: 0.25; stroke-opacity: 0.85; }
 path.sharp { stroke: black; stroke-width: 0.18; stroke-opacity: 0.7; }
 path.flush { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; }
+/* Occluded linework (issue #6424). fill:none is required because .projection fills white. */
+path.hidden { stroke: black; stroke-width: 0.13; stroke-opacity: 0.4; stroke-dasharray: 1.5 1.5; fill: none; }
 
 /* Debug CSS for troubleshooting edge classification */
 /*

@@ -1130,6 +1130,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.ridge_angle_min_degrees = float(pset["RidgeAngleMinDegrees"])
             if "RenderFlush" in pset:
                 camera_props.render_flush = bool(pset["RenderFlush"])
+            if "RenderHidden" in pset:
+                camera_props.render_hidden = bool(pset["RenderHidden"])
             if "DPI" in pset:
                 camera_props.dpi = int(pset["DPI"])
             if "LineworkMode" in pset:

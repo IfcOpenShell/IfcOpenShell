@@ -580,6 +580,14 @@ class BIMCameraProperties(PropertyGroup):
         default=False,
         update=get_update_layer_callback("render_flush", "RenderFlush"),
     )
+    render_hidden: BoolProperty(
+        name="Render Hidden Lines",
+        description="Draw the occluded parts of elements as hidden lines instead of omitting "
+        "them, so an element that sits entirely behind another still appears on the drawing. "
+        "Occluded linework carries the 'hidden' CSS class",
+        default=False,
+        update=get_update_layer_callback("render_hidden", "RenderHidden"),
+    )
     target_view: EnumProperty(
         name="Target View",
         default="PLAN_VIEW",
