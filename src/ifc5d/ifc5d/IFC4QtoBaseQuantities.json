@@ -383,11 +383,11 @@
             },
             "IfcOpeningElement": {
                 "Qto_OpeningElementBaseQuantities": {
-                    "Area": "gross_get_max_side_area",
-                    "Depth": "gross_get_z",
-                    "Height": "gross_get_y",
+                    "Area": "gross_get_opening_area",
+                    "Depth": "gross_get_opening_depth",
+                    "Height": "gross_get_opening_height",
                     "Volume": "gross_get_volume",
-                    "Width": "gross_get_x"
+                    "Width": "gross_get_opening_width"
                 }
             },
             "IfcOutlet": {

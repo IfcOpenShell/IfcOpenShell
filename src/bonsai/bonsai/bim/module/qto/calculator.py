@@ -225,7 +225,7 @@ def get_opening_depth(obj: bpy.types.Object) -> float:
     if is_opening_horizontal(obj):
         return get_height(obj)
     else:
-        return get_width(obj)
+        return get_y(obj)
 
 
 def get_opening_mapping_area(obj: bpy.types.Object) -> float:

@@ -387,7 +387,7 @@
                     "Depth": "get_opening_depth",
                     "Height": "get_opening_height",
                     "Volume": "get_net_volume",
-                    "Width": "get_length"
+                    "Width": "get_x"
                 }
             },
             "IfcOutlet": {
