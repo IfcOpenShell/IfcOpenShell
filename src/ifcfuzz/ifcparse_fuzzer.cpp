@@ -23,11 +23,37 @@
 // observing IfcConvert's exit code.
 
 #include "ifcparse/file.h"
+#include "ifcparse/logger.h"
 
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <sstream>
+#include <sys/stat.h>
+
+namespace {
+bool is_regular_file(const char* path) {
+    struct stat st;
+    return ::stat(path, &st) == 0 && S_ISREG(st.st_mode);
+}
+}  // namespace
+
+// libFuzzer runs in two modes: a real fuzzing campaign (given corpus
+// directories to mutate from, executed millions of times) and a
+// single-input repro (given one or more explicit file paths, e.g.
+// `-runs=1 crashes/<hash>/input`). logger::set_output is only wired up for
+// the latter -- logging every parse warning to a stream on every execution
+// of a real campaign would dominate the runtime.
+extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv) {
+    for (int i = 1; i < *argc; ++i) {
+        if (is_regular_file((*argv)[i])) {
+            logger::root().set_output(&std::cerr, &std::cerr);
+            break;
+        }
+    }
+    return 0;
+}
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     if (size == 0 || size > static_cast<size_t>(std::numeric_limits<int>::max())) {

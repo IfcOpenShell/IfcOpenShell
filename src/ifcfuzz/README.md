@@ -56,6 +56,14 @@ invalid `.ifc` files works as a starting corpus; a dictionary of STEP/IFC
 tokens (`ISO-10303-21`, `HEADER`, common `IFCxxx` entity names, etc.) passed
 via `-dict=` measurably helps the mutator get past the header boilerplate.
 
+### Log output
+
+`Logger` output is only wired up when the binary is run against an explicit
+file argument (e.g. `-runs=1 <file>`), not during a real campaign against a
+corpus directory - logging every parse warning on every execution of a
+fuzzing campaign would dominate the runtime. Repro runs print
+`[Warning]`/`[Error]` messages to stderr.
+
 ### Leak detection
 
 `run.sh` sets `ASAN_OPTIONS=detect_leaks=0` by default. A leak that used to
