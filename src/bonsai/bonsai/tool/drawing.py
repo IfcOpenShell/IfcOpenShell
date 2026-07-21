@@ -1009,6 +1009,8 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.has_annotation = True
         camera_props.target_view = "PLAN_VIEW"
         camera_props.is_nts = False
+        camera_props.generate_material_layers = True
+        camera_props.join_coplanar_surfaces = False
 
         pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         if pset:
@@ -1044,6 +1046,10 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.fill_mode = str(pset["FillMode"])
             if "CutMode" in pset:
                 camera_props.cut_mode = str(pset["CutMode"])
+            if "GenerateMaterialLayers" in pset:
+                camera_props.generate_material_layers = bool(pset["GenerateMaterialLayers"])
+            if "JoinCoplanarSurfaces" in pset:
+                camera_props.join_coplanar_surfaces = bool(pset["JoinCoplanarSurfaces"])
 
         camera_props.update_props = update_props
 
