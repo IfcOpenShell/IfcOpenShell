@@ -720,6 +720,7 @@ class Loader(bonsai.core.tool.Loader):
             settings = ifcopenshell.geom.settings()
             settings.set("mesher-linear-deflection", cls.settings.deflection_tolerance)
             settings.set("mesher-angular-deflection", cls.settings.angular_tolerance)
+            settings.set("circle-segments", cls.settings.circle_segments)
             settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             settings.set("context-ids", [context.id()])
             settings.set("apply-default-materials", False)

@@ -220,6 +220,8 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "angular_tolerance")
         row = self.layout.row()
+        row.prop(pprops, "circle_segments")
+        row = self.layout.row()
         row.prop(pprops, "void_limit")
         row = self.layout.row()
         row.prop(pprops, "style_limit")

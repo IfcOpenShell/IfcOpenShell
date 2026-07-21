@@ -384,6 +384,18 @@ class BIMProjectProperties(PropertyGroup):
     )
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.05)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
+    circle_segments: IntProperty(
+        name="Circle Segments",
+        description=(
+            "Minimum number of segments to approximate full circles (pipes, columns, etc.). "
+            "Set to 0 to derive segment count from the deflection tolerance instead"
+        ),
+        default=24,
+        min=0,
+        max=128,
+        soft_min=4,
+        soft_max=64,
+    )
     void_limit: IntProperty(
         name="Void Limit",
         default=30,

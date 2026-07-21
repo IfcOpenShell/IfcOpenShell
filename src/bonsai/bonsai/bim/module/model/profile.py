@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import copy
-from math import atan2, degrees, pi, radians
+from math import atan2, cos, degrees, pi, radians, sin
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bpy
@@ -46,6 +46,46 @@ from bonsai.bim.module.model.decorator import (
 from bonsai.bim.module.model.polyline import PolylineOperator
 
 ProfileFrom2PointsReturn = Union[dict[str, Any], None]
+
+
+def _tessellate_circular_profile(
+    file: ifcopenshell.file, profile: ifcopenshell.entity_instance, segments: int
+) -> ifcopenshell.entity_instance:
+    """Replace IfcCircleProfileDef / IfcCircleHollowProfileDef with polyline equivalents.
+
+    When *segments* is 0 the profile is returned unchanged so the downstream
+    tessellator derives the segment count from the deflection tolerance.
+
+    :param file: target IFC file (new entities are created here).
+    :param profile: the original profile definition.
+    :param segments: number of polyline points for a full circle (0 = no-op).
+    """
+    if segments <= 0:
+        return profile
+
+    if profile.is_a("IfcCircleProfileDef"):
+        r = profile.Radius
+        pts = [(r * cos(2 * pi * i / segments), r * sin(2 * pi * i / segments)) for i in range(segments)]
+        points = [file.createIfcCartesianPoint(p) for p in pts]
+        outer_curve = file.createIfcPolyline(points)
+        return file.createIfcArbitraryClosedProfileDef("AREA", profile.ProfileName, outer_curve)
+
+    if profile.is_a("IfcCircleHollowProfileDef"):
+        r_outer = profile.Radius
+        r_inner = r_outer - profile.WallThickness
+        if r_inner <= 0:
+            r_inner = 0.0
+        outer_pts = [(r_outer * cos(2 * pi * i / segments), r_outer * sin(2 * pi * i / segments)) for i in range(segments)]
+        inner_pts = [(r_inner * cos(2 * pi * i / segments), r_inner * sin(2 * pi * i / segments)) for i in range(segments)]
+        outer_points = [file.createIfcCartesianPoint(p) for p in outer_pts]
+        inner_points = [file.createIfcCartesianPoint(p) for p in inner_pts]
+        outer_curve = file.createIfcPolyline(outer_points)
+        inner_curve = file.createIfcPolyline(inner_points)
+        outer_poly = file.createIfcArbitraryClosedProfileDef("AREA", None, outer_curve)
+        inner_poly = file.createIfcArbitraryClosedProfileDef("AREA", None, inner_curve)
+        return file.createIfcArbitraryProfileDefWithVoids("AREA", profile.ProfileName, outer_poly, [inner_poly])
+
+    return profile
 
 
 class DumbProfileGenerator:
@@ -156,10 +196,14 @@ class DumbProfileGenerator:
                 tool.Ifc.get(), product=element, representation=representation
             )
 
+        profile_def = self.profile_set.CompositeProfile or self.profile_set.MaterialProfiles[0].Profile
+        circle_segments = tool.Project.get_project_props().circle_segments
+        profile_def = _tessellate_circular_profile(tool.Ifc.get(), profile_def, circle_segments)
+
         representation = ifcopenshell.api.geometry.add_profile_representation(
             tool.Ifc.get(),
             context=self.body_context,
-            profile=self.profile_set.CompositeProfile or self.profile_set.MaterialProfiles[0].Profile,
+            profile=profile_def,
             cardinal_point=self.cardinal_point,
             depth=self.depth,
         )
@@ -515,10 +559,13 @@ class DumbProfileJoiner:
             return ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
 
         old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        profile_def = _tessellate_circular_profile(
+            tool.Ifc.get(), self.profile, tool.Project.get_project_props().circle_segments
+        )
         new_body = ifcopenshell.api.geometry.add_profile_representation(
             tool.Ifc.get(),
             context=self.body_context,
-            profile=self.profile,
+            profile=profile_def,
             depth=depth,
             cardinal_point=usage.CardinalPoint if usage else None,
             clippings=self.clippings,

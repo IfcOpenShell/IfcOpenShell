@@ -1288,6 +1288,7 @@ class IfcImportSettings:
         self.should_cache = True
         self.deflection_tolerance = 0.05  # Default is 0.001, but I find this to be more practical
         self.angular_tolerance = 0.5
+        self.circle_segments = 24
         self.void_limit = 30
         self.style_limit = 300
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
@@ -1329,6 +1330,7 @@ class IfcImportSettings:
         settings.should_cache = prefs.should_always_cache or props.should_cache
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
+        settings.circle_segments = props.circle_segments
         settings.void_limit = props.void_limit
         settings.style_limit = props.style_limit
         settings.distance_limit = props.distance_limit

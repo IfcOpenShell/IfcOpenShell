@@ -1153,6 +1153,7 @@ class Geometry(bonsai.core.tool.Geometry):
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         settings.set("mesher-linear-deflection", ifc_import_settings.deflection_tolerance)
         settings.set("mesher-angular-deflection", ifc_import_settings.angular_tolerance)
+        settings.set("circle-segments", ifc_import_settings.circle_segments)
         geometry_library = ifc_import_settings.geometry_library
 
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
