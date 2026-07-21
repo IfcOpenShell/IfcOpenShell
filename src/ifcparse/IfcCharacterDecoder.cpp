@@ -89,6 +89,35 @@ IfcCharacterDecoder::~IfcCharacterDecoder() {
 
 namespace {
     std::string read_string(IfcParse::FileReader& stream_, Logger& logger, IfcParse::IfcCharacterDecoder::ConversionMode mode, char substitution_character) {
+        // Fast path for strings of printable ASCII without escapes or doubled
+        // apostrophes, which decode identically in all conversion modes
+        if (const char* buf = stream_.contiguous_buffer()) {
+            const size_t begin = stream_.tell();
+            const size_t n = stream_.size();
+            size_t pos = begin;
+            bool simple = false;
+            while (pos < n) {
+                const auto character = static_cast<unsigned char>(buf[pos]);
+                if (character == '\'') {
+                    simple = true;
+                    break;
+                }
+                if (character == '\\' || character < 0x20 || character >= 0x7f) {
+                    break;
+                }
+                ++pos;
+            }
+            if (simple && pos + 1 < n && buf[pos + 1] != '\'') {
+                std::string result;
+                result.reserve(pos - begin + 2);
+                result.push_back('\'');
+                result.append(buf + begin, pos - begin);
+                result.push_back('\'');
+                stream_.seek(pos + 1);
+                return result;
+            }
+        }
+
         std::u32string builder_;
 
         unsigned int parse_state = 0;
