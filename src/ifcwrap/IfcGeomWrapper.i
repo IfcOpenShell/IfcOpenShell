@@ -670,8 +670,16 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return vector_to_buffer(self->edges());
 	}
 
+	std::pair<const char*, size_t> points_buffer() const {
+		return vector_to_buffer(self->points());
+	}
+
 	std::pair<const char*, size_t> material_ids_buffer() const {
 		return vector_to_buffer(self->material_ids());
+	}
+
+	std::pair<const char*, size_t> points_material_ids_buffer() const {
+		return vector_to_buffer(self->points_material_ids());
 	}
 
 	std::pair<const char*, size_t> item_ids_buffer() const {
@@ -680,6 +688,10 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 	std::pair<const char*, size_t> edges_item_ids_buffer() const {
 		return vector_to_buffer(self->edges_item_ids());
+	}
+
+	std::pair<const char*, size_t> points_item_ids_buffer() const {
+		return vector_to_buffer(self->points_item_ids());
 	}
 
 	std::pair<const char*, size_t> verts_buffer() const {
@@ -728,6 +740,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
                 return self.polyhedral_faces_with_holes
         faces = property(get_faces)
         edges = property(edges)
+        points = property(points)
         material_ids = property(material_ids)
         materials = property(materials)
         verts = property(verts)
@@ -735,12 +748,17 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         item_ids = property(item_ids)
         uvs = property(uvs)
         edges_item_ids = property(edges_item_ids)
+        points_item_ids = property(points_item_ids)
+        points_material_ids = property(points_material_ids)
 
         faces_buffer = property(faces_buffer)
         edges_buffer = property(edges_buffer)
+        points_buffer = property(points_buffer)
         material_ids_buffer = property(material_ids_buffer)
         item_ids_buffer = property(item_ids_buffer)
         edges_item_ids_buffer = property(edges_item_ids_buffer)
+        points_item_ids_buffer = property(points_item_ids_buffer)
+        points_material_ids_buffer = property(points_material_ids_buffer)
         verts_buffer = property(verts_buffer)
         normals_buffer = property(normals_buffer)
         colors_buffer = property(colors_buffer)
