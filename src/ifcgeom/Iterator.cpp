@@ -23,10 +23,26 @@ bool IfcGeom::Iterator::initialize() {
 	}
 
 	time_points[0] = high_resolution_clock::now();
+
+	if (settings_.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get() && !settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+		// Folding tasks based on permissive shape reuse requires the upfront mapping
+		settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().value = true;
+		logger_.Notice("SYS", 36, "Enabled no-parallel-mapping due to permissive-shape-reuse");
+	}
+
 	std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
 	if (num_threads_ != 1) {
-		// @todo this shouldn't be necessary with properly immutable taxonomy items
-		converter_->mapping()->use_caching() = false;
+		if (!settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+			// @todo this shouldn't be necessary with properly immutable taxonomy items
+			converter_->mapping()->use_caching() = false;
+		} else {
+			// The upfront mapping below runs on this thread with caching, which is
+			// what makes instance reuse (and the permissive-shape-reuse folding)
+			// effective, but cache-shared taxonomy items cannot be converted
+			// concurrently yet, cf. the immutability @todo above
+			num_threads_ = 1;
+			logger_.Notice("SYS", 37, "Processing sequentially due to no-parallel-mapping");
+		}
 	}
 	try {
 		converter_->mapping()->get_representations(reps, filters_);
