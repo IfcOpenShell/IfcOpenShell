@@ -144,6 +144,11 @@ class IfcGitProperties(PropertyGroup):
         description="JSON report from last failed merge attempt",
         default="",
     )
+    merge_resolutions: StringProperty(
+        name="Merge Resolutions",
+        description="JSON report of conflicts auto-resolved by the last merge",
+        default="",
+    )
 
     if TYPE_CHECKING:
         ifcgit_commits: bpy.types.bpy_prop_collection_idprop[IfcGitListItem]
@@ -159,3 +164,4 @@ class IfcGitProperties(PropertyGroup):
         select_remote: str
         ifcgit_filter: Literal["all", "tagged", "relevant"]
         merge_conflicts: str
+        merge_resolutions: str
