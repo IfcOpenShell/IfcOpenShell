@@ -120,9 +120,6 @@ class RenameMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.rename_material(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material), name=self.name)
-        if screen := context.screen:
-            for area in screen.areas:
-                area.tag_redraw()
 
 
 class DisableEditingMaterial(bpy.types.Operator):

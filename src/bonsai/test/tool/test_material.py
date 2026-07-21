@@ -139,6 +139,17 @@ class TestImportMaterialDefinitions(NewFile):
         assert props.materials[0].total_elements == 0
 
 
+class TestRefresh(NewFile):
+    def test_run(self):
+        from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
+
+        MaterialsData.is_loaded = True
+        ObjectMaterialData.is_loaded = True
+        subject.refresh()
+        assert MaterialsData.is_loaded is False
+        assert ObjectMaterialData.is_loaded is False
+
+
 class TestIsEditingMaterials(NewFile):
     def test_run(self):
         props = tool.Material.get_material_props()
