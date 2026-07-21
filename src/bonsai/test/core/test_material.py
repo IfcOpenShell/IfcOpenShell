@@ -93,6 +93,20 @@ class TestRemoveMaterialSet:
         subject.remove_material_set(ifc, material, material="material")
 
 
+class TestRenameMaterial:
+    def test_renaming_a_material(self, ifc, material):
+        ifc.run("material.edit_material", material="material", attributes={"Name": "name"}).should_be_called()
+        material.is_editing_materials().should_be_called().will_return(False)
+        subject.rename_material(ifc, material, material="material", name="name")
+
+    def test_renaming_a_material_and_reloading_imported_materials(self, ifc, material):
+        ifc.run("material.edit_material", material="material", attributes={"Name": "name"}).should_be_called()
+        material.is_editing_materials().should_be_called().will_return(True)
+        material.get_active_material_type().should_be_called().will_return("material_type")
+        material.import_material_definitions("material_type").should_be_called()
+        subject.rename_material(ifc, material, material="material", name="name")
+
+
 class TestLoadMaterials:
     def test_run(self, material):
         material.import_material_definitions("material_type").should_be_called()
