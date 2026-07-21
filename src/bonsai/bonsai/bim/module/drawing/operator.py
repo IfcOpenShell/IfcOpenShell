@@ -3857,6 +3857,26 @@ class ToggleTargetView(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ToggleDrawingCategorySelection(bpy.types.Operator):
+    bl_idname = "bim.toggle_drawing_category_selection"
+    bl_label = "Toggle Category Selection"
+    bl_description = "Select or deselect all drawings in this view category"
+    bl_options = {"REGISTER", "UNDO"}
+
+    target_view: bpy.props.StringProperty()
+
+    if TYPE_CHECKING:
+        target_view: str
+
+    def execute(self, context):
+        drawings = tool.Drawing.get_visible_drawings_in_category(self.target_view)
+        # If everything visible in the category is already selected, deselect all; otherwise select all.
+        new_state = not all(d.is_selected for d in drawings)
+        for drawing in drawings:
+            drawing.is_selected = new_state
+        return {"FINISHED"}
+
+
 class ExpandSheet(bpy.types.Operator):
     bl_idname = "bim.expand_sheet"
     bl_label = "Expand Sheet"

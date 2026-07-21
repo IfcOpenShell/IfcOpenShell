@@ -108,6 +108,7 @@ classes = (
     operator.SelectAssignedProduct,
     operator.SelectSimilarTextLiteralValue,
     operator.ToggleTargetView,
+    operator.ToggleDrawingCategorySelection,
     operator.OpenDocumentationWebUi,
     operator.FilterSelectedObjectsIfIntersectedByCamera,
     prop.Variable,

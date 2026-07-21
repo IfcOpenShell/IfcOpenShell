@@ -874,8 +874,8 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             layout.label(text="", translate=False)
             return
 
-        row = layout.row(align=True)
         if item.is_drawing:
+            row = layout.row(align=True)
             row.label(text="", icon="BLANK1")
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
             row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
@@ -896,6 +896,9 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                     item.ifc_definition_id
                 )
         else:
+            # Give category headers a distinct inset background so they stand out from drawing rows.
+            box = layout.box()
+            row = box.row(align=True)
             if item.target_view == "PLAN_VIEW":
                 icon = "UV_FACESEL"
             elif item.target_view == "ELEVATION_VIEW":
@@ -916,7 +919,19 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                 op = row.operator("bim.toggle_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT")
                 op.target_view = item.target_view
                 op.option = "EXPAND"
-            row.prop(item, "name", text="", icon=icon, emboss=False)
+            group = tool.Drawing.get_visible_drawings_in_category(item.target_view)
+            all_selected = bool(group) and all(d.is_selected for d in group)
+            row.operator(
+                "bim.toggle_drawing_category_selection",
+                text="",
+                icon="CHECKBOX_HLT" if all_selected else "CHECKBOX_DEHLT",
+                emboss=False,
+            ).target_view = item.target_view
+            row.separator(factor=0.5, type="SPACE")
+            # Clicking the header name toggles expand/contract, same as the disclosure triangle.
+            op = row.operator("bim.toggle_target_view", text=item.name, icon=icon, emboss=False)
+            op.target_view = item.target_view
+            op.option = "CONTRACT" if item.is_expanded else "EXPAND"
 
     def filter_items(self, context, data: DocProperties, propname: str):
         drawings = getattr(data, propname)
