@@ -25,6 +25,10 @@
 
 #include <map>
 
+namespace IfcParse {
+	class declaration;
+}
+
 namespace IfcGeom {
 
 	namespace Representation {
@@ -36,15 +40,25 @@ namespace IfcGeom {
 			const ifcopenshell::geometry::Settings settings_;
 			const std::string entity_;
 			std::string id_;
+			// Most-derived IFC type declaration of the product this representation was
+			// built for, used to walk the supertype chain when resolving a default
+			// (fallback) style so subtypes such as IfcSlabStandardCase inherit the
+			// style registered for IfcSlab. May be null (e.g. for reconstructed /
+			// deserialized representations), in which case no inheritance is applied.
+			const IfcParse::declaration* declaration_ = nullptr;
 		public:
-			explicit Representation(const ifcopenshell::geometry::Settings& settings, const std::string& entity, const std::string& id)
+			explicit Representation(const ifcopenshell::geometry::Settings& settings, const std::string& entity, const std::string& id, const IfcParse::declaration* decl = nullptr)
 				: settings_(settings)
 				, entity_(entity)
 				, id_(id)
+				, declaration_(decl)
 			{}
 			const ifcopenshell::geometry::Settings& settings() const { return settings_; }
 			const std::string& entity() const {
 				return entity_;
+			}
+			const IfcParse::declaration* declaration() const {
+				return declaration_;
 			}
 			// id starts with representation id and then it may have the following dash separated elements:
 			// - layerset-layerset_id
@@ -60,8 +74,8 @@ namespace IfcGeom {
 			BRep(const BRep& other);
 			BRep& operator=(const BRep& other);
 		public:
-			BRep(const ifcopenshell::geometry::Settings& settings, const std::string& entity, const std::string& id, const IfcGeom::ConversionResults& shapes)
-				: Representation(settings, entity, id)
+			BRep(const ifcopenshell::geometry::Settings& settings, const std::string& entity, const std::string& id, const IfcGeom::ConversionResults& shapes, const IfcParse::declaration* decl = nullptr)
+				: Representation(settings, entity, id, decl)
 				, shapes_(shapes)
 			{}
 			virtual ~BRep() {}

@@ -137,7 +137,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 		}
 
 		if (settings().get<ifcopenshell::geometry::settings::ApplyDefaultMaterials>().get() && surface_style_id == -1) {
-			const auto& material = IfcGeom::get_default_style(shape_model.entity());
+			const auto& material = IfcGeom::get_default_style(shape_model.entity(), shape_model.declaration());
 			auto mit = std::find(materials_.begin(), materials_.end(), material);
 			if (mit == materials_.end()) {
 				surface_style_id = (int)materials_.size();
