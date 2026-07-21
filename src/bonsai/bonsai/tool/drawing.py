@@ -2909,6 +2909,29 @@ class Drawing(bonsai.core.tool.Drawing):
         return result
 
     @classmethod
+    def get_visible_drawings_in_category(cls, target_view: str) -> list[DrawingProperties]:
+        """Get the drawing items in a target view category that are currently visible in the drawing list.
+
+        Grouping is positional: individual drawing items don't carry their own ``target_view``, they belong to
+        the most recent header item above them. Only expanded categories contribute drawing items to the
+        collection, so a collapsed category yields an empty list. Respects the ``show_drawings_on_sheets_only``
+        filter so that select-all only affects visible drawings.
+        """
+        props = cls.get_document_props()
+        drawings: list[DrawingProperties] = []
+        in_category = False
+        for item in props.drawings:
+            if not item.is_drawing:
+                # Header row: we're inside the requested category until the next header.
+                in_category = item.target_view == target_view
+            elif in_category:
+                drawings.append(item)
+        if props.show_drawings_on_sheets_only:
+            sheeted_ids = cls.get_sheeted_drawing_ids()
+            drawings = [d for d in drawings if d.ifc_definition_id in sheeted_ids]
+        return drawings
+
+    @classmethod
     def get_camera_matrix(cls, camera: bpy.types.Object) -> Matrix:
         matrix_world = camera.matrix_world.copy().normalized()
         location, rotation, scale = matrix_world.decompose()
