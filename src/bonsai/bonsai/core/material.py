@@ -113,6 +113,7 @@ def rename_material(
     ifc.run("material.edit_material", material=material, attributes={"Name": name})
     if material_tool.is_editing_materials():
         material_tool.import_material_definitions(material_tool.get_active_material_type())
+    material_tool.refresh()
 
 
 def assign_material(

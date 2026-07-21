@@ -665,6 +665,7 @@ class Material:
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
+    def refresh(cls): pass
     def replace_material_with_material_profile(cls, element): pass
     def update_elements_using_material(cls, material): pass
 
