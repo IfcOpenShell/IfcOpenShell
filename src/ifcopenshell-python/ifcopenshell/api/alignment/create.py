@@ -35,6 +35,7 @@ def create(
     include_cant: bool = False,
     include_geometry: bool = True,
     start_station: float = 0.0,
+    rail_head_distance: float = 1.0,
 ) -> entity_instance:
     """
     Creates a new alignment with a horizontal layout. Optionally, vertical and cant layouts can be created as well.
@@ -58,6 +59,7 @@ def create(
     :param include_cant: If True, IfcAlignmentCant is created. IfcSegmentedReferenceCurve is created if include_geometry is True
     :param include_geometry: If True, the geometric representations are added
     :param start_station: station value at the start of the alignment.
+    :param rail_head_distance: value assigned to IfcAlignmentCant.RailHeadDistance when include_cant is True
     :return: Returns an IfcAlignment
     """
     alignment = file.createIfcAlignment(
@@ -79,7 +81,9 @@ def create(
         alignment_layouts.append(file.createIfcAlignmentVertical(GlobalId=ifcopenshell.guid.new()))
 
     if include_cant:
-        alignment_layouts.append(file.createIfcAlignmentCant(GlobalId=ifcopenshell.guid.new(), RailHeadDistance=1.0))
+        alignment_layouts.append(
+            file.createIfcAlignmentCant(GlobalId=ifcopenshell.guid.new(), RailHeadDistance=rail_head_distance)
+        )
 
     ifcopenshell.api.nest.assign_object(file, related_objects=alignment_layouts, relating_object=alignment)
 
