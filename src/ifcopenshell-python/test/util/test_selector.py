@@ -195,6 +195,27 @@ class TestGetElementValue(test.bootstrap.IFC4):
         assert subject.get_element_value(element, "/Pset_.*Common/.Status") == ["New"]
         assert subject.get_element_value(element, "/Pset_.*Common/.Status.0") == "New"
 
+    def test_selecting_a_pset_with_a_dot_in_its_name_requires_quoting(self):
+        # See #6937: a pset literally named "Foo.Bar" is ambiguous with an
+        # unquoted "Foo.Bar.Baz" query, since "." also separates keys.
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo.Bar")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": "correct"})
+
+        # Quoting resolves the ambiguity unambiguously.
+        assert subject.get_element_value(element, '"Foo.Bar".Baz') == "correct"
+        assert subject.get_element_value(element, r"/Foo\.Bar/.Baz") == "correct"
+
+        # An unquoted query fails silently rather than misresolving.
+        assert subject.get_element_value(element, "Foo.Bar.Baz") is None
+
+        # If a *different*, coincidentally-named pset also exists (e.g. "Foo"
+        # with a property "Bar"), the unquoted query must not silently return
+        # that unrelated value instead.
+        other_pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=other_pset, properties={"Bar": "unrelated"})
+        assert subject.get_element_value(element, "Foo.Bar.Baz") is None
+
 
 class TestFilterElements(test.bootstrap.IFC4):
     def test_selecting_by_globalid(self):
@@ -439,6 +460,26 @@ class TestSetElementValue(test.bootstrap.IFC4):
         layer.Material = material
         subject.set_element_value(self.file, layer, "Material.Name", "Foo")
         assert material.Name == "Foo"
+
+    def test_setting_a_pset_with_a_dot_in_its_name_requires_quoting(self):
+        # See #6937: an unquoted query must not silently write into an
+        # unrelated, coincidentally-named pset/property.
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo.Bar")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": "original"})
+        other_pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=other_pset, properties={"Bar": "original_unrelated"})
+
+        with pytest.raises(subject.SetElementValueException):
+            subject.set_element_value(self.file, element, "Foo.Bar.Baz", "new_value")
+
+        # Neither pset should have been touched.
+        assert ifcopenshell.util.element.get_pset(element, "Foo.Bar")["Baz"] == "original"
+        assert ifcopenshell.util.element.get_pset(element, "Foo")["Bar"] == "original_unrelated"
+
+        # The quoted form is unambiguous and works.
+        subject.set_element_value(self.file, element, '"Foo.Bar".Baz', "new_value")
+        assert ifcopenshell.util.element.get_pset(element, "Foo.Bar")["Baz"] == "new_value"
 
 
 class TestSetElementValuePredefinedType(test.bootstrap.IFC4):
