@@ -511,7 +511,10 @@ class IfcCsv:
             if any(pattern in key.lower() for pattern in SKIP_PATTERNS):
                 continue
 
-            ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value, concat=concat)
+            try:
+                ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value, concat=concat)
+            except ifcopenshell.util.selector.SetElementValueException as e:
+                print("Skipping column '{}' for element {}: {}".format(key, row[0], e))
 
 
 if __name__ == "__main__":
