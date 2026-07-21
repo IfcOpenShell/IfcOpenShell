@@ -1105,4 +1105,5 @@ class Style(bonsai.core.tool.Style):
                     props.active_style_type = "External"
                 else:
                     props.active_style_type = "Shading"
+            material.update_tag()
         return has_any_textures
