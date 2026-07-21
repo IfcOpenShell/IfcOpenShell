@@ -1850,6 +1850,61 @@ class CreateDrawing(bpy.types.Operator):
                     return min(x_hi, max_xs) - max(x_lo, min_xs) > TOL
             return False
 
+        def seg_strictly_interior_to(seg, bbox_outer):
+            """True if seg's fixed-axis coordinate is strictly inside bbox_outer.
+
+            Used for contained pairs: an inner element's segment that doesn't
+            touch the outer element's own bbox edge on its fixed axis has no
+            possible external interface — it can only be a boundary against the
+            (same-material) outer element and is safe to remove outright.
+            Segments on or beyond the outer's bbox edge are left untouched here;
+            those are handled by the ordinary bilateral matching against the
+            outer's own explicit segments.
+            """
+            (x0, y0), (x1, y1) = seg
+            min_xo, max_xo, min_yo, max_yo = bbox_outer
+            is_v = abs(x0 - x1) < TOL
+            if is_v:
+                x_mid = (x0 + x1) / 2
+                return min_xo + TOL < x_mid < max_xo - TOL
+            y_mid = (y0 + y1) / 2
+            return min_yo + TOL < y_mid < max_yo - TOL
+
+        # Contained elements are frequently modelled as an actual notch/void cut
+        # into the outer element (not just an abstract overlap), so the outer's
+        # own silhouette legitimately traces around that void — duplicating the
+        # inner element's boundary from the other side. Because the two elements'
+        # cut geometry is generated independently, that duplicate line rarely
+        # lands within the tight TOL bilateral matching needs (observed offsets
+        # of ~0.01-0.02mm between otherwise-identical edges are common), so it
+        # survives bilateral untouched. CONTAINED_BBOX_TOL is a looser margin
+        # (still sub-mm, invisible at drawing scale) used only to recognise an
+        # outer segment as "tracing the inner element's footprint" so it can be
+        # purged alongside the inner element's own copy.
+        CONTAINED_BBOX_TOL = 0.1
+
+        def seg_within_bbox(seg, bbox, tol=CONTAINED_BBOX_TOL):
+            """True if seg plausibly lies on or within bbox (with tolerance).
+
+            Used to find an outer element's segments that trace the boundary of
+            a contained inner element's footprint — these duplicate the inner
+            element's own silhouette and should be purged alongside it.
+            """
+            (x0, y0), (x1, y1) = seg
+            min_x, max_x, min_y, max_y = bbox
+            is_v = abs(x0 - x1) < TOL
+            if is_v:
+                x_mid = (x0 + x1) / 2
+                if not (min_x - tol <= x_mid <= max_x + tol):
+                    return False
+                y_lo, y_hi = min(y0, y1), max(y0, y1)
+                return min(y_hi, max_y + tol) - max(y_lo, min_y - tol) > TOL
+            y_mid = (y0 + y1) / 2
+            if not (min_y - tol <= y_mid <= max_y + tol):
+                return False
+            x_lo, x_hi = min(x0, x1), max(x0, x1)
+            return min(x_hi, max_x + tol) - max(x_lo, min_x - tol) > TOL
+
         def seg_line_key(seg):
             """Return a bucketed key for the axis-aligned line containing seg.
 
@@ -2174,13 +2229,90 @@ class CreateDrawing(bpy.types.Operator):
                         for lo, hi in rem_j:
                             to_add.append((grp_j, make_seg(kind, coord, lo, hi)))
 
+                    # Contained-pair purge: bilateral matching only removes a
+                    # segment when both elements draw an explicit segment at the
+                    # exact same line key. Contained "plug" elements are frequently
+                    # modelled as filling an actual notch/void cut into the outer
+                    # element, so BOTH sides independently draw that boundary —
+                    # but since each element's cut geometry is generated
+                    # separately, the two copies often land fractionally outside
+                    # bilateral's tight TOL and are never recognised as the same
+                    # line, surviving on both sides. Purge each side using a
+                    # geometric bbox test instead of an exact key match:
+                    #   - an inner segment strictly interior to the outer's bbox
+                    #     (not touching its edge) can only be a boundary against
+                    #     this outer element.
+                    #   - an outer segment lying on/within the inner's bbox
+                    #     footprint can only be the outer's own copy of the
+                    #     inner's boundary (tracing the void the inner fills).
+                    # Either way it's safe to remove — unless some other,
+                    # differently-materialed element also has a segment there, in
+                    # which case it's a genuine boundary against that third
+                    # element instead.
+                    if _is_contained:
+                        if _copl_result == "contained_a":
+                            inner_segs, outer_segs, inner_mat, inner_face = segs_i, segs_j, mat_i, face_i
+                        else:
+                            inner_segs, outer_segs, inner_mat, inner_face = segs_j, segs_i, mat_j, face_j
+
+                        def _blocked_by_other_material(key, lo, hi):
+                            for k, (grp_k, mat_k, face_k, style_k, segs_k, guid_k) in enumerate(group_data):
+                                if k == i or k == j or mat_k is None:
+                                    continue
+                                if mat_keys_match(inner_mat, mat_k, inner_face, face_k):
+                                    continue
+                                for _, other_seg in segs_k:
+                                    if seg_line_key(other_seg) != key:
+                                        continue
+                                    o_lo, o_hi = seg_interval(other_seg)
+                                    if min(hi, o_hi) - max(lo, o_lo) > TOL:
+                                        return True
+                            return False
+
+                        bbox_outer = segs_bbox(outer_segs)
+                        bbox_inner = segs_bbox(inner_segs)
+                        if bbox_outer:
+                            for path_el, seg in inner_segs:
+                                if id(path_el) in to_remove:
+                                    continue
+                                if not seg_strictly_interior_to(seg, bbox_outer):
+                                    continue
+                                key = seg_line_key(seg)
+                                if key is None:
+                                    continue
+                                lo, hi = seg_interval(seg)
+                                if not _blocked_by_other_material(key, lo, hi):
+                                    to_remove.add(id(path_el))
+                                    matched += 1
+                        if bbox_inner and bbox_outer:
+                            for path_el, seg in outer_segs:
+                                if id(path_el) in to_remove:
+                                    continue
+                                if not seg_within_bbox(seg, bbox_inner):
+                                    continue
+                                # Exclude the outer's own true perimeter (e.g. the
+                                # inner touches/spans flush to one side of the
+                                # outer): only purge segments that are also
+                                # strictly interior to the outer's own bbox, never
+                                # ones sitting on the outer's real outer edge.
+                                if not seg_strictly_interior_to(seg, bbox_outer):
+                                    continue
+                                key = seg_line_key(seg)
+                                if key is None:
+                                    continue
+                                lo, hi = seg_interval(seg)
+                                if not _blocked_by_other_material(key, lo, hi):
+                                    to_remove.add(id(path_el))
+                                    matched += 1
+
                     # Unilateral fallback: when one element's shared edge is implicit
                     # (not explicitly drawn as a path segment), segments from the other
                     # element that lie on the boundary of that element's SVG bbox are
                     # still on the shared face and should be removed.
-                    # Not applicable to contained pairs (bilateral handles their
-                    # shared interface; unilateral would over-remove here).
-                    if not _is_contained and matched == 0 and not _bilateral_had_explicit_keys and segs_i and segs_j:
+                    # Not applicable to contained pairs (the interior purge pass above
+                    # and bilateral matching handle their shared interface; unilateral
+                    # would over-remove here).
+                    elif matched == 0 and not _bilateral_had_explicit_keys and segs_i and segs_j:
                         bbox_i = segs_bbox(segs_i)
                         bbox_j = segs_bbox(segs_j)
                         if bbox_i and bbox_j:
