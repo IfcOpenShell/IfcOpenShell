@@ -2888,6 +2888,27 @@ class Drawing(bonsai.core.tool.Drawing):
         return sheet_references
 
     @classmethod
+    def get_sheeted_drawing_ids(cls) -> set[int]:
+        """Get the IFC ids of all drawings that are placed on at least one sheet."""
+        ifc_file = tool.Ifc.get()
+        sheet_locations: set[Union[str, None]] = set()
+        for sheet in ifc_file.by_type("IfcDocumentInformation"):
+            if sheet.Scope != "SHEET":
+                continue
+            for reference in cls.get_document_references(sheet):
+                sheet_locations.add(reference.Location)
+        if not sheet_locations:
+            return set()
+        result: set[int] = set()
+        for drawing in ifc_file.by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            drawing_document = cls.get_drawing_document(drawing)
+            if drawing_document and drawing_document.Location in sheet_locations:
+                result.add(drawing.id())
+        return result
+
+    @classmethod
     def get_camera_matrix(cls, camera: bpy.types.Object) -> Matrix:
         matrix_world = camera.matrix_world.copy().normalized()
         location, rotation, scale = matrix_world.decompose()

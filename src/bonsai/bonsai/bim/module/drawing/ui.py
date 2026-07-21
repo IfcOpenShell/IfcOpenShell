@@ -341,6 +341,7 @@ class BIM_PT_drawings(Panel):
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
+            self.layout.prop(self.props, "show_drawings_on_sheets_only")
 
 
 class BIM_PT_schedules(Panel):
@@ -916,6 +917,42 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                 op.target_view = item.target_view
                 op.option = "EXPAND"
             row.prop(item, "name", text="", icon=icon, emboss=False)
+
+    def filter_items(self, context, data: DocProperties, propname: str):
+        drawings = getattr(data, propname)
+        helper_funcs = bpy.types.UI_UL_list
+
+        flt_flags = []
+        flt_neworder = []
+
+        if self.filter_name:
+            flt_flags = helper_funcs.filter_items_by_name(
+                self.filter_name,
+                self.bitflag_filter_item,
+                drawings,
+                "name",
+                reverse=self.use_filter_sort_reverse,
+            )
+        if not flt_flags:
+            flt_flags = [self.bitflag_filter_item] * len(drawings)
+
+        props = tool.Drawing.get_document_props()
+        if props.show_drawings_on_sheets_only:
+            ifc_file = tool.Ifc.get()
+            sheeted_ids = tool.Drawing.get_sheeted_drawing_ids()
+            # Target view headers are only shown if they contain a sheeted drawing.
+            sheeted_target_views = {
+                tool.Drawing.get_drawing_target_view(ifc_file.by_id(drawing_id)) for drawing_id in sheeted_ids
+            }
+            for i, item in enumerate(drawings):
+                if item.is_drawing:
+                    is_visible = item.ifc_definition_id in sheeted_ids
+                else:
+                    is_visible = item.target_view in sheeted_target_views
+                if not is_visible:
+                    flt_flags[i] &= ~self.bitflag_filter_item
+
+        return flt_flags, flt_neworder
 
 
 class BIM_UL_sheets(bpy.types.UIList):
