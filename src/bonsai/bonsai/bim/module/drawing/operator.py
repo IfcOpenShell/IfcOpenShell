@@ -2293,7 +2293,11 @@ class SelectAllDrawings(bpy.types.Operator):
 
     def execute(self, context):
         props = tool.Drawing.get_document_props()
+        # When filtering to sheeted drawings only, act on the visible drawings only.
+        sheeted_ids = tool.Drawing.get_sheeted_drawing_ids() if props.show_drawings_on_sheets_only else None
         for drawing in props.drawings:
+            if sheeted_ids is not None and drawing.is_drawing and drawing.ifc_definition_id not in sheeted_ids:
+                continue
             if drawing.is_selected != self.select_all:
                 drawing.is_selected = self.select_all
         return {"FINISHED"}
