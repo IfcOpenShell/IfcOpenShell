@@ -425,7 +425,12 @@ class SvgWriter:
                 return text
 
             self.draw_dimension_text(
-                get_text, tag, dimension_data, text_position=text_position, angle=angle, class_str="SECTIONLEVEL"
+                get_text,
+                tag,
+                dimension_data,
+                text_position=text_position,
+                angle=angle,
+                class_str=" ".join([*classes, "SECTIONLEVEL"]),
             )
 
     def draw_stair_annotation(self, obj: bpy.types.Object) -> None:
@@ -452,7 +457,7 @@ class SvgWriter:
                 self.svg.text(
                     "UP",
                     insert=tuple(text_position),
-                    class_="STAIR",
+                    class_=" ".join([*classes, "STAIR"]),
                     **SvgWriter.get_box_alignment_parameters("center"),
                 )
             )
@@ -482,7 +487,7 @@ class SvgWriter:
                 self.svg.text(
                     axis_tag,
                     insert=tuple(start * self.svg_scale),
-                    class_="GRID",
+                    class_=" ".join([*classes, "GRID"]),
                     **text_style,
                 )
             )
@@ -490,7 +495,7 @@ class SvgWriter:
                 self.svg.text(
                     axis_tag,
                     insert=tuple(end * self.svg_scale),
-                    class_="GRID",
+                    class_=" ".join([*classes, "GRID"]),
                     **text_style,
                 )
             )
@@ -814,6 +819,7 @@ class SvgWriter:
         y_offset = self.raw_height / 2
 
         self.draw_line_annotation(obj)
+        classes = self.get_attribute_classes(obj)
 
         display_data = DecoratorData.get_section_markers_display_data(obj)
 
@@ -853,19 +859,23 @@ class SvgWriter:
                         self.svg.text(
                             reference_id,
                             insert=(text_position[0], text_position[1] - 2.5),
-                            class_="SECTION",
+                            class_=" ".join([*classes, "SECTION"]),
                             **text_style,
                         )
                     )
                     self.svg.add(
                         self.svg.text(
-                            sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="SECTION", **text_style
+                            sheet_id,
+                            insert=(text_position[0], text_position[1] + 2.5),
+                            class_=" ".join([*classes, "SECTION"]),
+                            **text_style,
                         )
                     )
 
     def draw_elevation_annotation(self, obj: bpy.types.Object) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
+        classes = self.get_attribute_classes(obj)
         symbol_position = self.project_point_onto_camera(obj.location)
         symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
         symbol_position_svg = symbol_position * self.svg_scale
@@ -884,11 +894,19 @@ class SvgWriter:
         text_style = SvgWriter.get_box_alignment_parameters("center")
         self.svg.add(
             self.svg.text(
-                reference_id, insert=(text_position[0], text_position[1] - 2.5), class_="ELEVATION", **text_style
+                reference_id,
+                insert=(text_position[0], text_position[1] - 2.5),
+                class_=" ".join([*classes, "ELEVATION"]),
+                **text_style,
             )
         )
         self.svg.add(
-            self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="ELEVATION", **text_style)
+            self.svg.text(
+                sheet_id,
+                insert=(text_position[0], text_position[1] + 2.5),
+                class_=" ".join([*classes, "ELEVATION"]),
+                **text_style,
+            )
         )
 
     def get_reference_and_sheet_id_from_annotation(self, element: ifcopenshell.entity_instance) -> tuple[str, str]:
@@ -1233,7 +1251,7 @@ class SvgWriter:
                 dimension_data,
                 text_position=text_position,
                 angle=angle,
-                class_str="PLANLEVEL",
+                class_str=" ".join([*classes, "PLANLEVEL"]),
                 box_alignment=box_alignment,
             )
 
@@ -1322,12 +1340,15 @@ class SvgWriter:
         # angle = -dir1.xy.angle_signed(dir2.xy)
 
         # calculating text parameters and adding text
+        classes = self.get_attribute_classes(obj)
         text_position = arc_mid_point + arc_mid_dir * 5
         text_style = SvgWriter.get_box_alignment_parameters("center")
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         decimal_places = drawing_pset_data.get("AngleDecimalPlaces", None)
         angle_text = f"{round(angle, decimal_places)}°"
-        self.svg.add(self.svg.text(angle_text, insert=text_position, class_="ANGLE", **text_style))
+        self.svg.add(
+            self.svg.text(angle_text, insert=text_position, class_=" ".join([*classes, "ANGLE"]), **text_style)
+        )
 
         # Draw SVG arc, see for details: http://xahlee.info/js/svg_circle_arc.html
         p1, p2 = arc_end_pts
@@ -1339,7 +1360,6 @@ class SvgWriter:
         #         1 => moving at positive angles
         sense = int(tool.Cad.is_counter_clockwise_order(*arc_points))
         d = f"M {p1.x} {p1.y} A {r} {r} 0 {reflex} {sense} {p2.x} {p2.y}"
-        classes = self.get_attribute_classes(obj)
         path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
     def draw_radius_annotations(self, obj: bpy.types.Object) -> None:
@@ -1377,7 +1397,12 @@ class SvgWriter:
                 return text
 
             self.draw_dimension_text(
-                get_text, tag, dimension_data, text_position=text_position, class_str="RADIUS", box_alignment="center"
+                get_text,
+                tag,
+                dimension_data,
+                text_position=text_position,
+                class_str=" ".join([*classes, "RADIUS"]),
+                box_alignment="center",
             )
 
     def draw_dimension_text(self, get_text: Callable[[], str], tag, dimension_data, **create_text_kwargs) -> None:
@@ -1476,7 +1501,9 @@ class SvgWriter:
             text_position += text_offset
 
             text_style = SvgWriter.get_box_alignment_parameters("center")
-            self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
+            self.svg.add(
+                self.svg.text(tag, insert=tuple(text_position), class_=" ".join([*classes, "RADIUS"]), **text_style)
+            )
 
     def draw_diameter_annotations(self, obj: bpy.types.Object) -> None:
         classes = self.get_attribute_classes(obj)
@@ -1579,7 +1606,7 @@ class SvgWriter:
         text_tags = []
         text_tag_kwargs = {
             "angle": angle,
-            "class_str": "DIMENSION",
+            "class_str": " ".join([*classes, "DIMENSION"]),
             "text_format": text_format,
             "fill_bg": fill_bg,
         }
