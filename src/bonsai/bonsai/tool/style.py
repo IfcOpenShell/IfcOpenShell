@@ -1075,6 +1075,8 @@ class Style(bonsai.core.tool.Style):
         objects = [tool.Ifc.get_object(e) for e in elements]
         tool.Geometry.reload_representation(objects)
 
+    _last_shading_type: str | None = None
+
     @classmethod
     def restore_material_style_types(cls, shading_type: str) -> bool:
         """Set each IFC material's active_style_type to the richest available for the given viewport mode.
@@ -1085,6 +1087,10 @@ class Style(bonsai.core.tool.Style):
 
         Returns True if any IFC material has IfcSurfaceStyleWithTextures (used to decide color_type).
         """
+        if cls._last_shading_type == shading_type:
+            return False
+        cls._last_shading_type = shading_type
+
         has_any_textures = False
         for material in bpy.data.materials:
             if not tool.Blender.get_ifc_definition_id(material):
