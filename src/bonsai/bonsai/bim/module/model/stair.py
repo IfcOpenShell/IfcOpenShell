@@ -98,8 +98,6 @@ def update_ifc_stair_props(obj: bpy.types.Object) -> None:
     if tool.Ifc.get_schema() != "IFC2X3" and element.is_a("IfcStairFlight"):
         element.PredefinedType = "STRAIGHT"
     number_of_risers = props.number_of_treads + 1
-    # update IfcStairFlight properties (seems already deprecated but keep it for now)
-    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcStairFlight.htm
 
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
     riser_height = props.height / number_of_risers / si_conversion
@@ -107,14 +105,22 @@ def update_ifc_stair_props(obj: bpy.types.Object) -> None:
     nosing_length = props.nosing_length / si_conversion
 
     if element.is_a("IfcStairFlight"):
-        if tool.Ifc.get_schema() == "IFC2X3":
-            element.NumberOfRiser = number_of_risers
+        # NumberOfRisers/NumberOfTreads/RiserHeight/TreadLength are deprecated
+        # in IFC4.3 in favour of Pset_StairFlightCommon, which is set below.
+        if tool.Ifc.get_schema() == "IFC4X3":
+            element.NumberOfRisers = None
+            element.NumberOfTreads = None
+            element.RiserHeight = None
+            element.TreadLength = None
         else:
-            element.NumberOfRisers = number_of_risers
+            if tool.Ifc.get_schema() == "IFC2X3":
+                element.NumberOfRiser = number_of_risers
+            else:
+                element.NumberOfRisers = number_of_risers
 
-        element.NumberOfTreads = props.number_of_treads
-        element.RiserHeight = riser_height
-        element.TreadLength = tread_length
+            element.NumberOfTreads = props.number_of_treads
+            element.RiserHeight = riser_height
+            element.TreadLength = tread_length
 
     # update pset with ifc properties
     pset_common = tool.Pset.get_element_pset(element, "Pset_StairFlightCommon")
