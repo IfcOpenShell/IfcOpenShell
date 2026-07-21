@@ -566,7 +566,7 @@ class TogglePreferIfcShading(bpy.types.Operator):
         else:
             # Default: apply to all IFC materials
             source_mat = bpy.data.materials.get(self.material_name)
-            new_value = not source_mat.BIMStyleProperties.prefer_ifc_shading if source_mat else True
+            new_value = not tool.Style.get_material_style_props(source_mat).prefer_ifc_shading if source_mat else True
             ifc_mats = [m for m in bpy.data.materials if tool.Blender.get_ifc_definition_id(m)]
             for mat in ifc_mats:
                 tool.Style.get_material_style_props(mat).prefer_ifc_shading = new_value
