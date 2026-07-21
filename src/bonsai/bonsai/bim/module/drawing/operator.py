@@ -1980,18 +1980,11 @@ class CreateDrawing(bpy.types.Operator):
             def get_camera_face_layer_id(guid):
                 """Return the material ID of the layer the camera sees for this element.
 
-                For IfcMaterialLayerSetUsage elements the camera-facing layer depends
-                on the LayerSetDirection and which side of the element the camera is on:
-
-                  AXIS3 (slabs/roofs — vertical stacking):
-                    Plan view (camera looks down) → top layer visible.
-                    RCP (camera looks up) → bottom layer visible.
-
-                  AXIS1/AXIS2 (walls — horizontal stacking):
-                    The dominant face normal is computed for the element. If the camera
-                    look direction is opposite to the face normal the camera sees the
-                    face-normal side (the "positive" face). Otherwise it sees the
-                    "negative" face (the interior side of the layer sequence).
+                Only meaningful for AXIS3 (slabs/roofs — vertical stacking):
+                  Plan view (camera looks down) → top layer visible.
+                  RCP (camera looks up) → bottom layer visible.
+                Returns None for AXIS1/AXIS2 (walls) — see mat_keys_match's
+                docstring for why walls must not use this as a match criterion.
 
                 DirectionSense POSITIVE: Layer[0] is the negative/interior face,
                 Layer[-1] is the positive/exterior face. NEGATIVE reverses this.
@@ -2010,31 +2003,31 @@ class CreateDrawing(bpy.types.Operator):
                     return None
                 positive = material.DirectionSense == "POSITIVE"
                 layer_dir = material.LayerSetDirection
+                # Only AXIS3 (slabs/roofs) may use the camera-facing layer as a
+                # material match criterion in mat_keys_match — for AXIS1/AXIS2
+                # (walls) the full cross-section is always visible in plan, so
+                # sharing only a facing layer isn't sufficient for a match. See
+                # mat_keys_match's docstring for the full contract.
+                if layer_dir != "AXIS3":
+                    return None
 
-                # For all LayerSetDirections, determine which side of the element
-                # the camera is on by projecting the camera look vector onto the
-                # object's local stacking axis in world space:
-                #   AXIS3 → stacking along local Z (col[2]) — slabs/roofs
-                #   AXIS2 → stacking along local Y (col[1]) — most walls
-                #   AXIS1 → stacking along local X (col[0]) — rare walls
+                # Determine which side of the element the camera is on by
+                # projecting the camera look vector onto the object's local
+                # stacking axis (Z, col[2]) in world space.
                 # DirectionSense POSITIVE: Layer[-1] is on the +axis side.
                 # dot < 0 → camera look is opposite to stacking axis
                 #         → camera is on the +axis (positive/exterior) side.
                 # This correctly handles sloped slabs seen by two plan-view
                 # cameras from opposite sides, unlike the simpler camera_looks_up
                 # flag which cannot distinguish them.
-                col_idx = {"AXIS1": 0, "AXIS2": 1, "AXIS3": 2}.get(layer_dir)
-                if col_idx is not None:
-                    obj = get_obj(guid)
-                    if obj is None or obj.type != "MESH":
-                        return None
-                    stack_axis = obj.matrix_world.col[col_idx].to_3d().normalized()
-                    dot = _cam_look.dot(stack_axis)
-                    on_positive_side = dot < 0
-                    face_layer = (layers[-1] if positive else layers[0]) if on_positive_side else (layers[0] if positive else layers[-1])
-                    return face_layer.Material.id()
-
-                return None
+                obj = get_obj(guid)
+                if obj is None or obj.type != "MESH":
+                    return None
+                stack_axis = obj.matrix_world.col[2].to_3d().normalized()
+                dot = _cam_look.dot(stack_axis)
+                on_positive_side = dot < 0
+                face_layer = (layers[-1] if positive else layers[0]) if on_positive_side else (layers[0] if positive else layers[-1])
+                return face_layer.Material.id()
 
             def mat_keys_match(a, b, face_a=None, face_b=None):
                 """True if two ordered layer-material tuples represent compatible assemblies.
