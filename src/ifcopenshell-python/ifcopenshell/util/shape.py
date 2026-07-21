@@ -18,7 +18,8 @@
 
 from __future__ import annotations
 
-from math import cos, radians
+import warnings
+from math import cos, radians, nan
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
 import numpy as np
@@ -353,24 +354,56 @@ def get_element_vertices(element: ifcopenshell.entity_instance, geometry: W.Tria
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
+# A curve used raw as a body representation item (e.g. an untrimmed IfcLine,
+# invalid per IFC's representation item rules) is unbounded. Backing geometry
+# kernels tessellate that as a vertex around their "practical infinity" value
+# (e.g. OCCT's Precision::Infinite() == 1e100) rather than a true float
+# infinity. No legitimate IFC model's coordinates come remotely close to this
+# magnitude, so treat it as a signal that the shape's representation is
+# degenerate rather than folding it into an elevation result.
+PRACTICAL_INFINITY = 1e50
+
+
+def _degenerate_elevation_warning(z_values: npt.NDArray[np.float64]) -> Optional[float]:
+    """Returns NaN with a warning if `z_values` contains a non-finite or practically-infinite
+
+    ordinate, otherwise returns None to indicate the values are safe to use.
+    """
+    if np.any(~np.isfinite(z_values)) or np.any(np.abs(z_values) >= PRACTICAL_INFINITY):
+        warnings.warn(
+            "Shape has a non-finite or practically-infinite Z ordinate, typically caused by an "
+            "unbounded curve (e.g. an untrimmed IfcLine) used directly as a body representation "
+            "item. The representation is likely invalid. Returning NaN instead of a meaningless "
+            "elevation value."
+        )
+        return nan
+    return None
+
+
 def get_bottom_elevation(geometry: W.Triangulation) -> float:
     """Gets the lowest local Z ordinate of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: The Z value
+    :return: The Z value, or NaN if the geometry has a non-finite ordinate
     """
     verts_flat = get_vertices(geometry).ravel()
-    return np.min(verts_flat[2::3]).item()
+    z_values = verts_flat[2::3]
+    if (result := _degenerate_elevation_warning(z_values)) is not None:
+        return result
+    return np.min(z_values).item()
 
 
 def get_top_elevation(geometry: W.Triangulation) -> float:
     """Gets the highest local Z ordinate of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: The Z value
+    :return: The Z value, or NaN if the geometry has a non-finite ordinate
     """
     verts_flat = get_vertices(geometry).ravel()
-    return np.max(verts_flat[2::3]).item()
+    z_values = verts_flat[2::3]
+    if (result := _degenerate_elevation_warning(z_values)) is not None:
+        return result
+    return np.max(z_values).item()
 
 
 def get_shape_bottom_elevation(shape: ShapeElementType, geometry: W.Triangulation) -> float:
@@ -381,9 +414,12 @@ def get_shape_bottom_elevation(shape: ShapeElementType, geometry: W.Triangulatio
 
     :param shape: Shape output calculated by IfcOpenShell
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: The Z value
+    :return: The Z value, or NaN if the shape has a non-finite ordinate
     """
-    return min([v[2] for v in get_shape_vertices(shape, geometry)])
+    z_values = get_shape_vertices(shape, geometry)[:, 2]
+    if (result := _degenerate_elevation_warning(z_values)) is not None:
+        return result
+    return np.min(z_values).item()
 
 
 def get_shape_top_elevation(shape: ShapeElementType, geometry: W.Triangulation) -> float:
@@ -394,9 +430,12 @@ def get_shape_top_elevation(shape: ShapeElementType, geometry: W.Triangulation) 
 
     :param shape: Shape output calculated by IfcOpenShell
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: The Z value
+    :return: The Z value, or NaN if the shape has a non-finite ordinate
     """
-    return max([v[2] for v in get_shape_vertices(shape, geometry)])
+    z_values = get_shape_vertices(shape, geometry)[:, 2]
+    if (result := _degenerate_elevation_warning(z_values)) is not None:
+        return result
+    return np.max(z_values).item()
 
 
 def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry: W.Triangulation) -> float:
@@ -407,9 +446,12 @@ def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: The Z value
+    :return: The Z value, or NaN if the element has a non-finite ordinate
     """
-    return min([v[2] for v in get_element_vertices(element, geometry)])
+    z_values = get_element_vertices(element, geometry)[:, 2]
+    if (result := _degenerate_elevation_warning(z_values)) is not None:
+        return result
+    return np.min(z_values).item()
 
 
 def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: W.Triangulation) -> float:
@@ -420,9 +462,12 @@ def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: W
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: The Z value
+    :return: The Z value, or NaN if the element has a non-finite ordinate
     """
-    return max([v[2] for v in get_element_vertices(element, geometry)])
+    z_values = get_element_vertices(element, geometry)[:, 2]
+    if (result := _degenerate_elevation_warning(z_values)) is not None:
+        return result
+    return np.max(z_values).item()
 
 
 def get_bbox(vertices: npt.NDArray[np.float64]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
