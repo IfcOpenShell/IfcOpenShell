@@ -1661,14 +1661,15 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
             bytype_excl_[ty]->push(instance);
         }
 
-        if (byid_.find(current_id) != byid_.end()) {
+        // byidentity_[instance->identity()] = instance;
+        if (!byid_.insert({(uint32_t) current_id, instance }).second) {
             std::stringstream ss;
             ss << "Overwriting instance with name #" << current_id;
             logger().Message(Logger::LOG_WARNING, "SYN", 18, ss.str());
-        }
 
-        // byidentity_[instance->identity()] = instance;
-        byid_.insert({(uint32_t) current_id, instance });
+            // insert() is a no-op on a duplicate key; instance is already referenced by byguid_/bytype_excl_ above, so keep it owned here instead of leaking it.
+            duplicate_id_instances_.emplace_back(instance);
+        }
 
         // @nb cannot assign to byid_;
         // byid_[current_id] = instance;
