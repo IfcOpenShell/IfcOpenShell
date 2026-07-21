@@ -409,6 +409,12 @@ class DocProperties(PropertyGroup):
         options=set(),
     )
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
+    show_drawings_on_sheets_only: BoolProperty(
+        name="Show Only Drawings on Sheets",
+        description="Only show drawings that are placed on a sheet",
+        default=False,
+        options=set(),
+    )
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
     target_view: EnumProperty(
@@ -439,6 +445,7 @@ class DocProperties(PropertyGroup):
         should_use_annotation_cache: bool
         should_draw_linked_projects: bool
         is_editing_drawings: bool
+        show_drawings_on_sheets_only: bool
         is_editing_schedules: bool
         is_editing_references: bool
         target_view: Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
