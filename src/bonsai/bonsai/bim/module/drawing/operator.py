@@ -2054,7 +2054,15 @@ class CreateDrawing(bpy.types.Operator):
                 For AXIS1/AXIS2 walls the full cross-section is always visible in plan,
                 so only exact/reversed/prefix/suffix matches are accepted — sharing only
                 an interior or exterior layer is not sufficient.
+
+                Elements with no material at all (empty tuple, e.g. IfcDoor) never
+                match anything, including each other: with an empty `short`, the
+                prefix/suffix checks below (`long_[:0] == ()`) would otherwise be
+                trivially true against any `long_`, wrongly treating "no material"
+                as a wildcard that matches every other element's material.
                 """
+                if not a or not b:
+                    return False
                 if a == b or a == b[::-1]:
                     return True
                 short, long_ = (a, b) if len(a) <= len(b) else (b, a)
