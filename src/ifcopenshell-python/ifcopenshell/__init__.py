@@ -379,12 +379,12 @@ def stream2(path: Union[Path, str], mmap: bool = False, page_size: int = 0):
         import builtins
 
         f = builtins.open(path, encoding="ascii")
-        strm = ifcopenshell_wrapper.InstanceStreamer()
-        strm.pushPage(f.read(page_size))
+        strm = ifcopenshell_wrapper.instance_streamer()
+        strm.push_page(f.read(page_size))
         finished = False
         while True:
-            while strm.hasSemicolon():
-                if inst := strm.readInstancePy():
+            while strm.has_semicolon():
+                if inst := strm.read_instance_py():
                     yield inst
                 else:
                     finished = True
@@ -393,13 +393,13 @@ def stream2(path: Union[Path, str], mmap: bool = False, page_size: int = 0):
                 break
             else:
                 if data := f.read(page_size):
-                    strm.pushPage(data)
+                    strm.push_page(data)
                 else:
                     break
     else:
-        streamer = ifcopenshell_wrapper.InstanceStreamer(str(path), mmap)
+        streamer = ifcopenshell_wrapper.instance_streamer(str(path), mmap)
         while streamer:
-            if inst := streamer.readInstancePy():
+            if inst := streamer.read_instance_py():
                 yield inst
 
 

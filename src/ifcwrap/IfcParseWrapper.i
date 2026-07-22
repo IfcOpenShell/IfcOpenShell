@@ -1306,7 +1306,7 @@ from .entity_instance import entity_instance_mixin as _entity_instance_mixin_bas
 %}
 
 %extend ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> {
-	PyObject* readInstancePy(bool type_as_declaration_instance=false) {
+	PyObject* read_instance_py(bool type_as_declaration_instance=false) {
 		auto simply_type_to_dictionary = [&](const express::Base& t) -> PyObject* {
 			const auto& nm = t.declaration().name();
 			auto ifc_val = t.get_attribute_value(0);
