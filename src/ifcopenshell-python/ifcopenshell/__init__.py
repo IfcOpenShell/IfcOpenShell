@@ -88,8 +88,6 @@ try:
 except Exception:
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
 
-# `_file`, `_stream` is used only for annotations inside this file,
-# see https://github.com/microsoft/pyright/discussions/9065.
 from . import guid
 from .ifcopenshell_wrapper import entity_instance, file
 from .file import rocksdb_lazy_instance
@@ -164,7 +162,7 @@ def open(
     *,
     should_stream: Literal[False] = False,
     logger: Optional[logger] = None,
-) -> Union[_file, sqlite]: ...
+) -> Union[file, sqlite]: ...
 @overload
 def open(
     path: Union[os.PathLike, str],
@@ -181,7 +179,7 @@ def open(
     should_stream: bool = False,
     readonly: bool = False,
     logger: Optional[logger] = None,
-) -> Union[_file, sqlite, _stream]: ...
+) -> Union[file, sqlite, _stream]: ...
 def open(
     path: Union[os.PathLike, str],
     format: SupportedFormat = None,
@@ -190,7 +188,7 @@ def open(
     mmap: bool = False,
     bypass_types: Optional[Sequence[str]] = None,
     logger: Optional[logger] = None,
-) -> Union[_file, sqlite, _stream]:
+) -> Union[file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
     :param should_stream: Whether to open the file in streaming mode. Could be useful
