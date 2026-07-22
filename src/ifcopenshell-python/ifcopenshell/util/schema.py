@@ -487,13 +487,13 @@ class Migrator:
         # IFC2X3 stand-in; non-element IFC4-only classes (rels, geometry items,
         # materials, times) still raise below.
         if not equivalent and new_file.schema == "IFC2X3" and self.fallback_element_to_proxy:
-            if self._is_subclass_of(ifc_class, "IfcElement", element.wrapped_data.file):
+            if self._is_subclass_of(ifc_class, "IfcElement", element.file):
                 equivalent = "IfcBuildingElementProxy"
-            elif self._is_subclass_of(ifc_class, "IfcElementType", element.wrapped_data.file):
+            elif self._is_subclass_of(ifc_class, "IfcElementType", element.file):
                 equivalent = "IfcBuildingElementProxyType"
 
         if not equivalent:
-            inverses = element.wrapped_data.file.get_inverse(element)
+            inverses = element.file.get_inverse(element)
             inverse_hint = ", ".join(f"#{i.id()}={i.is_a()}" for i in list(inverses)[:3])
             if len(inverses) > 3:
                 inverse_hint += f", … (+{len(inverses) - 3} more)"
