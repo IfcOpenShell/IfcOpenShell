@@ -158,7 +158,9 @@
 %ignore ContextIds;
 %ignore ContextTypes;
 %ignore ContextIdentifiers;
+%ignore ContextPriorities;
 %ignore OutputDimensionality;
+%ignore MaxVoidsPerElement;
 %ignore IteratorOutput;
 %ignore DisableOpeningSubtractions;
 %ignore ApplyDefaultMaterials;
