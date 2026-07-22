@@ -21,6 +21,8 @@ from typing import Any, Literal, Union
 from typing_extensions import Self
 
 import ifcopenshell
+from ifcopenshell.entity_instance import entity_instance_mixin
+from ifcopenshell.file import file_mixin
 
 # `std::vector<xxx>` usually translated to `tuple[xxx, ...]`.
 
@@ -873,7 +875,7 @@ class entity(declaration):
     def subtypes(self) -> tuple[entity, ...]: ...
     def supertype(self) -> Union[entity, None]: ...
 
-class entity_instance:
+class entity_instance(entity_instance_mixin):
     def __init__(self, *args, **kwargs): ...
     file: ifcopenshell.file
     """Reference to IFC file to prevent it's garbage collection, if entity is still used."""
@@ -966,7 +968,7 @@ class face:
     def matrix(self): ...
     def print_impl(self, o, indent): ...
 
-class file:
+class file(file_mixin):
     def FreshId(self): ...
     def __init__(self, *args): ...
     def add(self, entity: entity_instance, id: int = -1) -> entity_instance: ...

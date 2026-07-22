@@ -991,43 +991,21 @@ static bool express_Base_equals(const express::Base* self, const express::Base* 
 %include "../ifcparse/spf_header.h"
 
 %pythoncode %{
-### hack hack hack
-### we trick swig into inheriting from our own extension class
-### that way we do not constantly need to decorate/undecorate
-# @todo is there no official way to do this?
-_old_object = object
-from .file import file_mixin as custom_base
-object = custom_base
+from .file import file_mixin as _file_mixin_base
 %}
+%feature("python:abc", "_file_mixin_base") ifcopenshell::file;
 
 %include "../ifcparse/file.h"
 %template(instance_streamer) ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>;
 
-%pythoncode %{
-### hack hack hack
-### restore
-object = _old_object
-%}
-
 %include "../ifcparse/file_open_status.h"
 
 %pythoncode %{
-### hack hack hack
-### we trick swig into inheriting from our own extension class
-### that way we do not constantly need to decorate/undecorate
-# @todo is there no official way to do this?
-_old_object = object
-from .entity_instance import entity_instance_mixin as custom_base
-object = custom_base
+from .entity_instance import entity_instance_mixin as _entity_instance_mixin_base
 %}
+%feature("python:abc", "_entity_instance_mixin_base") express::Base;
 
 %include "../ifcparse/express.h"
-
-%pythoncode %{
-### hack hack hack
-### restore
-object = _old_object
-%}
 
 %include "../ifcparse/schema.h"
 %include "../serializers/RocksDbSerializer.h"
