@@ -211,7 +211,8 @@ exclude = [
 [tool.poe.tasks]
 
 dev-setup.sequence = [
-    {cmd = "uv sync"},
+    # 3.13 is chosen because it's the version used in the latest Bonsai.
+    {cmd = "uv sync --python 3.13"},
     {cmd = "uv pip install -e ./src/bsdd/"},
     {cmd = "uv pip install -e ./src/ifcopenshell-python/[advanced,dev]"},
     {cmd = "uv pip install -e ./src/ifcedit/"},
