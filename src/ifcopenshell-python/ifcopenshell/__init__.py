@@ -96,7 +96,18 @@ from .file import rocksdb_lazy_instance
 from .sql import sqlite, sqlite_entity
 
 get_log = ifcopenshell_wrapper.get_log
-logger = getattr(ifcopenshell_wrapper, "logger", None)
+logger = ifcopenshell_wrapper.logger if hasattr(ifcopenshell_wrapper, "logger") else None
+if hasattr(ifcopenshell_wrapper, "logger_or_root"):
+    logger_or_root = ifcopenshell_wrapper.logger_or_root
+else:
+
+    def logger_or_root(_logger: ifcopenshell_wrapper.logger | None) -> None:
+        return None
+
+
+# TODO: drop this function and all callsites after we migrate to the new build.
+def optional_logger_args(logger: ifcopenshell_wrapper.logger | None) -> tuple[logger] | tuple[()]:
+    return (logger,) if logger is not None else ()
 
 # explicitly specify available imported symbols
 # (it's a requirement for a typed library)
@@ -209,8 +220,7 @@ def open(
         raise FileNotFoundError(f"Path does not exist: '{path}'.")
     if format is None:
         format = guess_format(path)
-    if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
-        logger = logger_type.root()
+    logger = logger_or_root(logger)
     if format == ".ifcXML":
         f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()), *((logger,) if logger is not None else ()))
         if f:
@@ -229,11 +239,9 @@ def open(
     if should_stream:
         return stream(path)
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
-        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, *((logger,) if logger is not None else ()))
+        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, *optional_logger_args(logger))
     elif bypass_types:
-        f = ifcopenshell_wrapper.file(
-            ifcopenshell_wrapper.uninitialized_tag(), *((logger,) if logger is not None else ())
-        )
+        f = ifcopenshell_wrapper.file(ifcopenshell_wrapper.uninitialized_tag(), *optional_logger_args(logger))
         for ty in bypass_types:
             f.bypass_type(ty)
         if mmap:
@@ -248,7 +256,7 @@ def open(
             kwargs["logger"] = logger
         f = ifcopenshell_wrapper.open(str(path.absolute()), **kwargs)  # ty: ignore[unknown-argument]
     else:
-        f = ifcopenshell_wrapper.open(str(path.absolute()), False, *((logger,) if logger is not None else ()))
+        f = ifcopenshell_wrapper.open(str(path.absolute()), False, *optional_logger_args(logger))
 
     f.post_init()
 
