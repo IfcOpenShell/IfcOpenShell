@@ -208,6 +208,7 @@ class entity_instance_mixin:
 
         return value
 
+    # TODO: dead code? Since overridden by `__eq__` defined on `entity_instance`.
     def __eq__(self, other: entity_instance_mixin) -> bool:
         if not isinstance(other, entity_instance_mixin):
             if not self.is_entity():
