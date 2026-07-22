@@ -105,6 +105,11 @@ src/bonsai/bonsai/bim/data/webui/running_pid.json
 src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper*.so
 src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 
+# plugins
+src/ifcopenshell-python/ifcopenshell/ifcopenshell.document.*.so
+src/ifcopenshell-python/ifcopenshell/ifcopenshell.geometry.*.so
+src/ifcopenshell-python/ifcopenshell/ifcopenshell.parse.schema*.so
+
 # apple
 .DS_Store
 
