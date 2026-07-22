@@ -233,7 +233,7 @@ namespace {
     }
 }
 
-TtlWktSerializer::TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger)
+TtlWktSerializer::TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger)
     : WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
     , filename_(filename)
 {

@@ -16,7 +16,7 @@ private:
 
 	void write_streaming_();
 public:
-	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes = {}, ::logger& logger = ::logger::root());
+	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes = {}, ::logger* logger = nullptr);
 
 	virtual ~RocksDbSerializer() {}
 

@@ -53,7 +53,7 @@ static const uint32_t PRIM_TRIANGLE_FAN = 6;
 static const uint32_t ELEMENT_ARRAY_BUFFER = 34963;
 static const uint32_t ARRAY_BUFFER = 34962;
 
-GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger)
+GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger)
 	: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")

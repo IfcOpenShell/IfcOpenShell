@@ -1017,10 +1017,10 @@ from .entity_instance import entity_instance_mixin as _entity_instance_mixin_bas
 %newobject stream_from_string;
 
 %inline %{
-	ifcopenshell::file* open(const std::string& fn, bool readonly=false, logger& logger=::logger::root()) {
+	ifcopenshell::file* open(const std::string& fn, bool readonly=false, logger* logger=nullptr) {
 		ifcopenshell::file* f;
 		Py_BEGIN_ALLOW_THREADS;
-		f = new ifcopenshell::file(fn, ifcopenshell::FT_AUTODETECT, readonly, logger);
+		f = new ifcopenshell::file(fn, ifcopenshell::FT_AUTODETECT, readonly, logger_or_root(logger));
 		Py_END_ALLOW_THREADS;
 		return f;
 	}

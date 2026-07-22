@@ -36,7 +36,7 @@
 
 #include <math.h>
 
-USDSerializer::USDSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger):
+USDSerializer::USDSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger):
 	WriteOnlyGeometrySerializer(geometry_settings, settings, logger),
 	filename_(out_filename)
 {

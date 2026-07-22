@@ -22,6 +22,7 @@
 
 #include "../ifcgeom/Serializer.h"
 #include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcparse/logger.h"
 #include <fstream>
 
 namespace ifcopenshell {
@@ -346,8 +347,8 @@ class IFC_GEOM_API GeometrySerializer : public Serializer {
 public:
 	enum read_type { READ_BREP, READ_TRIANGULATION };
 
-    GeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger = ::logger::root())
-		: Serializer(logger)
+    GeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr)
+		: Serializer(logger_or_root(logger))
 		, geometry_settings_(geometry_settings)
 		, settings_(settings)
 	{}
@@ -381,7 +382,7 @@ protected:
 
 class IFC_GEOM_API WriteOnlyGeometrySerializer : public GeometrySerializer {
 public:
-	WriteOnlyGeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger = ::logger::root()) : GeometrySerializer(geometry_settings, settings, logger) {}
+	WriteOnlyGeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr) : GeometrySerializer(geometry_settings, settings, logger) {}
 
 	virtual IfcGeom::Element* read(ifcopenshell::file&, const std::string&, const std::string&, read_type = READ_BREP) {
 		throw std::runtime_error("Not supported");

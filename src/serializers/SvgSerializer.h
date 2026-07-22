@@ -597,7 +597,7 @@ protected:
 	subtract_before_project subtraction_settings_;
 
 public:
-	SvgSerializer(const stream_or_filename& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger = ::logger::root())
+	SvgSerializer(const stream_or_filename& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr)
 		: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
 		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())
