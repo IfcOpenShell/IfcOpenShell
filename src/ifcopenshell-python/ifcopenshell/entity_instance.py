@@ -379,8 +379,6 @@ class entity_instance_mixin:
 
         return return_type(_())
 
-    __dict__ = property(get_info)
-
     def get_info(
         self,
         include_identifier: bool = True,
@@ -400,3 +398,5 @@ class entity_instance_mixin:
         return self.get_info_py(
             include_identifier=include_identifier, recursive=recursive, return_type=return_type, ignore=ignore
         )
+
+    __dict__ = property(get_info)
