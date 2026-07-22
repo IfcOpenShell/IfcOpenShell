@@ -112,10 +112,14 @@ class Misc(bonsai.core.tool.Misc):
         reading data and never writing, to avoid the possibility of corrupting user preferences.
         """
 
+        # Byte offset of UserDef.user_menus within the UserDef C struct, per (major, minor)
+        # Blender version. Shifts whenever UserDef's fields change, so must be re-derived
+        # per version (e.g. from that Blender build's SDNA).
         OFFSET_USER_MENUS: dict[tuple[int, int], int] = {
             (4, 5): 10032,
             (5, 0): 10032,
             (5, 1): 10032,
+            (5, 2): 10800,
         }
 
         @classmethod
