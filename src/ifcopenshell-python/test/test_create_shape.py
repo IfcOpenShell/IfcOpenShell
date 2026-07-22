@@ -219,7 +219,7 @@ def test_iterator():
 def test_logging():
     assert ifcopenshell.logger
     logger = ifcopenshell.logger()
-    logger.OutputFormat(logger.FMT_INMEMORY)
+    logger.output_format(logger.FMT_INMEMORY)
     settings = ifcopenshell.geom.settings()
     f = ifcopenshell.open(fn)
     col = f.by_type("IfcColumn")[0]
