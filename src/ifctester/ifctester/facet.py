@@ -749,7 +749,7 @@ class Property(Facet):
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
                     elif prop_entity.is_a("IfcPhysicalSimpleQuantity"):
-                        prop_schema = prop_entity.declaration().as_entity()
+                        prop_schema = prop_entity.declaration.as_entity()
                         data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
 
                         if self.dataType and data_type.lower() != self.dataType.lower():

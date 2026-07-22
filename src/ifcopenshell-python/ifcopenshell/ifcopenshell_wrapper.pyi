@@ -765,6 +765,7 @@ class entity_instance(entity_instance_mixin):
     file_: Any
     id_: Any
     def data(self, *args): ...
+    @property
     def declaration(self) -> declaration: ...
     def file_pointer(self):
         """Internal IfcFile pointer address.

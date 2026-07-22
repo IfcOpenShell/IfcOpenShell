@@ -187,7 +187,7 @@ def import_attributes(
         info = {a.name(): None for a in attributes}
         info["type"] = element
     else:
-        assert (entity := element.declaration().as_entity())
+        assert (entity := element.declaration.as_entity())
         attributes = entity.all_attributes()
         info = element.get_info()
     for attribute in attributes:
