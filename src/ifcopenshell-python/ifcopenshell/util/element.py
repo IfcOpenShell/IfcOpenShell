@@ -958,7 +958,7 @@ def get_elements_by_profile(profile: ifcopenshell.entity_instance) -> set[ifcope
     :return: The elements using the profile.
     """
     ifc_file = profile.file
-    queue = list(ifc_file.get_inverse(profile))
+    queue = set(ifc_file.get_inverse(profile))
     processed: set[ifcopenshell.entity_instance] = set()
     representations: set[ifcopenshell.entity_instance] = set()
     while queue:
