@@ -15,6 +15,7 @@ Example usage:
 
 """
 
+import argparse
 import shutil
 import subprocess
 import sys
@@ -26,6 +27,17 @@ available_platforms = ("win32", "darwin", "linux")
 if sys.platform not in available_platforms:
     print(f"Currently only available on {', '.join(available_platforms)}. Not available on {sys.platform}.")
     exit(1)
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument(
+    "--skip-binaries",
+    action="store_true",
+    help=(
+        "Skip copying compiled dependencies (e.g. ifcopenshell_wrapper) to the repo. "
+        "Useful if you already have the latest binaries in the repo and don't want them to be overridden."
+    ),
+)
+args = parser.parse_args()
 
 # ---------------------------
 # SETTINGS.
@@ -125,17 +137,20 @@ def main() -> None:
         path.unlink()
     subprocess.check_call(("git", "checkout", "--", symlinks_glob), cwd=REPO_PATH)
 
-    print("Copying compiled dependencies to the repo...")
-    dest = REPO_PATH / "src" / "ifcopenshell-python" / "ifcopenshell"
-    for path in PACKAGE_PATH.glob("ifcopenshell/*_wrapper*"):
-        if path.suffix.lower() == ".pyi":
-            continue
-        dest_ = dest / path.name
-        print(f"Copying {path} -> {dest_}")
-        try:
-            shutil.copy(path, dest_)
-        except shutil.SameFileError:
-            pass
+    if args.skip_binaries:
+        print("Skipping copying compiled dependencies to the repo...")
+    else:
+        print("Copying compiled dependencies to the repo...")
+        dest = REPO_PATH / "src" / "ifcopenshell-python" / "ifcopenshell"
+        for path in PACKAGE_PATH.glob("ifcopenshell/*_wrapper*"):
+            if path.suffix.lower() == ".pyi":
+                continue
+            dest_ = dest / path.name
+            print(f"Copying {path} -> {dest_}")
+            try:
+                shutil.copy(path, dest_)
+            except shutil.SameFileError:
+                pass
 
     print("Symlinking extension to the git repo...")
     # fmt: off
