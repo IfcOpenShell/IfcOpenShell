@@ -107,7 +107,7 @@ def main(
     logger=None,
 ):
     if logger is None and ifcopenshell.logger is not None:
-        logger = ifcopenshell.logger.Root()
+        logger = ifcopenshell.logger.root()
 
     def by_guid(g):
         for f in files:

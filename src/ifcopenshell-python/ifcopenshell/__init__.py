@@ -210,7 +210,7 @@ def open(
     if format is None:
         format = guess_format(path)
     if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
-        logger = logger_type.Root()
+        logger = logger_type.root()
     if format == ".ifcXML":
         f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()), *((logger,) if logger is not None else ()))
         if f:

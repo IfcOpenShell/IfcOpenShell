@@ -304,7 +304,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
     ):
         self.settings = settings
         if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
-            logger = logger_type.Root()
+            logger = logger_type.root()
         if isinstance(file_or_filename, file):
             self.file = file
             file_or_filename = file_or_filename
