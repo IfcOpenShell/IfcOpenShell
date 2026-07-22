@@ -406,7 +406,7 @@ static bool express_Base_equals(const express::Base* self, const express::Base* 
 		return false;
 	} else if ((self->file() != other->file()) || (self->declaration().as_entity() == nullptr)) {
 		// PyGILState_STATE gil = PyGILState_Ensure();
-		// @todo get_info_2 is actually implemented in C++, so we try to call it directly
+		// @todo get_info is actually implemented in C++, so we try to call it directly
 		bool result = false;
 		PyObject *py_self  = SWIG_NewPointerObj(SWIG_as_voidptr(self),
                                             SWIGTYPE_p_express__Base, 0);
@@ -419,8 +419,8 @@ static bool express_Base_equals(const express::Base* self, const express::Base* 
 			PyDict_SetItemString(kwargs, "recursive", Py_True);
 			PyDict_SetItemString(kwargs, "include_identifier", Py_False);
 
-			PyObject *m1 = PyObject_GetAttrString(py_self,  "get_info_2");
-			PyObject *m2 = PyObject_GetAttrString(py_other, "get_info_2");
+			PyObject *m1 = PyObject_GetAttrString(py_self,  "get_info");
+			PyObject *m2 = PyObject_GetAttrString(py_other, "get_info");
 
 			PyObject *i1 = (m1 ? PyObject_Call(m1, args, kwargs) : nullptr);
 			PyObject *i2 = (m2 ? PyObject_Call(m2, args, kwargs) : nullptr);
@@ -429,7 +429,7 @@ static bool express_Base_equals(const express::Base* self, const express::Base* 
 				int eq = PyObject_RichCompareBool(i1, i2, Py_EQ);
 				result = (eq == 1);
 			} else {
-				// get_info_2 missing or threw; treat as not equal (and clear Python error).
+				// get_info missing or threw; treat as not equal (and clear Python error).
 				PyErr_Clear();
 			}
 

@@ -354,7 +354,7 @@ class IfcDiff:
         new_projections = sorted([o.RelatedFeatureElement.GlobalId for o in getattr(new, "HasProjections", []) or []])
         if old_projections != new_projections:
             return True
-        # Option 3: check completely using Python with get_info_2 (extremely slow, not worth it)
+        # Option 3: check completely using Python with get_info (extremely slow, not worth it)
         # old_rep_id = self.get_representation_id(old)
         # new_rep_id = self.get_representation_id(new)
         # rep_result = self.representation_ids.get(new_rep_id, None)
@@ -387,8 +387,8 @@ class IfcDiff:
             return True
         try:
             diff = DeepDiff(
-                old_item.get_info_2(recursive=True),
-                new_item.get_info_2(recursive=True),
+                old_item.get_info(recursive=True),
+                new_item.get_info(recursive=True),
                 custom_operators=[DiffTerminator()] if self.is_shallow else [],
                 math_epsilon=self.precision,
                 exclude_regex_paths=[r".*id']$"],

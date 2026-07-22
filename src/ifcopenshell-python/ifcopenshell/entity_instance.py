@@ -387,15 +387,15 @@ class entity_instance_mixin:
         return_type: type[dict] = dict,
         ignore: Sequence[str] = (),
     ) -> dict[str, Any]:
-        """More perfomant version of `.get_info()`.\n
-        Method has exactly the same signature as `.get_info()`, but the fast C++
+        """More perfomant version of `.get_info_py()`.\n
+        Method has exactly the same signature as `.get_info_py()`, but the fast C++
         path only implements ``recursive=True``, ``return_type=dict`` and
         ``ignore=()``. Any other combination falls back to the pure Python
-        `.get_info()`, where no meaningful performance gain is possible anyway
+        `.get_info_py()`, where no meaningful performance gain is possible anyway
         as the cost is dominated by the recursive traversal.
         """
         if recursive and return_type is dict and not ignore:
-            return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data, include_identifier)
+            return ifcopenshell_wrapper.get_info_cpp(self, recursive, include_identifier)
         return self.get_info_py(
             include_identifier=include_identifier, recursive=recursive, return_type=return_type, ignore=ignore
         )
