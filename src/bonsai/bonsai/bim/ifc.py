@@ -243,7 +243,7 @@ class IfcStore:
                     IfcStore.file = ifcopenshell.open(filename)
                     return
         elif extension.lower() == "ifcxml":
-            IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
+            raise NotImplementedError("Reading .ifcXML files is not currently supported.")
         elif prefs.should_stream:
             IfcStore.file = ifcopenshell.open(path, should_stream=True)
         else:

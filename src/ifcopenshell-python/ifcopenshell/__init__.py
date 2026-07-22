@@ -222,10 +222,7 @@ def open(
         format = guess_format(path)
     logger = logger_or_root(logger)
     if format == ".ifcXML":
-        f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()), *((logger,) if logger is not None else ()))
-        if f:
-            return file(f)
-        raise OSError(f"Failed to parse .ifcXML file from {path}")
+        raise NotImplementedError("Reading .ifcXML files is not currently supported.")
     if format == ".ifcZIP":
         with tempfile.TemporaryDirectory() as unzipped_path:
             with zipfile.ZipFile(path) as zf:
