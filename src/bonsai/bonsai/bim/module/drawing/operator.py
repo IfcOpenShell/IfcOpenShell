@@ -1949,6 +1949,20 @@ class CreateDrawing(bpy.types.Operator):
             (x0, y0), (x1, y1) = seg
             return (y0 + y1) / 2 if kind == "h" else (x0 + x1) / 2
 
+        def seg_length(seg):
+            """Return the Euclidean length of a parsed ((x0,y0),(x1,y1)) segment."""
+            (x0, y0), (x1, y1) = seg
+            return ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+
+        # IfcConvert's own linework export leaves a small number of
+        # near-zero-length path segments in the raw, untouched output (almost
+        # certainly floating-point noise from the underlying BRep boolean/cut
+        # operations for complex voids and infills) — these render as visible
+        # dots rather than lines. Measured on a real repro: confirmed artifacts
+        # up to ~0.0145 SVG units, confirmed genuine lines from ~2.83 units
+        # upward — MIN_VISIBLE_LENGTH sits with a large margin either side.
+        MIN_VISIBLE_LENGTH = 0.1
+
         def ivs_union(ivs):
             """Merge a list of (lo, hi) intervals into a non-overlapping sorted list."""
             merged = []
@@ -2530,6 +2544,16 @@ class CreateDrawing(bpy.types.Operator):
                     path_el = etree.SubElement(grp_el, f"{{{SVG}}}path")
                     (x0, y0), (x1, y1) = seg
                     path_el.set("d", f"M{x0},{y0} L{x1},{y1}")
+
+            # Strip any remaining near-zero-length path (see MIN_VISIBLE_LENGTH
+            # above) — a pre-existing IfcConvert artifact this pass's own
+            # matching logic doesn't create, so this runs unconditionally over
+            # every projection group here, independent of the round loop above.
+            for grp in proj_groups:
+                for path_el in grp.findall(f"{{{SVG}}}path"):
+                    line = parse_line(path_el.get("d", ""))
+                    if line is not None and seg_length(line) < MIN_VISIBLE_LENGTH:
+                        grp.remove(path_el)
 
     def drawing_to_model_co(self, x: float, y: float) -> Vector:
         camera_xy = np.array((x, -y)) / self.scale / 1000
