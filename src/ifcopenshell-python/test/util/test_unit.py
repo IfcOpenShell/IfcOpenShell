@@ -186,6 +186,50 @@ class TestConvert(test.bootstrap.IFC4):
         assert subject.convert(1, None, "SQUARE_METRE", "MILLI", "SQUARE_METRE") == 1000000
         assert subject.convert(1, None, "CUBIC_METRE", "MILLI", "CUBIC_METRE") == 1000000000
 
+    def test_a_nameless_unit_does_not_crash(self):
+        # Some third-party exporters (e.g. SolidWorks) write American unit
+        # spellings such as "METER" instead of the ISO "METRE", which is not
+        # a valid IfcSIUnitName and gets parsed as a None Name (#8885).
+        assert subject.convert(1, None, None, None, "METRE") == 1
+        assert subject.convert(1, None, "METRE", None, None) == 1
+        assert subject.convert(1, None, None, None, None) == 1
+
+
+class TestGetUnitSymbol(test.bootstrap.IFC4):
+    def test_run(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        assert subject.get_unit_symbol(length) == "m"
+
+    def test_a_nameless_unit_falls_back_to_a_placeholder_symbol(self):
+        # A schema-non-conformant unit with no Name, as produced by some
+        # third-party exporters writing e.g. "METER" instead of the ISO
+        # "METRE" (#8885). create_entity() permits omitting Name even though
+        # it is not officially optional for IfcSIUnit.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = self.file.create_entity("IfcSIUnit", UnitType="LENGTHUNIT")
+        assert length.Name is None
+        assert subject.get_unit_symbol(length) == "?"
+
+    def test_a_nameless_context_dependent_unit_falls_back_to_a_placeholder_symbol(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = self.file.create_entity("IfcContextDependentUnit", UnitType="USERDEFINED")
+        assert unit.Name is None
+        assert subject.get_unit_symbol(unit) == "?"
+
+
+class TestGetFullUnitName(test.bootstrap.IFC4):
+    def test_run(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        assert subject.get_full_unit_name(length) == "MILLIMETRE"
+
+    def test_a_nameless_unit_falls_back_to_unknown(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = self.file.create_entity("IfcSIUnit", UnitType="LENGTHUNIT")
+        assert length.Name is None
+        assert subject.get_full_unit_name(length) == "UNKNOWN"
+
 
 class TestCalculateUnitScale(test.bootstrap.IFC4):
     def test_prefix_and_conversion_based_units_are_considered(self):

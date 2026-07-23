@@ -395,7 +395,8 @@ def get_unit_name_universal(text: str) -> Union[str, None]:
 
 def get_full_unit_name(unit: ifcopenshell.entity_instance) -> str:
     prefix = getattr(unit, "Prefix", None) or ""
-    return prefix + unit.Name.upper()
+    # unit.Name may be None for a schema-non-conformant unit; fall back to "UNKNOWN".
+    return prefix + (unit.Name.upper() if unit.Name else "UNKNOWN")
 
 
 def get_si_dimensions(name):
@@ -622,12 +623,14 @@ def get_symbol_quantity_class(symbol: Optional[str] = None) -> QUANTITY_CLASS:
 
 
 def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
+    # unit.Name may be None for a schema-non-conformant unit; fall back to "?".
     symbol: str = ""
     if unit.is_a("IfcSIUnit"):
         symbol += prefix_symbols.get(unit.Prefix, "")
-    symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
+    name = unit.Name
+    symbol += unit_symbols.get(name.replace("METER", "METRE"), "?") if name else "?"
     if unit.is_a("IfcContextDependentUnit") and unit.UnitType == "USERDEFINED":
-        symbol = unit.Name
+        symbol = name or "?"
     return symbol
 
 
@@ -649,7 +652,13 @@ def mm_to_m(value: float) -> float:
     return value / 1000
 
 
-def convert(value: float, from_prefix: Optional[str], from_unit: str, to_prefix: Optional[str], to_unit: str) -> float:
+def convert(
+    value: float,
+    from_prefix: Optional[str],
+    from_unit: Optional[str],
+    to_prefix: Optional[str],
+    to_unit: Optional[str],
+) -> float:
     """Converts between length, area, and volume units
 
     In this case, you manually specify the names and (optionally) prefixes to
@@ -658,27 +667,30 @@ def convert(value: float, from_prefix: Optional[str], from_unit: str, to_prefix:
 
     :param value: The numeric value you want to convert
     :param from_prefix: A prefix from IfcSIPrefix. Can be None
-    :param from_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
+    :param from_unit: IfcSIUnitName or IfcConversionBasedUnit.Name. Can be
+        None for a schema-non-conformant unit, in which case no scaling is
+        applied for that side of the conversion.
     :param to_prefix: A prefix from IfcSIPrefix. Can be None
-    :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
+    :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name. Can be
+        None, see `from_unit`.
     :return: The converted value.
     """
-    if from_unit.lower() in si_conversions:
+    if from_unit and from_unit.lower() in si_conversions:
         value *= si_conversions[from_unit.lower()]
     elif from_prefix:
         value *= get_prefix_multiplier(from_prefix)
-        if "SQUARE" in from_unit:
+        if from_unit and "SQUARE" in from_unit:
             value *= get_prefix_multiplier(from_prefix)
-        elif "CUBIC" in from_unit:
+        elif from_unit and "CUBIC" in from_unit:
             value *= get_prefix_multiplier(from_prefix)
             value *= get_prefix_multiplier(from_prefix)
-    if to_unit.lower() in si_conversions:
+    if to_unit and to_unit.lower() in si_conversions:
         return value * (1 / si_conversions[to_unit.lower()])
     elif to_prefix:
         value *= 1 / get_prefix_multiplier(to_prefix)
-        if "SQUARE" in from_unit:
+        if from_unit and "SQUARE" in from_unit:
             value *= 1 / get_prefix_multiplier(to_prefix)
-        elif "CUBIC" in from_unit:
+        elif from_unit and "CUBIC" in from_unit:
             value *= 1 / get_prefix_multiplier(to_prefix)
             value *= 1 / get_prefix_multiplier(to_prefix)
     return value
