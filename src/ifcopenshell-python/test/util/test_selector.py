@@ -80,6 +80,9 @@ class TestFormat(test.bootstrap.IFC4):
         assert subject.format('imperial_length(3.0, 4, "foot", "foot", True)') == "3'"
         assert subject.format('imperial_length(3.0, 4, "foot", "foot", false)') == "3' - 0\""
         assert subject.format('imperial_length(3.0, 4, "foot", "foot", False)') == "3' - 0\""
+        # Non-numeric values must pass through unchanged instead of crashing (#5297).
+        assert subject.format('metric_length("N/A", 0.1, 1)') == "N/A"
+        assert subject.format('imperial_length("N/A", 2)') == "N/A"
 
     def test_variable_formatting(self):
         assert subject.format("{{undefined}}") is None
