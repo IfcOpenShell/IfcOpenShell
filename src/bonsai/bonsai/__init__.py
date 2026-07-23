@@ -73,6 +73,11 @@ def get_git_branch() -> Union[str, None]:
 # Accessed from bonsai extension:
 bbim_semver: dict[str, Any] = {}
 
+# Wheel filenames this Bonsai build was packaged with, as recorded in
+# blender_manifest.toml's wheels list at build time. Empty if it can't be
+# determined (e.g. running from source without a packaged manifest).
+bundled_wheel_filenames: list[str] = []
+
 # Accessed from bonsai dependency:
 last_error = None
 last_actions: deque = deque(maxlen=20)
@@ -115,6 +120,9 @@ def initialize_bbim_semver():
     global bbim_semver
     bbim_semver = re_version.groupdict()
     bbim_semver["version"] = version_str
+
+    global bundled_wheel_filenames
+    bundled_wheel_filenames = [Path(wheel).name for wheel in manifest.get("wheels", [])]
 
 
 def get_debug_info(*, bonsai_failed_to_load: bool = False) -> dict[str, Any]:
@@ -223,16 +231,161 @@ if IN_BLENDER:
 
     initialize_bbim_semver()
 
-    def get_binary_info() -> dict[str, Any]:
-        info = {}
+    def get_extensions_local_path() -> Path:
+        """Path to the shared site-packages Blender extracts extension dependencies into."""
         py_version = sys.version_info
-        site_path = (
+        return (
             Path(bpy.utils.user_resource("EXTENSIONS"))
             / ".local"
             / "lib"
             / f"python{py_version.major}.{py_version.minor}"
             / "site-packages"
         )
+
+    def _parse_wheel_filename(filename: str) -> Union[tuple[str, str], None]:
+        """Extract (distribution, version) from a wheel filename.
+
+        E.g. ifcopenshell-0.8.6a260716-py313-none-win_amd64.whl -> (ifcopenshell, 0.8.6a260716).
+        """
+        match = re.match(r"^([A-Za-z0-9_.]+)-([^-]+)-", filename)
+        if not match:
+            return None
+        return match.group(1), match.group(2)
+
+    def _dist_info_owned_paths(dist_info_dir: Path) -> set[str]:
+        """Paths (relative to site-packages) belonging to an installed wheel, read from its RECORD file."""
+        paths = {dist_info_dir.name}
+        record_path = dist_info_dir / "RECORD"
+        if record_path.exists():
+            with open(record_path, encoding="utf-8", errors="surrogateescape") as f:
+                for line in f:
+                    rel_path = line.split(",", 1)[0].strip().replace("\\", "/")
+                    top = rel_path.split("/", 1)[0]
+                    if top and top not in (".", ".."):
+                        paths.add(top)
+        # Some wheels ship a "{distribution}.libs" folder (e.g. bundled DLLs on Windows)
+        # that isn't listed in RECORD.
+        paths.add(dist_info_dir.name.split("-")[0] + ".libs")
+        return paths
+
+    def _remove_path_best_effort(target: Path) -> bool:
+        """Remove a file or directory tree, skipping anything that's locked.
+
+        Unlike ``shutil.rmtree``, this doesn't abort on the first locked file:
+        it removes everything it safely can, so a later retry (once whatever
+        was holding a lock is gone) has as little left to do as possible.
+        Returns False if anything couldn't be removed.
+        """
+        if not target.is_dir() or target.is_symlink():
+            try:
+                target.unlink()
+                return True
+            except OSError:
+                return False
+
+        ok = True
+        for child in target.iterdir():
+            if not _remove_path_best_effort(child):
+                ok = False
+        try:
+            target.rmdir()
+        except OSError:
+            ok = False
+        return ok
+
+    def _remove_installed_wheel(site_packages: Path, dist_info_dir: Path) -> bool:
+        """Remove a previously installed wheel's files.
+
+        Returns False if anything couldn't be removed, e.g. a DLL still locked
+        by another running Blender process.
+        """
+        ok = True
+        for rel_path in _dist_info_owned_paths(dist_info_dir):
+            target = site_packages / rel_path
+            if not target.exists():
+                continue
+            if not _remove_path_best_effort(target):
+                ok = False
+        return ok
+
+    def repair_stale_wheels() -> None:
+        """Detect and repair a shared site-packages holding different dependency versions
+        than this Bonsai build expects, before any of them (or Bonsai itself) get imported.
+
+        All extensions installed in Blender share a single site-packages folder for their
+        bundled wheels. Blender only re-syncs it on install/enable/disable events and doesn't
+        re-verify it on every startup, so it can end up holding versions this build was never
+        packaged with: e.g. a DLL was still locked by a running Blender process during an
+        update, or a different Bonsai variant (stable / unstable / a PR build) was enabled
+        more recently and wrote its own bundled versions into that same shared folder. Either
+        way, this build then fails with a confusing error far from the actual cause the next
+        time it starts.
+
+        This compares, purely on the file system (nothing is imported here, so nothing gets
+        locked by us), each bundled wheel's dist-info folder name against what this build's
+        manifest expects, and re-extracts our own bundled copy of anything that doesn't match.
+        """
+        if not bundled_wheel_filenames:
+            # Can't verify (e.g. running from source without a packaged manifest).
+            return
+
+        site_packages = get_extensions_local_path()
+        wheels_dir = Path(__file__).parent / "wheels"
+
+        repaired = []
+        blocked = []
+
+        for filename in bundled_wheel_filenames:
+            parsed = _parse_wheel_filename(filename)
+            if parsed is None:
+                continue
+            distribution, version = parsed
+            expected_dist_info = f"{distribution}-{version}.dist-info"
+
+            installed = [
+                m for m in site_packages.glob(f"{distribution}-*.dist-info") if m.name.split("-", 1)[0] == distribution
+            ]
+            if any(m.name == expected_dist_info for m in installed):
+                continue  # Already matches what this build expects.
+
+            wheel_path = wheels_dir / filename
+            if not wheel_path.exists():
+                # Our own bundled wheel is missing, nothing we can do about that here.
+                continue
+
+            ok = True
+            for stale_dist_info in installed:
+                if not _remove_installed_wheel(site_packages, stale_dist_info):
+                    ok = False
+
+            if not ok:
+                blocked.append(distribution)
+                continue
+
+            import zipfile
+
+            try:
+                with zipfile.ZipFile(wheel_path) as zf:
+                    zf.extractall(site_packages)
+            except OSError:
+                blocked.append(distribution)
+                continue
+
+            repaired.append(distribution)
+
+        if blocked:
+            raise RuntimeError(
+                "Bonsai installation repair blocked: "
+                f"could not update {', '.join(sorted(blocked))}, some of its files are still "
+                "locked (likely by another running Blender process)."
+            )
+
+        if repaired:
+            print(f"Bonsai repaired a partially-updated installation ({', '.join(sorted(repaired))}).")
+
+    def get_binary_info() -> dict[str, Any]:
+        info = {}
+        site_path = get_extensions_local_path()
         lib = site_path / "ifcopenshell"
         binary = next((i for i in lib.glob("_ifcopenshell_wrapper.*")), None)
         if binary is None:
@@ -275,6 +428,8 @@ if IN_BLENDER:
         update_commit_data()
 
     try:
+        repair_stale_wheels()
+
         import ifcopenshell.api
 
         def log_api(usecase_path, ifc_file, settings):
@@ -389,6 +544,19 @@ if IN_BLENDER:
                         box.label(text="installation from Blender extensions platform")
                         box.label(text="is not supported and you need to download")
                         box.label(text="and install Bonsai from the link below.")
+
+                if "Bonsai installation repair blocked" in (info.get("last_error") or ""):
+                    box.separator()
+                    # Bonsai tried to self-repair a stale/mismatched shared dependency (see
+                    # repair_stale_wheels) but some of its files are still locked, most likely
+                    # by another Blender process that's still running.
+                    box.label(text="Bonsai tried to repair its installation, but some files")
+                    box.label(text="are still locked by another running Blender process.")
+                    box.label(text="Close all Blender windows and start Blender again.")
+                    box.label(text="Bonsai will finish repairing itself on the next start.")
+                    box.label(text="If that keeps happening, delete this folder manually:")
+                    box.label(text=str(get_extensions_local_path().parent.parent.parent))
+                    box.label(text="then restart Blender and re-enable Bonsai.")
 
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")
