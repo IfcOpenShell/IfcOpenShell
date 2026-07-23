@@ -1137,6 +1137,11 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
 
     @classmethod
+    def is_layer3_capable_class(cls, ifc_class: str) -> bool:
+        """Classes whose single-extrusion body is edited as a LAYER3 profile."""
+        return ifc_class in ("IfcSlab", "IfcRoof", "IfcRamp", "IfcPlate")
+
+    @classmethod
     def get_wall_axis(
         cls, obj: bpy.types.Object, layers: Optional[MaterialLayerParameters] = None
     ) -> dict[str, list[Vector]]:
