@@ -1280,11 +1280,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.extend_profile(join_type="T")
 
         else:
-            # Extend LAYER2 walls to the underside of another selected element.
-            # Guard the selection here so an invalid combination (e.g. a column
-            # and a slab, with no wall involved) reports a clean end-user error
-            # instead of surfacing the nested operator's ERROR as a developer
-            # traceback (see #7454).
             walls = [
                 obj
                 for obj in bpy.context.selected_objects
@@ -1294,7 +1289,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.extend_walls_to_underside()
             else:
                 self.report(
-                    {"ERROR"}, "Please select at least one LAYER2 element and at least one other IFC element"
+                    {"ERROR"},
+                    "Extend to underside works with layered walls (LAYER2): "
+                    "select at least one wall plus the target element. "
+                    "Extending columns or similar elements is not supported yet.",
                 )
 
     def hotkey_S_F(self):
