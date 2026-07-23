@@ -1737,14 +1737,32 @@ class CreateDrawing(bpy.types.Operator):
             if aabb_contains(corners_b, corners_a):
                 adjacency_cache[key] = "contained_a"
                 return "contained_a"
-            # Coplanarity check: use the largest-face normal for each object.
+            # Coplanarity check: use the camera-facing normal for each object.
             # Area-weighted averages fail for slabs because top/bottom faces cancel.
+            # Picking the single largest-area polygon (instead of by camera
+            # alignment) fails for thin, elongated elements — e.g. a single
+            # masonry course modelled as its own thin sliver has more area on
+            # its top/bottom cap than on its front face, so the largest-area
+            # polygon's normal points along the wrong axis entirely (Z instead
+            # of the wall's actual facing direction), causing two genuinely
+            # coplanar, adjacent elements to be wrongly rejected. The face
+            # that actually matters for this check is whichever one is most
+            # nearly facing the camera — that's the plane the drawing is
+            # projecting, regardless of which polygon happens to have more
+            # raw area.
             def dominant_world_normal(obj):
                 mat3 = obj.matrix_world.to_3x3().normalized()
-                best = max(obj.data.polygons, key=lambda p: p.area, default=None)
-                if best is None or best.area < 1e-10:
-                    return None
-                return (mat3 @ best.normal).normalized()
+                best = None
+                best_score = -1.0
+                for p in obj.data.polygons:
+                    if p.area < 1e-10:
+                        continue
+                    n = (mat3 @ p.normal).normalized()
+                    score = abs(n.dot(_cam_look))
+                    if score > best_score:
+                        best_score = score
+                        best = n
+                return best
 
             n_a = dominant_world_normal(obj_a)
             n_b = dominant_world_normal(obj_b)
@@ -2136,205 +2154,295 @@ class CreateDrawing(bpy.types.Operator):
                                 style_ids.add(style.id())
                 return tuple(sorted(style_ids))
 
-            group_data = []
-            for grp in proj_groups:
-                guid = grp.get("{http://www.ifcopenshell.org/ns}guid", "")
-                cls = grp.get("class", "")
-                mat_key = get_material_key(guid)
-                face_mat_id = get_camera_face_layer_id(guid)
-                style_key = get_style_key(guid)
-                segs = []
-                all_paths = grp.findall(f"{{{SVG}}}path")
-                for path_el in all_paths:
-                    line = parse_line(path_el.get("d", ""))
-                    if line is not None:
-                        segs.append((path_el, line))
-                group_data.append((grp, mat_key, face_mat_id, style_key, segs, guid))
+            MAX_ROUNDS = 10
+            for _round in range(MAX_ROUNDS):
+                group_data = []
+                for grp in proj_groups:
+                    guid = grp.get("{http://www.ifcopenshell.org/ns}guid", "")
+                    cls = grp.get("class", "")
+                    mat_key = get_material_key(guid)
+                    face_mat_id = get_camera_face_layer_id(guid)
+                    style_key = get_style_key(guid)
+                    segs = []
+                    all_paths = grp.findall(f"{{{SVG}}}path")
+                    for path_el in all_paths:
+                        line = parse_line(path_el.get("d", ""))
+                        if line is not None:
+                            segs.append((path_el, line))
+                    group_data.append((grp, mat_key, face_mat_id, style_key, segs, guid))
 
-            to_remove = set()
-            # New path segments to add back: list of (grp_element, seg) pairs
-            to_add = []
+                to_remove = set()
+                # New path segments to add back: list of (grp_element, seg) pairs
+                to_add = []
 
-            for i, (grp_i, mat_i, face_i, style_i, segs_i, guid_i) in enumerate(group_data):
-                if mat_i is None:
-                    continue
-                for j, (grp_j, mat_j, face_j, style_j, segs_j, guid_j) in enumerate(group_data):
-                    if j <= i:
+                for i, (grp_i, mat_i, face_i, style_i, segs_i, guid_i) in enumerate(group_data):
+                    if mat_i is None:
                         continue
-                    if not mat_keys_match(mat_i, mat_j, face_i, face_j):
-                        continue
-                    if style_j != style_i:
-                        continue
-                    _copl_result = are_coplanar_and_adjacent(guid_i, guid_j)
-                    if not _copl_result:
-                        continue
-                    matched = 0
+                    for j, (grp_j, mat_j, face_j, style_j, segs_j, guid_j) in enumerate(group_data):
+                        if j <= i:
+                            continue
+                        if not mat_keys_match(mat_i, mat_j, face_i, face_j):
+                            continue
+                        if style_j != style_i:
+                            continue
+                        _copl_result = are_coplanar_and_adjacent(guid_i, guid_j)
+                        if not _copl_result:
+                            continue
+                        matched = 0
 
-                    _is_contained = _copl_result in ("contained_a", "contained_b")
-                    _is_same_surface = (_copl_result == "same_surface")
+                        _is_contained = _copl_result in ("contained_a", "contained_b")
+                        _is_same_surface = (_copl_result == "same_surface")
 
-                    # Group each element's segments by axis-aligned line.
-                    # All segments on the same line (within TOL) are merged into a
-                    # single interval union before computing the shared portion.
-                    # This correctly handles cases where one element has a single
-                    # long edge while the other has multiple shorter segments on
-                    # the same line (e.g. an L-shaped element).
-                    def group_by_line(segs):
-                        d = {}
-                        for path_el, seg in segs:
-                            key = seg_line_key(seg)
-                            if key is None:
+                        # Group each element's segments by axis-aligned line.
+                        # All segments on the same line (within TOL) are merged into a
+                        # single interval union before computing the shared portion.
+                        # This correctly handles cases where one element has a single
+                        # long edge while the other has multiple shorter segments on
+                        # the same line (e.g. an L-shaped element).
+                        def group_by_line(segs):
+                            d = {}
+                            for path_el, seg in segs:
+                                key = seg_line_key(seg)
+                                if key is None:
+                                    continue
+                                if key not in d:
+                                    d[key] = {"paths": [], "ivs": [], "coord": seg_axis_coord(seg, key[0])}
+                                d[key]["paths"].append(path_el)
+                                d[key]["ivs"].append(seg_interval(seg))
+                            return d
+
+                        lines_i = group_by_line(segs_i)
+                        lines_j = group_by_line(segs_j)
+                        bbox_i = segs_bbox(segs_i)
+                        bbox_j = segs_bbox(segs_j)
+
+                        # Track whether bilateral found shared keys but skipped them
+                        # due to offset overlap.  If so, both elements have explicit
+                        # segments at the shared line — the unilateral fallback must
+                        # not run for this pair (it would remove the same boundary
+                        # segments that bilateral correctly rejected).
+                        _bilateral_had_explicit_keys = False
+                        for key in set(lines_i) & set(lines_j):
+                            entry_i = lines_i[key]
+                            entry_j = lines_j[key]
+                            union_i = ivs_union(entry_i["ivs"])
+                            union_j = ivs_union(entry_j["ivs"])
+                            shared = ivs_intersect(union_i, union_j)
+                            if not shared:
                                 continue
-                            if key not in d:
-                                d[key] = {"paths": [], "ivs": [], "coord": seg_axis_coord(seg, key[0])}
-                            d[key]["paths"].append(path_el)
-                            d[key]["ivs"].append(seg_interval(seg))
-                        return d
-
-                    lines_i = group_by_line(segs_i)
-                    lines_j = group_by_line(segs_j)
-
-                    # Track whether bilateral found shared keys but skipped them
-                    # due to offset overlap.  If so, both elements have explicit
-                    # segments at the shared line — the unilateral fallback must
-                    # not run for this pair (it would remove the same boundary
-                    # segments that bilateral correctly rejected).
-                    _bilateral_had_explicit_keys = False
-                    for key in set(lines_i) & set(lines_j):
-                        entry_i = lines_i[key]
-                        entry_j = lines_j[key]
-                        union_i = ivs_union(entry_i["ivs"])
-                        union_j = ivs_union(entry_j["ivs"])
-                        shared = ivs_intersect(union_i, union_j)
-                        if not shared:
-                            continue
-                        _bilateral_had_explicit_keys = True
-                        # For contained pairs the ivs_equal full-extent guard is
-                        # skipped: a partial overlap between an outer element's long
-                        # edge and a physically-contained inner element's short edge
-                        # is still a genuine shared interface, not an offset-wall case.
-                        if not _is_contained and not _is_same_surface and not (ivs_equal(shared, union_i) or ivs_equal(shared, union_j)):
-                            continue
-                        matched += len(shared)
-                        kind = key[0]
-                        coord = entry_i["coord"]
-                        for path_el in entry_i["paths"]:
-                            to_remove.add(id(path_el))
-                        for path_el in entry_j["paths"]:
-                            to_remove.add(id(path_el))
-                        rem_i = ivs_subtract(union_i, shared)
-                        rem_j = ivs_subtract(union_j, shared)
-                        for lo, hi in rem_i:
-                            to_add.append((grp_i, make_seg(kind, coord, lo, hi)))
-                        for lo, hi in rem_j:
-                            to_add.append((grp_j, make_seg(kind, coord, lo, hi)))
-
-                    # Contained-pair purge: bilateral matching only removes a
-                    # segment when both elements draw an explicit segment at the
-                    # exact same line key. Contained "plug" elements are frequently
-                    # modelled as filling an actual notch/void cut into the outer
-                    # element, so BOTH sides independently draw that boundary —
-                    # but since each element's cut geometry is generated
-                    # separately, the two copies often land fractionally outside
-                    # bilateral's tight TOL and are never recognised as the same
-                    # line, surviving on both sides. Purge each side using a
-                    # geometric bbox test instead of an exact key match:
-                    #   - an inner segment strictly interior to the outer's bbox
-                    #     (not touching its edge) can only be a boundary against
-                    #     this outer element.
-                    #   - an outer segment lying on/within the inner's bbox
-                    #     footprint can only be the outer's own copy of the
-                    #     inner's boundary (tracing the void the inner fills).
-                    # Either way it's safe to remove — unless some other,
-                    # differently-materialed element also has a segment there, in
-                    # which case it's a genuine boundary against that third
-                    # element instead.
-                    if _is_contained:
-                        if _copl_result == "contained_a":
-                            inner_segs, outer_segs, inner_mat, inner_face = segs_i, segs_j, mat_i, face_i
-                        else:
-                            inner_segs, outer_segs, inner_mat, inner_face = segs_j, segs_i, mat_j, face_j
-
-                        def _blocked_by_other_material(key, lo, hi):
-                            for k, (grp_k, mat_k, face_k, style_k, segs_k, guid_k) in enumerate(group_data):
-                                if k == i or k == j or mat_k is None:
+                            _bilateral_had_explicit_keys = True
+                            # For contained pairs the ivs_equal full-extent guard is
+                            # skipped: a partial overlap between an outer element's long
+                            # edge and a physically-contained inner element's short edge
+                            # is still a genuine shared interface, not an offset-wall case.
+                            if not _is_contained and not _is_same_surface and not (ivs_equal(shared, union_i) or ivs_equal(shared, union_j)):
+                                continue
+                            matched += len(shared)
+                            kind = key[0]
+                            coord = entry_i["coord"]
+                            for path_el in entry_i["paths"]:
+                                to_remove.add(id(path_el))
+                            for path_el in entry_j["paths"]:
+                                to_remove.add(id(path_el))
+                            rem_i = ivs_subtract(union_i, shared)
+                            rem_j = ivs_subtract(union_j, shared)
+                            # For contained pairs, a partial bilateral match can leave a
+                            # remainder that isn't a genuine external edge either — e.g.
+                            # the inner element's own edge continuing past the matched
+                            # overlap into territory the outer element simply doesn't
+                            # draw its own copy for. If the remainder's line is
+                            # strictly interior to the OTHER element's bbox (not just
+                            # touching its boundary), it's still an interior seam and
+                            # must not be re-added as a visible line.
+                            for lo, hi in rem_i:
+                                seg = make_seg(kind, coord, lo, hi)
+                                if _is_contained and bbox_j and seg_strictly_interior_to(seg, bbox_j):
                                     continue
-                                if mat_keys_match(inner_mat, mat_k, inner_face, face_k):
+                                to_add.append((grp_i, seg))
+                            for lo, hi in rem_j:
+                                seg = make_seg(kind, coord, lo, hi)
+                                if _is_contained and bbox_i and seg_strictly_interior_to(seg, bbox_i):
                                     continue
-                                for _, other_seg in segs_k:
-                                    if seg_line_key(other_seg) != key:
+                                to_add.append((grp_j, seg))
+
+                        # Contained-pair purge: bilateral matching only removes a
+                        # segment when both elements draw an explicit segment at the
+                        # exact same line key. Contained "plug" elements are frequently
+                        # modelled as filling an actual notch/void cut into the outer
+                        # element, so BOTH sides independently draw that boundary —
+                        # but since each element's cut geometry is generated
+                        # separately, the two copies often land fractionally outside
+                        # bilateral's tight TOL and are never recognised as the same
+                        # line, surviving on both sides. Purge each side using a
+                        # geometric bbox test instead of an exact key match:
+                        #   - an inner segment strictly interior to the outer's bbox
+                        #     (not touching its edge) can only be a boundary against
+                        #     this outer element.
+                        #   - an outer segment lying on/within the inner's bbox
+                        #     footprint can only be the outer's own copy of the
+                        #     inner's boundary (tracing the void the inner fills).
+                        # Either way it's safe to remove — unless some other,
+                        # differently-materialed element also has a segment there, in
+                        # which case it's a genuine boundary against that third
+                        # element instead.
+                        if _is_contained:
+                            if _copl_result == "contained_a":
+                                inner_segs, outer_segs, inner_mat, inner_face = segs_i, segs_j, mat_i, face_i
+                                inner_lines, outer_lines = lines_i, lines_j
+                                outer_grp = grp_j
+                            else:
+                                inner_segs, outer_segs, inner_mat, inner_face = segs_j, segs_i, mat_j, face_j
+                                inner_lines, outer_lines = lines_j, lines_i
+                                outer_grp = grp_i
+
+                            def _blocked_by_other_material(key, lo, hi):
+                                for k, (grp_k, mat_k, face_k, style_k, segs_k, guid_k) in enumerate(group_data):
+                                    if k == i or k == j or mat_k is None:
+                                        continue
+                                    if mat_keys_match(inner_mat, mat_k, inner_face, face_k):
+                                        continue
+                                    for _, other_seg in segs_k:
+                                        if seg_line_key(other_seg) != key:
+                                            continue
+                                        o_lo, o_hi = seg_interval(other_seg)
+                                        if min(hi, o_hi) - max(lo, o_lo) > TOL:
+                                            return True
+                                return False
+
+                            bbox_outer = segs_bbox(outer_segs)
+                            bbox_inner = segs_bbox(inner_segs)
+
+                            def _outer_confirms_continuation(kind, coord, lo, hi):
+                                """True if the outer element has its own segment, on the
+                                same line orientation, positioned beyond this candidate
+                                line on the side away from the inner element's own
+                                footprint, whose running interval overlaps this
+                                candidate's — i.e. real outer material genuinely
+                                continues past this line for this same span.
+
+                                Without this, a candidate is judged purgeable purely
+                                because its coordinate falls inside the outer's overall
+                                bbox range — which can't distinguish a genuine interior
+                                seam from the inner element's own real perimeter edge
+                                that simply happens to fall inside that range (e.g. a
+                                material-layer/fascia edge that two independently
+                                generated, adjacent panels each draw at their own
+                                slightly different position).
+                                """
+                                if kind == "h":
+                                    away_is_lower = abs(coord - bbox_inner[2]) <= abs(coord - bbox_inner[3])
+                                else:
+                                    away_is_lower = abs(coord - bbox_inner[0]) <= abs(coord - bbox_inner[1])
+                                for _, other_seg in outer_segs:
+                                    other_key = seg_line_key(other_seg)
+                                    if other_key is None or other_key[0] != kind:
+                                        continue
+                                    o_coord = seg_axis_coord(other_seg, kind)
+                                    if away_is_lower and o_coord >= coord - TOL:
+                                        continue
+                                    if not away_is_lower and o_coord <= coord + TOL:
                                         continue
                                     o_lo, o_hi = seg_interval(other_seg)
                                     if min(hi, o_hi) - max(lo, o_lo) > TOL:
                                         return True
-                            return False
+                                return False
 
-                        bbox_outer = segs_bbox(outer_segs)
-                        bbox_inner = segs_bbox(inner_segs)
-                        if bbox_outer:
-                            for path_el, seg in inner_segs:
-                                if id(path_el) in to_remove:
-                                    continue
-                                if not seg_strictly_interior_to(seg, bbox_outer):
-                                    continue
-                                key = seg_line_key(seg)
-                                if key is None:
-                                    continue
-                                lo, hi = seg_interval(seg)
-                                if not _blocked_by_other_material(key, lo, hi):
+                            if bbox_outer:
+                                for path_el, seg in inner_segs:
+                                    if id(path_el) in to_remove:
+                                        continue
+                                    if not seg_strictly_interior_to(seg, bbox_outer):
+                                        continue
+                                    key = seg_line_key(seg)
+                                    # If the outer element independently draws its own
+                                    # real edge on this exact line, bilateral matching
+                                    # (above) has already made the correct call for it
+                                    # (removed it if genuinely overlapping, left it
+                                    # alone if merely colinear-adjacent). Re-purging it
+                                    # here with a cruder bbox test can delete a real
+                                    # external edge that just happens to run through
+                                    # the outer's bbox range (e.g. two colinear,
+                                    # end-to-end perimeter segments on either side of
+                                    # the contained element).
+                                    if key is None or key in outer_lines:
+                                        continue
+                                    lo, hi = seg_interval(seg)
+                                    if not _outer_confirms_continuation(key[0], seg_axis_coord(seg, key[0]), lo, hi):
+                                        continue
+                                    if not _blocked_by_other_material(key, lo, hi):
+                                        to_remove.add(id(path_el))
+                                        matched += 1
+                            if bbox_inner and bbox_outer:
+                                for path_el, seg in outer_segs:
+                                    if id(path_el) in to_remove:
+                                        continue
+                                    if not seg_within_bbox(seg, bbox_inner):
+                                        continue
+                                    # Exclude the outer's own true perimeter (e.g. the
+                                    # inner touches/spans flush to one side of the
+                                    # outer): only purge segments that are also
+                                    # strictly interior to the outer's own bbox, never
+                                    # ones sitting on the outer's real outer edge.
+                                    if not seg_strictly_interior_to(seg, bbox_outer):
+                                        continue
+                                    key = seg_line_key(seg)
+                                    # Same deference as above: if the inner element has
+                                    # its own independent edge on this exact line,
+                                    # bilateral has already handled it correctly.
+                                    if key is None or key in inner_lines:
+                                        continue
+                                    lo, hi = seg_interval(seg)
+                                    if _blocked_by_other_material(key, lo, hi):
+                                        continue
+                                    # An outer segment can be one continuous real edge
+                                    # (e.g. a long wall's corner line) that merely
+                                    # passes near/through a small contained element's
+                                    # footprint without being confined to it. Only
+                                    # remove the portion that actually overlaps the
+                                    # inner element's own extent along this line, and
+                                    # keep whatever sticks out beyond it.
+                                    kind = key[0]
+                                    inner_extent = (bbox_inner[0], bbox_inner[1]) if kind == "h" else (bbox_inner[2], bbox_inner[3])
+                                    overlap = ivs_intersect([(lo, hi)], [inner_extent])
+                                    if not overlap:
+                                        continue
                                     to_remove.add(id(path_el))
                                     matched += 1
-                        if bbox_inner and bbox_outer:
-                            for path_el, seg in outer_segs:
-                                if id(path_el) in to_remove:
-                                    continue
-                                if not seg_within_bbox(seg, bbox_inner):
-                                    continue
-                                # Exclude the outer's own true perimeter (e.g. the
-                                # inner touches/spans flush to one side of the
-                                # outer): only purge segments that are also
-                                # strictly interior to the outer's own bbox, never
-                                # ones sitting on the outer's real outer edge.
-                                if not seg_strictly_interior_to(seg, bbox_outer):
-                                    continue
-                                key = seg_line_key(seg)
-                                if key is None:
-                                    continue
-                                lo, hi = seg_interval(seg)
-                                if not _blocked_by_other_material(key, lo, hi):
-                                    to_remove.add(id(path_el))
-                                    matched += 1
+                                    coord = seg_axis_coord(seg, kind)
+                                    for r_lo, r_hi in ivs_subtract([(lo, hi)], overlap):
+                                        to_add.append((outer_grp, make_seg(kind, coord, r_lo, r_hi)))
 
-                    # Unilateral fallback: when one element's shared edge is implicit
-                    # (not explicitly drawn as a path segment), segments from the other
-                    # element that lie on the boundary of that element's SVG bbox are
-                    # still on the shared face and should be removed.
-                    # Not applicable to contained pairs (the interior purge pass above
-                    # and bilateral matching handle their shared interface; unilateral
-                    # would over-remove here).
-                    elif matched == 0 and not _bilateral_had_explicit_keys and segs_i and segs_j:
-                        bbox_i = segs_bbox(segs_i)
-                        bbox_j = segs_bbox(segs_j)
-                        if bbox_i and bbox_j:
-                            for path_j, line_j in segs_j:
-                                if seg_on_boundary_of(line_j, bbox_i, bbox_j):
-                                    to_remove.add(id(path_j))
-                                    matched += 1
-                            for path_i, line_i in segs_i:
-                                if seg_on_boundary_of(line_i, bbox_j, bbox_i):
-                                    to_remove.add(id(path_i))
-                                    matched += 1
+                        # Unilateral fallback: when one element's shared edge is implicit
+                        # (not explicitly drawn as a path segment), segments from the other
+                        # element that lie on the boundary of that element's SVG bbox are
+                        # still on the shared face and should be removed.
+                        # Not applicable to contained pairs (the interior purge pass above
+                        # and bilateral matching handle their shared interface; unilateral
+                        # would over-remove here).
+                        elif matched == 0 and not _bilateral_had_explicit_keys and segs_i and segs_j:
+                            if bbox_i and bbox_j:
+                                for path_j, line_j in segs_j:
+                                    if seg_on_boundary_of(line_j, bbox_i, bbox_j):
+                                        to_remove.add(id(path_j))
+                                        matched += 1
+                                for path_i, line_i in segs_i:
+                                    if seg_on_boundary_of(line_i, bbox_j, bbox_i):
+                                        to_remove.add(id(path_i))
+                                        matched += 1
 
-            if to_remove:
-                for grp, mat, face, style, segs, guid in group_data:
-                    for path_el, _ in segs:
-                        if id(path_el) in to_remove:
-                            grp.remove(path_el)
+                if not to_remove and not to_add:
+                    break
 
-            for grp_el, seg in to_add:
-                path_el = etree.SubElement(grp_el, f"{{{SVG}}}path")
-                (x0, y0), (x1, y1) = seg
-                path_el.set("d", f"M{x0},{y0} L{x1},{y1}")
+                if to_remove:
+                    for grp, mat, face, style, segs, guid in group_data:
+                        for path_el, _ in segs:
+                            if id(path_el) in to_remove:
+                                grp.remove(path_el)
+
+                for grp_el, seg in to_add:
+                    path_el = etree.SubElement(grp_el, f"{{{SVG}}}path")
+                    (x0, y0), (x1, y1) = seg
+                    path_el.set("d", f"M{x0},{y0} L{x1},{y1}")
 
     def drawing_to_model_co(self, x: float, y: float) -> Vector:
         camera_xy = np.array((x, -y)) / self.scale / 1000
