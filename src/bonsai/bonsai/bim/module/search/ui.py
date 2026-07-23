@@ -53,6 +53,9 @@ class BIM_PT_search(Panel):
 
         props = tool.Search.get_search_props()
 
+        row = self.layout.row(align=True)
+        row.operator("bim.filter_from_selection", icon="EYEDROPPER")
+
         bonsai.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "search")
 
         if len(props.filter_groups):
