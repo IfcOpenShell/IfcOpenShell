@@ -2155,6 +2155,20 @@ class CreateDrawing(bpy.types.Operator):
                 return tuple(sorted(style_ids))
 
             MAX_ROUNDS = 10
+            # Persists across rounds (unlike everything derived from group_data,
+            # which is rebuilt fresh each round): tracks every (guid, line_key)
+            # whose entire presence at that line was consumed down to nothing
+            # by a bilateral match in an earlier round. Once an element has
+            # nothing left at a line key, it can never legitimately reappear as
+            # a "shared edge" claimant there again — a later round only still
+            # sees a segment at that key because a *different* element also has
+            # geometry there (e.g. a hole cut all the way to a shared wall
+            # boundary leaves the neighbour's edge as the only copy of that
+            # boundary). Without this, the unilateral fallback's cruder bbox
+            # heuristic re-examines such a remainder in a later round and wrongly
+            # treats the drained element's now-empty bbox range as if it still
+            # justified removing the neighbour's real, permanent edge.
+            _drained_keys = set()
             for _round in range(MAX_ROUNDS):
                 group_data = []
                 for grp in proj_groups:
@@ -2246,6 +2260,13 @@ class CreateDrawing(bpy.types.Operator):
                                 to_remove.add(id(path_el))
                             rem_i = ivs_subtract(union_i, shared)
                             rem_j = ivs_subtract(union_j, shared)
+                            # Record when this match consumes an element's entire
+                            # presence at this line key, leaving nothing behind — see
+                            # _drained_keys above for why this matters to unilateral.
+                            if not rem_i:
+                                _drained_keys.add((guid_i, key))
+                            if not rem_j:
+                                _drained_keys.add((guid_j, key))
                             # For contained pairs, a partial bilateral match can leave a
                             # remainder that isn't a genuine external edge either — e.g.
                             # the inner element's own edge continuing past the matched
@@ -2422,10 +2443,22 @@ class CreateDrawing(bpy.types.Operator):
                         elif matched == 0 and not _bilateral_had_explicit_keys and segs_i and segs_j:
                             if bbox_i and bbox_j:
                                 for path_j, line_j in segs_j:
+                                    # If guid_i's own presence at this exact line was
+                                    # already fully drained by an earlier bilateral
+                                    # match, its bbox range can no longer be trusted as
+                                    # justification for "guid_i extends past this edge,
+                                    # so it's a duplicate" — that match already gave its
+                                    # final answer for this line (e.g. a hole cut
+                                    # through to a shared wall boundary leaves the
+                                    # neighbour's edge as the only, permanent copy).
+                                    if (guid_i, seg_line_key(line_j)) in _drained_keys:
+                                        continue
                                     if seg_on_boundary_of(line_j, bbox_i, bbox_j):
                                         to_remove.add(id(path_j))
                                         matched += 1
                                 for path_i, line_i in segs_i:
+                                    if (guid_j, seg_line_key(line_i)) in _drained_keys:
+                                        continue
                                     if seg_on_boundary_of(line_i, bbox_j, bbox_i):
                                         to_remove.add(id(path_i))
                                         matched += 1
