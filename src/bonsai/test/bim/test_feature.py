@@ -453,6 +453,7 @@ def i_trigger_operator(operator):
 @then(parsers.parse('I see "{text}"'))
 def i_see_text(text):
     assert panel_spy
+    text = replace_variables(text)
     panel_spy.refresh_spy()
     assert [l for l in panel_spy.spied_labels if text in l], f"Text {text} not found in {panel_spy.spied_labels}"
 
@@ -587,6 +588,7 @@ def i_select_the_row_where_i_see_text_in_the_nth_list(text, nth):
 @then(parsers.parse('I don\'t see "{text}"'))
 def i_dont_see_text(text):
     assert panel_spy
+    text = replace_variables(text)
     panel_spy.refresh_spy()
     assert not [l for l in panel_spy.spied_labels if text in l], f"Text {text} found in {panel_spy.spied_labels}"
 
@@ -1073,6 +1075,7 @@ def then_the_object_name_is_placed_in_the_collection_collection(name: str, colle
 @given(parsers.parse('additionally the object "{name}" is selected'))
 @when(parsers.parse('additionally the object "{name}" is selected'))
 def additionally_the_object_name_is_selected(name):
+    name = replace_variables(name)
     obj = bpy.context.scene.objects.get(name)
     if not obj:
         total = len(bpy.context.scene.objects)
@@ -1153,6 +1156,7 @@ def nothing_happens():
 @when(parsers.parse('the object "{name}" exists'))
 @then(parsers.parse('the object "{name}" exists'))
 def the_object_name_exists(name: str) -> bpy.types.Object:
+    name = replace_variables(name)
     # Some objects from linked collections may share the same name. This disambiguates them.
     if name.startswith("Col:"):
         _, collection_name, name = name.split(":")
@@ -1167,6 +1171,7 @@ def the_object_name_exists(name: str) -> bpy.types.Object:
 
 @then(parsers.parse('the object "{name}" does not exist'))
 def the_object_name_does_not_exist(name) -> None:
+    name = replace_variables(name)
     obj = bpy.data.objects.get(name)
     assert obj is None, f'The object "{name}" exists'
 
