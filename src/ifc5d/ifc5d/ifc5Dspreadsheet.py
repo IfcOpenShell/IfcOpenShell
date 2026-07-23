@@ -386,9 +386,22 @@ class Ifc5Dwriter:
                 "PredefinedType": cost_schedule.PredefinedType,
             }
 
-    # Bookkeeping columns needed for the .csv round trip (csv2ifc) but noise
-    # in presentation formats (.ods / .xlsx).
-    INTERNAL_COLUMNS = ("Id", "ItemIsASum", "Hierarchy", "Index", "Quantities")
+    # Presentation formats (.ods / .xlsx) mirror exactly what the Bonsai cost
+    # panel shows for a cost item: ID (Identification), Name, Quantity,
+    # Value (RateSubtotal) and the calculated Total Cost. Everything else
+    # (internal bookkeeping columns, Description, Unit, per-category cost
+    # breakdowns) is bonsai/csv2ifc round-trip plumbing and stays out of the
+    # presentation formats. The .csv format keeps the full column set since
+    # csv2ifc reads those extra columns back in on import.
+    PRESENTATION_COLUMNS = ("Identification", "Name", "Quantity", "RateSubtotal", "TotalPrice")
+
+    # Header text as shown in presentation formats, matching the Bonsai cost
+    # panel's own column labels (see BIM_UL_cost_items_trait.draw_header).
+    PRESENTATION_LABELS = {
+        "Identification": "ID",
+        "RateSubtotal": "Value",
+        "TotalPrice": "Total Cost",
+    }
 
     def multiply_cells(self, cell1, cell2):
         return "={}*{}".format(cell1, cell2)
@@ -397,15 +410,18 @@ class Ifc5Dwriter:
         return "=SUM({})".format(",".join(list_of_cells))
 
     def get_visible_headers(self, schedule_id: int) -> list[str]:
-        """Headers for presentation formats, without the internal bookkeeping columns."""
-        return [h for h in self.sheet_data[schedule_id]["headers"] if h not in self.INTERNAL_COLUMNS]
+        """Internal column keys shown in presentation formats, in panel order."""
+        headers = self.sheet_data[schedule_id]["headers"]
+        return [h for h in self.PRESENTATION_COLUMNS if h in headers]
+
+    def get_display_label(self, column: str) -> str:
+        """Header text to write for a column in presentation formats."""
+        return self.PRESENTATION_LABELS.get(column, column)
 
     def is_numeric_column(self, column: str) -> bool:
         return column in ("Quantity", "RateSubtotal", "TotalPrice") or column.endswith(" Cost")
 
-    def get_total_price_formula(
-        self, schedule_id: int, cost_item_index: int, first_data_row: int
-    ) -> Union[str, None]:
+    def get_total_price_formula(self, schedule_id: int, cost_item_index: int, first_data_row: int) -> Union[str, None]:
         """Spreadsheet formula for the TotalPrice cell of a cost item, or None for a plain value.
 
         Sum items get ``=SUM(...)`` over the TotalPrice cells of their direct
@@ -430,16 +446,9 @@ class Ifc5Dwriter:
                 total_col = col("TotalPrice")
                 return self.sum_cells(["{}{}".format(total_col, r) for r in child_rows])
             return None
-        if (
-            "Quantity" in headers
-            and "RateSubtotal" in headers
-            and item.get("Quantity")
-            and item.get("RateSubtotal")
-        ):
+        if "Quantity" in headers and "RateSubtotal" in headers and item.get("Quantity") and item.get("RateSubtotal"):
             row = first_data_row + cost_item_index
-            return self.multiply_cells(
-                "{}{}".format(col("Quantity"), row), "{}{}".format(col("RateSubtotal"), row)
-            )
+            return self.multiply_cells("{}{}".format(col("Quantity"), row), "{}{}".format(col("RateSubtotal"), row))
         return None
 
     def get_cell_position(self, schedule_id, attribute):
@@ -578,7 +587,7 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
 
         header_row = TableRow()
         for header in self.get_visible_headers(cost_schedule.id()):
-            add_cell(type="text", value=header, row=header_row, style="fed8b1")
+            add_cell(type="text", value=self.get_display_label(header), row=header_row, style="fed8b1")
         table.addElement(header_row)
 
         self.row_count = 5
@@ -616,7 +625,7 @@ class Ifc5DXlsxWriter(Ifc5Dwriter):
         title = re.sub(r"[\[\]:*?/\\]", "_", self.sheet_data[sheet_id]["Name"])[:31]
         worksheet = self.workbook.create_sheet(title)
         headers = self.get_visible_headers(sheet_id)
-        worksheet.append(headers)
+        worksheet.append([self.get_display_label(h) for h in headers])
 
         first_data_row = 2  # Row 1 is the header.
         for i, cost_item_data in enumerate(self.sheet_data[sheet_id]["cost_items"]):

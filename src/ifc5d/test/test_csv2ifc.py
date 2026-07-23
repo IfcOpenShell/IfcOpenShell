@@ -120,6 +120,34 @@ class TestCsv2Ifc:
             assert len(list(Path(temp_csv_dir).glob("*.ods"))) == 1
             assert len(list(Path(temp_csv_dir).glob("*.xlsx"))) == 1
 
+    def test_xlsx_columns_match_cost_panel(self):
+        """ODS/XLSX are presentation formats: they must show exactly what the
+        Bonsai cost panel shows (ID, Name, Quantity, Value, Total Cost), no
+        internal bookkeeping columns, no Description/Unit, no per-category
+        cost breakdown. See #6251."""
+        import openpyxl
+
+        ifc_file = self.setup_ifc_file()
+        csv_filepath = Path(__file__).parent.parent / "sample_cost_schedule_house_FR.csv"
+        ifc5d.csv2ifc.Csv2Ifc(str(csv_filepath), ifc_file).execute()
+
+        with tempfile.TemporaryDirectory("w") as temp_dir:
+            writer = ifc5d.ifc5Dspreadsheet.Ifc5DXlsxWriter(ifc_file, temp_dir)
+            writer.write()
+            workbook = openpyxl.load_workbook(next(Path(temp_dir).glob("*.xlsx")))
+            worksheet = workbook.active
+
+            headers = [cell.value for cell in next(worksheet.iter_rows())]
+            assert headers == ["ID", "Name", "Quantity", "Value", "Total Cost"]
+
+            # A leaf item (has quantity and value) gets Quantity * Value.
+            leaf_row = next(row for row in worksheet.iter_rows(min_row=2) if row[0].value == "DB.1.1")
+            assert leaf_row[4].value == "=C{}*D{}".format(leaf_row[0].row, leaf_row[0].row)
+
+            # A parent/sum item gets the sum of its direct children's Total Cost.
+            parent_row = next(row for row in worksheet.iter_rows(min_row=2) if row[0].value == "DB.1")
+            assert parent_row[4].value.startswith("=SUM(")
+
 
 class TestSerialiseCostQuantities:
     def test_quantity_name_with_special_characters_round_trips_as_json(self):
