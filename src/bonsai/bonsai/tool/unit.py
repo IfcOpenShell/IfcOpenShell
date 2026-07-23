@@ -34,14 +34,30 @@ import bonsai.tool as tool
 if TYPE_CHECKING:
     from bonsai.bim.module.unit.prop import BIMUnitProperties
 
+DISPLAY_LENGTH_CUSTOM_UNITS = {
+    "MILLIMETERS": "Millimeters",
+    "CENTIMETERS": "Centimeters",
+    "DECIMETERS": "Decimeters",
+    "METERS": "Meters",
+    "FEET_FRACTIONAL": "Feet and Inches - Fractional",
+    "FEET_DECIMAL": "Feet - Decimal",
+    "INCHES_FRACTIONAL": "Inches - Fractional",
+    "INCHES_DECIMAL": "Inches - Decimal",
+}
+
 
 class Unit(bonsai.core.tool.Unit):
     UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT", "MASSUNIT", "TIMEUNIT"]
 
-    @staticmethod
-    def format_distance(meters: float, use_imperial: bool = None, **kwargs) -> str:
+    @classmethod
+    def format_distance(cls, meters: float, use_imperial: bool = None, **kwargs) -> str:
         """
-        Format a distance value in meters to a string in the project's unit system.
+        Format a distance value in meters to a display string.
+
+        Lengths are formatted in the project's unit system unless the user
+        chose a different display length unit in the Units panel or the caller
+        passes an explicit ``custom_unit``. Display only, stored values are
+        never converted.
 
         :param meters: The distance value in meters
         :param use_imperial: If True, format as imperial; if False, format as metric; if None, auto-detect from scene
@@ -49,18 +65,20 @@ class Unit(bonsai.core.tool.Unit):
                     (hide_units, precision, decimal_places, etc.)
         :return: Formatted string with units
         """
-        # Import the comprehensive format_distance from the helper module
         from bonsai.bim.module.drawing import helper
 
-        # The comprehensive function expects value in scene units, not meters
-        # So we pass meters directly since it handles unit conversion internally
-        return helper.format_distance(
-            meters,
-            hide_units=kwargs.get("hide_units", False),
-            precision=kwargs.get("precision"),
-            decimal_places=kwargs.get("decimal_places"),
-            **kwargs,
-        )
+        kwargs.setdefault("hide_units", False)
+        if "custom_unit" not in kwargs and (custom_unit := cls.get_display_length_custom_unit()):
+            kwargs["custom_unit"] = custom_unit
+            kwargs.setdefault("suppress_zero_inches", True)
+            if custom_unit.startswith(("Feet", "Inches")) and kwargs.get("precision") is None:
+                kwargs["precision"] = tool.Blender.get_addon_preferences().doc.imperial_precision
+        return helper.format_distance(meters, **kwargs)
+
+    @classmethod
+    def get_display_length_custom_unit(cls) -> Union[str, None]:
+        """Map the display length unit preference to a format_distance custom unit, None means project unit."""
+        return DISPLAY_LENGTH_CUSTOM_UNITS.get(cls.get_unit_props().display_length_unit)
 
     @classmethod
     def parse_distance_string(cls, input_string: str, use_project_unit: bool = True) -> tuple[bool, float]:
