@@ -1,0 +1,25 @@
+{
+    "name": "IFC4X3 Space Areas - Boundary Annotations",
+    "description": "This ruleset copies areas measured from closed boundary annotation polygons (assigned with IfcRelAssignsToProduct) onto their spaces, so legally sensitive space areas follow an explicit measurement convention instead of being derived from geometry.",
+    "calculators": {
+        "Annotation": {
+            "IfcSpace": {
+                "Qto_SpaceBaseQuantities": {
+                    "FinishCeilingHeight": null,
+                    "FinishFloorHeight": null,
+                    "GrossCeilingArea": null,
+                    "GrossFloorArea": "get_boundary_area",
+                    "GrossPerimeter": null,
+                    "GrossVolume": null,
+                    "GrossWallArea": null,
+                    "Height": null,
+                    "NetCeilingArea": null,
+                    "NetFloorArea": null,
+                    "NetPerimeter": null,
+                    "NetVolume": null,
+                    "NetWallArea": null
+                }
+            }
+        }
+    }
+}
