@@ -272,6 +272,9 @@ def register():
     parametric_lifecycle.install_parametric_lifecycle_handlers()
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
+    # Global (not per-area) draw handler: covers viewports created or converted
+    # to VIEW_3D during the session too, see #3296.
+    handler.install_external_styles_draw_handler()
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
     bpy.types.Scene.BIMSnapProperties = bpy.props.PointerProperty(type=prop.BIMSnapProperties)
     bpy.types.Scene.BIMSnapGroups = bpy.props.PointerProperty(type=prop.BIMSnapGroups)
@@ -328,6 +331,7 @@ def unregister():
     unregister_classes(classes)
 
     parametric_lifecycle.uninstall_parametric_lifecycle_handlers()
+    handler.uninstall_external_styles_draw_handler()
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
     del bpy.types.Scene.BIMProperties
