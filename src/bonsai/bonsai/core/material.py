@@ -150,12 +150,20 @@ def assign_material(
         assigned_material = material_tool.get_material(element)
         assert assigned_material  # Type checker.
 
+        # Usages wrap the actual material set, unwrap it so an empty derived
+        # set (occurrence without a type) still gets its first layer/profile.
+        assigned_material_set = assigned_material
+        if assigned_material.is_a("IfcMaterialLayerSetUsage"):
+            assigned_material_set = assigned_material.ForLayerSet
+        elif assigned_material.is_a("IfcMaterialProfileSetUsage"):
+            assigned_material_set = assigned_material.ForProfileSet
+
         if material_tool.is_a_material_set(material):
             # Ensure set is a valid IFC.
             default_material = material_tool.get_default_material()
             material_tool.add_material_to_set(material_set=material, material=default_material)
-        elif material_tool.is_a_material_set(assigned_material):
-            material_tool.add_material_to_set(material_set=assigned_material, material=material)
+        elif material_tool.is_a_material_set(assigned_material_set):
+            material_tool.add_material_to_set(material_set=assigned_material_set, material=material)
         material_tool.ensure_material_assigned(
             elements=[element], material_type=element_material_type, material=material
         )
