@@ -534,7 +534,12 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         # Set duplicated type as active in current tool.
         if ifc_class in (i[0] for i in (bonsai.bim.helper.get_enum_items(props, "ifc_class", context) or ()) if i):
             props.ifc_class = new.is_a()
-            props.relating_type_id = str(tool.Blender.get_ifc_definition_id(new_obj))
+            # Guards the same enum/ifc_class race handled in
+            # bim/handler.py:update_bim_tool_props (see 233cc344fa).
+            try:
+                props.relating_type_id = str(tool.Blender.get_ifc_definition_id(new_obj))
+            except TypeError:
+                pass
         return {"FINISHED"}
 
     def invoke(self, context, event):

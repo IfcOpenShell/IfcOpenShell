@@ -565,7 +565,12 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = tool.Model.get_model_props()
-        props.relating_type_id = str(self.relating_type)
+        # Guards the same enum/ifc_class race already handled in
+        # bim/handler.py:update_bim_tool_props (see 233cc344fa).
+        try:
+            props.relating_type_id = str(self.relating_type)
+        except TypeError:
+            pass
 
 
 # TODO: not exposed to UI.
