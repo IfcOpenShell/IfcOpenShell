@@ -120,9 +120,7 @@ def get_or_create_ref_input(
     socket is used whichever side's expansion creates the link, with the plain
     Ref socket as the fallback for references without an inverse attribute.
     """
-    label = find_inverse_attribute_label(element, referencing)
-    if label is None:
-        return node.inputs["Ref"]
+    label = find_inverse_attribute_label(element, referencing) or "Ref"
     socket = node.inputs.get(label)
     if not socket:
         socket = node.inputs.new(SOCKET_TYPE, label)
@@ -172,8 +170,6 @@ def add_entity_node(tree: bpy.types.NodeTree, element: ifcopenshell.entity_insta
     node.width = NODE_WIDTH
     node.use_custom_color = True
     node.color = COLOR_RELATIONSHIP if element.is_a("IfcRelationship") else COLOR_DEFAULT
-    ref_socket = node.inputs.new(SOCKET_TYPE, "Ref")
-    ref_socket.link_limit = 0
     for key, value in get_scalar_rows(element):
         add_attribute_row(node, key, value)
     return node, True
@@ -250,7 +246,7 @@ def remove_link_and_orphaned_socket(
         if socket and not socket.is_linked:
             from_node.outputs.remove(socket)
     to_node = tree.nodes.get(to_name)
-    if to_node and to_socket_name != "Ref":
+    if to_node:
         socket = to_node.inputs.get(to_socket_name)
         if socket and not socket.is_linked:
             to_node.inputs.remove(socket)
