@@ -330,6 +330,14 @@ class BIMModelProperties(PropertyGroup):
     rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
     # Used for plan calculation points such as in room generation
     rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
+    # Used for spaces generated from the cursor, where there is no active object to take the height from
+    space_height: bpy.props.FloatProperty(
+        name="Height",
+        default=3,
+        min=0.001,
+        subtype="DISTANCE",
+        description="Height of spaces generated from the cursor",
+    )
     type_page: bpy.props.IntProperty(name="Type Page", default=1, min=1, update=update_type_page)
     x_angle: bpy.props.FloatProperty(
         name="X Angle",
@@ -419,6 +427,7 @@ class BIMModelProperties(PropertyGroup):
         rl1: float
         rl2: float
         rl3: float
+        space_height: float
         type_page: int
         x_angle: float
         type_name: str

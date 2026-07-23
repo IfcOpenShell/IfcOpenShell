@@ -907,14 +907,14 @@ class Spatial(bonsai.core.tool.Spatial):
         """
         `x`, `y` - from cursor;\n
         `z` - from default container Z location (if set);\n
-        `h` - default value of 3;\n
+        `h` - from the space height setting (default value of 3);\n
         `mat` - identity matrix
         """
         x, y, z = bpy.context.scene.cursor.location.xyz
         if tool.Root.get_default_container():
             z = tool.Root.get_default_container_elevation()
         mat = Matrix()
-        h = 3
+        h = tool.Model.get_model_props().space_height
         return x, y, z, h, mat
 
     @classmethod

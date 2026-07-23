@@ -86,6 +86,8 @@ class SpatialToolUI:
         row = cls.layout.row(align=True)
         row.prop(data=cls.model_props, property="rl3", text="RL")
         row = cls.layout.row(align=True)
+        row.prop(data=cls.model_props, property="space_height", text="Height")
+        row = cls.layout.row(align=True)
         op_name = lambda op: op.get_rna_type().name
         if AuthoringData.data["active_class"] == "IfcWall" and context.selected_objects:
             add_layout_hotkey(
