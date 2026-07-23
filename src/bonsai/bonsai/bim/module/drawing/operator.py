@@ -2189,6 +2189,41 @@ class CreateDrawing(bpy.types.Operator):
                 # New path segments to add back: list of (grp_element, seg) pairs
                 to_add = []
 
+                # Group each element's segments by axis-aligned line. All segments
+                # on the same line (within TOL) are merged into a single interval
+                # union before computing the shared portion. This correctly handles
+                # cases where one element has a single long edge while the other
+                # has multiple shorter segments on the same line (e.g. an L-shaped
+                # element). Computed once per round (from the round's unmodified
+                # group_data) and shared across every pair below, both for
+                # efficiency and so the multi-neighbour remainder accumulation
+                # further down has a stable, round-wide reference.
+                def group_by_line(segs):
+                    d = {}
+                    for path_el, seg in segs:
+                        key = seg_line_key(seg)
+                        if key is None:
+                            continue
+                        if key not in d:
+                            d[key] = {"paths": [], "ivs": [], "coord": seg_axis_coord(seg, key[0])}
+                        d[key]["paths"].append(path_el)
+                        d[key]["ivs"].append(seg_interval(seg))
+                    return d
+
+                lines_by_guid = {}
+                grp_by_guid = {}
+                for grp, mat, face, style, segs, guid in group_data:
+                    lines_by_guid[guid] = group_by_line(segs)
+                    grp_by_guid[guid] = grp
+
+                # Accumulates, per (guid, line_key), the union of every partner's
+                # matched interval this round — see the finalization pass below
+                # (after the (i, j) double loop) for why a single element's
+                # remainder can't be computed correctly pair-by-pair when more
+                # than one neighbour claims part of the same line in the same
+                # round.
+                _consumed = {}
+
                 for i, (grp_i, mat_i, face_i, style_i, segs_i, guid_i) in enumerate(group_data):
                     if mat_i is None:
                         continue
@@ -2207,26 +2242,8 @@ class CreateDrawing(bpy.types.Operator):
                         _is_contained = _copl_result in ("contained_a", "contained_b")
                         _is_same_surface = (_copl_result == "same_surface")
 
-                        # Group each element's segments by axis-aligned line.
-                        # All segments on the same line (within TOL) are merged into a
-                        # single interval union before computing the shared portion.
-                        # This correctly handles cases where one element has a single
-                        # long edge while the other has multiple shorter segments on
-                        # the same line (e.g. an L-shaped element).
-                        def group_by_line(segs):
-                            d = {}
-                            for path_el, seg in segs:
-                                key = seg_line_key(seg)
-                                if key is None:
-                                    continue
-                                if key not in d:
-                                    d[key] = {"paths": [], "ivs": [], "coord": seg_axis_coord(seg, key[0])}
-                                d[key]["paths"].append(path_el)
-                                d[key]["ivs"].append(seg_interval(seg))
-                            return d
-
-                        lines_i = group_by_line(segs_i)
-                        lines_j = group_by_line(segs_j)
+                        lines_i = lines_by_guid[guid_i]
+                        lines_j = lines_by_guid[guid_j]
                         bbox_i = segs_bbox(segs_i)
                         bbox_j = segs_bbox(segs_j)
 
@@ -2258,33 +2275,53 @@ class CreateDrawing(bpy.types.Operator):
                                 to_remove.add(id(path_el))
                             for path_el in entry_j["paths"]:
                                 to_remove.add(id(path_el))
-                            rem_i = ivs_subtract(union_i, shared)
-                            rem_j = ivs_subtract(union_j, shared)
-                            # Record when this match consumes an element's entire
-                            # presence at this line key, leaving nothing behind — see
-                            # _drained_keys above for why this matters to unilateral.
-                            if not rem_i:
-                                _drained_keys.add((guid_i, key))
-                            if not rem_j:
-                                _drained_keys.add((guid_j, key))
-                            # For contained pairs, a partial bilateral match can leave a
-                            # remainder that isn't a genuine external edge either — e.g.
-                            # the inner element's own edge continuing past the matched
-                            # overlap into territory the outer element simply doesn't
-                            # draw its own copy for. If the remainder's line is
-                            # strictly interior to the OTHER element's bbox (not just
-                            # touching its boundary), it's still an interior seam and
-                            # must not be re-added as a visible line.
-                            for lo, hi in rem_i:
-                                seg = make_seg(kind, coord, lo, hi)
-                                if _is_contained and bbox_j and seg_strictly_interior_to(seg, bbox_j):
-                                    continue
-                                to_add.append((grp_i, seg))
-                            for lo, hi in rem_j:
-                                seg = make_seg(kind, coord, lo, hi)
-                                if _is_contained and bbox_i and seg_strictly_interior_to(seg, bbox_i):
-                                    continue
-                                to_add.append((grp_j, seg))
+                            if _is_contained:
+                                rem_i = ivs_subtract(union_i, shared)
+                                rem_j = ivs_subtract(union_j, shared)
+                                # Record when this match consumes an element's entire
+                                # presence at this line key, leaving nothing behind —
+                                # see _drained_keys above for why this matters to
+                                # unilateral.
+                                if not rem_i:
+                                    _drained_keys.add((guid_i, key))
+                                if not rem_j:
+                                    _drained_keys.add((guid_j, key))
+                                # A partial bilateral match can leave a remainder that
+                                # isn't a genuine external edge either — e.g. the inner
+                                # element's own edge continuing past the matched
+                                # overlap into territory the outer element simply
+                                # doesn't draw its own copy for. If the remainder's
+                                # line is strictly interior to the OTHER element's
+                                # bbox (not just touching its boundary), it's still an
+                                # interior seam and must not be re-added as a visible
+                                # line.
+                                for lo, hi in rem_i:
+                                    seg = make_seg(kind, coord, lo, hi)
+                                    if bbox_j and seg_strictly_interior_to(seg, bbox_j):
+                                        continue
+                                    to_add.append((grp_i, seg))
+                                for lo, hi in rem_j:
+                                    seg = make_seg(kind, coord, lo, hi)
+                                    if bbox_i and seg_strictly_interior_to(seg, bbox_i):
+                                        continue
+                                    to_add.append((grp_j, seg))
+                            else:
+                                # Don't compute/re-add this pair's remainder
+                                # immediately: guid_i or guid_j may share this exact
+                                # line with more than one neighbour this round (e.g.
+                                # a wall panel flanked by two others, each covering a
+                                # different part of its edge). Computing "original
+                                # minus my match" per pair independently is wrong
+                                # when that happens — each pair's remainder still
+                                # includes the portion the *other* pair correctly
+                                # claimed, and re-adding both remainders reconstructs
+                                # almost the entire original edge next round. Instead
+                                # accumulate every partner's matched interval per
+                                # (guid, key) and resolve the true combined remainder
+                                # once, after every pair this round has been
+                                # considered (see the finalisation pass below).
+                                _consumed.setdefault((guid_i, key), []).extend(shared)
+                                _consumed.setdefault((guid_j, key), []).extend(shared)
 
                         # Contained-pair purge: bilateral matching only removes a
                         # segment when both elements draw an explicit segment at the
@@ -2462,6 +2499,23 @@ class CreateDrawing(bpy.types.Operator):
                                     if seg_on_boundary_of(line_i, bbox_j, bbox_i):
                                         to_remove.add(id(path_i))
                                         matched += 1
+
+                # Finalise non-contained pairs' remainders now that every pair this
+                # round has been considered: each (guid, key) may have accumulated
+                # matched intervals from more than one partner (see the "else"
+                # branch above), so the true remainder is this element's original
+                # extent at that key minus the *combined* union of every partner's
+                # match — not any single pair's match computed in isolation.
+                for (guid, key), intervals in _consumed.items():
+                    entry = lines_by_guid[guid][key]
+                    original = ivs_union(entry["ivs"])
+                    remainder = ivs_subtract(original, ivs_union(intervals))
+                    if not remainder:
+                        _drained_keys.add((guid, key))
+                    kind = key[0]
+                    coord = entry["coord"]
+                    for lo, hi in remainder:
+                        to_add.append((grp_by_guid[guid], make_seg(kind, coord, lo, hi)))
 
                 if not to_remove and not to_add:
                     break
