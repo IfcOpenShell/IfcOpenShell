@@ -1138,6 +1138,10 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.fill_mode = str(pset["FillMode"])
             if "CutMode" in pset:
                 camera_props.cut_mode = str(pset["CutMode"])
+            if "GenerateMaterialLayers" in pset:
+                camera_props.generate_material_layers = bool(pset["GenerateMaterialLayers"])
+            if "JoinCoplanarSurfaces" in pset:
+                camera_props.join_coplanar_surfaces = bool(pset["JoinCoplanarSurfaces"])
             if camera.type == "PERSP":
                 shifts = cls.get_perspective_camera_shifts(drawing)
                 camera.shift_x = shifts["shift_x"]

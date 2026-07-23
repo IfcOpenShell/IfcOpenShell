@@ -1129,12 +1129,16 @@ class CreateDrawing(bpy.types.Operator):
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
+            if self.cprops.generate_material_layers and self.cprops.join_coplanar_surfaces:
+                self.join_coplanar_boundary_lines(root)
             self.move_elements_to_top(root)
         elif self.cprops.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
+            if self.cprops.generate_material_layers and self.cprops.join_coplanar_surfaces:
+                self.join_coplanar_boundary_lines(root)
             self.move_elements_to_top(root)
 
         if self.cprops.fill_mode == "SHAPELY":
@@ -1733,6 +1737,532 @@ class CreateDrawing(bpy.types.Operator):
                 path.attrib["d"] = d
                 g.set("class", " ".join(list(polygon_classes)))
                 group.append(g)
+
+    def join_coplanar_boundary_lines(self, root):
+        """Remove duplicate SVG boundary lines between coplanar same-material elements.
+
+        Builds a real 2D planar arrangement (via ifcopenshell_wrapper's svgfill,
+        the same library `fill_mode == "SVGFILL"` already uses to merge coplanar
+        cells for hatching) per connected cluster of mutually coplanar,
+        same-material, same-style elements, and only dissolves an arrangement
+        edge when both cells it separates genuinely belong to the cluster. A
+        true external edge always has an unowned (background) cell on its far
+        side, so it can never be merged away -- this is what a pairwise 2D
+        interval-matching approach cannot determine, since duplicate-looking
+        lines and true external edges can be identical in raw 2D line data.
+        """
+        SVG = "http://www.w3.org/2000/svg"
+        TOL = 0.01
+        W = ifcopenshell.ifcopenshell_wrapper
+        MIN_VISIBLE_LENGTH = 0.1
+
+        obj_cache = {}
+
+        def get_obj(guid):
+            if guid in obj_cache:
+                return obj_cache[guid]
+            element = self.get_element_by_guid(guid)
+            obj = tool.Ifc.get_object(element) if element is not None else None
+            obj_cache[guid] = obj
+            return obj
+
+        adjacency_cache = {}
+        _cam_look = -self.camera.matrix_world.col[2].to_3d().normalized()
+
+        def are_coplanar_and_adjacent(guid_a, guid_b, tol=0.01):
+            """True if the two meshes share a vertex AND have parallel face normals.
+
+            Sharing a vertex confirms physical adjacency (rules out depth-stacked elements
+            whose 2D projections accidentally overlap). Parallel normals confirms the
+            shared face is coplanar -- elements meeting at a fold angle are rejected.
+            """
+            key = (min(guid_a, guid_b), max(guid_a, guid_b))
+            if key in adjacency_cache:
+                return adjacency_cache[key]
+            obj_a = get_obj(guid_a)
+            obj_b = get_obj(guid_b)
+            if obj_a is None or obj_b is None or obj_a.type != "MESH" or obj_b.type != "MESH":
+                adjacency_cache[key] = True
+                return True
+            corners_a = [obj_a.matrix_world @ Vector(c) for c in obj_a.bound_box]
+            corners_b = [obj_b.matrix_world @ Vector(c) for c in obj_b.bound_box]
+            for axis in range(3):
+                min_a = min(c[axis] for c in corners_a)
+                max_a = max(c[axis] for c in corners_a)
+                min_b = min(c[axis] for c in corners_b)
+                max_b = max(c[axis] for c in corners_b)
+                if min_a > max_b + tol:
+                    adjacency_cache[key] = False
+                    return False
+                if min_b > max_a + tol:
+                    adjacency_cache[key] = False
+                    return False
+            tol_sq = tol * tol
+
+            def point_to_seg_dist_sq(p, a, b):
+                ab = b - a
+                len_sq = ab.length_squared
+                if len_sq < 1e-12:
+                    return (p - a).length_squared
+                t = max(0.0, min(1.0, (p - a).dot(ab) / len_sq))
+                return (p - (a + t * ab)).length_squared
+
+            def vertex_near_edges(verts, obj, tol_sq):
+                mat = obj.matrix_world
+                for v in verts:
+                    for edge in obj.data.edges:
+                        v0 = mat @ obj.data.vertices[edge.vertices[0]].co
+                        v1 = mat @ obj.data.vertices[edge.vertices[1]].co
+                        if point_to_seg_dist_sq(v, v0, v1) < tol_sq:
+                            return True
+                return False
+
+            verts_a = [obj_a.matrix_world @ v.co for v in obj_a.data.vertices]
+            verts_b = [obj_b.matrix_world @ v.co for v in obj_b.data.vertices]
+            has_shared = any((va - vb).length_squared < tol_sq for va in verts_a for vb in verts_b)
+            if not has_shared:
+                has_shared = vertex_near_edges(verts_b, obj_a, tol_sq) or vertex_near_edges(verts_a, obj_b, tol_sq)
+            if not has_shared:
+                adjacency_cache[key] = False
+                return False
+
+            def aabb_contains(outer, inner):
+                for axis in range(3):
+                    if min(c[axis] for c in inner) < min(c[axis] for c in outer) - tol:
+                        return False
+                    if max(c[axis] for c in inner) > max(c[axis] for c in outer) + tol:
+                        return False
+                return True
+
+            if aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a):
+                adjacency_cache[key] = True
+                return True
+
+            def dominant_world_normal(obj):
+                mat3 = obj.matrix_world.to_3x3().normalized()
+                best = None
+                best_score = -1.0
+                for p in obj.data.polygons:
+                    if p.area < 1e-10:
+                        continue
+                    n = (mat3 @ p.normal).normalized()
+                    score = abs(n.dot(_cam_look))
+                    if score > best_score:
+                        best_score = score
+                        best = n
+                return best
+
+            n_a = dominant_world_normal(obj_a)
+            n_b = dominant_world_normal(obj_b)
+            if n_a is None or n_b is None:
+                adjacency_cache[key] = True
+                return True
+            dot = abs(n_a.dot(n_b))
+            if dot <= 1.0 - 3.8e-5:
+                adjacency_cache[key] = False
+                return False
+            plane_pos_a = {round(v.dot(n_a), 5) for v in verts_a}
+            plane_pos_b = {round(v.dot(n_a), 5) for v in verts_b}
+            same_plane = any(abs(pa - pb) < tol for pa in plane_pos_a for pb in plane_pos_b)
+            if not same_plane:
+                adjacency_cache[key] = False
+                return False
+            projs_a = [v.dot(_cam_look) for v in verts_a]
+            projs_b = [v.dot(_cam_look) for v in verts_b]
+            range_a = (min(projs_a), max(projs_a))
+            range_b = (min(projs_b), max(projs_b))
+            overlap = min(range_a[1], range_b[1]) - max(range_a[0], range_b[0])
+            same_depth = overlap > tol
+            if not same_depth:
+                adjacency_cache[key] = False
+                return False
+            adjacency_cache[key] = True
+            return True
+
+        def get_material_key(guid):
+            element = self.get_element_by_guid(guid)
+            if element is None:
+                return None
+            material = ifcopenshell.util.element.get_material(element)
+            if material is not None:
+                layer_set = None
+                if material.is_a("IfcMaterialLayerSetUsage"):
+                    layer_set = material.ForLayerSet
+                elif material.is_a("IfcMaterialLayerSet"):
+                    layer_set = material
+                if layer_set is not None:
+                    return tuple(
+                        layer.Material.id() for layer in layer_set.MaterialLayers if layer.Material is not None
+                    )
+            mats = ifcopenshell.util.element.get_materials(element)
+            return tuple(sorted(m.id() for m in mats)) if mats else ()
+
+        def get_camera_face_layer_id(guid):
+            element = self.get_element_by_guid(guid)
+            if element is None:
+                return None
+            material = ifcopenshell.util.element.get_material(element)
+            if material is None or not material.is_a("IfcMaterialLayerSetUsage"):
+                return None
+            layer_set = material.ForLayerSet
+            if layer_set is None:
+                return None
+            layers = [l for l in layer_set.MaterialLayers if l.Material is not None]
+            if not layers:
+                return None
+            positive = material.DirectionSense == "POSITIVE"
+            layer_dir = material.LayerSetDirection
+            if layer_dir != "AXIS3":
+                return None
+            obj = get_obj(guid)
+            if obj is None or obj.type != "MESH":
+                return None
+            stack_axis = obj.matrix_world.col[2].to_3d().normalized()
+            dot = _cam_look.dot(stack_axis)
+            on_positive_side = dot < 0
+            face_layer = (layers[-1] if positive else layers[0]) if on_positive_side else (
+                layers[0] if positive else layers[-1]
+            )
+            return face_layer.Material.id()
+
+        def mat_keys_match(a, b, face_a=None, face_b=None):
+            if not a or not b:
+                return False
+            if a == b or a == b[::-1]:
+                return True
+            short, long_ = (a, b) if len(a) <= len(b) else (b, a)
+            n = len(short)
+            if long_[-n:] == short or long_[:n] == short:
+                return True
+            if face_a is not None and face_b is not None:
+                return face_a == face_b
+            return False
+
+        def get_style_key(guid):
+            element = self.get_element_by_guid(guid)
+            if element is None or not getattr(element, "Representation", None):
+                return ()
+            style_ids = set()
+            for rep in element.Representation.Representations:
+                for item in rep.Items:
+                    for si in getattr(item, "StyledByItem", ()):
+                        for style in si.Styles:
+                            style_ids.add(style.id())
+            return tuple(sorted(style_ids))
+
+        def parse_line(d):
+            parts = d.strip().split()
+            if len(parts) == 2 and parts[0].startswith("M") and parts[1].startswith("L"):
+                try:
+                    x0, y0 = map(float, parts[0][1:].split(","))
+                    x1, y1 = map(float, parts[1][1:].split(","))
+                    return (x0, y0), (x1, y1)
+                except ValueError:
+                    pass
+            return None
+
+        def seg_line_key(seg):
+            (x0, y0), (x1, y1) = seg
+            if abs(y0 - y1) < TOL:
+                return ("h", round((y0 + y1) / 2 / TOL))
+            if abs(x0 - x1) < TOL:
+                return ("v", round((x0 + x1) / 2 / TOL))
+            return None
+
+        def seg_interval(seg):
+            (x0, y0), (x1, y1) = seg
+            if abs(y0 - y1) < TOL:
+                return (min(x0, x1), max(x0, x1))
+            return (min(y0, y1), max(y0, y1))
+
+        def seg_axis_coord(seg, kind):
+            (x0, y0), (x1, y1) = seg
+            return (y0 + y1) / 2 if kind == "h" else (x0 + x1) / 2
+
+        def seg_length(seg):
+            (x0, y0), (x1, y1) = seg
+            return ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+
+        def make_seg(kind, coord, lo, hi):
+            if kind == "h":
+                return ((lo, coord), (hi, coord))
+            return ((coord, lo), (coord, hi))
+
+        def ivs_union(ivs):
+            merged = []
+            for lo, hi in sorted(ivs):
+                if merged and lo <= merged[-1][1] + TOL:
+                    merged[-1] = (merged[-1][0], max(merged[-1][1], hi))
+                else:
+                    merged.append([lo, hi])
+            return [(lo, hi) for lo, hi in merged]
+
+        def ivs_intersect(a_ivs, b_ivs):
+            result = []
+            for a_lo, a_hi in a_ivs:
+                for b_lo, b_hi in b_ivs:
+                    lo, hi = max(a_lo, b_lo), min(a_hi, b_hi)
+                    if hi > lo + TOL:
+                        result.append((lo, hi))
+            return result
+
+        def ivs_subtract(ivs, sub):
+            result = list(ivs)
+            for s_lo, s_hi in sub:
+                new_result = []
+                for r_lo, r_hi in result:
+                    if s_hi <= r_lo + TOL or s_lo >= r_hi - TOL:
+                        new_result.append((r_lo, r_hi))
+                    else:
+                        if r_lo < s_lo - TOL:
+                            new_result.append((r_lo, s_lo))
+                        if r_hi > s_hi + TOL:
+                            new_result.append((s_hi, r_hi))
+                result = new_result
+            return result
+
+        def process_cluster(members):
+            all_segs = []
+            for m in members:
+                all_segs.extend(m["segs"])
+            if len(all_segs) < 2:
+                return
+
+            # Per-member (guid, line_key) -> union of that member's own
+            # original segment intervals on that line. Used both to decide
+            # which member(s) a face touches (below) and, later, to attribute
+            # final surviving edges back to the right <g> group. Building
+            # this from the raw segments directly -- rather than trying to
+            # polygonize each member's own linework into a closed shape --
+            # avoids requiring every element's cut geometry to independently
+            # form a single clean polygon, which real multi-void/notch
+            # elements routinely fail to do (open sub-loops, per-layer
+            # linework that only includes some of its own edges, etc.).
+            member_lines = []
+            for m in members:
+                d = {}
+                for seg in m["segs"]:
+                    key = seg_line_key(seg)
+                    if key is None:
+                        continue
+                    d.setdefault(key, []).append(seg_interval(seg))
+                member_lines.append({k: ivs_union(v) for k, v in d.items()})
+
+            ctx = W.context(W.EXACT_CONSTRUCTIONS, 1.0e-3)
+            ctx.add(all_segs)
+            if not ctx.build():
+                return
+            ps = W.svg_groups_of_polygons()
+            ctx.write(ps)
+            polygons = list(ps[0]) if len(ps) else []
+            if not polygons:
+                return
+
+            # A face "belongs" to a member if any of the face's own boundary
+            # edges lies along a line where that member has original
+            # geometry, with an overlapping interval. This is exactly the
+            # same line-key/interval test used for attribution below, just
+            # applied to decide ownership instead of to emit final paths --
+            # unlike a point-in-polygon test against a separately
+            # reconstructed member polygon, it doesn't require that polygon
+            # to exist, and it doesn't fail for the degenerate sliver faces
+            # that appear where two nearly-but-not-quite-parallel copies of
+            # "the same" edge cross at a shallow angle (both members' own
+            # segments are still present right along that sliver's boundary).
+            def face_owners_of(poly):
+                owners = set()
+                for loop in [poly.boundary] + list(poly.inner_boundaries):
+                    pts = list(loop)
+                    n_pts = len(pts)
+                    for i in range(n_pts):
+                        seg = (tuple(pts[i]), tuple(pts[(i + 1) % n_pts]))
+                        if seg_length(seg) < 1e-6:
+                            continue
+                        key = seg_line_key(seg)
+                        if key is None:
+                            continue
+                        lo, hi = seg_interval(seg)
+                        for mi, lines in enumerate(member_lines):
+                            own_ivs = lines.get(key)
+                            if own_ivs and ivs_intersect([(lo, hi)], own_ivs):
+                                owners.add(mi)
+                return owners
+
+            face_owners = [face_owners_of(poly) for poly in polygons]
+
+            pairs = ctx.get_face_pairs()
+            to_merge = []
+            for he in range(0, len(pairs), 2):
+                a, b = pairs[he], pairs[he + 1]
+                if a == -1 or b == -1:
+                    continue
+                if face_owners[a] and face_owners[b]:
+                    to_merge.append(he // 2)
+
+            if to_merge:
+                ctx.merge(to_merge)
+                ps2 = W.svg_groups_of_polygons()
+                ctx.write(ps2)
+                final_polygons = list(ps2[0]) if len(ps2) else []
+            else:
+                final_polygons = polygons
+
+            for m in members:
+                for path_el in list(m["grp"].findall(f"{{{SVG}}}path")):
+                    m["grp"].remove(path_el)
+
+            unattributed = 0
+            for poly in final_polygons:
+                for loop in [poly.boundary] + list(poly.inner_boundaries):
+                    pts = list(loop)
+                    n_pts = len(pts)
+                    for i in range(n_pts):
+                        seg = (tuple(pts[i]), tuple(pts[(i + 1) % n_pts]))
+                        if seg_length(seg) < MIN_VISIBLE_LENGTH:
+                            continue
+                        key = seg_line_key(seg)
+                        if key is None:
+                            fallback_mi = next(iter(face_owners[0]), 0) if face_owners else 0
+                            path_el = etree.SubElement(members[fallback_mi]["grp"], f"{{{SVG}}}path")
+                            (x0, y0), (x1, y1) = seg
+                            path_el.set("d", f"M{x0},{y0} L{x1},{y1}")
+                            unattributed += 1
+                            continue
+                        lo, hi = seg_interval(seg)
+                        kind, coord = key[0], seg_axis_coord(seg, key[0])
+                        remaining = [(lo, hi)]
+                        for mi, m in enumerate(members):
+                            if not remaining:
+                                break
+                            own_ivs = member_lines[mi].get(key)
+                            if not own_ivs:
+                                continue
+                            overlap = ivs_intersect(remaining, own_ivs)
+                            if not overlap:
+                                continue
+                            for o_lo, o_hi in overlap:
+                                if o_hi - o_lo < MIN_VISIBLE_LENGTH:
+                                    continue
+                                path_el = etree.SubElement(m["grp"], f"{{{SVG}}}path")
+                                (x0, y0), (x1, y1) = make_seg(kind, coord, o_lo, o_hi)
+                                path_el.set("d", f"M{x0},{y0} L{x1},{y1}")
+                            remaining = ivs_subtract(remaining, overlap)
+                        for r_lo, r_hi in remaining:
+                            if r_hi - r_lo < MIN_VISIBLE_LENGTH:
+                                continue
+                            path_el = etree.SubElement(members[0]["grp"], f"{{{SVG}}}path")
+                            (x0, y0), (x1, y1) = make_seg(kind, coord, r_lo, r_hi)
+                            path_el.set("d", f"M{x0},{y0} L{x1},{y1}")
+                            unattributed += 1
+            if unattributed:
+                print(
+                    "[join_coplanar_boundary_lines] "
+                    f"{unattributed} edge piece(s) needed fallback attribution in cluster "
+                    f"{[m['guid'] for m in members]}"
+                )
+
+            # A handful of near-duplicate arrangement edges (tiny slivers where
+            # two independently-generated, nearly-but-not-quite-parallel
+            # copies of the same seam cross at a shallow angle) can still
+            # produce two barely-offset boundary edges landing in the same
+            # member's group instead of being fully dissolved. Safety-net
+            # cleanup: merge same-group paths that share a line key and
+            # overlapping interval, same as the interval bucketing used for
+            # attribution above.
+            for m in members:
+                by_key = {}
+                for path_el in list(m["grp"].findall(f"{{{SVG}}}path")):
+                    seg = parse_line(path_el.get("d", ""))
+                    if seg is None:
+                        continue
+                    key = seg_line_key(seg)
+                    if key is None:
+                        continue
+                    coord = seg_axis_coord(seg, key[0])
+                    by_key.setdefault(key, []).append((path_el, seg_interval(seg), coord))
+                for key, entries in by_key.items():
+                    if len(entries) < 2:
+                        continue
+                    ivs = [iv for _, iv, _ in entries]
+                    merged = ivs_union(ivs)
+                    if len(merged) == len(entries):
+                        continue
+                    coord = entries[0][2]
+                    for path_el, _, _ in entries:
+                        m["grp"].remove(path_el)
+                    for lo, hi in merged:
+                        new_path = etree.SubElement(m["grp"], f"{{{SVG}}}path")
+                        (x0, y0), (x1, y1) = make_seg(key[0], coord, lo, hi)
+                        new_path.set("d", f"M{x0},{y0} L{x1},{y1}")
+
+        parent_to_groups = {}
+        for g in root.iter(f"{{{SVG}}}g"):
+            cls_list = g.get("class", "").split()
+            if "projection" not in cls_list:
+                continue
+            parent = g.getparent()
+            if parent is None:
+                continue
+            parent_to_groups.setdefault(id(parent), []).append(g)
+
+        for pid, proj_groups in parent_to_groups.items():
+            if len(proj_groups) < 2:
+                continue
+
+            group_data = []
+            for grp in proj_groups:
+                guid = grp.get("{http://www.ifcopenshell.org/ns}guid", "")
+                segs = []
+                for path_el in grp.findall(f"{{{SVG}}}path"):
+                    line = parse_line(path_el.get("d", ""))
+                    if line is not None:
+                        segs.append(line)
+                group_data.append(
+                    {
+                        "grp": grp,
+                        "guid": guid,
+                        "mat": get_material_key(guid),
+                        "face": get_camera_face_layer_id(guid),
+                        "style": get_style_key(guid),
+                        "segs": segs,
+                    }
+                )
+
+            n = len(group_data)
+            adj = [[] for _ in range(n)]
+            for i in range(n):
+                gi = group_data[i]
+                if gi["mat"] is None or not gi["segs"]:
+                    continue
+                for j in range(i + 1, n):
+                    gj = group_data[j]
+                    if gj["mat"] is None or not gj["segs"]:
+                        continue
+                    if not mat_keys_match(gi["mat"], gj["mat"], gi["face"], gj["face"]):
+                        continue
+                    if gi["style"] != gj["style"]:
+                        continue
+                    if not are_coplanar_and_adjacent(gi["guid"], gj["guid"]):
+                        continue
+                    adj[i].append(j)
+                    adj[j].append(i)
+
+            visited = [False] * n
+            for i in range(n):
+                if visited[i]:
+                    continue
+                comp = []
+                stack = [i]
+                visited[i] = True
+                while stack:
+                    u = stack.pop()
+                    comp.append(u)
+                    for v in adj[u]:
+                        if not visited[v]:
+                            visited[v] = True
+                            stack.append(v)
+                if len(comp) >= 2:
+                    process_cluster([group_data[k] for k in comp])
 
     def drawing_to_model_co(self, x: float, y: float) -> Vector:
         camera_xy = np.array((x, -y)) / self.scale / 1000
