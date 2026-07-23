@@ -556,45 +556,6 @@ class BIM_PT_product_assignments(Panel):
             col.enabled = bool(ProductAssignmentsData.data["relating_product"])
 
 
-class BIM_PT_dimension_text_label(Panel):
-    bl_label = "Linked Text Label"
-    bl_idname = "BIM_PT_dimension_text_label"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-    bl_order = 2
-    bl_parent_id = "BIM_PT_tab_object_metadata"
-
-    @classmethod
-    def poll(cls, context):
-        if not tool.Ifc.get() or not context.active_object:
-            return False
-        element = tool.Ifc.get_entity(context.active_object)
-        if not element:
-            return False
-        return tool.Drawing.is_annotation_object_type(element, ["DIMENSION", "DIAMETER"])
-
-    def draw(self, context):
-        assert self.layout
-        assert (obj := context.active_object)
-        element = tool.Ifc.get_entity(obj)
-        assert element
-
-        text_annotations = tool.Drawing.get_dimension_text_annotations(element)
-        if not text_annotations:
-            self.layout.operator("bim.add_dimension_text_annotation", icon="ADD")
-            return
-
-        for text_element in text_annotations:
-            text_obj = tool.Ifc.get_object(text_element)
-            row = self.layout.row(align=True)
-            row.label(text=text_obj.name if text_obj else str(text_element), icon="SMALL_CAPS")
-            if text_obj:
-                op = row.operator("bim.select_dimension_text_annotation", icon="RESTRICT_SELECT_OFF", text="")
-                op.object_name = text_obj.name
-        self.layout.operator("bim.add_dimension_text_annotation", text="Add Another Label", icon="ADD")
-
-
 def get_category_icon(category_name):
     """Get appropriate icon for each category"""
     icons = {
@@ -880,6 +841,45 @@ class BIM_PT_text(Panel):
                 else:
                     click_op.attribute_type = "text"
                 click_op.display_text = str(literal_data[attribute])
+
+
+class BIM_PT_dimension_text_label(Panel):
+    bl_label = "Linked Text Label"
+    bl_idname = "BIM_PT_dimension_text_label"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_order = 2
+    bl_parent_id = "BIM_PT_tab_object_metadata"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get() or not context.active_object:
+            return False
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element:
+            return False
+        return tool.Drawing.is_annotation_object_type(element, ["DIMENSION", "DIAMETER"])
+
+    def draw(self, context):
+        assert self.layout
+        assert (obj := context.active_object)
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        text_annotations = tool.Drawing.get_dimension_text_annotations(element)
+        if not text_annotations:
+            self.layout.operator("bim.add_dimension_text_annotation", icon="ADD")
+            return
+
+        for text_element in text_annotations:
+            text_obj = tool.Ifc.get_object(text_element)
+            row = self.layout.row(align=True)
+            row.label(text=text_obj.name if text_obj else str(text_element), icon="SMALL_CAPS")
+            if text_obj:
+                op = row.operator("bim.select_dimension_text_annotation", icon="RESTRICT_SELECT_OFF", text="")
+                op.object_name = text_obj.name
+        self.layout.operator("bim.add_dimension_text_annotation", text="Add Another Label", icon="ADD")
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):
