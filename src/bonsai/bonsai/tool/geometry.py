@@ -869,7 +869,13 @@ class Geometry(bonsai.core.tool.Geometry):
         if isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES) and (
             ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id
         ):
-            return tool.Ifc.get().by_id(ifc_id)
+            try:
+                return tool.Ifc.get().by_id(ifc_id)
+            except RuntimeError:
+                # Stale id: a representation rebuild freed the old entity
+                # while obj.data still tracks its id. Treated as "no data
+                # representation" — same contract as a mesh with id 0.
+                return None
 
     @classmethod
     def get_active_representation_context(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
