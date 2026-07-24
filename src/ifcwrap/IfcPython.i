@@ -163,6 +163,12 @@
 %ignore MaxOffset;
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
+%ignore SvgRidgeAngleMinDegrees;
+%ignore SvgValleyAngleMinDegrees;
+%ignore SvgEmitFlushEdges;
+%ignore SvgUseEdgeClassification;
+%ignore SvgRenderCreaseEdges;
+%ignore SvgRenderSharpEdges;
 
 %ignore XmlSerializerFactory;
 %ignore JsonSerializerFactory;
