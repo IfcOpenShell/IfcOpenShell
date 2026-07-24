@@ -67,6 +67,13 @@
 // Irrelevant abstract base that only has anonymous concrete implementations
 %ignore instance_factory;
 
+%ignore ifcopenshell::schema_registry;
+%ignore ifcopenshell::schema_registry_instance;
+%ignore ifcopenshell::schema_plugin_registration_symbol;
+%ignore ifcopenshell::schema_plugin_metadata;
+%ignore ifcopenshell::schema_plugin_directory;
+%ignore ifcopenshell::load_schema_plugins;
+
 // Not relevant for python usage
 %ignore express::Base::data;
 %ignore *::references_to_resolve;
