@@ -75,6 +75,13 @@ class TestLibraryFile(NewIfc):
 
         assert tool.Project.get_parent_library(root) == project
 
+    def test_get_parent_library_returns_the_library_for_a_nested_sub_library(self):
+        library_file = _make_library_file(with_child=True)
+        root = next(lib for lib in library_file.by_type("IfcProjectLibrary") if lib.Name == "RootLib")
+        child = next(lib for lib in library_file.by_type("IfcProjectLibrary") if lib.Name == "ChildLib")
+
+        assert tool.Project.get_parent_library(child) == root
+
     def test_get_parent_library_returns_none_for_an_orphaned_library(self):
         library_file = ifcopenshell.api.project.create_file(version="IFC4")
         orphan = ifcopenshell.api.root.create_entity(library_file, ifc_class="IfcProjectLibrary", name="Orphan")
@@ -114,6 +121,58 @@ class TestLibraryFile(NewIfc):
             result = bpy.ops.bim.refresh_library()
             assert result == {"FINISHED"}
         finally:
+            IfcStore.library_file = None
+            ProjectLibraryData.is_loaded = False
+
+    def test_edit_project_library_moves_a_project_declared_library_under_another_library(self):
+        import bpy
+
+        library_file = _make_library_file()
+        project = library_file.by_type("IfcProject")[0]
+        root = library_file.by_type("IfcProjectLibrary")[0]
+        target = ifcopenshell.api.root.create_entity(library_file, ifc_class="IfcProjectLibrary", name="TargetLib")
+        ifcopenshell.api.project.assign_declaration(library_file, definitions=[target], relating_context=project)
+        IfcStore.library_file = library_file
+        try:
+            props = tool.Project.get_project_props()
+            props.selected_project_library = str(root.id())
+            props.is_editing_project_library = True
+            props.parent_library = str(target.id())
+
+            result = bpy.ops.bim.edit_project_library()
+
+            assert result == {"FINISHED"}
+            assert tool.Project.get_parent_library(root) == target
+            assert root.Nests and root.Nests[0].RelatingObject == target
+            assert not root.HasContext
+        finally:
+            if props.is_editing_project_library:
+                props.is_editing_project_library = False
+            IfcStore.library_file = None
+            ProjectLibraryData.is_loaded = False
+
+    def test_edit_project_library_moves_a_nested_library_back_under_the_project(self):
+        import bpy
+
+        library_file = _make_library_file(with_child=True)
+        project = library_file.by_type("IfcProject")[0]
+        child = next(lib for lib in library_file.by_type("IfcProjectLibrary") if lib.Name == "ChildLib")
+        IfcStore.library_file = library_file
+        try:
+            props = tool.Project.get_project_props()
+            props.selected_project_library = str(child.id())
+            props.is_editing_project_library = True
+            props.parent_library = str(project.id())
+
+            result = bpy.ops.bim.edit_project_library()
+
+            assert result == {"FINISHED"}
+            assert tool.Project.get_parent_library(child) == project
+            assert child.HasContext and child.HasContext[0].RelatingContext == project
+            assert not child.Nests
+        finally:
+            if props.is_editing_project_library:
+                props.is_editing_project_library = False
             IfcStore.library_file = None
             ProjectLibraryData.is_loaded = False
 
