@@ -48,7 +48,7 @@ public:
 	}
 
 	void finalize();
-	void setFile(ifcopenshell::file*) {}
+	void setFile(ifcopenshell::file&) {}
 };
 
 #endif

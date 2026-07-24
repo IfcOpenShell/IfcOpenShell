@@ -350,7 +350,7 @@ public:
 		serializer_->finalize();
 	}
 
-	void setFile(ifcopenshell::file* file) override {
+	void setFile(ifcopenshell::file& file) override {
 		serializer_->setFile(file);
 	}
 
@@ -405,7 +405,7 @@ private:
 		$self->finalize();
 	}
 
-	void setFile(ifcopenshell::file* file) {
+	void setFile(ifcopenshell::file& file) {
 		$self->setFile(file);
 	}
 }

@@ -906,7 +906,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-	serializer->setFile(ifc_file);
+	serializer->setFile(*ifc_file);
 
     if (context_iterator && geometry_settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
 		serializer->setUnitNameAndMagnitude(context_iterator->unit_name(), static_cast<float>(context_iterator->unit_magnitude()));

@@ -50,7 +50,7 @@ class POSTFIX_SCHEMA(JsonSerializer) : public JsonSerializer {
     }
 
     void finalize();
-    void setFile(ifcopenshell::file*) {}
+    void setFile(ifcopenshell::file&) {}
 };
 
 #endif

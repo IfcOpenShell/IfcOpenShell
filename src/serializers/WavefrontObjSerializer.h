@@ -45,7 +45,7 @@ public:
 	void finalize() {}
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
-	void setFile(ifcopenshell::file*) {}
+	void setFile(ifcopenshell::file&) {}
 };
 
 #endif

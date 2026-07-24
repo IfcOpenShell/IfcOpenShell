@@ -47,7 +47,7 @@ public:
 	void write(const IfcGeom::TriangulationElement* /*o*/) {}
 	void write(const IfcGeom::BRepElement* o);
 	bool isTesselated() const { return false; }
-	void setFile(ifcopenshell::file*) {}
+	void setFile(ifcopenshell::file&) {}
 };
 
 #endif

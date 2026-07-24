@@ -25,7 +25,7 @@ public:
 	void writeHeader() override {}
 
 	void finalize() override;
-	void setFile(ifcopenshell::file*) override { throw ifcopenshell::exception("Streaming serializer uses input filename supplied on construction"); }
+	void setFile(ifcopenshell::file&) override { throw ifcopenshell::exception("Streaming serializer uses input filename supplied on construction"); }
 };
 
 #endif

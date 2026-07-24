@@ -51,7 +51,7 @@ class JsonSerializer : public Serializer {
         }
         implementation_->finalize();
     }
-    void setFile(ifcopenshell::file*) { throw ifcopenshell::exception("Should be supplied on construction"); }
+    void setFile(ifcopenshell::file&) { throw ifcopenshell::exception("Should be supplied on construction"); }
 };
 
 #endif

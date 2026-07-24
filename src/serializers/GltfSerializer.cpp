@@ -530,7 +530,7 @@ namespace {
 	}
 }
 
-void GltfSerializer::setFile(ifcopenshell::file* f) {
+void GltfSerializer::setFile(ifcopenshell::file& f) {
 	if (!settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get()) {
 		return;
 	}
@@ -541,7 +541,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 
 	std::vector<express::Base> coordops;
 	try {
-		coordops = f->instances_by_type("IfcCoordinateOperation");
+		coordops = f.instances_by_type("IfcCoordinateOperation");
 	} catch (ifcopenshell::exception&) {
 		// Ignored. Schema likely doesn't support IfcCoordinateOperation.
 	}
@@ -578,7 +578,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 	}
 
 	if (!crs_epsg) {
-		auto sites = f->instances_by_type("IfcSite");
+		auto sites = f.instances_by_type("IfcSite");
 
 		if (sites.size() == 1) {
 			auto lat_attr = sites.front().as<express::Entity>().get("RefLatitude");
@@ -613,7 +613,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 		}
 	}
 
-	auto contexts = f->instances_by_type_excl_subtypes("IfcGeometricRepresentationContext");
+	auto contexts = f.instances_by_type_excl_subtypes("IfcGeometricRepresentationContext");
 
 	if (!contexts.empty()) {
         auto context = contexts.front().as<express::Entity>();

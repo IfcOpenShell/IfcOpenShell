@@ -650,7 +650,7 @@ public:
 	bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
-	void setFile(ifcopenshell::file* f);
+	void setFile(ifcopenshell::file& f);
     void setBoundingRectangle(double width, double height);
     void setSectionHeight(double h, express::Base storey = express::Base());
 	void setSectionHeightsFromStoreys(double offset=1.2);

@@ -2463,10 +2463,10 @@ std::string SvgSerializer::nameElement(express::Base elem_) {
 		});
 }
 
-void SvgSerializer::setFile(ifcopenshell::file* f) {
+void SvgSerializer::setFile(ifcopenshell::file& f) {
 	using namespace ifcopenshell::geometry::settings;
 
-	file = f;
+	file = &f;
 	auto apply_section_heights_from_storeys = [&]() {
 		if (settings().get<SvgSectionHeightFromStoreys>().get()) {
 			if (settings().get<SvgSectionHeight>().has()) {
@@ -2477,15 +2477,15 @@ void SvgSerializer::setFile(ifcopenshell::file* f) {
 		}
 	};
 
-	auto storeys = f->instances_by_type("IfcBuildingStorey");
+	auto storeys = f.instances_by_type("IfcBuildingStorey");
 	if (storeys.empty()) {
 		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_, logger());
 
 		std::vector<const ifcopenshell::declaration*> to_derive_from;
-		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
-		to_derive_from.push_back(f->schema()->declaration_by_name("IfcSite"));
+		to_derive_from.push_back(f.schema()->declaration_by_name("IfcBuilding"));
+		to_derive_from.push_back(f.schema()->declaration_by_name("IfcSite"));
 		for (auto it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
-			auto insts = f->instances_by_type(*it);
+			auto insts = f.instances_by_type(*it);
 			for (auto& inst : insts) {
                 auto product = inst.as<express::Entity>();	
 				if (!product.get("ObjectPlacement").isNull()) {
