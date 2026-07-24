@@ -1046,7 +1046,6 @@ class CreateDrawing(bpy.types.Operator):
         # linked models) so the SHAPELY fill pass after the loop covers all of
         # them, not just whichever file happened to be processed last.
         raycast_objs = set()
-        elements_with_faces = set()
 
         for ifc_path, (ifc, link_matrix) in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
@@ -1063,7 +1062,6 @@ class CreateDrawing(bpy.types.Operator):
                         continue
                     obj = tool.Ifc.get_object(element)
                     if obj and obj.type == "MESH" and len(obj.data.polygons):
-                        elements_with_faces.add(element.GlobalId)
                         raycast_objs.add(obj)
 
             # Get all representation contexts to see what we're dealing with.
@@ -1145,11 +1143,9 @@ class CreateDrawing(bpy.types.Operator):
                 ".//svg:g[contains(@class, 'projection')]", namespaces={"svg": "http://www.w3.org/2000/svg"}
             )
 
+            # Pool boundary lines from all projections, not just face elements.
             boundary_lines = []
             for projection in projections:
-                global_id = projection.attrib["{http://www.ifcopenshell.org/ns}guid"]
-                if global_id not in elements_with_faces:
-                    continue
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
                     start, end = [[float(o) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
                     if start == end:
