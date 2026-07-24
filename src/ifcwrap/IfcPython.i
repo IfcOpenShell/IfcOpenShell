@@ -194,6 +194,9 @@
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
 
+%ignore filetype;
+%ignore guess_file_type;
+
 // Triangulated representation helper struct
 %ignore EdgeKey;
 
