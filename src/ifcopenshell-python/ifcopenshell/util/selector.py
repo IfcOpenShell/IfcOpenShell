@@ -557,6 +557,9 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                     else:
                         results.append(subvalue)
                 value = results
+        else:
+            # No more keys can be applied to a terminal value.
+            value = None
     return value
 
 
@@ -803,6 +806,12 @@ def set_element_value(
 
                 element = result
         elif isinstance(element, dict):  # Such as from the result of a prior get_pset
+            if len(keys) != i + 1:
+                raise SetElementValueException(
+                    f"Failed to set value '{value}' for element '{original_element}' with query '{query}': "
+                    f"'{key}' is not the last key. If a name contains a literal '.', quote it, "
+                    'e.g. "Pset.Name".Property or /Pset\\.Name/.Property.'
+                )
             pset = ifc_file.by_id(element["id"])
             if isinstance(key, re.Pattern):
                 for prop, prop_value in element.items():
