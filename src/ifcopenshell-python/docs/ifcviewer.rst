@@ -13,4 +13,5 @@ frontends.
    :maxdepth: 1
    :caption: Contents:
 
+   ifcviewer/installation
    ifcviewer/running_tests

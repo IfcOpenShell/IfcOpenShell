@@ -38,6 +38,7 @@ files and viewer-oriented formats such as ``.ifcview`` and ``.rdbview``.
       :caption: Contents
       :maxdepth: 2
 
+      installation
       connectors/index
       debug-output
       env-vars
