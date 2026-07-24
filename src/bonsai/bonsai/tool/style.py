@@ -1078,27 +1078,22 @@ class Style(bonsai.core.tool.Style):
     _last_shading_type: str | None = None
 
     @classmethod
-    def restore_material_style_types(cls, shading_type: str) -> bool:
+    def restore_material_style_types(cls, shading_type: str) -> None:
         """Set each IFC material's active_style_type to the richest available for the given viewport mode.
 
         In SOLID mode all materials use "Shading".
         In MATERIAL_PREVIEW / RENDERED, materials with an external .blend style use "External"
         unless prefer_ifc_shading is set on that material.
-
-        Returns True if any IFC material has IfcSurfaceStyleWithTextures (used to decide color_type).
         """
         if cls._last_shading_type == shading_type:
-            return False
+            return
         cls._last_shading_type = shading_type
 
-        has_any_textures = False
         for material in bpy.data.materials:
             if not tool.Blender.get_ifc_definition_id(material):
                 continue
             props = cls.get_material_style_props(material)
             style_elements = cls.get_style_elements(material)
-            if style_elements.get("IfcSurfaceStyleWithTextures"):
-                has_any_textures = True
             if shading_type == "SOLID":
                 props.active_style_type = "Shading"
                 shading = style_elements.get("IfcSurfaceStyleRendering") or style_elements.get("IfcSurfaceStyleShading")
@@ -1112,4 +1107,3 @@ class Style(bonsai.core.tool.Style):
                 else:
                     props.active_style_type = "Shading"
             material.update_tag()
-        return has_any_textures
