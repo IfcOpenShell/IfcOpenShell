@@ -2150,17 +2150,33 @@ class CreateDrawing(bpy.types.Operator):
             # borders look "owned" by that one element (a concave notch/void
             # cut into its own silhouette, or an internal fold/T-junction
             # between two of its own non-coplanar facets). If a *single*
-            # member's own authoritative polygon test *exclusively* claims
-            # both sides, that settles it categorically: it's that member's
-            # own material on both sides, so the line between them is always
-            # an internal feature, never a duplicate. "Exclusively" matters:
-            # two touching, genuinely different members' own polygons can
-            # each legitimately claim points right on their shared boundary
+            # member's full ownership (authoritative or fallback) *exclusively*
+            # claims both sides, that settles it categorically: it's that
+            # member's own material on both sides, so the line between them is
+            # always an internal feature, never a duplicate. "Exclusively"
+            # matters: two touching, genuinely different members' own polygons
+            # can each legitimately claim points right on their shared boundary
             # too (that's what makes it a real duplicate), so both faces
             # showing e.g. {A, B} must NOT veto -- only a face pair that
             # reduces to the *same single* member on both sides is this
             # element's own self-contained feature, not two elements
             # agreeing on a shared edge.
+            #
+            # This must compare the *combined* face_owners, not just
+            # face_authoritative_owners: at a corner where three members meet
+            # (an "L"-shaped run), independently-projected copies of the same
+            # corner vertex land a few hundred-thousandths of a unit apart,
+            # and the arrangement turns that into a razor-thin sliver face
+            # right at the corner. That sliver is genuinely co-owned by the
+            # member whose own linework closes into a polygon there *and* by
+            # the fallback-only neighbour across the real duplicate edge --
+            # but authoritative_owners_of only ever reflects the side with a
+            # closing polygon, so face_authoritative_owners collapses to just
+            # that one member on both sides of what is actually a genuine
+            # external duplicate. Comparing the full face_owners instead
+            # correctly reveals the second, fallback-only member as a
+            # co-owner, so the veto only fires when truly nothing else
+            # (fallback included) touches either side.
             pairs = ctx.get_face_pairs()
             to_merge = []
             for he in range(0, len(pairs), 2):
@@ -2170,8 +2186,8 @@ class CreateDrawing(bpy.types.Operator):
                 if not (face_owners[a] and face_owners[b]):
                     continue
                 if (
-                    len(face_authoritative_owners[a]) == 1
-                    and face_authoritative_owners[a] == face_authoritative_owners[b]
+                    len(face_owners[a]) == 1
+                    and face_owners[a] == face_owners[b]
                 ):
                     continue
                 to_merge.append(he // 2)
