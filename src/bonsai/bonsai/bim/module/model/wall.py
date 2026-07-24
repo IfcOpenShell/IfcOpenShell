@@ -4298,6 +4298,105 @@ class GizmoSlabEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return tool.Parametric.is_slab(element) and any(tool.Wall.iter_slab_wall_connections(element))
 
 
+class GizmoSlabAlign(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):
+    """Exterior / Centreline / Interior align icons for a selected IfcSlab.
+
+    Unlike ``GizmoWallEdition``'s "baseline" triplet (which cycles a single
+    wall's own material-layer offset via ``bim.cycle_wall_offset`` and only
+    ever needs one selected object), the Exterior/Centreline/Interior tool
+    referenced in #6211 is the two-object "match edges" action already bound
+    to Shift+X/C/V and surfaced as text buttons in the N-panel's Align row
+    (``EditObjectUI.draw_align`` in workspace.py). For a LAYER2 wall that
+    dispatches to ``core.align_walls`` (true layer alignment); for anything
+    else, including IfcSlab, it falls through to ``core.align_objects`` — a
+    generic bounding-box alignment of the selected objects to the active one
+    along whichever world axis needs the least travel (``tool.Model.align_objects``).
+
+    That fallback already works for slabs from the keyboard/N-panel; what was
+    missing was a 3D-viewport affordance a user editing a slab would actually
+    see. This group adds exactly that, dispatching through the same
+    ``bim.hotkey`` operator (hotkeys S_X / S_C / S_V) the N-panel buttons use,
+    so the alignment math itself is not duplicated anywhere."""
+
+    bl_idname = "OBJECT_GGT_bim_slab_align"
+    bl_label = "Slab Align Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    ICON_SCALE: ClassVar[float] = 0.35
+    ICON_SPACING_X: ClassVar[float] = 0.4
+    ICON_Z_OFFSET: ClassVar[float] = 0.5
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        # Shared gate (viewport gizmos enabled, no preview active, no array
+        # child in the selection) — same one the other 2-object wall topology
+        # gizmos (extend / join / fillet) use, since this group shares their
+        # shape: a multi-object action gated on the WHOLE selection, not just
+        # the active object.
+        if not _wall_topology_gizmo_poll_gate(context):
+            return False
+        if len(tool.Blender.get_selected_objects()) < 2:
+            return False
+        obj = tool.Blender.get_active_object(is_selected=True)
+        if obj is None:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if element is None or not element.is_a("IfcSlab"):
+            return False
+        return True
+
+    def setup(self, context: bpy.types.Context) -> None:
+        default_color, highlight_color = self.get_decoration_colors()
+
+        self.exterior_icon = self.setup_icon_gizmo(
+            "VIEW3D_GT_offset_exterior", default_color, highlight_color, "bim.hotkey"
+        )
+        self.exterior_op = self.exterior_icon.target_set_operator("bim.hotkey")
+        self.exterior_op.hotkey = "S_X"
+        self.exterior_op.description = "Align Exterior: match the selected slabs' edge to the active slab's edge"
+
+        self.centerline_icon = self.setup_icon_gizmo(
+            "VIEW3D_GT_offset_center", default_color, highlight_color, "bim.hotkey"
+        )
+        self.centerline_op = self.centerline_icon.target_set_operator("bim.hotkey")
+        self.centerline_op.hotkey = "S_C"
+        self.centerline_op.description = (
+            "Align Centreline: match the selected slabs' centre to the active slab's centre"
+        )
+
+        self.interior_icon = self.setup_icon_gizmo(
+            "VIEW3D_GT_offset_interior", default_color, highlight_color, "bim.hotkey"
+        )
+        self.interior_op = self.interior_icon.target_set_operator("bim.hotkey")
+        self.interior_op.hotkey = "S_V"
+        self.interior_op.description = (
+            "Align Interior: match the selected slabs' opposite edge to the active slab's edge"
+        )
+
+    def position_gizmos(self, context: bpy.types.Context) -> None:
+        obj = tool.Blender.get_active_object(is_selected=True)
+        if obj is None:
+            return
+        bbox_world = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+        anchor = Vector(
+            (
+                sum(v.x for v in bbox_world) / 8,
+                sum(v.y for v in bbox_world) / 8,
+                max(v.z for v in bbox_world),
+            )
+        )
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        screen_up = gizmo.get_screen_up(billboard_rot)
+        anchor += screen_up * self.ICON_Z_OFFSET
+        anchor += gizmo.top_down_clearance(context, billboard_rot)
+        offset_x = billboard_rot @ Vector((self.ICON_SPACING_X, 0.0, 0.0))
+        self.exterior_icon.matrix_basis = gizmo.billboarded_at(anchor - offset_x, billboard_rot, scale=self.ICON_SCALE)
+        self.centerline_icon.matrix_basis = gizmo.billboarded_at(anchor, billboard_rot, scale=self.ICON_SCALE)
+        self.interior_icon.matrix_basis = gizmo.billboarded_at(anchor + offset_x, billboard_rot, scale=self.ICON_SCALE)
+
+
 class GizmoPairDisconnect(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):
     """Surfaces a disconnect icon when exactly 2 IFC elements are selected
     and they share a supported rel — currently the wall + slab pair joined
