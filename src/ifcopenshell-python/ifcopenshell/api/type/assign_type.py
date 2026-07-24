@@ -19,8 +19,11 @@
 from typing import Union
 
 import ifcopenshell
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.owner
+import ifcopenshell.api.root
 import ifcopenshell.api.type
 import ifcopenshell.guid
 import ifcopenshell.util.element
@@ -256,8 +259,13 @@ class Usecase:
                 objects_with_types.append(obj)
 
         objects_to_change = objects_without_types + objects_with_types
-        # nothing to change
+        # nothing to change in the type assignment itself, though an
+        # already-typed occurrence authored before this repair existed may
+        # still be missing its aggregated type parts, so check for those.
         if not objects_to_change:
+            if should_map_representations and (part_types := self.get_typed_decomposition(relating_type)):
+                for related_object in related_objects_set:
+                    self.instantiate_aggregated_type_parts(related_object, part_types)
             return types
 
         # unassign from previous types
@@ -293,6 +301,15 @@ class Usecase:
                         related_object=related_object,
                         relating_type=relating_type,
                     )
+            elif part_types := self.get_typed_decomposition(relating_type):
+                # The type itself carries no geometry, but is decomposed
+                # (IfcRelAggregates) into other types that do, e.g. an
+                # IfcSolarDeviceType built from front/back IfcPlateType
+                # parts. Reflect that decomposition at the occurrence level
+                # too, since IFC requires an occurrence's geometry to come
+                # from itself, its type, or its parts (see #2052, #5505).
+                for related_object in objects_to_change:
+                    self.instantiate_aggregated_type_parts(related_object, part_types)
             self.map_material_usages(objects_to_change, relating_type)
 
         # Remove PredefinedType  / ObjectType if existing to forbid double typing(See #7006)
@@ -317,3 +334,51 @@ class Usecase:
                 products=related_objects,
                 type=f"{ifc_class}Usage",
             )
+
+    def get_typed_decomposition(
+        self, relating_type: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
+        is_decomposed_by = next((r for r in relating_type.IsDecomposedBy if r.is_a("IfcRelAggregates")), None)
+        if not is_decomposed_by:
+            return []
+        part_types = [o for o in is_decomposed_by.RelatedObjects if o.is_a("IfcTypeProduct")]
+        if not any(getattr(part_type, "RepresentationMaps", None) for part_type in part_types):
+            return []
+        return part_types
+
+    def instantiate_aggregated_type_parts(
+        self, related_object: ifcopenshell.entity_instance, part_types: list[ifcopenshell.entity_instance]
+    ) -> None:
+        schema = ifcopenshell.schema_by_name(self.file.schema)
+        existing_part_types = {
+            existing_type
+            for part in ifcopenshell.util.element.get_parts(related_object)
+            if (existing_type := ifcopenshell.util.element.get_type(part)) is not None
+        }
+        for part_type in part_types:
+            if part_type in existing_part_types or not getattr(part_type, "RepresentationMaps", None):
+                continue
+            occurrence_class = self.get_occurrence_class(part_type, schema)
+            if occurrence_class is None:
+                continue
+            part = ifcopenshell.api.root.create_entity(self.file, ifc_class=occurrence_class, name=part_type.Name)
+            ifcopenshell.api.geometry.edit_object_placement(self.file, product=part)
+            ifcopenshell.api.aggregate.assign_object(self.file, products=[part], relating_object=related_object)
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[part], relating_type=part_type)
+
+    def get_occurrence_class(self, type_entity: ifcopenshell.entity_instance, schema) -> Union[str, None]:
+        if applicable_occurrence := getattr(type_entity, "ApplicableOccurrence", None):
+            occurrence_class = applicable_occurrence.split("/", 1)[0]
+            try:
+                schema.declaration_by_name(occurrence_class)
+                return occurrence_class
+            except RuntimeError:
+                pass
+        if (type_class := type_entity.is_a()).endswith("Type"):
+            occurrence_class = type_class[: -len("Type")]
+            try:
+                schema.declaration_by_name(occurrence_class)
+                return occurrence_class
+            except RuntimeError:
+                pass
+        return None
