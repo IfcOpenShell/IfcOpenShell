@@ -281,7 +281,7 @@ class RefreshLibrary(bpy.types.Operator):
         elements = {e for e in elements if not tool.Project.is_element_assigned_to_project_library(e, rels)}
         self.props.add_library_project_library("Unassigned", len(elements), 0, False)
 
-        root_context = tool.Project.get_root_context(library_file)
+        root_context = library_file.by_type("IfcProject")[0]
         hierarchy = tool.Project.get_project_hierarchy(library_file)
         tool.Project.load_project_libraries_to_ui(root_context, hierarchy)
         return {"FINISHED"}
@@ -807,7 +807,7 @@ class AddProjectLibrary(bpy.types.Operator):
         props = tool.Project.get_project_props()
         library_file = IfcStore.library_file
         assert library_file
-        root_context = tool.Project.get_root_context(library_file)
+        root_context = library_file.by_type("IfcProject")[0]
         project_library = ifcopenshell.api.root.create_entity(library_file, "IfcProjectLibrary")
         ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
         ProjectLibraryData.load()  # Update enum.

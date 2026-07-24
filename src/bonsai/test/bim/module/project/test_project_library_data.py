@@ -55,23 +55,18 @@ class TestLibraryFile(NewIfc):
     """Project-library UI code operating on a spec-valid model (IfcProject root).
 
     A file containing only IfcProjectLibrary and no IfcProject is not valid IFC and
-    is not supported; see test_get_root_context_raises_for_a_file_without_a_project.
+    is not supported; see test_parent_libraries_enum_raises_for_a_file_without_a_project.
     """
 
-    def test_get_root_context_returns_the_project(self):
-        library_file = _make_library_file()
-        project = library_file.by_type("IfcProject")[0]
-
-        root = tool.Project.get_root_context(library_file)
-
-        assert root == project
-
-    def test_get_root_context_raises_for_a_file_without_a_project(self):
+    def test_parent_libraries_enum_raises_for_a_file_without_a_project(self):
         library_file = ifcopenshell.api.project.create_file(version="IFC4")
         ifcopenshell.api.root.create_entity(library_file, ifc_class="IfcProjectLibrary", name="RootLib")
-
-        with pytest.raises(IndexError):
-            tool.Project.get_root_context(library_file)
+        IfcStore.library_file = library_file
+        try:
+            with pytest.raises(IndexError):
+                ProjectLibraryData.parent_libraries_enum()
+        finally:
+            IfcStore.library_file = None
 
     def test_get_parent_library_returns_project_for_declared_root_library(self):
         library_file = _make_library_file()
@@ -79,6 +74,12 @@ class TestLibraryFile(NewIfc):
         root = library_file.by_type("IfcProjectLibrary")[0]
 
         assert tool.Project.get_parent_library(root) == project
+
+    def test_get_parent_library_returns_none_for_an_orphaned_library(self):
+        library_file = ifcopenshell.api.project.create_file(version="IFC4")
+        orphan = ifcopenshell.api.root.create_entity(library_file, ifc_class="IfcProjectLibrary", name="Orphan")
+
+        assert tool.Project.get_parent_library(orphan) is None
 
     def test_get_project_hierarchy_roots_libraries_under_the_project(self):
         library_file = _make_library_file(with_child=True)
@@ -92,12 +93,6 @@ class TestLibraryFile(NewIfc):
         assert child in hierarchy[root]
 
     def test_project_library_data_loads_with_unique_enum_keys(self):
-        # Regression test for the ci-bonsai-daily failure: parent_libraries_enum()
-        # must never emit two entries with the same STEP id (Blender's EnumProperty
-        # requires unique keys). The original failure only occurred because the root
-        # context could incorrectly resolve to an IfcProjectLibrary that was also
-        # collected by project_libraries(); on a spec-valid model root is always the
-        # IfcProject, whose id never collides with a library id.
         IfcStore.library_file = _make_library_file(with_child=True)
         try:
             ProjectLibraryData.is_loaded = False

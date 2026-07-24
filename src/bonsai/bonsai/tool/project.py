@@ -388,29 +388,13 @@ class Project(bonsai.core.tool.Project):
     def get_parent_library(
         cls, project_library: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
-        """Return the IfcContext that declares or nests ``project_library``.
-
-        Every IfcProjectLibrary in a supported (spec-valid) file is either nested
-        under another library or declared to the file's IfcProject. Returns ``None``
-        only as a defensive fallback for malformed data with neither relationship.
-        """
+        """Return the IfcContext that declares or nests ``project_library``, or ``None``
+        if neither relationship is present."""
         if nests := project_library.Nests:
             return nests[0].RelatingObject
         if has_context := project_library.HasContext:
             return has_context[0].RelatingContext
         return None
-
-    @classmethod
-    def get_root_context(cls, ifc_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
-        """Return the file's IfcProject.
-
-        Per the IFC Project Context concept template, every project data set (this
-        includes library files) shall contain exactly one IfcProject; there is no
-        such thing as a spec-valid file rooted on IfcProjectLibrary alone. A file
-        without an IfcProject is not supported and this raises IndexError. Caller is
-        responsible for the IFC2X3 guard; IfcContext does not exist in that schema.
-        """
-        return ifc_file.by_type("IfcProject")[0]
 
     @classmethod
     def get_project_hierarchy(cls, ifc_file: ifcopenshell.file) -> HiearchyDict:
