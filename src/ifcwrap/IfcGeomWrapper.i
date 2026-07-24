@@ -256,6 +256,22 @@ namespace {
 %include "../ifcgeom/Converter.h"
 %include "../ifcgeom/ConversionResult.h"
 %include "../ifcgeom/ConversionSettings.h"
+
+// Keep the owning element alive while its geometry is referenced (#1124).
+%define GEOMETRY_WITH_BACKREF(cls)
+%feature("shadow") cls::geometry %{
+	@property
+	def geometry(self):
+		result = $action(self)
+		result._parent = self
+		return result
+%}
+%enddef
+
+GEOMETRY_WITH_BACKREF(IfcGeom::TriangulationElement)
+GEOMETRY_WITH_BACKREF(IfcGeom::SerializedElement)
+GEOMETRY_WITH_BACKREF(IfcGeom::BRepElement)
+
 %include "../ifcgeom/IfcGeomElement.h"
 %include "../ifcgeom/IfcGeomRepresentation.h"
 %include "../ifcgeom/Iterator.h"
@@ -793,27 +809,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 };
 
 %extend IfcGeom::TriangulationElement {
-	%pythoncode %{
-        # Hide the getters with read-only property implementations
-        # Keep the owning element alive while its geometry is referenced (#1124).
-        def geometry_with_backref(self, _f=geometry):
-            result = _f(self)
-            result._parent = self
-            return result
-        geometry = property(geometry_with_backref)
-	%}
 };
 
 %extend IfcGeom::SerializedElement {
-	%pythoncode %{
-        # Hide the getters with read-only property implementations
-        # Keep the owning element alive while its geometry is referenced (#1124).
-        def geometry_with_backref(self, _f=geometry):
-            result = _f(self)
-            result._parent = self
-            return result
-        geometry = property(geometry_with_backref)
-	%}
 };
 
 %extend IfcGeom::BRepElement {
@@ -836,13 +834,6 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
     }
 
     %pythoncode %{
-        # Hide the getters with read-only property implementations
-        # Keep the owning element alive while its geometry is referenced (#1124).
-        def geometry_with_backref(self, _f=geometry):
-            result = _f(self)
-            result._parent = self
-            return result
-        geometry = property(geometry_with_backref)
         volume = property(calc_volume_)
         surface_area = property(calc_surface_area_)
     %}
