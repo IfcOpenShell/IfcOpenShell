@@ -2773,10 +2773,15 @@ class AddDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing_style"
     bl_label = "Add Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a new drawing style, keeping all previously saved styles."
 
     def _execute(self, context):
         assert context.scene and (camera_obj := context.scene.camera)
         props = tool.Drawing.get_document_props()
+        # Reload from disk first so a stale/empty cache can't overwrite previously saved styles. See #4739.
+        reload_result = bpy.ops.bim.reload_drawing_styles()
+        if "CANCELLED" in reload_result:
+            return {"CANCELLED"}
         drawing_styles = props.drawing_styles
         new = drawing_styles.add()
         # drawing style is saved to ifc on rename
