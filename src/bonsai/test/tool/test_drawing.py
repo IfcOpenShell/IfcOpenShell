@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -211,6 +212,78 @@ class TestCreateSvgSheet(NewFile):
         uri = subject.create_svg_sheet(document, "A1")
         assert uri.endswith(".svg")
         assert os.path.isfile(uri)
+
+
+class TestConvertSvgToDxf(NewFile):
+    # A minimal SVG standing in for a real printed drawing: a `<g ifc:name="Drawing">`
+    # group with straight-line building geometry (as IfcConvert's SVG serializer emits it),
+    # plus annotation content (as bonsai's SvgWriter emits it) added as siblings of that
+    # group: plain text, multiline text with tspans, an SVG arc (angle annotation), a leader
+    # line, a revision cloud boundary polyline, and a path mixing straight and curved segments.
+    SVG = """<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ifc="http://www.ifcopenshell.org/ns" viewBox="0 0 210 297">
+<defs>
+<style type="text/css">
+text, tspan {{ font-size: 4.13px; }}
+text.ANGLE, tspan.ANGLE {{ font-size: 3.0px; }}
+</style>
+</defs>
+<g ifc:name="Drawing">
+<g class="wall">
+<path d="M10,10 L20,10 L20,20 L10,20 Z" />
+</g>
+</g>
+<text x="50" y="60" class="regular" text-anchor="start" dominant-baseline="baseline">Wall Tag W1</text>
+<text transform="translate(70, 80) rotate(0)" style="font-size: 0;" text-anchor="middle" dominant-baseline="middle">
+<tspan x="0" y="0" class="regular">3000</tspan>
+<tspan x="0" y="0" class="regular" dy="1em">Dimension line</tspan>
+</text>
+<path d="M100,50 A5 5 0 0 1 105,55" class="ANGLE" />
+<line x1="10" y1="100" x2="60" y2="120" class="leader" />
+<polyline points="10,150 20,145 30,152 40,148" class="revision-cloud" />
+<path d="M120,150 C125,140 135,140 140,150" class="leader-curve" />
+</svg>
+"""
+
+    def test_run(self):
+        import ezdxf
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            svg_path = Path(tmp_dir) / "drawing.svg"
+            dxf_path = Path(tmp_dir) / "drawing.dxf"
+            svg_path.write_text(self.SVG)
+
+            subject.convert_svg_to_dxf(svg_path, dxf_path)
+
+            doc = ezdxf.readfile(dxf_path)
+            msp = doc.modelspace()
+            entity_types = [e.dxftype() for e in msp]
+
+        # The straight-line wall from the linework group still converts as before.
+        assert "LWPOLYLINE" in entity_types
+
+        # Annotation text (labels, multiline dimension text) is no longer dropped.
+        texts = {e.dxf.text for e in msp if e.dxftype() == "TEXT"}
+        assert texts == {"Wall Tag W1", "3000", "Dimension line"}
+
+        # A circular angle-annotation arc becomes a real DXF ARC, not a dropped path.
+        arcs = [e for e in msp if e.dxftype() == "ARC"]
+        assert len(arcs) == 1
+        assert arcs[0].dxf.radius == pytest.approx(5.0)
+
+        # The leader `<line>` and revision cloud `<polyline>` are no longer dropped either.
+        assert entity_types.count("LINE") >= 1
+        assert entity_types.count("LWPOLYLINE") >= 2
+
+    def test_no_annotation_group_returns_early(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            svg_path = Path(tmp_dir) / "drawing.svg"
+            dxf_path = Path(tmp_dir) / "drawing.dxf"
+            svg_path.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+
+            subject.convert_svg_to_dxf(svg_path, dxf_path)
+
+            assert dxf_path.exists()
 
 
 class TestDeleteCollection(NewFile):

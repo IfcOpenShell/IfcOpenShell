@@ -3002,7 +3002,414 @@ class Drawing(bonsai.core.tool.Drawing):
                     else:  # LINE
                         msp.add_line(*points)
 
+        # Annotations (text labels/tags/dimension text, leaders, angle/radius annotations,
+        # revision clouds, etc.) are drawn as siblings of `drawing` above (not nested inside
+        # it), and can use curved path commands (e.g. SVG arcs for angle annotations), so they
+        # need their own, more general walk of the document.
+        cls._convert_svg_annotations_to_dxf(svg, msp, drawing, SVG)
+
         finalize_dxf()
+
+    @classmethod
+    def _convert_svg_annotations_to_dxf(cls, svg, msp, drawing, SVG: str) -> None:
+        """Emit DXF TEXT entities and curved/straight geometry for SVG annotation content.
+
+        `drawing` (the `<g ifc:name="...">` linework group) is skipped here since it's already
+        handled by the caller. `<defs>`, `<marker>`, `<symbol>`, `<pattern>` and `<clipPath>`
+        subtrees are template definitions (e.g. the revision cloud's scalloped marker, arrow
+        heads) rather than directly drawn geometry, so they're skipped too.
+        """
+        from ezdxf.enums import TextEntityAlignment
+        from ezdxf.math import Bezier3P, Bezier4P, Vec2
+
+        NUMBER_RE = r"-?\d+\.?\d*(?:[eE][+-]?\d+)?"
+        IDENTITY = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+        SKIP_TAGS = {f"{SVG}defs", f"{SVG}marker", f"{SVG}symbol", f"{SVG}pattern", f"{SVG}clipPath"}
+
+        def matrix_multiply(m1, m2):
+            """Combine two matrices so that `m2` is applied to a point before `m1`."""
+            a1, b1, c1, d1, e1, f1 = m1
+            a2, b2, c2, d2, e2, f2 = m2
+            return (
+                a1 * a2 + c1 * b2,
+                b1 * a2 + d1 * b2,
+                a1 * c2 + c1 * d2,
+                b1 * c2 + d1 * d2,
+                a1 * e2 + c1 * f2 + e1,
+                b1 * e2 + d1 * f2 + f1,
+            )
+
+        def matrix_apply(m, point):
+            x, y = point
+            a, b, c, d, e, f = m
+            return (a * x + c * y + e, b * x + d * y + f)
+
+        def is_uniform_matrix(m) -> bool:
+            a, b, c, d, _, _ = m
+            return abs(a * c + b * d) < 1e-6 and abs((a * a + b * b) - (c * c + d * d)) < 1e-6
+
+        def matrix_scale(m) -> float:
+            a, b, c, d, _, _ = m
+            det = a * d - b * c
+            return math.sqrt(abs(det)) or 1.0
+
+        def parse_transform(transform_str: Optional[str]):
+            if not transform_str:
+                return IDENTITY
+            matrix = IDENTITY
+            for name, args in re.findall(r"(\w+)\s*\(([^)]*)\)", transform_str):
+                values = [float(v) for v in re.findall(NUMBER_RE, args)]
+                if not values:
+                    continue
+                if name == "translate":
+                    tx = values[0]
+                    ty = values[1] if len(values) > 1 else 0.0
+                    local = (1.0, 0.0, 0.0, 1.0, tx, ty)
+                elif name == "scale":
+                    sx = values[0]
+                    sy = values[1] if len(values) > 1 else sx
+                    local = (sx, 0.0, 0.0, sy, 0.0, 0.0)
+                elif name == "rotate":
+                    angle = math.radians(values[0])
+                    cos_a, sin_a = math.cos(angle), math.sin(angle)
+                    rot = (cos_a, sin_a, -sin_a, cos_a, 0.0, 0.0)
+                    if len(values) >= 3:
+                        cx, cy = values[1], values[2]
+                        local = matrix_multiply(
+                            matrix_multiply((1.0, 0.0, 0.0, 1.0, cx, cy), rot),
+                            (1.0, 0.0, 0.0, 1.0, -cx, -cy),
+                        )
+                    else:
+                        local = rot
+                elif name == "matrix" and len(values) == 6:
+                    local = tuple(values)
+                else:
+                    continue
+                matrix = matrix_multiply(matrix, local)
+            return matrix
+
+        def to_dxf(point) -> tuple[float, float]:
+            # SVG is Y-down, DXF is Y-up.
+            return (point[0], -point[1])
+
+        def rotation_degrees(matrix, local_point) -> float:
+            p0 = to_dxf(matrix_apply(matrix, local_point))
+            p1 = to_dxf(matrix_apply(matrix, (local_point[0] + 1.0, local_point[1])))
+            return math.degrees(math.atan2(p1[1] - p0[1], p1[0] - p0[0]))
+
+        def parse_style_font_sizes(root) -> tuple[dict[str, float], float]:
+            style_text = "".join(style_el.text or "" for style_el in root.iter(f"{SVG}style"))
+            class_sizes: dict[str, float] = {}
+            default_size = 4.13  # matches default.css `text, tspan` font-size (2.5mm), used as a fallback.
+            for match in re.finditer(r"([^{}]+)\{([^{}]*)\}", style_text):
+                selector, body = match.group(1), match.group(2)
+                size_match = re.search(rf"font-size:\s*({NUMBER_RE})", body)
+                if not size_match:
+                    continue
+                size = float(size_match.group(1))
+                for selector_part in selector.split(","):
+                    selector_part = selector_part.strip()
+                    if selector_part in ("text", "tspan"):
+                        default_size = size
+                    elif "." in selector_part:
+                        class_sizes[selector_part.rsplit(".", 1)[1]] = size
+            return class_sizes, default_size
+
+        class_font_sizes, default_font_size = parse_style_font_sizes(svg)
+
+        def get_font_size(element) -> float:
+            classes = (element.get("class") or "").split()
+            for class_name in classes:
+                if class_name in class_font_sizes:
+                    return class_font_sizes[class_name]
+            return default_font_size
+
+        def get_number(value: Optional[str], default: float = 0.0) -> float:
+            if value is None:
+                return default
+            match = re.search(NUMBER_RE, value)
+            return float(match.group(0)) if match else default
+
+        def emit_text(element, matrix) -> None:
+            font_size = get_font_size(element) * matrix_scale(matrix)
+            text_anchor = element.get("text-anchor")
+            baseline = element.get("dominant-baseline")
+            halign = {"start": "LEFT", "middle": "CENTER", "end": "RIGHT"}.get(text_anchor, "LEFT")
+            valign = {"hanging": "TOP", "middle": "MIDDLE", "baseline": "BOTTOM"}.get(baseline, "BOTTOM")
+            try:
+                alignment = TextEntityAlignment[f"{valign}_{halign}"]
+            except KeyError:
+                alignment = TextEntityAlignment.LEFT
+
+            base_x = get_number(element.get("x"))
+            base_y = get_number(element.get("y"))
+
+            tspans = element.findall(f"{SVG}tspan")
+            lines = tspans if tspans else [element]
+
+            for tspan in lines:
+                text_content = (tspan.text or "").strip()
+                if not text_content:
+                    continue
+                local_x = get_number(tspan.get("x"), base_x)
+                dy_em = get_number(tspan.get("dy"), 0.0)
+                local_y = get_number(tspan.get("y"), base_y) + dy_em * font_size
+
+                insert = to_dxf(matrix_apply(matrix, (local_x, local_y)))
+                rotation = rotation_degrees(matrix, (local_x, local_y))
+                text_entity = msp.add_text(text_content, dxfattribs={"height": font_size or 2.5, "rotation": rotation})
+                text_entity.set_placement(insert, align=alignment)
+
+        def emit_straight_points(points: list[tuple[float, float]], closed: bool) -> None:
+            if len(points) < 2:
+                return
+            if closed or len(points) > 2:
+                msp.add_lwpolyline(points, close=closed)
+            else:
+                msp.add_line(points[0], points[1])
+
+        def emit_line(element, matrix) -> None:
+            p1 = (get_number(element.get("x1")), get_number(element.get("y1")))
+            p2 = (get_number(element.get("x2")), get_number(element.get("y2")))
+            points = [to_dxf(matrix_apply(matrix, p)) for p in (p1, p2)]
+            emit_straight_points(points, closed=False)
+
+        def emit_polyline(element, matrix) -> None:
+            points_str = (element.get("points") or "").strip()
+            if not points_str:
+                return
+            numbers = [float(n) for n in re.findall(NUMBER_RE, points_str)]
+            points = [to_dxf(matrix_apply(matrix, (numbers[i], numbers[i + 1]))) for i in range(0, len(numbers) - 1, 2)]
+            emit_straight_points(points, closed=False)
+
+        def flatten_cubic(p0, p1, p2, p3, matrix) -> list[tuple[float, float]]:
+            bezier = Bezier4P([Vec2(*p0), Vec2(*p1), Vec2(*p2), Vec2(*p3)])
+            return [to_dxf(matrix_apply(matrix, (p.x, p.y))) for p in bezier.approximate(16)]
+
+        def flatten_quadratic(p0, p1, p2, matrix) -> list[tuple[float, float]]:
+            bezier = Bezier3P([Vec2(*p0), Vec2(*p1), Vec2(*p2)])
+            return [to_dxf(matrix_apply(matrix, (p.x, p.y))) for p in bezier.approximate(16)]
+
+        def emit_arc(p0, rx, ry, x_axis_rotation, large_arc, sweep, p1, matrix) -> None:
+            x1, y1 = p0
+            x2, y2 = p1
+            if rx == 0 or ry == 0 or (x1 == x2 and y1 == y2):
+                emit_straight_points([to_dxf(matrix_apply(matrix, p0)), to_dxf(matrix_apply(matrix, p1))], False)
+                return
+
+            phi = math.radians(x_axis_rotation)
+            cos_phi, sin_phi = math.cos(phi), math.sin(phi)
+            dx2, dy2 = (x1 - x2) / 2.0, (y1 - y2) / 2.0
+            x1p = cos_phi * dx2 + sin_phi * dy2
+            y1p = -sin_phi * dx2 + cos_phi * dy2
+
+            rx, ry = abs(rx), abs(ry)
+            lam = (x1p**2) / (rx**2) + (y1p**2) / (ry**2)
+            if lam > 1:
+                scale = math.sqrt(lam)
+                rx, ry = rx * scale, ry * scale
+
+            sign = -1.0 if large_arc == sweep else 1.0
+            num = rx**2 * ry**2 - rx**2 * y1p**2 - ry**2 * x1p**2
+            denom = rx**2 * y1p**2 + ry**2 * x1p**2
+            co = sign * math.sqrt(max(0.0, num / denom)) if denom else 0.0
+            cxp = co * (rx * y1p) / ry
+            cyp = -co * (ry * x1p) / rx
+
+            cx = cos_phi * cxp - sin_phi * cyp + (x1 + x2) / 2.0
+            cy = sin_phi * cxp + cos_phi * cyp + (y1 + y2) / 2.0
+
+            def angle_between(ux, uy, vx, vy) -> float:
+                dot = ux * vx + uy * vy
+                length = math.sqrt((ux**2 + uy**2) * (vx**2 + vy**2)) or 1.0
+                cos_ang = max(-1.0, min(1.0, dot / length))
+                ang = math.degrees(math.acos(cos_ang))
+                return -ang if (ux * vy - uy * vx) < 0 else ang
+
+            theta1 = angle_between(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry)
+            delta_theta = angle_between((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry)
+            if not sweep and delta_theta > 0:
+                delta_theta -= 360
+            elif sweep and delta_theta < 0:
+                delta_theta += 360
+            theta_mid = theta1 + delta_theta / 2.0
+
+            if is_uniform_matrix(matrix) and abs(rx - ry) < 1e-6:
+                # A true circular arc, use a real DXF ARC entity for a clean, editable result.
+                scale = matrix_scale(matrix)
+                center = to_dxf(matrix_apply(matrix, (cx, cy)))
+                radius = rx * scale
+                start_pt = to_dxf(matrix_apply(matrix, p0))
+                end_pt = to_dxf(matrix_apply(matrix, p1))
+                mid_x = cx + rx * math.cos(math.radians(theta_mid))
+                mid_y = cy + ry * math.sin(math.radians(theta_mid))
+                mid_pt = to_dxf(matrix_apply(matrix, (mid_x, mid_y)))
+                start_angle = math.degrees(math.atan2(start_pt[1] - center[1], start_pt[0] - center[0]))
+                end_angle = math.degrees(math.atan2(end_pt[1] - center[1], end_pt[0] - center[0]))
+                mid_angle = math.degrees(math.atan2(mid_pt[1] - center[1], mid_pt[0] - center[0]))
+                sweep_ccw = (end_angle - start_angle) % 360
+                mid_offset = (mid_angle - start_angle) % 360
+                if mid_offset > sweep_ccw:
+                    start_angle, end_angle = end_angle, start_angle
+                if radius > 1e-9:
+                    msp.add_arc(center=center, radius=radius, start_angle=start_angle, end_angle=end_angle)
+                    return
+
+            # Fallback: flatten the (possibly elliptical/transformed) arc into a polyline.
+            steps = max(2, int(abs(delta_theta) / 6) + 1)
+            points = []
+            for i in range(steps + 1):
+                t = theta1 + delta_theta * i / steps
+                px = cx + rx * math.cos(math.radians(t)) * cos_phi - ry * math.sin(math.radians(t)) * sin_phi
+                py = cy + rx * math.cos(math.radians(t)) * sin_phi + ry * math.sin(math.radians(t)) * cos_phi
+                points.append(to_dxf(matrix_apply(matrix, (px, py))))
+            emit_straight_points(points, closed=False)
+
+        PATH_TOKEN_RE = re.compile(rf"([MLHVCSQTAZmlhvcsqtaz])|({NUMBER_RE})")
+
+        def emit_path(element, matrix) -> None:
+            d = element.get("d")
+            if not d:
+                return
+            tokens = [(t[0] or None, t[1]) for t in PATH_TOKEN_RE.findall(d)]
+
+            current = (0.0, 0.0)
+            subpath_start = current
+            straight_run: list[tuple[float, float]] = []
+
+            def flush_straight_run(closed: bool = False) -> None:
+                nonlocal straight_run
+                if len(straight_run) >= 2:
+                    emit_straight_points([to_dxf(matrix_apply(matrix, p)) for p in straight_run], closed)
+                straight_run = []
+
+            i = 0
+            command = None
+            while i < len(tokens):
+                token_cmd, token_num = tokens[i]
+                if token_cmd:
+                    command = token_cmd
+                    i += 1
+                    # Z/z (closepath) takes no arguments, so it must be handled here rather than
+                    # deferred to the next token, which may never come (e.g. path ends with "...Z").
+                    if command.upper() != "Z":
+                        continue
+                if command is None:
+                    i += 1
+                    continue
+
+                def read_numbers(count: int) -> list[float]:
+                    nonlocal i
+                    values = []
+                    for _ in range(count):
+                        _, num = tokens[i]
+                        values.append(float(num))
+                        i += 1
+                    return values
+
+                cmd_upper = command.upper()
+                relative = command.islower()
+
+                if cmd_upper == "M":
+                    x, y = read_numbers(2)
+                    if relative:
+                        x, y = current[0] + x, current[1] + y
+                    if straight_run:
+                        flush_straight_run(False)
+                    current = (x, y)
+                    subpath_start = current
+                    straight_run = [current]
+                    command = "l" if relative else "L"
+                elif cmd_upper == "L":
+                    x, y = read_numbers(2)
+                    if relative:
+                        x, y = current[0] + x, current[1] + y
+                    current = (x, y)
+                    if not straight_run:
+                        straight_run = [current]
+                    else:
+                        straight_run.append(current)
+                elif cmd_upper == "H":
+                    (x,) = read_numbers(1)
+                    x = current[0] + x if relative else x
+                    current = (x, current[1])
+                    straight_run.append(current)
+                elif cmd_upper == "V":
+                    (y,) = read_numbers(1)
+                    y = current[1] + y if relative else y
+                    current = (current[0], y)
+                    straight_run.append(current)
+                elif cmd_upper == "Z":
+                    if straight_run:
+                        if straight_run[0] == subpath_start:
+                            # The whole subpath is a straight run starting at `subpath_start`,
+                            # so `close=True` alone implies the closing segment back to it.
+                            flush_straight_run(True)
+                        else:
+                            # A curve command broke up the straight run since `subpath_start`,
+                            # so the closing segment back to it needs to be made explicit.
+                            straight_run.append(subpath_start)
+                            flush_straight_run(False)
+                    current = subpath_start
+                elif cmd_upper in ("C", "S"):
+                    values = read_numbers(6 if cmd_upper == "C" else 4)
+                    if cmd_upper == "S":
+                        values = [current[0], current[1]] + values[:2] + values[2:]
+                    flush_straight_run(False)
+                    p0 = current
+                    p1, p2, p3 = (values[0], values[1]), (values[2], values[3]), (values[4], values[5])
+                    if relative:
+                        p1 = (p0[0] + p1[0], p0[1] + p1[1])
+                        p2 = (p0[0] + p2[0], p0[1] + p2[1])
+                        p3 = (p0[0] + p3[0], p0[1] + p3[1])
+                    emit_straight_points(flatten_cubic(p0, p1, p2, p3, matrix), False)
+                    current = p3
+                    straight_run = [current]
+                elif cmd_upper in ("Q", "T"):
+                    values = read_numbers(4 if cmd_upper == "Q" else 2)
+                    if cmd_upper == "T":
+                        values = [current[0], current[1]] + values
+                    flush_straight_run(False)
+                    p0 = current
+                    p1, p2 = (values[0], values[1]), (values[2], values[3])
+                    if relative:
+                        p1 = (p0[0] + p1[0], p0[1] + p1[1])
+                        p2 = (p0[0] + p2[0], p0[1] + p2[1])
+                    emit_straight_points(flatten_quadratic(p0, p1, p2, matrix), False)
+                    current = p2
+                    straight_run = [current]
+                elif cmd_upper == "A":
+                    rx, ry, rot, large_arc, sweep, x, y = read_numbers(7)
+                    if relative:
+                        x, y = current[0] + x, current[1] + y
+                    flush_straight_run(False)
+                    emit_arc(current, rx, ry, rot, bool(large_arc), bool(sweep), (x, y), matrix)
+                    current = (x, y)
+                    straight_run = [current]
+                else:
+                    i += 1
+                    continue
+
+            flush_straight_run(False)
+
+        def walk(element, matrix) -> None:
+            if element is drawing or element.tag in SKIP_TAGS:
+                return
+            tag = element.tag
+            own_matrix = matrix_multiply(matrix, parse_transform(element.get("transform")))
+            if tag == f"{SVG}text":
+                emit_text(element, own_matrix)
+                return
+            elif tag == f"{SVG}line":
+                emit_line(element, own_matrix)
+            elif tag == f"{SVG}polyline":
+                emit_polyline(element, own_matrix)
+            elif tag == f"{SVG}path" and "d" in element.attrib:
+                emit_path(element, own_matrix)
+            for child in element:
+                walk(child, own_matrix)
+
+        walk(svg, IDENTITY)
 
     @classmethod
     def remove_drawing_from_sheet(cls, reference: ifcopenshell.entity_instance) -> None:
