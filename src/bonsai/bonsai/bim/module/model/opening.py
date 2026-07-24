@@ -240,6 +240,33 @@ def _store_batch_in_cache(cache_key: tuple[int, str], batch: "gpu.types.GPUBatch
     _batch_cache[cache_key] = (epoch, batch)
 
 
+def get_surface_aligned_rotation(voided_obj_matrix_world: Matrix, local_normal: Vector) -> Matrix:
+    """Rotation that lays a filling flush against the host's surface at the
+    raycasted point, with its "up" axis following the surface's slope.
+
+    Generalises the old flat-slab assumption (host's own rotation, twisted
+    -90 degrees around X) to any face normal, so a filling rotates to match
+    a sloped face (eg. a parametric roof) rather than always coming out
+    horizontal. Reduces to the exact old result when ``local_normal`` is the
+    host's local +Z (flat slabs, and single-slope hosts whose whole object
+    is tilted, eg. a "Horizontal Layers" roof).
+    """
+    normal_matrix = voided_obj_matrix_world.to_3x3().inverted().transposed()
+    world_normal = (normal_matrix @ local_normal).normalized()
+
+    world_up = Vector((0.0, 0.0, 1.0))
+    tangent = world_up - world_up.dot(world_normal) * world_normal
+    if tangent.length < 1e-6:
+        tangent = Vector((0.0, 1.0, 0.0))
+    tangent.normalize()
+
+    y_axis = -world_normal
+    x_axis = y_axis.cross(tangent).normalized()
+    z_axis = tangent
+
+    return Matrix((x_axis, y_axis, z_axis)).transposed().to_4x4()
+
+
 def is_filling_supported(element) -> bool:
     """True when Bonsai's opening generator can derive an opening from this
     element. IFC's schema permits any IfcElement as a filling; Bonsai
@@ -319,13 +346,26 @@ class FilledOpeningGenerator:
                 else:
                     new_matrix.translation.z = filling_obj.matrix_world.copy().translation.z
             elif layers["layer_set_direction"] == "AXIS3":
-                new_matrix = voided_obj.matrix_world.copy()
                 local_position_on_voided_obj = raycast[1]
-                # Equivalent to "side Z" for a wall axis, so that stuff like skylights appear on the top.
-                local_position_on_voided_obj.z = layers["offset"] + layers["thickness"]
-                new_matrix.translation.xyz = voided_obj.matrix_world @ local_position_on_voided_obj
-                rotation_matrix = Matrix.Rotation(radians(-90), 4, "X")
-                new_matrix @= rotation_matrix
+                if layers["offset"] or layers["thickness"]:
+                    # A real material layer set to read a "top of layers" elevation from:
+                    # keep the exact existing flat-host behaviour (host's own rotation,
+                    # twisted -90 around X; equivalent to "side Z" for a wall axis, so
+                    # that stuff like skylights appear on the top).
+                    local_position_on_voided_obj.z = layers["offset"] + layers["thickness"]
+                    new_matrix = voided_obj.matrix_world.copy()
+                    new_matrix.translation.xyz = voided_obj.matrix_world @ local_position_on_voided_obj
+                    new_matrix @= Matrix.Rotation(radians(-90), 4, "X")
+                else:
+                    # No material layer set (eg. a parametric roof, which never gets
+                    # one): there's no single flat elevation to snap to, and the host
+                    # object itself usually isn't rotated even though individual faces
+                    # are sloped, so fall back to the actual raycasted point and its
+                    # face normal instead of assuming a flat top face.
+                    new_translation = voided_obj.matrix_world @ local_position_on_voided_obj
+                    new_matrix = Matrix.Translation(new_translation) @ get_surface_aligned_rotation(
+                        voided_obj.matrix_world, raycast[2]
+                    )
             else:
                 assert False, f"Unexpected layer set direction: {layers['layer_set_direction']}"
 
