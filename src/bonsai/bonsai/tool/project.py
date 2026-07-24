@@ -38,6 +38,8 @@ from typing import (
 import bpy
 import ifcopenshell
 import ifcopenshell.api.document
+import ifcopenshell.api.project
+import ifcopenshell.api.root
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
@@ -390,8 +392,10 @@ class Project(bonsai.core.tool.Project):
     ) -> Union[ifcopenshell.entity_instance, None]:
         """Return the IfcContext that declares or nests ``project_library``.
 
-        Returns ``None`` when ``project_library`` is itself the root of a
-        library-only file (no IfcRelNests, no IfcRelDeclares).
+        Every IfcProjectLibrary should be either nested under another library or
+        declared to the file's IfcProject (see ensure_project_context()). Returns
+        ``None`` only as a defensive fallback for malformed data with neither
+        relationship, which should not occur on a normalized file.
         """
         if nests := project_library.Nests:
             return nests[0].RelatingObject
@@ -401,15 +405,52 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def get_root_context(cls, ifc_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
-        """Return the file's root IfcContext.
+        """Return the file's IfcProject.
 
-        Prefers IfcProject if present, otherwise falls back to IfcProjectLibrary —
-        library-only files are valid per IFC4+ and contain no IfcProject. Caller is
-        responsible for the IFC2X3 guard; IfcContext does not exist in that schema.
+        Per the IFC Project Context concept template, every project data set (this
+        includes library files) shall contain exactly one IfcProject; there is no
+        such thing as a spec-valid file rooted on IfcProjectLibrary alone. Files
+        opened through open_library_file() are normalized by ensure_project_context()
+        so an IfcProject is always present here. The IfcProjectLibrary fallback below
+        only guards callers that bypass that normalization (e.g. a file opened
+        directly with ifcopenshell.open); it is not a legitimate IFC structure and
+        should not be relied upon. Caller is responsible for the IFC2X3 guard;
+        IfcContext does not exist in that schema.
         """
         if projects := ifc_file.by_type("IfcProject"):
             return projects[0]
         return ifc_file.by_type("IfcProjectLibrary")[0]
+
+    @classmethod
+    def ensure_project_context(cls, ifc_file: ifcopenshell.file) -> None:
+        """Repair a file that is missing the IfcProject the IFC spec requires.
+
+        Some externally authored library files only contain IfcProjectLibrary, with
+        no IfcProject (see #8183). Per the Project Context concept template, all
+        project data sets shall contain a single IfcProject, and IfcProjectLibrary
+        instances are assigned to it via IfcRelDeclares. Rather than treating such a
+        file as though a bare IfcProjectLibrary were a legitimate root context, create
+        the missing IfcProject and declare the file's root-level IfcProjectLibrary
+        instances to it, so the in-memory model becomes spec-valid.
+        """
+        if ifc_file.schema == "IFC2X3" or ifc_file.by_type("IfcProject"):
+            return
+        root_libraries = [lib for lib in ifc_file.by_type("IfcProjectLibrary") if not lib.Nests and not lib.HasContext]
+        if not root_libraries:
+            return
+        project = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Unnamed")
+        ifcopenshell.api.project.assign_declaration(ifc_file, definitions=root_libraries, relating_context=project)
+
+    @classmethod
+    def open_library_file(cls, filepath: str) -> ifcopenshell.file:
+        """Open a library file, repairing a missing IfcProject if needed.
+
+        See ensure_project_context() for why this repair is necessary rather than
+        treating a library-only file as spec-valid.
+        """
+        library_file = ifcopenshell.open(filepath)
+        cls.ensure_project_context(library_file)
+        return library_file
 
     @classmethod
     def get_project_hierarchy(cls, ifc_file: ifcopenshell.file) -> HiearchyDict:

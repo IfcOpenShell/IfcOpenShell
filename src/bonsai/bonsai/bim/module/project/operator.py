@@ -215,7 +215,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
         filepath = self.get_filepath()
         ifc_file = tool.Ifc.get()
         library_file: ifcopenshell.file
-        library_file = ifcopenshell.open(filepath)
+        library_file = tool.Project.open_library_file(filepath)
         if library_file.schema_identifier != ifc_file.schema_identifier:
             self.report(
                 {"ERROR"},
@@ -237,14 +237,14 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     def rollback(self, data):
         if data["old_filepath"]:
             IfcStore.library_path = data["old_filepath"]
-            IfcStore.library_file = ifcopenshell.open(data["old_filepath"])
+            IfcStore.library_file = tool.Project.open_library_file(data["old_filepath"])
         else:
             IfcStore.library_path = ""
             IfcStore.library_file = None
 
     def commit(self, data):
         IfcStore.library_path = data["filepath"]
-        IfcStore.library_file = ifcopenshell.open(data["filepath"])
+        IfcStore.library_file = tool.Project.open_library_file(data["filepath"])
 
     def draw(self, context):
         self.layout.prop(self, "append_all", text="Append Entire Library")
