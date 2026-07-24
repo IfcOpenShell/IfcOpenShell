@@ -2,4 +2,4 @@ black==26.3.1
 ruff==0.16.0
 poethepoet
 ty==0.0.59
-gersemi==0.26.1
+gersemi==0.28.0
