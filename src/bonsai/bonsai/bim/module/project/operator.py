@@ -1299,6 +1299,10 @@ class LoadProjectElements(bpy.types.Operator):
         tool.Project.set_default_modeling_dimensions()
         tool.Root.reload_grid_decorator()
         bonsai.bim.handler.refresh_ui_data()
+        for screen in bpy.data.screens:
+            for area in screen.areas:
+                if area.type == "VIEW_3D":
+                    bonsai.bim.handler.viewport_shading_changed_callback(area)
         return {"FINISHED"}
 
     def get_decomposition_elements(self) -> set[ifcopenshell.entity_instance]:

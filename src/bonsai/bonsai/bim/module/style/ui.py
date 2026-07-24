@@ -110,6 +110,11 @@ class BIM_PT_styles(Panel):
                 op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
                 op.style_id = style.ifc_definition_id
 
+            if active_style and self.props.style_type == "IfcSurfaceStyle":
+                if material := style.blender_material:
+                    msprops = tool.Style.get_material_style_props(material)
+                    self.draw_style_status_row(material, msprops)
+
             if self.props.style_type == "IfcSurfaceStyle":
                 self.layout.label(text="Surface Style Element:")
                 col = self.layout.column(align=True)
@@ -160,6 +165,66 @@ class BIM_PT_styles(Panel):
                 self.draw_lighting_surface_style()
                 edit_label = "Save Lighting Style"
             self.draw_edit_ui(edit_label)
+
+    def draw_style_status_row(self, material: bpy.types.Material, msprops) -> None:
+        space = tool.Blender.get_view3d_space()
+        box = self.layout.box()
+
+        obj = bpy.context.active_object
+
+        parts = []
+        if space:
+            shading_type = space.shading.type
+            shading_labels = {
+                "SOLID": "Solid",
+                "MATERIAL": "Material Preview",
+                "RENDERED": "Rendered",
+                "WIREFRAME": "Wireframe",
+            }
+            parts.append(f"Viewport: {shading_labels.get(shading_type, shading_type)}")
+        else:
+            parts.append("No 3D viewport")
+            shading_type = None
+
+        if obj:
+            obj_has_uv = isinstance(obj.data, bpy.types.Mesh) and bool(obj.data.uv_layers)
+            uv_label = "UV \u2713" if obj_has_uv else "UV \u2717"
+            parts.append(f"Selected Object: {obj.name} {uv_label}")
+        else:
+            parts.append("Selected Object: None")
+
+        if shading_type == "SOLID":
+            is_flat = space.shading.color_type != "TEXTURE"
+            mode_label = "Flat"
+            dep_label = "Shade"
+            if not is_flat:
+                mode_label = "Pretty"
+                dep_label = "Texture \u2192 Shade"
+        elif shading_type in ("MATERIAL", "RENDERED"):
+            is_flat = msprops.prefer_ifc_shading
+            mode_label = "Flat"
+            dep_label = "Render+Texture \u2192 Render \u2192 Shade"
+            if not is_flat:
+                mode_label = "Pretty"
+                dep_label = "External \u2192 Render+Texture \u2192 Render \u2192 Shade"
+        else:
+            is_flat = False
+            mode_label = ""
+            dep_label = ""
+
+        row1 = box.row(align=True)
+        row1.label(text=" | ".join(parts))
+
+        if mode_label:
+            row2 = box.row(align=True)
+            row2.label(text=f"Current Mode: {mode_label} \u2014 {dep_label}")
+
+        row3 = box.row(align=True)
+        row3.alignment = "RIGHT"
+        op = row3.operator("bim.suggest_shade_from_external_style", text="", icon="BRUSHES_ALL")
+        op.material_name = material.name
+        op = row3.operator("bim.toggle_prefer_ifc_shading", text="", icon="UV_SYNC_SELECT")
+        op.material_name = material.name
 
     def draw_surface_style_shading(self):
         row = self.layout.row()
