@@ -2197,7 +2197,11 @@ class Model(bonsai.core.tool.Model):
         for element in elements:
             if not (obj := tool.Ifc.get_object(element)) or not (data := obj.data):
                 continue
-            representation = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(data).ifc_definition_id)
+            ifc_id = tool.Geometry.get_mesh_props(data).ifc_definition_id
+            try:
+                representation = tool.Ifc.get().by_id(ifc_id)
+            except RuntimeError:
+                continue
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,

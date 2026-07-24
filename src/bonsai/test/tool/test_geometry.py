@@ -299,6 +299,34 @@ class TestIsBodyRepresentation(NewFile):
         assert subject.is_body_representation(representation) is False
 
 
+class TestIsBooleanOperand(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        item = ifc.createIfcBooleanResult()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = item.id()
+        assert subject.is_boolean_operand(obj) is True
+
+    def test_returns_false_for_non_boolean_item(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        item = ifc.createIfcShapeRepresentation()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = item.id()
+        assert subject.is_boolean_operand(obj) is False
+
+    def test_returns_false_instead_of_raising_for_a_stale_ifc_definition_id(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        item = ifc.createIfcBooleanResult()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        stale_id = item.id()
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
+        ifc.remove(item)
+        assert subject.is_boolean_operand(obj) is False
+
+
 class TestIsBoxRepresentation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

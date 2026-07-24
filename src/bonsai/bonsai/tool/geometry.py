@@ -1411,18 +1411,20 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def is_boolean_operand(cls, obj: bpy.types.Object) -> bool:
+        if not (data := obj.data) or not isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES):
+            return False
+        if not (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id):
+            return False
+        try:
+            item = tool.Ifc.get().by_id(ifc_id)
+        except RuntimeError:
+            return False
         return bool(
-            (data := obj.data)
-            and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
-            and (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id)
-            and (item := tool.Ifc.get().by_id(ifc_id))
-            and (
-                item.is_a("IfcBooleanResult")
-                or item.is_a("IfcCsgPrimitive3D")
-                or item.is_a("IfcHalfSpaceSolid")
-                or item.is_a("IfcSolidModel")
-                or item.is_a("IfcTessellatedFaceSet")
-            )
+            item.is_a("IfcBooleanResult")
+            or item.is_a("IfcCsgPrimitive3D")
+            or item.is_a("IfcHalfSpaceSolid")
+            or item.is_a("IfcSolidModel")
+            or item.is_a("IfcTessellatedFaceSet")
         )
 
     @classmethod
