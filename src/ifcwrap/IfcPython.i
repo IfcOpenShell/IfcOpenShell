@@ -201,6 +201,12 @@
 %ignore MaxOffset;
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
+%ignore SvgRidgeAngleMinDegrees;
+%ignore SvgValleyAngleMinDegrees;
+%ignore SvgEmitFlushEdges;
+%ignore SvgUseEdgeClassification;
+%ignore SvgRenderCreaseEdges;
+%ignore SvgRenderSharpEdges;
 
 %ignore filetype;
 %ignore guess_file_type;
