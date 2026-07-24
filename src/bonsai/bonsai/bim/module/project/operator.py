@@ -215,7 +215,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
         filepath = self.get_filepath()
         ifc_file = tool.Ifc.get()
         library_file: ifcopenshell.file
-        library_file = tool.Project.open_library_file(filepath)
+        library_file = ifcopenshell.open(filepath)
         if library_file.schema_identifier != ifc_file.schema_identifier:
             self.report(
                 {"ERROR"},
@@ -237,14 +237,14 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     def rollback(self, data):
         if data["old_filepath"]:
             IfcStore.library_path = data["old_filepath"]
-            IfcStore.library_file = tool.Project.open_library_file(data["old_filepath"])
+            IfcStore.library_file = ifcopenshell.open(data["old_filepath"])
         else:
             IfcStore.library_path = ""
             IfcStore.library_file = None
 
     def commit(self, data):
         IfcStore.library_path = data["filepath"]
-        IfcStore.library_file = tool.Project.open_library_file(data["filepath"])
+        IfcStore.library_file = ifcopenshell.open(data["filepath"])
 
     def draw(self, context):
         self.layout.prop(self, "append_all", text="Append Entire Library")
@@ -809,10 +809,7 @@ class AddProjectLibrary(bpy.types.Operator):
         assert library_file
         root_context = tool.Project.get_root_context(library_file)
         project_library = ifcopenshell.api.root.create_entity(library_file, "IfcProjectLibrary")
-        if root_context.is_a("IfcProject"):
-            ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
-        else:
-            ifcopenshell.api.nest.assign_object(library_file, [project_library], root_context)
+        ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
         ProjectLibraryData.load()  # Update enum.
         props.selected_project_library = str(project_library.id())
         props.is_editing_project_library = True

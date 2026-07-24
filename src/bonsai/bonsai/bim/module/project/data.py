@@ -165,9 +165,6 @@ class ProjectLibraryData:
         root = tool.Project.get_root_context(library_file)
         results.append((str(root.id()), f"{root.is_a()} {root.Name or 'Unnamed'}", root.Description or ""))
         for library_id, data in cls.data["project_libraries"].items():
-            # Defensive guard only; see tool.Project.ensure_project_context for the fix.
-            if library_id == root.id():
-                continue
             results.append((str(library_id), data["Name"] or "Unnamed", data["Description"] or ""))
         return results
 
