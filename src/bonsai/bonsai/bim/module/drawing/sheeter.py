@@ -26,6 +26,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.dom import minidom
 
+import ifcopenshell.util.document
 import ifcopenshell.util.geolocation
 import pystache
 from mathutils import Vector
@@ -319,7 +320,9 @@ class SheetBuilder:
     def build_titleblock(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
         image = titleblock.findall(f"{SVG}image")[0]
-        g = self.parse_embedded_svg(image, sheet.get_info())
+        data = sheet.get_info()
+        data["Revisions"] = [r.get_info() for r in ifcopenshell.util.document.get_revision_history(sheet)]
+        g = self.parse_embedded_svg(image, data)
         grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
         true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
         for north in g.iterfind(f'.//{SVG}g[@data-type="grid-north"]'):
