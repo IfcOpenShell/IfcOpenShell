@@ -2246,7 +2246,23 @@ class CreateDrawing(bpy.types.Operator):
             # cleanup: merge same-group paths that share a line key and
             # overlapping interval, same as the interval bucketing used for
             # attribution above.
-            for m in members:
+            #
+            # A subtler version of the same problem: when the two
+            # near-duplicate copies aren't just offset but taper along their
+            # length (one drifts a few hundredths of a unit relative to the
+            # other), the arrangement can produce a small knot of degenerate
+            # faces at the crossing that don't all reduce to one clean merge
+            # -- most of the shared line dissolves correctly, but a short
+            # residual crumb survives in one member's group. Drop any
+            # resulting interval shorter than RESIDUAL_SLIVER_LENGTH if
+            # another cluster member's own geometry genuinely overlaps that
+            # same span: a real, single-owner feature would never coincide
+            # with a different member's line at the exact same place, so
+            # this only ever fires on leftovers from what should have been a
+            # multi-member shared (and fully dissolved) boundary.
+            RESIDUAL_SLIVER_LENGTH = 0.5
+
+            for mi, m in enumerate(members):
                 by_key = {}
                 for path_el in list(m["grp"].findall(f"{{{SVG}}}path")):
                     seg = parse_line(path_el.get("d", ""))
@@ -2258,16 +2274,19 @@ class CreateDrawing(bpy.types.Operator):
                     coord = seg_axis_coord(seg, key[0])
                     by_key.setdefault(key, []).append((path_el, seg_interval(seg), coord))
                 for key, entries in by_key.items():
-                    if len(entries) < 2:
-                        continue
-                    ivs = [iv for _, iv, _ in entries]
-                    merged = ivs_union(ivs)
-                    if len(merged) == len(entries):
-                        continue
+                    merged = ivs_union([iv for _, iv, _ in entries])
+                    kept = []
+                    for lo, hi in merged:
+                        if hi - lo < RESIDUAL_SLIVER_LENGTH and any(
+                            mj != mi and ivs_intersect([(lo, hi)], member_lines[mj].get(key, []))
+                            for mj in range(len(members))
+                        ):
+                            continue
+                        kept.append((lo, hi))
                     coord = entries[0][2]
                     for path_el, _, _ in entries:
                         m["grp"].remove(path_el)
-                    for lo, hi in merged:
+                    for lo, hi in kept:
                         new_path = etree.SubElement(m["grp"], f"{{{SVG}}}path")
                         (x0, y0), (x1, y1) = make_seg(key[0], coord, lo, hi)
                         new_path.set("d", f"M{x0},{y0} L{x1},{y1}")
