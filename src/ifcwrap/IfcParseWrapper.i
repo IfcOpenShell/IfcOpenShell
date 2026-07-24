@@ -1045,8 +1045,8 @@ from .entity_instance import entity_instance_mixin as _entity_instance_mixin_bas
 		return IFCOPENSHELL_VERSION;
 	}
 
-	express::Base new_IfcBaseClass(ifcopenshell::file* file, const std::string& name) {
-        return file->create(file->schema()->declaration_by_name(name));
+	express::Base new_IfcBaseClass(ifcopenshell::file& file, const std::string& name) {
+        return file.create(file.schema()->declaration_by_name(name));
 	}
 %}
 
