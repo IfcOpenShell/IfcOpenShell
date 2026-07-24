@@ -208,6 +208,36 @@ class TestFile(test.bootstrap.IFC4):
         assert self.file.by_type("IfcElement") == [wall]
         assert len(self.file.by_type("IfcElement", include_subtypes=False)) == 0
 
+    def test_getting_elements_by_select_type(self):
+        # IfcDefinitionSelect = IfcObjectDefinition | IfcPropertyDefinition (#6063).
+        window_type = self.file.createIfcWindowType()
+        person = self.file.createIfcPerson()
+        assert self.file.by_type("IfcDefinitionSelect") == [window_type]
+        assert self.file.by_type("ifcdefinitionselect") == [window_type]
+        assert person not in self.file.by_type("IfcDefinitionSelect")
+
+        # include_subtypes=False only matches direct members of the select, not their subtypes.
+        assert self.file.by_type("IfcDefinitionSelect", include_subtypes=False) == []
+
+    def test_getting_elements_by_nested_select_type(self):
+        # IfcFillStyleSelect = IfcColour | ... and IfcColour = IfcColourSpecification | IfcPreDefinedColour,
+        # so resolving IfcFillStyleSelect must recurse through IfcColour.
+        colour = self.file.createIfcColourRgb(None, 0.1, 0.2, 0.3)
+        assert self.file.by_type("IfcFillStyleSelect") == [colour]
+
+    def test_getting_elements_by_select_type_ignores_non_entity_members(self):
+        # IfcTrimmingSelect = IfcCartesianPoint | IfcParameterValue. The IfcParameterValue
+        # (a defined type) member is not indexed as a standalone instance, so by_type()
+        # can only ever return the IfcCartesianPoint members (see #6063 discussion).
+        point = self.file.createIfcCartesianPoint((0.0, 0.0))
+        self.file.createIfcParameterValue(0.5)
+        assert self.file.by_type("IfcTrimmingSelect") == [point]
+
+        # A select that is composed purely of defined/enumeration types (no ENTITY members
+        # at all) can never be resolved to any retrievable instance.
+        self.file.createIfcLengthMeasure(3.0)
+        assert self.file.by_type("IfcValue") == []
+
     def test_traversing_direct_attributes_of_an_element(self):
         owner = self.file.createIfcOwnerHistory()
         element = self.file.createIfcWall(OwnerHistory=owner)

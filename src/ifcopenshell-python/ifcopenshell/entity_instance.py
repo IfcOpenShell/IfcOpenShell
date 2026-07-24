@@ -111,6 +111,65 @@ for nm in ifcopenshell_wrapper.schema_names():
     register_schema_attributes(schema)
 
 
+@functools.lru_cache(maxsize=None)
+def resolve_select_type(schema_identifier: str, name: str) -> Union[tuple[tuple[str, ...], tuple[str, ...]], None]:
+    """Recursively resolve an EXPRESS SELECT type to its terminal (non-SELECT) members.
+
+    A SELECT such as ``IfcDefinitionSelect`` is a union of other declarations,
+    which may themselves be SELECTs (e.g. ``IfcValue``), ENTITYs (e.g.
+    ``IfcWall``), or defined/enumeration types (e.g. ``IfcLengthMeasure``).
+    This walks the SELECT tree and returns its leaf members split into two
+    groups:
+
+    * entity names: concrete ENTITY declarations. These have addressable
+      instances, so both ``is_a()`` and ``by_type()`` can use them directly.
+    * simple type names: defined types and enumeration types (e.g.
+      ``IfcLengthMeasure``). An individual instance's own declared type can
+      still be tested against these with ``is_a()``, but IfcOpenShell does
+      not keep a file-wide index of every place such a value occurs (it may
+      be inlined as an unboxed attribute value), so they are intentionally
+      *not* retrievable via ``by_type()``. This means ``by_type()`` on a
+      SELECT that only (or partially) admits simple types will only return
+      the entity members, and a SELECT that admits only simple types (e.g.
+      ``IfcValue``) will return an empty list.
+
+    :param schema_identifier: A schema identifier, e.g. ``"IFC4"``.
+    :param name: A case insensitive declaration name.
+    :returns: ``None`` if ``name`` does not resolve to a SELECT type in the
+        given schema (e.g. it's an ENTITY, a defined type, or simply
+        unknown). Otherwise a ``(entity_names, simple_type_names)`` tuple of
+        de-duplicated leaf names, in first-encountered order.
+    """
+    try:
+        declaration = ifcopenshell_wrapper.schema_by_name(schema_identifier).declaration_by_name(name)
+    except RuntimeError:
+        return None
+
+    select_type = declaration.as_select_type()
+    if select_type is None:
+        return None
+
+    entity_names: dict[str, None] = {}
+    simple_type_names: dict[str, None] = {}
+    visited: set[str] = set()
+
+    def visit(st: ifcopenshell_wrapper.select_type) -> None:
+        if st.name() in visited:
+            return
+        visited.add(st.name())
+        for item in st.select_list():
+            nested_select = item.as_select_type()
+            if nested_select is not None:
+                visit(nested_select)
+            elif item.as_entity() is not None:
+                entity_names.setdefault(item.name())
+            else:
+                simple_type_names.setdefault(item.name())
+
+    visit(select_type)
+    return tuple(entity_names), tuple(simple_type_names)
+
+
 class entity_instance:
     """Represents an entity (wall, slab, property, etc) of an IFC model
 
@@ -434,7 +493,20 @@ class entity_instance:
             >>> 'IfcPerson'
             f.is_a('IfcPerson')
             >>> True
+
+        Since IfcOpenShell v0.8, ``is_a`` also recognises EXPRESS SELECT
+        types (e.g. ``IfcDefinitionSelect``), returning True if this
+        instance's declared type is one of the SELECT's members (including
+        transitively, through nested SELECTs).
         """
+        if len(args) == 1 and isinstance(args[0], str):
+            schema_identifier = self.wrapped_data.is_a(True).split(".")[0]
+            resolved = resolve_select_type(schema_identifier, args[0])
+            if resolved is not None:
+                entity_names, simple_type_names = resolved
+                return any(self.wrapped_data.is_a(n) for n in entity_names) or any(
+                    self.wrapped_data.is_a(n) for n in simple_type_names
+                )
         return self.wrapped_data.is_a(*args)
 
     def id(self) -> int:

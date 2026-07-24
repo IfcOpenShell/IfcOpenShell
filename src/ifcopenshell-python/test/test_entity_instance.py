@@ -75,3 +75,63 @@ class TestGetInfo2(test.bootstrap.IFC4):
         brep.Outer = shell
         assert brep.get_info_2() == brep.get_info()
         assert brep.get_info_2(recursive=True, ignore=("Outer",)) == brep.get_info(recursive=True, ignore=("Outer",))
+
+
+class TestIsA(test.bootstrap.IFC4):
+    def test_regular_entity_names_are_unaffected(self):
+        wall = self.file.create_entity("IfcWall")
+        assert wall.is_a("IfcWall")
+        assert wall.is_a("ifcwall")
+        assert wall.is_a("IfcElement")
+        assert not wall.is_a("IfcSlab")
+        assert wall.is_a() == "IfcWall"
+        assert wall.is_a(True) == "IFC4.IfcWall"
+
+    def test_unknown_class_name_returns_false(self):
+        wall = self.file.create_entity("IfcWall")
+        assert wall.is_a("NotARealClass") is False
+
+    def test_select_type(self):
+        # IfcDefinitionSelect = IfcObjectDefinition | IfcPropertyDefinition (#6063).
+        window_type = self.file.create_entity("IfcWindowType")
+        assert window_type.is_a("IfcObjectDefinition")
+        assert window_type.is_a("IfcDefinitionSelect")
+        assert window_type.is_a("ifcdefinitionselect")
+
+        person = self.file.create_entity("IfcPerson")
+        assert not person.is_a("IfcDefinitionSelect")
+
+    def test_nested_select_type(self):
+        # IfcFillStyleSelect = IfcColour | ... and IfcColour = IfcColourSpecification | IfcPreDefinedColour,
+        # so resolving IfcFillStyleSelect must recurse through the nested IfcColour select.
+        colour = self.file.create_entity("IfcColourRgb", Red=0.1, Green=0.2, Blue=0.3)
+        assert colour.is_a("IfcColour")
+        assert colour.is_a("IfcFillStyleSelect")
+
+        wall = self.file.create_entity("IfcWall")
+        assert not wall.is_a("IfcFillStyleSelect")
+
+    def test_select_type_with_defined_type_members(self):
+        # IfcValue is a SELECT composed entirely of defined/enumeration types (no
+        # ENTITY members), reachable by recursing through IfcMeasureValue,
+        # IfcSimpleValue, and IfcDerivedMeasureValue. Unlike by_type(), is_a() can
+        # test such non-entity instances directly, since it only needs to inspect
+        # the instance's own declared type rather than retrieve it from an index.
+        length = self.file.createIfcLengthMeasure(3.0)
+        assert length.is_a("IfcLengthMeasure")
+        assert length.is_a("IfcMeasureValue")
+        assert length.is_a("IfcValue")
+
+        wall = self.file.create_entity("IfcWall")
+        assert not wall.is_a("IfcValue")
+
+    def test_mixed_select_type(self):
+        # IfcTrimmingSelect = IfcCartesianPoint (entity) | IfcParameterValue (defined type).
+        # is_a() resolves both kinds of member consistently.
+        point = self.file.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0))
+        param = self.file.createIfcParameterValue(0.5)
+        assert point.is_a("IfcTrimmingSelect")
+        assert param.is_a("IfcTrimmingSelect")
+
+        wall = self.file.create_entity("IfcWall")
+        assert not wall.is_a("IfcTrimmingSelect")
