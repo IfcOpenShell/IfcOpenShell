@@ -639,9 +639,9 @@ class Style(bonsai.core.tool.Style):
     ) -> tuple[tuple[float, float, float], float]:
         if material.node_tree:
             nodes = material.node_tree.nodes
-            output_node = next(
-                (n for n in nodes if n.type == "OUTPUT_MATERIAL" and n.is_active_output), None
-            ) or next((n for n in nodes if n.type == "OUTPUT_MATERIAL"), None)
+            output_node = next((n for n in nodes if n.type == "OUTPUT_MATERIAL" and n.is_active_output), None) or next(
+                (n for n in nodes if n.type == "OUTPUT_MATERIAL"), None
+            )
             if output_node:
                 result = cls._color_from_shader_socket(output_node.inputs["Surface"])
                 if result:
