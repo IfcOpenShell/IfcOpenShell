@@ -76,6 +76,7 @@
 
 // Not relevant for python usage
 %ignore express::Base::data;
+%ignore express::Base::data_weak;
 %ignore *::references_to_resolve;
 
 // SVG serializer internal

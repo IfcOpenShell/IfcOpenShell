@@ -20,6 +20,13 @@
 %ignore ifcopenshell::file::register_inverse;
 %ignore ifcopenshell::file::unregister_inverse;
 %ignore ifcopenshell::file::schema;
+%ignore ifcopenshell::file::logger;
+%ignore ifcopenshell::file::process_deletion_inverse;
+%ignore ifcopenshell::file::build_inverses_;
+%ignore ifcopenshell::file::get_unit;
+%ignore ifcopenshell::file::build_inverses;
+%ignore ifcopenshell::file::check_existance_before_adding;
+%ignore ifcopenshell::file::calculate_unit_factors;
 %ignore ifcopenshell::file::begin;
 %ignore ifcopenshell::file::end;
 %ignore ifcopenshell::file::types_begin;
@@ -66,6 +73,10 @@
 %ignore ifcopenshell::spf_header::set_file_description;
 %ignore ifcopenshell::spf_header::set_file_name;
 %ignore ifcopenshell::spf_header::set_file_schema;
+
+%ignore ifcopenshell::spf_header::logger;
+%ignore ifcopenshell::spf_header::owner_file;
+%ignore ifcopenshell::spf_header::write;
 
 %ignore ifcopenshell::HeaderEntity::is;
 
@@ -991,9 +1002,9 @@ static bool express_Base_equals(const express::Base* self, const express::Base* 
 %include "../ifcparse/spf_header.h"
 
 %pythoncode %{
-from .file import file_mixin as _file_mixin_base
+from .file import file_mixin as file_mixin
 %}
-%feature("python:abc", "_file_mixin_base") ifcopenshell::file;
+%feature("python:abc", "file_mixin") ifcopenshell::file;
 
 %include "../ifcparse/file.h"
 %template(instance_streamer) ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>;
@@ -1001,9 +1012,9 @@ from .file import file_mixin as _file_mixin_base
 %include "../ifcparse/file_open_status.h"
 
 %pythoncode %{
-from .entity_instance import entity_instance_mixin as _entity_instance_mixin_base
+from .entity_instance import entity_instance_mixin
 %}
-%feature("python:abc", "_entity_instance_mixin_base") express::Base;
+%feature("python:abc", "entity_instance_mixin") express::Base;
 
 %include "../ifcparse/express.h"
 

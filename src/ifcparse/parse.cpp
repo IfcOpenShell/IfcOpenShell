@@ -1622,7 +1622,7 @@ file::file(const std::string& fn, bool mmap, ::logger& log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
     , max_id_(0)
-    , header_(new spf_header(this, logger_.get())) {
+    , header_(new spf_header(this, &logger_.get())) {
     initialize(fn, mmap);
 }
 
@@ -1650,7 +1650,7 @@ bool ifcopenshell::file::initialize(const std::string& fn, bool mmap) {
 #endif
 
 file::file(const uninitialized_tag&, ::logger& log)
-    : good_(file_open_status::UNKNOWN), logger_(log), schema_(nullptr), ifcroot_type_(nullptr), max_id_(0), header_(new ifcopenshell::spf_header(this, logger_.get())) {}
+    : good_(file_open_status::UNKNOWN), logger_(log), schema_(nullptr), ifcroot_type_(nullptr), max_id_(0), header_(new ifcopenshell::spf_header(this, &logger_.get())) {}
 
 bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool readonly) {
     if (ty == FT_AUTODETECT) {
@@ -1707,7 +1707,7 @@ file::file(const std::string& path, filetype ty, bool readonly, ::logger& log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
     , max_id_(0)
-    , header_(new spf_header(this, logger_.get()))
+    , header_(new spf_header(this, &logger_.get()))
 {
     initialize(path, ty, readonly);
 }
@@ -1717,7 +1717,7 @@ file::file(std::istream& stream, int length, ::logger& log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
     , max_id_(0)
-    , header_(new ifcopenshell::spf_header(this, logger_.get()))
+    , header_(new ifcopenshell::spf_header(this, &logger_.get()))
 {
     file_reader<pushed_sequential_impl> s(caller_fed_tag{});
 
@@ -1741,7 +1741,7 @@ file::file(void* data, int length, ::logger& log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
     , max_id_(0)
-    , header_(new ifcopenshell::spf_header(this, logger_.get()))
+    , header_(new ifcopenshell::spf_header(this, &logger_.get()))
 {
 	file_reader<pushed_sequential_impl> s(std::string((char*)data, length), caller_fed_tag{});
     
@@ -1783,7 +1783,7 @@ file::file(const ifcopenshell::schema_definition* schema, filetype ty, const std
     } else {
         throw std::runtime_error("Unsupported file format");
     }
-    header_.reset(new spf_header(this, logger_.get()));
+    header_.reset(new spf_header(this, &logger_.get()));
     set_default_header_values();
 }
 
@@ -1872,7 +1872,7 @@ spf_header& ifcopenshell::instance_streamer<Reader>::ensure_header() {
         header_ = &owner_->header();
         header_->owner_file(owner_);
     } else {
-        owned_header_ = std::make_unique<spf_header>(owner_, logger_.get());
+        owned_header_ = std::make_unique<spf_header>(owner_, &logger_.get());
         header_ = owned_header_.get();
     }
 

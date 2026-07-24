@@ -1,6 +1,7 @@
 #include "spf_header.h"
 
 #include "file.h"
+#include "logger.h"
 
 static const char* const ISO_10303_21 = "ISO-10303-21";
 static const char* const HEADER = "HEADER";
@@ -26,9 +27,9 @@ shared_pointer_type make_header_entity(ifcopenshell::file* file, const ifcopensh
 
 } // namespace
 
-ifcopenshell::spf_header::spf_header(ifcopenshell::file* file, ::logger& logger)
+ifcopenshell::spf_header::spf_header(ifcopenshell::file* file, ::logger* logger)
     : file_(file)
-    , logger_(logger) {
+    , logger_(logger_or_root(logger)) {
     Header_section_schema::get_schema();
 
     header_entities_[0] = make_header_entity(file_, Header_section_schema::file_description::Class(), logger_);
