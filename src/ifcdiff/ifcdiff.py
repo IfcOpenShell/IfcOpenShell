@@ -36,7 +36,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import numpy as np
 from deepdiff import DeepDiff
-from orderly_set import OrderedSet
+from orderly_set import StableSet
 
 __version__ = version = "0.0.0"
 
@@ -257,7 +257,7 @@ class IfcDiff:
 
     def json_dump_default(self, obj):
         # result of DeepDiff may contain ordered sets
-        if isinstance(obj, (OrderedSet, set)):
+        if isinstance(obj, (StableSet, set)):
             return list(obj)
         return json.JSONEncoder.default(None, obj)
 
