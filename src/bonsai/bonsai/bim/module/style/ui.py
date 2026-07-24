@@ -226,27 +226,6 @@ class BIM_PT_styles(Panel):
         op = row3.operator("bim.toggle_prefer_ifc_shading", text="", icon="UV_SYNC_SELECT")
         op.material_name = material.name
 
-    @staticmethod
-    def _get_shader_label(material: bpy.types.Material, msprops) -> str:
-        space = tool.Blender.get_view3d_space()
-        if space and space.shading.type == "SOLID":
-            return "Not Applicable"
-        if msprops.active_style_type == "External":
-            return "External (.blend)"
-        if not material.node_tree:
-            return "Flat colour"
-        nodes = material.node_tree.nodes
-        has_mix = any(n.type == "MIX_SHADER" for n in nodes)
-        if has_mix:
-            return "Emission (Flat)"
-        has_principled = any(n.type == "BSDF_PRINCIPLED" for n in nodes)
-        has_teximage = any(n.type == "TEX_IMAGE" and any(o.links for o in n.outputs) for n in nodes)
-        if has_principled and has_teximage:
-            return "BSDF + Textures"
-        if has_principled:
-            return "Principled BSDF"
-        return "Flat colour"
-
     def draw_surface_style_shading(self):
         row = self.layout.row()
         row.prop(self.props, "surface_colour")
