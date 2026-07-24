@@ -81,6 +81,11 @@ class BIM_PT_materials(Panel):
                 op = row.operator("bim.enable_editing_material_style", text="", icon="SHADING_RENDERED")
                 op.material = material_id
                 row.operator("bim.remove_material", text="", icon="X").material = material_id
+                if not self.props.is_merging_materials:
+                    row.operator("bim.enable_material_merge", text="", icon="AUTOMERGE_ON")
+
+            if self.props.is_merging_materials:
+                self.draw_merging_ui()
 
             self.draw_editing_ui()
         else:
@@ -107,6 +112,19 @@ class BIM_PT_materials(Panel):
                 op = row.operator("bim.unassign_material_style", text="", icon="X")
                 op.style = style["id"]
                 op.context = style["context_id"]
+
+    def draw_merging_ui(self):
+        selected_total = sum(1 for m in self.props.materials if m.is_selected and not m.is_category)
+        target = self.props.active_material
+        target_name = target.name if target and not target.is_category else "(select a material below)"
+        box = self.layout.box()
+        row = box.row(align=True)
+        row.label(text=f"Merge target: {target_name}", icon="GREASEPENCIL")
+        row = box.row(align=True)
+        row.label(text=f"Check materials below to merge into it ({selected_total} checked)", icon="INFO")
+        row = box.row(align=True)
+        row.operator("bim.merge_materials", text="Merge Into Active", icon="AUTOMERGE_ON")
+        row.operator("bim.disable_material_merge", text="Cancel", icon="CANCEL")
 
     def draw_editing_ui(self):
         if not self.props.active_material_id:
@@ -550,7 +568,10 @@ class BIM_UL_materials(UIList):
                 else:
                     row.prop(item, "name", text="", emboss=False)
             else:
-                row.label(text="", icon="BLANK1")
+                if data.is_merging_materials and material_type == "IfcMaterial":
+                    row.prop(item, "is_selected", text="")
+                else:
+                    row.label(text="", icon="BLANK1")
                 if item.ifc_definition_id == data.active_material_id:
                     row.label(text="", icon="GREASEPENCIL")
                 if material_type == "IfcMaterialList":
