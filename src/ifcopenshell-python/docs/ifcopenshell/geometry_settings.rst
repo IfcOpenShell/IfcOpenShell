@@ -10,8 +10,8 @@ Here's an example of changing settings in C++:
 
 .. code-block:: c++
 
-    SerializerSettings settings;
-    settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS, true);
+    ifcopenshell::geometry::Settings settings;
+    settings.get<ifcopenshell::geometry::settings::ApplyDefaultMaterials>().value = true;
 
 Here's an example of changing settings in Python:
 
