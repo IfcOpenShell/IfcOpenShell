@@ -2029,15 +2029,10 @@ class CreateDrawing(bpy.types.Operator):
                 return
 
             # Per-member (guid, line_key) -> union of that member's own
-            # original segment intervals on that line. Used both to decide
-            # which member(s) a face touches (below) and, later, to attribute
-            # final surviving edges back to the right <g> group. Building
-            # this from the raw segments directly -- rather than trying to
-            # polygonize each member's own linework into a closed shape --
-            # avoids requiring every element's cut geometry to independently
-            # form a single clean polygon, which real multi-void/notch
-            # elements routinely fail to do (open sub-loops, per-layer
-            # linework that only includes some of its own edges, etc.).
+            # original segment intervals on that line. Used by the ownership
+            # fallback below (for members whose own linework doesn't close
+            # into a polygon) and, later, to attribute final surviving edges
+            # back to the right <g> group.
             member_lines = []
             for m in members:
                 d = {}
@@ -2047,6 +2042,26 @@ class CreateDrawing(bpy.types.Operator):
                         continue
                     d.setdefault(key, []).append(seg_interval(seg))
                 member_lines.append({k: ivs_union(v) for k, v in d.items()})
+
+            # Per-member reconstructed polygon(s) from its own raw segments,
+            # where possible -- used as the preferred, side-aware ownership
+            # test below. Real multi-void/notch elements routinely fail to
+            # close into a single valid polygon (open sub-loops, per-layer
+            # linework that only includes some of its own edges, etc.), so
+            # this is best-effort: an empty result just means that member
+            # falls back to the cruder edge/interval test instead.
+            def build_own_polygons(segs):
+                lines = [shapely.LineString([p0, p1]) for p0, p1 in segs if p0 != p1]
+                if not lines:
+                    return []
+                try:
+                    unioned = shapely.union_all(shapely.GeometryCollection(lines))
+                    geoms = unioned.geoms if hasattr(unioned, "geoms") else [unioned]
+                    return list(shapely.polygonize(geoms).geoms)
+                except Exception:
+                    return []
+
+            per_member_polys = [build_own_polygons(m["segs"]) for m in members]
 
             ctx = W.context(W.EXACT_CONSTRUCTIONS, 1.0e-3)
             ctx.add(all_segs)
@@ -2058,18 +2073,52 @@ class CreateDrawing(bpy.types.Operator):
             if not polygons:
                 return
 
-            # A face "belongs" to a member if any of the face's own boundary
-            # edges lies along a line where that member has original
-            # geometry, with an overlapping interval. This is exactly the
-            # same line-key/interval test used for attribution below, just
-            # applied to decide ownership instead of to emit final paths --
-            # unlike a point-in-polygon test against a separately
-            # reconstructed member polygon, it doesn't require that polygon
-            # to exist, and it doesn't fail for the degenerate sliver faces
-            # that appear where two nearly-but-not-quite-parallel copies of
-            # "the same" edge cross at a shallow angle (both members' own
-            # segments are still present right along that sliver's boundary).
-            def face_owners_of(poly):
+            # Ownership is determined two ways, preferring the more precise
+            # one per member:
+            #
+            # 1. Authoritative (point-in-polygon): if a member's own raw
+            #    segments polygonize cleanly, a face belongs to it exactly
+            #    when the face's point is inside (or, within a tight
+            #    tolerance, right on the boundary of -- see
+            #    OWNERSHIP_NEAR_EPS below) that member's own polygon(s).
+            #    This directly answers "is this face really this member's
+            #    material," which correctly excludes a concave notch/void
+            #    cut into the member's own silhouette (the void is provably
+            #    outside its polygon) and correctly excludes a contained
+            #    element's claim on territory beyond its own small shape.
+            # 2. Fallback (edge/interval overlap): a face also belongs to a
+            #    member if any of the face's own boundary edges lies along a
+            #    line where that member has original geometry with an
+            #    overlapping interval -- cruder (side-unaware), but doesn't
+            #    require a closed polygon to exist. This runs for every
+            #    member, not just ones without an authoritative polygon: a
+            #    razor-thin sliver face can sit just outside
+            #    OWNERSHIP_NEAR_EPS of an otherwise-valid polygon (the
+            #    "point" test below is necessarily a single sample), so
+            #    still letting the fallback contribute recovers that case.
+            #    It never weakens the veto below, which only ever consults
+            #    the authoritative result.
+            #
+            # OWNERSHIP_NEAR_EPS: two independently-generated copies of "the
+            # same" edge are rarely perfectly parallel; where they cross at
+            # a shallow angle the arrangement has a genuine, tiny sliver
+            # face straddling the seam that exact contains() claims for
+            # neither original polygon. This is tight enough (two to three
+            # orders of magnitude above the observed sub-mm misalignment,
+            # far below any real feature size) to close only that gap.
+            OWNERSHIP_NEAR_EPS = 0.005
+
+            def authoritative_owners_of(point):
+                pt = shapely.Point(point[0], point[1])
+                owners = set()
+                for mi, polys in enumerate(per_member_polys):
+                    for p in polys:
+                        if p.contains(pt) or p.distance(pt) < OWNERSHIP_NEAR_EPS:
+                            owners.add(mi)
+                            break
+                return owners
+
+            def fallback_owners_of(poly):
                 owners = set()
                 for loop in [poly.boundary] + list(poly.inner_boundaries):
                     pts = list(loop)
@@ -2083,21 +2132,49 @@ class CreateDrawing(bpy.types.Operator):
                             continue
                         lo, hi = seg_interval(seg)
                         for mi, lines in enumerate(member_lines):
+                            if per_member_polys[mi]:
+                                continue  # trust this member's own authoritative (polygon) answer instead
                             own_ivs = lines.get(key)
                             if own_ivs and ivs_intersect([(lo, hi)], own_ivs):
                                 owners.add(mi)
                 return owners
 
-            face_owners = [face_owners_of(poly) for poly in polygons]
+            face_authoritative_owners = [authoritative_owners_of(poly.point_inside) for poly in polygons]
+            face_owners = [
+                face_authoritative_owners[i] | fallback_owners_of(poly) for i, poly in enumerate(polygons)
+            ]
 
+            # "Both faces have an owner" alone isn't enough to prove an edge
+            # is a genuine duplicate contributed by two different elements --
+            # a single element's own line can make both of the faces it
+            # borders look "owned" by that one element (a concave notch/void
+            # cut into its own silhouette, or an internal fold/T-junction
+            # between two of its own non-coplanar facets). If a *single*
+            # member's own authoritative polygon test *exclusively* claims
+            # both sides, that settles it categorically: it's that member's
+            # own material on both sides, so the line between them is always
+            # an internal feature, never a duplicate. "Exclusively" matters:
+            # two touching, genuinely different members' own polygons can
+            # each legitimately claim points right on their shared boundary
+            # too (that's what makes it a real duplicate), so both faces
+            # showing e.g. {A, B} must NOT veto -- only a face pair that
+            # reduces to the *same single* member on both sides is this
+            # element's own self-contained feature, not two elements
+            # agreeing on a shared edge.
             pairs = ctx.get_face_pairs()
             to_merge = []
             for he in range(0, len(pairs), 2):
                 a, b = pairs[he], pairs[he + 1]
                 if a == -1 or b == -1:
                     continue
-                if face_owners[a] and face_owners[b]:
-                    to_merge.append(he // 2)
+                if not (face_owners[a] and face_owners[b]):
+                    continue
+                if (
+                    len(face_authoritative_owners[a]) == 1
+                    and face_authoritative_owners[a] == face_authoritative_owners[b]
+                ):
+                    continue
+                to_merge.append(he // 2)
 
             if to_merge:
                 ctx.merge(to_merge)
@@ -2238,9 +2315,20 @@ class CreateDrawing(bpy.types.Operator):
                     gj = group_data[j]
                     if gj["mat"] is None or not gj["segs"]:
                         continue
-                    if not mat_keys_match(gi["mat"], gj["mat"], gi["face"], gj["face"]):
-                        continue
                     if gi["style"] != gj["style"]:
+                        continue
+                    mat_ok = mat_keys_match(gi["mat"], gj["mat"], gi["face"], gj["face"])
+                    # Elements with no material at all can still be a
+                    # genuine coplanar match if they share a real
+                    # (non-empty) style assignment -- style equality is
+                    # already required above regardless; this only lifts
+                    # the material requirement when there's no material to
+                    # compare in the first place. Two elements with neither
+                    # material nor style don't wildcard-match each other
+                    # (mirrors mat_keys_match's own guard against treating
+                    # "no material" as a match-anything wildcard).
+                    materialless_same_style = not gi["mat"] and not gj["mat"] and gi["style"]
+                    if not (mat_ok or materialless_same_style):
                         continue
                     if not are_coplanar_and_adjacent(gi["guid"], gj["guid"]):
                         continue
