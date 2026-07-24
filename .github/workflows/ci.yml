@@ -257,7 +257,7 @@ jobs:
           cd ../ifcdiff && make test || ERROR=1
           cd ../ifcpatch && make test || ERROR=1
           pip install -e ../ifc5d --no-deps
-          pip install odfpy xlsxwriter
+          pip install odfpy openpyxl
           cd ../ifc5d && make test || ERROR=1
           pip install -e ../ifcquery --no-deps
           cd ../ifcquery && make test || ERROR=1
