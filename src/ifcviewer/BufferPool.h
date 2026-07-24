@@ -115,6 +115,12 @@ public:
                 || total_capacity_bytes() < max_total_capacity_bytes_);
     }
 
+    // Whether a growth is in flight. On web that window is real time — a
+    // provisional sub-buffer validates asynchronously a frame or two later — so
+    // the streaming driver has to know that free space is still on its way and
+    // that a chunk it just parked is waiting on something that WILL arrive.
+    bool     growth_pending() const { return growth_pending_; }
+
     // Hard ceiling on total pool capacity (0 = unlimited). Once total capacity
     // reaches this, can_grow() returns false so the streaming driver EVICTS
     // instead of growing. Critical on web: a growth past the wasm heap ceiling

@@ -2542,21 +2542,30 @@ void ViewportCore::driveStreamingLoads() {
     // queued, or a visible chunk not yet resident) and bleed it down over the
     // next few frames so an on-demand render loop doesn't stall before the
     // geometry actually appears. Bounded, so the loop still quiesces at idle.
+    // A chunk still waiting on pool GROWTH keeps the loop alive too. Growth is
+    // asynchronous on web (a provisional sub-buffer validates a frame or two
+    // later), so the driver parks its candidates in a grow-backoff cooldown
+    // while it waits — and that cooldown is counted in FRAMES, which only
+    // advance while the loop is alive. Left out of this test, the loop quiesced
+    // after the settle burst (4 frames) but before the backoff expired (8), the
+    // frame index froze, and the cooldown could then never expire: streaming
+    // stalled part-loaded until the user happened to move the camera. Deadlock.
+    //
+    // Cooldowns that no growth can resolve are still ignored, so the loop keeps
+    // quiescing at idle in the cases this test was written for: a sub-pixel
+    // chunk (contribution_visible_count == 0) is never fetched at all, and a
+    // chunk blocked at the pool's hard capacity — where growth cannot help and
+    // eviction has already failed — genuinely has nothing to wait for.
+    const bool growth_may_land = pool_.growth_pending() || pool_.can_grow();
     bool visible_pending = false;
     for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.streaming_file_path.empty() || m.hidden) continue;
         for (const auto& c : m.chunks) {
             if (c.is_resident) continue;
-            // Keep the loop alive only for chunks we're actually loading or that
-            // are eligible to enqueue — the same test the enqueue below uses
-            // (contribution-visible and not in a blocked cooldown). A chunk
-            // that's in the frustum but sub-pixel (contribution_visible_count
-            // == 0) is never fetched, so it must not keep the render loop
-            // spinning at idle; likewise a cooldown-blocked chunk only retries
-            // after real work (an eviction or camera move) requests a frame.
-            if (c.is_loading
-                || (c.contribution_visible_count > 0
-                    && c.blocked_cooldown_until_frame_idx <= streaming_frame_idx_)) {
+            if (c.is_loading) { visible_pending = true; break; }
+            if (c.contribution_visible_count == 0) continue;  // sub-pixel: never fetched
+            const bool cooling = c.blocked_cooldown_until_frame_idx > streaming_frame_idx_;
+            if (!cooling || growth_may_land) {
                 visible_pending = true;
                 break;
             }
@@ -3196,6 +3205,15 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.meshes    = std::move(metadata.meta.meshes);
     model_gpu_data.instances = std::move(metadata.meta.instances);
 
+    // Where the element metadata block lives. The web path fetches that block
+    // lazily (loadElementMetadataWeb), so it must arrive here already knowing
+    // WHERE to fetch from: a model that is in the scene but whose locator is
+    // still unknown is indistinguishable from one that has no element block at
+    // all, and loadElementMetadataWeb would latch it as permanently empty.
+    model_gpu_data.element_metadata_comp_offset = metadata.element_metadata_comp_offset;
+    model_gpu_data.element_metadata_comp_size   = metadata.element_metadata_comp_size;
+    model_gpu_data.element_metadata_raw_size    = metadata.element_metadata_raw_size;
+
     // Element metadata, when the caller already read it. readSidecarMetadata
     // parses the block up front, so a path-based load arrives with it in hand;
     // the web byte-range path deliberately skips it (first paint must not wait
@@ -3665,38 +3683,49 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                 Log::warn() << "loadSidecarMetadataWeb: bad geometry metadata";
                                 return;
                             }
-                            const std::size_t n_meshes    = sc.meta.meshes.size();
-                            const std::size_t n_instances = sc.meta.instances.size();
-                            const std::uint32_t session_model_id = next_session_model_id_++;
-                            applyCachedModel(session_model_id, std::move(sc));
-                            // Mark web-streamed + set the source IMMEDIATELY — the
-                            // model now has non-resident chunks and the RAF loop's
-                            // driveStreamingLoads will run before the element metadata header
-                            // read below returns. If streaming_from_web weren't set
-                            // yet it would take the sync fopen path and fail
-                            // ("failed to read/decompress chunk 0").
-                            if (auto m0 = models_gpu_.find(session_model_id); m0 != models_gpu_.end()) {
-                                m0->second.streaming_from_web = true;
-                                m0->second.web_source_id      = source_id;
-                            }
-                            // Read the element metadata block header to record its locator
-                            // (the property block is fetched on demand later).
+                            // Read the element metadata block's 16-byte header to
+                            // learn where that block lives, and only THEN put the
+                            // model in the scene. Doing it the other way round
+                            // leaves a window in which the model is loaded but its
+                            // locator is still zero — and a loadElementMetadataWeb
+                            // landing in that window (a host page calling
+                            // getObjects() as soon as the model appears) cannot
+                            // tell "locator not read yet" from "this sidecar has no
+                            // element block", so it latches the model as
+                            // permanently empty. It costs one extra 16-byte
+                            // round-trip before first paint.
                             const std::uint64_t element_metadata_hdr_off =
                                 geometry_metadata_off + geometry_metadata_comp;
                             webReadRangesAsync(source_id, 0, {{element_metadata_hdr_off, 16}},
-                                [this, session_model_id, element_metadata_hdr_off, source_id, source_label,
-                                 n_meshes, n_instances]
-                                (bool ok4, std::vector<std::uint8_t>&& dh) {
-                                    auto mit = models_gpu_.find(session_model_id);
-                                    if (mit != models_gpu_.end()) {
-                                        if (ok4 && dh.size() >= 16) {
-                                            std::uint64_t dc = 0, dr = 0;
-                                            std::memcpy(&dc, dh.data(), 8);
-                                            std::memcpy(&dr, dh.data() + 8, 8);
-                                            mit->second.element_metadata_comp_offset = element_metadata_hdr_off + 16;
-                                            mit->second.element_metadata_comp_size   = dc;
-                                            mit->second.element_metadata_raw_size    = dr;
-                                        }
+                                [this, sc = std::move(sc), element_metadata_hdr_off,
+                                 source_id, source_label]
+                                (bool ok4, std::vector<std::uint8_t>&& dh) mutable {
+                                    if (ok4 && dh.size() >= 16) {
+                                        std::uint64_t dc = 0, dr = 0;
+                                        std::memcpy(&dc, dh.data(), 8);
+                                        std::memcpy(&dr, dh.data() + 8, 8);
+                                        sc.element_metadata_comp_offset = element_metadata_hdr_off + 16;
+                                        sc.element_metadata_comp_size   = dc;
+                                        sc.element_metadata_raw_size    = dr;
+                                    } else {
+                                        Log::warn() << "loadSidecarMetadataWeb: element metadata"
+                                                       " header read failed — no properties for "
+                                                    << source_label;
+                                    }
+
+                                    const std::size_t n_meshes    = sc.meta.meshes.size();
+                                    const std::size_t n_instances = sc.meta.instances.size();
+                                    const std::uint32_t session_model_id = next_session_model_id_++;
+                                    applyCachedModel(session_model_id, std::move(sc));
+                                    // Mark web-streamed + set the source IMMEDIATELY — the
+                                    // model now has non-resident chunks and the RAF loop's
+                                    // driveStreamingLoads can run before we return here. If
+                                    // streaming_from_web weren't set yet it would take the
+                                    // sync fopen path and fail ("failed to read/decompress
+                                    // chunk 0").
+                                    if (auto m0 = models_gpu_.find(session_model_id); m0 != models_gpu_.end()) {
+                                        m0->second.streaming_from_web = true;
+                                        m0->second.web_source_id      = source_id;
                                     }
                                     // NOTE: no viewAll() here — applyCachedModel
                                     // already frames the FIRST model (gated by
