@@ -898,7 +898,7 @@ class file_mixin:
     def _determine_schema_identifier(
         schema: Optional[ifcopenshell.util.schema.IFC_SCHEMA] = None,
         schema_version: Optional[tuple[int, int, int, int]] = None,
-    ):
+    ) -> str:
         if schema_version:
             prefixes = ("IFC", "X", "_ADD", "_TC")
             schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))

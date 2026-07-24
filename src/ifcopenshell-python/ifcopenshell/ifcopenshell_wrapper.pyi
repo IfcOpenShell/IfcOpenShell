@@ -21,6 +21,7 @@ from typing import Any, Literal, Sequence, Union
 from typing_extensions import Self
 
 import ifcopenshell
+import ifcopenshell.util.schema
 from ifcopenshell.entity_instance import entity_instance_mixin
 from ifcopenshell.file import file_mixin
 
@@ -830,7 +831,12 @@ class face:
 
 class file(file_mixin):
     def fresh_id(self) -> int: ...
-    def __init__(self, *args): ...
+    def __init__(
+        self,
+        schema: ifcopenshell.util.schema.IFC_SCHEMA | None = None,
+        schema_identifier: str | None = None,
+        schema_version: tuple[int, int, int, int] | None = None,
+    ): ...
     def _add(self, entity: entity_instance, id: int = -1) -> entity_instance: ...
     def add_type_ref(self, new_entity): ...
     def batch(self) -> None:

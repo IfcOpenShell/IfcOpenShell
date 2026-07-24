@@ -38,6 +38,16 @@
 %ignore ifcopenshell::file::byref_excl_;
 %ignore ifcopenshell::file::types_to_bypass_loading_;
 
+// Replaces the raw multi-overload ctor with a friendlier keyword-based signature.
+%feature("shadow") ifcopenshell::file::file %{
+	def __init__(self, schema=None, schema_identifier=None, schema_version=None):
+		if schema_identifier is not None:
+			identifier = schema_identifier
+		else:
+			identifier = self._determine_schema_identifier(schema=schema, schema_version=schema_version)
+		$action(self, identifier)
+%}
+
 %ignore ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>::read_instance;
 %ignore ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>::steal_instances;
 
@@ -392,10 +402,6 @@ private:
 		header = property(header)
 		_registry = {}
 
-		_old_init = __init__
-		def __init__(self, schema=None, schema_identifier=None, schema_version=None):
-			self._old_init(schema_identifier if schema_identifier else self._determine_schema_identifier(schema=schema, schema_version=schema_version))
-    
 		def __setattr__(self, k, v):
 			object.__setattr__(self, k, v)
 			if k == 'this':
