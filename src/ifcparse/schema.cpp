@@ -173,7 +173,7 @@ ifcopenshell::schema_definition::schema_definition(const std::string& name, cons
         ent->all_attributes();
     }
 
-    register_schema(this);
+    register_schema(*this);
 }
 
 ifcopenshell::schema_definition::~schema_definition() {
@@ -182,7 +182,7 @@ ifcopenshell::schema_definition::~schema_definition() {
     }
 }
 
-void ifcopenshell::register_schema(schema_definition* schema) {
+void ifcopenshell::register_schema(schema_definition& schema) {
     schema_registry_instance().bind(schema);
 }
 
@@ -244,10 +244,10 @@ void ifcopenshell::schema_registry::bind(const std::string& schema_name, get_sch
 	entry.module_ = module;
 }
 
-void ifcopenshell::schema_registry::bind(schema_definition* schema) {
+void ifcopenshell::schema_registry::bind(schema_definition& schema) {
 	std::lock_guard<std::recursive_mutex> lock(mutex_);
-	auto& entry = entries_[schema_key(schema->name())];
-	entry.schema_ = schema;
+	auto& entry = entries_[schema_key(schema.name())];
+	entry.schema_ = &schema;
 }
 
 const ifcopenshell::schema_definition* ifcopenshell::schema_registry::get(const std::string& schema_name) {
