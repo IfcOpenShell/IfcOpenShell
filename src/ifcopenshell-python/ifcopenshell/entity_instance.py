@@ -500,13 +500,28 @@ class entity_instance:
         transitively, through nested SELECTs).
         """
         if len(args) == 1 and isinstance(args[0], str):
-            schema_identifier = self.wrapped_data.is_a(True).split(".")[0]
+            # Try the regular ENTITY class hierarchy check first (the common
+            # case, and the only thing the C++ side understands). Only pay
+            # the extra cost of resolving `args[0]` as a SELECT type when
+            # that returns False, so a plain `is_a("IfcWall")` style check
+            # keeps its original performance.
+            if self.wrapped_data.is_a(args[0]):
+                return True
+            # An attached instance's file already knows its own schema
+            # identifier (cheaply, via a cached Python attribute), which is
+            # faster than re-deriving it through is_a(True).split(".").
+            file = self.wrapped_data.file
+            if file is not None:
+                schema_identifier = file.wrapped_data.schema
+            else:
+                schema_identifier = self.wrapped_data.is_a(True).split(".")[0]
             resolved = resolve_select_type(schema_identifier, args[0])
             if resolved is not None:
                 entity_names, simple_type_names = resolved
                 return any(self.wrapped_data.is_a(n) for n in entity_names) or any(
                     self.wrapped_data.is_a(n) for n in simple_type_names
                 )
+            return False
         return self.wrapped_data.is_a(*args)
 
     def id(self) -> int:
