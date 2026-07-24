@@ -21,6 +21,8 @@
 
 %ignore stream_or_filename::stream;
 %ignore boost::hash_value;
+%ignore IfcGeom::BRepElement::geometry_pointer;
+%ignore IfcGeom::TriangulationElement::geometry_pointer;
 
 // This is only used for RGB colours, hence the size of 3
 %typemap(out) const double* {
