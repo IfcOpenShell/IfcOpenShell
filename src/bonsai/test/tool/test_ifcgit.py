@@ -484,43 +484,99 @@ class TestStoreClearGetMergeConflicts(NewFile):
         assert IfcGit.get_merge_conflicts() is None
 
 
+class TestStoreClearGetMergeResolutions(NewFile):
+    def test_round_trip(self):
+        resolutions = [{"type": "placement_auto_resolved", "entity_id": 15, "kept": "remote"}]
+        IfcGit.store_merge_resolutions(resolutions)
+        result = IfcGit.get_merge_resolutions()
+        assert result == resolutions
+
+    def test_store_empty_list_clears(self):
+        IfcGit.store_merge_resolutions([{"type": "placement_auto_resolved"}])
+        IfcGit.store_merge_resolutions([])
+        assert IfcGit.get_merge_resolutions() is None
+
+    def test_get_returns_none_when_empty(self):
+        IfcGit.clear_merge_resolutions()
+        assert IfcGit.get_merge_resolutions() is None
+
+    def test_clear_removes_stored_resolutions(self):
+        IfcGit.store_merge_resolutions([{"type": "placement_auto_resolved"}])
+        IfcGit.clear_merge_resolutions()
+        assert IfcGit.get_merge_resolutions() is None
+
+    def test_get_returns_none_on_corrupt_json(self):
+        import bpy
+
+        bpy.context.scene.IfcGitProperties.merge_resolutions = "not valid json {"
+        assert IfcGit.get_merge_resolutions() is None
+
+
 # ---------------------------------------------------------------------------
 # git_mergetool — report file reading
 # ---------------------------------------------------------------------------
 
 
 class TestGitMergetool:
-    @requires_git
-    def test_returns_none_when_report_file_absent(self):
+    @staticmethod
+    def _mock_repo(unmerged=False):
         import unittest.mock as mock
 
+        mock_repo = mock.MagicMock()
+        mock_repo.index.unmerged_blobs.return_value = {"model.ifc": []} if unmerged else {}
+        return mock_repo
+
+    @requires_git
+    def test_returns_none_when_report_file_absent(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             ifc_path = os.path.join(tmpdir, "model.ifc")
-            mock_repo = mock.MagicMock()
-            IfcGitRepo.repo = mock_repo
-            result = IfcGit.git_mergetool("ifcmerge", ifc_path)
-            assert result is None
+            IfcGitRepo.repo = self._mock_repo()
+            conflicts, resolutions = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert conflicts is None
+            assert resolutions == []
+            IfcGitRepo.repo = None
+
+    @requires_git
+    def test_returns_empty_conflicts_when_blobs_left_unmerged(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc_path = os.path.join(tmpdir, "model.ifc")
+            IfcGitRepo.repo = self._mock_repo(unmerged=True)
+            conflicts, resolutions = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert conflicts == []
+            assert resolutions == []
             IfcGitRepo.repo = None
 
     @requires_git
     def test_returns_none_when_report_file_empty(self):
-        import unittest.mock as mock
-
         with tempfile.TemporaryDirectory() as tmpdir:
             ifc_path = os.path.join(tmpdir, "model.ifc")
             report_path = ifc_path + ".ifcmerge"
             open(report_path, "w").close()
-            mock_repo = mock.MagicMock()
-            IfcGitRepo.repo = mock_repo
-            result = IfcGit.git_mergetool("ifcmerge", ifc_path)
-            assert result is None
+            IfcGitRepo.repo = self._mock_repo()
+            conflicts, resolutions = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert conflicts is None
+            assert resolutions == []
+            assert not os.path.exists(report_path)
+            IfcGitRepo.repo = None
+
+    @requires_git
+    def test_returns_none_when_report_is_success_text(self):
+        # older ifcmerge writes plain "Success!" instead of a JSON report
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc_path = os.path.join(tmpdir, "model.ifc")
+            report_path = ifc_path + ".ifcmerge"
+            with open(report_path, "w") as f:
+                f.write("Success!\n")
+            IfcGitRepo.repo = self._mock_repo()
+            conflicts, resolutions = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert conflicts is None
+            assert resolutions == []
             assert not os.path.exists(report_path)
             IfcGitRepo.repo = None
 
     @requires_git
     def test_parses_conflict_report_and_deletes_file(self):
         import json
-        import unittest.mock as mock
 
         with tempfile.TemporaryDirectory() as tmpdir:
             ifc_path = os.path.join(tmpdir, "model.ifc")
@@ -528,12 +584,49 @@ class TestGitMergetool:
             conflicts = [{"type": "attribute_conflict", "entity_id": 5}]
             with open(report_path, "w") as f:
                 json.dump({"status": "failed", "conflicts": conflicts}, f)
-            mock_repo = mock.MagicMock()
+            mock_repo = self._mock_repo(unmerged=True)
             mock_repo.git.mergetool.side_effect = git.exc.GitCommandError("mergetool", 1)
             IfcGitRepo.repo = mock_repo
-            result = IfcGit.git_mergetool("ifcmerge", ifc_path)
-            assert result == conflicts
+            result_conflicts, resolutions = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert result_conflicts == conflicts
+            assert resolutions == []
             assert not os.path.exists(report_path)
+            IfcGitRepo.repo = None
+
+    @requires_git
+    def test_parses_success_report_with_auto_resolutions(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc_path = os.path.join(tmpdir, "model.ifc")
+            report_path = ifc_path + ".ifcmerge"
+            resolved = [{"type": "placement_auto_resolved", "entity_id": 15, "kept": "remote"}]
+            with open(report_path, "w") as f:
+                json.dump({"status": "success", "conflicts": [], "resolved": resolved}, f)
+            IfcGitRepo.repo = self._mock_repo()
+            conflicts, resolutions = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert conflicts is None
+            assert resolutions == resolved
+            assert not os.path.exists(report_path)
+            IfcGitRepo.repo = None
+
+    @requires_git
+    def test_parses_failed_report_with_auto_resolutions(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc_path = os.path.join(tmpdir, "model.ifc")
+            report_path = ifc_path + ".ifcmerge"
+            conflicts = [{"type": "attribute_conflict", "entity_id": 42}]
+            resolved = [{"type": "placement_auto_resolved", "entity_id": 15, "kept": "remote"}]
+            with open(report_path, "w") as f:
+                json.dump({"status": "failed", "conflicts": conflicts, "resolved": resolved}, f)
+            mock_repo = self._mock_repo(unmerged=True)
+            mock_repo.git.mergetool.side_effect = git.exc.GitCommandError("mergetool", 1)
+            IfcGitRepo.repo = mock_repo
+            result_conflicts, resolutions = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert result_conflicts == conflicts
+            assert resolutions == resolved
             IfcGitRepo.repo = None
 
 

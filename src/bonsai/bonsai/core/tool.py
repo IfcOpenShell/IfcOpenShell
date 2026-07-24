@@ -589,6 +589,9 @@ class IfcGit:
     def store_merge_conflicts(cls, conflicts): pass
     def clear_merge_conflicts(cls): pass
     def get_merge_conflicts(cls): pass
+    def store_merge_resolutions(cls, resolutions): pass
+    def clear_merge_resolutions(cls): pass
+    def get_merge_resolutions(cls): pass
     def set_display_branch(cls): pass
     def get_active_branch_name(cls): pass
     def get_ifcgit_props(cls): pass
