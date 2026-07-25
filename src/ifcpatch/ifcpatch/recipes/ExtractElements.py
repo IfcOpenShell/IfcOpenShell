@@ -75,7 +75,7 @@ class Patcher(ifcpatch.BasePatcher):
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcProduct, ! IfcSlab"]})
 
             # Extract walls whose Name is not "Foo"
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcWall, attribute.Name != \"Foo\""]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcWall, Name != \"Foo\""]})
         """
         super().__init__(file, logger)
         self.query = query
