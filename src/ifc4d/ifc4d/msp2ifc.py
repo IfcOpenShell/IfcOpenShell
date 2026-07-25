@@ -64,9 +64,23 @@ class MSP2Ifc:
         id = 0
         if task.findall("pr:PredecessorLink", self.ns):
             for relationship in task.findall("pr:PredecessorLink", self.ns):
+                lag_format = relationship.findtext("pr:LagFormat", namespaces=self.ns)
+                link_lag = relationship.findtext("pr:LinkLag", namespaces=self.ns)
+                duration_type = (
+                    "ELAPSEDTIME"
+                    if lag_format in {"4", "6", "8", "10", "12", "36", "38", "40", "42", "44"}
+                    else "WORKTIME"
+                )
+                hours_per_day = (
+                    24 if duration_type == "ELAPSEDTIME" else int(self.project["MinutesPerDay"] or 8 * 60) / 60
+                )
                 relationships[id] = {
                     "PredecessorTask": relationship.find("pr:PredecessorUID", self.ns).text,
                     "Type": relationship.find("pr:Type", self.ns).text,
+                    "Lag": (
+                        timedelta(days=int(link_lag) / 10 / 60 / hours_per_day) if link_lag and int(link_lag) else None
+                    ),
+                    "LagDurationType": duration_type,
                 }
                 id += 1
         return relationships
@@ -371,6 +385,13 @@ class MSP2Ifc:
                         self.file,
                         rel_sequence=rel_sequence,
                         attributes={"SequenceType": self.sequence_type_map[predecessor["Type"]]},
+                    )
+                if predecessor["Lag"]:
+                    ifcopenshell.api.sequence.assign_lag_time(
+                        self.file,
+                        rel_sequence=rel_sequence,
+                        lag_value=predecessor["Lag"],
+                        duration_type=predecessor["LagDurationType"],
                     )
 
     def parse_resources_xml(self, project):
