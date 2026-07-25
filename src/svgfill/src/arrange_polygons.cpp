@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <iostream>
+#include <optional>
 
 #include "graph_2d.h"
 
@@ -2313,8 +2314,8 @@ extend_end_vertices_based_on_input_simple(
                 CGAL::Ray_2<K> ray(incoming, M - incoming);
 
                 // intersect ray with boundary
-                boost::optional<CGAL::Segment_2<K>> closest_segment;
-                boost::optional<CGAL::Point_2<K>> closest_intersection_point;
+                std::optional<CGAL::Segment_2<K>> closest_segment;
+                std::optional<CGAL::Point_2<K>> closest_intersection_point;
                 K::FT sq_distance_along_ray = std::numeric_limits<double>::infinity();
                 for (auto jt = bnd.edges_begin(); jt != bnd.edges_end(); ++jt) {
                     const auto& seg = *jt;
@@ -2345,7 +2346,7 @@ extend_end_vertices_based_on_input_simple(
 
                     // Loop over boundary segments, and project point onto it, take the closest
                     K::FT closest_distance = std::numeric_limits<double>::infinity();
-                    boost::optional<CGAL::Point_2<K>> closest_point;
+                    std::optional<CGAL::Point_2<K>> closest_point;
                     for (auto& poly : outer_perimiter) {
                         for (auto jt = poly.edges_begin(); jt != poly.edges_end(); ++jt) {
                             auto seg = *jt;
@@ -2395,7 +2396,7 @@ extend_end_vertices_based_on_input_simple(
                     }
                 }
             } else if (bnd.has_on_boundary(M)) {
-                return boost::optional<Point_2>{M};
+                return std::optional<Point_2>{M};
             }
         }
         if (within_any_perimeter) {
@@ -2403,7 +2404,7 @@ extend_end_vertices_based_on_input_simple(
         } else {
             logger.message(::logger::LOG_WARNING, "ARR", 3, "Point is outside all boundaries");
         }
-        return boost::optional<Point_2>{};
+        return std::optional<Point_2>{};
     };
 
     using solution_length_point_incoming = std::tuple<K::FT, Point_2, Point_2>;
