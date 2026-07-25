@@ -59,8 +59,6 @@ def get_function_node_name(node: ast.FunctionDef) -> Union[SubnameType, None]:
     node_name = node.name
     is_init = node_name == "__init__"
 
-    if node_name.startswith("_") and node_name not in ("_is",) and not is_init:
-        return None
     arg_nodes = node.args.args
     defaults = [None] * (len(arg_nodes) - len(node.args.defaults)) + node.args.defaults
     args: list[str] = []
@@ -89,11 +87,51 @@ def get_function_node_name(node: ast.FunctionDef) -> Union[SubnameType, None]:
     return node_name
 
 
+def _count_params(def_string: str) -> int:
+    """Count parameters in a rendered ``def name(...): ...`` string.
+
+    Used to tell a getter (typically just ``self``) apart from a setter
+    (``self`` plus one more argument) when two same-named function
+    definitions need to be resolved.
+    """
+    start = def_string.index("(")
+    depth = 0
+    count = 0
+    has_params = False
+    for ch in def_string[start:]:
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+            if depth == 0:
+                break
+        elif depth == 1:
+            if ch == ",":
+                count += 1
+            elif ch not in " \t":
+                has_params = True
+    return count + 1 if has_params else 0
+
+
+def _is_hidden_def(entry: SubnameType) -> bool:
+    text = entry if isinstance(entry, str) else entry[-1]
+    if not text.startswith("def "):
+        return False
+    name = text[len("def ") :].split("(", 1)[0]
+    return name.startswith("_") and name not in ("_is",) and name != "__init__"
+
+
 def get_names_tree(tree: ast.Module) -> dict[str, set[SubnameType]]:
     # Get class tree.
     names_tree: dict[str, set[SubnameType]] = {}
     for node in tree.body:
         subnames: set[SubnameType] = set()
+        # Raw function definitions seen so far in this class, keyed by short
+        # name, in source order. Used to resolve which definition a
+        # `property(getter, setter)` / `staticmethod(func)` wrapper refers
+        # to without depending on `set` iteration order, which is randomized
+        # per-process and previously made this lookup nondeterministic.
+        functions_by_name: dict[str, list[str]] = {}
         node_name = None
         if isinstance(node, ast.ClassDef):
             # Skip `object_` as it's just a reference to `object`,
@@ -137,30 +175,38 @@ def get_names_tree(tree: ast.Module) -> dict[str, set[SubnameType]]:
                         len_args = len(args)
                         if len_args in (1, 2):
 
-                            def find_method_by_name(name: str) -> Union[str, None]:
-                                function_def = f"def {name}("
-                                return next(
-                                    (
-                                        func_
-                                        for func_ in subnames
-                                        if isinstance(func_, str) and func_.startswith(function_def)
-                                    ),
-                                    None,
-                                )
+                            def claim_function(name: str, prefer_min_arity: bool) -> Union[str, None]:
+                                candidates = functions_by_name.get(name)
+                                if not candidates:
+                                    return None
+                                picked = (min if prefer_min_arity else max)(candidates, key=_count_params)
+                                candidates.remove(picked)
+                                subnames.discard(picked)
+                                return picked
 
-                            # Use `set` for cases like `description = property(description, description)`.
+                            # `args` preserves declaration order: the first distinct name is the
+                            # getter (or the sole wrapped function for `staticmethod`), the
+                            # second, when present, is the setter (e.g. `description =
+                            # property(description, description)` only names one distinct
+                            # function and is claimed once, same as before). Resolving by
+                            # position, and preferring the lower-arity definition for the
+                            # getter, disambiguates getter/setter pairs that share a name,
+                            # instead of picking whichever same-named definition a
+                            # hash-ordered lookup happened to yield first.
+                            distinct_names = list(dict.fromkeys(args))
                             wrapped_function = None
-                            for arg in set(args):
-                                assert (wrapped_function := find_method_by_name(arg))
-                                subnames.remove(wrapped_function)
+                            for i, name in enumerate(distinct_names):
+                                found = claim_function(name, prefer_min_arity=(i == 0))
+                                assert found is not None, f"Could not resolve wrapped function {name!r}."
+                                wrapped_function = found
 
                             # TODO: sort it out in wrapper.py
                             # There's one annoying case in Element.product
                             # when property is overriding existing function, without using it.
                             # We should probably just exclude that function from the wrapper.
-                            overridden_name = find_method_by_name(subname_)
-                            if overridden_name:
-                                subnames.remove(overridden_name)
+                            overridden_candidates = functions_by_name.get(subname_)
+                            if overridden_candidates:
+                                subnames.discard(overridden_candidates.pop(0))
 
                             if len_args == 2:
                                 # Has both getter and setter, can be defined as a simple attribute.
@@ -189,6 +235,14 @@ def get_names_tree(tree: ast.Module) -> dict[str, set[SubnameType]]:
 
                 if subname is not None:
                     subnames.add(subname)
+                    text = subname if isinstance(subname, str) else subname[-1]
+                    if text.startswith("def "):
+                        functions_by_name.setdefault(text[len("def ") :].split("(", 1)[0], []).append(text)
+
+            # Function definitions that are still underscore-prefixed at this point
+            # were never claimed by a `property()`/`staticmethod()` wrapper above,
+            # so they're genuinely private and can be hidden from the output.
+            subnames = {s for s in subnames if not _is_hidden_def(s)}
             if not subnames:
                 node_name += " ..."
 
