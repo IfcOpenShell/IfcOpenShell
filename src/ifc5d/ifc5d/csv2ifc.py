@@ -113,6 +113,7 @@ class Csv2Ifc:
     file: Union[ifcopenshell.file, None] = None
     cost_schedule: Union[ifcopenshell.entity_instance, None] = None
     is_schedule_of_rates: bool = False
+    delimiter: str
 
     # Output.
     cost_items: list[CostItem]
@@ -132,12 +133,15 @@ class Csv2Ifc:
         cost_schedule: Union[ifcopenshell.entity_instance, None] = None,
         *,
         is_schedule_of_rates: bool = False,
+        delimiter: str = ",",
     ):
         """
         :param csv: CSV filepath to import.
         :param ifc_file: IFC file to import to. If not provided, boilerplate file will be created.
         :param cost_schedule: Cost schedule to load cost items to. If not provided, new one will be created.
         :param is_schedule_of_rates: Whether imported schedule is a schedule of rates.
+        :param delimiter: Field delimiter used by the CSV file. Locales that use a comma as the
+            decimal separator conventionally use a semicolon here.
         """
         # TODO: Arguments added only at 25.04.14
         # `csv` argument is actually not optional, it's only optional for backwards compatibility.
@@ -148,6 +152,7 @@ class Csv2Ifc:
         self.file = ifc_file
         self.cost_schedule = cost_schedule
         self.is_schedule_of_rates = is_schedule_of_rates
+        self.delimiter = delimiter
         self.units = {}
 
     def execute(self) -> None:
@@ -171,7 +176,7 @@ class Csv2Ifc:
         min_index = None
 
         with open(self.csv, "r", encoding="utf-8") as csv_file:
-            reader = csv.reader(csv_file)
+            reader = csv.reader(csv_file, delimiter=self.delimiter)
             for row in reader:
                 if not row[0]:
                     continue
