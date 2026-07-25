@@ -211,6 +211,14 @@ class ScheduleColumn(PropertyGroup):
         schedule_id: int
 
 
+def get_fixed_cost_value(self: "BIMCostProperties") -> float:
+    return float(self.get("fixed_cost_value", 0.0))
+
+
+def set_fixed_cost_value(self: "BIMCostProperties", value: float) -> None:
+    self["fixed_cost_value"] = value
+
+
 class BIMCostProperties(PropertyGroup):
     cost_schedule_predefined_types: EnumProperty(
         items=get_schedule_predefined_types, name="Predefined Type", default=None
@@ -240,7 +248,7 @@ class BIMCostProperties(PropertyGroup):
         name="Cost Types",
     )
     cost_category: StringProperty(name="Cost Category")
-    fixed_cost_value: FloatProperty(name="Fixed Cost Value")
+    fixed_cost_value: FloatProperty(name="Fixed Cost Value", get=get_fixed_cost_value, set=set_fixed_cost_value)
     active_cost_value_id: IntProperty(name="Active Cost Item Value Id")
     cost_value_editing_type: StringProperty(name="Cost Value Editing Type")
     cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)

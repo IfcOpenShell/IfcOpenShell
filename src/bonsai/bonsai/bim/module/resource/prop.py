@@ -94,10 +94,23 @@ def updateResourceUsage(self: "Resource", context: object) -> None:
     bonsai.bim.module.pset.data.refresh()
 
 
+def get_resource_schedule_usage(self: "Resource") -> float:
+    return float(self.get("schedule_usage", 0.0))
+
+
+def set_resource_schedule_usage(self: "Resource", value: float) -> None:
+    self["schedule_usage"] = value
+
+
 class Resource(PropertyGroup):
     name: StringProperty(name="Name", update=updateResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    schedule_usage: FloatProperty(name="Schedule Usage", update=updateResourceUsage)
+    schedule_usage: FloatProperty(
+        name="Schedule Usage",
+        update=updateResourceUsage,
+        get=get_resource_schedule_usage,
+        set=set_resource_schedule_usage,
+    )
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
@@ -197,10 +210,18 @@ class BIMResourceProperties(PropertyGroup):
         return tool.Blender.get_active_uilist_element(self.tree.resources, self.active_resource_index)
 
 
+def get_quantity_produced(self: "BIMResourceProductivity") -> float:
+    return float(self.get("quantity_produced", 0.0))
+
+
+def set_quantity_produced(self: "BIMResourceProductivity", value: float) -> None:
+    self["quantity_produced"] = value
+
+
 class BIMResourceProductivity(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     quantity_consumed: CollectionProperty(name="Duration", type=ISODuration)
-    quantity_produced: FloatProperty(name="Quantity Produced")
+    quantity_produced: FloatProperty(name="Quantity Produced", get=get_quantity_produced, set=set_quantity_produced)
     quantity_produced_name: StringProperty(name="Quantity Produced Name")
 
     if TYPE_CHECKING:

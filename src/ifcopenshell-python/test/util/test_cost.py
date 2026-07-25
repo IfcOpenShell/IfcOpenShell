@@ -49,3 +49,34 @@ class TestGetCostItemForProduct(test.bootstrap.IFC4):
         cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
         item1 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
         assert list(subject.get_cost_items_for_product(element)) == []
+
+
+class TestCalculateAppliedValuePrecision(test.bootstrap.IFC4):
+    """Regression tests for #6964: DimitriosThe's invariant is that "there
+    should be absolutely no rounding whatsoever, happening ever anywhere"
+    in a cost calculation. These assert a cost item total made of several
+    many-significant-digit components comes back bit-identical to the
+    Python sum, not truncated."""
+
+    def test_a_single_component_is_not_rounded(self):
+        model = self.file
+        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
+        value = ifcopenshell.api.cost.add_cost_value(model, parent=item)
+        applied_value = 150.79197255123456
+        ifcopenshell.api.cost.edit_cost_value(model, cost_value=value, attributes={"AppliedValue": applied_value})
+        assert subject.calculate_applied_value(item, value) == applied_value
+
+    def test_a_sum_of_many_significant_digit_components_is_not_rounded(self):
+        model = self.file
+        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
+        sum_value = ifcopenshell.api.cost.add_cost_value(model, parent=item)
+        components = [10.481575000123, 9.9278884001, 0.887000024, 1.612800002]
+        for component_value in components:
+            component = ifcopenshell.api.cost.add_cost_value(model, parent=sum_value)
+            ifcopenshell.api.cost.edit_cost_value(
+                model, cost_value=component, attributes={"AppliedValue": component_value}
+            )
+        sum_value.ArithmeticOperator = "ADD"
+        assert subject.calculate_applied_value(item, sum_value) == sum(components)
