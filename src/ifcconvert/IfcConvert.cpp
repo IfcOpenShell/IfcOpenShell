@@ -529,7 +529,7 @@ int main(int argc, char** argv) {
         if (unicode_mode == "utf8") {
             IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::UTF8;
         } else if (unicode_mode == "escape") {
-            IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::JSON;
+            IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::ESCAPE;
         } else {
             cerr_ << "[Error] Invalid value for --unicode" << std::endl;
             print_options(serializer_options);
