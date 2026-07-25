@@ -47,6 +47,10 @@ class Patcher:
 
         This is for AGS version 3.
 
+        The input file is not read. A new IFC4X3 model is built from the AGS
+        data, containing one IfcBorehole per location with its strata nested
+        inside as IfcGeotechnicalStratum.
+
         :param ags_file: The AGS file to convert.
         :filter_glob ags_file: *.ags
         :param docs_dir: The directory URI where documents are stored
@@ -55,8 +59,8 @@ class Patcher:
 
         .. code:: python
 
-            result = ifcpatch.execute({"input": fn, "file": model, "recipe": "ExtractPropertiesToSQLite"})
-            ifcpatch.write(result, "output.sqlite")
+            result = ifcpatch.execute({"file": model, "recipe": "AGS2IFC", "arguments": ["data.ags", "docs"]})
+            ifcpatch.write(result, "boreholes.ifc")
         """
         self.file = file
         self.logger = logger
