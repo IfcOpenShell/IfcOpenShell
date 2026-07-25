@@ -435,6 +435,21 @@ class Raycast(bonsai.core.tool.Raycast):
                 }
                 points.append(snap_point)
 
+        # Check round n-gon face centres (e.g. pipe/cable ends) for proximity to mouse position.
+        for center in snap_obj.circle_centers:
+            v2d = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
+            if v2d is None:
+                continue
+            distance = (Vector(mouse_pos) - v2d).length
+            if distance <= snap_threshold:
+                snap_point = {
+                    "object": snap_obj.obj,
+                    "type": "Circle Center",
+                    "point": center.copy(),
+                    "distance": distance / 10,
+                }
+                points.append(snap_point)
+
         count = 0
         selected_edges = {}
         for e in edges:
@@ -1021,6 +1036,28 @@ class SnapObj:
         self._bvh_built = False
         self.verts_3d = [obj.matrix_world @ v.co for v in obj.data.vertices]
         self.snap_points = []
+        self.circle_centers = self._find_circle_centers()
+
+    def _find_circle_centers(self) -> list[Vector]:
+        """Find the centre of round n-gon faces, to offer as a derived snap point."""
+        centers = []
+        min_vertices = 8
+        tolerance = 0.02
+        for polygon in self.obj.data.polygons:
+            verts = polygon.vertices
+            n = len(verts)
+            if n < min_vertices:
+                continue
+            coords = [self.verts_3d[i] for i in verts]
+            centroid = sum(coords, Vector()) / n
+            radii = [(co - centroid).length for co in coords]
+            mean_radius = sum(radii) / n
+            if mean_radius < 1e-6:
+                continue
+            max_deviation = max(abs(r - mean_radius) for r in radii)
+            if max_deviation / mean_radius <= tolerance:
+                centers.append(centroid)
+        return centers
 
     def _ensure_bvh(self):
         if self._bvh_built:

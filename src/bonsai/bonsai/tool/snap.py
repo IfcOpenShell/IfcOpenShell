@@ -574,6 +574,8 @@ class Snap(bonsai.core.tool.Snap):
                 zoom_factor = rv3d.view_distance
                 if snap["type"] == "Vertex":
                     snap["distance"] *= zoom_factor / 10
+                if snap["type"] == "Circle Center":
+                    snap["distance"] *= zoom_factor / 10
                 if snap["type"] == "Edge Center":
                     snap["distance"] *= zoom_factor / 8
                 if snap["type"] == "Edge Intersection":
