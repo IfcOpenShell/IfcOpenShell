@@ -100,8 +100,17 @@ class Patcher(ifcpatch.BasePatcher):
             self.owner_history = self.new.add(owner_history)
             break
         self.add_element(self.file.by_type("IfcProject")[0])
-        for element in ifcopenshell.util.selector.filter_elements(self.file, self.query):
+        elements = ifcopenshell.util.selector.filter_elements(self.file, self.query)
+        total = len(elements)
+        self.logger.info(f"ExtractElements: matched {total} element(s), extracting...")
+        report_every = max(1, total // 100)
+        for i, element in enumerate(elements, start=1):
             self.add_element(element)
+            if i % report_every == 0 or i == total:
+                self.logger.info(
+                    f"ExtractElements: extracted {i}/{total} element(s)",
+                    extra={"progress_current": i, "progress_total": total},
+                )
         ifcopenshell.api.project.flush_deferred_relationship_members(
             self.deferred_relationship_members, self.appended_elements
         )

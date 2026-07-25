@@ -18,7 +18,11 @@
 
 from __future__ import annotations
 
+import contextlib
+import logging
 import re
+import sys
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 import bpy
@@ -43,6 +47,53 @@ _MIGRATE_SCHEMA_ARG_NAME = "Schema"
 # Match a STEP-encoded FILE_SCHEMA header: ``FILE_SCHEMA(('IFC4'));`` and the
 # IFC4X3_ADD2 / IFC2X3_TC1 variants. Captures the bare schema identifier.
 _IFC_FILE_SCHEMA_RE = re.compile(r"FILE_SCHEMA\s*\(\s*\(\s*'([^']+)'", re.IGNORECASE)
+
+
+class _PatchProgressHandler(logging.Handler):
+    """Forwards ``ifcpatch`` recipe log records to the console, the status
+    bar, and the window progress bar while a recipe runs.
+
+    Patch recipes run synchronously on Blender's main thread, so a long one
+    otherwise gives no feedback and the window reports as not responding
+    (#8945). Recipes that log periodic progress (e.g. ``ExtractElements``)
+    now surface that here; recipes that don't log anything simply show no
+    progress bar, rather than a fake one.
+    """
+
+    def __init__(self, context: bpy.types.Context) -> None:
+        super().__init__(level=logging.INFO)
+        self.context = context
+        self.progress_started = False
+
+    def emit(self, record: logging.LogRecord) -> None:
+        message = record.getMessage()
+        print(f"[IfcPatch] {message}")
+        sys.stdout.flush()
+        try:
+            self.context.workspace.status_text_set(message)
+        except Exception:
+            pass
+
+        current = getattr(record, "progress_current", None)
+        total = getattr(record, "progress_total", None)
+        if current is None or not total:
+            return
+        try:
+            wm = self.context.window_manager
+            if not self.progress_started:
+                wm.progress_begin(0, total)
+                self.progress_started = True
+            wm.progress_update(current)
+        except Exception:
+            pass
+
+    def close(self) -> None:
+        if self.progress_started:
+            try:
+                self.context.window_manager.progress_end()
+            except Exception:
+                pass
+        super().close()
 
 
 class Patch(bonsai.core.tool.Patch):
@@ -125,6 +176,37 @@ class Patch(bonsai.core.tool.Patch):
             return ifcopenshell.util.schema.get_fallback_schema(match.group(1).upper())
         except AssertionError:
             return ""
+
+    @classmethod
+    @contextlib.contextmanager
+    def report_progress(cls, context: bpy.types.Context) -> Iterator[None]:
+        """Run a patch recipe with a WAIT cursor and its progress, if any,
+        forwarded to the console, status bar, and window progress bar.
+
+        See ``_PatchProgressHandler`` for what "progress" means here.
+        """
+        logger = logging.getLogger("IFCPatch")
+        handler = _PatchProgressHandler(context)
+        previous_level = logger.level
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+        # context.window is unset in headless/background test runs, where
+        # there's no cursor to set and nothing to redraw.
+        window = getattr(context, "window", None)
+        if window is not None:
+            window.cursor_modal_set("WAIT")
+        try:
+            yield
+        finally:
+            if window is not None:
+                window.cursor_modal_restore()
+            logger.removeHandler(handler)
+            handler.close()
+            logger.setLevel(previous_level)
+            try:
+                context.workspace.status_text_set(None)
+            except Exception:
+                pass
 
     @classmethod
     def post_process_patch_arguments(cls, recipe: str, args: list[Any]) -> list[Any]:
