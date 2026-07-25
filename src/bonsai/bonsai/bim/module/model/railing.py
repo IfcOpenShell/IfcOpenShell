@@ -31,7 +31,6 @@ import ifcopenshell.util.unit
 from mathutils import Matrix, Vector
 
 import bonsai.core.geometry
-import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
@@ -348,49 +347,6 @@ def get_path_data(obj: bpy.types.Object) -> dict[str, Any]:
     path_data = {"edges": segments, "verts": [p / si_conversion for p in points]}
 
     return path_data
-
-
-class BIM_OT_add_railing(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "mesh.add_railing"
-    bl_label = "Railing"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get() and context.mode == "OBJECT"
-
-    def _execute(self, context):
-        ifc_file = tool.Ifc.get()
-        if not ifc_file:
-            self.report({"ERROR"}, "You need to start IFC project first to create a railing.")
-            return {"CANCELLED"}
-
-        if context.active_object is not None:
-            spawn_location = context.active_object.location.copy()
-            context.active_object.select_set(False)
-        else:
-            spawn_location = bpy.context.scene.cursor.location.copy()
-
-        mesh = bpy.data.meshes.new("IfcRailing")
-        obj = bpy.data.objects.new("IfcRailing", mesh)
-        obj.location = spawn_location
-
-        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        bonsai.core.root.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=obj,
-            ifc_class="IfcRailing",
-            should_add_representation=True,
-            context=body_context,
-        )
-        bpy.ops.object.select_all(action="DESELECT")
-        bpy.context.view_layer.objects.active = None
-        bpy.context.view_layer.objects.active = obj
-        tool.Blender.select_object(obj)
-        bpy.ops.bim.add_railing()
-        return {"FINISHED"}
 
 
 # UI operators
