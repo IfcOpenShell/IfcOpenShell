@@ -182,6 +182,9 @@ class EnableEditingStyle(bpy.types.Operator):
     style: bpy.props.IntProperty(default=0)
 
     def execute(self, context):
+        props = tool.Style.get_style_props()
+        if props.is_editing_style:
+            bpy.ops.bim.edit_surface_style()
         core.enable_editing_style(tool.Style, tool.Ifc.get().by_id(self.style))
         return {"FINISHED"}
 
@@ -936,6 +939,8 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
 
     def execute(self, context):
         props = tool.Style.get_style_props()
+        if props.is_editing_style:
+            bpy.ops.bim.edit_surface_style()
         style = tool.Ifc.get().by_id(self.style)
         style_elements = tool.Style.get_style_elements(style)
 
