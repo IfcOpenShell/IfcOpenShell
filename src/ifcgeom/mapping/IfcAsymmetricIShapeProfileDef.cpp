@@ -32,43 +32,43 @@ using namespace ifcopenshell::geometry;
 // it is only defined in the schemas where the type is standalone (IFC4 / IFC4X3).
 #ifdef SCHEMA_IfcAsymmetricIShapeProfileDef_HAS_BottomFlangeWidth
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAsymmetricIShapeProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAsymmetricIShapeProfileDef& inst) {
 	// Bottom flange (half width), overall depth (half), web (half thickness).
-	const double xb = inst->BottomFlangeWidth() / 2.0 * length_unit_;
-	const double xt = inst->TopFlangeWidth() / 2.0 * length_unit_;
-	const double y = inst->OverallDepth() / 2.0 * length_unit_;
-	const double d1 = inst->WebThickness() / 2.0 * length_unit_;
+	const double xb = inst.BottomFlangeWidth() / 2.0 * length_unit_;
+	const double xt = inst.TopFlangeWidth() / 2.0 * length_unit_;
+	const double y = inst.OverallDepth() / 2.0 * length_unit_;
+	const double d1 = inst.WebThickness() / 2.0 * length_unit_;
 
 	// Bottom flange thickness; top flange thickness defaults to the bottom one.
-	const double ftb = inst->BottomFlangeThickness() * length_unit_;
-	const double ftt = inst->TopFlangeThickness().get_value_or(inst->BottomFlangeThickness()) * length_unit_;
+	const double ftb = inst.BottomFlangeThickness() * length_unit_;
+	const double ftt = inst.TopFlangeThickness().value_or(inst.BottomFlangeThickness()) * length_unit_;
 
 	// Optional fillet radii (web/flange transition) and flange edge radii.
-	const double fb = inst->BottomFlangeFilletRadius().get_value_or(0.) * length_unit_;
-	const double ft_top = inst->TopFlangeFilletRadius().get_value_or(0.) * length_unit_;
-	const double feb = inst->BottomFlangeEdgeRadius().get_value_or(0.) * length_unit_;
-	const double fet = inst->TopFlangeEdgeRadius().get_value_or(0.) * length_unit_;
+	const double fb = inst.BottomFlangeFilletRadius().value_or(0.) * length_unit_;
+	const double ft_top = inst.TopFlangeFilletRadius().value_or(0.) * length_unit_;
+	const double feb = inst.BottomFlangeEdgeRadius().value_or(0.) * length_unit_;
+	const double fet = inst.TopFlangeEdgeRadius().value_or(0.) * length_unit_;
 
 	// Optional flange slopes: the inner edge of the flange rises towards the web.
-	const double bottomSlope = inst->BottomFlangeSlope().get_value_or(0.) * angle_unit_;
-	const double topSlope = inst->TopFlangeSlope().get_value_or(0.) * angle_unit_;
+	const double bottomSlope = inst.BottomFlangeSlope().value_or(0.) * angle_unit_;
+	const double topSlope = inst.TopFlangeSlope().value_or(0.) * angle_unit_;
 	const double dyb = (xb - d1) * tan(bottomSlope);
 	const double dyt = (xt - d1) * tan(topSlope);
 
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if (xb < tol || xt < tol || y < tol || d1 < tol || ftb < tol || ftt < tol) {
-		logger_.Message(Logger::LOG_NOTICE, "GEO", 264, "Skipping zero sized profile:", inst);
+		logger_.message(::logger::LOG_NOTICE, "GEO", 264, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = !!inst->Position();
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	// Twelve corner points, running counter-clockwise from the bottom-left, with the

@@ -371,7 +371,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			for (size_t j = 0; j < i && !reported; ++j) {
 				BRepExtrema_DistShapeShape dss(fwires[i], fwires[j]);
 				if (dss.IsDone() && dss.Value() < precision_) {
-					logger().Warning("GEO", 402, "Face inner boundary intersects another face boundary", face->instance);
+					logger().warning("GEO", 402, "Face inner boundary intersects another face boundary", face->instance);
 					reported = true;
 				}
 			}

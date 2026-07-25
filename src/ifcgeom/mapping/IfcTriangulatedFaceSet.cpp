@@ -42,7 +42,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet& inst) {
 	// When the optional PnIndex is present, CoordIndex values do not index into
 	// CoordList directly but into PnIndex, which in turn remaps to CoordList.
 	// Both index levels are 1-based per the IFC specification.
-	auto pn_index = inst->PnIndex();
+	auto pn_index = inst.PnIndex();
 	auto resolve = [&](int64_t idx) -> const taxonomy::point3::ptr& {
 		if (pn_index) {
 			if (idx < 1 || idx > (int64_t)pn_index->size()) {
