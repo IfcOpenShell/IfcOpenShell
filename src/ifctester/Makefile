@@ -100,7 +100,7 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/pyproject.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
 endif
-	cd $(WEBAPP_IFCTESTER_BUILD_DIR) && $(PYTHON) -m venv env --system-site-packages && . env/$(VENV_ACTIVATE) && python -m pip install build && python -m build --wheel --no-isolation
+	cd $(WEBAPP_IFCTESTER_BUILD_DIR) && $(PYTHON) -m venv env --system-site-packages && . env/$(VENV_ACTIVATE) && python -m pip install build "setuptools>=61.0" && python -m build --wheel --no-isolation
 	mkdir -p $(WEBAPP_GENERATED_DIR)
 	wheel=$$(basename $(WEBAPP_IFCTESTER_BUILD_DIR)/dist/$(PACKAGE_NAME)-*.whl); \
 	cp "$(WEBAPP_IFCTESTER_BUILD_DIR)/dist/$$wheel" "$(WEBAPP_GENERATED_DIR)/$$wheel"; \
