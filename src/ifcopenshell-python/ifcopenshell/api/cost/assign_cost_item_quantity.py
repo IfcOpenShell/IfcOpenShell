@@ -63,7 +63,10 @@ def assign_cost_item_quantity(
     :param products: The IfcObjects to assign parametric quantities to
     :param prop_name: The name of the quantity. If this is not specified,
         then it is assumed that there is no calculated quantity, and the
-        number of objects are counted instead.
+        number of objects are counted instead. May list several candidate
+        names separated by a comma (e.g. "SOLIDWALL, COLUMN") so that
+        products of different classes, whose relevant quantity is stored
+        under a different name, can be resolved by the same call.
     :param formula: The string that contains the formula
     :param ifc_class: The quantity class of the calculated value if the formula is
         specified. Can be ['IfcQuantityCount', 'IfcQuantityNumber',
@@ -97,6 +100,15 @@ def assign_cost_item_quantity(
         # item.
         ifcopenshell.api.cost.assign_cost_item_quantity(model,
             cost_item=item, products=[slab], prop_name="NetVolume")
+
+        # If different classes of products store the relevant quantity under
+        # different names (e.g. a wall's formwork area is under "SOLIDWALL"
+        # while a column's is under "COLUMN"), list the candidate names
+        # separated by a comma. Each product resolves to whichever of these
+        # names is actually present on it, so one cost item can cover both
+        # classes instead of being duplicated per class.
+        ifcopenshell.api.cost.assign_cost_item_quantity(model,
+            cost_item=item, products=[wall, column], prop_name="SOLIDWALL, COLUMN")
 
         # Now let's use the formula in order to calculate the quantity value.
         # For example, let's say that a IfcWall has the reinfocement volume ratio
@@ -134,6 +146,7 @@ class Usecase:
     ):
         self.cost_item = cost_item
         self.prop_name = prop_name
+        self.prop_names = {name.strip().lower() for name in prop_name.split(",") if name.strip()}
         if self.prop_name or formula:
             self.quantities = set(cost_item.CostQuantities or [])
         for product in products:
@@ -185,7 +198,7 @@ class Usecase:
                 continue
 
             if self.prop_name:
-                if cost_item.CostQuantities and cost_item.CostQuantities[0].Name.lower() != self.prop_name.lower():
+                if cost_item.CostQuantities and cost_item.CostQuantities[0].Name.lower() not in self.prop_names:
                     continue
                 self.add_quantity_from_related_object(product)
         if self.prop_name or formula:
@@ -221,7 +234,7 @@ class Usecase:
         if not qto.is_a("IfcElementQuantity"):
             return
         for prop in qto.Quantities:
-            if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == self.prop_name.lower():
+            if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() in self.prop_names:
                 self.quantities.add(prop)
 
     def update_cost_item_count(self):

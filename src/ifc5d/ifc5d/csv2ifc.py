@@ -451,12 +451,22 @@ class Csv2Ifc:
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
 
 
-def has_property(self, product: ifcopenshell.entity_instance, property_name: str) -> bool:
+def has_property(file: ifcopenshell.file, product: ifcopenshell.entity_instance, property_name: str) -> bool:
+    """Check if ``product`` has a quantity matching ``property_name``.
+
+    ``property_name`` may list several candidate quantity names separated by
+    a comma (the same "," OR convention used by ifcopenshell.util.selector),
+    so a single article can resolve the right quantity per element class,
+    e.g. "SOLIDWALL, COLUMN".
+    """
     if not property_name:
+        return True
+    candidates = {name.strip().lower() for name in property_name.split(",") if name.strip()}
+    if not candidates:
         return True
     qtos = ifcopenshell.util.element.get_psets(product, qtos_only=True)
     for qset, quantities in qtos.items():
-        for quantity, value in quantities.items():
-            if quantity == property_name:
+        for quantity in quantities:
+            if quantity.lower() in candidates:
                 return True
     return False

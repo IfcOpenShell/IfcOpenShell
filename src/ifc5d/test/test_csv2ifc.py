@@ -22,6 +22,7 @@ import tempfile
 from pathlib import Path
 
 import ifcopenshell
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.cost
@@ -147,6 +148,40 @@ class TestCsv2Ifc:
             # A parent/sum item gets the sum of its direct children's Total Cost.
             parent_row = next(row for row in worksheet.iter_rows(min_row=2) if row[0].value == "DB.1")
             assert parent_row[4].value.startswith("=SUM(")
+
+    def test_property_column_accepts_comma_separated_candidate_names(self):
+        # Regression test for #6616. A single article can cover elements of
+        # different classes even when their relevant quantity is stored
+        # under a different property name per class, e.g. IfcWall.SOLIDWALL
+        # and IfcColumn.COLUMN. The Query column already supports selecting
+        # both classes with a comma (an existing ifcopenshell.util.selector
+        # OR), so only the Property column needed to gain the same "," OR
+        # convention to resolve the right name per element.
+        ifc_file = self.setup_ifc_file()
+
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Wall")
+        wall_qto = ifcopenshell.api.pset.add_qto(ifc_file, product=wall, name="Qto_WallFormwork")
+        ifcopenshell.api.pset.edit_qto(ifc_file, qto=wall_qto, properties={"SOLIDWALL": 24.0})
+
+        column = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcColumn", name="Column")
+        column_qto = ifcopenshell.api.pset.add_qto(ifc_file, product=column, name="Qto_ColumnFormwork")
+        ifcopenshell.api.pset.edit_qto(ifc_file, qto=column_qto, properties={"COLUMN": 9.5})
+
+        csv_rows = [
+            ["Id", "Index", "Name", "Unit", "Value", "Property", "Query"],
+            ["1", "1", "Formwork - all verticals", "m2", "10", "SOLIDWALL, COLUMN", "IfcWall, IfcColumn"],
+        ]
+        with tempfile.TemporaryDirectory("w") as temp_dir:
+            csv_filepath = Path(temp_dir) / "article.csv"
+            with csv_filepath.open("w", newline="", encoding="utf-8") as csv_file:
+                csv.writer(csv_file).writerows(csv_rows)
+
+            ifc5d.csv2ifc.Csv2Ifc(str(csv_filepath), ifc_file).execute()
+
+        cost_item = ifc_file.by_type("IfcCostItem")[0]
+        names = sorted(q.Name for q in cost_item.CostQuantities)
+        assert names == ["COLUMN", "SOLIDWALL"]
+        assert ifcopenshell.util.cost.get_total_quantity(cost_item) == 33.5
 
 
 class TestSerialiseCostQuantities:
