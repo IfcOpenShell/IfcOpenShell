@@ -20,10 +20,14 @@ dependencies = [
     "typing_extensions",
 ]
 
- [project.optional-dependencies] 
- advanced = [ 
-   "typst", 
- ] 
+ [project.optional-dependencies]
+ advanced = [
+   "typst",
+ ]
+ spreadsheet = [
+   "odfpy",
+   "openpyxl",
+ ]
 
 [project.urls]
 Homepage = "http://ifcopenshell.org"

@@ -10,6 +10,7 @@ if bonsai_lib_path:
 import argparse
 import base64
 import json
+import urllib.parse
 import xml.etree.ElementTree as ET
 
 import pystache
@@ -18,8 +19,53 @@ from aiohttp import web
 
 sio_port = 8080  # default port
 
+
+def get_asset_version() -> str:
+    """A cache-busting token appended to locally served static asset URLs.
+
+    Browsers otherwise keep serving a stale cached copy of static/js and
+    static/css after Bonsai ships a code change, until the user does a hard
+    refresh. Using the Bonsai version (which includes the build's commit
+    hash) means the token changes on every shipped update.
+    """
+    if bonsai_version:
+        return urllib.parse.quote(bonsai_version, safe="")
+    # Fallback for standalone runs without BONSAI_VERSION set (e.g. running
+    # sioserver.py directly outside of Blender): derive a token from the
+    # newest mtime among the static assets, so it still changes whenever the
+    # shipped files change.
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+    latest_mtime = 0
+    for root, _dirs, files in os.walk(static_dir):
+        for name in files:
+            latest_mtime = max(latest_mtime, int(os.path.getmtime(os.path.join(root, name))))
+    return f"dev-{latest_mtime}"
+
+
+asset_version = get_asset_version()
+
+
+@web.middleware
+async def no_cache_static_middleware(request: web.Request, handler):
+    """Force revalidation of locally served static assets.
+
+    Query-string version stamping (see `asset_version`) busts the cache for
+    the HTML-referenced entry points, but JS files that statically import
+    other local modules (e.g. cost.js/gantt.js importing utilities/costui.js)
+    reference those modules by an un-stamped relative path. Marking all
+    /static/ and /jsgantt/ responses as no-cache makes browsers always
+    revalidate with the server (a cheap conditional GET / 304 when nothing
+    changed), so nested imports also pick up shipped changes without
+    requiring a hard refresh.
+    """
+    response = await handler(request)
+    if request.path.startswith("/static/") or request.path.startswith("/jsgantt/"):
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
+
+
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="aiohttp", max_http_buffer_size=10000000)
-app = web.Application()
+app = web.Application(middlewares=[no_cache_static_middleware])
 sio.attach(app)
 
 
@@ -199,28 +245,28 @@ class BlenderNamespace(socketio.AsyncNamespace):
 async def schedules(request):
     with open("templates/index.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version, "v": asset_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
 async def costing(request):
     with open("templates/costing.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version, "v": asset_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
 async def sequencing(request):
     with open("templates/gantt.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version, "v": asset_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
 async def documentation(request):
     with open("templates/drawings.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version, "v": asset_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
@@ -229,7 +275,7 @@ async def documentation(request):
 async def demo(request):
     with open("templates/demo.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version, "v": asset_version})
     return web.Response(text=html_content, content_type="text/html")
 
 

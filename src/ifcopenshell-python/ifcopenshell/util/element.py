@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 from collections import namedtuple
 from collections.abc import Callable, Generator, Sequence
 from typing import Any, Literal, Optional, Union, overload
 
 import ifcopenshell
 import ifcopenshell.guid
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 
@@ -1590,10 +1592,36 @@ def replace_element(element: ifcopenshell.entity_instance, replacement: ifcopens
         replace_attribute(inverse, element, replacement)
 
 
+@functools.cache
+def _is_set_attribute(schema_identifier: str, ifc_class: str, index: int) -> bool:
+    """Whether attribute `index` of `ifc_class` is declared as an EXPRESS SET.
+
+    SET aggregates may not contain duplicate members, whereas LIST and BAG
+    aggregates may, so only SET-typed attributes are safe to deduplicate.
+    """
+    declaration = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_identifier).declaration_by_name(ifc_class)
+    attribute = declaration.attribute_by_index(index)
+    aggregation = attribute.type_of_attribute().as_aggregation_type()
+    return aggregation is not None and aggregation.type_of_aggregation_string() == "set"
+
+
 def replace_attribute(element: ifcopenshell.entity_instance, old: Any, new: Any) -> None:
     for i, attribute_value in enumerate(element):
         if has_element_reference(attribute_value, old):
-            element[i] = element.walk(lambda v: v == old, lambda v: new, attribute_value)
+            new_value = element.walk(lambda v: v == old, lambda v: new, attribute_value)
+            if (
+                isinstance(attribute_value, tuple)
+                and has_element_reference(attribute_value, new)
+                and _is_set_attribute(element.file.schema_identifier, element.is_a(), i)
+            ):
+                seen: set[Any] = set()
+                deduplicated = []
+                for v in new_value:
+                    if v not in seen:
+                        seen.add(v)
+                        deduplicated.append(v)
+                new_value = tuple(deduplicated)
+            element[i] = new_value
 
 
 def has_element_reference(value: Any, element: ifcopenshell.entity_instance) -> bool:

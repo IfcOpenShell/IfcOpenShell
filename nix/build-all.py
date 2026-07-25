@@ -121,7 +121,7 @@ import tarfile
 import threading
 from datetime import datetime
 
-ssl._create_default_https_context = ssl._create_unverified_context
+ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]
 
 import time
 from collections.abc import Generator, Sequence
@@ -697,7 +697,10 @@ def build_dependency(
             compr = "xz"
         else:
             raise RuntimeError("fix source for new download type")
-        download_tarfile = tarfile.open(name=download_tarfile_path, mode=f"r:{compr}")
+        # ty: false positive bug upstream.
+        download_tarfile = tarfile.open(
+            name=download_tarfile_path, mode=f"r:{compr}"
+        )  # ty:ignore[no-matching-overload]
         # tarfile seriously doesn't have a function to retrieve the root directory more easily
         extract_dir_name = os.path.commonprefix([x for x in download_tarfile.getnames() if x != "."])
         # run([tar, "--exclude=\"*/*\"", "-tf", download_name], cwd=build_dir).strip() no longer works

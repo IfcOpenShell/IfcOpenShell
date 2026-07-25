@@ -12,7 +12,7 @@ jobs:
       MIN_BLENDER_PY_VERSION: "3.11"
     steps:
       - name: Action - checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Action - install python
         uses: actions/setup-python@v6
