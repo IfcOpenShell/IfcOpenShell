@@ -3,6 +3,8 @@ name: ci-ifctester-org
 on:
   workflow_dispatch:
   push:
+    branches:
+      - v0.8.0
     paths:
       - src/ifctester/**
 
