@@ -428,6 +428,7 @@ class Usecase:
                 library=self.settings["library"],
                 element=element_type,
                 reuse_identities=self.reuse_identities,
+                assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
             )
             ifcopenshell.api.type.assign_type(
                 self.file,
