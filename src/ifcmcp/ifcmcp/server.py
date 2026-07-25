@@ -41,8 +41,11 @@ def build_server() -> Any:
         edits.  The new model has no file path of its own, so ``ifc_save`` must be
         given an explicit path.
 
-        :param schema: IFC schema version, passed straight to
-            ``ifcopenshell.file()`` (default ``IFC4``).
+        :param schema: IFC schema version — ``IFC2X3``, ``IFC4``, ``IFC4X1``,
+            ``IFC4X2`` or ``IFC4X3`` — passed straight to
+            ``ifcopenshell.file()`` (default ``IFC4``).  ``IFC4X3`` and
+            ``IFC4X3_ADD2`` are both accepted and resolve to the same
+            schema identifier, ``IFC4X3_ADD2``.
         """
         return session.ifc_new(schema=schema)
 
