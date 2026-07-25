@@ -112,6 +112,51 @@ class TestImportCameraProps(NewFile):
         assert camera.shift_x == 0.0
         assert camera.shift_y == 0.0
 
+    def test_defaults_edge_classification_props_when_pset_is_absent(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        camera = bpy.data.cameras.new("Camera")
+
+        subject.import_camera_props(drawing, camera)
+
+        props = subject.get_camera_props(camera)
+        assert props.use_edge_classification is False
+        assert props.render_creases is True
+        assert props.valley_angle_min_degrees == pytest.approx(12.0)
+        assert props.render_sharp is True
+        assert props.ridge_angle_min_degrees == pytest.approx(45.0)
+        assert props.render_flush is False
+
+    def test_imports_edge_classification_props_from_drawing_pset(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(
+            ifc,
+            pset=pset,
+            properties={
+                "UseEdgeClassification": True,
+                "RenderCreases": False,
+                "ValleyAngleMinDegrees": 8.0,
+                "RenderSharp": False,
+                "RidgeAngleMinDegrees": 30.0,
+                "RenderFlush": True,
+            },
+        )
+        camera = bpy.data.cameras.new("Camera")
+
+        subject.import_camera_props(drawing, camera)
+
+        props = subject.get_camera_props(camera)
+        assert props.use_edge_classification is True
+        assert props.render_creases is False
+        assert props.valley_angle_min_degrees == pytest.approx(8.0)
+        assert props.render_sharp is False
+        assert props.ridge_angle_min_degrees == pytest.approx(30.0)
+        assert props.render_flush is True
+
 
 class TestSyncPerspectiveCameraShifts(NewFile):
     def test_round_trips_perspective_camera_shifts_through_drawing_pset(self):

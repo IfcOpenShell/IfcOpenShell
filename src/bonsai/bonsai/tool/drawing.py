@@ -1072,6 +1072,12 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.has_annotation = True
         camera_props.target_view = "PLAN_VIEW"
         camera_props.is_nts = False
+        camera_props.use_edge_classification = False
+        camera_props.render_creases = True
+        camera_props.valley_angle_min_degrees = 12.0
+        camera_props.render_sharp = True
+        camera_props.ridge_angle_min_degrees = 45.0
+        camera_props.render_flush = False
         camera.shift_x = 0.0
         camera.shift_y = 0.0
 
@@ -1101,6 +1107,18 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.has_annotation = bool(pset["HasAnnotation"])
             if "IsNTS" in pset:
                 camera_props.is_nts = bool(pset["IsNTS"])
+            if "UseEdgeClassification" in pset:
+                camera_props.use_edge_classification = bool(pset["UseEdgeClassification"])
+            if "RenderCreases" in pset:
+                camera_props.render_creases = bool(pset["RenderCreases"])
+            if "ValleyAngleMinDegrees" in pset:
+                camera_props.valley_angle_min_degrees = float(pset["ValleyAngleMinDegrees"])
+            if "RenderSharp" in pset:
+                camera_props.render_sharp = bool(pset["RenderSharp"])
+            if "RidgeAngleMinDegrees" in pset:
+                camera_props.ridge_angle_min_degrees = float(pset["RidgeAngleMinDegrees"])
+            if "RenderFlush" in pset:
+                camera_props.render_flush = bool(pset["RenderFlush"])
             if "DPI" in pset:
                 camera_props.dpi = int(pset["DPI"])
             if "LineworkMode" in pset:

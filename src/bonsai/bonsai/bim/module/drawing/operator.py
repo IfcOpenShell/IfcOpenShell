@@ -1299,6 +1299,18 @@ class CreateDrawing(bpy.types.Operator):
         self.svg_settings = ifcopenshell.geom.settings()
         self.svg_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         self.svg_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
+        # SVG edge classification (issue #3668). See edge-classification.md. Settings are
+        # per-drawing, stored in EPset_Drawing and read into self.cprops by import_camera_props.
+        try:
+            self.svg_settings.set("svg-use-edge-classification", self.cprops.use_edge_classification)
+            self.svg_settings.set("svg-render-crease-edges", self.cprops.render_creases)
+            self.svg_settings.set("svg-valley-angle-min-degrees", self.cprops.valley_angle_min_degrees)
+            self.svg_settings.set("svg-render-sharp-edges", self.cprops.render_sharp)
+            self.svg_settings.set("svg-ridge-angle-min-degrees", self.cprops.ridge_angle_min_degrees)
+            self.svg_settings.set("svg-emit-flush-edges", self.cprops.render_flush)
+        except Exception:
+            # Backwards compatibility with older ifcopenshell builds that don't expose these keys.
+            pass
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser_settings = ifcopenshell.geom.serializer_settings()
         self.serialiser_settings.set("svg-svg-without-storeys", True)

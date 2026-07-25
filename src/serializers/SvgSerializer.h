@@ -56,6 +56,7 @@
 #include <string>
 #include <limits>
 #include <array>
+#include <tuple>
 
 typedef std::pair<express::Base, std::string> drawing_key;
 
@@ -212,15 +213,40 @@ namespace {
 	private:
 		const HLRAlgo_Projector& projector_;
 		const std::list<std::pair<express::Base, TopoDS_Shape>>* product_shapes_ = nullptr;
+		// SVG edge classification (issue #3668): per-(product, class) edge-only sub-shapes,
+		// classified pre-HLR on the original (real-face) topology. Empty class string means
+		// "unclassified" (used for the two fallback cases below).
+		const std::list<std::tuple<express::Base, std::string, TopoDS_Shape>>* classified_shapes_ = nullptr;
 
 	public:
-		typedef std::list<std::pair<express::Base, TopoDS_Shape>> result_type;
+		typedef std::list<std::tuple<express::Base, std::string, TopoDS_Shape>> result_type;
 
 		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
 		{}
 
 		void set_product_shape(const std::list<std::pair<express::Base, TopoDS_Shape>>* product_shapes) {
 			product_shapes_ = product_shapes;
+		}
+
+		void set_classified_shapes(const std::list<std::tuple<express::Base, std::string, TopoDS_Shape>>* classified_shapes) {
+			classified_shapes_ = classified_shapes;
+		}
+
+		template <typename HlrToShapeT>
+		result_type extract(HlrToShapeT& hlr_shapes) {
+			result_type r;
+			if (classified_shapes_ && !classified_shapes_->empty()) {
+				for (auto& t : *classified_shapes_) {
+					r.push_back({ std::get<0>(t), std::get<1>(t), occt_join(hlr_shapes.OutLineVCompound(std::get<2>(t)), hlr_shapes.VCompound(std::get<2>(t))) });
+				}
+			} else if (product_shapes_) {
+				for (auto& p : *product_shapes_) {
+					r.push_back({ p.first, std::string(), occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
+				}
+			} else {
+				r.push_back({ express::Base{}, std::string(), occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound()) });
+			}
+			return r;
 		}
 
 		result_type operator()(boost::blank&) const {
@@ -232,15 +258,7 @@ namespace {
 			algo->Update();
 			algo->Hide();
 			HLRBRep_HLRToShape hlr_shapes(algo);
-			if (product_shapes_) {
-				std::list<std::pair<express::Base, TopoDS_Shape>> r;
-				for (auto& p : *product_shapes_) {
-					r.push_back({ p.first, occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
-				}
-				return r;
-			} else {
-                return {{express::Base{}, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound())}};
-			}
+			return extract(hlr_shapes);
 		}
 
 		result_type operator()(opencascade::handle<HLRBRep_PolyAlgo>& algo) {
@@ -248,15 +266,7 @@ namespace {
 			algo->Update();
 			HLRBRep_PolyHLRToShape hlr_shapes;
 			hlr_shapes.Update(algo);
-			if (product_shapes_) {
-				std::list<std::pair<express::Base, TopoDS_Shape>> r;
-				for (auto& p : *product_shapes_) {
-					r.push_back({ p.first, occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
-				}
-				return r;
-			} else {
-                return {{express::Base{}, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound())}};
-			}
+			return extract(hlr_shapes);
 		}
 	};
 
@@ -367,6 +377,8 @@ namespace {
 
 		std::multimap<double, face_info> large_ortho_faces_;
 		std::list<std::pair<express::Base, TopoDS_Shape>> items_;
+		// SVG edge classification (issue #3668): see add_classified_edges().
+		std::list<std::tuple<express::Base, std::string, TopoDS_Shape>> classified_items_;
 
 		::logger& logger_;
 
@@ -389,6 +401,13 @@ namespace {
 			gp_Trsf trsf;
 			trsf.SetTransformation(view_direction.Position());
 			projector_ = HLRAlgo_Projector(trsf, false, 1.);
+		}
+
+		// SVG edge classification (issue #3668): register an edge-only sub-shape of `product`'s
+		// original (pre-HLR, real-face) geometry under a given class name. The full shape must
+		// still be added via add() as usual for correct occlusion.
+		void add_classified_edges(express::Base product, const std::string& cls, const TopoDS_Shape& edges) {
+			classified_items_.push_back({ product, cls, edges });
 		}
 
 		bool is_obscured_(TopoDS_Shape* sit) {
@@ -510,7 +529,7 @@ namespace {
 			}
 		}
 
-		std::list<std::pair<express::Base, TopoDS_Shape>> build() {
+		std::list<std::tuple<express::Base, std::string, TopoDS_Shape>> build() {
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
 				if (!use_prefiltering_ || !is_obscured_(&it->second)) {
@@ -527,6 +546,7 @@ namespace {
 			if (segment_projection_) {
 				vis.set_product_shape(&items_);
 			}
+			vis.set_classified_shapes(&classified_items_);
 			return boost::apply_visitor(vis, engine_);
 		}
 	};
@@ -569,6 +589,14 @@ protected:
 	bool only_valid_ = false;
 
 	int profile_threshold_;
+
+	// SVG edge classification (issue #3668): see classify_edge_from_faces() in SvgSerializer.cpp.
+	double svg_ridge_angle_min_deg_;
+	double svg_valley_angle_min_deg_;
+	bool svg_emit_flush_edges_;
+	bool svg_use_edge_classification_;
+	bool svg_render_crease_edges_;
+	bool svg_render_sharp_edges_;
 
 	ifcopenshell::file* file;
 	express::Base storey_;
@@ -624,6 +652,12 @@ public:
 		, mirror_x_(false)
 		, unify_inputs_(false)
 		, profile_threshold_(-1)
+		, svg_ridge_angle_min_deg_(45.)
+		, svg_valley_angle_min_deg_(12.)
+		, svg_emit_flush_edges_(false)
+		, svg_use_edge_classification_(false)
+		, svg_render_crease_edges_(true)
+		, svg_render_sharp_edges_(true)
 		, file(0)
 		, xcoords_begin(0)
 		, ycoords_begin(0)
@@ -643,7 +677,7 @@ public:
     bool ready();
     void write(const IfcGeom::TriangulationElement* /*o*/) {}
     void write(const IfcGeom::BRepElement* o);
-    void write(path_object& p, const TopoDS_Shape& wire, std::optional<std::vector<double>> dash_array=std::nullopt);
+    void write(path_object& p, const TopoDS_Shape& wire, std::optional<std::vector<double>> dash_array=std::nullopt, std::optional<std::string> css_class=std::nullopt);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, const express::Base& storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
