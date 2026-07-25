@@ -166,7 +166,9 @@ def flush_deferred_relationship_members(
     """
     for source_rel, new_rel in deferred_relationship_members.values():
         for index, attribute in enumerate(source_rel):
-            if not (isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance)):
+            if not (
+                isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance)
+            ):
                 continue
             members: list[ifcopenshell.entity_instance] = []
             seen: set[int] = set()
