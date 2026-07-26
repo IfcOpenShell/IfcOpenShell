@@ -128,10 +128,12 @@ def _operator():
         "get_mirror_axes",
         "invert_general_object",
         "invert_representation",
+        "get_mirror_plane_point",
         "is_type_owned_mapping",
         "reflect_placement",
     )
-    stub = type("MirrorElementsStub", (), {name: getattr(MirrorElements, name) for name in methods})()
+    # __dict__ rather than getattr so staticmethod descriptors survive the copy
+    stub = type("MirrorElementsStub", (), {name: MirrorElements.__dict__[name] for name in methods})()
     stub.unsupported_items = set()
     return stub
 
@@ -176,13 +178,34 @@ def test_reflect_placement_across_a_reference_is_an_exact_reflection():
     """The placement maths, independent of IFC: a point must land at its mirror image."""
     operator = _operator()
     obj = SimpleNamespace(matrix_world=Matrix.Translation((2.0, 0.0, 0.0)), location=None)
-    reference = SimpleNamespace(matrix_world=Matrix.Translation((5.0, 0.0, 0.0)))
+    # bound_box all zeros, as for an empty, so the plane passes through the reference origin
+    reference = SimpleNamespace(matrix_world=Matrix.Translation((5.0, 0.0, 0.0)), bound_box=[(0.0, 0.0, 0.0)] * 8)
     operator.reflect_placement(obj, reference, (1.0, 0.0, 0.0), {}, 0)
 
     # A local point p maps to matrix_world @ (P_local @ p); with the object at x=2 and the
     # plane at x=5, a point 1 unit along local +x sits at x=3 and must end up at x=7.
     p = Vector((1.0, 0.0, 0.0))
     assert np.allclose(list(obj.matrix_world @ Vector((-p.x, p.y, p.z))), [7.0, 0.0, 0.0])
+
+
+def test_the_mirror_plane_passes_through_the_middle_of_the_reference():
+    """An IFC origin is arbitrary, so the plane has to sit at what the user can see.
+
+    The reference here spans local x 0..4 with its origin at the near corner, so the plane is
+    at x = 2 in local terms, which is x = 12 in the world.
+    """
+    operator = _operator()
+    corners = [(x, y, z) for x in (0.0, 4.0) for y in (0.0, 1.0) for z in (0.0, 3.0)]
+    # get_object_bounding_box reads bound_box[0] as the minimum and bound_box[6] as the maximum
+    bound_box = [(0.0, 0.0, 0.0), None, None, None, None, None, (4.0, 1.0, 3.0), None]
+    reference = SimpleNamespace(matrix_world=Matrix.Translation((10.0, 0.0, 0.0)), bound_box=bound_box)
+    assert list(operator.get_mirror_plane_point(reference)) == [12.0, 0.5, 1.5]
+    assert corners  # the bounds above describe a real box
+
+    obj = SimpleNamespace(matrix_world=Matrix.Translation((3.0, 0.0, 0.0)), location=None)
+    operator.reflect_placement(obj, reference, (1.0, 0.0, 0.0), {}, 0)
+    # the object origin sits 9 units to the left of the plane, so it lands 9 to the right
+    assert np.allclose(list(obj.matrix_world.translation), [21.0, 0.0, 0.0])
 
 
 def test_the_mirror_plane_ignores_an_active_object_that_is_not_selected():
@@ -197,6 +220,7 @@ def test_the_mirror_plane_ignores_an_active_object_that_is_not_selected():
 
     class Stub:
         _execute = MirrorElements._execute
+        resolve_selection = MirrorElements.__dict__["resolve_selection"]
         mirror_axis = "X"
 
         def mirror_obj(self, context, obj, mirror_ref=None, axis_index=0):

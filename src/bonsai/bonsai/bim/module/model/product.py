@@ -633,16 +633,17 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = (
         "Mirrors the selected objects in place by truly inverting their geometry. "
         "Select a single object to mirror it about one of its own local planes. "
-        "Select two or more objects and the active object becomes the mirror plane, "
-        "with every other selected object reflected across it. Nothing is duplicated: "
-        "duplicate first if you want to keep the original"
+        "Select two or more and the active object becomes the mirror plane, passing through "
+        "its middle. Mirror Axis picks which local axis of the object, or of the reference, "
+        "is mirrored along. Nothing is duplicated: duplicate first to keep the original"
     )
 
     mirror_axis: bpy.props.EnumProperty(
         name="Mirror Axis",
         description=(
-            "Local axis to mirror along. With a single object this is the object's own axis, "
-            "otherwise it is the axis of the active reference object"
+            "Local axis to mirror along. With a single object this is the object's own axis. "
+            "With a reference object it is the reference's axis, and the mirror plane is the "
+            "plane through the reference's middle at right angles to it"
         ),
         items=(
             ("X", "X", "Mirror along local X, about the local YZ plane"),
@@ -656,18 +657,26 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         return context.selected_objects
 
-    def _execute(self, context):
-        # Blender keeps an object active after it has been deselected. Such an object is not
-        # visibly part of the selection, so treating it as the mirror plane would silently turn
-        # what looks like a single object mirror into a reflection across something off screen.
+    @staticmethod
+    def resolve_selection(
+        context: bpy.types.Context,
+    ) -> tuple[list[bpy.types.Object], Optional[bpy.types.Object]]:
+        """Split the selection into the objects to mirror and the mirror plane, if any.
+
+        Blender keeps an object active after it has been deselected. Such an object is not
+        visibly part of the selection, so treating it as the mirror plane would silently turn
+        what looks like a single object mirror into a reflection across something off screen.
+        """
         active_obj = context.active_object
         if active_obj and not active_obj.select_get():
             active_obj = None
         objs_to_mirror = [obj for obj in context.selected_objects if obj != active_obj] if active_obj else []
-        mirror_ref = active_obj if objs_to_mirror else None
-        if mirror_ref is None:
-            objs_to_mirror = list(context.selected_objects)
+        if objs_to_mirror:
+            return objs_to_mirror, active_obj
+        return list(context.selected_objects), None
 
+    def _execute(self, context):
+        objs_to_mirror, mirror_ref = self.resolve_selection(context)
         axis_index = "XYZ".index(self.mirror_axis)
         self.unsupported_items: set[str] = set()
         self.skipped: list[str] = []
@@ -687,11 +696,11 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         elif self.unsupported_items:
             self.report({"WARNING"}, f"Could not mirror: {', '.join(sorted(self.unsupported_items))}")
         if mirrored:
-            # Say which plane was used. A reflection across a reference whose origin already sits
-            # on the object's own mirror plane moves nothing, and without this the user cannot
-            # tell that the reference was taken into account at all.
+            # Say which plane was used. A reflection across a reference that straddles the
+            # object's own mirror plane moves nothing, and without this the user cannot tell
+            # that the reference was taken into account at all.
             about = (
-                f"across {mirror_ref.name} local {self.mirror_axis}"
+                f"across the middle of {mirror_ref.name}, along its local {self.mirror_axis}"
                 if mirror_ref
                 else f"about own local {self.mirror_axis}"
             )
@@ -907,9 +916,22 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         n_world = mirror_ref.matrix_world.to_3x3().col[axis_index].normalized()
         P_world = Matrix.Scale(-1, 4, n_world).to_3x3()
         new_mat = (P_world @ obj.matrix_world.to_3x3() @ P_local).to_4x4()
-        t_mr = mirror_ref.matrix_world.translation
+        t_mr = self.get_mirror_plane_point(mirror_ref)
         new_mat.translation = t_mr + P_world @ (obj.matrix_world.translation - t_mr)
         obj.matrix_world = new_mat
+
+    @staticmethod
+    def get_mirror_plane_point(mirror_ref: bpy.types.Object) -> Vector:
+        """The point the mirror plane passes through: the middle of the reference object.
+
+        An IFC object's origin is arbitrary and often sits at a corner or even at the model
+        origin, so a plane through it lands somewhere the user cannot see and frequently cuts
+        straight through the object being mirrored. The visible middle is predictable. An empty
+        has an all zero bounding box, so using one as a mirror plane still pivots on its origin,
+        which is the whole point of placing an empty.
+        """
+        centre = tool.Blender.get_object_bounding_box(mirror_ref)["center"]
+        return mirror_ref.matrix_world @ Vector(centre)
 
     def mirror_openings_after_reflection(
         self,
@@ -919,16 +941,12 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         M_host_before: np.ndarray,
         opening_placements_before: dict[int, np.ndarray],
     ) -> None:
-        _, R_quat, _ = obj.matrix_world.decompose()
-        frame_change = np.linalg.inv(np.array(R_quat.to_matrix())) @ M_host_before[:3, :3]
         # Sync the element's IFC placement to its post-reflection Blender position first. The
         # geometry engine converts opening world positions to element local positions using the
         # element placement, so a stale placement lands the void at the wrong offset.
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False)
         M_host_new = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        self.apply_opening_mirror(
-            element, mirror_axes, M_host_before, opening_placements_before, frame_change, M_host_new
-        )
+        self.apply_opening_mirror(element, mirror_axes, M_host_before, opening_placements_before, M_host_new)
         for rel in element.HasOpenings:
             opening = rel.RelatedOpeningElement
             tool.Geometry.clear_cache(opening)
@@ -941,14 +959,16 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         mirror_axes: tuple[float, float, float],
         M_host_before: np.ndarray,
         opening_placements_before: dict[int, np.ndarray],
-        frame_change: np.ndarray,
         M_host_new: Optional[np.ndarray] = None,
     ) -> None:
         """Mirror IfcOpeningElement placements and geometry in host local space.
 
-        frame_change = inv(R_host_new) @ R_host_old accounts for a host rotation change, such
-        as the 180 degree Z that assign_inverted_type applies for a Y mirror. Pass the identity
-        when the host rotation does not change.
+        The host's new placement is by construction Reflect @ M_host_old @ P_local, where
+        P_local is the same axis flip applied to its representation. An opening at host local L
+        therefore only needs L' = P_local @ L to land on the true reflection: the reflection and
+        the host's own movement cancel out. No correction for the host's rotation change is
+        needed, and applying one skews openings whenever the mirror plane is not exactly
+        parallel to a host local axis.
 
         M_host_new is the host's IFC world matrix after the mirror. None means it did not move.
         """
@@ -969,11 +989,11 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             M_abs_old = opening_placements_before[opening.id()]
             M_rel = np.linalg.inv(M_host_before) @ M_abs_old
             M_rel_new = M_rel.copy()
-            M_rel_new[:3, 3] = frame_change @ (H @ M_rel[:3, 3])
+            M_rel_new[:3, 3] = H @ M_rel[:3, 3]
             # Mirror the rotation by conjugation: H@R@H keeps det=+1 and gives the correct
             # mirrored rotation. A direct Householder on the columns yields det=-1, and IFC's
             # Y=Z*X normalisation then introduces a spurious 180 degree Z error.
-            M_rel_new[:3, :3] = frame_change @ (H @ M_rel[:3, :3] @ H)
+            M_rel_new[:3, :3] = H @ M_rel[:3, :3] @ H
             ifcopenshell.api.geometry.edit_object_placement(
                 tool.Ifc.get(), product=opening, matrix=M_host_anchor @ M_rel_new, is_si=False
             )
