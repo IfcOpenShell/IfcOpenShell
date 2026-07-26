@@ -108,16 +108,14 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
 
    - An update of Bonsai was interrupted or could not replace files that were
      still in use.
-   - You had two extensions installed that both bundle the same dependencies,
-     such as **Bonsai** and **BonsaiPR**, and you disabled or removed one of
-     them. Both share the same folder, so removing one can take the shared
-     dependencies away from the other.
+   - You have more than one extension installed that bundles the same
+     dependencies, such as **Bonsai** and **BonsaiPR**. They share one folder,
+     so enabling or disabling either of them rewrites it, and a rewrite that
+     cannot complete leaves both without dependencies.
 
    To fix it, go to :menuselection:`Edit --> Preferences --> Add-ons`, find
    Bonsai, **disable** it, then **enable** it again. Blender will re-extract the
    bundled wheels. Restart Blender afterwards.
-
-   To avoid the second situation, only enable one Bonsai extension at a time.
 
 Saving and loading blend files
 ------------------------------
