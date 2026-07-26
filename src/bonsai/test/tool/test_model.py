@@ -1003,6 +1003,35 @@ class TestGetBodyContext(NewFile):
         assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
 
 
+class TestGetOrCreateContext(NewFile):
+    def create_imported_file(self) -> ifcopenshell.file:
+        """An IFC as exported by other authoring tools: a Model context, no subcontexts."""
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="Project")
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        context.ContextIdentifier = "Plan"
+        tool.Ifc.set(ifc)
+        return ifc
+
+    def test_creating_the_plan_body_subcontext_and_its_parent_context(self):
+        ifc = self.create_imported_file()
+        assert ifcopenshell.util.representation.get_context(ifc, "Plan") is None
+        plan_body = subject.get_or_create_context("Plan", "Body", "PLAN_VIEW")
+        assert plan_body.ContextType == "Plan"
+        assert plan_body.ContextIdentifier == "Body"
+        assert plan_body.TargetView == "PLAN_VIEW"
+        assert plan_body.ParentContext == ifcopenshell.util.representation.get_context(ifc, "Plan")
+        assert plan_body.ParentContext in ifc.by_type("IfcProject")[0].RepresentationContexts
+
+    def test_not_creating_duplicate_contexts_on_repeated_calls(self):
+        ifc = self.create_imported_file()
+        assert subject.get_or_create_context("Plan", "Body", "PLAN_VIEW") == subject.get_or_create_context(
+            "Plan", "Body", "PLAN_VIEW"
+        )
+        assert len(ifc.by_type("IfcGeometricRepresentationContext", include_subtypes=False)) == 2
+        assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
+
+
 class TestGetSiblingOccurrenceCount(NewFile):
     """The pen-icon dispatcher's pre-edit warning depends on this count: zero
     means the edit is safe (unique geometry), non-zero means the edit will
