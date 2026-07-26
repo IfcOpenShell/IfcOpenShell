@@ -1,9 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
 
-import datetime
-
-import ifcopenshell.util.date
-
 from ifc4d.msp2ifc import MSP2Ifc
 
 
@@ -98,6 +94,30 @@ def test_ms_project_relationship_lags_are_imported(tmp_path):
         <LagFormat>7</LagFormat>
       </PredecessorLink>
     </Task>
+    <Task>
+      <UID>6</UID>
+      <Name>Partial and percentage lags</Name>
+      <WBS>6</WBS>
+      <OutlineNumber>6</OutlineNumber>
+      <OutlineLevel>0</OutlineLevel>
+      <Start>2024-03-25T12:00:00</Start>
+      <Finish>2024-03-25T16:00:00</Finish>
+      <Duration>PT4H0M0S</Duration>
+      <Priority>500</Priority>
+      <CalendarUID>-1</CalendarUID>
+      <PredecessorLink>
+        <PredecessorUID>4</PredecessorUID>
+        <Type>1</Type>
+        <LinkLag>2400</LinkLag>
+        <LagFormat>5</LagFormat>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>5</PredecessorUID>
+        <Type>1</Type>
+        <LinkLag>50</LinkLag>
+        <LagFormat>19</LagFormat>
+      </PredecessorLink>
+    </Task>
   </Tasks>
   <Calendars />
 </Project>
@@ -116,14 +136,23 @@ def test_ms_project_relationship_lags_are_imported(tmp_path):
 
     working_lag = relationships[("1", "2")].TimeLag
     assert working_lag.DurationType == "WORKTIME"
-    assert ifcopenshell.util.date.ifc2datetime(working_lag.LagValue.wrappedValue) == datetime.timedelta(days=5)
+    assert working_lag.LagValue.wrappedValue == "P5D"
 
     elapsed_lag = relationships[("2", "3")].TimeLag
     assert elapsed_lag.DurationType == "ELAPSEDTIME"
-    assert ifcopenshell.util.date.ifc2datetime(elapsed_lag.LagValue.wrappedValue) == datetime.timedelta(days=75)
+    assert elapsed_lag.LagValue.wrappedValue == "P75D"
 
     negative_lag = relationships[("3", "4")].TimeLag
     assert negative_lag.DurationType == "WORKTIME"
-    assert ifcopenshell.util.date.ifc2datetime(negative_lag.LagValue.wrappedValue) == datetime.timedelta(days=-1)
+    assert negative_lag.LagValue.wrappedValue == "-P1D"
 
     assert relationships[("4", "5")].TimeLag is None
+
+    partial_lag = relationships[("4", "6")].TimeLag
+    assert partial_lag.DurationType == "WORKTIME"
+    assert partial_lag.LagValue.wrappedValue == "PT4H"
+
+    percentage_lag = relationships[("5", "6")].TimeLag
+    assert percentage_lag.DurationType == "WORKTIME"
+    assert percentage_lag.LagValue.is_a("IfcRatioMeasure")
+    assert percentage_lag.LagValue.wrappedValue == 0.5
