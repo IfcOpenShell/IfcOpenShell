@@ -77,7 +77,6 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
-        ("bim.hotkey", {"type": "M", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_M")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
         ("bim.hotkey", {"type": "L", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_L")]}),
         ("bim.hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
@@ -858,11 +857,7 @@ class EditObjectUI:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Unjoin Walls", "S_U", "", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            # Ctrl M, not Shift M: Shift M is Mirror, and dispatching one key to two operators
-            # by material usage made Mirror unreachable on walls, which is #6906.
-            add_layout_hotkey_operator(
-                row, "Merge", "C_M", "Merge selected Elements", ui_context, operator="bim.merge_wall"
-            )
+            add_layout_hotkey_operator(row, "Merge", "S_M", "Merge selected Elements", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
                 row, "Split", "S_K", "Split selected Element into two Elements at the cursor location", ui_context
@@ -1042,17 +1037,7 @@ class EditObjectUI:
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Interior", "S_V", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        # Invoke the operator directly rather than via the S_M hotkey: that hotkey is shared
-        # with Merge for LAYER2 elements, so routing through it would merge walls instead of
-        # mirroring them.
-        add_layout_hotkey_operator(
-            row,
-            "Mirror",
-            "S_M",
-            bpy.ops.bim.mirror_elements.__doc__,
-            ui_context,
-            operator="bim.mirror_elements",
-        )
+        add_layout_hotkey_operator(row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
 
     @classmethod
     def draw_aggregation(cls, context):
@@ -1340,33 +1325,32 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.generate_space()
 
     def hotkey_S_M(self):
-        # Always Mirror, matching the Mirror button. Dispatching this one key to Merge for
-        # LAYER2 elements made Mirror unreachable on exactly the elements people mirror most.
         if not bpy.context.selected_objects:
             return
-        bpy.ops.bim.mirror_elements()
-
-    def hotkey_C_M(self):
-        if not bpy.context.selected_objects:
-            return
-        if self.active_material_usage != "LAYER2":
-            self.report({"ERROR"}, "Merge only applies to LAYER2 items (walls, railings, etc).")
-            return
-        if len(bpy.context.selected_objects) != 2:
-            self.report(
-                {"ERROR"},
-                "Exactly two LAYER2 items (walls, railings, etc) must be selected to perform a merge.",
-            )
-            return
-        for item in bpy.context.selected_objects:
-            element = tool.Ifc.get_entity(item)
-            if tool.Model.get_usage_type(element) != "LAYER2":
+        if self.active_material_usage == "LAYER2":
+            if len(bpy.context.selected_objects) != 2:
                 self.report(
                     {"ERROR"},
-                    "Both selected items must be LAYER2 (walls, railings, etc) to perform a merge.",
+                    "Exactly two LAYER2 items (walls, railings, etc) must be selected to perform a merge.",
                 )
                 return
-        bpy.ops.bim.merge_wall()
+            for item in bpy.context.selected_objects:
+                element = tool.Ifc.get_entity(item)
+                if tool.Model.get_usage_type(element) != "LAYER2":
+                    self.report(
+                        {"ERROR"},
+                        "Both selected items must be LAYER2 (walls, railings, etc) to perform a merge.",
+                    )
+                    return
+            bpy.ops.bim.merge_wall()
+        else:
+            if len(bpy.context.selected_objects) == 1:
+                self.report(
+                    {"ERROR"},
+                    "At least two objects must be selected: an object to be mirrored, and a mirror axis as the active object.",
+                )
+            else:
+                bpy.ops.bim.mirror_elements()
 
     def hotkey_S_R(self):
         if not bpy.context.selected_objects:
