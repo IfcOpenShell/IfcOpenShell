@@ -83,6 +83,8 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
         },
     }
 
+    body = tool.Model.get_body_context()
+
     active_context = tool.Geometry.get_active_representation_context(obj)
 
     # ELEVATION_VIEW representation
@@ -94,7 +96,6 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
 
     # MODEL_VIEW representation
     # (Model/Body defined only BEFORE Plan/Body to prevent #2744)
-    body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = body
     representation_data["part_of_product"] = ifcopenshell.util.representation.get_part_of_product(element, body)
     model_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)

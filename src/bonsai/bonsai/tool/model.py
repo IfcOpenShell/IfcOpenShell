@@ -39,6 +39,7 @@ from typing import (
 import bmesh
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
@@ -2244,6 +2245,27 @@ class Model(bonsai.core.tool.Model):
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         assert body
         cls.add_representation(obj, body)
+
+    @classmethod
+    def get_body_context(cls) -> ifcopenshell.entity_instance:
+        """Get the Model/Body/MODEL_VIEW subcontext, creating it if the file has none.
+
+        Externally authored IFCs often ship without it, and 3D body geometry
+        cannot be authored until it exists.
+        """
+        ifc_file = tool.Ifc.get()
+        if body := ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW"):
+            return body
+        model = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+        if not model:
+            model = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+        return ifcopenshell.api.context.add_context(
+            ifc_file,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+            parent=model,
+        )
 
     @classmethod
     def auto_detect_annotation_fill_area(cls, obj: bpy.types.Object, mesh: bpy.types.Mesh) -> dict | None:

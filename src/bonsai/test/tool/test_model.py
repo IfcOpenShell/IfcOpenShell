@@ -21,6 +21,7 @@ from typing import Any
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
@@ -959,6 +960,47 @@ class TestOffsetWall(NewFile):
         usage.DirectionSense = "NEGATIVE"
         subject.offset_wall(obj, "EXTERIOR")
         assert usage.OffsetFromReferenceLine == 100
+
+
+class TestGetBodyContext(NewFile):
+    def create_imported_file(self) -> ifcopenshell.file:
+        """An IFC as exported by other authoring tools: a Model context, no subcontexts."""
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="Project")
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        context.ContextIdentifier = "Plan"
+        tool.Ifc.set(ifc)
+        return ifc
+
+    def test_returning_the_existing_body_subcontext(self):
+        ifc = self.create_imported_file()
+        parent = ifcopenshell.util.representation.get_context(ifc, "Model")
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=parent
+        )
+        assert subject.get_body_context() == body
+        assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
+
+    def test_creating_the_body_subcontext_if_the_file_has_none(self):
+        ifc = self.create_imported_file()
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+        body = subject.get_body_context()
+        assert body.ContextType == "Model"
+        assert body.ContextIdentifier == "Body"
+        assert body.TargetView == "MODEL_VIEW"
+        assert body.ParentContext == ifcopenshell.util.representation.get_context(ifc, "Model")
+
+    def test_creating_the_model_context_if_the_file_has_none(self):
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="Project")
+        tool.Ifc.set(ifc)
+        body = subject.get_body_context()
+        assert body.ParentContext == ifcopenshell.util.representation.get_context(ifc, "Model")
+
+    def test_not_creating_duplicates_on_repeated_calls(self):
+        ifc = self.create_imported_file()
+        assert subject.get_body_context() == subject.get_body_context()
+        assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
 
 
 class TestGetSiblingOccurrenceCount(NewFile):
