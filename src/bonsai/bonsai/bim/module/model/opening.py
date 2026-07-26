@@ -249,6 +249,25 @@ def is_filling_supported(element) -> bool:
     return element is not None and element.is_a() in ("IfcDoor", "IfcWindow")
 
 
+FILLING_HOST_CLASSES = ("IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly")
+
+
+def get_filling_host(
+    element: Union[ifcopenshell.entity_instance, None],
+) -> Union[ifcopenshell.entity_instance, None]:
+    """The element a filling should be hosted in, resolved from whatever was picked.
+
+    A pick can land on something the host decomposes into rather than on the host
+    itself, so the decomposition is walked upwards until a host class is found."""
+    seen = set()
+    while element is not None and element.id() not in seen:
+        if element.is_a() in FILLING_HOST_CLASSES:
+            return element
+        seen.add(element.id())
+        element = ifcopenshell.util.element.get_aggregate(element)
+    return None
+
+
 class FilledOpeningGenerator:
     def generate(
         self,
@@ -312,11 +331,10 @@ class FilledOpeningGenerator:
                     new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
 
                 if should_set_z_level:
-                    base_z = tool.Model.get_wall_base_z(voided_obj)
                     if filling.is_a("IfcDoor"):
-                        new_matrix.translation.z = base_z + props.rl1
+                        new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl1
                     else:
-                        new_matrix.translation.z = base_z + props.rl2
+                        new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
                 else:
                     new_matrix.translation.z = filling_obj.matrix_world.copy().translation.z
             elif layers["layer_set_direction"] == "AXIS3":

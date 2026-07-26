@@ -34,6 +34,7 @@ from typing import Any, Union, cast
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.aggregate
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import numpy as np
@@ -1819,6 +1820,17 @@ def i_move_the_mesh_of_the_object_name_up_by_distance(name, distance):
         vertex.co += offset
     obj.data.update()
     bpy.context.view_layer.update()
+
+
+@given(parsers.parse('I aggregate the object "{name}" into the object "{parent_name}"'))
+@when(parsers.parse('I aggregate the object "{name}" into the object "{parent_name}"'))
+def i_aggregate_the_object_name_into_the_object_parent_name(name, parent_name):
+    ifc = an_ifc_file_exists()
+    ifcopenshell.api.aggregate.assign_object(
+        ifc,
+        products=[ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))],
+        relating_object=ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(parent_name))),
+    )
 
 
 @given("I display the construction type browser")

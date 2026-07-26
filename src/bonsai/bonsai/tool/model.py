@@ -1114,12 +1114,6 @@ class Model(bonsai.core.tool.Model):
         return axes
 
     @classmethod
-    def get_wall_base_z(cls, obj: bpy.types.Object) -> float:
-        """World Z of the lowest point of the wall's geometry, which is the placement
-        origin's Z only for a wall extruded from its own origin."""
-        return min((obj.matrix_world @ Vector(corner)).z for corner in obj.bound_box)
-
-    @classmethod
     def get_connected_walls(cls, walls: list[bpy.types.Object]) -> list[bpy.types.Object]:
         """
         Loop through walls by retrieving the next connected wall using the connection path.
@@ -2722,10 +2716,11 @@ class Model(bonsai.core.tool.Model):
         return geom_dict
 
     @classmethod
-    def add_filled_opening(cls, voided_obj: bpy.types.Object, filling_obj: bpy.types.Object) -> None:
+    def add_filled_opening(cls, voided_obj: bpy.types.Object, filling_obj: bpy.types.Object) -> Union[str, None]:
+        """:return: None on success, otherwise the reason the filling could not be hosted."""
         from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
-        FilledOpeningGenerator().generate(filling_obj, voided_obj)
+        return FilledOpeningGenerator().generate(filling_obj, voided_obj)
 
     @classmethod
     def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, position: Vector) -> None:

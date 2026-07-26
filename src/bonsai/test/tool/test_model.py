@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-from math import radians
 from typing import Any
 
 import bpy
@@ -32,7 +31,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import numpy as np
-import pytest
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
 import bonsai.core.tool
@@ -961,51 +959,6 @@ class TestOffsetWall(NewFile):
         usage.DirectionSense = "NEGATIVE"
         subject.offset_wall(obj, "EXTERIOR")
         assert usage.OffsetFromReferenceLine == 100
-
-
-class TestGetWallBaseZ(NewFile):
-    def create_wall_obj(self, *, mesh_min_z: float, height: float = 3.0) -> bpy.types.Object:
-        mesh = bpy.data.meshes.new("Wall")
-        mesh.from_pydata(
-            [
-                (0, 0, mesh_min_z),
-                (1, 0, mesh_min_z),
-                (1, 0, mesh_min_z + height),
-                (0, 0, mesh_min_z + height),
-            ],
-            [],
-            [(0, 1, 2, 3)],
-        )
-        mesh.update()
-        obj = bpy.data.objects.new("Wall", mesh)
-        bpy.context.scene.collection.objects.link(obj)
-        return obj
-
-    def test_a_wall_extruded_from_its_own_origin_bases_on_the_origin(self):
-        obj = self.create_wall_obj(mesh_min_z=0)
-        obj.location.z = 2
-        bpy.context.view_layer.update()
-        assert subject.get_wall_base_z(obj) == pytest.approx(2)
-
-    def test_a_wall_whose_geometry_is_offset_above_its_origin_bases_on_the_geometry(self):
-        obj = self.create_wall_obj(mesh_min_z=0.1)
-        obj.location.z = 0.65
-        bpy.context.view_layer.update()
-        assert subject.get_wall_base_z(obj) == pytest.approx(0.75)
-
-    def test_a_rotated_wall_bases_on_its_lowest_point_in_world_space(self):
-        obj = self.create_wall_obj(mesh_min_z=0.1)
-        obj.location.z = 0.65
-        obj.rotation_euler[2] = radians(90)
-        bpy.context.view_layer.update()
-        assert subject.get_wall_base_z(obj) == pytest.approx(0.75)
-
-    def test_a_wall_without_geometry_bases_on_its_origin(self):
-        obj = bpy.data.objects.new("Wall", bpy.data.meshes.new("Wall"))
-        bpy.context.scene.collection.objects.link(obj)
-        obj.location.z = 0.65
-        bpy.context.view_layer.update()
-        assert subject.get_wall_base_z(obj) == pytest.approx(0.65)
 
 
 class TestGetSiblingOccurrenceCount(NewFile):

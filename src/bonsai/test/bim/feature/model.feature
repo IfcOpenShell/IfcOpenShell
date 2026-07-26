@@ -242,7 +242,7 @@ Scenario: Insert door into wall
     Then the object "IfcDoor/Door" is at "7,0,0"
     And the object "IfcWall/Wall" is filled by "IfcDoor/Door"
 
-Scenario: Insert door into a wall whose geometry sits above its own origin
+Scenario: A door levels off the wall's placement origin, not off its rendered geometry
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
@@ -257,10 +257,10 @@ Scenario: Insert door into a wall whose geometry sits above its own origin
     And the variable "element_type" is "[e for e in {ifc}.by_type('IfcDoorType') if e.Name == 'DT01'][0].id()"
     And the cursor is at "7,0,2"
     And I press "bim.add_occurrence"
-    Then the object "IfcDoor/Door" is at "7,0,0.5"
+    Then the object "IfcDoor/Door" is at "7,0,0"
     And the object "IfcWall/Wall" is filled by "IfcDoor/Door"
 
-Scenario: Insert window into a wall whose geometry sits above its own origin
+Scenario: A door picked on a part the wall decomposes into is hosted in the wall
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
@@ -270,13 +270,33 @@ Scenario: Insert window into a wall whose geometry sits above its own origin
     And the object "IfcWall/Wall" is selected
     And the cursor is at "10,0,0"
     And I press "bim.hotkey(hotkey='S_E')"
-    And I move the mesh of the object "IfcWall/Wall" up by "0.5"
-    When I set "scene.BIMModelProperties.ifc_class" to "IfcWindowType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWindowType')][0].id()"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
+    And I aggregate the object "IfcColumn/Column" into the object "IfcWall/Wall"
+    And the object "IfcColumn/Column" is selected
+    When I set "scene.BIMModelProperties.ifc_class" to "IfcDoorType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcDoorType') if e.Name == 'DT01'][0].id()"
     And the cursor is at "7,0,2"
     And I press "bim.add_occurrence"
-    Then the object "IfcWindow/Window" is at "7,0,1.5"
-    And the object "IfcWall/Wall" is filled by "IfcWindow/Window"
+    Then the object "IfcWall/Wall" is filled by "IfcDoor/Door"
+    And the object "IfcDoor/Door" is at "7,0,0"
+
+Scenario: A door that cannot be hosted in the wall it was picked on is not left behind
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcDoorType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcDoorType') if e.Name == 'DT01'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    When the cursor is at "500,500,0"
+    Then I press "bim.add_occurrence" and expect error "Error: Could not host the door in IfcWall/Wall: TARGET is too far away from the voided object's mesh."
+    And the variable "doors" is "len({ifc}.by_type('IfcDoor'))"
+    And the variable "doors" equals "0"
+    And the object "IfcDoor/Door" does not exist
 
 Scenario: Flip a door inserted in a wall
     Given an empty IFC project
