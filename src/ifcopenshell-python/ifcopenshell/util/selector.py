@@ -540,8 +540,15 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                 value = results or None
                 if value and len(value) == 1:
                     value = value[0]
+            elif key in value:
+                value = value[key]
             else:
-                value = value.get(key, None)
+                # A nested complex quantity/property (IfcPhysicalComplexQuantity /
+                # IfcComplexProperty) is represented as a dict whose nested members
+                # live under a "properties" sub-dict. Descend into it so that nested
+                # values are reachable with the natural "Qto.Complex.Nested" path.
+                subprops = value.get("properties")
+                value = subprops.get(key, None) if isinstance(subprops, dict) else None
         elif isinstance(value, (list, tuple, set)):  # If we use regex
             if isinstance(key, str) and key.isnumeric():
                 try:
@@ -707,7 +714,17 @@ def set_element_value(
             return
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
-        elif key in ("x", "y", "z", "easting", "northing", "elevation", "rotation_x", "rotation_y", "rotation_z") and hasattr(element, "ObjectPlacement"):
+        elif key in (
+            "x",
+            "y",
+            "z",
+            "easting",
+            "northing",
+            "elevation",
+            "rotation_x",
+            "rotation_y",
+            "rotation_z",
+        ) and hasattr(element, "ObjectPlacement"):
             # TODO: add support
             if key in ("easting", "northing", "elevation", "rotation_x", "rotation_y", "rotation_z"):
                 return
@@ -1232,7 +1249,13 @@ class FacetTransformer(lark.Transformer):
 
     def compare(self, element_value, comparison, value) -> bool:
         if isinstance(element_value, (list, tuple)):
-            return any(self.compare(ev, comparison, value) for ev in element_value)
+            # Match if any item does, negating the aggregate rather than each
+            # item, so that e.g. != means "no item equals" and stays the
+            # complement of = (#8129).
+            result = any(self.compare(ev, comparison.lstrip("!"), value) for ev in element_value)
+            if comparison.startswith("!"):
+                return not result
+            return result
         elif isinstance(value, str):
             try:
                 if isinstance(element_value, int):
@@ -1269,6 +1292,8 @@ class FacetTransformer(lark.Transformer):
             result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):
             result = element_value is value
+        else:
+            assert False, value
 
         if comparison.startswith("!"):
             return not result

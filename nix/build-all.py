@@ -50,7 +50,7 @@ Used environment variables:
     - ``NO_CLEAN`` - do not clean `ifcopenshell` build directories but continue working on current build
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
-    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (IFC2X3; IFC4; IFC4X3_ADD2) - to be supplied as `2x3;4`
+    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (8 schemas), to be supplied as `2x3;4;4x3_add2`
     - ``USE_OCCT`` - whether to use official Open CASCADE instead of Community Edition
     (`true` by default, any other value is considered `false`)
     - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
@@ -121,7 +121,7 @@ import tarfile
 import threading
 from datetime import datetime
 
-ssl._create_default_https_context = ssl._create_unverified_context
+ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]
 
 import time
 from collections.abc import Generator, Sequence
@@ -155,7 +155,7 @@ MPFR_VERSION = "3.1.6"  # latest is 4.1.0
 CGAL_VERSION = "v5.6.3"
 USD_VERSION = "23.05"
 TBB_VERSION = "2021.9.0"
-ROCKSDB_VERSION = "9.11.2"
+ROCKSDB_VERSION = "10.4.2"
 ZSTD_VERSION = "1.5.7"
 # binaries
 cp = "cp"
@@ -627,9 +627,10 @@ def build_dependency(
     build_tool_args: "list[str]",
     download_url: str,
     download_name: str,
+    *,
     download_tool: Literal["py", "git"] = download_tool_default,
     revision: "Union[str, None]" = None,
-    patch: "Union[str, list[str], None]" = None,
+    patch: list[str] | None = None,
     shell=None,
     pre_compile_subs: "Sequence[tuple[str, str, str]]" = (),
     additional_files: "Union[dict[str, str], None]" = None,
@@ -696,7 +697,10 @@ def build_dependency(
             compr = "xz"
         else:
             raise RuntimeError("fix source for new download type")
-        download_tarfile = tarfile.open(name=download_tarfile_path, mode=f"r:{compr}")
+        # ty: false positive bug upstream.
+        download_tarfile = tarfile.open(
+            name=download_tarfile_path, mode=f"r:{compr}"
+        )  # ty:ignore[no-matching-overload]
         # tarfile seriously doesn't have a function to retrieve the root directory more easily
         extract_dir_name = os.path.commonprefix([x for x in download_tarfile.getnames() if x != "."])
         # run([tar, "--exclude=\"*/*\"", "-tf", download_name], cwd=build_dir).strip() no longer works
@@ -714,8 +718,6 @@ def build_dependency(
                 urlretrieve(url, os.path.join(extract_dir, path))
 
     if patch is not None:
-        if isinstance(patch, str):
-            patch = [patch]
         for p in patch:
             patch_abs = (SCRIPT_PATH / p).absolute().__str__()
             if os.path.exists(patch_abs):
@@ -724,6 +726,8 @@ def build_dependency(
                 except Exception as e:
                     # Assert that the patch has already been applied
                     run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
+            else:
+                raise FileNotFoundError(patch_abs)
 
     if shell is not None:
         sp.run(shell, shell=True, check=True, cwd=extract_dir)
@@ -1171,6 +1175,14 @@ if "cgal" in targets:
         os.environ["CC"] = MAC_CROSS_COMPILE_INTEL_CC
         gmp_args.extend(MAC_CROSS_COMPILE_INTEL_AUTOCONF_HOST_ARGS)
 
+    # Fixes configure failing to find a working compiler under GCC 15's default -std=gnu23.
+    # Issue presumably will be resolved in any next gmp version, but currently the last one is 6.3.0.
+    # Patch is just applying fix from upstream meantion below:
+    # https://gmplib.org/list-archives/gmp-bugs/2025-February/005561.html
+    gmp_patches = ["./patches/gmp/001-fix-std23.patch"]
+    if GMP_VERSION != "6.3.0":
+        raise Exception(f"GMP_VERSION changed to {GMP_VERSION}, check whether {gmp_patches} is still needed.")
+
     build_dependency(
         name=f"gmp-{GMP_VERSION}",
         mode="autoconf",
@@ -1178,6 +1190,7 @@ if "cgal" in targets:
         pre_compile_subs=(
             [("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if "wasm" in flags else []
         ),
+        patch=gmp_patches,
         # Sometimes ftp.gnu.org is very slow, use ftpmirror.gnu.org as a workaround.
         download_url="https://ftpmirror.gnu.org/gnu/gmp/",
         download_name=f"gmp-{GMP_VERSION}.tar.bz2",

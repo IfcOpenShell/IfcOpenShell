@@ -88,6 +88,8 @@ def bearing2dd(bearing: str) -> float:
     elif cY == "S" and cX == "W":
         angle = 270.0
         sign = -1.0
+    else:
+        assert False, (cY, cX)
 
     try:
         dms = ifcopenshell.util.geolocation.dms2dd(d, m, s, ms)

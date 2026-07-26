@@ -203,6 +203,7 @@ class TestGetDebugInfo(NewFile):
         "bonsai_version",
         "bonsai_commit_hash",
         "bonsai_commit_date",
+        "bonsai_git_branch",
         "last_actions",
         "last_error",
     }

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import colorsys
 import os
 from pathlib import Path
 from typing import Any, Union
@@ -238,13 +239,15 @@ class UpdateCurrentStyle(bpy.types.Operator):
             if not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve)):
                 continue
             for mat in obj.data.materials:
-                if (
-                    mat
-                    and mat not in updated_materials
-                    and (msprops_ := tool.Style.get_material_style_props(mat)).ifc_definition_id != 0
-                ):
-                    msprops_.active_style_type = current_style_type
-                    updated_materials.add(mat)
+                if not mat:
+                    continue
+                msprops_ = tool.Style.get_material_style_props(mat)
+                if msprops_.ifc_definition_id == 0:
+                    continue
+                if mat in updated_materials:
+                    continue
+                msprops_.active_style_type = current_style_type
+                updated_materials.add(mat)
         return {"FINISHED"}
 
 
@@ -457,10 +460,14 @@ class ActivateExternalStyle(bpy.types.Operator):
             self.report({"ERROR"}, f"Error loading external style for \"{material.name}\" - {db['msg']}")
             return {"CANCELLED"}
 
-        self.copy_material_attributes(db["data_block"], material)
+        ext_mat = db["data_block"]
+        self.copy_material_attributes(ext_mat, material)
         if tool.Style.get_use_nodes(material):
-            tool.Blender.copy_node_graph(material, db["data_block"])
-        bpy.data.materials.remove(db["data_block"])
+            if material.get("bim_dual_branch"):
+                tool.Style.update_external_branch(material, ext_mat)
+            else:
+                tool.Style.setup_dual_branch(material, ext_mat)
+        bpy.data.materials.remove(ext_mat)
         return {"FINISHED"}
 
     def copy_material_attributes(self, source, target):
@@ -501,6 +508,218 @@ class ActivateExternalStyle(bpy.types.Operator):
             if prop.is_readonly:
                 continue
             set_prop(prop_name)
+
+
+class TogglePreferIfcShading(bpy.types.Operator):
+    bl_idname = "bim.toggle_prefer_ifc_shading"
+    bl_label = "Toggle Flat/Pretty"
+    bl_description = (
+        "Toggle between Flat (IFC-native shading) and Pretty (external .blend style) for ALL styles.\n\n"
+        "SHIFT+CLICK to apply to this style only"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    material_name: bpy.props.StringProperty(name="Material Name", default="", options={"SKIP_SAVE"})
+    single_only: bpy.props.BoolProperty(name="Single Only", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.shift:
+            self.single_only = True
+        return self.execute(context)
+
+    def execute(self, context):
+        wm = context.window_manager
+        space = tool.Blender.get_view3d_space()
+        is_solid = space and space.shading.type == "SOLID"
+
+        if is_solid:
+            if space.shading.color_type == "TEXTURE":
+                space.shading.color_type = "MATERIAL"
+            else:
+                meshes_needing_uv = []
+                for obj in bpy.context.scene.objects:
+                    if not isinstance(obj.data, bpy.types.Mesh):
+                        continue
+                    for slot in obj.material_slots:
+                        mat = slot.material
+                        if not mat or not tool.Blender.get_ifc_definition_id(mat):
+                            continue
+                        style_elements = tool.Style.get_style_elements(mat)
+                        if style_elements.get("IfcSurfaceStyleWithTextures") and not obj.data.uv_layers:
+                            meshes_needing_uv.append(obj.data)
+                            break
+                wm.progress_begin(0, max(len(meshes_needing_uv), 1))
+                try:
+                    for i, mesh in enumerate(meshes_needing_uv):
+                        tool.Loader.load_generated_uv_map(mesh)
+                        wm.progress_update(i)
+                finally:
+                    wm.progress_end()
+                space.shading.color_type = "TEXTURE"
+            return {"FINISHED"}
+
+        if self.single_only:
+            mat = bpy.data.materials.get(self.material_name)
+            if not mat:
+                return {"CANCELLED"}
+            msprops = tool.Style.get_material_style_props(mat)
+            msprops.prefer_ifc_shading = not msprops.prefer_ifc_shading
+        else:
+            # Default: apply to all IFC materials
+            source_mat = bpy.data.materials.get(self.material_name)
+            new_value = not tool.Style.get_material_style_props(source_mat).prefer_ifc_shading if source_mat else True
+            ifc_mats = [m for m in bpy.data.materials if tool.Blender.get_ifc_definition_id(m)]
+            for mat in ifc_mats:
+                tool.Style.get_material_style_props(mat).prefer_ifc_shading = new_value
+        return {"FINISHED"}
+
+
+class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.suggest_shade_from_external_style"
+    bl_label = "Suggest Shade from External Style"
+    bl_description = (
+        "Generate a Shade style (Surface Colour + Transparency) from the external .blend style.\n\n"
+        "ALT+CLICK to apply to all styles with an external .blend style"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    material_name: bpy.props.StringProperty(name="Material Name", default="", options={"SKIP_SAVE"})
+    all_styles: bpy.props.BoolProperty(name="All Styles", default=False, options={"SKIP_SAVE"})
+    value_offset: bpy.props.FloatProperty(
+        name="Value",
+        description="Offset added to the colour's value (-1 = fully dark, 0 = unchanged, +1 = fully light)",
+        default=0.0,
+        min=-1.0,
+        max=1.0,
+        step=1,
+        precision=2,
+        options={"SKIP_SAVE"},
+    )
+    saturation_factor: bpy.props.FloatProperty(
+        name="Saturation",
+        description="Scale applied to the colour's saturation (0 = greyscale, 1 = unchanged, >1 = more saturated)",
+        default=1.0,
+        min=0.0,
+        max=2.0,
+        step=1,
+        precision=2,
+        options={"SKIP_SAVE"},
+    )
+
+    def invoke(self, context, event):
+        if event.alt:
+            self.all_styles = True
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "value_offset", slider=True)
+        layout.prop(self, "saturation_factor", slider=True)
+        if self.all_styles:
+            layout.label(text="Will apply to all external styles", icon="INFO")
+
+    def _execute(self, context):
+        if self.all_styles:
+            candidates = [
+                (mat, tool.Style.get_style_elements(mat))
+                for mat in bpy.data.materials
+                if tool.Blender.get_ifc_definition_id(mat)
+            ]
+            candidates = [(mat, se) for mat, se in candidates if tool.Style.has_blender_external_style(se)]
+            wm = context.window_manager
+            wm.progress_begin(0, max(len(candidates), 1))
+            count = 0
+            color_cache: dict[tuple[str, str, str], tuple | None] = {}
+            try:
+                for i, (mat, style_elements) in enumerate(candidates):
+                    wm.progress_update(i)
+                    if self._apply_to_material(
+                        mat, style_elements, self.value_offset, self.saturation_factor, color_cache
+                    ):
+                        count += 1
+            finally:
+                wm.progress_end()
+            self.report({"INFO"}, f"Shade style generated for {count} style(s).")
+        else:
+            mat = bpy.data.materials.get(self.material_name)
+            if not mat:
+                return {"CANCELLED"}
+            style_elements = tool.Style.get_style_elements(mat)
+            if not tool.Style.has_blender_external_style(style_elements):
+                self.report({"ERROR"}, "No external .blend style assigned. Please assign an external style first.")
+                return {"CANCELLED"}
+            self._apply_to_material(mat, style_elements, self.value_offset, self.saturation_factor)
+        props = tool.Style.get_style_props()
+        if props.is_editing:
+            core.load_styles(tool.Style, style_type=props.style_type)
+
+    def _apply_to_material(
+        self,
+        material: bpy.types.Material,
+        style_elements: dict,
+        value_offset: float = 0.0,
+        saturation_factor: float = 1.0,
+        color_cache: "dict[tuple[str, str, str], tuple | None] | None" = None,
+    ) -> bool:
+        external_style = style_elements["IfcExternallyDefinedSurfaceStyle"]
+        style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
+        data_block_type, data_block = external_style.Identification.split("/")
+
+        cache_key = (str(style_path), data_block_type, data_block)
+        if color_cache is not None and cache_key in color_cache:
+            cached = color_cache[cache_key]
+            if cached is None:
+                return False  # previously failed for this path
+            surface_colour, transparency = cached
+        else:
+            try:
+                db = tool.Blender.append_data_block(str(style_path), data_block_type, data_block)
+            except OSError as e:
+                self.report({"WARNING"}, f'Could not open blend file for "{material.name}": {e}')
+                if color_cache is not None:
+                    color_cache[cache_key] = None
+                return False
+            if not db["data_block"]:
+                self.report({"WARNING"}, f'Could not load external style for "{material.name}": {db["msg"]}')
+                if color_cache is not None:
+                    color_cache[cache_key] = None
+                return False
+
+            ext_mat = db["data_block"]
+            surface_colour, transparency = tool.Style.get_representative_material_color(ext_mat)
+            bpy.data.materials.remove(ext_mat)
+            if color_cache is not None:
+                color_cache[cache_key] = (surface_colour, transparency)
+
+        if value_offset != 0.0 or saturation_factor != 1.0:
+            h, s, v = colorsys.rgb_to_hsv(*surface_colour)
+            v = max(0.0, min(1.0, v + value_offset))
+            s = max(0.0, min(1.0, s * saturation_factor))
+            surface_colour = colorsys.hsv_to_rgb(h, s, v)
+
+        ifc_style = tool.Ifc.get_entity(material)
+        attributes: dict = {
+            "SurfaceColour": {
+                "Name": None,
+                "Red": surface_colour[0],
+                "Green": surface_colour[1],
+                "Blue": surface_colour[2],
+            },
+        }
+        if tool.Ifc.get_schema() != "IFC2X3":
+            attributes["Transparency"] = transparency
+
+        shading_style = style_elements.get("IfcSurfaceStyleShading")
+        if shading_style:
+            tool.Ifc.run("style.edit_surface_style", style=shading_style, attributes=attributes)
+        else:
+            tool.Ifc.run(
+                "style.add_surface_style",
+                style=ifc_style,
+                ifc_class="IfcSurfaceStyleShading",
+                attributes=attributes,
+            )
+        material.diffuse_color = (*surface_colour, 1.0 - transparency)
+        tool.Style.sync_flat_branch_shading(material, surface_colour, transparency)
+        return True
 
 
 class DisableEditingStyles(bpy.types.Operator):

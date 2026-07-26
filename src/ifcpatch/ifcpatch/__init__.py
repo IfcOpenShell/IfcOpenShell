@@ -184,7 +184,7 @@ class PatcherDoc(TypedDict):
 class InputDoc(TypedDict):
     name: str
     description: str
-    type: Union[str, list[str]]
+    type: NotRequired[Union[str, list[str]]]
     default: NotRequired[Any]
     generic_type: NotRequired[str]
     enum_items: NotRequired[list[str]]
@@ -201,7 +201,7 @@ def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Sequence[
     for name, parameter in signature.parameters.items():
         if name == "self" or name in boilerplate_args:
             continue
-        input_doc: InputDoc = {"name": name}
+        input_doc: InputDoc = {"name": name, "description": "Undocumented"}
         inputs[name] = input_doc
         if isinstance(parameter.default, (str, float, int, bool)):
             input_doc["default"] = parameter.default
@@ -267,10 +267,6 @@ def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Sequence[
             assert is_valid_filter_glob(filter_glob), f"Invalid filter_glob pattern: '{filter_glob}'."
             inputs[param_name]["filter_glob"] = filter_glob
 
-    for param_name in inputs:
-        if "description" not in inputs[param_name]:
-            inputs[param_name]["description"] = "Undocumented"
-
     docs = PatcherDoc(
         class_=cls,
         description=doc_description,
@@ -309,6 +305,7 @@ def parse_docstring(docstring: str) -> DocstringData:
             line = line[1:]
             if line.startswith(PREFIXES):
                 prefix = line.split(" ")[0]
+                assert prefix in PREFIXES, f"Invalid line: '{line}'."
                 current_section = prefix
                 match_ = re.match(rf"{prefix}\s+(\w+):\s+(.*)", line)
                 assert match_, f"Invalid line: '{line}'."

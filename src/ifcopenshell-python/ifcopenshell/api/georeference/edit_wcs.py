@@ -90,6 +90,8 @@ def edit_wcs(
                 point,
                 file.createIfcDirection((xaxis_x, xaxis_y)),
             )
+        else:
+            assert False, context
         context.WorldCoordinateSystem = placement
         if file.get_total_inverses(old_wcs) == 0:
             ifcopenshell.util.element.remove_deep2(file, old_wcs)

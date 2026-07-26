@@ -112,10 +112,14 @@ class Misc(bonsai.core.tool.Misc):
         reading data and never writing, to avoid the possibility of corrupting user preferences.
         """
 
+        # Byte offset of UserDef.user_menus within the UserDef C struct, per (major, minor)
+        # Blender version. Shifts whenever UserDef's fields change, so must be re-derived
+        # per version (e.g. from that Blender build's SDNA).
         OFFSET_USER_MENUS: dict[tuple[int, int], int] = {
             (4, 5): 10032,
             (5, 0): 10032,
             (5, 1): 10032,
+            (5, 2): 10800,
         }
 
         @classmethod
@@ -216,10 +220,12 @@ class Misc(bonsai.core.tool.Misc):
                         related_objects.append((element, ifcopenshell.util.placement.get_storey_elevation(element)))
         related_objects = sorted(related_objects, key=lambda e: e[1])
         storey_elevation = None
+        i = None
         for i, related_object in enumerate(related_objects):
             if related_object[0] == storey:
                 storey_elevation = related_object[1]
                 break
+        assert i is not None
         if i + total_storeys < len(related_objects):
             next_storey_elevation = related_objects[i + total_storeys][1]
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())

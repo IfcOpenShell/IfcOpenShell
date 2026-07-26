@@ -281,7 +281,7 @@ class RefreshLibrary(bpy.types.Operator):
         elements = {e for e in elements if not tool.Project.is_element_assigned_to_project_library(e, rels)}
         self.props.add_library_project_library("Unassigned", len(elements), 0, False)
 
-        root_context = tool.Project.get_root_context(library_file)
+        root_context = library_file.by_type("IfcProject")[0]
         hierarchy = tool.Project.get_project_hierarchy(library_file)
         tool.Project.load_project_libraries_to_ui(root_context, hierarchy)
         return {"FINISHED"}
@@ -714,6 +714,8 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             representations = element.RepresentationMaps or []
         elif element.is_a("IfcProduct"):
             representations = [element.Representation] if element.Representation else []
+        else:
+            assert False, element
         for representation in representations or []:
             for element in self.file.traverse(representation):
                 if not element.is_a("IfcRepresentationItem") or not element.StyledByItem:
@@ -759,21 +761,22 @@ class EditProjectLibrary(bpy.types.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.project_library_attributes)
         ifcopenshell.api.attribute.edit_attributes(library_file, project_library, attributes)
 
-        # Update parent library.
+        # Update parent library. Tear down the old IfcRelDeclares/IfcRelNests before
+        # creating the new one; a library must have exactly one of the two, never both.
         previous_parent_library = tool.Project.get_parent_library(project_library)
         new_parent_library = library_file.by_id(int(props.parent_library))
         if previous_parent_library != new_parent_library:
-            if previous_parent_library is None:
-                # Edited library was a root in a library-only file; nest it under the new parent.
+            if previous_parent_library is not None:
+                if previous_parent_library.is_a("IfcProject"):
+                    ifcopenshell.api.project.unassign_declaration(
+                        library_file, [project_library], previous_parent_library
+                    )
+                else:
+                    ifcopenshell.api.nest.unassign_object(library_file, [project_library])
+            if new_parent_library.is_a("IfcProject"):
+                ifcopenshell.api.project.assign_declaration(library_file, [project_library], new_parent_library)
+            else:
                 ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
-            elif previous_parent_library.is_a("IfcProject"):
-                # Then new one is IfcProjectLibrary.
-                ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
-            else:  # Previous is IfcProjectLibrary.
-                ifcopenshell.api.nest.unassign_object(library_file, [project_library])
-                # If new one is IfcProject, then it's already assigned by default.
-                if new_parent_library.is_a("IfcProjectLibrary"):
-                    ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
 
         props.is_editing_project_library = False
         bpy.ops.bim.refresh_library()
@@ -807,12 +810,9 @@ class AddProjectLibrary(bpy.types.Operator):
         props = tool.Project.get_project_props()
         library_file = IfcStore.library_file
         assert library_file
-        root_context = tool.Project.get_root_context(library_file)
+        root_context = library_file.by_type("IfcProject")[0]
         project_library = ifcopenshell.api.root.create_entity(library_file, "IfcProjectLibrary")
-        if root_context.is_a("IfcProject"):
-            ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
-        else:
-            ifcopenshell.api.nest.assign_object(library_file, [project_library], root_context)
+        ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
         ProjectLibraryData.load()  # Update enum.
         props.selected_project_library = str(project_library.id())
         props.is_editing_project_library = True
@@ -1044,13 +1044,19 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
 
         return tooltip
 
-    def check_autosave_recovery(self, context: bpy.types.Context) -> set["rna_enums.OperatorReturnItems"] | None:
+    def check_autosave_recovery(self, context: bpy.types.Context) -> bool:
         if self.skip_autosave_recovery:
-            return None
+            return False
         autosaved_filepath = tool.Autosave.get_newer_autosaved_path(self.get_filepath_abs())
         if not autosaved_filepath:
-            return None
-        return bpy.ops.bim.load_autosaved_recovery_popup(
+            return False
+        # Fire-and-forget: don't propagate this popup's own RUNNING_MODAL
+        # return value up as if *this* operator were running modally too -
+        # we never call modal_handler_add() on ourselves, so the window
+        # manager would be left tracking a modal operator with no handler,
+        # corrupting its operator bookkeeping until it crashes later when
+        # the (real) popup modal handler is closed.
+        bpy.ops.bim.load_autosaved_recovery_popup(
             "INVOKE_DEFAULT",
             original_filepath=str(self.get_filepath_abs()),
             autosaved_filepath=autosaved_filepath,
@@ -1059,10 +1065,11 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             should_start_fresh_session=self.should_start_fresh_session,
             import_without_ifc_data=self.import_without_ifc_data,
         )
+        return True
 
     def execute(self, context):
-        if recovery := self.check_autosave_recovery(context):
-            return recovery
+        if self.check_autosave_recovery(context):
+            return {"FINISHED"}
 
         if (
             tool.Blender.get_addon_preferences().save_metadata_blend_file
@@ -1177,8 +1184,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
 
     def invoke(self, context, event):
         if self.filepath:
-            if recovery := self.check_autosave_recovery(context):
-                return recovery
+            if self.check_autosave_recovery(context):
+                return {"FINISHED"}
             return self.execute(context)
         return ImportHelper.invoke(self, context, event)
 
@@ -1292,6 +1299,10 @@ class LoadProjectElements(bpy.types.Operator):
         tool.Project.set_default_modeling_dimensions()
         tool.Root.reload_grid_decorator()
         bonsai.bim.handler.refresh_ui_data()
+        for screen in bpy.data.screens:
+            for area in screen.areas:
+                if area.type == "VIEW_3D":
+                    bonsai.bim.handler.viewport_shading_changed_callback(area)
         return {"FINISHED"}
 
     def get_decomposition_elements(self) -> set[ifcopenshell.entity_instance]:
@@ -1569,10 +1580,13 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
         json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
 
         def should_clear_cache() -> bool:
-            if not self.use_cache:
-                return True
+            # Nothing to clear if the cache file was never created (e.g. a
+            # fresh link). Check this first so os.remove below is never
+            # called on a non-existent path, regardless of use_cache.
             if not blend_filepath.exists():
                 return False
+            if not self.use_cache:
+                return True
             data = json.loads(json_filepath.read_text())
             # Empty 'query' - model loaded without custom query.
             # Missing 'query' - model was loaded before custom queries were introduced in Bonsai.
@@ -2022,6 +2036,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         project_props = tool.Project.get_project_props()
         prefs = tool.Blender.get_addon_preferences()
         project_props.use_relative_project_path = self.use_relative_path
+        old_history_size, old_undo_steps = None, None
         if prefs.should_disable_undo_on_save:
             old_history_size = tool.Ifc.get().history_size
             old_undo_steps = context.preferences.edit.undo_steps
@@ -2029,6 +2044,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
             context.preferences.edit.undo_steps = 0
         IfcStore.execute_ifc_operator(self, context)
         if prefs.should_disable_undo_on_save:
+            assert old_history_size is not None and old_undo_steps is not None
             tool.Ifc.get().history_size = old_history_size
             context.preferences.edit.undo_steps = old_undo_steps
         return {"FINISHED"}
@@ -2182,8 +2198,8 @@ class LoadAutosavedRecoveryPopup(bpy.types.Operator):
             self, width=420, title="Recover Autosaved File", confirm_text="Yes"
         )
 
-    def _load(self, filepath: str, skip_recent: bool) -> set["rna_enums.OperatorReturnItems"]:
-        return bpy.ops.bim.load_project(
+    def _load_kwargs(self, filepath: str, skip_recent: bool) -> dict:
+        return dict(
             filepath=filepath,
             skip_autosave_recovery=True,  # Prevent infinite loop
             is_advanced=self.is_advanced,
@@ -2193,16 +2209,42 @@ class LoadAutosavedRecoveryPopup(bpy.types.Operator):
             skip_recent=skip_recent,
         )
 
+    @staticmethod
+    def _defer(callback) -> None:
+        def on_timer() -> None:
+            callback()
+            return None
+
+        # bim.load_project (with should_start_fresh_session, our default)
+        # calls wm.read_homefile(), which tears down the window
+        # manager/screens/regions. Calling that synchronously from this
+        # dialog's execute()/cancel() - themselves invoked from deep inside
+        # Blender's modal handling for this popup's button click - frees
+        # data that the still-on-stack caller dereferences once we return,
+        # segfaulting Blender. Deferring by one timer tick runs the reload
+        # after the popup's own modal handling has fully unwound. The
+        # callback only closes over plain values (not `self`), since the
+        # operator instance itself may no longer be valid by the time the
+        # timer fires.
+        bpy.app.timers.register(on_timer, first_interval=0.0)
+
     def execute(self, context):
-        result = self._load(self.autosaved_filepath, skip_recent=True)
-        # Re-point tracking at the original path so future saves write back
-        # to it, not "_autosaved.ifc".
-        tool.Ifc.set_path(self.original_filepath)
-        return result
+        kwargs = self._load_kwargs(self.autosaved_filepath, skip_recent=True)
+        original_filepath = self.original_filepath
+
+        def load_and_repoint() -> None:
+            bpy.ops.bim.load_project(**kwargs)
+            # Re-point tracking at the original path so future saves write
+            # back to it, not "_autosaved.ifc".
+            tool.Ifc.set_path(original_filepath)
+
+        self._defer(load_and_repoint)
+        return {"FINISHED"}
 
     def cancel(self, context):
         # Also reached via Escape or a click outside the dialog, not just Cancel.
-        self._load(self.original_filepath, skip_recent=False)
+        kwargs = self._load_kwargs(self.original_filepath, skip_recent=False)
+        self._defer(lambda: bpy.ops.bim.load_project(**kwargs))
 
 
 class AutosavePrompt(bpy.types.Operator):

@@ -347,11 +347,13 @@ class TestAddDrawing:
             context="context",
             ifc_representation_class=None,
         ).should_be_called().will_return("element")
+        drawing.ensure_drawings_parent_group().should_be_called().will_return("drawings_parent_group")
         ifc.run("group.add_group").should_be_called().will_return("group")
         ifc.run(
             "group.edit_group", group="group", attributes={"Name": "name", "ObjectType": "DRAWING"}
         ).should_be_called()
         ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
+        ifc.run("group.assign_group", group="drawings_parent_group", products=["group"]).should_be_called()
         collector.assign("obj").should_be_called()
         ifc.run("pset.add_pset", product="element", name="EPset_Drawing").should_be_called().will_return("pset")
         drawing.get_default_drawing_resource_path("Stylesheet").should_be_called().will_return("stylesheet.css")
@@ -381,8 +383,11 @@ class TestAddDrawing:
                 "CurrentShadingStyle": "Blender Default",
             },
         ).should_be_called()
+        drawing.ensure_drawings_parent_document().should_be_called().will_return("drawings_parent_document")
         drawing.get_default_drawing_path("name").should_be_called().will_return("uri")
-        ifc.run("document.add_information").should_be_called().will_return("information")
+        ifc.run("document.add_information", parent="drawings_parent_document").should_be_called().will_return(
+            "information"
+        )
         ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")
         ifc.get_schema().should_be_called().will_return("IFC4")
         ifc.run(
@@ -406,11 +411,13 @@ class TestDuplicateDrawing:
         drawing.set_name("new_drawing", "unique_name").should_be_called()
         drawing.get_drawing_group("new_drawing").should_be_called().will_return("group")
         ifc.run("group.unassign_group", group="group", products=["new_drawing"]).should_be_called()
+        drawing.ensure_drawings_parent_group().should_be_called().will_return("drawings_parent_group")
         ifc.run("group.add_group").should_be_called().will_return("new_group")
         ifc.run(
             "group.edit_group", group="new_group", attributes={"Name": "unique_name", "ObjectType": "DRAWING"}
         ).should_be_called()
         ifc.run("group.assign_group", group="new_group", products=["new_drawing"]).should_be_called()
+        ifc.run("group.assign_group", group="drawings_parent_group", products=["new_group"]).should_be_called()
         drawing.get_group_elements("group").should_be_called().will_return(["drawing", "annotation"])
         ifc.get_object("annotation").should_be_called().will_return("annotation_obj")
         geometry.duplicate_ifc_objects(["annotation_obj"]).should_be_called().will_return(
@@ -425,7 +432,10 @@ class TestDuplicateDrawing:
         drawing.get_drawing_document("new_drawing").should_be_called().will_return("old_reference")
         ifc.run("document.unassign_document", products=["new_drawing"], document="old_reference").should_be_called()
 
-        ifc.run("document.add_information").should_be_called().will_return("information")
+        drawing.ensure_drawings_parent_document().should_be_called().will_return("drawings_parent_document")
+        ifc.run("document.add_information", parent="drawings_parent_document").should_be_called().will_return(
+            "information"
+        )
         ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")
         ifc.get_schema().should_be_called().will_return("IFC4")
         drawing.get_default_drawing_path("unique_name").should_be_called().will_return("drawing_path")
@@ -441,6 +451,59 @@ class TestDuplicateDrawing:
 
         drawing.import_drawings().should_be_called()
         subject.duplicate_drawing(ifc, blender, drawing, geometry, drawing="drawing", should_duplicate_annotations=True)
+
+
+class TestCopyAnnotationsToDrawing:
+    def test_run(self, ifc: Prophecy, collector: Prophecy, drawing: Prophecy, geometry: Prophecy):
+        drawing.get_drawing_group("target_drawing").should_be_called().will_return("target_group")
+        drawing.get_annotation_drawing("annotation").should_be_called().will_return("source_drawing")
+        ifc.get_object("annotation").should_be_called().will_return("annotation_obj")
+        ifc.get_object("target_drawing").should_be_called().will_return("camera")
+        geometry.duplicate_ifc_objects(["annotation_obj"]).should_be_called().will_return(
+            ({"annotation": ["new_annotation"]}, None)
+        )
+        drawing.get_drawing_group("new_annotation").should_be_called().will_return("source_group")
+        ifc.run("group.unassign_group", group="source_group", products=["new_annotation"]).should_be_called()
+        ifc.run("group.assign_group", group="target_group", products=["new_annotation"]).should_be_called()
+        ifc.get_object("new_annotation").should_be_called().will_return("new_annotation_obj")
+        drawing.ensure_annotation_in_drawing_plane("new_annotation_obj", "camera").should_be_called()
+        collector.assign("new_annotation_obj", should_clean_users_collection=True).should_be_called()
+        assert subject.copy_annotations_to_drawing(
+            ifc, collector, drawing, geometry, annotations=["annotation"], target_drawing="target_drawing"
+        ) == ["new_annotation"]
+
+    def test_skipping_annotations_already_in_the_target_drawing(
+        self, ifc: Prophecy, collector: Prophecy, drawing: Prophecy, geometry: Prophecy
+    ):
+        drawing.get_drawing_group("target_drawing").should_be_called().will_return("target_group")
+        drawing.get_annotation_drawing("annotation").should_be_called().will_return("target_drawing")
+        assert (
+            subject.copy_annotations_to_drawing(
+                ifc, collector, drawing, geometry, annotations=["annotation"], target_drawing="target_drawing"
+            )
+            == []
+        )
+
+    def test_importing_the_target_camera_when_it_is_not_loaded(
+        self, ifc: Prophecy, collector: Prophecy, drawing: Prophecy, geometry: Prophecy
+    ):
+        drawing.get_drawing_group("target_drawing").should_be_called().will_return("target_group")
+        drawing.get_annotation_drawing("annotation").should_be_called().will_return("source_drawing")
+        ifc.get_object("annotation").should_be_called().will_return("annotation_obj")
+        ifc.get_object("target_drawing").should_be_called().will_return(None)
+        drawing.import_drawing("target_drawing").should_be_called().will_return("camera")
+        geometry.duplicate_ifc_objects(["annotation_obj"]).should_be_called().will_return(
+            ({"annotation": ["new_annotation"]}, None)
+        )
+        drawing.get_drawing_group("new_annotation").should_be_called().will_return("source_group")
+        ifc.run("group.unassign_group", group="source_group", products=["new_annotation"]).should_be_called()
+        ifc.run("group.assign_group", group="target_group", products=["new_annotation"]).should_be_called()
+        ifc.get_object("new_annotation").should_be_called().will_return("new_annotation_obj")
+        drawing.ensure_annotation_in_drawing_plane("new_annotation_obj", "camera").should_be_called()
+        collector.assign("new_annotation_obj", should_clean_users_collection=True).should_be_called()
+        assert subject.copy_annotations_to_drawing(
+            ifc, collector, drawing, geometry, annotations=["annotation"], target_drawing="target_drawing"
+        ) == ["new_annotation"]
 
 
 class TestRemoveDrawing:
