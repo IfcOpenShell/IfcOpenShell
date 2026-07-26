@@ -205,10 +205,87 @@ def main() -> None:
             "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js",
             BONSAI_DATA / "webui" / "static" / "js" / "jquery.min.js",
         ),
+        (
+            "https://unpkg.com/tabulator-tables@6.5.2/dist/js/tabulator.min.js",
+            BONSAI_DATA / "webui" / "static" / "js" / "tabulator.min.js",
+        ),
+        (
+            "https://unpkg.com/tabulator-tables@6.5.2/dist/css/tabulator_site.min.css",
+            BONSAI_DATA / "webui" / "static" / "css" / "tabulator_site.min.css",
+        ),
+        (
+            "https://unpkg.com/tabulator-tables@6.5.2/dist/css/tabulator_site_dark.min.css",
+            BONSAI_DATA / "webui" / "static" / "css" / "tabulator_site_dark.min.css",
+        ),
+        (
+            "https://cdn.socket.io/4.0.0/socket.io.min.js",
+            BONSAI_DATA / "webui" / "static" / "js" / "socket.io.min.js",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css",
+            BONSAI_DATA / "webui" / "static" / "css" / "all.min.css",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-brands-400.ttf",
+            BONSAI_DATA / "webui" / "static" / "webfonts" / "fa-brands-400.ttf",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-brands-400.woff2",
+            BONSAI_DATA / "webui" / "static" / "webfonts" / "fa-brands-400.woff2",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-regular-400.ttf",
+            BONSAI_DATA / "webui" / "static" / "webfonts" / "fa-regular-400.ttf",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-regular-400.woff2",
+            BONSAI_DATA / "webui" / "static" / "webfonts" / "fa-regular-400.woff2",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-solid-900.ttf",
+            BONSAI_DATA / "webui" / "static" / "webfonts" / "fa-solid-900.ttf",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-solid-900.woff2",
+            BONSAI_DATA / "webui" / "static" / "webfonts" / "fa-solid-900.woff2",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-v4compatibility.ttf",
+            BONSAI_DATA / "webui" / "static" / "webfonts" / "fa-v4compatibility.ttf",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-v4compatibility.woff2",
+            BONSAI_DATA / "webui" / "static" / "webfonts" / "fa-v4compatibility.woff2",
+        ),
+        (
+            "https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.1.1/svg.min.js",
+            BONSAI_DATA / "webui" / "static" / "js" / "svg.min.js",
+        ),
+        (
+            "https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js",
+            BONSAI_DATA / "webui" / "static" / "js" / "svg-pan-zoom.min.js",
+        ),
+        (
+            "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css",
+            BONSAI_DATA / "webui" / "static" / "css" / "bootstrap.min.css",
+        ),
+        (
+            "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js",
+            BONSAI_DATA / "webui" / "static" / "js" / "bootstrap.min.js",
+        ),
+        (
+            "https://bonsaibim.org/assets/images/favicon-blender.png",
+            BONSAI_DATA / "webui" / "static" / "images" / "favicon-blender.png",
+        ),
+        (
+            "https://bonsaibim.org/assets/images/blender/blender-logo.png",
+            BONSAI_DATA / "webui" / "static" / "images" / "blender-logo.png",
+        ),
     )
 
     for url, filepath in downloads:
         print(f"Downloading {url} -> {filepath}")
+        filepath.parent.mkdir(parents=True, exist_ok=True)
         urllib.request.urlretrieve(url, filepath)
 
     input("Dev environment is all set!! \nPress Enter to continue...")
