@@ -134,7 +134,7 @@ std::string& spf_lexer<Reader>::get_temp_string() const {
 
 namespace {
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
 double parse_double_c(const char* start, char** end) {
     static const locale_t loc = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
     return strtod_l(start, end, loc);
@@ -154,11 +154,11 @@ bool parse_num_(const char* pStart, size_t size, T& val) {
         }
     }
     if constexpr (std::is_floating_point_v<T>) {
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
         // pStart is NUL-terminated at pStart + size (callers pass c_str()), so
         // strtod_l stops exactly at the end of a well-formed number. from_chars
         // is not instantiated for double here — its float overload is =deleted
-        // in Apple's libc++.
+        // in libc++ (Apple's and Emscripten's).
         char* pEnd = nullptr;
         const double result = parse_double_c(pStart, &pEnd);
         if (pEnd != pStart + size) {

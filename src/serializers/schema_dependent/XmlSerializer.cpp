@@ -300,7 +300,11 @@ ptree* descend(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping,
 			(log, object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
 
 		for (auto& s : property_set_sets) {
-            auto set_sets_value = (decltype(property_sets))s;
+            // Copy-initialise (not a C-style cast) so the implicit
+            // IfcPropertySetDefinitionSet -> std::vector<IfcPropertySetDefinition>
+            // conversion operator is used. MSVC rejects the equivalent cast to a
+            // template type (C2440), whereas copy-initialisation is portable.
+            decltype(property_sets) set_sets_value = s;
             property_sets.insert(property_sets.end(), set_sets_value.begin(), set_sets_value.end());
 		}
 #endif
