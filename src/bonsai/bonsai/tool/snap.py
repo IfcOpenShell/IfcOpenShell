@@ -225,6 +225,7 @@ class Snap(bonsai.core.tool.Snap):
         # Get axis that are closer than the stick factor threshold
         elegible_axis = []
 
+        axis = None
         for axis in snap_axis:
             if not axis:
                 continue
@@ -326,6 +327,7 @@ class Snap(bonsai.core.tool.Snap):
         detected_snaps: list[dict[str, Any]] = []
 
         def select_plane_method():
+            plane_origin, plane_normal = None, None
             if not last_polyline_point:
                 plane_origin = Vector((0, 0, 0))
                 plane_normal = Vector((0, 0, 1))
@@ -357,6 +359,7 @@ class Snap(bonsai.core.tool.Snap):
                     plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((1, 0, 0))
 
+            assert plane_origin and plane_normal
             plane_normal = tool.Polyline.use_transform_orientations(plane_normal)
             return plane_origin, plane_normal
 
@@ -583,6 +586,7 @@ class Snap(bonsai.core.tool.Snap):
 
         snaps_by_group = filter_snapping_points_by_group(detected_snaps)
         edges = []  # Get edges to create edge-intersection snap
+        axis_start, axis_end = ..., ...
         for snapping_point in snaps_by_group:
             if snapping_point["group"] in {"Polyline", "Measure", "Wireframe", "Object"}:
                 if snapping_point["type"] == "Edge":
@@ -607,6 +611,7 @@ class Snap(bonsai.core.tool.Snap):
                 if point["type"] == "Axis":
                     if ordered_snaps[0]["type"] not in {"Axis", "Plane"}:
                         obj = ordered_snaps[0]["object"]
+                        assert axis_start is not ... and axis_end is not ...
                         mixed_snap = cls.mix_snap_and_axis(ordered_snaps[0], axis_start, axis_end)
                         for mixed_point in mixed_snap:
                             snap_point = {

@@ -409,6 +409,12 @@ class DocProperties(PropertyGroup):
         options=set(),
     )
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
+    show_drawings_on_sheets_only: BoolProperty(
+        name="Show Only Drawings on Sheets",
+        description="Only show drawings that are placed on a sheet",
+        default=False,
+        options=set(),
+    )
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
     target_view: EnumProperty(
@@ -439,6 +445,7 @@ class DocProperties(PropertyGroup):
         should_use_annotation_cache: bool
         should_draw_linked_projects: bool
         is_editing_drawings: bool
+        show_drawings_on_sheets_only: bool
         is_editing_schedules: bool
         is_editing_references: bool
         target_view: Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
@@ -535,6 +542,50 @@ class BIMCameraProperties(PropertyGroup):
         name="Annotation",
         default=True,
         update=get_update_layer_callback("has_annotation", "HasAnnotation"),
+    )
+    use_edge_classification: BoolProperty(
+        name="Use Edge Classification",
+        description="Classify projection edges into boundary/outline/sharp/crease/flush "
+        "instead of drawing all linework identically. See edge-classification.md",
+        default=False,
+        update=get_update_layer_callback("use_edge_classification", "UseEdgeClassification"),
+    )
+    render_creases: BoolProperty(
+        name="Render Creases",
+        description="Render 'crease' (concave) projection edges",
+        default=True,
+        update=get_update_layer_callback("render_creases", "RenderCreases"),
+    )
+    valley_angle_min_degrees: FloatProperty(
+        name="Valley Angle Minimum",
+        description="Minimum concave dihedral deviation from flat, in degrees, for a projection "
+        "edge to be classified as 'crease' rather than 'flush'",
+        default=12.0,
+        min=0.0,
+        max=180.0,
+        update=get_update_layer_callback("valley_angle_min_degrees", "ValleyAngleMinDegrees"),
+    )
+    render_sharp: BoolProperty(
+        name="Render Sharp",
+        description="Render 'sharp' (convex) projection edges",
+        default=True,
+        update=get_update_layer_callback("render_sharp", "RenderSharp"),
+    )
+    ridge_angle_min_degrees: FloatProperty(
+        name="Ridge Angle Minimum",
+        description="Minimum convex dihedral deviation from flat, in degrees, for a projection "
+        "edge to be classified as 'sharp' rather than 'flush'",
+        default=45.0,
+        min=0.0,
+        max=180.0,
+        update=get_update_layer_callback("ridge_angle_min_degrees", "RidgeAngleMinDegrees"),
+    )
+    render_flush: BoolProperty(
+        name="Render Flush",
+        description="Render 'flush' projection edges (dihedral deviation below both ridge/valley "
+        "thresholds). Omitted by default",
+        default=False,
+        update=get_update_layer_callback("render_flush", "RenderFlush"),
     )
     target_view: EnumProperty(
         name="Target View",

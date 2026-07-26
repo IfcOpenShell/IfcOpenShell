@@ -147,6 +147,12 @@ class Material(bonsai.core.tool.Material):
         MaterialsData.data["material_styles_data"] = MaterialsData.material_styles_data()
 
     @classmethod
+    def refresh(cls) -> None:
+        from bonsai.bim.module.material.data import refresh as refresh_material_data
+
+        refresh_material_data()
+
+    @classmethod
     def is_editing_materials(cls) -> bool:
         props = tool.Material.get_material_props()
         return props.is_editing

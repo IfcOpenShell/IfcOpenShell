@@ -31,8 +31,8 @@ XmlSerializer* XmlSerializerFactory::Factory::construct(const std::string& schem
 	return it->second(file, xml_filename, logger);
 }
 
-XmlSerializer::XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename, Logger& logger)
-	: Serializer(logger) {
+XmlSerializer::XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename, Logger* logger)
+	: Serializer(logger_or_root(logger)) {
 	if (file) {
 		implementation_ = XmlSerializerFactory::implementations().construct(file->schema()->name(), file, xml_filename, logger_);
 	}

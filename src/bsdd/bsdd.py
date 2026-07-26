@@ -26,7 +26,9 @@ import webbrowser
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict
 
 import requests
+from requests.adapters import HTTPAdapter
 from typing_extensions import NotRequired
+from urllib3.util import Retry
 
 if TYPE_CHECKING:
     import ifcopenshell
@@ -517,12 +519,25 @@ class Client:
         self.auth_endpoint = "https://buildingsmartservices.b2clogin.com/tfp/buildingsmartservices.onmicrosoft.com/b2c_1_signupsignin/oauth2/v2.0/authorize"
         self.token_endpoint = "https://buildingsmartservices.b2clogin.com/tfp/buildingsmartservices.onmicrosoft.com/b2c_1_signupsignin/oauth2/v2.0/token"
         self.client_id = "4aba821f-d4ff-498b-a462-c2837dbbba70"
+        # The bSDD API is aggressively rate limited (HTTP 429). Retry transient
+        # failures with backoff instead of immediately raising, honouring the
+        # server's `Retry-After` header when present.
+        self.session = requests.Session()
+        retries = Retry(
+            total=5,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            respect_retry_after_header=True,
+            allowed_methods=["GET", "POST"],
+        )
+        self.session.mount("https://", HTTPAdapter(max_retries=retries))
+        self.session.mount("http://", HTTPAdapter(max_retries=retries))
 
     def get(self, endpoint, params=None, is_auth_required=False):
         headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
         if is_auth_required:
             headers["Authorization"] = "Bearer " + self.get_access_token()
-        response = requests.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None)
+        response = self.session.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None)
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -539,7 +554,7 @@ class Client:
         old_baseurl = "https://bs-dd-api-prototype.azurewebsites.net/"
         if is_auth_required:
             headers["Authorization"] = "Bearer " + self.get_access_token()
-        return requests.get(f"{old_baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
+        return self.session.get(f"{old_baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
 
     def post(self):
         pass  # TODO

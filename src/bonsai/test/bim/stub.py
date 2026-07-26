@@ -21,6 +21,10 @@ from typing import Any, Optional, Union
 
 
 class bSDDClientStub:
+    def __init__(self):
+        # Mirrors bsdd.Client so tool.Bsdd.identifier_url() works against the stub.
+        self.baseurl = "https://api.bsdd.buildingsmart.org/api/"
+
     def get_dictionary(self, dictionary_uri=None, include_test_dictionaries=False):
         dicts = {
             "dictionaries": [

@@ -360,6 +360,10 @@ class Style(bonsai.core.tool.Style):
         material_output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL", {"is_active_output": True})
         surface_output = get_input_node(material_output, "Surface")
 
+        # TODO: this variable is not really needed,
+        # just workaround a for ty issue detecting unresolved refs.
+        bsdf = None
+
         if surface_output and surface_output.type == "MIX_SHADER":
             mix_shader = surface_output
             if (
@@ -388,6 +392,7 @@ class Style(bonsai.core.tool.Style):
                 and (bsdf := get_input_node(surface_output, input_index=1, of_type="BSDF_PRINCIPLED"))
             )
         ):
+            assert bsdf
             report(f"Because of {BLUE}BSDF_PRINCIPLED{R} node reflectance method identified as {BLUE}PHYSICAL{R}")
             attributes["ReflectanceMethod"] = "NOTDEFINED" if tool.Ifc.get_schema() != "IFC4X3" else "PHYSICAL"
 
@@ -593,6 +598,146 @@ class Style(bonsai.core.tool.Style):
         return bool(external_style and external_style.Location and external_style.Location.endswith(".blend"))
 
     @classmethod
+    def _color_from_principled(cls, node: bpy.types.Node) -> tuple[tuple[float, float, float], float]:
+        color = cls._resolve_color_socket(node.inputs["Base Color"])
+        alpha_socket = node.inputs["Alpha"]
+        alpha_source = cls._upstream_color_source(alpha_socket)
+        if alpha_source and alpha_source[0] == "IMAGE":
+            pixels = alpha_source[1].pixels[:]
+            n = len(pixels) // 4
+            step = max(1, n // 4096)
+            a_sum = sum(pixels[i * 4 + 3] for i in range(0, n, step))
+            count = len(range(0, n, step)) or 1
+            transparency = 1.0 - (a_sum / count)
+        else:
+            transparency = 1.0 - alpha_socket.default_value
+        return color, transparency
+
+    @classmethod
+    def _color_from_shader_socket(
+        cls, socket: bpy.types.NodeSocket, seen: set[str] | None = None
+    ) -> tuple[tuple[float, float, float], float] | None:
+        if seen is None:
+            seen = set()
+        for link in socket.links:
+            node = link.from_node
+            if node.name in seen:
+                continue
+            seen.add(node.name)
+            if node.type == "BSDF_PRINCIPLED":
+                return cls._color_from_principled(node)
+            if node.type in ("BSDF_DIFFUSE", "DIFFUSE_BSDF"):
+                return cls._resolve_color_socket(node.inputs["Color"]), 0.0
+            if node.type == "BSDF_GLASS":
+                return cls._resolve_color_socket(node.inputs["Color"]), 0.0
+            if node.type in ("MIX_SHADER", "ADD_SHADER"):
+                for inp in node.inputs:
+                    if inp.type == "SHADER" and inp.is_linked:
+                        result = cls._color_from_shader_socket(inp, seen)
+                        if result:
+                            return result
+        return None
+
+    @classmethod
+    def get_representative_material_color(
+        cls, material: bpy.types.Material
+    ) -> tuple[tuple[float, float, float], float]:
+        if material.node_tree:
+            nodes = material.node_tree.nodes
+            output_node = next((n for n in nodes if n.type == "OUTPUT_MATERIAL" and n.is_active_output), None) or next(
+                (n for n in nodes if n.type == "OUTPUT_MATERIAL"), None
+            )
+            if output_node:
+                result = cls._color_from_shader_socket(output_node.inputs["Surface"])
+                if result:
+                    return result
+            # Fallback: scan all shader nodes if no output node or graph traversal found nothing
+            for node in nodes:
+                if node.type == "BSDF_PRINCIPLED":
+                    return cls._color_from_principled(node)
+            for node in nodes:
+                if node.type in ("BSDF_DIFFUSE", "DIFFUSE_BSDF"):
+                    return cls._resolve_color_socket(node.inputs["Color"]), 0.0
+            for node in nodes:
+                if node.type == "BSDF_GLASS":
+                    return cls._resolve_color_socket(node.inputs["Color"]), 0.0
+        color = tuple(material.diffuse_color[:3])
+        transparency = 1.0 - material.diffuse_color[3]
+        return color, transparency
+
+    @classmethod
+    def _collect_upstream_sources(cls, socket: bpy.types.NodeSocket, seen: set[str]) -> list[tuple[str, object]]:
+        """Recursively collect all upstream colour/image sources reachable from *socket*."""
+        results = []
+        for link in socket.links:
+            node = link.from_node
+            if node.name in seen:
+                continue
+            seen.add(node.name)
+            if node.type == "TEX_IMAGE":
+                results.append(("IMAGE", node.image))
+            elif node.type == "VALTORGB":
+                results.append(("COLORRAMP", node))
+            else:
+                for inp in node.inputs:
+                    if inp.is_linked:
+                        results.extend(cls._collect_upstream_sources(inp, seen))
+        return results
+
+    @classmethod
+    def _upstream_color_source(
+        cls, socket: bpy.types.NodeSocket, seen: set[str] | None = None
+    ) -> tuple[str, object] | None:
+        sources = cls._collect_upstream_sources(socket, set() if seen is None else seen)
+        # Prefer a concrete image texture over a colour ramp (which may be greyscale/procedural).
+        for s in sources:
+            if s[0] == "IMAGE":
+                return s
+        for s in sources:
+            if s[0] == "COLORRAMP":
+                return s
+        return None
+
+    @classmethod
+    def _resolve_color_socket(cls, socket: bpy.types.NodeSocket) -> tuple[float, float, float]:
+        source = cls._upstream_color_source(socket)
+        if source is None:
+            return tuple(socket.default_value[:3])
+        kind, obj = source
+        if kind == "IMAGE":
+            return cls._average_image_color(obj)
+        if kind == "COLORRAMP":
+            return cls._average_colorramp_color(obj)
+        return tuple(socket.default_value[:3])
+
+    @staticmethod
+    def _average_image_color(image: bpy.types.Image) -> tuple[float, float, float]:
+        pixels = image.pixels[:]
+        n = len(pixels) // 4
+        if n == 0:
+            return (0.5, 0.5, 0.5)
+        step = max(1, n // 4096)
+        r_sum = g_sum = b_sum = 0.0
+        count = 0
+        for i in range(0, n, step):
+            base = i * 4
+            r_sum += pixels[base]
+            g_sum += pixels[base + 1]
+            b_sum += pixels[base + 2]
+            count += 1
+        return (r_sum / count, g_sum / count, b_sum / count)
+
+    @staticmethod
+    def _average_colorramp_color(node: bpy.types.Node) -> tuple[float, float, float]:
+        elements = node.color_ramp.elements
+        if not elements:
+            return (0.5, 0.5, 0.5)
+        r = sum(e.color[0] for e in elements) / len(elements)
+        g = sum(e.color[1] for e in elements) / len(elements)
+        b = sum(e.color[2] for e in elements) / len(elements)
+        return (r, g, b)
+
+    @classmethod
     def is_editing_styles(cls) -> bool:
         props = cls.get_style_props()
         return props.is_editing
@@ -670,8 +815,178 @@ class Style(bonsai.core.tool.Style):
         props.active_style_type = props.active_style_type
 
     @classmethod
+    def get_branch_outputs(
+        cls, material: bpy.types.Material
+    ) -> tuple[bpy.types.ShaderNode | None, bpy.types.ShaderNode | None]:
+        """Return (external_output_node, flat_output_node), or (None, None) if not dual-branch."""
+        if not material.node_tree:
+            return None, None
+        ext = material.node_tree.nodes.get("BIM_Output_External")
+        fast = material.node_tree.nodes.get("BIM_Output_Flat")
+        return ext, fast
+
+    @classmethod
+    def _remove_external_branch(cls, material: bpy.types.Material) -> None:
+        """Remove all nodes reachable from BIM_Output_External (walks links backwards)."""
+        if not material.node_tree:
+            return
+        nodes = material.node_tree.nodes
+        output = nodes.get("BIM_Output_External")
+        if not output:
+            return
+        to_remove: set[str] = set()
+        stack = [output]
+        while stack:
+            node = stack.pop()
+            if node.name in to_remove:
+                continue
+            to_remove.add(node.name)
+            for inp in node.inputs:
+                for link in inp.links:
+                    stack.append(link.from_node)
+        for name in list(to_remove):
+            n = nodes.get(name)
+            if n:
+                nodes.remove(n)
+
+    @classmethod
+    def _build_flat_branch_nodes(cls, material: bpy.types.Material) -> bpy.types.ShaderNode:
+        """Add a Principled BSDF flat-branch to material's existing node tree.
+
+        Reads IfcSurfaceStyleRendering or IfcSurfaceStyleShading from the linked IFC entity.
+        Defaults to a white BSDF when no IFC shading data is available.
+        Returns the new Material Output node (named BIM_Output_Flat, is_active_output=False).
+        """
+        from mathutils import Vector
+
+        style_elements = cls.get_style_elements(material)
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+
+        bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+        bsdf.location = Vector((10, -600))
+        output = nodes.new("ShaderNodeOutputMaterial")
+        output.name = "BIM_Output_Flat"
+        output.location = Vector((300, -600))
+        output.is_active_output = False
+        links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
+
+        rendering_style = None
+        shading_only = None
+        for surface_style in style_elements.values():
+            if surface_style.is_a() == "IfcSurfaceStyleShading":
+                shading_only = surface_style
+            elif surface_style.is_a("IfcSurfaceStyleRendering"):
+                rendering_style = surface_style
+                shading_only = None
+
+        if rendering_style:
+            d = tool.Loader.surface_style_to_dict(rendering_style)
+            if d.get("DiffuseColour"):
+                ctype, cval = d["DiffuseColour"]
+                if ctype == "IfcColourRgb":
+                    bsdf.inputs["Base Color"].default_value = cval + (1,)
+                    solid_color = cval
+                else:
+                    cval = tuple(v * cval for v in d["SurfaceColour"])
+                    bsdf.inputs["Base Color"].default_value = cval + (1,)
+                    solid_color = cval
+            else:
+                r, g, b = d["SurfaceColour"]
+                bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
+                solid_color = (r, g, b)
+            if d.get("SpecularColour"):
+                ctype, cval = d["SpecularColour"]
+                if ctype == "IfcNormalisedRatioMeasure":
+                    bsdf.inputs["Metallic"].default_value = cval
+            if d.get("SpecularHighlight"):
+                bsdf.inputs["Roughness"].default_value = d["SpecularHighlight"]
+            transparency = d.get("Transparency") or 0.0
+            bsdf.inputs["Alpha"].default_value = 1 - transparency
+            if transparency > 0:
+                material.blend_method = "BLEND"
+            material.diffuse_color = solid_color + (1.0 - transparency,)
+        elif shading_only:
+            d = tool.Loader.surface_style_to_dict(shading_only)
+            r, g, b = d["SurfaceColour"]
+            alpha = 1 - (d.get("Transparency") or 0.0)
+            bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
+            bsdf.inputs["Alpha"].default_value = alpha
+            if alpha < 1.0:
+                material.blend_method = "BLEND"
+            material.diffuse_color = (r, g, b, alpha)
+        # else: leave default white Principled BSDF
+        return output
+
+    @classmethod
+    def setup_dual_branch(cls, material: bpy.types.Material, ext_material: bpy.types.Material) -> bool:
+        """Build a dual-branch node tree: flat branch from IFC data + external branch from ext_material.
+
+        Clears any existing nodes and builds both branches from scratch.
+        External branch output (BIM_Output_External) is set active — Pretty mode.
+        Flat branch output (BIM_Output_Flat) is inactive — Flat mode.
+        Returns True on success; False if no shader editor is available (falls back to single-branch).
+        """
+        cls.set_use_nodes(material, True)
+        for n in material.node_tree.nodes[:]:
+            material.node_tree.nodes.remove(n)
+
+        cls._build_flat_branch_nodes(material)
+
+        ext_output = tool.Blender.copy_node_graph_additive(material, ext_material)
+        if not ext_output:
+            # No shader editor available: fall back to single-branch
+            tool.Blender.copy_node_graph(material, ext_material)
+            return False
+
+        ext_output.name = "BIM_Output_External"
+        ext_output.is_active_output = True
+        material["bim_dual_branch"] = True
+        return True
+
+    @classmethod
+    def update_external_branch(cls, material: bpy.types.Material, ext_material: bpy.types.Material) -> None:
+        """Replace the external-branch nodes of an already dual-branch material."""
+        cls._remove_external_branch(material)
+        ext_output = tool.Blender.copy_node_graph_additive(material, ext_material)
+        if ext_output:
+            ext_output.name = "BIM_Output_External"
+            ext_output.is_active_output = True
+            fast = material.node_tree.nodes.get("BIM_Output_Flat")
+            if fast:
+                fast.is_active_output = False
+
+    @classmethod
+    def sync_flat_branch_shading(
+        cls, material: bpy.types.Material, surface_colour: tuple[float, float, float], transparency: float
+    ) -> None:
+        """Update the flat-branch Principled BSDF with new shading values.
+
+        Call this after creating or editing IfcSurfaceStyleShading so the flat branch
+        stays in sync without requiring a full setup_dual_branch rebuild.
+        """
+        if not material.node_tree:
+            return
+        fast_output = material.node_tree.nodes.get("BIM_Output_Flat")
+        if not fast_output:
+            return
+        for link in fast_output.inputs["Surface"].links:
+            if link.from_node.type == "BSDF_PRINCIPLED":
+                bsdf = link.from_node
+                r, g, b = surface_colour
+                bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
+                bsdf.inputs["Alpha"].default_value = 1.0 - transparency
+                break
+
+    @classmethod
     def switch_shading(cls, blender_material: bpy.types.Material, style_type: StyleType) -> None:
         if style_type == "External":
+            ext, fast = cls.get_branch_outputs(blender_material)
+            if ext and fast:
+                ext.is_active_output = True
+                fast.is_active_output = False
+                blender_material.update_tag()
+                return
             try:
                 bpy.ops.bim.activate_external_style(material_name=blender_material.name)
             except RuntimeError as error:
@@ -679,21 +994,41 @@ class Style(bonsai.core.tool.Style):
                     return
                 raise error
         elif style_type == "Shading":
+            ext, fast = cls.get_branch_outputs(blender_material)
+            if ext and fast:
+                fast.is_active_output = True
+                ext.is_active_output = False
+                blender_material.update_tag()
+                return
             style_elements = tool.Style.get_style_elements(blender_material)
             rendering_style = None
             texture_style = None
+            shading_only_style = None
 
             for surface_style in style_elements.values():
                 if surface_style.is_a() == "IfcSurfaceStyleShading":
+                    shading_only_style = surface_style
                     tool.Loader.create_surface_style_shading(blender_material, surface_style)
                 elif surface_style.is_a("IfcSurfaceStyleRendering"):
                     rendering_style = surface_style
+                    shading_only_style = None  # rendering overrides shading-only path
                     tool.Loader.create_surface_style_rendering(blender_material, surface_style)
                 elif surface_style.is_a("IfcSurfaceStyleWithTextures"):
                     texture_style = surface_style
 
             if rendering_style and texture_style:
                 tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
+            elif shading_only_style and not rendering_style:
+                # create a minimal Principled BSDF so Material Preview/Rendered shows the colour instead of white.
+                tool.Style.set_use_nodes(blender_material, True)
+                tool.Loader.restart_material_node_tree(blender_material)
+                bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+                if bsdf:
+                    r, g, b, a = blender_material.diffuse_color
+                    bsdf.inputs["Base Color"].default_value = (r, g, b, 1)
+                    bsdf.inputs["Alpha"].default_value = a
+                    if a < 1.0:
+                        blender_material.blend_method = "BLEND"
         else:
             assert False, f"Invalid style type found: {style_type}"
 
@@ -739,3 +1074,36 @@ class Style(bonsai.core.tool.Style):
         elements = ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style)
         objects = [tool.Ifc.get_object(e) for e in elements]
         tool.Geometry.reload_representation(objects)
+
+    _last_shading_type: str | None = None
+
+    @classmethod
+    def restore_material_style_types(cls, shading_type: str) -> None:
+        """Set each IFC material's active_style_type to the richest available for the given viewport mode.
+
+        In SOLID mode all materials use "Shading".
+        In MATERIAL_PREVIEW / RENDERED, materials with an external .blend style use "External"
+        unless prefer_ifc_shading is set on that material.
+        """
+        if cls._last_shading_type == shading_type:
+            return
+        cls._last_shading_type = shading_type
+
+        for material in bpy.data.materials:
+            if not tool.Blender.get_ifc_definition_id(material):
+                continue
+            props = cls.get_material_style_props(material)
+            style_elements = cls.get_style_elements(material)
+            if shading_type == "SOLID":
+                props.active_style_type = "Shading"
+                shading = style_elements.get("IfcSurfaceStyleRendering") or style_elements.get("IfcSurfaceStyleShading")
+                if shading:
+                    d = tool.Loader.surface_style_to_dict(shading)
+                    alpha = 1.0 - (d.get("Transparency") or 0.0)
+                    material.diffuse_color = d["SurfaceColour"] + (alpha,)
+            else:  # MATERIAL_PREVIEW or RENDERED
+                if cls.has_blender_external_style(style_elements) and not props.prefer_ifc_shading:
+                    props.active_style_type = "External"
+                else:
+                    props.active_style_type = "Shading"
+            material.update_tag()

@@ -447,7 +447,7 @@ public:
 };
 
 #ifdef WITH_IFCXML
-IFC_PARSE_API IfcFile* parse_ifcxml(const std::string& filename, Logger& logger = Logger::Root());
+IFC_PARSE_API IfcFile* parse_ifcxml(const std::string& filename, Logger* logger = nullptr);
 #endif
 
 namespace impl {

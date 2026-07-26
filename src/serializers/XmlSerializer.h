@@ -16,7 +16,7 @@ protected:
 	std::string xml_filename;
 
 public:
-	XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename, Logger& logger = Logger::Root());
+	XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename, Logger* logger = nullptr);
 
 	virtual ~XmlSerializer() {}
 

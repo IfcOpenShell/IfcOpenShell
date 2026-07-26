@@ -142,6 +142,13 @@ class IFC_PARSE_API Logger {
     const std::vector<log_message>& log_messages() const { return log_messages_; }
 };
 
+// SWIG couldn't represent `Logger::Root()` default value using Python,
+// so when translating signature it represents it just as `fn(*args)`, losing information about args.
+// Using `Logger * = nullptr` instead of `&Logger = Logger::Root` helps,
+// since `nullptr` is convertable Python's `None`.
+// `logger_or_root` is just covering the boilerplate for this pattern.
+inline Logger& logger_or_root(Logger* logger) { return logger ? *logger : Logger::Root(); }
+
 #define PERF(x)                                                      \
                                                                      \
     Logger::Root().Message(Logger::LOG_PERF, "SYS", 1, x);            \

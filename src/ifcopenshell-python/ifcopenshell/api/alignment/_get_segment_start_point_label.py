@@ -308,5 +308,7 @@ def _get_segment_start_point_label(prev_segment: entity_instance, segment: entit
             label = _cant_callback(prev_segment, segment)
         else:
             label = _cant_label(prev_segment, segment)
+    else:
+        assert False, s.DesignParameters
 
     return label

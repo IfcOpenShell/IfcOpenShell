@@ -508,6 +508,7 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         converter.run()
 
         profile = tool.Ifc.get().createIfcArbitraryClosedProfileDef("AREA")
+        curve = None
         for path in converter.paths:
             points = []
             lines = path[0]
@@ -517,6 +518,7 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
                 points.append(tool.Ifc.get().createIfcCartesianPoint(local_point))
             points.append(points[0])
             curve = tool.Ifc.get().createIfcPolyline(points)
+        assert curve
         profile.OuterCurve = curve
 
         old_profile = extrusion.SweptArea

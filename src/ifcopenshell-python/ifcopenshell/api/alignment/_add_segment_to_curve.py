@@ -159,8 +159,10 @@ def _add_segment_to_curve(
     else:
         assert False
 
+    end_point = ...
     for mapped_segment in mapped_segments:
         if mapped_segment:
             end_point = _add_curve_segment_to_composite_curve(file, layout_segment, mapped_segment, curve)
 
+    assert end_point is not ...
     return end_point

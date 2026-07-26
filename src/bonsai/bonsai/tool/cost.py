@@ -280,6 +280,8 @@ class Cost(bonsai.core.tool.Cost):
                     new = props.cost_item_processes.add()
                 elif related_object.is_a("IfcResource"):
                     new = props.cost_item_resources.add()
+                else:
+                    assert False, related_object
                 new.ifc_definition_id = related_object.id()
                 new.name = related_object.Name or "Unnamed"
 

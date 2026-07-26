@@ -12,7 +12,7 @@ jobs:
       MIN_BLENDER_PY_VERSION: "3.11"
     steps:
       - name: Action - checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Action - install python
         uses: actions/setup-python@v6
@@ -55,11 +55,17 @@ jobs:
           black --diff --check . | black-codeclimate | python .github/workflows/black_to_github_annotations.py
         continue-on-error: true
 
-      - name: ty check
-        id: ty
-        run: |
-          poe ty-venv
-          poe ty
+      - name: ty check (venv setup)
+        run: poe ty-venv
+
+      - name: ty check (bonsai)
+        id: ty-bonsai
+        run: poe ty-bonsai
+        continue-on-error: true
+
+      - name: ty check (ios)
+        id: ty-ios
+        run: poe ty-ios
         continue-on-error: true
 
       - name: Ruff check
@@ -109,7 +115,10 @@ jobs:
           if [ "${{ steps.ruff.outcome }}" != "success" ]; then
             echo "::error::Ruff check failed, see Summary or 'ruff' step for the details." && ERROR=1
           fi
-          if [ "${{ steps.ty.outcome }}" != "success" ]; then
-            echo "::error::ty check failed, see 'ty check' step for the details." && ERROR=1
+          if [ "${{ steps.ty-bonsai.outcome }}" != "success" ]; then
+            echo "::error::ty check (bonsai) failed, see 'ty check (bonsai)' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.ty-ios.outcome }}" != "success" ]; then
+            echo "::error::ty check (ios) failed, see 'ty check (ios)' step for the details." && ERROR=1
           fi
           exit $ERROR

@@ -564,6 +564,7 @@ class SelectAllArrayObjects(bpy.types.Operator):
                     except RuntimeError:
                         self.report({"ERROR"}, f"Objects that don't have an array parent, were deselected.")
                         object.select_set(False)
+                        continue
 
                     array_objects = tool.Array.get_all_objects(parent_element)
                     tool.Blender.set_objects_selection(

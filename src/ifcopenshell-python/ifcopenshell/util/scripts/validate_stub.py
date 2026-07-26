@@ -89,7 +89,7 @@ def get_function_node_name(node: ast.FunctionDef) -> Union[SubnameType, None]:
     return node_name
 
 
-def get_names_tree_lines(tree: ast.Module) -> list[str]:
+def get_names_tree(tree: ast.Module) -> dict[str, set[SubnameType]]:
     # Get class tree.
     names_tree: dict[str, set[SubnameType]] = {}
     for node in tree.body:
@@ -211,6 +211,12 @@ def get_names_tree_lines(tree: ast.Module) -> list[str]:
 
         if node_name is not None:
             names_tree[node_name] = subnames
+
+    return names_tree
+
+
+def get_names_tree_lines(tree: ast.Module) -> list[str]:
+    names_tree = get_names_tree(tree)
 
     # Convert names tree to lines.
     lines: list[str] = []
