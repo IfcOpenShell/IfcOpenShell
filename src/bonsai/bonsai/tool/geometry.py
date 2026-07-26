@@ -2742,13 +2742,18 @@ class Geometry(bonsai.core.tool.Geometry):
         """Recalculate new IfcWall duplicates that just received an
         ``IfcRelConnectsPathElements``. The in-loop ``regenerate_wall`` runs
         before ``recreate_connections``, so wall body geometry doesn't reflect
-        the junction until this second pass."""
+        the junction until this second pass. Walls backed by type
+        representation maps are authored, not layer-set generated, so they are
+        excluded here for the same reason they skip ``regenerate_wall``."""
         walls_to_recalc: list[bpy.types.Object] = []
         for new_list in old_to_new.values():
             for new_entity in new_list:
                 if not new_entity.is_a("IfcWall"):
                     continue
                 if not (getattr(new_entity, "ConnectedTo", None) or getattr(new_entity, "ConnectedFrom", None)):
+                    continue
+                wall_type = tool.Root.get_element_type(new_entity)
+                if wall_type and tool.Root.does_type_have_representations(wall_type):
                     continue
                 new_obj = tool.Ifc.get_object(new_entity)
                 if new_obj is not None:
