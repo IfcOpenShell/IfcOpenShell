@@ -60,6 +60,38 @@ class TestCopyRepresentation(NewFile):
         subject.copy_representation(source, dest)
         assert dest.RepresentationMaps[0].is_a("IfcRepresentationMap")
 
+    def test_copying_a_type_product_does_not_share_its_representation_maps(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation_map = ifc.createIfcRepresentationMap()
+        source = ifc.createIfcWallType(RepresentationMaps=[representation_map])
+        dest = ifc.createIfcWallType()
+        subject.copy_representation(source, dest)
+        assert dest.RepresentationMaps[0] != representation_map
+
+    def test_copying_a_product_shares_the_representation_map_it_maps(self):
+        # The map is owned by the type, not by the occurrence. Copying it forks the
+        # type's geometry and leaves the copy pointing at an orphan (issue #7996).
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation_map = ifc.createIfcRepresentationMap()
+        item = ifc.createIfcMappedItem(
+            representation_map, ifc.createIfcCartesianTransformationOperator3DnonUniform(Scale=200.0)
+        )
+        source = ifc.createIfcWall(
+            Representation=ifc.createIfcProductDefinitionShape(
+                Representations=[ifc.createIfcShapeRepresentation(Items=[item])]
+            )
+        )
+        dest = ifc.createIfcWall()
+        subject.copy_representation(source, dest)
+        new_item = dest.Representation.Representations[0].Items[0]
+        assert new_item != item
+        assert new_item.MappingSource == representation_map
+        assert new_item.MappingTarget != item.MappingTarget
+        assert new_item.MappingTarget.Scale == 200.0
+        assert len(ifc.by_type("IfcRepresentationMap")) == 1
+
 
 class TestDoesTypeHaveRepresentations(NewFile):
     def test_run(self):
@@ -68,6 +100,83 @@ class TestDoesTypeHaveRepresentations(NewFile):
         assert subject.does_type_have_representations(element) is False
         element.RepresentationMaps = [ifc.createIfcRepresentationMap()]
         assert subject.does_type_have_representations(element) is True
+
+
+class TestMappedRepresentations(NewFile):
+    def create_occurrence(self, ifc, mapping_target):
+        item = ifc.createIfcMappedItem(ifc.createIfcRepresentationMap(), mapping_target)
+        return ifc.createIfcWall(
+            Representation=ifc.createIfcProductDefinitionShape(
+                Representations=[ifc.createIfcShapeRepresentation(Items=[item])]
+            )
+        )
+
+    def identity_target(self, ifc):
+        return ifc.createIfcCartesianTransformationOperator3D(LocalOrigin=ifc.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+
+    def test_an_element_without_a_representation_maps_nothing(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcWall()
+        assert subject.has_mapped_representation(element) is False
+        assert subject.has_transformed_mapped_representation(element) is False
+
+    def test_authored_geometry_is_not_mapped(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcWall(
+            Representation=ifc.createIfcProductDefinitionShape(
+                Representations=[ifc.createIfcShapeRepresentation(Items=[ifc.createIfcFacetedBrep()])]
+            )
+        )
+        assert subject.has_mapped_representation(element) is False
+        assert subject.has_transformed_mapped_representation(element) is False
+
+    def test_an_identity_instance_of_a_type_is_not_transformed(self):
+        ifc = ifcopenshell.file()
+        element = self.create_occurrence(ifc, self.identity_target(ifc))
+        assert subject.has_mapped_representation(element) is True
+        assert subject.has_transformed_mapped_representation(element) is False
+
+    def test_a_non_uniformly_scaled_instance_is_transformed(self):
+        # The AutoCAD Architecture pattern from issue #7996: one unit-sized shape
+        # on the type, scaled to length per occurrence.
+        ifc = ifcopenshell.file()
+        target = ifc.createIfcCartesianTransformationOperator3DnonUniform(
+            LocalOrigin=ifc.createIfcCartesianPoint((0.0, 0.0, 0.0)), Scale=200.0, Scale2=1.0, Scale3=1.0
+        )
+        element = self.create_occurrence(ifc, target)
+        assert subject.has_transformed_mapped_representation(element) is True
+
+    def test_a_uniformly_scaled_instance_is_transformed(self):
+        ifc = ifcopenshell.file()
+        target = self.identity_target(ifc)
+        target.Scale = 2.0
+        element = self.create_occurrence(ifc, target)
+        assert subject.has_transformed_mapped_representation(element) is True
+
+    def test_an_offset_instance_is_transformed(self):
+        ifc = ifcopenshell.file()
+        target = self.identity_target(ifc)
+        target.LocalOrigin = ifc.createIfcCartesianPoint((1.0, 0.0, 0.0))
+        element = self.create_occurrence(ifc, target)
+        assert subject.has_transformed_mapped_representation(element) is True
+
+    def test_a_rotated_instance_is_transformed(self):
+        ifc = ifcopenshell.file()
+        target = self.identity_target(ifc)
+        target.Axis1 = ifc.createIfcDirection((0.0, 1.0, 0.0))
+        target.Axis2 = ifc.createIfcDirection((-1.0, 0.0, 0.0))
+        element = self.create_occurrence(ifc, target)
+        assert subject.has_transformed_mapped_representation(element) is True
+
+    def test_explicit_identity_axes_are_not_a_transform(self):
+        ifc = ifcopenshell.file()
+        target = self.identity_target(ifc)
+        target.Axis1 = ifc.createIfcDirection((1.0, 0.0, 0.0))
+        target.Axis2 = ifc.createIfcDirection((0.0, 1.0, 0.0))
+        target.Axis3 = ifc.createIfcDirection((0.0, 0.0, 1.0))
+        target.Scale = 1.0
+        element = self.create_occurrence(ifc, target)
+        assert subject.has_transformed_mapped_representation(element) is False
 
 
 class TestGetDecompositionRelationships(NewFile):
