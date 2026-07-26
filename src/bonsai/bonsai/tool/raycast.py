@@ -864,8 +864,11 @@ class Raycast(bonsai.core.tool.Raycast):
 
         if not xray_mode and objs_to_raycast:
             # Non-xray - only the closest solid object's Face snap is kept by
-            # the caller (detect_snapping_points).  Process solids in distance
-            # order and stop at the first hit to minimise raycasts.
+            # the caller (detect_snapping_points).  Ray cast every solid under
+            # the cursor and keep the one with the nearest actual hit. Sorting by
+            # object origin and stopping at the first hit was cheaper but picked
+            # the wrong object when solids overlap, so a covering coincident with
+            # a wall/slab (whose origin may sort closer) never got snapped.
             wireframe_objs = []
             solid_objs = []
             for snap_obj in objs_to_raycast:
@@ -875,9 +878,6 @@ class Raycast(bonsai.core.tool.Raycast):
                     wireframe_objs.append(snap_obj)
                 else:
                     solid_objs.append(snap_obj)
-
-            # Rough distance - object origin to ray origin
-            solid_objs.sort(key=lambda so: (so.obj.matrix_world.translation - ray_origin).length_squared)
 
             # Process wireframe objects first (all of them, always collected)
             for snap_obj in wireframe_objs:
@@ -890,7 +890,7 @@ class Raycast(bonsai.core.tool.Raycast):
                         closest_hit = hit
                         closest_face_index = None
 
-            # Process solid objects in distance order, stop at first hit
+            # Ray cast every solid and keep the nearest actual hit
             for snap_obj in solid_objs:
                 hit_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, snap_obj.obj)
 
@@ -911,8 +911,6 @@ class Raycast(bonsai.core.tool.Raycast):
                         closest_obj = hit_obj
                         closest_hit = hit
                         closest_face_index = face_index
-
-                    break
 
         else:
             # Xray mode - process all objects (all snaps are kept by the caller)
