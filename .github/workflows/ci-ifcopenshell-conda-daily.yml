@@ -21,7 +21,7 @@ jobs:
       date: ${{ steps.date.outputs.date }}
       verdate: ${{ steps.verdate.outputs.verdate }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set env
         run: echo ok go
       
@@ -75,7 +75,7 @@ jobs:
             echo "ARTIFACTS_DIR=/home/runner/work/artifacts" >> $GITHUB_ENV
           fi
       
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 

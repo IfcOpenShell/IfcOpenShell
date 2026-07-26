@@ -116,6 +116,8 @@ def add_feature(
             return ifcopenshell.api.aggregate.assign_object(file, [feature], element)
         rels = feature.AdheresToElement
         ifc_class = "IfcRelAdheresToElement"
+    else:
+        assert False, feature
 
     if rels:
         if rels[0][4] == element:

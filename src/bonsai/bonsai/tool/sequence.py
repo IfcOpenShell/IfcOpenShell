@@ -23,7 +23,7 @@ import re
 from collections.abc import Iterable
 from datetime import datetime
 from datetime import time as datetime_time
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never
 
 import bpy
 import ifcopenshell
@@ -1127,7 +1127,8 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def load_default_animation_color_scheme(cls):
-        groups = {
+        GroupType = Literal["CREATION", "OPERATION", "MOVEMENT_TO", "DESTRUCTION", "MOVEMENT_FROM", "USERDEFINED"]
+        groups: dict[GroupType, dict[str, Any]] = {
             "CREATION": {
                 "PredefinedType": ["CONSTRUCTION", "INSTALLATION"],
                 "Color": (0.0, 1.0, 0.0),
@@ -1158,15 +1159,17 @@ class Sequence(bonsai.core.tool.Sequence):
         props.task_input_colors.clear()
         for group, data in groups.items():
             for predefined_type in data["PredefinedType"]:
-                if group in ["CREATION", "OPERATION", "MOVEMENT_TO"]:
+                if group in ("CREATION", "OPERATION", "MOVEMENT_TO"):
                     predefined_type_item = props.task_output_colors.add()
-                elif group in ["MOVEMENT_FROM"]:
+                elif group in ("MOVEMENT_FROM",):
                     predefined_type_item = props.task_input_colors.add()
-                elif group in ["USERDEFINED", "DESTRUCTION"]:
+                elif group in ("USERDEFINED", "DESTRUCTION"):
                     predefined_type_item = props.task_input_colors.add()
                     predefined_type_item2 = props.task_output_colors.add()
                     predefined_type_item2.name = predefined_type
                     predefined_type_item2.color = data["Color"]
+                else:
+                    assert_never(group)
                 # TO DO: consider cases where users confuses inputs and outputs
                 predefined_type_item.name = predefined_type
                 predefined_type_item.color = data["Color"]

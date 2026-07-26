@@ -220,10 +220,12 @@ class Misc(bonsai.core.tool.Misc):
                         related_objects.append((element, ifcopenshell.util.placement.get_storey_elevation(element)))
         related_objects = sorted(related_objects, key=lambda e: e[1])
         storey_elevation = None
+        i = None
         for i, related_object in enumerate(related_objects):
             if related_object[0] == storey:
                 storey_elevation = related_object[1]
                 break
+        assert i is not None
         if i + total_storeys < len(related_objects):
             next_storey_elevation = related_objects[i + total_storeys][1]
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())

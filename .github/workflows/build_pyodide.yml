@@ -9,13 +9,13 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           path: IfcOpenShell
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: IfcOpenShell/build-outputs
           path: ifcopenshell_build

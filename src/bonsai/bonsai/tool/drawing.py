@@ -757,6 +757,17 @@ class Drawing(bonsai.core.tool.Drawing):
                 return rel.RelatingGroup
 
     @classmethod
+    def get_group_drawing(cls, group: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the drawing that owns this group, if the group represents a drawing."""
+        if group.ObjectType != "DRAWING":
+            return None
+        for rel in group.IsGroupedBy or []:
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcAnnotation") and related_object.ObjectType == "DRAWING":
+                    return related_object
+        return None
+
+    @classmethod
     def get_drawing_document(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         for rel in drawing.HasAssociations:
             if rel.is_a("IfcRelAssociatesDocument"):
@@ -1072,6 +1083,12 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.has_annotation = True
         camera_props.target_view = "PLAN_VIEW"
         camera_props.is_nts = False
+        camera_props.use_edge_classification = False
+        camera_props.render_creases = True
+        camera_props.valley_angle_min_degrees = 12.0
+        camera_props.render_sharp = True
+        camera_props.ridge_angle_min_degrees = 45.0
+        camera_props.render_flush = False
         camera.shift_x = 0.0
         camera.shift_y = 0.0
 
@@ -1101,6 +1118,18 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.has_annotation = bool(pset["HasAnnotation"])
             if "IsNTS" in pset:
                 camera_props.is_nts = bool(pset["IsNTS"])
+            if "UseEdgeClassification" in pset:
+                camera_props.use_edge_classification = bool(pset["UseEdgeClassification"])
+            if "RenderCreases" in pset:
+                camera_props.render_creases = bool(pset["RenderCreases"])
+            if "ValleyAngleMinDegrees" in pset:
+                camera_props.valley_angle_min_degrees = float(pset["ValleyAngleMinDegrees"])
+            if "RenderSharp" in pset:
+                camera_props.render_sharp = bool(pset["RenderSharp"])
+            if "RidgeAngleMinDegrees" in pset:
+                camera_props.ridge_angle_min_degrees = float(pset["RidgeAngleMinDegrees"])
+            if "RenderFlush" in pset:
+                camera_props.render_flush = bool(pset["RenderFlush"])
             if "DPI" in pset:
                 camera_props.dpi = int(pset["DPI"])
             if "LineworkMode" in pset:
@@ -2575,16 +2604,15 @@ class Drawing(bonsai.core.tool.Drawing):
             if not obj:
                 continue
             current_representation = tool.Geometry.get_active_representation(obj)
+            current_representation_subcontext = None
             if current_representation:
                 subcontext = current_representation.ContextOfItems
                 current_representation_subcontext = tool.Geometry.get_subcontext_parameters(subcontext)
 
-            has_context = False
             for subcontext in subcontexts:
                 # prioritize already active representation if it matches the subcontext
                 # (element could have multiple representations in the same subcontext)
-                if current_representation and subcontext == current_representation_subcontext:
-                    has_context = True
+                if current_representation_subcontext and subcontext == current_representation_subcontext:
                     break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
@@ -2594,7 +2622,6 @@ class Drawing(bonsai.core.tool.Drawing):
                         obj=obj,
                         representation=priority_representation,
                     )
-                    has_context = True
                     break
 
         linked_handles: set[bpy.types.Object] = set()
@@ -2859,6 +2886,50 @@ class Drawing(bonsai.core.tool.Drawing):
                     sheet_references.append(reference)
                     break
         return sheet_references
+
+    @classmethod
+    def get_sheeted_drawing_ids(cls) -> set[int]:
+        """Get the IFC ids of all drawings that are placed on at least one sheet."""
+        ifc_file = tool.Ifc.get()
+        sheet_locations: set[Union[str, None]] = set()
+        for sheet in ifc_file.by_type("IfcDocumentInformation"):
+            if sheet.Scope != "SHEET":
+                continue
+            for reference in cls.get_document_references(sheet):
+                sheet_locations.add(reference.Location)
+        if not sheet_locations:
+            return set()
+        result: set[int] = set()
+        for drawing in ifc_file.by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            drawing_document = cls.get_drawing_document(drawing)
+            if drawing_document and drawing_document.Location in sheet_locations:
+                result.add(drawing.id())
+        return result
+
+    @classmethod
+    def get_visible_drawings_in_category(cls, target_view: str) -> list[DrawingProperties]:
+        """Get the drawing items in a target view category that are currently visible in the drawing list.
+
+        Grouping is positional: individual drawing items don't carry their own ``target_view``, they belong to
+        the most recent header item above them. Only expanded categories contribute drawing items to the
+        collection, so a collapsed category yields an empty list. Respects the ``show_drawings_on_sheets_only``
+        filter so that select-all only affects visible drawings.
+        """
+        props = cls.get_document_props()
+        drawings: list[DrawingProperties] = []
+        in_category = False
+        for item in props.drawings:
+            if not item.is_drawing:
+                # Header row: we're inside the requested category until the next header.
+                in_category = item.target_view == target_view
+            elif in_category:
+                drawings.append(item)
+        if props.show_drawings_on_sheets_only:
+            sheeted_ids = cls.get_sheeted_drawing_ids()
+            drawings = [d for d in drawings if d.ifc_definition_id in sheeted_ids]
+        return drawings
 
     @classmethod
     def get_camera_matrix(cls, camera: bpy.types.Object) -> Matrix:

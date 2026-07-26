@@ -74,10 +74,11 @@ def add_instance_ceiling_covering_from_cursor(
         if not relating_type.is_a("IfcCoveringType"):
             relating_type = None
 
+    ceiling_height = None
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
+        x, y, z, _, _ = spatial.get_x_y_z_h_mat_from_obj(active_obj)
     else:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
+        x, y, z, _, _ = spatial.get_x_y_z_h_mat_from_cursor()
         ceiling_height = covering.get_z_from_ceiling_height()
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
@@ -87,6 +88,7 @@ def add_instance_ceiling_covering_from_cursor(
 
     obj = spatial.create_object("Covering")
     spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
+    assert ceiling_height is not None
     spatial.translate_obj_to_z_location(obj, z + ceiling_height)
     spatial.assign_type_to_obj(obj)
     spatial.set_covering_representation_from_polygon(obj, space_polygon, polygon_is_si=True)
@@ -100,7 +102,9 @@ def regen_selected_covering_object(root: type[tool.Root], spatial: type[tool.Spa
     selected_objects = spatial.get_selected_objects()
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
+        x, y, _, _, _ = spatial.get_x_y_z_h_mat_from_obj(active_obj)
+    else:
+        assert False, "Object has to be active and selected."
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
