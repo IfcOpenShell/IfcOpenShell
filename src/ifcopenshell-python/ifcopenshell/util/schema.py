@@ -50,6 +50,21 @@ def get_fallback_schema(version: str) -> IFC_SCHEMA:
     return version
 
 
+def get_schema_identifier(schema: IFC_SCHEMA) -> str:
+    """Resolve a general schema name to the specific identifier used internally
+    (as in ``file.schema_identifier``).
+
+    E.g. ``IFC4X3`` -> ``IFC4X3_ADD2``.
+    """
+    return {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
+
+
+def get_schema_name_from_version(schema_version: tuple[int, ...]) -> str:
+    """Build a schema name from a version tuple, e.g. (4, 3, 0, 1) -> "IFC4X3_TC1"."""
+    prefixes = ("IFC", "X", "_ADD", "_TC")
+    return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+
+
 def get_declaration(element: ifcopenshell.entity_instance):
     """Get the schema declaration of an actively used entity instance
 
@@ -175,8 +190,8 @@ def geometry_classes_introduced_after(target_schema: IFC_SCHEMA, source_schema: 
     B-splines, advanced surfaces, alignment curves on IFC4X3 → 2X3, …) or
     purge. Defaults match the IFC4 → IFC2X3 case for backwards compatibility
     with the original caller."""
-    source = ifcopenshell_wrapper.schema_by_name(source_schema)
-    target = ifcopenshell_wrapper.schema_by_name(target_schema)
+    source = ifcopenshell.schema_by_name(source_schema)
+    target = ifcopenshell.schema_by_name(target_schema)
     target_names = {decl.name() for decl in target.entities()}
     result: set[str] = set()
     for decl in source.entities():
@@ -569,6 +584,7 @@ class Migrator:
         # NOTE: `attribute` is an attribute in new file schema
         # print("Migrating attribute", element, new_element, attribute.name())
         old_file = element.wrapped_data.file
+        value = ...
         if hasattr(element, attribute.name()):
             value = getattr(element, attribute.name())
             # print("Attribute names matched", value)
@@ -607,9 +623,7 @@ class Migrator:
             except:  # We tried our best
                 return
 
-        try:
-            value
-        except UnboundLocalError:
+        if value is ...:
             print(
                 f"Couldn't match attribute {attribute.name()} by name to migrate from {element} "
                 f"to {new_element} and there is no special mapping to handle migration "

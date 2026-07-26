@@ -82,7 +82,15 @@ import math
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, ClassVar, Literal, Optional, Protocol, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Literal,
+    Optional,
+    Protocol,
+    runtime_checkable,
+)
 
 import blf
 import bpy
@@ -104,6 +112,9 @@ from mathutils.kdtree import KDTree
 
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.shaders import ExtrusionGuidesShader
+
+if TYPE_CHECKING:
+    import bmesh
 
 SNAP_POINT_SIZE = 10.0
 SNAP_POINT_COLOR = (1.0, 0.5, 0.0, 1.0)
@@ -2035,7 +2046,9 @@ class TexturedQuadGizmoMixin(StaticTrisGizmoMixin):
 
     def setup(self) -> None:
         super().setup()
-        from bonsai.bim.module.drawing import gizmo_textures
+        from bonsai.bim.module.drawing import (
+            gizmo_textures,  # ty: ignore[unresolved-import]
+        )
 
         self._quad_batch = batch_for_shader(
             gizmo_textures.get_shader(),
@@ -2044,7 +2057,9 @@ class TexturedQuadGizmoMixin(StaticTrisGizmoMixin):
         )
 
     def draw(self, context: bpy.types.Context) -> None:
-        from bonsai.bim.module.drawing import gizmo_textures
+        from bonsai.bim.module.drawing import (
+            gizmo_textures,  # ty: ignore[unresolved-import]
+        )
 
         texture = gizmo_textures.get_icon_texture(self.icon_name)
         if texture is None:

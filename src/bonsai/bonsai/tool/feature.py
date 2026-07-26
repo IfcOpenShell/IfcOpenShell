@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING
 
 import bpy
 import ifcopenshell.api.feature
-import ifcopenshell.util.representation
 
 import bonsai.core.geometry
 import bonsai.core.tool
@@ -50,6 +49,7 @@ class Feature(bonsai.core.tool.Feature):
                 has_visible_openings = True
                 break
 
+        element_had_openings = None
         for feature_obj in feature_objs:
             feature_element = tool.Ifc.get_entity(feature_obj)
 
@@ -58,7 +58,6 @@ class Feature(bonsai.core.tool.Feature):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=featured_obj)
 
             element_had_openings = tool.Geometry.has_openings(featured_element)
-            body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body")
             ifcopenshell.api.feature.add_feature(tool.Ifc.get(), feature=feature_element, element=featured_element)
 
             if tool.Ifc.is_moved(feature_obj):
@@ -73,6 +72,7 @@ class Feature(bonsai.core.tool.Feature):
             if voided_obj.data:
                 if tool.Ifc.is_edited(voided_obj):
                     voided_element_ = tool.Ifc.get_entity(voided_obj)
+                    assert element_had_openings is not None
                     if element_had_openings or (voided_element_ != featured_element and voided_element_.HasOpenings):
                         voided_obj.scale = (1.0, 1.0, 1.0)
                         tool.Ifc.finish_edit(voided_obj)

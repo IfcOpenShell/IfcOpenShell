@@ -163,13 +163,51 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         if not self.is_assigning:
             return bpy.ops.bim.unassign_group(group=self.group)
+        ifc_file = tool.Ifc.get()
+        group = ifc_file.by_id(self.group)
         products = [
             element
             for o in tool.Blender.get_selected_objects(include_active=False)
             if (element := tool.Ifc.get_entity(o))
         ]
-        ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
+        relocated_annotations = self.unassign_from_previous_drawing(ifc_file, group, products)
+        ifcopenshell.api.group.assign_group(ifc_file, products=products, group=group)
+        self.relocate_annotations_to_drawing(relocated_annotations, group)
         self.report({"INFO"}, f"Assigned {len(products)} objects to group.")
+
+    def unassign_from_previous_drawing(self, ifc_file, group, products) -> list[ifcopenshell.entity_instance]:
+        """Assigning an annotation to a group that represents a drawing means the
+        annotation should belong to that drawing only, so it needs to leave
+        whichever drawing it was previously part of, instead of ending up
+        visible in both at once.
+        """
+        new_drawing = tool.Drawing.get_group_drawing(group)
+        if not new_drawing:
+            return []
+        relocated = []
+        for product in products:
+            if not product.is_a("IfcAnnotation") or product.ObjectType == "DRAWING":
+                continue
+            old_drawing = tool.Drawing.get_annotation_drawing(product)
+            if not old_drawing or old_drawing.id() == new_drawing.id():
+                continue
+            if old_group := tool.Drawing.get_drawing_group(old_drawing):
+                ifcopenshell.api.group.unassign_group(ifc_file, products=[product], group=old_group)
+            relocated.append(product)
+        return relocated
+
+    def relocate_annotations_to_drawing(self, products, group) -> None:
+        """Move the relocated annotations into the new drawing's collection and
+        depth, now that they have actually been assigned to its group.
+        """
+        if not products:
+            return
+        new_drawing = tool.Drawing.get_group_drawing(group)
+        new_camera = tool.Ifc.get_object(new_drawing) or tool.Drawing.import_drawing(new_drawing)
+        for product in products:
+            if obj := tool.Ifc.get_object(product):
+                tool.Drawing.ensure_annotation_in_drawing_plane(obj, camera=new_camera)
+                tool.Collector.assign(obj)
 
 
 class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):

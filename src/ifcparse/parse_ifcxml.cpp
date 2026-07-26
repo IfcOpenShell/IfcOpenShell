@@ -695,10 +695,10 @@ end:
     return;
 }
 
-IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filename, Logger& logger) {
+IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filename, Logger* logger) {
     throw std::runtime_error("IFC-XML import temporarily disabled");
 
-    ifcxml_parse_state state(logger);
+    ifcxml_parse_state state(logger_or_root(logger));
 
     xmlSAXHandler handler;
     memset(&handler, 0, sizeof(xmlSAXHandler));

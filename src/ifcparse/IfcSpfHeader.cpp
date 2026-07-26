@@ -35,7 +35,13 @@ namespace {
             parse_context pc;
             storage->tokens->Next();
             storage->load(-1, nullptr, pc, -1);
-            return pc.construct(boost::none, *storage->references_to_resolve, decl, decl->as_entity()->attribute_count(), -1, logger);
+            // references_to_resolve is unset while reading the header (header
+            // entities such as FILE_DESCRIPTION never reference other
+            // instances), so fall back to a throwaway list instead of
+            // dereferencing a null pointer.
+            unresolved_references no_references;
+            unresolved_references& references = storage->references_to_resolve ? *storage->references_to_resolve : no_references;
+            return pc.construct(boost::none, references, decl, decl->as_entity()->attribute_count(), -1, logger);
         } else {
             // std::unreachable();
             return IfcEntityInstanceData(in_memory_attribute_storage(10));

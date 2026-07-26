@@ -281,11 +281,11 @@ class BIM_PT_work_schedules(Panel):
     def draw_task_operators(self) -> None:
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        ifc_definition_id = None
+        task, ifc_definition_id = None, None
         if self.tprops.tasks and self.props.active_task_index < len(self.tprops.tasks):
             task = self.tprops.tasks[self.props.active_task_index]
             ifc_definition_id = task.ifc_definition_id
-        if ifc_definition_id:
+        if task and ifc_definition_id:
             if self.props.active_task_id:
                 if self.props.editing_task_type == "TASKTIME":
                     row.operator("bim.edit_task_time", text="", icon="CHECKMARK")
@@ -341,6 +341,8 @@ class BIM_PT_work_schedules(Panel):
             row.prop(self.props, "other_columns", text="")
             column_type, name = self.props.other_columns.split(".")
             data_type = "string"
+        else:
+            assert False, column_type
         row.operator("bim.set_task_sort_column", text="", icon="SORTALPHA").column = f"{column_type}.{name}"
         row.prop(
             self.props, "is_sort_reversed", text="", icon="SORT_DESC" if self.props.is_sort_reversed else "SORT_ASC"

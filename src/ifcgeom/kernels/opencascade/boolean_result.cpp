@@ -118,14 +118,14 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 			const double first_operand_volume = util::shape_volume(a);
 			if (first_operand_volume <= ALMOST_ZERO) {
-				Logger::Root().Message(Logger::LOG_WARNING, "GEO", 119, "Empty solid for:", c->instance);
+				logger_.Message(Logger::LOG_WARNING, "GEO", 119, "Empty solid for:", c->instance);
 			}
 		} else {
 
 			for (auto& r : cr) {
 				auto S = std::static_pointer_cast<OpenCascadeShape>(r.Shape())->shape();
 				if (S.IsNull()) {
-					Logger::Root().Error("GEO", 120, "Null operand");
+					logger_.Error("GEO", 120, "Null operand");
 					continue;
 				}
 				gp_GTrsf trsf;
@@ -140,7 +140,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 					// #2665 we also set a precision-independent threshold, because in the boolean op routine
 					// the working fuzziness might still be increased.
 					if (d < tol * 20. || d < 0.00002) {
-						Logger::Root().Message(Logger::LOG_WARNING, "GEO", 121, "Halfspace subtraction yields unchanged volume:", c->instance);
+						logger_.Message(Logger::LOG_WARNING, "GEO", 121, "Halfspace subtraction yields unchanged volume:", c->instance);
 						continue;
 					} else {
 						S = result;
@@ -159,6 +159,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	bst.attempt_2d = settings_.get<settings::BooleanAttempt2d>().get();
 	bst.debug = settings_.get<settings::DebugBooleanOperations>().get();
 	bst.precision = settings_.get<settings::Precision>().get();
+	bst.logger = &logger_;
 
 	TopoDS_Shape r;
 

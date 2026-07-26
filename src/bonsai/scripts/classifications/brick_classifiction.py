@@ -82,6 +82,7 @@ class Generator:
                 }
                 """.replace("{entity}", location.split("#")[-1]))
             # filter parents for the brick entity
+            parent = None
             for row in query:
                 parent = row.get("parent").toPython()
                 if "brickschema.org" in parent and parent in references.keys():

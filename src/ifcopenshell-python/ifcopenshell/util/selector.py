@@ -18,7 +18,7 @@
 
 import re
 from collections.abc import Iterable
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from types import EllipsisType
 from typing import Any, Optional, Union
 
@@ -36,12 +36,12 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.pset
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 
-filter_elements_grammar = lark.Lark(
-    """start: filter_group
-    filter_group: facet_list ("+" facet_list)*
+filter_elements_grammar = lark.Lark("""start: filter_group
+    filter_group: facet_list ("+" facet_list)* "+"?
     facet_list: facet ("," facet)*
 
     facet: instance | entity | attribute | type | material | query | classification | location | property | group | parent
@@ -109,13 +109,13 @@ filter_elements_grammar = lark.Lark(
     CR : /\\r/
     LF : /\\n/
     NEWLINE: (CR? LF)+
+    COMMENT: "/*" /.*?/s "*/"
 
     %ignore WS // Disregard spaces in text
-"""
-)
+    %ignore COMMENT // Allow /* ... */ block comments to toggle parts of a query
+""")
 
-get_element_grammar = lark.Lark(
-    """start: keys
+get_element_grammar = lark.Lark("""start: keys
 
     keys: key ("." key)*
     key: quoted_string | regex_string | unquoted_string
@@ -130,11 +130,9 @@ get_element_grammar = lark.Lark(
     WS: /[ \\t\\f\\r\\n]/+
 
     %ignore WS // Disregard spaces in text
- """
-)
+ """)
 
-format_grammar = lark.Lark(
-    """start: expression
+format_grammar = lark.Lark("""start: expression
 
     ?expression: add_sub
     ?add_sub: mul_div
@@ -193,8 +191,7 @@ format_grammar = lark.Lark(
     NEWLINE: (CR? LF)+
 
     %ignore WS // Disregard spaces in text
-"""
-)
+""")
 
 
 class FormatTransformer(lark.Transformer):
@@ -320,7 +317,13 @@ class FormatTransformer(lark.Transformer):
         return value in ("true", "1", "yes")
 
     def round(self, args):
-        value = Decimal(0.0 if args[0] == "None" else args[0] or 0.0)
+        try:
+            value = Decimal(0.0 if args[0] == "None" else args[0] or 0.0)
+        except InvalidOperation:
+            # The value is not numeric (e.g. a text property, or a value with
+            # a unit suffix like "12.5 m"). Rounding is meaningless here, so
+            # return it unchanged instead of crashing the whole expression.
+            return args[0]
         nearest = Decimal(args[1])
         result = round(value / nearest) * nearest
         if nearest % 1 == 0:
@@ -489,6 +492,13 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                     value = enh[("easting", "northing", "elevation").index(key)]
             else:
                 value = None
+        elif key in ("rotation_x", "rotation_y", "rotation_z") and hasattr(value, "ObjectPlacement"):
+            if getattr(value, "ObjectPlacement", None):
+                matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                euler = ifcopenshell.util.shape_builder.np_matrix_to_euler(matrix)
+                value = float(np.degrees(euler[("rotation_x", "rotation_y", "rotation_z").index(key)]))
+            else:
+                value = None
         elif isinstance(value, ifcopenshell.entity_instance):
             if key == "Name" and value.is_a("IfcMaterialLayerSet"):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
@@ -530,8 +540,15 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                 value = results or None
                 if value and len(value) == 1:
                     value = value[0]
+            elif key in value:
+                value = value[key]
             else:
-                value = value.get(key, None)
+                # A nested complex quantity/property (IfcPhysicalComplexQuantity /
+                # IfcComplexProperty) is represented as a dict whose nested members
+                # live under a "properties" sub-dict. Descend into it so that nested
+                # values are reachable with the natural "Qto.Complex.Nested" path.
+                subprops = value.get("properties")
+                value = subprops.get(key, None) if isinstance(subprops, dict) else None
         elif isinstance(value, (list, tuple, set)):  # If we use regex
             if isinstance(key, str) and key.isnumeric():
                 try:
@@ -697,9 +714,19 @@ def set_element_value(
             return
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
-        elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
+        elif key in (
+            "x",
+            "y",
+            "z",
+            "easting",
+            "northing",
+            "elevation",
+            "rotation_x",
+            "rotation_y",
+            "rotation_z",
+        ) and hasattr(element, "ObjectPlacement"):
             # TODO: add support
-            if key in ("easting", "northing", "elevation"):
+            if key in ("easting", "northing", "elevation", "rotation_x", "rotation_y", "rotation_z"):
                 return
 
             placement = element.ObjectPlacement
@@ -1222,7 +1249,13 @@ class FacetTransformer(lark.Transformer):
 
     def compare(self, element_value, comparison, value) -> bool:
         if isinstance(element_value, (list, tuple)):
-            return any(self.compare(ev, comparison, value) for ev in element_value)
+            # Match if any item does, negating the aggregate rather than each
+            # item, so that e.g. != means "no item equals" and stays the
+            # complement of = (#8129).
+            result = any(self.compare(ev, comparison.lstrip("!"), value) for ev in element_value)
+            if comparison.startswith("!"):
+                return not result
+            return result
         elif isinstance(value, str):
             try:
                 if isinstance(element_value, int):
@@ -1259,6 +1292,8 @@ class FacetTransformer(lark.Transformer):
             result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):
             result = element_value is value
+        else:
+            assert False, value
 
         if comparison.startswith("!"):
             return not result

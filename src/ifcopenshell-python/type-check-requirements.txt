@@ -3,6 +3,7 @@ cjio >=0.8, <0.10
 deepdiff
 docutils
 flask
+igraph
 isodate
 jinja2
 lark

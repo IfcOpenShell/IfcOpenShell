@@ -361,14 +361,50 @@ namespace ifcopenshell {
 
 			struct CircleSegments : public SettingBase<CircleSegments, int> {
 				static constexpr const char* const name = "circle-segments";
-				static constexpr const char* const description = "Number of segments to approximate full circles in CGAL kernel.";
-				static constexpr int defaultvalue = 16;
+				static constexpr const char* const description = "Number of segments to approximate full circles in the CGAL kernel. When 0 (the default) the segment count is derived from mesher-linear-deflection instead, so curves stay within the deflection tolerance regardless of radius.";
+				static constexpr int defaultvalue = 0;
 			};
 
 			struct CgalSmoothAngleDegrees : public SettingBase<CgalSmoothAngleDegrees, double> {
 				static constexpr const char* const name = "cgal-smooth-angle-degrees";
 				static constexpr const char* const description = "Angle in degrees under which adjacent facets will have averaged vertex normals in CGAL output. NB irrespective of original IFC geometry types. Defaults to -1 to disable smoothing.";
 				static constexpr double defaultvalue = -1.;
+			};
+
+			struct SvgRidgeAngleMinDegrees : public SettingBase<SvgRidgeAngleMinDegrees, double> {
+				static constexpr const char* const name = "svg-ridge-angle-min-degrees";
+				static constexpr const char* const description = "SVG edge classification (issue #3668): minimum convex dihedral deviation from flat, in degrees, for a projection edge to be classified as 'sharp' rather than 'flush'.";
+				static constexpr double defaultvalue = 45.;
+			};
+
+			struct SvgValleyAngleMinDegrees : public SettingBase<SvgValleyAngleMinDegrees, double> {
+				static constexpr const char* const name = "svg-valley-angle-min-degrees";
+				static constexpr const char* const description = "SVG edge classification (issue #3668): minimum concave dihedral deviation from flat, in degrees, for a projection edge to be classified as 'crease' rather than 'flush'.";
+				static constexpr double defaultvalue = 12.;
+			};
+
+			struct SvgEmitFlushEdges : public SettingBase<SvgEmitFlushEdges, bool> {
+				static constexpr const char* const name = "svg-emit-flush-edges";
+				static constexpr const char* const description = "SVG edge classification (issue #3668): whether to emit 'flush' projection edges (dihedral deviation below both ridge/valley thresholds). Defaults to false, i.e. flush edges are omitted from the output.";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct SvgUseEdgeClassification : public SettingBase<SvgUseEdgeClassification, bool> {
+				static constexpr const char* const name = "svg-use-edge-classification";
+				static constexpr const char* const description = "SVG edge classification (issue #3668): enable the 5-class boundary/outline/sharp/crease/flush scheme. When false (the default), falls back to the original unclassified linework.";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct SvgRenderCreaseEdges : public SettingBase<SvgRenderCreaseEdges, bool> {
+				static constexpr const char* const name = "svg-render-crease-edges";
+				static constexpr const char* const description = "SVG edge classification (issue #3668): whether to emit 'crease' (concave) projection edges. Only relevant when svg-use-edge-classification is enabled.";
+				static constexpr bool defaultvalue = true;
+			};
+
+			struct SvgRenderSharpEdges : public SettingBase<SvgRenderSharpEdges, bool> {
+				static constexpr const char* const name = "svg-render-sharp-edges";
+				static constexpr const char* const description = "SVG edge classification (issue #3668): whether to emit 'sharp' (convex) projection edges. Only relevant when svg-use-edge-classification is enabled.";
+				static constexpr bool defaultvalue = true;
 			};
 
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
@@ -653,7 +689,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }

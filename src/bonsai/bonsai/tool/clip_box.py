@@ -1270,6 +1270,17 @@ class ClipBox:
     def on_depsgraph_update_caps(cls, scene, depsgraph) -> None:
         """Depsgraph entry-point — guard, then delegate to the
         modal-aware debounce in :meth:`_handle_cap_tick`."""
+        # Same file-load danger window as on_depsgraph_update: a real
+        # depsgraph tick during load (between load_pre and the new file's
+        # first paint) must not re-arm a cap-rebuild timer. _on_load_pre
+        # already cancels any in-flight timer via _cancel_pending_cap_rebuild;
+        # without this gate, a depsgraph_update_post event firing later in
+        # the same load (Blender fires these while building the new file's
+        # scene) would immediately reschedule one via _handle_cap_tick,
+        # undoing that cancellation and re-arming against regions whose GPU
+        # state is not yet wired.
+        if cls._file_loading:
+            return
         if getattr(bpy.context, "screen", None) is None:
             return
         if cls._active_scene_props(scene) is None:

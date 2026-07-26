@@ -39,3 +39,25 @@ def ifcopenshell_open_test(str_: str, bool_: bool):
     assert_type(ifc_file, ifcopenshell.stream)
 
     ifc_file = ifcopenshell.open(str_, readonly=True)
+
+
+def get_inverse_test(ifc_file: ifcopenshell.file, inst: ifcopenshell.entity_instance, bool_: bool):
+    # Default: allow_duplicate=False, with_attribute_indices=False
+    result = ifc_file.get_inverse(inst)
+    assert_type(result, set[ifcopenshell.entity_instance])
+
+    # Explicit allow_duplicate=False
+    result = ifc_file.get_inverse(inst, allow_duplicate=False)
+    assert_type(result, set[ifcopenshell.entity_instance])
+
+    # allow_duplicate=True without indices
+    result = ifc_file.get_inverse(inst, allow_duplicate=True)
+    assert_type(result, list[ifcopenshell.entity_instance])
+
+    # allow_duplicate=True with indices
+    result = ifc_file.get_inverse(inst, allow_duplicate=True, with_attribute_indices=True)
+    assert_type(result, list[tuple[ifcopenshell.entity_instance, int]])
+
+    # Dynamic bool values (falls back to generic overload)
+    result = ifc_file.get_inverse(inst, allow_duplicate=bool_)
+    assert_type(result, list[ifcopenshell.entity_instance] | set[ifcopenshell.entity_instance])

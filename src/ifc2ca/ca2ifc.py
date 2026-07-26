@@ -27,10 +27,12 @@ flatten = itertools.chain.from_iterable
 
 def get_element_data(model, name, element):
     if element["geometry_type"] == "Edge":
+        cell_tags, cell_block = None, None
         for i, cell_block in enumerate(model.cells):
             if cell_block.type == "line":
                 cell_tags = model.cell_data["cell_tags"][i]
                 break
+        assert cell_tags is not None and cell_block is not None
         rows = []
         for i_row, i in enumerate(cell_tags):
             if i == 0:
@@ -59,6 +61,7 @@ def get_element_data(model, name, element):
     elif element["geometry_type"] == "Face":
         triangle_cell_tags = None
         quad_cell_tags = None
+        points, cell_block = None, None
         for i, cell_block in enumerate(model.cells):
             if cell_block.type == "triangle":
                 triangle_cell_tags = model.cell_data["cell_tags"][i]
@@ -78,8 +81,10 @@ def get_element_data(model, name, element):
             if not len(rows):
                 points = []
             else:
+                assert cell_block is not None
                 points = list(flatten([cell_block.data[c] for c in rows]))
 
+        cell_block = None
         for i, cell_block in enumerate(model.cells):
             if cell_block.type == "quad":
                 quad_cell_tags = model.cell_data["cell_tags"][i]
@@ -97,6 +102,7 @@ def get_element_data(model, name, element):
                         rows.append(i_row)
                         break
             if len(rows):
+                assert cell_block is not None and points is not None
                 points.extend(list(flatten([cell_block.data[c] for c in rows])))
 
         points = list(set(points))
@@ -172,6 +178,8 @@ def results_to_ifc(ifc_file, ifc_model, rmed_path, global_case, field_types, dat
         model_cases = data["load_cases"]
     elif global_case == "COMB":
         model_cases = data["load_combinations"]
+    else:
+        assert False, global_case
     for field in field_types:
         if field == "InternalForces":
             _parsed_data = internal_forces_to_ifc(ifc_file, ifc_model, result, model_cases, data["elements"])

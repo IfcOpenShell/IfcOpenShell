@@ -46,7 +46,7 @@ IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
 class OperationData(TypedDict):
     id: int
     guid: NotRequired[str]
-    obj: str
+    obj: NotRequired[str]
 
 
 class EditObjectOperationData(TypedDict):

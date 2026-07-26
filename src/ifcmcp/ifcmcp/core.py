@@ -703,7 +703,7 @@ class IfcSession:
                         "rule": {"type": "string", "description": "QTO rule name, e.g. IFC4QtoBaseQuantities"},
                         "selector": {
                             "type": "string",
-                            "description": "ifcopenshell selector to restrict elements (default: all IfcElement)",
+                            "description": "ifcopenshell selector to restrict elements (default: all IfcElement and IfcSpace)",
                         },
                     },
                     "required": ["rule"],

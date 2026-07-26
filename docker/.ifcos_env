@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# .ifcos_env
+# register autocompletes. just source the file in your shell, i.e. 
+# source .ifcos_env
+
+.ifcos_env() {
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    opts="create update up down restart build attach logs ps config remove help"
+
+    # Basic static completion
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+
+    return 0
+}
+
+# Register the completion for the command "ifcos_env"
+complete -F .ifcos_env ./ifcos_env

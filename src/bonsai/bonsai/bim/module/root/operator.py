@@ -27,6 +27,7 @@ import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
@@ -129,13 +130,25 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
             same_ifc_product = element.is_a(ifc_product)
 
             if not same_ifc_product:
-                if not (element.is_a("IfcElement") and ifc_product == "IfcElementType") and not (
-                    element.is_a("IfcElementType") and ifc_product == "IfcElement"
-                ):
-                    self.report(
-                        {"ERROR"}, f"Not supported class reassignment for object '{obj.name}' -> {ifc_product}."
+                # A spatial element (e.g. IfcSite) anchors the containment
+                # hierarchy, so only allow reassigning it to another family when
+                # it actually carries geometry - i.e. it's a real modelled thing
+                # (a bench dropped onto IfcSite -> IfcFurniture) rather than an
+                # empty spatial container we'd be turning into a loose element.
+                # IfcSpatialStructureElement covers IFC2X3, which has no
+                # IfcSpatialElement supertype.
+                is_spatial = element.is_a("IfcSpatialElement") or element.is_a("IfcSpatialStructureElement")
+                if is_spatial:
+                    has_geometry = (
+                        next(ifcopenshell.util.representation.get_representations_iter(element), None) is not None
                     )
-                    return {"CANCELLED"}
+                    if not has_geometry:
+                        self.report(
+                            {"ERROR"},
+                            f"Cannot reassign '{obj.name}' ({element.is_a()}) to {ifc_product}: "
+                            "a spatial element can only be reassigned to another class when it has geometry.",
+                        )
+                        return {"CANCELLED"}
 
             props = tool.Blender.get_object_bim_props(obj)
             props.is_reassigning_class = False
@@ -400,12 +413,13 @@ class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
     skip_invoke: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def _execute(self, context):
+        objects: list[bpy.types.Object]
         if self.obj:
-            objects = [bpy.data.objects.get(self.obj)]
+            requested_obj = bpy.data.objects.get(self.obj)
+            objects = [requested_obj] if requested_obj is not None else []
         else:
             objects = context.selected_objects
 
-        objects: list[bpy.types.Object]
         for obj in objects:
             was_active_object = obj == context.active_object
 
@@ -617,10 +631,13 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                     local_z = wall_matrix.to_3x3() @ Vector((0, 0, 1))
                     direction_sense = getattr(usage, "DirectionSense", "POSITIVE")
 
-                    if usage.LayerSetDirection == "AXIS2":
+                    layer_set_direction = usage.LayerSetDirection
+                    if layer_set_direction == "AXIS2":
                         z_axis = tuple(local_y) if direction_sense == "POSITIVE" else tuple(-local_y)
-                    elif usage.LayerSetDirection == "AXIS3":
+                    elif layer_set_direction == "AXIS3":
                         z_axis = tuple(local_z) if direction_sense == "POSITIVE" else tuple(-local_z)
+                    else:
+                        assert False, layer_set_direction
 
                     item = builder.extrude(
                         profile,
@@ -750,6 +767,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         WebThickness=default_web_thickness / unit_scale,
                         FlangeThickness=default_flange_thickness / unit_scale,
                     )
+                else:
+                    assert False, representation_template
 
             rel = ifcopenshell.api.material.assign_material(
                 tool.Ifc.get(), products=[element], type="IfcMaterialProfileSet"

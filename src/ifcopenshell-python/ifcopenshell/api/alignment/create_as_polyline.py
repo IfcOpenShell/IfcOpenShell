@@ -46,6 +46,7 @@ def _create_layout(file: ifcopenshell.file, alignment: entity_instance, points: 
     ifcopenshell.api.nest.assign_object(file, related_objects=alignment_layouts, relating_object=alignment)
 
     start_dist_along = 0.0
+    gradient = None
     for p1, p2 in zip(points, points[1:]):
         x1, y1, z1 = p1.Coordinates
         x2, y2, z2 = p2.Coordinates
@@ -100,6 +101,7 @@ def _create_layout(file: ifcopenshell.file, alignment: entity_instance, points: 
     ifcopenshell.api.nest.assign_object(file, related_objects=[hsegment], relating_object=alignment_layouts[0])
 
     if include_vertical:
+        assert gradient is not None
         vsegment = file.createIfcAlignmentSegment(
             ifcopenshell.guid.new(),
             DesignParameters=file.createIfcAlignmentVerticalSegment(
@@ -141,7 +143,7 @@ def create_as_polyline(
 
     # define stationing
     name = ifcopenshell.util.alignment.station_as_string(file, start_station)
-    referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name, alignment)
+    referent = ifcopenshell.api.alignment.add_stationing_referent(file, name, alignment, 0.0, start_station)
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]

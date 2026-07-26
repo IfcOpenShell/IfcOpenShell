@@ -33,7 +33,6 @@ from typing import (
     Optional,
     TypeGuard,
     Union,
-    cast,
     get_args,
 )
 
@@ -758,6 +757,7 @@ class Geometry(bonsai.core.tool.Geometry):
             # its centroid not obscured (tested via raycasting) by any other
             # face.
             distance = max(obj.dimensions.xyz)
+            min_y, max_z = None, None
             if axis == "+Z":
                 max_z = max([co[2] for co in obj.bound_box]) + 0.002
                 direction = Vector((0, 0, -1))
@@ -772,8 +772,10 @@ class Geometry(bonsai.core.tool.Geometry):
                 if direction.dot(face.normal) > 0:
                     continue
                 if axis == "+Z":
+                    assert max_z is not None
                     face_centroid_at_max = Vector((*face.calc_center_median().xy, max_z))
                 elif axis == "-Y":
+                    assert min_y is not None
                     centroid = face.calc_center_median()
                     face_centroid_at_max = Vector((centroid.x, min_y, centroid.z))
                 face_centroid_at_max = obj.matrix_world @ face_centroid_at_max
@@ -1149,6 +1151,9 @@ class Geometry(bonsai.core.tool.Geometry):
         settings.set("layerset-first", True)
         settings.set("keep-bounding-boxes", True)
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+        settings.set("mesher-linear-deflection", ifc_import_settings.deflection_tolerance)
+        settings.set("mesher-angular-deflection", ifc_import_settings.angular_tolerance)
+        geometry_library = ifc_import_settings.geometry_library
 
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
@@ -1160,7 +1165,11 @@ class Geometry(bonsai.core.tool.Geometry):
         shape = None
         if elements:
             iterator = ifcopenshell.geom.iterator(
-                settings, tool.Ifc.get(), multiprocessing.cpu_count(), include=elements
+                settings,
+                tool.Ifc.get(),
+                multiprocessing.cpu_count(),
+                include=elements,
+                geometry_library=geometry_library,
             )
         else:
             iterator = None  # For example, when switching representation of a type with no occurrences
@@ -1215,7 +1224,9 @@ class Geometry(bonsai.core.tool.Geometry):
         for element in element_types:
             if obj := tool.Ifc.get_object(element):
                 if representation := ifcopenshell.util.representation.get_representation(element, context):
-                    geometry = ifcopenshell.geom.create_shape(settings, representation)
+                    geometry = ifcopenshell.geom.create_shape(
+                        settings, representation, geometry_library=geometry_library
+                    )
                     mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
                     mesh = meshes.get(mesh_name)
                     if mesh is None:
@@ -1886,6 +1897,7 @@ class Geometry(bonsai.core.tool.Geometry):
         """NOTE: we assume that all items belonged to the same representation and to the same shape aspect"""
         ifc_file = tool.Ifc.get()
         previous_shape_aspect = None
+        base_representation = None
         for inverse in ifc_file.get_inverse(representation_items[0]):
             if inverse.is_a("IfcShapeRepresentation"):
                 if inverse.OfShapeAspect:
@@ -1895,6 +1907,7 @@ class Geometry(bonsai.core.tool.Geometry):
                     previous_shape_aspect = inverse.OfShapeAspect[0]
                 else:
                     base_representation = inverse
+        assert base_representation
 
         # remove item from previous shape aspect
         if previous_shape_aspect:
@@ -2187,7 +2200,7 @@ class Geometry(bonsai.core.tool.Geometry):
             setattr(item, attribute.name, attribute.get_value())
 
         if item.is_a("IfcSweptAreaSolid"):
-            item_profile = cast(str, props.item_profile)
+            item_profile = props.item_profile
             profile = item.SweptArea
             profile_name: Union[str, None] = profile.ProfileName
             if item_profile == "-":
@@ -2212,6 +2225,7 @@ class Geometry(bonsai.core.tool.Geometry):
         assert item
         obj.data.clear_geometry()
 
+        cartesian_point_offset = None
         if item.is_a("IfcHalfSpaceSolid"):
             bm = bmesh.new()
             bmesh.ops.create_grid(bm, size=0.5)
