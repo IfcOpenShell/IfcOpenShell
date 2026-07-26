@@ -208,6 +208,23 @@ def test_the_mirror_plane_passes_through_the_middle_of_the_reference():
     assert np.allclose(list(obj.matrix_world.translation), [21.0, 0.0, 0.0])
 
 
+def test_a_reference_is_kept_even_when_its_selection_flag_lags():
+    """Losing the reference falls back to an in-place mirror, which on a wall's Y is invisible.
+
+    That silent fallback is what made a wall mirror look like it did nothing. With more than
+    one object selected the active object is the reference, selection flag or not.
+    """
+    from bonsai.bim.module.model.product import MirrorElements
+
+    target = SimpleNamespace(name="target", select_get=lambda: True)
+    reference = SimpleNamespace(name="reference", select_get=lambda: False)
+    context = SimpleNamespace(active_object=reference, selected_objects=[target, reference])
+
+    objs, mirror_ref = MirrorElements.__dict__["resolve_selection"].__func__(context)
+    assert [o.name for o in objs] == ["target"]
+    assert mirror_ref is reference
+
+
 def test_the_mirror_plane_ignores_an_active_object_that_is_not_selected():
     """Blender keeps an object active after deselecting it. It is not a visible mirror plane."""
     from bonsai.bim.module.model.product import MirrorElements

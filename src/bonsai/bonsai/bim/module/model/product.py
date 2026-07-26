@@ -663,20 +663,30 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
     ) -> tuple[list[bpy.types.Object], Optional[bpy.types.Object]]:
         """Split the selection into the objects to mirror and the mirror plane, if any.
 
-        Blender keeps an object active after it has been deselected. Such an object is not
-        visibly part of the selection, so treating it as the mirror plane would silently turn
-        what looks like a single object mirror into a reflection across something off screen.
+        Clicking a single object leaves the previously active object active but deselected.
+        Reflecting across that invisible plane would be surprising, so it is ignored. Once more
+        than one object is selected the active object is the user's reference even if Blender's
+        selection flag has not caught up with it, which it may not have while the redo panel
+        re-runs the operator. Dropping the reference there would quietly fall back to mirroring
+        each object about its own axis, and for a wall on Y that is geometrically invisible.
         """
+        selected = list(context.selected_objects)
         active_obj = context.active_object
-        if active_obj and not active_obj.select_get():
+        if active_obj and len(selected) < 2 and not active_obj.select_get():
             active_obj = None
-        objs_to_mirror = [obj for obj in context.selected_objects if obj != active_obj] if active_obj else []
+        objs_to_mirror = [obj for obj in selected if obj != active_obj] if active_obj else []
         if objs_to_mirror:
             return objs_to_mirror, active_obj
-        return list(context.selected_objects), None
+        return selected, None
 
     def _execute(self, context):
         objs_to_mirror, mirror_ref = self.resolve_selection(context)
+        if mirror_ref is None and len(context.selected_objects) > 1:
+            self.report(
+                {"WARNING"},
+                "No active object to use as the mirror plane. Each object was mirrored about "
+                "its own axis instead. Click the object you want as the mirror plane last.",
+            )
         axis_index = "XYZ".index(self.mirror_axis)
         self.unsupported_items: set[str] = set()
         self.skipped: list[str] = []
