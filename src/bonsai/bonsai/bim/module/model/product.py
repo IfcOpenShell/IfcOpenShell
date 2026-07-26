@@ -708,13 +708,16 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         if mirrored:
             # Say which plane was used. A reflection across a reference that straddles the
             # object's own mirror plane moves nothing, and without this the user cannot tell
-            # that the reference was taken into account at all.
+            # that the reference was taken into account at all. The status bar flash is gone
+            # by the time anyone asks what happened, so this also goes to the console.
             about = (
                 f"across the middle of {mirror_ref.name}, along its local {self.mirror_axis}"
                 if mirror_ref
-                else f"about own local {self.mirror_axis}"
+                else f"about own local {self.mirror_axis} (no reference object)"
             )
-            self.report({"INFO"}, f"Mirrored {mirrored} object{'s' if mirrored > 1 else ''} {about}")
+            summary = f"Mirrored {mirrored} object{'s' if mirrored > 1 else ''} {about}"
+            self.report({"INFO"}, summary)
+            print(f"[bim.mirror_elements] {summary}")
         return {"FINISHED"} if mirrored else {"CANCELLED"}
 
     def mirror_obj(
