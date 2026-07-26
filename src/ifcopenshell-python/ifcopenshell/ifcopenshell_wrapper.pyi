@@ -20,7 +20,6 @@ from typing import Any, Literal, Sequence, Union
 
 from typing_extensions import Self
 
-import ifcopenshell
 import ifcopenshell.util.schema
 from ifcopenshell.entity_instance import entity_instance_mixin
 from ifcopenshell.file import file_mixin
