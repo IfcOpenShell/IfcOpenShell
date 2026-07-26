@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import contextlib
 import importlib
+import json
 import math
 import os
 import platform
@@ -56,6 +57,7 @@ from typing import (
 import bmesh
 import bpy
 import gpu
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import numpy as np
 import numpy.typing as npt
@@ -1615,6 +1617,23 @@ class Blender(bonsai.core.tool.Blender):
         @classmethod
         def is_eligible_for_roof_modifier(cls, obj: bpy.types.Object) -> bool:
             return tool.Blender.is_object_an_ifc_class(obj, _ROOF_MODIFIER_IFC_CLASSES)
+
+        @classmethod
+        def has_mirrored_type(cls, element: entity_instance, inherit: bool = True) -> Union[entity_instance, None]:
+            """Return the mirrored counterpart of a type, if one has already been created."""
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_MirroredType", "Data", should_inherit=inherit)
+            if pset and (parsed := json.loads(pset)) and "mirrored_type" in parsed:
+                return tool.Ifc.get_entity_by_id(int(parsed["mirrored_type"]))
+            return None
+
+        @classmethod
+        def set_mirrored_type(cls, element: entity_instance, mirrored_type: entity_instance) -> None:
+            pset = tool.Pset.get_element_pset(element, "BBIM_MirroredType")
+            if not pset:
+                pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), element, "BBIM_MirroredType")
+            ifcopenshell.api.pset.edit_pset(
+                tool.Ifc.get(), pset, properties={"Data": json.dumps({"mirrored_type": mirrored_type.id()})}
+            )
 
         @classmethod
         def is_array_child(cls, element: entity_instance) -> bool:

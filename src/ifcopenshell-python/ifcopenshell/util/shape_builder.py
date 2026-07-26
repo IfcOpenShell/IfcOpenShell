@@ -910,20 +910,23 @@ class ShapeBuilder:
     ) -> np.ndarray:
         """Mirror a single 2D point across the specified axes.
 
-        :param point_2d: The 2D point to mirror.
+        :param point_2d: The point to mirror. Only the first two components are mirrored,
+            any further components are passed through untouched, so a 3D point may be
+            supplied and its Z is preserved.
         :param mirror_axes: Indicates which axes to mirror across. A positive value in a
             component means that axis is mirrored (negated relative to ``mirror_point``).
             Example: ``(1, 0)`` mirrors across the Y-axis (negates X only),
             ``(1, 1)`` mirrors across both axes.
         :param mirror_point: Origin of the mirror operation.
-        :return: Mirrored 2D point as a numpy array.
+        :return: Mirrored point as a numpy array, of the same length as ``point_2d``.
         """
         mirror_axes: np.ndarray = np.where(np.array(mirror_axes) > 0, -1, 1)
         mirror_point: np.ndarray = np.array(mirror_point)
-        relative_point = point_2d - mirror_point
+        point_2d: np.ndarray = np.array(point_2d)
+        relative_point = point_2d[:2] - mirror_point
         relative_point = relative_point * mirror_axes
         point_2d_res = relative_point + mirror_point
-        return point_2d_res
+        return np.append(point_2d_res, point_2d[2:])
 
     def create_axis2_placement_3d(
         self,
@@ -1050,6 +1053,7 @@ class ShapeBuilder:
         processed_objects: list[ifcopenshell.entity_instance] = []
         for curve_or_item_el in curve_or_item:
             for mirror_axes in mirror_axes_data:
+                axis_flip_count = sum(1 for axis in mirror_axes if axis > 0.0)
                 c = (
                     ifcopenshell.util.element.copy_deep(self.file, curve_or_item_el)
                     if create_copy
@@ -1083,17 +1087,25 @@ class ShapeBuilder:
                     c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                 elif c.is_a("IfcExtrudedAreaSolid"):
-                    placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(c.Position)[:3, :3]
-                    base_position = c.Position.Location.Coordinates
-                    # TODO: add support for Z-axis too
-                    new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
-                    new_position = np_to_3d(new_position, base_position[np_Z])
-                    c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
+                    if c.Position is not None:
+                        placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(c.Position)[:3, :3]
+                        base_position = np.array(c.Position.Location.Coordinates)
+                        # TODO: add support for Z-axis too
+                        new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
+                        new_position = np_to_3d(new_position, base_position[np_Z])
+                        c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
+                    else:
+                        # Position is optional in IFC4 and absent means the identity placement,
+                        # so the profile coordinates already live in the parent frame.
+                        placement_matrix_ = np.eye(3)
+                        base_position = np.zeros(3)
+                        new_position = np.zeros(3)
 
                     # TODO: add support for Z-axis too
-                    self.translate(c.SweptArea.OuterCurve, base_position[np_XY])
-                    self.mirror(c.SweptArea.OuterCurve, mirror_axes, mirror_point, placement_matrix=placement_matrix_)
-                    self.translate(c.SweptArea.OuterCurve, -new_position[np_XY])
+                    if outer_curve := getattr(c.SweptArea, "OuterCurve", None):
+                        self.translate(outer_curve, base_position[np_XY])
+                        self.mirror(outer_curve, mirror_axes, mirror_point, placement_matrix=placement_matrix_)
+                        self.translate(outer_curve, -new_position[np_XY])
 
                     if hasattr(c.SweptArea, "InnerCurves"):
                         for inner_curve in c.SweptArea.InnerCurves:
@@ -1131,6 +1143,35 @@ class ShapeBuilder:
                     c.Trim1[0].Coordinates, c.Trim2[0].Coordinates = trim_coords
 
                     self.mirror(c.BasisCurve, mirror_axes, mirror_point)
+
+                elif c.is_a("IfcPolygonalFaceSet"):
+                    if self.file.get_total_inverses(c.Coordinates) > 1:
+                        # Another representation item shares this coordinate list. Clone it so
+                        # mirroring this face set does not move the other item's geometry too.
+                        c.Coordinates = ifcopenshell.util.element.copy(self.file, c.Coordinates)
+                    c.Coordinates.CoordList = [
+                        ifc_safe_vector_type(self.mirror_2d_point(coord, mirror_axes, mirror_point))
+                        for coord in c.Coordinates.CoordList
+                    ]
+
+                    if axis_flip_count % 2:
+                        for face in c.Faces:
+                            face.CoordIndex = list(reversed(face.CoordIndex))
+                            if face.is_a("IfcIndexedPolygonalFaceWithVoids"):
+                                face.InnerCoordIndices = [list(reversed(loop)) for loop in face.InnerCoordIndices]
+
+                elif c.is_a("IfcBoundingBox"):
+                    corner = np.array(c.Corner.Coordinates)
+                    new_corner = self.mirror_2d_point(corner, mirror_axes, mirror_point)
+                    # Corner is the minimum corner, so a flipped axis turns it into the maximum
+                    # corner and it has to be shifted back by that axis' dimension.
+                    new_corner[np_X] -= c.XDim if mirror_axes[np_X] > 0.0 else 0.0
+                    new_corner[np_Y] -= c.YDim if mirror_axes[np_Y] > 0.0 else 0.0
+                    c.Corner.Coordinates = ifc_safe_vector_type(new_corner)
+
+                elif c.is_a("IfcGeometricSet"):
+                    self.mirror(list(c.Elements), mirror_axes, mirror_point)
+
                 else:
                     raise Exception(f"{c} is not supported for mirror() method.")
 

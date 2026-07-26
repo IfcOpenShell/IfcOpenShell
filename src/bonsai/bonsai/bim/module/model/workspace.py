@@ -1037,7 +1037,17 @@ class EditObjectUI:
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Interior", "S_V", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
+        # Invoke the operator directly rather than via the S_M hotkey: that hotkey is shared
+        # with Merge for LAYER2 elements, so routing through it would merge walls instead of
+        # mirroring them.
+        add_layout_hotkey_operator(
+            row,
+            "Mirror",
+            "S_M",
+            bpy.ops.bim.mirror_elements.__doc__,
+            ui_context,
+            operator="bim.mirror_elements",
+        )
 
     @classmethod
     def draw_aggregation(cls, context):
@@ -1344,13 +1354,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                     return
             bpy.ops.bim.merge_wall()
         else:
-            if len(bpy.context.selected_objects) == 1:
-                self.report(
-                    {"ERROR"},
-                    "At least two objects must be selected: an object to be mirrored, and a mirror axis as the active object.",
-                )
-            else:
-                bpy.ops.bim.mirror_elements()
+            bpy.ops.bim.mirror_elements()
 
     def hotkey_S_R(self):
         if not bpy.context.selected_objects:

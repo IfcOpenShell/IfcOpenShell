@@ -19,12 +19,13 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import json
-from typing import TYPE_CHECKING, Any, Literal, get_args
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, get_args
 
 import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
 import ifcopenshell.api.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -33,6 +34,7 @@ import ifcopenshell.util.shape_builder
 import ifcopenshell.util.system
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
+import numpy as np
 from bpy_extras.object_utils import AddObjectHelper
 from mathutils import Matrix, Vector
 
@@ -47,6 +49,7 @@ from bonsai.bim.helper import get_enum_items
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.door import update_door_modifier_representation
 from bonsai.bim.module.model.polyline import PolylineOperator
 
 from . import mep, profile, slab, wall
@@ -619,63 +622,438 @@ class LoadTypeThumbnails(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SharedMappedGeometryError(Exception):
+    """Raised when mirroring would mutate geometry shared with sibling occurrences."""
+
+
 class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.mirror_elements"
-    bl_label = "Mirror Elements"
+    bl_label = "Mirror"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Faux-mirrors the selected objects by an active empty along a mirror plane"
+    bl_description = (
+        "Mirrors the selected objects in place by truly inverting their geometry. "
+        "Select a single object to mirror it about its own local YZ plane. "
+        "Select two or more objects and the active object becomes the mirror plane, "
+        "with every other selected object reflected across it. Nothing is duplicated: "
+        "duplicate first if you want to keep the original"
+    )
 
     @classmethod
     def poll(cls, context):
         return context.selected_objects
 
     def _execute(self, context):
-        # This is not a true mirror operation. In BIM, objects that are
-        # mirrored are not the same type. (i.e. a mirrored asymmetric desk is a
-        # completely different product). To preserve types, we calculate
-        # bounding box centroids, and mirror the position of the object.  The
-        # mirrored object performs the necessary rotation to preserve the
-        # mirrored intention, but never actually truly mirror anything (i.e.
-        # scale = -1).
+        active_obj = context.active_object
+        objs_to_mirror = [obj for obj in context.selected_objects if obj != active_obj] if active_obj else []
+        mirror_ref = active_obj if objs_to_mirror else None
+        if mirror_ref is None:
+            objs_to_mirror = list(context.selected_objects)
 
-        # Objects are mirrored along the YZ plane of the mirror object.
-        # Mirrored objects have their relative local Y and Z axes preserved,
-        # and the new X axis is calculated.
+        self.unsupported_items: set[str] = set()
+        for obj in objs_to_mirror:
+            try:
+                self.mirror_obj(context, obj, mirror_ref)
+            except SharedMappedGeometryError as e:
+                self.report({"ERROR"}, str(e))
+        if self.unsupported_items:
+            self.report({"WARNING"}, f"Could not mirror: {', '.join(sorted(self.unsupported_items))}")
+        return {"FINISHED"}
 
-        # In theory, untyped objects may be truly mirrored, but this is not yet
-        # implemented.
-        mirror = context.active_object
-        reflection = Matrix()
-        reflection[0][0] = -1
+    def mirror_obj(
+        self,
+        context: bpy.types.Context,
+        obj: bpy.types.Object,
+        mirror_ref: Optional[bpy.types.Object] = None,
+    ) -> None:
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
 
-        mirror.select_set(False)
+        active_context = tool.Geometry.get_active_representation_context(obj)
+        active_representation = tool.Geometry.get_active_representation(obj)
+        bb_data = tool.Blender.get_object_bounding_box(obj)
+        mirror_axes = self.get_mirror_axes(obj, mirror_ref)
 
-        if not context.selected_objects:
-            self.report(
-                {"INFO"},
-                "At least two objects must be selected: an object to be mirrored, and a mirror axis as the active object.",
-            )
-            return {"FINISHED"}
+        # Snapshot opening world placements AND the host placement BEFORE any geometry or
+        # origin change. We work in the host's local space so the mirrored relative offset
+        # is correct regardless of when the host's IFC placement gets synced.
+        opening_placements_before: dict[int, np.ndarray] = {}
+        M_host_before: Optional[np.ndarray] = None
+        if getattr(element, "HasOpenings", None):
+            M_host_before = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement).copy()
+            for rel in element.HasOpenings:
+                opening = rel.RelatedOpeningElement
+                M = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+                opening_placements_before[opening.id()] = M.copy()
 
-        bpy.ops.bim.override_object_duplicate_move(is_interactive=False)
+        type_element = ifcopenshell.util.element.get_type(element)
+        usage_type = tool.Model.get_usage_type(element)
+        # LAYER2 (walls) and LAYER3 (slabs) generate instance specific bodies via
+        # DumbWallGenerator / DumbSlabGenerator rather than mapping the type's
+        # RepresentationMaps, so they invert their own representation even when typed.
+        is_typed_occurrence = bool(
+            type_element
+            and element.id() != type_element.id()
+            and type_element.RepresentationMaps
+            and usage_type not in ("LAYER2", "LAYER3")
+        )
 
-        for obj in context.selected_objects:
-            if obj == mirror:
+        if is_typed_occurrence:
+            # The shared mirrored type is always X flipped, so that is the axis the occurrence's
+            # geometry ends up inverted along, whatever the mirror plane's orientation.
+            geometry_axes = (1.0, 0.0, 0.0)
+            self.assign_inverted_type(element)
+        else:
+            geometry_axes = mirror_axes
+            self.invert_representation(element, mirror_axes)
+            # For LAYER2 walls, layers stack along local Y (LayerSetDirection=AXIS2). A Y-axis
+            # flip reverses that direction, so DirectionSense and OffsetFromReferenceLine must
+            # both invert. X/Z flips do not touch local Y.
+            if usage_type == "LAYER2" and mirror_axes[1] > 0.5:
+                mat_usage = ifcopenshell.util.element.get_material(element, should_inherit=False)
+                if mat_usage and mat_usage.is_a("IfcMaterialLayerSetUsage"):
+                    mat_usage.DirectionSense = "NEGATIVE" if mat_usage.DirectionSense == "POSITIVE" else "POSITIVE"
+                    mat_usage.OffsetFromReferenceLine = -mat_usage.OffsetFromReferenceLine
+
+        context.view_layer.update()
+        self.reflect_placement(obj, mirror_ref, geometry_axes, bb_data)
+
+        # Openings are mirrored only now, after the origin has been reflected: they have to be
+        # anchored to the host's final placement, and the frame change needs its final rotation.
+        if opening_placements_before and M_host_before is not None:
+            self.mirror_openings_after_reflection(obj, element, geometry_axes, M_host_before, opening_placements_before)
+            tool.Geometry.clear_cache(element)
+
+        # Bonsai does not automatically switch to the representation that should be active in
+        # the given context, so an element retyped by assign_inverted_type would come back with
+        # the wrong representation.
+        representation = self.get_target_representation(element, active_representation, active_context)
+        if representation:
+            bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+
+    def get_target_representation(
+        self,
+        element: ifcopenshell.entity_instance,
+        active_representation: Optional[ifcopenshell.entity_instance],
+        active_context: ifcopenshell.entity_instance,
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Find the representation to display after the mirror.
+
+        Matching on the context alone is not enough: files that put Axis, Body and BoundingBox
+        in a single context would come back showing the Axis. The representation identifier has
+        to be preserved as well.
+        """
+        representations = list(ifcopenshell.util.representation.get_representations_iter(element))
+        if active_representation is not None:
+            if active_representation in representations:
+                return active_representation
+            identifier = active_representation.RepresentationIdentifier
+            context = active_representation.ContextOfItems
+            for r in representations:
+                if r.ContextOfItems == context and r.RepresentationIdentifier == identifier:
+                    return r
+            for r in representations:
+                if r.RepresentationIdentifier == identifier:
+                    return r
+        return next((r for r in representations if r.ContextOfItems == active_context), None)
+
+    def get_mirror_axes(
+        self, obj: bpy.types.Object, mirror_ref: Optional[bpy.types.Object]
+    ) -> tuple[float, float, float]:
+        """Return which of the object's local axes the geometry has to be inverted along.
+
+        The mirror plane normal is the reference object's local X. Without a reference the
+        object is mirrored about its own local YZ plane.
+
+        Exactly one axis is ever chosen, the one most parallel to the mirror plane normal.
+        Flipping two axes at once would be a 180 degree rotation rather than a reflection, and
+        reflect_placement relies on the representation flip having a negative determinant to
+        produce an exact world space reflection for an arbitrarily oriented mirror plane.
+        """
+        if not mirror_ref:
+            return (1.0, 0.0, 0.0)
+        mirror_normal_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
+        mirror_normal_local = obj.matrix_world.to_3x3().inverted() @ mirror_normal_world
+        axis = max(range(3), key=lambda i: abs(mirror_normal_local[i]))
+        return tuple(1.0 if i == axis else 0.0 for i in range(3))
+
+    def reflect_placement(
+        self,
+        obj: bpy.types.Object,
+        mirror_ref: Optional[bpy.types.Object],
+        geometry_axes: tuple[float, float, float],
+        bb_data: dict[str, Any],
+    ) -> None:
+        if not mirror_ref:
+            # No reference: mirror about the local YZ plane through the bounding box centre so
+            # the object stays where it is. Inverting the representation sends local x to -x,
+            # so shifting the origin by min_x + max_x turns that into a reflection about the
+            # centre. Derived from the pre-mirror bounds on purpose: remeasuring the reloaded
+            # mesh would be wrong for a host whose openings have not been mirrored yet.
+            shift = bb_data["min_x"] + bb_data["max_x"]
+            obj.location += (obj.matrix_world @ Vector((shift, 0, 0, 0))).xyz
+            return
+
+        # P_world is the Householder matrix of the mirror plane and P_local the diagonal of the
+        # axis flip applied to the representation. For a local point p the new world position
+        # is P_world @ R @ P_local @ (P_local @ p) + t' = P_world @ (R @ p + t - t_ref) + t_ref,
+        # which is the exact reflection, whatever the plane's orientation. Both determinants
+        # are -1, so new_R stays a proper rotation.
+        P_local = Matrix.Diagonal(Vector([-1.0 if a > 0.5 else 1.0 for a in geometry_axes]))
+        n_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
+        P_world = Matrix.Scale(-1, 4, n_world).to_3x3()
+        new_mat = (P_world @ obj.matrix_world.to_3x3() @ P_local).to_4x4()
+        t_mr = mirror_ref.matrix_world.translation
+        new_mat.translation = t_mr + P_world @ (obj.matrix_world.translation - t_mr)
+        obj.matrix_world = new_mat
+
+    def mirror_openings_after_reflection(
+        self,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        mirror_axes: tuple[float, float, float],
+        M_host_before: np.ndarray,
+        opening_placements_before: dict[int, np.ndarray],
+    ) -> None:
+        _, R_quat, _ = obj.matrix_world.decompose()
+        frame_change = np.linalg.inv(np.array(R_quat.to_matrix())) @ M_host_before[:3, :3]
+        # Sync the element's IFC placement to its post-reflection Blender position first. The
+        # geometry engine converts opening world positions to element local positions using the
+        # element placement, so a stale placement lands the void at the wrong offset.
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False)
+        M_host_new = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        self.apply_opening_mirror(
+            element, mirror_axes, M_host_before, opening_placements_before, frame_change, M_host_new
+        )
+        for rel in element.HasOpenings:
+            opening = rel.RelatedOpeningElement
+            tool.Geometry.clear_cache(opening)
+            if opening_obj := tool.Ifc.get_object(opening):
+                tool.Geometry.reload_representation(opening_obj)
+
+    def apply_opening_mirror(
+        self,
+        element: ifcopenshell.entity_instance,
+        mirror_axes: tuple[float, float, float],
+        M_host_before: np.ndarray,
+        opening_placements_before: dict[int, np.ndarray],
+        frame_change: np.ndarray,
+        M_host_new: Optional[np.ndarray] = None,
+    ) -> None:
+        """Mirror IfcOpeningElement placements and geometry in host local space.
+
+        frame_change = inv(R_host_new) @ R_host_old accounts for a host rotation change, such
+        as the 180 degree Z that assign_inverted_type applies for a Y mirror. Pass the identity
+        when the host rotation does not change.
+
+        M_host_new is the host's IFC world matrix after the mirror. None means it did not move.
+        """
+        M_host_anchor = M_host_new if M_host_new is not None else M_host_before
+        N_local = np.array([1.0 if flip > 0.0 else 0.0 for flip in mirror_axes[:3]])
+        norm = np.linalg.norm(N_local)
+        if norm > 0:
+            N_local /= norm
+        H = np.eye(3) - 2 * np.outer(N_local, N_local)
+
+        # A file may declare the same opening through more than one IfcRelVoidsElement.
+        # Mirroring it twice would put it back where it started.
+        for opening in {
+            rel.RelatedOpeningElement.id(): rel.RelatedOpeningElement for rel in element.HasOpenings
+        }.values():
+            if opening.id() not in opening_placements_before:
                 continue
+            M_abs_old = opening_placements_before[opening.id()]
+            M_rel = np.linalg.inv(M_host_before) @ M_abs_old
+            M_rel_new = M_rel.copy()
+            M_rel_new[:3, 3] = frame_change @ (H @ M_rel[:3, 3])
+            # Mirror the rotation by conjugation: H@R@H keeps det=+1 and gives the correct
+            # mirrored rotation. A direct Householder on the columns yields det=-1, and IFC's
+            # Y=Z*X normalisation then introduces a spurious 180 degree Z error.
+            M_rel_new[:3, :3] = frame_change @ (H @ M_rel[:3, :3] @ H)
+            ifcopenshell.api.geometry.edit_object_placement(
+                tool.Ifc.get(), product=opening, matrix=M_host_anchor @ M_rel_new, is_si=False
+            )
 
-            objmat = mirror.matrix_world.inverted() @ obj.matrix_world.copy()
-            x, y, z = objmat.to_3x3().col
-            centroid = Vector(obj.bound_box[0]).lerp(Vector(obj.bound_box[6]), 0.5)
-            c = mirror.matrix_world.inverted() @ obj.matrix_world @ centroid
-            newy = mirror.matrix_world.to_quaternion() @ (y @ reflection)
-            newz = mirror.matrix_world.to_quaternion() @ (z @ reflection)
-            newx = newy.cross(newz)
-            newc = mirror.matrix_world @ (c @ reflection)
+            if not opening.Representation:
+                continue
+            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+            for rep in opening.Representation.Representations:
+                for item in rep.Items:
+                    if item.is_a("IfcExtrudedAreaSolid"):
+                        self.mirror_opening_extrusion(builder, item, H)
+                    else:
+                        builder.mirror(item, mirror_axes[:2], create_copy=False)
 
-            newmat = Matrix((newx.to_4d(), newy.to_4d(), newz.to_4d(), newc.to_4d())).transposed()
-            newmat.translation = Vector(newmat.translation) - (newmat.to_quaternion() @ centroid)
+    def mirror_opening_extrusion(
+        self,
+        builder: ifcopenshell.util.shape_builder.ShapeBuilder,
+        item: ifcopenshell.entity_instance,
+        H: np.ndarray,
+    ) -> None:
+        """Mirror an opening's extrusion with the host local Householder matrix H.
 
-            obj.matrix_world = newmat
+        Applying H as the geometric transform to opening local coordinates is correct because
+        M_rel_new @ T_geom = H @ M_rel with M_rel_new = H@R@H, hence T_geom = H. Conjugating it
+        into Position local space gives H_pos = placement.T @ H @ placement.
+        """
+        placement_mat = ifcopenshell.util.placement.get_axis2placement(item.Position)[:3, :3]
+        H_pos = placement_mat.T @ H @ placement_mat
+
+        pos_coords = item.Position.Location.Coordinates
+        pos3 = np.array([pos_coords[0], pos_coords[1], pos_coords[2] if len(pos_coords) > 2 else 0.0])
+        pos3_new = H @ pos3
+        item.Position.Location.Coordinates = tuple(float(v) for v in pos3_new[: len(pos_coords)])
+
+        # H_pos is a reflection (det=-1) so the profile winding has to be reversed.
+        profile = item.SweptArea
+        curves = [c for c in [getattr(profile, "OuterCurve", None)] if c is not None]
+        curves.extend(getattr(profile, "InnerCurves", None) or [])
+        for curve in curves:
+            coords = builder.get_polyline_coords(curve)
+            coords3 = np.hstack([coords, np.zeros((len(coords), 1))])
+            builder.set_polyline_coords(curve, (H_pos @ coords3.T).T[:, :2][::-1])
+
+        dir_local = np.array(item.ExtrudedDirection.DirectionRatios)
+        item.ExtrudedDirection.DirectionRatios = tuple(float(v) for v in H_pos @ dir_local)
+
+    def is_type_owned_mapping(self, item: ifcopenshell.entity_instance) -> bool:
+        """Whether inverting this IfcMappedItem's source would affect sibling occurrences."""
+        representation_map = item.MappingSource
+        if len(representation_map.MapUsage) > 1:
+            return True
+        return any(inv.is_a("IfcTypeProduct") for inv in tool.Ifc.get().get_inverse(representation_map))
+
+    def invert_general_object(
+        self, element: ifcopenshell.entity_instance, mirror_axes: tuple[float, float, float] = (1.0, 0.0, 0.0)
+    ) -> None:
+        # ShapeBuilder.mirror works in 2D, so it only gets the XY components.
+        mirror_axes_2d = mirror_axes[:2]
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+
+        def mirror_item(item: ifcopenshell.entity_instance) -> None:
+            if item.is_a("IfcBooleanResult"):
+                mirror_item(item.FirstOperand)
+                mirror_item(item.SecondOperand)
+            elif item.is_a("IfcFacetedBrep") or item.is_a("IfcFacetedBrepWithVoids"):
+                mirror_faceted_brep(item)
+            elif item.is_a("IfcMappedItem"):
+                if self.is_type_owned_mapping(item):
+                    raise SharedMappedGeometryError(
+                        f"{element.is_a()} maps geometry owned by its type. Inverting it would "
+                        "mirror every other occurrence of that type as well."
+                    )
+                for sub in item.MappingSource.MappedRepresentation.Items:
+                    mirror_item(sub)
+            else:
+                if mirror_axes[2] > 0.5:
+                    # ShapeBuilder.mirror is 2D, so a Z flip only reaches explicit meshes.
+                    self.unsupported_items.add(f"{item.is_a()} along Z")
+                    return
+                try:
+                    builder.mirror(item, mirror_axes_2d, create_copy=False)
+                except Exception:
+                    # ShapeBuilder has no mirror for every representation item, half spaces in
+                    # particular. Leave those alone and tell the user rather than aborting the
+                    # whole mirror halfway through.
+                    self.unsupported_items.add(item.is_a())
+
+        def mirror_faceted_brep(item: ifcopenshell.entity_instance) -> None:
+            shells = [item.Outer]
+            if item.is_a("IfcFacetedBrepWithVoids"):
+                shells.extend(item.Voids)
+
+            points_done = set()
+            for shell in shells:
+                for face in shell.CfsFaces:
+                    for bound in face.Bounds:
+                        if not bound.Bound.is_a("IfcPolyLoop"):
+                            continue
+                        for pt in bound.Bound.Polygon:
+                            if pt.id() in points_done:
+                                continue
+                            points_done.add(pt.id())
+                            coords = list(pt.Coordinates)
+                            for i, flip in enumerate(mirror_axes[: len(coords)]):
+                                if flip > 0.0:
+                                    coords[i] = -coords[i]
+                            pt.Coordinates = coords
+
+            # An odd number of flipped axes inverts the faces, so the winding has to be
+            # reversed to restore outward normals.
+            if sum(1 for v in mirror_axes if v > 0.0) % 2:
+                for shell in shells:
+                    for face in shell.CfsFaces:
+                        for bound in face.Bounds:
+                            if bound.Bound.is_a("IfcPolyLoop"):
+                                bound.Bound.Polygon = list(reversed(bound.Bound.Polygon))
+
+        if element.is_a("IfcProduct"):
+            if not element.Representation:
+                return
+            for representation in element.Representation.Representations:
+                for item in representation.Items:
+                    mirror_item(item)
+        elif element.is_a("IfcTypeProduct"):
+            for representation_map in element.RepresentationMaps or []:
+                for item in representation_map.MappedRepresentation.Items:
+                    mirror_item(item)
+
+        tool.Geometry.reload_representation(tool.Ifc.get_object(element))
+
+    def invert_door_swing(self, element: ifcopenshell.entity_instance) -> None:
+        obj = tool.Ifc.get_object(element)
+        pset_data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
+
+        if "LEFT" in pset_data["door_type"]:
+            pset_data["door_type"] = pset_data["door_type"].replace("LEFT", "RIGHT")
+        elif "RIGHT" in pset_data["door_type"]:
+            pset_data["door_type"] = pset_data["door_type"].replace("RIGHT", "LEFT")
+
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
+        pset_data_str = tool.Ifc.get().createIfcText(json.dumps(pset_data, default=list))
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": pset_data_str})
+
+        pset_data.update(pset_data.pop("lining_properties"))
+        pset_data.update(pset_data.pop("panel_properties"))
+        pset_data.update(tool.Model.get_constituents_props_data(element))
+
+        # set_props_kwargs_from_ifc_data updates the mesh of the active object, which would
+        # switch its representation, so the door has to be active while it runs.
+        prev_active = bpy.context.view_layer.objects.active
+        bpy.context.view_layer.objects.active = obj
+        tool.Model.get_door_props(obj).set_props_kwargs_from_ifc_data(pset_data)
+        bpy.context.view_layer.objects.active = prev_active
+
+        update_door_modifier_representation(obj)
+        tool.Model.mark_thumbnail_for_update(element)
+
+    def invert_representation(
+        self, element: ifcopenshell.entity_instance, mirror_axes: tuple[float, float, float] = (1.0, 0.0, 0.0)
+    ) -> None:
+        if ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"):
+            self.invert_door_swing(element)
+        else:
+            self.invert_general_object(element, mirror_axes)
+
+    def assign_inverted_type(self, element: ifcopenshell.entity_instance) -> None:
+        """Point a typed occurrence at a mirrored copy of its type.
+
+        The type's own geometry is never inverted: that representation is shared with every
+        sibling occurrence. Instead the type is duplicated once, the duplicate is inverted, and
+        both are cross referenced so later mirrors of the same type reuse it.
+        """
+        type_element = ifcopenshell.util.element.get_type(element)
+
+        inverted_type = tool.Blender.Modifier.has_mirrored_type(type_element)
+        if not inverted_type:
+            old_to_new, _ = tool.Geometry.duplicate_ifc_objects([tool.Ifc.get_object(type_element)])
+            inverted_type = old_to_new[type_element][0]
+            self.invert_representation(inverted_type)  # the cached type is always X flipped
+            tool.Blender.Modifier.set_mirrored_type(inverted_type, type_element)
+            tool.Blender.Modifier.set_mirrored_type(type_element, inverted_type)
+            inverted_type.Name = f"{inverted_type.Name}.Mirror"
+
+        bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element, inverted_type)
 
 
 def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
