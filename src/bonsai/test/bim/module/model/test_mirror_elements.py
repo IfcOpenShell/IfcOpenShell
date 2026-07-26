@@ -36,7 +36,7 @@ from unittest.mock import patch
 import ifcopenshell
 import numpy as np
 import pytest
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 pytestmark = pytest.mark.model
 
@@ -129,6 +129,7 @@ def _operator():
         "invert_general_object",
         "invert_representation",
         "is_type_owned_mapping",
+        "reflect_placement",
     )
     stub = type("MirrorElementsStub", (), {name: getattr(MirrorElements, name) for name in methods})()
     stub.unsupported_items = set()
@@ -169,6 +170,44 @@ def test_a_privately_mapped_representation_is_still_mirrored():
     coordinates_after = _profile_coordinates(solid)
     assert coordinates_after != coordinates_before
     assert [round(-x, 6) for x, _ in coordinates_before] == [round(x, 6) for x, _ in coordinates_after]
+
+
+def test_reflect_placement_across_a_reference_is_an_exact_reflection():
+    """The placement maths, independent of IFC: a point must land at its mirror image."""
+    operator = _operator()
+    obj = SimpleNamespace(matrix_world=Matrix.Translation((2.0, 0.0, 0.0)), location=None)
+    reference = SimpleNamespace(matrix_world=Matrix.Translation((5.0, 0.0, 0.0)))
+    operator.reflect_placement(obj, reference, (1.0, 0.0, 0.0), {}, 0)
+
+    # A local point p maps to matrix_world @ (P_local @ p); with the object at x=2 and the
+    # plane at x=5, a point 1 unit along local +x sits at x=3 and must end up at x=7.
+    p = Vector((1.0, 0.0, 0.0))
+    assert np.allclose(list(obj.matrix_world @ Vector((-p.x, p.y, p.z))), [7.0, 0.0, 0.0])
+
+
+def test_the_mirror_plane_ignores_an_active_object_that_is_not_selected():
+    """Blender keeps an object active after deselecting it. It is not a visible mirror plane."""
+    from bonsai.bim.module.model.product import MirrorElements
+
+    target = SimpleNamespace(name="target", select_get=lambda: True)
+    ghost = SimpleNamespace(name="ghost", select_get=lambda: False)
+    context = SimpleNamespace(active_object=ghost, selected_objects=[target])
+
+    seen = []
+
+    class Stub:
+        _execute = MirrorElements._execute
+        mirror_axis = "X"
+
+        def mirror_obj(self, context, obj, mirror_ref=None, axis_index=0):
+            seen.append((obj.name, mirror_ref.name if mirror_ref else None))
+            return True
+
+        def report(self, level, message):
+            pass
+
+    Stub()._execute(context)
+    assert seen == [("target", None)], "a deselected active object must not become the mirror plane"
 
 
 def test_get_mirror_axes_never_flips_more_than_one_axis():

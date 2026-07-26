@@ -657,7 +657,12 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
+        # Blender keeps an object active after it has been deselected. Such an object is not
+        # visibly part of the selection, so treating it as the mirror plane would silently turn
+        # what looks like a single object mirror into a reflection across something off screen.
         active_obj = context.active_object
+        if active_obj and not active_obj.select_get():
+            active_obj = None
         objs_to_mirror = [obj for obj in context.selected_objects if obj != active_obj] if active_obj else []
         mirror_ref = active_obj if objs_to_mirror else None
         if mirror_ref is None:
@@ -681,6 +686,16 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             )
         elif self.unsupported_items:
             self.report({"WARNING"}, f"Could not mirror: {', '.join(sorted(self.unsupported_items))}")
+        if mirrored:
+            # Say which plane was used. A reflection across a reference whose origin already sits
+            # on the object's own mirror plane moves nothing, and without this the user cannot
+            # tell that the reference was taken into account at all.
+            about = (
+                f"across {mirror_ref.name} local {self.mirror_axis}"
+                if mirror_ref
+                else f"about own local {self.mirror_axis}"
+            )
+            self.report({"INFO"}, f"Mirrored {mirrored} object{'s' if mirrored > 1 else ''} {about}")
         return {"FINISHED"} if mirrored else {"CANCELLED"}
 
     def mirror_obj(
@@ -755,6 +770,10 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         context.view_layer.update()
         self.reflect_placement(obj, mirror_ref, geometry_axes, bb_data, axis_index)
+        # reflect_placement may have written obj.location, and matrix_world only picks that up
+        # after a depsgraph update. Without this the captured matrix is the pre-mirror one.
+        context.view_layer.update()
+        mirrored_matrix = obj.matrix_world.copy()
 
         # Openings are mirrored only now, after the origin has been reflected: they have to be
         # anchored to the host's final placement, and the frame change needs its final rotation.
@@ -768,6 +787,13 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         representation = self.get_target_representation(element, active_representation, active_context)
         if representation:
             bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+
+        # Everything above moved the Blender object. Write that placement to IFC now, or the
+        # mirror lives only in the viewport and the saved file keeps the old position. Reloading
+        # the representation can snap the object back to the committed placement, so the intended
+        # matrix is restored first.
+        obj.matrix_world = mirrored_matrix
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False)
         return True
 
     def get_target_representation(
