@@ -312,10 +312,11 @@ class FilledOpeningGenerator:
                     new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
 
                 if should_set_z_level:
+                    base_z = tool.Model.get_wall_base_z(voided_obj)
                     if filling.is_a("IfcDoor"):
-                        new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl1
+                        new_matrix.translation.z = base_z + props.rl1
                     else:
-                        new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
+                        new_matrix.translation.z = base_z + props.rl2
                 else:
                     new_matrix.translation.z = filling_obj.matrix_world.copy().translation.z
             elif layers["layer_set_direction"] == "AXIS3":

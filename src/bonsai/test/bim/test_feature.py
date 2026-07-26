@@ -1808,6 +1808,19 @@ def the_cursor_is_at_location(location):
     bpy.context.scene.cursor.location = [float(co) for co in location.split(",")]
 
 
+@given(parsers.parse('I move the mesh of the object "{name}" up by "{distance}"'))
+@when(parsers.parse('I move the mesh of the object "{name}" up by "{distance}"'))
+def i_move_the_mesh_of_the_object_name_up_by_distance(name, distance):
+    """Offset geometry from its own object origin, the shape a wall imported from
+    another authoring tool commonly has."""
+    obj = the_object_name_exists(name)
+    offset = Vector((0, 0, float(distance)))
+    for vertex in obj.data.vertices:
+        vertex.co += offset
+    obj.data.update()
+    bpy.context.view_layer.update()
+
+
 @given("I display the construction type browser")
 @when("I display the construction type browser")
 def i_display_the_construction_type_browser():
