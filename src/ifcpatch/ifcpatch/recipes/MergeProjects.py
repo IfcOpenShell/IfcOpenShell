@@ -22,6 +22,7 @@ from typing import Union
 
 import ifcpatch
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
@@ -43,6 +44,13 @@ class Patcher(ifcpatch.BasePatcher):
         Note that other than combining the two (or more) IfcProject elements into
         one, no further processing will be done. This means that you may end up
         with duplicate spatial hierarchies (i.e. 2 sites, 2 buildings, etc).
+
+        Those duplicated hierarchies are kept as separate objects, so any
+        incoming element whose GlobalId is already taken in the main model is
+        given a fresh GlobalId. Some authoring tools emit a constant GlobalId
+        for IfcProject and IfcBuilding across unrelated exports, and without
+        this the merged file would contain two IfcRoot entities sharing one
+        GlobalId, which is invalid IFC.
 
         Will automatically convert length units in the second model to the main
         model's unit before merging.
@@ -137,6 +145,8 @@ class Patcher(ifcpatch.BasePatcher):
         )
         self.added_contexts: set[ifcopenshell.entity_instance] = set()
 
+        existing_guids = {e.GlobalId for e in self.file.by_type("IfcRoot")}
+
         original_project = self.file.by_type("IfcProject")[0]
         merged_project = self.file.add(other.by_type("IfcProject")[0])
 
@@ -144,14 +154,44 @@ class Patcher(ifcpatch.BasePatcher):
             new = self.file.add(element)
             self.added_contexts.add(new)
 
+        added_roots: list[ifcopenshell.entity_instance] = []
         for element in other:
-            self.file.add(element)
+            new = self.file.add(element)
+            if element.is_a("IfcRoot"):
+                added_roots.append(new)
+
+        self.regenerate_colliding_guids(added_roots, merged_project, existing_guids)
 
         for inverse in self.file.get_inverse(merged_project):
             ifcopenshell.util.element.replace_attribute(inverse, merged_project, original_project)
         self.file.remove(merged_project)
 
         self.reuse_existing_contexts()
+
+    def regenerate_colliding_guids(
+        self,
+        added_roots: list[ifcopenshell.entity_instance],
+        merged_project: ifcopenshell.entity_instance,
+        existing_guids: set[str],
+    ) -> None:
+        collisions: list[str] = []
+        for root in added_roots:
+            if root == merged_project:
+                continue
+            guid = root.GlobalId
+            if guid not in existing_guids:
+                existing_guids.add(guid)
+                continue
+            root.GlobalId = ifcopenshell.guid.new()
+            existing_guids.add(root.GlobalId)
+            collisions.append(f"{root.is_a()} #{root.id()} ({guid})")
+
+        if collisions and self.logger:
+            self.logger.warning(
+                "MergeProjects: regenerated %s GlobalId(s) already used by the main model: %s",
+                len(collisions),
+                ", ".join(collisions[:10]) + (", ..." if len(collisions) > 10 else ""),
+            )
 
     def get_unit_name(self, ifc_file: ifcopenshell.file) -> str:
         length_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
