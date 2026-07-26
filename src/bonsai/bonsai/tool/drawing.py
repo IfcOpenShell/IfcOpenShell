@@ -1089,6 +1089,9 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.render_sharp = True
         camera_props.ridge_angle_min_degrees = 45.0
         camera_props.render_flush = False
+        camera_props.use_cross_coplanar_classification = False
+        camera_props.render_cross_coplanar = False
+        camera_props.cross_coplanar_tolerance = 0.0001
         camera.shift_x = 0.0
         camera.shift_y = 0.0
 
@@ -1130,6 +1133,12 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.ridge_angle_min_degrees = float(pset["RidgeAngleMinDegrees"])
             if "RenderFlush" in pset:
                 camera_props.render_flush = bool(pset["RenderFlush"])
+            if "UseCrossCoplanarClassification" in pset:
+                camera_props.use_cross_coplanar_classification = bool(pset["UseCrossCoplanarClassification"])
+            if "RenderCrossCoplanar" in pset:
+                camera_props.render_cross_coplanar = bool(pset["RenderCrossCoplanar"])
+            if "CrossCoplanarTolerance" in pset:
+                camera_props.cross_coplanar_tolerance = float(pset["CrossCoplanarTolerance"])
             if "DPI" in pset:
                 camera_props.dpi = int(pset["DPI"])
             if "LineworkMode" in pset:

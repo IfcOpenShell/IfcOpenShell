@@ -108,6 +108,9 @@ bool SvgSerializer::ready() {
 	svg_use_edge_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseEdgeClassification>().get();
 	svg_render_crease_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderCreaseEdges>().get();
 	svg_render_sharp_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderSharpEdges>().get();
+	svg_use_cross_coplanar_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseCrossCoplanarClassification>().get();
+	svg_render_cross_coplanar_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderCrossCoplanarEdges>().get();
+	svg_cross_coplanar_tolerance_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgCrossCoplanarTolerance>().get();
 	return true;
 }
 
@@ -588,6 +591,21 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	TopoDS_Shape compound_local = ((ifcopenshell::geometry::OpenCascadeShape*)itm)->shape();
 	delete itm;
 
+	// Cross-object "cross-coplanar" edge classification (issue #3742): a single representative
+	// style/material identity for the whole product -- see geometry_data::
+	// cross_coplanar_style_instance for why this is per-product rather than per-face/per-item.
+	// Whichever item resolves a style first wins; good enough for the common case, and cheap
+	// to skip entirely when the feature is off.
+	const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance = nullptr;
+	if (svg_use_cross_coplanar_classification_) {
+		for (auto& x : brep_obj->geometry()) {
+			if (x.hasStyle() && x.Style().instance) {
+				cross_coplanar_style_instance = x.Style().instance;
+				break;
+			}
+		}
+	}
+
 	for (auto& x : brep_obj->geometry()) {
 		dash_arrays.emplace_back();
 
@@ -779,7 +797,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 		return;
 	}
 
-	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
+	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj), cross_coplanar_style_instance };
 
 	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_ || deferred_section_data_) {
 		element_buffer_.push_back(data);
@@ -810,15 +828,23 @@ namespace {
 namespace {
 	// SVG edge classification (issue #3668). See edge-classification.md at the repo root for
 	// the authoritative definition of the five classes and their evaluation order.
-	enum class edge_style_class { boundary, outline, sharp, crease, flush };
+	//
+	// cross_coplanar (issue #3742) is a 6th, separately-gated class layered on top of the
+	// original five: it is never assigned by classify_edge_from_faces() itself (which only
+	// ever looks at a single product's own topology), but is instead applied afterward, in
+	// prefiltered_hlr::build(), to edges that classify_edge_from_faces() already resolved to
+	// one of the original five, whenever that edge's entire length also happens to lie on a
+	// coincident, same-style/material face of a *different* product.
+	enum class edge_style_class { boundary, outline, sharp, crease, flush, cross_coplanar };
 
 	const char* edge_style_class_name(edge_style_class c) {
 		switch (c) {
-		case edge_style_class::boundary: return "boundary";
-		case edge_style_class::outline:  return "outline";
-		case edge_style_class::sharp:    return "sharp";
-		case edge_style_class::crease:   return "crease";
-		default:                         return "flush";
+		case edge_style_class::boundary:       return "boundary";
+		case edge_style_class::outline:        return "outline";
+		case edge_style_class::sharp:          return "sharp";
+		case edge_style_class::crease:         return "crease";
+		case edge_style_class::cross_coplanar: return "cross-coplanar";
+		default:                               return "flush";
 		}
 	}
 
@@ -1486,9 +1512,11 @@ void SvgSerializer::write(const geometry_data& data) {
 					if (storey) {
 						auto it = storey_hlr.find(storey);
 						if (it == storey_hlr.end()) {
-							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
+							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane,
+								svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
+								svg_render_cross_coplanar_edges_) }).first;
 						}
-						it->second.add(*compound_to_hlr, data.product);
+						it->second.add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance);
 						for (auto& kv : classified_edge_buckets) {
 							it->second.add_classified_edges(data.product, kv.first, kv.second);
 						}
@@ -1496,7 +1524,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						logger_.Warning("SER", 28, "Unable to invoke HLR due to absence of storey containment", data.product);
 					}
 				} else if (hlr) {
-					hlr->add(*compound_to_hlr, data.product);
+					hlr->add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance);
 					for (auto& kv : classified_edge_buckets) {
 						hlr->add_classified_edges(data.product, kv.first, kv.second);
 					}
@@ -2379,7 +2407,9 @@ void SvgSerializer::finalize() {
 
 			// @todo do we have always have pln here?
 			if (use_hlr && pln) {
-				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, *pln);
+				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, *pln,
+					svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
+					svg_render_cross_coplanar_edges_);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };
@@ -2439,7 +2469,7 @@ void SvgSerializer::finalize() {
 								name = (std::string) a2;
 							}
 							write(geometry_data{
-								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey)
+								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey),nullptr
 							});
 						}
 					}

@@ -587,6 +587,30 @@ class BIMCameraProperties(PropertyGroup):
         default=False,
         update=get_update_layer_callback("render_flush", "RenderFlush"),
     )
+    use_cross_coplanar_classification: BoolProperty(
+        name="Use Cross-Coplanar Classification",
+        description="Additionally classify a projection edge as 'cross-coplanar' when its entire "
+        "length lies on a different element's coincident, same-style/material face -- a duplicate "
+        "boundary between two elements' coincident surfaces. Only takes effect when Use Edge "
+        "Classification is also enabled",
+        default=False,
+        update=get_update_layer_callback("use_cross_coplanar_classification", "UseCrossCoplanarClassification"),
+    )
+    render_cross_coplanar: BoolProperty(
+        name="Render Cross-Coplanar",
+        description="Render 'cross-coplanar' projection edges (duplicate boundaries between two "
+        "different elements' coincident surfaces). Omitted by default",
+        default=False,
+        update=get_update_layer_callback("render_cross_coplanar", "RenderCrossCoplanar"),
+    )
+    cross_coplanar_tolerance: FloatProperty(
+        name="Cross-Coplanar Tolerance",
+        description="Distance tolerance, in project length units, used when deciding whether two "
+        "different elements' faces are coincident for 'cross-coplanar' classification",
+        default=0.0001,
+        min=0.0,
+        update=get_update_layer_callback("cross_coplanar_tolerance", "CrossCoplanarTolerance"),
+    )
     target_view: EnumProperty(
         name="Target View",
         default="PLAN_VIEW",
