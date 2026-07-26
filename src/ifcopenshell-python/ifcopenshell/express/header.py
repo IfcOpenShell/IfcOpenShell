@@ -26,6 +26,7 @@ import documentation
 
 from collections import defaultdict
 
+
 class Header(codegen.Base):
     def __init__(self, mapping):
         declarations = []
@@ -41,7 +42,12 @@ class Header(codegen.Base):
             % dict({"documentation": templates.multi_line_comment(documentation.description(kwargs["name"]))}, **kwargs)
         )
 
-        forward_names = list(mapping.schema.entities.keys()) + list(mapping.schema.simpletypes.keys()) + list(mapping.schema.selects.keys()) + list(mapping.schema.enumerations.keys())
+        forward_names = (
+            list(mapping.schema.entities.keys())
+            + list(mapping.schema.simpletypes.keys())
+            + list(mapping.schema.selects.keys())
+            + list(mapping.schema.enumerations.keys())
+        )
         forward_definitions = "".join(["class %s; " % n for n in forward_names])
 
         select_super_types = defaultdict(list)
@@ -57,11 +63,14 @@ class Header(codegen.Base):
                     yield x
                     if mapping.schema.is_select(x):
                         yield from visit_select(mapping.schema.selects[x])
-                
-            write(templates.select, 
-                  name=name, 
-                  template_items="\n".join(templates.select_list_item % {'item_name': nm} for nm in visit_select(type)),
-                  cast_functions="\n".join(templates.select_cast_function % {'name': name, 'item_name': nm} for nm in visit_select(type)),
+
+            write(
+                templates.select,
+                name=name,
+                template_items="\n".join(templates.select_list_item % {"item_name": nm} for nm in visit_select(type)),
+                cast_functions="\n".join(
+                    templates.select_cast_function % {"name": name, "item_name": nm} for nm in visit_select(type)
+                ),
             )
 
         def get_select_super_types(nm, bases=[]):
@@ -115,10 +124,15 @@ class Header(codegen.Base):
                 # with the v1 data model we're back to exactly one supertype, no more virtual inheritance to handle selects
                 assert len(superclasses) == 1
                 superclass_statement = superclasses[0]
-                superclass_2 = superclass_statement.split('::')[-1]
+                superclass_2 = superclass_statement.split("::")[-1]
 
                 write(
-                    templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement, superclass_2=superclass_2
+                    templates.simpletype,
+                    name=name,
+                    type=type_str,
+                    attr_type=attr_type,
+                    superclass=superclass_statement,
+                    superclass_2=superclass_2,
                 )
 
         class_definitions = []
@@ -145,7 +159,7 @@ class Header(codegen.Base):
                         if mapping.make_argument_type(attr) != "ifcopenshell::Argument_UNKNOWN":
                             attr_lines.append("%s %s() const;" % (type_str, attr.name))
                             attr_lines.append("void set%s(const %s& v);" % (attr.name, type_str))
-                            if type_str == 'std::optional< std::string >':
+                            if type_str == "std::optional< std::string >":
                                 # because a 2-step char[] -> std::string -> optional<string> is not allowed
                                 # attr_lines.append("void set%s(const %s& v);" % (attr.name, 'std::string'))
                                 pass
@@ -182,7 +196,7 @@ class Header(codegen.Base):
                     supertypes = list(map(case_normalize, supertypes))
                     assert len(supertypes) == 1
                     superclass = supertypes[0]
-                    superclass_2 = superclass.split('::')[-1]
+                    superclass_2 = superclass.split("::")[-1]
 
                     argument_count = mapping.argument_count(type)
 

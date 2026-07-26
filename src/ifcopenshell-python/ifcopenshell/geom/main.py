@@ -547,9 +547,20 @@ def create_shape(
     return wrap_shape_creation(
         settings,
         (
-            ifcopenshell_wrapper.create_shape(settings, inst, repr, geometry_library, *ifcopenshell.optional_logger_args(logger),)
+            ifcopenshell_wrapper.create_shape(
+                settings,
+                inst,
+                repr,
+                geometry_library,
+                *ifcopenshell.optional_logger_args(logger),
+            )
             if repr
-            else ifcopenshell_wrapper.create_shape(settings, inst, geometry_library, *ifcopenshell.optional_logger_args(logger),)
+            else ifcopenshell_wrapper.create_shape(
+                settings,
+                inst,
+                geometry_library,
+                *ifcopenshell.optional_logger_args(logger),
+            )
         ),
     )
 

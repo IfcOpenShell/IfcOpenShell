@@ -83,7 +83,7 @@ class sqlite(file):
 
         if not Path(filepath).exists():
             raise FileNotFoundError(f"File doesn't exist: {filepath}")
-        
+
         # See ifcopenshell.file.file_mixin.post_init()
         # history, future and transaction are stored in a list so that they
         # can easily be shared among file instances that are the same C++

@@ -129,14 +129,16 @@ simpletype_impl_is_without_supertype = "return v == %(class_name)s_type;"
 simpletype_impl_type = "return *((ifcopenshell::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 simpletype_impl_class = "return *((ifcopenshell::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 simpletype_impl_explicit_constructor = "data_ = e;"
-simpletype_impl_constructor = (
-    "data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v);"
-)
+simpletype_impl_constructor = "data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v);"
 simpletype_impl_constructor_templated = "data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, cast_vector<express::Base>(v));"
 simpletype_impl_cast = "return get_attribute_value(0);"
-simpletype_impl_cast_templated = "std::vector<express::Base> es = get_attribute_value(0); return cast_vector<%(underlying_type)s>(es);"
+simpletype_impl_cast_templated = (
+    "std::vector<express::Base> es = get_attribute_value(0); return cast_vector<%(underlying_type)s>(es);"
+)
 
-simpletype_impl_declaration = "return *((ifcopenshell::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
+simpletype_impl_declaration = (
+    "return *((ifcopenshell::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
+)
 
 select = """%(documentation)s
 class IFC_SCHEMA_API %(name)s : public express::Select {
@@ -226,7 +228,7 @@ const ifcopenshell::entity& %(schema_name)s::%(name)s::Class() { return *((ifcop
 %(schema_name)s::%(name)s %(schema_name)s::%(name)s::initialize(%(constructor_arguments)s) { %(constructor_implementation)s; return *this; }
 """
 
-# data_ = e; 
+# data_ = e;
 # data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]);
 
 optional_attribute_description = "/// Whether the optional attribute %s is defined for this %s"
@@ -234,9 +236,7 @@ optional_attribute_description = "/// Whether the optional attribute %s is defin
 function = "%(return_type)s %(schema_name)s::%(class_name)s::%(name)s(%(arguments)s) { %(body)s }"
 const_function = "%(return_type)s %(schema_name)s::%(class_name)s::%(name)s(%(arguments)s) const { %(body)s }"
 constructor = "%(schema_name)s::%(class_name)s::%(class_name)s(%(arguments)s) { %(body)s }"
-initialize_single_initlist = (
-    "%(schema_name)s::%(class_name)s %(schema_name)s::%(class_name)s::initialize(%(arguments)s) { %(body)s; return *this; }"
-)
+initialize_single_initlist = "%(schema_name)s::%(class_name)s %(schema_name)s::%(class_name)s::initialize(%(arguments)s) { %(body)s; return *this; }"
 cast_function = "%(schema_name)s::%(class_name)s::operator %(return_type)s() const { %(body)s }"
 
 array_type = "std::vector< %(instance_type)s > /*[%(lower)s:%(upper)s]*/"
@@ -258,41 +258,25 @@ optional_attr_stmt = "return !get_attribute_value(%(index)d).isNull();"
 
 get_attr_stmt = "%(null_check)s %(non_optional_type)s v = get_attribute_value(%(index)d); return v;"
 get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(get_attribute_value(%(index)d));"
-get_attr_stmt_entity = "%(null_check)s return ((express::Base)(get_attribute_value(%(index)d))).as<%(non_optional_type_no_pointer)s>();"
+get_attr_stmt_entity = (
+    "%(null_check)s return ((express::Base)(get_attribute_value(%(index)d))).as<%(non_optional_type_no_pointer)s>();"
+)
 get_attr_stmt_array = "%(null_check)s std::vector<express::Base> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
 get_attr_stmt_nested_array = "%(null_check)s std::vector<std::vector<express::Base>> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
 
 get_inverse = "return cast_vector<%(type)s>(file()->get_inverse(data()->id(), %(schema_name_upper)s_types[%(type_index)d], %(index)d));"
 
-set_attr_stmt = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
-set_attr_instance = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, v);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
-set_attr_stmt_enum =  "%(check_optional_set_begin)sset_attribute_value(%(index)d, enumeration_reference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-set_attr_stmt_array = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
-set_attr_stmt_nested_array = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
+set_attr_stmt = "%(check_optional_set_begin)sset_attribute_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_instance = "%(check_optional_set_begin)sset_attribute_value(%(index)d, v);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_enum = "%(check_optional_set_begin)sset_attribute_value(%(index)d, enumeration_reference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_array = "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_nested_array = "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 
-constructor_stmt = (
-    "set_attribute_value(%(index)d, (%(name)s));"
-)
-constructor_stmt_enum = (
-    "set_attribute_value(%(index)d, (enumeration_reference(&%(type)s::Class(),(size_t)%(name)s)));"
-)
-constructor_stmt_array = (
-    "set_attribute_value(%(index)d, cast_vector<express::Base>(%(name)s));"
-)
-constructor_stmt_derived = (
-    ""
-)
-constructor_stmt_instance = (
-    "set_attribute_value(%(index)d, %(name)s);"
-)
+constructor_stmt = "set_attribute_value(%(index)d, (%(name)s));"
+constructor_stmt_enum = "set_attribute_value(%(index)d, (enumeration_reference(&%(type)s::Class(),(size_t)%(name)s)));"
+constructor_stmt_array = "set_attribute_value(%(index)d, cast_vector<express::Base>(%(name)s));"
+constructor_stmt_derived = ""
+constructor_stmt_instance = "set_attribute_value(%(index)d, %(name)s);"
 
 constructor_stmt_optional = " if (%(name)s) {%(stmt)s }"
 
@@ -301,5 +285,3 @@ inverse_implementation = '    inverse_map[Type::%(type)s].insert(std::make_pair(
 
 def multi_line_comment(li):
     return ("/// %s" % ("\n/// ".join(li))) if len(li) else ""
-
-

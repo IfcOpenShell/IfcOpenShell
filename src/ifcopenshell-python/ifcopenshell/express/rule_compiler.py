@@ -695,6 +695,7 @@ codegen_rule("MOD", lambda context: "%")
 codegen_rule("TRUE", lambda context: "True")
 codegen_rule("FALSE", lambda context: "False")
 
+
 def _dotted_name(node: ast.AST):
     """Return dotted name for Name/Attribute chains, else None."""
     if isinstance(node, ast.Name):
@@ -703,6 +704,7 @@ def _dotted_name(node: ast.AST):
         base = _dotted_name(node.value)
         return f"{base}.{node.attr}" if base else node.attr
     return None
+
 
 class AttributeGetattrTransformer(ast.NodeTransformer):
     def visit_Attribute(self, node):
@@ -720,7 +722,7 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
         if isinstance(node.ctx, ast.Store):
             return node
 
-        if _dotted_name(node) in ('ifcopenshell.create_entity', 'str.lower'):
+        if _dotted_name(node) in ("ifcopenshell.create_entity", "str.lower"):
             return node
 
         if node.attr.startswith("__"):

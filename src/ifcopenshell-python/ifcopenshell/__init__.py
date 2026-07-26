@@ -107,6 +107,7 @@ else:
 def optional_logger_args(logger: ifcopenshell_wrapper.logger | None) -> tuple[logger] | tuple[()]:
     return (logger,) if logger is not None else ()
 
+
 # explicitly specify available imported symbols
 # (it's a requirement for a typed library)
 __all__ = [

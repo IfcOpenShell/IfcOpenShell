@@ -701,9 +701,7 @@ class Property(Facet):
                 if isinstance(self.baseName, str):
                     prop = pset_props.get(self.baseName)
                     if prop == "UNKNOWN" and next(
-                        p
-                        for p in self.get_properties(inst.file.by_id(pset_props["id"]))
-                        if p.Name == self.baseName
+                        p for p in self.get_properties(inst.file.by_id(pset_props["id"])) if p.Name == self.baseName
                     ).NominalValue.is_a("IfcLogical"):
                         pass
                     elif prop is not None and prop != "":

@@ -22,7 +22,6 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.cogo
 import ifcopenshell.api.context
 
-
 try:
     ifcopenshell.file(schema="IFC4X3_ADD2")
     IFC4X3_AVAILABLE = True

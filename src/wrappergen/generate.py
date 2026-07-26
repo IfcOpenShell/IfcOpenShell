@@ -27,11 +27,7 @@ def _existing_directories(paths: list[Path]) -> list[str]:
 
 
 def _discover_headers(src_ifcparse: Path) -> list[str]:
-    return [
-        str(path.resolve())
-        for path in sorted(src_ifcparse.glob("*.h"))
-        if path.parent.name != "schemas"
-    ]
+    return [str(path.resolve()) for path in sorted(src_ifcparse.glob("*.h")) if path.parent.name != "schemas"]
 
 
 def _discover_boost_include_dirs() -> list[Path]:

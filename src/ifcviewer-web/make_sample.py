@@ -39,9 +39,9 @@ BAKE = HERE / "../../build-viewer/ifcviewer/sidecar_bake"
 
 # (class, name, footprint w x d in m, height in m, placement x/y/z in m)
 ELEMENTS = [
-    ("IfcSlab", "Slab",  (6.0, 6.0), 0.2, (-3.0, -3.0, 0.0)),
-    ("IfcWall", "Wall",  (5.0, 0.3), 3.0, (-2.5, -2.5, 0.2)),
-    ("IfcBeam", "Beam",  (0.3, 5.0), 0.3, (2.0, -2.5, 3.2)),
+    ("IfcSlab", "Slab", (6.0, 6.0), 0.2, (-3.0, -3.0, 0.0)),
+    ("IfcWall", "Wall", (5.0, 0.3), 3.0, (-2.5, -2.5, 0.2)),
+    ("IfcBeam", "Beam", (0.3, 5.0), 0.3, (2.0, -2.5, 3.2)),
 ]
 
 
@@ -51,8 +51,8 @@ def build_ifc(path: Path) -> None:
     ifcopenshell.api.unit.assign_unit(f, length={"is_metric": True, "raw": "METERS"})
     body = ifcopenshell.api.context.add_context(f, context_type="Model")
     body = ifcopenshell.api.context.add_context(
-        f, context_type="Model", context_identifier="Body",
-        target_view="MODEL_VIEW", parent=body)
+        f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=body
+    )
 
     site = ifcopenshell.api.root.create_entity(f, ifc_class="IfcSite", name="Site")
     storey = ifcopenshell.api.root.create_entity(f, ifc_class="IfcBuildingStorey", name="Ground floor")
@@ -61,30 +61,39 @@ def build_ifc(path: Path) -> None:
 
     for ifc_class, name, (w, d), height, (x, y, z) in ELEMENTS:
         element = ifcopenshell.api.root.create_entity(f, ifc_class=ifc_class, name=name)
-        ifcopenshell.api.spatial.assign_container(
-            f, products=[element], relating_structure=storey)
+        ifcopenshell.api.spatial.assign_container(f, products=[element], relating_structure=storey)
 
         # A rectangular profile extruded up — enough to be a recognisable,
         # distinctly-placed solid without dragging in a whole modelling stack.
         profile = f.create_entity(
-            "IfcRectangleProfileDef", ProfileType="AREA", XDim=w, YDim=d,
+            "IfcRectangleProfileDef",
+            ProfileType="AREA",
+            XDim=w,
+            YDim=d,
             Position=f.create_entity(
-                "IfcAxis2Placement2D",
-                Location=f.create_entity("IfcCartesianPoint", Coordinates=(w / 2, d / 2))))
+                "IfcAxis2Placement2D", Location=f.create_entity("IfcCartesianPoint", Coordinates=(w / 2, d / 2))
+            ),
+        )
         solid = f.create_entity(
-            "IfcExtrudedAreaSolid", SweptArea=profile, Depth=height,
+            "IfcExtrudedAreaSolid",
+            SweptArea=profile,
+            Depth=height,
             Position=f.create_entity(
-                "IfcAxis2Placement3D",
-                Location=f.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0))),
-            ExtrudedDirection=f.create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0)))
+                "IfcAxis2Placement3D", Location=f.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0))
+            ),
+            ExtrudedDirection=f.create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0)),
+        )
         representation = f.create_entity(
-            "IfcShapeRepresentation", ContextOfItems=body, RepresentationIdentifier="Body",
-            RepresentationType="SweptSolid", Items=[solid])
-        ifcopenshell.api.geometry.assign_representation(
-            f, product=element, representation=representation)
+            "IfcShapeRepresentation",
+            ContextOfItems=body,
+            RepresentationIdentifier="Body",
+            RepresentationType="SweptSolid",
+            Items=[solid],
+        )
+        ifcopenshell.api.geometry.assign_representation(f, product=element, representation=representation)
         ifcopenshell.api.geometry.edit_object_placement(
-            f, product=element,
-            matrix=ifcopenshell.util.placement.a2p((x, y, z), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0)))
+            f, product=element, matrix=ifcopenshell.util.placement.a2p((x, y, z), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
+        )
 
     f.write(str(path))
 

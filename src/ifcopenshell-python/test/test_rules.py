@@ -8,6 +8,7 @@ import tabulate
 import ifcopenshell.express.rule_executor
 import ifcopenshell.validate
 
+
 @pytest.mark.parametrize(
     "filename",
     [
@@ -45,4 +46,4 @@ def test_file(filename):
 
 
 if __name__ == "__main__":
-    pytest.main(["-sx", __file__, '--import-mode=importlib'])
+    pytest.main(["-sx", __file__, "--import-mode=importlib"])

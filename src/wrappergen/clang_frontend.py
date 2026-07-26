@@ -168,7 +168,9 @@ def _is_in_allowed_headers(cursor, allowed_headers: set[Path]) -> bool:
 def _is_in_allowed_namespace(cpp_name: str, config: WrapperConfig) -> bool:
     if not config.allowed_namespaces:
         return True
-    return any(cpp_name == namespace or cpp_name.startswith(f"{namespace}::") for namespace in config.allowed_namespaces)
+    return any(
+        cpp_name == namespace or cpp_name.startswith(f"{namespace}::") for namespace in config.allowed_namespaces
+    )
 
 
 def _matches_ignore(cpp_name: str, ignored: list[str]) -> bool:
@@ -328,7 +330,7 @@ def _python_default_value(
     if adapter == "integer":
         return cpp_value if cpp_value.lstrip("-").isdigit() else None
     if adapter == "string":
-        return cpp_value if cpp_value.startswith(("\"", "'")) else None
+        return cpp_value if cpp_value.startswith(('"', "'")) else None
     if is_enum_adapter(adapter):
         enum_name = enum_py_names.get(adapter.split(":", 1)[1])
         if enum_name is None:
@@ -393,9 +395,17 @@ def _finalize_overload_names(callables: list[CallableModel]) -> None:
         for index, callable_model in enumerate(group, start=1):
             parameter_suffix = "_".join(parameter.name for parameter in callable_model.parameters)
             if callable_model.kind == "constructor":
-                callable_model.py_name = f"{callable_model.py_name}_{parameter_suffix}" if parameter_suffix else f"{callable_model.py_name}_overload_{index}"
+                callable_model.py_name = (
+                    f"{callable_model.py_name}_{parameter_suffix}"
+                    if parameter_suffix
+                    else f"{callable_model.py_name}_overload_{index}"
+                )
             else:
-                callable_model.py_name = f"{callable_model.py_name}_with_{parameter_suffix}" if parameter_suffix else f"{callable_model.py_name}_overload_{index}"
+                callable_model.py_name = (
+                    f"{callable_model.py_name}_with_{parameter_suffix}"
+                    if parameter_suffix
+                    else f"{callable_model.py_name}_overload_{index}"
+                )
                 callable_model.c_name = normalize_identifier(callable_model.py_name)
 
 
@@ -473,7 +483,9 @@ def _discover_methods(
         qualified_name = f"{owner.cpp_name}::{child.spelling}"
         if _matches_ignore(qualified_name, config.ignore.methods):
             continue
-        return_adapter = _resolve_return_adapter(child.result_type.spelling, scalar_adapters, enum_cursors, class_models_by_cpp)
+        return_adapter = _resolve_return_adapter(
+            child.result_type.spelling, scalar_adapters, enum_cursors, class_models_by_cpp
+        )
         if return_adapter is None:
             continue
         parameters = _build_parameter_models(child, config, scalar_adapters, enum_cursors)
@@ -535,7 +547,9 @@ def build_module_model(config: WrapperConfig) -> ModuleModel:
     for normalized_cpp_name, cursor in class_cursors.items():
         owner = class_models_by_cpp[normalized_cpp_name]
         owner.callables.extend(_discover_constructors(cursor, owner, config, scalar_adapters, enum_cursors))
-        owner.callables.extend(_discover_methods(cursor, owner, config, scalar_adapters, enum_cursors, class_models_by_cpp))
+        owner.callables.extend(
+            _discover_methods(cursor, owner, config, scalar_adapters, enum_cursors, class_models_by_cpp)
+        )
         owner.callables = _deduplicate_callables(owner.callables)
         _finalize_overload_names(owner.callables)
 

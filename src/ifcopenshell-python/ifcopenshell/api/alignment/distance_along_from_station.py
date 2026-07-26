@@ -73,7 +73,10 @@ def distance_along_from_station(file: ifcopenshell.file, alignment: entity_insta
         return station - start_station
 
     stations = [
-        (_distance_along_of_referent(referent), ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="Station"))
+        (
+            _distance_along_of_referent(referent),
+            ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="Station"),
+        )
         for referent in referent_nest.RelatedObjects
     ]
     stations.sort(key=lambda entry: entry[0])

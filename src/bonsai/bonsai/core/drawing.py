@@ -308,9 +308,9 @@ def add_drawing(
     group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=group, products=[element])
-    
+
     ifc.run("group.assign_group", group=drawings_parent_group, products=[group])
-    
+
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
     if drawing.get_unit_system() == "METRIC":

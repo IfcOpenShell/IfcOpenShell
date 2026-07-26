@@ -24,7 +24,6 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
-
 try:
     ifcopenshell.file(schema="IFC4X3_ADD2")
     IFC4X3_AVAILABLE = True

@@ -161,7 +161,18 @@ keywords = list(filter(operator.attrgetter("is_keyword"), terminals))
 # terminals is identity-ordered (no __eq__/__hash__), so sort for determinism
 keywords.sort(key=lambda x: repr(x))
 negated_keywords = map(lambda s: "~%s" % s, keywords)
-no_action = {"letter", "digit", "digits", "real_literal", "integer_literal", "string_literal", "simple_string_literal", "letter", "not_quote", "not_paren_star_quote_special"}
+no_action = {
+    "letter",
+    "digit",
+    "digits",
+    "real_literal",
+    "integer_literal",
+    "string_literal",
+    "simple_string_literal",
+    "letter",
+    "not_quote",
+    "not_paren_star_quote_special",
+}
 
 while True:
     emitted_in_loop = set()
@@ -197,7 +208,9 @@ for id in sorted(to_emit):
     elif id in to_original_text:
         stmt = "(original_text_for%s).add_parse_action(token_map(str.lower))" % stmt
     if id not in no_action and not isinstance(expr.contents, Keyword):
-        children = list(map(operator.attrgetter('contents'), reduce(lambda x, y: x | y, (find_bytype(e, Keyword) for e in [expr]))))
+        children = list(
+            map(operator.attrgetter("contents"), reduce(lambda x, y: x | y, (find_bytype(e, Keyword) for e in [expr])))
+        )
         has_duplicates = len(children) > len(set(children))
         node_type = "ListNode" if ("ZeroOrMore" in stmt or has_duplicates) else "Node"
         action = ".set_parse_action(%s)" % (
@@ -246,6 +259,4 @@ if __name__ == "__main__":
         mdl = importlib.import_module(output)
         mdl.Generator(m).emit()
     sys.stdout.write(m.schema.name)
-"""
-        % ("\n        ".join(statements))
-    )
+""" % ("\n        ".join(statements)))

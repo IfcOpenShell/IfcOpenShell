@@ -1,5 +1,6 @@
 import ifcopenshell
 
+
 def test_skip_over_non_entity_instance():
     data = """
 ISO-10303-21;

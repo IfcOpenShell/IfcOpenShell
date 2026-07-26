@@ -13,6 +13,7 @@ class FileType(IntEnum):
     FT_UNKNOWN = _native.FT_UNKNOWN
     FT_AUTODETECT = _native.FT_AUTODETECT
 
+
 class exception:
     __slots__ = ("_handle",)
 
@@ -22,6 +23,7 @@ class exception:
     @staticmethod
     def with_message(message: str) -> exception:
         return exception(_native.exception_new_with_message(message))
+
 
 class attribute_out_of_range_exception:
     __slots__ = ("_handle",)
@@ -33,6 +35,7 @@ class attribute_out_of_range_exception:
     def with_message(message: str) -> attribute_out_of_range_exception:
         return attribute_out_of_range_exception(_native.attribute_out_of_range_exception_new_with_message(message))
 
+
 class invalid_token_exception:
     __slots__ = ("_handle",)
 
@@ -40,8 +43,15 @@ class invalid_token_exception:
         self._handle = handle
 
     @staticmethod
-    def with_token_start_token_string_expected_type(token_start: int, token_string: str, expected_type: str) -> invalid_token_exception:
-        return invalid_token_exception(_native.invalid_token_exception_new_with_token_start_token_string_expected_type(token_start, token_string, expected_type))
+    def with_token_start_token_string_expected_type(
+        token_start: int, token_string: str, expected_type: str
+    ) -> invalid_token_exception:
+        return invalid_token_exception(
+            _native.invalid_token_exception_new_with_token_start_token_string_expected_type(
+                token_start, token_string, expected_type
+            )
+        )
+
 
 class parameter_type:
     __slots__ = ("_handle",)
@@ -61,6 +71,7 @@ class parameter_type:
     def is_(self, arg0: str) -> bool:
         return _native.parameter_type_is(self._handle, arg0)
 
+
 class named_type:
     __slots__ = ("_handle",)
 
@@ -76,6 +87,7 @@ class named_type:
     def is_(self, name: str) -> bool:
         return _native.named_type_is(self._handle, name)
 
+
 class simple_type:
     __slots__ = ("_handle",)
 
@@ -84,6 +96,7 @@ class simple_type:
 
     def as_simple_type(self) -> simple_type:
         return simple_type(_native.simple_type_as_simple_type(self._handle))
+
 
 class aggregation_type:
     __slots__ = ("_handle",)
@@ -102,6 +115,7 @@ class aggregation_type:
 
     def as_aggregation_type(self) -> aggregation_type:
         return aggregation_type(_native.aggregation_type_as_aggregation_type(self._handle))
+
 
 class declaration:
     __slots__ = ("_handle",)
@@ -143,6 +157,7 @@ class declaration:
     def schema(self) -> schema_definition:
         return schema_definition(_native.declaration_schema(self._handle))
 
+
 class type_declaration:
     __slots__ = ("_handle",)
 
@@ -154,6 +169,7 @@ class type_declaration:
 
     def as_type_declaration(self) -> type_declaration:
         return type_declaration(_native.type_declaration_as_type_declaration(self._handle))
+
 
 class select_type:
     __slots__ = ("_handle",)
@@ -167,6 +183,7 @@ class select_type:
     def as_select_type(self) -> select_type:
         return select_type(_native.select_type_as_select_type(self._handle))
 
+
 class enumeration_type:
     __slots__ = ("_handle",)
 
@@ -178,6 +195,7 @@ class enumeration_type:
 
     def as_enumeration_type(self) -> enumeration_type:
         return enumeration_type(_native.enumeration_type_as_enumeration_type(self._handle))
+
 
 class attribute:
     __slots__ = ("_handle",)
@@ -193,6 +211,7 @@ class attribute:
 
     def optional(self) -> bool:
         return _native.attribute_optional(self._handle)
+
 
 class inverse_attribute:
     __slots__ = ("_handle",)
@@ -214,6 +233,7 @@ class inverse_attribute:
 
     def attribute_reference(self) -> attribute:
         return attribute(_native.inverse_attribute_attribute_reference(self._handle))
+
 
 class entity:
     __slots__ = ("_handle",)
@@ -248,6 +268,7 @@ class entity:
     def as_entity(self) -> entity:
         return entity(_native.entity_as_entity(self._handle))
 
+
 class schema_definition:
     __slots__ = ("_handle",)
 
@@ -258,7 +279,9 @@ class schema_definition:
         return declaration(_native.schema_definition_declaration_by_name_with_name(self._handle, name))
 
     def declaration_by_name_with_declaration_index(self, declaration_index: int) -> declaration:
-        return declaration(_native.schema_definition_declaration_by_name_with_declaration_index(self._handle, declaration_index))
+        return declaration(
+            _native.schema_definition_declaration_by_name_with_declaration_index(self._handle, declaration_index)
+        )
 
     def declarations(self) -> list[declaration]:
         return [declaration(item) for item in _native.schema_definition_declarations(self._handle)]
@@ -277,6 +300,7 @@ class schema_definition:
 
     def name(self) -> str:
         return _native.schema_definition_name(self._handle)
+
 
 class Base:
     __slots__ = ("_handle",)
@@ -301,6 +325,7 @@ class Base:
     def id(self) -> int:
         return _native.base_id(self._handle)
 
+
 class Entity:
     __slots__ = ("_handle",)
 
@@ -313,6 +338,7 @@ class Entity:
 
     def get_inverse(self, attribute_name: str) -> list[Entity]:
         return [Entity(item) for item in _native.entity_get_inverse(self._handle, attribute_name)]
+
 
 class Select:
     __slots__ = ("_handle",)
@@ -327,6 +353,7 @@ class Select:
     def concrete(self) -> Base:
         return Base(_native.select_concrete(self._handle))
 
+
 class DeclaredType:
     __slots__ = ("_handle",)
 
@@ -336,6 +363,7 @@ class DeclaredType:
     @staticmethod
     def create() -> DeclaredType:
         return DeclaredType(_native.declared_type_new())
+
 
 class full_buffer_impl:
     __slots__ = ("_handle",)
@@ -365,6 +393,7 @@ class full_buffer_impl:
         _native.full_buffer_impl_drop_pages(self._handle, up_to_position)
         return None
 
+
 class paged_file_impl:
     __slots__ = ("_handle",)
 
@@ -373,7 +402,9 @@ class paged_file_impl:
 
     @staticmethod
     def with_path_page_size_page_capacity(path: str, page_size: int, page_capacity: int) -> paged_file_impl:
-        return paged_file_impl(_native.paged_file_impl_new_with_path_page_size_page_capacity(path, page_size, page_capacity))
+        return paged_file_impl(
+            _native.paged_file_impl_new_with_path_page_size_page_capacity(path, page_size, page_capacity)
+        )
 
     def size(self) -> int:
         return _native.paged_file_impl_size(self._handle)
@@ -388,6 +419,7 @@ class paged_file_impl:
     def drop_pages(self, up_to_position: int) -> None:
         _native.paged_file_impl_drop_pages(self._handle, up_to_position)
         return None
+
 
 class pushed_sequential_impl:
     __slots__ = ("_handle",)
@@ -409,6 +441,7 @@ class pushed_sequential_impl:
         _native.pushed_sequential_impl_drop_pages(self._handle, up_to_position)
         return None
 
+
 class character_encoder:
     __slots__ = ("_handle",)
 
@@ -419,6 +452,7 @@ class character_encoder:
     def with_input(input: str) -> character_encoder:
         return character_encoder(_native.character_encoder_new_with_input(input))
 
+
 class file_open_status:
     __slots__ = ("_handle",)
 
@@ -427,6 +461,7 @@ class file_open_status:
 
     pass
 
+
 class spf_header:
     __slots__ = ("_handle",)
 
@@ -434,6 +469,7 @@ class spf_header:
         self._handle = handle
 
     pass
+
 
 class file:
     __slots__ = ("_handle",)
@@ -507,6 +543,7 @@ class file:
     def reset_identity_cache(self) -> None:
         _native.file_reset_identity_cache(self._handle)
         return None
+
 
 class global_id:
     __slots__ = ("_handle",)

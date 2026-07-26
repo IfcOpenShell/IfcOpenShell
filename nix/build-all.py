@@ -814,17 +814,12 @@ def install_qt6() -> str:
     # the supported flow is a pre-installed Qt6 advertised via QT_DIR.
     preset_qt_dir = os.environ.get("QT_DIR", "").strip()
     if preset_qt_dir:
-        preset_qt_config = (
-            Path(preset_qt_dir) / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake"
-        )
+        preset_qt_config = Path(preset_qt_dir) / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake"
         if preset_qt_config.exists():
-            logger.info(
-                f"Using pre-set QT_DIR={preset_qt_dir}, skipping aqt install"
-            )
+            logger.info(f"Using pre-set QT_DIR={preset_qt_dir}, skipping aqt install")
             return preset_qt_dir
         logger.warning(
-            f"QT_DIR={preset_qt_dir} is set but {preset_qt_config} not found; "
-            f"falling through to aqtinstall"
+            f"QT_DIR={preset_qt_dir} is set but {preset_qt_config} not found; " f"falling through to aqtinstall"
         )
 
     host, qt_arch, install_suffix = get_qt6_aqt_config()
@@ -1463,8 +1458,8 @@ elif "occ" in targets:
     cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
 
 if "manifold" in targets:
-     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
-     cmake_args.append("-DWITH_MANIFOLD=On")
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
+    cmake_args.append("-DWITH_MANIFOLD=On")
 
 if "OpenCOLLADA" in targets:
     # pcre is a dependency of OpenCOLLADA, but since we `find_package`,

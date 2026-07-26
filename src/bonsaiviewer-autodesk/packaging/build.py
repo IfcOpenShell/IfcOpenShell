@@ -29,11 +29,11 @@ import zipfile
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DIST_DIR     = PROJECT_ROOT / "dist"
-TARGET_DIR   = PROJECT_ROOT / "target" / "release"
+DIST_DIR = PROJECT_ROOT / "dist"
+TARGET_DIR = PROJECT_ROOT / "target" / "release"
 
 CONNECTOR_FOLDER_NAME = "autodesk"
-BINARY_NAME           = "bonsaiviewer-autodesk"
+BINARY_NAME = "bonsaiviewer-autodesk"
 
 
 def _platform_tag() -> str:
@@ -73,9 +73,7 @@ def main() -> None:
 
     bin_src = TARGET_DIR / _binary_name_for_host()
     if not bin_src.exists():
-        raise FileNotFoundError(
-            f"cargo build did not produce expected binary at {bin_src}"
-        )
+        raise FileNotFoundError(f"cargo build did not produce expected binary at {bin_src}")
 
     bundle_dir = DIST_DIR / CONNECTOR_FOLDER_NAME
     bundle_dir.mkdir(parents=True)

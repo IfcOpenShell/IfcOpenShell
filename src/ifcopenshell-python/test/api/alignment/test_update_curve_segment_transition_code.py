@@ -31,6 +31,7 @@ try:
 except RuntimeError:
     IFC4X3_AVAILABLE = False
 
+
 def _test1():
     file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")

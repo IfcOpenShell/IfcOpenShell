@@ -32,6 +32,7 @@ try:
 except RuntimeError:
     IFC4X3_AVAILABLE = False
 
+
 def _CircularArc_100_0_10_0_0_0_0_5_1_Meter(file):
     design_parameters = file.createIfcAlignmentVerticalSegment(
         StartDistAlong=0.0,

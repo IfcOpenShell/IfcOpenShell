@@ -25,7 +25,6 @@ import ifcopenshell.api.unit
 import ifcopenshell.util
 import ifcopenshell.util.unit
 
-
 try:
     ifcopenshell.file(schema="IFC4X3_ADD2")
     IFC4X3_AVAILABLE = True

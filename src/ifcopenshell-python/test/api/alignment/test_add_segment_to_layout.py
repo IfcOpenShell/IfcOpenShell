@@ -24,7 +24,6 @@ import ifcopenshell.api.context
 import ifcopenshell.api.unit
 from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
-
 try:
     ifcopenshell.file(schema="IFC4X3")
     IFC4X3_AVAILABLE = True
