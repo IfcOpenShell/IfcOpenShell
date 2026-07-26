@@ -37,6 +37,7 @@
 #include <set>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
 #include <string>
 #include <iomanip>
 #include <charconv>
@@ -1183,29 +1184,65 @@ namespace {
             }
             data_ << ")";
         }
+        // Shortest decimal representation of 'd' that round-trips back to the
+        // exact same double (like std::to_chars, or Python's repr).
+        // Using actual `std::to_chars` requires macOS 13.3+, so we implement this manually,
+        // until we drop support for older targets.
+        //
+        // Mirrors libstdc++'s notation-choice bounds (floating_to_chars.cc,
+        // __floating_to_chars_shortest) to pick whichever of fixed/scientific is
+        // shorter for a given digit count and exponent.
+        static inline void format_double_shortest(char (&buf)[64], double d) {
+            char sci[64];
+            int mantissa_length = 17;
+            for (int prec = 1; prec <= 17; ++prec) {
+                snprintf(sci, sizeof(sci), "%.*e", prec - 1, d);
+                if (strtod(sci, nullptr) == d) {
+                    mantissa_length = prec;
+                    break;
+                }
+            }
+            const char* exp_str = strchr(sci, 'e');
+            const int scientific_exponent = exp_str ? atoi(exp_str + 1) : 0;
+            const int fd_exponent = scientific_exponent - (mantissa_length - 1);
+            int lower_bound = -(mantissa_length + 3);
+            int upper_bound = 5;
+            if (mantissa_length == 1) {
+                ++lower_bound;
+                --upper_bound;
+            }
+            if (fd_exponent >= lower_bound && fd_exponent <= upper_bound) {
+                const int fixed_precision = fd_exponent < 0 ? -fd_exponent : 0;
+                snprintf(buf, 64, "%.*f", fixed_precision, d);
+            } else {
+                snprintf(buf, 64, "%.*e", mantissa_length - 1, d);
+            }
+        }
         // The REAL token definition from the IFC SPF standard does not necessarily match
         // the output of the C++ ostream formatting operation.
         // REAL = [ SIGN ] DIGIT { DIGIT } "." { DIGIT } [ "E" [ SIGN ] DIGIT { DIGIT } ] .
         static std::string format_double(const double& d) {
-            std::ostringstream oss;
-            oss.imbue(std::locale::classic());
-            oss << std::setprecision(std::numeric_limits<double>::digits10) << d;
-            const std::string str = oss.str();
-            oss.str("");
+            // Use the shortest representation that round-trips exactly (like
+            // Python's repr) instead of max_digits10. max_digits10 padded clean
+            // values with noise digits (0.0174532925199433 -> 0.017453292519943299),
+            // which rewrote every REAL and produced huge diffs when a file was
+            // re-saved. See #7696.
+            char buf[64];
+            format_double_shortest(buf, d);
+            const std::string str(buf);
             std::string::size_type e = str.find('e');
             if (e == std::string::npos) {
                 e = str.find('E');
             }
-            const std::string mantissa = str.substr(0, e);
-            oss << mantissa;
-            if (mantissa.find('.') == std::string::npos) {
-                oss << ".";
+            std::string result = str.substr(0, e);
+            if (result.find('.') == std::string::npos) {
+                result += '.';
             }
             if (e != std::string::npos) {
-                oss << "E";
-                oss << str.substr(e + 1);
+                result += 'E';
+                result += str.substr(e + 1);
             }
-            return oss.str();
+            return result;
         }
 
         static std::string format_binary(const boost::dynamic_bitset<>& b) {
@@ -2131,7 +2168,8 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointe
             }
 
             if (entity_type->as_entity() == nullptr) {
-                logger_.get().message(::logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].start_pos));
+                logger_.get().message(::logger::LOG_ERROR, "Non-entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].start_pos));
+                current_id = 0;
                 goto advance;
             }
 
