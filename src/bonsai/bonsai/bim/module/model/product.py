@@ -653,6 +653,9 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         default="X",
     )
 
+    # The last run, so Adjust Last Operation can undo it before applying a new axis.
+    _last_run: Optional[dict[str, Any]] = None
+
     @classmethod
     def poll(cls, context):
         return context.selected_objects
@@ -679,6 +682,13 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             return objs_to_mirror, active_obj
         return selected, None
 
+    def invoke(self, context, event):
+        # Marks this as a new run rather than Adjust Last Operation re-running the last one.
+        # Blender calls invoke for a button or a keymap and only execute for a redo, and the
+        # attribute does not survive into the fresh instance Blender builds for that redo.
+        self.is_fresh_invocation = True
+        return self.execute(context)
+
     def _execute(self, context):
         objs_to_mirror, mirror_ref = self.resolve_selection(context)
         if mirror_ref is None and len(context.selected_objects) > 1:
@@ -690,12 +700,28 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         axis_index = "XYZ".index(self.mirror_axis)
         self.unsupported_items: set[str] = set()
         self.skipped: list[str] = []
+
+        # Adjust Last Operation re-runs the operator, but Blender's redo path never fires the
+        # undo handler that rolls the IFC back, so the previous run's inversion is still in the
+        # file. Inverting X and then Y composes into a 180 degree rotation, which is not a
+        # mirror at all. A mirror is its own inverse, so replaying the previous run undoes it
+        # and the new axis then applies to the original geometry.
+        if not self.__dict__.pop("is_fresh_invocation", False):
+            self.revert_last_run(context)
+
         mirrored = 0
         for obj in objs_to_mirror:
             try:
                 mirrored += bool(self.mirror_obj(context, obj, mirror_ref, axis_index))
             except SharedMappedGeometryError as e:
                 self.report({"ERROR"}, str(e))
+        if mirrored:
+            MirrorElements._last_run = {
+                "objects": [obj.name for obj in objs_to_mirror],
+                "reference": mirror_ref.name if mirror_ref else None,
+                "axis_index": axis_index,
+                "file": id(tool.Ifc.get()),
+            }
         if self.skipped:
             self.report(
                 {"ERROR"} if not mirrored else {"WARNING"},
@@ -719,6 +745,35 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"INFO"}, summary)
             print(f"[bim.mirror_elements] {summary}")
         return {"FINISHED"} if mirrored else {"CANCELLED"}
+
+    @staticmethod
+    def find_object(name: str) -> Optional[bpy.types.Object]:
+        return bpy.data.objects.get(name)
+
+    def revert_last_run(self, context: bpy.types.Context) -> None:
+        """Undo the previous run by replaying it, since mirroring is its own inverse."""
+        previous = MirrorElements._last_run
+        if not previous:
+            return
+        MirrorElements._last_run = None
+        # Names are only meaningful within the project the run happened in. Another project
+        # can hold different objects under the same names.
+        if previous["file"] != id(tool.Ifc.get()):
+            return
+        objs = [obj for name in previous["objects"] if (obj := self.find_object(name))]
+        if not objs:
+            return
+        reference = self.find_object(previous["reference"]) if previous["reference"] else None
+        if previous["reference"] and reference is None:
+            return
+        for obj in objs:
+            try:
+                self.mirror_obj(context, obj, reference, previous["axis_index"])
+            except SharedMappedGeometryError:
+                pass
+        # The replay's findings describe the state we just discarded, not this run's request.
+        self.unsupported_items.clear()
+        self.skipped.clear()
 
     def mirror_obj(
         self,

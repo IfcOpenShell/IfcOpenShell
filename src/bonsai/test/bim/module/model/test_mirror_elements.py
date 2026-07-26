@@ -33,6 +33,7 @@ axes at once is a 180 degree rotation, not a reflection, and would leave
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import bpy
 import ifcopenshell
 import numpy as np
 import pytest
@@ -208,6 +209,95 @@ def test_the_mirror_plane_passes_through_the_middle_of_the_reference():
     assert np.allclose(list(obj.matrix_world.translation), [21.0, 0.0, 0.0])
 
 
+def test_adjust_last_operation_undoes_the_previous_run_first():
+    """Blender's redo path re-runs execute without firing the undo handler, so the previous
+    run's inversion is still in the IFC. Inverting X then Y composes into a 180 degree
+    rotation. Mirroring is its own inverse, so the previous run is replayed to cancel it."""
+    from bonsai.bim.module.model.product import MirrorElements
+
+    replayed = []
+
+    class Stub:
+        _execute = MirrorElements._execute
+        revert_last_run = MirrorElements.revert_last_run
+        resolve_selection = MirrorElements.__dict__["resolve_selection"]
+        mirror_axis = "Y"
+
+        def mirror_obj(self, context, obj, mirror_ref=None, axis_index=0):
+            replayed.append((obj.name, axis_index))
+            return True
+
+        def report(self, level, message):
+            pass
+
+    target = SimpleNamespace(name="target", select_get=lambda: True)
+    context = SimpleNamespace(active_object=target, selected_objects=[target])
+
+    Stub.find_object = staticmethod(lambda name: target if name == "target" else None)
+    with patch("bonsai.tool.Ifc.get", return_value=None):
+        MirrorElements._last_run = {
+            "objects": ["target"],
+            "reference": None,
+            "axis_index": 0,
+            "file": id(None),
+        }
+        Stub()._execute(context)
+
+    assert replayed == [("target", 0), ("target", 1)], "the X run must be replayed before Y"
+    MirrorElements._last_run = None
+
+
+def test_a_fresh_invocation_does_not_undo_the_previous_run():
+    from bonsai.bim.module.model.product import MirrorElements
+
+    replayed = []
+
+    class Stub:
+        _execute = MirrorElements._execute
+        revert_last_run = MirrorElements.revert_last_run
+        resolve_selection = MirrorElements.__dict__["resolve_selection"]
+        mirror_axis = "Y"
+
+        def mirror_obj(self, context, obj, mirror_ref=None, axis_index=0):
+            replayed.append((obj.name, axis_index))
+            return True
+
+        def report(self, level, message):
+            pass
+
+    target = SimpleNamespace(name="target", select_get=lambda: True)
+    context = SimpleNamespace(active_object=target, selected_objects=[target])
+
+    with patch("bonsai.tool.Ifc.get", return_value=None):
+        MirrorElements._last_run = {"objects": ["target"], "reference": None, "axis_index": 0, "file": id(None)}
+        stub = Stub()
+        stub.is_fresh_invocation = True
+        stub._execute(context)
+
+    assert replayed == [("target", 1)], "a button or hotkey run must not undo anything"
+    MirrorElements._last_run = None
+
+
+def test_a_stale_run_from_another_project_is_not_replayed():
+    from bonsai.bim.module.model.product import MirrorElements
+
+    replayed = []
+
+    class Stub:
+        revert_last_run = MirrorElements.revert_last_run
+        find_object = staticmethod(lambda name: None)
+
+        def mirror_obj(self, context, obj, mirror_ref=None, axis_index=0):
+            replayed.append(obj.name)
+            return True
+
+    MirrorElements._last_run = {"objects": ["target"], "reference": None, "axis_index": 0, "file": 12345}
+    with patch("bonsai.tool.Ifc.get", return_value=None):
+        Stub().revert_last_run(None)
+    assert replayed == []
+    MirrorElements._last_run = None
+
+
 def test_a_reference_is_kept_even_when_its_selection_flag_lags():
     """Losing the reference falls back to an in-place mirror, which on a wall's Y is invisible.
 
@@ -237,6 +327,7 @@ def test_the_mirror_plane_ignores_an_active_object_that_is_not_selected():
 
     class Stub:
         _execute = MirrorElements._execute
+        revert_last_run = MirrorElements.revert_last_run
         resolve_selection = MirrorElements.__dict__["resolve_selection"]
         mirror_axis = "X"
 
