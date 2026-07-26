@@ -632,10 +632,24 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
         "Mirrors the selected objects in place by truly inverting their geometry. "
-        "Select a single object to mirror it about its own local YZ plane. "
+        "Select a single object to mirror it about one of its own local planes. "
         "Select two or more objects and the active object becomes the mirror plane, "
         "with every other selected object reflected across it. Nothing is duplicated: "
         "duplicate first if you want to keep the original"
+    )
+
+    mirror_axis: bpy.props.EnumProperty(
+        name="Mirror Axis",
+        description=(
+            "Local axis to mirror along. With a single object this is the object's own axis, "
+            "otherwise it is the axis of the active reference object"
+        ),
+        items=(
+            ("X", "X", "Mirror along local X, about the local YZ plane"),
+            ("Y", "Y", "Mirror along local Y, about the local XZ plane"),
+            ("Z", "Z", "Mirror along local Z, about the local XY plane"),
+        ),
+        default="X",
     )
 
     @classmethod
@@ -649,42 +663,42 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         if mirror_ref is None:
             objs_to_mirror = list(context.selected_objects)
 
+        axis_index = "XYZ".index(self.mirror_axis)
         self.unsupported_items: set[str] = set()
+        self.skipped: list[str] = []
+        mirrored = 0
         for obj in objs_to_mirror:
             try:
-                self.mirror_obj(context, obj, mirror_ref)
+                mirrored += bool(self.mirror_obj(context, obj, mirror_ref, axis_index))
             except SharedMappedGeometryError as e:
                 self.report({"ERROR"}, str(e))
-        if self.unsupported_items:
+        if self.skipped:
+            self.report(
+                {"ERROR"} if not mirrored else {"WARNING"},
+                f"Cannot invert {', '.join(self.skipped)} along {self.mirror_axis}"
+                f" ({', '.join(sorted(self.unsupported_items))}), left untouched."
+                " Try a different mirror axis.",
+            )
+        elif self.unsupported_items:
             self.report({"WARNING"}, f"Could not mirror: {', '.join(sorted(self.unsupported_items))}")
-        return {"FINISHED"}
+        return {"FINISHED"} if mirrored else {"CANCELLED"}
 
     def mirror_obj(
         self,
         context: bpy.types.Context,
         obj: bpy.types.Object,
         mirror_ref: Optional[bpy.types.Object] = None,
-    ) -> None:
+        axis_index: int = 0,
+    ) -> bool:
+        """Mirror a single object. False means it was left untouched."""
         element = tool.Ifc.get_entity(obj)
         if not element:
-            return
+            return False
 
         active_context = tool.Geometry.get_active_representation_context(obj)
         active_representation = tool.Geometry.get_active_representation(obj)
         bb_data = tool.Blender.get_object_bounding_box(obj)
-        mirror_axes = self.get_mirror_axes(obj, mirror_ref)
-
-        # Snapshot opening world placements AND the host placement BEFORE any geometry or
-        # origin change. We work in the host's local space so the mirrored relative offset
-        # is correct regardless of when the host's IFC placement gets synced.
-        opening_placements_before: dict[int, np.ndarray] = {}
-        M_host_before: Optional[np.ndarray] = None
-        if getattr(element, "HasOpenings", None):
-            M_host_before = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement).copy()
-            for rel in element.HasOpenings:
-                opening = rel.RelatedOpeningElement
-                M = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
-                opening_placements_before[opening.id()] = M.copy()
+        mirror_axes = self.get_mirror_axes(obj, mirror_ref, axis_index)
 
         type_element = ifcopenshell.util.element.get_type(element)
         usage_type = tool.Model.get_usage_type(element)
@@ -697,6 +711,30 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             and type_element.RepresentationMaps
             and usage_type not in ("LAYER2", "LAYER3")
         )
+
+        # Check before touching anything. Reflecting the placement of an element whose geometry
+        # could not be inverted would reproduce the faux mirror this operator exists to replace,
+        # so such elements are reported and left exactly as they were.
+        if is_typed_occurrence:
+            blockers = self.find_uninvertible_items(type_element, (1.0, 0.0, 0.0))
+        else:
+            blockers = self.find_uninvertible_items(element, mirror_axes)
+        if blockers:
+            self.skipped.append(obj.name)
+            self.unsupported_items.update(blockers)
+            return False
+
+        # Snapshot opening world placements AND the host placement BEFORE any geometry or
+        # origin change. We work in the host's local space so the mirrored relative offset
+        # is correct regardless of when the host's IFC placement gets synced.
+        opening_placements_before: dict[int, np.ndarray] = {}
+        M_host_before: Optional[np.ndarray] = None
+        if getattr(element, "HasOpenings", None):
+            M_host_before = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement).copy()
+            for rel in element.HasOpenings:
+                opening = rel.RelatedOpeningElement
+                M = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+                opening_placements_before[opening.id()] = M.copy()
 
         if is_typed_occurrence:
             # The shared mirrored type is always X flipped, so that is the axis the occurrence's
@@ -716,7 +754,7 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                     mat_usage.OffsetFromReferenceLine = -mat_usage.OffsetFromReferenceLine
 
         context.view_layer.update()
-        self.reflect_placement(obj, mirror_ref, geometry_axes, bb_data)
+        self.reflect_placement(obj, mirror_ref, geometry_axes, bb_data, axis_index)
 
         # Openings are mirrored only now, after the origin has been reflected: they have to be
         # anchored to the host's final placement, and the frame change needs its final rotation.
@@ -730,6 +768,7 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         representation = self.get_target_representation(element, active_representation, active_context)
         if representation:
             bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+        return True
 
     def get_target_representation(
         self,
@@ -758,12 +797,13 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         return next((r for r in representations if r.ContextOfItems == active_context), None)
 
     def get_mirror_axes(
-        self, obj: bpy.types.Object, mirror_ref: Optional[bpy.types.Object]
+        self, obj: bpy.types.Object, mirror_ref: Optional[bpy.types.Object], axis_index: int = 0
     ) -> tuple[float, float, float]:
         """Return which of the object's local axes the geometry has to be inverted along.
 
-        The mirror plane normal is the reference object's local X. Without a reference the
-        object is mirrored about its own local YZ plane.
+        Without a reference the object is mirrored about its own local plane normal to
+        ``axis_index``. With one, that axis of the reference is the mirror plane normal and the
+        object's own closest axis is inverted.
 
         Exactly one axis is ever chosen, the one most parallel to the mirror plane normal.
         Flipping two axes at once would be a 180 degree rotation rather than a reflection, and
@@ -771,11 +811,44 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         produce an exact world space reflection for an arbitrarily oriented mirror plane.
         """
         if not mirror_ref:
-            return (1.0, 0.0, 0.0)
-        mirror_normal_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
+            return tuple(1.0 if i == axis_index else 0.0 for i in range(3))
+        mirror_normal_world = mirror_ref.matrix_world.to_3x3().col[axis_index].normalized()
         mirror_normal_local = obj.matrix_world.to_3x3().inverted() @ mirror_normal_world
         axis = max(range(3), key=lambda i: abs(mirror_normal_local[i]))
         return tuple(1.0 if i == axis else 0.0 for i in range(3))
+
+    def find_uninvertible_items(
+        self, element: ifcopenshell.entity_instance, mirror_axes: tuple[float, float, float]
+    ) -> set[str]:
+        """Report the representation items that cannot be inverted along ``mirror_axes``.
+
+        Run before any mutation. ShapeBuilder.mirror works in the XY plane only, so a Z mirror
+        is limited to the explicit meshes this operator inverts coordinate by coordinate.
+        """
+        is_z_mirror = mirror_axes[2] > 0.5
+        blockers: set[str] = set()
+
+        def visit(item: ifcopenshell.entity_instance) -> None:
+            if item.is_a("IfcBooleanResult"):
+                visit(item.FirstOperand)
+                visit(item.SecondOperand)
+            elif item.is_a("IfcFacetedBrep") or item.is_a("IfcFacetedBrepWithVoids"):
+                return
+            elif item.is_a("IfcMappedItem"):
+                if self.is_type_owned_mapping(item):
+                    raise SharedMappedGeometryError(
+                        f"{element.is_a()} maps geometry owned by its type. Inverting it would "
+                        "mirror every other occurrence of that type as well."
+                    )
+                for sub in item.MappingSource.MappedRepresentation.Items:
+                    visit(sub)
+            elif is_z_mirror:
+                blockers.add(f"{item.is_a()} along Z")
+
+        for representation in ifcopenshell.util.representation.get_representations_iter(element):
+            for item in representation.Items:
+                visit(item)
+        return blockers
 
     def reflect_placement(
         self,
@@ -783,15 +856,20 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         mirror_ref: Optional[bpy.types.Object],
         geometry_axes: tuple[float, float, float],
         bb_data: dict[str, Any],
+        axis_index: int = 0,
     ) -> None:
         if not mirror_ref:
-            # No reference: mirror about the local YZ plane through the bounding box centre so
-            # the object stays where it is. Inverting the representation sends local x to -x,
-            # so shifting the origin by min_x + max_x turns that into a reflection about the
-            # centre. Derived from the pre-mirror bounds on purpose: remeasuring the reloaded
-            # mesh would be wrong for a host whose openings have not been mirrored yet.
-            shift = bb_data["min_x"] + bb_data["max_x"]
-            obj.location += (obj.matrix_world @ Vector((shift, 0, 0, 0))).xyz
+            # No reference: mirror about the local plane through the bounding box centre so the
+            # object stays where it is. Inverting the representation sends the local coordinate
+            # on the flipped axis to its negative, so shifting the origin by min + max on that
+            # axis turns it into a reflection about the centre. Derived from the pre-mirror
+            # bounds on purpose: remeasuring the reloaded mesh would be wrong for a host whose
+            # openings have not been mirrored yet.
+            axis = max(range(3), key=lambda i: geometry_axes[i])
+            name = "xyz"[axis]
+            shift = Vector((0.0, 0.0, 0.0, 0.0))
+            shift[axis] = bb_data[f"min_{name}"] + bb_data[f"max_{name}"]
+            obj.location += (obj.matrix_world @ shift).xyz
             return
 
         # P_world is the Householder matrix of the mirror plane and P_local the diagonal of the
@@ -800,7 +878,7 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         # which is the exact reflection, whatever the plane's orientation. Both determinants
         # are -1, so new_R stays a proper rotation.
         P_local = Matrix.Diagonal(Vector([-1.0 if a > 0.5 else 1.0 for a in geometry_axes]))
-        n_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
+        n_world = mirror_ref.matrix_world.to_3x3().col[axis_index].normalized()
         P_world = Matrix.Scale(-1, 4, n_world).to_3x3()
         new_mat = (P_world @ obj.matrix_world.to_3x3() @ P_local).to_4x4()
         t_mr = mirror_ref.matrix_world.translation
@@ -945,10 +1023,6 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 for sub in item.MappingSource.MappedRepresentation.Items:
                     mirror_item(sub)
             else:
-                if mirror_axes[2] > 0.5:
-                    # ShapeBuilder.mirror is 2D, so a Z flip only reaches explicit meshes.
-                    self.unsupported_items.add(f"{item.is_a()} along Z")
-                    return
                 try:
                     builder.mirror(item, mirror_axes_2d, create_copy=False)
                 except Exception:

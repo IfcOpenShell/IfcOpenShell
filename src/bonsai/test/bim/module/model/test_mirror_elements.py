@@ -123,7 +123,13 @@ def _operator():
     ``unsupported_items``."""
     from bonsai.bim.module.model.product import MirrorElements
 
-    methods = ("get_mirror_axes", "invert_general_object", "invert_representation", "is_type_owned_mapping")
+    methods = (
+        "find_uninvertible_items",
+        "get_mirror_axes",
+        "invert_general_object",
+        "invert_representation",
+        "is_type_owned_mapping",
+    )
     stub = type("MirrorElementsStub", (), {name: getattr(MirrorElements, name) for name in methods})()
     stub.unsupported_items = set()
     return stub
@@ -178,3 +184,46 @@ def test_get_mirror_axes_without_a_reference_uses_the_local_yz_plane():
     operator = _operator()
     obj = SimpleNamespace(matrix_world=Matrix.Identity(4))
     assert operator.get_mirror_axes(obj, None) == (1.0, 0.0, 0.0)
+
+
+def test_get_mirror_axes_without_a_reference_honours_the_chosen_axis():
+    operator = _operator()
+    obj = SimpleNamespace(matrix_world=Matrix.Identity(4))
+    assert operator.get_mirror_axes(obj, None, 1) == (0.0, 1.0, 0.0)
+    assert operator.get_mirror_axes(obj, None, 2) == (0.0, 0.0, 1.0)
+
+
+def test_get_mirror_axes_uses_the_chosen_axis_of_the_reference():
+    """A reference turned 90 degrees about Z has its local Y pointing along world -X."""
+    operator = _operator()
+    obj = SimpleNamespace(matrix_world=Matrix.Identity(4))
+    reference = SimpleNamespace(matrix_world=Matrix.Rotation(np.radians(90), 4, "Z"))
+    assert operator.get_mirror_axes(obj, reference, 0) == (0.0, 1.0, 0.0)
+    assert operator.get_mirror_axes(obj, reference, 1) == (1.0, 0.0, 0.0)
+    assert operator.get_mirror_axes(obj, reference, 2) == (0.0, 0.0, 1.0)
+
+
+def test_a_swept_solid_reports_that_it_cannot_be_inverted_along_z():
+    """ShapeBuilder.mirror is 2D, so a Z mirror must be refused rather than half applied."""
+    ifc_file, _, occurrences, _ = _mapped_type_file()
+    element_type = ifc_file.by_type("IfcFurnitureType")[0]
+    operator = _operator()
+
+    with patch("bonsai.tool.Ifc.get", return_value=ifc_file):
+        assert operator.find_uninvertible_items(element_type, (1.0, 0.0, 0.0)) == set()
+        assert operator.find_uninvertible_items(element_type, (0.0, 1.0, 0.0)) == set()
+        assert operator.find_uninvertible_items(element_type, (0.0, 0.0, 1.0)) == {"IfcExtrudedAreaSolid along Z"}
+
+
+def test_find_uninvertible_items_refuses_shared_type_geometry_before_mutating():
+    from bonsai.bim.module.model.product import SharedMappedGeometryError
+
+    ifc_file, _, occurrences, solid = _mapped_type_file()
+    coordinates_before = _profile_coordinates(solid)
+    operator = _operator()
+
+    with patch("bonsai.tool.Ifc.get", return_value=ifc_file):
+        with pytest.raises(SharedMappedGeometryError):
+            operator.find_uninvertible_items(occurrences[0], (1.0, 0.0, 0.0))
+
+    assert _profile_coordinates(solid) == coordinates_before
