@@ -407,6 +407,24 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = true;
 			};
 
+			struct SvgUseCrossCoplanarClassification : public SettingBase<SvgUseCrossCoplanarClassification, bool> {
+				static constexpr const char* const name = "svg-use-cross-coplanar-classification";
+				static constexpr const char* const description = "SVG edge classification (issue #3742): additionally classify a projection edge as 'cross-coplanar' when its entire length lies on a face of a different product that is coplanar with, and shares style/material identity with, the face it came from -- i.e. a duplicate boundary between two distinct elements' coincident surfaces, not a fold within one element's own geometry. Only takes effect when svg-use-edge-classification is also enabled, since it shares that system's classification buckets.";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct SvgRenderCrossCoplanarEdges : public SettingBase<SvgRenderCrossCoplanarEdges, bool> {
+				static constexpr const char* const name = "svg-render-cross-coplanar-edges";
+				static constexpr const char* const description = "SVG edge classification (issue #3742): whether to emit 'cross-coplanar' projection edges. Defaults to false, i.e. these duplicate-boundary edges are omitted from the output. Only relevant when svg-use-cross-coplanar-classification is enabled.";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct SvgCrossCoplanarTolerance : public SettingBase<SvgCrossCoplanarTolerance, double> {
+				static constexpr const char* const name = "svg-cross-coplanar-tolerance";
+				static constexpr const char* const description = "SVG edge classification (issue #3742): distance tolerance, in project length units, used for the bounding-box pre-filter and the plane-coincidence test between two different products' faces when deciding 'cross-coplanar' classification. Defaults to 1e-4 (0.1mm for a project in metres).";
+				static constexpr double defaultvalue = 1.e-4;
+			};
+
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
 				static constexpr const char* const name = "keep-bounding-boxes";
 				static constexpr const char* const description =
@@ -689,7 +707,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, SvgUseCrossCoplanarClassification, SvgRenderCrossCoplanarEdges, SvgCrossCoplanarTolerance, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }

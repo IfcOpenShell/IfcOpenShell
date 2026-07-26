@@ -108,6 +108,8 @@ class BIM_PT_camera(Panel):
         row.prop(props, "linework_mode")
         row = self.layout.row()
         row.prop(props, "generate_material_layers")
+        row = self.layout.row()
+        row.prop(props, "join_coplanar_surfaces")
         if props.linework_mode == "OPENCASCADE":
             row = self.layout.row()
             row.prop(props, "fill_mode")
@@ -125,6 +127,12 @@ class BIM_PT_camera(Panel):
             row.prop(props, "ridge_angle_min_degrees")
             row = self.layout.row()
             row.prop(props, "render_flush")
+            row = self.layout.row()
+            row.prop(props, "use_cross_coplanar_classification")
+            if props.use_cross_coplanar_classification:
+                row = self.layout.row()
+                row.prop(props, "render_cross_coplanar")
+                row.prop(props, "cross_coplanar_tolerance")
 
         row = self.layout.row()
         row.prop(props, "width")

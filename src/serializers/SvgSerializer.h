@@ -46,7 +46,15 @@
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
+#include <TopoDS_Face.hxx>
+#include <TopoDS_Edge.hxx>
+#include <TopoDS_Vertex.hxx>
 #include <BRepGProp_Face.hxx>
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
+#include <BRepAlgoAPI_Common.hxx>
+#include <Precision.hxx>
+#include <gp_Vec.hxx>
 
 #if OCC_VERSION_HEX >= 0x70300
 #include <Bnd_OBB.hxx>
@@ -57,6 +65,8 @@
 #include <limits>
 #include <array>
 #include <tuple>
+#include <map>
+#include <iterator>
 
 typedef std::pair<const IfcUtil::IfcBaseEntity*, std::string> drawing_key;
 
@@ -131,6 +141,17 @@ struct geometry_data {
 	const IfcUtil::IfcBaseEntity* storey;
 	double storey_elevation;
 	std::string ifc_name, svg_name;
+	// Cross-object "cross-coplanar" edge classification (issue #3742): one style/material
+	// identity for the whole product (the underlying IFC entity a resolved style was derived
+	// from, whether via IfcStyledItem or IfcMaterial -- see taxonomy::style::instance), used
+	// as the "same style/material" comparison key in the cross-object pass. Deliberately
+	// per-product, not per-face/per-layer: per-item shapes are transformed and concatenated
+	// away by the time compound_local exists (IfcGeom::Representation::BRep::as_compound()),
+	// so there's no cheap way to trace a specific face in compound_local back to a specific
+	// original item/layer. A single representative style per product is simpler and correct
+	// for the common case (single-material elements, or layered elements where the touching
+	// layer is also the one that happens to resolve first); nullptr if the product has none.
+	const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance;
 };
 
 struct drawing_meta {
@@ -209,10 +230,17 @@ namespace {
 		return C;
 	}
 
+	// Cross-object "cross-coplanar" edge classification (issue #3742) needs a style/material
+	// identity alongside each product's shape, so this is a 3-tuple rather than the pair it
+	// used to be -- see geometry_data::cross_coplanar_style_instance for why that identity is
+	// per-product, not per-face. The style is nullptr wherever cross-coplanar classification
+	// is off or a product resolved no style; unused by anything else that reads this list.
+	typedef std::list<std::tuple<const IfcUtil::IfcBaseEntity*, TopoDS_Shape, const IfcUtil::IfcBaseInterface*>> product_shape_list_t;
+
 	class hlr_calc {
 	private:
 		const HLRAlgo_Projector& projector_;
-		const std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>* product_shapes_ = nullptr;
+		const product_shape_list_t* product_shapes_ = nullptr;
 		// SVG edge classification (issue #3668): per-(product, class) edge-only sub-shapes,
 		// classified pre-HLR on the original (real-face) topology. Queried via
 		// VCompound(S)/OutLineVCompound(S), which correlate by the identity of the *original*
@@ -227,7 +255,7 @@ namespace {
 		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
 		{}
 
-		void set_product_shape(const std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>* product_shapes) {
+		void set_product_shape(const product_shape_list_t* product_shapes) {
 			product_shapes_ = product_shapes;
 		}
 
@@ -248,7 +276,7 @@ namespace {
 				}
 			} else if (product_shapes_) {
 				for (auto& p : *product_shapes_) {
-					r.push_back({ p.first, std::string(), occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
+					r.push_back({ std::get<0>(p), std::string(), occt_join(hlr_shapes.OutLineVCompound(std::get<1>(p)), hlr_shapes.VCompound(std::get<1>(p))) });
 				}
 			} else {
 				r.push_back({ nullptr, std::string(), occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound()) });
@@ -272,6 +300,101 @@ namespace {
 			return extract(hlr_shapes);
 		}
 	};
+
+	// Cross-object "cross-coplanar" edge classification (issue #3742). Deliberately
+	// self-contained, not sharing geometry primitives with classify_edge_from_faces() /
+	// face_normal_from_planar_face() in SvgSerializer.cpp (a separate, already carefully-tuned
+	// function for the single-object 5-class scheme) -- and it has to be self-contained here
+	// regardless, since prefiltered_hlr::build() is defined inline in this header, compiled
+	// before classify_edge_from_faces() is even declared later in the .cpp. Keeping this pass'
+	// own small set of primitives independent also means a future change to the 5-class scheme
+	// can't accidentally affect this one, or vice versa.
+	//
+	// The class name added here ("cross-coplanar") must stay in sync with
+	// edge_style_class_name(edge_style_class::cross_coplanar) in SvgSerializer.cpp -- there's
+	// no shared enum to keep them structurally linked, since edge_style_class also lives in
+	// that later, separate anonymous namespace.
+	namespace cross_coplanar {
+		constexpr const char* const class_name = "cross-coplanar";
+
+		bool face_normal(const TopoDS_Face& f, gp_Dir& out) {
+			auto s = BRep_Tool::Surface(f);
+			if (s->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+				return false;
+			}
+			auto p = Handle(Geom_Plane)::DownCast(s);
+			gp_Dir d = p->Axis().Direction();
+			if (f.Orientation() == TopAbs_REVERSED) {
+				d.Reverse();
+			}
+			out = d;
+			return true;
+		}
+
+		double shape_length(const TopoDS_Shape& s) {
+			GProp_GProps props;
+			BRepGProp::LinearProperties(s, props);
+			return props.Mass();
+		}
+
+		double shape_area(const TopoDS_Shape& s) {
+			GProp_GProps props;
+			BRepGProp::SurfaceProperties(s, props);
+			return props.Mass();
+		}
+
+		// Every edge of `face` whose *entire* length lies within `overlap_region` (the result
+		// of a prior face/face BRepAlgoAPI_Common, so already guaranteed coplanar with `face`)
+		// is added to `out`. A partially-overlapping edge is deliberately left untouched --
+		// documented v1 scope decision, see find_cross_coplanar_matches() below.
+		void collect_fully_contained_edges(
+			const TopoDS_Face& face, const TopoDS_Shape& overlap_region, double tol,
+			BRep_Builder& builder, TopoDS_Compound& out
+		) {
+			for (TopExp_Explorer eexp(face, TopAbs_EDGE); eexp.More(); eexp.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
+				double edge_len = shape_length(e);
+				if (edge_len < Precision::Confusion()) {
+					continue;
+				}
+				BRepAlgoAPI_Common common(e, overlap_region);
+				if (!common.IsDone()) {
+					continue;
+				}
+				double contained_len = shape_length(common.Shape());
+				if (contained_len >= edge_len - tol) {
+					builder.Add(out, e);
+				}
+			}
+		}
+
+		// An edge newly classified as cross-coplanar was already committed to one of the
+		// original 5 classes by the per-product classification pass (it runs first, for every
+		// product, before any product is done being added -- see find_cross_coplanar_matches()'s
+		// own comment). Without this, the same edge would end up listed under two classes at
+		// once and get drawn twice. `from` and everything in `to_remove` are the same, non-moved,
+		// non-transformed original edges (both ultimately sourced from the same per-product
+		// compound_to_hlr, never copied), so plain shape identity (IsSame(), TShape + Location)
+		// is a safe, exact way to find the overlap.
+		TopoDS_Compound remove_matching_edges(const TopoDS_Shape& from, const TopoDS_Compound& to_remove) {
+			BRep_Builder builder;
+			TopoDS_Compound result;
+			builder.MakeCompound(result);
+			for (TopExp_Explorer exp(from, TopAbs_EDGE); exp.More(); exp.Next()) {
+				bool matched = false;
+				for (TopExp_Explorer rexp(to_remove, TopAbs_EDGE); rexp.More(); rexp.Next()) {
+					if (exp.Current().IsSame(rexp.Current())) {
+						matched = true;
+						break;
+					}
+				}
+				if (!matched) {
+					builder.Add(result, exp.Current());
+				}
+			}
+			return result;
+		}
+	}
 
 	class prefiltered_hlr {
 
@@ -377,9 +500,15 @@ namespace {
 		bool segment_projection_;
 		gp_Ax1 view_direction_;
 		HLRAlgo_Projector projector_;
+		// Cross-object "cross-coplanar" edge classification (issue #3742): both flags are
+		// needed here, not just the cross-coplanar one -- see the gating comment in build().
+		bool use_edge_classification_;
+		bool use_cross_coplanar_classification_;
+		double cross_coplanar_tolerance_;
+		bool render_cross_coplanar_edges_;
 
 		std::multimap<double, face_info> large_ortho_faces_;
-		std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> items_;
+		product_shape_list_t items_;
 		// SVG edge classification (issue #3668): see add_classified_edges().
 		std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> classified_items_;
 
@@ -387,13 +516,19 @@ namespace {
 
 	public:
 
-		prefiltered_hlr(Logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
+		prefiltered_hlr(Logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction,
+			bool use_edge_classification = false, bool use_cross_coplanar_classification = false, double cross_coplanar_tolerance = 1.e-4,
+			bool render_cross_coplanar_edges = false)
 			: logger_(logger)
 			, use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
 			, segment_projection_(segment_projection)
 			// @nb negative z in accordance with occt projector convention (and opengl)
 			, view_direction_(view_direction.Axis())
+			, use_edge_classification_(use_edge_classification)
+			, use_cross_coplanar_classification_(use_cross_coplanar_classification)
+			, cross_coplanar_tolerance_(cross_coplanar_tolerance)
+			, render_cross_coplanar_edges_(render_cross_coplanar_edges)
 		{
 			if (use_hlr_poly_) {
 				engine_ = new HLRBRep_PolyAlgo;
@@ -457,9 +592,9 @@ namespace {
 			return false;
 		}
 		
-		void add(const TopoDS_Shape& s, const IfcUtil::IfcBaseEntity* product) {
+		void add(const TopoDS_Shape& s, const IfcUtil::IfcBaseEntity* product, const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance = nullptr) {
 			if (!use_prefiltering_) {
-				items_.insert(items_.end(), {product, s});
+				items_.insert(items_.end(), {product, s, cross_coplanar_style_instance});
 				return;
 			}
 
@@ -498,7 +633,7 @@ namespace {
 
 				logger_.Notice("SER", 34, "Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
 
-				auto it = items_.insert(items_.end(), { product, C });
+				auto it = items_.insert(items_.end(), { product, C, cross_coplanar_style_instance });
 
 				{
 					TopExp_Explorer exp(C, TopAbs_FACE);
@@ -522,7 +657,7 @@ namespace {
 										auto d = -(pnt.XYZ() - view_direction_.Location().XYZ()).Dot(view_direction_.Direction().XYZ());
 
 										if (d > 1.e-5) {
-											large_ortho_faces_.insert({ d, face_info(&it->second, face) });
+											large_ortho_faces_.insert({ d, face_info(&std::get<1>(*it), face) });
 										}
 									}
 								}
@@ -531,15 +666,144 @@ namespace {
 					}
 				}
 			} else {
-				items_.insert(items_.end(), { product, s });
+				items_.insert(items_.end(), { product, s, cross_coplanar_style_instance });
+			}
+		}
+
+		// Cross-object "cross-coplanar" edge classification (issue #3742). Runs once, over
+		// every item added to this drawing/storey so far (items_ is already complete by the
+		// time build() is called -- see the comment on this call site). Only takes effect
+		// when both use_edge_classification_ and use_cross_coplanar_classification_ are set;
+		// otherwise a no-op, so this feature is fully inert unless explicitly enabled twice
+		// over (matching its ConversionSettings description).
+		void find_cross_coplanar_matches() {
+			if (!use_edge_classification_ || !use_cross_coplanar_classification_) {
+				return;
+			}
+
+			// Per-product accumulated cross-coplanar edges -- more than one neighbour can
+			// each contribute matched edges to the same product, so these are merged into one
+			// compound per product before being handed to add_classified_edges() once each.
+			std::map<const IfcUtil::IfcBaseEntity*, TopoDS_Compound> per_product_edges;
+			BRep_Builder builder;
+			auto get_bucket = [&](const IfcUtil::IfcBaseEntity* product) -> TopoDS_Compound& {
+				auto it = per_product_edges.find(product);
+				if (it == per_product_edges.end()) {
+					TopoDS_Compound c;
+					builder.MakeCompound(c);
+					it = per_product_edges.emplace(product, c).first;
+				}
+				return it->second;
+			};
+
+			for (auto ii = items_.begin(); ii != items_.end(); ++ii) {
+				for (auto jj = std::next(ii); jj != items_.end(); ++jj) {
+					const auto* product_i = std::get<0>(*ii);
+					const TopoDS_Shape& shape_i = std::get<1>(*ii);
+					const auto* style_i = std::get<2>(*ii);
+					const auto* product_j = std::get<0>(*jj);
+					const TopoDS_Shape& shape_j = std::get<1>(*jj);
+					const auto* style_j = std::get<2>(*jj);
+
+					// Same style/material identity is required on both sides -- see
+					// geometry_data::cross_coplanar_style_instance for what this identity
+					// means and why per-product rather than per-face.
+					if (!style_i || !style_j || style_i != style_j) {
+						continue;
+					}
+
+					Bnd_Box box_i, box_j;
+					BRepBndLib::AddClose(shape_i, box_i);
+					BRepBndLib::AddClose(shape_j, box_j);
+					if (box_i.IsVoid() || box_j.IsVoid()) {
+						continue;
+					}
+					box_i.Enlarge(cross_coplanar_tolerance_);
+					if (box_i.IsOut(box_j)) {
+						continue;
+					}
+
+					for (TopExp_Explorer fi(shape_i, TopAbs_FACE); fi.More(); fi.Next()) {
+						const TopoDS_Face& face_i = TopoDS::Face(fi.Current());
+						gp_Dir n_i;
+						if (!cross_coplanar::face_normal(face_i, n_i)) {
+							continue;
+						}
+						TopExp_Explorer vexp_i(face_i, TopAbs_VERTEX);
+						if (!vexp_i.More()) {
+							continue;
+						}
+						gp_Pnt sample_i = BRep_Tool::Pnt(TopoDS::Vertex(vexp_i.Current()));
+
+						for (TopExp_Explorer fj(shape_j, TopAbs_FACE); fj.More(); fj.Next()) {
+							const TopoDS_Face& face_j = TopoDS::Face(fj.Current());
+							gp_Dir n_j;
+							if (!cross_coplanar::face_normal(face_j, n_j)) {
+								continue;
+							}
+							// Normal-parallel test (same tolerance convention as
+							// classify_edge_from_faces()'s own near-exact-parallel check).
+							if (std::abs(n_i.Dot(n_j)) <= 1.0 - 3.8e-5) {
+								continue;
+							}
+							// Plane-coincidence: perpendicular distance from a point on
+							// face_j to face_i's plane.
+							TopExp_Explorer vexp_j(face_j, TopAbs_VERTEX);
+							if (!vexp_j.More()) {
+								continue;
+							}
+							gp_Pnt sample_j = BRep_Tool::Pnt(TopoDS::Vertex(vexp_j.Current()));
+							double plane_dist = std::abs(gp_Vec(sample_i, sample_j).Dot(n_i));
+							if (plane_dist >= cross_coplanar_tolerance_) {
+								continue;
+							}
+
+							BRepAlgoAPI_Common common(face_i, face_j);
+							if (!common.IsDone()) {
+								continue;
+							}
+							if (cross_coplanar::shape_area(common.Shape()) < Precision::Confusion()) {
+								continue;
+							}
+
+							cross_coplanar::collect_fully_contained_edges(
+								face_i, common.Shape(), cross_coplanar_tolerance_, builder, get_bucket(product_i));
+							cross_coplanar::collect_fully_contained_edges(
+								face_j, common.Shape(), cross_coplanar_tolerance_, builder, get_bucket(product_j));
+						}
+					}
+				}
+			}
+
+			for (auto& kv : per_product_edges) {
+				const IfcUtil::IfcBaseEntity* product = kv.first;
+				const TopoDS_Compound& new_edges = kv.second;
+
+				// Always remove a matched edge from whatever base-class bucket the earlier
+				// per-product classification pass already put it in -- these are duplicates
+				// that must never be drawn under their original class regardless of whether
+				// render_cross_coplanar_edges_ is on (that flag only controls whether they're
+				// *also* re-added below for visibility, not whether the duplicate is hidden).
+				for (auto& entry : classified_items_) {
+					if (std::get<0>(entry) != product) {
+						continue;
+					}
+					std::get<2>(entry) = cross_coplanar::remove_matching_edges(std::get<2>(entry), new_edges);
+				}
+
+				if (render_cross_coplanar_edges_) {
+					add_classified_edges(product, cross_coplanar::class_name, new_edges);
+				}
 			}
 		}
 
 		std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> build() {
+			find_cross_coplanar_matches();
+
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
-				if (!use_prefiltering_ || !is_obscured_(&it->second)) {
-					hlr_writer vis(it->second);
+				if (!use_prefiltering_ || !is_obscured_(&std::get<1>(*it))) {
+					hlr_writer vis(std::get<1>(*it));
 					boost::apply_visitor(vis, engine_);
 					n_included++;
 				}
@@ -604,6 +868,12 @@ protected:
 	bool svg_render_crease_edges_;
 	bool svg_render_sharp_edges_;
 
+	// Cross-object "cross-coplanar" edge classification (issue #3742): see the cross-object
+	// pass in prefiltered_hlr::build() in SvgSerializer.cpp.
+	bool svg_use_cross_coplanar_classification_;
+	bool svg_render_cross_coplanar_edges_;
+	double svg_cross_coplanar_tolerance_;
+
 	IfcParse::IfcFile* file;
 	const IfcUtil::IfcBaseEntity* storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
@@ -663,6 +933,9 @@ public:
 		, svg_use_edge_classification_(false)
 		, svg_render_crease_edges_(true)
 		, svg_render_sharp_edges_(true)
+		, svg_use_cross_coplanar_classification_(false)
+		, svg_render_cross_coplanar_edges_(false)
+		, svg_cross_coplanar_tolerance_(1.e-4)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
