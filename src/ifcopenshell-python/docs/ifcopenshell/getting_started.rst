@@ -12,6 +12,8 @@ The basis of all parsing and getting information from the IFC starts with obtain
       return 1;
     }
 
+.. _schema-agnostic-parsing-of-ifcs:
+
 Schema-agnostic parsing of IFCs
 -------------------------------
 
@@ -106,6 +108,143 @@ The following function shows how property sets can be extracted from a given ``I
                         return defines_by_properties->RelatingPropertyDefinition()->template as<typename Schema::IfcPropertySet>();
                         });
     }
+
+Reading properties and quantities from an element
+---------------------------------------------------
+
+A frequent point of confusion is that ``IsDefinedBy()`` does *not* return the property set
+or quantity set itself. It is an inverse attribute that lists every
+``IfcRelDefinesByProperties`` relationship pointing at the element, and the relationship
+still needs to be unwrapped via ``RelatingPropertyDefinition()`` to reach the actual
+``IfcPropertySet`` (regular properties) or ``IfcElementQuantity`` (physical quantities such
+as length, area, or volume). Both classes derive from ``IfcPropertySetDefinition``, so a
+single cast check tells you which one you got:
+
+.. code-block:: c++
+
+    for (auto& rel : *element.IsDefinedBy()) {
+        // IsDefinedBy() can also contain IfcRelDefinesByType, IfcRelDefinesByObject, or
+        // IfcRelDefinesByTemplate relationships, so filter for the one we want first.
+        auto* defines_by_props = rel->as<Ifc4::IfcRelDefinesByProperties>();
+        if (!defines_by_props)
+            continue;
+
+        // This is the step that's easy to miss: the relationship is not the pset.
+        auto* pset_def = defines_by_props->RelatingPropertyDefinition();
+
+        if (auto* pset = pset_def->as<Ifc4::IfcPropertySet>()) {
+            for (auto* prop : *pset->HasProperties()) {
+                if (auto* single = prop->as<Ifc4::IfcPropertySingleValue>()) {
+                    std::cout << single->Name() << " = "
+                              << single->NominalValue()->data().toString() << std::endl;
+                }
+            }
+        } else if (auto* qto = pset_def->as<Ifc4::IfcElementQuantity>()) {
+            for (auto* quantity : *qto->Quantities()) {
+                if (auto* length = quantity->as<Ifc4::IfcQuantityLength>()) {
+                    std::cout << length->Name() << " = " << length->LengthValue() << std::endl;
+                }
+                // IfcQuantityArea, IfcQuantityVolume, IfcQuantityWeight, IfcQuantityCount,
+                // and IfcQuantityTime all follow the same pattern.
+            }
+        }
+    }
+
+There is a second, easily-missed source of properties: the element's **type**. Properties
+assigned to a type (e.g. a shared "IfcDuctSegmentType") apply to every element of that type,
+and are reached completely differently, through ``IsTypedBy()`` and then
+``RelatingType()->HasPropertySets()`` directly, with no relationship to unwrap:
+
+.. code-block:: c++
+
+    auto* typed_by = element.IsTypedBy();
+    if (typed_by && typed_by->size()) {
+        // Unlike IsDefinedBy(), a type only ever has one IfcRelDefinesByType relationship.
+        auto* type = (*typed_by->begin())->RelatingType();
+        if (auto* psets = type->HasPropertySets()) {
+            for (auto* pset_def : *psets) {
+                // pset_def can again be either an IfcPropertySet or an IfcElementQuantity,
+                // and is handled exactly as above.
+                std::cout << pset_def->data().toString() << std::endl;
+            }
+        }
+    }
+
+A complete, compilable example that ties both paths together for a chosen element (here
+``IfcDuctSegment``, but any IFC class works the same way) looks like this:
+
+.. code-block:: c++
+
+    #include <ifcparse/IfcFile.h>
+    #include <ifcparse/Ifc4.h>
+    #include <iostream>
+
+    void print_pset_or_qto(Ifc4::IfcPropertySetDefinition* pset_def) {
+        if (auto* pset = pset_def->as<Ifc4::IfcPropertySet>()) {
+            for (auto* prop : *pset->HasProperties()) {
+                if (auto* single = prop->as<Ifc4::IfcPropertySingleValue>()) {
+                    std::cout << "  " << single->Name() << " = "
+                              << single->NominalValue()->data().toString() << std::endl;
+                }
+            }
+        } else if (auto* qto = pset_def->as<Ifc4::IfcElementQuantity>()) {
+            for (auto* quantity : *qto->Quantities()) {
+                if (auto* length = quantity->as<Ifc4::IfcQuantityLength>()) {
+                    std::cout << "  " << length->Name() << " = " << length->LengthValue() << std::endl;
+                }
+            }
+        }
+    }
+
+    int main(int argc, char** argv) {
+        if (argc < 2) {
+            std::cerr << "Usage: " << argv[0] << " <model.ifc>" << std::endl;
+            return 1;
+        }
+
+        IfcParse::IfcFile file(argv[1]);
+        if (!file.good()) {
+            std::cerr << "Unable to parse .ifc file" << std::endl;
+            return 1;
+        }
+
+        auto duct_segments = file.instances_by_type<Ifc4::IfcDuctSegment>();
+        if (duct_segments->size() == 0) {
+            std::cerr << "No IfcDuctSegment instances found" << std::endl;
+            return 1;
+        }
+
+        Ifc4::IfcDuctSegment* element = *duct_segments->begin();
+        std::cout << "Inspecting " << element->Name().get_value_or("<unnamed>") << std::endl;
+
+        // 1. Properties and quantities attached directly to the element instance.
+        std::cout << "Element-level property sets:" << std::endl;
+        for (auto& rel : *element->IsDefinedBy()) {
+            if (auto* defines_by_props = rel->as<Ifc4::IfcRelDefinesByProperties>()) {
+                print_pset_or_qto(defines_by_props->RelatingPropertyDefinition());
+            }
+        }
+
+        // 2. Properties and quantities inherited from the element's type, if any.
+        std::cout << "Type-level property sets:" << std::endl;
+        auto* typed_by = element->IsTypedBy();
+        if (typed_by && typed_by->size()) {
+            auto* type = (*typed_by->begin())->RelatingType();
+            if (auto* psets = type->HasPropertySets()) {
+                for (auto* pset_def : *psets) {
+                    print_pset_or_qto(pset_def);
+                }
+            }
+        }
+
+        return 0;
+    }
+
+.. note::
+
+    The example above hardcodes the ``Ifc4`` namespace for readability. See
+    :ref:`Schema-agnostic parsing of IFCs<schema-agnostic-parsing-of-ifcs>` above for how to
+    write the same logic so it works against any schema version at once.
 
 Defensive programming with IfcOpenshell
 ---------------------------------------

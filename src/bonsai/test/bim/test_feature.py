@@ -187,7 +187,14 @@ class PanelSpy:
             after = ""
             if self.spied_labels:
                 after = self.spied_labels[-1]
-            spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}, "after": after}
+            spied_operator = {
+                "operator": operator,
+                "icon": icon,
+                "text": text,
+                "kwargs": {},
+                "after": after,
+                "bl_idname": bl_idname,
+            }
             self.spied_operators.append(spied_operator)
             return OperatorSpy(spied_operator)
         elif self.spied_attr == "panel":
@@ -209,6 +216,14 @@ class OperatorSpy:
             super().__setattr__(name, value)
         else:
             self.spied_data["kwargs"][name] = value
+
+    @property
+    def bl_rna(self) -> Any:
+        # Mirror the real `UILayout.operator()` return value (an OperatorProperties
+        # instance), which exposes `.bl_rna` so panel code such as
+        # `"module" in op.bl_rna.properties` (bonsai/bim/helper.py) also works when
+        # drawing is spied on during BDD tests.
+        return getattr(bpy.types, self.spied_data["bl_idname"]).bl_rna
 
 
 class TemplateListSpy(PanelSpy):
@@ -453,6 +468,7 @@ def i_trigger_operator(operator):
 @then(parsers.parse('I see "{text}"'))
 def i_see_text(text):
     assert panel_spy
+    text = replace_variables(text)
     panel_spy.refresh_spy()
     assert [l for l in panel_spy.spied_labels if text in l], f"Text {text} not found in {panel_spy.spied_labels}"
 
@@ -587,6 +603,7 @@ def i_select_the_row_where_i_see_text_in_the_nth_list(text, nth):
 @then(parsers.parse('I don\'t see "{text}"'))
 def i_dont_see_text(text):
     assert panel_spy
+    text = replace_variables(text)
     panel_spy.refresh_spy()
     assert not [l for l in panel_spy.spied_labels if text in l], f"Text {text} found in {panel_spy.spied_labels}"
 
@@ -773,7 +790,11 @@ def i_create_default_mep_types():
     with bpy.context.temp_override(active_object=bpy.data.objects["IfcActuatorType/ACTUATOR"]):
         bpy.ops.bim.add_port()
         # port at cube's left side
-        bpy.data.objects["IfcDistributionPort/Port"].location = (-0.5, 0, 0)
+        # Newly created ports are never given an explicit IFC `.Name` (see
+        # `core/system.py:create_port_at_cursor` / `tool/system.py`), so
+        # `tool.Loader.get_name()` falls back to the standard "Unnamed" convention
+        # used throughout Bonsai for freshly-created, not-yet-named elements.
+        bpy.data.objects["IfcDistributionPort/Unnamed"].location = (-0.5, 0, 0)
         bpy.ops.bim.hide_ports()
 
 
@@ -1073,6 +1094,7 @@ def then_the_object_name_is_placed_in_the_collection_collection(name: str, colle
 @given(parsers.parse('additionally the object "{name}" is selected'))
 @when(parsers.parse('additionally the object "{name}" is selected'))
 def additionally_the_object_name_is_selected(name):
+    name = replace_variables(name)
     obj = bpy.context.scene.objects.get(name)
     if not obj:
         total = len(bpy.context.scene.objects)
@@ -1153,6 +1175,7 @@ def nothing_happens():
 @when(parsers.parse('the object "{name}" exists'))
 @then(parsers.parse('the object "{name}" exists'))
 def the_object_name_exists(name: str) -> bpy.types.Object:
+    name = replace_variables(name)
     # Some objects from linked collections may share the same name. This disambiguates them.
     if name.startswith("Col:"):
         _, collection_name, name = name.split(":")
@@ -1167,6 +1190,7 @@ def the_object_name_exists(name: str) -> bpy.types.Object:
 
 @then(parsers.parse('the object "{name}" does not exist'))
 def the_object_name_does_not_exist(name) -> None:
+    name = replace_variables(name)
     obj = bpy.data.objects.get(name)
     assert obj is None, f'The object "{name}" exists'
 

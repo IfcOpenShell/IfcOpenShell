@@ -188,9 +188,9 @@
             },
             "IfcCovering": {
                 "Qto_CoveringBaseQuantities": {
-                    "GrossArea": "gross_get_max_side_area",
-                    "NetArea": "net_get_max_side_area",
-                    "Width": "gross_get_min_xyz"
+                    "GrossArea": "gross_get_covering_area",
+                    "NetArea": "net_get_covering_area",
+                    "Width": "gross_get_covering_width"
                 }
             },
             "IfcCurtainWall": {
@@ -529,16 +529,16 @@
                 "Qto_SpaceBaseQuantities": {
                     "FinishCeilingHeight": null,
                     "FinishFloorHeight": null,
-                    "GrossCeilingArea": null,
-                    "GrossFloorArea": null,
-                    "GrossPerimeter": null,
-                    "GrossVolume": null,
+                    "GrossCeilingArea": "gross_get_top_area",
+                    "GrossFloorArea": "gross_get_footprint_area",
+                    "GrossPerimeter": "gross_get_footprint_perimeter",
+                    "GrossVolume": "gross_get_volume",
                     "GrossWallArea": null,
-                    "Height": null,
-                    "NetCeilingArea": null,
-                    "NetFloorArea": null,
+                    "Height": "net_get_z",
+                    "NetCeilingArea": "net_get_top_area",
+                    "NetFloorArea": "net_get_footprint_area",
                     "NetPerimeter": null,
-                    "NetVolume": null,
+                    "NetVolume": "net_get_volume",
                     "NetWallArea": null
                 }
             },
@@ -606,13 +606,13 @@
             },
             "IfcWall": {
                 "Qto_WallBaseQuantities": {
-                    "GrossFootprintArea": null,
+                    "GrossFootprintArea": "gross_get_footprint_area",
                     "GrossSideArea": "gross_get_side_area",
                     "GrossVolume": "gross_get_volume",
                     "GrossWeight": "gross_get_weight",
                     "Height": "net_get_z",
                     "Length": "net_get_x",
-                    "NetFootprintArea": null,
+                    "NetFootprintArea": "net_get_footprint_area",
                     "NetSideArea": "net_get_side_area",
                     "NetVolume": "net_get_volume",
                     "NetWeight": "net_get_weight",

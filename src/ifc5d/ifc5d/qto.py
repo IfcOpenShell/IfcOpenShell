@@ -286,8 +286,20 @@ class IfcOpenShell(QtoCalculator):
             "cross section height along the local Y axis. For slab-like footings (PAD_FOOTING, PILE_CAP) "
             "and other predefined types it is the thickness along the local Z axis.",
         ),
+        "get_covering_width": Function(
+            "IfcLengthMeasure",
+            "Covering Width",
+            "The covering's thickness: the side area axis for AXIS2 (e.g. wall finishes), "
+            "otherwise the local Z depth (e.g. floor or ceiling finishes)",
+        ),
         # IfcAreaMeasure
         "get_area": Function("IfcAreaMeasure", "Area", "The total surface area of the element"),
+        "get_covering_area": Function(
+            "IfcAreaMeasure",
+            "Covering Area",
+            "The covering's side area for AXIS2 (e.g. wall finishes), otherwise its footprint "
+            "area (e.g. floor or ceiling finishes)",
+        ),
         "get_footprint_area": Function(
             "IfcAreaMeasure",
             "Footprint Area",
@@ -349,6 +361,8 @@ class IfcOpenShell(QtoCalculator):
         "get_opening_height",
         "get_opening_depth",
         "get_opening_area",
+        "get_covering_width",
+        "get_covering_area",
     ) + footing_functions
 
     @classmethod
@@ -421,6 +435,12 @@ class IfcOpenShell(QtoCalculator):
                                 if value is None:
                                     continue
                                 value = cls.unit_converter.convert(value, cls.raw_functions[formula].measure)
+                            elif formula == "get_covering_width":
+                                value = cls.get_covering_width(element, geometry)
+                                value = cls.unit_converter.convert(value, "IfcLengthMeasure")
+                            elif formula == "get_covering_area":
+                                value = cls.get_covering_area(element, geometry)
+                                value = cls.unit_converter.convert(value, "IfcAreaMeasure")
                             else:
                                 value = formula_functions[formula](geometry)
                                 assert isinstance(value, (float, int))
@@ -585,6 +605,53 @@ class IfcOpenShell(QtoCalculator):
                 return None
             mass += mass_per_length * item.Depth
         return mass
+
+    @staticmethod
+    def get_covering_parametric_axis(element: ifcopenshell.entity_instance) -> Union[str, None]:
+        """Get an IfcCovering's layer set direction, as authored by Bonsai's covering type.
+
+        :param element: IFC element entity.
+        :return: ``"AXIS2"`` for wall-like coverings, ``"AXIS3"`` for slab-like
+            coverings (e.g. floors or ceilings), or ``None`` if the covering's
+            type has no ``EPset_Parametric.LayerSetDirection``.
+        """
+        relating_type = ifcopenshell.util.element.get_type(element)
+        if not relating_type:
+            return None
+        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
+        if not parametric:
+            return None
+        return parametric.get("LayerSetDirection")
+
+    @classmethod
+    def get_covering_area(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        """Get a covering's area, following its layer set direction.
+
+        AXIS2 (wall-like) coverings report the local Y-facing side area,
+        while AXIS3 coverings and coverings without a layer set direction
+        (e.g. freeform profiles) report the projected footprint area. This
+        mirrors how ``gross_get_side_area``/``net_get_side_area`` are
+        already used for ``Qto_WallBaseQuantities.*SideArea`` in this same
+        rule set.
+        """
+        if cls.get_covering_parametric_axis(element) == "AXIS2":
+            return ifcopenshell.util.shape.get_side_area(geometry)
+        return ifcopenshell.util.shape.get_footprint_area(geometry)
+
+    @classmethod
+    def get_covering_width(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        """Get a covering's width (i.e. thickness), following its layer set direction.
+
+        AXIS2 (wall-like) coverings report the local Y depth, while AXIS3
+        coverings and coverings without a layer set direction report the
+        local Z depth. This mirrors how ``net_get_y`` is already used for
+        ``Qto_WallBaseQuantities.Width`` in this same rule set, rather than
+        the ``min(X, Y)`` heuristic used by the Blender-side
+        :func:`bonsai.bim.module.qto.calculator.get_width`.
+        """
+        if cls.get_covering_parametric_axis(element) == "AXIS2":
+            return ifcopenshell.util.shape.get_y(geometry)
+        return ifcopenshell.util.shape.get_z(geometry)
 
 
 class Blender(QtoCalculator):

@@ -12,14 +12,14 @@
     />
     <!-- here we request the CSS file from the server, -->
     <!-- using registered static path in the server -->
-    <link rel="stylesheet" href="/static/css/demo.css" id="demo-stylesheet" />
+    <link rel="stylesheet" href="/static/css/demo.css?v={{v}}" id="demo-stylesheet" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
     />
     <script
       type="text/javascript"
-      src="/static/js/jquery.min.js"
+      src="/static/js/jquery.min.js?v={{v}}"
     ></script>
     <script
       type="text/javascript"
@@ -33,7 +33,7 @@
     </script>
     <!-- here we request the JS file from the server-->
     <!-- using registered static path in the server -->
-    <script defer src="./static/js/demo.js"></script>
+    <script defer src="./static/js/demo.js?v={{v}}"></script>
   </head>
   <body>
     <!-- the navigation bar at the top of the page. -->

@@ -56,3 +56,31 @@ class TestValidateInput(NewFile):
 
         # Angle.
         assert subject.validate_input("25", "A") == (True, "25.0")
+
+
+class TestCalculateDistanceAndAngle(NewFile):
+    def test_it_does_not_crash_when_distance_is_zero_and_should_round(self, monkeypatch):
+        # Regression test for #8597: right after placing the first polyline
+        # point, the initial mouse sample can equal the last placed point
+        # (distance == 0), e.g. entering the viewport on a YZ plane wall.
+        # angle_round_threshold used to only be assigned in the
+        # `distance > 0` branch, crashing when should_round reads it here.
+        # get_increment_snap_value requires a real 3D viewport rv3d, which
+        # is unrelated to this bug, so it's stubbed out for a headless run.
+        monkeypatch.setattr(tool.Snap, "get_increment_snap_value", classmethod(lambda cls, context: 1.0))
+
+        polyline_props = tool.Model.get_polyline_props()
+        mouse_point = polyline_props.snap_mouse_point.add()
+        mouse_point.x, mouse_point.y, mouse_point.z = 0, 0, 0
+
+        tool_state = subject.create_tool_state()
+        tool_state.is_input_on = False
+        tool_state.use_default_container = False
+        tool_state.plane_method = "YZ"
+
+        input_ui = subject.create_input_ui(input_options=["D", "A", "X", "Y", "Z"])
+
+        subject.calculate_distance_and_angle(bpy.context, input_ui, tool_state, should_round=True)
+
+        assert input_ui.get_number_value("D") == 0
+        assert input_ui.get_number_value("A") == 0
