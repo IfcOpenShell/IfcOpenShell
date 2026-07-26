@@ -113,11 +113,6 @@ class CoveringToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
-            row.operator("bim.add_instance_wall_covering_from_cursor")
-
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_A")
             row.operator("bim.add_instance_wall_coverings_from_walls")
 
             row = cls.layout.row(align=True)

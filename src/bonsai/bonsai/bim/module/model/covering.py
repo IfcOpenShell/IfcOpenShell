@@ -125,35 +125,6 @@ class AddInstanceCeilingCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator
             return self.report({"ERROR"}, "Please set a default container to create the covering in.")
 
 
-class AddInstanceWallCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_instance_wall_covering_from_cursor"
-    bl_label = "Add Wall Covering From Cursor"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = (
-        "Add a typed instance wall covering on the active wall side face, "
-        "net of openings, on the side facing the 3D cursor"
-    )
-    facing_cursor: bpy.props.BoolProperty(
-        name="Facing Cursor",
-        description="Place the covering on the wall side facing the 3D cursor, uncheck for the opposite side",
-        default=True,
-    )
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Covering.covering_poll_wall_selected(cls, context, tool.Covering.WALL_COVERING_TYPES)
-
-    def _execute(self, context):
-        try:
-            core.add_instance_wall_covering_from_cursor(
-                tool.Root, tool.Covering, tool.Spatial, facing_cursor=self.facing_cursor
-            )
-        except core.NoDefaultContainer:
-            return self.report({"ERROR"}, "Please set a default container to create the covering in.")
-        except core.NoLayerSetThickness:
-            return self.report({"ERROR"}, "The covering type must have a material layer set with a thickness.")
-
-
 class AddInstanceWallCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_instance_wall_coverings_from_walls"
     bl_label = "Add Wall Coverings From Walls"

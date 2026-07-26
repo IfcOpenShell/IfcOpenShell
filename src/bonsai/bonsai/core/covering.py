@@ -147,19 +147,6 @@ def add_instance_ceiling_coverings_from_walls(
         spatial.set_covering_representation_from_polygon(obj, poly, polygon_is_si=False)
 
 
-def add_instance_wall_covering_from_cursor(
-    root: type[tool.Root], covering: type[tool.Covering], spatial: type[tool.Spatial], facing_cursor: bool = True
-) -> None:
-    if not root.get_default_container():
-        raise NoDefaultContainer()
-    if not covering.get_relating_type_layer_thickness():
-        raise NoLayerSetThickness()
-
-    active_obj = spatial.get_active_obj()
-    if active_obj:
-        covering.create_wall_covering(active_obj, facing_cursor=facing_cursor)
-
-
 def add_instance_wall_coverings_from_walls(
     ifc: type[tool.Ifc],
     root: type[tool.Root],
