@@ -634,6 +634,113 @@ namespace {
 
 		return nullptr;
 	}
+
+	// Resolves a per-layer material lookup table for `product` (issue #3742, v2) -- lets
+	// find_cross_coplanar_matches() classify a candidate face into its own layer instead of
+	// relying on get_single_material_association()'s single, whole-product approximation.
+	// Schema-agnostic like the helpers above; deliberately does NOT split any geometry (see
+	// the plan discussion this was designed against: AbstractKernel::apply_layerset() isn't
+	// implemented for the OCCT kernel) -- this is a pure geometric lookup using data that's
+	// already fully resolved by the time this runs: IfcMaterialLayerSetUsage's own
+	// LayerSetDirection/MaterialLayers attributes, and `compound_local`'s own measured extent
+	// along that axis (calibrating the raw, unscaled IFC LayerThickness values against real
+	// geometry sidesteps needing this schema-agnostic file to know the project's length unit
+	// scale at all -- robust regardless of what units the source file uses, and regardless of
+	// any scale baked into `trsf`, since bounding-box extent is measured before `trsf` is
+	// applied and rigid transforms preserve length).
+	//
+	// nullptr/boost::none for anything that isn't an IfcMaterialLayerSetUsage with 2+ layers
+	// (a single layer, or no material at all, is already unambiguous -- get_single_material_
+	// association() alone is correct for those) or where LayerSetDirection is missing, or
+	// where the shape's measured extent along that axis is degenerate.
+	boost::optional<layer_projection> resolve_layer_projection(IfcUtil::IfcBaseEntity* product, const TopoDS_Shape& compound_local, const gp_Trsf& trsf) {
+		auto rels = product->get_inverse("HasAssociations");
+		IfcUtil::IfcBaseEntity* relating_material = nullptr;
+		size_t n_material_rels = 0;
+		for (auto& ref : *rels) {
+			if (ref->declaration().is("IfcRelAssociatesMaterial")) {
+				n_material_rels++;
+				auto arg = ((IfcUtil::IfcBaseEntity*) ref)->get("RelatingMaterial");
+				if (!arg.isNull()) {
+					relating_material = ((IfcUtil::IfcBaseClass*) arg)->as<IfcUtil::IfcBaseEntity>();
+				}
+			}
+		}
+		if (n_material_rels != 1 || !relating_material || !relating_material->declaration().is("IfcMaterialLayerSetUsage")) {
+			return boost::none;
+		}
+
+		auto dir_arg = relating_material->get("LayerSetDirection");
+		if (dir_arg.isNull()) {
+			return boost::none;
+		}
+		std::string direction_str = (std::string) dir_arg;
+		int axis_index = direction_str == "AXIS1" ? 0 : direction_str == "AXIS2" ? 1 : direction_str == "AXIS3" ? 2 : -1;
+		if (axis_index < 0) {
+			return boost::none;
+		}
+
+		auto fls = relating_material->get("ForLayerSet");
+		if (fls.isNull()) {
+			return boost::none;
+		}
+		auto layerset = ((IfcUtil::IfcBaseClass*) fls)->as<IfcUtil::IfcBaseEntity>();
+		aggregate_of_instance::ptr layers = layerset->get("MaterialLayers");
+		if (!layers || layers->size() < 2) {
+			return boost::none;
+		}
+
+		std::vector<double> raw_thickness;
+		std::vector<const IfcUtil::IfcBaseInterface*> materials;
+		for (auto& layer_ : *layers) {
+			auto layer = (IfcUtil::IfcBaseEntity*) layer_;
+			auto th_arg = layer->get("LayerThickness");
+			if (th_arg.isNull()) {
+				return boost::none;
+			}
+			raw_thickness.push_back((double) th_arg);
+			auto mat_arg = layer->get("Material");
+			materials.push_back(mat_arg.isNull() ? nullptr : ((IfcUtil::IfcBaseClass*) mat_arg)->as<IfcUtil::IfcBaseEntity>());
+		}
+		double raw_total = std::accumulate(raw_thickness.begin(), raw_thickness.end(), 0.0);
+		if (raw_total < 1.e-9) {
+			return boost::none;
+		}
+
+		gp_Dir local_axis = axis_index == 0 ? gp_Dir(1, 0, 0) : axis_index == 1 ? gp_Dir(0, 1, 0) : gp_Dir(0, 0, 1);
+
+		Bnd_Box local_bbox;
+		BRepBndLib::Add(compound_local, local_bbox);
+		if (local_bbox.IsVoid()) {
+			return boost::none;
+		}
+		double xmin, ymin, zmin, xmax, ymax, zmax;
+		local_bbox.Get(xmin, ymin, zmin, xmax, ymax, zmax);
+		double local_min = axis_index == 0 ? xmin : axis_index == 1 ? ymin : zmin;
+		double local_max = axis_index == 0 ? xmax : axis_index == 1 ? ymax : zmax;
+		double measured_span = local_max - local_min;
+		if (measured_span < 1.e-9) {
+			return boost::none;
+		}
+
+		layer_projection proj;
+		gp_Pnt local_origin(
+			axis_index == 0 ? local_min : 0.0,
+			axis_index == 1 ? local_min : 0.0,
+			axis_index == 2 ? local_min : 0.0);
+		proj.origin = local_origin.Transformed(trsf);
+		proj.axis = local_axis.Transformed(trsf);
+
+		double scale = measured_span / raw_total;
+		double acc = 0.0;
+		proj.cumulative_offsets.push_back(0.0);
+		for (double t : raw_thickness) {
+			acc += t * scale;
+			proj.cumulative_offsets.push_back(acc);
+		}
+		proj.materials = materials;
+		return proj;
+	}
 }
 
 void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
@@ -711,6 +818,17 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 		m(1, 0), m(1, 1), m(1, 2), m(1, 3),
 		m(2, 0), m(2, 1), m(2, 2), m(2, 3)
 	);
+
+	// v2: needs both compound_local (still untransformed here -- resolve_layer_projection()
+	// measures its own bbox in local frame, since a rigid trsf preserves the resulting
+	// lengths regardless) and trsf (to place the resolved axis/origin into the same frame
+	// compound_local ends up in once transformed) -- see geometry_data::
+	// cross_coplanar_layer_projection.
+	boost::optional<layer_projection> cross_coplanar_layer_projection;
+	if (svg_use_cross_coplanar_classification_ && file) {
+		cross_coplanar_layer_projection = resolve_layer_projection(
+			(IfcUtil::IfcBaseEntity*) brep_obj->product(), compound_local, trsf);
+	}
 
 	const bool is_section = (section_ref_ && object_type && *section_ref_ == *object_type);
 	bool is_elevation = false;
@@ -864,7 +982,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 		return;
 	}
 
-	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj), cross_coplanar_style_instance, cross_coplanar_material_instance };
+	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj), cross_coplanar_style_instance, cross_coplanar_material_instance, cross_coplanar_layer_projection };
 
 	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_ || deferred_section_data_) {
 		element_buffer_.push_back(data);
@@ -1583,7 +1701,7 @@ void SvgSerializer::write(const geometry_data& data) {
 								svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
 								svg_render_cross_coplanar_edges_) }).first;
 						}
-						it->second.add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance, data.cross_coplanar_material_instance);
+						it->second.add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance, data.cross_coplanar_material_instance, data.cross_coplanar_layer_projection);
 						for (auto& kv : classified_edge_buckets) {
 							it->second.add_classified_edges(data.product, kv.first, kv.second);
 						}
@@ -1591,7 +1709,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						logger_.Warning("SER", 28, "Unable to invoke HLR due to absence of storey containment", data.product);
 					}
 				} else if (hlr) {
-					hlr->add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance, data.cross_coplanar_material_instance);
+					hlr->add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance, data.cross_coplanar_material_instance, data.cross_coplanar_layer_projection);
 					for (auto& kv : classified_edge_buckets) {
 						hlr->add_classified_edges(data.product, kv.first, kv.second);
 					}
@@ -2536,7 +2654,7 @@ void SvgSerializer::finalize() {
 								name = (std::string) a2;
 							}
 							write(geometry_data{
-								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey),nullptr,nullptr
+								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey),nullptr,nullptr,boost::none
 							});
 						}
 					}

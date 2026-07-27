@@ -133,6 +133,20 @@ struct vertical_section {
 
 typedef boost::variant<horizontal_plan, horizontal_plan_at_element, vertical_section> section_data;
 
+// Cross-object "cross-coplanar" edge classification (issue #3742), v2: lets a layered
+// product's material be resolved per candidate face instead of once for the whole
+// product (see geometry_data::cross_coplanar_layer_projection below for why). Purely a
+// geometric lookup table -- axis/origin/offsets are all in the same world/drawing frame
+// geometry_data::compound_local ends up in once trsf is applied, so a face's centroid can
+// be classified into a layer with a single dot product + binary search, no boolean split
+// of any geometry required. materials.size() == cumulative_offsets.size() - 1.
+struct layer_projection {
+	gp_Dir axis;
+	gp_Pnt origin;
+	std::vector<double> cumulative_offsets;
+	std::vector<const IfcUtil::IfcBaseInterface*> materials;
+};
+
 struct geometry_data {
 	TopoDS_Shape compound_local;
 	std::vector<boost::optional<std::vector<double>>> dash_arrays;
@@ -159,6 +173,16 @@ struct geometry_data {
 	// presentation concept and two products can coincidentally share a style while being made of
 	// different materials (or vice versa). nullptr if the product has no resolved material.
 	const IfcUtil::IfcBaseInterface* cross_coplanar_material_instance;
+	// v2: when the product has a 2+ layer IfcMaterialLayerSetUsage, this lets
+	// find_cross_coplanar_matches() resolve a candidate face's *own* layer material
+	// instead of falling back to cross_coplanar_material_instance's whole-product
+	// approximation -- fixes false positives where two products share a first-resolved
+	// layer material but differ in a different layer (e.g. both have a Corten 1 layer,
+	// but one's other layer is Concrete 1 and the other's is Concrete 2: the Corten
+	// boundary genuinely matches, the Concrete boundary must not). boost::none for
+	// non-layered products or layer sets with fewer than 2 layers, where a single
+	// per-product material is already unambiguous.
+	boost::optional<layer_projection> cross_coplanar_layer_projection;
 };
 
 struct drawing_meta {
@@ -238,12 +262,15 @@ namespace {
 	}
 
 	// Cross-object "cross-coplanar" edge classification (issue #3742) needs a style and a
-	// material identity alongside each product's shape, so this is a 4-tuple rather than the
-	// pair it used to be -- see geometry_data::cross_coplanar_style_instance and
-	// ::cross_coplanar_material_instance for why those identities are per-product, not
-	// per-face. Both are nullptr wherever cross-coplanar classification is off or a product
-	// resolved none; unused by anything else that reads this list.
-	typedef std::list<std::tuple<const IfcUtil::IfcBaseEntity*, TopoDS_Shape, const IfcUtil::IfcBaseInterface*, const IfcUtil::IfcBaseInterface*>> product_shape_list_t;
+	// material identity alongside each product's shape -- see geometry_data::
+	// cross_coplanar_style_instance and ::cross_coplanar_material_instance for why those
+	// identities are per-product, not per-face. The trailing layer_projection (v2) is the
+	// exception: when present, it lets find_cross_coplanar_matches() resolve a candidate
+	// face's *own* material instead of relying on the whole-product one -- see
+	// geometry_data::cross_coplanar_layer_projection. All three are nullptr/none wherever
+	// cross-coplanar classification is off, a product resolved none, or (for the
+	// projection) the product isn't layered; unused by anything else that reads this list.
+	typedef std::list<std::tuple<const IfcUtil::IfcBaseEntity*, TopoDS_Shape, const IfcUtil::IfcBaseInterface*, const IfcUtil::IfcBaseInterface*, boost::optional<layer_projection>>> product_shape_list_t;
 
 	class hlr_calc {
 	private:
@@ -664,9 +691,9 @@ namespace {
 			return false;
 		}
 		
-		void add(const TopoDS_Shape& s, const IfcUtil::IfcBaseEntity* product, const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance = nullptr, const IfcUtil::IfcBaseInterface* cross_coplanar_material_instance = nullptr) {
+		void add(const TopoDS_Shape& s, const IfcUtil::IfcBaseEntity* product, const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance = nullptr, const IfcUtil::IfcBaseInterface* cross_coplanar_material_instance = nullptr, const boost::optional<layer_projection>& cross_coplanar_layer_projection = boost::none) {
 			if (!use_prefiltering_) {
-				items_.insert(items_.end(), {product, s, cross_coplanar_style_instance, cross_coplanar_material_instance});
+				items_.insert(items_.end(), {product, s, cross_coplanar_style_instance, cross_coplanar_material_instance, cross_coplanar_layer_projection});
 				return;
 			}
 
@@ -705,7 +732,7 @@ namespace {
 
 				logger_.Notice("SER", 34, "Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
 
-				auto it = items_.insert(items_.end(), { product, C, cross_coplanar_style_instance, cross_coplanar_material_instance });
+				auto it = items_.insert(items_.end(), { product, C, cross_coplanar_style_instance, cross_coplanar_material_instance, cross_coplanar_layer_projection });
 
 				{
 					TopExp_Explorer exp(C, TopAbs_FACE);
@@ -738,7 +765,7 @@ namespace {
 					}
 				}
 			} else {
-				items_.insert(items_.end(), { product, s, cross_coplanar_style_instance, cross_coplanar_material_instance });
+				items_.insert(items_.end(), { product, s, cross_coplanar_style_instance, cross_coplanar_material_instance, cross_coplanar_layer_projection });
 			}
 		}
 
@@ -778,20 +805,28 @@ namespace {
 					const TopoDS_Shape& shape_j = std::get<1>(*jj);
 					const auto* style_j = std::get<2>(*jj);
 					const auto* material_j = std::get<3>(*jj);
+					const auto& proj_i = std::get<4>(*ii);
+					const auto& proj_j = std::get<4>(*jj);
 
-					// Material takes priority over style as the "same substance" identity --
-					// see geometry_data::cross_coplanar_material_instance. If either side
+					// v2: when either product is layered, the whole-product material/style is
+					// only an approximation (see geometry_data::cross_coplanar_layer_projection)
+					// -- defer the real decision to the per-face-pair resolution below instead
+					// of rejecting the pair outright here. Otherwise (the common, non-layered
+					// case) this is the same product-level gate as before: material takes
+					// priority over style as the "same substance" identity -- if either side
 					// resolved a material, both must be present and equal (style is not
 					// consulted at all in that case, even if it happens to also match: two
 					// products can share a rendering style while being genuinely different
 					// materials). Style is only the comparison when *neither* side has a
 					// resolved material.
-					if (material_i || material_j) {
-						if (!material_i || !material_j || material_i != material_j) {
+					if (!proj_i && !proj_j) {
+						if (material_i || material_j) {
+							if (!material_i || !material_j || material_i != material_j) {
+								continue;
+							}
+						} else if (!style_i || !style_j || style_i != style_j) {
 							continue;
 						}
-					} else if (!style_i || !style_j || style_i != style_j) {
-						continue;
 					}
 
 					Bnd_Box box_i, box_j;
@@ -838,6 +873,37 @@ namespace {
 							double plane_dist = std::abs(gp_Vec(sample_i, sample_j).Dot(n_i));
 							if (plane_dist >= cross_coplanar_tolerance_) {
 								continue;
+							}
+
+							// v2 per-face material resolution: only needed when one of the two
+							// products is layered (proj_i/proj_j set) -- the product-level gate
+							// above already handled the common, non-layered case. Classify each
+							// face into its own layer (a single dot product + binary search into
+							// cumulative_offsets, see geometry_data::cross_coplanar_layer_projection)
+							// and re-apply the exact same material-priority-then-style logic, now
+							// per face pair instead of once per product pair.
+							if (proj_i || proj_j) {
+								auto resolve_face_material = [](const TopoDS_Face& f, const boost::optional<layer_projection>& proj, const IfcUtil::IfcBaseInterface* product_level) -> const IfcUtil::IfcBaseInterface* {
+									if (!proj) {
+										return product_level;
+									}
+									GProp_GProps props;
+									BRepGProp::SurfaceProperties(f, props);
+									double dist = gp_Vec(proj->origin, props.CentreOfMass()).Dot(proj->axis);
+									auto& offs = proj->cumulative_offsets;
+									size_t idx = std::upper_bound(offs.begin(), offs.end(), dist) - offs.begin();
+									idx = std::min(std::max(idx, size_t(1)), proj->materials.size());
+									return proj->materials[idx - 1];
+								};
+								const auto* face_material_i = resolve_face_material(face_i, proj_i, material_i);
+								const auto* face_material_j = resolve_face_material(face_j, proj_j, material_j);
+								if (face_material_i || face_material_j) {
+									if (!face_material_i || !face_material_j || face_material_i != face_material_j) {
+										continue;
+									}
+								} else if (!style_i || !style_j || style_i != style_j) {
+									continue;
+								}
 							}
 
 							// Edge-to-edge coincidence, not face-area overlap: two adjacent,
