@@ -837,7 +837,7 @@ def install_qt6() -> str:
     os.makedirs(qt_install_root, exist_ok=True)
 
     try:
-        import aqt
+        import aqt  # ty:ignore[unresolved-import]
     except ModuleNotFoundError:
         logger.error(
             "Could not find an existing Qt6 install, so aqtinstall is needed to fetch it automatically. "

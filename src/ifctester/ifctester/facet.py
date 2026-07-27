@@ -142,6 +142,8 @@ class Facet:
                 templates = [
                     t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
                 ]
+        else:
+            assert False, clause_type
 
         for template in templates:
             total_variables = len(template) - len(template.replace("{", ""))
@@ -242,6 +244,7 @@ class Entity(Facet):
         elif not is_pass:
             reason = {"type": "NAME", "actual": inst.is_a().upper()}
 
+        predefined_type = None
         if is_pass and self.predefinedType:
             if self.predefinedType == "USERDEFINED":
                 is_pass = ifcopenshell.util.element.is_userdefined_type(inst)
@@ -616,6 +619,8 @@ class PartOf(Facet):
                     if predefined_type != self.predefinedType:
                         is_pass = False
                         reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
+        else:
+            assert False, self.relation
 
         if self.cardinality == "prohibited":
             return PartOfResult(not is_pass, {"type": "PROHIBITED"})
@@ -798,11 +803,13 @@ class Property(Facet):
                             ]
                     elif prop_entity.is_a("IfcPropertyBoundedValue"):
                         values = []
+                        data_type = None
                         for attribute in ["UpperBoundValue", "LowerBoundValue", "SetPointValue"]:
                             value = getattr(prop_entity, attribute)
                             if value is not None:
                                 data_type = value.is_a()
                                 values.append(value.wrappedValue)
+                        assert data_type is not None, prop_entity
                         if self.dataType and data_type.lower() != self.dataType.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
@@ -823,6 +830,7 @@ class Property(Facet):
                     elif prop_entity.is_a("IfcPropertyTableValue"):
                         values = []
                         units = ifcopenshell.util.unit.get_property_table_unit(prop_entity, inst.file)
+                        data_type = None
                         for attribute in ["Defining", "Defined"]:
                             column_values = props[pset_name][prop_entity.Name][f"{attribute}Values"]
                             if not column_values:
@@ -845,6 +853,7 @@ class Property(Facet):
                                 values.extend(column_values)
                         if not values:
                             is_pass = False
+                            assert data_type is not None, prop_entity
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
                         props[pset_name][prop_entity.Name] = values
@@ -982,6 +991,8 @@ class Material(Facet):
                     values.update(
                         [item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category", None)]
                     )
+            else:
+                assert False, material
 
             is_pass = False
             for value in values:

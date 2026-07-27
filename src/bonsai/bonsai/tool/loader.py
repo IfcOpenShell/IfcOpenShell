@@ -197,7 +197,6 @@ class Loader(bonsai.core.tool.Loader):
         cls, blender_material: bpy.types.Material, surface_style: ifcopenshell.entity_instance
     ) -> None:
         surface_style = cls.surface_style_to_dict(surface_style)
-        surface_style: dict[str, Any]
 
         cls.create_surface_style_shading(blender_material, surface_style)
 
@@ -1100,6 +1099,8 @@ class Loader(bonsai.core.tool.Loader):
             co = Vector((0.0, 0.0, offset))
             no = cls.get_extrusion_vector(element).normalized()
             no = Vector([1.0, 0.0, 0.0])
+        else:
+            assert False, usage.LayerSetDirection
         no *= sense_factor
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
@@ -1109,6 +1110,7 @@ class Loader(bonsai.core.tool.Loader):
             if style := tool.Ifc.get_entity(material):
                 styles[style] = i
         last_i = len(layer_set.MaterialLayers) - 1
+        bisect_geom = None
         for i, layer in enumerate(layer_set.MaterialLayers):
             if i != last_i:
                 prev_co = co.copy()
@@ -1122,6 +1124,7 @@ class Loader(bonsai.core.tool.Loader):
             if (material_index := styles.get(style, None)) is None:
                 material_index = len(mesh.materials)
                 mesh.materials.append(tool.Ifc.get_object(style))
+            assert bisect_geom is not None
             if i == last_i:
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
@@ -1287,6 +1290,7 @@ class Loader(bonsai.core.tool.Loader):
             polyline.material_index = material_index
             return polyline
 
+        item = None
         for item_data, item_style in zip(rep_items, item_styles):
             item = item_data["item"]
 
@@ -1314,6 +1318,7 @@ class Loader(bonsai.core.tool.Loader):
                 polyline.points.add(1)
                 polyline.points[-1].co = native_data["matrix"] @ Vector(v2)
 
+        assert item is not None
         curve.bevel_depth = unit_scale * item.Radius
         thickness = None
         if (inner_radius := item.InnerRadius) and (thickness := max(item.Radius - inner_radius, 0)):

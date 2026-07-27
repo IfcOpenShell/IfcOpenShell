@@ -18,7 +18,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
+import shutil
 import tempfile
 import traceback
 import uuid
@@ -29,6 +31,7 @@ from typing import Literal, NotRequired, Optional, TypedDict, Union
 
 import bpy
 import ifcopenshell
+import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
 from ifcopenshell.file import UndoSystemError
 
@@ -43,7 +46,7 @@ IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
 class OperationData(TypedDict):
     id: int
     guid: NotRequired[str]
-    obj: str
+    obj: NotRequired[str]
 
 
 class EditObjectOperationData(TypedDict):

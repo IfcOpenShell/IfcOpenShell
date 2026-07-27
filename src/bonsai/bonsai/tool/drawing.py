@@ -2604,6 +2604,7 @@ class Drawing(bonsai.core.tool.Drawing):
             if not obj:
                 continue
             current_representation = tool.Geometry.get_active_representation(obj)
+            current_representation_subcontext = None
             if current_representation:
                 subcontext = current_representation.ContextOfItems
                 current_representation_subcontext = tool.Geometry.get_subcontext_parameters(subcontext)

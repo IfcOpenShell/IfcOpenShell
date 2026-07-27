@@ -286,6 +286,7 @@ def main(
         else:
             num_passes = 0
 
+        g2 = None
         for iteration in range(num_passes + 1):
 
             # initialize empty group, note that in the current approach only one
@@ -306,6 +307,7 @@ def main(
                 plt.fill(numpy.array(x.boundary).T[0], numpy.array(x.boundary).T[1])
             """
 
+            semantics, pairs = None, None
             if iteration != num_passes:
                 pairs = svgfill_context.get_face_pairs()
                 semantics = [None] * (max(pairs) + 1)
@@ -367,6 +369,7 @@ def main(
                 if inside_elements:
                     elements = None
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = (inside_elements[0], -1)
                 else:
                     elements = tree.select_ray(pythonize(a), pythonize(b - a))
@@ -399,6 +402,7 @@ def main(
                     svg_fill = "rgb(%s)" % ", ".join(str(f * 255.0) for f in clr[0:3])
 
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = elements[0]
                 else:
                     svg_fill = "none"
@@ -406,6 +410,8 @@ def main(
                 p.setAttribute("style", "fill: " + svg_fill)
 
             if iteration != num_passes:
+                assert pairs is not None
+                assert semantics is not None
                 to_remove = []
 
                 for he_idx in range(0, len(pairs), 2):
@@ -435,6 +441,7 @@ def main(
 
         # Swap the XML nodes from the files
         # Remove the original hidden line node we still have in the serializer output
+        assert g2 is not None
         g1.removeChild(projection)
         g2.setAttribute("class", "projection")
         # Find the children of the projection node parent
@@ -529,9 +536,10 @@ def main(
                     *(tup for i, tup in enumerate(zip(path_objects, section_polies, polies)) if has_relevant_zone(i))
                 )
 
+            # ty can't bound the length of the unpacked iterables, so it over-counts the args.
             arranged = W.arrange_polygons(
                 *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
-                polies,
+                polies,  # ty:ignore[too-many-positional-arguments]
                 *ifcopenshell.optional_logger_args(logger),
             )
             svg_data_3 = W.polygons_to_svg(arranged, False)

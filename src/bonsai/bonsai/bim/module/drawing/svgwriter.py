@@ -1445,6 +1445,8 @@ class SvgWriter:
                 O = A.copy()
                 O.z = B.z
                 run = (B - O).length
+
+                angle_tg = None
                 if run != 0:
                     angle_tg = rise / run
                     angle = round(degrees(atan(angle_tg)))
@@ -1462,6 +1464,7 @@ class SvgWriter:
                 elif object_type == "SLOPE_PERCENT":
                     if angle == 90:
                         return "-"
+                    assert angle_tg is not None
                     return f"{round(angle_tg * 100)} %"
 
             tag = element.Description or get_label_text()

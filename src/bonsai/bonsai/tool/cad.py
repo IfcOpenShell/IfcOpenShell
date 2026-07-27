@@ -981,6 +981,7 @@ class Cad:
                         has_found_connected_edge = True
             loops.append(loop)
 
+        new_verts = None
         for loop in loops:
             all_verts = {v.index for e in loop for v in e.verts}
             possible_v1s = []
@@ -1085,6 +1086,7 @@ class Cad:
 
                 v1 = v2
 
+        assert new_verts is not None
         return new_verts
 
     @classmethod

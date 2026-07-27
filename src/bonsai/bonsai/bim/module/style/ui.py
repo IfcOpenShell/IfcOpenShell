@@ -102,6 +102,7 @@ class BIM_PT_styles(Panel):
 
         # style ui tools
         if active_style:
+            style = active_style
             row = self.layout.row(align=True)
             if material := style.blender_material:
                 msprops = tool.Style.get_material_style_props(material)

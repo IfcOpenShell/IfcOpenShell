@@ -210,6 +210,8 @@ def np_rotation_matrix(
             matrix = np.array([[cos_theta, 0, sin_theta], [0, 1, 0], [-sin_theta, 0, cos_theta]])
         elif axis == "Z":
             matrix = np.array([[cos_theta, -sin_theta, 0], [sin_theta, cos_theta, 0], [0, 0, 1]])
+        else:
+            assert False, axis
     else:
         # Assume axis is a vector.
         axis = axis / np.linalg.norm(axis)
@@ -473,7 +475,6 @@ class ShapeBuilder:
         if arc_points and self.file.schema == "IFC2X3":
             raise Exception("Arcs are not supported for IFC2X3.")
 
-        points: np.ndarray
         points = np.array(points)
         if position_offset is not None:
             points = points + position_offset
@@ -635,7 +636,6 @@ class ShapeBuilder:
         diff = (0.01, 0.01) * diff_sign
         middle_point = points[0] + diff
 
-        points: list[VectorType]
         points = [points[0], middle_point, points[1]]
         points = [ifc_safe_vector_type(p) for p in points]
         seg = self.file.createIfcArcIndex((1, 2, 3))

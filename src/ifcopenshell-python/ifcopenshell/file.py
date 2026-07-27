@@ -90,8 +90,8 @@ class Transaction:
     batch_inverses: list[ElementInverses]
     batch_delete_ids: set[int]
 
-    def __init__(self, ifc_file: file):
-        self.file: file = ifc_file
+    def __init__(self, ifc_file: ifcopenshell.file):
+        self.file: ifcopenshell.file = ifc_file
         self.operations = []
         self.is_batched = False
         self.batch_delete_index = 0
@@ -634,6 +634,7 @@ class file_mixin:
         # Don't store these attributes as transactions
         # as the creation it self is already stored with
         # it's arguments
+        transaction = None
         if attrs:
             transaction = self.transaction
             self.transaction = None
@@ -715,12 +716,14 @@ class file_mixin:
         :returns: An ifcopenshell.entity_instance
         """
 
+        max_id = None
         if self.transaction:
             max_id = self.get_max_id()
 
         result = self._add(inst, -1 if _id is None else _id)
 
         if self.transaction:
+            assert max_id is not None
             added_elements = [e for e in self.traverse(result) if e.id() > max_id]
             [self.transaction.store_create(e) for e in reversed(added_elements)]
         return result

@@ -1577,6 +1577,7 @@ class DumbWallJoiner:
         # Get the ATEND connection from wall1 to use it in wall2
         relating_element = None
         connections = element1.ConnectedTo
+        relating_connection, description = ..., ...
         for conn in connections:
             if conn.is_a("IfcRelConnectsPathElements") and conn.RelatingConnectionType == "ATEND":
                 relating_element = conn.RelatedElement
@@ -1591,6 +1592,7 @@ class DumbWallJoiner:
                 description = conn.Description
                 bonsai.core.geometry.remove_connection(tool.Geometry, connection=conn)
         if relating_element:
+            assert relating_connection is not ... and description is not ...
             ifcopenshell.api.geometry.connect_path(
                 tool.Ifc.get(),
                 relating_element=relating_element,
@@ -1667,15 +1669,6 @@ class DumbWallJoiner:
 
                 # Remove the old opening
                 ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
-            elif void_straddles:
-                # Filling stays on element1, but void straddles — add a pure-void
-                # copy to element2 so its body gets cut.
-                _add_void_copy(element2, opening)
-
-                if void_straddles:
-                    # Filling moved to element2, but void straddles — add a
-                    # pure-void copy back to element1 so its body still gets cut.
-                    _add_void_copy(element1, new_opening)
             elif void_straddles:
                 # Filling stays on element1, but void straddles — add a pure-void
                 # copy to element2 so its body gets cut.

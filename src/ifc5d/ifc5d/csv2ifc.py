@@ -82,6 +82,11 @@ MAIN_CSV_HEADER_COLUMNS.extend(
 )
 
 
+class CostRate(TypedDict):
+    Schedule: str | None
+    RateID: str | None
+
+
 class CostItem(TypedDict):
     children: list[CostItem]
     ifc: NotRequired[ifcopenshell.entity_instance]
@@ -97,6 +102,7 @@ class CostItem(TypedDict):
     Property: Union[str, None]
     Query: Union[str, None]
 
+    CostRate: CostRate | None
     Formula: Union[str, None]
     # QuantityClass: Union[str, None]
 
@@ -239,7 +245,7 @@ class Csv2Ifc:
             cost_values = float(cost_values) if cost_values else None
 
         if self.has_rates:
-            cost_rate = {
+            cost_rate: CostRate = {
                 "Schedule": row[(self.headers["RateSchedule"])] if "RateSchedule" in self.headers else None,
                 "RateID": row[(self.headers["RateID"])] if "RateID" in self.headers else None,
             }

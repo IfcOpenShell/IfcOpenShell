@@ -569,6 +569,7 @@ class Migrator:
         # NOTE: `attribute` is an attribute in new file schema
         # print("Migrating attribute", element, new_element, attribute.name())
         old_file = element.file
+        value = ...
         if hasattr(element, attribute.name()):
             value = getattr(element, attribute.name())
             # print("Attribute names matched", value)
@@ -607,9 +608,7 @@ class Migrator:
             except:  # We tried our best
                 return
 
-        try:
-            value
-        except UnboundLocalError:
+        if value is ...:
             print(
                 f"Couldn't match attribute {attribute.name()} by name to migrate from {element} "
                 f"to {new_element} and there is no special mapping to handle migration "

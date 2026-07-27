@@ -71,6 +71,7 @@ class Patcher:
 
             # Sort elements by GlobalId to ensure consistent order
             elements_sorted = sorted(elements, key=lambda x: x.GlobalId)
+            element_quantities = None
             for element in elements_sorted:
                 quantities = self.get_element_quantities(element)
                 if quantities:

@@ -1290,6 +1290,8 @@ class FacetTransformer(lark.Transformer):
             result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):
             result = element_value is value
+        else:
+            assert False, value
 
         if comparison.startswith("!"):
             return not result

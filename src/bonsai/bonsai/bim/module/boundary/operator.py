@@ -1082,7 +1082,8 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 point_list = tool.Ifc.get().createIfcCartesianPointList2D(points)
                 inner_boundaries.append(tool.Ifc.get().createIfcIndexedPolyCurve(point_list, None, False))
         else:
-            pass  # TODO
+            # TODO:
+            raise NotImplementedError(tool.Ifc.get().schema)
 
         surface.OuterBoundary = outer_boundary
         surface.InnerBoundaries = inner_boundaries

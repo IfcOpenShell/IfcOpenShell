@@ -27,6 +27,8 @@ def test_file_gc(args):
         inst = f.createIfcPerson()
     elif api in (1, 2):
         inst = f.createIfcSite()
+    else:
+        assert False, api
 
     r = weakref.ref(f)
 
@@ -69,9 +71,9 @@ def test_file_gc(args):
     assert r()
 
     if not file_first:
-        del f
+        del f  # ty: ignore[possibly-unresolved-reference]
     else:
-        del inst
+        del inst  # ty: ignore[possibly-unresolved-reference]
 
     # With both deleted we should have no longer access to the file.
     assert r() is None

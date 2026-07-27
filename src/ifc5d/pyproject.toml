@@ -17,6 +17,7 @@ classifiers = [
 ]
 dependencies = [
     "ifcopenshell",
+    "typing_extensions",
 ]
 
  [project.optional-dependencies]

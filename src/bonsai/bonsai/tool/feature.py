@@ -45,6 +45,7 @@ class Feature(bonsai.core.tool.Feature):
         featured_element = tool.Ifc.get_entity(featured_obj)
 
         has_visible_openings = False
+        element_had_openings = None
         for opening in [r.RelatedOpeningElement for r in featured_element.HasOpenings]:
             if tool.Ifc.get_object(opening):
                 has_visible_openings = True
@@ -73,6 +74,7 @@ class Feature(bonsai.core.tool.Feature):
             if voided_obj.data:
                 if tool.Ifc.is_edited(voided_obj):
                     voided_element_ = tool.Ifc.get_entity(voided_obj)
+                    assert element_had_openings is not None
                     if element_had_openings or (voided_element_ != featured_element and voided_element_.HasOpenings):
                         voided_obj.scale = (1.0, 1.0, 1.0)
                         tool.Ifc.finish_edit(voided_obj)

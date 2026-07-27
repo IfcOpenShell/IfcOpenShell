@@ -304,12 +304,14 @@ class Spatial(bonsai.core.tool.Spatial):
 
             while True:
                 has_parent = None
+                new_current_results = None
                 for key in current_results:
                     if flat_key.startswith(key):
                         has_parent = True
                         new_current_results = current_results[key]["children"]
                         break
                 if has_parent:
+                    assert new_current_results is not None
                     current_results = new_current_results
                 else:
                     break
@@ -977,12 +979,15 @@ class Spatial(bonsai.core.tool.Spatial):
     def get_purged_inner_holes_poly(cls, union_geom: Polygon, min_area: float) -> Polygon:
         interiors_list = []
 
+        new_poly = None
+        poly = None
         if union_geom.geom_type == "MultiPolygon":
             for poly in union_geom.geoms:
                 interiors_list = cls.get_poly_valid_interior_list(
                     poly=poly, min_area=min_area, interiors_list=interiors_list
                 )
 
+            assert poly is not None
             new_poly = Polygon(poly.exterior.coords, holes=interiors_list)
 
         if union_geom.geom_type == "Polygon":
@@ -991,6 +996,7 @@ class Spatial(bonsai.core.tool.Spatial):
             )
             new_poly = Polygon(union_geom.exterior.coords, holes=interiors_list)
 
+        assert new_poly is not None
         return new_poly
 
     @classmethod

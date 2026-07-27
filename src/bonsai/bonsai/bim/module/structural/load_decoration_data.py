@@ -71,7 +71,11 @@ class LoadByDirection(TypedDict):
 
 ProcessedLoad = TypedDict(
     "ProcessedLoad",
-    {"linear loads": LoadByDirection, "max linear load": float, "discrete loads": list[list[DiscreteConfigItem]]},
+    {
+        "linear loads": dict[str, LoadByDirection] | None,
+        "max linear load": float,
+        "discrete loads": list[list[DiscreteConfigItem]],
+    },
 )
 
 
@@ -845,7 +849,9 @@ class ShaderInfo:
         v = l1[1] + fac * (pos - l1[0])
         return v
 
-    def interpolate(self, pos: float, loadinfo: list[LoadConfigItem], start: int, end: int, key: str) -> np.ndarray:
+    def interpolate(
+        self, pos: float, loadinfo: list[LoadConfigItem], start: int, end: int, key: Literal["load values"]
+    ) -> np.ndarray:
         """interpolate the result vectors between load poits"""
         result = np.zeros(6)
         for i in range(6):

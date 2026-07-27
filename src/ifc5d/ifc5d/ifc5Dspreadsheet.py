@@ -26,7 +26,8 @@ import logging
 import os
 import time
 from collections import Counter
-from typing import Optional, TypedDict, Union
+from typing import Optional, Union
+from typing_extensions import TypedDict
 
 import ifcopenshell
 import ifcopenshell.util.cost
@@ -35,7 +36,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 
 
-class CostItem(TypedDict):
+class CostItem(TypedDict, extra_items=float):
     # Exported columns.
     Index: int
     Hierarchy: str
@@ -536,6 +537,8 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
                 cell.addElement(P(text=value))
             elif type == "formula":
                 cell = TableCell(formula=value, stylename=style)
+            else:
+                assert False, type
             row.addElement(cell)
 
         first_data_row = 6  # 3 metadata rows, 1 blank row, 1 header row.
@@ -775,6 +778,8 @@ if __name__ == "__main__":
         writer = Ifc5DOdsWriter(args["input"], args["output"])
     elif args["format"] == "XLSX":
         writer = Ifc5DXlsxWriter(args["input"], args["output"])
+    else:
+        assert False, args
     writer.write()
 
     logger.info("Finished conversion in %ss", time.time() - start)

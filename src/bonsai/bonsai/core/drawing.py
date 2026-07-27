@@ -526,6 +526,7 @@ def add_annotation(
         context = drawing_tool.create_annotation_context(target_view, object_type)
 
     drawing_tool.show_decorations()
+    relating_type_rep = None
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
     if not element:  # Brand new annotation

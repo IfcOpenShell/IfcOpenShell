@@ -53,6 +53,8 @@ class ClashResult(TypedDict):
     p1: list[float]
     p2: list[float]
     distance: float
+    # Added by `Clasher.smart_group_clashes`.
+    smart_group: NotRequired[int]
 
 
 class ClashSet(TypedDict):

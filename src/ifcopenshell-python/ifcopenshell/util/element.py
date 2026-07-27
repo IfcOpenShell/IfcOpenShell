@@ -331,6 +331,8 @@ def get_quantity(
             data["properties"] = get_quantities(quantity.HasQuantities, verbose=verbose)
             del data["HasQuantities"]
             result = data
+        else:
+            assert False, quantity
         if verbose:
             result = {"id": quantity.id(), "class": quantity.is_a(), "value": result}
         return result
@@ -387,6 +389,7 @@ def get_property(
         if prop.Name != name:
             continue
         is_single_value = False  # For now we pass value type only for single values.
+        result_type = None
         if prop.is_a("IfcPropertySingleValue"):
             # 2 IfcPropertySingleValue.NominalValue
             result = v.wrappedValue if (v := prop[2]) else None
@@ -409,6 +412,8 @@ def get_property(
             data["properties"] = get_properties(prop.HasProperties, verbose=verbose)
             del data["HasProperties"]
             result = data
+        else:
+            assert False, prop
         if verbose:
             result = {"id": prop.id(), "class": prop.is_a(), "value": result}
             if is_single_value:

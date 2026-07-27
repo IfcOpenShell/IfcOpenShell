@@ -156,6 +156,8 @@ class CostSchedulesData:
             values = root_element.CostValues
         elif root_element.is_a("IfcConstructionResource"):
             values = root_element.BaseCosts
+        else:
+            assert False, root_element
         for cost_value in values or []:
             cls._load_cost_value(root_element, data, cost_value)
             # data["CostValues"].append(cost_value.id())

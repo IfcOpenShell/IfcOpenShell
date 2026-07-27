@@ -3524,6 +3524,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
         if props.representation_item_shape_aspect == "NEW":
             active_representation = tool.Geometry.get_active_representation(obj)
             # find IfcProductRepresentationSelect based on current representation
+            product_shape = None
             if hasattr(element, "Representation"):  # IfcProduct
                 product_shape = element.Representation
             else:  # IfcTypeProduct
@@ -3533,6 +3534,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
             previous_shape_aspect_id = props.active_item.shape_aspect_id
             # will be None if item didn't had a shape aspect
             previous_shape_aspect = tool.Ifc.get_entity_by_id(previous_shape_aspect_id)
+            assert product_shape is not None
             shape_aspect = tool.Geometry.create_shape_aspect(
                 product_shape, active_representation, [representation_item], previous_shape_aspect
             )
@@ -3879,6 +3881,8 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
             curve = builder.rectangle(size=Vector((0.5, 0.5)) / unit_scale)
         elif self.shape == "CYLINDER":
             curve = builder.circle(radius=0.25 / unit_scale)
+        else:
+            assert False, self.shape
         item = builder.extrude(
             curve,
             magnitude=0.5 / unit_scale,

@@ -635,6 +635,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         z_axis = tuple(local_y) if direction_sense == "POSITIVE" else tuple(-local_y)
                     elif usage.LayerSetDirection == "AXIS3":
                         z_axis = tuple(local_z) if direction_sense == "POSITIVE" else tuple(-local_z)
+                    else:
+                        assert False, usage.LayerSetDirection
 
                     item = builder.extrude(
                         profile,
@@ -764,6 +766,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         WebThickness=default_web_thickness / unit_scale,
                         FlangeThickness=default_flange_thickness / unit_scale,
                     )
+                else:
+                    assert False, representation_template
 
             rel = ifcopenshell.api.material.assign_material(
                 tool.Ifc.get(), products=[element], type="IfcMaterialProfileSet"

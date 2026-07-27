@@ -33,7 +33,6 @@ from typing import (
     Optional,
     TypeGuard,
     Union,
-    cast,
     get_args,
 )
 
@@ -768,6 +767,7 @@ class Geometry(bonsai.core.tool.Geometry):
             # its centroid not obscured (tested via raycasting) by any other
             # face.
             distance = max(obj.dimensions.xyz)
+            min_y, max_z = None, None
             if axis == "+Z":
                 max_z = max([co[2] for co in obj.bound_box]) + 0.002
                 direction = Vector((0, 0, -1))
@@ -782,8 +782,10 @@ class Geometry(bonsai.core.tool.Geometry):
                 if direction.dot(face.normal) > 0:
                     continue
                 if axis == "+Z":
+                    assert max_z is not None
                     face_centroid_at_max = Vector((*face.calc_center_median().xy, max_z))
                 elif axis == "-Y":
+                    assert min_y is not None
                     centroid = face.calc_center_median()
                     face_centroid_at_max = Vector((centroid.x, min_y, centroid.z))
                 face_centroid_at_max = obj.matrix_world @ face_centroid_at_max
@@ -1904,6 +1906,7 @@ class Geometry(bonsai.core.tool.Geometry):
         """NOTE: we assume that all items belonged to the same representation and to the same shape aspect"""
         ifc_file = tool.Ifc.get()
         previous_shape_aspect = None
+        base_representation = None
         for inverse in ifc_file.get_inverse(representation_items[0]):
             if inverse.is_a("IfcShapeRepresentation"):
                 if inverse.OfShapeAspect:
@@ -1917,6 +1920,7 @@ class Geometry(bonsai.core.tool.Geometry):
         # remove item from previous shape aspect
         if previous_shape_aspect:
             cls.remove_representation_items_from_shape_aspect(representation_items, previous_shape_aspect)
+        assert base_representation
         shape_aspect_representation = cls.get_shape_aspect_representation(
             shape_aspect, base_representation, create_new=True
         )
@@ -2205,7 +2209,7 @@ class Geometry(bonsai.core.tool.Geometry):
             setattr(item, attribute.name, attribute.get_value())
 
         if item.is_a("IfcSweptAreaSolid"):
-            item_profile = cast(str, props.item_profile)
+            item_profile = props.item_profile
             profile = item.SweptArea
             profile_name: Union[str, None] = profile.ProfileName
             if item_profile == "-":
@@ -2230,6 +2234,7 @@ class Geometry(bonsai.core.tool.Geometry):
         assert item
         obj.data.clear_geometry()
 
+        cartesian_point_offset = None
         if item.is_a("IfcHalfSpaceSolid"):
             bm = bmesh.new()
             bmesh.ops.create_grid(bm, size=0.5)

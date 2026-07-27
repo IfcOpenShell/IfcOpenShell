@@ -1032,6 +1032,7 @@ class BIM_UL_sheets(bpy.types.UIList):
         if self.filter_name:
             filter_name = self.filter_name.lower()
             active_sheet = None
+            active_sheet_index = None
             for sheet in data.sheets:
                 if sheet.is_sheet:
                     active_sheet = sheet
@@ -1039,6 +1040,7 @@ class BIM_UL_sheets(bpy.types.UIList):
                 if filter_name in sheet.name.lower() or filter_name in sheet.identification.lower():
                     flt_flags.append(self.bitflag_filter_item)
                     if not sheet.is_sheet:
+                        assert active_sheet_index is not None
                         flt_flags[active_sheet_index] = self.bitflag_filter_item
                 else:
                     flt_flags.append(0)
