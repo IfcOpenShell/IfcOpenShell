@@ -1158,9 +1158,14 @@ class Geometry(bonsai.core.tool.Geometry):
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
 
-        settings.set("context-ids", [context.id()])
-        if not apply_openings:
+        context_ids = {context.id()}
+        if apply_openings:
+            context_ids |= ifcopenshell.util.representation.get_missing_opening_context_ids(
+                ifc_file, context_ids, elements
+            )
+        else:
             settings.set("disable-opening-subtractions", True)
+        settings.set("context-ids", sorted(context_ids))
 
         shape = None
         if elements:

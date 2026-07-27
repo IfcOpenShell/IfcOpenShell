@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Iterable, Sequence
 from typing import Literal, Optional, TypedDict, Union
 
 import numpy as np
@@ -423,6 +423,60 @@ def get_prioritised_contexts(ifc_file: ifcopenshell.file) -> list[ifcopenshell.e
         return tuple(priority)
 
     return sorted(ifc_file.by_type("IfcGeometricRepresentationContext"), key=sort_context, reverse=True)
+
+
+def get_missing_opening_context_ids(
+    ifc_file: ifcopenshell.file,
+    context_ids: Iterable[int],
+    elements: Optional[Iterable[ifcopenshell.entity_instance]] = None,
+) -> set[int]:
+    """Gets the extra context ids an opening subtraction needs to resolve
+
+    The ``context-ids`` geometry setting is an allow list of the
+    representations the geometry kernel may resolve, and it is applied to the
+    openings subtracted from a host as well as to the host's own
+    representation. An allow list that leaves an opening with no representation
+    inside it makes the kernel drop that subtraction and emit an unvoided host,
+    so any ``context-ids`` filter used with opening subtractions enabled should
+    be extended by the result of this function.
+
+    Openings that already have a representation in ``context_ids`` contribute
+    nothing, so a model that keeps hosts and their openings in the same context
+    gets an empty result and an unchanged filter.
+
+    :param ifc_file: The model containing the openings
+    :param context_ids: The IfcGeometricRepresentationContext ids already allowed
+    :param elements: Only consider openings voiding these elements, including
+        openings inherited from an aggregate. Defaults to every opening in the
+        model.
+    :return: A set of IfcGeometricRepresentationContext ids to add
+    """
+    openings: set[ifcopenshell.entity_instance] = set()
+    if elements is None:
+        openings.update(ifc_file.by_type("IfcOpeningElement"))
+    else:
+        for element in elements:
+            seen: set[int] = set()
+            while element is not None and element.id() not in seen:
+                seen.add(element.id())
+                for rel in getattr(element, "HasOpenings", None) or ():
+                    openings.add(rel.RelatedOpeningElement)
+                decomposes = getattr(element, "Decomposes", None) or ()
+                element = next((r.RelatingObject for r in decomposes if r.is_a("IfcRelAggregates")), None)
+
+    allowed = set(context_ids)
+    missing: set[int] = set()
+    for opening in openings:
+        if not (definition := opening.Representation):
+            continue
+        representations = definition.Representations
+        if any(r.ContextOfItems.id() in allowed for r in representations):
+            continue
+        body = next((r for r in representations if r.RepresentationIdentifier == "Body"), None)
+        chosen = {body.ContextOfItems.id()} if body else {r.ContextOfItems.id() for r in representations}
+        allowed |= chosen
+        missing |= chosen
+    return missing
 
 
 def get_part_of_product(
