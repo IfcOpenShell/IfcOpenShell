@@ -1184,9 +1184,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
         elif tool.Model.get_usage_type(relating_type) == "LAYER3":
             return bpy.ops.bim.draw_polyline_slab("INVOKE_DEFAULT")
-        elif tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type_class not in (
-            "IfcColumnType",
-            "IfcPileType",
+        elif (
+            tool.Model.get_usage_type(relating_type) == "PROFILE"
+            and relating_type_class not in ("IfcColumnType", "IfcPileType")
+            and tool.Model.get_material_profile_set(relating_type)
         ):
             return bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
         return bpy.ops.bim.draw_occurrence("INVOKE_DEFAULT")
