@@ -16,7 +16,8 @@ use crate::progress::AuthProgress;
 use crate::rpc::RpcError;
 
 pub const KEYRING_SERVICE: &str = "bonsaiviewer-autodesk";
-pub const AUTHORIZE_ENDPOINT: &str = "https://developer.api.autodesk.com/authentication/v2/authorize";
+pub const AUTHORIZE_ENDPOINT: &str =
+    "https://developer.api.autodesk.com/authentication/v2/authorize";
 pub const TOKEN_ENDPOINT: &str = "https://developer.api.autodesk.com/authentication/v2/token";
 
 const REFRESH_TTL_DEFAULT_SECONDS: i64 = 15 * 24 * 60 * 60;
@@ -44,7 +45,10 @@ pub struct KeyringTokenStore {
 
 impl KeyringTokenStore {
     pub fn new(username: impl Into<String>) -> Self {
-        Self { service: KEYRING_SERVICE.to_string(), username: username.into() }
+        Self {
+            service: KEYRING_SERVICE.to_string(),
+            username: username.into(),
+        }
     }
 
     fn entry(&self) -> Result<keyring::Entry, RpcError> {
@@ -128,8 +132,9 @@ pub fn wait_for_oauth_callback(
     path: &str,
     expected_state: &str,
 ) -> Result<String, RpcError> {
-    let listener = TcpListener::bind((host, port))
-        .map_err(|e| RpcError::internal(format!("Cannot bind OAuth callback to {host}:{port}: {e}")))?;
+    let listener = TcpListener::bind((host, port)).map_err(|e| {
+        RpcError::internal(format!("Cannot bind OAuth callback to {host}:{port}: {e}"))
+    })?;
     let (mut stream, _) = listener
         .accept()
         .map_err(|e| RpcError::internal(format!("OAuth callback accept failed: {e}")))?;
@@ -137,7 +142,9 @@ pub fn wait_for_oauth_callback(
 
     let request_line = {
         let mut reader = BufReader::new(
-            stream.try_clone().map_err(|e| RpcError::internal(e.to_string()))?,
+            stream
+                .try_clone()
+                .map_err(|e| RpcError::internal(e.to_string()))?,
         );
         let mut line = String::new();
         reader
@@ -184,7 +191,9 @@ pub fn wait_for_oauth_callback(
     }
 
     if let Some(err) = error.filter(|s| !s.is_empty()) {
-        return Err(RpcError::internal(format!("Autodesk returned OAuth error '{err}'.")));
+        return Err(RpcError::internal(format!(
+            "Autodesk returned OAuth error '{err}'."
+        )));
     }
     if state.as_deref() != Some(expected_state) {
         return Err(RpcError::internal("OAuth state mismatch."));
@@ -195,10 +204,11 @@ pub fn wait_for_oauth_callback(
 
 /// Pluggable callback strategy — production binds a localhost socket, tests
 /// inject a stub that returns a canned code.
-pub type CallbackWaiter = Arc<dyn Fn(&str, u16, &str, &str) -> Result<String, RpcError> + Send + Sync>;
+pub type CallbackWaiter =
+    Arc<dyn Fn(&str, u16, &str, &str) -> Result<String, RpcError> + Send + Sync>;
 
 pub fn default_callback_waiter() -> CallbackWaiter {
-    Arc::new(|host, port, path, state| wait_for_oauth_callback(host, port, path, state))
+    Arc::new(wait_for_oauth_callback)
 }
 
 /// Pluggable "open this URL in a browser" — production opens it for real,
@@ -235,7 +245,12 @@ pub struct AuthBuilder {
 }
 
 impl AuthBuilder {
-    pub fn new(client_id: String, callback_url: String, scope: String, token_store: Box<dyn TokenStore>) -> Self {
+    pub fn new(
+        client_id: String,
+        callback_url: String,
+        scope: String,
+        token_store: Box<dyn TokenStore>,
+    ) -> Self {
         Self {
             client_id,
             callback_url,
@@ -317,7 +332,9 @@ impl AuthSessionService {
         if callback.scheme() != "http"
             || !matches!(callback.host_str(), Some("127.0.0.1") | Some("localhost"))
         {
-            return Err(RpcError::internal("Callback URL must be http://localhost or http://127.0.0.1."));
+            return Err(RpcError::internal(
+                "Callback URL must be http://localhost or http://127.0.0.1.",
+            ));
         }
 
         let authorize_url = {
@@ -356,7 +373,11 @@ impl AuthSessionService {
         Ok(token)
     }
 
-    fn refresh(&self, token: &StoredToken, progress: AuthProgress) -> Result<StoredToken, RpcError> {
+    fn refresh(
+        &self,
+        token: &StoredToken,
+        progress: AuthProgress,
+    ) -> Result<StoredToken, RpcError> {
         progress("auth", "Refreshing Autodesk session", None);
         let payload = self
             .post_form(&[
@@ -408,7 +429,8 @@ impl AuthSessionService {
             access_token: access_token.to_string(),
             refresh_token: refresh_token.to_string(),
             access_token_expires_at: now + ChronoDuration::seconds(expires_in - TOKEN_SKEW_SECONDS),
-            refresh_token_expires_at: now + ChronoDuration::seconds(refresh_ttl - TOKEN_SKEW_SECONDS),
+            refresh_token_expires_at: now
+                + ChronoDuration::seconds(refresh_ttl - TOKEN_SKEW_SECONDS),
             scope: self.scope.clone(),
         })
     }
@@ -421,10 +443,14 @@ pub struct InMemoryTokenStore {
 
 impl InMemoryTokenStore {
     pub fn empty() -> Self {
-        Self { inner: std::sync::Mutex::new(None) }
+        Self {
+            inner: std::sync::Mutex::new(None),
+        }
     }
     pub fn preloaded(token: StoredToken) -> Self {
-        Self { inner: std::sync::Mutex::new(Some(token)) }
+        Self {
+            inner: std::sync::Mutex::new(Some(token)),
+        }
     }
 }
 
@@ -483,7 +509,11 @@ mod tests {
         assert!(store.load().unwrap().is_none());
     }
 
-    fn make_service(store: Box<dyn TokenStore>, token_endpoint: String, code: &'static str) -> AuthSessionService {
+    fn make_service(
+        store: Box<dyn TokenStore>,
+        token_endpoint: String,
+        code: &'static str,
+    ) -> AuthSessionService {
         AuthBuilder::new(
             "client-xyz".into(),
             "http://127.0.0.1:8080/".into(),
@@ -539,15 +569,22 @@ mod tests {
             inner: InMemoryTokenStore,
         }
         impl TokenStore for PeekStore {
-            fn load(&self) -> Result<Option<StoredToken>, RpcError> { self.inner.load() }
+            fn load(&self) -> Result<Option<StoredToken>, RpcError> {
+                self.inner.load()
+            }
             fn save(&self, t: &StoredToken) -> Result<(), RpcError> {
                 *self.shadow.lock().unwrap() = Some(t.clone());
                 self.inner.save(t)
             }
-            fn delete(&self) -> Result<(), RpcError> { self.inner.delete() }
+            fn delete(&self) -> Result<(), RpcError> {
+                self.inner.delete()
+            }
         }
         let _ = store;
-        let peek = Box::new(PeekStore { shadow: saved_check.clone(), inner: InMemoryTokenStore::empty() });
+        let peek = Box::new(PeekStore {
+            shadow: saved_check.clone(),
+            inner: InMemoryTokenStore::empty(),
+        });
 
         let svc = make_service(peek, endpoint, "AUTH_CODE");
         let token = svc.login_interactive(crate::progress::noop_auth()).unwrap();
@@ -570,7 +607,9 @@ mod tests {
         };
         let store = Box::new(InMemoryTokenStore::preloaded(token));
         let svc = make_service(store, "http://127.0.0.1:1/never".into(), "x");
-        let access = svc.ensure_access_token(crate::progress::noop_auth()).unwrap();
+        let access = svc
+            .ensure_access_token(crate::progress::noop_auth())
+            .unwrap();
         assert_eq!(access, "CACHED");
     }
 
@@ -591,7 +630,9 @@ mod tests {
         };
         let store = Box::new(InMemoryTokenStore::preloaded(token));
         let svc = make_service(store, endpoint, "unused");
-        let access = svc.ensure_access_token(crate::progress::noop_auth()).unwrap();
+        let access = svc
+            .ensure_access_token(crate::progress::noop_auth())
+            .unwrap();
         assert_eq!(access, "FRESH");
     }
 }

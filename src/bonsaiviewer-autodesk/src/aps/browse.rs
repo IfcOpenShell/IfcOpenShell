@@ -77,7 +77,11 @@ impl ApsClient {
             .and_then(|v| v.as_array())
             .map(|arr| arr.iter().map(entry_from_jsonapi).collect())
             .unwrap_or_default();
-        folders.sort_by(|a, b| a.display_name.to_lowercase().cmp(&b.display_name.to_lowercase()));
+        folders.sort_by(|a, b| {
+            a.display_name
+                .to_lowercase()
+                .cmp(&b.display_name.to_lowercase())
+        });
         Ok(folders)
     }
 
@@ -120,7 +124,11 @@ impl ApsClient {
                 _ => break,
             }
         }
-        entries.sort_by(|a, b| a.display_name.to_lowercase().cmp(&b.display_name.to_lowercase()));
+        entries.sort_by(|a, b| {
+            a.display_name
+                .to_lowercase()
+                .cmp(&b.display_name.to_lowercase())
+        });
         Ok(entries)
     }
 
@@ -136,10 +144,17 @@ impl ApsClient {
             .get("data")
             .cloned()
             .ok_or_else(|| RpcError::internal("Item response missing 'data'."))?;
-        let item_attrs = item.get("attributes").cloned().unwrap_or_else(|| serde_json::json!({}));
+        let item_attrs = item
+            .get("attributes")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!({}));
         let parent_folder_id = relationship_id(&item, "parent");
         let tip_id = relationship_id(&item, "tip");
-        let id = item.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+        let id = item
+            .get("id")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string();
         let tip = payload
             .get("included")
             .and_then(|v| v.as_array())
@@ -171,7 +186,10 @@ impl ApsClient {
                 parent_folder_id,
             });
         };
-        let tip_attrs = tip.get("attributes").cloned().unwrap_or_else(|| serde_json::json!({}));
+        let tip_attrs = tip
+            .get("attributes")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!({}));
         let display = tip_attrs
             .get("displayName")
             .and_then(|v| v.as_str())
@@ -182,12 +200,21 @@ impl ApsClient {
         Ok(ItemTip {
             id,
             display_name: display,
-            hidden: item_attrs.get("hidden").and_then(|v| v.as_bool()).unwrap_or(false),
+            hidden: item_attrs
+                .get("hidden")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false),
             version_id: tip.get("id").and_then(|v| v.as_str()).map(String::from),
             storage_id: relationship_id(&tip, "storage"),
             version_number: tip_attrs.get("versionNumber").cloned(),
-            last_modified_time_utc: tip_attrs.get("lastModifiedTime").and_then(|v| v.as_str()).map(String::from),
-            last_modified_user_name: tip_attrs.get("lastModifiedUserName").and_then(|v| v.as_str()).map(String::from),
+            last_modified_time_utc: tip_attrs
+                .get("lastModifiedTime")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            last_modified_user_name: tip_attrs
+                .get("lastModifiedUserName")
+                .and_then(|v| v.as_str())
+                .map(String::from),
             parent_folder_id,
         })
     }
@@ -195,8 +222,16 @@ impl ApsClient {
 
 fn hub_from_jsonapi(item: &Value) -> Hub {
     Hub {
-        id: item.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-        name: item.pointer("/attributes/name").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+        id: item
+            .get("id")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string(),
+        name: item
+            .pointer("/attributes/name")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string(),
         extension_type: item
             .pointer("/attributes/extension/type")
             .and_then(|v| v.as_str())
@@ -207,8 +242,16 @@ fn hub_from_jsonapi(item: &Value) -> Hub {
 
 fn project_from_jsonapi(item: &Value) -> Project {
     Project {
-        id: item.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-        name: item.pointer("/attributes/name").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+        id: item
+            .get("id")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string(),
+        name: item
+            .pointer("/attributes/name")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string(),
         extension_type: item
             .pointer("/attributes/extension/type")
             .and_then(|v| v.as_str())
@@ -223,7 +266,10 @@ fn project_from_jsonapi(item: &Value) -> Project {
 }
 
 pub(crate) fn entry_from_jsonapi(item: &Value) -> Entry {
-    let attrs = item.get("attributes").cloned().unwrap_or_else(|| serde_json::json!({}));
+    let attrs = item
+        .get("attributes")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
     let display = attrs
         .get("displayName")
         .and_then(|v| v.as_str())
@@ -237,7 +283,11 @@ pub(crate) fn entry_from_jsonapi(item: &Value) -> Entry {
         _ => EntryType::Other,
     };
     Entry {
-        id: item.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+        id: item
+            .get("id")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string(),
         entry_type,
         display_name: display,
         name: attrs.get("name").and_then(|v| v.as_str()).map(String::from),

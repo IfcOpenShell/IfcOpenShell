@@ -83,9 +83,17 @@ pub struct AutodeskConnector {
     inner: RefCell<Option<ClientPair>>,
 }
 
+impl Default for AutodeskConnector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AutodeskConnector {
     pub fn new() -> Self {
-        let me = Self { inner: RefCell::new(None) };
+        let me = Self {
+            inner: RefCell::new(None),
+        };
         me.reload_credentials();
         me
     }
@@ -144,7 +152,7 @@ impl AutodeskConnector {
         // SAFETY: SettingsDialog::run blocks the calling thread, and the
         // callback fires only on this thread before run returns. The pointer
         // outlives the call because `self` is borrowed by the RPC dispatch.
-        let on_reload: Arc<dyn Fn() -> Result<(), RpcError>> = Arc::new(move || {
+        let on_reload: Rc<dyn Fn() -> Result<(), RpcError>> = Rc::new(move || {
             let cell: &RefCell<Option<ClientPair>> = unsafe { &*inner_ptr };
             let client_id = cfg::load_client_id();
             if client_id.is_empty() {
@@ -181,7 +189,14 @@ impl AutodeskConnector {
         let display_name = entry.display_name.clone();
         let aps = pair.aps.clone();
         let path = run_with_progress("Downloading project", move |report| {
-            download_ifcfed(&aps, &hub_id, &project_id, &item_id, &display_name, Some(download_callback(report, 0, 0)))
+            download_ifcfed(
+                &aps,
+                &hub_id,
+                &project_id,
+                &item_id,
+                &display_name,
+                Some(download_callback(report, 0, 0)),
+            )
         })?;
         Ok(json!({"path": path.to_string_lossy()}))
     }
@@ -190,13 +205,19 @@ impl AutodeskConnector {
 
     fn pull_ifcfed(&self, params: Value) -> Result<Value, RpcError> {
         let pair = self.require()?;
-        let p: PullIfcfedParams = serde_json::from_value(params).map_err(|e| {
-            RpcError::invalid_params(format!("pull_ifcfed: {e}"))
-        })?;
+        let p: PullIfcfedParams = serde_json::from_value(params)
+            .map_err(|e| RpcError::invalid_params(format!("pull_ifcfed: {e}")))?;
         let display = p.display_name.unwrap_or_else(|| p.item_id.clone());
         let aps = pair.aps.clone();
         let path = run_with_progress("Downloading project", move |report| {
-            download_ifcfed(&aps, &p.hub_id, &p.project_id, &p.item_id, &display, Some(download_callback(report, 0, 0)))
+            download_ifcfed(
+                &aps,
+                &p.hub_id,
+                &p.project_id,
+                &p.item_id,
+                &display,
+                Some(download_callback(report, 0, 0)),
+            )
         })?;
         Ok(json!({"path": path.to_string_lossy()}))
     }
@@ -205,9 +226,8 @@ impl AutodeskConnector {
 
     fn pull_models(&self, params: Value) -> Result<Value, RpcError> {
         let pair = self.require()?;
-        let entries: Vec<PullModelEntry> = serde_json::from_value(params).map_err(|e| {
-            RpcError::invalid_params(format!("pull_models: {e}"))
-        })?;
+        let entries: Vec<PullModelEntry> = serde_json::from_value(params)
+            .map_err(|e| RpcError::invalid_params(format!("pull_models: {e}")))?;
         let total = entries.len();
         let aps = pair.aps.clone();
         let results = run_with_progress("Downloading models", move |report| {
@@ -241,7 +261,14 @@ impl AutodeskConnector {
             let mut out: Vec<Value> = Vec::new();
             for (index, entry) in chosen.entries.into_iter().enumerate() {
                 let cb = download_callback(report.clone(), index + 1, total);
-                match download_picked_model(&aps, &hub.id, &project.id, &entry.id, &entry.display_name, Some(cb)) {
+                match download_picked_model(
+                    &aps,
+                    &hub.id,
+                    &project.id,
+                    &entry.id,
+                    &entry.display_name,
+                    Some(cb),
+                ) {
                     Ok(Some(v)) => out.push(v),
                     Ok(None) => {}
                     Err(e) => eprintln!("pull_models_interactive[{index}] skipped: {}", e.message),
@@ -256,16 +283,18 @@ impl AutodeskConnector {
 
     fn push_ifcfed_interactive(&self, params: Value) -> Result<Value, RpcError> {
         let pair = self.require()?;
-        let p: PushInteractiveParams = serde_json::from_value(params).map_err(|e| {
-            RpcError::invalid_params(format!("push_ifcfed_interactive: {e}"))
-        })?;
+        let p: PushInteractiveParams = serde_json::from_value(params)
+            .map_err(|e| RpcError::invalid_params(format!("push_ifcfed_interactive: {e}")))?;
         check_local_exists(&p.path)?;
         let default_name = file_name_of(&p.path);
         if !default_name.to_lowercase().ends_with(".ifcfed") {
-            return Err(RpcError::invalid_params("push_ifcfed_interactive expects an .ifcfed file."));
+            return Err(RpcError::invalid_params(
+                "push_ifcfed_interactive expects an .ifcfed file.",
+            ));
         }
 
-        let chosen = BrowseDialog::new(pair.auth.clone(), pair.aps.clone(), Mode::Destination).run()?;
+        let chosen =
+            BrowseDialog::new(pair.auth.clone(), pair.aps.clone(), Mode::Destination).run()?;
         let folder = chosen
             .entries
             .first()
@@ -274,7 +303,11 @@ impl AutodeskConnector {
 
         let raw = prompt_for_filename("Save Project", "Save .ifcfed as:", &default_name)
             .ok_or_else(|| RpcError::internal("User cancelled save to cloud."))?;
-        let file_name = if raw.to_lowercase().ends_with(".ifcfed") { raw } else { format!("{raw}.ifcfed") };
+        let file_name = if raw.to_lowercase().ends_with(".ifcfed") {
+            raw
+        } else {
+            format!("{raw}.ifcfed")
+        };
 
         let project_id = chosen.project.id.clone();
         let folder_id = folder.id.clone();
@@ -282,17 +315,28 @@ impl AutodeskConnector {
         let local_path = p.path.clone();
         let upload_name = file_name.clone();
         let uploaded = run_with_progress("Uploading project", move |report| {
-            aps.upload_file_to_folder(&project_id, &folder_id, &local_path, Some(&upload_name), Some(upload_callback(report)))
+            aps.upload_file_to_folder(
+                &project_id,
+                &folder_id,
+                &local_path,
+                Some(&upload_name),
+                Some(upload_callback(report)),
+            )
         })?;
 
-        let cached_path = cache_ifcfed_locally(&chosen.project.id, &uploaded.item_id, &file_name, &p.path)?;
-        cache::write_manifest(&cached_path, &Manifest {
-            connector: CONNECTOR_ID.into(),
-            hub_id: chosen.hub.id,
-            project_id: chosen.project.id,
-            item_id: uploaded.item_id,
-            display_name: file_name,
-        }).map_err(|e| RpcError::internal(format!("Manifest write failed: {e}")))?;
+        let cached_path =
+            cache_ifcfed_locally(&chosen.project.id, &uploaded.item_id, &file_name, &p.path)?;
+        cache::write_manifest(
+            &cached_path,
+            &Manifest {
+                connector: CONNECTOR_ID.into(),
+                hub_id: chosen.hub.id,
+                project_id: chosen.project.id,
+                item_id: uploaded.item_id,
+                display_name: file_name,
+            },
+        )
+        .map_err(|e| RpcError::internal(format!("Manifest write failed: {e}")))?;
         Ok(json!({"path": cached_path.to_string_lossy()}))
     }
 
@@ -300,23 +344,30 @@ impl AutodeskConnector {
 
     fn push_ifcfed(&self, params: Value) -> Result<Value, RpcError> {
         let pair = self.require()?;
-        let p: PushIfcfedParams = serde_json::from_value(params).map_err(|e| {
-            RpcError::invalid_params(format!("push_ifcfed: {e}"))
-        })?;
+        let p: PushIfcfedParams = serde_json::from_value(params)
+            .map_err(|e| RpcError::invalid_params(format!("push_ifcfed: {e}")))?;
         check_local_exists(&p.path)?;
         if !file_name_of(&p.path).to_lowercase().ends_with(".ifcfed") {
-            return Err(RpcError::invalid_params("push_ifcfed expects an .ifcfed file."));
+            return Err(RpcError::invalid_params(
+                "push_ifcfed expects an .ifcfed file.",
+            ));
         }
         if p.manifest.connector != CONNECTOR_ID {
-            return Err(RpcError::invalid_params(format!("Manifest connector is not '{CONNECTOR_ID}'.")));
+            return Err(RpcError::invalid_params(format!(
+                "Manifest connector is not '{CONNECTOR_ID}'."
+            )));
         }
 
-        let item = pair.aps.get_item(&p.manifest.project_id, &p.manifest.item_id)?;
+        let item = pair
+            .aps
+            .get_item(&p.manifest.project_id, &p.manifest.item_id)?;
         ensure_visible(&item)?;
-        let folder_id = item
-            .parent_folder_id
-            .clone()
-            .ok_or_else(|| RpcError::internal(format!("Cannot resolve parent folder for item '{}'.", p.manifest.item_id)))?;
+        let folder_id = item.parent_folder_id.clone().ok_or_else(|| {
+            RpcError::internal(format!(
+                "Cannot resolve parent folder for item '{}'.",
+                p.manifest.item_id
+            ))
+        })?;
         let file_name = if p.manifest.display_name.is_empty() {
             item.display_name.clone()
         } else {
@@ -328,17 +379,32 @@ impl AutodeskConnector {
         let project_id = p.manifest.project_id.clone();
         let upload_name = file_name.clone();
         let uploaded = run_with_progress("Uploading project", move |report| {
-            aps.upload_file_to_folder(&project_id, &folder_id, &local_path, Some(&upload_name), Some(upload_callback(report)))
+            aps.upload_file_to_folder(
+                &project_id,
+                &folder_id,
+                &local_path,
+                Some(&upload_name),
+                Some(upload_callback(report)),
+            )
         })?;
 
-        let cached_path = cache_ifcfed_locally(&p.manifest.project_id, &uploaded.item_id, &file_name, &p.path)?;
-        cache::write_manifest(&cached_path, &Manifest {
-            connector: CONNECTOR_ID.into(),
-            hub_id: p.manifest.hub_id,
-            project_id: p.manifest.project_id,
-            item_id: uploaded.item_id,
-            display_name: file_name,
-        }).map_err(|e| RpcError::internal(format!("Manifest write failed: {e}")))?;
+        let cached_path = cache_ifcfed_locally(
+            &p.manifest.project_id,
+            &uploaded.item_id,
+            &file_name,
+            &p.path,
+        )?;
+        cache::write_manifest(
+            &cached_path,
+            &Manifest {
+                connector: CONNECTOR_ID.into(),
+                hub_id: p.manifest.hub_id,
+                project_id: p.manifest.project_id,
+                item_id: uploaded.item_id,
+                display_name: file_name,
+            },
+        )
+        .map_err(|e| RpcError::internal(format!("Manifest write failed: {e}")))?;
         Ok(json!({"path": cached_path.to_string_lossy()}))
     }
 
@@ -346,12 +412,12 @@ impl AutodeskConnector {
 
     fn push_model_interactive(&self, params: Value) -> Result<Value, RpcError> {
         let pair = self.require()?;
-        let p: PushInteractiveParams = serde_json::from_value(params).map_err(|e| {
-            RpcError::invalid_params(format!("push_model_interactive: {e}"))
-        })?;
+        let p: PushInteractiveParams = serde_json::from_value(params)
+            .map_err(|e| RpcError::invalid_params(format!("push_model_interactive: {e}")))?;
         check_local_exists(&p.path)?;
 
-        let chosen = BrowseDialog::new(pair.auth.clone(), pair.aps.clone(), Mode::Destination).run()?;
+        let chosen =
+            BrowseDialog::new(pair.auth.clone(), pair.aps.clone(), Mode::Destination).run()?;
         let folder = chosen
             .entries
             .first()
@@ -368,10 +434,22 @@ impl AutodeskConnector {
         let local_path = p.path.clone();
         let upload_name = file_name.clone();
         let uploaded = run_with_progress("Uploading model", move |report| {
-            aps.upload_file_to_folder(&project_id, &folder_id, &local_path, Some(&upload_name), Some(upload_callback(report)))
+            aps.upload_file_to_folder(
+                &project_id,
+                &folder_id,
+                &local_path,
+                Some(&upload_name),
+                Some(upload_callback(report)),
+            )
         })?;
 
-        let cached_path = cache_model_locally(&chosen.project.id, &uploaded.item_id, &uploaded.version_id, &file_name, &p.path)?;
+        let cached_path = cache_model_locally(
+            &chosen.project.id,
+            &uploaded.item_id,
+            &uploaded.version_id,
+            &file_name,
+            &p.path,
+        )?;
         Ok(json!({
             "display_name": file_name,
             "path": cached_path.to_string_lossy(),
@@ -389,31 +467,50 @@ impl AutodeskConnector {
 
     fn push_model(&self, params: Value) -> Result<Value, RpcError> {
         let pair = self.require()?;
-        let p: PushModelParams = serde_json::from_value(params).map_err(|e| {
-            RpcError::invalid_params(format!("push_model: {e}"))
-        })?;
+        let p: PushModelParams = serde_json::from_value(params)
+            .map_err(|e| RpcError::invalid_params(format!("push_model: {e}")))?;
         check_local_exists(&p.path)?;
         if p.source.connector != CONNECTOR_ID {
-            return Err(RpcError::invalid_params(format!("Source connector is not '{CONNECTOR_ID}'.")));
+            return Err(RpcError::invalid_params(format!(
+                "Source connector is not '{CONNECTOR_ID}'."
+            )));
         }
 
         let item = pair.aps.get_item(&p.source.project_id, &p.source.item_id)?;
         ensure_visible(&item)?;
-        let folder_id = item
-            .parent_folder_id
-            .clone()
-            .ok_or_else(|| RpcError::internal(format!("Cannot resolve parent folder for item '{}'.", p.source.item_id)))?;
-        let file_name = if item.display_name.is_empty() { file_name_of(&p.path) } else { item.display_name.clone() };
+        let folder_id = item.parent_folder_id.clone().ok_or_else(|| {
+            RpcError::internal(format!(
+                "Cannot resolve parent folder for item '{}'.",
+                p.source.item_id
+            ))
+        })?;
+        let file_name = if item.display_name.is_empty() {
+            file_name_of(&p.path)
+        } else {
+            item.display_name.clone()
+        };
 
         let aps = pair.aps.clone();
         let local_path = p.path.clone();
         let project_id = p.source.project_id.clone();
         let upload_name = file_name.clone();
         let uploaded = run_with_progress("Uploading model", move |report| {
-            aps.upload_file_to_folder(&project_id, &folder_id, &local_path, Some(&upload_name), Some(upload_callback(report)))
+            aps.upload_file_to_folder(
+                &project_id,
+                &folder_id,
+                &local_path,
+                Some(&upload_name),
+                Some(upload_callback(report)),
+            )
         })?;
 
-        let _cached_path = cache_model_locally(&p.source.project_id, &uploaded.item_id, &uploaded.version_id, &file_name, &p.path)?;
+        let _cached_path = cache_model_locally(
+            &p.source.project_id,
+            &uploaded.item_id,
+            &uploaded.version_id,
+            &file_name,
+            &p.path,
+        )?;
         Ok(json!({
             "source": Source {
                 connector: CONNECTOR_ID.into(),
@@ -438,10 +535,11 @@ fn download_ifcfed(
 ) -> Result<PathBuf, RpcError> {
     let item = aps.get_item(project_id, item_id)?;
     ensure_visible(&item)?;
-    let storage_id = item
-        .storage_id
-        .clone()
-        .ok_or_else(|| RpcError::internal(format!("Autodesk item '{item_id}' has no downloadable storage.")))?;
+    let storage_id = item.storage_id.clone().ok_or_else(|| {
+        RpcError::internal(format!(
+            "Autodesk item '{item_id}' has no downloadable storage."
+        ))
+    })?;
     let file_name = if !item.display_name.is_empty() {
         item.display_name.clone()
     } else if !display_name_hint.is_empty() {
@@ -450,19 +548,25 @@ fn download_ifcfed(
         item_id.to_string()
     };
     if !file_name.to_lowercase().ends_with(".ifcfed") {
-        return Err(RpcError::internal(format!("Item '{file_name}' is not an .ifcfed file.")));
+        return Err(RpcError::internal(format!(
+            "Item '{file_name}' is not an .ifcfed file."
+        )));
     }
     let directory = cache::prepare_sole_child_dir(&cache::ifcfed_dir(project_id, item_id))
         .map_err(|e| RpcError::internal(format!("Cache dir prep failed: {e}")))?;
     let ifcfed_path = directory.join(&file_name);
     aps.download_storage_to_file(&storage_id, &ifcfed_path, progress)?;
-    cache::write_manifest(&ifcfed_path, &Manifest {
-        connector: CONNECTOR_ID.into(),
-        hub_id: hub_id.into(),
-        project_id: project_id.into(),
-        item_id: item_id.into(),
-        display_name: file_name,
-    }).map_err(|e| RpcError::internal(format!("Manifest write failed: {e}")))?;
+    cache::write_manifest(
+        &ifcfed_path,
+        &Manifest {
+            connector: CONNECTOR_ID.into(),
+            hub_id: hub_id.into(),
+            project_id: project_id.into(),
+            item_id: item_id.into(),
+            display_name: file_name,
+        },
+    )
+    .map_err(|e| RpcError::internal(format!("Manifest write failed: {e}")))?;
     Ok(ifcfed_path)
 }
 
@@ -472,7 +576,9 @@ fn resolve_scripted_model(
     progress: Option<crate::progress::ApsProgress>,
 ) -> Result<Option<Value>, RpcError> {
     if entry.source.connector != CONNECTOR_ID {
-        return Err(RpcError::invalid_params(format!("Source connector is not '{CONNECTOR_ID}'.")));
+        return Err(RpcError::invalid_params(format!(
+            "Source connector is not '{CONNECTOR_ID}'."
+        )));
     }
     let display_hint = entry
         .display_name
@@ -481,14 +587,23 @@ fn resolve_scripted_model(
 
     let item = aps.get_item(&entry.source.project_id, &entry.source.item_id)?;
     if item.hidden {
-        eprintln!("Autodesk item '{}' is hidden/deleted; returning null.", entry.source.item_id);
+        eprintln!(
+            "Autodesk item '{}' is hidden/deleted; returning null.",
+            entry.source.item_id
+        );
         return Ok(None);
     }
-    let storage_id = item
-        .storage_id
-        .clone()
-        .ok_or_else(|| RpcError::internal(format!("Autodesk item '{}' has no downloadable storage.", entry.source.item_id)))?;
-    let file_name = if item.display_name.is_empty() { display_hint } else { item.display_name.clone() };
+    let storage_id = item.storage_id.clone().ok_or_else(|| {
+        RpcError::internal(format!(
+            "Autodesk item '{}' has no downloadable storage.",
+            entry.source.item_id
+        ))
+    })?;
+    let file_name = if item.display_name.is_empty() {
+        display_hint
+    } else {
+        item.display_name.clone()
+    };
     let version_id = item.version_id.clone().unwrap_or_default();
 
     let directory = cache::model_dir(&entry.source.project_id, &entry.source.item_id, &version_id);
@@ -514,10 +629,11 @@ fn download_picked_model(
 ) -> Result<Option<Value>, RpcError> {
     let item = aps.get_item(project_id, entry_id)?;
     ensure_visible(&item)?;
-    let storage_id = item
-        .storage_id
-        .clone()
-        .ok_or_else(|| RpcError::internal(format!("Autodesk item '{entry_id}' has no downloadable storage.")))?;
+    let storage_id = item.storage_id.clone().ok_or_else(|| {
+        RpcError::internal(format!(
+            "Autodesk item '{entry_id}' has no downloadable storage."
+        ))
+    })?;
     let file_name = if !item.display_name.is_empty() {
         item.display_name.clone()
     } else if !entry_display.is_empty() {
@@ -548,20 +664,33 @@ fn download_picked_model(
     })))
 }
 
-fn cache_ifcfed_locally(project_id: &str, item_id: &str, file_name: &str, src: &Path) -> Result<PathBuf, RpcError> {
+fn cache_ifcfed_locally(
+    project_id: &str,
+    item_id: &str,
+    file_name: &str,
+    src: &Path,
+) -> Result<PathBuf, RpcError> {
     let directory = cache::prepare_sole_child_dir(&cache::ifcfed_dir(project_id, item_id))
         .map_err(|e| RpcError::internal(format!("Cache dir prep failed: {e}")))?;
     let cached_path = directory.join(file_name);
-    std::fs::copy(src, &cached_path).map_err(|e| RpcError::internal(format!("Cache copy failed: {e}")))?;
+    std::fs::copy(src, &cached_path)
+        .map_err(|e| RpcError::internal(format!("Cache copy failed: {e}")))?;
     Ok(cached_path)
 }
 
-fn cache_model_locally(project_id: &str, item_id: &str, version_id: &str, file_name: &str, src: &Path) -> Result<PathBuf, RpcError> {
+fn cache_model_locally(
+    project_id: &str,
+    item_id: &str,
+    version_id: &str,
+    file_name: &str,
+    src: &Path,
+) -> Result<PathBuf, RpcError> {
     let directory = cache::model_dir(project_id, item_id, version_id);
     cache::prepare_sole_child_dir(&directory)
         .map_err(|e| RpcError::internal(format!("Cache dir prep failed: {e}")))?;
     let cached_path = directory.join(file_name);
-    std::fs::copy(src, &cached_path).map_err(|e| RpcError::internal(format!("Cache copy failed: {e}")))?;
+    std::fs::copy(src, &cached_path)
+        .map_err(|e| RpcError::internal(format!("Cache copy failed: {e}")))?;
     Ok(cached_path)
 }
 
@@ -569,7 +698,10 @@ fn build_metadata_from_item(item: &ItemTip) -> Value {
     let mut metadata = serde_json::Map::new();
     if let Some(v) = &item.version_number {
         if !v.is_null() {
-            metadata.insert("revision".into(), json!(format!("v{}", json_value_to_display(v))));
+            metadata.insert(
+                "revision".into(),
+                json!(format!("v{}", json_value_to_display(v))),
+            );
         }
     }
     if let Some(s) = &item.last_modified_time_utc {
@@ -589,7 +721,10 @@ fn build_metadata_from_upload(uploaded: &UploadResult) -> Value {
     let mut metadata = serde_json::Map::new();
     if let Some(v) = &uploaded.version_number {
         if !v.is_null() {
-            metadata.insert("revision".into(), json!(format!("v{}", json_value_to_display(v))));
+            metadata.insert(
+                "revision".into(),
+                json!(format!("v{}", json_value_to_display(v))),
+            );
         }
     }
     if let Some(s) = &uploaded.last_modified_time_utc {
@@ -616,14 +751,20 @@ fn json_value_to_display(v: &Value) -> String {
 
 fn ensure_visible(item: &ItemTip) -> Result<(), RpcError> {
     if item.hidden {
-        return Err(RpcError::internal(format!("Autodesk item '{}' has been deleted.", item.id)));
+        return Err(RpcError::internal(format!(
+            "Autodesk item '{}' has been deleted.",
+            item.id
+        )));
     }
     Ok(())
 }
 
 fn check_local_exists(path: &Path) -> Result<(), RpcError> {
     if !path.exists() {
-        return Err(RpcError::invalid_params(format!("Local file '{}' does not exist.", path.display())));
+        return Err(RpcError::invalid_params(format!(
+            "Local file '{}' does not exist.",
+            path.display()
+        )));
     }
     Ok(())
 }

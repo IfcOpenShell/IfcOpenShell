@@ -10,14 +10,26 @@ use serde_json::Value;
 fn binary_path() -> std::path::PathBuf {
     let mut path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("target");
-    path.push(if cfg!(debug_assertions) { "debug" } else { "release" });
-    path.push(if cfg!(windows) { "bonsaiviewer-autodesk.exe" } else { "bonsaiviewer-autodesk" });
+    path.push(if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    });
+    path.push(if cfg!(windows) {
+        "bonsaiviewer-autodesk.exe"
+    } else {
+        "bonsaiviewer-autodesk"
+    });
     path
 }
 
 fn exchange(requests: &[&str]) -> Vec<Value> {
     let path = binary_path();
-    assert!(path.exists(), "expected binary at {}; build with `cargo build --bin bonsaiviewer-autodesk` first", path.display());
+    assert!(
+        path.exists(),
+        "expected binary at {}; build with `cargo build --bin bonsaiviewer-autodesk` first",
+        path.display()
+    );
     let mut child = Command::new(&path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

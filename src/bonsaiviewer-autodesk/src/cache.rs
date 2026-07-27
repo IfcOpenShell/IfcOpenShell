@@ -46,13 +46,17 @@ fn hash_parts(parts: &[&str]) -> String {
 /// Stable directory for an .ifcfed; re-downloads overwrite in place so the
 /// viewer's open path remains valid across sync operations.
 pub fn ifcfed_dir(project_id: &str, item_id: &str) -> PathBuf {
-    cache_root().join("ifcfeds").join(hash_parts(&[project_id, item_id]))
+    cache_root()
+        .join("ifcfeds")
+        .join(hash_parts(&[project_id, item_id]))
 }
 
 /// Per-version directory for a model. A new resolved version → a new
 /// directory, so sidecars regenerate when the model file changes.
 pub fn model_dir(project_id: &str, item_id: &str, version_id: &str) -> PathBuf {
-    cache_root().join("models").join(hash_parts(&[project_id, item_id, version_id]))
+    cache_root()
+        .join("models")
+        .join(hash_parts(&[project_id, item_id, version_id]))
 }
 
 /// Clear the directory so the file we write is the only child.

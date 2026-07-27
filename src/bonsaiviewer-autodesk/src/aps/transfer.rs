@@ -43,9 +43,13 @@ impl ApsClient {
                 local_path.display()
             )));
         }
-        let file_name = display_name
-            .map(str::to_string)
-            .unwrap_or_else(|| local_path.file_name().unwrap_or_default().to_string_lossy().into_owned());
+        let file_name = display_name.map(str::to_string).unwrap_or_else(|| {
+            local_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned()
+        });
         let storage_id = self.create_storage(project_id, folder_id, &file_name)?;
         let (bucket, object) = parse_storage_id(&storage_id)?;
         self.upload_local_file_to_oss(&bucket, &object, local_path, progress)?;
@@ -68,7 +72,9 @@ impl ApsClient {
             .and_then(|v| v.as_str())
             .filter(|s| !s.is_empty())
             .map(String::from)
-            .ok_or_else(|| RpcError::internal("Signed download URL response did not contain a URL."))
+            .ok_or_else(|| {
+                RpcError::internal("Signed download URL response did not contain a URL.")
+            })
     }
 
     fn download_to_file(
@@ -81,7 +87,11 @@ impl ApsClient {
             Ok(r) => r,
             Err(ureq::Error::Status(code, resp)) => {
                 let body = resp.into_string().unwrap_or_default();
-                let msg = if body.trim().is_empty() { format!("HTTP {code}") } else { body.trim().to_string() };
+                let msg = if body.trim().is_empty() {
+                    format!("HTTP {code}")
+                } else {
+                    body.trim().to_string()
+                };
                 return Err(RpcError::internal(msg));
             }
             Err(e) => return Err(RpcError::internal(e.to_string())),
@@ -93,8 +103,9 @@ impl ApsClient {
             .to_string_lossy()
             .into_owned();
         let mut reader = resp.into_reader();
-        let mut file = File::create(destination)
-            .map_err(|e| RpcError::internal(format!("Cannot create '{}': {e}", destination.display())))?;
+        let mut file = File::create(destination).map_err(|e| {
+            RpcError::internal(format!("Cannot create '{}': {e}", destination.display()))
+        })?;
         let mut buf = vec![0u8; READ_BUF];
         let mut downloaded: u64 = 0;
         loop {
@@ -108,16 +119,26 @@ impl ApsClient {
                 .map_err(|e| RpcError::internal(format!("Download write failed: {e}")))?;
             downloaded += n as u64;
             if let Some(cb) = &progress {
-                let percent = total_bytes.map(|t| min(100, ((downloaded as f64 / t as f64) * 100.0) as i32));
+                let percent =
+                    total_bytes.map(|t| min(100, ((downloaded as f64 / t as f64) * 100.0) as i32));
                 cb(&name, percent, Some(downloaded), total_bytes);
             }
         }
         Ok(())
     }
 
-    fn create_storage(&self, project_id: &str, folder_id: &str, file_name: &str) -> Result<String, RpcError> {
+    fn create_storage(
+        &self,
+        project_id: &str,
+        folder_id: &str,
+        file_name: &str,
+    ) -> Result<String, RpcError> {
         let payload = self.post_json(
-            &format!("{}/data/v1/projects/{}/storage", self.base_url, url_enc(project_id)),
+            &format!(
+                "{}/data/v1/projects/{}/storage",
+                self.base_url,
+                url_enc(project_id)
+            ),
             &json!({
                 "jsonapi": {"version": "1.0"},
                 "data": {
@@ -145,7 +166,7 @@ impl ApsClient {
         let file_size = std::fs::metadata(local_path)
             .map_err(|e| RpcError::internal(format!("stat '{}': {e}", local_path.display())))?
             .len();
-        let total_parts = ((file_size + CHUNK_SIZE - 1) / CHUNK_SIZE).max(1);
+        let total_parts = file_size.div_ceil(CHUNK_SIZE).max(1);
         let file_name = local_path
             .file_name()
             .unwrap_or_default()
@@ -170,13 +191,18 @@ impl ApsClient {
                 parts_to_request,
             )?;
             if upload_key.is_none() {
-                upload_key = signed.get("uploadKey").and_then(|v| v.as_str()).map(String::from);
+                upload_key = signed
+                    .get("uploadKey")
+                    .and_then(|v| v.as_str())
+                    .map(String::from);
             }
             let urls = signed
                 .get("urls")
                 .and_then(|v| v.as_array())
                 .filter(|a| !a.is_empty())
-                .ok_or_else(|| RpcError::internal("Upload URL response did not contain upload URLs."))?
+                .ok_or_else(|| {
+                    RpcError::internal("Upload URL response did not contain upload URLs.")
+                })?
                 .clone();
             for url in &urls {
                 if parts_uploaded >= total_parts {
@@ -197,14 +223,23 @@ impl ApsClient {
                     let percent = if file_size == 0 {
                         100
                     } else {
-                        min(100, ((bytes_uploaded as f64 / file_size as f64) * 100.0) as i32)
+                        min(
+                            100,
+                            ((bytes_uploaded as f64 / file_size as f64) * 100.0) as i32,
+                        )
                     };
-                    cb(&file_name, Some(percent), Some(bytes_uploaded), Some(file_size));
+                    cb(
+                        &file_name,
+                        Some(percent),
+                        Some(bytes_uploaded),
+                        Some(file_size),
+                    );
                 }
             }
         }
 
-        let key = upload_key.ok_or_else(|| RpcError::internal("Upload did not return an upload key."))?;
+        let key =
+            upload_key.ok_or_else(|| RpcError::internal("Upload did not return an upload key."))?;
         self.complete_signed_upload(bucket, object, &key)
     }
 
@@ -216,7 +251,9 @@ impl ApsClient {
         first_part: u32,
         parts: u32,
     ) -> Result<Value, RpcError> {
-        let token = self.auth.ensure_access_token(crate::progress::noop_auth())?;
+        let token = self
+            .auth
+            .ensure_access_token(crate::progress::noop_auth())?;
         let mut url = format!(
             "{}/oss/v2/buckets/{}/objects/{}/signeds3upload?minutesExpiration=10&firstPart={}&parts={}",
             self.base_url,
@@ -236,8 +273,15 @@ impl ApsClient {
         decode_json(resp, &url)
     }
 
-    fn complete_signed_upload(&self, bucket: &str, object: &str, upload_key: &str) -> Result<(), RpcError> {
-        let token = self.auth.ensure_access_token(crate::progress::noop_auth())?;
+    fn complete_signed_upload(
+        &self,
+        bucket: &str,
+        object: &str,
+        upload_key: &str,
+    ) -> Result<(), RpcError> {
+        let token = self
+            .auth
+            .ensure_access_token(crate::progress::noop_auth())?;
         let url = format!(
             "{}/oss/v2/buckets/{}/objects/{}/signeds3upload",
             self.base_url,
@@ -254,7 +298,11 @@ impl ApsClient {
             Ok(_) => Ok(()),
             Err(ureq::Error::Status(code, resp)) => {
                 let body = resp.into_string().unwrap_or_default();
-                let msg = if body.trim().is_empty() { format!("HTTP {code}") } else { body.trim().to_string() };
+                let msg = if body.trim().is_empty() {
+                    format!("HTTP {code}")
+                } else {
+                    body.trim().to_string()
+                };
                 Err(RpcError::internal(msg))
             }
             Err(e) => Err(RpcError::internal(e.to_string())),
@@ -271,7 +319,11 @@ impl ApsClient {
             Ok(_) => Ok(()),
             Err(ureq::Error::Status(code, resp)) => {
                 let body = resp.into_string().unwrap_or_default();
-                let msg = if body.trim().is_empty() { format!("HTTP {code}") } else { body.trim().to_string() };
+                let msg = if body.trim().is_empty() {
+                    format!("HTTP {code}")
+                } else {
+                    body.trim().to_string()
+                };
                 Err(RpcError::internal(msg))
             }
             Err(e) => Err(RpcError::internal(e.to_string())),
@@ -299,7 +351,11 @@ impl ApsClient {
         storage_id: &str,
     ) -> Result<UploadResult, RpcError> {
         let payload = self.post_json(
-            &format!("{}/data/v1/projects/{}/versions", self.base_url, url_enc(project_id)),
+            &format!(
+                "{}/data/v1/projects/{}/versions",
+                self.base_url,
+                url_enc(project_id)
+            ),
             &json!({
                 "jsonapi": {"version": "1.0"},
                 "data": {
@@ -318,14 +374,27 @@ impl ApsClient {
         let version = payload
             .get("data")
             .ok_or_else(|| RpcError::internal("Create version response missing 'data'."))?;
-        let attrs = version.get("attributes").cloned().unwrap_or_else(|| json!({}));
+        let attrs = version
+            .get("attributes")
+            .cloned()
+            .unwrap_or_else(|| json!({}));
         Ok(UploadResult {
             item_id: item_id.to_string(),
-            version_id: version.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            version_id: version
+                .get("id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
             display_name: file_name.to_string(),
             version_number: attrs.get("versionNumber").cloned(),
-            last_modified_time_utc: attrs.get("lastModifiedTime").and_then(|v| v.as_str()).map(String::from),
-            last_modified_user_name: attrs.get("lastModifiedUserName").and_then(|v| v.as_str()).map(String::from),
+            last_modified_time_utc: attrs
+                .get("lastModifiedTime")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            last_modified_user_name: attrs
+                .get("lastModifiedUserName")
+                .and_then(|v| v.as_str())
+                .map(String::from),
         })
     }
 
@@ -337,7 +406,11 @@ impl ApsClient {
         storage_id: &str,
     ) -> Result<UploadResult, RpcError> {
         let payload = self.post_json(
-            &format!("{}/data/v1/projects/{}/items", self.base_url, url_enc(project_id)),
+            &format!(
+                "{}/data/v1/projects/{}/items",
+                self.base_url,
+                url_enc(project_id)
+            ),
             &json!({
                 "jsonapi": {"version": "1.0"},
                 "data": {
@@ -386,8 +459,14 @@ impl ApsClient {
                     if let Some(v) = attrs.get("versionNumber") {
                         version_number = Some(v.clone());
                     }
-                    last_modified_time = attrs.get("lastModifiedTime").and_then(|v| v.as_str()).map(String::from);
-                    last_modified_user = attrs.get("lastModifiedUserName").and_then(|v| v.as_str()).map(String::from);
+                    last_modified_time = attrs
+                        .get("lastModifiedTime")
+                        .and_then(|v| v.as_str())
+                        .map(String::from);
+                    last_modified_user = attrs
+                        .get("lastModifiedUserName")
+                        .and_then(|v| v.as_str())
+                        .map(String::from);
                 }
             }
         }
@@ -404,14 +483,16 @@ impl ApsClient {
 
 pub(crate) fn parse_storage_id(storage_id: &str) -> Result<(String, String), RpcError> {
     let marker = "urn:adsk.objects:os.object:";
-    let path = storage_id
-        .strip_prefix(marker)
-        .ok_or_else(|| RpcError::internal(format!("Unsupported storage identifier '{storage_id}'.")))?;
-    let slash = path
-        .find('/')
-        .ok_or_else(|| RpcError::internal(format!("Malformed storage identifier '{storage_id}'.")))?;
+    let path = storage_id.strip_prefix(marker).ok_or_else(|| {
+        RpcError::internal(format!("Unsupported storage identifier '{storage_id}'."))
+    })?;
+    let slash = path.find('/').ok_or_else(|| {
+        RpcError::internal(format!("Malformed storage identifier '{storage_id}'."))
+    })?;
     if slash == 0 || slash == path.len() - 1 {
-        return Err(RpcError::internal(format!("Malformed storage identifier '{storage_id}'.")));
+        return Err(RpcError::internal(format!(
+            "Malformed storage identifier '{storage_id}'."
+        )));
     }
     Ok((path[..slash].to_string(), path[slash + 1..].to_string()))
 }
