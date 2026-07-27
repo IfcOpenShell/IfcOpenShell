@@ -28,13 +28,12 @@ jobs:
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
                          findutils xz byacc patchelf libxkbcommon-devel                 \
-                         python3.11 python3.11-pip python3.11-tkinter \
+                         python3.11 python3.11-pip \
                          dbus-devel \
                          libXext-devel libXinerama-devel libXcursor-devel libXrender-devel \
                          libXfixes-devel libXft-devel pango-devel cairo-devel libstdc++-static
           python3 -m pip install aqtinstall
           git config --global --add safe.directory '*'
-          python3.11 -c "import tkinter; print('Tk', tkinter.TkVersion)"
 
       - name: Install Rust
         # The bonsaiviewer-autodesk connector is a Rust crate; the "Package

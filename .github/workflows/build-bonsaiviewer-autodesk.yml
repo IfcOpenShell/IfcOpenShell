@@ -1,4 +1,9 @@
-name: Build Bonsai Viewer Autodesk Connector
+# Lint/test gate for the bonsaiviewer-autodesk crate — nothing here ships.
+# The connector binary that reaches users is built by the platform pipelines
+# (build_rocky.yml, build_rocky_arm.yml, build_win.yml, build_osx.yml), each
+# of which runs packaging/build.py itself and bundles dist/autodesk/ into the
+# Bonsai Viewer archive.
+name: Test Bonsai Viewer Autodesk Connector
 
 on:
   workflow_dispatch:
@@ -39,55 +44,3 @@ jobs:
 
       - name: cargo test
         run: cargo test --all-features
-
-  build:
-    name: ${{ matrix.os_label }}-${{ matrix.arch }}
-    needs: test
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Linux: build on the oldest reasonable glibc (Ubuntu 22.04 / glibc
-          # 2.35) so the bundle runs on older distributions.
-          - os_label: linux
-            arch: x86_64
-            runner: ubuntu-22.04
-          # macOS Apple Silicon.
-          - os_label: macos
-            arch: arm64
-            runner: macos-14
-          # macOS Intel. macos-13 is the last Intel runner GitHub provides.
-          - os_label: macos
-            arch: x86_64
-            runner: macos-13
-          # Windows x86_64.
-          - os_label: windows
-            arch: x86_64
-            runner: windows-latest
-
-    defaults:
-      run:
-        working-directory: src/bonsaiviewer-autodesk
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src/bonsaiviewer-autodesk
-
-      # python3 is the runner default on all four hosts; packaging/build.py
-      # only uses stdlib (subprocess, shutil, zipfile, pathlib, platform),
-      # no pip-installable deps.
-      - name: Build connector bundle
-        run: python3 packaging/build.py
-
-      - name: Upload connector zip
-        uses: actions/upload-artifact@v7
-        with:
-          name: autodesk-${{ matrix.os_label }}-${{ matrix.arch }}
-          path: src/bonsaiviewer-autodesk/dist/autodesk-${{ matrix.os_label }}-${{ matrix.arch }}.zip
-          if-no-files-found: error
