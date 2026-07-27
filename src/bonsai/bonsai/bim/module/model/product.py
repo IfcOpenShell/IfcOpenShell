@@ -511,7 +511,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             new_port.SystemType = port.SystemType
             ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=new_port, matrix=mat, is_si=True)
 
-        if ifc_class == "IfcDoorType" and len(context.selected_objects) >= 1:
+        if ifc_class in ("IfcDoorType", "IfcDoorStyle") and len(context.selected_objects) >= 1:
             pass
         else:
             tool.Blender.select_and_activate_single_object(context, obj)

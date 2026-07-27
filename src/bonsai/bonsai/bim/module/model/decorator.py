@@ -1533,10 +1533,11 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
         if not (data := self.obj_data):
             return
         relating_type = self.relating_type
+        relating_class = relating_type.is_a()
         model_props = tool.Model.get_model_props()
-        if relating_type.is_a("IfcDoorType"):
+        if relating_class in ("IfcDoorType", "IfcDoorStyle"):
             rl = float(model_props.rl1)
-        elif relating_type.is_a("IfcWindowType"):
+        elif relating_class in ("IfcWindowType", "IfcWindowStyle"):
             rl = float(model_props.rl2)
         else:
             rl = 0
@@ -1547,7 +1548,11 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
         snap_obj = bpy.data.objects.get(snap_prop.snap_object)
         snap_element = tool.Ifc.get_entity(snap_obj)
         rot_mat = Matrix()
-        if relating_type.is_a() in ["IfcDoorType", "IfcWindowType"] and snap_element and snap_element.is_a("IfcWall"):
+        if (
+            relating_class in ("IfcDoorType", "IfcDoorStyle", "IfcWindowType", "IfcWindowStyle")
+            and snap_element
+            and snap_element.is_a("IfcWall")
+        ):
             layers = tool.Model.get_material_layer_parameters(snap_element)
             axes = tool.Model.get_wall_axis(snap_obj, layers=layers)
             axis_base = axes["base"]
