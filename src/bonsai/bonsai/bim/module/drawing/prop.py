@@ -602,7 +602,7 @@ class BIMCameraProperties(PropertyGroup):
         "length lies on a different element's coincident, same-style/material face -- a duplicate "
         "boundary between two elements' coincident surfaces. Only takes effect when Use Edge "
         "Classification is also enabled",
-        default=False,
+        default=True,
         update=get_update_layer_callback("use_cross_coplanar_classification", "UseCrossCoplanarClassification"),
     )
     render_cross_coplanar: BoolProperty(

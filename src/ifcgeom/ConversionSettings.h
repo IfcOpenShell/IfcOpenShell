@@ -410,7 +410,7 @@ namespace ifcopenshell {
 			struct SvgUseCrossCoplanarClassification : public SettingBase<SvgUseCrossCoplanarClassification, bool> {
 				static constexpr const char* const name = "svg-use-cross-coplanar-classification";
 				static constexpr const char* const description = "SVG edge classification (issue #3742): additionally classify a projection edge as 'cross-coplanar' when its entire length lies on a face of a different product that is coplanar with, and shares style/material identity with, the face it came from -- i.e. a duplicate boundary between two distinct elements' coincident surfaces, not a fold within one element's own geometry. Only takes effect when svg-use-edge-classification is also enabled, since it shares that system's classification buckets.";
-				static constexpr bool defaultvalue = false;
+				static constexpr bool defaultvalue = true;
 			};
 
 			struct SvgRenderCrossCoplanarEdges : public SettingBase<SvgRenderCrossCoplanarEdges, bool> {

@@ -576,6 +576,64 @@ namespace {
 		}
 		return boost::none;
 	}
+
+	// Resolves the material genuinely associated with `product`, for the cross-coplanar
+	// "same substance" comparison (issue #3742) -- schema-agnostic like get_curve_style_name()
+	// above (walking get_inverse()/get() generically), since this file has no access to
+	// mapping_'s typed Converter machinery. Mirrors the simple cases of
+	// mapping::get_single_material_association() (Converter.cpp) run in its "layerset first"
+	// mode: a direct IfcMaterial, or the *first* layer of an IfcMaterialLayerSet/-SetUsage
+	// regardless of how many layers it has. Same per-product, whichever-resolves-first
+	// simplification already accepted for cross_coplanar_style_instance -- the layer actually
+	// touching a neighbour's face isn't tracked, so a multi-layer element's non-first-layer
+	// matches are a known, accepted gap (documented alongside the style one). Other
+	// multi-material constructs (profile sets, constituent sets) deliberately return nullptr
+	// rather than guessing -- material only takes priority over style when it *is* resolved, so
+	// an unresolved product just falls back to the existing style comparison, a safe default.
+	IfcUtil::IfcBaseEntity* get_single_material_association(IfcUtil::IfcBaseEntity* product) {
+		auto rels = product->get_inverse("HasAssociations");
+		IfcUtil::IfcBaseEntity* relating_material = nullptr;
+		size_t n_material_rels = 0;
+		for (auto& ref : *rels) {
+			if (ref->declaration().is("IfcRelAssociatesMaterial")) {
+				n_material_rels++;
+				auto arg = ((IfcUtil::IfcBaseEntity*) ref)->get("RelatingMaterial");
+				if (!arg.isNull()) {
+					relating_material = ((IfcUtil::IfcBaseClass*) arg)->as<IfcUtil::IfcBaseEntity>();
+				}
+			}
+		}
+		if (n_material_rels != 1 || !relating_material) {
+			return nullptr;
+		}
+
+		if (relating_material->declaration().is("IfcMaterial")) {
+			return relating_material;
+		}
+
+		if (relating_material->declaration().is("IfcMaterialLayerSetUsage") ||
+			relating_material->declaration().is("IfcMaterialLayerSet"))
+		{
+			IfcUtil::IfcBaseEntity* layerset = relating_material;
+			if (relating_material->declaration().is("IfcMaterialLayerSetUsage")) {
+				auto fls = relating_material->get("ForLayerSet");
+				if (fls.isNull()) {
+					return nullptr;
+				}
+				layerset = ((IfcUtil::IfcBaseClass*) fls)->as<IfcUtil::IfcBaseEntity>();
+			}
+			aggregate_of_instance::ptr layers = layerset->get("MaterialLayers");
+			if (layers && layers->size() >= 1) {
+				auto layer = (IfcUtil::IfcBaseEntity*) (*layers->begin());
+				auto mat = layer->get("Material");
+				if (!mat.isNull()) {
+					return ((IfcUtil::IfcBaseClass*) mat)->as<IfcUtil::IfcBaseEntity>();
+				}
+			}
+		}
+
+		return nullptr;
+	}
 }
 
 void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
@@ -597,12 +655,21 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	// Whichever item resolves a style first wins; good enough for the common case, and cheap
 	// to skip entirely when the feature is off.
 	const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance = nullptr;
+	// Material takes priority over style in the cross-object comparison -- see
+	// geometry_data::cross_coplanar_material_instance -- so resolve it once per product here
+	// too, only when the feature is on. Material is a product-level association (not per-item
+	// like style), so a single lookup suffices, no loop needed.
+	const IfcUtil::IfcBaseInterface* cross_coplanar_material_instance = nullptr;
 	if (svg_use_cross_coplanar_classification_) {
 		for (auto& x : brep_obj->geometry()) {
 			if (x.hasStyle() && x.Style().instance) {
 				cross_coplanar_style_instance = x.Style().instance;
 				break;
 			}
+		}
+		if (file) {
+			cross_coplanar_material_instance = get_single_material_association(
+				(IfcUtil::IfcBaseEntity*) brep_obj->product());
 		}
 	}
 
@@ -797,7 +864,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 		return;
 	}
 
-	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj), cross_coplanar_style_instance };
+	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj), cross_coplanar_style_instance, cross_coplanar_material_instance };
 
 	if (auto_section_ || auto_elevation_ || section_ref_ || elevation_ref_ || elevation_ref_guid_ || deferred_section_data_) {
 		element_buffer_.push_back(data);
@@ -1516,7 +1583,7 @@ void SvgSerializer::write(const geometry_data& data) {
 								svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
 								svg_render_cross_coplanar_edges_) }).first;
 						}
-						it->second.add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance);
+						it->second.add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance, data.cross_coplanar_material_instance);
 						for (auto& kv : classified_edge_buckets) {
 							it->second.add_classified_edges(data.product, kv.first, kv.second);
 						}
@@ -1524,7 +1591,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						logger_.Warning("SER", 28, "Unable to invoke HLR due to absence of storey containment", data.product);
 					}
 				} else if (hlr) {
-					hlr->add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance);
+					hlr->add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance, data.cross_coplanar_material_instance);
 					for (auto& kv : classified_edge_buckets) {
 						hlr->add_classified_edges(data.product, kv.first, kv.second);
 					}
@@ -2469,7 +2536,7 @@ void SvgSerializer::finalize() {
 								name = (std::string) a2;
 							}
 							write(geometry_data{
-								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey),nullptr
+								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey),nullptr,nullptr
 							});
 						}
 					}

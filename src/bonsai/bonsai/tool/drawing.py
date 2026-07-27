@@ -1089,7 +1089,7 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.render_sharp = True
         camera_props.ridge_angle_min_degrees = 45.0
         camera_props.render_flush = False
-        camera_props.use_cross_coplanar_classification = False
+        camera_props.use_cross_coplanar_classification = True
         camera_props.render_cross_coplanar = False
         camera_props.cross_coplanar_tolerance = 0.0001
         camera.shift_x = 0.0
