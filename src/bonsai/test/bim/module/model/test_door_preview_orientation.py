@@ -18,12 +18,17 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
-"""Hover-preview orientation for door/window fillings must be schema
-independent: the preview a ProductDecorator draws while the user hovers a
-filling over a wall follows the wall's rotation on IFC4 and must do the same
-on IFC2X3, where the type classes are spelled IfcDoorStyle/IfcWindowStyle."""
+"""Hover-preview correctness for door fillings must be schema independent
+and wall-angle independent: the ghost a ProductDecorator draws while the
+user hovers a filling over a wall must land where the placed door will
+land, on IFC4 and on IFC2X3 (where the type classes are spelled
+IfcDoorStyle/IfcWindowStyle), for walls at any angle and any origin,
+including the rl1 sill offset and the wall's Z."""
+
+import math
 
 import bpy
+import numpy as np
 import pytest
 from mathutils import Vector
 
@@ -35,16 +40,23 @@ from test.bim.bootstrap import NewFile
 
 pytestmark = pytest.mark.model
 
+RL1 = 0.3
 
-def _xy_extents(verts) -> tuple[float, float]:
-    xs = [v[0] for v in verts]
-    ys = [v[1] for v in verts]
-    return max(xs) - min(xs), max(ys) - min(ys)
+
+def _principal_xy_angle_vs(dir_world: Vector, verts) -> float:
+    pts = np.array([(v[0], v[1]) for v in verts])
+    pts = pts - pts.mean(axis=0)
+    evals, evecs = np.linalg.eigh(pts.T @ pts)
+    principal = Vector((evecs[0, -1], evecs[1, -1], 0.0)).normalized()
+    d = Vector((dir_world.x, dir_world.y, 0.0)).normalized()
+    cosang = max(-1.0, min(1.0, abs(principal.dot(d))))
+    return math.degrees(math.acos(cosang))
 
 
 class TestDoorPreviewFollowsWall(NewFile):
     @pytest.mark.parametrize("schema", ["IFC2X3", "IFC4"])
-    def test_hover_preview_and_placement_follow_a_rotated_wall(self, schema):
+    @pytest.mark.parametrize("wall_angle", [0, 30, 90, 135])
+    def test_hover_preview_matches_the_placed_door(self, schema, wall_angle):
         pprops = tool.Project.get_project_props()
         pprops.export_schema = schema
         bpy.ops.bim.create_project()
@@ -53,11 +65,16 @@ class TestDoorPreviewFollowsWall(NewFile):
 
         bpy.ops.bim.add_default_type(ifc_element_type="IfcWallType")
         wall_type = ifc.by_type("IfcWallType")[-1]
+        tool.Model.get_model_props().rl1 = RL1
 
-        # Wall drawn along +Y, so an unrotated preview reads as 90 degrees off.
+        # Wall away from the world origin so a preview displaced by the
+        # wall's own translation cannot pass.
+        a = math.radians(wall_angle)
+        p0 = Vector((5.0, 3.0, 0.0))
+        p1 = p0 + Vector((math.cos(a), math.sin(a), 0.0)) * 3.0
         polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline.add()
-        for co in ((0.0, 0.0, 0.0), (0.0, 3.0, 0.0)):
+        for co in (p0, p1):
             point = polyline_data.polyline_points.add()
             point.x, point.y, point.z = co
         walls, _ = DumbWallGenerator(wall_type).generate(insertion_type="POLYLINE")
@@ -65,6 +82,7 @@ class TestDoorPreviewFollowsWall(NewFile):
         wall_obj = walls[0]["obj"] if isinstance(walls[0], dict) else walls[0]
         bpy.context.view_layer.update()
         wall = tool.Ifc.get_entity(wall_obj)
+        wall_x = (wall_obj.matrix_world.to_3x3() @ Vector((1, 0, 0))).normalized()
 
         rprops = tool.Root.get_root_props()
         rprops.ifc_product = "IfcElementType"
@@ -80,7 +98,8 @@ class TestDoorPreviewFollowsWall(NewFile):
 
         layers = tool.Model.get_material_layer_parameters(wall)
         axes = tool.Model.get_wall_axis(wall_obj, layers=layers)
-        mouse = tool.Cad.point_on_edge(Vector((0.0, 1.5, 0.0)), axes["base"])
+        mid = (axes["base"][0] + axes["base"][1]) / 2
+        mouse = tool.Cad.point_on_edge(Vector((mid.x, mid.y, 0.0)), axes["base"])
         try:
             snap_vertex = polyline_props.snap_mouse_point[0]
         except IndexError:
@@ -98,18 +117,27 @@ class TestDoorPreviewFollowsWall(NewFile):
         data = handler.get_generic_preview_data()
         assert data
 
-        # The door is ~0.9 wide and ~0.1 deep: on a +Y wall the rotated
-        # preview footprint must be longer along Y than along X.
-        x_extent, y_extent = _xy_extents(data["verts"])
-        assert y_extent > x_extent, f"preview not rotated with the wall: x={x_extent:.3f} y={y_extent:.3f}"
+        preview_angle = _principal_xy_angle_vs(wall_x, data["verts"])
+        assert preview_angle < 5.0, f"preview not rotated with the wall: {preview_angle:.2f} degrees off"
 
-        # Click-to-place parity: door matrix aligns with the wall and the
-        # wall stays active, on both schemas.
+        # Click-to-place, then require the ghost to sit exactly where the
+        # placed door sits (position, rotation, sill and wall Z in one).
         tool.Blender.select_and_activate_single_object(bpy.context, wall_obj)
         bpy.context.scene.cursor.location = mouse
         bpy.ops.bim.add_occurrence(relating_type_id=door_type.id())
         door_obj = tool.Ifc.get_object(ifc.by_type("IfcDoor")[-1])
         door_x = (door_obj.matrix_world.to_3x3() @ Vector((1, 0, 0))).normalized()
-        wall_x = (wall_obj.matrix_world.to_3x3() @ Vector((1, 0, 0))).normalized()
         assert abs(door_x.dot(wall_x)) > 0.999
         assert bpy.context.active_object is wall_obj
+
+        placed_centroid = Vector((0.0, 0.0, 0.0))
+        for v in door_obj.data.vertices:
+            placed_centroid += door_obj.matrix_world @ v.co
+        placed_centroid /= len(door_obj.data.vertices)
+        preview_centroid = Vector((0.0, 0.0, 0.0))
+        preview_mesh_verts = data["verts"][: len(door_obj.data.vertices)]
+        for v in preview_mesh_verts:
+            preview_centroid += Vector(v)
+        preview_centroid /= len(preview_mesh_verts)
+        gap = (preview_centroid - placed_centroid).length
+        assert gap < 0.05, f"preview does not match the placed door: {gap:.3f} m apart"
