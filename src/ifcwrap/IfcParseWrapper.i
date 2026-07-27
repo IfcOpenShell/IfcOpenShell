@@ -45,7 +45,7 @@
 			identifier = schema_identifier
 		else:
 			identifier = self._determine_schema_identifier(schema=schema, schema_version=schema_version)
-		$action(self, identifier)
+		_ifcopenshell_wrapper.file_swiginit(self, $action(identifier))
 %}
 
 %ignore ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>::read_instance;
