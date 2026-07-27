@@ -53,8 +53,11 @@
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
 #include <Precision.hxx>
 #include <gp_Vec.hxx>
+#include <NCollection_DataMap.hxx>
+#include <TopTools_ShapeMapHasher.hxx>
 
 #if OCC_VERSION_HEX >= 0x70300
 #include <Bnd_OBB.hxx>
@@ -67,6 +70,7 @@
 #include <tuple>
 #include <map>
 #include <iterator>
+#include <algorithm>
 
 typedef std::pair<const IfcUtil::IfcBaseEntity*, std::string> drawing_key;
 
@@ -377,6 +381,21 @@ namespace {
 			double length;
 		};
 
+		// Deliberately orientation-*independent*: p0/p1 always come from the edge's intrinsic
+		// curve parametrization (u0, u1), never adjusted for e.Orientation(). v3's coverage
+		// accumulation and sub-edge reconstruction store/retrieve per-edge t-values across two
+		// different topological contexts for "the same" edge (once via a face's own boundary
+		// traversal in accumulate_edge_coverage(), later via a flat classified-edges compound in
+		// replace_matched_edges()) -- the same edge can carry different relative orientation in
+		// each (e.g. a shared edge between two faces of one product, or the separate
+		// single-object classification pass picking a different owning face than this one's own
+		// traversal does). An orientation-dependent swap here would make a t-value computed in
+		// one context mean the *opposite* end when reconstructed in the other -- exactly the bug
+		// that produced a sub-edge mirrored within its own original edge's span. Every other use
+		// of `dir` in this namespace (collinearity, perpendicular distance) already goes through
+		// abs()/cross-product magnitude and is sign-independent, so this doesn't change any
+		// matching decision, only guarantees a stable frame for split_edge_by_coverage()'s
+		// absolute-point reconstruction.
 		boost::optional<LineSeg> edge_to_line_seg(const TopoDS_Edge& e) {
 			double u0, u1;
 			auto crv = BRep_Tool::Curve(e, u0, u1);
@@ -387,9 +406,6 @@ namespace {
 			gp_Pnt p1 = crv->Value(u1);
 			if (p0.Distance(p1) < Precision::Confusion()) {
 				return boost::none;
-			}
-			if (e.Orientation() == TopAbs_REVERSED) {
-				std::swap(p0, p1);
 			}
 			gp_Vec v(p0, p1);
 			return LineSeg{ p0, p1, gp_Dir(v), v.Magnitude() };
@@ -422,18 +438,89 @@ namespace {
 			return merged;
 		}
 
-		// Every edge of `face` whose *entire* length is collinear with, and covered by, one or
-		// more edges in `other_segs` (the boundary edges of an already-confirmed-coplanar face
-		// of a *different* product) is added to `out`. This is a direct edge-to-edge coincidence
-		// test -- not a face-area-overlap test (the previous, wrong approach: two side-by-side,
-		// non-overlapping faces sharing a boundary, or a void's inner wire coincident with a
-		// plug's outer wire, both have *zero* area in common by construction, even though the
-		// shared edge is exactly the "duplicate boundary" this feature exists to find). A
-		// partially-overlapping edge is deliberately left untouched -- documented v1 scope
-		// decision, see find_cross_coplanar_matches() below.
-		void collect_fully_contained_edges(
+		// Resolves the material at a specific 3D point for a (possibly layered) product: a
+		// single dot product against `proj`'s axis/origin plus a binary search into
+		// cumulative_offsets, clamped to a valid layer index -- falls back to `product_level`
+		// (the whole-product material/style identity) when the product isn't layered at all.
+		// Deliberately point-based rather than face-based: a face's *centroid* is only a valid
+		// stand-in for "this face's material" when the face doesn't itself span more than one
+		// layer -- for a face that does (e.g. a slanted/sheared face crossing a layer boundary),
+		// sampling different points along a candidate edge's own overlap with a neighbour is
+		// what lets each sub-range be judged on its own true material instead of one, possibly
+		// unrepresentative, sample for the whole face.
+		const IfcUtil::IfcBaseInterface* resolve_material_at_point(
+			const gp_Pnt& point, const boost::optional<layer_projection>& proj,
+			const IfcUtil::IfcBaseInterface* product_level
+		) {
+			if (!proj) {
+				return product_level;
+			}
+			double dist = gp_Vec(proj->origin, point).Dot(proj->axis);
+			auto& offs = proj->cumulative_offsets;
+			size_t idx = std::upper_bound(offs.begin(), offs.end(), dist) - offs.begin();
+			idx = std::min(std::max(idx, size_t(1)), proj->materials.size());
+			return proj->materials[idx - 1];
+		}
+
+		// Projects every *internal* layer boundary of `proj` (excluding the product's own
+		// overall start/end, which aren't a material transition) onto `seg`'s own t-axis --
+		// i.e. for each boundary plane at proj->origin + offset*proj->axis, solves for the t
+		// where seg's line crosses it. If `seg` is (near-)perpendicular to proj->axis, the line
+		// never crosses a layer boundary at all (it's confined to a single layer already, the
+		// common case for e.g. a horizontal edge on a vertically-layered slab) -- returns empty
+		// in that case, which is exactly what lets the per-sub-interval logic degenerate to a
+		// single-piece, whole-interval check when a layer split genuinely isn't relevant.
+		std::vector<double> layer_boundary_ts(const LineSeg& seg, const layer_projection& proj) {
+			std::vector<double> ts;
+			double denom = seg.dir.Dot(proj.axis);
+			if (std::abs(denom) < 1.e-9) {
+				return ts;
+			}
+			double base = gp_Vec(proj.origin, seg.p0).Dot(proj.axis);
+			for (size_t i = 1; i + 1 < proj.cumulative_offsets.size(); ++i) {
+				ts.push_back((proj.cumulative_offsets[i] - base) / denom);
+			}
+			return ts;
+		}
+
+		// v3: raw covered intervals accumulated per original edge, across every qualifying
+		// neighbour face pair the double loop in find_cross_coplanar_matches() finds -- keyed
+		// by shape identity (TShape + Location), the same map/hasher pairing already used for
+		// shape-identity bookkeeping in kernels/opencascade/{wire_utils,sweep_utils}.cpp. An
+		// edge can legitimately be touched by more than one neighbour on different sub-ranges
+		// (e.g. two separate adjacent slabs on either side of a wall's own length), so the
+		// union of ALL contributions has to be known before any full-vs-partial-vs-none
+		// decision is made -- deferred to split_edge_by_coverage() below, once the whole double
+		// loop has finished.
+		typedef NCollection_DataMap<TopoDS_Shape, std::vector<std::pair<double, double>>, TopTools_ShapeMapHasher> edge_coverage_map_t;
+
+		// For each edge of `face` with a valid LineSeg, appends its raw covered sub-intervals
+		// (against `other_segs`, the boundary edges of an already-confirmed-coplanar face of a
+		// *different* product) into `coverage` -- accumulation only, no full/partial decision
+		// here (see edge_coverage_map_t above for why that's deferred). This is a direct
+		// edge-to-edge coincidence test -- not a face-area-overlap test (the previous, wrong
+		// v1 approach: two side-by-side, non-overlapping faces sharing a boundary, or a void's
+		// inner wire coincident with a plug's outer wire, both have *zero* area in common by
+		// construction, even though the shared edge is exactly the "duplicate boundary" this
+		// feature exists to find).
+		//
+		// `proj_this`/`material_this`/`style_this` describe `face`'s own product; `proj_other`/
+		// `material_other`/`style_other` describe the neighbour `other_segs` came from. When
+		// either is layered, a raw geometric interval isn't necessarily one material throughout
+		// -- a face that itself spans more than one layer (e.g. a slanted face crossing a layer
+		// boundary) would otherwise have its whole overlap judged by one, possibly
+		// unrepresentative, sample. Instead each raw interval is split at every layer boundary
+		// either side contributes (layer_boundary_ts()), and each resulting sub-range is
+		// independently verified at its own midpoint before being accepted -- a sub-range where
+		// materials genuinely agree (e.g. both Corten) is kept even if a neighbouring sub-range
+		// of the *same* edge disagrees (e.g. Concrete 1 vs Concrete 2), and vice versa. When
+		// neither side is layered this degenerates to exactly the old whole-interval behaviour
+		// (no boundaries found, one pass through the loop below).
+		void accumulate_edge_coverage(
 			const TopoDS_Face& face, const std::vector<LineSeg>& other_segs, double tol,
-			BRep_Builder& builder, TopoDS_Compound& out
+			const boost::optional<layer_projection>& proj_this, const IfcUtil::IfcBaseInterface* material_this, const IfcUtil::IfcBaseInterface* style_this,
+			const boost::optional<layer_projection>& proj_other, const IfcUtil::IfcBaseInterface* material_other, const IfcUtil::IfcBaseInterface* style_other,
+			edge_coverage_map_t& coverage
 		) {
 			for (TopExp_Explorer eexp(face, TopAbs_EDGE); eexp.More(); eexp.Next()) {
 				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
@@ -453,42 +540,215 @@ namespace {
 					}
 					double t0 = gp_Vec(seg->p0, other.p0).Dot(gp_Vec(seg->dir));
 					double t1 = gp_Vec(seg->p0, other.p1).Dot(gp_Vec(seg->dir));
-					covered.push_back({ std::min(t0, t1), std::max(t0, t1) });
+					double lo = std::min(t0, t1), hi = std::max(t0, t1);
+
+					if (!proj_this && !proj_other) {
+						covered.push_back({ lo, hi });
+						continue;
+					}
+
+					std::vector<double> boundaries;
+					if (proj_this) {
+						auto bs = layer_boundary_ts(*seg, *proj_this);
+						boundaries.insert(boundaries.end(), bs.begin(), bs.end());
+					}
+					if (proj_other) {
+						auto bs = layer_boundary_ts(*seg, *proj_other);
+						boundaries.insert(boundaries.end(), bs.begin(), bs.end());
+					}
+					std::vector<double> cuts;
+					for (double b : boundaries) {
+						if (b > lo && b < hi) {
+							cuts.push_back(b);
+						}
+					}
+					std::sort(cuts.begin(), cuts.end());
+
+					double cursor = lo;
+					for (size_t i = 0; i <= cuts.size(); ++i) {
+						double piece_end = (i < cuts.size()) ? cuts[i] : hi;
+						if (piece_end <= cursor) {
+							continue;
+						}
+						double t_mid = 0.5 * (cursor + piece_end);
+						gp_Pnt mid = seg->p0.Translated(gp_Vec(seg->dir) * t_mid);
+						const auto* mat_this = resolve_material_at_point(mid, proj_this, material_this);
+						const auto* mat_other = resolve_material_at_point(mid, proj_other, material_other);
+						bool ok;
+						if (mat_this || mat_other) {
+							ok = mat_this && mat_other && mat_this == mat_other;
+						} else {
+							ok = style_this && style_other && style_this == style_other;
+						}
+						if (ok) {
+							covered.push_back({ cursor, piece_end });
+						}
+						cursor = piece_end;
+					}
 				}
 				if (covered.empty()) {
 					continue;
 				}
-				for (auto& iv : ivs_union(covered, tol)) {
-					if (iv.first <= tol && iv.second >= seg->length - tol) {
-						builder.Add(out, e);
-						break;
-					}
+				auto* existing = coverage.ChangeSeek(e);
+				if (existing) {
+					existing->insert(existing->end(), covered.begin(), covered.end());
+				} else {
+					coverage.Bind(e, covered);
 				}
 			}
 		}
 
-		// An edge newly classified as cross-coplanar was already committed to one of the
-		// original 5 classes by the per-product classification pass (it runs first, for every
-		// product, before any product is done being added -- see find_cross_coplanar_matches()'s
-		// own comment). Without this, the same edge would end up listed under two classes at
-		// once and get drawn twice. `from` and everything in `to_remove` are the same, non-moved,
-		// non-transformed original edges (both ultimately sourced from the same per-product
-		// compound_to_hlr, never copied), so plain shape identity (IsSame(), TShape + Location)
-		// is a safe, exact way to find the overlap.
-		TopoDS_Compound remove_matching_edges(const TopoDS_Shape& from, const TopoDS_Compound& to_remove) {
-			BRep_Builder builder;
+		struct edge_split_result {
+			std::vector<TopoDS_Edge> covered;
+			std::vector<TopoDS_Edge> remainder;
+			// True only when covered/remainder contain newly-constructed TopoDS_Edge objects
+			// (the genuine partial-split path below) -- false when either vector just holds the
+			// original, unmodified `e` (the full-coverage fast path, or the "nothing survived
+			// noise filtering" fallback). Callers need this to know which edges are brand new
+			// geometry that was never part of what build() feeds to the HLR algorithm, and so
+			// must be separately injected into the owning product's items_ shape for HLRBRep_
+			// HLRToShape::VCompound()/OutLineVCompound() to correlate them at all (see the
+			// injection step in find_cross_coplanar_matches()).
+			bool is_new_geometry = false;
+		};
+
+		// Unions `raw_intervals` (every contribution accumulate_edge_coverage() ever recorded
+		// for `e`) and walks `e`'s own [0, length] range against that union to produce
+		// alternating covered/uncovered sub-ranges -- v3's actual sub-edge split. Full coverage
+		// keeps the fast path of moving the *whole*, unmodified edge (avoids introducing a
+		// floating-point seam at an edge's own original endpoints for the common full-duplicate
+		// case, and is byte-identical to pre-v3 behaviour). Only genuine partial coverage
+		// constructs new, trimmed TopoDS_Edge objects (via BRepBuilderAPI_MakeEdge on two
+		// points derived from `seg`'s own p0/dir -- no new geometric machinery). Sub-ranges
+		// shorter than Precision::Confusion() are dropped rather than turned into degenerate
+		// zero-length edges.
+		edge_split_result split_edge_by_coverage(
+			const TopoDS_Edge& e, const LineSeg& seg,
+			const std::vector<std::pair<double, double>>& raw_intervals, double tol
+		) {
+			edge_split_result result;
+			auto merged = ivs_union(raw_intervals, tol);
+
+			for (auto& iv : merged) {
+				if (iv.first <= tol && iv.second >= seg.length - tol) {
+					result.covered.push_back(e);
+					return result;
+				}
+			}
+
+			// Clamp every merged interval to this edge's own [0, length] range -- a raw interval
+			// can extend well past this edge's own endpoint (e.g. a much longer neighbour edge
+			// collinear with a short one), leaving only a razor-thin sliver actually inside
+			// [0, length]. A clamped sub-interval shorter than the matching tolerance itself is
+			// noise (e.g. two edges only touching at a shared corner vertex) -- not a genuine
+			// partial duplicate -- and is dropped rather than fragmenting the edge over it; it's
+			// the *clamped* width that matters here, not the raw interval's own (pre-clamp)
+			// width. If nothing genuinely covered survives, treat the whole edge as untouched,
+			// same as if accumulate_edge_coverage() had never recorded anything for it at all.
+			std::vector<std::pair<double, double>> clamped;
+			for (auto& iv : merged) {
+				double a = std::max(iv.first, 0.0);
+				double b = std::min(iv.second, seg.length);
+				if (b - a >= tol) {
+					clamped.push_back({ a, b });
+				}
+			}
+			if (clamped.empty()) {
+				result.remainder.push_back(e);
+				return result;
+			}
+
+			auto make_subedge = [&](double a, double b) -> boost::optional<TopoDS_Edge> {
+				if (b - a < Precision::Confusion()) {
+					return boost::none;
+				}
+				gp_Pnt pa = seg.p0.Translated(gp_Vec(seg.dir) * a);
+				gp_Pnt pb = seg.p0.Translated(gp_Vec(seg.dir) * b);
+				BRepBuilderAPI_MakeEdge mk(pa, pb);
+				if (!mk.IsDone()) {
+					return boost::none;
+				}
+				return mk.Edge();
+			};
+
+			result.is_new_geometry = true;
+
+			double cursor = 0.0;
+			for (auto& iv : clamped) {
+				double a = iv.first;
+				double b = iv.second;
+				if (b <= cursor) {
+					continue;
+				}
+				if (a > cursor) {
+					if (auto sub = make_subedge(cursor, a)) {
+						result.remainder.push_back(*sub);
+					}
+				}
+				if (auto sub = make_subedge(std::max(a, cursor), b)) {
+					result.covered.push_back(*sub);
+				}
+				cursor = std::max(cursor, b);
+			}
+			if (cursor < seg.length) {
+				if (auto sub = make_subedge(cursor, seg.length)) {
+					result.remainder.push_back(*sub);
+				}
+			}
+			return result;
+		}
+
+		// Replaces `from` (one of a product's original 5-class buckets) with a new compound:
+		// edges with no entry in `coverage` are kept unchanged; edges that split_edge_by_coverage()
+		// finds fully covered are dropped entirely (as in pre-v3 behaviour -- they're already
+		// committed to one of the original classes by the per-product classification pass that
+		// runs before find_cross_coplanar_matches(), so without this an edge would end up
+		// listed under two classes at once and get drawn twice); partially-covered edges are
+		// *replaced* by their uncovered remainder sub-edge(s) -- same class, only the geometry
+		// shrinks. Every covered sub-edge (whole or trimmed) is also appended to
+		// `cross_coplanar_out`, so the cross-coplanar bucket and this replacement are always
+		// built from exactly the same split decision. Whenever split_edge_by_coverage() reports
+		// genuinely new geometry, every resulting piece (both covered and remainder) is *also*
+		// appended to `new_geometry_out` -- these are edges build() never fed to the HLR
+		// algorithm, so the caller has to inject them into the owning product's items_ shape
+		// before build()'s algo->Add() loop runs, or HLRBRep_HLRToShape::VCompound()/
+		// OutLineVCompound() (which correlate by original-input-edge identity, not by shape
+		// content) will silently return nothing for them. `from`'s edges and `coverage`'s keys
+		// are the same, non-moved, non-transformed original edges (both ultimately sourced from
+		// the same per-product compound_to_hlr, never copied), so plain shape identity (TShape +
+		// Location, via TopTools_ShapeMapHasher) is a safe, exact way to find the overlap.
+		TopoDS_Compound replace_matched_edges(
+			const TopoDS_Shape& from, edge_coverage_map_t& coverage, double tol,
+			BRep_Builder& builder, TopoDS_Compound& cross_coplanar_out, TopoDS_Compound& new_geometry_out
+		) {
 			TopoDS_Compound result;
 			builder.MakeCompound(result);
 			for (TopExp_Explorer exp(from, TopAbs_EDGE); exp.More(); exp.Next()) {
-				bool matched = false;
-				for (TopExp_Explorer rexp(to_remove, TopAbs_EDGE); rexp.More(); rexp.Next()) {
-					if (exp.Current().IsSame(rexp.Current())) {
-						matched = true;
-						break;
+				const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
+				auto* raw = coverage.ChangeSeek(e);
+				if (!raw) {
+					builder.Add(result, e);
+					continue;
+				}
+				auto seg = edge_to_line_seg(e);
+				if (!seg) {
+					// Shouldn't happen -- coverage is only ever populated for edges that already
+					// had a valid LineSeg -- but keep the edge rather than silently drop it.
+					builder.Add(result, e);
+					continue;
+				}
+				auto split = split_edge_by_coverage(e, *seg, *raw, tol);
+				for (auto& c : split.covered) {
+					builder.Add(cross_coplanar_out, c);
+					if (split.is_new_geometry) {
+						builder.Add(new_geometry_out, c);
 					}
 				}
-				if (!matched) {
-					builder.Add(result, exp.Current());
+				for (auto& r : split.remainder) {
+					builder.Add(result, r);
+					if (split.is_new_geometry) {
+						builder.Add(new_geometry_out, r);
+					}
 				}
 			}
 			return result;
@@ -780,19 +1040,16 @@ namespace {
 				return;
 			}
 
-			// Per-product accumulated cross-coplanar edges -- more than one neighbour can
-			// each contribute matched edges to the same product, so these are merged into one
-			// compound per product before being handed to add_classified_edges() once each.
-			std::map<const IfcUtil::IfcBaseEntity*, TopoDS_Compound> per_product_edges;
+			// Per-product accumulated edge coverage (v3: raw intervals, not whole edges -- see
+			// cross_coplanar::edge_coverage_map_t) -- more than one neighbour can each
+			// contribute coverage to the same product's edges, so this has to be fully
+			// accumulated across the whole double loop below before any full/partial/none
+			// split decision is made (the post-loop pass, mirroring how per-product edges were
+			// already deferred to a post-loop pass pre-v3).
 			BRep_Builder builder;
-			auto get_bucket = [&](const IfcUtil::IfcBaseEntity* product) -> TopoDS_Compound& {
-				auto it = per_product_edges.find(product);
-				if (it == per_product_edges.end()) {
-					TopoDS_Compound c;
-					builder.MakeCompound(c);
-					it = per_product_edges.emplace(product, c).first;
-				}
-				return it->second;
+			std::map<const IfcUtil::IfcBaseEntity*, cross_coplanar::edge_coverage_map_t> per_product_coverage;
+			auto get_coverage = [&](const IfcUtil::IfcBaseEntity* product) -> cross_coplanar::edge_coverage_map_t& {
+				return per_product_coverage[product];
 			};
 
 			for (auto ii = items_.begin(); ii != items_.end(); ++ii) {
@@ -875,36 +1132,14 @@ namespace {
 								continue;
 							}
 
-							// v2 per-face material resolution: only needed when one of the two
-							// products is layered (proj_i/proj_j set) -- the product-level gate
-							// above already handled the common, non-layered case. Classify each
-							// face into its own layer (a single dot product + binary search into
-							// cumulative_offsets, see geometry_data::cross_coplanar_layer_projection)
-							// and re-apply the exact same material-priority-then-style logic, now
-							// per face pair instead of once per product pair.
-							if (proj_i || proj_j) {
-								auto resolve_face_material = [](const TopoDS_Face& f, const boost::optional<layer_projection>& proj, const IfcUtil::IfcBaseInterface* product_level) -> const IfcUtil::IfcBaseInterface* {
-									if (!proj) {
-										return product_level;
-									}
-									GProp_GProps props;
-									BRepGProp::SurfaceProperties(f, props);
-									double dist = gp_Vec(proj->origin, props.CentreOfMass()).Dot(proj->axis);
-									auto& offs = proj->cumulative_offsets;
-									size_t idx = std::upper_bound(offs.begin(), offs.end(), dist) - offs.begin();
-									idx = std::min(std::max(idx, size_t(1)), proj->materials.size());
-									return proj->materials[idx - 1];
-								};
-								const auto* face_material_i = resolve_face_material(face_i, proj_i, material_i);
-								const auto* face_material_j = resolve_face_material(face_j, proj_j, material_j);
-								if (face_material_i || face_material_j) {
-									if (!face_material_i || !face_material_j || face_material_i != face_material_j) {
-										continue;
-									}
-								} else if (!style_i || !style_j || style_i != style_j) {
-									continue;
-								}
-							}
+							// Material/style resolution when either product is layered has moved
+							// to a per-*sub-interval* check inside accumulate_edge_coverage()
+							// below -- a face-level (centroid-based) verdict here would wrongly
+							// gate the *whole* face pair on one sample, when a face that itself
+							// spans more than one layer needs each overlapping sub-range judged
+							// on its own actual material (see accumulate_edge_coverage()'s own
+							// comment). The product-level gate above already handled the common,
+							// non-layered case; nothing further to check here before proceeding.
 
 							// Edge-to-edge coincidence, not face-area overlap: two adjacent,
 							// non-overlapping faces (side-by-side slabs, a void's inner wire
@@ -915,33 +1150,65 @@ namespace {
 							// ones), so void/hole boundaries are covered too.
 							auto segs_i = cross_coplanar::face_line_segs(face_i);
 							auto segs_j = cross_coplanar::face_line_segs(face_j);
-							cross_coplanar::collect_fully_contained_edges(
-								face_i, segs_j, cross_coplanar_tolerance_, builder, get_bucket(product_i));
-							cross_coplanar::collect_fully_contained_edges(
-								face_j, segs_i, cross_coplanar_tolerance_, builder, get_bucket(product_j));
+							cross_coplanar::accumulate_edge_coverage(
+								face_i, segs_j, cross_coplanar_tolerance_,
+								proj_i, material_i, style_i, proj_j, material_j, style_j,
+								get_coverage(product_i));
+							cross_coplanar::accumulate_edge_coverage(
+								face_j, segs_i, cross_coplanar_tolerance_,
+								proj_j, material_j, style_j, proj_i, material_i, style_i,
+								get_coverage(product_j));
 						}
 					}
 				}
 			}
 
-			for (auto& kv : per_product_edges) {
+			for (auto& kv : per_product_coverage) {
 				const IfcUtil::IfcBaseEntity* product = kv.first;
-				const TopoDS_Compound& new_edges = kv.second;
+				cross_coplanar::edge_coverage_map_t& coverage = kv.second;
 
-				// Always remove a matched edge from whatever base-class bucket the earlier
-				// per-product classification pass already put it in -- these are duplicates
-				// that must never be drawn under their original class regardless of whether
-				// render_cross_coplanar_edges_ is on (that flag only controls whether they're
-				// *also* re-added below for visibility, not whether the duplicate is hidden).
+				// v3: split_edge_by_coverage() (inside replace_matched_edges()) now decides,
+				// per edge, whether coverage is none (kept untouched), full (moved to
+				// new_edges whole, same fast path as pre-v3), or partial (replaced by its
+				// uncovered remainder here, with the covered sub-edge appended to new_edges) --
+				// always against the *union* of every neighbour's contribution to that edge,
+				// accumulated across the whole double loop above. Always applied regardless of
+				// render_cross_coplanar_edges_ (that flag only controls whether new_edges is
+				// *also* re-added below for visibility, not whether a duplicate -- whole or
+				// partial -- is hidden from its original class).
+				TopoDS_Compound new_edges;
+				builder.MakeCompound(new_edges);
+				// v3: any genuinely new (trimmed) sub-edges split_edge_by_coverage() constructs
+				// are collected here -- they were never part of what this product's shape gave
+				// to the HLR algorithm, so they have to be injected into items_ below before
+				// build()'s algo->Add() loop runs, or HLRBRep_HLRToShape's VCompound()/
+				// OutLineVCompound() (which correlate by original-input-edge identity) would
+				// silently return nothing for them and they'd never reach the rendered output.
+				TopoDS_Compound new_geometry;
+				builder.MakeCompound(new_geometry);
 				for (auto& entry : classified_items_) {
 					if (std::get<0>(entry) != product) {
 						continue;
 					}
-					std::get<2>(entry) = cross_coplanar::remove_matching_edges(std::get<2>(entry), new_edges);
+					std::get<2>(entry) = cross_coplanar::replace_matched_edges(
+						std::get<2>(entry), coverage, cross_coplanar_tolerance_, builder, new_edges, new_geometry);
 				}
 
 				if (render_cross_coplanar_edges_) {
 					add_classified_edges(product, cross_coplanar::class_name, new_edges);
+				}
+
+				if (TopExp_Explorer(new_geometry, TopAbs_EDGE).More()) {
+					for (auto& item : items_) {
+						if (std::get<0>(item) != product) {
+							continue;
+						}
+						TopoDS_Compound merged;
+						builder.MakeCompound(merged);
+						builder.Add(merged, std::get<1>(item));
+						builder.Add(merged, new_geometry);
+						std::get<1>(item) = merged;
+					}
 				}
 			}
 		}
