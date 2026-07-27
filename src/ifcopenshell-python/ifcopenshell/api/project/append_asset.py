@@ -50,7 +50,9 @@ def append_asset(
     element: ifcopenshell.entity_instance,
     reuse_identities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
     assume_asset_uniqueness_by_name: bool = True,
-    deferred_relationship_members: Optional[dict[int, tuple[ifcopenshell.entity_instance, dict[int, list]]]] = None,
+    deferred_relationship_members: Optional[
+        dict[int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]]
+    ] = None,
 ) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
@@ -147,8 +149,8 @@ def append_asset(
 
 
 def flush_deferred_relationship_members(
+    file: ifcopenshell.file,
     deferred_relationship_members: dict[int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]],
-    appended_elements: dict[int, ifcopenshell.entity_instance],
 ) -> None:
     """Assign relationship member lists deferred by ``append_asset``.
 
@@ -158,12 +160,17 @@ def flush_deferred_relationship_members(
     list-valued member attributes re-scanned and re-assigned on every element
     append. Doing that per element is O(n^2) because the member list grows.
 
-    Instead, this maps each relationship's source members to their appended
-    counterparts a single time. ``appended_elements`` maps a source element's step
-    id to the entity it was appended as (the caller collects the value returned by
-    each ``append_asset`` call). Members whose source was not appended (i.e. not
-    part of the extracted subset) are skipped. Call this once after all appends.
+    This resolves every deferred relationship a single time instead: a source
+    member is kept if and only if it is present in ``file``, which is the same
+    rule ``append_asset`` applies when it assigns the list eagerly. Call this
+    once, after all appends, on the file the assets were appended into.
+
+    :param file: The file assets were appended into.
+    :param deferred_relationship_members: The accumulator passed to ``append_asset``.
     """
+    if not deferred_relationship_members:
+        return
+    appended_by_guid = {e.GlobalId: e for e in file.by_type("IfcRoot")}
     for source_rel, new_rel in deferred_relationship_members.values():
         for index, attribute in enumerate(source_rel):
             if not (
@@ -173,7 +180,7 @@ def flush_deferred_relationship_members(
             members: list[ifcopenshell.entity_instance] = []
             seen: set[int] = set()
             for member in attribute:
-                mapped = appended_elements.get(member.id())
+                mapped = appended_by_guid.get(getattr(member, "GlobalId", None))
                 if mapped is not None and mapped.id() not in seen:
                     seen.add(mapped.id())
                     members.append(mapped)
@@ -570,6 +577,7 @@ class Usecase:
         # attributes of relationships (e.g. IfcRelAssociatesMaterial.RelatedObjects)
         # instead of re-scanning and re-assigning the growing list on every element
         # append (O(n^2)). flush_deferred_relationship_members assigns them once.
+        # Members that are not another asset are still pulled in, but only once.
         defer_member_lists = False
         if self.deferred_relationship_members is not None and new.is_a("IfcRelationship"):
             if new.id() in self.deferred_relationship_members:
@@ -594,6 +602,9 @@ class Usecase:
                     new_attribute = self.add_element(attribute)
             elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
                 if defer_member_lists:
+                    for item in attribute:
+                        if not self.is_another_asset(item):
+                            self.add_element(item)
                     continue
                 new_attribute = []
                 for item in attribute:

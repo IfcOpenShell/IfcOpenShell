@@ -24,8 +24,10 @@ import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
 import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 import numpy
 import pytest
@@ -59,6 +61,53 @@ class TestExtractElements(test.bootstrap.IFC4):
         rels = output.by_type("IfcRelAssociatesMaterial")
         assert len(rels) == 1
         assert {w.GlobalId for w in rels[0].RelatedObjects} == {w.GlobalId for w in walls}
+
+    def test_relationship_members_outside_the_query_are_preserved(self):
+        # Regression test: spatial containers, decomposition parents and element
+        # types are appended alongside the queried elements, so deferred
+        # relationship member lists must be resolved against everything present in
+        # the output, not only the query matches. Otherwise their property sets and
+        # material associations are dropped and relationships are left with an
+        # empty member list, which violates the IFC [1:?] cardinality.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, context_type="Model")
+
+        site = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storeys = [ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey") for _ in range(2)]
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[building], relating_object=site)
+        ifcopenshell.api.aggregate.assign_object(self.file, products=storeys, relating_object=building)
+
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        walls = [ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall") for _ in range(4)]
+        for i, wall in enumerate(walls):
+            ifcopenshell.api.spatial.assign_container(
+                self.file, products=[wall], relating_structure=storeys[i % len(storeys)]
+            )
+        ifcopenshell.api.type.assign_type(self.file, related_objects=walls, relating_type=wall_type)
+
+        containers = [site, building] + storeys
+        for element in containers + walls:
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_Test")
+            ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Foo": "Bar"})
+
+        material = ifcopenshell.api.material.add_material(self.file, name="Steel")
+        ifcopenshell.api.material.assign_material(self.file, products=walls + [wall_type], material=material)
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        for element in containers + walls:
+            new_element = output.by_guid(element.GlobalId)
+            psets = ifcopenshell.util.element.get_psets(new_element)
+            assert psets.get("Pset_Test", {}).get("Foo") == "Bar", element.is_a()
+
+        rels = output.by_type("IfcRelAssociatesMaterial")
+        assert len(rels) == 1
+        assert {o.GlobalId for o in rels[0].RelatedObjects} == {e.GlobalId for e in walls + [wall_type]}
+
+        for rel in output.by_type("IfcRelationship"):
+            for attribute in rel:
+                assert attribute != (), f"{rel.is_a()} has an empty member list"
 
     def test_keep_spatial_structure(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
