@@ -249,6 +249,17 @@ def is_filling_supported(element) -> bool:
     return element is not None and element.is_a() in ("IfcDoor", "IfcWindow")
 
 
+def closest_point_on_host(obj: bpy.types.Object, target: Vector, distance: float) -> tuple[bool, Vector, Vector, int]:
+    """``Object.closest_point_on_mesh`` that reports a miss instead of raising.
+
+    Blender raises when the evaluated mesh carries no faces, which is what an
+    imported host whose body resolves to nothing at all hands us."""
+    try:
+        return obj.closest_point_on_mesh(obj.matrix_world.inverted() @ target, distance=distance)
+    except RuntimeError:
+        return (False, Vector(), Vector(), -1)
+
+
 class FilledOpeningGenerator:
     def generate(
         self,
@@ -286,10 +297,10 @@ class FilledOpeningGenerator:
 
         # Sometimes, the voided_obj may be an aggregate, which won't have any representation.
         if not preserve_placement and voided_obj.data:
-            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
+            raycast = closest_point_on_host(voided_obj, target, 0.01)
             if not raycast[0]:
                 target = filling_obj.matrix_world.translation.copy()
-                raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+                raycast = closest_point_on_host(voided_obj, target, 0.5)
                 if not raycast[0]:
                     return "TARGET is too far away from the voided object's mesh."
 
