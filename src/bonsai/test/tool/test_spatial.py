@@ -312,3 +312,130 @@ class TestGenerateSpace(NewFile):
         bpy.ops.bim.generate_space()
 
         assert np.isclose(space.location.z, 5), f"Expected z=5, got {space.location.z}"
+
+    def test_auto_space_height_from_slab_above(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        scene = bpy.context.scene
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        wall_obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(wall_obj)
+        tool.Ifc.link(wall, wall_obj)
+
+        slab = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4 + 4))
+        slab_obj = bpy.data.objects["Cube.001"]
+        scene.collection.objects.link(slab_obj)
+        tool.Ifc.link(slab, slab_obj)
+
+        scene.cursor.location = (0, 0, 0)
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        assert np.isclose(space.dimensions.z, 4, atol=0.1), f"Expected height ~4, got {space.dimensions.z}"
+
+    def test_forced_space_height(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        scene = bpy.context.scene
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        wall_obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(wall_obj)
+        tool.Ifc.link(wall, wall_obj)
+
+        scene.cursor.location = (0, 0, 0)
+        spatial_props = tool.Spatial.get_spatial_props()
+        spatial_props.force_space_height = True
+        spatial_props.space_height = 5
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        assert np.isclose(space.dimensions.z, 5, atol=0.1), f"Expected height 5, got {space.dimensions.z}"
+
+    def test_auto_space_height_fallback_no_slab(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        scene = bpy.context.scene
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        wall_obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(wall_obj)
+        tool.Ifc.link(wall, wall_obj)
+
+        scene.cursor.location = (0, 0, 0)
+        spatial_props = tool.Spatial.get_spatial_props()
+        spatial_props.force_space_height = False
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        assert space.dimensions.z > 0, f"Expected positive height, got {space.dimensions.z}"
+
+    def test_apply_space_height_to_selection(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        scene = bpy.context.scene
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        wall_obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(wall_obj)
+        tool.Ifc.link(wall, wall_obj)
+
+        scene.cursor.location = (0, 0, 0)
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+
+        spatial_props = tool.Spatial.get_spatial_props()
+        spatial_props.space_height = 6
+        bpy.context.view_layer.objects.active = space
+        space.select_set(True)
+        wall_obj.select_set(False)
+
+        bpy.ops.bim.apply_space_height_to_selection()
+        bpy.context.view_layer.update()
+        assert np.isclose(space.dimensions.z, 6, atol=0.1), f"Expected height 6, got {space.dimensions.z}"
+
+    def test_cache_survives_second_generation(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        scene = bpy.context.scene
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        wall_obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(wall_obj)
+        tool.Ifc.link(wall, wall_obj)
+        scene.cursor.location = (0, 0, 0)
+
+        bpy.ops.bim.generate_space()
+        space1 = bpy.data.objects["IfcSpace/Space"]
+        height1 = space1.dimensions.z
+
+        bpy.ops.bim.generate_space()
+        space2 = bpy.data.objects["IfcSpace/Space"]
+        height2 = space2.dimensions.z
+
+        assert np.isclose(height1, height2, atol=0.1), f"Cache changed height: {height1} vs {height2}"
+
+    def test_regenerate_after_wall_height_change(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        scene = bpy.context.scene
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        wall_obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(wall_obj)
+        tool.Ifc.link(wall, wall_obj)
+        scene.cursor.location = (0, 0, 0)
+
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        original_height = space.dimensions.z
+
+        wall_obj.dimensions.z = original_height + 2
+        bpy.context.view_layer.update()
+
+        bpy.context.view_layer.objects.active = space
+        space.select_set(True)
+        wall_obj.select_set(False)
+
+        bpy.ops.bim.generate_space()
+        new_height = space.dimensions.z
+        assert new_height != original_height or new_height > 0

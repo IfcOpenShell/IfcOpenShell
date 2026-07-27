@@ -18,7 +18,9 @@
 
 
 import bpy
+import ifcopenshell.util.unit
 
+import bonsai.core.geometry as core_geometry
 import bonsai.core.spatial as core
 import bonsai.tool as tool
 
@@ -115,3 +117,47 @@ class ToggleHideSpaces(bpy.types.Operator):
     def execute(self, context):
         core.toggle_hide_spaces(tool.Ifc, tool.Spatial)
         return {"FINISHED"}
+
+
+class ApplySpaceHeightToSelection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.apply_space_height_to_selection"
+    bl_label = "Apply Space Height To Selection"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Apply the space height value to all selected spaces without regenerating their footprint"
+
+    @classmethod
+    def poll(cls, context):
+        selected_spaces = [
+            obj
+            for obj in context.selected_objects
+            if (element := tool.Ifc.get_entity(obj)) and element.is_a("IfcSpace")
+        ]
+        if not selected_spaces:
+            cls.poll_message_set("No spaces selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        depth_ifc = tool.Spatial.get_spatial_props().space_height / si_conversion
+        total = 0
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcSpace"):
+                continue
+            body = tool.Geometry.get_body_representation(element)
+            if not body:
+                continue
+            extrusion = tool.Model.get_extrusion(body)
+            if not extrusion:
+                continue
+            extrusion.Depth = depth_ifc
+            core_geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=body,
+            )
+            total += 1
+        self.report({"INFO"}, f"Height applied to {total} spaces.")

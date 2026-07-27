@@ -206,7 +206,7 @@ def generate_space(
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
 
-    space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
+    space_polygon, bounding_walls = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
     if isinstance(space_polygon, str):
         if space_polygon == "NO POLYGONS FOUND":
@@ -219,6 +219,14 @@ def generate_space(
             )
         else:
             assert space_polygon
+
+    props = spatial.get_spatial_props()
+    if props.force_space_height:
+        h = props.space_height
+    else:
+        auto_h = spatial.get_auto_space_height(space_polygon, z, bounding_walls)
+        if auto_h is not None and auto_h > 0:
+            h = auto_h
 
     if element and element.is_a("IfcSpace"):
         spatial.set_space_representation_from_polygon(active_obj, element, space_polygon, h, polygon_is_si=True)
@@ -248,10 +256,24 @@ def generate_spaces_from_walls(
     z = spatial.get_active_obj_z()
     h = spatial.get_active_obj_height()
 
+    bounding_walls = [
+        element
+        for obj in spatial.get_selected_objects()
+        if (element := ifc.get_entity(obj)) and element.is_a("IfcWall")
+    ]
+
     union = spatial.get_union_shape_from_selected_objects()
 
+    props = spatial.get_spatial_props()
     for i, linear_ring in enumerate(union.interiors):
         poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
+
+        if props.force_space_height:
+            h = props.space_height
+        else:
+            auto_h = spatial.get_auto_space_height(poly, z, bounding_walls)
+            if auto_h is not None and auto_h > 0:
+                h = auto_h
 
         name = "Space" + str(i)
 
