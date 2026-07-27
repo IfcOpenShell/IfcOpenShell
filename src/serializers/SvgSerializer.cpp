@@ -253,7 +253,24 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 				std::swap(p1, p2);
 			}
 
-			
+			// p1/p2 are in model-space (metres) at this point -- the paper-space mm
+			// scale factor (scale_ * 1000) isn't applied until the later, deferred
+			// SvgSerializer::resize() pass (which patches every already-buffered
+			// xcoords/ycoords float_item in place once the whole drawing's bounding
+			// box is known). scale_ is set earlier in the pipeline, from the
+			// drawing's own EPset_Drawing.Scale, so it's already available here for
+			// the common case (an explicit drawing scale, as opposed to resize()'s
+			// auto-fit calculated_scale_, which genuinely isn't known yet at this
+			// point -- skip the filter in that rarer case rather than guess).
+			// Threshold matches the old (now superseded) Python
+			// join_coplanar_boundary_lines's MIN_VISIBLE_LENGTH precedent (0.1mm,
+			// paper space).
+			if (scale_) {
+				constexpr double MIN_VISIBLE_LENGTH_MM = 0.1;
+				if (p1.Distance(p2) * (*scale_) * 1000. < MIN_VISIBLE_LENGTH_MM) {
+					continue;
+				}
+			}
 
 			if (first) {
 				if (first_wire) {
