@@ -152,6 +152,13 @@ struct geometry_data {
 	// for the common case (single-material elements, or layered elements where the touching
 	// layer is also the one that happens to resolve first); nullptr if the product has none.
 	const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance;
+	// Same per-product simplification as cross_coplanar_style_instance above, but for the
+	// product's resolved material (IfcMaterial, or the first layer of an
+	// IfcMaterialLayerSet(Usage)) rather than its rendering style. Material takes priority over
+	// style in the cross-object match (see find_cross_coplanar_matches()): style is a
+	// presentation concept and two products can coincidentally share a style while being made of
+	// different materials (or vice versa). nullptr if the product has no resolved material.
+	const IfcUtil::IfcBaseInterface* cross_coplanar_material_instance;
 };
 
 struct drawing_meta {
@@ -230,12 +237,13 @@ namespace {
 		return C;
 	}
 
-	// Cross-object "cross-coplanar" edge classification (issue #3742) needs a style/material
-	// identity alongside each product's shape, so this is a 3-tuple rather than the pair it
-	// used to be -- see geometry_data::cross_coplanar_style_instance for why that identity is
-	// per-product, not per-face. The style is nullptr wherever cross-coplanar classification
-	// is off or a product resolved no style; unused by anything else that reads this list.
-	typedef std::list<std::tuple<const IfcUtil::IfcBaseEntity*, TopoDS_Shape, const IfcUtil::IfcBaseInterface*>> product_shape_list_t;
+	// Cross-object "cross-coplanar" edge classification (issue #3742) needs a style and a
+	// material identity alongside each product's shape, so this is a 4-tuple rather than the
+	// pair it used to be -- see geometry_data::cross_coplanar_style_instance and
+	// ::cross_coplanar_material_instance for why those identities are per-product, not
+	// per-face. Both are nullptr wherever cross-coplanar classification is off or a product
+	// resolved none; unused by anything else that reads this list.
+	typedef std::list<std::tuple<const IfcUtil::IfcBaseEntity*, TopoDS_Shape, const IfcUtil::IfcBaseInterface*, const IfcUtil::IfcBaseInterface*>> product_shape_list_t;
 
 	class hlr_calc {
 	private:
@@ -331,39 +339,103 @@ namespace {
 			return true;
 		}
 
-		double shape_length(const TopoDS_Shape& s) {
-			GProp_GProps props;
-			BRepGProp::LinearProperties(s, props);
-			return props.Mass();
+		// A straight edge's endpoints in 3D, plus its (unit) direction and length -- the atom
+		// the edge-coincidence matching below works with. Curved edges (no Geom_Line) and
+		// degenerate (near-zero-length) edges are skipped by edge_to_line_seg, consistent with
+		// this whole feature only supporting planar/straight geometry (same simplification
+		// classify_edge_from_faces() already makes for the single-object 5-class scheme).
+		struct LineSeg {
+			gp_Pnt p0, p1;
+			gp_Dir dir;
+			double length;
+		};
+
+		boost::optional<LineSeg> edge_to_line_seg(const TopoDS_Edge& e) {
+			double u0, u1;
+			auto crv = BRep_Tool::Curve(e, u0, u1);
+			if (!crv || crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+				return boost::none;
+			}
+			gp_Pnt p0 = crv->Value(u0);
+			gp_Pnt p1 = crv->Value(u1);
+			if (p0.Distance(p1) < Precision::Confusion()) {
+				return boost::none;
+			}
+			if (e.Orientation() == TopAbs_REVERSED) {
+				std::swap(p0, p1);
+			}
+			gp_Vec v(p0, p1);
+			return LineSeg{ p0, p1, gp_Dir(v), v.Magnitude() };
 		}
 
-		double shape_area(const TopoDS_Shape& s) {
-			GProp_GProps props;
-			BRepGProp::SurfaceProperties(s, props);
-			return props.Mass();
+		std::vector<LineSeg> face_line_segs(const TopoDS_Face& f) {
+			std::vector<LineSeg> out;
+			for (TopExp_Explorer e(f, TopAbs_EDGE); e.More(); e.Next()) {
+				auto seg = edge_to_line_seg(TopoDS::Edge(e.Current()));
+				if (seg) {
+					out.push_back(*seg);
+				}
+			}
+			return out;
 		}
 
-		// Every edge of `face` whose *entire* length lies within `overlap_region` (the result
-		// of a prior face/face BRepAlgoAPI_Common, so already guaranteed coplanar with `face`)
-		// is added to `out`. A partially-overlapping edge is deliberately left untouched --
-		// documented v1 scope decision, see find_cross_coplanar_matches() below.
+		// Merge overlapping/touching-within-tolerance 1D intervals -- the same union logic the
+		// Python arrangement approach used all session for 2D projected lines, here applied to
+		// real 3D edge intervals instead.
+		std::vector<std::pair<double, double>> ivs_union(std::vector<std::pair<double, double>> ivs, double tol) {
+			std::sort(ivs.begin(), ivs.end());
+			std::vector<std::pair<double, double>> merged;
+			for (auto& iv : ivs) {
+				if (!merged.empty() && iv.first <= merged.back().second + tol) {
+					merged.back().second = std::max(merged.back().second, iv.second);
+				} else {
+					merged.push_back(iv);
+				}
+			}
+			return merged;
+		}
+
+		// Every edge of `face` whose *entire* length is collinear with, and covered by, one or
+		// more edges in `other_segs` (the boundary edges of an already-confirmed-coplanar face
+		// of a *different* product) is added to `out`. This is a direct edge-to-edge coincidence
+		// test -- not a face-area-overlap test (the previous, wrong approach: two side-by-side,
+		// non-overlapping faces sharing a boundary, or a void's inner wire coincident with a
+		// plug's outer wire, both have *zero* area in common by construction, even though the
+		// shared edge is exactly the "duplicate boundary" this feature exists to find). A
+		// partially-overlapping edge is deliberately left untouched -- documented v1 scope
+		// decision, see find_cross_coplanar_matches() below.
 		void collect_fully_contained_edges(
-			const TopoDS_Face& face, const TopoDS_Shape& overlap_region, double tol,
+			const TopoDS_Face& face, const std::vector<LineSeg>& other_segs, double tol,
 			BRep_Builder& builder, TopoDS_Compound& out
 		) {
 			for (TopExp_Explorer eexp(face, TopAbs_EDGE); eexp.More(); eexp.Next()) {
 				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
-				double edge_len = shape_length(e);
-				if (edge_len < Precision::Confusion()) {
+				auto seg = edge_to_line_seg(e);
+				if (!seg) {
 					continue;
 				}
-				BRepAlgoAPI_Common common(e, overlap_region);
-				if (!common.IsDone()) {
+				std::vector<std::pair<double, double>> covered;
+				for (auto& other : other_segs) {
+					if (std::abs(seg->dir.Dot(other.dir)) <= 1.0 - 3.8e-5) {
+						continue;
+					}
+					gp_Vec to_other(seg->p0, other.p0);
+					double perp_dist = to_other.Crossed(gp_Vec(seg->dir)).Magnitude();
+					if (perp_dist >= tol) {
+						continue;
+					}
+					double t0 = gp_Vec(seg->p0, other.p0).Dot(gp_Vec(seg->dir));
+					double t1 = gp_Vec(seg->p0, other.p1).Dot(gp_Vec(seg->dir));
+					covered.push_back({ std::min(t0, t1), std::max(t0, t1) });
+				}
+				if (covered.empty()) {
 					continue;
 				}
-				double contained_len = shape_length(common.Shape());
-				if (contained_len >= edge_len - tol) {
-					builder.Add(out, e);
+				for (auto& iv : ivs_union(covered, tol)) {
+					if (iv.first <= tol && iv.second >= seg->length - tol) {
+						builder.Add(out, e);
+						break;
+					}
 				}
 			}
 		}
@@ -592,9 +664,9 @@ namespace {
 			return false;
 		}
 		
-		void add(const TopoDS_Shape& s, const IfcUtil::IfcBaseEntity* product, const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance = nullptr) {
+		void add(const TopoDS_Shape& s, const IfcUtil::IfcBaseEntity* product, const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance = nullptr, const IfcUtil::IfcBaseInterface* cross_coplanar_material_instance = nullptr) {
 			if (!use_prefiltering_) {
-				items_.insert(items_.end(), {product, s, cross_coplanar_style_instance});
+				items_.insert(items_.end(), {product, s, cross_coplanar_style_instance, cross_coplanar_material_instance});
 				return;
 			}
 
@@ -633,7 +705,7 @@ namespace {
 
 				logger_.Notice("SER", 34, "Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
 
-				auto it = items_.insert(items_.end(), { product, C, cross_coplanar_style_instance });
+				auto it = items_.insert(items_.end(), { product, C, cross_coplanar_style_instance, cross_coplanar_material_instance });
 
 				{
 					TopExp_Explorer exp(C, TopAbs_FACE);
@@ -666,7 +738,7 @@ namespace {
 					}
 				}
 			} else {
-				items_.insert(items_.end(), { product, s, cross_coplanar_style_instance });
+				items_.insert(items_.end(), { product, s, cross_coplanar_style_instance, cross_coplanar_material_instance });
 			}
 		}
 
@@ -701,14 +773,24 @@ namespace {
 					const auto* product_i = std::get<0>(*ii);
 					const TopoDS_Shape& shape_i = std::get<1>(*ii);
 					const auto* style_i = std::get<2>(*ii);
+					const auto* material_i = std::get<3>(*ii);
 					const auto* product_j = std::get<0>(*jj);
 					const TopoDS_Shape& shape_j = std::get<1>(*jj);
 					const auto* style_j = std::get<2>(*jj);
+					const auto* material_j = std::get<3>(*jj);
 
-					// Same style/material identity is required on both sides -- see
-					// geometry_data::cross_coplanar_style_instance for what this identity
-					// means and why per-product rather than per-face.
-					if (!style_i || !style_j || style_i != style_j) {
+					// Material takes priority over style as the "same substance" identity --
+					// see geometry_data::cross_coplanar_material_instance. If either side
+					// resolved a material, both must be present and equal (style is not
+					// consulted at all in that case, even if it happens to also match: two
+					// products can share a rendering style while being genuinely different
+					// materials). Style is only the comparison when *neither* side has a
+					// resolved material.
+					if (material_i || material_j) {
+						if (!material_i || !material_j || material_i != material_j) {
+							continue;
+						}
+					} else if (!style_i || !style_j || style_i != style_j) {
 						continue;
 					}
 
@@ -758,18 +840,19 @@ namespace {
 								continue;
 							}
 
-							BRepAlgoAPI_Common common(face_i, face_j);
-							if (!common.IsDone()) {
-								continue;
-							}
-							if (cross_coplanar::shape_area(common.Shape()) < Precision::Confusion()) {
-								continue;
-							}
-
+							// Edge-to-edge coincidence, not face-area overlap: two adjacent,
+							// non-overlapping faces (side-by-side slabs, a void's inner wire
+							// against a plug's outer wire) share a boundary edge but have zero
+							// area in common by construction -- BRepAlgoAPI_Common would (and
+							// used to) wrongly reject exactly the cases this feature exists to
+							// find. face_line_segs() walks all wires of a face (including inner
+							// ones), so void/hole boundaries are covered too.
+							auto segs_i = cross_coplanar::face_line_segs(face_i);
+							auto segs_j = cross_coplanar::face_line_segs(face_j);
 							cross_coplanar::collect_fully_contained_edges(
-								face_i, common.Shape(), cross_coplanar_tolerance_, builder, get_bucket(product_i));
+								face_i, segs_j, cross_coplanar_tolerance_, builder, get_bucket(product_i));
 							cross_coplanar::collect_fully_contained_edges(
-								face_j, common.Shape(), cross_coplanar_tolerance_, builder, get_bucket(product_j));
+								face_j, segs_i, cross_coplanar_tolerance_, builder, get_bucket(product_j));
 						}
 					}
 				}
