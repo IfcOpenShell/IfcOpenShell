@@ -24,6 +24,7 @@ import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
 import ifcopenshell.api.material
+import ifcopenshell.guid
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
@@ -108,6 +109,33 @@ class TestExtractElements(test.bootstrap.IFC4):
         for rel in output.by_type("IfcRelationship"):
             for attribute in rel:
                 assert attribute != (), f"{rel.is_a()} has an empty member list"
+
+    def test_overrides_properties_members_are_preserved(self):
+        # Regression test: IfcRelOverridesProperties.OverridingProperties holds
+        # IfcProperty members, which unlike most relationship members have no
+        # GlobalId. The deferred member-list assignment used to resolve members
+        # by GlobalId, so every member of this one relationship silently
+        # resolved to nothing and the list was written empty, violating the
+        # IFC [1:?] cardinality.
+        if self.file.schema != "IFC2X3":
+            pytest.skip("IfcRelOverridesProperties only exists in IFC2X3")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=wall, name="Pset_Test")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Foo": "Bar"})
+        override = self.file.createIfcPropertySingleValue("Foo", None, self.file.createIfcText("Baz"), None)
+        owner_history = self.file.by_type("IfcOwnerHistory")[0]
+        self.file.createIfcRelOverridesProperties(
+            ifcopenshell.guid.new(), owner_history, None, None, [wall], pset, [override]
+        )
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        rels = output.by_type("IfcRelOverridesProperties")
+        assert len(rels) == 1
+        assert len(rels[0].OverridingProperties) == 1
+        assert rels[0].OverridingProperties[0].Name == "Foo"
+        assert rels[0].OverridingProperties[0].NominalValue.wrappedValue == "Baz"
 
     def test_keep_spatial_structure(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")

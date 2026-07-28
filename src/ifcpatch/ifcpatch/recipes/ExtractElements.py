@@ -99,7 +99,9 @@ class Patcher(ifcpatch.BasePatcher):
         self.add_element(self.file.by_type("IfcProject")[0])
         for element in ifcopenshell.util.selector.filter_elements(self.file, self.query):
             self.add_element(element)
-        ifcopenshell.api.project.flush_deferred_relationship_members(self.new, self.deferred_relationship_members)
+        ifcopenshell.api.project.flush_deferred_relationship_members(
+            self.new, self.deferred_relationship_members, self.reuse_identities
+        )
         self.create_spatial_tree()
         self.file = self.new
 

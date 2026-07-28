@@ -151,6 +151,7 @@ def append_asset(
 def flush_deferred_relationship_members(
     file: ifcopenshell.file,
     deferred_relationship_members: dict[int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]],
+    reuse_identities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
 ) -> None:
     """Assign relationship member lists deferred by ``append_asset``.
 
@@ -160,17 +161,30 @@ def flush_deferred_relationship_members(
     list-valued member attributes re-scanned and re-assigned on every element
     append. Doing that per element is O(n^2) because the member list grows.
 
-    This resolves every deferred relationship a single time instead: a source
-    member is kept if and only if it is present in ``file``, which is the same
-    rule ``append_asset`` applies when it assigns the list eagerly. Call this
-    once, after all appends, on the file the assets were appended into.
+    This resolves every deferred relationship a single time instead. Members
+    that are ``IfcRoot`` subtypes (e.g. products, property sets) are kept if
+    and only if they were appended into ``file``, matched by ``GlobalId`` -
+    the same rule ``append_asset`` applies when it assigns the list eagerly.
+    Members that are not ``IfcRoot`` subtypes have no ``GlobalId``, so they are
+    matched by identity through ``reuse_identities`` instead. The only such
+    member today is ``IfcRelOverridesProperties.OverridingProperties``, whose
+    ``IfcProperty`` members ``append_asset`` always appends (they are not
+    optional assets that may have been excluded), so they are always resolved
+    if the same ``reuse_identities`` accumulator used during the appends is
+    passed here. Call this once, after all appends, on the file the assets
+    were appended into.
 
     :param file: The file assets were appended into.
     :param deferred_relationship_members: The accumulator passed to ``append_asset``.
+    :param reuse_identities: The ``reuse_identities`` accumulator passed to
+        ``append_asset``, used to resolve non-``IfcRoot`` members. Required to
+        avoid dropping them; safe to omit if none of the deferred
+        relationships have non-``IfcRoot`` list-valued members.
     """
     if not deferred_relationship_members:
         return
     appended_by_guid = {e.GlobalId: e for e in file.by_type("IfcRoot")}
+    reuse_identities = reuse_identities if reuse_identities is not None else {}
     for source_rel, new_rel in deferred_relationship_members.values():
         for index, attribute in enumerate(source_rel):
             if not (
@@ -180,7 +194,10 @@ def flush_deferred_relationship_members(
             members: list[ifcopenshell.entity_instance] = []
             seen: set[int] = set()
             for member in attribute:
-                mapped = appended_by_guid.get(getattr(member, "GlobalId", None))
+                if member.is_a("IfcRoot"):
+                    mapped = appended_by_guid.get(member.GlobalId)
+                else:
+                    mapped = reuse_identities.get(member.wrapped_data.identity())
                 if mapped is not None and mapped.id() not in seen:
                     seen.add(mapped.id())
                     members.append(mapped)
@@ -604,8 +621,16 @@ class Usecase:
             elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
                 if defer_member_lists:
                     for item in attribute:
-                        if not self.is_another_asset(item):
-                            self.add_element(item)
+                        if self.is_another_asset(item):
+                            continue
+                        new_item = self.add_element(item)
+                        if not item.is_a("IfcRoot"):
+                            # Non-IfcRoot members (e.g. IfcProperty in
+                            # IfcRelOverridesProperties.OverridingProperties) have no
+                            # GlobalId, so flush_deferred_relationship_members cannot
+                            # match them that way. Record the mapping by identity so
+                            # it can resolve them instead of silently dropping them.
+                            self.reuse_identities[item.wrapped_data.identity()] = new_item
                     continue
                 new_attribute = []
                 for item in attribute:
