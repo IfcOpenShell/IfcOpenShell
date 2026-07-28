@@ -45,7 +45,19 @@ def copy_class(
     new = ifc.run("root.copy_class", product=element)
     ifc.link(new, obj)
     relating_type = root.get_element_type(new)
-    if relating_type and root.does_type_have_representations(relating_type):
+    # A type having RepresentationMaps does not mean the occurrence being duplicated actually
+    # uses them: a Body authored as a private mesh (e.g. IfcFacetedBrep, common for imported
+    # steel members) is real geometry independent from the type, even when the type happens to
+    # also carry an unused/placeholder swept-solid RepresentationMap. Mapping the duplicate to
+    # such a type discards its real body for whatever the type's map happens to contain, which
+    # can be a degenerate stand-in (matching #7991's beam collapsing to a sliver). Only take the
+    # type-mapping path when the source had no representation of its own, or was already mapped.
+    should_map_to_type = bool(
+        relating_type
+        and root.does_type_have_representations(relating_type)
+        and (not representation or root.body_representation_is_mapped(element))
+    )
+    if should_map_to_type:
         ifc.run("type.map_type_representations", related_object=new, relating_type=relating_type)
         root.link_object_data(ifc.get_object(relating_type), obj)
     elif representation:

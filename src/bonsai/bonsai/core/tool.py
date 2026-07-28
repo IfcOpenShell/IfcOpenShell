@@ -889,6 +889,7 @@ class Resource:
 class Root:
     def add_tracked_opening(cls, obj): pass
     def assign_body_styles(cls, element, obj): pass
+    def body_representation_is_mapped(cls, element): pass
     def copy_representation(cls, source, dest): pass
     def does_type_have_representations(cls, element): pass
     def get_default_container(cls): pass
