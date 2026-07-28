@@ -472,6 +472,7 @@ class Usecase:
                 library=self.settings["library"],
                 element=element_type,
                 reuse_identities=self.reuse_identities,
+                assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
             )
             ifcopenshell.api.type.assign_type(
                 self.file,
@@ -612,8 +613,14 @@ class Usecase:
                         continue
                     if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
                         identity = item.wrapped_data.identity()
-                        if (item := self.reuse_identities.get(identity)) is None:
+                        reused = self.reuse_identities.get(identity)
+                        if reused is None:
+                            # reuse_identities is only filled by file_add's per-attribute
+                            # path; the native file.add fast path records added_elements.
+                            reused = self.added_elements.get(item.id())
+                        if reused is None:
                             continue
+                        item = reused
                     else:
                         item = self.add_element(item)
                     new_attribute.append(item)
