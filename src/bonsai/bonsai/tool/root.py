@@ -133,9 +133,11 @@ class Root(bonsai.core.tool.Root):
                 new_map = ifcopenshell.util.element.copy(tool.Ifc.get(), rep_map)
 
                 # Handle the mapped representation - preserve mapping structure if present
-                if (source_rep.RepresentationType == 'MappedRepresentation' and
-                    len(source_rep.Items) == 1 and
-                    source_rep.Items[0].is_a("IfcMappedItem")):
+                if (
+                    source_rep.RepresentationType == "MappedRepresentation"
+                    and len(source_rep.Items) == 1
+                    and source_rep.Items[0].is_a("IfcMappedItem")
+                ):
                     # This is a mapped representation - preserve the structure
                     new_rep = ifcopenshell.util.element.copy(tool.Ifc.get(), source_rep)
                     new_rep.Items = [ifcopenshell.util.element.copy(tool.Ifc.get(), item) for item in source_rep.Items]
@@ -173,6 +175,21 @@ class Root(bonsai.core.tool.Root):
     @classmethod
     def does_type_have_representations(cls, element: ifcopenshell.entity_instance) -> bool:
         return bool(element.RepresentationMaps)
+
+    @classmethod
+    def body_representation_is_mapped(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Whether this occurrence's own Body representation is an ``IfcMappedItem``.
+
+        A type carrying ``RepresentationMaps`` does not mean every occurrence classified
+        against it actually uses them: a Body authored as a private mesh (``IfcFacetedBrep``,
+        common for imported steel members) is not mapped even when its type happens to also
+        declare an unused swept-solid representation map.
+        """
+        for representation in ifcopenshell.util.representation.get_representations_iter(element):
+            if representation.RepresentationIdentifier != "Body":
+                continue
+            return any(item.is_a("IfcMappedItem") for item in representation.Items)
+        return False
 
     @classmethod
     def get_decomposition_relationships(
