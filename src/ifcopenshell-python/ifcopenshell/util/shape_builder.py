@@ -695,6 +695,10 @@ class ShapeBuilder:
 
                 self.translate(c.BasisCurve, translation)
 
+            elif c.is_a("IfcCompositeCurve"):
+                for segment in c.Segments:
+                    self.translate(segment.ParentCurve, translation)
+
             else:
                 raise Exception(f"{c} is not supported for translate() method.")
 
@@ -1038,6 +1042,42 @@ class ShapeBuilder:
                     c.Trim1[0].Coordinates, c.Trim2[0].Coordinates = trim_coords
 
                     self.mirror(c.BasisCurve, mirror_axes, mirror_point)
+
+                elif c.is_a("IfcCompositeCurve"):
+                    # Common for filleted steel angle/channel profiles: straight runs and corner
+                    # fillets each their own segment rather than one continuous curve.
+                    segments = list(c.Segments)
+                    for segment in segments:
+                        parent_curve = segment.ParentCurve
+                        if parent_curve.is_a("IfcTrimmedCurve"):
+                            # Mirror the trim points in place, unlike the standalone
+                            # IfcTrimmedCurve case below, which swaps Trim1/Trim2 to keep a lone
+                            # arc's own winding. Here that swap is done once for the whole curve,
+                            # by reversing the segment order and each SameSense below, so trim
+                            # points staying in place keep every segment consistent with its
+                            # neighbours instead of half the segments being reversed twice.
+                            for trim in (parent_curve.Trim1, parent_curve.Trim2):
+                                point = trim[0]
+                                point.Coordinates = ifc_safe_vector_type(
+                                    self.mirror_2d_point(point.Coordinates, mirror_axes, mirror_point)
+                                )
+                            self.mirror(parent_curve.BasisCurve, mirror_axes, mirror_point)
+                            # A reflection reverses which of the two arcs between Trim1 and
+                            # Trim2 is the short way round, same radius, opposite sweep.
+                            if axis_flip_count % 2:
+                                parent_curve.SenseAgreement = not parent_curve.SenseAgreement
+                        else:
+                            self.mirror(parent_curve, mirror_axes, mirror_point, placement_matrix=placement_matrix)
+
+                    # A single-axis mirror flips winding (CCW <-> CW); reversing segment order
+                    # and each segment's SameSense restores it, matching the IfcTrimmedCurve
+                    # Trim1/Trim2 swap below.
+                    if axis_flip_count % 2:
+                        segments.reverse()
+                        for segment in segments:
+                            segment.SameSense = not segment.SameSense
+                        c.Segments = segments
+
                 elif c.is_a("IfcPolygonalFaceSet"):
                     if c.file.get_total_inverses(c.Coordinates) > 1:
                         # if Coordinates is used more than once, this probably means that another representation item
