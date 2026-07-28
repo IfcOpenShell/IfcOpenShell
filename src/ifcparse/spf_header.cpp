@@ -98,3 +98,26 @@ Header_section_schema::file_name ifcopenshell::spf_header::file_name() {
 Header_section_schema::file_schema ifcopenshell::spf_header::file_schema() {
     return Header_section_schema::file_schema(header_entities_[2]);
 }
+
+void ifcopenshell::spf_header::assign(const spf_header& other) {
+    if (this != &other) {
+        auto copy_inst = [](express::Entity& new_entity, const express::Entity& entity) {
+            for (size_t i = 0; i < entity.declaration().as_entity()->attribute_count(); ++i) {
+                entity.get_attribute_value(i).apply_visitor([i, &entity, &new_entity](const auto& v) {
+                    using U = std::decay_t<decltype(v)>;
+                    if constexpr (std::is_same_v<U, express::Base>) {
+                    } else if constexpr (std::is_same_v<U, std::vector<express::Base>>) {
+                    } else if constexpr (std::is_same_v<U, std::vector<std::vector<express::Base>>>) {
+                    } else {
+                        new_entity.set_attribute_value(i, v);
+                    }
+                });
+            }
+        };
+
+        for (size_t i = 0; i < header_entities_.size(); ++i) {
+            express::Entity tmp(header_entities_[i]);
+            copy_inst(tmp, express::Entity(other.header_entities_[i]));
+        }
+    }
+}

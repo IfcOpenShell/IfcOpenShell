@@ -57,6 +57,8 @@ class IFC_PARSE_API spf_header {
     const Header_section_schema::file_description file_description() const;
     const Header_section_schema::file_name file_name() const;
     const Header_section_schema::file_schema file_schema() const;
+
+    void assign(const spf_header& other);
 };
 
 } // namespace ifcopenshell
