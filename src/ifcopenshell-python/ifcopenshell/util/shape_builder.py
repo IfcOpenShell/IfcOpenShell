@@ -971,7 +971,6 @@ class ShapeBuilder:
                         # TODO: add support for Z-axis too
                         new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
                         new_position = np_to_3d(new_position, base_position[np_Z])
-                        c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
                     else:
                         # Position is optional; None means identity (origin, no rotation).
                         # Profile coords are already in the parent frame — just mirror them.
@@ -979,16 +978,35 @@ class ShapeBuilder:
                         base_position = np.zeros(3)
                         new_position = np.zeros(3)
 
+                    # A profile curve type this method does not support (e.g. IfcCompositeCurve,
+                    # common for filleted steel angle/channel profiles) raises here. The position
+                    # write is deferred to after the curves mirror successfully, and a failed
+                    # curve mirror undoes its own translate, so the caller's "leave unsupported
+                    # items untouched" contract holds instead of leaving the profile shifted by
+                    # ``base_position`` with neither a mirror nor the matching shift back applied.
                     # TODO: add support for Z-axis too
                     self.translate(c.SweptArea.OuterCurve, base_position[np_XY])
-                    self.mirror(c.SweptArea.OuterCurve, mirror_axes, mirror_point, placement_matrix=placement_matrix_)
+                    try:
+                        self.mirror(
+                            c.SweptArea.OuterCurve, mirror_axes, mirror_point, placement_matrix=placement_matrix_
+                        )
+                    except Exception:
+                        self.translate(c.SweptArea.OuterCurve, -base_position[np_XY])
+                        raise
                     self.translate(c.SweptArea.OuterCurve, -new_position[np_XY])
 
                     if hasattr(c.SweptArea, "InnerCurves"):
                         for inner_curve in c.SweptArea.InnerCurves:
                             self.translate(inner_curve, base_position[np_XY])
-                            self.mirror(inner_curve, mirror_axes, mirror_point, placement_matrix=placement_matrix_)
+                            try:
+                                self.mirror(inner_curve, mirror_axes, mirror_point, placement_matrix=placement_matrix_)
+                            except Exception:
+                                self.translate(inner_curve, -base_position[np_XY])
+                                raise
                             self.translate(inner_curve, -new_position[np_XY])
+
+                    if c.Position is not None:
+                        c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                     # extrusion converted to world space
                     base_extruded_direction = c.ExtrudedDirection.DirectionRatios
@@ -1054,7 +1072,11 @@ class ShapeBuilder:
                     new_corner_2d = self.mirror_2d_point([old_corner[0], old_corner[1]], mirror_axes, mirror_point)
                     x_correction = c.XDim if mirror_axes[0] > 0.0 else 0.0
                     y_correction = c.YDim if mirror_axes[1] > 0.0 else 0.0
-                    c.Corner.Coordinates = [float(new_corner_2d[0] - x_correction), float(new_corner_2d[1]) - y_correction, old_corner[2]]
+                    c.Corner.Coordinates = [
+                        float(new_corner_2d[0] - x_correction),
+                        float(new_corner_2d[1]) - y_correction,
+                        old_corner[2],
+                    ]
                 elif c.is_a("IfcGeometricSet"):
                     self.mirror(c.Elements, mirror_axes, mirror_point)
                 else:
