@@ -734,6 +734,21 @@ public:
                                                        int w, int h,
                                                        std::uint64_t needed_bytes);
 
+    // Build the x-ray box-pick pipeline: vs_pick + fs_boxpick, depth compare
+    // Always with no depth write and no colour targets, so nothing culls a
+    // fragment behind another and the pass's only output is the hit bitmask.
+    bool buildBoxPickPipeline();
+
+    // Encode the depth-less box-pick pass scissored to (x,y,w,h): zero the hit
+    // bits, draw every visible chunk, copy the bitmask into
+    // hit_flags_staging_buffer_ and submit. Clamps the rect in place and reports
+    // the byte count to map. False if nothing is pickable or the rect is empty.
+    bool encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
+                                    std::uint64_t& needed_bytes_out);
+    // Read the (already-mapped) hit bitmask → the object ids whose bit is set.
+    // Unmaps before returning.
+    std::vector<std::uint32_t> collectMappedXrayHitIds(std::uint64_t needed_bytes);
+
     // CPU half of pickSurfaceAt: cast the pixel's world ray against every
     // instance carrying `object_id`, returning the closest hit's world pos,
     // normal (mrt_normal if non-degenerate, else the AABB-face normal), and the
@@ -827,6 +842,11 @@ public:
     // Marquee box select: encode the pick pass, copy the (x, y, w, h)
     // sub-rect of the object_id MRT back, return the set of unique
     // non-zero ids. Synchronous (rare interaction) — desktop only path.
+    //
+    // In x-ray this instead runs the depth-less box-pick pass (see
+    // encodeXrayBoxPickToStaging), so the marquee selects THROUGH occluders —
+    // matching what x-ray already lets you see. Outside x-ray the depth-tested
+    // MRT read stands, so a marquee still takes only what is actually visible.
     std::vector<std::uint32_t> picksInRect(int x, int y, int w, int h);
 
 #if defined(__EMSCRIPTEN__)
@@ -1106,6 +1126,11 @@ private:
     int                pick_h_                     = 0;
     WGPUBuffer         box_pick_staging_buffer_    = nullptr;
     std::uint64_t      box_pick_staging_capacity_  = 0;
+    // Readback target for the x-ray marquee's hit bits. Separate from the
+    // rect staging buffer above: that one holds an image, this one a bitmask.
+    WGPUBuffer         hit_flags_staging_buffer_   = nullptr;
+    std::uint64_t      hit_flags_staging_capacity_ = 0;
+    WGPURenderPipeline box_pick_pipeline_          = nullptr;
 #if defined(__EMSCRIPTEN__)
     // Async object-pick state (web). Held while the staging map is in flight;
     // pick_async_cb_ fires with object_id when the spontaneous map resolves.
@@ -1119,6 +1144,10 @@ private:
     int                               box_pick_async_h_ = 0;
     std::uint64_t                     box_pick_async_padded_bpr_ = 0;
     std::uint64_t                     box_pick_async_bytes_      = 0;
+    // Which staging buffer the in-flight map belongs to: the x-ray bitmask or
+    // the object_id rect. Both share box_pick_async_in_flight_ so only one box
+    // pick can be outstanding either way.
+    bool                              box_pick_async_xray_       = false;
     // Async surface pick (section tool): chained id→normal staging maps. Reuses
     // pick_async_in_flight_ (same staging buffers as the single object pick).
     std::function<void(SurfaceHit)>   surface_async_cb_;
@@ -1142,6 +1171,13 @@ private:
     WGPUBuffer    selection_flags_buffer_   = nullptr;
     uint32_t      selection_flags_capacity_ = 0;  // u32 entries
     std::vector<uint32_t> selection_flags_scratch_;
+
+    // X-ray marquee hit bits: one bit per object_id, written by fs_boxpick and
+    // read back to decide the selection. Allocated and bound alongside the
+    // selection flags (ensureSelectionFlagsBuffer) so the two never disagree
+    // about how many object ids exist.
+    WGPUBuffer    hit_flags_buffer_  = nullptr;
+    uint32_t      hit_flags_words_   = 0;   // u32 words = ceil(capacity / 32)
 
     // Active world-space section planes (up to kMaxSectionPlanes); packed
     // into the per-frame uniform every render and consumed by the WGSL

@@ -820,6 +820,14 @@ struct PerModel {
 // because we cap the index by arrayLength before fetching.
 @group(0) @binding(1) var<storage, read> sel_flags: array<u32>;
 
+// X-ray marquee select: one bit per object_id, set by fs_boxpick. That pass
+// runs with depth testing off and the scissor clamped to the marquee rect, so
+// every object with a fragment anywhere inside the box sets its bit whether it
+// is occluded or not — which is the whole point of selecting through in x-ray.
+// Only the box-pick pipeline writes it; the layout entry is FRAGMENT-visible
+// only, because WebGPU forbids a read_write storage buffer in the vertex stage.
+@group(0) @binding(2) var<storage, read_write> hit_flags: array<atomic<u32>>;
+
 @group(1) @binding(0) var<storage, read> vertices:      array<u32>;
 @group(1) @binding(1) var<storage, read> meshes:        array<MeshQuant>;
 @group(1) @binding(2) var<storage, read> instances:     array<InstanceRecord>;
@@ -1068,12 +1076,23 @@ fn fs_pick(in: VsOutPick) -> FsOutPick {
     out.world_pos = vec4<f32>(in.world_pos, 1.0);
     return out;
 }
+
+// X-ray marquee. No colour outputs and no depth write — the only result is the
+// bit this sets, so every layer under the cursor is recorded rather than just
+// the front-most fragment the depth test would leave standing.
+@fragment
+fn fs_boxpick(in: VsOutPick) {
+    if (is_section_clipped(in.world_pos)) { discard; }
+    let word = in.object_id >> 5u;
+    if (word >= arrayLength(&hit_flags)) { return; }
+    atomicOr(&hit_flags[word], 1u << (in.object_id & 31u));
+}
 )";
 } // namespace
 
 bool ViewportCore::buildPipelines() {
     // ---- Bind group layouts ----------------------------------------------
-    WGPUBindGroupLayoutEntry frame_entries[2] = {};
+    WGPUBindGroupLayoutEntry frame_entries[3] = {};
     frame_entries[0].binding = 0;
     frame_entries[0].visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
     frame_entries[0].buffer.type = WGPUBufferBindingType_Uniform;
@@ -1081,9 +1100,14 @@ bool ViewportCore::buildPipelines() {
     frame_entries[1].binding = 1;
     frame_entries[1].visibility = WGPUShaderStage_Fragment;
     frame_entries[1].buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
+    // X-ray marquee hit bits. Fragment-only: a read_write storage buffer is
+    // illegal in the vertex stage, and every pipeline shares this layout.
+    frame_entries[2].binding = 2;
+    frame_entries[2].visibility = WGPUShaderStage_Fragment;
+    frame_entries[2].buffer.type = WGPUBufferBindingType_Storage;
 
     WGPUBindGroupLayoutDescriptor frame_bgl_desc = {};
-    frame_bgl_desc.entryCount = 2;
+    frame_bgl_desc.entryCount = 3;
     frame_bgl_desc.entries    = frame_entries;
     frame_bgl_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bgl");
     frame_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &frame_bgl_desc);
@@ -1279,6 +1303,21 @@ void ViewportCore::ensureSelectionFlagsBuffer() {
         // Initialise to zero so any unused range reads as "not selected".
         // wgpuQueueWriteBuffer with a small zero block is enough; the rest
         // is created as zero-initialised by wgpu per the spec.
+
+        // The x-ray marquee's hit bits ride the same capacity — one BIT per
+        // object where the flags take a word, so a thirty-second of the size.
+        // CopySrc because the box pick reads it back through a staging buffer.
+        if (hit_flags_buffer_) {
+            wgpuBufferRelease(hit_flags_buffer_);
+            hit_flags_buffer_ = nullptr;
+        }
+        hit_flags_words_ = (new_cap + 31u) / 32u;
+        WGPUBufferDescriptor hb = {};
+        hb.size  = uint64_t(hit_flags_words_) * sizeof(uint32_t);
+        hb.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst
+                 | WGPUBufferUsage_CopySrc;
+        hb.label = svFromCStr("ifcviewer-wgpu.xray_hit_flags");
+        hit_flags_buffer_ = wgpuDeviceCreateBuffer(device_, &hb);
     }
 
     // Rebuild the frame bind group against the (possibly new) buffer.
@@ -1286,16 +1325,19 @@ void ViewportCore::ensureSelectionFlagsBuffer() {
         wgpuBindGroupRelease(frame_bind_group_);
         frame_bind_group_ = nullptr;
     }
-    WGPUBindGroupEntry fbg_entries[2] = {};
+    WGPUBindGroupEntry fbg_entries[3] = {};
     fbg_entries[0].binding = 0;
     fbg_entries[0].buffer  = frame_uniform_buffer_;
     fbg_entries[0].size    = sizeof(FrameUniforms);
     fbg_entries[1].binding = 1;
     fbg_entries[1].buffer  = selection_flags_buffer_;
     fbg_entries[1].size    = WGPU_WHOLE_SIZE;
+    fbg_entries[2].binding = 2;
+    fbg_entries[2].buffer  = hit_flags_buffer_;
+    fbg_entries[2].size    = WGPU_WHOLE_SIZE;
     WGPUBindGroupDescriptor fbg_desc = {};
     fbg_desc.layout     = frame_bgl_;
-    fbg_desc.entryCount = 2;
+    fbg_desc.entryCount = 3;
     fbg_desc.entries    = fbg_entries;
     fbg_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bind_group");
     frame_bind_group_ = wgpuDeviceCreateBindGroup(device_, &fbg_desc);
@@ -1826,6 +1868,8 @@ void ViewportCore::shutdown() {
     if (frame_uniform_buffer_)    { wgpuBufferRelease(frame_uniform_buffer_);         frame_uniform_buffer_ = nullptr; }
     if (selection_flags_buffer_)  { wgpuBufferRelease(selection_flags_buffer_);       selection_flags_buffer_ = nullptr; }
     selection_flags_capacity_ = 0;
+    if (hit_flags_buffer_)        { wgpuBufferRelease(hit_flags_buffer_);             hit_flags_buffer_ = nullptr; }
+    hit_flags_words_ = 0;
     if (main_pipeline_)              { wgpuRenderPipelineRelease(main_pipeline_);             main_pipeline_ = nullptr; }
     if (main_pipeline_no_cull_)      { wgpuRenderPipelineRelease(main_pipeline_no_cull_);     main_pipeline_no_cull_ = nullptr; }
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
@@ -4921,6 +4965,53 @@ bool ViewportCore::buildPickPipeline() {
         Log::warn() << "wgpu pick pipeline creation failed";
         return false;
     }
+    // The x-ray marquee variant rides along so no caller has to know about it.
+    // A failure here is not fatal: picksInRect falls back to the depth-tested
+    // read, which is the pre-x-ray behaviour rather than a broken viewport.
+    buildBoxPickPipeline();
+    return true;
+}
+
+bool ViewportCore::buildBoxPickPipeline() {
+    // No colour targets: fs_boxpick's only output is the atomic bit it sets, so
+    // the pass writes no image at all. A render pass still needs one attachment
+    // — the pick depth view serves, bound read-only.
+    WGPUFragmentState frag = {};
+    frag.module      = main_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_boxpick");
+    frag.targetCount = 0;
+    frag.targets     = nullptr;
+
+    // Always/no-write is the whole trick: every fragment survives, so an
+    // occluded object records its bit just as a front-most one does.
+    WGPUDepthStencilState depth = {};
+    depth.format               = WGPUTextureFormat_Depth32Float;
+    depth.depthWriteEnabled    = WGPUOptionalBool_False;
+    depth.depthCompare         = WGPUCompareFunction_Always;
+    depth.stencilFront.compare = WGPUCompareFunction_Always;
+    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.box_pick_pipeline");
+    rp_desc.vertex.module       = main_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_pick");
+    rp_desc.vertex.bufferCount  = 0;
+    rp_desc.fragment            = &frag;
+    rp_desc.depthStencil        = &depth;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    // No back-face cull. A box that lands inside a closed solid would otherwise
+    // see none of its faces and miss the object entirely.
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.primitive.frontFace = WGPUFrontFace_CCW;
+    rp_desc.multisample.count   = 1;
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+
+    box_pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    if (!box_pick_pipeline_) {
+        Log::warn() << "wgpu box-pick pipeline creation failed";
+        return false;
+    }
     return true;
 }
 
@@ -5026,11 +5117,17 @@ void ViewportCore::releasePickResources() {
         pick_position_staging_buffer_ = nullptr;
     }
     if (pick_pipeline_)            { wgpuRenderPipelineRelease(pick_pipeline_); pick_pipeline_ = nullptr; }
+    if (box_pick_pipeline_)        { wgpuRenderPipelineRelease(box_pick_pipeline_); box_pick_pipeline_ = nullptr; }
     if (box_pick_staging_buffer_)  {
         wgpuBufferRelease(box_pick_staging_buffer_);
         box_pick_staging_buffer_ = nullptr;
     }
     box_pick_staging_capacity_ = 0;
+    if (hit_flags_staging_buffer_) {
+        wgpuBufferRelease(hit_flags_staging_buffer_);
+        hit_flags_staging_buffer_ = nullptr;
+    }
+    hit_flags_staging_capacity_ = 0;
     pick_w_ = pick_h_ = 0;
 }
 
@@ -5544,7 +5641,131 @@ std::vector<std::uint32_t> ViewportCore::collectMappedBoxPickIds(
     return out;
 }
 
+bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
+                                              std::uint64_t& needed_bytes_out) {
+    if (w <= 0 || h <= 0) return false;
+    if (!box_pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return false;
+    if (!hit_flags_buffer_ || hit_flags_words_ == 0) return false;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return false;
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > configured_w_) w = configured_w_ - x;
+    if (y + h > configured_h_) h = configured_h_ - y;
+    if (w <= 0 || h <= 0) return false;
+
+    ensurePickAttachments(configured_w_, configured_h_);
+    if (!pick_depth_view_) return false;
+
+    const std::uint64_t needed_bytes = std::uint64_t(hit_flags_words_) * sizeof(std::uint32_t);
+    if (needed_bytes > hit_flags_staging_capacity_) {
+        if (hit_flags_staging_buffer_) {
+            wgpuBufferRelease(hit_flags_staging_buffer_);
+            hit_flags_staging_buffer_ = nullptr;
+        }
+        const std::uint64_t cap = std::max<std::uint64_t>(needed_bytes * 2, 4 * 1024);
+        WGPUBufferDescriptor sb = {};
+        sb.size  = cap;
+        sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        sb.label = svFromCStr("ifcviewer-wgpu.hit_flags_staging");
+        hit_flags_staging_buffer_   = wgpuDeviceCreateBuffer(device_, &sb);
+        hit_flags_staging_capacity_ = cap;
+    }
+    if (!hit_flags_staging_buffer_) return false;
+
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
+
+    // Every pick starts from no hits; the bits are pure output.
+    wgpuCommandEncoderClearBuffer(enc, hit_flags_buffer_, 0, needed_bytes);
+
+    // Depth is bound read-only and never compared (the pipeline is Always), so
+    // whatever the last pass left in it is irrelevant.
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view            = pick_depth_view_;
+    depth.depthLoadOp     = WGPULoadOp_Undefined;
+    depth.depthStoreOp    = WGPUStoreOp_Undefined;
+    depth.depthReadOnly   = true;
+    depth.stencilLoadOp   = WGPULoadOp_Undefined;
+    depth.stencilStoreOp  = WGPUStoreOp_Undefined;
+    depth.stencilReadOnly = true;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount   = 0;
+    pass_desc.colorAttachments       = nullptr;
+    pass_desc.depthStencilAttachment = &depth;
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.xray_box_pick_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    // The scissor is what makes this a BOX pick: geometry is drawn full-screen
+    // as usual, and only fragments landing in the marquee survive to set a bit.
+    wgpuRenderPassEncoderSetScissorRect(pass, std::uint32_t(x), std::uint32_t(y),
+                                        std::uint32_t(w), std::uint32_t(h));
+    wgpuRenderPassEncoderSetPipeline(pass, box_pick_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+        }
+    }
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+
+    wgpuCommandEncoderCopyBufferToBuffer(enc, hit_flags_buffer_, 0,
+                                         hit_flags_staging_buffer_, 0, needed_bytes);
+
+    WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
+    wgpuQueueSubmit(queue_, 1, &cmd);
+    wgpuCommandBufferRelease(cmd);
+    wgpuCommandEncoderRelease(enc);
+
+    needed_bytes_out = needed_bytes;
+    return true;
+}
+
+std::vector<std::uint32_t> ViewportCore::collectMappedXrayHitIds(std::uint64_t needed_bytes) {
+    std::vector<std::uint32_t> out;
+    const std::uint32_t* words = static_cast<const std::uint32_t*>(
+        wgpuBufferGetConstMappedRange(hit_flags_staging_buffer_, 0, needed_bytes));
+    if (words) {
+        const std::size_t n = std::size_t(needed_bytes / sizeof(std::uint32_t));
+        for (std::size_t i = 0; i < n; ++i) {
+            const std::uint32_t bits = words[i];
+            if (!bits) continue;   // the overwhelmingly common case
+            for (std::uint32_t b = 0; b < 32u; ++b) {
+                if (!(bits & (1u << b))) continue;
+                const std::uint32_t id = std::uint32_t(i) * 32u + b;
+                if (id != 0) out.push_back(id);   // 0 is the "no object" sentinel
+            }
+        }
+    }
+    wgpuBufferUnmap(hit_flags_staging_buffer_);
+    return out;
+}
+
 std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
+    // X-ray: select through, via the depth-less bitmask pass.
+    if (xrayActive() && box_pick_pipeline_) {
+        std::uint64_t hit_bytes = 0;
+        if (!encodeXrayBoxPickToStaging(x, y, w, h, hit_bytes)) return {};
+        struct MapReq { bool done = false; bool ok = false; };
+        MapReq req;
+        WGPUBufferMapCallbackInfo mcb = {};
+        mcb.mode = kAsyncCbMode;
+        mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                          void* ud1, void* /*ud2*/) {
+            auto* r = static_cast<MapReq*>(ud1);
+            r->done = true;
+            r->ok   = (status == WGPUMapAsyncStatus_Success);
+        };
+        mcb.userdata1 = &req;
+        wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, mcb);
+        while (!req.done) waitTickInstance(instance_);
+        if (!req.ok) return {};
+        return collectMappedXrayHitIds(hit_bytes);
+    }
+
     std::uint64_t padded_bpr = 0, needed_bytes = 0;
     if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) return {};
 
@@ -5570,6 +5791,38 @@ void ViewportCore::picksInRectAsync(int x, int y, int w, int h,
                                     std::function<void(std::vector<std::uint32_t>)> cb) {
     auto miss = [&cb]() { if (cb) cb({}); };
     if (box_pick_async_in_flight_) { miss(); return; }
+
+    // X-ray: select through. Same spontaneous-map dance, but the mapped buffer
+    // is a per-object bitmask rather than a rect of the object_id image, so the
+    // rect dims the other callback walks are not needed here.
+    if (xrayActive() && box_pick_pipeline_) {
+        std::uint64_t hit_bytes = 0;
+        if (!encodeXrayBoxPickToStaging(x, y, w, h, hit_bytes)) { miss(); return; }
+        box_pick_async_bytes_     = hit_bytes;
+        box_pick_async_xray_      = true;
+        box_pick_async_in_flight_ = true;
+        box_pick_async_cb_        = std::move(cb);
+
+        WGPUBufferMapCallbackInfo xcb = {};
+        xcb.mode = kAsyncCbMode;
+        xcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                          void* ud1, void* /*ud2*/) {
+            auto* self = static_cast<ViewportCore*>(ud1);
+            std::vector<std::uint32_t> ids;
+            if (status == WGPUMapAsyncStatus_Success) {
+                ids = self->collectMappedXrayHitIds(self->box_pick_async_bytes_);
+            }
+            auto done = std::move(self->box_pick_async_cb_);
+            self->box_pick_async_cb_        = nullptr;
+            self->box_pick_async_in_flight_ = false;
+            self->box_pick_async_xray_      = false;
+            if (done) done(std::move(ids));
+        };
+        xcb.userdata1 = this;
+        wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, xcb);
+        return;
+    }
+
     std::uint64_t padded_bpr = 0, needed_bytes = 0;
     if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) { miss(); return; }
 
