@@ -1658,8 +1658,7 @@ file::file(const std::string& fn, bool mmap, ::logger& log)
     : logger_(log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
-    , max_id_(0)
-    , header_(new spf_header(this, &logger_.get())) {
+    , max_id_(0) {
     initialize(fn, mmap);
 }
 
@@ -1682,12 +1681,13 @@ bool ifcopenshell::file::initialize(const std::string& fn, bool mmap) {
     }
 
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
+    header_.reset(new spf_header(this, &logger_.get()));
     return good_ == file_open_status::SUCCESS;
 }
 #endif
 
 file::file(const uninitialized_tag&, ::logger& log)
-    : good_(file_open_status::UNKNOWN), logger_(log), schema_(nullptr), ifcroot_type_(nullptr), max_id_(0), header_(new ifcopenshell::spf_header(this, &logger_.get())) {}
+    : good_(file_open_status::UNKNOWN), logger_(log), schema_(nullptr), ifcroot_type_(nullptr), max_id_(0), header_(nullptr) {}
 
 bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool readonly) {
     if (ty == FT_AUTODETECT) {
@@ -1732,6 +1732,7 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
         // throw std::runtime_error("Unsupported file format");
     }
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
+    header_.reset(new spf_header(this, &logger_.get()));
     return good_ == file_open_status::SUCCESS;
 }
 
@@ -1744,7 +1745,6 @@ file::file(const std::string& path, filetype ty, bool readonly, ::logger& log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
     , max_id_(0)
-    , header_(new spf_header(this, &logger_.get()))
 {
     initialize(path, ty, readonly);
 }
@@ -1754,7 +1754,6 @@ file::file(std::istream& stream, int length, ::logger& log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
     , max_id_(0)
-    , header_(new ifcopenshell::spf_header(this, &logger_.get()))
 {
     file_reader<pushed_sequential_impl> s(caller_fed_tag{});
 
@@ -1771,6 +1770,8 @@ file::file(std::istream& stream, int length, ::logger& log)
     byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_read_);
     byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
     byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
+
+    header_.reset(new spf_header(this, &logger_.get()));
 }
 
 file::file(void* data, int length, ::logger& log)
@@ -1778,7 +1779,6 @@ file::file(void* data, int length, ::logger& log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
     , max_id_(0)
-    , header_(new ifcopenshell::spf_header(this, &logger_.get()))
 {
 	file_reader<pushed_sequential_impl> s(std::string((char*)data, length), caller_fed_tag{});
     
@@ -1790,6 +1790,8 @@ file::file(void* data, int length, ::logger& log)
     byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_read_);
     byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
     byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
+
+    header_.reset(new spf_header(this, &logger_.get()));
 }
 
 file::file(const ifcopenshell::schema_definition* schema, filetype ty, const std::string& path, ::logger& log)
