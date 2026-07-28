@@ -108,13 +108,15 @@ target_link_options(IfcViewerWeb PRIVATE
     # sidecar via HTTP Range; _ifcv_on_range_done / _ifcv_source_ready are the
     # JS→C completion callbacks for a landed range / a resolved URL size.
     # The _ifcv_{get,set,apply}_* family is the scripting API (camera, selection,
-    # visibility, colour override, object enumeration) that web/ifcviewer.js
-    # wraps; _malloc/_free let it marshal id arrays into the wasm heap.
+    # visibility, colour override, object enumeration, mouse nav preset) that
+    # web/ifcviewer.js wraps; _malloc/_free let it marshal id arrays into the
+    # wasm heap.
     # EMSCRIPTEN_KEEPALIVE alone keeps the symbols in the binary but doesn't
     # add them to Module. ccall lets the host page (web/ifcviewer.js) pass a JS string (the ?model
     # URL) to load_sidecar_from_url_c without manual heap marshalling.
-    "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free','_raf_tick_c','_load_sidecar_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_hide_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c','_ifcv_get_camera_c','_ifcv_set_camera_c','_ifcv_set_ortho_c','_ifcv_get_selection_c','_ifcv_get_active_object_c','_ifcv_apply_selection_c','_ifcv_set_visible_c','_ifcv_get_hidden_c','_ifcv_set_color_c','_ifcv_clear_colors_c','_ifcv_request_objects_c']"
-    # ccall: the host page (web/ifcviewer.js) passes the ?model URL string to load_sidecar_from_url_c.
+    "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free','_raf_tick_c','_load_sidecar_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_hide_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c','_ifcv_get_camera_c','_ifcv_set_camera_c','_ifcv_set_ortho_c','_ifcv_set_nav_preset_c','_ifcv_get_selection_c','_ifcv_get_active_object_c','_ifcv_apply_selection_c','_ifcv_set_visible_c','_ifcv_get_hidden_c','_ifcv_set_color_c','_ifcv_clear_colors_c','_ifcv_request_objects_c']"
+    # ccall: the host page (web/ifcviewer.js) passes the ?model URL string to load_sidecar_from_url_c,
+    # and the nav-preset name to ifcv_set_nav_preset_c.
     # HEAPU8: lets tooling/tests read the wasm heap size (e.g. to verify a large
     # sidecar streams by range instead of loading whole). HEAPU32/HEAPF32: the
     # scripting API marshals object-id arrays and the camera state through them.

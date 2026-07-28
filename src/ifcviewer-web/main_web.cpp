@@ -627,6 +627,17 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_ortho_c(int on) {
     if (bool(on) != g_app->core.projectionOrtho()) g_app->core.toggleProjection();
 }
 
+// Mouse navigation scheme: "blender" | "rhino" | "revit" | "web". The preset
+// only rewrites the button/modifier table classifyPress reads, so unlike the
+// rest of the scripting API it does not need the GPU app to be live — a host
+// page can pick its scheme the moment the module resolves. Unknown names fall
+// back to blender inside the core; web/ifcviewer.js rejects them before they
+// get here so a typo is an error rather than a silent scheme change.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_nav_preset_c(const char* name) {
+    if (!g_app || !name) return;
+    g_app->core.setNavPreset(name);
+}
+
 // Selection.
 extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_selection_c(std::uint32_t* out, int max) {
     if (!g_app || !g_app->ready) return 0;
@@ -778,6 +789,8 @@ int main(int /*argc*/, char** /*argv*/) {
     Log::info() << "ifcviewer-web: starting";
     g_app = new AppState();
     // Default to the web mouse scheme: LMB orbit, MMB pan, RMB select/marquee.
+    // Host pages override it with ifcv_set_nav_preset_c (IfcViewer.create's
+    // `navPreset` option) — e.g. "blender" for MMB-orbit.
     g_app->core.setNavPreset("web");
     g_app->core.initWgpuAsyncWeb([](bool ok) {
         if (!ok) {

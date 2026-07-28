@@ -5,7 +5,8 @@
 //   <script src="IfcViewerWeb.js"></script>
 //   <script src="ifcviewer.js"></script>
 //   <script>
-//     const viewer = await IfcViewer.create({ canvas: myCanvas });
+//     const viewer = await IfcViewer.create({ canvas: myCanvas,
+//                                             navPreset: 'blender' });
 //     await viewer.ready;                       // GPU app is live
 //     await viewer.addFile(file, { replace: true });
 //     await viewer.addUrl('/model.ifcview');    // appends (federation)
@@ -14,6 +15,7 @@
 //     viewer.setSelection(['3vB2YO$MX4xv5uCqZZG05x']);
 //     viewer.setColor(objects.filter(o => o.type === 'IfcWall'), '#ff8800');
 //     viewer.setCamera({ yaw: 45, pitch: 30 });
+//     viewer.setNavPreset('rhino');             // or switch schemes later
 //   </script>
 //
 // The canvas element MUST have id="viewer-canvas" — the wasm side hard-codes
@@ -40,6 +42,10 @@
     const cr = probe.headers.get('Content-Range'); // "bytes 0-0/12345"
     return cr ? parseInt(cr.split('/')[1] || '0', 10) : 0;
   }
+
+  // Mouse navigation schemes the wasm's classifyPress understands. Named so a
+  // typo is an error here rather than a silent fall-back to blender in the core.
+  const NAV_PRESETS = ['blender', 'rhino', 'revit', 'web'];
 
   // Pack a colour into the u32 the shader unpacks: 0xAABBGGRR. Accepts
   // '#rgb' / '#rrggbb' / '#rrggbbaa', or {r, g, b, a} with 0-255 channels
@@ -314,6 +320,23 @@
         if (c.ortho !== undefined) Module._ifcv_set_ortho_c(c.ortho ? 1 : 0);
       },
 
+      // ---- Navigation ------------------------------------------------------
+
+      // Which mouse buttons orbit / pan / select, as one of NAV_PRESETS:
+      //   blender  MMB orbit · Shift+MMB pan · LMB select
+      //   rhino    RMB orbit · Shift+RMB pan · LMB select
+      //   revit    Shift+MMB orbit · MMB pan · LMB select
+      //   web      LMB orbit · MMB pan · RMB select   (the default)
+      // The wheel zooms under all four. Also settable up-front as the
+      // `navPreset` option to create().
+      setNavPreset: function (name) {
+        if (NAV_PRESETS.indexOf(name) < 0) {
+          throw new Error('unknown nav preset: ' + name +
+                          ' (expected one of ' + NAV_PRESETS.join(', ') + ')');
+        }
+        Module.ccall('ifcv_set_nav_preset_c', null, ['string'], [name]);
+      },
+
       // id: 0 Front, 1 Back, 2 Left, 3 Right, 4 Top, 5 Bottom.
       setStandardView: function (id) { Module._standard_view_c(id | 0); },
       viewAll:        function () { Module._view_all_c(); },
@@ -447,6 +470,13 @@
         Module._load_sidecar_from_source_c(await registerUrl(url));
       },
     };
+
+    // The nav preset is pure button-table state on the wasm side, so it can be
+    // set the moment main() has run (which is by the time `factory` resolved) —
+    // no need to wait on `ready`. Doing it here means the very first drag uses
+    // the host's scheme rather than the "web" default for a frame or two.
+    if (opts.navPreset) api.setNavPreset(opts.navPreset);
+
     return api;
   }
 
