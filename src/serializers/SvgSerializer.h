@@ -1628,6 +1628,48 @@ namespace {
 					if (box_i.IsVoid() || box_j.IsVoid()) {
 						continue;
 					}
+
+					// Cheap proxy for "these two products are exact full duplicates" (occupy
+					// the identical volume), checked on the *pristine* boxes -- before the
+					// Enlarge() below, which would otherwise inflate box_i by
+					// cross_coplanar_tolerance_ on every side and make an "equal within
+					// tolerance" comparison land exactly on that same tolerance boundary
+					// (fragile at best, never fires at worst). A full duplicate has no
+					// genuine "boundary between two distinct elements" anywhere on it -- every
+					// face of one has a matching face of the other, including whatever's
+					// *beyond* any given edge (A2/B2 below), so the one-hop A2/B2 coplanarity
+					// gate trivially passes everywhere, even at edges that are the shape's true
+					// outer silhouette with nothing beyond them in either direction. This
+					// mirrors, at product scale, the same "zero area in common" premise the
+					// edge-to-edge coincidence test below is built on (see its own comment): a
+					// legitimate seam shares a boundary edge with zero area in common, while a
+					// full duplicate's touching faces coincide in area, not just along an edge
+					// -- the inverse condition. Necessary but not sufficient: this catches exact
+					// full-volume duplication (the reported case) but not a *partial*-volume
+					// overlap (e.g. a small slab landing mid-face on a much bigger one, where
+					// bounding boxes differ but a sub-region genuinely coincides in area) --
+					// deliberately out of scope here; the fully general fix would be a
+					// per-face-pair area-overlap rejection, not worth O(faces^2) booleans for a
+					// one-off exact-duplicate case. If this heuristic ever mismatches (two
+					// genuinely different-shaped products that happen to share a bounding box),
+					// the failure mode is conservative: coverage simply never fires for that
+					// pair, same as if this whole feature were off for it -- never a crash,
+					// never a confidently-wrong edge.
+					{
+						double xmin_i, ymin_i, zmin_i, xmax_i, ymax_i, zmax_i;
+						double xmin_j, ymin_j, zmin_j, xmax_j, ymax_j, zmax_j;
+						box_i.Get(xmin_i, ymin_i, zmin_i, xmax_i, ymax_i, zmax_i);
+						box_j.Get(xmin_j, ymin_j, zmin_j, xmax_j, ymax_j, zmax_j);
+						if (std::abs(xmin_i - xmin_j) < cross_coplanar_tolerance_ &&
+							std::abs(ymin_i - ymin_j) < cross_coplanar_tolerance_ &&
+							std::abs(zmin_i - zmin_j) < cross_coplanar_tolerance_ &&
+							std::abs(xmax_i - xmax_j) < cross_coplanar_tolerance_ &&
+							std::abs(ymax_i - ymax_j) < cross_coplanar_tolerance_ &&
+							std::abs(zmax_i - zmax_j) < cross_coplanar_tolerance_) {
+							continue;
+						}
+					}
+
 					box_i.Enlarge(cross_coplanar_tolerance_);
 					if (box_i.IsOut(box_j)) {
 						continue;
