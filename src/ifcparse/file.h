@@ -97,7 +97,6 @@ private:
     Reader* stream_;
     std::unique_ptr<spf_lexer<Reader>> lexer_;
     std::unique_ptr<spf_header> owned_header_;
-    spf_header* header_;
     ifcopenshell::file* owner_;
     boost::circular_buffer<token> token_stream_;
     const ifcopenshell::schema_definition* schema_;
@@ -171,7 +170,7 @@ private:
 
     const ifcopenshell::schema_definition* schema() const { return schema_; }
 
-    const spf_header* header() const { return header_; }
+    const spf_header* header() const;
 
     ~instance_streamer() = default;
 

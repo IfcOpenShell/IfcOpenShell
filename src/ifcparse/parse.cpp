@@ -1666,10 +1666,12 @@ bool ifcopenshell::file::initialize(const std::string& fn, bool mmap) {
     if (mmap) {
         file_reader<mmap_impl> s(fn);
         storage_.emplace<1>(this, logger_.get());
+        header_.reset(new spf_header(this, &logger_.get()));
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     } else {
         file_reader<full_buffer_impl> s(fn);
         storage_.emplace<1>(this, logger_.get());
+        header_.reset(new spf_header(this, &logger_.get()));
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     }
 
@@ -1681,7 +1683,6 @@ bool ifcopenshell::file::initialize(const std::string& fn, bool mmap) {
     }
 
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
-    header_.reset(new spf_header(this, &logger_.get()));
     return good_ == file_open_status::SUCCESS;
 }
 #endif
@@ -1696,6 +1697,7 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
     if (ty == FT_IFCSPF) {
         file_reader<full_buffer_impl> s(path);
         storage_.emplace<1>(this, logger_.get());
+        header_.reset(new spf_header(this, &logger_.get()));
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
 
         if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
@@ -1732,7 +1734,9 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
         // throw std::runtime_error("Unsupported file format");
     }
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
-    header_.reset(new spf_header(this, &logger_.get()));
+    if (!header_) {
+        header_.reset(new spf_header(this, &logger_.get()));
+    }
     return good_ == file_open_status::SUCCESS;
 }
 
@@ -1763,6 +1767,7 @@ file::file(std::istream& stream, int length, ::logger& log)
     s.push_next_page(string_data);
 
     storage_.emplace<1>(this, logger_.get());
+    header_.reset(new spf_header(this, &logger_.get()));
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
@@ -1771,7 +1776,6 @@ file::file(std::istream& stream, int length, ::logger& log)
     byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
     byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
 
-    header_.reset(new spf_header(this, &logger_.get()));
 }
 
 file::file(void* data, int length, ::logger& log)
@@ -1783,6 +1787,7 @@ file::file(void* data, int length, ::logger& log)
 	file_reader<pushed_sequential_impl> s(std::string((char*)data, length), caller_fed_tag{});
     
     storage_.emplace<1>(this, logger_.get());
+    header_.reset(new spf_header(this, &logger_.get()));
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
@@ -1791,7 +1796,6 @@ file::file(void* data, int length, ::logger& log)
     byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
     byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
 
-    header_.reset(new spf_header(this, &logger_.get()));
 }
 
 file::file(const ifcopenshell::schema_definition* schema, filetype ty, const std::string& path, ::logger& log)
@@ -1902,20 +1906,21 @@ bool try_parse_header(
 } // namespace
 
 template <typename Reader>
+const spf_header* ifcopenshell::instance_streamer<Reader>::header() const {
+    return owner_ ? &owner_->header() : owned_header_.get();
+}
+
+template <typename Reader>
 spf_header& ifcopenshell::instance_streamer<Reader>::ensure_header() {
-    if (header_) {
-        return *header_;
-    }
-
     if (owner_ != nullptr) {
-        header_ = &owner_->header();
-        header_->owner_file(owner_);
-    } else {
-        owned_header_ = std::make_unique<spf_header>(owner_, &logger_.get());
-        header_ = owned_header_.get();
+        return owner_->header();
     }
 
-    return *header_;
+    if (!owned_header_) {
+        owned_header_ = std::make_unique<spf_header>(owner_, &logger_.get());
+    }
+
+    return *owned_header_;
 }
 
 template <typename Reader>
@@ -2012,7 +2017,6 @@ void ifcopenshell::instance_streamer<Reader>::push_page(const std::string& page)
 template <typename Reader>
 ifcopenshell::instance_streamer<Reader>::instance_streamer(ifcopenshell::file* f, ::logger& log)
     : stream_(nullptr)
-    , header_(nullptr)
     , owner_(f)
     , token_stream_(3, token{})
     , schema_(nullptr)
@@ -2038,7 +2042,6 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(ifcopenshell::file* f
 template <typename Reader>
 ifcopenshell::instance_streamer<Reader>::instance_streamer(const std::string& fn, bool mmap, ifcopenshell::file* f, ::logger& log)
     : stream_(nullptr)
-    , header_(nullptr)
     , owner_(f)
     , token_stream_(3, token{})
     , schema_(nullptr)
@@ -2067,7 +2070,6 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(const std::string& fn
 template <typename Reader>
 ifcopenshell::instance_streamer<Reader>::instance_streamer(void* data, int length, ifcopenshell::file* f, ::logger& log)
     : stream_(nullptr)
-    , header_(nullptr)
     , owner_(f)
     , token_stream_(3, token{})
     , schema_(nullptr)
@@ -2092,7 +2094,6 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(void* data, int lengt
 template <typename Reader>
 ifcopenshell::instance_streamer<Reader>::instance_streamer(Reader* stream, ifcopenshell::file* f, ::logger& log)
     : stream_(stream)
-    , header_(nullptr)
     , owner_(f)
     , token_stream_(3, token{})
     , schema_(nullptr)
@@ -2120,33 +2121,34 @@ template <typename Reader>
 std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointer_type>> ifcopenshell::instance_streamer<Reader>::read_instance() {
     std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointer_type>> return_value;
 
-    if (yield_header_instances_ && header_ && yielded_header_instances_ < 3) {
+    const auto* header = this->header();
+    if (yield_header_instances_ && header && yielded_header_instances_ < 3) {
         if (yielded_header_instances_ == 0) {
             return_value.emplace(
                 0,
-                &header_->file_description().declaration(),
+                &header->file_description().declaration(),
 #ifdef IFOPSH_SAFE_INSTANCE
-                header_->file_description().data_weak().lock());
+                header->file_description().data_weak().lock());
 #else
-                header_->file_description().data_weak());
+                header->file_description().data_weak());
 #endif
         } else if (yielded_header_instances_ == 1) {
             return_value.emplace(
                 0,
-                &header_->file_name().declaration(),
+                &header->file_name().declaration(),
 #ifdef IFOPSH_SAFE_INSTANCE
-                header_->file_name().data_weak().lock());
+                header->file_name().data_weak().lock());
 #else
-                header_->file_name().data_weak());
+                header->file_name().data_weak());
 #endif
         } else if (yielded_header_instances_ == 2) {
             return_value.emplace(
                 0,
-                &header_->file_schema().declaration(),
+                &header->file_schema().declaration(),
 #ifdef IFOPSH_SAFE_INSTANCE
-                header_->file_schema().data_weak().lock());
+                header->file_schema().data_weak().lock());
 #else
-                header_->file_schema().data_weak());
+                header->file_schema().data_weak());
 #endif
         }
         yielded_header_instances_ += 1;
