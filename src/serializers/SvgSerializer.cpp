@@ -111,6 +111,7 @@ bool SvgSerializer::ready() {
 	svg_use_cross_coplanar_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseCrossCoplanarClassification>().get();
 	svg_render_cross_coplanar_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderCrossCoplanarEdges>().get();
 	svg_cross_coplanar_tolerance_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgCrossCoplanarTolerance>().get();
+	svg_use_mat_style_change_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseMatStyleChangeClassification>().get();
 	return true;
 }
 
@@ -1153,14 +1154,30 @@ namespace {
 		const gp_Pnt edge_p0 = BRep_Tool::Pnt(ev0);
 		const gp_Pnt edge_p1 = BRep_Tool::Pnt(ev1);
 
+		// Scans every off-edge vertex of f1 (not just the first one found) and keeps the one
+		// with the largest |dot| -- the most decisive, least ambiguous sample -- rather than
+		// whichever vertex TopExp_Explorer happens to visit first. A triangulated mesh (e.g. a
+		// roof ridge/hip) can easily put a near-coplanar vertex (dot close to zero, an
+		// unreliable sign) first in traversal order while a different, clearly-off-plane vertex
+		// of the same face would have given an unambiguous answer -- picking the most decisive
+		// vertex avoids depending on traversal order for what should be a purely geometric
+		// property of the fold.
+		double decisive_dot = 0.0;
+		bool have_decisive_vertex = false;
 		for (TopExp_Explorer vexp(f1, TopAbs_VERTEX); vexp.More(); vexp.Next()) {
 			const gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
 			if (p.Distance(edge_p0) > Precision::Confusion() && p.Distance(edge_p1) > Precision::Confusion()) {
-				const bool convex = gp_Vec(edge_p0, p).Dot(gp_Vec(n0.XYZ())) < 0.0;
-				if (!convex) {
-					deviation_deg = -deviation_deg;
+				double dot = gp_Vec(edge_p0, p).Dot(gp_Vec(n0.XYZ()));
+				if (!have_decisive_vertex || std::abs(dot) > std::abs(decisive_dot)) {
+					decisive_dot = dot;
+					have_decisive_vertex = true;
 				}
-				break;
+			}
+		}
+		if (have_decisive_vertex) {
+			const bool convex = decisive_dot < 0.0;
+			if (!convex) {
+				deviation_deg = -deviation_deg;
 			}
 		}
 
@@ -1710,13 +1727,52 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 				}
 
+				// "mat-style-change" case B: intra-product layer-boundary lining. Purely
+				// per-item (no comparison against any other product needed), so this runs here
+				// rather than through prefiltered_hlr's deferred cross-product pass -- reuses
+				// the exact "repoint compound_to_hlr to a new local shape" idiom already used
+				// above for subtracted_shape/profile_edges. New edges are loose (never wired
+				// into any face's own wire structure), so they're structurally invisible to any
+				// per-face edge walk (cross_coplanar's included) -- no interaction with case A.
+				TopoDS_Compound mat_style_change_shape;
+				if (svg_use_edge_classification_ && svg_use_mat_style_change_classification_ && data.cross_coplanar_layer_projection) {
+					BRep_Builder BBmsc;
+					BBmsc.MakeCompound(mat_style_change_shape);
+					BBmsc.Add(mat_style_change_shape, *compound_to_hlr);
+
+					TopoDS_Compound case_b_edges;
+					BBmsc.MakeCompound(case_b_edges);
+					bool any_case_b_edges = false;
+					for (TopExp_Explorer fexp(*compound_to_hlr, TopAbs_FACE); fexp.More(); fexp.Next()) {
+						const TopoDS_Face& f = TopoDS::Face(fexp.Current());
+						auto edges = mat_style_change::layer_boundary_edges_for_face(f, *data.cross_coplanar_layer_projection);
+						for (auto& e : edges) {
+							BBmsc.Add(case_b_edges, e);
+							any_case_b_edges = true;
+						}
+					}
+
+					if (any_case_b_edges) {
+						BBmsc.Add(mat_style_change_shape, case_b_edges);
+						compound_to_hlr = &mat_style_change_shape;
+
+						auto bucket_it = classified_edge_buckets.find(mat_style_change::class_name);
+						if (bucket_it == classified_edge_buckets.end()) {
+							TopoDS_Compound c;
+							BBmsc.MakeCompound(c);
+							bucket_it = classified_edge_buckets.emplace(mat_style_change::class_name, c).first;
+						}
+						BBmsc.Add(bucket_it->second, case_b_edges);
+					}
+				}
+
 				if (is_floor_plan_) {
 					if (storey) {
 						auto it = storey_hlr.find(storey);
 						if (it == storey_hlr.end()) {
 							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane,
 								svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
-								svg_render_cross_coplanar_edges_) }).first;
+								svg_render_cross_coplanar_edges_, svg_use_mat_style_change_classification_) }).first;
 						}
 						it->second.add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance, data.cross_coplanar_material_instance, data.cross_coplanar_layer_projection);
 						for (auto& kv : classified_edge_buckets) {
@@ -2611,7 +2667,7 @@ void SvgSerializer::finalize() {
 			if (use_hlr && pln) {
 				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, *pln,
 					svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
-					svg_render_cross_coplanar_edges_);
+					svg_render_cross_coplanar_edges_, svg_use_mat_style_change_classification_);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };

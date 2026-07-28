@@ -611,6 +611,16 @@ class BIMCameraProperties(PropertyGroup):
         min=0.0,
         update=get_update_layer_callback("cross_coplanar_tolerance", "CrossCoplanarTolerance"),
     )
+    use_mat_style_change_classification: BoolProperty(
+        name="Use Material/Style Change Classification",
+        description="Classify a projection edge as 'mat-style-change' where two coincident faces of "
+        "different elements have different material/style, or where a single face crosses an "
+        "internal boundary of its own multi-layer material usage (e.g. a section-cut face showing "
+        "more than one layer of a wall's material stack). Only takes effect when Use Edge "
+        "Classification is also enabled",
+        default=False,
+        update=get_update_layer_callback("use_mat_style_change_classification", "UseMatStyleChangeClassification"),
+    )
     target_view: EnumProperty(
         name="Target View",
         default="PLAN_VIEW",

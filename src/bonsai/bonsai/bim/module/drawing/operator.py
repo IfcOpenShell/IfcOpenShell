@@ -1412,6 +1412,7 @@ class CreateDrawing(bpy.types.Operator):
             self.svg_settings.set("svg-use-cross-coplanar-classification", self.cprops.use_cross_coplanar_classification)
             self.svg_settings.set("svg-render-cross-coplanar-edges", self.cprops.render_cross_coplanar)
             self.svg_settings.set("svg-cross-coplanar-tolerance", self.cprops.cross_coplanar_tolerance)
+            self.svg_settings.set("svg-use-mat-style-change-classification", self.cprops.use_mat_style_change_classification)
         except Exception:
             # Backwards compatibility with older ifcopenshell builds that don't expose these keys.
             pass

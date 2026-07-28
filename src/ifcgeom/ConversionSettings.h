@@ -425,6 +425,12 @@ namespace ifcopenshell {
 				static constexpr double defaultvalue = 1.e-4;
 			};
 
+			struct SvgUseMatStyleChangeClassification : public SettingBase<SvgUseMatStyleChangeClassification, bool> {
+				static constexpr const char* const name = "svg-use-mat-style-change-classification";
+				static constexpr const char* const description = "SVG edge classification: additionally classify a projection edge as 'mat-style-change' when (a) it lies on a coplanar, coincident boundary between two different products whose material/style genuinely differ, or (b) it is a newly-constructed edge marking where a single face of one product's own multi-layer IfcMaterialLayerSetUsage crosses an internal boundary between two genuinely different materials. Only takes effect when svg-use-edge-classification is also enabled. Independent of svg-use-cross-coplanar-classification, though it shares the same cross-product comparison pass for case (a). Reuses svg-cross-coplanar-tolerance for its own plane-coincidence/boundary-crossing tests.";
+				static constexpr bool defaultvalue = false;
+			};
+
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
 				static constexpr const char* const name = "keep-bounding-boxes";
 				static constexpr const char* const description =
@@ -707,7 +713,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, SvgUseCrossCoplanarClassification, SvgRenderCrossCoplanarEdges, SvgCrossCoplanarTolerance, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, SvgUseCrossCoplanarClassification, SvgRenderCrossCoplanarEdges, SvgCrossCoplanarTolerance, SvgUseMatStyleChangeClassification, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }

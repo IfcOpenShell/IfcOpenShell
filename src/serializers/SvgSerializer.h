@@ -58,6 +58,12 @@
 #include <gp_Vec.hxx>
 #include <NCollection_DataMap.hxx>
 #include <TopTools_ShapeMapHasher.hxx>
+#include <IntAna_QuadQuadGeo.hxx>
+#include <gp_Lin.hxx>
+#include <gp_Pnt2d.hxx>
+#include <TopExp.hxx>
+#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+#include <TopTools_ListOfShape.hxx>
 
 #if OCC_VERSION_HEX >= 0x70300
 #include <Bnd_OBB.hxx>
@@ -69,6 +75,7 @@
 #include <array>
 #include <tuple>
 #include <map>
+#include <set>
 #include <iterator>
 #include <algorithm>
 
@@ -379,7 +386,13 @@ namespace {
 			gp_Pnt p0, p1;
 			gp_Dir dir;
 			double length;
+			TopoDS_Edge edge;
 		};
+
+		// Shared by every raw dot-product coplanarity/collinearity test in this namespace and
+		// mat_style_change's (face-normal parallel/antiparallel, edge-direction, face-normal vs.
+		// layering axis) -- previously four independent copies of the same literal.
+		constexpr double kCoplanarNormalTolerance = 3.8e-5;
 
 		// Deliberately orientation-*independent*: p0/p1 always come from the edge's intrinsic
 		// curve parametrization (u0, u1), never adjusted for e.Orientation(). v3's coverage
@@ -408,7 +421,7 @@ namespace {
 				return boost::none;
 			}
 			gp_Vec v(p0, p1);
-			return LineSeg{ p0, p1, gp_Dir(v), v.Magnitude() };
+			return LineSeg{ p0, p1, gp_Dir(v), v.Magnitude(), e };
 		}
 
 		std::vector<LineSeg> face_line_segs(const TopoDS_Face& f) {
@@ -420,6 +433,35 @@ namespace {
 				}
 			}
 			return out;
+		}
+
+		// Given an edge and one of its two real adjacent faces (within a single product's own
+		// topology), returns the *other* one -- i.e. "what's beyond this edge, away from
+		// `known_face`" within that same solid. Used to find the face pair (face_i2/face_j2) that
+		// sits just past a matched cross-coplanar boundary edge on each side, so their own
+		// coplanarity can be verified independently of the touching pair (face_i/face_j) that
+		// found the edge in the first place -- see find_cross_coplanar_matches()'s own comment for
+		// why the touching pair alone isn't sufficient. Returns none for a naked/boundary edge or
+		// any non-manifold edge (3+ faces) -- conservative: callers fall back to today's behaviour
+		// (no additional gate) when this can't be resolved, rather than guessing.
+		boost::optional<TopoDS_Face> other_adjacent_face(
+			const TopoDS_Edge& e, const TopoDS_Face& known_face,
+			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map
+		) {
+			if (!edge_face_map.Contains(e)) {
+				return boost::none;
+			}
+			const TopTools_ListOfShape& faces = edge_face_map.FindFromKey(e);
+			if (faces.Extent() != 2) {
+				return boost::none;
+			}
+			for (TopTools_ListIteratorOfListOfShape it(faces); it.More(); it.Next()) {
+				const TopoDS_Face& cand = TopoDS::Face(it.Value());
+				if (!cand.IsSame(known_face)) {
+					return cand;
+				}
+			}
+			return boost::none;
 		}
 
 		// Merge overlapping/touching-within-tolerance 1D intervals -- the same union logic the
@@ -517,9 +559,11 @@ namespace {
 		// neither side is layered this degenerates to exactly the old whole-interval behaviour
 		// (no boundaries found, one pass through the loop below).
 		void accumulate_edge_coverage(
-			const TopoDS_Face& face, const std::vector<LineSeg>& other_segs, double tol,
+			const TopoDS_Face& face, const TopoDS_Face& face_other, const std::vector<LineSeg>& other_segs, double tol,
 			const boost::optional<layer_projection>& proj_this, const IfcUtil::IfcBaseInterface* material_this, const IfcUtil::IfcBaseInterface* style_this,
 			const boost::optional<layer_projection>& proj_other, const IfcUtil::IfcBaseInterface* material_other, const IfcUtil::IfcBaseInterface* style_other,
+			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_this,
+			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_other,
 			edge_coverage_map_t& coverage
 		) {
 			for (TopExp_Explorer eexp(face, TopAbs_EDGE); eexp.More(); eexp.Next()) {
@@ -528,9 +572,15 @@ namespace {
 				if (!seg) {
 					continue;
 				}
+				// "Beyond" face on this edge's own (single-object) far side, away from `face`
+				// itself -- see other_adjacent_face()'s own comment for why this, not just
+				// face/face_other, is what needs to stay coplanar for coverage to be valid here.
+				auto face2_this = other_adjacent_face(e, face, edge_face_map_this);
+				gp_Dir n_this2;
+				bool have_n_this2 = face2_this && face_normal(*face2_this, n_this2);
 				std::vector<std::pair<double, double>> covered;
 				for (auto& other : other_segs) {
-					if (std::abs(seg->dir.Dot(other.dir)) <= 1.0 - 3.8e-5) {
+					if (std::abs(seg->dir.Dot(other.dir)) <= 1.0 - kCoplanarNormalTolerance) {
 						continue;
 					}
 					gp_Vec to_other(seg->p0, other.p0);
@@ -538,15 +588,44 @@ namespace {
 					if (perp_dist >= tol) {
 						continue;
 					}
+					// Guard against hiding a genuine surface discontinuity: face/face_other
+					// (A1/B1) being coplanar only establishes that *this* touching pair is a
+					// legitimate duplicate boundary -- it says nothing about whether what's beyond
+					// the edge on each side (face2_this/face2_other, i.e. A2/B2) is *also*
+					// consistent. When both are resolvable and fail the same coplanar test A1/B1
+					// already passed, the edge marks a real transition (e.g. two adjacent but
+					// differently-sloped surfaces meeting at their shared boundary), not a
+					// hideable seam -- skip this contribution and let the edge keep whatever
+					// classify_edge_from_faces() independently computes for it. Left unresolved
+					// (naked/non-manifold edge on either side) falls back to today's behaviour.
+					if (have_n_this2) {
+						auto face2_other = other_adjacent_face(other.edge, face_other, edge_face_map_other);
+						gp_Dir n_other2;
+						if (face2_other && face_normal(*face2_other, n_other2)) {
+							if (std::abs(n_this2.Dot(n_other2)) <= 1.0 - kCoplanarNormalTolerance) {
+								continue;
+							}
+						}
+					}
 					double t0 = gp_Vec(seg->p0, other.p0).Dot(gp_Vec(seg->dir));
 					double t1 = gp_Vec(seg->p0, other.p1).Dot(gp_Vec(seg->dir));
 					double lo = std::min(t0, t1), hi = std::max(t0, t1);
 
-					if (!proj_this && !proj_other) {
-						covered.push_back({ lo, hi });
-						continue;
-					}
-
+					// No fast path for the non-layered (!proj_this && !proj_other) case: that
+					// used to unconditionally accept [lo, hi] without any material/style check,
+					// relying on the caller's coarse product-level gate in
+					// find_cross_coplanar_matches() to have already guaranteed equality before
+					// ever reaching here. That guarantee no longer universally holds -- the gate
+					// is deliberately widened when mat_style_change is enabled, so a confirmed
+					// *mismatch* can now reach this function too (needed for
+					// mat_style_change::accumulate_mismatch_coverage()'s own call using the same
+					// scaffolding). Falling through to the general per-sub-interval logic below
+					// (which degenerates to exactly one whole-[lo,hi] check when neither side is
+					// layered, since layer_boundary_ts() contributes no boundaries) makes the
+					// verification explicit and correct in both cases -- and is a no-op for every
+					// previously-verified pair, since resolve_material_at_point() with proj=none
+					// just returns material_this/material_other directly, the same values the
+					// coarse gate already compared.
 					std::vector<double> boundaries;
 					if (proj_this) {
 						auto bs = layer_boundary_ts(*seg, *proj_this);
@@ -753,6 +832,435 @@ namespace {
 			}
 			return result;
 		}
+
+		struct edge_split_result2 {
+			std::vector<TopoDS_Edge> match_pieces;
+			std::vector<TopoDS_Edge> mismatch_pieces;
+			std::vector<TopoDS_Edge> remainder;
+			bool is_new_geometry = false;
+		};
+
+		// Combined match+mismatch split for a single edge, against its own raw interval
+		// contributions from BOTH accumulate_edge_coverage() (match_intervals) and
+		// mat_style_change::accumulate_mismatch_coverage() (mismatch_intervals) at once --
+		// deliberately NOT implemented as two independent split_edge_by_coverage() calls chained
+		// together (call, then call again on the first call's *output*): whenever the first call
+		// performs a genuine partial split, it constructs brand-new TopoDS_Edge objects (via
+		// make_subedge/BRepBuilderAPI_MakeEdge) that do not share shape identity with the
+		// original edge -- so a second lookup keyed by the *original* edge's identity (which is
+		// what mismatch_coverage's keys are, since accumulate_mismatch_coverage() walked the
+		// pre-split face) would silently find nothing for the new remainder pieces, leaving them
+		// stuck in their original class forever. Splitting once, against the union of both
+		// interval sets' boundaries, and classifying each resulting sub-range against whichever
+		// (if either) original list it falls in, avoids the identity mismatch entirely.
+		edge_split_result2 split_edge_by_match_and_mismatch(
+			const TopoDS_Edge& e, const LineSeg& seg,
+			const std::vector<std::pair<double, double>>& raw_match_intervals,
+			const std::vector<std::pair<double, double>>& raw_mismatch_intervals,
+			double tol
+		) {
+			edge_split_result2 result;
+			auto match_merged = ivs_union(raw_match_intervals, tol);
+			auto mismatch_merged = ivs_union(raw_mismatch_intervals, tol);
+
+			for (auto& iv : match_merged) {
+				if (iv.first <= tol && iv.second >= seg.length - tol) {
+					result.match_pieces.push_back(e);
+					return result;
+				}
+			}
+			for (auto& iv : mismatch_merged) {
+				if (iv.first <= tol && iv.second >= seg.length - tol) {
+					result.mismatch_pieces.push_back(e);
+					return result;
+				}
+			}
+
+			auto clamp = [&](const std::vector<std::pair<double, double>>& ivs) {
+				std::vector<std::pair<double, double>> out;
+				for (auto& iv : ivs) {
+					double a = std::max(iv.first, 0.0);
+					double b = std::min(iv.second, seg.length);
+					if (b - a >= tol) {
+						out.push_back({ a, b });
+					}
+				}
+				return out;
+			};
+			auto match_clamped = clamp(match_merged);
+			auto mismatch_clamped = clamp(mismatch_merged);
+
+			if (match_clamped.empty() && mismatch_clamped.empty()) {
+				result.remainder.push_back(e);
+				return result;
+			}
+
+			auto make_subedge = [&](double a, double b) -> boost::optional<TopoDS_Edge> {
+				if (b - a < Precision::Confusion()) {
+					return boost::none;
+				}
+				gp_Pnt pa = seg.p0.Translated(gp_Vec(seg.dir) * a);
+				gp_Pnt pb = seg.p0.Translated(gp_Vec(seg.dir) * b);
+				BRepBuilderAPI_MakeEdge mk(pa, pb);
+				if (!mk.IsDone()) {
+					return boost::none;
+				}
+				return mk.Edge();
+			};
+
+			// Split points from BOTH lists' own boundaries -- the two lists are constructed to
+			// be mutually exclusive on any given sub-range (a match verdict and a mismatch
+			// verdict can never both accept the same midpoint sample), but each is independently
+			// merged/clamped above, so cutting at the union of both lists' interval boundaries
+			// (plus the edge's own [0, length] ends) is what correctly separates "match" from
+			// "mismatch" from "neither" without assuming any particular ordering between them.
+			std::vector<double> cuts = { 0.0, seg.length };
+			for (auto& iv : match_clamped) { cuts.push_back(iv.first); cuts.push_back(iv.second); }
+			for (auto& iv : mismatch_clamped) { cuts.push_back(iv.first); cuts.push_back(iv.second); }
+			std::sort(cuts.begin(), cuts.end());
+
+			result.is_new_geometry = true;
+
+			for (size_t i = 0; i + 1 < cuts.size(); ++i) {
+				double a = cuts[i], b = cuts[i + 1];
+				if (b - a < tol) {
+					continue;
+				}
+				double mid = 0.5 * (a + b);
+				bool in_match = false, in_mismatch = false;
+				for (auto& iv : match_clamped) {
+					if (mid >= iv.first && mid <= iv.second) { in_match = true; break; }
+				}
+				if (!in_match) {
+					for (auto& iv : mismatch_clamped) {
+						if (mid >= iv.first && mid <= iv.second) { in_mismatch = true; break; }
+					}
+				}
+				auto sub = make_subedge(a, b);
+				if (!sub) {
+					continue;
+				}
+				if (in_match) {
+					result.match_pieces.push_back(*sub);
+				} else if (in_mismatch) {
+					result.mismatch_pieces.push_back(*sub);
+				} else {
+					result.remainder.push_back(*sub);
+				}
+			}
+			return result;
+		}
+
+		// Combined replacement, mirroring replace_matched_edges() but consuming both coverage
+		// maps in a single pass per edge (see split_edge_by_match_and_mismatch() for why this
+		// can't be done as two sequential replace_matched_edges() calls). `mismatch_coverage`
+		// may be an empty (never-bound) map when mat_style_change is disabled for this product,
+		// in which case every edge behaves exactly as the match-only path always did.
+		TopoDS_Compound replace_matched_and_mismatched_edges(
+			const TopoDS_Shape& from, edge_coverage_map_t& coverage, edge_coverage_map_t& mismatch_coverage,
+			double tol, BRep_Builder& builder,
+			TopoDS_Compound& cross_coplanar_out, TopoDS_Compound& mat_style_change_out, TopoDS_Compound& new_geometry_out
+		) {
+			TopoDS_Compound result;
+			builder.MakeCompound(result);
+			for (TopExp_Explorer exp(from, TopAbs_EDGE); exp.More(); exp.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
+				auto* raw_match = coverage.ChangeSeek(e);
+				auto* raw_mismatch = mismatch_coverage.ChangeSeek(e);
+				if (!raw_match && !raw_mismatch) {
+					builder.Add(result, e);
+					continue;
+				}
+				auto seg = edge_to_line_seg(e);
+				if (!seg) {
+					builder.Add(result, e);
+					continue;
+				}
+				static const std::vector<std::pair<double, double>> empty_intervals;
+				auto split = split_edge_by_match_and_mismatch(
+					e, *seg,
+					raw_match ? *raw_match : empty_intervals,
+					raw_mismatch ? *raw_mismatch : empty_intervals,
+					tol);
+				for (auto& c : split.match_pieces) {
+					builder.Add(cross_coplanar_out, c);
+					if (split.is_new_geometry) {
+						builder.Add(new_geometry_out, c);
+					}
+				}
+				for (auto& m : split.mismatch_pieces) {
+					builder.Add(mat_style_change_out, m);
+					if (split.is_new_geometry) {
+						builder.Add(new_geometry_out, m);
+					}
+				}
+				for (auto& r : split.remainder) {
+					builder.Add(result, r);
+					if (split.is_new_geometry) {
+						builder.Add(new_geometry_out, r);
+					}
+				}
+			}
+			return result;
+		}
+	}
+
+	// New SVG edge classification, "mat-style-change": marks a coplanar boundary where two
+	// faces do NOT share material/style (as opposed to cross_coplanar's classification of
+	// boundaries where they DO). Two sub-cases (see cross-object comment below and case-B
+	// namespace further down):
+	//   A) cross-product -- two different products have genuinely coplanar, coincident faces,
+	//      but their resolved material/style differ. Reuses cross_coplanar's exact geometric
+	//      coincidence machinery, just with a different sub-range verdict.
+	//   B) intra-product -- a single product's own face spans more than one layer of its own
+	//      IfcMaterialLayerSetUsage; there is no existing edge at the internal boundary at all
+	//      (real geometric layer-splitting is unimplemented for this kernel), so brand new line
+	//      geometry is constructed. See the `case_b` sub-namespace below.
+	// Deliberately a sibling of cross_coplanar, not nested inside it, so a future change to
+	// either doesn't have to reason about the other -- same rationale as cross_coplanar's own
+	// self-contained-from-classify_edge_from_faces() design (see that namespace's own comment).
+	namespace mat_style_change {
+		constexpr const char* const class_name = "mat-style-change";
+
+		// Case A: cross-product mismatch. Exact structural duplicate of
+		// cross_coplanar::accumulate_edge_coverage()'s geometric-coincidence scaffolding
+		// (direction/perpendicular-distance/interval computation, layer-boundary sub-splitting)
+		// -- copied rather than shared so a future change to the match path can never
+		// accidentally affect this one, or vice versa (same reasoning as cross_coplanar's own
+		// "deliberately self-contained" design). The only difference is the final per-sub-range
+		// verdict: accepted here precisely when both sides resolve a material/style identity
+		// AND they differ (a confirmed mismatch) -- a sub-range where one side is simply
+		// unresolved is neither a match nor a confirmed mismatch, and is left alone (preserving
+		// today's "leave as default classification" behaviour for genuinely ambiguous cases).
+		void accumulate_mismatch_coverage(
+			const TopoDS_Face& face, const TopoDS_Face& face_other, const std::vector<cross_coplanar::LineSeg>& other_segs, double tol,
+			const boost::optional<layer_projection>& proj_this, const IfcUtil::IfcBaseInterface* material_this, const IfcUtil::IfcBaseInterface* style_this,
+			const boost::optional<layer_projection>& proj_other, const IfcUtil::IfcBaseInterface* material_other, const IfcUtil::IfcBaseInterface* style_other,
+			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_this,
+			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_other,
+			cross_coplanar::edge_coverage_map_t& coverage
+		) {
+			for (TopExp_Explorer eexp(face, TopAbs_EDGE); eexp.More(); eexp.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
+				auto seg = cross_coplanar::edge_to_line_seg(e);
+				if (!seg) {
+					continue;
+				}
+				// See cross_coplanar::accumulate_edge_coverage()'s own comment: A1/B1 (face/
+				// face_other) being coplanar doesn't guarantee what's beyond the edge on each side
+				// (A2/B2) is also consistent.
+				auto face2_this = cross_coplanar::other_adjacent_face(e, face, edge_face_map_this);
+				gp_Dir n_this2;
+				bool have_n_this2 = face2_this && cross_coplanar::face_normal(*face2_this, n_this2);
+				std::vector<std::pair<double, double>> covered;
+				for (auto& other : other_segs) {
+					if (std::abs(seg->dir.Dot(other.dir)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
+						continue;
+					}
+					gp_Vec to_other(seg->p0, other.p0);
+					double perp_dist = to_other.Crossed(gp_Vec(seg->dir)).Magnitude();
+					if (perp_dist >= tol) {
+						continue;
+					}
+					if (have_n_this2) {
+						auto face2_other = cross_coplanar::other_adjacent_face(other.edge, face_other, edge_face_map_other);
+						gp_Dir n_other2;
+						if (face2_other && cross_coplanar::face_normal(*face2_other, n_other2)) {
+							if (std::abs(n_this2.Dot(n_other2)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
+								continue;
+							}
+						}
+					}
+					double t0 = gp_Vec(seg->p0, other.p0).Dot(gp_Vec(seg->dir));
+					double t1 = gp_Vec(seg->p0, other.p1).Dot(gp_Vec(seg->dir));
+					double lo = std::min(t0, t1), hi = std::max(t0, t1);
+
+					std::vector<double> boundaries;
+					if (proj_this) {
+						auto bs = cross_coplanar::layer_boundary_ts(*seg, *proj_this);
+						boundaries.insert(boundaries.end(), bs.begin(), bs.end());
+					}
+					if (proj_other) {
+						auto bs = cross_coplanar::layer_boundary_ts(*seg, *proj_other);
+						boundaries.insert(boundaries.end(), bs.begin(), bs.end());
+					}
+					std::vector<double> cuts;
+					for (double b : boundaries) {
+						if (b > lo && b < hi) {
+							cuts.push_back(b);
+						}
+					}
+					std::sort(cuts.begin(), cuts.end());
+
+					double cursor = lo;
+					for (size_t i = 0; i <= cuts.size(); ++i) {
+						double piece_end = (i < cuts.size()) ? cuts[i] : hi;
+						if (piece_end <= cursor) {
+							continue;
+						}
+						double t_mid = 0.5 * (cursor + piece_end);
+						gp_Pnt mid = seg->p0.Translated(gp_Vec(seg->dir) * t_mid);
+						const auto* mat_this = cross_coplanar::resolve_material_at_point(mid, proj_this, material_this);
+						const auto* mat_other = cross_coplanar::resolve_material_at_point(mid, proj_other, material_other);
+						bool both_resolved, equal;
+						if (mat_this || mat_other) {
+							both_resolved = mat_this && mat_other;
+							equal = both_resolved && mat_this == mat_other;
+						} else {
+							both_resolved = style_this && style_other;
+							equal = both_resolved && style_this == style_other;
+						}
+						if (both_resolved && !equal) {
+							covered.push_back({ cursor, piece_end });
+						}
+						cursor = piece_end;
+					}
+				}
+				if (covered.empty()) {
+					continue;
+				}
+				auto* existing = coverage.ChangeSeek(e);
+				if (existing) {
+					existing->insert(existing->end(), covered.begin(), covered.end());
+				} else {
+					coverage.Bind(e, covered);
+				}
+			}
+		}
+
+		// Case B: intra-product layer-boundary lining. `face` is one face of a product with a
+		// layer_projection (2+-layer IfcMaterialLayerSetUsage); this finds every internal layer
+		// boundary the face's own extent spans (e.g. an end-cap face crossing all layers of a
+		// wall's thickness), and constructs new edges marking where each boundary crosses the
+		// face, clipped to the face's true outline -- including inner/hole wires, and correct
+		// for non-convex faces, since every candidate sub-range is independently verified by
+		// classifying its own midpoint against the face's real boundary (BRepTopAdaptor_
+		// FClass2d), not assumed from a fixed in/out alternation pattern. Returns empty for a
+		// non-planar face, or a face (near-)flat against the layering axis (e.g. a wall's long
+		// inner/outer face, confined to a single layer -- nothing to mark, the common case).
+		std::vector<TopoDS_Edge> layer_boundary_edges_for_face(const TopoDS_Face& face, const layer_projection& proj) {
+			std::vector<TopoDS_Edge> result;
+
+			auto surf = BRep_Tool::Surface(face);
+			if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+				return result;
+			}
+			// The face's own *native* plane (and hence (u,v) frame) -- not an arbitrary plane
+			// built from face_normal() -- since BRepTopAdaptor_FClass2d below classifies points
+			// against the face's own pcurves, which are defined in this exact parametrization.
+			gp_Pln face_pln = Handle(Geom_Plane)::DownCast(surf)->Pln();
+
+			if (std::abs(face_pln.Axis().Direction().Dot(proj.axis)) > 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
+				return result;
+			}
+
+			double vmin = std::numeric_limits<double>::infinity();
+			double vmax = -std::numeric_limits<double>::infinity();
+			for (TopExp_Explorer vexp(face, TopAbs_VERTEX); vexp.More(); vexp.Next()) {
+				gp_Pnt v = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+				double dist = gp_Vec(proj.origin, v).Dot(proj.axis);
+				vmin = std::min(vmin, dist);
+				vmax = std::max(vmax, dist);
+			}
+			if (vmin > vmax) {
+				return result;
+			}
+
+			std::vector<size_t> boundary_indices;
+			for (size_t i = 1; i + 1 < proj.cumulative_offsets.size(); ++i) {
+				double b = proj.cumulative_offsets[i];
+				if (vmin < b - Precision::Confusion() && b + Precision::Confusion() < vmax) {
+					boundary_indices.push_back(i);
+				}
+			}
+			if (boundary_indices.empty()) {
+				return result;
+			}
+
+			gp_Pnt origin_pnt = face_pln.Position().Location();
+			gp_Dir xdir = face_pln.Position().XDirection();
+			gp_Dir ydir = face_pln.Position().YDirection();
+			auto to_uv = [&](const gp_Pnt& p) -> gp_Pnt2d {
+				gp_Vec d(origin_pnt, p);
+				return gp_Pnt2d(d.Dot(xdir), d.Dot(ydir));
+			};
+
+			auto face_segs = cross_coplanar::face_line_segs(face);
+			BRepTopAdaptor_FClass2d fclass(face, 1.e-5);
+
+			for (size_t i : boundary_indices) {
+				// Same-material guard: a layer set can legitimately repeat a material -- no
+				// real change to mark between two layers of the same material.
+				if (proj.materials[i - 1] == proj.materials[i]) {
+					continue;
+				}
+
+				double offset = proj.cumulative_offsets[i];
+				gp_Pnt boundary_pnt = proj.origin.Translated(gp_Vec(proj.axis) * offset);
+				gp_Pln boundary_pln(boundary_pnt, proj.axis);
+
+				IntAna_QuadQuadGeo inter(face_pln, boundary_pln, 1.e-9, Precision::Confusion());
+				if (!inter.IsDone() || inter.TypeInter() != IntAna_Line) {
+					continue;
+				}
+				gp_Lin L = inter.Line(1);
+				gp_Pnt P0 = L.Location();
+				gp_Dir D = L.Direction();
+
+				gp_Pnt2d p0_uv = to_uv(P0);
+				gp_Pnt2d d_uv(gp_Vec(D).Dot(xdir), gp_Vec(D).Dot(ydir));
+
+				// Every parametric t (in the SAME 3D distance units as P0/D, since d_uv's
+				// magnitude is 1 -- D is a unit direction) where L crosses one of the face's own
+				// boundary segments -- outer or inner/hole wires, face_line_segs() already walks
+				// all of them. No a-priori bound on t is needed: sub-ranges are only ever formed
+				// between two consecutive crossings, so anything outside the outermost crossings
+				// is never sampled at all.
+				std::vector<double> ts;
+				for (auto& fs : face_segs) {
+					gp_Pnt2d s0_uv = to_uv(fs.p0);
+					gp_Pnt2d s1_uv = to_uv(fs.p1);
+					double sdu = s1_uv.X() - s0_uv.X();
+					double sdv = s1_uv.Y() - s0_uv.Y();
+					double denom = d_uv.X() * sdv - d_uv.Y() * sdu;
+					if (std::abs(denom) < 1.e-12) {
+						continue;
+					}
+					double dx = s0_uv.X() - p0_uv.X();
+					double dy = s0_uv.Y() - p0_uv.Y();
+					double t = (dx * sdv - dy * sdu) / denom;
+					double s = (dx * d_uv.Y() - dy * d_uv.X()) / denom;
+					if (s >= -1.e-9 && s <= 1.0 + 1.e-9) {
+						ts.push_back(t);
+					}
+				}
+				if (ts.size() < 2) {
+					continue;
+				}
+				std::sort(ts.begin(), ts.end());
+
+				for (size_t k = 0; k + 1 < ts.size(); ++k) {
+					double ta = ts[k], tb = ts[k + 1];
+					if (tb - ta < Precision::Confusion()) {
+						continue;
+					}
+					double t_mid = 0.5 * (ta + tb);
+					gp_Pnt2d mid_uv = to_uv(P0.Translated(gp_Vec(D) * t_mid));
+					TopAbs_State state = fclass.Perform(mid_uv);
+					if (state != TopAbs_IN && state != TopAbs_ON) {
+						continue;
+					}
+					gp_Pnt pa = P0.Translated(gp_Vec(D) * ta);
+					gp_Pnt pb = P0.Translated(gp_Vec(D) * tb);
+					BRepBuilderAPI_MakeEdge mk(pa, pb);
+					if (mk.IsDone()) {
+						result.push_back(mk.Edge());
+					}
+				}
+			}
+
+			return result;
+		}
 	}
 
 	class prefiltered_hlr {
@@ -865,6 +1373,13 @@ namespace {
 		bool use_cross_coplanar_classification_;
 		double cross_coplanar_tolerance_;
 		bool render_cross_coplanar_edges_;
+		// "mat-style-change" classification: reuses cross_coplanar_tolerance_ for its own
+		// plane-coincidence test (see find_cross_coplanar_matches()'s gate widening). No
+		// separate render flag -- unlike cross-coplanar's covered-duplicate case, a
+		// mat-style-change edge is always either a genuine singular material/style boundary
+		// (case A) or genuinely new geometry (case B), so there's never a reason to compute it
+		// and then discard it.
+		bool use_mat_style_change_classification_;
 
 		std::multimap<double, face_info> large_ortho_faces_;
 		product_shape_list_t items_;
@@ -877,7 +1392,7 @@ namespace {
 
 		prefiltered_hlr(Logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction,
 			bool use_edge_classification = false, bool use_cross_coplanar_classification = false, double cross_coplanar_tolerance = 1.e-4,
-			bool render_cross_coplanar_edges = false)
+			bool render_cross_coplanar_edges = false, bool use_mat_style_change_classification = false)
 			: logger_(logger)
 			, use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
@@ -888,6 +1403,7 @@ namespace {
 			, use_cross_coplanar_classification_(use_cross_coplanar_classification)
 			, cross_coplanar_tolerance_(cross_coplanar_tolerance)
 			, render_cross_coplanar_edges_(render_cross_coplanar_edges)
+			, use_mat_style_change_classification_(use_mat_style_change_classification)
 		{
 			if (use_hlr_poly_) {
 				engine_ = new HLRBRep_PolyAlgo;
@@ -1036,7 +1552,7 @@ namespace {
 		// otherwise a no-op, so this feature is fully inert unless explicitly enabled twice
 		// over (matching its ConversionSettings description).
 		void find_cross_coplanar_matches() {
-			if (!use_edge_classification_ || !use_cross_coplanar_classification_) {
+			if (!use_edge_classification_ || (!use_cross_coplanar_classification_ && !use_mat_style_change_classification_)) {
 				return;
 			}
 
@@ -1050,6 +1566,12 @@ namespace {
 			std::map<const IfcUtil::IfcBaseEntity*, cross_coplanar::edge_coverage_map_t> per_product_coverage;
 			auto get_coverage = [&](const IfcUtil::IfcBaseEntity* product) -> cross_coplanar::edge_coverage_map_t& {
 				return per_product_coverage[product];
+			};
+			// "mat-style-change" case A: a second, independent accumulation of confirmed
+			// material/style *mismatch* sub-ranges, alongside the existing match coverage above.
+			std::map<const IfcUtil::IfcBaseEntity*, cross_coplanar::edge_coverage_map_t> per_product_mismatch_coverage;
+			auto get_mismatch_coverage = [&](const IfcUtil::IfcBaseEntity* product) -> cross_coplanar::edge_coverage_map_t& {
+				return per_product_mismatch_coverage[product];
 			};
 
 			for (auto ii = items_.begin(); ii != items_.end(); ++ii) {
@@ -1076,12 +1598,26 @@ namespace {
 					// products can share a rendering style while being genuinely different
 					// materials). Style is only the comparison when *neither* side has a
 					// resolved material.
+					// "mat-style-change" case A widens this gate (only) for the "both sides
+					// resolved, confirmed different" sub-case -- a pair where one/both sides are
+					// simply unresolved can never yield a valid mismatch verdict either (see
+					// mat_style_change::accumulate_mismatch_coverage()'s own both_resolved check),
+					// so it's still safe, and better for performance, to keep skipping that
+					// sub-case unconditionally. When use_mat_style_change_classification_ is
+					// false, the added `&& !use_mat_style_change_classification_` term collapses
+					// to true, reproducing the original condition exactly -- byte-identical
+					// behaviour to before this feature existed.
 					if (!proj_i && !proj_j) {
 						if (material_i || material_j) {
-							if (!material_i || !material_j || material_i != material_j) {
+							if (!material_i || !material_j) {
 								continue;
 							}
-						} else if (!style_i || !style_j || style_i != style_j) {
+							if (material_i != material_j && !use_mat_style_change_classification_) {
+								continue;
+							}
+						} else if (!style_i || !style_j) {
+							continue;
+						} else if (style_i != style_j && !use_mat_style_change_classification_) {
 							continue;
 						}
 					}
@@ -1096,6 +1632,14 @@ namespace {
 					if (box_i.IsOut(box_j)) {
 						continue;
 					}
+
+					// Built once per product pair (not per face pair) for
+					// cross_coplanar::other_adjacent_face()'s A2/B2 lookups below -- gives, for any
+					// edge of shape_i/shape_j, its real adjacent faces within that same product's
+					// own topology.
+					TopTools_IndexedDataMapOfShapeListOfShape edge_face_map_i, edge_face_map_j;
+					TopExp::MapShapesAndAncestors(shape_i, TopAbs_EDGE, TopAbs_FACE, edge_face_map_i);
+					TopExp::MapShapesAndAncestors(shape_j, TopAbs_EDGE, TopAbs_FACE, edge_face_map_j);
 
 					for (TopExp_Explorer fi(shape_i, TopAbs_FACE); fi.More(); fi.Next()) {
 						const TopoDS_Face& face_i = TopoDS::Face(fi.Current());
@@ -1115,9 +1659,19 @@ namespace {
 							if (!cross_coplanar::face_normal(face_j, n_j)) {
 								continue;
 							}
-							// Normal-parallel test (same tolerance convention as
-							// classify_edge_from_faces()'s own near-exact-parallel check).
-							if (std::abs(n_i.Dot(n_j)) <= 1.0 - 3.8e-5) {
+							// Normal-parallel test. Deliberately abs()'d: accepts both parallel
+							// (n_i == n_j, e.g. two coincident faces on the same side) and
+							// antiparallel (n_i == -n_j, e.g. two products butting end-to-end,
+							// each face's own outward normal pointing at the other) as candidate
+							// coplanar pairs -- distinguishing "same infinite plane" from "same
+							// side of it" is plane_dist's job below, not this test's. (This
+							// tolerance is local to this cross-object pass and not shared with
+							// classify_edge_from_faces()'s single-object 5-class scheme, which
+							// works in degrees via acos() rather than a raw dot-product epsilon
+							// -- despite a same-numbered-literal coincidence, an earlier version
+							// of this comment wrongly implied the two shared a tolerance
+							// convention.)
+							if (std::abs(n_i.Dot(n_j)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
 								continue;
 							}
 							// Plane-coincidence: perpendicular distance from a point on
@@ -1150,23 +1704,49 @@ namespace {
 							// ones), so void/hole boundaries are covered too.
 							auto segs_i = cross_coplanar::face_line_segs(face_i);
 							auto segs_j = cross_coplanar::face_line_segs(face_j);
-							cross_coplanar::accumulate_edge_coverage(
-								face_i, segs_j, cross_coplanar_tolerance_,
-								proj_i, material_i, style_i, proj_j, material_j, style_j,
-								get_coverage(product_i));
-							cross_coplanar::accumulate_edge_coverage(
-								face_j, segs_i, cross_coplanar_tolerance_,
-								proj_j, material_j, style_j, proj_i, material_i, style_i,
-								get_coverage(product_j));
+							// Guarded explicitly (rather than relying only on the top-of-function
+							// early return) because that gate now also lets the whole pass proceed
+							// when only use_mat_style_change_classification_ is on -- without this,
+							// cross-coplanar's own match-hiding would run even when the user never
+							// asked for it.
+							if (use_cross_coplanar_classification_) {
+								cross_coplanar::accumulate_edge_coverage(
+									face_i, face_j, segs_j, cross_coplanar_tolerance_,
+									proj_i, material_i, style_i, proj_j, material_j, style_j,
+									edge_face_map_i, edge_face_map_j,
+									get_coverage(product_i));
+								cross_coplanar::accumulate_edge_coverage(
+									face_j, face_i, segs_i, cross_coplanar_tolerance_,
+									proj_j, material_j, style_j, proj_i, material_i, style_i,
+									edge_face_map_j, edge_face_map_i,
+									get_coverage(product_j));
+							}
+							if (use_mat_style_change_classification_) {
+								mat_style_change::accumulate_mismatch_coverage(
+									face_i, face_j, segs_j, cross_coplanar_tolerance_,
+									proj_i, material_i, style_i, proj_j, material_j, style_j,
+									edge_face_map_i, edge_face_map_j,
+									get_mismatch_coverage(product_i));
+								mat_style_change::accumulate_mismatch_coverage(
+									face_j, face_i, segs_i, cross_coplanar_tolerance_,
+									proj_j, material_j, style_j, proj_i, material_i, style_i,
+									edge_face_map_j, edge_face_map_i,
+									get_mismatch_coverage(product_j));
+							}
 						}
 					}
 				}
 			}
 
-			for (auto& kv : per_product_coverage) {
-				const IfcUtil::IfcBaseEntity* product = kv.first;
-				cross_coplanar::edge_coverage_map_t& coverage = kv.second;
+			// Union of every product that has *any* coverage (match and/or mismatch) -- can't
+			// just iterate per_product_coverage's own keys any more, since a product might have
+			// only mismatch coverage (e.g. use_cross_coplanar_classification_ is off, only
+			// use_mat_style_change_classification_ is on).
+			std::set<const IfcUtil::IfcBaseEntity*> products_with_coverage;
+			for (auto& kv : per_product_coverage) { products_with_coverage.insert(kv.first); }
+			for (auto& kv : per_product_mismatch_coverage) { products_with_coverage.insert(kv.first); }
 
+			for (const IfcUtil::IfcBaseEntity* product : products_with_coverage) {
 				// v3: split_edge_by_coverage() (inside replace_matched_edges()) now decides,
 				// per edge, whether coverage is none (kept untouched), full (moved to
 				// new_edges whole, same fast path as pre-v3), or partial (replaced by its
@@ -1178,24 +1758,46 @@ namespace {
 				// partial -- is hidden from its original class).
 				TopoDS_Compound new_edges;
 				builder.MakeCompound(new_edges);
+				// "mat-style-change" case A's own equivalent of new_edges -- kept separate so it
+				// gets its own class, never merged with cross-coplanar's.
+				TopoDS_Compound mat_style_change_edges;
+				builder.MakeCompound(mat_style_change_edges);
 				// v3: any genuinely new (trimmed) sub-edges split_edge_by_coverage() constructs
 				// are collected here -- they were never part of what this product's shape gave
 				// to the HLR algorithm, so they have to be injected into items_ below before
 				// build()'s algo->Add() loop runs, or HLRBRep_HLRToShape's VCompound()/
 				// OutLineVCompound() (which correlate by original-input-edge identity) would
 				// silently return nothing for them and they'd never reach the rendered output.
+				// Shared between match and mismatch -- both need the same injection step.
 				TopoDS_Compound new_geometry;
 				builder.MakeCompound(new_geometry);
+				// Both coverage maps are consumed together, in a single pass per edge, via
+				// replace_matched_and_mismatched_edges() -- NOT as two sequential
+				// replace_matched_edges() calls (the second operating on the first's output).
+				// See split_edge_by_match_and_mismatch()'s own comment for why that sequential
+				// approach is wrong: a partial match split constructs brand-new TopoDS_Edge
+				// objects, and a second lookup keyed by the *original* edge's identity (which is
+				// what mismatch_coverage's keys are) would silently find nothing for those new
+				// pieces, leaving a genuinely-mismatched remainder stuck in its original class.
+				cross_coplanar::edge_coverage_map_t empty_coverage;
+				auto* coverage = (use_cross_coplanar_classification_ && per_product_coverage.count(product))
+					? &per_product_coverage[product] : &empty_coverage;
+				auto* mismatch = (use_mat_style_change_classification_ && per_product_mismatch_coverage.count(product))
+					? &per_product_mismatch_coverage[product] : &empty_coverage;
 				for (auto& entry : classified_items_) {
 					if (std::get<0>(entry) != product) {
 						continue;
 					}
-					std::get<2>(entry) = cross_coplanar::replace_matched_edges(
-						std::get<2>(entry), coverage, cross_coplanar_tolerance_, builder, new_edges, new_geometry);
+					std::get<2>(entry) = cross_coplanar::replace_matched_and_mismatched_edges(
+						std::get<2>(entry), *coverage, *mismatch, cross_coplanar_tolerance_, builder,
+						new_edges, mat_style_change_edges, new_geometry);
 				}
 
 				if (render_cross_coplanar_edges_) {
 					add_classified_edges(product, cross_coplanar::class_name, new_edges);
+				}
+				if (use_mat_style_change_classification_) {
+					add_classified_edges(product, mat_style_change::class_name, mat_style_change_edges);
 				}
 
 				if (TopExp_Explorer(new_geometry, TopAbs_EDGE).More()) {
@@ -1289,6 +1891,10 @@ protected:
 	bool svg_use_cross_coplanar_classification_;
 	bool svg_render_cross_coplanar_edges_;
 	double svg_cross_coplanar_tolerance_;
+	// "mat-style-change" edge classification: case A (cross-product mismatch) is threaded into
+	// prefiltered_hlr the same way as cross-coplanar above; case B (intra-product layer-boundary
+	// lining) is applied per-item in write(const geometry_data&).
+	bool svg_use_mat_style_change_classification_;
 
 	IfcParse::IfcFile* file;
 	const IfcUtil::IfcBaseEntity* storey_;
@@ -1352,6 +1958,7 @@ public:
 		, svg_use_cross_coplanar_classification_(false)
 		, svg_render_cross_coplanar_edges_(false)
 		, svg_cross_coplanar_tolerance_(1.e-4)
+		, svg_use_mat_style_change_classification_(false)
 		, file(0)
 		, storey_(0)
 		, xcoords_begin(0)
