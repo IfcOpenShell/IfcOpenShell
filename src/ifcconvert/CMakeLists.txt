@@ -24,4 +24,19 @@ set_target_properties(IfcConvert PROPERTIES
         "PATH=%PATH%;$<JOIN:$<TARGET_RUNTIME_DLL_DIRS:IfcConvert>,;>;${_plugin_paths}"
 )
 
+if((NOT WIN32) AND BUILD_SHARED_LIBS AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_RPATHS)
+    if(IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+        SET_INSTALL_RPATHS(IfcConvert "${CMAKE_INSTALL_LIBDIR}")
+    elseif(IS_ABSOLUTE "${CMAKE_INSTALL_BINDIR}")
+        SET_INSTALL_RPATHS(IfcConvert "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    else()
+        file(RELATIVE_PATH _ifcconvert_libdir_from_bindir "/${CMAKE_INSTALL_BINDIR}" "/${CMAKE_INSTALL_LIBDIR}")
+        if(APPLE)
+            SET_INSTALL_RPATHS(IfcConvert "@executable_path/${_ifcconvert_libdir_from_bindir}")
+        else()
+            SET_INSTALL_RPATHS(IfcConvert "$ORIGIN/${_ifcconvert_libdir_from_bindir}")
+        endif()
+    endif()
+endif()
+
 install(TARGETS IfcConvert)
