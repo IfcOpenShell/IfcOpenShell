@@ -234,6 +234,21 @@ class Drawing(bonsai.core.tool.Drawing):
                         return e
 
     @classmethod
+    def get_annotation_drawings(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """Return every drawing (camera) this annotation is assigned to.
+
+        An annotation may belong to multiple drawing groups (it renders on each);
+        the singular get_annotation_drawing returns only the first/home drawing.
+        """
+        drawings = []
+        for rel in element.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
+                for e in rel.RelatedObjects:
+                    if e.ObjectType == "DRAWING" and e not in drawings:
+                        drawings.append(e)
+        return drawings
+
+    @classmethod
     def exclude_annotation_from_drawing(
         cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance
     ) -> None:
@@ -936,13 +951,10 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def import_annotations_in_group(cls, group: ifcopenshell.entity_instance) -> None:
-        elements = set(
-            [
-                e
-                for e in cls.get_group_elements(group)
-                if e.is_a("IfcAnnotation") and e.ObjectType != "DRAWING" and not tool.Ifc.get_object(e)
-            ]
-        )
+        group_annotations = [
+            e for e in cls.get_group_elements(group) if e.is_a("IfcAnnotation") and e.ObjectType != "DRAWING"
+        ]
+        elements = set(e for e in group_annotations if not tool.Ifc.get_object(e))
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
@@ -955,6 +967,13 @@ class Drawing(bonsai.core.tool.Drawing):
         ifc_importer.setup_arrays(annotations_to_import=elements)
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
+        # Annotations shared from another drawing may already have a Blender object
+        # (so they were skipped above); re-collect them so they are also linked into
+        # this drawing's collection.
+        added_objs = set(ifc_importer.added_data.values())
+        for e in group_annotations:
+            if (obj := tool.Ifc.get_object(e)) and obj not in added_objs:
+                tool.Collector.assign(obj)
 
     @classmethod
     def get_camera_shape_matrix(

@@ -119,8 +119,12 @@ class Collector(bonsai.core.tool.Collector):
                 cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
                 cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
-        elif element.is_a("IfcAnnotation") and (drawing_obj := cls.get_annotation_drawing_obj(element)):
-            cls.link_collection_object_safe(tool.Blender.get_object_bim_props(drawing_obj).collection, obj)
+        elif element.is_a("IfcAnnotation") and (drawing_objs := cls.get_annotation_drawing_objs(element)):
+            # An annotation may be shared across several drawings; link it into
+            # each drawing's collection so it is visible/editable from all of them.
+            for drawing_obj in drawing_objs:
+                if target_collection := tool.Blender.get_object_bim_props(drawing_obj).collection:
+                    cls.link_collection_object_safe(target_collection, obj)
         elif container := ifcopenshell.util.element.get_container(element):
             while container.is_a("IfcSpace"):
                 container = ifcopenshell.util.element.get_aggregate(container)
@@ -168,6 +172,18 @@ class Collector(bonsai.core.tool.Collector):
                 for related_object in rel.RelatedObjects:
                     if related_object.is_a("IfcAnnotation") and related_object.ObjectType == "DRAWING":
                         return tool.Ifc.get_object(related_object)
+
+    @classmethod
+    def get_annotation_drawing_objs(cls, element: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
+        """Every drawing camera object this annotation is assigned to (may be several)."""
+        objs = []
+        for rel in element.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
+                for related_object in rel.RelatedObjects:
+                    if related_object.is_a("IfcAnnotation") and related_object.ObjectType == "DRAWING":
+                        if (drawing_obj := tool.Ifc.get_object(related_object)) and drawing_obj not in objs:
+                            objs.append(drawing_obj)
+        return objs
 
     @classmethod
     def link_collection_object_safe(cls, collection: bpy.types.Collection, obj: bpy.types.Object) -> None:

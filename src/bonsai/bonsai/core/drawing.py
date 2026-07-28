@@ -503,6 +503,55 @@ def add_annotation(
     return obj
 
 
+def add_annotation_to_drawing(
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    drawing_tool: type[tool.Drawing],
+    element: ifcopenshell.entity_instance,
+    drawing: ifcopenshell.entity_instance,
+) -> bool:
+    """Assign a manual annotation to an additional drawing so it renders on it too.
+
+    Auto-generated annotations (grid/section/elevation tags, etc.) are tied to a
+    single drawing's regeneration cycle and cannot be shared - they are skipped.
+    Returns True if the annotation was assigned, False if it was skipped/already there.
+    """
+    if drawing_tool.is_auto_annotation(element):
+        return False
+    group = drawing_tool.get_drawing_group(drawing)
+    if not group or drawing in drawing_tool.get_annotation_drawings(element):
+        return False
+    ifc.run("group.assign_group", group=group, products=[element])
+    # Relink the Blender object so it becomes visible in the newly-assigned
+    # drawing's collection as well.
+    if obj := ifc.get_object(element):
+        collector.assign(obj)
+    return True
+
+
+def remove_annotation_from_drawing(
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    drawing_tool: type[tool.Drawing],
+    element: ifcopenshell.entity_instance,
+    drawing: ifcopenshell.entity_instance,
+) -> bool:
+    """Remove a manual annotation from a drawing's group.
+
+    An annotation must always belong to at least one drawing, so removal from its
+    last remaining drawing is refused. Returns True if removed, False otherwise.
+    """
+    if len(drawing_tool.get_annotation_drawings(element)) <= 1:
+        return False
+    group = drawing_tool.get_drawing_group(drawing)
+    if not group:
+        return False
+    ifc.run("group.unassign_group", group=group, products=[element])
+    if obj := ifc.get_object(element):
+        collector.assign(obj)
+    return True
+
+
 def assign_manual_drawing_reference(
     ifc: type[tool.Ifc],
     drawing_tool: type[tool.Drawing],

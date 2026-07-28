@@ -1896,6 +1896,102 @@ class AssignManualDrawingReference(bpy.types.Operator, tool.Ifc.Operator):
                 area.tag_redraw()
 
 
+def _get_unassigned_drawing_enum_items(self, context):
+    """Drawings the active annotation is NOT yet assigned to."""
+    items = []
+    if (ifc := tool.Ifc.get()) and context.active_object:
+        element = tool.Ifc.get_entity(context.active_object)
+        assigned = set(tool.Drawing.get_annotation_drawings(element)) if element else set()
+        for d in ifc.by_type("IfcAnnotation"):
+            if d.ObjectType == "DRAWING" and d not in assigned:
+                items.append((str(d.id()), d.Name or f"Drawing {d.id()}", ""))
+    if not items:
+        items.append(("0", "No available drawings", ""))
+    return items
+
+
+class AddAnnotationToDrawing(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_annotation_to_drawing"
+    bl_label = "Add Annotation To Drawing"
+    bl_description = "Assign the selected annotation(s) to an additional drawing so they render on it too"
+    bl_options = {"REGISTER", "UNDO"}
+    drawing_id: bpy.props.EnumProperty(name="Drawing", items=_get_unassigned_drawing_enum_items)
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get() or not context.active_object:
+            return False
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element or not element.is_a("IfcAnnotation") or element.ObjectType == "DRAWING":
+            cls.poll_message_set("Active object is not an annotation.")
+            return False
+        if tool.Drawing.is_auto_annotation(element):
+            cls.poll_message_set("Auto-generated annotations cannot be shared across drawings.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        prop_with_search(
+            self.layout, self, "drawing_id", should_click_ok=True, search_threshold=0,
+            original_operator_path=f"{__name__}.AddAnnotationToDrawing",
+        )
+
+    def _execute(self, context):
+        if self.drawing_id == "0":
+            self.report({"WARNING"}, "No drawing selected.")
+            return
+        drawing = tool.Ifc.get().by_id(int(self.drawing_id))
+        elements = [
+            element
+            for o in tool.Blender.get_selected_objects()
+            if (element := tool.Ifc.get_entity(o)) and element.is_a("IfcAnnotation") and element.ObjectType != "DRAWING"
+        ]
+        assigned = 0
+        skipped = 0
+        for element in elements:
+            if core.add_annotation_to_drawing(tool.Ifc, tool.Collector, tool.Drawing, element=element, drawing=drawing):
+                assigned += 1
+            else:
+                skipped += 1
+        msg = f"Assigned {assigned} annotation(s) to {drawing.Name or 'drawing'}."
+        if skipped:
+            msg += f" Skipped {skipped} (auto-generated or already assigned)."
+        self.report({"INFO"}, msg)
+        for area in context.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
+
+
+class RemoveAnnotationFromDrawing(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_annotation_from_drawing"
+    bl_label = "Remove Annotation From Drawing"
+    bl_description = "Remove the active annotation from this drawing (it stays on its other drawings)"
+    bl_options = {"REGISTER", "UNDO"}
+    drawing_id: bpy.props.IntProperty(options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get() or not context.active_object:
+            return False
+        element = tool.Ifc.get_entity(context.active_object)
+        return bool(element and element.is_a("IfcAnnotation") and element.ObjectType != "DRAWING")
+
+    def _execute(self, context):
+        element = tool.Ifc.get_entity(context.active_object)
+        drawing = tool.Ifc.get().by_id(self.drawing_id)
+        if not core.remove_annotation_from_drawing(
+            tool.Ifc, tool.Collector, tool.Drawing, element=element, drawing=drawing
+        ):
+            self.report({"WARNING"}, "An annotation must remain on at least one drawing.")
+            return
+        for area in context.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
+
+
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"

@@ -358,6 +358,8 @@ class Drawing:
     def generate_reference_attributes(cls, reference, **attributes): pass
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view, object_type=None): pass
+    def get_annotation_drawing(cls, element): pass
+    def get_annotation_drawings(cls, element): pass
     def get_annotation_representation(cls, element_type): pass
     def get_assigned_product(cls, element): pass
     def get_assigned_product_workaround(cls, element): pass
@@ -393,6 +395,7 @@ class Drawing:
     def import_text_attributes(cls, obj): pass
     def is_active_drawing(cls, drawing): pass
     def is_annotation_object_type(cls, element, object_types): pass
+    def is_auto_annotation(cls, element): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
     def is_editing_sheets(cls): pass
