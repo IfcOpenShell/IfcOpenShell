@@ -39,6 +39,7 @@
 #include <TopExp_Explorer.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepTools.hxx>
+#include <BRepTools_WireExplorer.hxx>
 #include <BRepAlgoAPI_Section.hxx>
 #include <ShapeAnalysis_FreeBounds.hxx>
 
@@ -1073,6 +1074,105 @@ namespace {
 		return v;
 	}
 
+	// True if the wire-order triple (v0 -> v1 -> v2) turns right (concave/reflex) at v1, judged
+	// via an in-plane cross-product turn test against the face's own outward normal `n`. For a
+	// simple polygon walked in the winding order BRepTools_WireExplorer gives over a face's own
+	// (orientation-composed) outer wire, consecutive edge vectors turn left (positive
+	// cross(a,b).Dot(n)) at every convex corner and right (negative) at every reflex corner --
+	// the same "outward normal + consistent winding" convention face_normal_from_planar_face()
+	// already relies on elsewhere in this function, just applied in-plane instead of
+	// face-to-face. Deliberately biased towards "not reflex" (trust the candidate) on a
+	// degenerate/near-collinear triple, minimizing regression risk on ambiguous input.
+	bool is_reflex_vertex(const gp_Pnt& v0, const gp_Pnt& v1, const gp_Pnt& v2, const gp_Dir& n) {
+		const gp_Vec a(v0, v1), b(v1, v2);
+		const double la = a.Magnitude(), lb = b.Magnitude();
+		if (la < Precision::Confusion() || lb < Precision::Confusion()) {
+			return false;
+		}
+		constexpr double kSinEps = 1.e-6;
+		return a.Crossed(b).Dot(gp_Vec(n.XYZ())) < -kSinEps * la * lb;
+	}
+
+	// Locates `target_edge` within a properly wire-ordered traversal of face `f`'s boundary --
+	// tries BRepTools::OuterWire(f) first (the common case), then falls back to every other wire
+	// of f via TopExp_Explorer(f, TopAbs_WIRE) in case the shared edge sits on an inner/hole
+	// boundary. Matches by edge identity (IsSame), not vertex geometry/identity, specifically to
+	// sidestep duplicate-vertex ambiguity -- the shared edge between f0 and f1 is the same
+	// TopoDS_Edge instance in both, since both come from the same edge-face map built off one
+	// compound.
+	//
+	// For each of the caller-supplied endpoints (ev0, ev1) of target_edge, reports the
+	// wire-neighbor vertex reached via the *other* wire-edge incident to that endpoint (i.e.
+	// continuing along the wire, not back across target_edge), and whether that endpoint is
+	// itself a reflex corner of the wire it was found on. Output order mirrors (ev0, ev1) as
+	// passed in, regardless of the wire's own internal start/end order for target_edge.
+	//
+	// Returns false if target_edge could not be located on any wire of f (shouldn't happen for a
+	// legitimately shared 2-manifold edge; caller must treat this as "fall back to whole-face
+	// scan").
+	bool wire_neighbors_of_edge(
+		const TopoDS_Face& f, const TopoDS_Edge& target_edge,
+		const TopoDS_Vertex& ev0, const TopoDS_Vertex& ev1, const gp_Dir& f_normal,
+		TopoDS_Vertex& neighbor_of_ev0, bool& ev0_is_reflex,
+		TopoDS_Vertex& neighbor_of_ev1, bool& ev1_is_reflex)
+	{
+		std::vector<TopoDS_Wire> wires;
+		TopoDS_Wire outer = BRepTools::OuterWire(f);
+		if (!outer.IsNull()) {
+			wires.push_back(outer);
+		}
+		for (TopExp_Explorer wexp(f, TopAbs_WIRE); wexp.More(); wexp.Next()) {
+			TopoDS_Wire w = TopoDS::Wire(wexp.Current());
+			if (outer.IsNull() || !w.IsSame(outer)) {
+				wires.push_back(w);
+			}
+		}
+
+		for (const TopoDS_Wire& w : wires) {
+			std::vector<TopoDS_Vertex> verts;
+			std::vector<TopoDS_Edge> edges;
+			for (BRepTools_WireExplorer exp(w, f); exp.More(); exp.Next()) {
+				verts.push_back(exp.CurrentVertex());
+				edges.push_back(TopoDS::Edge(exp.Current()));
+			}
+			const int n = (int)edges.size();
+			if (n < 3) {
+				continue;
+			}
+
+			int i = -1;
+			for (int k = 0; k < n; ++k) {
+				if (edges[k].IsSame(target_edge)) {
+					i = k;
+					break;
+				}
+			}
+			if (i < 0) {
+				continue;
+			}
+
+			const TopoDS_Vertex& a = verts[i];
+			const TopoDS_Vertex& b = verts[(i + 1) % n];
+			const TopoDS_Vertex& prev = verts[(i - 1 + n) % n];
+			const TopoDS_Vertex& next2 = verts[(i + 2) % n];
+
+			const bool a_reflex = is_reflex_vertex(
+				BRep_Tool::Pnt(prev), BRep_Tool::Pnt(a), BRep_Tool::Pnt(b), f_normal);
+			const bool b_reflex = is_reflex_vertex(
+				BRep_Tool::Pnt(a), BRep_Tool::Pnt(b), BRep_Tool::Pnt(next2), f_normal);
+
+			if (a.IsSame(ev0)) {
+				neighbor_of_ev0 = prev;  ev0_is_reflex = a_reflex;
+				neighbor_of_ev1 = next2; ev1_is_reflex = b_reflex;
+			} else {
+				neighbor_of_ev0 = next2; ev0_is_reflex = b_reflex;
+				neighbor_of_ev1 = prev;  ev1_is_reflex = a_reflex;
+			}
+			return true;
+		}
+		return false;
+	}
+
 	edge_style_class classify_edge_from_faces(
 		const TopoDS_Edge& edge,
 		const NCollection_List<TopoDS_Shape>& faces,
@@ -1122,7 +1222,7 @@ namespace {
 		// tessellations viewed from "nice" angles (icospheres, N-gon cylinder/cone
 		// approximations) and must count as outline on both its edges, not just the one that
 		// happens to pair it with a clearly front-facing neighbour.
-		constexpr double kOutlineDotEps = 1.e-5;
+		constexpr double kOutlineDotEps = 1.e-4;
 		const bool front0 = d0 < -kOutlineDotEps;
 		const bool back0 = d0 > kOutlineDotEps;
 		const bool front1 = d1 < -kOutlineDotEps;
@@ -1154,18 +1254,38 @@ namespace {
 		const gp_Pnt edge_p0 = BRep_Tool::Pnt(ev0);
 		const gp_Pnt edge_p1 = BRep_Tool::Pnt(ev1);
 
-		// Scans every off-edge vertex of f1 (not just the first one found) and keeps the one
-		// with the largest |dot| -- the most decisive, least ambiguous sample -- rather than
-		// whichever vertex TopExp_Explorer happens to visit first. A triangulated mesh (e.g. a
-		// roof ridge/hip) can easily put a near-coplanar vertex (dot close to zero, an
-		// unreliable sign) first in traversal order while a different, clearly-off-plane vertex
-		// of the same face would have given an unambiguous answer -- picking the most decisive
-		// vertex avoids depending on traversal order for what should be a purely geometric
-		// property of the fold.
+		// Trustworthy-candidate selection (issue #3742 follow-up): only consider the
+		// wire-neighbor vertex reached from each of the target edge's own endpoints, and only
+		// when that endpoint is NOT itself a reflex corner of f1's boundary. Scanning every
+		// vertex of f1 and keeping the largest |dot| (the previous behaviour) is only valid when
+		// f1 is convex -- every vertex of a convex polygon lies on the same side of any line
+		// through one of its edges, so the sign is invariant to which vertex is picked, and
+		// "largest magnitude" is just a noise-robustness tiebreak. When f1 is non-convex (e.g. an
+		// L-shaped face, or a face with a notch cut into it by a boolean void), vertices
+		// reachable only by crossing through a reflex corner -- or lying on a distant, unrelated
+		// part of the polygon -- give an INVERTED sign. Confirmed against real geometry (an
+		// L-shaped roof slab's bottom face, and a wall's notch cut by an IfcOpeningElement): in
+		// both cases the wrong-sign vertex also had the larger |dot|, so the old "most decisive"
+		// heuristic reliably picked the wrong answer, misclassifying genuinely convex/sharp edges
+		// as concave/crease.
+		std::vector<gp_Pnt> trustworthy_candidates;
+		TopoDS_Vertex nb0, nb1;
+		bool ev0_reflex = false, ev1_reflex = false;
+		if (wire_neighbors_of_edge(f1, edge, ev0, ev1, n1, nb0, ev0_reflex, nb1, ev1_reflex)) {
+			if (!ev0_reflex) {
+				trustworthy_candidates.push_back(BRep_Tool::Pnt(nb0));
+			}
+			if (!ev1_reflex) {
+				trustworthy_candidates.push_back(BRep_Tool::Pnt(nb1));
+			}
+		}
+
 		double decisive_dot = 0.0;
 		bool have_decisive_vertex = false;
-		for (TopExp_Explorer vexp(f1, TopAbs_VERTEX); vexp.More(); vexp.Next()) {
-			const gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+
+		// Existing "keep largest |dot|" rule (noise robustness against near-coplanar samples),
+		// now scoped to trustworthy candidates only.
+		for (const gp_Pnt& p : trustworthy_candidates) {
 			if (p.Distance(edge_p0) > Precision::Confusion() && p.Distance(edge_p1) > Precision::Confusion()) {
 				double dot = gp_Vec(edge_p0, p).Dot(gp_Vec(n0.XYZ()));
 				if (!have_decisive_vertex || std::abs(dot) > std::abs(decisive_dot)) {
@@ -1174,6 +1294,23 @@ namespace {
 				}
 			}
 		}
+
+		if (!have_decisive_vertex) {
+			// Conservative fallback: both endpoints reflex, or the edge couldn't be located on
+			// any wire of f1 (degenerate/non-manifold-looking topology) -- fall back to the
+			// original whole-face scan rather than giving up outright.
+			for (TopExp_Explorer vexp(f1, TopAbs_VERTEX); vexp.More(); vexp.Next()) {
+				const gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+				if (p.Distance(edge_p0) > Precision::Confusion() && p.Distance(edge_p1) > Precision::Confusion()) {
+					double dot = gp_Vec(edge_p0, p).Dot(gp_Vec(n0.XYZ()));
+					if (!have_decisive_vertex || std::abs(dot) > std::abs(decisive_dot)) {
+						decisive_dot = dot;
+						have_decisive_vertex = true;
+					}
+				}
+			}
+		}
+
 		if (have_decisive_vertex) {
 			const bool convex = decisive_dot < 0.0;
 			if (!convex) {
