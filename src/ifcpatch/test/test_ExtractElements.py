@@ -137,6 +137,38 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert rels[0].OverridingProperties[0].Name == "Foo"
         assert rels[0].OverridingProperties[0].NominalValue.wrappedValue == "Baz"
 
+    def test_representation_shared_with_a_type_map_is_not_duplicated(self):
+        # Regression test: exporters do emit an IfcShapeRepresentation that is at
+        # once a product's own representation and a type's
+        # IfcRepresentationMap.MappedRepresentation. Extraction must reproduce the
+        # source as it stands, one entity in both roles. Appending the element type
+        # through the name uniqueness code path the caller had opted out of used to
+        # copy the representation instead, silently rewriting the model.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(
+            self.file, related_objects=[wall], relating_type=wall_type, should_map_representations=False
+        )
+
+        points = [self.file.createIfcCartesianPoint(p) for p in ((0.0, 0.0), (1.0, 0.0))]
+        representation = self.file.createIfcShapeRepresentation(
+            context, "Body", "Curve2D", [self.file.createIfcPolyline(points)]
+        )
+        wall.Representation = self.file.createIfcProductDefinitionShape(None, None, [representation])
+        origin = self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+        wall_type.RepresentationMaps = [self.file.createIfcRepresentationMap(origin, representation)]
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall", False]})
+
+        new_wall = output.by_type("IfcWall")[0]
+        new_type = output.by_type("IfcWallType")[0]
+        own = {r.id() for r in new_wall.Representation.Representations}
+        mapped = {m.MappedRepresentation.id() for m in new_type.RepresentationMaps}
+        assert own == mapped
+        assert len(output.by_type("IfcShapeRepresentation")) == 1
+
     def test_keep_spatial_structure(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
 
