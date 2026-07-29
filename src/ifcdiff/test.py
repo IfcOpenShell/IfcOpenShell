@@ -27,6 +27,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.representation
+import ifcopenshell.util.schema
 
 import ifcdiff
 
@@ -98,6 +99,27 @@ class TestIfcDiff:
         assert ifc_diff.added_elements == set()
         assert ifc_diff.deleted_elements == set()
         assert ifc_diff.change_register == {wall.GlobalId: {"attributes_changed": True}}
+
+    def test_changed_class_is_reported(self):
+        # Regression test: an element reclassified to a different IFC class,
+        # with the same GlobalId and otherwise identical attribute values,
+        # must be reported. diff_element previously only ran DeepDiff over
+        # direct attributes and never compared is_a(), so a reclassified
+        # element was silently treated as unchanged.
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWallStandardCase", name="Foo")
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        wall_new = new_file.by_id(wall.id())
+        ifcopenshell.util.schema.reassign_class(new_file, wall_new, "IfcColumn")
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file)
+        ifc_diff.diff()
+        assert ifc_diff.added_elements == set()
+        assert ifc_diff.deleted_elements == set()
+        assert ifc_diff.change_register == {
+            wall.GlobalId: {"class_changed": {"old": "IfcWallStandardCase", "new": "IfcColumn"}}
+        }
 
     def test_property_diff_exports_to_json(self):
         # Regression test for #8905: comparing "property" relationships makes
