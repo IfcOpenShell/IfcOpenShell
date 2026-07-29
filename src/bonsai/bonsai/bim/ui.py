@@ -312,6 +312,17 @@ class DocPreferences(bpy.types.PropertyGroup):
         default=os.path.join("drawings") + os.path.sep,
         name="Default Drawings Directory",
     )
+    assets_dir: StringProperty(
+        default=os.path.join("drawings", "assets") + os.path.sep,
+        name="Default Drawing Style Assets Directory",
+        description=(
+            "Folder holding the drawing style asset files (stylesheet, schedule stylesheet, markers, "
+            "symbols, patterns, shading styles). Click 'Apply' below to set all six paths in this "
+            "section at once from this folder, using Bonsai's standard asset filenames, instead of "
+            "setting each one individually"
+        ),
+        subtype="DIR_PATH",
+    )
     stylesheet_path: StringProperty(
         default=os.path.join("drawings", "assets", "default.css"),
         name="Default Stylesheet",
@@ -372,6 +383,7 @@ class DocPreferences(bpy.types.PropertyGroup):
         layouts_dir: str
         titleblocks_dir: str
         drawings_dir: str
+        assets_dir: str
         stylesheet_path: str
         schedules_stylesheet_path: str
         markers_path: str
@@ -833,6 +845,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(dprops, "layouts_dir")
         layout.prop(dprops, "titleblocks_dir")
         layout.prop(dprops, "drawings_dir")
+        row = layout.row(align=True)
+        row.prop(dprops, "assets_dir")
+        row.operator("bim.apply_drawing_assets_dir", text="", icon="COPYDOWN")
         layout.prop(dprops, "stylesheet_path")
         layout.prop(dprops, "schedules_stylesheet_path")
         layout.prop(dprops, "markers_path")
