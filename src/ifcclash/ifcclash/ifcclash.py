@@ -208,7 +208,6 @@ class Clasher:
         assert iterator.initialize()
         while True:
             self.tree.add_element(iterator.get())
-            shape = iterator.get()
             if not iterator.next():
                 break
         self.logger.info(f"Tree finished {time.time() - start}")
@@ -302,7 +301,6 @@ class Clasher:
                 max_distance_between_grouped_points = 3
 
             model = OPTICS(min_samples=2, max_eps=max_distance_between_grouped_points)
-            model.fit_predict(data)
             pred = model.fit_predict(data)
 
             # Insert the smart groups into the clashes
