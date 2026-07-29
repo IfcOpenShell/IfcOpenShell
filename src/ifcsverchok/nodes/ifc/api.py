@@ -81,8 +81,10 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
     def process(self):
         module_usecase = self.get_module_usecase()
         if module_usecase:
+            self.results_out = []
             self.sv_input_names = [i.name for i in self.inputs]
             super().process()
+            self.outputs["file"].sv_set(self.results_out)
 
     def get_module_usecase(self) -> Union[list[str], None]:
         usecase = self.inputs["usecase"].sv_get()[0][0]
@@ -92,7 +94,7 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
     def generate_node(self, module: str, usecase: str) -> None:
         try:
             node_data = ifcopenshell.api.extract_docs(module, usecase)
-        except:
+        except AttributeError:
             print("Node not yet implemented:", module, usecase)
             return
         while len(self.inputs) > 1:
@@ -112,7 +114,7 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
         if usecase:
             settings = dict(zip(self.sv_input_names[1:], setting_values))
             settings = {k: v for k, v in settings.items() if v != ""}
-            self.outputs["file"].sv_set([ifcopenshell.api.run(usecase, **settings)])
+            self.results_out.append(ifcopenshell.api.run(usecase, **settings))
 
 
 def register():
