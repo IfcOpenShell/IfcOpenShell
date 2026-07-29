@@ -64,9 +64,13 @@ class MSP2Ifc:
         id = 0
         if task.findall("pr:PredecessorLink", self.ns):
             for relationship in task.findall("pr:PredecessorLink", self.ns):
+                link_lag = relationship.find("pr:LinkLag", self.ns)
+                lag_format = relationship.find("pr:LagFormat", self.ns)
                 relationships[id] = {
                     "PredecessorTask": relationship.find("pr:PredecessorUID", self.ns).text,
                     "Type": relationship.find("pr:Type", self.ns).text,
+                    "LinkLag": link_lag.text if link_lag is not None else None,
+                    "LagFormat": lag_format.text if lag_format is not None else None,
                 }
                 id += 1
         return relationships
@@ -76,6 +80,9 @@ class MSP2Ifc:
             hours_per_day = int(self.project["MinutesPerDay"]) / 60
         else:
             hours_per_day = 8
+        # Stored so create_rel_sequences can convert PredecessorLink/LinkLag with the
+        # same calendar-based hours-per-day scaling used for task durations below.
+        self.hours_per_day = hours_per_day
 
         for task in project.find("pr:Tasks", self.ns):
             task_id = task.find("pr:UID", self.ns).text
@@ -357,6 +364,11 @@ class MSP2Ifc:
             "2": "START_FINISH",
             "3": "START_START",
         }
+        # PredecessorLink/LagFormat codes used by MSPDI exports for a calendar
+        # based ("working time") lag versus an elapsed (24/7) lag. Percentage
+        # based formats (e.g. 19/20) are not a duration and are left alone.
+        worktime_lag_formats = {"3", "5", "7", "9", "11"}
+        elapsed_lag_formats = {"4", "6", "8", "10"}
         for task in self.tasks.values():
             if not task["PredecessorTasks"]:
                 continue
@@ -372,6 +384,24 @@ class MSP2Ifc:
                         rel_sequence=rel_sequence,
                         attributes={"SequenceType": self.sequence_type_map[predecessor["Type"]]},
                     )
+
+                link_lag = predecessor.get("LinkLag")
+                lag_format = predecessor.get("LagFormat")
+                if not link_lag or int(link_lag) == 0:
+                    continue
+                if lag_format not in worktime_lag_formats and lag_format not in elapsed_lag_formats:
+                    continue
+                # MSPDI stores LinkLag in tenths of a minute, regardless of LagFormat.
+                lag_hours = int(link_lag) / 10 / 60
+                if lag_format in elapsed_lag_formats:
+                    duration_type = "ELAPSEDTIME"
+                    lag_value = timedelta(hours=lag_hours)
+                else:
+                    duration_type = "WORKTIME"
+                    lag_value = timedelta(days=lag_hours / float(self.hours_per_day))
+                ifcopenshell.api.sequence.assign_lag_time(
+                    self.file, rel_sequence=rel_sequence, lag_value=lag_value, duration_type=duration_type
+                )
 
     def parse_resources_xml(self, project):
         resources_lst = project.find("pr:Resources", self.ns)
