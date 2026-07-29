@@ -1968,7 +1968,7 @@ class AddAnnotationToDrawing(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveAnnotationFromDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_annotation_from_drawing"
     bl_label = "Remove Annotation From Drawing"
-    bl_description = "Remove the active annotation from this drawing (it stays on its other drawings)"
+    bl_description = "Remove the selected annotation(s) from this drawing (they stay on their other drawings)"
     bl_options = {"REGISTER", "UNDO"}
     drawing_id: bpy.props.IntProperty(options={"SKIP_SAVE"})
 
@@ -1980,13 +1980,30 @@ class RemoveAnnotationFromDrawing(bpy.types.Operator, tool.Ifc.Operator):
         return bool(element and element.is_a("IfcAnnotation") and element.ObjectType != "DRAWING")
 
     def _execute(self, context):
-        element = tool.Ifc.get_entity(context.active_object)
         drawing = tool.Ifc.get().by_id(self.drawing_id)
-        if not core.remove_annotation_from_drawing(
-            tool.Ifc, tool.Collector, tool.Drawing, element=element, drawing=drawing
-        ):
-            self.report({"WARNING"}, "An annotation must remain on at least one drawing.")
-            return
+        # Mirror AddAnnotationToDrawing: act on every selected annotation that is
+        # actually on this drawing, not just the active one.
+        elements = [
+            element
+            for o in tool.Blender.get_selected_objects()
+            if (element := tool.Ifc.get_entity(o))
+            and element.is_a("IfcAnnotation")
+            and element.ObjectType != "DRAWING"
+            and drawing in tool.Drawing.get_annotation_drawings(element)
+        ]
+        removed = 0
+        skipped = 0
+        for element in elements:
+            if core.remove_annotation_from_drawing(
+                tool.Ifc, tool.Collector, tool.Drawing, element=element, drawing=drawing
+            ):
+                removed += 1
+            else:
+                skipped += 1
+        msg = f"Removed {removed} annotation(s) from {drawing.Name or 'drawing'}."
+        if skipped:
+            msg += f" Skipped {skipped} (must remain on at least one drawing)."
+        self.report({"INFO"}, msg)
         for area in context.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
