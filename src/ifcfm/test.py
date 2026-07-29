@@ -166,3 +166,33 @@ class TestZoneDataUnnamedZone:
 
         data = cobie24.get_zone_data(ifc_file, (zone, None))
         assert data["Name"] == "Group A-Wet Areas"
+
+
+class TestZoneDataUnnamedZoneLegacy:
+    """Identical bug to TestZoneDataUnnamedZone above, in the cobie24legacy
+    preset: cobie24legacy.get_zone_data concatenated parent.Name + "-" +
+    zone.Name unguarded. Name is optional on IfcRoot, so an unnamed IfcZone
+    nested under a named IfcZone raised TypeError: can only concatenate str
+    (not "NoneType") to str."""
+
+    def test_unnamed_zone_with_named_parent_does_not_crash(self):
+        ifc_file, *_ = setup_project()
+        zone = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcZone", name=None)
+        parent_zone = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcZone", name="Group A")
+        ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=parent_zone, products=[zone])
+        assert zone.Name is None
+        assert ifcopenshell.util.element.get_aggregate(zone).Name == "Group A"
+
+        data = cobie24legacy.get_zone_data(ifc_file, (zone, None))
+        assert data["Name"] is None
+
+    def test_named_zone_with_named_parent_prefixes_name(self):
+        # Happy path: the guard must not affect the original prefixing
+        # behaviour when both names are present.
+        ifc_file, *_ = setup_project()
+        zone = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcZone", name="Wet Areas")
+        parent_zone = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcZone", name="Group A")
+        ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=parent_zone, products=[zone])
+
+        data = cobie24legacy.get_zone_data(ifc_file, (zone, None))
+        assert data["Name"] == "Group A-Wet Areas"

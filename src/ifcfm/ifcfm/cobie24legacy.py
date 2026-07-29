@@ -477,7 +477,7 @@ def get_zone_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
 
     name = zone.Name
     parent = ifcopenshell.util.element.get_aggregate(zone)
-    if parent and val(parent.Name):
+    if parent and val(parent.Name) and val(name):
         name = parent.Name + "-" + name
 
     category = get_category(zone)
