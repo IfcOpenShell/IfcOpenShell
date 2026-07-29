@@ -634,7 +634,7 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
 
 def get_component_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     space = ifcopenshell.util.element.get_container(element)
-    space_name = space.Name if space.is_a("IfcSpace") else None
+    space_name = space.Name if space and space.is_a("IfcSpace") else None
 
     type_name = None
     relating_type = ifcopenshell.util.element.get_type(element)

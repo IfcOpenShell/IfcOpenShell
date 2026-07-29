@@ -148,7 +148,7 @@ def get_element_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.ent
 
 def get_element_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     space = ifcopenshell.util.element.get_container(element)
-    space_name = space.Name if space.is_a("IfcSpace") else None
+    space_name = space.Name if space and space.is_a("IfcSpace") else None
     systems = ifcopenshell.util.system.get_element_systems(element)
     system = systems[0].Name if systems else None
     psets = ifcopenshell.util.element.get_psets(element)
