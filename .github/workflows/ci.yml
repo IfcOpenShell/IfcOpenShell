@@ -249,7 +249,9 @@ jobs:
           cd ../ifcquery && make test || ERROR=1
           pip install -e ../ifcedit --no-deps
           cd ../ifcedit && make test || ERROR=1
-          pip install mcp
+          # Pinned <2: mcp 2.0.0 renamed mcp.server.fastmcp.FastMCP to
+          # mcp.server.mcpserver.MCPServer, which ifcmcp doesn't support yet.
+          pip install "mcp>=1.0,<2"
           pip install -e ../ifcmcp --no-deps
           cd ../ifcmcp && make test || ERROR=1
           pip install -e ../ifctester --no-deps
