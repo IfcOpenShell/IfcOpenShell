@@ -18,7 +18,9 @@ classifiers = [
 dependencies = ["ifcopenshell", "ifcquery", "ifcedit"]
 
 [project.optional-dependencies]
-mcp = ["mcp"]
+# Pinned <2: mcp 2.0.0 renamed mcp.server.fastmcp.FastMCP to
+# mcp.server.mcpserver.MCPServer, which this package doesn't support yet.
+mcp = ["mcp>=1.0,<2"]
 
 [project.scripts]
 ifcmcp = "ifcmcp.__main__:main"
