@@ -1044,9 +1044,17 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
 
 def disable_editing_extrusion_axis(context):
     ProfileDecorator.uninstall()
-    bpy.ops.object.mode_set(mode="OBJECT")
 
+    # This is also used as the decorator's exit_edit_mode_callback, which
+    # can fire with no active object (e.g. the user deselected everything
+    # while editing). mode_set requires an active object to poll, so guard
+    # both that call and the rest of the cleanup below. See #9006.
     obj = context.active_object
+    if obj is None:
+        return {"CANCELLED"}
+    if obj.mode == "EDIT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+
     element = tool.Ifc.get_entity(obj)
     body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
