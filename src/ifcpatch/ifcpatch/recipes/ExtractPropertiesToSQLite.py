@@ -157,6 +157,10 @@ class Patcher(ifcpatch.BasePatcher):
                         properties.append(
                             PropertyRow(i, "IFC Material", f"Layer {idx + 1} Name", getattr(item, "Name", None))
                         )
+                        # Material is optional on IfcMaterialLayer.
+                        if material is None:
+                            self.logger.debug(f"Layer {idx + 1} of element #{element.id()} has no Material set.")
+                            continue
                         properties.append(PropertyRow(i, "IFC Material", f"Layer {idx + 1} Material", material.Name))
                         if category := getattr(material, "Category", None):
                             properties.append(PropertyRow(i, "IFC Material", f"Layer {idx + 1} Category", category))
@@ -164,6 +168,10 @@ class Patcher(ifcpatch.BasePatcher):
                     for idx, item in enumerate(material.MaterialProfiles or []):
                         material = item.Material
                         properties.append(PropertyRow(i, "IFC Material", f"Profile {idx + 1} Name", item.Name))
+                        # Material is optional on IfcMaterialProfile.
+                        if material is None:
+                            self.logger.debug(f"Profile {idx + 1} of element #{element.id()} has no Material set.")
+                            continue
                         properties.append(PropertyRow(i, "IFC Material", f"Profile {idx + 1} Material", material.Name))
                         if category := getattr(material, "Category", None):
                             properties.append(PropertyRow(i, "IFC Material", f"Profile {idx + 1} Category", category))
