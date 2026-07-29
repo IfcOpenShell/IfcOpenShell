@@ -49,3 +49,9 @@ extend = "../../pyproject.toml"
 lint.select = [
   "F401",  # unused imports
 ]
+
+[tool.pytest.ini_options]
+markers = [
+  "network: hits the live bSDD API; deselected by default, run with -m network",
+]
+addopts = "-m 'not network'"
