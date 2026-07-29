@@ -343,6 +343,13 @@ class DocPreferences(bpy.types.PropertyGroup):
     drawing_font: StringProperty(
         default="OpenGost Type B TT.ttf",
         name="Drawing Font",
+        description=(
+            "Font used for text in the 3D viewport and drawings. Browse to any "
+            "TrueType/OpenType font installed on your system if the bundled "
+            "default is missing glyphs you need (for example, non-English "
+            "characters)."
+        ),
+        subtype="FILE_PATH",
     )
     magic_font_scale: bpy.props.FloatProperty(
         default=0.004118616,
