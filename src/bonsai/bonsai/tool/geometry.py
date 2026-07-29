@@ -2837,9 +2837,16 @@ class Geometry(bonsai.core.tool.Geometry):
         causing both old and new products to share stale RelatedObjects lists.
 
         Three cases, identified by whether the RelatingProduct was also duplicated:
-          A) RelatingProduct is OLD → new annotation was incorrectly appended → remove it.
-          B) RelatingProduct is NEW → stale original annotation was carried over → remove it.
+          A) RelatingProduct is OLD → new annotation was incorrectly appended → remove it,
+             and hand it to the duplicate of that product, which is where it belongs.
+          B) RelatingProduct is NEW → stale original was carried over → remove it.
           C) RelatingProduct unchanged → create a genuinely new rel for the new annotation.
+
+        Case A used to only remove, because copy_class also cloned the product's rel onto
+        the duplicate, so case B did the re-linking. copy_class no longer shares annotations
+        that way (#9049), so case A has to make the link itself or the duplicated annotation
+        would end up assigned to nothing. Case B still fires for related objects that are
+        not annotations, such as the task that outputs the product.
         """
         ifc_file = tool.Ifc.get()
         old_elements = set(old_to_new.keys())
@@ -2855,6 +2862,30 @@ class Geometry(bonsai.core.tool.Geometry):
                 if relating_product in old_elements:
                     # Case A: remove new elem from the old product's rel
                     rel.RelatedObjects = [e for e in rel.RelatedObjects if e != new_elem]
+                    # The product was duplicated too, so follow it: the i-th copy of the
+                    # annotation belongs to the i-th copy of the product it labels.
+                    new_products = old_to_new.get(relating_product) or []
+                    index = old_to_new[original_elem].index(new_elem)
+                    if index < len(new_products):
+                        new_product = new_products[index]
+                        if not any(
+                            r.is_a("IfcRelAssignsToProduct") and r.RelatingProduct == new_product
+                            for r in new_elem.HasAssignments or []
+                        ):
+                            new_rel = next(
+                                (r for r in new_product.ReferencedBy or [] if r.is_a("IfcRelAssignsToProduct")),
+                                None,
+                            )
+                            if new_rel:
+                                new_rel.RelatedObjects = list(new_rel.RelatedObjects) + [new_elem]
+                            else:
+                                ifc_file.create_entity(
+                                    "IfcRelAssignsToProduct",
+                                    GlobalId=ifcopenshell.guid.new(),
+                                    OwnerHistory=rel.OwnerHistory,
+                                    RelatedObjects=[new_elem],
+                                    RelatingProduct=new_product,
+                                )
                 elif relating_product in new_elements:
                     # Case B: remove the stale original from the new product's rel
                     rel.RelatedObjects = [e for e in rel.RelatedObjects if e != original_elem]
