@@ -676,9 +676,9 @@ def convert(value: float, from_prefix: Optional[str], from_unit: str, to_prefix:
         return value * (1 / si_conversions[to_unit.lower()])
     elif to_prefix:
         value *= 1 / get_prefix_multiplier(to_prefix)
-        if "SQUARE" in from_unit:
+        if "SQUARE" in to_unit:
             value *= 1 / get_prefix_multiplier(to_prefix)
-        elif "CUBIC" in from_unit:
+        elif "CUBIC" in to_unit:
             value *= 1 / get_prefix_multiplier(to_prefix)
             value *= 1 / get_prefix_multiplier(to_prefix)
     return value
@@ -752,12 +752,21 @@ def format_length(
     :returns: The formatted string, such as 1' - 5 1/2".
     """
     if unit_system == "imperial":
+        # A negative value is negated up front and formatted as a positive
+        # magnitude, then the sign is reapplied once to the finished string.
+        # Negating feet and inches independently produces malformed output
+        # like "-1' - -6\"" for -1.5 feet.
+        sign = "-" if value < 0 else ""
+        value = abs(value)
+
         if input_unit == "foot":
             feet = int(value)
             inches = (value - feet) * 12
         elif input_unit == "inch":
             inches = value % 12
             feet = int(round((value - inches) / 12))
+        else:
+            raise ValueError(f"Unexpected input_unit {input_unit!r}. Use 'foot' or 'inch'.")
 
         # Round to the nearest 1/N
         nearest = round(inches * precision)
@@ -769,24 +778,25 @@ def format_length(
         if frac.denominator == 1:
             if suppress_zero_inches and frac.numerator == 0:
                 if output_unit == "foot":
-                    return f"{feet}'"
-                return f'{feet * 12}"'
+                    return f"{sign}{feet}'"
+                return f'{sign}{feet * 12}"'
             if output_unit == "foot":
-                return f"{feet}' - {frac.numerator}\""
-            return f'{(feet * 12) + frac.numerator}"'
+                return f"{sign}{feet}' - {frac.numerator}\""
+            return f'{sign}{(feet * 12) + frac.numerator}"'
         if frac.numerator > frac.denominator:
             remainder = frac.numerator % frac.denominator
             whole = int((frac.numerator - remainder) / frac.denominator)
             if output_unit == "foot":
-                return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
-            return f'{(feet * 12) + whole} {remainder}/{frac.denominator}"'
+                return f"{sign}{feet}' - {whole} {remainder}/{frac.denominator}\""
+            return f'{sign}{(feet * 12) + whole} {remainder}/{frac.denominator}"'
         # When we have a proper fraction (numerator < denominator), show "0 frac"
         if output_unit == "foot":
-            return f"{feet}' - 0 {frac.numerator}/{frac.denominator}\""
-        return f'{feet * 12} {frac.numerator}/{frac.denominator}"'
+            return f"{sign}{feet}' - 0 {frac.numerator}/{frac.denominator}\""
+        return f'{sign}{feet * 12} {frac.numerator}/{frac.denominator}"'
     elif unit_system == "metric":
         rounded_val = round(value / precision) * precision
         return f"{rounded_val:.{decimal_places}f}"
+    raise ValueError(f"Unexpected unit_system {unit_system!r}. Use 'metric' or 'imperial'.")
 
 
 def is_attr_type(
