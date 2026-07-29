@@ -440,7 +440,7 @@ class Classification(Facet):
             if not is_pass:
                 reason = {"type": "VALUE", "actual": values}
 
-        if is_pass:
+        if is_pass and self.system:
             classifications = filter(None, (ifcopenshell.util.classification.get_classification(r) for r in references))
             systems = [r.Name for r in classifications]
             is_pass = any([self.system == s for s in systems])
@@ -920,7 +920,14 @@ class Property(Facet):
             return pset.Quantities
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             return pset.Properties
-        elif pset.is_a("IfcPreDefinedPropertySet"):
+        else:
+            # Predefined property sets (e.g. IfcDoorLiningProperties) store their
+            # values as direct attributes rather than IfcProperty entities. In
+            # IFC4 these are IfcPreDefinedPropertySet subtypes, but that abstract
+            # supertype does not exist in IFC2X3, so the same kind of entity
+            # (e.g. IfcWindowLiningProperties) falls straight through to here
+            # instead. ifcopenshell.util.element.get_property_definition() already
+            # treats this as its unconditional fallback, so mirror that here.
             return [
                 type("", (object,), {"Name": k, "Value": v})()
                 for k, v in pset.get_info().items()
