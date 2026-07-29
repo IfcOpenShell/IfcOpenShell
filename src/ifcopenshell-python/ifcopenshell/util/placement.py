@@ -34,6 +34,11 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixTyp
     IFC uses a right-handed coordinate system, so it is not necessary to
     provide the Y axis.
 
+    The X axis is projected onto the plane normal to the Z axis, as prescribed
+    by the IfcBuildAxes and IfcFirstProjAxis EXPRESS functions. The result is
+    therefore always orthonormal, even if the supplied X axis is not
+    perpendicular to the supplied Z axis.
+
     :param o: The origin (i.e. location) of the matrix
     :param z: The +Z vector / axis of the matrix
     :param x: The +X vector / axis of the matrix
@@ -43,10 +48,23 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixTyp
     z = z / np.linalg.norm(z)
     y = np.cross(z, x)
     y = y / np.linalg.norm(y)
+    x = np.cross(y, z)
     r = np.eye(4)
     r[:-1, :-1] = x, y, z
     r[-1, :-1] = o
     return r.T
+
+
+def _default_ref_direction(z: np.ndarray) -> np.ndarray:
+    """Picks a default X axis that is not parallel to the given Z axis
+
+    Used where RefDirection is absent and the X axis is therefore ours to
+    choose. Mirrors the fallback in the geometry kernel's matrix4 constructor.
+    """
+    x = np.array((1.0, 0.0, 0.0))
+    if np.linalg.norm(np.cross(z, x)) < 1e-7:
+        x = np.array((0.0, 0.0, 1.0))
+    return x
 
 
 def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
@@ -63,7 +81,10 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     ifc_class = placement.is_a()
     if ifc_class in ("IfcAxis2Placement3D", "IfcAxis2PlacementLinear"):
         z = np.array(placement.Axis.DirectionRatios if placement.Axis else (0, 0, 1))
-        x = np.array(placement.RefDirection.DirectionRatios if placement.RefDirection else (1, 0, 0))
+        if placement.RefDirection:
+            x = np.array(placement.RefDirection.DirectionRatios)
+        else:
+            x = _default_ref_direction(z)
         location = placement.Location
         if coordinates := getattr(location, "Coordinates", None):
             o = coordinates
@@ -86,7 +107,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     elif ifc_class == "IfcAxis1Placement":
         axis = placement.Axis
         z = np.array(axis.DirectionRatios if axis else (0, 0, 1))
-        x = np.array((1, 0, 0))
+        x = _default_ref_direction(z)
         o = placement.Location.Coordinates
 
     else:
