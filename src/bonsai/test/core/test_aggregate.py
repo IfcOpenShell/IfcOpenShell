@@ -59,3 +59,13 @@ class TestUnassignObject:
         collector.assign("relating_obj").should_be_called()
         collector.assign("related_obj").should_be_called()
         subject.unassign_object(ifc, aggregate, collector, relating_obj="relating_obj", related_obj="related_obj")
+
+    def test_run_without_relating_obj_when_no_aggregate_is_found(self, ifc, aggregate, collector):
+        # relating_obj is Optional and defaults to None: the function must look
+        # it up itself via aggregate.get_relating_object(). When that lookup
+        # finds no aggregate, it must not call ifc.get_object() with that
+        # None result, and must not run any unassign/collector side effects.
+        ifc.get_entity("related_obj").should_be_called().will_return("element")
+        aggregate.get_container("element").should_be_called().will_return(None)
+        aggregate.get_relating_object("element").should_be_called().will_return(None)
+        subject.unassign_object(ifc, aggregate, collector, related_obj="related_obj")

@@ -65,7 +65,7 @@ def unassign_object(
     container = aggregate.get_container(related_element)
     if not relating_obj:
         relating_element = aggregate.get_relating_object(related_element)
-        if related_element:
+        if relating_element:
             relating_obj = ifc.get_object(relating_element)
     if relating_obj:
         ifc.run("aggregate.unassign_object", products=[related_element])
