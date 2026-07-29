@@ -436,5 +436,35 @@ def convert_path_to_rocksdb(
     ser.finalize()
 
 
+_global_ifc_models: dict[str, file] = {}
+
+
+def create_entity(type: str, schema: str = "IFC4", *args: Any, **kwargs: Any) -> entity_instance:
+    """Creates a new IFC entity that will be stored in a global file object
+
+    Note that it is more common to create entities within an existing explicit file
+    object. See :meth:`ifcopenshell.file.create_entity`.
+
+    :param type: Case insensitive name of the IFC class
+    :param schema: The IFC schema identifier
+    :param args: The positional arguments of the IFC class
+    :param kwargs: The keyword arguments of the IFC class
+    :returns: An entity instance
+
+    Example:
+
+    .. code:: python
+
+        person = ifcopenshell.create_entity("IfcPerson") # #0=IfcPerson($,$,$,$,$,$,$,$)
+        model = ifcopenshell.file()
+        model.add(person) # #1=IfcPerson($,$,$,$,$,$,$,$)
+    """
+    if fi := _global_ifc_models.get(schema.lower()):
+        pass
+    else:
+        fi = _global_ifc_models[schema.lower()] = file(schema=schema)
+    return fi.create_entity(type, *args, **kwargs)
+
+
 version_core = ifcopenshell_wrapper.version()
 __version__ = version = "0.0.0"
