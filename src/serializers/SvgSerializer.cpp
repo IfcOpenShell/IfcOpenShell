@@ -2469,9 +2469,318 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 	return m;
 }
 
+namespace {
+	// Cross-product coincident-edge deduplication (issue #3742 follow-up). When two DIFFERENT
+	// products each independently produce an edge at (or extremely near) the same real-world
+	// location -- e.g. two touching objects whose shared boundary is visible from both sides --
+	// which one ends up drawn on top in the final flat SVG is NOT spatial: it comes from
+	// IfcGeom::Iterator's multi-threaded worker-completion order (a race between threads
+	// finishing geometry conversion for different products), then products are written to the
+	// SVG in that same order -- since SVG has no Z-index, later elements simply paint over
+	// earlier ones regardless of true camera-space depth. Real, correct, cross-product HLR
+	// *does* already run (prefiltered_hlr::build() adds every product sharing a drawing/storey
+	// into one shared HLRBRep_Algo/PolyAlgo before a single Hide()/Update() call), so this is
+	// never a visibility-computation bug -- both of two touching products' coincident edges are
+	// genuinely, correctly visible (neither occludes the other, since they're at the same
+	// location). The bug is purely which of two coincident-but-both-visible edges paints on top.
+	//
+	// Fixed here with a pass over every item's edges (still real TopoDS_Edge/gp_Pnt data, before
+	// any mirroring or stringification into SVG path text), bucketing by a canonical
+	// (endpoint-order-independent) key quantized to cross-coplanar-tolerance-scale precision.
+	// Any bucket spanning more than one distinct product keeps only the single highest-priority
+	// edge (see kClassPriority below) -- deterministic regardless of processing order, so the
+	// visually-correct edge always wins.
+
+	// Priority for picking a winner among coincident duplicate edges from different products
+	// (lower number = higher priority = wins). `outline` is a product's own true silhouette and
+	// always wins when it coincides with anything else -- confirmed against a reported case
+	// where a mat-style-change edge wrongly painted over the true outline of the object actually
+	// visible from this camera. `mat-style-change`/`cross-coplanar` represent a *resolved*
+	// cross-product matching decision (more specific than an ordinary single-object
+	// classification), so they outrank sharp/crease/flush, but still lose to a genuine outline
+	// on the other side. `boundary` (naked/non-manifold edges) has no confirmed test case in
+	// this scenario; placed conservatively last.
+	int coincident_edge_class_priority(const std::string& cls) {
+		if (cls == "outline") return 0;
+		if (cls == mat_style_change::class_name) return 1;
+		if (cls == cross_coplanar::class_name) return 2;
+		if (cls == "sharp") return 3;
+		if (cls == "crease") return 4;
+		if (cls == "flush") return 5;
+		return 6; // "boundary" or anything unrecognised
+	}
+
+	using quant_pnt = std::tuple<long long, long long, long long>;
+	using quant_edge_key = std::pair<quant_pnt, quant_pnt>;
+
+	size_t mix_quant_triple(long long a, long long b, long long c) {
+		size_t h = std::hash<long long>()(a);
+		h ^= std::hash<long long>()(b) + 0x9e3779b9 + (h << 6) + (h >> 2);
+		h ^= std::hash<long long>()(c) + 0x9e3779b9 + (h << 6) + (h >> 2);
+		return h;
+	}
+
+	struct quant_pnt_hash {
+		size_t operator()(const quant_pnt& p) const {
+			return mix_quant_triple(std::get<0>(p), std::get<1>(p), std::get<2>(p));
+		}
+	};
+
+	struct quant_edge_key_hash {
+		size_t operator()(const quant_edge_key& k) const {
+			size_t h0 = mix_quant_triple(std::get<0>(k.first), std::get<1>(k.first), std::get<2>(k.first));
+			size_t h1 = mix_quant_triple(std::get<0>(k.second), std::get<1>(k.second), std::get<2>(k.second));
+			return h0 ^ (h1 + 0x9e3779b9 + (h0 << 6) + (h0 >> 2));
+		}
+	};
+
+	quant_pnt quantize_point(const gp_Pnt& p, double scale) {
+		return { std::llround(p.X() * scale), std::llround(p.Y() * scale), std::llround(p.Z() * scale) };
+	}
+
+	quant_edge_key make_edge_key(const gp_Pnt& p0, const gp_Pnt& p1, double scale) {
+		quant_pnt q0 = quantize_point(p0, scale);
+		quant_pnt q1 = quantize_point(p1, scale);
+		return (q0 <= q1) ? quant_edge_key{ q0, q1 } : quant_edge_key{ q1, q0 };
+	}
+
+	// Computes, for every coincident-edge bucket that genuinely mixes classes across more than
+	// one product, the best (lowest-number) class priority present. Deliberately does NOT
+	// resolve buckets where every contributing product agrees on the same class -- e.g. both
+	// sides of a legitimate internal seam independently computing `cross-coplanar`, or both
+	// sides of a real material transition computing `mat-style-change`, is the correct,
+	// *intentional* outcome (both are meant to be shown together when cross-coplanar/
+	// mat-style-change rendering is enabled for QA, or both hidden together otherwise) -- not a
+	// paint-order bug to fix. Only a genuine class *mismatch* (e.g. one side `outline`, the
+	// other `sharp`) indicates one of the two is the wrong edge to be painting on top of the
+	// other; same-class duplicates are left completely untouched.
+	std::unordered_map<quant_edge_key, int, quant_edge_key_hash>
+	compute_coincident_edge_best_priority(
+		const std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>>& hlr_items,
+		double tolerance
+	) {
+		const double scale = 1.0 / tolerance;
+		struct edge_ref {
+			const IfcUtil::IfcBaseEntity* product;
+			int priority;
+		};
+		std::unordered_map<quant_edge_key, std::vector<edge_ref>, quant_edge_key_hash> buckets;
+
+		for (auto& item : hlr_items) {
+			const IfcUtil::IfcBaseEntity* product = std::get<0>(item);
+			const std::string& cls = std::get<1>(item);
+			const TopoDS_Shape& shape = std::get<2>(item);
+			if (shape.IsNull()) {
+				continue;
+			}
+			int prio = coincident_edge_class_priority(cls);
+			for (TopExp_Explorer eexp(shape, TopAbs_EDGE); eexp.More(); eexp.Next()) {
+				TopoDS_Vertex v0, v1;
+				TopExp::Vertices(TopoDS::Edge(eexp.Current()), v0, v1);
+				if (v0.IsNull() || v1.IsNull()) {
+					continue;
+				}
+				auto key = make_edge_key(BRep_Tool::Pnt(v0), BRep_Tool::Pnt(v1), scale);
+				buckets[key].push_back({ product, prio });
+			}
+		}
+
+		std::unordered_map<quant_edge_key, int, quant_edge_key_hash> best_priority_by_key;
+		for (auto& kv : buckets) {
+			bool multi_product = false;
+			bool multi_priority = false;
+			int best_prio = kv.second[0].priority;
+			for (size_t i = 1; i < kv.second.size(); ++i) {
+				if (kv.second[i].product != kv.second[0].product) {
+					multi_product = true;
+				}
+				if (kv.second[i].priority != kv.second[0].priority) {
+					multi_priority = true;
+				}
+				best_prio = std::min(best_prio, kv.second[i].priority);
+			}
+			// Only record a resolution for buckets that genuinely mix both products AND
+			// classes -- same-class duplicates across products (e.g. both cross-coplanar) are
+			// intentional and must be left alone (see the function comment above).
+			if (multi_product && multi_priority) {
+				best_priority_by_key[kv.first] = best_prio;
+			}
+		}
+		return best_priority_by_key;
+	}
+
+	// Angular bucket width for the line-identity prefilter below. Deliberately looser than
+	// kCoplanarNormalTolerance's own implied ~0.0087 rad (acos(1 - 3.8e-5)) -- over-inclusion here
+	// only costs a few extra pairwise checks inside one small bucket, while under-inclusion would
+	// silently skip a genuine nested-duplicate pair. Consistent in spirit with make_edge_key()'s
+	// own single-rounding scheme just above.
+	constexpr double kLineBucketAngularTolerance = 0.01;
+
+	// Sign-canonicalizes `dir` (forces the largest-magnitude component positive -- two
+	// independently-computed collinear edges can disagree on sign) then quantizes at
+	// kLineBucketAngularTolerance-scale precision. Reuses quant_pnt as the tuple shape.
+	quant_pnt quantize_direction(const gp_Dir& dir, double scale) {
+		double c[3] = { dir.X(), dir.Y(), dir.Z() };
+		int axis = 0;
+		if (std::abs(c[1]) > std::abs(c[axis])) axis = 1;
+		if (std::abs(c[2]) > std::abs(c[axis])) axis = 2;
+		double sign = (c[axis] < 0.0) ? -1.0 : 1.0;
+		return {
+			std::llround(sign * c[0] * scale),
+			std::llround(sign * c[1] * scale),
+			std::llround(sign * c[2] * scale)
+		};
+	}
+
+	// Builds a LineSeg directly from an edge's two vertex positions, rather than
+	// cross_coplanar::edge_to_line_seg()'s BRep_Tool::Curve()-based approach. HLR output edges
+	// (hlr_compound_full, before ShapeFix_Edge::FixAddCurve3d() runs further down in draw_hlr())
+	// have no 3D curve attached yet, so edge_to_line_seg() -- built for pre-HLR real-face-topology
+	// edges -- always returns boost::none here. Since HLR output for a BRep model is always
+	// straight polygonal segments, reconstructing the line from its two endpoints is both
+	// sufficient and more robust for this specific post-HLR use than depending on curve-type
+	// introspection.
+	boost::optional<cross_coplanar::LineSeg> edge_to_line_seg_from_vertices(const TopoDS_Edge& e) {
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(e, v0, v1);
+		if (v0.IsNull() || v1.IsNull()) {
+			return boost::none;
+		}
+		gp_Pnt p0 = BRep_Tool::Pnt(v0);
+		gp_Pnt p1 = BRep_Tool::Pnt(v1);
+		if (p0.Distance(p1) < Precision::Confusion()) {
+			return boost::none;
+		}
+		gp_Vec v(p0, p1);
+		return cross_coplanar::LineSeg{ p0, p1, gp_Dir(v), v.Magnitude(), e };
+	}
+
+	// Detects collinear-overlap coincident-edge duplicates that compute_coincident_edge_best_priority
+	// misses -- e.g. one product's SHORT edge fully nested inside another product's collinear,
+	// LONGER edge (sharing at most one endpoint; the exact-endpoint bucket above never groups
+	// these). Buckets every straight-line edge across hlr_items by (quantized canonical direction,
+	// quantized foot point) -- i.e. "which infinite 3D line is this edge on" -- so the pairwise
+	// collinear/overlap test only ever runs within a small per-line bucket, never across the whole
+	// drawing. Within a bucket, for every pair from *different* products with *different* class
+	// priorities (same-priority overlaps -- e.g. both genuinely cross-coplanar -- are skipped
+	// before any geometry test, same "intentional agreement" rule as
+	// compute_coincident_edge_best_priority()) that are genuinely collinear with a non-trivial
+	// overlap, the lower-priority edge's overlapped sub-range is recorded, in its own [0, length]
+	// parametrization, into a cross_coplanar::edge_coverage_map_t -- ready for
+	// cross_coplanar::split_edge_by_coverage() to trim.
+	cross_coplanar::edge_coverage_map_t compute_coincident_edge_overlap_coverage(
+		const std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>>& hlr_items,
+		double tolerance
+	) {
+		struct entry {
+			const IfcUtil::IfcBaseEntity* product;
+			int priority;
+			cross_coplanar::LineSeg seg;
+		};
+		std::vector<entry> entries;
+		for (auto& item : hlr_items) {
+			const IfcUtil::IfcBaseEntity* product = std::get<0>(item);
+			const std::string& cls = std::get<1>(item);
+			const TopoDS_Shape& shape = std::get<2>(item);
+			if (shape.IsNull()) {
+				continue;
+			}
+			int prio = coincident_edge_class_priority(cls);
+			for (TopExp_Explorer eexp(shape, TopAbs_EDGE); eexp.More(); eexp.Next()) {
+				auto seg = edge_to_line_seg_from_vertices(TopoDS::Edge(eexp.Current()));
+				if (!seg) {
+					continue; // curved edge -- ineligible for this pass, falls back to exact-key only
+				}
+				entries.push_back({ product, prio, *seg });
+			}
+		}
+
+		// Bucket by quantized direction ONLY (not also by a quantized foot-point, as an earlier
+		// version of this pass tried) -- a two-level quantized key is fragile exactly where it
+		// matters most: two independently-computed collinear edges from different products can
+		// differ enough in the 6th-7th decimal digit (the same floating-point noise seen
+		// throughout this codebase's cross-product matching) to land their foot points in
+		// *adjacent*, not identical, hash cells, silently skipping a genuine nested-duplicate
+		// pair -- confirmed as the actual cause of a real miss during development. Direction
+		// quantization alone is a much looser, safer prefilter (kLineBucketAngularTolerance is
+		// already deliberately looser than the position tolerance); the actual collinearity test
+		// below uses the true (non-quantized) perpendicular-distance computation, so no precision
+		// is lost -- only the O(n^2) prefilter grouping is coarser, trading a larger per-bucket
+		// pairwise cost for correctness.
+		const double dir_scale = 1.0 / kLineBucketAngularTolerance;
+
+		std::unordered_map<quant_pnt, std::vector<size_t>, quant_pnt_hash> buckets;
+		buckets.reserve(entries.size());
+		for (size_t i = 0; i < entries.size(); ++i) {
+			quant_pnt dkey = quantize_direction(entries[i].seg.dir, dir_scale);
+			buckets[dkey].push_back(i);
+		}
+
+		cross_coplanar::edge_coverage_map_t coverage;
+		auto record = [&](const TopoDS_Edge& e, double lo, double hi) {
+			auto* existing = coverage.ChangeSeek(e);
+			if (existing) {
+				existing->push_back({ lo, hi });
+			} else {
+				coverage.Bind(e, { { lo, hi } });
+			}
+		};
+
+		for (auto& kv : buckets) {
+			auto& idxs = kv.second;
+			for (size_t a = 0; a < idxs.size(); ++a) {
+				for (size_t b = a + 1; b < idxs.size(); ++b) {
+					const entry& ei = entries[idxs[a]];
+					const entry& ej = entries[idxs[b]];
+					if (ei.product == ej.product) continue;   // not a cross-product duplicate
+					if (ei.priority == ej.priority) continue;  // intentional agreement -- leave alone
+
+					// Same collinearity/perp-distance test as cross_coplanar::accumulate_edge_coverage().
+					if (std::abs(ei.seg.dir.Dot(ej.seg.dir)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
+						continue;
+					}
+					gp_Vec to_other(ei.seg.p0, ej.seg.p0);
+					double perp_dist = to_other.Crossed(gp_Vec(ei.seg.dir)).Magnitude();
+					if (perp_dist >= tolerance) {
+						continue;
+					}
+
+					// Overlap in ei's own frame.
+					double t0 = gp_Vec(ei.seg.p0, ej.seg.p0).Dot(gp_Vec(ei.seg.dir));
+					double t1 = gp_Vec(ei.seg.p0, ej.seg.p1).Dot(gp_Vec(ei.seg.dir));
+					double lo_i = std::max(std::min(t0, t1), 0.0);
+					double hi_i = std::min(std::max(t0, t1), ei.seg.length);
+					bool has_i_overlap = (hi_i - lo_i) >= tolerance;
+
+					// Overlap in ej's own frame (independently -- must not reuse ei's t-values).
+					double u0 = gp_Vec(ej.seg.p0, ei.seg.p0).Dot(gp_Vec(ej.seg.dir));
+					double u1 = gp_Vec(ej.seg.p0, ei.seg.p1).Dot(gp_Vec(ej.seg.dir));
+					double lo_j = std::max(std::min(u0, u1), 0.0);
+					double hi_j = std::min(std::max(u0, u1), ej.seg.length);
+					bool has_j_overlap = (hi_j - lo_j) >= tolerance;
+
+					if (!has_i_overlap && !has_j_overlap) {
+						continue; // touching at a shared vertex only, not a genuine overlap range
+					}
+
+					if (ei.priority > ej.priority) {
+						if (has_i_overlap) record(ei.seg.edge, lo_i, hi_i); // ei loses
+					} else {
+						if (has_j_overlap) record(ej.seg.edge, lo_j, hi_j); // ej loses
+					}
+				}
+			}
+		}
+		return coverage;
+	}
+}
+
 void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name) {
 	hlr_t& hlr_source = drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr;
 	auto hlr_items = hlr_source.build();
+
+	auto coincident_best_priority = compute_coincident_edge_best_priority(hlr_items, svg_cross_coplanar_tolerance_);
+	auto coincident_overlap_coverage = compute_coincident_edge_overlap_coverage(hlr_items, svg_cross_coplanar_tolerance_);
 
 	// SVG edge classification (issue #3668): each item's class is already known -- it was
 	// determined pre-HLR from real face topology (see the classified_edge_buckets block in
@@ -2485,9 +2794,72 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 	for (auto& item : hlr_items) {
 		const IfcUtil::IfcBaseEntity* product = std::get<0>(item);
 		const std::string& cls = std::get<1>(item);
-		const TopoDS_Shape& hlr_compound_unmirrored = std::get<2>(item);
+		const TopoDS_Shape& hlr_compound_full = std::get<2>(item);
 
-		if (hlr_compound_unmirrored.IsNull()) {
+		if (hlr_compound_full.IsNull()) {
+			continue;
+		}
+
+		// Drop any edge whose coincident-duplicate bucket (computed above, in the same
+		// pre-mirror coordinate space) genuinely mixes classes across products AND this edge's
+		// own class is strictly worse than the best one present -- e.g. a `sharp` edge dropped
+		// in favour of another product's coincident `outline`. An edge at the *same* (tied)
+		// best priority as another product's coincident edge is always kept (never arbitrarily
+		// picks between equally-good duplicates), and a bucket where every product agrees on the
+		// same class (e.g. both sides `cross-coplanar`) has no entry in coincident_best_priority
+		// at all, so nothing here is ever touched for those -- see
+		// compute_coincident_edge_best_priority()'s own comment for why that's intentional.
+		TopoDS_Compound hlr_compound_filtered;
+		BRep_Builder dedup_builder;
+		dedup_builder.MakeCompound(hlr_compound_filtered);
+		{
+			const double scale = 1.0 / svg_cross_coplanar_tolerance_;
+			const int this_priority = coincident_edge_class_priority(cls);
+			for (TopExp_Explorer eexp(hlr_compound_full, TopAbs_EDGE); eexp.More(); eexp.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
+				TopoDS_Vertex v0, v1;
+				TopExp::Vertices(e, v0, v1);
+				bool keep = true;
+				if (!v0.IsNull() && !v1.IsNull()) {
+					auto key = make_edge_key(BRep_Tool::Pnt(v0), BRep_Tool::Pnt(v1), scale);
+					auto it = coincident_best_priority.find(key);
+					if (it != coincident_best_priority.end() && this_priority > it->second) {
+						keep = false;
+					}
+				}
+				if (!keep) {
+					continue; // exact-duplicate fast path: dropped entirely
+				}
+
+				// Collinear-overlap pass (nested/sub-range duplicates the exact-key pass above
+				// can't see -- see compute_coincident_edge_overlap_coverage()'s own comment).
+				// Edges absent from this map (the overwhelming majority) fall straight through to
+				// the unchanged-original path below, byte-identical to before this pass existed.
+				auto* raw_overlap = coincident_overlap_coverage.ChangeSeek(e);
+				if (!raw_overlap) {
+					dedup_builder.Add(hlr_compound_filtered, e);
+					continue;
+				}
+				auto seg = edge_to_line_seg_from_vertices(e);
+				if (!seg) {
+					// Shouldn't happen -- compute_coincident_edge_overlap_coverage() only ever
+					// records entries for edges it already built a LineSeg for -- but never
+					// crash or silently drop.
+					dedup_builder.Add(hlr_compound_filtered, e);
+					continue;
+				}
+				auto split = cross_coplanar::split_edge_by_coverage(e, *seg, *raw_overlap, svg_cross_coplanar_tolerance_);
+				for (auto& r : split.remainder) {
+					dedup_builder.Add(hlr_compound_filtered, r);
+				}
+				// split.covered (the overlapped-by-better-priority portion) is deliberately
+				// discarded -- it's simply a wrong-priority duplicate of another product's edge,
+				// not something to feed into a second class bucket.
+			}
+		}
+		const TopoDS_Shape& hlr_compound_unmirrored = hlr_compound_filtered;
+
+		if (TopExp_Explorer(hlr_compound_unmirrored, TopAbs_EDGE).More() == Standard_False) {
 			continue;
 		}
 
