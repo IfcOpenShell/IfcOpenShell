@@ -611,6 +611,9 @@ class Ifc2CA:
                     MX = np.array([tempMX, tempMY, tempMZ]).dot(element["orientation"][:, 0])
                     MY = np.array([tempMX, tempMY, tempMZ]).dot(element["orientation"][:, 1])
                     MZ = np.array([tempMX, tempMY, tempMZ]).dot(element["orientation"][:, 2])
+                # a point load has no length to project against, in either GLOBAL_COORDS or LOCAL_COORDS
+                force_projection_coeff = 1.0
+                moment_projection_coeff = 1.0
 
             elif action.is_a("IfcStructuralLinearAction") and load.is_a("IfcStructuralLoadLinearForce"):
                 FX = tempFX = load.LinearForceX if load.LinearForceX is not None else 0.0
