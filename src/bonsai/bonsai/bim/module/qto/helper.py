@@ -36,8 +36,51 @@ def calculate_faces_areas(objs: list[bpy.types.Object], context: bpy.types.Conte
     return calculate_mesh_quantity(objs, context, lambda bm: sum(f.calc_area() for f in bm.faces if f.select))
 
 
-def calculate_volumes(objs: list[bpy.types.Object], context: bpy.types.Context) -> float:
-    return calculate_mesh_quantity(objs, context, lambda bm: bm.calc_volume())
+def is_manifold(bm: bmesh.types.BMesh) -> bool:
+    """Checks whether a bmesh is a closed, consistently oriented manifold.
+
+    bm.calc_volume() sums signed tetrahedra via the divergence theorem, which
+    assumes a watertight mesh with matching face winding across every edge.
+    A non-manifold mesh (open, or with inconsistent winding) gives a
+    plausible-looking but wrong volume instead of an error, see
+    https://github.com/IfcOpenShell/IfcOpenShell/issues/6125.
+
+    :param bm: A bmesh instance.
+    :return: True if every edge is shared by exactly two faces with matching winding.
+    """
+    return all(edge.is_contiguous for edge in bm.edges)
+
+
+def calculate_volumes(objs: list[bpy.types.Object], context: bpy.types.Context) -> tuple[float, list[str]]:
+    """Sum the bmesh volume of the given mesh objects.
+
+    Non-manifold objects are excluded from the sum, since bm.calc_volume()
+    silently returns a wrong number for them instead of failing loudly
+    (#6125). Their names are returned so the caller can warn the user
+    rather than reporting an incomplete total without saying so.
+
+    :param objs: iterable of mesh objects
+    :param context: current execution context
+    :returns: total volume of the manifold objects, and the names of any
+        objects skipped for being non-manifold.
+    """
+    result = 0.0
+    non_manifold_names = []
+    edit_mode = context.active_object.mode == "EDIT"
+    for obj in objs:
+        assert isinstance(obj.data, bpy.types.Mesh)
+        if edit_mode:
+            bm = bmesh.from_edit_mesh(obj.data)
+        else:
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+        if is_manifold(bm):
+            result += bm.calc_volume()
+        else:
+            non_manifold_names.append(obj.name)
+        if not edit_mode:
+            bm.free()
+    return result, non_manifold_names
 
 
 def calculate_mesh_quantity(
