@@ -169,6 +169,39 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert own == mapped
         assert len(output.by_type("IfcShapeRepresentation")) == 1
 
+    def test_shared_presentation_layer_keeps_every_element(self):
+        # Regression test for #9008: an IfcPresentationLayerAssignment is shared by
+        # every element drawn on it. append_asset created it on the first element
+        # that reached it and returned on every later visit, so the output kept the
+        # items of one element and every other element silently lost its layer.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+
+        walls = []
+        items = []
+        for _ in range(4):
+            wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+            points = [self.file.createIfcCartesianPoint(p) for p in ((0.0, 0.0), (1.0, 0.0))]
+            item = self.file.createIfcPolyline(points)
+            representation = self.file.createIfcShapeRepresentation(context, "Body", "Curve2D", [item])
+            wall.Representation = self.file.createIfcProductDefinitionShape(None, None, [representation])
+            walls.append(wall)
+            items.append(item)
+        layer = self.file.createIfcPresentationLayerAssignment("Layer", None, items, None)
+        assert len(layer.AssignedItems) == len(walls)
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall", False]})
+
+        assert len(output.by_type("IfcWall")) == len(walls)
+        layers = output.by_type("IfcPresentationLayerAssignment")
+        assert len(layers) == 1
+        assert layers[0].Name == "Layer"
+        assigned = set(layers[0].AssignedItems)
+        assert len(assigned) == len(walls)
+        for wall in output.by_type("IfcWall"):
+            wall_items = {i for r in wall.Representation.Representations for i in r.Items}
+            assert wall_items & assigned, f"{wall.GlobalId} lost its presentation layer"
+
     def test_keep_spatial_structure(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
 

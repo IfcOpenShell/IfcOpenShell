@@ -53,6 +53,9 @@ def append_asset(
     deferred_relationship_members: Optional[
         dict[int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]]
     ] = None,
+    deferred_layer_items: Optional[
+        dict[int, tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]]
+    ] = None,
 ) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
@@ -79,6 +82,10 @@ def append_asset(
         to add just 1 asset or if added assets won't have any shared elements, then it can be left empty.
     :param assume_asset_uniqueness_by_name: If True, checks if elements (profiles, materials, styles)
         with the same name already exist in the project and reuses them instead of appending new ones.
+    :param deferred_layer_items: Optional accumulator shared across ``append_asset``
+        calls that collects ``IfcPresentationLayerAssignment.AssignedItems`` instead
+        of re-assigning the growing item set on every call, which is O(n^2). Pass it
+        to ``flush_deferred_layer_items`` once all assets have been appended.
     :return: The appended element
 
     Example:
@@ -144,8 +151,27 @@ def append_asset(
         "reuse_identities": {} if reuse_identities is None else reuse_identities,
         "assume_asset_uniqueness_by_name": assume_asset_uniqueness_by_name,
         "deferred_relationship_members": deferred_relationship_members,
+        "deferred_layer_items": deferred_layer_items,
     }
     return usecase.execute()
+
+
+def flush_deferred_layer_items(
+    deferred_layer_items: dict[int, tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]],
+) -> None:
+    """Assign presentation layer item sets deferred by ``append_asset``.
+
+    ``IfcPresentationLayerAssignment.AssignedItems`` is shared by every asset
+    drawn on that layer, so assigning it once per appended asset re-writes a set
+    that grows with the number of assets, which is O(n^2). With a shared
+    ``deferred_layer_items`` accumulator the items are collected in Python and
+    each layer's set is written a single time here. Call this once, after all
+    appends.
+
+    :param deferred_layer_items: The accumulator passed to ``append_asset``.
+    """
+    for layer, items in deferred_layer_items.values():
+        layer.AssignedItems = list(dict.fromkeys(items))
 
 
 def flush_deferred_relationship_members(
@@ -278,6 +304,7 @@ class Usecase:
         self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
         self.assume_asset_uniqueness_by_name = self.settings["assume_asset_uniqueness_by_name"]
         self.deferred_relationship_members = self.settings["deferred_relationship_members"]
+        self.deferred_layer_items = self.settings["deferred_layer_items"]
 
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -490,6 +517,7 @@ class Usecase:
                 element=element_type,
                 reuse_identities=self.reuse_identities,
                 assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
+                deferred_layer_items=self.deferred_layer_items,
             )
             ifcopenshell.api.type.assign_type(
                 self.file,
@@ -554,11 +582,15 @@ class Usecase:
                     attribute, attribute_class = attribute.split(".")
                 for inverse in getattr(element, attribute, []):
                     if attribute_class and inverse.is_a(attribute_class):
-                        self.add_inverse_element(inverse)
+                        self.add_inverse_element(inverse, element)
                     elif not attribute_class:
-                        self.add_inverse_element(inverse)
+                        self.add_inverse_element(inverse, element)
 
-    def add_inverse_element(self, element: ifcopenshell.entity_instance) -> None:
+    def add_inverse_element(
+        self,
+        element: ifcopenshell.entity_instance,
+        source: Union[ifcopenshell.entity_instance, None] = None,
+    ) -> None:
         """Add inverse element.
 
         Inverse elements are requiring different method than ``file_add``
@@ -567,6 +599,9 @@ class Usecase:
 
         E.g. a IfcRelAssociatesMaterial referencing products unrelated
         to the current asset.
+
+        ``source`` is the library element whose whitelisted inverse attribute
+        led here, used to extend a shared IfcPresentationLayerAssignment.
         """
         # For layer assignment we don't want to add it's items
         # to avoid adding representations / items that are not related to current append_asset.
@@ -582,6 +617,12 @@ class Usecase:
         # that now needs it's RelatingObjects to be extended by the current asset.
         existing_rel = None
         if (new := self.reuse_identities.get(element_identity)) is not None:
+            if skip_not_reused_entities_attr_i is not None:
+                # A layer is shared by every asset drawn on it, so revisiting it
+                # must add the item that reached it now. Returning here would keep
+                # only the items of the first asset that ever reached the layer.
+                self.extend_assigned_items(new, skip_not_reused_entities_attr_i, source)
+                return
             # Currently known cases requiring attributes reassignment are rels.
             if not new.is_a("IfcRelationship"):
                 return
@@ -637,18 +678,19 @@ class Usecase:
                     if self.is_another_asset(item):
                         continue
                     if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
-                        identity = item.wrapped_data.identity()
-                        reused = self.reuse_identities.get(identity)
-                        if reused is None:
-                            # reuse_identities is only filled by file_add's per-attribute
-                            # path; the native file.add fast path records added_elements.
-                            reused = self.added_elements.get(item.id())
+                        reused = self.resolve_added(item)
                         if reused is None:
                             continue
                         item = reused
                     else:
                         item = self.add_element(item)
                     new_attribute.append(item)
+                if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
+                    if (deferred := self.deferred_layer_items) is not None:
+                        # Collect the items in Python and let flush_deferred_layer_items
+                        # write this layer's set once, instead of on every append.
+                        deferred[new.id()] = (new, new_attribute)
+                        continue
                 # If rel exists we need to make sure previously assigned elements are untouched
                 # e.g. not to assign a material or a pset from element.
                 if existing_rel:
@@ -658,6 +700,42 @@ class Usecase:
                 new_attribute = attribute
             if new_attribute is not None:
                 new[i] = new_attribute
+
+    def resolve_added(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the appended counterpart of a library element, if there is one."""
+        added = self.reuse_identities.get(element.wrapped_data.identity())
+        if added is None:
+            # reuse_identities is only filled by file_add's per-attribute path,
+            # the native file.add fast path records added_elements.
+            added = self.added_elements.get(element.id())
+        return added
+
+    def extend_assigned_items(
+        self,
+        new: ifcopenshell.entity_instance,
+        attr_i: int,
+        source: Union[ifcopenshell.entity_instance, None],
+    ) -> None:
+        """Add ``source``'s appended counterpart to an already created layer assignment."""
+        if source is None:
+            return
+        item = self.resolve_added(source)
+        if item is None:
+            return
+        if (deferred := self.deferred_layer_items) is not None:
+            if (entry := deferred.get(new.id())) is not None:
+                entry[1].append(item)
+                return
+        # AssignedItems is the inverse of LayerAssignment(s), so the item itself
+        # tells us whether it is already on this layer without scanning the layer.
+        for inverse_attribute in ("LayerAssignments", "LayerAssignment"):
+            assignments = getattr(item, inverse_attribute, None)
+            if assignments is None:
+                continue
+            if new in assignments:
+                return
+            break
+        new[attr_i] = list(new[attr_i] or ()) + [item]
 
     def is_another_asset(self, element: ifcopenshell.entity_instance) -> bool:
         """Is IFC entity from inverse attribute is another asset to append that should be skipped."""
