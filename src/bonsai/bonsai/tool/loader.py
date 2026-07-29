@@ -1097,7 +1097,7 @@ class Loader(bonsai.core.tool.Loader):
             no = cls.get_extrusion_vector(element).normalized()
             no = Vector([0.0, 0.0, 1.0])
         elif layer_set_direction == "AXIS1":
-            co = Vector((0.0, 0.0, offset))
+            co = Vector((offset, 0.0, 0.0))
             no = cls.get_extrusion_vector(element).normalized()
             no = Vector([1.0, 0.0, 0.0])
         else:
