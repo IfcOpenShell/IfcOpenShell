@@ -116,6 +116,48 @@ class TestExtractElements(test.bootstrap.IFC4):
         wall_new = output.by_type("IfcWall")[0]
         assert wall_new.ObjectPlacement.RelativePlacement.Location.Coordinates == (5.0, 10.0, 2.0)
 
+    def test_preserving_georeferencing_ifc2x3(self):
+        # Regression test: IFC2X3 has no IfcMapConversion. Georeferencing is instead
+        # stored as ePSet_MapConversion / ePSet_ProjectedCRS property sets on
+        # IfcProject, reached only via the inverse IsDefinedBy relationship, so they
+        # were dropped by the same forward-attribute-only IfcProject copy that
+        # originally lost IfcMapConversion for #8199 (that fix only covered IFC4+).
+        # Losing them is worse than silent data loss: append_asset() still globalises
+        # each element's placement using the source's georeferencing and, finding
+        # none on the target, leaves the globalised (Eastings/Northings-scale)
+        # coordinates in place, corrupting every extracted element's placement.
+        if self.file.schema != "IFC2X3":
+            pytest.skip("ePSet_MapConversion is an IFC2X3-only convention")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            coordinate_operation={
+                "Eastings": 500000.0,
+                "Northings": 6000000.0,
+                "XAxisAbscissa": 0.6,
+                "XAxisOrdinate": 0.8,
+            },
+        )
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        matrix = numpy.eye(4)
+        matrix[:3, 3] = [5.0, 10.0, 2.0]
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=matrix)
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        project_new = output.by_type("IfcProject")[0]
+        conversion = ifcopenshell.util.element.get_pset(project_new, "ePSet_MapConversion")
+        assert conversion is not None
+        assert conversion["Eastings"] == 500000.0
+        assert conversion["Northings"] == 6000000.0
+        # Placements must be copied verbatim: extraction must not bake map
+        # coordinates (or any other georeferencing transform) into the local
+        # placements of the extracted elements.
+        wall_new = output.by_type("IfcWall")[0]
+        coords = wall_new.ObjectPlacement.RelativePlacement.Location.Coordinates
+        assert coords == pytest.approx((5.0, 10.0, 2.0))
+
     @pytest.mark.skipif(
         "IFC4X3" not in ifcopenshell.ifcopenshell_wrapper.schema_names(),
         reason=(

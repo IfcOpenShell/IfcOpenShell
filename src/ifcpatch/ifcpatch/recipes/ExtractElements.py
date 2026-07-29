@@ -113,6 +113,31 @@ class Patcher(ifcpatch.BasePatcher):
             for ctx in element.RepresentationContexts or ():
                 for coop in getattr(ctx, "HasCoordinateOperation", ()):
                     self.new.add(coop)
+            if self.file.schema == "IFC2X3":
+                # IFC2X3 has no IfcMapConversion. Georeferencing is instead stored as
+                # ePSet_MapConversion / ePSet_ProjectedCRS property sets on IfcProject
+                # (see ifcopenshell.api.georeference), reached only via the inverse
+                # IsDefinedBy relationship, so the forward-attribute copy above misses
+                # them. Dropping them isn't just data loss: append_asset() still runs
+                # its local-to-global-to-local placement correction per element using
+                # the source's georeferencing, and finding none on the target, leaves
+                # the globalised (Eastings/Northings-scale) coordinates in place,
+                # silently corrupting every extracted element's placement.
+                for rel in element.IsDefinedBy or ():
+                    pset = rel.RelatingPropertyDefinition
+                    if (
+                        pset is not None
+                        and pset.is_a("IfcPropertySet")
+                        and pset.Name
+                        in (
+                            "ePSet_MapConversion",
+                            "ePSet_ProjectedCRS",
+                        )
+                    ):
+                        new_pset = self.new.add(pset)
+                        self.new.createIfcRelDefinesByProperties(
+                            ifcopenshell.guid.new(), self.owner_history, None, None, [proj], new_pset
+                        )
             return proj
         return ifcopenshell.api.project.append_asset(
             self.new,
