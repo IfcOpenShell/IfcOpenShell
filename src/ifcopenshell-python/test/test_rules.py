@@ -1,6 +1,5 @@
 import glob
 import os
-import sys
 
 import pytest
 import tabulate
@@ -9,14 +8,18 @@ import ifcopenshell.express.rule_executor
 import ifcopenshell.validate
 
 
-@pytest.mark.parametrize(
-    "filename",
-    [
+def pytest_generate_tests(metafunc):
+    if "filename" not in metafunc.fixturenames:
+        return
+    rule = metafunc.config.getoption("--rule")
+    filenames = [
         fn
         for fn in glob.glob(os.path.join(os.path.dirname(__file__), "fixtures/rules/*.ifc"))
-        if len(sys.argv) < 2 or (not sys.argv[1].endswith(".ifc") or sys.argv[1] in os.path.basename(fn))
-    ],
-)
+        if not rule or rule in os.path.basename(fn)
+    ]
+    metafunc.parametrize("filename", filenames, ids=[os.path.basename(fn) for fn in filenames])
+
+
 def test_file(filename):
     base = os.path.basename(filename)
     file = ifcopenshell.open(filename)
