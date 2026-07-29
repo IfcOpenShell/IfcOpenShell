@@ -97,7 +97,14 @@ class json_logger:
         self.state[key] = value
 
     def log(self, level, message, *args):
-        self.statements.append({"level": level, "message": message % args, **self.state})
+        # Mirror logging.LogRecord.getMessage(): only apply %-formatting when args
+        # are actually supplied. Several call sites pass a pre-built message (e.g.
+        # str(ValidationError), which can embed arbitrary IFC content such as a
+        # Name containing a literal "%s"). Unconditionally formatting with an
+        # empty args tuple would raise instead of logging the error.
+        if args:
+            message = message % args
+        self.statements.append({"level": level, "message": message, **self.state})
 
     def __getattr__(self, level):
         return functools.partial(self.log, level)
