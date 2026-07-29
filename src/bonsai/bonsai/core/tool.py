@@ -370,6 +370,7 @@ class Drawing:
     def get_annotation_context(cls, target_view, object_type=None): pass
     def get_annotation_drawing(cls, element): pass
     def get_annotation_representation(cls, element_type): pass
+    def get_assigned_annotations(cls, element): pass
     def get_assigned_product(cls, element): pass
     def get_assigned_product_workaround(cls, element): pass
     def get_body_context(cls): pass
@@ -417,6 +418,7 @@ class Drawing:
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_type_assign_type(cls, element=None, relating_type=None): pass
+    def select_assigned_annotations(cls, context): pass
     def select_assigned_product(cls, drawing): pass
     def set_camera_name(cls, drawing, name): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
