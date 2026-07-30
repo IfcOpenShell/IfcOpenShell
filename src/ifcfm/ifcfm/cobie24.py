@@ -53,7 +53,7 @@ def get_floors(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance
     return [
         e
         for e in ifc_file.by_type("IfcBuildingStorey")
-        if ifcopenshell.util.element.get_aggregate(e).is_a("IfcBuilding")
+        if (parent := ifcopenshell.util.element.get_aggregate(e)) and parent.is_a("IfcBuilding")
     ]
 
 
