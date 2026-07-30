@@ -106,7 +106,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": "input.ifc", "recipe": "FixRevit2025TINs", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "recipe": "FixRevit2025TINs", "arguments": ["input.ifc"]})
         """
         self.file = file
         self.filepath = filepath
