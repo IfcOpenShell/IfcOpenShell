@@ -349,6 +349,18 @@ PLUGIN_API std::filesystem::path ifcopenshell::plugin::add_search_paths_or_defau
 	const auto path = default_search_path();
 	manager.add_search_path(path);
 
+	// Static libraries place their anchor in the executable. For a normal
+	// Unix install this resolves to $prefix/bin, while shared plug-ins are
+	// installed in $prefix/lib. Windows installs DLL plug-ins in bin already.
+#ifndef _WIN32
+	if (path.filename() == "bin") {
+		const auto lib = path.parent_path() / "lib";
+		if (std::filesystem::exists(lib)) {
+			manager.add_search_path(lib);
+		}
+	}
+#endif
+
 	// Bundle-aware fallback search paths. The primary search path is
 	// dirname(libIfcParse) which works for the flat layouts we get on
 	// Linux ($prefix/lib/) and Windows ($prefix/bin/) — plug-ins live
