@@ -38,6 +38,10 @@ add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES
         OUTPUT_NAME "ifcopenshell.parse"
 )
+
+if((NOT WIN32) AND BUILD_SHARED_LIBS AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+    SET_INSTALL_SELF_RPATH(IfcParse)
+endif()
 target_compile_definitions(IfcParse PUBLIC ${SCHEMA_DEFINITIONS})
 if(USE_MMAP)
     target_compile_definitions(IfcParse PUBLIC USE_MMAP)
