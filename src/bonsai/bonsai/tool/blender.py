@@ -2161,7 +2161,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_data_dir_paths(cls, relative_dir_path: Union[str, Path], glob_pattern: str) -> Generator[Path, None, None]:
         """Return paths based on glob pattern from the provided path in data folder.
-        Return paths from internal data folder first and then paths from the user data folder (if it exists)."""
+        Return paths from the user data folder first (if it exists), then paths from the internal data folder."""
         custom_path = cls.get_user_data_dir() / relative_dir_path
         if custom_path.is_dir():
             for filepath in custom_path.glob(glob_pattern):
