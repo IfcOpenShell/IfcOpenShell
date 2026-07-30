@@ -112,6 +112,8 @@ class Usecase:
 
         if element.is_a("IfcSpatialStructureElement"):
             element.CompositionType = "ELEMENT"
+            if element.is_a("IfcSpace"):
+                element.InteriorOrExteriorSpace = "NOTDEFINED"
         elif element.is_a("IfcRoof"):
             element.ShapeType = "NOTDEFINED"
         elif element.is_a("IfcFurnitureType"):

@@ -74,6 +74,9 @@ class TestCreateEntity(test.bootstrap.IFC4):
             assert element.PartitioningType == "NOTDEFINED"
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFurnitureType", name="Foo")
         assert element.AssemblyPlace == "NOTDEFINED"
+        if self.file.schema == "IFC2X3":
+            element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace", name="Foo")
+            assert element.InteriorOrExteriorSpace == "NOTDEFINED"
 
 
 class TestCreateEntityIFC2X3(test.bootstrap.IFC2X3, TestCreateEntity):
