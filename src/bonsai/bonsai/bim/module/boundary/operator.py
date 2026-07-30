@@ -18,6 +18,7 @@
 
 import logging
 import multiprocessing
+import traceback
 from math import acos, degrees, inf, pi, radians
 from typing import Optional, Union
 
@@ -38,6 +39,7 @@ import shapely.ops
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix, Vector
 
+import bonsai
 import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.attribute as core
 import bonsai.core.geometry
@@ -804,12 +806,26 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                     space_face_polygon = shapely.Polygon(
                         [tuple((space_face_matrix_i @ v).xy) for v in space_face_verts]
                     )
+                    if not space_face_polygon.is_valid:
+                        space_face_polygon = space_face_polygon.buffer(0)
 
                     space_matrix_world_i = space_obj.matrix_world.inverted()
                     face_verts = [space_matrix_world_i @ building_obj.matrix_world @ v.co.copy() for v in face.verts]
                     face_polygon = shapely.Polygon([tuple((space_face_matrix_i @ v).xy) for v in face_verts])
+                    if not face_polygon.is_valid:
+                        face_polygon = face_polygon.buffer(0)
 
-                    gross_boundary_polygon = space_face_polygon.intersection(face_polygon)
+                    try:
+                        gross_boundary_polygon = space_face_polygon.intersection(face_polygon)
+                    except shapely.errors.GEOSException:
+                        bonsai.last_error = traceback.format_exc()
+                        element_name = building_element.Name or building_element.is_a()
+                        self.report(
+                            {"ERROR"},
+                            f"Skipping invalid geometry for {element_name} (shapely topology error). "
+                            "See 'Copy Error Message To Clipboard' for details.",
+                        )
+                        continue
 
                     if type(gross_boundary_polygon) == shapely.GeometryCollection:
                         for geom in gross_boundary_polygon.geoms:
