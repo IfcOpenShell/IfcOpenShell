@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+# This file was generated with the assistance of an AI coding tool.
+
 """Every :param: name in ifcopenshell.api docstrings must match the real signature.
 
 wrap_usecase() (see ifcopenshell/api/__init__.py) sets wrapper.__signature__ and
