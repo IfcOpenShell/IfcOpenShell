@@ -1944,17 +1944,19 @@ void ifcopenshell::instance_streamer<Reader>::initialize_header() {
 
     storage_.schema = schema_;
 
-    types_to_bypass_materialized_.resize(schema_->declarations().size(), false);
-    for (auto& bp : types_to_bypass_) {
-        std::function<void(const ifcopenshell::entity*)> mark;
-        mark = [&](const ifcopenshell::entity* e) {
-            types_to_bypass_materialized_[e->index_in_schema()] = true;
-            for (auto& subtype : e->subtypes()) {
-                mark(subtype);
+    if (schema_) {
+        types_to_bypass_materialized_.resize(schema_->declarations().size(), false);
+        for (auto& bp : types_to_bypass_) {
+            std::function<void(const ifcopenshell::entity*)> mark;
+            mark = [&](const ifcopenshell::entity* e) {
+                types_to_bypass_materialized_[e->index_in_schema()] = true;
+                for (auto& subtype : e->subtypes()) {
+                    mark(subtype);
+                }
+            };
+            if (auto* e = bp->as_entity()) {
+                mark(e);
             }
-        };
-        if (auto* e = bp->as_entity()) {
-            mark(e);
         }
     }
 }
