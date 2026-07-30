@@ -1407,7 +1407,7 @@ class CreateDrawing(bpy.types.Operator):
             pass
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser_settings = ifcopenshell.geom.serializer_settings()
-        self.serialiser_settings.set("svg-svg-without-storeys", True)
+        self.serialiser_settings.set("svg-without-storeys", True)
         self.serialiser_settings.set("svg-write-poly", True)
         self.serialiser_settings.set("svg-poly", True)
         # Objects with more than these edges are rendered as wireframe instead of HLR for optimisation
@@ -1421,7 +1421,7 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser_settings.set("door-arcs", False)
         self.serialiser_settings.set("svg-no-css", True)
         self.serialiser_settings.set("elevation-ref-guid", self.camera_element.GlobalId)
-        self.serialiser_settings.set("scale", self.scale)
+        self.serialiser_settings.set("scale", str(self.scale))
         self.serialiser_settings.set("svg-subtract-before", "always")
         self.serialiser_settings.set("svg-prefilter", True)  # See #3359
         self.serialiser_settings.set("svg-unify-inputs", True)
