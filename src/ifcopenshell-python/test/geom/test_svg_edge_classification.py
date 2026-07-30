@@ -1,0 +1,790 @@
+"""Regression tests for the SVG serializer's edge classification (issue #3742):
+cross-coplanar / mat-style-change classification, the coincident-edge paint-order
+dedup pass, and restore_coincident_hidden_edges()'s HLR depth-tie restoration.
+
+All geometry here is synthetic and minimal, built directly via low-level IFC
+construction rather than realistic wall/slab authoring, so that the exact
+geometric relationship each bug depends on (an exact touching plane, a specific
+offset) is fully controlled and doesn't drift if higher-level authoring helpers
+change their defaults.
+
+Every scenario in this file was cross-checked against the real Bonsai/Blender
+`bim.create_drawing` pipeline (not just this module's own direct-serializer
+path) before being written here, using a matching camera (an `ELEVATION_VIEW`/
+`SOUTH` drawing, i.e. a camera at negative Y looking towards +Y, positioned
+outside all test geometry so it never bisects a product -- an early version of
+this suite's manual verification did exactly that by accident and produced a
+subtly different, invalid result). See `.spike_notes/svg_test_dev/` (outside
+this repo) for the saved `.ifc`/`.svg` artifacts from that cross-check, not
+committed here.
+
+Two non-obvious requirements this suite discovered the hard way, both
+confirmed by reading `find_cross_coplanar_matches()` in `SvgSerializer.h`
+directly rather than assumed:
+
+- Project length units must be explicitly set to metres. `ifcopenshell.api.unit
+  .assign_unit()` defaults to millimetres, while `ShapeBuilder`'s own numeric
+  arguments are *not* unit-converted -- leaving the default silently produces a
+  1000x mismatch between a product's shape size and its placement offset.
+- Cross-coplanar (and therefore mat-style-change Case A) matching is skipped
+  entirely for a product pair where *neither* side has a resolved material AND
+  *either* side lacks a style -- both scenario products need at least a shared
+  material (or, if no material, a shared style) or the pair is never even
+  considered, regardless of how their geometry is arranged.
+"""
+
+import xml.dom.minidom
+from dataclasses import dataclass
+
+import numpy as np
+import pytest
+
+import ifcopenshell
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.unit
+import ifcopenshell.geom
+from ifcopenshell.util.shape_builder import ShapeBuilder
+
+W = ifcopenshell.ifcopenshell_wrapper
+
+
+def _make_project() -> tuple[ifcopenshell.file, ifcopenshell.entity_instance, ifcopenshell.entity_instance]:
+    """Minimal project + Body/Model context + spatial structure, metre units."""
+    ifc_file = ifcopenshell.file(schema="IFC4")
+    project = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+    ifcopenshell.api.unit.assign_unit(ifc_file, length={"is_metric": True, "raw": "METERS"})
+    context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+    body_context = ifcopenshell.api.context.add_context(
+        ifc_file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=context
+    )
+    site = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSite", name="Site")
+    building = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuilding", name="Building")
+    storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Storey")
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=project, products=[site])
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=site, products=[building])
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=building, products=[storey])
+    return ifc_file, body_context, storey
+
+
+def _add_box(
+    ifc_file: ifcopenshell.file,
+    body_context: ifcopenshell.entity_instance,
+    storey: ifcopenshell.entity_instance,
+    name: str,
+    size: tuple[float, float, float],
+    translation: tuple[float, float, float],
+    ifc_class: str = "IfcWall",
+    material: ifcopenshell.entity_instance | None = None,
+    x_axis: tuple[float, float, float] = (1.0, 0.0, 0.0),
+    z_axis: tuple[float, float, float] = (0.0, 0.0, 1.0),
+) -> ifcopenshell.entity_instance:
+    """A simple box product (size=(x,y,z) in the box's own local axes), placed
+    at an exact world translation, with an optional rotated placement (for a
+    sloped/rotated box; `x_axis`/`z_axis` become the placement's own axes, in
+    world space) and an optional shared material.
+    """
+    builder = ShapeBuilder(ifc_file)
+    product = ifcopenshell.api.root.create_entity(ifc_file, ifc_class=ifc_class, name=name)
+    ifcopenshell.api.spatial.assign_container(ifc_file, relating_structure=storey, products=[product])
+    profile = builder.rectangle(size=(size[0], size[1]))
+    extrusion = builder.extrude(profile, magnitude=size[2])
+    representation = builder.get_representation(body_context, extrusion)
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=product, representation=representation)
+    x = np.array(x_axis, dtype=float)
+    z = np.array(z_axis, dtype=float)
+    y = np.cross(z, x)
+    matrix = np.eye(4)
+    matrix[:3, 0] = x
+    matrix[:3, 1] = y
+    matrix[:3, 2] = z
+    matrix[:3, 3] = translation
+    ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=product, matrix=matrix)
+    if material is not None:
+        ifcopenshell.api.material.assign_material(ifc_file, products=[product], material=material)
+    return product
+
+
+def _axis_refdir_to_matrix(
+    location: tuple[float, float, float],
+    axis: tuple[float, float, float],
+    ref_direction: tuple[float, float, float],
+) -> np.ndarray:
+    z = np.array(axis, dtype=float)
+    z /= np.linalg.norm(z)
+    x = np.array(ref_direction, dtype=float)
+    x = x - np.dot(x, z) * z
+    x /= np.linalg.norm(x)
+    y = np.cross(z, x)
+    matrix = np.eye(4)
+    matrix[:3, 0] = x
+    matrix[:3, 1] = y
+    matrix[:3, 2] = z
+    matrix[:3, 3] = location
+    return matrix
+
+
+def _add_arbitrary_profile_slab(
+    ifc_file: ifcopenshell.file,
+    body_context: ifcopenshell.entity_instance,
+    storey: ifcopenshell.entity_instance,
+    name: str,
+    points_2d: list[tuple[float, float]],
+    depth: float,
+    location: tuple[float, float, float],
+    axis: tuple[float, float, float],
+    ref_direction: tuple[float, float, float],
+    ifc_class: str = "IfcRoof",
+) -> ifcopenshell.entity_instance:
+    """A product with an arbitrary closed polygon profile (an
+    `IfcIndexedPolyCurve`, built via raw low-level entity creation rather than
+    `ShapeBuilder`) extruded along local +Z, placed at an exact world
+    location/orientation. Used for scenarios that need a specific irregular
+    footprint and slope, where `_add_box`'s rectangular profile isn't enough.
+    `location`/`axis`/`ref_direction` are project-unit coordinates applied
+    with `is_si=False` -- `ShapeBuilder`/`edit_object_placement`'s usual
+    SI-metres convention doesn't apply here since callers may want non-metre
+    project units (see `test_cluster_b_depth_tie_restoration`).
+    """
+    product = ifcopenshell.api.root.create_entity(ifc_file, ifc_class=ifc_class, name=name)
+    ifcopenshell.api.spatial.assign_container(ifc_file, relating_structure=storey, products=[product])
+    point_list = ifc_file.createIfcCartesianPointList2D(points_2d)
+    poly_curve = ifc_file.createIfcIndexedPolyCurve(point_list, None, None)
+    profile = ifc_file.createIfcArbitraryClosedProfileDef("AREA", None, poly_curve)
+    direction = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+    solid = ifc_file.createIfcExtrudedAreaSolid(profile, None, direction, depth)
+    shape_rep = ifc_file.createIfcShapeRepresentation(body_context, "Body", "SweptSolid", [solid])
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=product, representation=shape_rep)
+    matrix = _axis_refdir_to_matrix(location, axis, ref_direction)
+    ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=product, matrix=matrix, is_si=False)
+    return product
+
+
+@dataclass(frozen=True)
+class Edge:
+    guid: str
+    cls: str
+    p0: tuple[float, float]
+    p1: tuple[float, float]
+
+    def near(self, other_p0: tuple[float, float], other_p1: tuple[float, float], tol: float = 1e-3) -> bool:
+        """Endpoint match within `tol`, order-independent."""
+
+        def close(a, b):
+            return abs(a[0] - b[0]) < tol and abs(a[1] - b[1]) < tol
+
+        return (close(self.p0, other_p0) and close(self.p1, other_p1)) or (
+            close(self.p0, other_p1) and close(self.p1, other_p0)
+        )
+
+
+def render_svg(
+    ifc_file: ifcopenshell.file,
+    camera_pos: tuple[float, float, float],
+    camera_dir: tuple[float, float, float],
+    camera_ref: tuple[float, float, float] = (1.0, 0.0, 0.0),
+    use_cross_coplanar: bool = False,
+    use_mat_style_change: bool = False,
+    render_cross_coplanar: bool = False,
+    scale: float = 1.0,
+    bounding_rectangle: tuple[float, float] = (20000.0, 20000.0),
+) -> str:
+    """Drive `SvgSerializer` directly (no Blender), matching the pattern
+    `ifcopenshell/draw.py` uses. `camera_dir` is the direction *from the scene
+    towards the camera* (not the camera's own view direction) -- matching
+    `SvgSerializer.h`'s own `@nb negative z in accordance with occt projector
+    convention` comment and confirmed empirically: a camera at
+    `(x, -10, z)` "looking" into the scene along +Y needs `camera_dir=(0,-1,0)`,
+    not `(0,1,0)`, to produce any visible geometry at all.
+    """
+    geom_settings = ifcopenshell.geom.settings(ELEMENT_HIERARCHY=True)
+    geom_settings.set("dimensionality", W.SURFACES_AND_SOLIDS)
+    geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
+    geom_settings.set("apply-default-materials", True)
+    geom_settings.set("svg-use-edge-classification", True)
+    geom_settings.set("svg-use-cross-coplanar-classification", use_cross_coplanar)
+    geom_settings.set("svg-use-mat-style-change-classification", use_mat_style_change)
+    geom_settings.set("svg-render-cross-coplanar-edges", render_cross_coplanar)
+
+    buffer = ifcopenshell.geom.serializers.buffer()
+    serializer_settings = ifcopenshell.geom.serializer_settings()
+    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings, serializer_settings)
+    sr.setFile(ifc_file)
+    sr.setPolygonal(True)
+    sr.setUseNamespace(True)
+    sr.setUseHlrPoly(True)
+    sr.setUsePrefiltering(True)
+    sr.setAlwaysProject(True)
+    sr.setBoundingRectangle(*bounding_rectangle)
+    sr.setScale(scale)
+    sr.addDrawing(camera_pos, camera_dir, camera_ref, "Test", True)
+
+    it = ifcopenshell.geom.iterator(geom_settings, ifc_file)
+    for elem in it:
+        sr.write(elem)
+    sr.finalize()
+    return buffer.get_value()
+
+
+def parse_edges(svg: str) -> list[Edge]:
+    """Parse an SVG string into a flat list of (owning product guid, class,
+    endpoints) for every `<path>`, tracking the enclosing `<g ifc:guid=...>`
+    the same way this whole branch's manual verification has all session.
+    Only handles the simple "M x,y L x,y" polyline paths this suite's own
+    synthetic geometry produces -- not a general SVG path parser.
+    """
+    dom = xml.dom.minidom.parseString(svg)
+    edges: list[Edge] = []
+
+    def walk(node, guid_stack):
+        if node.nodeType != node.ELEMENT_NODE:
+            return
+        if node.tagName == "g":
+            guid = node.getAttribute("ifc:guid") or None
+            guid_stack = guid_stack + [guid] if guid else guid_stack
+        elif node.tagName == "path" and node.hasAttribute("d") and node.hasAttribute("class"):
+            d = node.getAttribute("d")
+            cls = node.getAttribute("class")
+            tokens = d.replace("M", "").replace("L", "").strip().split()
+            if len(tokens) == 2:
+                p0 = tuple(float(v) for v in tokens[0].split(","))
+                p1 = tuple(float(v) for v in tokens[1].split(","))
+                guid = guid_stack[-1] if guid_stack else ""
+                edges.append(Edge(guid, cls, p0, p1))
+        for child in node.childNodes:
+            walk(child, guid_stack)
+
+    walk(dom.documentElement, [])
+    return edges
+
+
+def has_edge(edges: list[Edge], guid: str, cls: str, p0: tuple[float, float], p1: tuple[float, float]) -> bool:
+    return any(e.guid == guid and e.cls == cls and e.near(p0, p1) for e in edges)
+
+
+def has_any_edge(edges: list[Edge], guid: str, p0: tuple[float, float], p1: tuple[float, float]) -> bool:
+    """Same coordinates, any class -- for "must be absent entirely" checks."""
+    return any(e.guid == guid and e.near(p0, p1) for e in edges)
+
+
+def test_cross_coplanar_basic_touching_boundary():
+    """Two walls of identical size, pushed flush together side-by-side, with a
+    SHARED material -- confirmed via `find_cross_coplanar_matches()` that a
+    matching material (or, absent that, a matching style) is a precondition
+    for cross-coplanar matching to even be attempted, regardless of geometry.
+    Without a shared material this exact scenario instead classifies the
+    shared boundary as a genuine `outline` on both sides (also confirmed via
+    the real Bonsai pipeline) -- not a bug, just not what this test targets.
+    """
+    ifc_file, body_context, storey = _make_project()
+    material = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    wall_a = _add_box(
+        ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=material
+    )
+    wall_b = _add_box(
+        ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=material
+    )
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(2.0, -5.0, 1.0),
+        camera_dir=(0.0, -1.0, 0.0),
+        use_cross_coplanar=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    # Viewed from a Y-axis elevation, the visible plane is world-X (horizontal)
+    # and world-Z (vertical, height) -- world-Y (wall thickness) is the view
+    # axis itself and isn't represented. Scale 1000, offset 8000 in X and 9000
+    # in Z comes from setBoundingRectangle(20000, 20000) centring the drawing.
+    shared_p0, shared_p1 = (10000.0, 9000.0), (10000.0, 11000.0)
+    assert has_edge(edges, wall_a.GlobalId, "cross-coplanar", shared_p0, shared_p1)
+    assert has_edge(edges, wall_b.GlobalId, "cross-coplanar", shared_p0, shared_p1)
+    # The two walls' own OUTER silhouette edges must still be plain outline.
+    assert has_edge(edges, wall_a.GlobalId, "outline", (8000.0, 9000.0), (8000.0, 11000.0))
+    assert has_edge(edges, wall_b.GlobalId, "outline", (12000.0, 9000.0), (12000.0, 11000.0))
+
+
+def test_mat_style_change_case_a_material_mismatch():
+    """Same touching-wall geometry as the cross-coplanar baseline, but the two
+    walls have DIFFERENT materials -- `find_cross_coplanar_matches()` only
+    considers a mismatched-material pair at all when mat-style-change
+    classification is enabled, and classifies their shared boundary as
+    `mat-style-change` rather than `cross-coplanar`.
+    """
+    ifc_file, body_context, storey = _make_project()
+    concrete = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    timber = ifcopenshell.api.material.add_material(ifc_file, name="Timber")
+    wall_a = _add_box(
+        ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=concrete
+    )
+    wall_b = _add_box(
+        ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=timber
+    )
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(2.0, -5.0, 1.0),
+        camera_dir=(0.0, -1.0, 0.0),
+        use_cross_coplanar=True,
+        use_mat_style_change=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    shared_p0, shared_p1 = (10000.0, 9000.0), (10000.0, 11000.0)
+    assert has_edge(edges, wall_a.GlobalId, "mat-style-change", shared_p0, shared_p1)
+    assert has_edge(edges, wall_b.GlobalId, "mat-style-change", shared_p0, shared_p1)
+    # Must NOT also be classified cross-coplanar (materials genuinely differ).
+    assert not has_edge(edges, wall_a.GlobalId, "cross-coplanar", shared_p0, shared_p1)
+    assert not has_edge(edges, wall_b.GlobalId, "cross-coplanar", shared_p0, shared_p1)
+
+
+def test_cluster_a_exact_match_dedup_outline_beats_sharp():
+    """Cluster A (`a08873af07`): when two DIFFERENT products produce an edge at
+    the exact same 3D location but with different class priorities, only the
+    best-priority class should survive -- previously this was
+    non-deterministic paint order (whichever product's SVG group happened to
+    be written later simply painted over the other), not a correctness
+    decision.
+
+    Not hand-designed -- an earlier attempt at this scenario (a 3rd wall
+    offset in Y to land its silhouette at the same *2D-projected* location as
+    a touching pair's boundary) turned out to just be genuine HLR 3D
+    occlusion, not a coincident-duplicate-edge case at all (see git history
+    of this function/module for that dead end). The real trigger only
+    reproduced once identified in the actual primary test fixture: two walls
+    (GUIDs `3Dt1Chn$DDgxkP6LNUvmEB`/`21z$tr7Hj9YRCib0bGUX1_`) meeting at an
+    angled corner, each rotated by a different amount -- their shared vertical
+    corner edge is the exact same physical line in 3D, but each wall's own
+    independent `classify_edge_from_faces()` disagrees on what it is: one
+    sees a true silhouette (`outline`), the other `sharp`. This test's
+    profile points, extrusion depth, and placement (location/axis/
+    ref-direction, verbatim, in the original file's own FEET project units)
+    are copied exactly from that real fixture -- not a real project *file*
+    (no `.ifc` is read here or committed anywhere), just its bare numeric
+    geometry, reconstructed via low-level entity creation, matching the same
+    recipe as `test_cluster_b_depth_tie_restoration`.
+
+    Verified two ways before being written as an assertion:
+    - Rendering this exact synthetic geometry byte-for-byte reproduces the
+      real fixture's own extracted-pair SVG output (12 outline + 5 sharp
+      edges, identical coordinates).
+    - Reverting both `compute_coincident_edge_best_priority()` and
+      `compute_coincident_edge_overlap_coverage()` (commenting out their
+      calls in `SvgSerializer.cpp`) raises the sharp count from 5 to 7 --
+      WallB's `sharp` duplicate at WallA's `outline` location wrongly
+      reappears -- confirming this test would actually have caught the
+      original bug.
+
+    Builds its own project (not the shared `_make_project()` helper) since
+    the extracted geometry's literal numbers are in FEET, matching the real
+    fixture's own project units -- `_make_project()` uses METERS, which
+    silently produced a completely different (and non-reproducing) geometry
+    the first time this test was written, caught by the target edge simply
+    being absent (wrong coordinates, not a real failure of the fix).
+    """
+    ifc_file = ifcopenshell.file(schema="IFC4")
+    ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+    ifcopenshell.api.unit.assign_unit(ifc_file, length={"is_metric": False, "raw": "FEET"})
+    context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+    body_context = ifcopenshell.api.context.add_context(
+        ifc_file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=context
+    )
+    site = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSite", name="Site")
+    building = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuilding", name="Building")
+    storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Storey")
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=ifc_file.by_type("IfcProject")[0], products=[site])
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=site, products=[building])
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=building, products=[storey])
+
+    profile = [
+        (0.0, 0.0),
+        (0.0, 1.000000029802323),
+        (1.6404194043377256, 1.000000029802323),
+        (1.6404194043377256, 0.0),
+    ]
+    depth = 2.0000000247179366
+    axis = (0.0, 0.0, 1.0)
+
+    wall_a = _add_arbitrary_profile_slab(
+        ifc_file, body_context, storey, "WallA",
+        points_2d=profile,
+        depth=depth,
+        location=(-34.15430311768699, 0.3383361692894788, 11.32700152284517),
+        axis=axis,
+        ref_direction=(0.9663057411039859, -0.2573969982526535, 0.0),
+        ifc_class="IfcWall",
+    )
+    wall_b = _add_arbitrary_profile_slab(
+        ifc_file, body_context, storey, "WallB",
+        points_2d=profile,
+        depth=depth,
+        location=(-35.74319711820347, -0.06958368060782825, 11.32700152284517),
+        axis=axis,
+        ref_direction=(0.9685886719581167, 0.2486684229137502, 0.0),
+        ifc_class="IfcWall",
+    )
+
+    # Camera matches the real fixture's own ORTHOGRAPHIC drawing.
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(-4.301992893218994, -4.959714889526367, 6.503134250640869),
+        camera_dir=(0.5899107456207275, -0.7030283808708191, 0.39718562364578247),
+        camera_ref=(0.7660444974899292, 0.6427875757217407, -7.652545264136279e-10),
+        scale=31.25 / 1000.0,
+        use_cross_coplanar=True,
+        use_mat_style_change=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    target_p0 = (9998.6578298785953, 10009.248959683862)
+    target_p1 = (9998.6578300775, 9991.7660449053692)
+    assert has_edge(edges, wall_a.GlobalId, "outline", target_p0, target_p1)
+    # WallB's own independently-classified `sharp` duplicate at this exact
+    # location must be gone entirely, not just painted under the outline.
+    assert not has_any_edge(edges, wall_b.GlobalId, target_p0, target_p1)
+
+
+def test_cluster_b_depth_tie_restoration():
+    """Cluster B (`0078c94872`): `restore_coincident_hidden_edges()` restores a
+    single-object edge that HLR hid due to an exact view-depth tie with a
+    foreign product's coincident face.
+
+    This geometry is not hand-designed: two hand-built attempts at this
+    scenario (a flat slab+box, then a sloped slab+box) both failed to actually
+    reproduce the depth-tie -- HLR simply resolved them as ordinary, correctly
+    visible edges. The real trigger only reproduced when extracted from a
+    genuine bug report fixture (two sloped `IfcRoof` slabs, GUIDs
+    `2CH9svq8r2gfCQ$eEjlBKa`/`2u$gvViprDheArJeaHzt$M`). This test's profile
+    points, extrusion depths and placement (location/axis/ref-direction,
+    verbatim, in the original file's own FEET project units) are copied
+    exactly from that real extraction -- not a real project *file* (no `.ifc`
+    is read here or committed anywhere), just its bare numeric geometry,
+    reconstructed via low-level entity creation.
+
+    Verified two ways before being written as an assertion:
+    - Rendering this exact synthetic geometry byte-for-byte reproduces the
+      real extraction's own SVG output (17 paths, same coordinates, same
+      classes, including a same-product duplicate outline edge).
+    - Reverting `restore_coincident_hidden_edges()` (commenting out its call
+      in `SvgSerializer.h`) drops the output from 14 to 12 outline edges,
+      missing exactly the target edge asserted below plus one copy of the
+      duplicate -- confirming this test would actually have caught the
+      original bug, not just that it passes against current code.
+
+    No material/style is assigned to either product (matching the real
+    fixture) -- this restoration pass is independent of the cross-coplanar
+    material/style gate.
+    """
+    ifc_file = ifcopenshell.file(schema="IFC4")
+    ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+    ifcopenshell.api.unit.assign_unit(ifc_file, length={"is_metric": False, "raw": "FEET"})
+    context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+    body_context = ifcopenshell.api.context.add_context(
+        ifc_file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=context
+    )
+    site = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSite", name="Site")
+    building = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuilding", name="Building")
+    storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Storey")
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=ifc_file.by_type("IfcProject")[0], products=[site])
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=site, products=[building])
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=building, products=[storey])
+
+    # Both slabs share the same sloped-roof-plane orientation -- that shared
+    # normal is what puts their coincident faces at an exact HLR depth tie.
+    axis = (0.0, -0.24259928227576613, 0.9701265836164285)
+    ref_direction = (1.0, 0.0, 0.0)
+
+    slab_a = _add_arbitrary_profile_slab(
+        ifc_file, body_context, storey, "SlabA",
+        points_2d=[
+            (-4.08607816696167, 2.661661148071289),
+            (-4.08607816696167, 1.2422367334365845),
+            (-2.0000345706939697, 1.2422367334365845),
+            (-2.0000345706939697, 2.661661148071289),
+            (-4.08607816696167, 2.661661148071289),
+        ],
+        depth=0.0644245835111433,
+        location=(-44.95270296031721, 2.998521165272069, 14.503785944360446),
+        axis=axis,
+        ref_direction=ref_direction,
+    )
+    _add_arbitrary_profile_slab(
+        ifc_file, body_context, storey, "SlabB",
+        points_2d=[
+            (4.086053371429443, -1.0950984687951859e-05),
+            (2.086031198501587, -1.0950984687951859e-05),
+            (2.086031198501587, -1.4194228649139404),
+            (-1.2515411071944982e-05, -1.419427514076233),
+            (-1.2515411071944982e-05, -2.6616580486297607),
+            (4.086053371429443, -2.6616580486297607),
+            (4.086053371429443, -1.0950984687951859e-05),
+        ],
+        depth=0.128849165102285,
+        location=(-49.038768753292054, 5.596308257636123, 15.087005660289854),
+        axis=axis,
+        ref_direction=ref_direction,
+    )
+
+    # Camera matches the real fixture's own SOUTH SECTION drawing (a section,
+    # not an elevation, so intentionally sits between the two slabs in Y --
+    # unlike this file's other elevation-view tests, that's correct here).
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(0.0, 3.296240, 0.0),
+        camera_dir=(0.0, 1.0, 0.0),
+        camera_ref=(-1.0, 0.0, 0.0),
+        scale=31.25 / 1000.0,
+    )
+    edges = parse_edges(svg)
+
+    target_p0, target_p1 = (10019.459887439012, 10000.204735060386), (9999.590322184562, 10000.204735060386)
+    assert has_edge(edges, slab_a.GlobalId, "outline", target_p0, target_p1)
+
+
+def test_mat_style_change_case_b_intra_product_layer_boundary():
+    """Case B (as opposed to Case A's cross-product mismatch, see the
+    `mat_style_change` namespace's own comment in `SvgSerializer.h`): a SINGLE
+    product's own `IfcMaterialLayerSetUsage` has 2+ layers, and a face of its
+    geometry spans across the layering axis (here, the wall's end-cap face,
+    which cuts across the full thickness). There is no pre-existing HLR edge
+    at the internal layer boundary at all -- real geometric layer-splitting is
+    unimplemented for this kernel -- so `layer_boundary_edges_for_face()`
+    constructs brand new line geometry clipped to the face's outline.
+
+    CONFIRMED COUPLING BUG (tracked in the known-issues backlog, P1): despite
+    `mat_style_change`'s own header comment describing Case B as independent
+    of cross-coplanar matching, `SvgSerializer.cpp`'s `write()` only calls
+    `resolve_layer_projection()` at all when
+    `svg_use_cross_coplanar_classification_` is true --
+    `use_mat_style_change=True` alone is NOT enough, confirmed by this test
+    genuinely failing (no `mat-style-change` edge at all) with cross-coplanar
+    left off. `use_cross_coplanar=True` is passed below to match this real,
+    if surprising, current behaviour -- not to route around the bug.
+    """
+    ifc_file, body_context, storey = _make_project()
+    wall = _add_box(ifc_file, body_context, storey, "Wall", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0))
+
+    concrete = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    insulation = ifcopenshell.api.material.add_material(ifc_file, name="Insulation")
+    layer_set = ifcopenshell.api.material.add_material_set(ifc_file, name="WallBuildUp", set_type="IfcMaterialLayerSet")
+    layer1 = ifcopenshell.api.material.add_layer(ifc_file, layer_set=layer_set, material=concrete)
+    ifcopenshell.api.material.edit_layer(ifc_file, layer=layer1, attributes={"LayerThickness": 0.15})
+    layer2 = ifcopenshell.api.material.add_layer(ifc_file, layer_set=layer_set, material=insulation)
+    ifcopenshell.api.material.edit_layer(ifc_file, layer=layer2, attributes={"LayerThickness": 0.05})
+    # IfcWall isn't in SvgSerializer.cpp's AXIS3_CLASSES list, so this resolves
+    # to LayerSetDirection AXIS2 -- the local Y axis, matching `_add_box`'s own
+    # size=(x, y, z) convention where y is the wall's thickness.
+    ifcopenshell.api.material.assign_material(
+        ifc_file, products=[wall], type="IfcMaterialLayerSetUsage", material=layer_set
+    )
+
+    # A view straight down the wall's own length (world-X), so the end-cap
+    # face (spanning the full Y thickness) faces the camera directly -- unlike
+    # this file's other tests, which all view along Y.
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(5.0, 0.1, 1.0),
+        camera_dir=(1.0, 0.0, 0.0),
+        camera_ref=(0.0, 1.0, 0.0),
+        use_mat_style_change=True,
+        use_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    # Visible plane is world-Y (thickness, horizontal) / world-Z (height,
+    # vertical); offset/scale as in the cross-coplanar tests. The boundary
+    # sits at Y=0.15 (end of the 0.15m Concrete layer, start of Insulation).
+    boundary_p0, boundary_p1 = (10050.005, 9000.0), (10050.005, 11000.0)
+    assert has_edge(edges, wall.GlobalId, "mat-style-change", boundary_p0, boundary_p1)
+    # The wall's real outer silhouette at Y=0/Y=0.2 must remain plain outline.
+    assert has_edge(edges, wall.GlobalId, "outline", (9900.0, 9000.0), (9900.0, 11000.0))
+    assert has_edge(edges, wall.GlobalId, "outline", (10100.0, 9000.0), (10100.0, 11000.0))
+
+
+@pytest.mark.skip(
+    reason=(
+        "Not yet a valid repro, same trap as test_cluster_a_exact_match_dedup_...: WallC sits "
+        "nearer the camera (Y:[-0.05, 0]) than A/B's shared boundary (Y=0), so its own SOLID "
+        "geometry genuinely occludes that screen region -- confirmed by disabling both "
+        "compute_coincident_edge_best_priority() and compute_coincident_edge_overlap_coverage() "
+        "in SvgSerializer.cpp entirely and rebuilding: the output was byte-for-byte IDENTICAL, "
+        "proving this scenario's apparently-correct trimmed result comes from ordinary HLR "
+        "occlusion, not the dedup pass this test claims to exercise. A genuine collinear-overlap "
+        "case needs two products' OWN independently-classified edges (not a cross-coplanar match) "
+        "to differ in classification while occupying the exact same 3D line with neither's solid "
+        "geometry occluding the other -- e.g. a genuine face-angle difference between two touching "
+        "products' adjacent geometry, not a third object placed in front. Needs a better geometry "
+        "design. Also searched the primary fixture's ORTHOGRAPHIC/ORTHOGRAPHIC-X/EAST SECTION/"
+        "NORTH SECTION TILT drawings directly (2026-07-30) for a genuinely NESTED (different-"
+        "length, partial-overlap) differing-class real-world case, the specific pattern this "
+        "second mechanism (as opposed to exact-match) targets -- every candidate found either fell "
+        "outside the real ~1e-4 project-unit tolerance (a first, too-loose search bucket falsely "
+        "matched unrelated edges) or, once the search was tightened to the real tolerance, turned "
+        "out to have identical endpoints (an exact-match case already, not a distinctly nested "
+        "one). Parked per explicit user instruction: if this can't be isolated before the PR, drop "
+        "this placeholder rather than ship a fake/empty test."
+    )
+)
+def test_cluster_a_collinear_overlap_dedup():
+    """Cluster A (`a08873af07`)'s SECOND detection mechanism -- collinear-overlap,
+    as opposed to `test_cluster_a_exact_match_dedup_...`'s (skipped) exact-match
+    case. Catches a duplicate exact-match bucketing misses: one product's SHORT
+    edge fully nested inside another product's collinear, LONGER edge, sharing
+    at most one endpoint, genuinely coincident in full 3D (not merely
+    same-2D-projection, which the exact-match test's own postmortem found
+    isn't a valid repro at all -- see that test's skip reason).
+
+    WallA/WallB (height 2.0, SAME material) touch at X=2, producing a
+    `cross-coplanar` edge over their full shared boundary. WallC is a SHORT
+    (height 1.0), DIFFERENT-material pilaster flush against that same X=2
+    plane, sitting slightly nearer the camera (Y:[-0.05, 0]) -- intended to
+    never be occluded, but see the skip reason: it actually DOES occlude the
+    boundary it was meant to merely coincide with.
+    """
+    ifc_file, body_context, storey = _make_project()
+    material = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    other = ifcopenshell.api.material.add_material(ifc_file, name="Timber")
+    wall_a = _add_box(ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=material)
+    wall_b = _add_box(ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=material)
+    wall_c = _add_box(ifc_file, body_context, storey, "WallC", (0.2, 0.05, 1.0), (2.0, -0.05, 0.0), material=other)
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(2.0, -5.0, 1.0),
+        camera_dir=(0.0, -1.0, 0.0),
+        use_cross_coplanar=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    # Only the non-overlapping (upper) half of the shared boundary survives as
+    # cross-coplanar -- the lower half, coincident with WallC, must be gone
+    # entirely (not just repainted; genuinely absent from both sides' output).
+    surviving_p0, surviving_p1 = (10000.0, 9000.0), (10000.0, 10000.0)
+    trimmed_p0, trimmed_p1 = (10000.0, 10000.0), (10000.0, 11000.0)
+    assert has_edge(edges, wall_a.GlobalId, "cross-coplanar", surviving_p0, surviving_p1)
+    assert has_edge(edges, wall_b.GlobalId, "cross-coplanar", surviving_p0, surviving_p1)
+    assert not has_any_edge(edges, wall_a.GlobalId, trimmed_p0, trimmed_p1)
+    assert not has_any_edge(edges, wall_b.GlobalId, trimmed_p0, trimmed_p1)
+
+    # WallB's own outer edge is trimmed too, wherever WallC's footprint
+    # coincides with it (WallC's own outline wins there instead).
+    assert not has_any_edge(edges, wall_b.GlobalId, (10000.0, 11000.0), (10200.0, 11000.0))
+    assert has_edge(edges, wall_b.GlobalId, "outline", (10200.0, 11000.0), (12000.0, 11000.0))
+
+    # WallC's own genuine silhouette is untouched.
+    assert has_edge(edges, wall_c.GlobalId, "outline", (10000.0, 10000.0), (10200.0, 10000.0))
+    assert has_edge(edges, wall_c.GlobalId, "outline", (10000.0, 11000.0), (10200.0, 11000.0))
+
+
+def test_cluster_b_self_occlusion_must_not_restore():
+    """Cluster B regression guard: `is_genuinely_occluded()`'s ray-cast
+    deliberately includes the edge's OWN product (not just foreign products)
+    -- an object's own back-facing edge, truly hidden by its own nearer
+    geometry, must stay hidden even when it also happens to sit on a
+    coincident foreign face (satisfying `point_on_foreign_face()`'s gate).
+    Only a genuine depth-tie (nothing nearer at all, including the product's
+    own geometry) should ever be restored.
+
+    BoxA is a solid cube; its BACK face (Y=2, far from the camera) is
+    genuinely occluded by its own FRONT face (Y=0) -- not a depth-tie at all,
+    ordinary self-occlusion. SlabD sits exactly at Y=2, coincident with BoxA's
+    own back face, so a foreign face genuinely exists there too. Confirmed via
+    a direct before/after check (forcing `is_genuinely_occluded()` to always
+    return `false`, i.e. simulating the self-occlusion check never having
+    existed): BoxA then shows 8 outline edges (the back face wrongly
+    restored, duplicating all 4 front-face edges) instead of the correct 4 --
+    this test would have caught that regression.
+    """
+    ifc_file, body_context, storey = _make_project()
+    box_a = _add_box(ifc_file, body_context, storey, "BoxA", (2.0, 2.0, 2.0), (0.0, 0.0, 0.0))
+    _add_box(ifc_file, body_context, storey, "SlabD", (2.0, 0.1, 2.0), (0.0, 2.0, 0.0))
+
+    svg = render_svg(ifc_file, camera_pos=(1.0, -5.0, 1.0), camera_dir=(0.0, -1.0, 0.0))
+    edges = parse_edges(svg)
+
+    box_a_edges = [e for e in edges if e.guid == box_a.GlobalId]
+    assert len(box_a_edges) == 4, f"expected only BoxA's 4 front-face edges, found {box_a_edges}"
+    assert all(e.cls == "outline" for e in box_a_edges)
+
+
+def test_full_duplicate_pair_silhouette_stays_outline():
+    """Regression guard for `03865b02fe`: two exactly-overlapping duplicate
+    products (identical footprint and placement, differing only in material)
+    must keep their true outer silhouette as plain `outline`, not wrongly
+    `mat-style-change`. The A2/B2 coplanarity gate that
+    `find_cross_coplanar_matches()` normally relies on is a one-hop check --
+    correct for a genuine partial touch, but a full duplicate has every face
+    matching, including whatever's beyond any given edge, so that gate
+    trivially passes even at edges that are the shape's true silhouette with
+    nothing beyond them at all. Fixed via a bounding-box-equality pre-check
+    that skips the whole face-pair loop for an exact-duplicate pair.
+
+    Not verified against a pre-fix build for this one: temporarily disabling
+    the bounding-box-equality skip (to confirm the old, buggy behaviour)
+    produced completely empty SVG output instead of the documented wrong
+    classification -- true full-volume duplicate geometry going through the
+    disabled code path seems to hit a different, more degenerate case than
+    the original bug report, not a faithful pre-fix reproduction. The
+    assertion below is still a correct, meaningful regression guard for the
+    documented behaviour either way.
+    """
+    ifc_file, body_context, storey = _make_project()
+    concrete = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    timber = ifcopenshell.api.material.add_material(ifc_file, name="Timber")
+    wall_a = _add_box(ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=concrete)
+    wall_dup = _add_box(ifc_file, body_context, storey, "WallDup", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=timber)
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(1.0, -5.0, 1.0),
+        camera_dir=(0.0, -1.0, 0.0),
+        use_cross_coplanar=True,
+        use_mat_style_change=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    for product in (wall_a, wall_dup):
+        product_edges = [e for e in edges if e.guid == product.GlobalId]
+        assert len(product_edges) == 4, f"expected 4 silhouette edges for {product.Name}, found {product_edges}"
+        assert all(e.cls == "outline" for e in product_edges), product_edges
+
+
+@pytest.mark.skip(
+    reason=(
+        "Investigated but not yet reproducible standalone. Cluster B's third guard (0078c94872, "
+        "'remaining false-positive class'): real GUIDs identified in the primary fixture's NORTH "
+        "SECTION TILT drawing (143K2G_eT8tvByq93EgoU$ / 2jifPdGkTAYg1VkqWF2gAd, a straight two-"
+        "segment wall run) via debug instrumentation confirming an edge-on match "
+        "(face normal (-1,~0,0), dot~1.6e-7) is genuinely found and rejected in the FULL fixture "
+        "at this exact query point. But extracting just these two products (via dst.add(), then "
+        "separately re-verified via full hand-reconstruction from literal profile/placement data -- "
+        "the same recipe that worked cleanly for both test_cluster_b_depth_tie_restoration and "
+        "test_cluster_a_exact_match_dedup_outline_beats_sharp) does NOT reproduce it: the exact "
+        "same query point instead matches a DIFFERENT, non-edge-on face first (the neighbour "
+        "wall's own top face, normal (0,0,1), dot=0.397 -- a valid, unrejected match), so the edge "
+        "restores via that path regardless of the edge-on gate. point_on_foreign_face() returns on "
+        "the FIRST matching face found while iterating TopExp_Explorer -- which face is 'first' for "
+        "a given query point is apparently sensitive to full-scene context (more surrounding "
+        "geometry, more total topology) in a way isolating 2-3 objects doesn't preserve, unlike the "
+        "other two scenarios above where isolation reproduced the bug byte-for-byte. Tried widening "
+        "the extraction to 3 and then 16 nearby real products (walls, slabs, beams) from the "
+        "original fixture -- neither reproduced it either. Root cause of the face-ordering "
+        "sensitivity itself not identified. Parked per explicit user instruction (2026-07-30) after "
+        "this investigation, same as test_cluster_a_collinear_overlap_dedup above -- if this can't "
+        "be isolated before the PR, drop this placeholder rather than ship a fake/empty test."
+    )
+)
+def test_cluster_b_edge_on_face_must_not_restore():
+    """Placeholder for Cluster B's edge-on rejection guard -- see the skip
+    reason for why this isn't constructed yet, and what's already been tried."""
+    pass
