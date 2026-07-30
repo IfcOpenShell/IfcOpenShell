@@ -221,16 +221,29 @@ class TopicHandler:
         if self.bim_snippet:
             destination_zip.writestr(f"{self.topic.guid}/{ref_filename}", self.bim_snippet)
 
+    def _resolve_zip_path(self, reference: str) -> str:
+        """Resolve a topic-relative reference into its POSIX path inside the BCF zip.
+
+        Unlike walking self._topic_dir with joinpath()/parent, this doesn't rely on
+        zipfile.Path.at, which a freshly created topic (backed by a plain pathlib.Path,
+        not yet loaded from a zip) doesn't have.
+        """
+        parts = [self._topic_dir.name]
+        for path_part in reference.split("/"):
+            if path_part == "..":
+                if parts:
+                    parts.pop()
+            else:
+                parts.append(path_part)
+        return "/".join(parts)
+
     def _save_reference_files(self, destination_zip: ZipFileInterface) -> None:
         if not self.header:
             return
         for ref in self.header.file:
             if ref.is_external or not ref.reference:
                 continue
-            real_path = self._topic_dir
-            for path_part in ref.reference.split("/"):
-                real_path = real_path.parent if path_part == ".." else real_path.joinpath(path_part)
-            destination_zip.writestr(real_path.at, self.reference_files[ref.reference])
+            destination_zip.writestr(self._resolve_zip_path(ref.reference), self.reference_files[ref.reference])
 
     def _save_document_references(self, destination_zip: ZipFileInterface) -> None:
         if not self.topic:
@@ -238,10 +251,9 @@ class TopicHandler:
         for doc in self.topic.document_reference:
             if doc.is_external or not doc.referenced_document:
                 continue
-            real_path = self._topic_dir
-            for path_part in doc.referenced_document.split("/"):
-                real_path = real_path.parent if path_part == ".." else real_path.joinpath(path_part)
-            destination_zip.writestr(real_path.at, self.document_references[doc.referenced_document])
+            destination_zip.writestr(
+                self._resolve_zip_path(doc.referenced_document), self.document_references[doc.referenced_document]
+            )
 
     def add_viewpoint(self, element: entity_instance) -> VisualizationInfoHandler:
         """Add a viewpoint pointed at the placement of an IFC element to the topic.
