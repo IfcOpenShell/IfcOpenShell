@@ -394,7 +394,7 @@ class CostItemQuantitiesData:
         names = set()
         qtos = ifcopenshell.util.element.get_psets(element, qtos_only=True)
         for qset, quantities in qtos.items():
-            names = set(quantities.keys())
+            names.update(quantities.keys())
         return [(n, n, "") for n in names if n != "id"]
 
     @classmethod
@@ -407,5 +407,5 @@ class CostItemQuantitiesData:
         names = set()
         qtos = ifcopenshell.util.element.get_psets(element, qtos_only=True)
         for qset, quantities in qtos.items():
-            names = set(quantities.keys())
+            names.update(quantities.keys())
         return [(n, n, "") for n in names if n != "id"]
