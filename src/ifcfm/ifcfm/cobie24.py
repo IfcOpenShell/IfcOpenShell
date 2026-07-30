@@ -690,8 +690,10 @@ def get_connection_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entit
         or val(element.Name)
     )
     name = val(element.Name)
-    row_name1 = val(ifcopenshell.util.system.get_port_element(element.RelatingPort).Name)
-    row_name2 = val(ifcopenshell.util.system.get_port_element(element.RelatedPort).Name)
+    relating_element = ifcopenshell.util.system.get_port_element(element.RelatingPort)
+    related_element = ifcopenshell.util.system.get_port_element(element.RelatedPort)
+    row_name1 = val(relating_element.Name) if relating_element else None
+    row_name2 = val(related_element.Name) if related_element else None
     return {
         "Name": name,
         "CreatedBy": get_created_by(element),
