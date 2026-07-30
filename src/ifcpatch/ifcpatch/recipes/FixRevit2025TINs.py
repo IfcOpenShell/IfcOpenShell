@@ -124,6 +124,7 @@ class Patcher:
         props = tool.Project.get_project_props()
         props.should_use_native_meshes = True
         bpy.ops.bim.load_project(filepath=self.filepath)
+        self.file = tool.Ifc.get()
 
         old_history_size = tool.Ifc.get().history_size
         old_undo_steps = bpy.context.preferences.edit.undo_steps
@@ -169,8 +170,6 @@ class Patcher:
 
         tool.Ifc.get().history_size = old_history_size
         bpy.context.preferences.edit.undo_steps = old_undo_steps
-
-        self.file = tool.Ifc.get()
 
     def create_edges(self, obj: bpy.types.Object) -> None:
         import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
