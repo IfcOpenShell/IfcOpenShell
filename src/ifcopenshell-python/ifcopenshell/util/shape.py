@@ -914,11 +914,16 @@ def dissolve_faces(
     result = []
     for tri_indices in ngons.values():
         tri_edge_set = set()
+        edge_count: dict[frozenset, int] = {}
         for tri_idx in tri_indices:
             for e in tri_edges[tri_idx]:
                 tri_edge_set.add(e)
+                edge_count[e] = edge_count.get(e, 0) + 1
 
-        boundary_edges = [e for e in tri_edge_set if e in original_edges]
+        if merge_coplanar:
+            boundary_edges = [e for e in tri_edge_set if edge_count.get(e, 0) == 1]
+        else:
+            boundary_edges = [e for e in tri_edge_set if e in original_edges]
 
         if not boundary_edges:
             result.append(list(faces[tri_indices[0]]))
@@ -938,15 +943,21 @@ def dissolve_faces(
                     continue
                 break
 
+        if not edge_adjacency:
+            result.append(list(faces[tri_indices[0]]))
+            continue
+
         start = next(iter(edge_adjacency))
         polygon = [start]
         current = edge_adjacency[start]
-        while current != start:
+        while current != start and current in edge_adjacency:
             polygon.append(current)
-            if current not in edge_adjacency:
-                break
             current = edge_adjacency[current]
-        result.append(polygon)
+
+        if len(polygon) >= 3:
+            result.append(polygon)
+        else:
+            result.append(list(faces[tri_indices[0]]))
 
     return result
 
