@@ -22,6 +22,7 @@ import tempfile
 from pathlib import Path
 
 import ifcopenshell
+import ifcopenshell.api.cost
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.cost
@@ -188,3 +189,26 @@ class TestSerialiseCostQuantities:
         result = ifc5d.ifc5Dspreadsheet.IfcDataGetter.serialise_cost_quantities(ifc_file, cost_item)
 
         assert json.loads(result) == [["Complex ERROR: Only IfcPhysicalSimpleQuantity is supported", 0.0, ""]]
+
+
+class TestCostCategoryTotals:
+    def test_two_cost_values_sharing_a_category_are_summed_not_overwritten(self):
+        # Two cost values with no Category set both default to "General". The
+        # per-category "General Cost" column must sum both, matching
+        # RateSubtotal (which already sums every non-"*" cost value).
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+        ifcopenshell.api.unit.assign_unit(ifc_file)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(ifc_file, name="Sched")
+        item = ifcopenshell.api.cost.add_cost_item(ifc_file, cost_schedule=schedule)
+        item.Name = "Wall"
+
+        value1 = ifcopenshell.api.cost.add_cost_value(ifc_file, parent=item)
+        value1.AppliedValue = ifc_file.create_entity("IfcMonetaryMeasure", 100.0)
+        value2 = ifcopenshell.api.cost.add_cost_value(ifc_file, parent=item)
+        value2.AppliedValue = ifc_file.create_entity("IfcMonetaryMeasure", 250.0)
+
+        data = ifc5d.ifc5Dspreadsheet.IfcDataGetter.get_cost_items_data(ifc_file, item)[0]
+
+        assert data["RateSubtotal"] == pytest.approx(350.0)
+        assert data["cost_categories"]["General Cost"] == pytest.approx(350.0)
