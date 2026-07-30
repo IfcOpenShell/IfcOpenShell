@@ -133,7 +133,7 @@ def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) ->
     Note that in general you will not need to call this directly. See
     ``get_mappeditem_transformation`` instead.
 
-    :param item: The IfcCartesianTransformationOperator entity
+    :param inst: The IfcCartesianTransformationOperator entity
     :return: A 4x4 numpy transformation matrix
     """
     origin = np.array(inst.LocalOrigin.Coordinates)
