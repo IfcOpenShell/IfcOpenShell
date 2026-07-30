@@ -321,7 +321,10 @@ class Pset(bonsai.core.tool.Pset):
     def import_enumerated_value_from_template(
         cls, prop_template: ifcopenshell.entity_instance, data: dict[str, Any], props: bpy.types.PropertyGroup
     ) -> None:
-        enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
+        enumerators = prop_template.Enumerators
+        if not enumerators or not enumerators.EnumerationValues:
+            return
+        enum_items = [v.wrappedValue for v in enumerators.EnumerationValues]
         selected_enum_items = data.get(prop_template.Name, []) or []
 
         prop = props.properties.add()
@@ -408,7 +411,7 @@ class Pset(bonsai.core.tool.Pset):
                     continue
                 cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
 
-            elif prop_template.TemplateType.startswith("Q_"):
+            elif prop_template.TemplateType and prop_template.TemplateType.startswith("Q_"):
                 cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
 
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
