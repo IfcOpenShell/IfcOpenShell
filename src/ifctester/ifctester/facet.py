@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import builtins
 import re
+from decimal import Decimal, InvalidOperation
 from functools import lru_cache
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
@@ -1010,6 +1011,25 @@ class Material(Facet):
         return MaterialResult(is_pass, reason)
 
 
+def to_finite_decimal(value: Any) -> Decimal:
+    try:
+        result = Decimal(str(value))
+    except InvalidOperation:
+        raise ValueError(f"Not a decimal value: {value!r}")
+    if not result.is_finite():
+        raise ValueError(f"Not a finite decimal value: {value!r}")
+    return result
+
+
+def get_fraction_digits(value: Any) -> int:
+    return max(0, -to_finite_decimal(value).normalize().as_tuple().exponent)
+
+
+def get_total_digits(value: Any) -> int:
+    scaled = to_finite_decimal(value).normalize().scaleb(get_fraction_digits(value))
+    return len(str(abs(int(scaled))))
+
+
 class Restriction:
     def __init__(self, options=None, base="string"):
         self.base = base
@@ -1090,13 +1110,10 @@ class Restriction:
                     if float(other) < float(value):
                         return False
                 elif constraint == "totalDigits":
-                    digits = re.sub(r"[^0-9]", "", str(other)).lstrip("0") or "0"
-                    if len(digits) > int(value):
+                    if get_total_digits(other) > int(value):
                         return False
                 elif constraint == "fractionDigits":
-                    text = str(other)
-                    fraction = text.split(".", 1)[1] if "." in text else ""
-                    if len(fraction) > int(value):
+                    if get_fraction_digits(other) > int(value):
                         return False
             except ValueError:
                 return False

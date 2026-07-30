@@ -1710,12 +1710,24 @@ class TestRestriction:
         assert restriction != 123456
         assert restriction == -12
         assert restriction == 0
+        # IFC numeric attributes are floats, so str() adds a fractional part
+        # that is not a significant digit.
+        assert restriction == 100.0
+        assert restriction == "100.0"
+        # Trailing zeros in the fraction are not significant either.
+        assert restriction == "1.500"
+        # Nor are leading zeros: 0.001 is 1 x 10^-3, so one digit.
+        assert restriction == "0.001"
+        assert restriction != float("nan")
 
     def test_fraction_digits(self):
         restriction = Restriction(options={"fractionDigits": 2}, base="decimal")
         assert restriction == 3.14
         assert restriction != 3.14159
         assert restriction == 42
+        assert restriction == "3.140000"
+        assert restriction == 100.0
+        assert restriction != float("inf")
 
     def test_pattern(self):
         restriction = Restriction(options={"pattern": "[A-Z]{2}[0-9]{2}"})
