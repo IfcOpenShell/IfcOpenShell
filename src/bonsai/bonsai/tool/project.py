@@ -18,10 +18,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import shutil
 from collections import defaultdict
+from collections.abc import Iterator
 from math import radians
 from pathlib import Path
 from typing import (
@@ -306,6 +308,36 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def run_root_reload_grid_decorator(cls) -> None:
         tool.Root.reload_grid_decorator()
+
+    @classmethod
+    @contextlib.contextmanager
+    def report_linking_progress(cls, context: bpy.types.Context, message: str) -> Iterator[None]:
+        """Show a WAIT cursor and a status bar message while a link loads.
+
+        Linking a file runs a separate, headless Blender subprocess to parse
+        and cache the model (see ``LoadLink.link_ifc``), so there is no
+        incremental progress to report back from it, only that it is running
+        and for how long so far (#9029). This deliberately does not fake a
+        percentage; see ``tool.Patch.report_progress`` for the equivalent on
+        the IfcPatch side, which can show real percentages because recipes
+        run in-process and can log their own progress.
+        """
+        window = getattr(context, "window", None)
+        if window is not None:
+            window.cursor_modal_set("WAIT")
+        try:
+            context.workspace.status_text_set(message)
+        except Exception:
+            pass
+        try:
+            yield
+        finally:
+            if window is not None:
+                window.cursor_modal_restore()
+            try:
+                context.workspace.status_text_set(None)
+            except Exception:
+                pass
 
     @classmethod
     def get_linked_models_documents(cls) -> dict[str, ifcopenshell.entity_instance]:
