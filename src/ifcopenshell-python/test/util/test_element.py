@@ -279,6 +279,39 @@ class TestGetQuantitiesIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"x": 42})
         assert subject.get_quantities(qto.Quantities) == {"x": 42}
 
+    def test_getting_complex_quantities_verbose(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="qto")
+        sub_quantity = self.file.create_entity("IfcQuantityLength", Name="sub", LengthValue=1.0)
+        complex_quantity = self.file.create_entity(
+            "IfcPhysicalComplexQuantity",
+            Name="complex",
+            Discrimination="usage",
+            HasQuantities=[sub_quantity],
+        )
+        qto.Quantities = [complex_quantity]
+        quantities = subject.get_quantities(qto.Quantities, verbose=True)
+        quantity_value = quantities["complex"]["value"]
+        nested_quantity = quantity_value["properties"]["sub"]
+        assert quantities == {
+            "complex": {
+                "id": complex_quantity.id(),
+                "class": "IfcPhysicalComplexQuantity",
+                "value": {
+                    "Discrimination": "usage",
+                    "id": complex_quantity.id(),
+                    "type": "IfcPhysicalComplexQuantity",
+                    "properties": {
+                        "sub": {
+                            "id": nested_quantity["id"],
+                            "class": "IfcQuantityLength",
+                            "value": 1.0,
+                        }
+                    },
+                },
+            }
+        }
+
 
 class TestGetPropertiesIFC4(test.bootstrap.IFC4):
     def test_getting_no_properties_when_none_are_available(self):
