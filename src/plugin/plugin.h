@@ -105,6 +105,9 @@ private:
 PLUGIN_API abi_info host_abi();
 PLUGIN_API void validate_abi(const abi_info& abi);
 PLUGIN_API std::filesystem::path module_directory(const void* symbol);
+PLUGIN_API void set_search_paths(const std::vector<std::string>& paths);
+PLUGIN_API std::vector<std::string> search_paths();
+PLUGIN_API void clear_search_paths();
 
 }
 }

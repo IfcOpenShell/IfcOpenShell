@@ -28,7 +28,7 @@ PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, s
 }
 
 namespace {
-	constexpr const char* opencascade_geometry_ifc_writer_plugin_prefix = "geometry.serialization.";
+	constexpr const char* opencascade_geometry_ifc_writer_plugin_prefix = "geometry.writer.";
 }
 
 const char* IfcGeom::opencascade_geometry_ifc_writer_plugin_registration_symbol() {

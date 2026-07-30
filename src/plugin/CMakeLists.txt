@@ -5,6 +5,10 @@ add_library(plugin ${PLUGIN_CPP_FILES} ${PLUGIN_H_FILES})
 set_target_properties(plugin PROPERTIES
     OUTPUT_NAME "ifcopenshell.plugin"
     COMPILE_FLAGS "-DPLUGIN_EXPORTS")
+target_include_directories(plugin PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
 if (NOT CREATE_BUNDLE)
 set_target_properties(plugin PROPERTIES 
@@ -20,7 +24,7 @@ target_compile_definitions(plugin PRIVATE
 
 target_link_libraries(plugin PRIVATE ${Boost_LIBRARIES})
 
-install(TARGETS plugin)
+install(TARGETS plugin EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 
 install(FILES ${PLUGIN_H_FILES}
     DESTINATION ${INCLUDEDIR}/plugin

@@ -48,6 +48,7 @@
 #include INCLUDE_SCHEMA_DEFINITIONS(ifcparse/schemas, IfcSchema)
 
 #include "ifcparse/hierarchy_helper.h"
+#include "plugin/plugin.h"
 
 #include "../ifcgeom/Serialization/Serialization.h"
 
@@ -61,6 +62,10 @@ using namespace std::string_literals;
 void createGroundShape(TopoDS_Shape& shape);
 
 int main() {
+
+#ifdef IFCOPENSHELL_EXAMPLE_PLUGIN_PATH
+	ifcopenshell::plugin::set_search_paths({IFCOPENSHELL_EXAMPLE_PLUGIN_PATH});
+#endif
 
 	// The hierarchy_helper is a subclass of the regular file that provides several
 	// convenience functions for working with geometry in IFC files.
@@ -99,8 +104,8 @@ int main() {
 	auto building_shape = IfcGeom::serialise(file, building_shell, false).as<IfcSchema::IfcProductDefinitionShape>();
 	
 	file.add_entity(building_shape);
-	auto rep = building_shape.Representations().begin();
-	rep->setContextOfItems(file.getRepresentationContext("model"));
+	auto building_representations = building_shape.Representations();
+	building_representations.front().setContextOfItems(file.getRepresentationContext("model"));
 
 	building.setRepresentation(building_shape);
 

@@ -208,6 +208,8 @@ endif()
 
 include(GNUInstallDirs)
 
+set(IFCOPENSHELL_EXPORT_TARGETS "${PROJECT_NAME}Targets")
+
 if(NOT INCLUDEDIR)
     set(INCLUDEDIR include)
 endif()
@@ -317,6 +319,8 @@ if (WITH_ROCKSDB)
         find_package(zstd CONFIG REQUIRED)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
     endif()
+
+    install(TARGETS IFCOPENSHELL_RocksDB EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endif()
 
 # Find Boost: On win32 the (hardcoded) default is to use static libraries and
@@ -734,7 +738,10 @@ if(BUILD_IFCGEOM)
         )
     endforeach()
 
-    install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom)
+    install(
+        TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
+        EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+    )
 endif(BUILD_IFCGEOM)
 if(BUILD_BONSAIVIEWER)
     # IfcViewer is the unified scene + render lib since the wgpu/ifcviewer
@@ -797,3 +804,5 @@ set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
 # set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/cmake/debian/postinst")
 
 include(CPack)
+
+include(package_export.cmake)

@@ -75,8 +75,14 @@ macro(build_example exe_name)
 endmacro()
 
 macro(build_schema_example exe_name schema)
-    build_example(${exe_name} ${ARGN})
-    if(NOT STANDALONE_PROJECT)
+    build_example(${exe_name} ${schema} ${ARGN})
+    if(STANDALONE_PROJECT)
+        target_link_libraries(${exe_name} IfcOpenShell::parse_schema_ifc${schema})
+        target_compile_definitions(
+            ${exe_name}
+            PRIVATE IFCOPENSHELL_EXAMPLE_PLUGIN_PATH="$<TARGET_FILE_DIR:IfcOpenShell::parse_schema_ifc${schema}>"
+        )
+    else()
         target_link_libraries(${exe_name} parse_schema_ifc${schema})
     endif()
 endmacro()

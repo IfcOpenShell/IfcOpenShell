@@ -153,9 +153,6 @@ namespace {
 
 namespace ifcopenshell {
 namespace plugin {
-PLUGIN_API void set_search_paths(const std::vector<std::string>& paths);
-PLUGIN_API std::vector<std::string> search_paths();
-PLUGIN_API void clear_search_paths();
 PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
 }
 }

@@ -22,6 +22,9 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
     set(KERNEL_TARGET "geometry_kernel_${kernel}")
     add_library(${KERNEL_TARGET} SHARED ${IFCGEOM_FILES})
+    if((NOT WIN32) AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+        SET_INSTALL_SELF_RPATH(${KERNEL_TARGET})
+    endif()
 
     if(${kernel} STREQUAL "opencascade")
         ifcopenshell_wasm_plugin_link_options(${KERNEL_TARGET} ifcopenshell_register_kernel_plugin_v1 OPTIMIZATION -O0)
@@ -45,6 +48,9 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
         set(KERNEL_TARGET_SIMPLE "${KERNEL_TARGET}_simple")
         add_library(${KERNEL_TARGET_SIMPLE} SHARED ${IFCGEOM_FILES})
+        if((NOT WIN32) AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+            SET_INSTALL_SELF_RPATH(${KERNEL_TARGET_SIMPLE})
+        endif()
 
         ifcopenshell_wasm_plugin_link_options(${KERNEL_TARGET_SIMPLE} ifcopenshell_register_kernel_plugin_v1)
 
@@ -74,6 +80,9 @@ foreach(kernel ${GEOMETRY_KERNELS})
                 ${kernel}/tree_${tree_backend}_plugin.cpp
                 ${kernel}/tree_backends.h
             )
+            if((NOT WIN32) AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+                SET_INSTALL_SELF_RPATH(${TREE_TARGET})
+            endif()
             set_target_properties(${TREE_TARGET} PROPERTIES
                 COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS"
                 OUTPUT_NAME "ifcopenshell.geometry.tree.opencascade.${tree_backend}"
