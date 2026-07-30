@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2026 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2026 Petru Conduraru <petru@bimvoice.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -37,3 +37,21 @@ class TestIsWorkTimeApplicableToDay(test.bootstrap.IFC4):
             work_time.RecurrencePattern = recurrence
             result = subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 30))
             assert result is False, f"{recurrence_type} returned {result!r}, expected the explicit bool False"
+
+    def test_every_recurrence_type_survives_absent_optional_components(self):
+        # Only RecurrenceType is mandatory on IfcRecurrencePattern; DayComponent,
+        # WeekdayComponent, MonthComponent and Position are all optional, so a
+        # pattern carrying none of them is valid IFC and must not raise.
+        work_time = self.file.create_entity("IfcWorkTime")
+        for recurrence_type in subject.RECURRENCE_TYPE.__args__:
+            recurrence = self.file.create_entity("IfcRecurrencePattern", RecurrenceType=recurrence_type)
+            work_time.RecurrencePattern = recurrence
+            result = subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 30))
+            assert isinstance(result, bool), f"{recurrence_type} returned {result!r}, expected a bool"
+
+    def test_a_populated_weekday_component_still_decides_the_day(self):
+        # Guarding the absent case must not neuter the populated one.
+        recurrence = self.file.create_entity("IfcRecurrencePattern", RecurrenceType="WEEKLY", WeekdayComponent=[4])
+        work_time = self.file.create_entity("IfcWorkTime", RecurrencePattern=recurrence)
+        assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 30)) is True
+        assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 31)) is False

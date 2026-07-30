@@ -240,30 +240,30 @@ def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day)
         return False  # TODO
     elif recurrence_type == "WEEKLY":
         if not recurrence.Interval and not recurrence.Occurrences:
-            return (day.weekday() + 1) in recurrence.WeekdayComponent
+            return (day.weekday() + 1) in (recurrence.WeekdayComponent or ())
         # 4 IfcWorktime Start
         if not work_time[4]:
             return False
         return False  # TODO
     elif recurrence_type == "MONTHLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
-            return day.day in recurrence.DayComponent
+            return day.day in (recurrence.DayComponent or ())
         return False  # TODO
     elif recurrence_type == "MONTHLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
-            return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(day.day / 7) + 1 == recurrence[
+            return (day.weekday() + 1) in (recurrence.WeekdayComponent or ()) and floor(day.day / 7) + 1 == recurrence[
                 "Position"
             ]
         return False  # TODO
     elif recurrence_type == "YEARLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
-            return day.month in recurrence.MonthComponent and day.day in recurrence.DayComponent
+            return day.month in (recurrence.MonthComponent or ()) and day.day in (recurrence.DayComponent or ())
         return False  # TODO
     elif recurrence_type == "YEARLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (
-                day.month in recurrence.MonthComponent
-                and (day.weekday() + 1) in recurrence.WeekdayComponent
+                day.month in (recurrence.MonthComponent or ())
+                and (day.weekday() + 1) in (recurrence.WeekdayComponent or ())
                 and floor(day.day / 7) + 1 == recurrence.Position
             )
         return False  # TODO
