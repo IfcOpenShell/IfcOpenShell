@@ -940,7 +940,7 @@ def get_coordinate_data_(element: ifcopenshell.entity_instance) -> Generator[dic
     }
     for category, point in zip(categories, bbox):
         box_point_data = {
-            "Name": element_name + category,
+            "Name": (element_name or "") + category,
             "CoordinateXAxis": point[0],
             "CoordinateYAxis": point[1],
             "CoordinateZAxis": point[2],
