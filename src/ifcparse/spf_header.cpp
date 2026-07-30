@@ -108,6 +108,8 @@ void ifcopenshell::spf_header::assign(const spf_header& other) {
                     if constexpr (std::is_same_v<U, express::Base>) {
                     } else if constexpr (std::is_same_v<U, std::vector<express::Base>>) {
                     } else if constexpr (std::is_same_v<U, std::vector<std::vector<express::Base>>>) {
+                    } else if constexpr (std::is_same_v<U, empty_aggregate_t>) {
+                    } else if constexpr (std::is_same_v<U, empty_aggregate_of_aggregate_t>) {
                     } else {
                         new_entity.set_attribute_value(i, v);
                     }
