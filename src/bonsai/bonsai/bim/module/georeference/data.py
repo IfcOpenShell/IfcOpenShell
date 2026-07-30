@@ -116,7 +116,7 @@ class GeoreferenceData:
                 del projected_crs["type"]
                 if projected_crs["MapUnit"]:
                     unit = projected_crs["MapUnit"]
-                    projected_crs["MapUnit"] = (getattr(unit, "Prefix", "") or "") + unit.Name
+                    projected_crs["MapUnit"] = (getattr(unit, "Prefix", "") or "") + (unit.Name or "")
                 return projected_crs
         return {}
 
