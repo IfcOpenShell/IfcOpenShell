@@ -352,8 +352,8 @@ def _assign_connection_geometry(
 ) -> None:
     """Assign connection geometry to a boundary using the existing API."""
     location = face_matrix[:3, 3]
-    axis = face_matrix[:3, 0]
-    ref_direction = face_matrix[:3, 2]
+    axis = face_matrix[:3, 2]
+    ref_direction = face_matrix[:3, 0]
 
     outer_boundary = [list(coord) for coord in polygon.exterior.coords[:-1]]
     inner_boundaries = [list(interior.coords[:-1]) for interior in polygon.interiors]
