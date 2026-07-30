@@ -190,9 +190,45 @@ class TestFixArchiCADToRevitDoorSwings(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcDiscreteAccessory")
         assert list(door.Representation.Representations) == [body_rep]
 
+    def test_door_type_footprint_representation_map_is_removed(self):
+        """The door type entity (``IfcDoorType`` in IFC4, ``IfcDoorStyle`` in
+        IFC2X3) has its FootPrint representation map culled, leaving other
+        maps untouched."""
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        body_ctx, footprint_ctx = self._add_contexts()
 
-# Note: no IFC2X3 test class here. This recipe is IFC4-only as of HEAD: it
-# unconditionally calls ``self.file.by_type("IfcDoorType")`` (IFC2X3 names
-# the equivalent entity ``IfcDoorStyle``), so it raises a RuntimeError on any
-# IFC2X3 file before ever reaching the door-swing logic under test here. That
-# is a pre-existing, separate defect, out of scope for this change.
+        door_type_class = "IfcDoorStyle" if self.file.schema == "IFC2X3" else "IfcDoorType"
+        door_type = ifcopenshell.api.root.create_entity(self.file, ifc_class=door_type_class)
+
+        def make_map(context, identifier, rep_type):
+            rep = self.file.create_entity(
+                "IfcShapeRepresentation",
+                ContextOfItems=context,
+                RepresentationIdentifier=identifier,
+                RepresentationType=rep_type,
+                Items=[],
+            )
+            origin = self.file.create_entity(
+                "IfcAxis2Placement3D", Location=self.file.create_entity("IfcCartesianPoint", (0.0, 0.0, 0.0))
+            )
+            return self.file.create_entity("IfcRepresentationMap", MappingOrigin=origin, MappedRepresentation=rep)
+
+        footprint_map = make_map(footprint_ctx, "FootPrint", "Curve2D")
+        body_map = make_map(body_ctx, "Body", "SweptSolid")
+        door_type.RepresentationMaps = [footprint_map, body_map]
+
+        ifcpatch.execute({"file": self.file, "recipe": "FixArchiCADToRevitDoorSwings", "arguments": []})
+
+        remaining = [rm.MappedRepresentation.RepresentationIdentifier for rm in door_type.RepresentationMaps]
+        assert remaining == ["Body"]
+
+
+class TestFixArchiCADToRevitDoorSwingsIFC2X3(test.bootstrap.IFC2X3, TestFixArchiCADToRevitDoorSwings):
+    """IFC2X3 has no ``IfcIndexedPolyCurve``/``IfcArcIndex`` (the arc-index
+    faceting section is simply not applicable, same as
+    ``DowngradeIndexedPolyCurve.py``) and no ``IfcDoorType`` (the door type
+    entity is named ``IfcDoorStyle`` there instead, handled by
+    ``test_door_type_footprint_representation_map_is_removed`` above, which
+    is inherited and re-run against this schema). Every other test in the
+    base class exercises ``IfcWall``/``IfcDoor``/``IfcDiscreteAccessory``,
+    which are unchanged between schemas, so they are inherited unmodified."""
