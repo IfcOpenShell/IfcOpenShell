@@ -254,7 +254,7 @@ def reassign_class(
     for attribute in declaration.all_attributes():
         name = attribute.name()
         old_attribute = info.get(name, None)
-        if old_attribute:
+        if old_attribute is not None:
             if ifcopenshell.util.attribute.get_primitive_type(attribute) == "enum":
                 if old_attribute in ifcopenshell.util.attribute.get_enum_items(attribute):
                     new_attributes[name] = old_attribute
