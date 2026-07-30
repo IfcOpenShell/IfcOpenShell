@@ -110,7 +110,7 @@ class TopicHandler:
             return self._reference_files
 
         for ref in self.header.file:
-            if ref.is_external:
+            if ref.is_external or not ref.reference:
                 continue
             real_path = self._topic_dir
             for path_part in ref.reference.split("/"):
