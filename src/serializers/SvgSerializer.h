@@ -41,6 +41,7 @@
 #include <BRep_Builder.hxx>
 #include <HLRBRep_PolyHLRToShape.hxx>
 #include <BRepTopAdaptor_FClass2d.hxx>
+#include <BRepClass_FaceClassifier.hxx>
 #include <Geom_Plane.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
@@ -79,6 +80,7 @@
 #include <set>
 #include <iterator>
 #include <algorithm>
+#include <IntCurvesFace_ShapeIntersector.hxx>
 
 typedef std::pair<const IfcUtil::IfcBaseEntity*, std::string> drawing_key;
 
@@ -1264,6 +1266,249 @@ namespace {
 		}
 	}
 
+	// Restores classified edges that HLR marked hidden purely because they lie exactly
+	// coincident with a DIFFERENT product's own planar face -- a genuine touching boundary
+	// between two solids (e.g. one object resting on another's sloped surface), not real
+	// occlusion. HLR's own visibility computation runs jointly across every product sharing a
+	// drawing/storey, and can determine such an edge "hidden" due to an exact depth-tie with the
+	// coincident face -- confirmed via direct debug trace: the edge is entirely absent from all
+	// four of HLRBRep_HLRToShape's visible-edge query buckets (VCompound/OutLineVCompound/
+	// Rg1LineVCompound/RgNLineVCompound), i.e. genuinely hidden by HLR, not merely misrouted into
+	// an unqueried bucket.
+	//
+	// `result` is hlr_calc::extract()'s already-computed per-(product, class) visible-edge
+	// output; `classified_items` is the pre-HLR classified edge buckets it was built from (same
+	// order, one-to-one, since extract() iterates classified_items in order to build result --
+	// see hlr_calc::extract()); `items` is every product's full shape in this drawing/storey,
+	// used to look for a coincident foreign face. Self-contained and only ever adds edges back
+	// (never removes any), so it's a no-op whenever nothing was hidden this way.
+	std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>>
+	restore_coincident_hidden_edges(
+		std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> result,
+		const std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>>& classified_items,
+		const product_shape_list_t& items,
+		double tolerance,
+		const HLRAlgo_Projector& projector,
+		const gp_Ax1& view_direction
+	) {
+		// Signed "distance towards camera" for a world-space point, using the same convention as
+		// prefiltered_hlr::is_obscured_()/add() elsewhere in this class: SMALLER d is NEARER the
+		// camera, LARGER d is deeper into the scene.
+		auto depth = [&](const gp_Pnt& p) {
+			return -(p.XYZ() - view_direction.Location().XYZ()).Dot(view_direction.Direction().XYZ());
+		};
+		// Foreign-face coincidence alone (below) can't tell a genuine HLR depth-tie (nothing
+		// really blocks the point; only the exactly-coincident face shares its depth) from
+		// completely ordinary occlusion -- including a product's own OTHER geometry hiding this
+		// point (a box's back wall behind its own front wall, any back-facing crease), which is
+		// just as valid a reason for HLR to have hidden the edge as foreign-product occlusion.
+		// So this deliberately does NOT exclude the edge's own product from the ray-cast: the
+		// only case that needs special handling is the point sitting exactly on its own product's
+		// surface (by construction, since that's what makes it a candidate edge in the first
+		// place), which lands at essentially `depth_p` and is naturally excluded by the
+		// `depth(q) < depth_p - tolerance` comparison below, not a false positive.
+		//
+		// `IntCurvesFace_ShapeIntersector::Load()` builds a full face/BVH structure and is the
+		// expensive part of this class -- it's designed to be loaded once per shape and reused via
+		// repeated `Perform()` calls with different rays. One intersector is built per item, up
+		// front, and reused for every candidate edge and sample point in this function, rather than
+		// rebuilt from scratch each time (this once caused a ~30x slowdown on a real building).
+		std::vector<IntCurvesFace_ShapeIntersector> intersectors(items.size());
+		std::vector<bool> intersector_loaded(items.size(), false);
+		{
+			size_t idx = 0;
+			for (auto& it : items) {
+				const TopoDS_Shape& shape = std::get<1>(it);
+				if (!shape.IsNull()) {
+					intersectors[idx].Load(shape, tolerance);
+					intersector_loaded[idx] = true;
+				}
+				++idx;
+			}
+		}
+
+		// Casts a ray through `p`, parallel to the view direction, against every product's solid
+		// (including the point's own product -- see above), and checks whether anything is
+		// genuinely nearer to the camera than `p` itself at that same screen position. Only the
+		// depth-tie case (nothing nearer) should be restored.
+		auto is_genuinely_occluded = [&](const gp_Pnt& p) -> bool {
+			double depth_p = depth(p);
+			gp_Lin ray(p, gp_Dir(view_direction.Direction()));
+			for (size_t i = 0; i < intersectors.size(); ++i) {
+				if (!intersector_loaded[i]) {
+					continue;
+				}
+				auto& inter = intersectors[i];
+				inter.Perform(ray, -1.0e6, 1.0e6);
+				if (!inter.IsDone()) {
+					continue;
+				}
+				for (int j = 1; j <= inter.NbPnt(); ++j) {
+					double dq = depth(inter.Pnt(j));
+					if (dq < depth_p - tolerance) {
+						return true;
+					}
+				}
+			}
+			return false;
+		};
+		// `visible_edges` (HLR's own output) has already been through the HLR algorithm's own
+		// projector transform and is built from edges it reconstructed internally -- these never
+		// share underlying topology with `classified_items`' original, unprojected world-space
+		// edges, so comparing them via TopoDS_Edge identity (IsSame) can never match, even for an
+		// edge that HLR did keep visible. The only correct test is geometric: transform the
+		// candidate edge's endpoints into the same (projected) space first, then compare
+		// endpoint-to-endpoint against what's already there.
+		auto same_point = [](const gp_Pnt& a, const gp_Pnt& b, double tol) {
+			return a.Distance(b) < tol;
+		};
+		auto has_coincident_edge = [&](const TopoDS_Shape& s, const gp_Pnt& tp0, const gp_Pnt& tp1) {
+			if (s.IsNull()) {
+				return false;
+			}
+			for (TopExp_Explorer exp(s, TopAbs_EDGE); exp.More(); exp.Next()) {
+				TopoDS_Vertex qv0, qv1;
+				TopExp::Vertices(TopoDS::Edge(exp.Current()), qv0, qv1);
+				if (qv0.IsNull() || qv1.IsNull()) {
+					continue;
+				}
+				gp_Pnt q0 = BRep_Tool::Pnt(qv0), q1 = BRep_Tool::Pnt(qv1);
+				if ((same_point(tp0, q0, tolerance) && same_point(tp1, q1, tolerance)) ||
+					(same_point(tp0, q1, tolerance) && same_point(tp1, q0, tolerance))) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		// Is `p` coincident with (on-plane and within the bounds of) some OTHER product's planar
+		// face? `self_product` is excluded so an edge is never "restored" by matching its own
+		// product's own geometry.
+		//
+		// A coincident match is only a meaningful "depth-tie" candidate when the matched face is
+		// roughly front/back-facing relative to the camera -- i.e. the kind of face a straight
+		// ray along the view direction can actually cross, which is exactly what both this
+		// plane-coincidence test and the later ray-cast occlusion test are built to reason about.
+		// An *edge-on* matched face (normal nearly perpendicular to the view direction -- e.g. the
+		// end-cap/"side" face of a wall in a section or elevation view, which is genuinely
+		// invisible from this camera) isn't that: being "on" such a face's plane says nothing about
+		// front/back depth-tie, and empirically its normal doesn't discriminate genuine touching-
+		// boundary silhouettes from a point that's really covered by the merged footprint of two
+		// coplanar, offset objects (confirmed by checking all three known cases directly: the
+		// original, confirmed-correct target edge matches a clearly camera-facing face, normal
+		// ~(0,0.97,0.24); both confirmed-wrong "shifted wall" cases match an edge-on face, normal
+		// ~(±1,0,0)). So an edge-on match is treated as no match at all here, leaving the candidate
+		// edge ineligible for restoration via this mechanism.
+		auto point_on_foreign_face = [&](const gp_Pnt& p, const IfcUtil::IfcBaseEntity* self_product) -> bool {
+			for (auto& other : items) {
+				if (std::get<0>(other) == self_product) {
+					continue;
+				}
+				const TopoDS_Shape& other_shape = std::get<1>(other);
+				for (TopExp_Explorer fexp(other_shape, TopAbs_FACE); fexp.More(); fexp.Next()) {
+					const TopoDS_Face& face = TopoDS::Face(fexp.Current());
+					gp_Dir n;
+					if (!cross_coplanar::face_normal(face, n)) {
+						continue;
+					}
+					if (std::abs(n.Dot(view_direction.Direction())) < 0.05) {
+						continue;
+					}
+					TopExp_Explorer vexp(face, TopAbs_VERTEX);
+					if (!vexp.More()) {
+						continue;
+					}
+					gp_Pnt face_pnt = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+					double plane_dist = std::abs(gp_Vec(face_pnt, p).Dot(n));
+					if (plane_dist >= tolerance) {
+						continue;
+					}
+					BRepClass_FaceClassifier classifier(face, p, tolerance);
+					if (classifier.State() != TopAbs_OUT) {
+						return true;
+					}
+				}
+			}
+			return false;
+		};
+
+		auto result_it = result.begin();
+		auto classified_it = classified_items.begin();
+		for (; result_it != result.end() && classified_it != classified_items.end(); ++result_it, ++classified_it) {
+			const IfcUtil::IfcBaseEntity* product = std::get<0>(*classified_it);
+			const std::string& cls = std::get<1>(*classified_it);
+			// Cross-coplanar/mat-style-change classes represent an *intentional* touching
+			// boundary with a foreign product's coincident face -- that's the whole definition
+			// of those classes, so the foreign-face-coincidence test below would trivially match
+			// every one of their edges. Only ordinary single-object classes (outline/sharp/
+			// crease/flush/boundary) are eligible: for those, foreign-face coincidence is
+			// unexpected and is specifically the HLR depth-tie artifact this pass targets.
+			if (cls == cross_coplanar::class_name || cls == mat_style_change::class_name) {
+				continue;
+			}
+			const TopoDS_Shape& original_edges = std::get<2>(*classified_it);
+			TopoDS_Shape& visible_edges = std::get<2>(*result_it);
+
+			std::vector<TopoDS_Edge> to_restore;
+			for (TopExp_Explorer eexp(original_edges, TopAbs_EDGE); eexp.More(); eexp.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
+				TopoDS_Vertex v0, v1;
+				TopExp::Vertices(e, v0, v1);
+				if (v0.IsNull() || v1.IsNull()) {
+					continue;
+				}
+				gp_Pnt p0 = BRep_Tool::Pnt(v0), p1 = BRep_Tool::Pnt(v1);
+				// HLRBRep_HLRToShape's own output (what `visible_edges` is built from) is not in
+				// original 3D world space -- it's already been through the HLR algorithm's own
+				// projector transform. Transform up front so both the "already visible" check and
+				// the eventual restored edge live in that same space. `HLRAlgo_Projector::Transform`
+				// is the same transform HLRBRep_Algo/HLRBRep_PolyAlgo apply internally.
+				gp_Pnt tp0 = p0, tp1 = p1;
+				projector.Transform(tp0);
+				projector.Transform(tp1);
+				if (has_coincident_edge(visible_edges, tp0, tp1)) {
+					continue;
+				}
+				gp_Pnt mid = p0.Translated(gp_Vec(p0, p1) * 0.5);
+				if (!point_on_foreign_face(p0, product) || !point_on_foreign_face(p1, product) || !point_on_foreign_face(mid, product)) {
+					continue;
+				}
+				// Only sample the occlusion test at interior points (midpoint and quarter-points),
+				// never at the edge's own endpoints. Endpoints are exactly where this kind of
+				// touching-boundary edge meets *other* edges/faces -- a corner where several faces
+				// legitimately converge -- and a ray fired through that exact degenerate point can
+				// pick up a spurious "nearer" hit from a neighbouring face grazing the same corner,
+				// even though the edge itself suffers no real occlusion. An interior point can't
+				// coincide with that kind of unrelated corner.
+				gp_Pnt q1 = p0.Translated(gp_Vec(p0, p1) * 0.25);
+				gp_Pnt q3 = p0.Translated(gp_Vec(p0, p1) * 0.75);
+				if (is_genuinely_occluded(mid) || is_genuinely_occluded(q1) || is_genuinely_occluded(q3)) {
+					continue;
+				}
+				BRepBuilderAPI_MakeEdge mk(tp0, tp1);
+				if (mk.IsDone()) {
+					to_restore.push_back(mk.Edge());
+				}
+			}
+
+			if (!to_restore.empty()) {
+				TopoDS_Compound c;
+				BRep_Builder builder;
+				builder.MakeCompound(c);
+				if (!visible_edges.IsNull()) {
+					for (TopExp_Explorer eexp(visible_edges, TopAbs_EDGE); eexp.More(); eexp.Next()) {
+						builder.Add(c, eexp.Current());
+					}
+				}
+				for (auto& e : to_restore) {
+					builder.Add(c, e);
+				}
+				visible_edges = c;
+			}
+		}
+		return result;
+	}
+
 	class prefiltered_hlr {
 
 		class face_info {
@@ -1878,7 +2123,8 @@ namespace {
 				vis.set_product_shape(&items_);
 			}
 			vis.set_classified_shapes(&classified_items_);
-			return boost::apply_visitor(vis, engine_);
+			auto result = boost::apply_visitor(vis, engine_);
+			return restore_coincident_hidden_edges(std::move(result), classified_items_, items_, cross_coplanar_tolerance_, projector_, view_direction_);
 		}
 	};
 }
