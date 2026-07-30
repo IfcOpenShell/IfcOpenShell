@@ -523,7 +523,7 @@ private:
 	}
 
 	void setArgumentAsNull(unsigned int i) {
-		bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
+		bool is_optional = $self->declaration().as_entity() && $self->declaration().as_entity()->attribute_by_index(i)->optional();
 		if (is_optional) {
 			self->set_attribute_value(i, Blank{});
 		} else {
