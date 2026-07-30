@@ -267,6 +267,10 @@ def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day)
                 and floor(day.day / 7) + 1 == recurrence.Position
             )
         return False  # TODO
+    elif recurrence_type == "BY_DAY_COUNT":
+        return False  # TODO
+    elif recurrence_type == "BY_WEEKDAY_COUNT":
+        return False  # TODO
 
 
 def get_task_work_schedule(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
