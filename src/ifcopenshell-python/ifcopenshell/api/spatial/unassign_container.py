@@ -24,7 +24,7 @@ import ifcopenshell.util.element
 def unassign_container(file: ifcopenshell.file, products: list[ifcopenshell.entity_instance]) -> None:
     """Unassigns a container from products.
 
-    :param product: A list of IfcProducts to remove the containment from.
+    :param products: A list of IfcProducts to remove the containment from.
     :return: None
 
     Example:
