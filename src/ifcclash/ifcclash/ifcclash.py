@@ -140,7 +140,13 @@ class Clasher:
             element1 = result.a
             element2 = result.b
 
-            processed_results[f"{element1.get_argument(0)}-{element2.get_argument(0)}"] = ClashResult(
+            # Keyed by object identity, not GlobalId: a GlobalId is only unique
+            # within a single file, and a clash set can federate several
+            # sources. Two distinct, genuine clash pairs whose GlobalIds
+            # happen to collide across sources would otherwise silently
+            # overwrite each other here, dropping one real clash from the
+            # output with no error or warning.
+            processed_results[f"{id(element1)}-{id(element2)}"] = ClashResult(
                 a_global_id=element1.get_argument(0),
                 b_global_id=element2.get_argument(0),
                 a_ifc_class=element1.is_a(),
