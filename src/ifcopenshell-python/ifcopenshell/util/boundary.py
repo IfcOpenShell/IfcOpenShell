@@ -108,6 +108,7 @@ def auto_generate_boundaries(
         )
 
     # Compare space faces and building element faces
+    processed_fillings: set[int] = set()
     for space_ngon in space_ngons:
         space_verts_l = space_verts_local[space_ngon]
         # Normal from local verts, then transform to world via space placement
@@ -224,6 +225,7 @@ def auto_generate_boundaries(
                         parent_boundary,
                         space,
                         unit_scale,
+                        processed_fillings,
                     )
                 )
 
@@ -243,6 +245,7 @@ def _process_openings(
     parent_boundary,
     space,
     unit_scale,
+    processed_fillings: set[int],
 ):
     """Process openings and fillings for a building element.
 
@@ -251,12 +254,16 @@ def _process_openings(
     :param element_matrix: The building element placement matrix.
     :param face_matrix: The face matrix in space-local coordinates (for connection geometry).
     :param face_matrix_inv: The inverse face matrix (for 2D projection).
+    :param processed_fillings: Set of element IDs that already have opening boundaries.
     """
     boundaries = []
 
     for rel in getattr(building_element, "HasOpenings", []):
         opening = rel.RelatedOpeningElement
         filling = opening.HasFillings[0].RelatedBuildingElement if opening.HasFillings else None
+        filling_id = (filling or opening).id()
+        if filling_id in processed_fillings:
+            continue
 
         settings = ifcopenshell.geom.settings()
         try:
@@ -317,6 +324,7 @@ def _process_openings(
         if boundary.is_a() != "IfcRelSpaceBoundary":
             boundary.ParentBoundary = parent_boundary
         _set_boundary_name(boundary)
+        processed_fillings.add(filling_id)
         boundaries.append(boundary)
 
     return boundaries
