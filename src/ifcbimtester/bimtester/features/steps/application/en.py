@@ -24,7 +24,9 @@ from bimtester.lang import _
 @step('The IFC file must be exported by application full name "{fullname}"')
 def step_impl(context, fullname):
 
-    real_fullname = IfcStore.file.by_type("IfcApplication")[0].ApplicationFullName
+    applications = IfcStore.file.by_type("IfcApplication")
+    assert applications, _("The IFC file does not have any exporting application recorded")
+    real_fullname = applications[0].ApplicationFullName
     assert real_fullname == fullname, (
         "The IFC file was not exported by application full name {} "
         "instead it was exported by application full name {}".format(fullname, real_fullname)
@@ -34,7 +36,9 @@ def step_impl(context, fullname):
 @step('The IFC file must be exported by application identifier "{identifier}"')
 def step_impl(context, identifier):
 
-    real_identifier = IfcStore.file.by_type("IfcApplication")[0].ApplicationIdentifier
+    applications = IfcStore.file.by_type("IfcApplication")
+    assert applications, _("The IFC file does not have any exporting application recorded")
+    real_identifier = applications[0].ApplicationIdentifier
     assert (
         real_identifier == identifier
     ), "The IFC file was not exported by application identifier {} " "instead it was exported by identifier {}".format(
@@ -45,7 +49,9 @@ def step_impl(context, identifier):
 @step('The IFC file must be exported by the application version "{version}"')
 def step_impl(context, version):
 
-    real_version = IfcStore.file.by_type("IfcApplication")[0].Version
+    applications = IfcStore.file.by_type("IfcApplication")
+    assert applications, _("The IFC file does not have any exporting application recorded")
+    real_version = applications[0].Version
     assert (
         real_version == version
     ), "The IFC file was not exported by application version {} " "instead it was exported by version {}".format(
