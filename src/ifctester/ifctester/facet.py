@@ -1089,6 +1089,15 @@ class Restriction:
                 elif constraint == "minInclusive":
                     if float(other) < float(value):
                         return False
+                elif constraint == "totalDigits":
+                    digits = re.sub(r"[^0-9]", "", str(other)).lstrip("0") or "0"
+                    if len(digits) > int(value):
+                        return False
+                elif constraint == "fractionDigits":
+                    text = str(other)
+                    fraction = text.split(".", 1)[1] if "." in text else ""
+                    if len(fraction) > int(value):
+                        return False
             except ValueError:
                 return False
         return True

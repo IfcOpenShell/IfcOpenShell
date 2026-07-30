@@ -1704,6 +1704,19 @@ class TestRestriction:
         assert restriction == 5
         assert restriction != -1
 
+    def test_total_digits(self):
+        restriction = Restriction(options={"totalDigits": 3}, base="decimal")
+        assert restriction == 123
+        assert restriction != 123456
+        assert restriction == -12
+        assert restriction == 0
+
+    def test_fraction_digits(self):
+        restriction = Restriction(options={"fractionDigits": 2}, base="decimal")
+        assert restriction == 3.14
+        assert restriction != 3.14159
+        assert restriction == 42
+
     def test_pattern(self):
         restriction = Restriction(options={"pattern": "[A-Z]{2}[0-9]{2}"})
         assert restriction == "AB01"
