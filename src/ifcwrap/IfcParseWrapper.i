@@ -461,7 +461,8 @@ private:
 	}
 
 	AttributeValue get_argument(const std::string& a) {
-		auto i = $self->declaration().as_entity()->attribute_index(a);
+		auto entity_decl = $self->declaration().as_entity();
+		auto i = entity_decl ? entity_decl->attribute_index(a) : -1;
 		if (i == -1) {
 			throw std::runtime_error("Attribute '" + a + "' not found on entity named " + $self->declaration().name());
 		}
@@ -574,7 +575,11 @@ private:
 		if (arg_type == IfcUtil::Argument_STRING) {
 			self->set_attribute_value(i, a);	
 		} else if (arg_type == IfcUtil::Argument_ENUMERATION) {
-			const IfcParse::enumeration_type* enum_type = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity()->
+			const IfcParse::entity* value_entity = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity();
+			if (!value_entity) {
+				throw IfcParse::IfcException("Attribute not set");
+			}
+			const IfcParse::enumeration_type* enum_type = value_entity->
 			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
 			self->set_attribute_value(i, EnumerationReference(enum_type, enum_type->lookup_enum_offset(a)));
 		} else if (arg_type == IfcUtil::Argument_BINARY) {
