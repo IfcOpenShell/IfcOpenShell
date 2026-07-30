@@ -361,6 +361,11 @@ class sqlite_entity:
     def id(self) -> int:
         return self.sqlite_wrapper.id
 
+    def is_a(self, *args):
+        # sqlite_entity no longer derives from entity_instance, but wrapped_data
+        # is a shadow C++ instance of the right type, so it can answer this.
+        return self.wrapped_data.is_a(*args)
+
     def __del__(self) -> None:
         pass
 
@@ -453,7 +458,9 @@ class sqlite_entity:
             self.sqlite_wrapper.inverse_attribute_cache[name] = tuple(results)
             return self.sqlite_wrapper.inverse_attribute_cache[name]
 
-        raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
+        raise AttributeError(
+            "entity instance of type '%s' has no attribute '%s'" % (self.sqlite_wrapper.ifc_class, name)
+        )
 
     def unserialise_value(self, value):
         if isinstance(value, (tuple, list)):
