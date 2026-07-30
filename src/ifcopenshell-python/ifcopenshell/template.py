@@ -64,7 +64,10 @@ DEFAULTS = {
     "project_globalid": lambda d: compress(uuid.uuid4().hex),
     "schema_identifier": lambda d: "IFC4",
     "timestamp": lambda d: int(time.time()),
-    "timestring": lambda d: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(d.get("timestamp") or time.time())),
+    "timestring": lambda d: time.strftime(
+        "%Y-%m-%dT%H:%M:%S",
+        time.gmtime(d["timestamp"] if d.get("timestamp") is not None else time.time()),
+    ),
     "mvd": lambda d: (
         "ReferenceView_V1.2"
         if d.get("schema_identifier") == "IFC4"
