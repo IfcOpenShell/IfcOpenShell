@@ -84,7 +84,7 @@ class TopicHandler:
 
     @property
     def bim_snippet(self) -> Optional[bytes]:
-        if not self._bim_snippet and self._topic_dir:
+        if self._bim_snippet is None and self._topic_dir:
             self._bim_snippet = self._load_bim_snippet()
         return self._bim_snippet
 
@@ -203,7 +203,7 @@ class TopicHandler:
         if not snippet or snippet.is_external:
             return
         ref_filename = Path(snippet.reference).name
-        if self.bim_snippet:
+        if self.bim_snippet is not None:
             destination_zip.writestr(f"{self.topic.guid}/{ref_filename}", self.bim_snippet)
 
     def _resolve_zip_path(self, reference: str) -> str:
