@@ -110,6 +110,18 @@ class TestAddConversionBasedUnitIFC4(test.bootstrap.IFC4, TestAddConversionBased
         assert si_unit.Name == "KELVIN"
         assert unit.ConversionOffset == -459.67
 
+    def test_an_explicit_zero_offset_is_not_overridden_by_the_builtin_offset(self):
+        # conversion_offset=None means "use the builtin offset for this unit
+        # name if any", whereas an explicit 0.0 must be honoured as-is and
+        # not be silently replaced by fahrenheit's builtin -459.67.
+        unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="fahrenheit", conversion_offset=0.0)
+        assert unit.is_a("IfcConversionBasedUnit")
+        assert not unit.is_a("IfcConversionBasedUnitWithOffset")
+
+        unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="fahrenheit", conversion_offset=-100.0)
+        assert unit.is_a("IfcConversionBasedUnitWithOffset")
+        assert unit.ConversionOffset == -100.0
+
     def test_unknown_units_fall_back_to_userdefined(self):
         unknown_unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="unknown_unit")
         assert unknown_unit.UnitType == "USERDEFINED"
