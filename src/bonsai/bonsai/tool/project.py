@@ -316,11 +316,11 @@ class Project(bonsai.core.tool.Project):
 
         Linking a file runs a separate, headless Blender subprocess to parse
         and cache the model (see ``LoadLink.link_ifc``), so there is no
-        incremental progress to report back from it, only that it is running
-        and for how long so far (#9029). This deliberately does not fake a
-        percentage; see ``tool.Patch.report_progress`` for the equivalent on
-        the IfcPatch side, which can show real percentages because recipes
-        run in-process and can log their own progress.
+        incremental progress to report back from it, only that it is
+        running (#9029). This deliberately does not fake a percentage; see
+        ``tool.Patch.report_progress`` for the equivalent on the IfcPatch
+        side, which can show real percentages because recipes run
+        in-process and can log their own progress.
         """
         window = getattr(context, "window", None)
         if window is not None:
