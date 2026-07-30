@@ -130,8 +130,12 @@ class IfcCsv:
             else:
                 self.headers.append(attribute)
 
-        self.group_results(groups, attributes)
+        # Summarise before grouping: a summary column need not be one of the
+        # group's aggregated columns, and grouping collapses rows, so summing
+        # post-group would silently total only the surviving representative
+        # rows instead of every exported element.
         self.summarise_results(summaries, attributes)
+        self.group_results(groups, attributes)
         self.sort_results(sort, attributes, include_global_id)
         self.format_results(formatting, attributes, null)
 
