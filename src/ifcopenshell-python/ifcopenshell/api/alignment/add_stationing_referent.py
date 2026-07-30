@@ -81,11 +81,14 @@ def add_stationing_referent(
 
         update_fallback_position(file, object_placement)
     else:
+        coordinates = (
+            alignment.ObjectPlacement.RelativePlacement.Location.Coordinates
+            if alignment.ObjectPlacement
+            else (0.0, 0.0)
+        )
         object_placement = file.createIfcLocalPlacement(
             PlacementRelTo=None,
-            RelativePlacement=file.createIfcAxis2Placement2D(
-                Location=file.createIfcCartesianPoint(alignment.ObjectPlacement.RelativePlacement.Location.Coordinates)
-            ),
+            RelativePlacement=file.createIfcAxis2Placement2D(Location=file.createIfcCartesianPoint(coordinates)),
         )
 
     # this commented out code is what you would do to add a geometric representation of the referent

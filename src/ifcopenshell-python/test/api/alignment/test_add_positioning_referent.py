@@ -96,5 +96,25 @@ def test_add_positioning_referent_creates_separate_referent_per_call():
     assert second_referent.Positions[0].RelatedProducts == (other_product,)
 
 
+def test_add_positioning_referent_without_alignment_object_placement():
+    # IfcAlignment.ObjectPlacement is schema-optional. A semantic-only alignment
+    # (no geometric representation, no placement) is a valid state and must not crash.
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    alignment = file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="TestAlignment")
+    assert alignment.ObjectPlacement is None
+
+    product = file.createIfcBuildingElementProxy(GlobalId=ifcopenshell.guid.new(), Name="Sign")
+
+    referent = ifcopenshell.api.alignment.add_positioning_referent(
+        file, "P.C.", alignment, distance_along=0.0, station=100.0, positioned_product=product
+    )
+
+    assert referent.is_a("IfcReferent")
+    assert referent.ObjectPlacement.is_a("IfcLocalPlacement")
+    assert referent.ObjectPlacement.RelativePlacement.Location.Coordinates == (0.0, 0.0)
+
+
 test_add_positioning_referent()
 test_add_positioning_referent_creates_separate_referent_per_call()
+test_add_positioning_referent_without_alignment_object_placement()

@@ -110,6 +110,24 @@ def test_add_stationing_referent_on_basis_curve_false():
     assert basis_curve != ifcopenshell.api.alignment.get_basis_curve(alignment)
 
 
+def test_add_stationing_referent_without_alignment_object_placement():
+    # IfcAlignment.ObjectPlacement is schema-optional. A semantic-only alignment
+    # (no geometric representation, no placement) is a valid state and must not crash.
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    alignment = file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="TestAlignment")
+    assert alignment.ObjectPlacement is None
+
+    referent = ifcopenshell.api.alignment.add_stationing_referent(
+        file, "1+00.000", alignment, distance_along=0.0, station=100.0
+    )
+
+    assert referent.is_a("IfcReferent")
+    assert referent.ObjectPlacement.is_a("IfcLocalPlacement")
+    assert referent.ObjectPlacement.RelativePlacement.Location.Coordinates == (0.0, 0.0)
+
+
 test_add_stationing_referent_on_basis_curve_none_defaults_to_basis_curve()
 test_add_stationing_referent_on_basis_curve_true()
 test_add_stationing_referent_on_basis_curve_false()
+test_add_stationing_referent_without_alignment_object_placement()
