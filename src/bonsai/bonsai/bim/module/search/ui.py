@@ -55,6 +55,10 @@ class BIM_PT_search(Panel):
 
         bonsai.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "search")
 
+        row = self.layout.row(align=True)
+        row.operator("bim.export_search_filter", icon="EXPORT", text="Export to File").module = "search"
+        row.operator("bim.import_search_filter", icon="IMPORT", text="Import from File").module = "search"
+
         if len(props.filter_groups):
             row = self.layout.row(align=True)
             op = row.operator("bim.search", text="Search", icon="VIEWZOOM")
@@ -98,6 +102,10 @@ class BIM_PT_colour_by_property(Panel):
         if ColourByPropertyData.data["saved_colourschemes"]:
             row.operator("bim.load_colourscheme", text="", icon="IMPORT")
         row.operator("bim.save_colourscheme", text="", icon="EXPORT")
+
+        row = self.layout.row(align=True)
+        row.operator("bim.export_colourscheme", icon="EXPORT", text="Export to File")
+        row.operator("bim.import_colourscheme", icon="IMPORT", text="Import from File")
 
         row = self.layout.row()
         bonsai.bim.helper.prop_with_search(self.layout, props, "colourscheme_key", text="Colour By")
