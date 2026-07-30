@@ -77,6 +77,16 @@ class TestCreateEntity(test.bootstrap.IFC4):
         if self.file.schema == "IFC2X3":
             element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace", name="Foo")
             assert element.InteriorOrExteriorSpace == "NOTDEFINED"
+            element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRamp", name="Foo")
+            assert element.ShapeType == "NOTDEFINED"
+            element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair", name="Foo")
+            assert element.ShapeType == "NOTDEFINED"
+            for ifc_class in ("IfcElementAssembly", "IfcFooting", "IfcOccupant", "IfcPile", "IfcTendon"):
+                element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class, name="Foo")
+                assert element.PredefinedType == "NOTDEFINED"
+            for ifc_class in ("IfcStructuralPointAction", "IfcStructuralLinearAction", "IfcStructuralPlanarAction"):
+                element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class)
+                assert element.DestabilizingLoad == False
 
 
 class TestCreateEntityIFC2X3(test.bootstrap.IFC2X3, TestCreateEntity):
