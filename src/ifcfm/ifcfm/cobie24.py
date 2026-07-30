@@ -947,7 +947,10 @@ def get_coordinate_data_(element: ifcopenshell.entity_instance) -> Generator[dic
 
 
 def get_unit_type_name(ifc_file: ifcopenshell.file, unit_type: str) -> Union[str, None]:
-    for unit in ifc_file.by_type("IfcUnitAssignment")[0].Units:
+    unit_assignments = ifc_file.by_type("IfcUnitAssignment")
+    if not unit_assignments:
+        return None
+    for unit in unit_assignments[0].Units:
         if unit.is_a("IfcNamedUnit") and unit.UnitType == unit_type:
             if unit.is_a("IfcSIUnit"):
                 prefix = (unit.Prefix or "").lower()
