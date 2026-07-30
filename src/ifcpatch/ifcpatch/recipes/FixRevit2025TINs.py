@@ -58,7 +58,8 @@ class Patcher:
 
         After that, it will:
 
-        1. Reassign everything to an IfcGeographicElement
+        1. Reassign everything to an IfcGeographicElement. Skipped on IFC2X3,
+            where this class does not exist.
         2. Detect boundary edges and create an edge-only IfcVirtualElement.
             Good for clean viz in Revit.
         3. Create a copy of the object which has no sharp faces. This will
@@ -137,9 +138,14 @@ class Patcher:
             if not obj.data.polygons:
                 continue
             element = tool.Ifc.get_entity(obj)
-            element.PredefinedType = "USERDEFINED"
             element.ObjectType = "TIN"
-            element = ifcopenshell.util.schema.reassign_class(tool.Ifc.get(), element, "IfcGeographicElement")
+            if tool.Ifc.get().schema == "IFC2X3":
+                self.logger.warning(
+                    f"{element} was not reassigned to IfcGeographicElement: this class does not exist in IFC2X3."
+                )
+            else:
+                element.PredefinedType = "USERDEFINED"
+                element = ifcopenshell.util.schema.reassign_class(tool.Ifc.get(), element, "IfcGeographicElement")
 
             bm = bmesh.new()
             bm.from_mesh(obj.data)
