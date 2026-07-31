@@ -985,13 +985,15 @@ class IfcImporter:
                             bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
                 else:
                     bpy.context.scene.unit_settings.system = "IMPERIAL"
-                    name = unit.Name.lower()
+                    # unit.Name may be None for a schema-non-conformant unit.
+                    name = (unit.Name or "").lower()
                     if name == "inch":
                         bpy.context.scene.unit_settings.length_unit = "INCHES"
                     elif name == "foot":
                         bpy.context.scene.unit_settings.length_unit = "FEET"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "AREAUNIT":
-                name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
+                # unit.Name may be None for a schema-non-conformant unit.
+                name = unit.Name if unit.is_a("IfcSIUnit") else (unit.Name or "").lower()
                 try:
                     props.area_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
@@ -999,7 +1001,8 @@ class IfcImporter:
                 except:  # Probably an invalid unit.
                     props.area_unit = "SQUARE_METRE"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "VOLUMEUNIT":
-                name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
+                # unit.Name may be None for a schema-non-conformant unit.
+                name = unit.Name if unit.is_a("IfcSIUnit") else (unit.Name or "").lower()
                 try:
                     props.volume_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
