@@ -194,6 +194,22 @@ class TestAssignObject:
         assert len(set(vs)) == 12
 
 
+class TestTree:
+    def test_select_by_point_accepts_int_coordinates(self):
+        # Regression test: passing an int (or mixed int/float) coordinate
+        # triple used to raise a confusing SWIG TypeError instead of being
+        # treated as a point, because the dispatch required every element
+        # to be exactly `float`.
+        settings = ifcopenshell.geom.settings()
+        settings.set("use-world-coords", True)
+        ifc_file = ifcopenshell.open(fn)
+        tree = ifcopenshell.geom.tree()
+        tree.add_file(ifc_file, settings)
+
+        assert tree.select((0, 0, 0)) == tree.select((0.0, 0.0, 0.0))
+        assert tree.select((0, 0.0, 0)) == tree.select((0.0, 0.0, 0.0))
+
+
 def test_iterator():
     # just test some permutations of invocation
     settings = ifcopenshell.geom.settings()

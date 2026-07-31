@@ -399,11 +399,22 @@ class tree(ifcopenshell_wrapper.tree):
         ],
         **kwargs,
     ) -> list[entity_instance]:
+        def is_point_triple(value):
+            return (
+                isinstance(value, (list, tuple))
+                and len(value) == 3
+                and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in value)
+            )
+
         def unwrap(value):
             if isinstance(value, entity_instance):
                 return value.wrapped_data
             elif all(map(lambda v: hasattr(value, v), "XYZ")):
                 return value.X(), value.Y(), value.Z()
+            elif is_point_triple(value):
+                # Coordinates need to be actual floats, otherwise SWIG cannot
+                # resolve the gp_Pnt overload and raises a confusing TypeError.
+                return tuple(float(v) for v in value)
             return value
 
         args = [self, unwrap(value)]
@@ -411,7 +422,7 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("completely_within", False))
             if "extend" in kwargs:
                 args.append(kwargs["extend"])
-        elif isinstance(value, (list, tuple)) and len(value) == 3 and set(map(type, value)) == {float}:
+        elif is_point_triple(value):
             if "extend" in kwargs:
                 args.append(kwargs["extend"])
         elif has_occ:
