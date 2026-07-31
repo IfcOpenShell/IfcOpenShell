@@ -1487,6 +1487,14 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def record_object_materials(cls, obj: bpy.types.Object) -> None:
+        # During reimport, material_creator.create() calls this before
+        # change_data() assigns the new mesh, so obj.data is still the object's
+        # prior data — which is None when switching a representation onto an
+        # object that is currently an empty. Nothing to checksum yet; the mesh
+        # is assigned immediately after. (Same ordering in the non-batch
+        # reimport_element_representations path.)
+        if obj.data is None:
+            return
         props = tool.Geometry.get_mesh_props(obj.data)
         props.material_checksum = cls.get_material_checksum(obj)
 
