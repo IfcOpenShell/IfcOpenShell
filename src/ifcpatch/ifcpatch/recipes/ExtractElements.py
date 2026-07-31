@@ -22,9 +22,23 @@ from typing import Union
 import ifcopenshell
 import ifcopenshell.api.project
 import ifcopenshell.guid
+import ifcopenshell.util.element
 import ifcopenshell.util.selector
 
 import ifcpatch
+
+# IFC2X3 has no IfcMapConversion / IfcProjectedCRS. Georeferencing is instead
+# stored as extension property sets, historically attached to IfcProject or
+# IfcSite depending on the authoring tool. See
+# https://github.com/buildingSMART/validate/issues/310#issuecomment-5076630963
+# for the complete set of names accepted across IFC2X3, IFC4 and IFC4X3_ADD2.
+IFC2X3_GEOREFERENCING_PSETS = (
+    "ePSet_GeographicCRS",
+    "ePSet_MapConversion",
+    "ePSet_MapConversionScaled",
+    "ePSet_ProjectedCRS",
+    "ePSet_RigidOperation",
+)
 
 
 class Patcher(ifcpatch.BasePatcher):
@@ -114,38 +128,41 @@ class Patcher(ifcpatch.BasePatcher):
                 for coop in getattr(ctx, "HasCoordinateOperation", ()):
                     self.new.add(coop)
             if self.file.schema == "IFC2X3":
-                # IFC2X3 has no IfcMapConversion. Georeferencing is instead stored as
-                # ePSet_MapConversion / ePSet_ProjectedCRS property sets on IfcProject
-                # (see ifcopenshell.api.georeference), reached only via the inverse
-                # IsDefinedBy relationship, so the forward-attribute copy above misses
-                # them. Dropping them isn't just data loss: append_asset() still runs
-                # its local-to-global-to-local placement correction per element using
-                # the source's georeferencing, and finding none on the target, leaves
-                # the globalised (Eastings/Northings-scale) coordinates in place,
-                # silently corrupting every extracted element's placement.
-                for rel in element.IsDefinedBy or ():
-                    pset = rel.RelatingPropertyDefinition
-                    if (
-                        pset is not None
-                        and pset.is_a("IfcPropertySet")
-                        and pset.Name
-                        in (
-                            "ePSet_MapConversion",
-                            "ePSet_ProjectedCRS",
-                        )
-                    ):
-                        new_pset = self.new.add(pset)
-                        self.new.createIfcRelDefinesByProperties(
-                            ifcopenshell.guid.new(), self.owner_history, None, None, [proj], new_pset
-                        )
+                self.copy_ifc2x3_georeferencing_psets(element, proj)
             return proj
-        return ifcopenshell.api.project.append_asset(
+        new_element = ifcopenshell.api.project.append_asset(
             self.new,
             library=self.file,
             element=element,
             reuse_identities=self.reuse_identities,
             assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
         )
+        if self.file.schema == "IFC2X3" and element.is_a("IfcSite") and new_element:
+            self.copy_ifc2x3_georeferencing_psets(element, new_element)
+        return new_element
+
+    def copy_ifc2x3_georeferencing_psets(
+        self, element: ifcopenshell.entity_instance, new_element: ifcopenshell.entity_instance
+    ) -> None:
+        """Relink IFC2X3 georeferencing property sets missed by forward-attribute-only copies.
+
+        IfcProject is copied with self.new.add(), a forward-attribute-only deep
+        copy, so any pset reached only via the inverse IsDefinedBy is dropped.
+        IfcSite is copied through ifcopenshell.api.project.append_asset(), which
+        already carries IsDefinedBy psets, so this is a no-op safety net there.
+        """
+        for rel in element.IsDefinedBy:
+            pset = rel.RelatingPropertyDefinition
+            if (
+                pset is not None
+                and pset.is_a("IfcPropertySet")
+                and pset.Name in IFC2X3_GEOREFERENCING_PSETS
+                and not ifcopenshell.util.element.get_pset(new_element, pset.Name)
+            ):
+                new_pset = self.new.add(pset)
+                self.new.createIfcRelDefinesByProperties(
+                    ifcopenshell.guid.new(), self.owner_history, None, None, [new_element], new_pset
+                )
 
     def add_spatial_structures(
         self, element: ifcopenshell.entity_instance, new_element: ifcopenshell.entity_instance
