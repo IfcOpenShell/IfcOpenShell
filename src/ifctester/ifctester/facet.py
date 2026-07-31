@@ -720,7 +720,9 @@ class Property(Facet):
 
                 if not bool(props[pset_name]):
                     if self.cardinality == "optional":
-                        return PropertyResult(True)
+                        # An optional property may be absent from THIS pset;
+                        # other matching psets can still fail validation.
+                        continue
                     is_pass = False
                     reason = {"type": "NOVALUE"}
                     break
