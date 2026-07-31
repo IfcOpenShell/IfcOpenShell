@@ -575,12 +575,25 @@ private:
 		if (arg_type == IfcUtil::Argument_STRING) {
 			self->set_attribute_value(i, a);	
 		} else if (arg_type == IfcUtil::Argument_ENUMERATION) {
-			const IfcParse::entity* value_entity = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity();
-			if (!value_entity) {
+			const IfcParse::declaration* decl = $self->declaration().schema()->declaration_by_name($self->declaration().type());
+			const IfcParse::parameter_type* pt = 0;
+			if (const IfcParse::entity* value_entity = decl->as_entity()) {
+				pt = value_entity->attribute_by_index(i)->type_of_attribute();
+			} else if (i == 0) {
+				// A defined type can wrap an enumeration, as some IFC4.3 release
+				// candidates did, so resolve through its declared type as well.
+				if (const IfcParse::type_declaration* td = decl->as_type_declaration()) {
+					pt = td->declared_type();
+				}
+			}
+			const IfcParse::named_type* nt = pt ? pt->as_named_type() : 0;
+			const IfcParse::enumeration_type* enum_type = nt ? nt->declared_type()->as_enumeration_type() : 0;
+			if (!enum_type && i == 0) {
+				enum_type = decl->as_enumeration_type();
+			}
+			if (!enum_type) {
 				throw IfcParse::IfcException("Attribute not set");
 			}
-			const IfcParse::enumeration_type* enum_type = value_entity->
-			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
 			self->set_attribute_value(i, EnumerationReference(enum_type, enum_type->lookup_enum_offset(a)));
 		} else if (arg_type == IfcUtil::Argument_BINARY) {
 			if (IfcUtil::valid_binary_string(a)) {
