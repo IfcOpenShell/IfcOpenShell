@@ -65,7 +65,7 @@ class DumbProfileGenerator:
         else:
             return
 
-        self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        self.body_context = tool.Model.get_body_context()
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         props = tool.Model.get_model_props()
 
@@ -315,7 +315,7 @@ class DumbProfileJoiner:
     def __init__(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
-        self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        self.body_context = tool.Model.get_body_context()
 
     def unjoin(self, profile1: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(profile1)
