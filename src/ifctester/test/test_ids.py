@@ -395,3 +395,17 @@ class TestSpecification:
             [wall],
             [],
         )
+
+    def test_prohibited_specification_with_requirements_shows_requirements_as_failed(self):
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.requirements.append(ids.Attribute(name="Name"))
+        specs.specifications.append(spec)
+        spec.set_usage("prohibited")
+
+        model = ifcopenshell.file()
+        model.createIfcWall(Name="Wally")
+        specs.validate(model)
+        assert spec.status is False
+        assert spec.requirements[0].status is False
