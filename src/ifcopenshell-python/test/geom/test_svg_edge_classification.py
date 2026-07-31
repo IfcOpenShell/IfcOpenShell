@@ -1191,3 +1191,156 @@ def test_hole_rim_edge_stays_sharp_not_crease():
     assert not long_crease_edges, long_crease_edges
     target_p0, target_p1 = (9595.977771701151, 9461.301506137414), (10405.254755114664, 9800.83355512243)
     assert has_edge(edges, window.GlobalId, "sharp", target_p0, target_p1)
+
+
+def _add_layered_wall(
+    ifc_file: ifcopenshell.file,
+    body_context: ifcopenshell.entity_instance,
+    storey: ifcopenshell.entity_instance,
+    name: str,
+    tag: str,
+    size: tuple[float, float, float],
+    translation: tuple[float, float, float],
+) -> ifcopenshell.entity_instance:
+    """A `_add_box` wall with its own 2-layer `IfcMaterialLayerSetUsage`
+    (0.15m + 0.05m along local Y, matching `test_mat_style_change_case_b_
+    intra_product_layer_boundary`'s own setup) -- `tag` keeps each wall's
+    materials distinct so two touching walls never accidentally compare equal.
+    """
+    wall = _add_box(ifc_file, body_context, storey, name, size, translation)
+    concrete = ifcopenshell.api.material.add_material(ifc_file, name=f"Concrete{tag}")
+    insulation = ifcopenshell.api.material.add_material(ifc_file, name=f"Insulation{tag}")
+    layer_set = ifcopenshell.api.material.add_material_set(ifc_file, name=f"WallBuildUp{tag}", set_type="IfcMaterialLayerSet")
+    layer1 = ifcopenshell.api.material.add_layer(ifc_file, layer_set=layer_set, material=concrete)
+    ifcopenshell.api.material.edit_layer(ifc_file, layer=layer1, attributes={"LayerThickness": 0.15})
+    layer2 = ifcopenshell.api.material.add_layer(ifc_file, layer_set=layer_set, material=insulation)
+    ifcopenshell.api.material.edit_layer(ifc_file, layer=layer2, attributes={"LayerThickness": 0.05})
+    ifcopenshell.api.material.assign_material(ifc_file, products=[wall], type="IfcMaterialLayerSetUsage", material=layer_set)
+    return wall
+
+
+def _mat_style_change_y_values(edges: list[Edge], guid: str) -> list[float]:
+    """Every endpoint Y (SVG-space) of every `mat-style-change` edge owned by
+    `guid`, for the "must not enter this Z-band" gap assertions below.
+    """
+    ys = []
+    for e in edges:
+        if e.guid == guid and e.cls == "mat-style-change":
+            ys.append(e.p0[1])
+            ys.append(e.p1[1])
+    return ys
+
+
+def test_mat_style_change_case_b_must_not_fire_on_matched_touching_face():
+    """P1 known-issue #4 (see [[project_cross_coplanar_known_issues]]): a
+    `mat-style-change` Case B edge appeared where it shouldn't -- on the
+    exact shared end-cap face between two products touching end-to-end,
+    which is a genuine cross-product touching boundary, not an intra-product
+    detail Case B should ever be drawing on.
+
+    Two layered walls (`WallA`/`WallB`, each independently 2-layer) touch
+    end-to-end at x=2.0. WallB is deliberately *shorter than WallA and
+    vertically centred* (Z:[0.1, 1.9] vs WallA's own Z:[0, 2]) rather than
+    exactly matching WallA's height -- this isn't testing a partial overlap
+    (that's the sibling test below); it's specifically to avoid a confound
+    found while developing this test: with same-height walls, a *tilted*
+    camera (needed at all -- see below) also makes WallA's own top/bottom
+    faces marginally visible, and their own entirely legitimate, WallB-
+    independent Concrete/Insulation boundary line grazes into view right at
+    the same shared corner as the bug, landing at nearly identical projected
+    coordinates purely because of the simple box geometry -- making a
+    same-height design unable to tell "the bug" and "an unrelated, correct
+    result" apart by endpoint alone. Keeping WallB's own top/bottom strictly
+    away from WallA's Z=0/Z=2 corners (even by a small 0.1m margin) removes
+    that confound structurally: WallA's own top/bottom lines only ever touch
+    Z=0/Z=2 exactly, nowhere near the matched interior this test targets.
+
+    A slightly *tilted* camera (camera_dir's +Z component just 0.02) is
+    needed at all: under an ordinary straight-on camera, WallB's solid
+    ordinarily and unambiguously hides WallA's matched end-cap region (confirmed
+    separately -- no edges at all for WallA there), so the bug never manifests
+    without a depth-tie-inducing tilt of some kind, echoing the real report's
+    "NORTH SECTION TILT" drawing. 0.02 was found empirically to be enough to
+    expose the touching end cap's own depth-tie sliver.
+
+    `use_cross_coplanar` is deliberately left at its default `False`, same
+    rationale as `test_mat_style_change_case_b_intra_product_layer_boundary`:
+    Case B must keep working (and must keep NOT over-firing) independently
+    of cross-coplanar being on, per the matrix pinned by P1-1's own tests.
+    """
+    ifc_file, body_context, storey = _make_project()
+    wallA = _add_layered_wall(ifc_file, body_context, storey, "WallA", "A", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0))
+    wallB = _add_layered_wall(ifc_file, body_context, storey, "WallB", "B", (2.0, 0.2, 1.8), (2.0, 0.0, 0.1))
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(6.0, 0.1, 1.0),
+        camera_dir=(1.0, 0.0, 0.02),
+        camera_ref=(0.0, 1.0, 0.0),
+        use_mat_style_change=True,
+    )
+    edges = parse_edges(svg)
+
+    # Empirically captured: the SVG-Y range covered by WallB's matched band
+    # (Z:[0.1, 1.9]). Nothing must fall strictly inside it.
+    gap_lo, gap_hi = 9120.175947217595, 10959.808057580807
+    a_ys = _mat_style_change_y_values(edges, wallA.GlobalId)
+    assert a_ys, "expected WallA to produce at least some mat-style-change edges (the exposed slivers near Z=0/Z=2)"
+    leaked = [y for y in a_ys if gap_lo < y < gap_hi]
+    assert not leaked, leaked
+    # Sanity: the exposed slivers right at the matched band's own edges are
+    # genuinely present -- this isn't vacuously passing because nothing
+    # rendered at all.
+    assert any(abs(y - gap_lo) < 1e-6 for y in a_ys), a_ys
+    assert any(abs(y - gap_hi) < 1e-6 for y in a_ys), a_ys
+
+
+def test_mat_style_change_case_b_partial_overlap_splits_correctly():
+    """The precise reason to fix P1-4 by teaching Case B about real matched
+    geometry (rather than a coordinate-based post-hoc dedup pass -- see the
+    conversation this fix came from, [[project_cross_coplanar_known_issues]]
+    item #4): a real project's touching walls will very often NOT match
+    exactly. Here WallB (Z:[0.5, 1.5], vertically centred within WallA's own
+    Z:[0, 2] -- see the sibling test's own docstring for why centred rather
+    than flush with WallA's own bottom or top) matches only the *middle*
+    half of WallA's end cap: the lower quarter (Z:[0, 0.5]) and upper
+    quarter (Z:[1.5, 2]) are both genuinely unmatched (Case B MUST still
+    draw there) while the middle half is truly covered (Case B must NOT draw
+    there, same bug as the sibling test) -- three regions on the exact same
+    face. A dedup-after-the-fact approach has no principled way to remove
+    just the matched middle third of a single generated edge; this only
+    comes out right if Case B itself knows, per sub-range, whether a
+    matching neighbour face covers it.
+
+    Same tilted camera as the sibling test, same reasoning for the exact
+    tilt magnitude and for keeping WallB away from WallA's own Z=0/Z=2
+    corners (see that test's own docstring). Exact coordinates below were
+    captured empirically from this exact scene (deterministic: synthetic
+    geometry, fixed camera, no tolerance-edge ambiguity) rather than
+    hand-derived, matching this suite's existing convention (e.g.
+    `test_hole_rim_edge_stays_sharp_not_crease`).
+    """
+    ifc_file, body_context, storey = _make_project()
+    wallA = _add_layered_wall(ifc_file, body_context, storey, "WallA", "A", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0))
+    wallB = _add_layered_wall(ifc_file, body_context, storey, "WallB", "B", (2.0, 0.2, 1.0), (2.0, 0.0, 0.5))
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(6.0, 0.1, 1.0),
+        camera_dir=(1.0, 0.0, 0.02),
+        camera_ref=(0.0, 1.0, 0.0),
+        use_mat_style_change=True,
+    )
+    edges = parse_edges(svg)
+
+    # Empirically captured: the SVG-Y range covered by WallB's matched
+    # middle band (Z:[0.5, 1.5]). Nothing must fall strictly inside it.
+    gap_lo, gap_hi = 9520.095971209596, 10559.888033588803
+    a_ys = _mat_style_change_y_values(edges, wallA.GlobalId)
+    assert a_ys, "expected WallA to produce at least some mat-style-change edges (the exposed lower/upper quarters)"
+    leaked = [y for y in a_ys if gap_lo < y < gap_hi]
+    assert not leaked, leaked
+    # Sanity: the exposed quarters right at the matched band's own edges are
+    # genuinely present -- not vacuously passing because nothing rendered.
+    assert any(abs(y - gap_lo) < 1e-6 for y in a_ys), a_ys
+    assert any(abs(y - gap_hi) < 1e-6 for y in a_ys), a_ys

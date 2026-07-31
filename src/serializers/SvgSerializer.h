@@ -1131,6 +1131,90 @@ namespace {
 			}
 		}
 
+		// Finds every face, across every OTHER product's raw shape, that's coplanar-coincident
+		// with `face` (same normal-parallel + plane-distance test find_cross_coplanar_matches()
+		// uses for its own cross-product face matching -- reused here rather than
+		// reimplemented, since it's the same underlying geometric question: "is this face a
+		// genuine touching boundary with some other product's face"). Used by
+		// layer_boundary_edges_for_face() below to keep Case B's own internal layer-boundary
+		// line off any portion of a face that's actually a matched touching boundary -- that
+		// portion's material story belongs to cross_coplanar/Case A (which compares the two
+		// products' own materials where they touch), not to this product's own internal
+		// layering, even though both can be computed from the exact same face.
+		//
+		// Deliberately independent of use_cross_coplanar_classification_/
+		// use_mat_style_change_classification_'s own gating and of
+		// find_cross_coplanar_matches() entirely -- Case B must keep working (and keep NOT
+		// over-firing) even when cross-coplanar classification is off, per the matrix pinned by
+		// the P1-1 fix (see ConversionSettings.h's SvgUseMatStyleChangeClassification
+		// description). A cheap per-face bounding-box prefilter (mirroring
+		// find_cross_coplanar_matches()'s own per-product-pair one) keeps this from scaling
+		// against every face of every other product unconditionally.
+		std::vector<TopoDS_Face> find_coplanar_coincident_faces(
+			const TopoDS_Face& face,
+			const std::vector<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>& other_products,
+			const IfcUtil::IfcBaseEntity* self_product,
+			double tolerance
+		) {
+			std::vector<TopoDS_Face> result;
+
+			gp_Dir n;
+			if (!cross_coplanar::face_normal(face, n)) {
+				return result;
+			}
+			TopExp_Explorer vexp(face, TopAbs_VERTEX);
+			if (!vexp.More()) {
+				return result;
+			}
+			gp_Pnt sample = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+
+			Bnd_Box face_box;
+			BRepBndLib::Add(face, face_box);
+			if (face_box.IsVoid()) {
+				return result;
+			}
+			face_box.Enlarge(tolerance);
+
+			for (auto& other : other_products) {
+				if (other.first == self_product) {
+					continue;
+				}
+				for (TopExp_Explorer fexp(other.second, TopAbs_FACE); fexp.More(); fexp.Next()) {
+					const TopoDS_Face& other_face = TopoDS::Face(fexp.Current());
+
+					Bnd_Box other_box;
+					BRepBndLib::Add(other_face, other_box);
+					if (other_box.IsVoid() || face_box.IsOut(other_box)) {
+						continue;
+					}
+
+					gp_Dir n_other;
+					if (!cross_coplanar::face_normal(other_face, n_other)) {
+						continue;
+					}
+					// Parallel or antiparallel, same as find_cross_coplanar_matches() -- two
+					// products butting end-to-end have opposing outward normals on their
+					// touching faces.
+					if (std::abs(n.Dot(n_other)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
+						continue;
+					}
+					TopExp_Explorer vexp_other(other_face, TopAbs_VERTEX);
+					if (!vexp_other.More()) {
+						continue;
+					}
+					gp_Pnt sample_other = BRep_Tool::Pnt(TopoDS::Vertex(vexp_other.Current()));
+					double plane_dist = std::abs(gp_Vec(sample, sample_other).Dot(n));
+					if (plane_dist >= tolerance) {
+						continue;
+					}
+
+					result.push_back(other_face);
+				}
+			}
+
+			return result;
+		}
+
 		// Case B: intra-product layer-boundary lining. `face` is one face of a product with a
 		// layer_projection (2+-layer IfcMaterialLayerSetUsage); this finds every internal layer
 		// boundary the face's own extent spans (e.g. an end-cap face crossing all layers of a
@@ -1141,7 +1225,22 @@ namespace {
 		// FClass2d), not assumed from a fixed in/out alternation pattern. Returns empty for a
 		// non-planar face, or a face (near-)flat against the layering axis (e.g. a wall's long
 		// inner/outer face, confined to a single layer -- nothing to mark, the common case).
-		std::vector<TopoDS_Edge> layer_boundary_edges_for_face(const TopoDS_Face& face, const layer_projection& proj) {
+		//
+		// `foreign_faces` (see find_coplanar_coincident_faces() above) are any other products'
+		// faces already known to be coplanar-coincident with `face` -- their own outline
+		// crossings are unioned into the same cut-point set as `face`'s own outline (same
+		// "union boundaries from every relevant source, then classify each resulting piece
+		// independently" shape as accumulate_mismatch_coverage()'s own boundaries/cuts, just
+		// applied to outline crossings instead of layer-boundary offsets), and any resulting
+		// piece whose midpoint lands on one of them is dropped -- that's a genuine touching
+		// boundary, cross_coplanar/Case A's territory, not an intra-product detail of this face
+		// alone. A face with no foreign match at all (the common case: most faces have no
+		// touching neighbour) behaves exactly as before -- this is a pure narrowing, never a
+		// widening, of what Case B used to draw.
+		std::vector<TopoDS_Edge> layer_boundary_edges_for_face(
+			const TopoDS_Face& face, const layer_projection& proj,
+			const std::vector<TopoDS_Face>& foreign_faces, double foreign_face_tolerance
+		) {
 			std::vector<TopoDS_Edge> result;
 
 			auto surf = BRep_Tool::Surface(face);
@@ -1214,31 +1313,45 @@ namespace {
 				gp_Pnt2d d_uv(gp_Vec(D).Dot(xdir), gp_Vec(D).Dot(ydir));
 
 				// Every parametric t (in the SAME 3D distance units as P0/D, since d_uv's
-				// magnitude is 1 -- D is a unit direction) where L crosses one of the face's own
-				// boundary segments -- outer or inner/hole wires, face_line_segs() already walks
-				// all of them. No a-priori bound on t is needed: sub-ranges are only ever formed
-				// between two consecutive crossings, so anything outside the outermost crossings
-				// is never sampled at all.
+				// magnitude is 1 -- D is a unit direction) where L crosses one of `segs`'
+				// boundary segments. No a-priori bound on t is needed: sub-ranges are only ever
+				// formed between two consecutive crossings, so anything outside the outermost
+				// crossings is never sampled at all. Shared between `face`'s own outline
+				// (below) and every foreign_faces' own outline (further down) -- same crossing
+				// math, different segment source, so factored out once rather than duplicated.
+				auto crossings_against = [&](const std::vector<cross_coplanar::LineSeg>& segs, std::vector<double>& out) {
+					for (auto& fs : segs) {
+						gp_Pnt2d s0_uv = to_uv(fs.p0);
+						gp_Pnt2d s1_uv = to_uv(fs.p1);
+						double sdu = s1_uv.X() - s0_uv.X();
+						double sdv = s1_uv.Y() - s0_uv.Y();
+						double denom = d_uv.X() * sdv - d_uv.Y() * sdu;
+						if (std::abs(denom) < 1.e-12) {
+							continue;
+						}
+						double dx = s0_uv.X() - p0_uv.X();
+						double dy = s0_uv.Y() - p0_uv.Y();
+						double t = (dx * sdv - dy * sdu) / denom;
+						double s = (dx * d_uv.Y() - dy * d_uv.X()) / denom;
+						if (s >= -1.e-9 && s <= 1.0 + 1.e-9) {
+							out.push_back(t);
+						}
+					}
+				};
+
 				std::vector<double> ts;
-				for (auto& fs : face_segs) {
-					gp_Pnt2d s0_uv = to_uv(fs.p0);
-					gp_Pnt2d s1_uv = to_uv(fs.p1);
-					double sdu = s1_uv.X() - s0_uv.X();
-					double sdv = s1_uv.Y() - s0_uv.Y();
-					double denom = d_uv.X() * sdv - d_uv.Y() * sdu;
-					if (std::abs(denom) < 1.e-12) {
-						continue;
-					}
-					double dx = s0_uv.X() - p0_uv.X();
-					double dy = s0_uv.Y() - p0_uv.Y();
-					double t = (dx * sdv - dy * sdu) / denom;
-					double s = (dx * d_uv.Y() - dy * d_uv.X()) / denom;
-					if (s >= -1.e-9 && s <= 1.0 + 1.e-9) {
-						ts.push_back(t);
-					}
-				}
+				crossings_against(face_segs, ts);
 				if (ts.size() < 2) {
 					continue;
+				}
+				// Union in cut points from every foreign face's own outline too (projected into
+				// this same (P0, D) line -- valid since a foreign face only reaches this point
+				// at all by having already passed the coplanarity check in
+				// find_coplanar_coincident_faces()), so a piece that's genuinely split between
+				// "covered by this neighbour" and "not" gets separated into two pieces instead
+				// of being judged as a single all-or-nothing unit by its midpoint alone.
+				for (auto& foreign : foreign_faces) {
+					crossings_against(cross_coplanar::face_line_segs(foreign), ts);
 				}
 				std::sort(ts.begin(), ts.end());
 
@@ -1248,9 +1361,24 @@ namespace {
 						continue;
 					}
 					double t_mid = 0.5 * (ta + tb);
-					gp_Pnt2d mid_uv = to_uv(P0.Translated(gp_Vec(D) * t_mid));
+					gp_Pnt mid_3d = P0.Translated(gp_Vec(D) * t_mid);
+					gp_Pnt2d mid_uv = to_uv(mid_3d);
 					TopAbs_State state = fclass.Perform(mid_uv);
 					if (state != TopAbs_IN && state != TopAbs_ON) {
+						continue;
+					}
+					// This piece is genuinely part of `face`'s own outline -- now check it isn't
+					// also sitting on a matched neighbour's own face (a genuine touching
+					// boundary, cross_coplanar/Case A's territory, not Case B's).
+					bool covered_by_foreign = false;
+					for (auto& foreign : foreign_faces) {
+						BRepClass_FaceClassifier classifier(foreign, mid_3d, foreign_face_tolerance);
+						if (classifier.State() == TopAbs_IN || classifier.State() == TopAbs_ON) {
+							covered_by_foreign = true;
+							break;
+						}
+					}
+					if (covered_by_foreign) {
 						continue;
 					}
 					gp_Pnt pa = P0.Translated(gp_Vec(D) * ta);
@@ -1631,6 +1759,17 @@ namespace {
 		product_shape_list_t items_;
 		// SVG edge classification (issue #3668): see add_classified_edges().
 		std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> classified_items_;
+		// "mat-style-change" Case B (see generate_mat_style_change_case_b_edges() and
+		// mat_style_change::find_coplanar_coincident_faces()): every product's RAW shape,
+		// exactly as passed to add(), before add()'s own prefiltering (front-facing-only, when
+		// use_prefiltering_ is set -- always true for real Bonsai drawings, see operator.py)
+		// strips faces that happen to face away from this particular camera. items_ itself can't
+		// be reused for this: whether a touching neighbour's own face is a genuine geometric
+		// match must not depend on which side of it happens to face the current camera -- the
+		// touching relationship is a property of the model, not the view. Only populated when
+		// use_mat_style_change_classification_ is on, to avoid the extra shape-handle bookkeeping
+		// otherwise.
+		std::vector<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> case_b_raw_shapes_;
 
 		Logger& logger_;
 
@@ -1714,6 +1853,9 @@ namespace {
 		}
 		
 		void add(const TopoDS_Shape& s, const IfcUtil::IfcBaseEntity* product, const IfcUtil::IfcBaseInterface* cross_coplanar_style_instance = nullptr, const IfcUtil::IfcBaseInterface* cross_coplanar_material_instance = nullptr, const boost::optional<layer_projection>& cross_coplanar_layer_projection = boost::none) {
+			if (use_mat_style_change_classification_) {
+				case_b_raw_shapes_.push_back({ product, s });
+			}
 			if (!use_prefiltering_) {
 				items_.insert(items_.end(), {product, s, cross_coplanar_style_instance, cross_coplanar_material_instance, cross_coplanar_layer_projection});
 				return;
@@ -1801,8 +1943,8 @@ namespace {
 		// comment) -- Case A reuses this exact matching pass, so it requires cross-coplanar
 		// too, even though it's independently gated on use_mat_style_change_classification_
 		// within the pass below. Case B (intra-product layer boundary) is NOT gated here at
-		// all -- it's constructed entirely in write() via a separate call path (resolve_
-		// layer_projection()/layer_boundary_edges_for_face()) and is correctly independent of
+		// all -- it runs as its own separate pass, generate_mat_style_change_case_b_edges()
+		// (called from build(), right after this function), and is correctly independent of
 		// cross-coplanar.
 		void find_cross_coplanar_matches() {
 			if (!use_edge_classification_ || !use_cross_coplanar_classification_) {
@@ -2112,8 +2254,82 @@ namespace {
 			}
 		}
 
+		// "mat-style-change" case B: intra-product layer-boundary lining (see the mat_style_change
+		// namespace's own comment). Deliberately its OWN pass, separate from
+		// find_cross_coplanar_matches() above and gated only on use_mat_style_change_classification_
+		// (not use_cross_coplanar_classification_) -- Case B must keep working independently of
+		// cross-coplanar, per the matrix pinned by the P1-1 fix (find_cross_coplanar_matches()
+		// early-returns whole when cross-coplanar is off, which is correct for what it does, but
+		// would be wrong to inherit here). Runs from build(), after every product for this
+		// drawing/storey has been add()-ed (case_b_raw_shapes_ is only complete at that point) --
+		// unlike the old per-product call site this replaced, which ran per-product before every
+		// OTHER product was necessarily known yet, and so had no way to ask "is this face actually
+		// a matched touching boundary with some other product" at all.
+		void generate_mat_style_change_case_b_edges() {
+			if (!use_edge_classification_ || !use_mat_style_change_classification_) {
+				return;
+			}
+
+			BRep_Builder builder;
+			for (auto& item : items_) {
+				const IfcUtil::IfcBaseEntity* product = std::get<0>(item);
+				const auto& proj = std::get<4>(item);
+				if (!proj) {
+					continue;
+				}
+				// The RAW (pre-prefiltering) shape for this exact product -- see
+				// case_b_raw_shapes_'s own comment for why items_'s stored shape can't be used
+				// here. add() always stashes one raw entry per add() call when this feature is
+				// on, so this is guaranteed to find one for every product reaching this point.
+				const TopoDS_Shape* self_raw = nullptr;
+				for (auto& raw : case_b_raw_shapes_) {
+					if (raw.first == product) {
+						self_raw = &raw.second;
+						break;
+					}
+				}
+				if (!self_raw) {
+					continue;
+				}
+
+				TopoDS_Compound new_edges;
+				builder.MakeCompound(new_edges);
+				bool any_case_b_edges = false;
+				for (TopExp_Explorer fexp(*self_raw, TopAbs_FACE); fexp.More(); fexp.Next()) {
+					const TopoDS_Face& f = TopoDS::Face(fexp.Current());
+					auto foreign_faces = mat_style_change::find_coplanar_coincident_faces(
+						f, case_b_raw_shapes_, product, cross_coplanar_tolerance_);
+					auto edges = mat_style_change::layer_boundary_edges_for_face(
+						f, *proj, foreign_faces, cross_coplanar_tolerance_);
+					for (auto& e : edges) {
+						builder.Add(new_edges, e);
+						any_case_b_edges = true;
+					}
+				}
+
+				if (any_case_b_edges) {
+					add_classified_edges(product, mat_style_change::class_name, new_edges);
+					// Same injection-before-HLR requirement as find_cross_coplanar_matches()'s own
+					// new_geometry merge-back above: these are brand new edges, never part of
+					// what this product's shape already gave the HLR algorithm, so they have to
+					// land in items_ before build()'s own algo->Add() loop (right below) runs.
+					for (auto& it2 : items_) {
+						if (std::get<0>(it2) != product) {
+							continue;
+						}
+						TopoDS_Compound merged;
+						builder.MakeCompound(merged);
+						builder.Add(merged, std::get<1>(it2));
+						builder.Add(merged, new_edges);
+						std::get<1>(it2) = merged;
+					}
+				}
+			}
+		}
+
 		std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> build() {
 			find_cross_coplanar_matches();
+			generate_mat_style_change_case_b_edges();
 
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
