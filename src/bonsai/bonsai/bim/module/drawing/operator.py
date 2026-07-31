@@ -2200,6 +2200,48 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
             self.open_viewer = True
         return self.execute(context)
 
+    def run_conversion_commands(
+        self, command_json: str, replacements: dict[str, str], setting_name: str
+    ) -> bool:
+        """Run the user-configured SVG conversion commands.
+
+        Returns True on success. On a misconfigured command (bad JSON, missing
+        program, or non-zero exit code) it reports a clear, actionable error that
+        names the failing command and the Bonsai preference to fix, and returns
+        False instead of letting a raw traceback surface. See issue #4822.
+        """
+        try:
+            commands = json.loads(command_json)
+        except json.JSONDecodeError as e:
+            self.report(
+                {"ERROR"},
+                f'The "{setting_name}" Bonsai preference is not valid JSON ({e}). '
+                'It should look like [["inkscape", "svg", "-o", "pdf"]].',
+            )
+            return False
+        for command in commands:
+            command[0] = shutil.which(command[0]) or command[0]
+            try:
+                subprocess.run([replacements.get(c, c) for c in command], check=True)
+            except FileNotFoundError:
+                self.report(
+                    {"ERROR"},
+                    f'Could not run "{command[0]}" set in the "{setting_name}" Bonsai preference. '
+                    "The program was not found. Check that it is installed and on your PATH "
+                    '(on Windows you may need "inkscape.exe" instead of "inkscape"), '
+                    "then update the command in the Bonsai add-on preferences.",
+                )
+                return False
+            except subprocess.CalledProcessError as e:
+                self.report(
+                    {"ERROR"},
+                    f'The command "{command[0]}" set in the "{setting_name}" Bonsai preference '
+                    f"failed with exit code {e.returncode}. See the system console for details, "
+                    "then check the command in the Bonsai add-on preferences.",
+                )
+                return False
+        return True
+
     def _execute(self, context):
         scene = context.scene
         props = tool.Drawing.get_document_props()
@@ -2265,17 +2307,14 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
             if svg2pdf_command:
                 # With great power comes great responsibility. Example:
                 # [["inkscape", "svg", "-o", "pdf"]]
-                commands = json.loads(svg2pdf_command)
-                for command in commands:
-                    subprocess.run([replacements.get(c, c) for c in command])
+                if not self.run_conversion_commands(svg2pdf_command, replacements, "svg2pdf_command"):
+                    return {"CANCELLED"}
 
             if svg2dxf_command:
                 # With great power comes great responsibility. Example:
                 # [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]
-                commands = json.loads(svg2dxf_command)
-                for command in commands:
-                    command[0] = shutil.which(command[0]) or command[0]
-                    subprocess.run([replacements.get(c, c) for c in command])
+                if not self.run_conversion_commands(svg2dxf_command, replacements, "svg2dxf_command"):
+                    return {"CANCELLED"}
 
             if self.open_viewer:
                 if svg2pdf_command:
