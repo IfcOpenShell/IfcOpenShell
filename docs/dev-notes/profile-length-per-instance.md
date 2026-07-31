@@ -100,8 +100,23 @@ never hit implicitly.
 - **`assign_type` preserves per-instance** (`core/type.py`): if the occurrence is already
   per-instance (own non-mapped body + own profile usage), pass
   `should_map_representations=False` so reassigning a type keeps its own geometry/length
-  instead of converting it to typed. (Side effect: it also keeps its own profile/material;
-  fine when all types share one profile — revisit if reassigning across different profiles.)
+  instead of converting it to typed.
+- **…but that flag gates the material usage too** (`core/type.py`): in `api type.assign_type`
+  the `map_material_usages` call sits *inside* the same `if should_map_representations:`
+  block. Suppressing the mapping therefore also suppressed the step that re-points the
+  occurrence's `IfcMaterialProfileSetUsage` at the new type's set, leaving a usage whose
+  `ForProfileSet` still referenced the **old** type. `get_material(should_skip_usage=True)`
+  follows that pointer, so the material panel showed — and edited — the old type's profile:
+  duplicate a profile type, change the copy's profile, and the *original's* profile was
+  rewritten instead, taking every other occurrence of the original with it. This is the
+  "revisit if reassigning across different profiles" caveat that used to sit here, and it
+  bit in the wild.
+  Fixed by re-pointing the usage in `core/type.py` immediately after the `ifc.run`. Reuse
+  `material.assign_material` rather than setting `ForProfileSet` by hand: its
+  `update_representation_profile` rewrites `SweptArea` to the new type's profile but never
+  touches the extrusion depth, so the per-instance length this whole branch exists to
+  protect still survives. `restore_material_usage_attributes` runs after it and lands on the
+  new usage. Covered by `test/bim/module/type/test_assign_type_material_usage.py`.
 
 ## Supporting bug fixes (separate from the feature)
 
@@ -131,6 +146,9 @@ never hit implicitly.
 - [ ] New occurrence of a mapped type → defaults to per-instance.
 - [ ] Assign a length-driven type to a **typed** occurrence → adopts type length, no cascade.
 - [ ] Assign another type to a **per-instance** occurrence → stays per-instance, keeps length.
+- [x] Reassigning across types with **different** profiles — was broken (the occurrence's
+      usage kept the old type's profile set, so editing it mutated the old type). Fixed in
+      `core/type.py`; covered by `test_assign_type_material_usage.py`.
 - [ ] Edge cases untested: non-identity mapping transforms; non-centroid cardinal point vs
-      the 180° flip; reassigning across types with **different** profiles.
+      the 180° flip.
 - [ ] Commit layout: feature on `1c421d0`; separate `change_data` fix; exclude `placement.py`.
