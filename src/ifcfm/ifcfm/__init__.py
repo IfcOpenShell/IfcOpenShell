@@ -22,6 +22,7 @@ import csv
 import importlib
 import os
 import re
+import warnings
 from collections import defaultdict
 from collections.abc import Callable
 from pathlib import Path
@@ -128,9 +129,12 @@ class Parser:
 
                 if data:
                     key = "-".join([str(data[k]) for k in category_config["keys"]])
-                    # TODO: duplicate_keys are never used?
                     if key in self.categories[category_name]:
                         self.duplicate_keys.append((self.categories[category_name][key], data))
+                        warnings.warn(
+                            f"Duplicate key '{key}' in category '{category_name}': "
+                            "an earlier element with this key is being dropped from the export."
+                        )
                     self.categories[category_name][key] = data
 
     def federate(self, paths: list[str]) -> None:
