@@ -1252,7 +1252,8 @@ class IfcImporter:
             name = "Default"
             elements = ifcopenshell.util.element.get_grouped_by(self.file.by_id(group.id()), is_recursive=True)
             for j, element in enumerate(elements):
-                split = element.Name.rsplit("_")
+                # element.Name is optional (IfcRoot) and may be None.
+                split = (element.Name or "").rsplit("_")
                 name = split[0]
                 try:
                     aggregate_index = int(split[1])

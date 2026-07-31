@@ -18,15 +18,20 @@
 #
 # This file was modified with the assistance of an AI coding tool.
 
-"""Regression test for ``IfcImporter.set_units`` crashing on a
-schema-non-conformant unit whose ``Name`` is ``None``.
+"""Regression tests for ``IfcImporter`` crashing on entities with an
+optional attribute left unset.
 
-A hand-crafted or otherwise invalid IFC file can carry an
-``IfcConversionBasedUnit`` with a null ``Name`` even though the schema
-marks it mandatory (IfcOpenShell does not enforce this at parse time).
-Bonsai already treats this as a real, previously-hit defect class for
-``ifcopenshell.util.unit`` (see PR fixing #8885); this covers the same
-class of bug in ``bim/import_ifc.py``'s own direct ``unit.Name`` reads."""
+- ``set_units``: a hand-crafted or otherwise invalid IFC file can carry
+  an ``IfcConversionBasedUnit`` with a null ``Name`` even though the
+  schema marks it mandatory (IfcOpenShell does not enforce this at
+  parse time). Bonsai already treats this as a real, previously-hit
+  defect class for ``ifcopenshell.util.unit`` (see PR fixing #8885);
+  this covers the same class of bug in ``bim/import_ifc.py``'s own
+  direct ``unit.Name`` reads.
+
+- ``update_linked_aggregates``: ``IfcRoot.Name`` is genuinely optional,
+  so a member of a legacy "BBIM_Linked_Aggregate" group with no Name
+  crashed every subsequent load of that file."""
 
 import logging
 import os
@@ -34,6 +39,8 @@ import tempfile
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.group
+import ifcopenshell.api.root
 
 import bonsai.bim.import_ifc as import_ifc
 import bonsai.tool as tool
@@ -75,3 +82,20 @@ class TestSetUnitsNamelessUnit(NewFile):
 
         # Must not raise AttributeError on the None .Name.
         importer.set_units()
+
+
+class TestUpdateLinkedAggregatesNamelessMember(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="P")
+        group = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcGroup", name="BBIM_Linked_Aggregate")
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", name=None)
+        assert wall.Name is None
+        ifcopenshell.api.group.assign_group(ifc, products=[wall], group=group)
+
+        settings = import_ifc.IfcImportSettings.factory(bpy.context, "", logging.getLogger("ImportIFC"))
+        importer = import_ifc.IfcImporter(settings)
+        importer.file = ifc
+
+        # Must not raise AttributeError on the None .Name.
+        importer.update_linked_aggregates()
