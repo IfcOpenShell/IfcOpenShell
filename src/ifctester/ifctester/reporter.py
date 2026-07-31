@@ -315,7 +315,12 @@ class Json(Reporter):
         total_checks_pass = 0
         requirements = []
         for requirement in specification.requirements:
-            total_fail = len(requirement.failures)
+            # A failed requirement can be forced (e.g. a violated prohibited
+            # specification) without ever recording per-element failures.
+            if requirement.status is False and not requirement.failures:
+                total_fail = total_applicable
+            else:
+                total_fail = len(requirement.failures)
             total_pass = total_applicable - total_fail
             percent_pass = math.floor((total_pass / total_applicable) * 100) if total_applicable else "N/A"
             total_checks += total_applicable
