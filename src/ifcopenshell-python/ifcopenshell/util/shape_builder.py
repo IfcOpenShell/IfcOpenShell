@@ -770,6 +770,18 @@ class ShapeBuilder:
             profile = self.file.create_entity("IfcArbitraryClosedProfileDef", **kwargs)
         return profile
 
+    def _ensure_position(self, item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """Get item.Position, assigning a default identity placement if unset.
+
+        IfcExtrudedAreaSolid.Position is optional since IFC4, unlike IfcCircle
+        and IfcEllipse where it is mandatory, so callers relying on Position
+        being present need to fill in the IFC4 default (identity placement)
+        before mutating it in place.
+        """
+        if item.Position is None:
+            item.Position = self.create_axis2_placement_3d()
+        return item.Position
+
     def translate(
         self,
         curve_or_item: Union[ifcopenshell.entity_instance, Sequence[ifcopenshell.entity_instance]],
@@ -800,8 +812,9 @@ class ShapeBuilder:
                 self.set_polyline_coords(c, coords)
 
             elif c.is_a("IfcCircle") or c.is_a("IfcExtrudedAreaSolid") or c.is_a("IfcEllipse"):
-                base_position = np.array(c.Position.Location.Coordinates)
-                c.Position.Location.Coordinates = ifc_safe_vector_type(base_position + translation)
+                position = self._ensure_position(c)
+                base_position = np.array(position.Location.Coordinates)
+                position.Location.Coordinates = ifc_safe_vector_type(base_position + translation)
 
             elif c.is_a("IfcTessellatedFaceSet"):
                 c.Coordinates.CoordList = ifc_safe_vector_type(np.array(c.Coordinates.CoordList) + translation)
@@ -886,11 +899,12 @@ class ShapeBuilder:
 
             elif c.is_a("IfcExtrudedAreaSolid"):
                 # TODO: add support for Z-axis too
-                base_position = c.Position.Location.Coordinates
+                position = self._ensure_position(c)
+                base_position = position.Location.Coordinates
                 new_position = self.rotate_2d_point(base_position[:2], angle, pivot_point, counter_clockwise)
                 new_position = np_to_3d(new_position)
                 new_position[2] = base_position[2]
-                c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
+                position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                 # TODO: add inner axis too and test it
                 self.rotate(c.SweptArea.OuterCurve, angle, pivot_point, counter_clockwise)
@@ -1083,12 +1097,13 @@ class ShapeBuilder:
                     c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                 elif c.is_a("IfcExtrudedAreaSolid"):
-                    placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(c.Position)[:3, :3]
-                    base_position = c.Position.Location.Coordinates
+                    position = self._ensure_position(c)
+                    placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(position)[:3, :3]
+                    base_position = position.Location.Coordinates
                     # TODO: add support for Z-axis too
                     new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
                     new_position = np_to_3d(new_position, base_position[np_Z])
-                    c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
+                    position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                     # TODO: add support for Z-axis too
                     self.translate(c.SweptArea.OuterCurve, base_position[np_XY])
