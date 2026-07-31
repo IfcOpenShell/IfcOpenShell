@@ -252,7 +252,9 @@ class Txt(Console):
         self.text = ""
 
     def print(self, txt: str, end: Optional[str] = None):
-        self.text += txt + "\n" if end is None else end
+        # Operator precedence: without parentheses this discards txt whenever
+        # end is not None, keeping only the end delimiter.
+        self.text += txt + ("\n" if end is None else end)
 
     def to_string(self) -> None:
         print(self.text)

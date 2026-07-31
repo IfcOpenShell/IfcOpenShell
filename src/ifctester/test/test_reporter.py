@@ -76,3 +76,43 @@ class TestConsole:
         printed = capsys.readouterr().out
         assert "(0/1)" in printed
         assert "(1/1)" not in printed
+
+
+class TestTxt:
+    def test_a_failed_specification_shows_the_fail_label_and_reason(self):
+        # Txt.print used "txt + '\\n' if end is None else end", which due to
+        # operator precedence discarded txt and kept only end whenever a
+        # caller passed an explicit end=. That silently dropped the
+        # [PASS]/[FAIL] label, the pass count, and every failure reason.
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Walls need a Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.requirements.append(ids.Attribute(name="Name"))
+        specs.specifications.append(spec)
+        spec.set_usage("required")
+
+        model = ifcopenshell.file()
+        model.createIfcWall(Name=None)
+        specs.validate(model)
+        assert spec.status is False
+
+        txt = reporter.Txt(specs)
+        txt.report()
+        assert "[FAIL] (0/1)" in txt.text
+        assert "The attribute value" in txt.text and "is empty" in txt.text
+
+        specs2 = ids.Ids(title="Title")
+        spec2 = ids.Specification(name="Walls need a Name")
+        spec2.applicability.append(ids.Entity(name="IFCWALL"))
+        spec2.requirements.append(ids.Attribute(name="Name"))
+        specs2.specifications.append(spec2)
+        spec2.set_usage("required")
+
+        model2 = ifcopenshell.file()
+        model2.createIfcWall(Name="Wally")
+        specs2.validate(model2)
+        assert spec2.status is True
+
+        txt2 = reporter.Txt(specs2)
+        txt2.report()
+        assert "[PASS] (1/1)" in txt2.text
