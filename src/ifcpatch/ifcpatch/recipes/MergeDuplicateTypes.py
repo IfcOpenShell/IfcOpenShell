@@ -25,7 +25,9 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, file: ifcopenshell.file, logger: Logger, attribute: str = "Tag", should_merge_null: bool = False):
+    def __init__(
+        self, file: ifcopenshell.file, logger: Logger, attribute: str = "Tag", should_merge_null: bool = False
+    ):
         """Merge duplicate element types via the Tag or another attribute
 
         Revit is notorious for creating many duplicate element types. Element
@@ -84,7 +86,8 @@ class Patcher:
     def patch(self):
         keys: dict[Any, ifcopenshell.entity_instance] = {}
         for element_type in self.file.by_type("IfcTypeObject"):
-            attribute_value = getattr(element_type, self.attribute)
+            # Not every subtype has this attribute, e.g. IfcTypeProcess.
+            attribute_value = getattr(element_type, self.attribute, None)
             if not attribute_value and not self.should_merge_null:
                 continue
             # Include the IFC class in the key so that only types of the same
