@@ -20,6 +20,7 @@ from typing import Optional
 
 import ifcopenshell
 import ifcopenshell.api.alignment
+from ifcopenshell.api.alignment._ensure_alignment_object_placement import _ensure_alignment_object_placement
 from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 import ifcopenshell.api.pset
 import ifcopenshell.guid
@@ -81,11 +82,8 @@ def add_stationing_referent(
 
         update_fallback_position(file, object_placement)
     else:
-        coordinates = (
-            alignment.ObjectPlacement.RelativePlacement.Location.Coordinates
-            if alignment.ObjectPlacement
-            else (0.0, 0.0)
-        )
+        _ensure_alignment_object_placement(file, alignment)
+        coordinates = alignment.ObjectPlacement.RelativePlacement.Location.Coordinates
         object_placement = file.createIfcLocalPlacement(
             PlacementRelTo=None,
             RelativePlacement=file.createIfcAxis2Placement2D(Location=file.createIfcCartesianPoint(coordinates)),
