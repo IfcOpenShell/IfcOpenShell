@@ -31,6 +31,7 @@ import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
+import mathutils
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
@@ -1068,6 +1069,152 @@ class TestWindowRepresentationOnImportedFile(NewFile):
         bpy.ops.mesh.add_window()
 
         assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
+
+
+class TestWallRepresentationOnImportedFile(NewFile):
+    """wall.py mirrors the door/window crash: DumbWallGenerator and
+    AddPerpendicularWall both looked up Model/Body/MODEL_VIEW directly and
+    passed a possibly-None context into add_wall_representation, which
+    crashes on .TargetView / .ContextIdentifier."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def get_wall_type(self, ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        return next(t for t in ifc.by_type("IfcWallType") if tool.Model.get_usage_type(t) == "LAYER2")
+
+    def test_creating_a_wall_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        wall_type = self.get_wall_type(ifc)
+        walls_before = {w.id() for w in ifc.by_type("IfcWall")}
+        result = bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+        assert result == {"FINISHED"}
+
+        wall = next(w for w in ifc.by_type("IfcWall") if w.id() not in walls_before)
+        body = ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_wall(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        wall_type = self.get_wall_type(ifc)
+
+        bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+    def test_add_perpendicular_wall_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        wall_type = self.get_wall_type(ifc)
+
+        walls_before = {w.id() for w in ifc.by_type("IfcWall")}
+        bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+        source_wall = next(w for w in ifc.by_type("IfcWall") if w.id() not in walls_before)
+        source_obj = tool.Ifc.get_object(source_wall)
+        tool.Blender.set_objects_selection(bpy.context, source_obj, (source_obj,))
+
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        bpy.context.scene.cursor.location = source_obj.matrix_world @ mathutils.Vector((0.5, 2.0, 0.0))
+        result = bpy.ops.bim.add_perpendicular_wall()
+        assert result == {"FINISHED"}
+
+        new_wall = next(w for w in ifc.by_type("IfcWall") if w.id() not in walls_before and w.id() != source_wall.id())
+        body = ifcopenshell.util.representation.get_representation(new_wall, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+
+class TestSlabRepresentationOnImportedFile(NewFile):
+    """slab.py mirrors the same crash in DumbSlabGenerator.generate() and in
+    DumbSlabPlaner.change_thickness() when an occurrence has no Body
+    representation of its own to fall back on."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def get_slab_type(self, ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        return next(t for t in ifc.by_type("IfcSlabType") if tool.Model.get_usage_type(t) == "LAYER3")
+
+    def test_creating_a_slab_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        slab_type = self.get_slab_type(ifc)
+        slabs_before = {s.id() for s in ifc.by_type("IfcSlab")}
+        result = bpy.ops.bim.add_occurrence(relating_type_id=slab_type.id())
+        assert result == {"FINISHED"}
+
+        slab = next(s for s in ifc.by_type("IfcSlab") if s.id() not in slabs_before)
+        body = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_slab(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        slab_type = self.get_slab_type(ifc)
+
+        bpy.ops.bim.add_occurrence(relating_type_id=slab_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=slab_type.id())
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+    def test_change_thickness_recreates_missing_body_context(self):
+        from bonsai.bim.module.model.slab import DumbSlabPlaner
+
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        slab_type = self.get_slab_type(ifc)
+        slabs_before = {s.id() for s in ifc.by_type("IfcSlab")}
+        bpy.ops.bim.add_occurrence(relating_type_id=slab_type.id())
+        slab = next(s for s in ifc.by_type("IfcSlab") if s.id() not in slabs_before)
+
+        # Simulate an occurrence with no body representation of its own, as
+        # an externally authored import might have.
+        existing_rep = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
+        assert existing_rep is not None
+        ifcopenshell.util.element.remove_deep2(ifc, existing_rep)
+        slab.Representation.Representations = tuple(r for r in slab.Representation.Representations if r != existing_rep)
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        layer_params = tool.Model.get_material_layer_parameters(slab)
+        DumbSlabPlaner().change_thickness(slab, layer_params["thickness"] * 2)
+
+        body = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
 
 
 class TestGetSiblingOccurrenceCount(NewFile):
