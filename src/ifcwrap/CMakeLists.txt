@@ -225,11 +225,15 @@ if(schema_libraries OR kernel_libraries OR tree_libraries OR mapping_libraries O
     add_dependencies(ifcopenshell_wrapper ${schema_libraries} ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries} ${linework_processing_libraries})
 endif()
 if((NOT WIN32) AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_RPATHS)
-    # The wrapper exposes RocksDbSerializer, so it has a DT_NEEDED entry for
-    # the document RDB plug-in.  The Python package and CMake library
-    # directories are normally different, including in CI where the package
-    # is installed into Python_SITEARCH and plug-ins go to /usr/local/lib.
-    SET_INSTALL_RPATHS(ifcopenshell_wrapper "${CMAKE_INSTALL_FULL_LIBDIR};${IFCDIRS};${OCC_LIBRARY_DIR}")
+    if(IFCOPENSHELL_IFCWRAP_STANDALONE)
+        set(_ifcwrap_ifcopenshell_library_dir "${IFCOPENSHELL_LIBRARY_DIR}")
+    else()
+        set(_ifcwrap_ifcopenshell_library_dir "${CMAKE_INSTALL_FULL_LIBDIR}")
+    endif()
+    # The Python package and IfcOpenShell libraries can have unrelated install
+    # prefixes. This is notably the case for standalone ifcwrap builds against
+    # an installed CMake package and GitHub Actions' hosted Python.
+    SET_INSTALL_RPATHS(ifcopenshell_wrapper "${_ifcwrap_ifcopenshell_library_dir};${IFCDIRS};${OCC_LIBRARY_DIR}")
 elseif((NOT WIN32) AND BUILD_SHARED_LIBS AND COMMAND SET_INSTALL_RPATHS)
     SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
 endif()

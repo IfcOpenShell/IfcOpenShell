@@ -1,5 +1,7 @@
 @PACKAGE_INIT@
 
+set_and_check(IFCOPENSHELL_LIBRARY_DIR "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+
 # Variable to inspect installed schema versions.
 set(IFCOPENSHELL_SCHEMA_VERSIONS @SCHEMA_VERSIONS@)
 
