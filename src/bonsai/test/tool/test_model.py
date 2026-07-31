@@ -1326,6 +1326,82 @@ class TestRoofRepresentationOnImportedFile(NewFile):
         assert len(body_subcontexts) == 1
 
 
+class TestProfileRepresentationOnImportedFile(NewFile):
+    """profile.py mirrors the same crash: DumbProfileGenerator.generate()
+    and DumbProfileJoiner.unjoin() (via recreate_profile) both looked up
+    Model/Body/MODEL_VIEW directly."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def get_profile_type(self, ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        for t in ifc.by_type("IfcColumnType") + ifc.by_type("IfcBeamType") + ifc.by_type("IfcMemberType"):
+            material = ifcopenshell.util.element.get_material(t)
+            if material and material.is_a("IfcMaterialProfileSet"):
+                return t
+        assert False, "no profile-set type found in template"
+
+    def test_creating_a_profile_occurrence_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        profile_type = self.get_profile_type(ifc)
+        element_class = profile_type.is_a()[:-4]
+        elems_before = {e.id() for e in ifc.by_type(element_class)}
+        result = bpy.ops.bim.add_occurrence(relating_type_id=profile_type.id())
+        assert result == {"FINISHED"}
+
+        elem = next(e for e in ifc.by_type(element_class) if e.id() not in elems_before)
+        body = ifcopenshell.util.representation.get_representation(elem, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_occurrence(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        profile_type = self.get_profile_type(ifc)
+
+        bpy.ops.bim.add_occurrence(relating_type_id=profile_type.id())
+        bpy.context.view_layer.objects.active = None
+        tool.Blender.set_objects_selection(bpy.context, None, ())
+        bpy.ops.bim.add_occurrence(relating_type_id=profile_type.id())
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+    def test_unjoin_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        profile_type = self.get_profile_type(ifc)
+        element_class = profile_type.is_a()[:-4]
+        elems_before = {e.id() for e in ifc.by_type(element_class)}
+        bpy.ops.bim.add_occurrence(relating_type_id=profile_type.id())
+        elem = next(e for e in ifc.by_type(element_class) if e.id() not in elems_before)
+        obj = tool.Ifc.get_object(elem)
+        tool.Blender.set_objects_selection(bpy.context, obj, (obj,))
+
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = bpy.ops.bim.extend_profile(join_type="-")
+        assert result == {"FINISHED"}
+
+        body = ifcopenshell.util.representation.get_representation(elem, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+
 class TestGetSiblingOccurrenceCount(NewFile):
     """The pen-icon dispatcher's pre-edit warning depends on this count: zero
     means the edit is safe (unique geometry), non-zero means the edit will
