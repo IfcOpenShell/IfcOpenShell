@@ -45,5 +45,23 @@ def test_file(filename):
         assert len(results) == 0
 
 
+def test_missing_rules_reports_clean_error(tmp_path, monkeypatch):
+    # Regression test: for a schema with no precompiled rules and no matching
+    # .exp in the current folder, run() previously crashed with an opaque
+    # "'NoneType' object is not subscriptable" TypeError instead of a clear
+    # FileNotFoundError, unlike the equivalent fallback in validate.py and
+    # entity_instance.py.
+    class FakeFile:
+        schema_identifier = "NOTASCHEMA"
+
+        def __iter__(self):
+            return iter(())
+
+    monkeypatch.chdir(tmp_path)
+    logger = ifcopenshell.validate.json_logger()
+    with pytest.raises(FileNotFoundError):
+        ifcopenshell.express.rule_executor.run(FakeFile(), logger)
+
+
 if __name__ == "__main__":
     pytest.main(["-sx", __file__, "--import-mode=importlib"])
