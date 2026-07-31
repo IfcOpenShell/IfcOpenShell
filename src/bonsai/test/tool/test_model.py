@@ -1283,6 +1283,49 @@ class TestRailingRepresentationOnImportedFile(NewFile):
         assert body.Items
 
 
+class TestRoofRepresentationOnImportedFile(NewFile):
+    """roof.py mirrors the same crash: BIM_OT_add_roof looked up
+    Model/Body/MODEL_VIEW directly and passed a possibly-None context into
+    root.assign_class, which asserts on it."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def test_creating_a_roof_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = bpy.ops.mesh.add_roof()
+        assert result == {"FINISHED"}
+
+        roof = ifc.by_type("IfcRoof")[0]
+        body = ifcopenshell.util.representation.get_representation(roof, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_roof(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+
+        bpy.ops.mesh.add_roof()
+        bpy.context.view_layer.objects.active = None
+        tool.Blender.set_objects_selection(bpy.context, None, ())
+        bpy.ops.mesh.add_roof()
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+
 class TestGetSiblingOccurrenceCount(NewFile):
     """The pen-icon dispatcher's pre-edit warning depends on this count: zero
     means the edit is safe (unique geometry), non-zero means the edit will
