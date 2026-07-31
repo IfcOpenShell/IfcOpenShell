@@ -844,7 +844,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	// compound_local ends up in once transformed) -- see geometry_data::
 	// cross_coplanar_layer_projection.
 	boost::optional<layer_projection> cross_coplanar_layer_projection;
-	if (svg_use_cross_coplanar_classification_ && file) {
+	if ((svg_use_cross_coplanar_classification_ || svg_use_mat_style_change_classification_) && file) {
 		cross_coplanar_layer_projection = resolve_layer_projection(
 			(IfcUtil::IfcBaseEntity*) brep_obj->product(), compound_local, trsf);
 	}

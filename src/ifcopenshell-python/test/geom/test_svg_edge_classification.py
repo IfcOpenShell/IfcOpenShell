@@ -345,6 +345,102 @@ def test_mat_style_change_case_a_material_mismatch():
     assert not has_edge(edges, wall_b.GlobalId, "cross-coplanar", shared_p0, shared_p1)
 
 
+def test_mat_style_change_case_a_requires_cross_coplanar_too():
+    """Case A (cross-product mismatch, see `test_mat_style_change_case_a_material_mismatch`
+    above) must NOT fire from `use_mat_style_change` alone -- unlike Case B
+    (intra-product layer boundary), which is independent of the cross-coplanar
+    flag, Case A reuses cross-coplanar's own cross-product matching pass
+    (`find_cross_coplanar_matches()`) and requires `use_cross_coplanar` to
+    also be enabled. Confirmed as the user's own intended behaviour, not
+    assumed: the full matrix is (coplanar, mat-style) -> (off,off)=neither,
+    (off,on)=Case B only, (on,off)=cross-coplanar only, (on,on)=both.
+
+    Same touching, mismatched-material geometry as
+    `test_mat_style_change_case_a_material_mismatch`, but with
+    `use_cross_coplanar` left at its default `False` -- the shared boundary
+    must classify as plain `outline` on both sides (an ordinary silhouette,
+    since no cross-product matching ran at all), not `mat-style-change`.
+    """
+    ifc_file, body_context, storey = _make_project()
+    concrete = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    timber = ifcopenshell.api.material.add_material(ifc_file, name="Timber")
+    wall_a = _add_box(
+        ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=concrete
+    )
+    wall_b = _add_box(
+        ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=timber
+    )
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(2.0, -5.0, 1.0),
+        camera_dir=(0.0, -1.0, 0.0),
+        use_mat_style_change=True,
+    )
+    edges = parse_edges(svg)
+
+    shared_p0, shared_p1 = (10000.0, 9000.0), (10000.0, 11000.0)
+    assert not has_edge(edges, wall_a.GlobalId, "mat-style-change", shared_p0, shared_p1)
+    assert not has_edge(edges, wall_b.GlobalId, "mat-style-change", shared_p0, shared_p1)
+    assert has_edge(edges, wall_a.GlobalId, "outline", shared_p0, shared_p1)
+    assert has_edge(edges, wall_b.GlobalId, "outline", shared_p0, shared_p1)
+
+
+def test_mat_style_change_case_a_requires_cross_coplanar_too_when_layered():
+    """Same requirement as `test_mat_style_change_case_a_requires_cross_coplanar_too`
+    above, but with LAYERED (2+-layer `IfcMaterialLayerSetUsage`) walls rather
+    than plain-material ones -- specifically added because the two aren't
+    equivalent regression coverage.
+
+    With plain (non-layered) materials, `find_cross_coplanar_matches()`'s own
+    per-pair gate (`SvgSerializer.h`, `if (!proj_i && !proj_j) { ...material/
+    style null check... }`) happens to reject an unresolved-material pair
+    anyway when cross-coplanar is off, since resolving `cross_coplanar_
+    material_instance`/`style_instance` at all is *itself* separately gated on
+    `svg_use_cross_coplanar_classification_` (`SvgSerializer.cpp`, just above
+    `resolve_layer_projection()`) -- so the plain-material test alone doesn't
+    distinguish a correctly-narrowed entry gate from an accidental side effect
+    of that unrelated gate.
+
+    Confirmed directly: applying ONLY the Case B fix (widening
+    `resolve_layer_projection()`'s gate at `SvgSerializer.cpp:846`) without
+    ALSO narrowing `find_cross_coplanar_matches()`'s entry gate back to
+    requiring cross-coplanar causes THIS exact layered scenario to newly
+    regress -- `proj_i`/`proj_j` populate (bypassing the `!proj_i && !proj_j`
+    material-null gate entirely, since layer materials resolve from the
+    projection itself, not from the gated `cross_coplanar_material_instance`),
+    letting Case A wrongly fire with coplanar off. Both fixes are needed
+    together; this test is what proves it.
+    """
+    ifc_file, body_context, storey = _make_project()
+    concrete = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    timber = ifcopenshell.api.material.add_material(ifc_file, name="Timber")
+    insulation = ifcopenshell.api.material.add_material(ifc_file, name="Insulation")
+    wall_a = _add_box(ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0))
+    wall_b = _add_box(ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0))
+    for wall, top_material in ((wall_a, concrete), (wall_b, timber)):
+        layer_set = ifcopenshell.api.material.add_material_set(ifc_file, set_type="IfcMaterialLayerSet")
+        layer1 = ifcopenshell.api.material.add_layer(ifc_file, layer_set=layer_set, material=top_material)
+        ifcopenshell.api.material.edit_layer(ifc_file, layer=layer1, attributes={"LayerThickness": 0.15})
+        layer2 = ifcopenshell.api.material.add_layer(ifc_file, layer_set=layer_set, material=insulation)
+        ifcopenshell.api.material.edit_layer(ifc_file, layer=layer2, attributes={"LayerThickness": 0.05})
+        ifcopenshell.api.material.assign_material(
+            ifc_file, products=[wall], type="IfcMaterialLayerSetUsage", material=layer_set
+        )
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(2.0, -5.0, 1.0),
+        camera_dir=(0.0, -1.0, 0.0),
+        use_mat_style_change=True,
+    )
+    edges = parse_edges(svg)
+
+    shared_p0, shared_p1 = (10000.0, 9000.0), (10000.0, 11000.0)
+    assert not has_edge(edges, wall_a.GlobalId, "mat-style-change", shared_p0, shared_p1)
+    assert not has_edge(edges, wall_b.GlobalId, "mat-style-change", shared_p0, shared_p1)
+
+
 def test_cluster_a_exact_match_dedup_outline_beats_sharp():
     """Cluster A (`a08873af07`): when two DIFFERENT products produce an edge at
     the exact same 3D location but with different class priorities, only the
@@ -559,15 +655,15 @@ def test_mat_style_change_case_b_intra_product_layer_boundary():
     unimplemented for this kernel -- so `layer_boundary_edges_for_face()`
     constructs brand new line geometry clipped to the face's outline.
 
-    CONFIRMED COUPLING BUG (tracked in the known-issues backlog, P1): despite
-    `mat_style_change`'s own header comment describing Case B as independent
-    of cross-coplanar matching, `SvgSerializer.cpp`'s `write()` only calls
-    `resolve_layer_projection()` at all when
-    `svg_use_cross_coplanar_classification_` is true --
-    `use_mat_style_change=True` alone is NOT enough, confirmed by this test
-    genuinely failing (no `mat-style-change` edge at all) with cross-coplanar
-    left off. `use_cross_coplanar=True` is passed below to match this real,
-    if surprising, current behaviour -- not to route around the bug.
+    Deliberately independent of cross-coplanar: `use_cross_coplanar` is left
+    at its default `False` below. This pins the fix for a P1 known-issue
+    (see [[project_cross_coplanar_known_issues]]): `SvgSerializer.cpp`'s
+    `write()` used to only call `resolve_layer_projection()` -- which this
+    Case relies on -- when `svg_use_cross_coplanar_classification_` was also
+    true, so `use_mat_style_change=True` alone silently did nothing. See
+    `test_mat_style_change_case_a_requires_cross_coplanar_too` for Case A's
+    opposite requirement (it DOES need cross-coplanar, since it reuses that
+    matching pass) -- the two tests together pin the full, corrected matrix.
     """
     ifc_file, body_context, storey = _make_project()
     wall = _add_box(ifc_file, body_context, storey, "Wall", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0))
@@ -595,7 +691,6 @@ def test_mat_style_change_case_b_intra_product_layer_boundary():
         camera_dir=(1.0, 0.0, 0.0),
         camera_ref=(0.0, 1.0, 0.0),
         use_mat_style_change=True,
-        use_cross_coplanar=True,
     )
     edges = parse_edges(svg)
 

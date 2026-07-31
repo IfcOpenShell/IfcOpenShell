@@ -1796,9 +1796,16 @@ namespace {
 		// time build() is called -- see the comment on this call site). Only takes effect
 		// when both use_edge_classification_ and use_cross_coplanar_classification_ are set;
 		// otherwise a no-op, so this feature is fully inert unless explicitly enabled twice
-		// over (matching its ConversionSettings description).
+		// over (matching its ConversionSettings description). This also gates "mat-style-
+		// change" Case A (cross-product mismatch, see the mat_style_change namespace's own
+		// comment) -- Case A reuses this exact matching pass, so it requires cross-coplanar
+		// too, even though it's independently gated on use_mat_style_change_classification_
+		// within the pass below. Case B (intra-product layer boundary) is NOT gated here at
+		// all -- it's constructed entirely in write() via a separate call path (resolve_
+		// layer_projection()/layer_boundary_edges_for_face()) and is correctly independent of
+		// cross-coplanar.
 		void find_cross_coplanar_matches() {
-			if (!use_edge_classification_ || (!use_cross_coplanar_classification_ && !use_mat_style_change_classification_)) {
+			if (!use_edge_classification_ || !use_cross_coplanar_classification_) {
 				return;
 			}
 
@@ -1992,11 +1999,12 @@ namespace {
 							// ones), so void/hole boundaries are covered too.
 							auto segs_i = cross_coplanar::face_line_segs(face_i);
 							auto segs_j = cross_coplanar::face_line_segs(face_j);
-							// Guarded explicitly (rather than relying only on the top-of-function
-							// early return) because that gate now also lets the whole pass proceed
-							// when only use_mat_style_change_classification_ is on -- without this,
-							// cross-coplanar's own match-hiding would run even when the user never
-							// asked for it.
+							// use_cross_coplanar_classification_ is always true here (guaranteed by
+							// the top-of-function entry gate) -- kept as an explicit, local check
+							// rather than relying purely on that early return, since this whole
+							// block is cross-coplanar's own match-hiding specifically (as opposed
+							// to Case A's mismatch-coverage block just below, which has its own
+							// independent use_mat_style_change_classification_ gate).
 							if (use_cross_coplanar_classification_) {
 								cross_coplanar::accumulate_edge_coverage(
 									face_i, face_j, segs_j, cross_coplanar_tolerance_,
@@ -2028,8 +2036,9 @@ namespace {
 
 			// Union of every product that has *any* coverage (match and/or mismatch) -- can't
 			// just iterate per_product_coverage's own keys any more, since a product might have
-			// only mismatch coverage (e.g. use_cross_coplanar_classification_ is off, only
-			// use_mat_style_change_classification_ is on).
+			// only mismatch coverage (e.g. every neighbour it's coplanar-coincident with turns
+			// out to have a genuinely different material/style, so it never accumulates any
+			// match coverage at all, only mismatch).
 			std::set<const IfcUtil::IfcBaseEntity*> products_with_coverage;
 			for (auto& kv : per_product_coverage) { products_with_coverage.insert(kv.first); }
 			for (auto& kv : per_product_mismatch_coverage) { products_with_coverage.insert(kv.first); }
