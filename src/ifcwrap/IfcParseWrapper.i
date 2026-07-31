@@ -580,8 +580,8 @@ private:
 			if (const IfcParse::entity* value_entity = decl->as_entity()) {
 				pt = value_entity->attribute_by_index(i)->type_of_attribute();
 			} else if (i == 0) {
-				// A defined type can wrap an enumeration, as some IFC4.3 release
-				// candidates did, so resolve through its declared type as well.
+				// e.g. IfcFacilityPart.PredefinedType: IfcFacilityPartTypeSelect (IFC4X3 RC1-4)
+				// is a select of enums, so resolve through the declared type as well.
 				if (const IfcParse::type_declaration* td = decl->as_type_declaration()) {
 					pt = td->declared_type();
 				}
