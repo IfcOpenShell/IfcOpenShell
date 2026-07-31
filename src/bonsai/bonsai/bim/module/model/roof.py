@@ -24,7 +24,6 @@ import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
-import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import shapely
 from bpypolyskel import bpypolyskel
@@ -550,7 +549,7 @@ class BIM_OT_add_roof(bpy.types.Operator, tool.Ifc.Operator):
         obj = bpy.data.objects.new("IfcRoof", mesh)
         obj.location = spawn_location
 
-        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        body_context = tool.Model.get_body_context()
         bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
