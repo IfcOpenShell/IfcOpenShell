@@ -56,6 +56,9 @@ class Patcher:
 
     def patch(self):
         """Execute the patch to assign fractions to material constituents."""
+        if self.file.schema == "IFC2X3":
+            return
+
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
         # Get length unit from project
