@@ -66,8 +66,11 @@ class Usecase:
 
     def execute(self, work_schedule: ifcopenshell.entity_instance, name: Union[str, None]) -> None:
         # create work schedule
-        if not work_schedule.PredefinedType == "PLANNED":
-            return
+        if work_schedule.PredefinedType != "PLANNED":
+            raise ValueError(
+                "A baseline can only be created from a work schedule with "
+                f"PredefinedType 'PLANNED', not '{work_schedule.PredefinedType}'."
+            )
         baseline_work_schedule = ifcopenshell.api.sequence.add_work_schedule(
             self.file, name=work_schedule.Name, predefined_type="BASELINE"
         )
