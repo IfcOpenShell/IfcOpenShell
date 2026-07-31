@@ -1032,6 +1032,44 @@ class TestGetOrCreateContext(NewFile):
         assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
 
 
+class TestWindowRepresentationOnImportedFile(NewFile):
+    """window.py mirrors the door crash fixed above: it looked up
+    Model/Body/MODEL_VIEW directly and passed a possibly-None context
+    into add_window_representation, which crashes on .TargetView."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def test_creating_a_window_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = bpy.ops.mesh.add_window()
+        assert result == {"FINISHED"}
+
+        obj = bpy.context.view_layer.objects.active
+        element = tool.Ifc.get_entity(obj)
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_window(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+
+        bpy.ops.mesh.add_window()
+        bpy.context.view_layer.objects.active = None
+        bpy.ops.mesh.add_window()
+
+        assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
+
+
 class TestGetSiblingOccurrenceCount(NewFile):
     """The pen-icon dispatcher's pre-edit warning depends on this count: zero
     means the edit is safe (unique geometry), non-zero means the edit will
