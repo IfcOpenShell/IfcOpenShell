@@ -86,6 +86,8 @@ class Profile(bonsai.core.tool.Profile):
     @classmethod
     def get_profile(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         representations = element.Representation
+        if representations is None:
+            return None
         for representation in representations.Representations:
             if not representation.is_a("IfcShapeRepresentation"):
                 continue
