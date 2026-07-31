@@ -434,11 +434,18 @@ class tree(ifcopenshell_wrapper.tree):
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select(*args)]
 
     def select_box(self, value, **kwargs) -> list[entity_instance]:
+        def is_coord_triple(v):
+            return isinstance(v, (list, tuple)) and len(v) == 3 and all(isinstance(c, (int, float)) for c in v)
+
         def unwrap(value):
             if isinstance(value, entity_instance):
                 return value.wrapped_data
             elif hasattr(value, "Get"):
                 return value.Get()[:3], value.Get()[3:]
+            elif isinstance(value, (list, tuple)) and len(value) == 2 and all(map(is_coord_triple, value)):
+                # Coordinates need to be actual floats, otherwise the Bnd_Box
+                # typemap cannot resolve and raises a confusing TypeError.
+                return tuple(tuple(float(c) for c in corner) for corner in value)
             return value
 
         args = [self, unwrap(value)]
