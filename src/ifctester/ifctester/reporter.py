@@ -183,7 +183,12 @@ class Console(Reporter):
 
         self.set_style("bold")
         total = len(specification.applicable_entities)
-        total_successes = total - len(specification.failed_entities)
+        if specification.maxOccurs == 0 and specification.status is False:
+            # A violated prohibited specification: every applicable entity is
+            # a violation, but failed_entities is never populated for it.
+            total_successes = 0
+        else:
+            total_successes = total - len(specification.failed_entities)
         self.print(f"({total_successes}/{total}) ", end="")
 
         if specification.minOccurs != 0:

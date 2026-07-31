@@ -51,3 +51,28 @@ class TestJson:
         assert requirement_result["total_pass"] == 0
         assert requirement_result["total_fail"] == 1
         assert requirement_result["percent_pass"] == 0
+
+
+class TestConsole:
+    def test_a_violated_prohibited_specification_does_not_show_all_successes(self, capsys):
+        # specification.failed_entities is never populated for a prohibited
+        # specification, since per-element requirement checks are skipped.
+        # The success counter must not read that empty set as "all passed".
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="No walls allowed")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        specs.specifications.append(spec)
+        spec.set_usage("prohibited")
+
+        model = ifcopenshell.file()
+        model.createIfcWall(Name="Wally")
+        specs.validate(model)
+
+        assert spec.status is False
+        assert spec.failed_entities == set()
+
+        console = reporter.Console(specs, use_colour=False)
+        console.report()
+        printed = capsys.readouterr().out
+        assert "(0/1)" in printed
+        assert "(1/1)" not in printed
