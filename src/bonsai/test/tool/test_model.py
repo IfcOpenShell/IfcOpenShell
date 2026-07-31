@@ -1217,6 +1217,72 @@ class TestSlabRepresentationOnImportedFile(NewFile):
         assert body.Items
 
 
+class TestRailingRepresentationOnImportedFile(NewFile):
+    """railing.py mirrors the same crash: BIM_OT_add_railing and the
+    WALL_MOUNTED_HANDRAIL branch of update_railing_modifier_ifc_data both
+    looked up Model/Body/MODEL_VIEW directly."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def test_creating_a_railing_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = bpy.ops.mesh.add_railing()
+        assert result == {"FINISHED"}
+
+        railing = ifc.by_type("IfcRailing")[0]
+        body = ifcopenshell.util.representation.get_representation(railing, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_railing(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+
+        bpy.ops.mesh.add_railing()
+        bpy.context.view_layer.objects.active = None
+        tool.Blender.set_objects_selection(bpy.context, None, ())
+        bpy.ops.mesh.add_railing()
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+    def test_wall_mounted_handrail_recreates_missing_body_context(self):
+        from bonsai.bim.module.model.railing import update_railing_modifier_ifc_data
+
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        bpy.ops.mesh.add_railing()
+        railing = ifc.by_type("IfcRailing")[0]
+        obj = tool.Ifc.get_object(railing)
+        tool.Blender.set_objects_selection(bpy.context, obj, (obj,))
+        props = tool.Model.get_railing_props(obj)
+        props.railing_type = "WALL_MOUNTED_HANDRAIL"
+        props.path_data = '{"edges": [[0, 1]], "verts": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]}'
+
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        update_railing_modifier_ifc_data(bpy.context)
+
+        body = ifcopenshell.util.representation.get_representation(railing, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+
 class TestGetSiblingOccurrenceCount(NewFile):
     """The pen-icon dispatcher's pre-edit warning depends on this count: zero
     means the edit is safe (unique geometry), non-zero means the edit will
