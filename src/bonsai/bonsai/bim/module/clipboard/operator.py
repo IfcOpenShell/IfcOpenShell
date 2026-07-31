@@ -1126,6 +1126,7 @@ class BonsaiGraphClipboardEngine:
                 target_containers[key] = container
 
         # Create missing containers
+        created_containers = []  # Track created containers for batch processing
         for source_container in source_containers:
             key = (source_container.is_a(), source_container.Name)
 
@@ -1137,6 +1138,15 @@ class BonsaiGraphClipboardEngine:
                 new_container = self._create_missing_container(source, source_container, target_containers, context)
                 if new_container:
                     target_containers[key] = new_container
+                    created_containers.append(new_container)
+
+        if created_containers:
+            for container in created_containers:
+                if obj := tool.Ifc.get_object(container):
+                    try:
+                        tool.Collector.assign(obj)
+                    except Exception:
+                        pass
 
         # Force UI refresh to update outliner with new container names
         bpy.context.view_layer.update()
@@ -1147,7 +1157,7 @@ class BonsaiGraphClipboardEngine:
 
     def _create_missing_container(self, source, source_container, target_containers, context):
         """
-        Create a missing spatial container in the target file using Blender operators.
+        Create a missing spatial container in the target file using IFC API directly.
         Recursively creates parent hierarchy as needed.
 
         :param source: Source IFC file
@@ -1182,36 +1192,30 @@ class BonsaiGraphClipboardEngine:
         if not parent_element:
             return None
 
-        # Get Blender object for parent
-        parent_obj = tool.Ifc.get_object(parent_element)
-        if not parent_obj:
-            return None
-
-        # Use Blender operator to create the container
+        # Use IFC API directly instead of Blender operator (much faster)
         try:
-            # Select parent object
-            bpy.context.view_layer.objects.active = parent_obj
+            new_container = ifcopenshell.api.run(
+                "root.create_entity",
+                self.target,
+                ifc_class=container_class,
+                name=container_name,
+            )
 
-            # Track existing IDs before creating
-            existing_ids = {c.id() for c in self.target.by_type(container_class)}
+            ifcopenshell.api.run(
+                "aggregate.assign_object",
+                self.target,
+                products=[new_container],
+                relating_object=parent_element,
+            )
 
-            # Create container using operator
-            bpy.ops.bim.add_part_to_object(part_class=container_class, element=parent_element.id())
-
-            # Find the newly created container (the one not in existing_ids)
-            for container in self.target.by_type(container_class):
-                if container.id() not in existing_ids:
-                    # This is the newly created one, set its name
-                    container.Name = container_name
-
-                    # Update Blender object and collection names
-                    if obj := tool.Ifc.get_object(container):
-                        tool.Root.set_object_name(obj, container)
-                        tool.Collector.assign(obj)
-
-                    return container
-
-            return None
+            obj = bpy.data.objects.new(tool.Loader.get_name(new_container), None)
+            tool.Ifc.link(new_container, obj)
+            
+            tool.Root.set_object_name(obj, new_container)
+            
+            bpy.context.scene.collection.objects.link(obj)
+            
+            return new_container
 
         except Exception:
             return None
@@ -1231,7 +1235,6 @@ class BonsaiGraphClipboardEngine:
         new_element_ids = {elem.id() for elem in new_elements}
 
         # For each source container, find its contained elements and assign them in target
-        assignments_made = 0
         for source_container in source.by_type("IfcSpatialStructureElement"):
             container_key = (source_container.is_a(), source_container.Name)
 
@@ -1274,7 +1277,6 @@ class BonsaiGraphClipboardEngine:
                         products=elements_to_assign,
                         relating_structure=target_container,
                     )
-                    assignments_made += len(elements_to_assign)
 
                     # Update Blender collections for assigned objects
                     for elem in elements_to_assign:
@@ -1333,15 +1335,18 @@ class BonsaiGraphClipboardEngine:
             ifc_importer.create_generic_elements(products)
             ifc_importer.setup_arrays()
 
-            # Assign all created objects to their collections (filter out materials)
+            # Batch collection assignment - collect all objects first
             pasted_blender_objects = [
                 obj for obj in ifc_importer.added_data.values() if isinstance(obj, bpy.types.Object)
             ]
-            for obj in pasted_blender_objects:
-                try:
-                    tool.Collector.assign(obj, should_clean_users_collection=False)
-                except Exception:
-                    pass  # collection assignment is non-critical; object was created successfully
+            
+            if pasted_blender_objects:
+                for obj in pasted_blender_objects:
+                    try:
+                        tool.Collector.assign(obj, should_clean_users_collection=False)
+                    except Exception:
+                        pass  # collection assignment is non-critical
+            
             return pasted_blender_objects
 
         return []
@@ -1666,6 +1671,8 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         try:
+            context.window.cursor_modal_set("WAIT")
+            
             with open(clipboard_json, "r") as f:
                 clipboard_data = json.load(f)
 
@@ -1675,6 +1682,10 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             paste_mode = "RENAME"
             if hasattr(context.scene, "BIMClipboardProperties"):
                 paste_mode = context.scene.BIMClipboardProperties.paste_mode
+
+            num_elements = len(clipboard_data.get("elements", []))
+            if num_elements > 0:
+                self.report({"INFO"}, f"Pasting {num_elements} element(s)... (please wait)")
 
             # ── Pass 1: paste vanilla Blender objects from Blender's buffer ────────
             pre_paste = set(context.selected_objects)
@@ -1705,6 +1716,8 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
                     obj.select_set(True)
                 context.view_layer.objects.active = all_pasted[0]
 
+            context.window.cursor_modal_restore()
+
             if new_elements or vanilla_pasted_objects:
                 parts = []
                 if new_elements:
@@ -1718,5 +1731,9 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         except Exception as e:
+            try:
+                context.window.cursor_modal_restore()
+            except:
+                pass
             self.report({"ERROR"}, f"Paste failed: {str(e)}")
             return {"CANCELLED"}
