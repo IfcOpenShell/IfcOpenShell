@@ -126,7 +126,7 @@ class RepresentationsData:
             resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
 
             if resolved_representation != representation:
-                representation_type = resolved_representation.RepresentationType + "*"
+                representation_type = (resolved_representation.RepresentationType or "") + "*"
 
             is_active = (
                 representation.id() == active_representation_id
