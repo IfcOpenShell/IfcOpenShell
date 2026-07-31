@@ -24,8 +24,8 @@ import ifcopenshell.api.sequence
 import test.bootstrap
 
 
-# NOTE: sequence module features relies on entities introduced in IFC4
-# therefore no IFC2X3 tests
+# NOTE: task time cascading relies on IfcTaskTime, introduced in IFC4,
+# so most tests here are IFC4 only. See TestCascadeScheduleIfc2X3 below.
 class TestCascadeSchedule(test.bootstrap.IFC4):
     def test_doing_nothing_if_the_task_has_no_successors(self):
         task = ifcopenshell.api.sequence.add_task(self.file)
@@ -177,3 +177,18 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
             ifcopenshell.api.sequence.assign_lag_time(
                 self.file, rel_sequence=rel, lag_value=lag, duration_type="WORKTIME"
             )
+
+
+class TestCascadeScheduleIfc2X3(test.bootstrap.IFC2X3):
+    def test_doing_nothing_since_ifctasktime_does_not_exist_in_ifc2x3(self):
+        # IfcTask has no TaskTime attribute at all in IFC2X3 (IfcTaskTime was
+        # only introduced in IFC4), so there is nothing to cascade.
+        task = ifcopenshell.api.sequence.add_task(self.file)
+        assert not hasattr(task, "TaskTime")
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+
+    def test_assign_sequence_does_not_crash_when_cascading_afterwards(self):
+        task = ifcopenshell.api.sequence.add_task(self.file)
+        task2 = ifcopenshell.api.sequence.add_task(self.file)
+        rel = ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task, related_process=task2)
+        assert rel.is_a("IfcRelSequence")
