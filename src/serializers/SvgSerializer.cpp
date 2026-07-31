@@ -1110,25 +1110,46 @@ namespace {
 	// Returns false if target_edge could not be located on any wire of f (shouldn't happen for a
 	// legitimately shared 2-manifold edge; caller must treat this as "fall back to whole-face
 	// scan").
+	// `matched_wire_is_outer` reports whether `target_edge` was found on `f`'s *outer* boundary
+	// wire, as opposed to one of its inner (hole/void) boundary wires. This matters to the
+	// caller: walking further around a face's own wire to find a "trustworthy" neighbor point
+	// only reflects genuine material extent when that wire is the face's outer boundary. On an
+	// inner (hole) wire, the next vertex around the SAME rim lies on the *far side of the empty
+	// hole*, not on material -- confirmed on a real-world project file, a window frame member
+	// extruded from an `IfcArbitraryProfileDefWithVoids` profile (a genuine through-hole, not a
+	// notch) had its hole-rim edges consistently misclassified `crease` instead of `sharp`,
+	// traced to exactly this: the position-based sign test's "trustworthy candidate" always came
+	// from the flat cap face's own hole-rim wire (the only wire containing that edge on that
+	// face), whose next vertex sits across the hole, giving a dot product that is *always*
+	// positive (same side as the wall's into-the-hole normal) regardless of the true 3D fold
+	// direction -- a structural artifact of the hole, not noise, so no amount of "prefer larger
+	// |dot|" tie-breaking can fix it. The other face meeting at that edge (the hole's own inner
+	// wall) has no hole of its own; its neighbor vertex correctly extends into the wall's own
+	// depth and gives the right answer. See the caller for how this flag is used to prefer that.
 	bool wire_neighbors_of_edge(
 		const TopoDS_Face& f, const TopoDS_Edge& target_edge,
 		const TopoDS_Vertex& ev0, const TopoDS_Vertex& ev1, const gp_Dir& f_normal,
 		TopoDS_Vertex& neighbor_of_ev0, bool& ev0_is_reflex,
-		TopoDS_Vertex& neighbor_of_ev1, bool& ev1_is_reflex)
+		TopoDS_Vertex& neighbor_of_ev1, bool& ev1_is_reflex,
+		bool& matched_wire_is_outer)
 	{
 		std::vector<TopoDS_Wire> wires;
+		std::vector<bool> wire_is_outer;
 		TopoDS_Wire outer = BRepTools::OuterWire(f);
 		if (!outer.IsNull()) {
 			wires.push_back(outer);
+			wire_is_outer.push_back(true);
 		}
 		for (TopExp_Explorer wexp(f, TopAbs_WIRE); wexp.More(); wexp.Next()) {
 			TopoDS_Wire w = TopoDS::Wire(wexp.Current());
 			if (outer.IsNull() || !w.IsSame(outer)) {
 				wires.push_back(w);
+				wire_is_outer.push_back(false);
 			}
 		}
 
-		for (const TopoDS_Wire& w : wires) {
+		for (size_t wire_idx = 0; wire_idx < wires.size(); ++wire_idx) {
+			const TopoDS_Wire& w = wires[wire_idx];
 			std::vector<TopoDS_Vertex> verts;
 			std::vector<TopoDS_Edge> edges;
 			for (BRepTools_WireExplorer exp(w, f); exp.More(); exp.Next()) {
@@ -1151,15 +1172,41 @@ namespace {
 				continue;
 			}
 
+			// `is_reflex_vertex()` assumes the wire's vertex sequence runs counter-clockwise as
+			// seen from the +f_normal side (the standard "convex corners turn towards the normal"
+			// convention). That assumption doesn't universally hold: confirmed on a real-world
+			// project file, a side/reveal face of a thin extruded frame member had its whole
+			// 4-vertex wire wound the *opposite* way relative to its own outward face normal (as
+			// returned by face_normal_from_planar_face()) -- every one of its 4 corners, on a
+			// simple planar quad where none can genuinely be reflex, tested as reflex. Rather than
+			// track down which OCCT face-construction path produces this (side faces of prisms
+			// built from a swept profile boundary can end up with either winding relative to their
+			// topological Orientation flag), self-correct here: sum the signed turning across the
+			// *entire* wire once, and if the aggregate is negative (wire runs clockwise as seen
+			// from f_normal), use the reversed normal for every reflex test on this wire instead.
+			// This makes the reflex test internally consistent regardless of whichever winding
+			// convention this particular face's boundary happens to have -- a real, convex quad
+			// then correctly reports zero reflex vertices no matter which way its wire winds.
+			double winding = 0.0;
+			for (int k = 0; k < n; ++k) {
+				const gp_Pnt pprev = BRep_Tool::Pnt(verts[(k - 1 + n) % n]);
+				const gp_Pnt pcur = BRep_Tool::Pnt(verts[k]);
+				const gp_Pnt pnext = BRep_Tool::Pnt(verts[(k + 1) % n]);
+				winding += gp_Vec(pprev, pcur).Crossed(gp_Vec(pcur, pnext)).Dot(gp_Vec(f_normal.XYZ()));
+			}
+			const gp_Dir effective_normal = (winding < 0.0) ? f_normal.Reversed() : f_normal;
+
 			const TopoDS_Vertex& a = verts[i];
 			const TopoDS_Vertex& b = verts[(i + 1) % n];
 			const TopoDS_Vertex& prev = verts[(i - 1 + n) % n];
 			const TopoDS_Vertex& next2 = verts[(i + 2) % n];
 
 			const bool a_reflex = is_reflex_vertex(
-				BRep_Tool::Pnt(prev), BRep_Tool::Pnt(a), BRep_Tool::Pnt(b), f_normal);
+				BRep_Tool::Pnt(prev), BRep_Tool::Pnt(a), BRep_Tool::Pnt(b), effective_normal);
 			const bool b_reflex = is_reflex_vertex(
-				BRep_Tool::Pnt(a), BRep_Tool::Pnt(b), BRep_Tool::Pnt(next2), f_normal);
+				BRep_Tool::Pnt(a), BRep_Tool::Pnt(b), BRep_Tool::Pnt(next2), effective_normal);
+
+			matched_wire_is_outer = wire_is_outer[wire_idx];
 
 			if (a.IsSame(ev0)) {
 				neighbor_of_ev0 = prev;  ev0_is_reflex = a_reflex;
@@ -1178,7 +1225,8 @@ namespace {
 		const NCollection_List<TopoDS_Shape>& faces,
 		const gp_Dir& projection_direction,
 		double ridge_angle_min_deg,
-		double valley_angle_min_deg
+		double valley_angle_min_deg,
+		bool product_has_naked_edge
 	) {
 		std::vector<TopoDS_Face> faces_vec;
 		for (NCollection_List<TopoDS_Shape>::Iterator it(faces); it.More(); it.Next()) {
@@ -1256,56 +1304,97 @@ namespace {
 
 		// Trustworthy-candidate selection (issue #3742 follow-up): only consider the
 		// wire-neighbor vertex reached from each of the target edge's own endpoints, and only
-		// when that endpoint is NOT itself a reflex corner of f1's boundary. Scanning every
-		// vertex of f1 and keeping the largest |dot| (the previous behaviour) is only valid when
-		// f1 is convex -- every vertex of a convex polygon lies on the same side of any line
-		// through one of its edges, so the sign is invariant to which vertex is picked, and
-		// "largest magnitude" is just a noise-robustness tiebreak. When f1 is non-convex (e.g. an
-		// L-shaped face, or a face with a notch cut into it by a boolean void), vertices
+		// when that endpoint is NOT itself a reflex corner of the face's boundary. Scanning every
+		// vertex of a face and keeping the largest |dot| (the previous behaviour) is only valid
+		// when that face is convex -- every vertex of a convex polygon lies on the same side of
+		// any line through one of its edges, so the sign is invariant to which vertex is picked,
+		// and "largest magnitude" is just a noise-robustness tiebreak. When the face is non-convex
+		// (e.g. an L-shaped face, or a face with a notch cut into it by a boolean void), vertices
 		// reachable only by crossing through a reflex corner -- or lying on a distant, unrelated
 		// part of the polygon -- give an INVERTED sign. Confirmed against real geometry (an
 		// L-shaped roof slab's bottom face, and a wall's notch cut by an IfcOpeningElement): in
 		// both cases the wrong-sign vertex also had the larger |dot|, so the old "most decisive"
 		// heuristic reliably picked the wrong answer, misclassifying genuinely convex/sharp edges
 		// as concave/crease.
-		std::vector<gp_Pnt> trustworthy_candidates;
-		TopoDS_Vertex nb0, nb1;
-		bool ev0_reflex = false, ev1_reflex = false;
-		if (wire_neighbors_of_edge(f1, edge, ev0, ev1, n1, nb0, ev0_reflex, nb1, ev1_reflex)) {
-			if (!ev0_reflex) {
-				trustworthy_candidates.push_back(BRep_Tool::Pnt(nb0));
+		//
+		// Pooled from BOTH faces, not just f1 (issue #3742, hole/void follow-up): a candidate
+		// from f1's wire, tested against n0, and a candidate from f0's wire, tested against n1,
+		// are symmetric -- "does a genuine extension point of either face lie behind the OTHER
+		// face's plane" is the same convex test either way round. This matters because f0/f1 is
+		// an arbitrary ordering (whichever face came first out of an unordered edge-face map),
+		// and which face's wire is usable is NOT arbitrary: confirmed on a real-world project
+		// file, a window frame member extruded from a profile with a genuine hole (through-hole,
+		// not a notch) has its hole-rim edges shared between the hole's inner wall (a plain quad,
+		// only an outer wire) and the flat cap face (an annulus, with an INNER wire running around
+		// the hole). Whichever face happened to land in the "f1" slot, if it was the cap, its own
+		// hole-rim wire's next vertex sits on the *far side of the hole* -- not on material at
+		// all -- giving a dot product that is always positive (wrong) regardless of the true fold,
+		// no matter how large its magnitude. The wall's own wire has no such issue (it has no
+		// voids of its own), so pooling both and strongly preferring whichever candidate came from
+		// an OUTER wire (see wire_neighbors_of_edge()'s own comment) reliably picks the wall's
+		// correct signal over the cap's structurally-misleading one, regardless of f0/f1 order.
+		struct SignCandidate { double dot; bool is_outer; };
+		std::vector<SignCandidate> candidates;
+
+		auto collect_candidates = [&](const TopoDS_Face& face_for_wire, const gp_Dir& wire_normal,
+		                               const gp_Dir& test_against_normal) {
+			TopoDS_Vertex nb0, nb1;
+			bool ev0_reflex = false, ev1_reflex = false;
+			bool wire_is_outer = false;
+			if (!wire_neighbors_of_edge(face_for_wire, edge, ev0, ev1, wire_normal, nb0, ev0_reflex, nb1, ev1_reflex, wire_is_outer)) {
+				return;
 			}
-			if (!ev1_reflex) {
-				trustworthy_candidates.push_back(BRep_Tool::Pnt(nb1));
+			for (const auto& nb_pair : { std::make_pair(nb0, ev0_reflex), std::make_pair(nb1, ev1_reflex) }) {
+				if (nb_pair.second) {
+					continue;
+				}
+				const gp_Pnt p = BRep_Tool::Pnt(nb_pair.first);
+				if (p.Distance(edge_p0) > Precision::Confusion() && p.Distance(edge_p1) > Precision::Confusion()) {
+					candidates.push_back({ gp_Vec(edge_p0, p).Dot(gp_Vec(test_against_normal.XYZ())), wire_is_outer });
+				}
 			}
-		}
+		};
+		collect_candidates(f1, n1, n0);
+		collect_candidates(f0, n0, n1);
 
 		double decisive_dot = 0.0;
 		bool have_decisive_vertex = false;
+		bool have_outer_decisive = false;
 
-		// Existing "keep largest |dot|" rule (noise robustness against near-coplanar samples),
-		// now scoped to trustworthy candidates only.
-		for (const gp_Pnt& p : trustworthy_candidates) {
-			if (p.Distance(edge_p0) > Precision::Confusion() && p.Distance(edge_p1) > Precision::Confusion()) {
-				double dot = gp_Vec(edge_p0, p).Dot(gp_Vec(n0.XYZ()));
-				if (!have_decisive_vertex || std::abs(dot) > std::abs(decisive_dot)) {
-					decisive_dot = dot;
+		// Prefer candidates from an outer wire outright; only fall back to inner-wire candidates
+		// (still useful for genuine notches, just not for holes) if no outer-wire one exists.
+		for (const SignCandidate& c : candidates) {
+			if (c.is_outer) {
+				if (!have_outer_decisive || std::abs(c.dot) > std::abs(decisive_dot)) {
+					decisive_dot = c.dot;
+					have_outer_decisive = true;
+					have_decisive_vertex = true;
+				}
+			}
+		}
+		if (!have_outer_decisive) {
+			for (const SignCandidate& c : candidates) {
+				if (!have_decisive_vertex || std::abs(c.dot) > std::abs(decisive_dot)) {
+					decisive_dot = c.dot;
 					have_decisive_vertex = true;
 				}
 			}
 		}
 
 		if (!have_decisive_vertex) {
-			// Conservative fallback: both endpoints reflex, or the edge couldn't be located on
-			// any wire of f1 (degenerate/non-manifold-looking topology) -- fall back to the
-			// original whole-face scan rather than giving up outright.
-			for (TopExp_Explorer vexp(f1, TopAbs_VERTEX); vexp.More(); vexp.Next()) {
-				const gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
-				if (p.Distance(edge_p0) > Precision::Confusion() && p.Distance(edge_p1) > Precision::Confusion()) {
-					double dot = gp_Vec(edge_p0, p).Dot(gp_Vec(n0.XYZ()));
-					if (!have_decisive_vertex || std::abs(dot) > std::abs(decisive_dot)) {
-						decisive_dot = dot;
-						have_decisive_vertex = true;
+			// Conservative fallback: both endpoints reflex on both faces, or the edge couldn't be
+			// located on any wire of either face (degenerate/non-manifold-looking topology) --
+			// fall back to the original whole-face scan (both faces, not just f1) rather than
+			// giving up outright.
+			for (const auto& face_normal_pair : { std::make_pair(&f1, &n0), std::make_pair(&f0, &n1) }) {
+				for (TopExp_Explorer vexp(*face_normal_pair.first, TopAbs_VERTEX); vexp.More(); vexp.Next()) {
+					const gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+					if (p.Distance(edge_p0) > Precision::Confusion() && p.Distance(edge_p1) > Precision::Confusion()) {
+						double dot = gp_Vec(edge_p0, p).Dot(gp_Vec(face_normal_pair.second->XYZ()));
+						if (!have_decisive_vertex || std::abs(dot) > std::abs(decisive_dot)) {
+							decisive_dot = dot;
+							have_decisive_vertex = true;
+						}
 					}
 				}
 			}
@@ -1349,7 +1438,21 @@ namespace {
 		// against the full test scene: every object's classification is byte-for-byte unchanged
 		// except "Rotated Box w/Boundary", whose 3 interior lines now correctly read `crease`
 		// (previously all 4 non-boundary edges read `sharp`).
-		if (back0 && back1) {
+		//
+		// Second fix (issue #3742 follow-up): `back0 && back1` alone is true for countless
+		// ordinary edges on any closed, watertight solid -- it just means this particular fold
+		// happens to face away from the camera, which says nothing about whether there's an
+		// actual hole to be "seeing through" at all. Confirmed on a real-world project file: a
+		// flush-mounted (no recess) window frame -- a fully closed solid, no missing faces
+		// anywhere -- had several genuinely convex, back-facing 90-degree corners wrongly
+		// flipped to `crease`. The flip's own motivating case ("a box with one face removed")
+		// necessarily has genuine naked/boundary edges somewhere on the product (the rim of the
+		// removed face), even though the specific *interior* edges it flips still have exactly 2
+		// adjacent faces each. `product_has_naked_edge` (computed once per product, not per
+		// edge, from the same edge-face map already built at the call site) is that real,
+		// topological signal -- not a heuristic guess -- for "this product actually has an
+		// opening somewhere," so only allow the flip when it's true.
+		if (back0 && back1 && product_has_naked_edge) {
 			const bool would_show_unflipped =
 				(deviation_deg >= 0.0) ? (deviation_deg >= ridge_angle_min_deg) : (-deviation_deg >= valley_angle_min_deg);
 			if (would_show_unflipped) {
@@ -1807,13 +1910,26 @@ void SvgSerializer::write(const geometry_data& data) {
 						view_dir = gp::DZ();
 					}
 
+					// Once per product (not per edge): does this product's own shape have a
+					// genuine opening anywhere (a naked/boundary edge with != 2 adjacent
+					// faces)? classify_edge_from_faces()'s back-facing "seen through an
+					// opening" reinterpretation only makes sense when this is true -- see its
+					// own comment for the real-world bug this was found from.
+					bool product_has_naked_edge = false;
+					for (int i = 1; i <= edge_face_map.Extent(); ++i) {
+						if (edge_face_map.FindFromIndex(i).Extent() != 2) {
+							product_has_naked_edge = true;
+							break;
+						}
+					}
+
 					BRep_Builder BBcls;
 					for (int i = 1; i <= edge_face_map.Extent(); ++i) {
 						const TopoDS_Edge& cls_edge = TopoDS::Edge(edge_face_map.FindKey(i));
 
 						edge_style_class cls = edge_style_class::outline;
 						try {
-							cls = classify_edge_from_faces(cls_edge, edge_face_map.FindFromIndex(i), view_dir, svg_ridge_angle_min_deg_, svg_valley_angle_min_deg_);
+							cls = classify_edge_from_faces(cls_edge, edge_face_map.FindFromIndex(i), view_dir, svg_ridge_angle_min_deg_, svg_valley_angle_min_deg_, product_has_naked_edge);
 						} catch (const Standard_Failure& e) {
 							logger_.Warning("SER", 30, std::string("SVG edge classification OCC exception: ") + e.GetMessageString());
 						} catch (const std::exception& e) {

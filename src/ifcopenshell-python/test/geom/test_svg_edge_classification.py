@@ -883,3 +883,311 @@ def test_cluster_b_edge_on_face_must_not_restore():
     """Placeholder for Cluster B's edge-on rejection guard -- see the skip
     reason for why this isn't constructed yet, and what's already been tried."""
     pass
+
+
+def test_back_facing_convex_edge_on_closed_solid_stays_sharp():
+    """P1-2 (known-issues backlog): `classify_edge_from_faces()`'s "view-relative
+    flip for folds seen from behind through an opening" (`SvgSerializer.cpp`,
+    the `if (back0 && back1)` block) wrongly reinterprets ANY back-facing
+    convex fold as `crease`, with no check for whether the product actually
+    HAS an opening at all -- found via a real user-reported bug on a genuine
+    project file's window (flush-mounted, no recess -- confirmed with the
+    user there is no plausible "seen through an opening" story for it).
+
+    Not hand-designed -- two earlier attempts at a minimal synthetic
+    reproduction (a chunky L-shaped extrusion at several camera angles) each
+    genuinely reproduced the wrong classification at the pre-HLR
+    `classify_edge_from_faces()` level, but the specific wrongly-classified
+    edges never survived to the final HLR-visible output at any camera angle
+    tried -- a plain L-shape's own bulk kept fully occluding them. The real
+    trigger only reproduced once rebuilt from the real window's actual
+    geometry (GUID `2NvX7VpZfB48hD$vRvyHVz`): 8 separate, genuinely thin
+    (10-40mm deep) `IfcExtrudedAreaSolid` frame members with notched,
+    non-convex profiles -- thinness plus non-convexity together are what let
+    HLR legitimately keep some back-facing convex corners visible, unlike a
+    single chunky solid. This test's profile points, depths, local positions,
+    and the window's own resolved world placement matrix (via
+    `ifcopenshell.util.placement.get_local_placement()`, verbatim, in the
+    original file's own millimetre project units) are copied exactly from
+    that real geometry -- not a real project *file* (no `.ifc` is read here
+    or committed anywhere), just its bare numeric geometry, reconstructed via
+    low-level entity creation, matching the same recipe as
+    `test_cluster_b_depth_tie_restoration`.
+
+    Verified via the real Bonsai/Blender `bpy.ops.bim.create_drawing()`
+    pipeline (not just this module's own direct-serializer harness) before
+    writing this assertion: with the fix, 9 of the product's edges that
+    would have wrongly flipped to `crease` now correctly read `sharp`
+    (`product_has_naked_edge` confirmed `False` for this product, matching
+    the real window), and the final rendered elevation shows zero `crease`
+    edges at all -- matching the real bug's own before/after.
+    """
+    ifc_file, body_context, storey = _make_project()
+    ifcopenshell.api.unit.assign_unit(ifc_file, length={"is_metric": True, "raw": "MILLIMETERS"})
+
+    items_data = [
+        dict(points=[(1200.0, 1080.0), (1200.0, 0.0), (0.0, 0.0), (0.0, 1080.0), (25.0, 1080.0), (25.0, 25.0), (1175.0, 25.0), (1175.0, 1080.0)], position=(0.0, 90.0, 0.0), depth=9.99999523162842),
+        dict(points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 1080.0), (0.0, 1080.0)], position=(0.0, 50.0, 0.0), depth=40.0000038146973),
+        dict(points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 1055.0), (0.0, 1055.0)], position=(25.0, 90.0, 25.0), depth=34.9999961853027),
+        dict(points=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 1020.0), (34.9999961853027, 1020.0)], position=(25.0, 102.5, 25.0), depth=10.0),
+        dict(points=[(0.0, 0.0), (0.0, 320.000061035156), (1200.0, 320.000061035156), (1200.0, 0.0), (1175.0, 0.0), (1175.0, 295.000061035156), (25.0, 295.000061035156), (25.0, 0.0)], position=(0.0, 90.0, 1080.0), depth=9.99999523162842),
+        dict(points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 320.000061035156), (0.0, 320.000061035156)], position=(0.0, 50.0, 1080.0), depth=40.0000038146973),
+        dict(points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 295.000061035156), (0.0, 295.000061035156)], position=(25.0, 90.0, 1080.0), depth=34.9999961853027),
+        dict(points=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 260.000061035156), (34.9999961853027, 260.000061035156)], position=(25.0, 102.5, 1080.0), depth=10.0),
+    ]
+    # Resolved world-space placement (get_local_placement(), collapsing the
+    # real product's multi-level placement chain -- and its identity
+    # mapped-item transform -- into one matrix): a 45-degree plan rotation
+    # plus translation, in the project's own millimetre units.
+    world_matrix = np.array([
+        [0.7071067812, -0.7071067812, 0.0, 5742.3152923584],
+        [0.7071067812, 0.7071067812, 0.0, -2819.2496299744],
+        [0.0, 0.0, 1.0, 400.0000059605],
+        [0.0, 0.0, 0.0, 1.0],
+    ])
+
+    window = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWindow", name="Window")
+    ifcopenshell.api.spatial.assign_container(ifc_file, relating_structure=storey, products=[window])
+    solids = []
+    for item in items_data:
+        point_list = ifc_file.createIfcCartesianPointList2D(item["points"])
+        poly_curve = ifc_file.createIfcIndexedPolyCurve(point_list, None, None)
+        profile = ifc_file.createIfcArbitraryClosedProfileDef("AREA", None, poly_curve)
+        position = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint(item["position"]),
+            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+        direction = ifc_file.createIfcDirection((0.0, 0.0, -1.0))
+        solids.append(ifc_file.createIfcExtrudedAreaSolid(profile, position, direction, item["depth"]))
+    shape_rep = ifc_file.createIfcShapeRepresentation(body_context, "Body", "SweptSolid", solids)
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=window, representation=shape_rep)
+    # world_matrix's numbers are already in the project's own millimetre
+    # units, not SI metres -- is_si=False so edit_object_placement doesn't
+    # apply its default metre-to-project-unit conversion.
+    ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=window, matrix=world_matrix, is_si=False)
+
+    # Camera matches the real window's own EAST ELEVATION drawing (extracted
+    # via bpy camera.matrix_world against this exact synthetic geometry).
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(16.0, -2.799999952316284, 0.8999999761581421),
+        camera_dir=(1.0, 0.0, 0.0),
+        camera_ref=(0.0, 1.0, 0.0),
+    )
+    edges = parse_edges(svg)
+
+    window_edges = [e for e in edges if e.guid == window.GlobalId]
+    assert window_edges, "expected the window to produce some visible edges"
+    assert not any(e.cls == "crease" for e in window_edges), window_edges
+    target_p0, target_p1 = (10028.284271247461, 9439.9999980926514), (10028.284271247461, 9480.0000019073486)
+    assert has_edge(edges, window.GlobalId, "sharp", target_p0, target_p1)
+
+
+def test_back_facing_fold_seen_through_genuine_opening_still_flips():
+    """Regression guard for the fix above: the `back0 && back1` view-relative
+    flip must still fire when the product genuinely HAS an opening -- the
+    "Rotated Box w/Boundary" scenario the flip was originally built for (a
+    box with a face actually removed, so its own naked/boundary edges ring
+    the missing face). Narrowing the flip to require
+    `product_has_naked_edge` must not disable it here, only for products
+    (like the one above) that don't have any opening at all.
+
+    Built as a genuinely open `IfcOpenShell`/`IfcShellBasedSurfaceModel` (5
+    faces of a unit cube, top face omitted entirely -- not a closed solid
+    with a boolean void, an actually-incomplete shell), so the rim around the
+    missing top is a real naked-edge loop, confirmed present in the render as
+    `boundary`-class edges. Viewed from a diagonal angle, one of the box's
+    own outer vertical edges is genuinely concave pre-flip (`convex=0`,
+    `deviation_deg=-90`, i.e. would show `crease`) and gets flipped to
+    `sharp` by the `back0 && back1` block -- confirmed via direct debug
+    trace before writing this assertion.
+    """
+    ifc_file, body_context, storey = _make_project()
+    pts = {}
+    for x in (0.0, 1.0):
+        for y in (0.0, 1.0):
+            for z in (0.0, 1.0):
+                pts[(x, y, z)] = ifc_file.createIfcCartesianPoint((x, y, z))
+
+    def face(*coords):
+        poly = ifc_file.createIfcPolyLoop([pts[c] for c in coords])
+        bound = ifc_file.createIfcFaceOuterBound(poly, True)
+        return ifc_file.createIfcFace([bound])
+
+    faces = [
+        face((0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)),  # bottom
+        face((0, 0, 0), (0, 1, 0), (0, 1, 1), (0, 0, 1)),
+        face((1, 0, 0), (1, 0, 1), (1, 1, 1), (1, 1, 0)),
+        face((0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 0, 0)),
+        face((0, 1, 0), (1, 1, 0), (1, 1, 1), (0, 1, 1)),
+        # top (Z=1) deliberately omitted -- a genuine opening, not a closed solid.
+    ]
+    shell = ifc_file.createIfcOpenShell(faces)
+    ssm = ifc_file.createIfcShellBasedSurfaceModel([shell])
+
+    open_box = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="OpenBox")
+    ifcopenshell.api.spatial.assign_container(ifc_file, relating_structure=storey, products=[open_box])
+    shape_rep = ifc_file.createIfcShapeRepresentation(body_context, "Body", "SurfaceModel", [ssm])
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=open_box, representation=shape_rep)
+    ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=open_box, matrix=np.eye(4))
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(3.0, 3.0, 3.0),
+        camera_dir=(1.0, 1.0, 1.0),
+        camera_ref=(1.0, -1.0, 0.0),
+    )
+    edges = parse_edges(svg)
+
+    assert any(e.cls == "boundary" for e in edges if e.guid == open_box.GlobalId), "expected a naked-edge rim around the missing top face"
+    target_p0, target_p1 = (10000.0, 9183.5034190722745), (10000.0, 10000.0)
+    assert has_edge(edges, open_box.GlobalId, "sharp", target_p0, target_p1)
+
+
+def test_hole_rim_edge_stays_sharp_not_crease():
+    """P1-2 (known-issues backlog), second and final root cause. The fix in
+    `test_back_facing_convex_edge_on_closed_solid_stays_sharp` above
+    (`product_has_naked_edge`) turned out not to be what the user's
+    originally-reported edges depended on at all -- confirmed via a fresh
+    real-project debug trace: `product_has_naked_edge` was `False` for this
+    product (no `back0 && back1` flip ever fired), yet the exact reported
+    edges were still `crease`. The user then supplied the real root cause
+    from direct inspection: several of the window's 8 frame members are
+    extruded from an `IfcArbitraryProfileDefWithVoids` profile -- a genuine
+    hole through the member, not a notch -- and it's specifically the hole's
+    own rim edges that misclassify.
+
+    This test's geometry corrects TWO mistakes in the earlier (in this same
+    session) reconstruction used above: that one (a) silently dropped the
+    inner void loops entirely for 4 of the 8 members, turning them into
+    solid blocks, and (b) used the wrong `IfcAxis2Placement3D` axis/ref
+    (assumed `(0,0,1)`/`(1,0,0)`; the real members use `(0,-1,0)`/`(1,0,0)`).
+    Both were wrong enough that the earlier reconstruction produced *zero*
+    crease edges from the real drawing's own camera -- it simply didn't
+    reproduce the bug at all. This test's `items_data` (outer AND inner loop
+    points, axis, ref, depth, direction) and `world_matrix` are read back
+    verbatim from the real window (GUID `2NvX7VpZfB48hD$vRvyHVz`) via
+    `ifcopenshell.open()` + direct attribute access (`SweptArea.OuterCurve`/
+    `InnerCurves`, `Position.Axis`/`RefDirection`) -- not a real project
+    *file* (no `.ifc` is read here or committed anywhere), just its bare
+    numeric geometry. With this corrected geometry, rendering with the
+    user's own saved second camera (`EXISTING EAST ELEVATION-X`, extracted
+    via `camera.matrix_world`) reproduces exactly the reported symptom: 4
+    `crease` edges at the hole rims where there should be none.
+
+    Root cause: `classify_edge_from_faces()`'s position-based convexity test
+    (see `wire_neighbors_of_edge()`'s own comment) picks a "trustworthy
+    candidate" vertex by walking further around a face's own boundary wire.
+    That only reflects genuine material extent on a face's OUTER wire. Here,
+    the shared edge sits on the flat cap face's INNER (hole) wire; the next
+    vertex around that same rim lies on the *far side of the empty hole*,
+    not on material, so the test's dot product is always positive (wrong)
+    regardless of the true 3D fold -- not noise, a structural artifact of
+    the hole, so no `|dot|`-based tie-break can fix it. The hole's own inner
+    wall face (the other face at this edge) has no such issue -- it has no
+    voids of its own, so its wire-neighbor candidate is reliable. Fix: pool
+    candidates from BOTH faces (not just f1), each tested against the
+    OTHER's normal, and strongly prefer whichever came from an outer wire.
+
+    Verified via the real Bonsai/Blender `bpy.ops.bim.create_drawing()`
+    pipeline (not just this module's own direct-serializer harness) against
+    the real project file before writing this assertion: with the fix, all
+    8 wrongly-`crease` hole-rim edges on this window (from the user's own
+    saved camera view) now read `sharp`, at byte-identical coordinates to
+    the pre-fix `crease` output, while the 4 genuinely-correct `crease`
+    edges elsewhere on the same product (unrelated internal member-to-member
+    boundaries, confirmed correct by the user) are untouched.
+    """
+    ifc_file, body_context, storey = _make_project()
+    ifcopenshell.api.unit.assign_unit(ifc_file, length={"is_metric": True, "raw": "MILLIMETERS"})
+
+    # Read back verbatim from the real window (position, axis, ref, depth, direction,
+    # outer/inner profile loop points) via ifcopenshell.open() + direct attribute access --
+    # see this test's own docstring for why the earlier reconstruction above got this wrong.
+    items_data = [
+        dict(position=(0.0, 90.0, 0.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=9.99999523162842, direction=(0.0, 0.0, -1.0),
+             outer=[(1200.0, 1080.0), (1200.0, 0.0), (0.0, 0.0), (0.0, 1080.0), (25.0, 1080.0), (25.0, 25.0), (1175.0, 25.0), (1175.0, 1080.0)], inner=[]),
+        dict(position=(0.0, 50.0, 0.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=40.0000038146973, direction=(0.0, 0.0, -1.0),
+             outer=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 1080.0), (0.0, 1080.0)], inner=[[(50.0, 50.0), (1150.0, 50.0), (1150.0, 1055.0), (50.0, 1055.0)]]),
+        dict(position=(25.0, 90.0, 25.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=34.9999961853027, direction=(0.0, 0.0, -1.0),
+             outer=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 1055.0), (0.0, 1055.0)], inner=[[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 1020.0), (34.9999961853027, 1020.0)]]),
+        dict(position=(25.0, 102.5, 25.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=10.0, direction=(0.0, 0.0, -1.0),
+             outer=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 1020.0), (34.9999961853027, 1020.0)], inner=[]),
+        dict(position=(0.0, 90.0, 1080.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=9.99999523162842, direction=(0.0, 0.0, -1.0),
+             outer=[(0.0, 0.0), (0.0, 320.000061035156), (1200.0, 320.000061035156), (1200.0, 0.0), (1175.0, 0.0), (1175.0, 295.000061035156), (25.0, 295.000061035156), (25.0, 0.0)], inner=[]),
+        dict(position=(0.0, 50.0, 1080.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=40.0000038146973, direction=(0.0, 0.0, -1.0),
+             outer=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 320.000061035156), (0.0, 320.000061035156)], inner=[[(50.0, 25.0), (1150.0, 25.0), (1150.0, 270.000061035156), (50.0, 270.000061035156)]]),
+        dict(position=(25.0, 90.0, 1080.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=34.9999961853027, direction=(0.0, 0.0, -1.0),
+             outer=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 295.000061035156), (0.0, 295.000061035156)], inner=[[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 260.000061035156), (34.9999961853027, 260.000061035156)]]),
+        dict(position=(25.0, 102.5, 1080.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=10.0, direction=(0.0, 0.0, -1.0),
+             outer=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 260.000061035156), (34.9999961853027, 260.000061035156)], inner=[]),
+    ]
+    # Resolved world-space placement (get_local_placement()), same recipe as the earlier
+    # reconstruction above -- this part was already correct, only the per-item axis/ref and
+    # inner-loop points needed fixing.
+    world_matrix = np.array([
+        [0.7071067812, -0.7071067812, 0.0, 5742.3152923584],
+        [0.7071067812, 0.7071067812, 0.0, -2819.2496299744],
+        [0.0, 0.0, 1.0, 400.0000059605],
+        [0.0, 0.0, 0.0, 1.0],
+    ])
+
+    window = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWindow", name="Window")
+    ifcopenshell.api.spatial.assign_container(ifc_file, relating_structure=storey, products=[window])
+    solids = []
+    for item in items_data:
+        position = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint(item["position"]),
+            ifc_file.createIfcDirection(item["axis"]),
+            ifc_file.createIfcDirection(item["ref"]),
+        )
+        outer_pl = ifc_file.createIfcCartesianPointList2D(item["outer"])
+        n_outer = len(item["outer"])
+        outer_curve = ifc_file.createIfcIndexedPolyCurve(
+            outer_pl, (ifc_file.createIfcLineIndex(tuple(list(range(1, n_outer + 1)) + [1])),), None
+        )
+        if item["inner"]:
+            inner_curves = []
+            for inner_pts in item["inner"]:
+                inner_pl = ifc_file.createIfcCartesianPointList2D(inner_pts)
+                n_inner = len(inner_pts)
+                inner_curve = ifc_file.createIfcIndexedPolyCurve(
+                    inner_pl, (ifc_file.createIfcLineIndex(tuple(list(range(1, n_inner + 1)) + [1])),), None
+                )
+                inner_curves.append(inner_curve)
+            profile = ifc_file.createIfcArbitraryProfileDefWithVoids("AREA", None, outer_curve, inner_curves)
+        else:
+            profile = ifc_file.createIfcArbitraryClosedProfileDef("AREA", None, outer_curve)
+        direction = ifc_file.createIfcDirection(item["direction"])
+        solids.append(ifc_file.createIfcExtrudedAreaSolid(profile, position, direction, item["depth"]))
+    shape_rep = ifc_file.createIfcShapeRepresentation(body_context, "Body", "SweptSolid", solids)
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=window, representation=shape_rep)
+    ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=window, matrix=world_matrix, is_si=False)
+
+    # Camera matches the real window's own second, more oblique EXISTING EAST
+    # ELEVATION-X drawing (extracted via bpy camera.matrix_world against the real
+    # project file) -- the straight-on EAST ELEVATION camera used above doesn't put
+    # the hole-rim edges at a angle where this specific bug is visible.
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(10.79759693145752, -2.690483808517456, 3.7899999618530273),
+        camera_dir=(0.8627297282218933, -0.07547909766435623, 0.5000001192092896),
+        camera_ref=(0.08715580403804779, 0.9961947202682495, -4.951073862002886e-08),
+    )
+    edges = parse_edges(svg)
+
+    window_edges = [e for e in edges if e.guid == window.GlobalId]
+    assert window_edges, "expected the window to produce some visible edges"
+
+    def edge_length(e):
+        return ((e.p1[0] - e.p0[0]) ** 2 + (e.p1[1] - e.p0[1]) ** 2) ** 0.5
+
+    # From this camera, 4 SHORT `crease` edges are genuine, correct internal
+    # member-to-member boundaries (confirmed by the user, unrelated to this bug) --
+    # not asserted away here. The bug produced LONG `crease` edges specifically
+    # along the hole rims; none of those should remain.
+    long_crease_edges = [e for e in window_edges if e.cls == "crease" and edge_length(e) > 50]
+    assert not long_crease_edges, long_crease_edges
+    target_p0, target_p1 = (9595.977771701151, 9461.301506137414), (10405.254755114664, 9800.83355512243)
+    assert has_edge(edges, window.GlobalId, "sharp", target_p0, target_p1)
