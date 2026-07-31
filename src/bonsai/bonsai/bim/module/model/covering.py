@@ -38,6 +38,8 @@ class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operato
             core.add_instance_flooring_covering_from_cursor(tool.Ifc, tool.Root, tool.Spatial)
         except core.NoDefaultContainer:
             return self.report({"ERROR"}, "Please set a default container to create the covering in.")
+        except core.NoPolygonFound:
+            return self.report({"ERROR"}, "No enclosed space was found at the cursor position.")
 
 
 class AddInstanceCeilingCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator):
@@ -55,6 +57,8 @@ class AddInstanceCeilingCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator
             core.add_instance_ceiling_covering_from_cursor(tool.Ifc, tool.Root, tool.Covering, tool.Spatial)
         except core.NoDefaultContainer:
             return self.report({"ERROR"}, "Please set a default container to create the covering in.")
+        except core.NoPolygonFound:
+            return self.report({"ERROR"}, "No enclosed space was found at the cursor position.")
 
 
 class RegenSelectedCoveringObject(bpy.types.Operator, tool.Ifc.Operator):
@@ -75,6 +79,8 @@ class RegenSelectedCoveringObject(bpy.types.Operator, tool.Ifc.Operator):
             core.regen_selected_covering_object(tool.Root, tool.Spatial)
         except core.NoDefaultContainer:
             return self.report({"ERROR"}, "Please set a default container to create the covering in.")
+        except core.NoPolygonFound:
+            return self.report({"ERROR"}, "No enclosed space was found at the cursor position.")
 
 
 class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):
