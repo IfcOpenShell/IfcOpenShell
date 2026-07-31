@@ -53,6 +53,9 @@ endmacro()
 
 function(ifcopenshell_plugin_target TARGET)
     set_target_properties(${TARGET} PROPERTIES PREFIX "")
+    if((NOT WIN32) AND BUILD_SHARED_LIBS AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+        SET_INSTALL_SELF_RPATH(${TARGET})
+    endif()
 endfunction()
 
 function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)

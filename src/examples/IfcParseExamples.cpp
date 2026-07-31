@@ -25,6 +25,7 @@
 
 #include "ifcparse/file.h"
 #include "ifcparse/logger.h"
+#include "plugin/plugin.h"
 
 #include INCLUDE_SCHEMA(ifcparse/schemas, IfcSchema)
 #include INCLUDE_SCHEMA_DEFINITIONS(ifcparse/schemas, IfcSchema)
@@ -47,13 +48,29 @@ struct is_ifc4_or_higher<T, std::void_t<decltype(T::IfcMaterialDefinition)>> : s
 
 typedef std::map<std::string, std::map<std::string, std::string>> element_properties;
 
+std::string string_value(const std::string& value) {
+	return value;
+}
+
+std::string string_value(const std::optional<std::string>& value) {
+	return value.value_or("");
+}
+
+bool has_string(const std::string& value) {
+	return !value.empty();
+}
+
+bool has_string(const std::optional<std::string>& value) {
+	return value.has_value();
+}
+
 #ifdef SCHEMA_HAS_IfcBuildingElement
 typedef IfcSchema::IfcBuildingElement element_t;
 #else
 typedef IfcSchema::IfcBuiltElement element_t;
 #endif
 
-std::string format_string(const AttributeValue& argument) {
+std::string format_string(const attribute_value& argument) {
 	// Argument is a runtime tagged variant for the various data types in a IFC model,
 	// in this particular case we only care about flattening it to a string.
 	// @todo mostly duplicated from XmlSerializer.cpp
@@ -62,21 +79,21 @@ std::string format_string(const AttributeValue& argument) {
 	}
 	auto argument_type = argument.type();
 	switch (argument_type) {
-	case IfcUtil::Argument_BOOL: {
+	case ifcopenshell::Argument_BOOL: {
 		const bool b = argument;
 		return b ? "true" : "false";
 	}
-	case IfcUtil::Argument_DOUBLE: {
+	case ifcopenshell::Argument_DOUBLE: {
 		const double d = argument;
 		std::stringstream stream;
 		stream << std::setprecision(std::numeric_limits< double >::max_digits10) << d;
 		return stream.str();
 		break; }
-	case IfcUtil::Argument_STRING:
-	case IfcUtil::Argument_ENUMERATION: {
+	case ifcopenshell::Argument_STRING:
+	case ifcopenshell::Argument_ENUMERATION: {
 		return static_cast<std::string>(argument);
 		break; }
-	case IfcUtil::Argument_INT: {
+	case ifcopenshell::Argument_INT: {
 		const int v = argument;
 		std::stringstream stream;
 		stream << v;
@@ -90,40 +107,38 @@ template <typename Schema, typename T>
 void process_pset(element_properties& props, const T& inst) {
 	// Process an individual Property or Quantity set.
 	if (auto pset = inst.template as<typename Schema::IfcPropertySet>()) {
-		if (!pset.Name()) {
+		auto pset_name = pset.Name();
+		if (!has_string(pset_name)) {
 			return;
 		}
 		auto ps = pset.HasProperties();
 		for (const auto& p : ps) {
 			if (auto singleval = p.template as<typename Schema::IfcPropertySingleValue>()) {
 				std::string propname, propvalue;
-				if constexpr (is_ifc4_or_higher<Schema>::value) {
-					if (!singleval.Name()) {
-						continue;
-					}
-					propname = *singleval.Name();
+				auto property_name = singleval.Name();
+				if (!has_string(property_name)) {
+					continue;
 				}
-				if constexpr (!is_ifc4_or_higher<Schema>::value) {
-					propname = *singleval.Name();
-				}
+				propname = string_value(property_name);
 				auto nominal_value = singleval.NominalValue();
 				if (!nominal_value) {
 					propvalue = "-";
 				} else {
-					props[*pset.Name()][propname] = format_string(nominal_value.get_attribute_value(0));
+					props[string_value(pset_name)][propname] = format_string(nominal_value.get_attribute_value(0));
 				}
 			}
 		}
 	}
 	if (auto qset = inst.template as<typename Schema::IfcElementQuantity>()) {
-		if (!qset.Name()) {
+		auto qset_name = qset.Name();
+		if (!has_string(qset_name)) {
 			return;
 		}
 		auto qs = qset.Quantities();
 		for (const auto& q : qs) {
-			if (q.template as<typename Schema::IfcPhysicalSimpleQuantity>() && q.get_attribute_value(3).type() == IfcUtil::Argument_DOUBLE) {
+			if (q.template as<typename Schema::IfcPhysicalSimpleQuantity>() && q.get_attribute_value(3).type() == ifcopenshell::Argument_DOUBLE) {
 				double v = q.get_attribute_value(3);
-				props[*qset.Name()][q.Name()] = std::to_string(v);
+				props[string_value(qset_name)][string_value(q.Name())] = std::to_string(v);
 			}
 		}
 	}
@@ -192,6 +207,10 @@ int main(int argc, char** argv) {
         std::cout << "usage: IfcParseExamples <filename.ifc>" << std::endl;
         return 1;
     }
+
+#ifdef IFCOPENSHELL_EXAMPLE_PLUGIN_PATH
+	ifcopenshell::plugin::set_search_paths({IFCOPENSHELL_EXAMPLE_PLUGIN_PATH});
+#endif
 
     // Redirect the output (both progress and log) to stdout
     ::logger::root().set_output(&std::cout, &std::cout);

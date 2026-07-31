@@ -26,6 +26,7 @@
 #endif
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/dll/shared_library.hpp>
 
 #include <algorithm>
@@ -449,7 +450,13 @@ std::filesystem::path ifcopenshell::plugin::module_directory(const void* symbol)
 		throw std::runtime_error("Unable to resolve module path");
 	}
 
-	const auto directory = std::filesystem::path(info.dli_fname).parent_path();
+	auto directory = std::filesystem::path(info.dli_fname).parent_path();
+	if (directory.empty()) {
+		// dladdr() returns the invocation string for symbols in the main
+		// executable. When it was found through PATH this can be just the
+		// executable name, so resolve the actual program location instead.
+		directory = boost::dll::program_location().parent_path();
+	}
 	plugin_debug("module_directory resolved " + path_string(directory));
 	return directory;
 #endif

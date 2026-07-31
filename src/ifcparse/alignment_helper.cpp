@@ -268,7 +268,7 @@ Ifc4x3_add2::IfcAlignment addHorizontalAlignment(hierarchy_helper<Ifc4x3_add2>& 
     return alignment;
 }
 
-std::tuple<typename std::vector<Ifc4x3_add2::IfcObjectDefinition>&, typename std::vector<Ifc4x3_add2::IfcSegment>&, Ifc4x3_add2::IfcGradientCurve> _createVerticalAlignment(hierarchy_helper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcCompositeCurve composite_curve,const std::vector<std::pair<double, double>>& vpoints, const std::vector<double>& vclengths, bool include_geometry) {
+std::tuple<std::vector<Ifc4x3_add2::IfcObjectDefinition>, std::vector<Ifc4x3_add2::IfcSegment>, Ifc4x3_add2::IfcGradientCurve> _createVerticalAlignment(hierarchy_helper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcCompositeCurve composite_curve,const std::vector<std::pair<double, double>>& vpoints, const std::vector<double>& vclengths, bool include_geometry) {
     std::vector<Ifc4x3_add2::IfcObjectDefinition> vertical_segments; // business logic
     std::vector<Ifc4x3_add2::IfcSegment> vertical_curve_segments;    // geometry
 
