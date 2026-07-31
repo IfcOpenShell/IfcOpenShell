@@ -1282,6 +1282,19 @@ class Drawing(bonsai.core.tool.Drawing):
                 subprocess.call(("xdg-open", path))
 
     @classmethod
+    def run_conversion_command(cls, command_json: str, replacements: dict[str, str]) -> None:
+        """Run a JSON-configured SVG conversion command such as svg2pdf_command.
+
+        :raises json.JSONDecodeError: if ``command_json`` is not valid JSON.
+        :raises FileNotFoundError: if a configured program cannot be found.
+        :raises subprocess.CalledProcessError: if a command exits non-zero.
+        """
+        commands = json.loads(command_json)
+        for command in commands:
+            command[0] = shutil.which(command[0]) or command[0]
+            subprocess.run([replacements.get(c, c) for c in command], check=True)
+
+    @classmethod
     def open_spreadsheet(cls, uri: str) -> None:
         cls.open_with_user_command(tool.Blender.get_addon_preferences().spreadsheet_command, uri)
 

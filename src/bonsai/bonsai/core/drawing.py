@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
@@ -302,23 +304,25 @@ def add_drawing(
         context=drawing.get_body_context(),
         ifc_representation_class=None,
     )
-    
+
     drawings_parent_group = None
     for group in ifc.get().by_type("IfcGroup"):
         if group.Name == "DRAWINGS" and group.ObjectType == "DRAWINGS":
             drawings_parent_group = group
             break
-    
+
     if not drawings_parent_group:
         drawings_parent_group = ifc.run("group.add_group")
-        ifc.run("group.edit_group", group=drawings_parent_group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"})
-    
+        ifc.run(
+            "group.edit_group", group=drawings_parent_group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"}
+        )
+
     group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=group, products=[element])
-    
+
     ifc.run("group.assign_group", group=drawings_parent_group, products=[group])
-    
+
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
     if drawing.get_unit_system() == "METRIC":
@@ -355,7 +359,7 @@ def add_drawing(
         if document.Name == "DRAWINGS" and document.Scope == "DRAWINGS":
             drawings_parent_document = document
             break
-    
+
     if not drawings_parent_document:
         drawings_parent_document = ifc.run("document.add_information")
         if ifc.get_schema() == "IFC2X3":
@@ -363,7 +367,7 @@ def add_drawing(
         else:
             attributes = {"Identification": "DRAWINGS", "Name": "DRAWINGS", "Scope": "DRAWINGS"}
         ifc.run("document.edit_information", information=drawings_parent_document, attributes=attributes)
-    
+
     information = ifc.run("document.add_information", parent=drawings_parent_document)
     uri = drawing.get_default_drawing_path(drawing_name)
     reference = ifc.run("document.add_reference", information=information)
@@ -392,17 +396,19 @@ def duplicate_drawing(
     drawing_tool.set_name(new_drawing, drawing_name)
     group = drawing_tool.get_drawing_group(new_drawing)
     ifc.run("group.unassign_group", group=group, products=[new_drawing])
-    
+
     drawings_parent_group = None
     for parent_group in ifc.get().by_type("IfcGroup"):
         if parent_group.Name == "DRAWINGS" and parent_group.ObjectType == "DRAWINGS":
             drawings_parent_group = parent_group
             break
-    
+
     if not drawings_parent_group:
         drawings_parent_group = ifc.run("group.add_group")
-        ifc.run("group.edit_group", group=drawings_parent_group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"})
-    
+        ifc.run(
+            "group.edit_group", group=drawings_parent_group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"}
+        )
+
     new_group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=new_group, products=[new_drawing])
@@ -427,7 +433,7 @@ def duplicate_drawing(
         if document.Name == "DRAWINGS" and document.Scope == "DRAWINGS":
             drawings_parent_document = document
             break
-    
+
     if not drawings_parent_document:
         drawings_parent_document = ifc.run("document.add_information")
         if ifc.get_schema() == "IFC2X3":
@@ -645,3 +651,38 @@ def activate_drawing_view(
     blender.activate_camera(camera)
     drawing_tool.isolate_camera_collection(camera)
     drawing_tool.activate_drawing(camera)
+
+
+def run_conversion_command(
+    drawing: type[tool.Drawing], command_json: str, replacements: dict[str, str], setting_name: str
+) -> None:
+    """Run a user-configured SVG conversion command, such as svg2pdf_command.
+
+    :raises ConversionCommandError: if the command is not valid JSON, the
+        configured program cannot be found, or the command exits with a
+        non-zero status.
+    """
+    try:
+        drawing.run_conversion_command(command_json, replacements)
+    except json.JSONDecodeError as e:
+        raise ConversionCommandError(
+            f'The "{setting_name}" Bonsai preference is not valid JSON ({e}). '
+            'It should look like [["inkscape", "svg", "-o", "pdf"]].'
+        )
+    except FileNotFoundError as e:
+        raise ConversionCommandError(
+            f'Could not run "{e.filename}" set in the "{setting_name}" Bonsai preference. '
+            "The program was not found. Check that it is installed and on your PATH "
+            '(on Windows you may need "inkscape.exe" instead of "inkscape"), '
+            "then update the command in the Bonsai add-on preferences."
+        )
+    except subprocess.CalledProcessError as e:
+        raise ConversionCommandError(
+            f'The command "{e.cmd[0]}" set in the "{setting_name}" Bonsai preference '
+            f"failed with exit code {e.returncode}. See the system console for details, "
+            "then check the command in the Bonsai add-on preferences."
+        )
+
+
+class ConversionCommandError(Exception):
+    pass
