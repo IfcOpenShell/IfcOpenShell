@@ -291,16 +291,6 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
             FILES "${CMAKE_CURRENT_BINARY_DIR}/ifcopenshell_wrapper.py"
             DESTINATION "${python_package_dir}/ifcopenshell"
         )
-        FOREACH(file ${sourcefiles})
-            FILE(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
-            GET_FILENAME_COMPONENT(dir "${relative}" DIRECTORY)
-            if(NOT IS_DIRECTORY "${file}")
-			    INSTALL(FILES "${file}"
-                        DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
-            endif()
-        ENDFOREACH()
-        INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
-                DESTINATION "${python_package_dir}/ifcopenshell")
         INSTALL(TARGETS ifcopenshell_wrapper
                 DESTINATION "${python_package_dir}/ifcopenshell")
 
