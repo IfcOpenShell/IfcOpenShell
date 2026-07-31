@@ -357,6 +357,17 @@ PLUGIN_API std::filesystem::path ifcopenshell::plugin::add_search_paths_or_defau
 			manager.add_search_path(lib);
 		}
 	}
+
+	// A static IfcParse/IfcGeom embedded in a Python extension resolves to the
+	// extension's site-packages directory, while plug-ins retain CMake's normal
+	// install location. This also covers Python installations outside the CMake
+	// prefix, such as GitHub Actions' hosted Python.
+#ifdef IFCOPENSHELL_INSTALL_PLUGIN_DIRECTORY
+	const auto install_plugin_directory = std::filesystem::path(IFCOPENSHELL_INSTALL_PLUGIN_DIRECTORY);
+	if (install_plugin_directory != path && std::filesystem::exists(install_plugin_directory)) {
+		manager.add_search_path(install_plugin_directory);
+	}
+#endif
 #endif
 
 	// Bundle-aware fallback search paths. The primary search path is

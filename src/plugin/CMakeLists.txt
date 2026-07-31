@@ -20,6 +20,7 @@ endif()
 target_compile_definitions(plugin PRIVATE
     BOOST_DLL_USE_STD_FS
     PLUGIN_IFCOPENSHELL_VERSION="${PROJECT_VERSION}"
+    IFCOPENSHELL_INSTALL_PLUGIN_DIRECTORY="${CMAKE_INSTALL_FULL_LIBDIR}"
 )
 
 target_link_libraries(plugin PRIVATE ${Boost_LIBRARIES})
