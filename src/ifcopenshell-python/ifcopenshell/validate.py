@@ -429,19 +429,19 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
         pprint(logger.statements)
     """
 
-    # Originally there was no way in Python to distinguish on an entity instance attribute value whether the
-    # value supplied in the model was NIL ($) or 'missing because derived in subtype' (*). For validation this
-    # however this may be important, and hence a feature switch has been implemented to return *-values as
-    # instances of a dedicated type `ifcopenshell.ifcopenshell_wrapper.attribute_value_derived`.
-    attribute_value_derived_org = ifcopenshell.ifcopenshell_wrapper.get_feature("use_attribute_value_derived")
-    ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", True)
-
     if isinstance(f, ifcopenshell.sqlite):
         raise NotImplementedError(
             "ifcopenshell.validate.validate() does not support ifcopenshell.sqlite files: "
             "the sqlite backend does not retain the full IFC header or entity attribute data "
             "needed for validation."
         )
+
+    # Originally there was no way in Python to distinguish on an entity instance attribute value whether the
+    # value supplied in the model was NIL ($) or 'missing because derived in subtype' (*). For validation this
+    # however this may be important, and hence a feature switch has been implemented to return *-values as
+    # instances of a dedicated type `ifcopenshell.ifcopenshell_wrapper.attribute_value_derived`.
+    attribute_value_derived_org = ifcopenshell.ifcopenshell_wrapper.get_feature("use_attribute_value_derived")
+    ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", True)
 
     filename = None
 
