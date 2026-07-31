@@ -216,11 +216,21 @@ if(WASM_BUILD)
         PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2" -O1
     )
 endif()
-target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom IfcParse ${Boost_LIBRARIES})
+target_link_libraries(ifcopenshell_wrapper PRIVATE
+    ${_ifcwrap_geometry_libraries}
+    ${_ifcwrap_ifcopenshell_libraries}
+    ${Boost_LIBRARIES}
+)
 if(schema_libraries OR kernel_libraries OR tree_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries OR linework_processing_libraries)
     add_dependencies(ifcopenshell_wrapper ${schema_libraries} ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries} ${linework_processing_libraries})
 endif()
-if((NOT WIN32) AND BUILD_SHARED_LIBS AND COMMAND SET_INSTALL_RPATHS)
+if((NOT WIN32) AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_RPATHS)
+    # The wrapper exposes RocksDbSerializer, so it has a DT_NEEDED entry for
+    # the document RDB plug-in.  The Python package and CMake library
+    # directories are normally different, including in CI where the package
+    # is installed into Python_SITEARCH and plug-ins go to /usr/local/lib.
+    SET_INSTALL_RPATHS(ifcopenshell_wrapper "${CMAKE_INSTALL_FULL_LIBDIR};${IFCDIRS};${OCC_LIBRARY_DIR}")
+elseif((NOT WIN32) AND BUILD_SHARED_LIBS AND COMMAND SET_INSTALL_RPATHS)
     SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
 endif()
 
