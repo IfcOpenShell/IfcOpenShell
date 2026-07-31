@@ -356,6 +356,8 @@ class Attribute(Facet):
             else:
                 is_pass = False
                 reason = {"type": "FALSEY", "actual": values if len(values) > 1 else values[0]}
+                if self.cardinality == "optional":
+                    return AttributeResult(True)
 
         if is_pass and self.value:
             for value in values:
