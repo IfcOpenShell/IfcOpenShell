@@ -54,6 +54,20 @@ def assign_type(
         relating_type=type,
         should_map_representations=should_map,
     )
+    if not should_map:
+        # should_map_representations=False also suppresses api type.assign_type's
+        # map_material_usages, which is what re-points an occurrence's usage at the new type's
+        # material set. Skipping it leaves the occurrence's IfcMaterialProfileSetUsage pointing
+        # at the OLD type's set, so the material panel then edits the old type's profile and
+        # every other occurrence of that type moves with it. Re-point it here instead: this
+        # rewrites SweptArea to the new type's profile but leaves the extrusion depth alone,
+        # so the per-instance length this branch exists to protect still survives.
+        type_material = ifcopenshell.util.element.get_material(type)
+        if type_material and (material_class := type_material.is_a()) in (
+            "IfcMaterialLayerSet",
+            "IfcMaterialProfileSet",
+        ):
+            ifc.run("material.assign_material", products=[element], type=f"{material_class}Usage")
     obj = ifc.get_object(element)
     if (usage := model.get_usage_type(type)) and usage_attributes:
         type_tool.restore_material_usage_attributes(element, usage_attributes)
