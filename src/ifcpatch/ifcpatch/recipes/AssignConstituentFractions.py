@@ -80,8 +80,6 @@ class Patcher:
                 if quantities:
                     element_quantities = quantities
                     break
-            assert element_quantities is not None
-
             if not element_quantities:
                 continue
 

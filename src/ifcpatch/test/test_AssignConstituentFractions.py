@@ -81,6 +81,32 @@ class TestAssignConstituentFractions(test.bootstrap.IFC4):
         assert constituent_a.Fraction == pytest.approx(1 / 3, rel=1e-6)
         assert constituent_b.Fraction == pytest.approx(2 / 3, rel=1e-6)
 
+    def test_run_skips_constituent_set_when_no_element_has_matching_quantities(self):
+        # None of the associated elements carry a Qto_*BaseQuantities with a
+        # "layer" discrimination, so get_element_quantities() returns {} for
+        # every element and element_quantities is never assigned. This must
+        # be skipped quietly instead of raising, per the very next
+        # "if not element_quantities: continue" line.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+
+        constituent_set = ifcopenshell.api.material.add_material_set(
+            self.file, name="Wall Materials", set_type="IfcMaterialConstituentSet"
+        )
+        material_a = ifcopenshell.api.material.add_material(self.file, name="Brick")
+        constituent_a = ifcopenshell.api.material.add_constituent(self.file, constituent_set, material_a, name="Layer1")
+        ifcopenshell.api.material.assign_material(
+            self.file, products=[element], type="IfcMaterialConstituentSet", material=constituent_set
+        )
+
+        ifcpatch.execute(
+            {"input": "input.ifc", "file": self.file, "recipe": "AssignConstituentFractions", "arguments": []}
+        )
+
+        assert constituent_a.Fraction is None
+
 
 class TestAssignConstituentFractionsIFC2X3(test.bootstrap.IFC2X3):
     def test_run_is_a_no_op_since_constituent_sets_do_not_exist_in_ifc2x3(self):
