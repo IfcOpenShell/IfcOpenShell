@@ -77,6 +77,12 @@ class TestUnassignRepresentation(test.bootstrap.IFC4):
         assert not wall.Representation
         assert len(self.file.by_type("IfcProductDefinitionShape")) == 0
 
+    def test_unassigning_a_representation_from_a_product_without_any_representation(self):
+        wall = self.file.createIfcWall()
+        representation = self.file.createIfcShapeRepresentation()
+        ifcopenshell.api.geometry.unassign_representation(self.file, product=wall, representation=representation)
+        assert not wall.Representation
+
 
 class TestUnassignRepresentationIFC2X3(test.bootstrap.IFC2X3, TestUnassignRepresentation):
     pass
