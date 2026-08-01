@@ -719,11 +719,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Ifc.is_moved(space_obj):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=space_obj)
 
-        # Don't generate boundaries for elements that already have boundaries
-        for boundary in space.BoundedBy:
-            if boundary.RelatedBuildingElement in building_elements:
-                building_elements.remove(boundary.RelatedBuildingElement)
-
         # Build shapes dict with iterator (parallel, includes space + building elements)
         include = building_elements + [space]
         tree = ifcopenshell.geom.tree()
@@ -745,13 +740,9 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 if not iterator.next():
                     break
 
-        # Spatially query all potential boundary elements via a 100mm extension of the space
-        building_elements = [e for e in tree.select(space, extend=0.1) if e != space]
-
-        if not building_elements:
-            return "No building elements found to create boundaries."
-
-        # Filter shapes to only include selected building elements + space
+        # Pass all building element shapes to the auto-generation function.
+        # The function performs its own spatial filtering (coplanarity + overlap),
+        # so tree-adjacency filtering is not needed here.
         filtered_shapes = {space.id(): shapes[space.id()]}
         for element in building_elements:
             if element.id() in shapes:

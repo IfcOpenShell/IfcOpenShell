@@ -991,7 +991,7 @@ def _merge_coplanar_ngons(
         edge2 = v2 - v0
         normal = np.cross(edge1, edge2)
         norm = np.linalg.norm(normal)
-        if norm > 0:
+        if norm > 1e-8:
             normal = normal / norm
         ngon_normals[root] = normal
 
