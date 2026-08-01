@@ -302,23 +302,25 @@ def add_drawing(
         context=drawing.get_body_context(),
         ifc_representation_class=None,
     )
-    
+
     drawings_parent_group = None
     for group in ifc.get().by_type("IfcGroup"):
         if group.Name == "DRAWINGS" and group.ObjectType == "DRAWINGS":
             drawings_parent_group = group
             break
-    
+
     if not drawings_parent_group:
         drawings_parent_group = ifc.run("group.add_group")
-        ifc.run("group.edit_group", group=drawings_parent_group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"})
-    
+        ifc.run(
+            "group.edit_group", group=drawings_parent_group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"}
+        )
+
     group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=group, products=[element])
-    
+
     ifc.run("group.assign_group", group=drawings_parent_group, products=[group])
-    
+
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
     if drawing.get_unit_system() == "METRIC":
@@ -355,7 +357,7 @@ def add_drawing(
         if document.Name == "DRAWINGS" and document.Scope == "DRAWINGS":
             drawings_parent_document = document
             break
-    
+
     if not drawings_parent_document:
         drawings_parent_document = ifc.run("document.add_information")
         if ifc.get_schema() == "IFC2X3":
@@ -363,7 +365,7 @@ def add_drawing(
         else:
             attributes = {"Identification": "DRAWINGS", "Name": "DRAWINGS", "Scope": "DRAWINGS"}
         ifc.run("document.edit_information", information=drawings_parent_document, attributes=attributes)
-    
+
     information = ifc.run("document.add_information", parent=drawings_parent_document)
     uri = drawing.get_default_drawing_path(drawing_name)
     reference = ifc.run("document.add_reference", information=information)
@@ -392,17 +394,19 @@ def duplicate_drawing(
     drawing_tool.set_name(new_drawing, drawing_name)
     group = drawing_tool.get_drawing_group(new_drawing)
     ifc.run("group.unassign_group", group=group, products=[new_drawing])
-    
+
     drawings_parent_group = None
     for parent_group in ifc.get().by_type("IfcGroup"):
         if parent_group.Name == "DRAWINGS" and parent_group.ObjectType == "DRAWINGS":
             drawings_parent_group = parent_group
             break
-    
+
     if not drawings_parent_group:
         drawings_parent_group = ifc.run("group.add_group")
-        ifc.run("group.edit_group", group=drawings_parent_group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"})
-    
+        ifc.run(
+            "group.edit_group", group=drawings_parent_group, attributes={"Name": "DRAWINGS", "ObjectType": "DRAWINGS"}
+        )
+
     new_group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=new_group, products=[new_drawing])
@@ -427,7 +431,7 @@ def duplicate_drawing(
         if document.Name == "DRAWINGS" and document.Scope == "DRAWINGS":
             drawings_parent_document = document
             break
-    
+
     if not drawings_parent_document:
         drawings_parent_document = ifc.run("document.add_information")
         if ifc.get_schema() == "IFC2X3":
@@ -594,6 +598,11 @@ def sync_references(
         if not drawing_tool.is_auto_annotation(element):
             continue
 
+        # Only elements we generated ourselves are eligible for the auto
+        # sync/cleanup below (see is_generated_reference_annotation).
+        if not drawing_tool.is_generated_reference_annotation(element):
+            continue
+
         # Skip spatial elements - should never sync their placement
         if element.is_a("IfcSpatialElement"):
             continue
@@ -625,6 +634,7 @@ def sync_references(
             if annotation := drawing_tool.generate_reference_annotation(drawing, reference_element, context):
                 ifc.run("drawing.assign_product", relating_product=reference_element, related_object=annotation)
                 ifc.run("group.assign_group", group=group, products=[annotation])
+                drawing_tool.mark_as_generated_reference_annotation(annotation)
                 collector.assign(ifc.get_object(annotation))
 
 
