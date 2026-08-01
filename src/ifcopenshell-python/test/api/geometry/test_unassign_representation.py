@@ -42,6 +42,48 @@ class TestUnassignRepresentation(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcProductDefinitionShape")) == 0
         assert len(self.file.by_type("IfcShapeAspect")) == 0
 
+    def test_unassigning_the_last_representation_of_a_shape_shared_by_another_product(self):
+        # some authoring tools (eg. Revit) reuse the very same occurrence-level
+        # IfcProductDefinitionShape across multiple products (#9207)
+        representation = self.file.createIfcShapeRepresentation()
+        shape = self.file.createIfcProductDefinitionShape(Representations=[representation])
+        wall = self.file.createIfcWall(Representation=shape)
+        sibling = self.file.createIfcWall(Representation=shape)
+
+        ifcopenshell.api.geometry.unassign_representation(self.file, product=wall, representation=representation)
+
+        assert wall.Representation is None
+        # the sibling keeps the shared definition and its representation untouched
+        assert sibling.Representation == shape
+        assert representation in sibling.Representation.Representations
+        assert len(self.file.by_type("IfcProductDefinitionShape")) == 1
+        assert len(self.file.by_type("IfcShapeRepresentation")) == 1
+
+        # once the sibling is the sole owner, unassigning still cleans up the
+        # definition (unassign_representation never deletes the bare
+        # representation entity itself, matching the non-shared behaviour
+        # exercised by test_unassigning_a_product_representation above)
+        ifcopenshell.api.geometry.unassign_representation(self.file, product=sibling, representation=representation)
+        assert sibling.Representation is None
+        assert len(self.file.by_type("IfcProductDefinitionShape")) == 0
+        assert len(self.file.by_type("IfcShapeRepresentation")) == 1
+
+    def test_unassigning_one_of_several_representations_shared_by_another_product(self):
+        body = self.file.createIfcShapeRepresentation(RepresentationIdentifier="Body")
+        axis = self.file.createIfcShapeRepresentation(RepresentationIdentifier="Axis")
+        shape = self.file.createIfcProductDefinitionShape(Representations=[body, axis])
+        wall = self.file.createIfcWall(Representation=shape)
+        sibling = self.file.createIfcWall(Representation=shape)
+
+        ifcopenshell.api.geometry.unassign_representation(self.file, product=wall, representation=body)
+
+        assert list(wall.Representation.Representations) == [axis]
+        # the sibling still has both representations, unaffected by wall's detach
+        assert list(sibling.Representation.Representations) == [body, axis]
+        assert wall.Representation != sibling.Representation
+        assert len(self.file.by_type("IfcProductDefinitionShape")) == 2
+        assert len(self.file.by_type("IfcShapeRepresentation")) == 2
+
     def test_unassigning_a_type_product_representation(self):
         item = self.file.create_entity("IfcExtrudedAreaSolid")
         representation = self.file.createIfcShapeRepresentation(Items=(item,))
