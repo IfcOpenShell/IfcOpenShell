@@ -18,9 +18,10 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
+import pytest
+
 import bonsai
 import bonsai.core.covering as subject
-import pytest
 from test.core.bootstrap import Prophecy, ifc, root, spatial
 
 # NOTE: The Prophecy mocking framework serialises call arguments as JSON,
