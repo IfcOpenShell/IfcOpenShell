@@ -22,6 +22,7 @@ import pytest
 
 import bonsai
 import bonsai.core.covering as subject
+import bonsai.core.tool
 from test.core.bootstrap import Prophecy, ifc, root, spatial
 
 # NOTE: The Prophecy mocking framework serialises call arguments as JSON,
