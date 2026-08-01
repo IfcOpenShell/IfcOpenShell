@@ -91,6 +91,7 @@ from .layout_vertical_alignment_by_pi_method import (
 from .name_segments import name_segments
 from .update_end_point import update_end_point
 from .update_fallback_position import update_fallback_position
+from .update_key_point_referents import update_key_point_referents
 from .util import *
 
 __all__ = [
@@ -133,5 +134,6 @@ __all__ = [
     "register_referent_name_callback",
     "update_end_point",
     "update_fallback_position",
+    "update_key_point_referents",
     "get_mapped_segments",
 ]
