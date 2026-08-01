@@ -198,6 +198,16 @@ def _external_earth_ifczip():
     )
 
 
+def _over_splitted_ifc():
+    return os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "IfcRelSpaceBoundary_TestFiles",
+        "IfcRelSpaceBoundary2ndLevel",
+        "OverSplitted_R20_IFC2X3.ifc",
+    )
+
+
 def _boundary_element_counts(ifc_file, space_id):
     space = ifc_file.by_id(space_id)
     counts = Counter()
@@ -320,3 +330,25 @@ class TestAutoGenerateBoundaries(test.bootstrap.IFC4):
                 skylight = [b for b in result if b.RelatedBuildingElement.id() in (3435, 3640)]
                 assert len(skylight) == 1
                 assert skylight[0].ParentBoundary == roof_boundaries[0]
+
+    def test_over_splitted_roof_keeps_shaft_opening(self):
+        ifc_path = _over_splitted_ifc()
+        if not os.path.exists(ifc_path):
+            pytest.skip("IfcRelSpaceBoundary_TestFiles submodule is not checked out")
+        ifc_file = ifcopenshell.open(ifc_path)
+        shapes = _build_shapes_dict_from_iterator(ifc_file)
+        copy = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+        result = subject.auto_generate_boundaries(
+            copy, copy.by_id(251), shapes=shapes, boundary_class="IfcRelSpaceBoundary"
+        )
+        assert isinstance(result, list)
+        assert len(result) == 17
+        roof_boundaries = _boundaries_for(result, copy.by_id(5248))
+        assert len(roof_boundaries) == 1
+        assert _boundary_inner_count(roof_boundaries[0]) == 1
+        surface = roof_boundaries[0].ConnectionGeometry.SurfaceOnRelatingElement
+        outer = [(p.Coordinates[0], p.Coordinates[1]) for p in surface.OuterBoundary.Points]
+        inner = [[(p.Coordinates[0], p.Coordinates[1]) for p in ib.Points] for ib in surface.InnerBoundaries]
+        assert shapely.Polygon(outer, inner).area == pytest.approx(9.962, abs=1e-3)
+        for wall_id in (5832, 5877, 5922, 5967):
+            assert len(_boundaries_for(result, copy.by_id(wall_id))) == 1
