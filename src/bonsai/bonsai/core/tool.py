@@ -445,6 +445,8 @@ class Geometry:
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
     def copy_data_links(cls, data, copied_entities) -> None: pass
+    def copy_representation_deep(cls, representation): pass
+    def add_type_representation_map(cls, element_type, representation): pass
     def delete_data(cls, data): pass
     def delete_ifc_object(cls, obj): pass
     def delete_opening_object_placement(cls, opening): pass

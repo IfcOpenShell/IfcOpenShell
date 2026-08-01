@@ -159,7 +159,7 @@ class BIM_PT_representations(Panel):
         header.label(text="", icon="BLANK1")
         header.label(text="", icon="BLANK1")
 
-        for representation in RepresentationsData.data["representations"]:
+        def draw_representation_row(representation, allow_promote=False):
             row = self.layout.row(align=True)
             row.label(text=representation["ContextType"])
             row.label(text=representation["ContextIdentifier"])
@@ -171,6 +171,10 @@ class BIM_PT_representations(Panel):
                 emboss=False,
             )
             op.representation_type = representation["RepresentationType"]
+            if allow_promote:
+                row.operator(
+                    "bim.promote_representation_to_type", icon="EXPORT", text=""
+                ).representation_id = representation["id"]
             op = row.operator(
                 "bim.switch_representation",
                 icon="FILE_REFRESH" if representation["is_active"] else "OUTLINER_DATA_MESH",
@@ -179,6 +183,28 @@ class BIM_PT_representations(Panel):
             op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
             row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
+
+        representations = RepresentationsData.data["representations"]
+        # For a type element every representation is its own; for an occurrence
+        # split them into those inherited from the type (mapped) vs those local
+        # to the occurrence, so it's clear which are driven by the type.
+        if RepresentationsData.data["element_is_type"]:
+            for representation in representations:
+                draw_representation_row(representation)
+        else:
+            type_representations = [r for r in representations if r["is_mapped"]]
+            occurrence_representations = [r for r in representations if not r["is_mapped"]]
+            # A local representation can be promoted onto the type only when the
+            # occurrence actually has a type to promote it onto.
+            allow_promote = RepresentationsData.data["element_has_type"]
+            if type_representations:
+                self.layout.label(text="Type", icon="LINKED")
+                for representation in type_representations:
+                    draw_representation_row(representation)
+            if occurrence_representations:
+                self.layout.label(text="Occurrence", icon="OBJECT_DATA")
+                for representation in occurrence_representations:
+                    draw_representation_row(representation, allow_promote=allow_promote)
 
         # Presentation layers.
         self.layout.separator()
