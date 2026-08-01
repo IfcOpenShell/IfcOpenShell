@@ -62,7 +62,7 @@ import tempfile
 import zipfile
 from collections.abc import Generator, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Optional, Union, overload
+from typing import TYPE_CHECKING, Literal, Optional, Union, Any, overload
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
