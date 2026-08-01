@@ -17,7 +17,7 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 from logging import Logger
-from typing import Any, Union
+from typing import Any
 
 import ifcopenshell
 import ifcopenshell.util.element
@@ -82,30 +82,16 @@ class Patcher:
                         # and replace_element -> get_inverse also raises; either way
                         # there is nothing valid to collapse, so skip it.
                         duplicate = self.file.by_id(duplicate.id())
+                        # replace_element repoints every reference onto the survivor,
+                        # including SET-typed attributes (e.g.
+                        # IfcProject.RepresentationContexts), which it deduplicates so
+                        # the survivor is never listed twice.
                         ifcopenshell.util.element.replace_element(duplicate, survivor)
                         self.file.remove(duplicate)
                     except RuntimeError:
                         self.logger.warning(
                             "MergeDuplicateContexts: skipping context the file cannot resolve (%s)", key
                         )
-                # Repointing may leave the survivor listed twice in a SET-typed
-                # attribute (e.g. IfcProject.RepresentationContexts), which is
-                # non-conformant. Dedupe those aggregates.
-                self.dedupe_references(survivor)
-
-    def dedupe_references(self, element: ifcopenshell.entity_instance) -> None:
-        for inverse in self.file.get_inverse(element):
-            for i, value in enumerate(inverse):
-                if not isinstance(value, tuple) or value.count(element) < 2:
-                    continue
-                # Keep the first occurrence of the survivor, drop the rest;
-                # leave every other member untouched and in order.
-                deduped = []
-                for v in value:
-                    if v == element and element in deduped:
-                        continue
-                    deduped.append(v)
-                inverse[i] = deduped
 
     def get_key(self, context: ifcopenshell.entity_instance) -> tuple[Any, ...]:
         # ContextIdentifier / TargetView are None on plain contexts; that is a
