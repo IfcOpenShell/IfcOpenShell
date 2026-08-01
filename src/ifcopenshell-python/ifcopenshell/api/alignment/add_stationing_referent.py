@@ -114,7 +114,7 @@ def add_stationing_referent(
     pset_stationing = ifcopenshell.api.pset.add_pset(file, product=referent, name="Pset_Stationing")
     ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties=properties)
 
-    nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
+    nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
     if nest is None:
         nest = file.createIfcRelNests(
             GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=(referent,)
