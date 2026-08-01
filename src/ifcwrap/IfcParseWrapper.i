@@ -580,8 +580,9 @@ private:
 			if (const IfcParse::entity* value_entity = decl->as_entity()) {
 				pt = value_entity->attribute_by_index(i)->type_of_attribute();
 			} else if (i == 0) {
-				// e.g. IfcFacilityPart.PredefinedType: IfcFacilityPartTypeSelect (IFC4X3 RC1-4)
-				// is a select of enums, so resolve through the declared type as well.
+				// A defined type can wrap an enumeration, so resolve through its
+				// declared type as well. No such case is reachable in any schema
+				// currently built; this guard is defensive.
 				if (const IfcParse::type_declaration* td = decl->as_type_declaration()) {
 					pt = td->declared_type();
 				}
