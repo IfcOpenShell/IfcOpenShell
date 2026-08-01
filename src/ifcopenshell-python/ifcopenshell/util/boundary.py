@@ -64,6 +64,7 @@ FULL_FACE_OFFSET_TOL = 0.25
 def _union_coplanar_face_polygon(
     space_verts_local,
     space_triangles,
+    space_triangle_normals,
     face_origin,
     face_normal,
     face_matrix_inv,
@@ -76,14 +77,15 @@ def _union_coplanar_face_polygon(
     or an opening. Unioning the raw triangles coplanar with the face restores
     those holes.
     """
+    # Vectorized coplanarity prefilter: keep only triangles whose vertices all
+    # lie within 1e-4 m (0.1 mm) of the face plane.
+    triangle_points = space_verts_local[space_triangles]
+    plane_offsets = np.abs(np.tensordot(triangle_points - face_origin, face_normal, axes=(2, 0))).max(axis=1)
     polygons = []
-    for triangle in space_triangles:
-        points = space_verts_local[triangle]
-        if _face_normal(points) is None:
+    for triangle in np.flatnonzero(plane_offsets <= 1e-4):
+        if space_triangle_normals[triangle] is None:
             continue
-        if np.abs(np.dot(points - face_origin, face_normal)).max() > 1e-4:
-            continue
-        polygon = _verts_to_polygon(points, face_matrix_inv, snap=1e-6)
+        polygon = _verts_to_polygon(space_verts_local[space_triangles[triangle]], face_matrix_inv, snap=1e-6)
         if not polygon.is_valid:
             polygon = polygon.buffer(0)
         if polygon.is_empty:
@@ -158,6 +160,11 @@ def auto_generate_boundaries(
     space_ngons = ifcopenshell.util.shape.dissolve_faces(
         space_verts_local, space_shape["faces"], space_shape["edges"], merge_coplanar=True
     )
+
+    # Per-triangle normals used to reconstruct space faces from their raw
+    # triangles (see _union_coplanar_face_polygon). Computed once instead of
+    # once per space face.
+    space_triangle_normals = [_face_normal(space_verts_local[tri]) for tri in space_shape["faces"]]
 
     # Dissolve building element meshes — verts are in element-local coords
     element_ngons = {}
@@ -262,6 +269,7 @@ def auto_generate_boundaries(
         space_face_polygon = _union_coplanar_face_polygon(
             space_verts_local,
             space_shape["faces"],
+            space_triangle_normals,
             space_verts_l[0],
             space_face_normal_local,
             face_matrix_inv,
@@ -317,7 +325,9 @@ def auto_generate_boundaries(
         # candidates are kept in order of increasing plane offset (ties broken
         # by polygon area). A candidate whose polygon is entirely covered by
         # the candidates already kept is redundant and is absorbed into the
-        # larger boundary.
+        # larger boundary. This includes coplanar candidates: e.g. wall end
+        # caps that are coplanar with the ceiling and fully covered by the
+        # slab above do not get their own boundary in the reference output.
         surviving_candidates = []
         kept_union = None
         for element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal in sorted(

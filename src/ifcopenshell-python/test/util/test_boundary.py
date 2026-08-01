@@ -208,6 +208,26 @@ def _over_splitted_ifc():
     )
 
 
+def _small_house_ifczip():
+    return os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "IfcRelSpaceBoundary_TestFiles",
+        "IfcRelSpaceBoundary2ndLevel",
+        "SmallHouse_BB_IFC4.ifczip",
+    )
+
+
+def _triangle_ifczip():
+    return os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "IfcRelSpaceBoundary_TestFiles",
+        "IfcRelSpaceBoundary2ndLevel",
+        "Triangle_BB_IFC4.ifczip",
+    )
+
+
 def _boundary_element_counts(ifc_file, space_id):
     space = ifc_file.by_id(space_id)
     counts = Counter()
@@ -332,6 +352,10 @@ class TestAutoGenerateBoundaries(test.bootstrap.IFC4):
                 assert skylight[0].ParentBoundary == roof_boundaries[0]
 
     def test_over_splitted_roof_keeps_shaft_opening(self):
+        # Space 251 of OverSplitted_R20_IFC2X3.ifc has an L-shaped ceiling
+        # pierced by a shaft opening. The ceiling boundary must keep the
+        # opening as an inner boundary, and each shaft wall must get exactly
+        # one boundary instead of fragmented partial + gap boundaries.
         ifc_path = _over_splitted_ifc()
         if not os.path.exists(ifc_path):
             pytest.skip("IfcRelSpaceBoundary_TestFiles submodule is not checked out")
@@ -352,3 +376,28 @@ class TestAutoGenerateBoundaries(test.bootstrap.IFC4):
         assert shapely.Polygon(outer, inner).area == pytest.approx(9.962, abs=1e-3)
         for wall_id in (5832, 5877, 5922, 5967):
             assert len(_boundaries_for(result, copy.by_id(wall_id))) == 1
+
+    def test_small_house_boundaries(self):
+        ifc_path = _small_house_ifczip()
+        if not os.path.exists(ifc_path):
+            pytest.skip("IfcRelSpaceBoundary_TestFiles submodule is not checked out")
+        ifc_file = ifcopenshell.open(ifc_path)
+        shapes = _build_shapes_dict_from_iterator(ifc_file)
+        for space_id, expected_total in [(1692, 8), (4356, 8), (4380, 13), (6185, 1)]:
+            copy = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+            result = subject.auto_generate_boundaries(
+                copy, copy.by_id(space_id), shapes=shapes, boundary_class="IfcRelSpaceBoundary2ndLevel"
+            )
+            assert len(result) == expected_total
+
+    def test_triangle_boundaries(self):
+        ifc_path = _triangle_ifczip()
+        if not os.path.exists(ifc_path):
+            pytest.skip("IfcRelSpaceBoundary_TestFiles submodule is not checked out")
+        ifc_file = ifcopenshell.open(ifc_path)
+        shapes = _build_shapes_dict_from_iterator(ifc_file)
+        copy = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+        result = subject.auto_generate_boundaries(
+            copy, copy.by_id(1573), shapes=shapes, boundary_class="IfcRelSpaceBoundary2ndLevel"
+        )
+        assert len(result) == 6
