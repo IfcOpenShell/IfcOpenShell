@@ -176,6 +176,96 @@ def remove_representation(
         geometry.delete_data(data)
 
 
+def promote_representation_to_type(
+    ifc: type[tool.Ifc],
+    geometry: type[tool.Geometry],
+    obj: bpy.types.Object,
+    representation: ifcopenshell.entity_instance,
+) -> dict[str, int]:
+    """Move an occurrence-local representation onto its type (slot-based, type wins).
+
+    The representation is copied onto the type as a mapped representation. Then,
+    for every occurrence of the type, **any** existing representation in the same
+    *slot* — same context (context/subcontext/target view), same
+    ``RepresentationIdentifier`` and same ``RepresentationType`` — is removed and
+    replaced by the type's mapped representation. This covers both a local
+    (non-mapped) rep and an already-mapped rep the occurrence inherited from
+    another map (e.g. a floating ``IfcRepresentationMap`` not anchored to the
+    type, as Revit exports), so no duplicate is left. If the type already holds a
+    rep in the slot it is removed too, so promoting is idempotent / replaces
+    rather than accumulating maps.
+
+    Geometry is NOT compared: the type's representation replaces the
+    occurrence's for that slot, even when the occurrence's geometry differs
+    (e.g. an independently meshed / mirrored / rotated instance) — such
+    occurrences visibly adopt the type's geometry.
+
+    :return: counts dict with ``replaced`` (occurrence reps removed) and
+        ``occurrences`` (occurrences that now reference the type's mapped rep).
+    """
+    element = ifc.get_entity(obj)
+    assert element
+    element_type = geometry.get_element_type(element)
+    assert element_type, "Cannot promote a representation without a type."
+    context = representation.ContextOfItems
+    identifier = representation.RepresentationIdentifier
+    # Compare the *resolved* type: an inherited rep is a "MappedRepresentation"
+    # whose real type lives on the map's target, so matching the raw
+    # RepresentationType would miss it and leave a duplicate.
+    rep_type = geometry.resolve_mapped_representation(representation).RepresentationType
+
+    def _in_slot(r: ifcopenshell.entity_instance) -> bool:
+        return (
+            r.ContextOfItems == context
+            and r.RepresentationIdentifier == identifier
+            and geometry.resolve_mapped_representation(r).RepresentationType == rep_type
+        )
+
+    # Copy the promoted geometry for the type up front, before any removal below
+    # can touch the source occurrence's representation.
+    type_representation = geometry.copy_representation_deep(representation)
+
+    # Snapshot every occurrence's reps in the slot (local AND mapped) so we can
+    # replace them -- an occurrence may already inherit a mapped rep in the slot,
+    # which would otherwise be left behind as a duplicate.
+    occurrence_reps: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = {}
+    for occurrence in geometry.get_elements_of_type(element_type):
+        occurrence_reps[occurrence] = [r for r in geometry.get_representations_iter(occurrence) if _in_slot(r)]
+
+    counts = {"replaced": 0, "occurrences": 0}
+    # 1. Drop every existing rep in the slot from each occurrence.
+    for occurrence, reps_in_slot in occurrence_reps.items():
+        occurrence_obj = ifc.get_object(occurrence)
+        for rep in reps_in_slot:
+            if occurrence_obj is not None and not geometry.is_mapped_representation(rep):
+                # Blender-aware removal for a local mesh the object may display.
+                remove_representation(ifc, geometry, obj=occurrence_obj, representation=rep)
+            else:
+                # Mapped wrapper (or object not loaded): remove from this
+                # occurrence only. remove_representation's remove_deep2 keeps a
+                # shared map alive until its last user is gone.
+                ifc.run("geometry.unassign_representation", product=occurrence, representation=rep)
+                ifc.run("geometry.remove_representation", representation=rep)
+            counts["replaced"] += 1
+
+    # 2. Drop any rep the type already holds in this slot, so we replace rather
+    #    than accumulate maps. (Must run before adding the new map below.)
+    for rm in list(element_type.RepresentationMaps or []):
+        mapped = rm.MappedRepresentation
+        if mapped and _in_slot(mapped):
+            ifc.run("geometry.unassign_representation", product=element_type, representation=mapped)
+            ifc.run("geometry.remove_representation", representation=mapped)
+
+    # 3. Add the promoted geometry to the type and map it onto every occurrence.
+    geometry.add_type_representation_map(element_type, type_representation)
+    for occurrence in occurrence_reps:
+        mapped_representation = ifc.run("geometry.map_representation", representation=type_representation)
+        ifc.run("geometry.assign_representation", product=occurrence, representation=mapped_representation)
+        counts["occurrences"] += 1
+
+    return counts
+
+
 def purge_unused_representations(ifc: type[tool.Ifc], geometry: type[tool.Geometry]) -> int:
     """Purge representations without inverses.
 

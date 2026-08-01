@@ -63,6 +63,7 @@ classes = (
     operator.OverrideOriginSet,
     operator.OverrideOutlinerDelete,
     operator.OverridePasteBuffer,
+    operator.PromoteRepresentationToType,
     operator.PurgeUnusedRepresentations,
     operator.RefreshLinkedAggregate,
     operator.RemoveConnection,

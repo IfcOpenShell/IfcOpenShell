@@ -545,6 +545,36 @@ class RemoveRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"INFO"}, f"{self.bl_label} was finished in {operator_time:.2f} seconds.")
 
 
+class PromoteRepresentationToType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.promote_representation_to_type"
+    bl_label = "Promote Representation to Type"
+    bl_description = (
+        "Move this occurrence-local representation onto its type so occurrences can inherit it.\n"
+        "Occurrences with an identical local representation inherit from the type;\n"
+        "occurrences with a divergent local representation keep their own override"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    representation_id: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        representation_id: int
+
+    def _execute(self, context):
+        assert context.active_object
+        counts = core.promote_representation_to_type(
+            tool.Ifc,
+            tool.Geometry,
+            obj=context.active_object,
+            representation=tool.Ifc.get().by_id(self.representation_id),
+        )
+        self.report(
+            {"INFO"},
+            "Representation promoted to type. "
+            f"{counts['occurrences']} occurrence(s) now inherit it "
+            f"({counts['replaced']} local representation(s) replaced).",
+        )
+
+
 class PurgeUnusedRepresentations(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.purge_unused_representations"
     bl_label = "Purge Unused Representations"

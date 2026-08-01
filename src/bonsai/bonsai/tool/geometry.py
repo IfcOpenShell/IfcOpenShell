@@ -889,6 +889,38 @@ class Geometry(bonsai.core.tool.Geometry):
         return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
+    def copy_representation_deep(cls, representation: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """Deep copy a representation, sharing geometric contexts and preserving
+        named profiles (mirrors ``tool.Root.copy_representation``'s exclusions)."""
+
+        def exclude_callback(attribute: ifcopenshell.entity_instance) -> bool:
+            return attribute.is_a("IfcProfileDef") and attribute.ProfileName
+
+        return ifcopenshell.util.element.copy_deep(
+            tool.Ifc.get(),
+            representation,
+            exclude=["IfcGeometricRepresentationContext"],
+            exclude_callback=exclude_callback,
+        )
+
+    @classmethod
+    def add_type_representation_map(
+        cls, element_type: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
+        """Register ``representation`` on ``element_type`` as a new
+        ``IfcRepresentationMap`` (mapping origin at the type's local origin).
+        Subsequent ``geometry.map_representation`` calls reuse this map."""
+        ifc_file = tool.Ifc.get()
+        origin = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+        rep_map = ifc_file.createIfcRepresentationMap(origin, representation)
+        element_type.RepresentationMaps = list(element_type.RepresentationMaps or []) + [rep_map]
+        return rep_map
+
+    @classmethod
     def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64] | None:
         props = tool.Blender.get_object_bim_props(obj)
         if props.blender_offset_type == "CARTESIAN_POINT" and props.cartesian_point_offset:
