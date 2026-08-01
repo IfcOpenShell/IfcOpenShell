@@ -54,16 +54,54 @@ BOUNDARY_ELEMENT_CLASSES = (
     "IfcDoor",
 )
 
-# Distance (in meters) below which an element face is considered coplanar with
-# the space face it bounds. Matches beyond this distance within the larger
-# tolerance are only kept when no coplanar element already covers the face.
-COPLANAR_TOL = 0.05
-
 # Plane offset (in meters) below which a sole bounding element is assigned the
 # full space face. Building element faces are often slightly offset from the
 # space face they bound (e.g. wall linings), so a single bounding element
 # within this offset gets the complete face rather than a clipped polygon.
-FULL_FACE_OFFSET_TOL = 0.2
+FULL_FACE_OFFSET_TOL = 0.25
+
+
+def _union_coplanar_face_polygon(
+    space_verts_local,
+    space_triangles,
+    face_origin,
+    face_normal,
+    face_matrix_inv,
+    fallback,
+):
+    """Reconstruct a space face from its raw triangles.
+
+    ``dissolve_faces`` with ``merge_coplanar=True`` drops any interior rings
+    (holes) when coplanar faces are merged, e.g. a ceiling pierced by a shaft
+    or an opening. Unioning the raw triangles coplanar with the face restores
+    those holes.
+    """
+    polygons = []
+    for triangle in space_triangles:
+        points = space_verts_local[triangle]
+        if _face_normal(points) is None:
+            continue
+        if np.abs(np.dot(points - face_origin, face_normal)).max() > 1e-4:
+            continue
+        polygon = _verts_to_polygon(points, face_matrix_inv, snap=1e-6)
+        if not polygon.is_valid:
+            polygon = polygon.buffer(0)
+        if polygon.is_empty:
+            continue
+        polygons.append(polygon)
+    if not polygons:
+        return fallback
+    union = shapely.ops.unary_union(polygons).buffer(0)
+    if isinstance(union, shapely.Polygon):
+        return union
+    if isinstance(union, shapely.MultiPolygon):
+        best, best_area = None, -1.0
+        for polygon in union.geoms:
+            overlap = polygon.intersection(fallback).area
+            if overlap > best_area:
+                best, best_area = polygon, overlap
+        return best if best is not None else fallback
+    return fallback
 
 
 def auto_generate_boundaries(
@@ -221,6 +259,14 @@ def auto_generate_boundaries(
         space_face_polygon = _verts_to_polygon(space_verts_l, face_matrix_inv, snap=1e-6)
         if not space_face_polygon.is_valid:
             space_face_polygon = space_face_polygon.buffer(0)
+        space_face_polygon = _union_coplanar_face_polygon(
+            space_verts_local,
+            space_shape["faces"],
+            space_verts_l[0],
+            space_face_normal_local,
+            face_matrix_inv,
+            space_face_polygon,
+        )
         space_face_polygons[space_ngon_idx] = space_face_polygon
         face_matrices[space_ngon_idx] = face_matrix
         face_matrix_invs[space_ngon_idx] = face_matrix_inv
@@ -266,24 +312,23 @@ def auto_generate_boundaries(
             candidates.append((element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal))
 
         # A space face may be matched by several elements within the distance
-        # tolerance (e.g. a second wall layer or an element end cap). When the
-        # face is already covered coplanarly, offset matches that only duplicate
-        # that coverage are skipped.
-        coplanar_union = None
-        for _, dist_min, _, gross_boundary_polygon, _ in candidates:
-            if dist_min <= COPLANAR_TOL:
-                coplanar_union = (
-                    gross_boundary_polygon if coplanar_union is None else coplanar_union.union(gross_boundary_polygon)
-                )
-
+        # tolerance (e.g. a second wall layer or an element end cap). The
+        # element closest to the face is the actual bounding surface, so
+        # candidates are kept in order of increasing plane offset (ties broken
+        # by polygon area). A candidate whose polygon is entirely covered by
+        # the candidates already kept is redundant and is absorbed into the
+        # larger boundary.
         surviving_candidates = []
-        for element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal in candidates:
-            if dist_min > COPLANAR_TOL and coplanar_union is not None:
-                if gross_boundary_polygon.difference(coplanar_union).area < 1e-4:
-                    continue
+        kept_union = None
+        for element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal in sorted(
+            candidates, key=lambda c: (c[2] if c[2] is not None else float("inf"), -c[3].area)
+        ):
+            if kept_union is not None and gross_boundary_polygon.difference(kept_union).area < 1e-4:
+                continue
             surviving_candidates.append(
                 (element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal)
             )
+            kept_union = gross_boundary_polygon if kept_union is None else kept_union.union(gross_boundary_polygon)
 
         # When a single element bounds the space face and its face is (nearly)
         # coplanar with it, the boundary covers the full space face (1st level
@@ -297,11 +342,7 @@ def auto_generate_boundaries(
             surviving_candidates[0] = (element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal)
 
         for element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal in surviving_candidates:
-            if dist_min > COPLANAR_TOL and coplanar_union is not None:
-                if gross_boundary_polygon.difference(coplanar_union).area < 1e-4:
-                    continue
-
-            exterior_boundary_polygon = shapely.Polygon(gross_boundary_polygon.exterior.coords)
+            exterior_boundary_polygon = gross_boundary_polygon
 
             opening_source_element = element
             for rel in getattr(element, "Decomposes", []):
