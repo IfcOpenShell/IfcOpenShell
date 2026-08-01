@@ -139,10 +139,12 @@ def _add_arbitrary_profile_slab(
     axis: tuple[float, float, float],
     ref_direction: tuple[float, float, float],
     ifc_class: str = "IfcRoof",
+    extruded_direction: tuple[float, float, float] = (0.0, 0.0, 1.0),
 ) -> ifcopenshell.entity_instance:
     """A product with an arbitrary closed polygon profile (an
     `IfcIndexedPolyCurve`, built via raw low-level entity creation rather than
-    `ShapeBuilder`) extruded along local +Z, placed at an exact world
+    `ShapeBuilder`) extruded along `extruded_direction` (local to the item's
+    own, identity `Position`; defaults to local +Z), placed at an exact world
     location/orientation. Used for scenarios that need a specific irregular
     footprint and slope, where `_add_box`'s rectangular profile isn't enough.
     `location`/`axis`/`ref_direction` are project-unit coordinates applied
@@ -155,7 +157,7 @@ def _add_arbitrary_profile_slab(
     point_list = ifc_file.createIfcCartesianPointList2D(points_2d)
     poly_curve = ifc_file.createIfcIndexedPolyCurve(point_list, None, None)
     profile = ifc_file.createIfcArbitraryClosedProfileDef("AREA", None, poly_curve)
-    direction = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+    direction = ifc_file.createIfcDirection(extruded_direction)
     solid = ifc_file.createIfcExtrudedAreaSolid(profile, None, direction, depth)
     shape_rep = ifc_file.createIfcShapeRepresentation(body_context, "Body", "SweptSolid", [solid])
     ifcopenshell.api.geometry.assign_representation(ifc_file, product=product, representation=shape_rep)
@@ -643,6 +645,186 @@ def test_cluster_b_depth_tie_restoration():
 
     target_p0, target_p1 = (10019.459887439012, 10000.204735060386), (9999.590322184562, 10000.204735060386)
     assert has_edge(edges, slab_a.GlobalId, "outline", target_p0, target_p1)
+
+
+def test_restore_coincident_hidden_edges_partial_occlusion():
+    """`restore_coincident_hidden_edges()` (`SvgSerializer.h:1413-1638`)
+    restores a single-object edge HLR hid due to a depth-tie with a coincident
+    foreign face -- but decides whole-edge-or-nothing from only 3 fixed
+    interior sample points (mid/q1@0.25/q3@0.75). When only PART of an edge is
+    a genuine depth-tie and the rest is genuinely occluded by a nearer,
+    unrelated object, this all-or-nothing decision is wrong either way: if
+    none of the 3 fixed samples land in the occluded portion, the WHOLE
+    original edge (occluded portion included) is wrongly restored,
+    overshooting past where it should be clipped; if ANY of the 3 samples
+    lands in the occluded portion, `is_genuinely_occluded()` rejects the
+    WHOLE edge, wrongly dropping the genuinely-restorable outer portions too.
+
+    User-reported real examples (a real-project outline edge extending over
+    3-4 separate occluding products along its length, and this project's own
+    "coplanar join.ifc" synthetic fixture's EAST SECTION drawing) show the first
+    (overshoot) failure mode. This test reproduces the second (whole-edge
+    drop) failure mode instead, since it's the one that reproduces reliably
+    from this suite's own already-proven depth-tie geometry -- both are the
+    exact same root cause (a 3-sample whole-edge gate with no sub-interval
+    logic), confirmed directly: with a third, deliberately partial occluder
+    added to this scene, the target edge (present and correct with no
+    occluder, per `test_cluster_b_depth_tie_restoration`) disappears
+    entirely, when the correct behaviour is for its two genuinely-unoccluded
+    outer thirds to survive and only the genuinely-occluded middle to be
+    dropped.
+
+    Base geometry (SlabA/SlabB, camera) is `test_cluster_b_depth_tie_
+    restoration`'s own already-proven depth-tie scene, verbatim -- reusing it
+    rather than hand-designing a new depth-tie from scratch, since that
+    test's own docstring records two prior hand-built attempts failing to
+    reproduce a depth-tie at all. A third, small opaque box (`Occluder`) is
+    added, positioned (by empirical placement against this exact scene, not
+    hand-derived) to block only the middle portion of the target edge's
+    world-space extent while leaving both outer thirds genuinely unoccluded.
+
+    Second, related root cause found investigating the overshoot mode
+    directly against the real EAST SECTION example above (not reproducible
+    via this test's own scene, since it needs a candidate edge that HLR's OWN
+    native computation *also* independently makes visible, which this
+    2-product scene's target edge -- genuinely, fully HLR-hidden with no
+    occluder -- structurally never does): `has_coincident_edge()`/
+    `point_covered_by_visible()` (`SvgSerializer.h`) compared a candidate's
+    transformed endpoints/samples against `visible_edges` using full 3D
+    `Distance()`, but `visible_edges`'s own vertices always carry Z=0 in this
+    projected space (HLR's reconstructed 2D screen output, depth already
+    resolved and discarded) while a freshly-`projector.Transform()`-ed
+    candidate point retains a real, generally-nonzero depth component --
+    so neither check could ever actually match, even for a point genuinely
+    coincident on screen. Confirmed via direct debug instrumentation this
+    check never fired in practice. Fixed by flattening both sides to the
+    screen plane (X, Y) before comparing. Verified directly against the real
+    "coplanar join.ifc" EAST SECTION drawing (temporary debug instrumentation,
+    fully reverted): `1I9V3NogL069$EyK070JfW`'s outline edges now match the
+    `restore_coincident_hidden_edges()`-disabled baseline exactly (the
+    genuinely-already-visible native edge stays as-is; the wrongly-restored,
+    ~0.39-unit-overshooting duplicate is gone) -- not captured as a synthetic
+    test here, per this suite's own established precedent (see
+    `test_cluster_b_depth_tie_restoration`'s and item 5's own parked-test
+    notes) of not shipping a non-reproducing test for a depth-tie-adjacent
+    scenario that resists isolation from its full real-scene context.
+    """
+    ifc_file = ifcopenshell.file(schema="IFC4")
+    ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+    ifcopenshell.api.unit.assign_unit(ifc_file, length={"is_metric": False, "raw": "FEET"})
+    context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+    body_context = ifcopenshell.api.context.add_context(
+        ifc_file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=context
+    )
+    site = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSite", name="Site")
+    building = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuilding", name="Building")
+    storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Storey")
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=ifc_file.by_type("IfcProject")[0], products=[site])
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=site, products=[building])
+    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=building, products=[storey])
+
+    # Verbatim from test_cluster_b_depth_tie_restoration.
+    axis = (0.0, -0.24259928227576613, 0.9701265836164285)
+    ref_direction = (1.0, 0.0, 0.0)
+    slab_a = _add_arbitrary_profile_slab(
+        ifc_file, body_context, storey, "SlabA",
+        points_2d=[
+            (-4.08607816696167, 2.661661148071289),
+            (-4.08607816696167, 1.2422367334365845),
+            (-2.0000345706939697, 1.2422367334365845),
+            (-2.0000345706939697, 2.661661148071289),
+            (-4.08607816696167, 2.661661148071289),
+        ],
+        depth=0.0644245835111433,
+        location=(-44.95270296031721, 2.998521165272069, 14.503785944360446),
+        axis=axis,
+        ref_direction=ref_direction,
+    )
+    _add_arbitrary_profile_slab(
+        ifc_file, body_context, storey, "SlabB",
+        points_2d=[
+            (4.086053371429443, -1.0950984687951859e-05),
+            (2.086031198501587, -1.0950984687951859e-05),
+            (2.086031198501587, -1.4194228649139404),
+            (-1.2515411071944982e-05, -1.419427514076233),
+            (-1.2515411071944982e-05, -2.6616580486297607),
+            (4.086053371429443, -2.6616580486297607),
+            (4.086053371429443, -1.0950984687951859e-05),
+        ],
+        depth=0.128849165102285,
+        location=(-49.038768753292054, 5.596308257636123, 15.087005660289854),
+        axis=axis,
+        ref_direction=ref_direction,
+    )
+    # A small opaque box, positioned (empirically, against this exact scene)
+    # to sit in front of (nearer the camera than) only the middle portion of
+    # the target edge's world-space extent, leaving both outer thirds
+    # genuinely unoccluded and still depth-tied.
+    _add_arbitrary_profile_slab(
+        ifc_file, body_context, storey, "Occluder",
+        points_2d=[(0.0, 0.0), (0.7, 0.0), (0.7, 0.3), (0.0, 0.3), (0.0, 0.0)],
+        depth=0.3,
+        location=(-48.34, 4.0, 14.8),
+        axis=(0.0, 0.0, 1.0),
+        ref_direction=(1.0, 0.0, 0.0),
+        ifc_class="IfcWall",
+    )
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(0.0, 3.296240, 0.0),
+        camera_dir=(0.0, 1.0, 0.0),
+        camera_ref=(-1.0, 0.0, 0.0),
+        scale=31.25 / 1000.0,
+    )
+    edges = parse_edges(svg)
+
+    # Baseline (test_cluster_b_depth_tie_restoration, no occluder): this
+    # exact edge is present in full, from target_p0 to target_p1. With the
+    # occluder's middle-third obstruction added, current (unfixed) code drops
+    # it ENTIRELY -- neither outer third survives -- because
+    # `is_genuinely_occluded()` returns true at at least one of the 3 fixed
+    # sample points (which fall inside the occluder's footprint), rejecting
+    # the whole restore. The fix must restore the two genuinely-unoccluded
+    # outer thirds independently of the genuinely-occluded middle -- each
+    # reaching all the way to its own true endpoint (the corner-artifact
+    # sampling gate only ever excludes the true endpoints from *occlusion*
+    # sampling, never from the restored geometry itself).
+    target_p0, target_p1 = (10019.459887439012, 10000.204735060386), (9999.590322184562, 10000.204735060386)
+
+    def has_endpoint_near(guid: str, point: tuple[float, float], tol: float = 1e-3) -> bool:
+        def close(a, b):
+            return abs(a[0] - b[0]) < tol and abs(a[1] - b[1]) < tol
+
+        return any(e.guid == guid and (close(e.p0, point) or close(e.p1, point)) for e in edges)
+
+    # This is the assertion that fails against unfixed code: today, the
+    # occluder's mere presence makes the whole edge vanish, so NEITHER true
+    # endpoint has any surviving edge touching it at all.
+    assert has_endpoint_near(slab_a.GlobalId, target_p0), (
+        f"expected a restored sub-edge reaching target_p0={target_p0} (the genuinely "
+        f"unoccluded far third); unfixed code drops the whole edge instead"
+    )
+    assert has_endpoint_near(slab_a.GlobalId, target_p1), (
+        f"expected a restored sub-edge reaching target_p1={target_p1} (the genuinely "
+        f"unoccluded near third); unfixed code drops the whole edge instead"
+    )
+
+    # Exact coordinates below were captured empirically from this exact scene
+    # (fixed code), not hand-derived -- same convention as
+    # test_mat_style_change_case_b_partial_overlap_splits_correctly. Two
+    # separate outline sub-edges, one reaching each true endpoint, with a
+    # genuine gap over the occluder's own footprint -- this is what current
+    # (unfixed) code structurally cannot produce (it only ever emits the
+    # whole edge or nothing, never two disjoint pieces of one original edge).
+    far_third_inner = (10012.940186339896, 10000.204735060386)
+    near_third_inner = (10006.11002328368, 10000.204735060386)
+    assert has_edge(edges, slab_a.GlobalId, "outline", target_p0, far_third_inner)
+    assert has_edge(edges, slab_a.GlobalId, "outline", near_third_inner, target_p1)
+    # No edge may cross into the occluded middle band -- neither of the two
+    # legitimate sub-edges reaches past its own inner endpoint, and no third,
+    # wrongly-unified edge spans the whole original extent.
+    assert not has_any_edge(edges, slab_a.GlobalId, target_p0, target_p1)
 
 
 def test_mat_style_change_case_b_intra_product_layer_boundary():

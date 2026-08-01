@@ -1443,13 +1443,24 @@ namespace {
 		// rebuilt from scratch each time (this once caused a ~30x slowdown on a real building).
 		std::vector<IntCurvesFace_ShapeIntersector> intersectors(items.size());
 		std::vector<bool> intersector_loaded(items.size(), false);
+		// Cheap per-item bounding boxes plus (product, shape) pointers, built once up front
+		// alongside the (expensive) intersectors -- lets restorable_intervals() below reject
+		// foreign items that can't possibly matter for a given candidate edge via a
+		// bbox-vs-bbox test, instead of walking every face of every foreign product per sample
+		// point, and gives indexed (not list-iteration) access to `items` for that shortlist.
+		std::vector<Bnd_Box> item_boxes(items.size());
+		std::vector<const IfcUtil::IfcBaseEntity*> item_products(items.size());
+		std::vector<const TopoDS_Shape*> item_shapes(items.size());
 		{
 			size_t idx = 0;
 			for (auto& it : items) {
 				const TopoDS_Shape& shape = std::get<1>(it);
+				item_products[idx] = std::get<0>(it);
+				item_shapes[idx] = &shape;
 				if (!shape.IsNull()) {
 					intersectors[idx].Load(shape, tolerance);
 					intersector_loaded[idx] = true;
+					BRepBndLib::AddClose(shape, item_boxes[idx]);
 				}
 				++idx;
 			}
@@ -1487,8 +1498,20 @@ namespace {
 		// edge that HLR did keep visible. The only correct test is geometric: transform the
 		// candidate edge's endpoints into the same (projected) space first, then compare
 		// endpoint-to-endpoint against what's already there.
+		//
+		// Critical, confirmed-by-direct-inspection detail: `visible_edges`'s own vertices always
+		// carry Z=0 in this transformed space -- they're HLR's reconstructed 2D screen-space
+		// output, depth already resolved and discarded. `tp0`/`tp1` (a candidate's own endpoints,
+		// run through the same `projector.Transform()`) retain a real, generally-nonzero depth
+		// component instead. Comparing the raw 3D points via `Distance()` therefore compares
+		// against a phantom depth axis that `visible_edges` never populates, so this match would
+		// silently and essentially always fail even for a point genuinely coincident on screen --
+		// confirmed empirically: this check never actually fired in practice. `same_point` is used
+		// purely as a screen-space (X, Y) coincidence test throughout this function; both sides are
+		// flattened to Z=0 before comparing so it actually behaves as one.
 		auto same_point = [](const gp_Pnt& a, const gp_Pnt& b, double tol) {
-			return a.Distance(b) < tol;
+			gp_Pnt af(a.X(), a.Y(), 0.0), bf(b.X(), b.Y(), 0.0);
+			return af.Distance(bf) < tol;
 		};
 		auto has_coincident_edge = [&](const TopoDS_Shape& s, const gp_Pnt& tp0, const gp_Pnt& tp1) {
 			if (s.IsNull()) {
@@ -1503,6 +1526,51 @@ namespace {
 				gp_Pnt q0 = BRep_Tool::Pnt(qv0), q1 = BRep_Tool::Pnt(qv1);
 				if ((same_point(tp0, q0, tolerance) && same_point(tp1, q1, tolerance)) ||
 					(same_point(tp0, q1, tolerance) && same_point(tp1, q0, tolerance))) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		// Is `tp` (already transformed into the same projected space `visible_edges` lives in,
+		// same convention as `has_coincident_edge` above) already covered by SOME edge already
+		// present in `visible_edges` -- not necessarily the same edge as a whole, just this one
+		// point? `has_coincident_edge` above only ever catches an exact, whole-edge match; a
+		// genuinely-visible edge HLR (or an earlier pass) already produced independently can be a
+		// different length/shorter than a given restoration candidate while still sharing part of
+		// the same line -- in that case `has_coincident_edge` correctly finds no match, but
+		// restoring the WHOLE candidate would wastefully (and, per real-project reports, often
+		// wrongly) duplicate the portion that's already correctly drawn. Used per-sample below so
+		// only the genuinely-missing portion of a candidate edge is ever considered for
+		// restoration, never a portion something else already drew.
+		auto point_covered_by_visible = [&](const gp_Pnt& tp, const TopoDS_Shape& visible_edges) -> bool {
+			if (visible_edges.IsNull()) {
+				return false;
+			}
+			// Same Z=0-vs-real-depth mismatch as `same_point`/`has_coincident_edge` above -- flatten
+			// both sides to the screen plane before the point-on-segment math, not just the
+			// degenerate-segment case (which already goes through the now-flattening `same_point`).
+			gp_Pnt tp_flat(tp.X(), tp.Y(), 0.0);
+			for (TopExp_Explorer exp(visible_edges, TopAbs_EDGE); exp.More(); exp.Next()) {
+				TopoDS_Vertex qv0, qv1;
+				TopExp::Vertices(TopoDS::Edge(exp.Current()), qv0, qv1);
+				if (qv0.IsNull() || qv1.IsNull()) {
+					continue;
+				}
+				gp_Pnt q0v = BRep_Tool::Pnt(qv0), q1v = BRep_Tool::Pnt(qv1);
+				gp_Pnt q0(q0v.X(), q0v.Y(), 0.0), q1(q1v.X(), q1v.Y(), 0.0);
+				gp_Vec seg(q0, q1);
+				double seg_len_sq = seg.SquareMagnitude();
+				if (seg_len_sq < Precision::SquareConfusion()) {
+					if (same_point(tp, q0, tolerance)) {
+						return true;
+					}
+					continue;
+				}
+				double t = gp_Vec(q0, tp_flat).Dot(seg) / seg_len_sq;
+				t = std::max(0.0, std::min(1.0, t));
+				gp_Pnt closest = q0.Translated(seg * t);
+				if (tp_flat.Distance(closest) < tolerance) {
 					return true;
 				}
 			}
@@ -1527,12 +1595,12 @@ namespace {
 		// ~(0,0.97,0.24); both confirmed-wrong "shifted wall" cases match an edge-on face, normal
 		// ~(±1,0,0)). So an edge-on match is treated as no match at all here, leaving the candidate
 		// edge ineligible for restoration via this mechanism.
-		auto point_on_foreign_face = [&](const gp_Pnt& p, const IfcUtil::IfcBaseEntity* self_product) -> bool {
-			for (auto& other : items) {
-				if (std::get<0>(other) == self_product) {
+		auto point_on_foreign_face = [&](const gp_Pnt& p, const IfcUtil::IfcBaseEntity* self_product, const std::vector<size_t>& candidate_indices) -> bool {
+			for (size_t idx : candidate_indices) {
+				if (item_products[idx] == self_product) {
 					continue;
 				}
-				const TopoDS_Shape& other_shape = std::get<1>(other);
+				const TopoDS_Shape& other_shape = *item_shapes[idx];
 				for (TopExp_Explorer fexp(other_shape, TopAbs_FACE); fexp.More(); fexp.Next()) {
 					const TopoDS_Face& face = TopoDS::Face(fexp.Current());
 					gp_Dir n;
@@ -1558,6 +1626,106 @@ namespace {
 				}
 			}
 			return false;
+		};
+
+		// Cheap bbox-vs-bbox pre-filter: which foreign items could possibly matter for a
+		// candidate edge running from p0 to p1? Built from `item_boxes` (computed once, up
+		// front, above) rather than walking every face of every foreign product -- most edges
+		// are nowhere near another product at all, and this keeps that common case just as
+		// cheap as it was before (a handful of box-vs-box tests instead of per-face loops).
+		auto nearby_foreign_items = [&](const gp_Pnt& p0, const gp_Pnt& p1) -> std::vector<size_t> {
+			Bnd_Box edge_box;
+			edge_box.Add(p0);
+			edge_box.Add(p1);
+			edge_box.Enlarge(tolerance);
+			std::vector<size_t> nearby;
+			for (size_t idx = 0; idx < item_boxes.size(); ++idx) {
+				if (item_boxes[idx].IsVoid()) {
+					continue;
+				}
+				if (!edge_box.IsOut(item_boxes[idx])) {
+					nearby.push_back(idx);
+				}
+			}
+			return nearby;
+		};
+
+		// Replaces the old 3-fixed-sample whole-edge gate: samples a fixed interior grid along
+		// the candidate edge and returns the merged, restorable sub-intervals (in the edge's own
+		// [0, length] parametrization) instead of a single yes/no verdict -- so an edge that's
+		// only PARTLY a genuine depth-tie (the rest genuinely occluded by an unrelated nearer
+		// object) gets partially restored instead of wrongly restored/dropped in full. Same
+		// "accumulate raw intervals -> union -> split" shape as cross_coplanar's own
+		// accumulate_edge_coverage()/split_edge_by_coverage(), reusing cross_coplanar::ivs_union()
+		// directly rather than re-deriving interval-merge logic.
+		auto restorable_intervals = [&](const gp_Pnt& p0, const gp_Pnt& p1, const IfcUtil::IfcBaseEntity* product, const TopoDS_Shape& visible_edges) -> std::vector<std::pair<double, double>> {
+			gp_Vec vec(p0, p1);
+			double length = vec.Magnitude();
+			if (length < Precision::Confusion()) {
+				return {};
+			}
+			gp_Dir dir(vec);
+
+			std::vector<size_t> shortlist = nearby_foreign_items(p0, p1);
+			if (shortlist.empty()) {
+				return {};
+			}
+
+			// 31 interior samples (32 bins) across (0, length), never at the true endpoints --
+			// same corner-artifact rationale as the original 3-sample gate (a ray fired exactly
+			// through a corner where unrelated faces converge can pick up a spurious "nearer"
+			// hit). Real occluders are whole product footprints, not needle-thin, so this
+			// comfortably resolves multi-occluder cases along one edge (real-project reports of
+			// this bug show 3-4 distinct occluding products along a single edge).
+			constexpr int kRestoreSampleCount = 31;
+			std::vector<double> ts(kRestoreSampleCount);
+			std::vector<bool> restorable(kRestoreSampleCount);
+			for (int i = 0; i < kRestoreSampleCount; ++i) {
+				double t = length * static_cast<double>(i + 1) / static_cast<double>(kRestoreSampleCount + 1);
+				ts[i] = t;
+				gp_Pnt sample = p0.Translated(gp_Vec(dir) * t);
+				gp_Pnt tsample = sample;
+				projector.Transform(tsample);
+				restorable[i] = point_on_foreign_face(sample, product, shortlist) && !is_genuinely_occluded(sample) &&
+					!point_covered_by_visible(tsample, visible_edges);
+			}
+
+			// Each true sample maps to a bin extending halfway to its neighbours; the two
+			// outermost bins extend all the way to the true endpoints, so endpoint
+			// restorability is inherited from the outermost interior sample rather than
+			// independently ray-cast there (same rationale as above, generalized).
+			std::vector<std::pair<double, double>> raw;
+			for (int i = 0; i < kRestoreSampleCount; ++i) {
+				if (!restorable[i]) {
+					continue;
+				}
+				double lo = (i == 0) ? 0.0 : 0.5 * (ts[i - 1] + ts[i]);
+				double hi = (i == kRestoreSampleCount - 1) ? length : 0.5 * (ts[i] + ts[i + 1]);
+				raw.emplace_back(lo, hi);
+			}
+			auto merged = cross_coplanar::ivs_union(raw, tolerance);
+
+			// Sliver guards: clamp to [0, length] and drop anything narrower than tolerance
+			// (mirrors split_edge_by_coverage's own guard), plus require an interval that
+			// doesn't touch a true endpoint to be corroborated by >=2 consecutive true samples
+			// -- a lone isolated true sample surrounded by false ones is more likely a
+			// borderline/noisy sample than a genuine narrow restorable stretch. Empirically
+			// tunable, same as point_on_foreign_face's own 0.05 edge-on-normal threshold.
+			double bin_width = length / static_cast<double>(kRestoreSampleCount + 1);
+			std::vector<std::pair<double, double>> filtered;
+			for (auto& iv : merged) {
+				double lo = std::max(0.0, iv.first);
+				double hi = std::min(length, iv.second);
+				if (hi - lo < tolerance) {
+					continue;
+				}
+				bool touches_endpoint = lo <= tolerance || hi >= length - tolerance;
+				if (!touches_endpoint && (hi - lo) < 2.0 * bin_width - tolerance) {
+					continue;
+				}
+				filtered.emplace_back(lo, hi);
+			}
+			return filtered;
 		};
 
 		auto result_it = result.begin();
@@ -1597,25 +1765,35 @@ namespace {
 				if (has_coincident_edge(visible_edges, tp0, tp1)) {
 					continue;
 				}
-				gp_Pnt mid = p0.Translated(gp_Vec(p0, p1) * 0.5);
-				if (!point_on_foreign_face(p0, product) || !point_on_foreign_face(p1, product) || !point_on_foreign_face(mid, product)) {
+				gp_Vec dir_vec(p0, p1);
+				double length = dir_vec.Magnitude();
+				if (length < Precision::Confusion()) {
 					continue;
 				}
-				// Only sample the occlusion test at interior points (midpoint and quarter-points),
-				// never at the edge's own endpoints. Endpoints are exactly where this kind of
-				// touching-boundary edge meets *other* edges/faces -- a corner where several faces
-				// legitimately converge -- and a ray fired through that exact degenerate point can
-				// pick up a spurious "nearer" hit from a neighbouring face grazing the same corner,
-				// even though the edge itself suffers no real occlusion. An interior point can't
-				// coincide with that kind of unrelated corner.
-				gp_Pnt q1 = p0.Translated(gp_Vec(p0, p1) * 0.25);
-				gp_Pnt q3 = p0.Translated(gp_Vec(p0, p1) * 0.75);
-				if (is_genuinely_occluded(mid) || is_genuinely_occluded(q1) || is_genuinely_occluded(q3)) {
+				gp_Dir dir(dir_vec);
+				auto intervals = restorable_intervals(p0, p1, product, visible_edges);
+				if (intervals.empty()) {
 					continue;
 				}
-				BRepBuilderAPI_MakeEdge mk(tp0, tp1);
-				if (mk.IsDone()) {
-					to_restore.push_back(mk.Edge());
+				if (intervals.size() == 1 && intervals[0].first <= tolerance && intervals[0].second >= length - tolerance) {
+					// Full-coverage fast path: byte-identical to the old single-push behaviour,
+					// avoids introducing a new floating-point seam at the edge's own true
+					// endpoints for what's still the common (fully-restorable) case.
+					BRepBuilderAPI_MakeEdge mk(tp0, tp1);
+					if (mk.IsDone()) {
+						to_restore.push_back(mk.Edge());
+					}
+				} else {
+					for (auto& iv : intervals) {
+						gp_Pnt pa = p0.Translated(gp_Vec(dir) * iv.first);
+						gp_Pnt pb = p0.Translated(gp_Vec(dir) * iv.second);
+						projector.Transform(pa);
+						projector.Transform(pb);
+						BRepBuilderAPI_MakeEdge mk(pa, pb);
+						if (mk.IsDone()) {
+							to_restore.push_back(mk.Edge());
+						}
+					}
 				}
 			}
 
