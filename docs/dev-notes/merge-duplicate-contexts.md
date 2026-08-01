@@ -29,9 +29,12 @@ tool to repair such a file.
 For each `(ContextType, ContextIdentifier, TargetView)` key: keep the first context,
 repoint every reference off the duplicates onto that survivor via
 `ifcopenshell.util.element.replace_element` (generic — handles representations'
-`ContextOfItems`, subcontexts' `ParentContext`, coordinate operations, etc.), remove the
-duplicates, and dedupe any SET-typed aggregate (e.g. `IfcProject.RepresentationContexts`)
-that would otherwise list the survivor twice.
+`ContextOfItems`, subcontexts' `ParentContext`, coordinate operations, etc.), then remove
+the duplicates. `replace_element`/`replace_attribute` deduplicate SET-typed attributes
+themselves (e.g. `IfcProject.RepresentationContexts`), so the survivor is never listed
+twice — this recipe no longer needs its own SET-dedupe pass (dropped in review; see the
+core fix that added it: `ifcopenshell.util.element: dedupe SET-typed attributes in
+replace_attribute`).
 
 Top-level contexts and subcontexts are keyed and processed in **separate passes** so a
 subcontext is never merged into a parent context, and a surviving subcontext keeps a
