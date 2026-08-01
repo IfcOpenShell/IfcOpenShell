@@ -1632,7 +1632,16 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_auto_annotation(cls, element: ifcopenshell.entity_instance):
-        return element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
+        if not element.is_a("IfcAnnotation"):
+            return False
+        if element.ObjectType in ("GRID", "SECTION", "ELEVATION"):
+            return True
+        # SECTION_LEVEL is also a user-creatable "Level (Section)" annotation type.
+        # Only storey-referencing ones are auto generated, and those carry an
+        # assigned product. Manual ones have none and must not be auto managed.
+        if element.ObjectType == "SECTION_LEVEL":
+            return cls.get_assigned_product(element) is not None
+        return False
 
     @classmethod
     def get_drawing_reference_annotation(
