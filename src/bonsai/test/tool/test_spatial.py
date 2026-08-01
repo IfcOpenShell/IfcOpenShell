@@ -30,7 +30,8 @@ from mathutils import Matrix
 
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.tool.spatial import Spatial as subject, _bump_geom_cache_token
+from bonsai.tool.spatial import Spatial as subject
+from bonsai.tool.spatial import _bump_geom_cache_token
 from test.bim.bootstrap import NewFile
 
 
