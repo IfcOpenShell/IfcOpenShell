@@ -208,21 +208,27 @@ class entity_instance_mixin:
 
         return value
 
-    # TODO: dead code? Since overridden by `__eq__` defined on `entity_instance`.
-    def __eq__(self, other: entity_instance_mixin) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, entity_instance_mixin):
-            if not self.is_entity():
-                return self[0] == other
-            else:
-                return False
-        else:
-            raise NotImplementedError
+            return self[0] == other if not self.is_entity() else False
 
-    def __ne__(self, other: entity_instance_mixin) -> bool:
-        if other is None or not isinstance(other, entity_instance_mixin):
+        if self.identity() == other.identity():
             return True
-        else:
-            raise NotImplementedError
+
+        if self.is_a(True) != other.is_a(True):
+            return False
+
+        if self.file != other.file or not self.is_entity():
+            return self.get_info(
+                recursive=True, include_identifier=False
+            ) == other.get_info(
+                recursive=True, include_identifier=False
+            )
+
+        return False
+
+    def __ne__(self, other: object) -> bool:
+        return not self == other
 
     def is_entity(self) -> bool:
         """Tests whether the instance is an entity type as opposed to a simple data type.

@@ -410,66 +410,6 @@ private:
 	%}
 }
 
-%{
-// Shared by __eq__/__ne__ below - %extend methods can't call each other directly.
-// Initially was added as __eq__, but swig doesn't allow calling one extended method from another.
-static bool express_Base_equals(const express::Base* self, const express::Base* other) {
-	// This logic is not perfect and is not fully consistent with __hash__
-	if (!other) {
-		return false;
-	} else if (self->identity() == other->identity()) {
-		return true;
-	} else if (&self->declaration() != &other->declaration()) {
-		return false;
-	} else if ((self->file() != other->file()) || (self->declaration().as_entity() == nullptr)) {
-		// PyGILState_STATE gil = PyGILState_Ensure();
-		// @todo get_info is actually implemented in C++, so we try to call it directly
-		bool result = false;
-		PyObject *py_self  = SWIG_NewPointerObj(SWIG_as_voidptr(self),
-                                            SWIGTYPE_p_express__Base, 0);
-		PyObject *py_other = SWIG_NewPointerObj(SWIG_as_voidptr(other),
-                            SWIGTYPE_p_express__Base, 0);
-		if (py_self && py_other) {
-			PyObject *args = PyTuple_New(0);
-
-			PyObject *kwargs = PyDict_New();
-			PyDict_SetItemString(kwargs, "recursive", Py_True);
-			PyDict_SetItemString(kwargs, "include_identifier", Py_False);
-
-			PyObject *m1 = PyObject_GetAttrString(py_self,  "get_info");
-			PyObject *m2 = PyObject_GetAttrString(py_other, "get_info");
-
-			PyObject *i1 = (m1 ? PyObject_Call(m1, args, kwargs) : nullptr);
-			PyObject *i2 = (m2 ? PyObject_Call(m2, args, kwargs) : nullptr);
-
-			if (i1 && i2) {
-				int eq = PyObject_RichCompareBool(i1, i2, Py_EQ);
-				result = (eq == 1);
-			} else {
-				// get_info missing or threw; treat as not equal (and clear Python error).
-				PyErr_Clear();
-			}
-
-			Py_XDECREF(i1);
-			Py_XDECREF(i2);
-			Py_XDECREF(m1);
-			Py_XDECREF(m2);
-			Py_DECREF(kwargs);
-			Py_DECREF(args);
-		} else {
-			PyErr_Clear();
-		}
-
-		Py_XDECREF(py_self);
-		Py_XDECREF(py_other);
-		// PyGILState_Release(gil);
-		return result;
-	} else {
-		return false;
-	}
-}
-%}
-
 %extend express::Base {
 
 	// 0 = not found
@@ -587,18 +527,6 @@ static bool express_Base_equals(const express::Base* self, const express::Base* 
 			throw std::runtime_error("Attribute '" + a + "' not found on entity named " + $self->declaration().name());
 		}
 		return $self->get_attribute_value((unsigned)i);
-	}
-
-	// `other` is a pointer, not a reference, so Python `None` converts to
-	// nullptr instead of SWIG raising a null-reference error before this
-	// body runs.
-	bool __eq__(const express::Base* other) const {
-		return express_Base_equals($self, other);
-	}
-
-	// Override operator!= to support None or other data types in `other`.
-	bool __ne__(const express::Base* other) const {
-		return !express_Base_equals($self, other);
 	}
 
 	size_t __hash__() const {
