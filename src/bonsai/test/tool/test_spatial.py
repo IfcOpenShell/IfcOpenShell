@@ -426,3 +426,63 @@ class TestGenerateSpace(NewFile):
         bpy.ops.bim.generate_space()
         new_height = space.dimensions.z
         assert new_height != original_height or new_height > 0
+
+    def test_regenerate_space_from_centered_cube_representation(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_wall(ifc, height=10.0)
+        scene = bpy.context.scene
+        scene.cursor.location = (0, 0, 0)
+
+        # Create a space with a unit cube PolygonalFaceSet centered at local origin.
+        ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
+        points = ifc.createIfcCartesianPointList3D(
+            [
+                (-0.5, -0.5, -0.5),
+                (-0.5, -0.5, 0.5),
+                (-0.5, 0.5, -0.5),
+                (-0.5, 0.5, 0.5),
+                (0.5, -0.5, -0.5),
+                (0.5, -0.5, 0.5),
+                (0.5, 0.5, -0.5),
+                (0.5, 0.5, 0.5),
+            ]
+        )
+        faces = [
+            ifc.createIfcIndexedPolygonalFace([1, 2, 4, 3]),
+            ifc.createIfcIndexedPolygonalFace([3, 4, 8, 7]),
+            ifc.createIfcIndexedPolygonalFace([7, 8, 6, 5]),
+            ifc.createIfcIndexedPolygonalFace([5, 6, 2, 1]),
+            ifc.createIfcIndexedPolygonalFace([3, 7, 5, 1]),
+            ifc.createIfcIndexedPolygonalFace([8, 4, 2, 6]),
+        ]
+        face_set = ifc.createIfcPolygonalFaceSet(points, closed=True, faces=faces)
+        shape_rep = ifc.createIfcShapeRepresentation(ctx, "Body", "Tessellation", [face_set])
+
+        space_element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        space_element.Representation = ifc.createIfcProductDefinitionShape(None, None, [shape_rep])
+
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 5))
+        obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(obj)
+        tool.Ifc.link(space_element, obj)
+        bpy.context.view_layer.update()
+        obj.name = "MySpace"
+
+        # Check the cube's world bottom Z before regeneration.
+        bottom_z = (obj.matrix_world @ Vector(obj.bound_box[0])).z
+        assert np.isclose(bottom_z, 4.5), f"Expected bottom_z=4.5, got {bottom_z}"
+
+        # Regenerate the space.
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        bpy.ops.bim.generate_space()
+
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        verts = [v.co.z for v in mesh.vertices]
+        min_z = min(verts)
+        max_z = max(verts)
+        assert min_z >= 0, f"Expected extrusion to start at local z>=0, got min_z={min_z}"
+        assert max_z > 0, f"Expected extrusion to have positive height, got max_z={max_z}"
+        assert np.isclose(obj.location.z, 4.5, atol=0.01), f"Expected location.z=4.5, got {obj.location.z}"
