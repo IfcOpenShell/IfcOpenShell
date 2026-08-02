@@ -38,6 +38,7 @@ import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix, Vector
 
+import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
@@ -407,6 +408,8 @@ class MEPGenerator:
                     compare = tool.Cad.is_x(requested_value, fitting_value, compare_precision)
                 elif isinstance(fitting_value, list):
                     compare = tool.Cad.are_vectors_equal(requested_value, Vector(fitting_value), precision)
+                else:
+                    assert False, f"{key} {second_key}"
                 return compare
 
             ignore_keys = []
@@ -475,11 +478,13 @@ class MEPGenerator:
             if predefined_type == "OBSTRUCTION":
                 return packed_data
 
+            start_port = None
             for port in ports:
                 port_local_position = V(*port.ObjectPlacement.RelativePlacement.Location.Coordinates)
                 if tool.Cad.is_x(port_local_position.length, 0.0):
                     start_port = port
                     break
+            assert start_port is not None
 
             connected_port = tool.System.get_connected_port(start_port)
             connected_element = tool.System.get_port_relating_element(connected_port)
@@ -1677,6 +1682,11 @@ def _n_mep_selected(n: int) -> bool:
         element = tool.Ifc.get_entity(selected_obj)
         if element is None or not tool.System.is_mep_element(element):
             return False
+        # Array children mirror their parent's port topology. Writable MEP
+        # actions on a child get wiped by the next array regen, so gate the
+        # icons out at the visibility layer.
+        if tool.Array.is_array_child(element):
+            return False
     return True
 
 
@@ -2555,6 +2565,8 @@ def _active_is_flow_segment(obj: bpy.types.Object) -> bool:
     element = tool.Ifc.get_entity(obj)
     if element is None or not element.is_a("IfcFlowSegment"):
         return False
+    if tool.Array.is_array_child(element):
+        return False
     return tool.System.has_parametric_body(element)
 
 
@@ -2583,6 +2595,8 @@ def _active_is_bend_fitting(obj: bpy.types.Object) -> bool:
     eligible."""
     element = tool.Ifc.get_entity(obj)
     if not _is_bend_fitting(element):
+        return False
+    if tool.Array.is_array_child(element):
         return False
     element_type = ifcopenshell.util.element.get_type(element)
     if element_type is None:

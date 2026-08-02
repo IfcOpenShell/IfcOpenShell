@@ -521,7 +521,7 @@ class Patcher(ifcpatch.BasePatcher):
                 data_type = "JSON"
                 json_attrs.append(i)
             else:
-                print("Possibly not implemented attribute data type:", attribute, primitive)
+                assert False, f"{attribute}, {primitive}"
             if not self.is_strict or derived[i]:
                 optional = "DEFAULT NULL"
             else:

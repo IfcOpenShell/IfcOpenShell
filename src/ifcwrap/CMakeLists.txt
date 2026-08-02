@@ -254,6 +254,8 @@ if(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
     else()
         message(STATUS "Python wrapper will be installed to '${python_package_dir}'.")
         file(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*")
+        # Exclude compiled extensions - they're part of dev environment and shouldn't leak into installation.
+        list(FILTER sourcefiles EXCLUDE REGEX "\\.(so|pyd|dylib)$")
         foreach(file ${sourcefiles})
             file(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
             get_filename_component(dir "${relative}" DIRECTORY)

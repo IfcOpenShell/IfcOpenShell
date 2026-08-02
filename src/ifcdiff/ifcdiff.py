@@ -36,7 +36,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import numpy as np
 from deepdiff import DeepDiff
-from orderly_set import OrderedSet
+from orderly_set import StableSet
 
 __version__ = version = "0.0.0"
 
@@ -51,8 +51,10 @@ class IfcDiff:
 
     :param old: IFC file object for the old model
     :param new: IFC file object for the new model
-    :param relationships: List of relationships to check. None means that only
-        geometry is compared. See RELATIONSHIP_TYPE for available relationships.
+    :param relationships: List of relationships to check. None means that
+        attributes and geometry are compared, so changes such as a modified or
+        removed PredefinedType are reported. See RELATIONSHIP_TYPE for available
+        relationships.
     :param is_shallow: True if you want only the first difference to be listed.
         False if you want all differences to be checked. Choosing False means
         that comparisons will take longer.
@@ -86,7 +88,7 @@ class IfcDiff:
         self.new = new
         self.change_register = {}
         self.representation_ids = {}
-        self.relationships = relationships or ["geometry"]
+        self.relationships = relationships or ["attributes", "geometry"]
         self.precision = 1e-4
         self.is_shallow = is_shallow
         self.filter_elements = filter_elements
@@ -255,7 +257,7 @@ class IfcDiff:
 
     def json_dump_default(self, obj):
         # result of DeepDiff may contain ordered sets
-        if isinstance(obj, (OrderedSet, set)):
+        if isinstance(obj, (StableSet, set)):
             return list(obj)
         return json.JSONEncoder.default(None, obj)
 
@@ -435,7 +437,11 @@ if __name__ == "__main__":
         "-r",
         "--relationships",
         type=str,
-        help='A list of space-separated relationships, chosen from "type", "property", "container", "aggregate", "classification"',
+        help=(
+            'A list of space-separated relationships, chosen from "attributes", "geometry", '
+            '"type", "property", "container", "aggregate", "classification". '
+            'Defaults to "attributes geometry" when omitted.'
+        ),
         default="",
     )
     args = parser.parse_args()

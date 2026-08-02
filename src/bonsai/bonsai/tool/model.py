@@ -59,6 +59,7 @@ from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
 from mathutils import Matrix, Vector
 
 import bonsai.core.geometry
+import bonsai.core.model
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
@@ -1248,6 +1249,35 @@ class Model(bonsai.core.tool.Model):
             cls._regenerate_array_body(parent_obj, data, array_layers_to_apply)
 
     @classmethod
+    def _prune_orphan_array_children(cls, array: dict[str, Any]) -> None:
+        """Drop GUIDs from ``array['children']`` whose IFC entity or Blender
+        object is no longer alive, and cascade-remove the orphan IFC entity
+        if it still exists. Outliner / keyboard delete of a Bonsai-managed
+        object bypasses ``bim.delete``'s cascade, leaving dangling opening
+        and filling references that later confuse regen and crash the
+        ``batch_host_recut`` drain."""
+        live_guids: list[str] = []
+        ifc_file = tool.Ifc.get()
+        for guid in array["children"]:
+            try:
+                element = ifc_file.by_guid(guid)
+            except RuntimeError:
+                continue
+            obj = tool.Ifc.get_object(element)
+            try:
+                is_live = obj is not None and obj.data is not None
+            except ReferenceError:
+                is_live = False
+            if is_live:
+                live_guids.append(guid)
+                continue
+            try:
+                ifcopenshell.api.root.remove_product(ifc_file, product=element)
+            except (RuntimeError, ifcopenshell.Error):
+                pass
+        array["children"] = live_guids
+
+    @classmethod
     def _regenerate_array_body(
         cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int]
     ) -> None:
@@ -1262,6 +1292,7 @@ class Model(bonsai.core.tool.Model):
         obj_stack = [parent_obj]
 
         for array_i, array in enumerate(data):
+            cls._prune_orphan_array_children(array)
             child_i = 0
             existing_children = set(array["children"])
             total_existing_children = len(array["children"])
@@ -1274,6 +1305,14 @@ class Model(bonsai.core.tool.Model):
                 base_offset = Vector([array["x"], array["y"], array["z"]]) / divider * unit_scale
             else:
                 base_offset = Vector([array["x"], array["y"], array["z"]]) * unit_scale
+
+            target_new_in_this_layer = (array["count"] - 1) * len(obj_stack)
+            missing_count = max(0, target_new_in_this_layer - total_existing_children)
+            new_entities_pool: list[ifcopenshell.entity_instance] = []
+            if missing_count > 0:
+                batch_old_to_new = tool.Geometry.duplicate_ifc_object_n_times(parent_obj, missing_count)
+                new_entities_pool = batch_old_to_new.get(parent_element, [])
+            new_entities_iter = iter(new_entities_pool)
 
             for i in range(array["count"]):
                 if i == 0:
@@ -1292,8 +1331,13 @@ class Model(bonsai.core.tool.Model):
                         child_obj = tool.Ifc.get_object(child_element)
                         assert child_obj
                     except (IndexError, RuntimeError, AssertionError):
-                        old_to_new, _ = tool.Geometry.duplicate_ifc_objects([parent_obj])
-                        child_element = next(iter(old_to_new.values()))[0]
+                        try:
+                            child_element = next(new_entities_iter)
+                        except StopIteration:
+                            # Stale-GUID mid-list left the pool exhausted; fall back
+                            # to a one-off duplicate so the layer can still complete.
+                            old_to_new, _ = tool.Geometry.duplicate_ifc_objects([parent_obj])
+                            child_element = next(iter(old_to_new.values()))[0]
                         child_obj = tool.Ifc.get_object(child_element)
 
                     # add child pset
@@ -1361,14 +1405,7 @@ class Model(bonsai.core.tool.Model):
             tool.Ifc.get(), pset=pset, properties={"Data": json_data, "Parent": parent_element.GlobalId}
         )
 
-        # Post-condition: parent is selected on return. duplicate_ifc_objects
-        # deselects the source on every call inside the regen loop; without
-        # this restore, callers get a deselected parent for arrays with N >= 2.
-        # TODO: batch the per-child duplicate_ifc_objects([parent]) calls into
-        # a single N-way duplicate — N depsgraph churns + N select/deselect
-        # flips is wasteful, and a batched duplicate would also remove the
-        # need for this restore.
-        parent_obj.select_set(True)
+        tool.Blender.set_object_selection(parent_obj, True)
 
     @classmethod
     def mirror_parent_void_fillings_to_children(
@@ -2255,31 +2292,17 @@ class Model(bonsai.core.tool.Model):
         deform_layer = bm.verts.layers.deform.active
 
         # Sanity check
-        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
         if deform_layer:
             for vert in bm.verts:
                 vert_group_indices = tool.Blender.bmesh_get_vertex_groups(vert, deform_layer)
-                is_circle = False
-                for group_index in vert_group_indices:
-                    group_type = "IFCARCINDEX" if group_index in groups["IFCARCINDEX"] else "IFCCIRCLE"
-                    group_verts[group_type].setdefault(group_index, 0)
-                    group_verts[group_type][group_index] += 1
-                    if group_type == "IFCCIRCLE":
-                        is_circle = True
+                is_circle = any(gi in groups["IFCCIRCLE"] for gi in vert_group_indices)
+                is_arc = any(gi in groups["IFCARCINDEX"] for gi in vert_group_indices)
+                if (is_circle or is_arc) and not vert.link_edges:
+                    return (False, "CIRCLE" if is_circle else "3POINT_ARC")
                 if is_circle:
                     pass  # Circles are allowed to be unclosed
                 elif len(vert.link_edges) != 2:  # Unclosed loop or forked loop
                     return (False, "UNCLOSED_LOOP")
-
-        for group_type, group_counts in group_verts.items():
-            if group_type == "IFCARCINDEX":
-                for group_count in group_counts.values():
-                    if group_count != 3:  # Each arc needs 3 verts
-                        return (False, "3POINT_ARC")
-            elif group_type == "IFCCIRCLE":
-                for group_count in group_counts.values():
-                    if group_count != 2:  # Each circle needs 2 verts
-                        return (False, "CIRCLE")
 
         loop_edges = list(bm.edges)
 
@@ -2302,6 +2325,28 @@ class Model(bonsai.core.tool.Model):
                         loop_edges.remove(edge)
                         has_found_connected_edge = True
             loops.append(loop)
+
+        # Sanity check, per loop rather than across the whole mesh
+        if deform_layer:
+            for loop in loops:
+                loop_group_counts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
+                loop_verts = {v for edge in loop for v in edge.verts}
+                for vert in loop_verts:
+                    for group_index in tool.Blender.bmesh_get_vertex_groups(vert, deform_layer):
+                        if group_index in groups["IFCARCINDEX"]:
+                            group_type = "IFCARCINDEX"
+                        elif group_index in groups["IFCCIRCLE"]:
+                            group_type = "IFCCIRCLE"
+                        else:
+                            continue
+                        loop_group_counts[group_type].setdefault(group_index, 0)
+                        loop_group_counts[group_type][group_index] += 1
+                for group_count in loop_group_counts["IFCARCINDEX"].values():
+                    if group_count != 3:  # Each arc needs 3 verts
+                        return (False, "3POINT_ARC")
+                for group_count in loop_group_counts["IFCCIRCLE"].values():
+                    if group_count != 2:  # Each circle needs 2 verts
+                        return (False, "CIRCLE")
 
         tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
 
@@ -2483,26 +2528,10 @@ class Model(bonsai.core.tool.Model):
         deform_layer = bm.verts.layers.deform.active
 
         # Sanity check
-        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
         if deform_layer:
             for vert in bm.verts:
-                vert_group_indices = tool.Blender.bmesh_get_vertex_groups(vert, deform_layer)
-                for group_index in vert_group_indices:
-                    group_type = "IFCARCINDEX" if group_index in groups["IFCARCINDEX"] else "IFCCIRCLE"
-                    group_verts[group_type].setdefault(group_index, 0)
-                    group_verts[group_type][group_index] += 1
                 if len(vert.link_edges) > 2:  # Forked loop
                     return (False, "FORKED_LOOP")
-
-        for group_type, group_counts in group_verts.items():
-            if group_type == "IFCARCINDEX":
-                for group_count in group_counts.values():
-                    if group_count != 3:  # Each arc needs 3 verts
-                        return (False, "3POINT_ARC")
-            elif group_type == "IFCCIRCLE":
-                for group_count in group_counts.values():
-                    if group_count != 2:  # Each circle needs 2 verts
-                        return (False, "CIRCLE")
 
         loop_edges = list(bm.edges)
 
@@ -2525,6 +2554,28 @@ class Model(bonsai.core.tool.Model):
                         loop_edges.remove(edge)
                         has_found_connected_edge = True
             loops.append(loop)
+
+        # Sanity check, per loop rather than across the whole mesh
+        if deform_layer:
+            for loop in loops:
+                loop_group_counts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
+                loop_verts = {v for edge in loop for v in edge.verts}
+                for vert in loop_verts:
+                    for group_index in tool.Blender.bmesh_get_vertex_groups(vert, deform_layer):
+                        if group_index in groups["IFCARCINDEX"]:
+                            group_type = "IFCARCINDEX"
+                        elif group_index in groups["IFCCIRCLE"]:
+                            group_type = "IFCCIRCLE"
+                        else:
+                            continue
+                        loop_group_counts[group_type].setdefault(group_index, 0)
+                        loop_group_counts[group_type][group_index] += 1
+                for group_count in loop_group_counts["IFCARCINDEX"].values():
+                    if group_count != 3:  # Each arc needs 3 verts
+                        return (False, "3POINT_ARC")
+                for group_count in loop_group_counts["IFCCIRCLE"].values():
+                    if group_count != 2:  # Each circle needs 2 verts
+                        return (False, "CIRCLE")
 
         tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
 

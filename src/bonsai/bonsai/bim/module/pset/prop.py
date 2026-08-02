@@ -228,6 +228,8 @@ def get_qto_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Ble
     if "bpy.data.objects" in pset_type:
         if prop_type == "PsetProperties":
             results = get_object_qto_name(self, context)
+        else:
+            assert False
     elif prop_type == "TaskPsetProperties":
         results = get_task_qto_names(self, context)
     elif prop_type == "ResourcePsetProperties":

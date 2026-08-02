@@ -302,9 +302,15 @@ def add_drawing(
         context=drawing.get_body_context(),
         ifc_representation_class=None,
     )
+
+    drawings_parent_group = drawing.ensure_drawings_parent_group()
+
     group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=group, products=[element])
+
+    ifc.run("group.assign_group", group=drawings_parent_group, products=[group])
+
     collector.assign(camera)
     pset = ifc.run("pset.add_pset", product=element, name="EPset_Drawing")
     if drawing.get_unit_system() == "METRIC":
@@ -335,7 +341,10 @@ def add_drawing(
         },
     )
     drawing.setup_shading_styles_path(shading_styles_path)
-    information = ifc.run("document.add_information")
+
+    drawings_parent_document = drawing.ensure_drawings_parent_document()
+
+    information = ifc.run("document.add_information", parent=drawings_parent_document)
     uri = drawing.get_default_drawing_path(drawing_name)
     reference = ifc.run("document.add_reference", information=information)
     if ifc.get_schema() == "IFC2X3":
@@ -363,9 +372,13 @@ def duplicate_drawing(
     drawing_tool.set_name(new_drawing, drawing_name)
     group = drawing_tool.get_drawing_group(new_drawing)
     ifc.run("group.unassign_group", group=group, products=[new_drawing])
+
+    drawings_parent_group = drawing_tool.ensure_drawings_parent_group()
+
     new_group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=new_group, products=[new_drawing])
+    ifc.run("group.assign_group", group=drawings_parent_group, products=[new_group])
     if should_duplicate_annotations:
         new_annotations: list[ifcopenshell.entity_instance] = []
         annotation_objs = [ifc.get_object(a) for a in drawing_tool.get_group_elements(group) if a != drawing]
@@ -381,7 +394,9 @@ def duplicate_drawing(
     old_reference = drawing_tool.get_drawing_document(new_drawing)
     ifc.run("document.unassign_document", products=[new_drawing], document=old_reference)
 
-    information = ifc.run("document.add_information")
+    drawings_parent_document = drawing_tool.ensure_drawings_parent_document()
+
+    information = ifc.run("document.add_information", parent=drawings_parent_document)
     uri = drawing_tool.get_default_drawing_path(drawing_name)
     reference = ifc.run("document.add_reference", information=information)
     if ifc.get_schema() == "IFC2X3":
@@ -394,6 +409,37 @@ def duplicate_drawing(
 
     drawing_tool.import_drawings()
     return new_drawing
+
+
+def copy_annotations_to_drawing(
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    drawing_tool: type[tool.Drawing],
+    geometry: type[tool.Geometry],
+    annotations: list[ifcopenshell.entity_instance],
+    target_drawing: ifcopenshell.entity_instance,
+) -> list[ifcopenshell.entity_instance]:
+    """Duplicate annotations into another drawing, leaving the originals untouched."""
+    target_group = drawing_tool.get_drawing_group(target_drawing)
+    if not target_group:
+        return []
+    annotations = [a for a in annotations if drawing_tool.get_annotation_drawing(a) != target_drawing]
+    annotation_objs = [obj for a in annotations if (obj := ifc.get_object(a))]
+    if not annotation_objs:
+        return []
+    camera = ifc.get_object(target_drawing) or drawing_tool.import_drawing(target_drawing)
+    old_to_new, _ = geometry.duplicate_ifc_objects(annotation_objs)
+    copied: list[ifcopenshell.entity_instance] = []
+    for new_elements in old_to_new.values():
+        for new_element in new_elements:
+            if old_group := drawing_tool.get_drawing_group(new_element):
+                ifc.run("group.unassign_group", group=old_group, products=[new_element])
+            ifc.run("group.assign_group", group=target_group, products=[new_element])
+            new_obj = ifc.get_object(new_element)
+            drawing_tool.ensure_annotation_in_drawing_plane(new_obj, camera)
+            collector.assign(new_obj, should_clean_users_collection=True)
+            copied.append(new_element)
+    return copied
 
 
 def remove_drawing(
@@ -482,6 +528,7 @@ def add_annotation(
     drawing_tool.show_decorations()
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
+    relating_type_rep = None
     if not element:  # Brand new annotation
         relating_type_rep = drawing_tool.get_annotation_representation(relating_type) if relating_type else None
         element = drawing_tool.run_root_assign_class(

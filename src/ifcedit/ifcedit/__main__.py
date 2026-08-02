@@ -244,7 +244,9 @@ def main():
     qrun_parser = quantify_sub.add_parser("run", help="Run QTO on an IFC file")
     qrun_parser.add_argument("ifc_file", help="Path to the IFC file")
     qrun_parser.add_argument("rule_name", help="QTO rule name (e.g. IFC4QtoBaseQuantities)")
-    qrun_parser.add_argument("--selector", help="ifcopenshell selector to restrict elements (default: all IfcElement)")
+    qrun_parser.add_argument(
+        "--selector", help="ifcopenshell selector to restrict elements (default: all IfcElement and IfcSpace)"
+    )
     qrun_parser.add_argument("-o", "--output", help="Output file path (default: overwrite input)")
 
     args, extra = parser.parse_known_args()

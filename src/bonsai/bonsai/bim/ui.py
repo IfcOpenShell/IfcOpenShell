@@ -41,6 +41,7 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.ifc import is_cache_locked_by_other_process
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
+from bonsai.bim.module.material.operator import SelectByMaterial
 from bonsai.bim.module.model import prop as _model_prop
 from bonsai.bim.module.model import ui as _model_ui
 from bonsai.bim.module.pset.prop import IfcProperty
@@ -284,11 +285,13 @@ class GizmoPreferences(bpy.types.PropertyGroup):
         draw_gizmos_in_3d_viewport: bool
 
 
+_gizmo_pref_entry = None
 for _gizmo_pref_entry in tool.Parametric.EDIT_TYPES:
     GizmoPreferences.__annotations__[_gizmo_pref_entry.name] = BoolProperty(
         name=_gizmo_pref_entry.name.replace("_", " ").title(),
         default=True,
     )
+assert _gizmo_pref_entry is not None
 del _gizmo_pref_entry
 
 
@@ -394,12 +397,14 @@ class DefaultParameters(bpy.types.PropertyGroup):
     and gives the create operator a preset to copy from."""
 
 
+_default_params_entry = None
 for _default_params_entry in tool.Parametric.EDIT_TYPES:
     if not _default_params_entry.has_default_parameters:
         continue
     DefaultParameters.__annotations__[_default_params_entry.name] = bpy.props.PointerProperty(
         type=getattr(_model_prop, _default_params_entry.props_attr),
     )
+assert _default_params_entry is not None
 del _default_params_entry
 
 
@@ -577,6 +582,43 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
+
+    def update_autosave_settings(self, context: bpy.types.Context) -> None:
+        if self.autosave_enabled:
+            tool.Autosave.reset_timer()
+        else:
+            tool.Autosave.cancel_timer()
+
+    autosave_enabled: BoolProperty(
+        name="Enable IFC Autosave Timer",
+        description="Periodically remind you to save or automatically create a backup copy of the IFC file",
+        default=False,
+        update=update_autosave_settings,
+    )
+    autosave_interval_minutes: bpy.props.IntProperty(
+        name="Autosave Interval (Minutes)",
+        description="Time between autosave reminders or backups. The timer resets whenever you open or save a project",
+        default=10,
+        min=1,
+        max=1440,
+        update=update_autosave_settings,
+    )
+    autosave_mode: bpy.props.EnumProperty(
+        name="Autosave Mode",
+        items=[
+            (
+                "PROMPT",
+                "Prompt to Save",
+                "Show a dialog offering to save the IFC project when the timer expires",
+            ),
+            (
+                "BACKUP",
+                "Automatic Backup",
+                "Save a backup copy as filename_autosaved.ifc when the timer expires",
+            ),
+        ],
+        default="PROMPT",
+    )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_always_cache: BoolProperty(
         name="Always Cache Geometry",
@@ -689,6 +731,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bsdd_load_test_dictionaries: bool
         bsdd_baseurl: str
         should_disable_undo_on_save: bool
+        autosave_enabled: bool
+        autosave_interval_minutes: int
+        autosave_mode: Literal["PROMPT", "BACKUP"]
         should_stream: bool
         should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
@@ -837,6 +882,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")
         layout.prop(self, "should_disable_undo_on_save")
+        layout.separator()
+        layout.label(text="Autosave:")
+        layout.prop(self, "autosave_enabled")
+        if self.autosave_enabled:
+            layout.prop(self, "autosave_interval_minutes")
+            layout.prop(self, "autosave_mode")
         layout.prop(self, "should_stream")
         layout.prop(self, "should_always_cache")
         layout.label(text="bSDD:")
@@ -1804,6 +1855,21 @@ def draw_statusbar(self, context):
 
 def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     # https://blender.stackexchange.com/a/275555/86891
+
+    # Context menu for material name buttons (e.g. `bim.select_by_material`),
+    # offering a quick "Rename Material" entry instead of having to look up
+    # the material in the scene Materials panel to rename it.
+    button_operator = getattr(context, "button_operator", None)
+    if button_operator is not None and button_operator.bl_rna.identifier == SelectByMaterial.bl_rna.identifier:
+        ifc_file = tool.Ifc.get()
+        material = ifc_file.by_id(button_operator.material) if ifc_file else None
+        if material is not None and material.is_a("IfcMaterial"):
+            assert self.layout
+            self.layout.separator()
+            op = self.layout.operator("bim.rename_material", text="Rename Material", icon="GREASEPENCIL")
+            op.material = material.id()
+        return
+
     if (
         not hasattr(context, "button_pointer")
         or not hasattr(context, "button_prop")

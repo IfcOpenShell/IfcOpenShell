@@ -22,6 +22,8 @@ from __future__ import annotations
 from collections.abc import Generator, Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
+import ifcopenshell
+
 from .. import ifcopenshell_wrapper, open
 from ..entity_instance import entity_instance
 from ..file import file
@@ -107,6 +109,12 @@ SETTING = Literal[
     "reorient-shells",
     "site-local-placement",
     "surface-colour",
+    "svg-emit-flush-edges",
+    "svg-render-crease-edges",
+    "svg-render-sharp-edges",
+    "svg-ridge-angle-min-degrees",
+    "svg-use-edge-classification",
+    "svg-valley-angle-min-degrees",
     "triangulation-type",
     "unify-shapes",
     "use-material-names",
@@ -174,7 +182,7 @@ class settings_mixin:
     def set(self: settings, k: SETTING, v: Any) -> None: ...
     @overload
     def set(self: serializer_settings, k: SERIALIZER_SETTING, v: Any) -> None: ...
-    def set(self, k: SETTING, v: Any) -> None:
+    def set(self, k: Union[SETTING, SERIALIZER_SETTING], v: Any) -> None:
         """
         Set value of the setting named `k` to `v`.
 
@@ -252,7 +260,7 @@ class settings_mixin:
         }
         for nm in self.setting_names():
             if nm == "use-python-opencascade":
-                ty == "bool"
+                ty = "bool"
             else:
                 ty = self.get_type(nm)
             if ty == "bool":
@@ -302,8 +310,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
         logger=None,
     ):
         self.settings = settings
-        if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
-            logger = logger_type.Root()
+        logger = ifcopenshell.logger_or_root(logger)
         if isinstance(file_or_filename, file):
             self.file = file
             file_or_filename = file_or_filename.wrapped_data
@@ -325,10 +332,11 @@ class iterator(ifcopenshell_wrapper.Iterator):
             if include_or_exclude_type == {"entity_instance"}:
                 include_or_exclude = cast(set[entity_instance], include_or_exclude)
 
-                if not all((last_inst := inst).is_a("IfcProduct") for inst in include_or_exclude):
-                    raise ValueError(
-                        f"include and exclude need to be an aggregate of IfcProduct. Violating element: '{last_inst}'."
-                    )
+                for inst in include_or_exclude:
+                    if not inst.is_a("IfcProduct"):
+                        raise ValueError(
+                            f"include and exclude need to be an aggregate of IfcProduct. Violating element: '{inst}'."
+                        )
 
                 initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude_id
 
@@ -344,10 +352,10 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 include is not None,
                 num_threads,
             )
-            self.this = initializer(*args, *((logger,) if logger is not None else ()))
+            self.this = initializer(*args, *ifcopenshell.optional_logger_args(logger))
         else:
             args = (geometry_library, self.settings, file_or_filename, num_threads)
-            self.this = ifcopenshell_wrapper.construct_iterator(*args, *((logger,) if logger is not None else ()))
+            self.this = ifcopenshell_wrapper.construct_iterator(*args, *ifcopenshell.optional_logger_args(logger))
 
     if has_occ:
 
@@ -474,8 +482,8 @@ def create_shape(
     """
     Returns a geometric interpretation of the IFC entity instance
 
-    Note that in Python, you must store a reference to the element returned by this function to prevent garbage
-    collection when you access its children. See #1124.
+    The returned element's ``geometry`` keeps a reference to its owning element, so accessing children
+    (e.g. ``create_shape(...).geometry.verts``) no longer requires holding onto the element. See #1124.
 
     :raises RuntimeError: If failed to process shape. You can turn detailed logging to get more details.
 

@@ -228,6 +228,90 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
         )
 
 
+def get_copy_annotation_target_drawings(self, context):
+    global COPY_ANNOTATION_TARGET_DRAWINGS_ENUM
+    drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+    drawings.sort(key=lambda d: d.Name or "")
+    COPY_ANNOTATION_TARGET_DRAWINGS_ENUM = [(str(d.id()), d.Name or "Unnamed", "") for d in drawings]
+    return COPY_ANNOTATION_TARGET_DRAWINGS_ENUM
+
+
+COPY_ANNOTATION_TARGET_DRAWINGS_ENUM = []
+
+
+class CopyAnnotationToDrawing(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_annotation_to_drawing"
+    bl_label = "Copy Annotation To Drawing"
+    bl_description = (
+        "Copy the selected annotations to another drawing.\n\n"
+        "The copies become independent annotations assigned to the chosen drawing, "
+        "placed in its view plane. The originals stay in their current drawing"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    target_drawing: bpy.props.EnumProperty(name="Target Drawing", items=get_copy_annotation_target_drawings)
+
+    if TYPE_CHECKING:
+        target_drawing: str
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded.")
+            return False
+        if not cls.get_selected_annotations(context):
+            cls.poll_message_set("No annotation selected.")
+            return False
+        return True
+
+    @classmethod
+    def get_selected_annotations(cls, context) -> list[ifcopenshell.entity_instance]:
+        return [
+            element
+            for obj in context.selected_objects
+            if (element := tool.Ifc.get_entity(obj))
+            and element.is_a("IfcAnnotation")
+            and element.ObjectType != "DRAWING"
+        ]
+
+    def invoke(self, context, event):
+        assert context.window_manager
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        assert self.layout
+        row = self.layout.row()
+        row.prop(self, "target_drawing")
+
+    def _execute(self, context):
+        if not self.target_drawing:
+            self.report({"ERROR"}, "No target drawing selected.")
+            return {"CANCELLED"}
+        target_drawing = tool.Ifc.get().by_id(int(self.target_drawing))
+        annotations = self.get_selected_annotations(context)
+        previous_selection = [obj for a in annotations if (obj := tool.Ifc.get_object(a))]
+        previous_active = context.view_layer.objects.active
+        copied = core.copy_annotations_to_drawing(
+            tool.Ifc,
+            tool.Collector,
+            tool.Drawing,
+            tool.Geometry,
+            annotations=annotations,
+            target_drawing=target_drawing,
+        )
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        for obj in previous_selection:
+            if obj.name in context.view_layer.objects:
+                obj.select_set(True)
+        if previous_active and previous_active.name in context.view_layer.objects:
+            context.view_layer.objects.active = previous_active
+        skipped = len(annotations) - len(copied)
+        message = f"Copied {len(copied)} annotations to {target_drawing.Name or 'Unnamed'}."
+        if skipped:
+            message += f" Skipped {skipped} already in that drawing."
+        self.report({"INFO"}, message)
+
+
 class CreateDrawing(bpy.types.Operator):
     """Creates/refreshes a .svg drawing
 
@@ -698,6 +782,8 @@ class CreateDrawing(bpy.types.Operator):
                 layer_set = material
                 offset = 0
                 sense_factor = 1
+            else:
+                assert False, material
 
             camera_matrix_i = context.scene.camera.matrix_world.inverted()
 
@@ -722,7 +808,6 @@ class CreateDrawing(bpy.types.Operator):
             bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.000001)
             bmesh.ops.triangle_fill(bm, use_dissolve=True, edges=bm.edges)
 
-            prev_co = None
             if not usage:
                 sense_factor = 1  # Assume the extrusion vector points in the direction sense
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
@@ -739,6 +824,8 @@ class CreateDrawing(bpy.types.Operator):
                 co = Vector((0.0, 0.0, offset))
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
                 no = Vector([1.0, 0.0, 0.0])
+            else:
+                assert False, usage
             no *= sense_factor
             last_i = len(layer_set.MaterialLayers) - 1
             for i, layer in enumerate(layer_set.MaterialLayers):
@@ -906,6 +993,10 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
+        ifc = tool.Ifc.get()
+        semantics = None
+        pairs = None
+
         # in case of printing multiple drawings we need to sync just once
         if self.sync and self.drawing_index == 0:
             with profile("sync"):
@@ -951,6 +1042,12 @@ class CreateDrawing(bpy.types.Operator):
         tree = ifcopenshell.geom.tree()
         tree.enable_face_styles(True)
 
+        # Accumulated across every file in the loop below (main model plus any
+        # linked models) so the SHAPELY fill pass after the loop covers all of
+        # them, not just whichever file happened to be processed last.
+        raycast_objs = set()
+        elements_with_faces = set()
+
         for ifc_path, (ifc, link_matrix) in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
@@ -960,13 +1057,24 @@ class CreateDrawing(bpy.types.Operator):
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
 
+            if self.cprops.fill_mode == "SHAPELY":
+                for element in drawing_elements.copy():
+                    if element.is_a("IfcAnnotation"):
+                        continue
+                    obj = tool.Ifc.get_object(element)
+                    if obj and obj.type == "MESH" and len(obj.data.polygons):
+                        elements_with_faces.add(element.GlobalId)
+                        raycast_objs.add(obj)
+
             # Get all representation contexts to see what we're dealing with.
             # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
             # A drawing prioritises a target view context first, followed by a model view context as a fallback.
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
             contexts = self.get_linework_contexts(ifc, target_view)
             self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
-            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix)
+            self.serialize_contexts_elements(
+                ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix
+            )
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
@@ -1032,16 +1140,6 @@ class CreateDrawing(bpy.types.Operator):
         if self.cprops.fill_mode == "SHAPELY":
             # shapely variant
             group = root.find("{http://www.w3.org/2000/svg}g")
-
-            raycast_objs = set()
-            elements_with_faces = set()
-            for element in drawing_elements.copy():
-                if element.is_a("IfcAnnotation"):
-                    continue
-                obj = tool.Ifc.get_object(element)
-                if obj and obj.type == "MESH" and len(obj.data.polygons):
-                    elements_with_faces.add(element.GlobalId)
-                    raycast_objs.add(obj)
 
             projections = root.xpath(
                 ".//svg:g[contains(@class, 'projection')]", namespaces={"svg": "http://www.w3.org/2000/svg"}
@@ -1302,6 +1400,18 @@ class CreateDrawing(bpy.types.Operator):
         self.svg_settings = ifcopenshell.geom.settings()
         self.svg_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         self.svg_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
+        # SVG edge classification (issue #3668). See edge-classification.md. Settings are
+        # per-drawing, stored in EPset_Drawing and read into self.cprops by import_camera_props.
+        try:
+            self.svg_settings.set("svg-use-edge-classification", self.cprops.use_edge_classification)
+            self.svg_settings.set("svg-render-crease-edges", self.cprops.render_creases)
+            self.svg_settings.set("svg-valley-angle-min-degrees", self.cprops.valley_angle_min_degrees)
+            self.svg_settings.set("svg-render-sharp-edges", self.cprops.render_sharp)
+            self.svg_settings.set("svg-ridge-angle-min-degrees", self.cprops.ridge_angle_min_degrees)
+            self.svg_settings.set("svg-emit-flush-edges", self.cprops.render_flush)
+        except Exception:
+            # Backwards compatibility with older ifcopenshell builds that don't expose these keys.
+            pass
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser_settings = ifcopenshell.geom.serializer_settings()
         self.serialiser = ifcopenshell.geom.serializers.svg(
@@ -1445,6 +1555,15 @@ class CreateDrawing(bpy.types.Operator):
                 "Material.Name",
             ]
 
+        join_classes = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinClasses")
+        if join_classes:
+            join_classes = tuple(c.strip() for c in join_classes.split(",") if c.strip())
+        else:
+            # Architectural convention only merges these objects by default. E.g. pipe
+            # segments and fittings shouldn't merge. Users may override this per-drawing
+            # via the EPset_Drawing.JoinClasses property (e.g. to also join IfcCovering).
+            join_classes = ("IfcWall", "IfcSlab")
+
         group = root.find("{http://www.w3.org/2000/svg}g")
         joined_paths = {}
         self.is_manifold_cache = {}
@@ -1546,8 +1665,7 @@ class CreateDrawing(bpy.types.Operator):
                             )
                         path.attrib["d"] = d
 
-            # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
-            if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
+            if not any(element.is_a(c) for c in join_classes):
                 continue
 
             keys = []
@@ -1699,6 +1817,12 @@ class CreateDrawing(bpy.types.Operator):
             key=lambda a: (
                 tool.Drawing.get_annotation_z_index(a),
                 1 if ifcopenshell.util.element.get_predefined_type(a) == "TEXT" else 0,
+                # Deterministic tiebreaker so equal-priority annotations keep a
+                # stable order across sessions. Without it the order comes from
+                # the set union above, which depends on entity hashes (and thus
+                # the file pointer), shuffling annotations between Blender
+                # restarts. See #6608.
+                a.id(),
             ),
         )
 
@@ -2186,7 +2310,11 @@ class SelectAllDrawings(bpy.types.Operator):
 
     def execute(self, context):
         props = tool.Drawing.get_document_props()
+        # When filtering to sheeted drawings only, act on the visible drawings only.
+        sheeted_ids = tool.Drawing.get_sheeted_drawing_ids() if props.show_drawings_on_sheets_only else None
         for drawing in props.drawings:
+            if sheeted_ids is not None and drawing.is_drawing and drawing.ifc_definition_id not in sheeted_ids:
+                continue
             if drawing.is_selected != self.select_all:
                 drawing.is_selected = self.select_all
         return {"FINISHED"}
@@ -2336,7 +2464,9 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         "Activates the selected drawing view.\n\n"
         + "ALT+CLICK to keep the viewport position.\n\n"
         + "SHIFT+CLICK to load a quick preview of the drawing view.\n\n"
-        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views"
+        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views, "
+        + "then select their cameras (the first selected drawing's camera becomes active).\n\n"
+        + "SHIFT+CTRL+ALT+CLICK to do the same but also select the annotations, not just the cameras"
     )
 
     drawing: bpy.props.IntProperty()
@@ -2358,16 +2488,25 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         default=False,
         options={"SKIP_SAVE"},
     )
+    include_annotations_in_selection: bpy.props.BoolProperty(
+        name="Include Annotations In Selection",
+        description="Also select the loaded annotation objects, not just the drawing cameras.",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
 
     if TYPE_CHECKING:
         drawing: int
         should_view_from_camera: bool
         use_quick_preview: bool
         load_selected_annotations: bool
+        include_annotations_in_selection: bool
 
     def invoke(self, context, event) -> set["rna_enums.OperatorReturnItems"]:
         if event.type == "LEFTMOUSE" and event.shift and event.ctrl:
             self.load_selected_annotations = True
+            if event.alt:
+                self.include_annotations_in_selection = True
             return self.execute(context)
         if event.type == "LEFTMOUSE" and event.alt:
             self.should_view_from_camera = False
@@ -2382,15 +2521,34 @@ class ActivateDrawingBase(tool.Ifc.Operator):
             bpy.ops.bim.load_drawings()
 
         if self.load_selected_annotations:
+            objs_to_select = []
+            active_camera = None
             for d in props.drawings:
                 if not (d.is_drawing and d.is_selected):
                     continue
                 selected_drawing = tool.Ifc.get().by_id(d.ifc_definition_id)
                 # Importing the camera (if missing) ensures the drawing's
                 # collection exists so the annotations get collected into it.
-                if not tool.Ifc.get_object(selected_drawing):
-                    tool.Drawing.import_drawing(selected_drawing)
-                tool.Drawing.import_annotations_in_group(tool.Drawing.get_drawing_group(selected_drawing))
+                if not (camera := tool.Ifc.get_object(selected_drawing)):
+                    camera = tool.Drawing.import_drawing(selected_drawing)
+                group = tool.Drawing.get_drawing_group(selected_drawing)
+                tool.Drawing.import_annotations_in_group(group)
+
+                if active_camera is None:
+                    active_camera = camera
+                objs_to_select.append(camera)
+                if self.include_annotations_in_selection:
+                    for element in tool.Drawing.get_group_elements(group) or []:
+                        if element.is_a("IfcAnnotation") and element.ObjectType != "DRAWING":
+                            if annotation_obj := tool.Ifc.get_object(element):
+                                objs_to_select.append(annotation_obj)
+
+            # Select the checked drawings' objects, with the first drawing's camera as active.
+            bpy.ops.object.select_all(action="DESELECT")
+            for obj in objs_to_select:
+                obj.select_set(True)
+            if active_camera is not None:
+                context.view_layer.objects.active = active_camera
             return {"FINISHED"}
 
         drawing = tool.Ifc.get().by_id(self.drawing)
@@ -2479,7 +2637,9 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
         "Activates the selected drawing view.\n\n"
         + "ALT+CLICK to keep the viewport position.\n\n"
         + "SHIFT+CLICK to load a quick preview of the drawing view.\n\n"
-        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views"
+        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views, "
+        + "then select their cameras (the first selected drawing's camera becomes active).\n\n"
+        + "SHIFT+CTRL+ALT+CLICK to do the same but also select the annotations, not just the cameras"
     )
 
 
@@ -3541,7 +3701,7 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
         if sheet.is_a("IfcDocumentInformation"):
             self.document_type = "SHEET"
             self.name = sheet.Name
-            self.identification = sheet.DocumentId if tool.Ifc.get_schema() == "IFC2X3" else sheet.Identification
+            self.identification = tool.Document.get_document_information_id(sheet)
         elif sheet.is_a("IfcDocumentReference") and tool.Drawing.get_reference_description(sheet) == "TITLEBLOCK":
             self.document_type = "TITLEBLOCK"
         else:
@@ -3711,6 +3871,26 @@ class ToggleTargetView(bpy.types.Operator):
             if self.toggle_all or drawing.target_view == self.target_view:
                 drawing.is_expanded = expanded
         core.load_drawings(tool.Drawing)
+        return {"FINISHED"}
+
+
+class ToggleDrawingCategorySelection(bpy.types.Operator):
+    bl_idname = "bim.toggle_drawing_category_selection"
+    bl_label = "Toggle Category Selection"
+    bl_description = "Select or deselect all drawings in this view category"
+    bl_options = {"REGISTER", "UNDO"}
+
+    target_view: bpy.props.StringProperty()
+
+    if TYPE_CHECKING:
+        target_view: str
+
+    def execute(self, context):
+        drawings = tool.Drawing.get_visible_drawings_in_category(self.target_view)
+        # If everything visible in the category is already selected, deselect all; otherwise select all.
+        new_state = not all(d.is_selected for d in drawings)
+        for drawing in drawings:
+            drawing.is_selected = new_state
         return {"FINISHED"}
 
 

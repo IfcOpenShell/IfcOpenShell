@@ -57,6 +57,7 @@ def create_from_csv(file: ifcopenshell.file, filepath: str) -> entity_instance:
     :param filepath: path the to CSV file
     :return: IfcAlignment
     """
+    alignment = None
     with open(filepath, newline="") as csvfile:
         reader = csv.reader(csvfile)
         row_count = 0
@@ -89,9 +90,14 @@ def create_from_csv(file: ifcopenshell.file, filepath: str) -> entity_instance:
                 )
             else:
                 # add all subsequent vertical alignments
+                assert alignment is not None
                 vertical_layout = ifcopenshell.api.alignment.add_vertical_layout(file, alignment)
                 ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method(
                     file, vertical_layout, coordinates, radii
                 )
 
+    if row_count == 0:
+        raise ValueError(f"CSV file '{filepath}' is empty; expected at least one row for the horizontal alignment.")
+
+    assert alignment is not None
     return alignment

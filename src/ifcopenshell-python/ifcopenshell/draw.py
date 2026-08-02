@@ -42,7 +42,7 @@ WHITE = numpy.array((1.0, 1.0, 1.0))
 
 DO_NOTHING = lambda *args: None
 
-ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings() if hasattr(W, "arrange_polygon_settings") else None
+ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings()
 
 
 @dataclass
@@ -107,8 +107,7 @@ def main(
     progress_function: Callable = DO_NOTHING,
     logger=None,
 ):
-    if logger is None and ifcopenshell.logger is not None:
-        logger = ifcopenshell.logger.Root()
+    logger = ifcopenshell.logger_or_root(logger)
 
     def by_guid(g):
         for f in files:
@@ -297,6 +296,7 @@ def main(
         else:
             num_passes = 0
 
+        g2 = None
         for iteration in range(num_passes + 1):
 
             # initialize empty group, note that in the current approach only one
@@ -317,6 +317,7 @@ def main(
                 plt.fill(numpy.array(x.boundary).T[0], numpy.array(x.boundary).T[1])
             """
 
+            semantics, pairs = None, None
             if iteration != num_passes:
                 pairs = svgfill_context.get_face_pairs()
                 semantics = [None] * (max(pairs) + 1)
@@ -378,6 +379,7 @@ def main(
                 if inside_elements:
                     elements = None
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = (inside_elements[0], -1)
                 else:
                     elements = tree.select_ray(pythonize(a), pythonize(b - a))
@@ -410,6 +412,7 @@ def main(
                     svg_fill = "rgb(%s)" % ", ".join(str(f * 255.0) for f in clr[0:3])
 
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = elements[0]
                 else:
                     svg_fill = "none"
@@ -419,6 +422,8 @@ def main(
             if iteration != num_passes:
                 to_remove = []
 
+                assert pairs is not None
+                assert semantics is not None
                 for he_idx in range(0, len(pairs), 2):
                     # @todo instead of ray_distance, better do (x.point - y.point).dot(x.normal)
                     # to see if they're coplanar, because ray-distance will be different in case
@@ -446,6 +451,7 @@ def main(
 
         # Swap the XML nodes from the files
         # Remove the original hidden line node we still have in the serializer output
+        assert g2 is not None
         g1.removeChild(projection)
         g2.setAttribute("class", "projection")
         # Find the children of the projection node parent
@@ -540,11 +546,7 @@ def main(
                     *(tup for i, tup in enumerate(zip(path_objects, section_polies, polies)) if has_relevant_zone(i))
                 )
 
-            arranged = W.arrange_polygons(
-                *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
-                polies,  # ty: ignore[too-many-positional-arguments]
-                *((logger,) if logger is not None else ()),
-            )
+            arranged = W.arrange_polygons(ARRANGE_POLYGON_SETTINGS, polies, logger)
             svg_data_3 = W.polygons_to_svg(arranged, False)
             dom3 = parseString(svg_data_3)
             svg3 = dom3.childNodes[0]

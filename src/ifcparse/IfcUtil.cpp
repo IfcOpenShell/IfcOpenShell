@@ -187,6 +187,15 @@ void IfcUtil::sanitate_material_name(std::string& str) {
 }
 
 void IfcUtil::escape_xml(std::string& str) {
+    // Strip characters that are illegal in XML 1.0. Control characters other
+    // than tab (0x09), newline (0x0A) and carriage return (0x0D) are not valid
+    // XML 1.0 characters and cannot even be represented as numeric character
+    // references, so they would otherwise make the serialized XML/SVG output
+    // non-well-formed. Bytes belonging to a valid UTF-8 multibyte sequence are
+    // always >= 0x80, so filtering on the low control range leaves them intact.
+    str.erase(std::remove_if(str.begin(), str.end(), [](unsigned char c) {
+        return c < 0x20 && c != '\t' && c != '\n' && c != '\r';
+    }), str.end());
     boost::replace_all(str, "&", "&amp;");
     boost::replace_all(str, "\"", "&quot;");
     boost::replace_all(str, "'", "&apos;");
@@ -353,6 +362,17 @@ IFC_PARSE_API bool IfcUtil::path::rename_file(const std::string& old_filename, c
     return success;
 }
 
+IFC_PARSE_API bool IfcUtil::path::atomic_rename_file(const std::string& old_filename, const std::string& new_filename) {
+    std::wstring old_filename_w = from_utf8(old_filename);
+    std::wstring new_filename_w = from_utf8(new_filename);
+    // MOVEFILE_REPLACE_EXISTING makes the replace atomic on NTFS (no unlink
+    // of the destination first). MOVEFILE_WRITE_THROUGH waits until the move
+    // is flushed to disk before returning.
+    const bool success = !!MoveFileExW(old_filename_w.c_str(), new_filename_w.c_str(),
+        MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    return success;
+}
+
 IFC_PARSE_API bool IfcUtil::path::delete_file(const std::string& filename) {
     std::wstring filename_w = from_utf8(filename);
     const bool success = !!DeleteFileW(filename_w.c_str());
@@ -365,6 +385,12 @@ IFC_PARSE_API bool IfcUtil::path::rename_file(const std::string& old_filename, c
     // Whether or not rename() replaces an existing file is implementation-specific,
     // so remove() possible existing file always.
     delete_file(new_filename);
+    return std::rename(old_filename.c_str(), new_filename.c_str()) == 0;
+}
+
+IFC_PARSE_API bool IfcUtil::path::atomic_rename_file(const std::string& old_filename, const std::string& new_filename) {
+    // POSIX rename() atomically replaces an existing destination on the same
+    // filesystem, so there is no window in which new_filename is missing.
     return std::rename(old_filename.c_str(), new_filename.c_str()) == 0;
 }
 

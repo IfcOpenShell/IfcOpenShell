@@ -33,9 +33,7 @@ class TestDowngradeIndexedPolyCurve(test.bootstrap.IFC4):
             Points=point_list,
             Segments=segments,
         )
-        self.file.create_entity(
-            "IfcArbitraryClosedProfileDef", ProfileType="AREA", OuterCurve=curve
-        )
+        self.file.create_entity("IfcArbitraryClosedProfileDef", ProfileType="AREA", OuterCurve=curve)
         return curve
 
     def test_run_without_segments(self):
@@ -80,9 +78,7 @@ class TestDowngradeIndexedPolyCurve(test.bootstrap.IFC4):
             Points=point_list,
             Segments=[self.file.createIfcLineIndex((1, 2, 3, 4, 1))],
         )
-        self.file.create_entity(
-            "IfcArbitraryClosedProfileDef", ProfileType="AREA", OuterCurve=curve
-        )
+        self.file.create_entity("IfcArbitraryClosedProfileDef", ProfileType="AREA", OuterCurve=curve)
         ifcpatch.execute(
             {"input": "input.ifc", "file": self.file, "recipe": "DowngradeIndexedPolyCurve", "arguments": []}
         )
@@ -110,9 +106,7 @@ class TestDowngradeIndexedPolyCurve(test.bootstrap.IFC4):
                 self.file.createIfcLineIndex((3, 4)),
             ],
         )
-        self.file.create_entity(
-            "IfcArbitraryClosedProfileDef", ProfileType="AREA", OuterCurve=curve
-        )
+        self.file.create_entity("IfcArbitraryClosedProfileDef", ProfileType="AREA", OuterCurve=curve)
         ifcpatch.execute(
             {"input": "input.ifc", "file": self.file, "recipe": "DowngradeIndexedPolyCurve", "arguments": []}
         )

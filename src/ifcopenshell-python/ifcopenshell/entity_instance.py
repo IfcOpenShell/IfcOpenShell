@@ -192,7 +192,7 @@ class entity_instance:
             return
 
     @property
-    def file(self):
+    def file(self) -> "ifcopenshell.file":
         # ugh circular imports, name collisions
         from . import file
 
@@ -409,9 +409,9 @@ class entity_instance:
     @overload
     def is_a(self) -> str: ...
     @overload
-    def is_a(self, ifc_class: str) -> bool: ...
+    def is_a(self, ifc_class: str, /) -> bool: ...
     @overload
-    def is_a(self, with_schema: bool) -> str: ...
+    def is_a(self, with_schema: bool, /) -> str: ...
     def is_a(self, *args: Union[str, bool]) -> Union[str, bool]:
         """Return the IFC class name of an instance, or checks if an instance belongs to a class.
 
@@ -642,16 +642,16 @@ class entity_instance:
         return_type: type[dict] = dict,
         ignore: Sequence[str] = (),
     ) -> dict[str, Any]:
-        """More perfomant version of `.get_info()` but with limited arguments values.\n
-        Method has exactly the same signature as `.get_info()` but it doesn't support getting information non-recursively.
-
-        Currently supported arguments values:
-            * recursive: `True` (will fail with default `False` value from `.get_info()`)
-            * return_type: `dict`
-            * ignore: `()` (empty tuple)
+        """More perfomant version of `.get_info()`.\n
+        Method has exactly the same signature as `.get_info()`, but the fast C++
+        path only implements ``recursive=True``, ``return_type=dict`` and
+        ``ignore=()``. Any other combination falls back to the pure Python
+        `.get_info()`, where no meaningful performance gain is possible anyway
+        as the cost is dominated by the recursive traversal.
         """
 
-        assert recursive
-        assert return_type is dict
-        assert len(ignore) == 0
-        return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data, include_identifier)
+        if recursive and return_type is dict and not ignore:
+            return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data, include_identifier)
+        return self.get_info(
+            include_identifier=include_identifier, recursive=recursive, return_type=return_type, ignore=ignore
+        )

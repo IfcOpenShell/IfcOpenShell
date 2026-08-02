@@ -449,7 +449,14 @@ const std::string& TokenFunc::asStringRef(const Token& token) {
     }
     std::string& str = token.lexer->GetTempString();
     token.lexer->TokenString(token.startPos, str);
-    if ((isString(token) || isEnumeration(token) || isBinary(token)) && !str.empty()) {
+    // A well-formed string/enumeration/binary token has both delimiters (e.g.
+    // '...', .XXX., "...."), so at least two characters. Malformed input from a
+    // fuzzer can produce a single-character token (e.g. a bare '.' left by
+    // ".)" instead of ".PHYSICAL."); stripping both ends would then erase past
+    // the end of an already-empty string, which is undefined behaviour and
+    // aborts under hardened standard libraries (_GLIBCXX_ASSERTIONS). Require
+    // two characters before stripping. See #5683.
+    if ((isString(token) || isEnumeration(token) || isBinary(token)) && str.size() >= 2) {
         //remove start+end characters in-place
         str.erase(str.end() - 1);
         str.erase(str.begin());
@@ -725,6 +732,41 @@ void IfcParse::impl::rocks_db_file_storage::remove_type_ref(IfcUtil::IfcBaseClas
 }
 
 namespace {
+    // Shortest decimal representation of 'd' that round-trips back to the
+    // exact same double (like std::to_chars, or Python's repr).
+    // Using actual `std::to_chars` requires macOS 13.3+, so we implement this manually,
+    // until we drop support for older targets.
+    //
+    // Mirrors libstdc++'s notation-choice bounds (floating_to_chars.cc,
+    // __floating_to_chars_shortest) to pick whichever of fixed/scientific is
+    // shorter for a given digit count and exponent.
+    static inline void format_double_shortest(char (&buf)[64], double d) {
+        char sci[64];
+        int mantissa_length = 17;
+        for (int prec = 1; prec <= 17; ++prec) {
+            snprintf(sci, sizeof(sci), "%.*e", prec - 1, d);
+            if (strtod(sci, nullptr) == d) {
+                mantissa_length = prec;
+                break;
+            }
+        }
+        const char* exp_str = strchr(sci, 'e');
+        const int scientific_exponent = exp_str ? atoi(exp_str + 1) : 0;
+        const int fd_exponent = scientific_exponent - (mantissa_length - 1);
+        int lower_bound = -(mantissa_length + 3);
+        int upper_bound = 5;
+        if (mantissa_length == 1) {
+            ++lower_bound;
+            --upper_bound;
+        }
+        if (fd_exponent >= lower_bound && fd_exponent <= upper_bound) {
+            const int fixed_precision = fd_exponent < 0 ? -fd_exponent : 0;
+            snprintf(buf, 64, "%.*f", fixed_precision, d);
+        } else {
+            snprintf(buf, 64, "%.*e", mantissa_length - 1, d);
+        }
+    }
+
     class StringBuilderVisitor : public boost::static_visitor<void> {
     private:
         StringBuilderVisitor(const StringBuilderVisitor&);            //N/A
@@ -746,25 +788,27 @@ namespace {
         // the output of the C++ ostream formatting operation.
         // REAL = [ SIGN ] DIGIT { DIGIT } "." { DIGIT } [ "E" [ SIGN ] DIGIT { DIGIT } ] .
         static std::string format_double(const double& d) {
-            std::ostringstream oss;
-            oss.imbue(std::locale::classic());
-            oss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
-            const std::string str = oss.str();
-            oss.str("");
+            // Use the shortest representation that round-trips exactly (like
+            // Python's repr) instead of max_digits10. max_digits10 padded clean
+            // values with noise digits (0.0174532925199433 -> 0.017453292519943299),
+            // which rewrote every REAL and produced huge diffs when a file was
+            // re-saved. See #7696.
+            char buf[64];
+            format_double_shortest(buf, d);
+            const std::string str(buf);
             std::string::size_type e = str.find('e');
             if (e == std::string::npos) {
                 e = str.find('E');
             }
-            const std::string mantissa = str.substr(0, e);
-            oss << mantissa;
-            if (mantissa.find('.') == std::string::npos) {
-                oss << ".";
+            std::string result = str.substr(0, e);
+            if (result.find('.') == std::string::npos) {
+                result += '.';
             }
             if (e != std::string::npos) {
-                oss << "E";
-                oss << str.substr(e + 1);
+                result += 'E';
+                result += str.substr(e + 1);
             }
-            return oss.str();
+            return result;
         }
 
         static std::string format_binary(const boost::dynamic_bitset<>& b) {
@@ -1656,6 +1700,14 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
     for (const auto& p : streamer.references()) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
+
+        auto owner_it = byid_.find(ref);
+        if (owner_it == byid_.end()) {
+            logger().Error("SYN", 28, "Instance #" + std::to_string(ref) + " referenced at attribute index " + std::to_string(refattr) + " not found");
+            continue;
+        }
+        IfcUtil::IfcBaseClass* owner = owner_it->second;
+
         if (auto* v = std::get_if<reference_or_simple_type>(&p.second)) {
             if (auto* name = std::get_if<InstanceReference>(v)) {
                 if (std::binary_search(bypassed.begin(), bypassed.end(), *name)) {
@@ -1665,12 +1717,12 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                 if (it == byid_.end()) {
                     logger().Error("SYN", 19, "Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                 } else {
-                    auto* storage = &byid_[p.first.name_]->data();
+                    auto* storage = &owner->data();
                     auto attr_index = p.first.index_;
                     
                     if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
                         IfcUtil::IfcBaseClass* inst = storage->get_attribute_value(nullptr, nullptr, 0, attr_index);
-                        if (!inst->declaration().as_entity()) {
+                        if (inst != nullptr && !inst->declaration().as_entity()) {
                             // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
                             storage = &inst->data();
                             attr_index = 0;
@@ -1684,7 +1736,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                     }
                 }
             } else if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(v)) {
-                byid_[p.first.name_]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, *inst);
+                owner->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, *inst);
             }
         } else if (auto* vv = std::get_if<std::vector<reference_or_simple_type>>(&p.second)) {
             aggregate_of_instance::ptr instances(new aggregate_of_instance);
@@ -1705,12 +1757,12 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                 }
             }
 
-            auto* storage = &byid_[p.first.name_]->data();
+            auto* storage = &owner->data();
             auto attr_index = p.first.index_;
             
             if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
                 IfcUtil::IfcBaseClass* inst = storage->get_attribute_value(nullptr, nullptr, 0, attr_index);
-                if (!inst->declaration().as_entity()) {
+                if (inst != nullptr && !inst->declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
                     storage = &inst->data();
                     attr_index = 0;
@@ -1744,12 +1796,12 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                 instances->push(inner);
             }
 
-            auto* storage = &byid_[p.first.name_]->data();
+            auto* storage = &owner->data();
             auto attr_index = p.first.index_;
             
             if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
                 IfcUtil::IfcBaseClass* inst = storage->get_attribute_value(nullptr, nullptr, 0, attr_index);
-                if (!inst->declaration().as_entity()) {
+                if (inst != nullptr && !inst->declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
                     storage = &inst->data();
                     attr_index = 0;

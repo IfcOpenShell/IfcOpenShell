@@ -64,3 +64,14 @@ class TestGetInfo2(test.bootstrap.IFC4):
             "Outer": {"CfsFaces": None, "type": "IfcClosedShell"},
             "type": "IfcFacetedBrep",
         }
+
+    def test_unsupported_arguments_fall_back_to_get_info(self):
+        # Regression test for #4270: get_info_2 raised a bare AssertionError
+        # when called with its own default arguments (recursive=False) or any
+        # other combination the C++ fast path does not implement. It must
+        # delegate to get_info instead of crashing.
+        brep = self.file.create_entity("IfcFacetedBrep")
+        shell = self.file.create_entity("IfcClosedShell")
+        brep.Outer = shell
+        assert brep.get_info_2() == brep.get_info()
+        assert brep.get_info_2(recursive=True, ignore=("Outer",)) == brep.get_info(recursive=True, ignore=("Outer",))

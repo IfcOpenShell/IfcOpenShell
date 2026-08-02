@@ -1,0 +1,339 @@
+#!/bin/bash
+
+# ================== CONFIG ==================
+SCRIPT_NAME=$(basename "$0")
+ENV_FILE=".env"
+WORKDIR="/__w/IfcOpenShell/IfcOpenShell"
+NAMEPREFIX=ifcopenshell
+
+function set_env() {
+    # Load .env file if it exists
+    if [[ -f "$ENV_FILE" ]]; then
+        set -a
+        source "$ENV_FILE"
+        set +a
+        echo "✅ Loaded environment variables from $ENV_FILE"
+    else
+        echo "⚠️  No $ENV_FILE found, proceeding without it."
+    fi
+}
+
+set_env
+
+# ================ FUNCTIONS =================
+
+function create() {
+    echo "⭐ Creating image: ifcopenshell-build-env"
+    docker build -f Dockerfile \
+        --build-arg USER_UID="$(id -u)" --build-arg USER_GID="$(id -g)" \
+        -t ifcopenshell-build-env:updated .
+}
+
+function update() {
+    # The Dockerfile always builds FROM a clean rockylinux:9 and does
+    # `dnf update -y` as its first step, so re-running create() is enough
+    # to get fresh packages.
+    echo "⚡ Updating image: ifcopenshell-build-env"
+    create
+}
+
+function up() {
+    # Creates the container if it doesn't exist yet (and starts it either
+    # way) - this is the one that needs ready_repo, since a freshly created
+    # container has no submodules/dependency cache in place yet.
+    echo "🚀 Creating/starting stack: ifcopenshell-${UNIQUE_ID}"
+    unique          # Update UNIQUE_ID first
+    docker compose up -d "$@"   # Container must exist before ready_repo can exec into it.
+    ready_repo      # Ensure repo is recursive, and the build repo is in place.
+}
+
+function down() {
+    # Removes the container (and its network) entirely. Named volumes
+    # (ccache) and the bind-mounted repo/build/ survive; up() will recreate
+    # the container from scratch next time.
+    echo "🔥 Removing stack: ifcopenshell-${UNIQUE_ID}"
+    docker compose down "$@"
+}
+
+function stop() {
+    # Stops the existing container without removing it - the container,
+    # its filesystem layer, and its exec history all remain intact.
+    echo "🛑 Stopping stack: ifcopenshell-${UNIQUE_ID}"
+    docker compose stop "$@"
+}
+
+function start() {
+    # Starts a previously-stopped container back up. Does nothing (and
+    # won't create anything) if the container doesn't exist - use up() for
+    # that.
+    echo "▶️  Starting stack: ifcopenshell-${UNIQUE_ID}"
+    docker compose start "$@"
+}
+
+function restart() {
+    echo "🔄 Restarting stack (stop, then start)..."
+    stop
+    start
+}
+
+function recreate() {
+    echo "♻️  Recreating stack (down, then up)..."
+    down
+    up
+}
+
+function logs() {
+    echo "📜 Showing logs..."
+    docker compose logs -f "$@"
+}
+
+function ps() {
+    docker compose ps
+}
+
+function config() {
+    echo "🔍 Validated compose configuration:"
+    docker compose config
+}
+
+function remove() {
+    # Lower-level than down(): removes already-stopped containers without
+    # touching the compose network. Mostly useful after a plain stop().
+    echo "🗑️  Removing stopped containers: ifcopenshell-${UNIQUE_ID}"
+    docker compose rm "$@"
+}
+
+function unique() {
+    echo "🔧 Making stack name folder specific..."
+
+    REGEX="^UNIQUE_ID="
+
+    if [[ ! -f "$ENV_FILE" ]] || ! grep -qE "$REGEX" "$ENV_FILE"; then
+        echo -e "\nUNIQUE_ID=dummy\n" >> "$ENV_FILE"
+    fi
+
+    export UNIQUE_ID="$(pwd | sha256sum | cut -c -8)"
+
+    # `sed -i` takes incompatible syntax between GNU sed (Linux) and BSD sed
+    # (macOS) - `-si` is GNU-only and errors as "illegal option -- s" under
+    # BSD/macOS sed. Avoid -i altogether and do the in-place edit via a temp
+    # file + mv instead, which behaves identically with either sed.
+    local tmp_file
+    tmp_file="$(mktemp "${ENV_FILE}.XXXXXX")"
+    sed "s/^UNIQUE_ID=.*$/UNIQUE_ID=${UNIQUE_ID}/" "$ENV_FILE" > "$tmp_file"
+    mv "$tmp_file" "$ENV_FILE"
+
+    set_env
+}
+
+function ready_repo() {
+    echo "👍 Getting the repo ready to build..."
+    docker exec -i -w "${WORKDIR}" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
+        set -euo pipefail   # Recommended for robustness
+
+        git submodule update --init --recursive
+
+        if [[ ! -d "build" ]]; then
+            git clone -b rockylinux9-x64 https://github.com/IfcOpenShell/build-outputs.git build
+        else
+            cd build
+            git pull
+            cd ..
+        fi
+
+        if [[ ! -d "build/Linux/x86_64/install/boost-1.86.0/" ]]; then
+            cd build
+            uv run ../nix/cache_dependencies.py unpack
+            cd ..
+        fi
+    '
+}
+
+function build() {
+    echo "☕ Execute the build, go make yourself a cuppa... I'll be a while"
+    local BUILD_TARGET="$1"
+    
+    docker exec -i -w "${WORKDIR}" -e PY_TGT="${PY_TGT}" -e BUILD_TARGET="${BUILD_TARGET}" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
+        set -o pipefail
+        CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release uv run ./nix/build-all.py -v ${PY_TGT:+-$PY_TGT} --diskcleanup ${BUILD_TARGET} 2>&1 | tee build.log
+    '
+    echo "🎒 Pack Dependencies"
+    docker exec -i -w "${WORKDIR}" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
+        cd build
+        uv run ../nix/cache_dependencies.py pack
+    '
+
+    echo "🎁 Package .zip archives"
+    docker exec -i -w "${WORKDIR}" -e GITHUB_SHA="$(git rev-parse HEAD)" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
+        OUTPUT_DIR=${PWD}/output
+        VERSION=v`cat VERSION`
+        mkdir -p ${OUTPUT_DIR}
+        cd ./build/`uname`/*/install/ifcopenshell
+
+        ls -d python-* | while read py_version; do
+            postfix=`echo ${py_version: -1} | sed s/[0-9]//`
+            numbers=`echo $py_version | grep -oE "[0-9]+\.[0-9]+" | tr -d "."`
+            py_version_major=python-${numbers}$postfix
+            pushd . > /dev/null
+            cd $py_version
+            if [ ! -d ifcopenshell ]; then
+                mkdir ../ifcopenshell_
+                mv * ../ifcopenshell_
+                mv ../ifcopenshell_ ifcopenshell
+            fi
+            [ -d ifcopenshell/__pycache__ ] && rm -rf ifcopenshell/__pycache__
+            find ifcopenshell -name "*.pyc" -delete
+            zip -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip ifcopenshell/*
+            mv *.zip ${OUTPUT_DIR}/
+            popd > /dev/null
+        done
+
+        cd bin
+        if compgen -G "./*.zip" > /dev/null; then
+            rm *.zip 2>&1 >/dev/null || true
+        ls | while read exe; do
+            zip -qq -r ${exe}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip $exe
+        done
+        mv *.zip ${OUTPUT_DIR}/
+        cd ..
+      '
+}
+
+function attach() {
+    echo "🔦 Connect to interactive shell"
+    docker exec -it  -w "${WORKDIR}" "${NAMEPREFIX}-${UNIQUE_ID}" /bin/bash
+}
+
+function try() {
+    # Copies the freshly built wrapper into your actual Blender/Bonsai
+    # installation for manual, in-Blender testing. This is a human-only
+    # convenience: it overwrites files in your live Blender setup, so it's
+    # not something that should run unattended as part of an automated or
+    # AI-driven build/test loop (which should instead copy the wrapper into
+    # the repo's own src/ifcopenshell-python/ifcopenshell/ - see SKILL.md).
+    echo "🚴 Copying build artifacts into your Blender resource folder for testing"
+
+    if [[ -z "${BLENDER_USER_RESOURCE:-}" ]]; then
+        echo "❌ BLENDER_USER_RESOURCE is not set in .env."
+        echo "   Add a line pointing at wherever Blender's user resource folder for"
+        echo "   the Bonsai extension actually is on your system, e.g.:"
+        echo "     BLENDER_USER_RESOURCE=~/.config/blender/bonsai/"
+        return 1
+    fi
+
+    # Normalise: expand a leading ~ (in case it was quoted in .env and so
+    # never went through shell tilde-expansion when set_env sourced it),
+    # then resolve to an absolute, symlink-free path.
+    local resource="${BLENDER_USER_RESOURCE/#\~/$HOME}"
+    resource="$(realpath -m "$resource")"
+
+    local install_dir="../build/Linux/x86_64/install"
+    local py_dirs=("$install_dir"/python-*)
+    if [[ ${#py_dirs[@]} -gt 1 && -n "${PY_TGT:-}" ]]; then
+        # PY_TGT is compact (py-311); the install dirs are dotted
+        # (python-3.11.8) - reinsert the dot (assumes a single-digit major
+        # version, true for the Python 3.x line) before matching.
+        local py_tgt_digits="${PY_TGT#py-}"
+        local py_tgt_dotted="${py_tgt_digits:0:1}.${py_tgt_digits:1}"
+        local filtered=() d
+        for d in "${py_dirs[@]}"; do
+            [[ "$(basename "$d")" == "python-${py_tgt_dotted}."* ]] && filtered+=("$d")
+        done
+        [[ ${#filtered[@]} -gt 0 ]] && py_dirs=("${filtered[@]}")
+    fi
+    if [[ ${#py_dirs[@]} -ne 1 || ! -d "${py_dirs[0]}" ]]; then
+        echo "❌ Expected exactly one built python-* dir under $install_dir, found ${#py_dirs[@]}."
+        echo "   Run 'build' first, or set PY_TGT in .env to disambiguate a multi-version build."
+        return 1
+    fi
+
+    local py_minor
+    py_minor="$(basename "${py_dirs[0]}" | grep -oE '[0-9]+\.[0-9]+')"
+    local wrapper_dir="${py_dirs[0]}/lib/python${py_minor}/site-packages/ifcopenshell"
+    if [[ ! -f "$wrapper_dir/ifcopenshell_wrapper.py" ]]; then
+        echo "❌ Built wrapper not found at $wrapper_dir - run 'build' first."
+        return 1
+    fi
+
+    local target="$resource/extensions/.local/lib/python${py_minor}/site-packages/ifcopenshell"
+    mkdir -p "$target"
+    cp "$wrapper_dir"/_ifcopenshell_wrapper*.so "$target/"
+    cp "$wrapper_dir"/ifcopenshell_wrapper.py "$target/"
+    echo "✅ Copied wrapper into $target"
+}
+
+function clean() {
+    # Host-side only - doesn't touch the container, image, or ccache volume.
+    echo "💎 Clean the build and output folder up"
+    if [[ -d "../build" ]]; then
+        rm -rf ../build
+    fi
+    if [[ -d "../output" ]]; then
+        rm -rf ../output
+    fi
+}
+
+
+function help() {
+    cat <<EOF
+Usage: ./$SCRIPT_NAME <command>
+
+Available commands:
+  create      Build the rocky9-based image
+  update      Rebuild the image fresh, picking up OS package updates
+  up          Create the container if it doesn't exist yet, and start it
+  down        Remove the container entirely (docker compose down)
+  stop        Stop the container without removing it
+  start       Start a previously-stopped container
+  restart     stop, then start (same container, no recreation)
+  recreate    down, then up (fresh container)
+  build       Execute the IfcOpenShell build
+  attach      Connect to an interactive shell in the container
+  try         Copy the built wrapper into your Blender resource folder
+              (human-only - see BLENDER_USER_RESOURCE below, and SKILL.md
+              for the AI/automated-testing equivalent)
+  clean       Remove the build and output folders
+  logs        Follow container logs
+  ps          Show running containers
+  config      Validate and show compose config
+  remove      Remove stopped containers (docker compose rm)
+  help        Show this help
+
+Environment variables from .env are automatically loaded, including:
+  PY_TGT                  Restrict the build to one Python version, e.g. py-311
+  UNIQUE_ID               Recalculated automatically on every 'up', don't set by hand
+  BLENDER_USER_RESOURCE   Where 'try' copies the wrapper for manual testing, e.g.
+                          ~/.config/blender/bonsai/
+EOF
+}
+
+# ================= MAIN =================
+
+case "$1" in
+    create)         create ;;
+    update)         update ;;
+    up)             up "${@:2}" ;;
+    down)           down "${@:2}" ;;
+    stop)           stop "${@:2}" ;;
+    start)          start "${@:2}" ;;
+    restart)        restart ;;
+    recreate)       recreate ;;
+    build)          build "${@:2}" ;;
+    attach)         attach ;;
+    try)            try ;;
+    clean)          clean ;;
+    logs)           logs "${@:2}" ;;
+    ps)             ps ;;
+    config)         config ;;
+    remove)         remove ;;
+    help|-h|--help) help ;;
+    "")
+        echo "❌ No command provided."
+        help
+        ;;
+    *)
+        echo "❌ Unknown command: $1"
+        echo "Type './$SCRIPT_NAME help' for available commands."
+        exit 1
+        ;;
+esac

@@ -9,7 +9,7 @@ from ifcmcp.core import IfcSession
 try:
     from mcp.server.fastmcp import FastMCP  # type: ignore
     from mcp.types import ImageContent  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     FastMCP = None  # type: ignore
     ImageContent = None  # type: ignore
 

@@ -329,6 +329,7 @@ class _ArrayEditMixin(ParametricEditMixinBase):
         # Unhide the (possibly newly-regenerated) children so the user sees
         # the committed result. Mirrors the hide in ``_enable_one``.
         cls._set_children_visibility(element, hidden=False)
+        tool.Array.select_only_parent(obj, context)
 
     @classmethod
     def _cancel_one(cls, obj: bpy.types.Object) -> None:
@@ -421,9 +422,9 @@ class RegenerateArray(bpy.types.Operator, tool.Ifc.Operator):
         pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
         arrays = json.loads(pset["Data"])
         pset = tool.Ifc.get().by_id(pset["id"])
-        # Coalesce host recuts: the child-delete loop, the regenerate, and the
-        # per-child opening mirror all touch the same host body. Without batching,
-        # an N-child wipe-then-regen costs N+1 recuts; this collapses to one.
+        # Coalesce host recuts across the child-delete loop, the regenerate,
+        # and the per-child opening mirror: each fans out its own host body
+        # recut without the batch wrapper.
         with tool.Geometry.batch_host_recut():
             for array in arrays:
                 for child in set(array["children"]):
@@ -441,6 +442,8 @@ class RegenerateArray(bpy.types.Operator, tool.Ifc.Operator):
             # constrain children against a sibling, silently corrupting the array.
             tool.Model.regenerate_array(parent, arrays)
             tool.Array.constrain_children_to_parent(parent_element)
+
+        tool.Array.select_only_parent(parent, context)
 
 
 class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
@@ -561,6 +564,7 @@ class SelectAllArrayObjects(bpy.types.Operator):
                     except RuntimeError:
                         self.report({"ERROR"}, f"Objects that don't have an array parent, were deselected.")
                         object.select_set(False)
+                        continue
 
                     array_objects = tool.Array.get_all_objects(parent_element)
                     tool.Blender.set_objects_selection(

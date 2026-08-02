@@ -912,6 +912,13 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
             new_value = convert_value(val)
             setattr(element, attr.name(), new_value)
 
+    # IfcGeometricRepresentationContext.Precision is typed as a plain IfcReal
+    # but is interpreted in the project length unit, so it must be scaled too.
+    # Subcontexts derive Precision from their parent and cannot be set.
+    for context in file_patched.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+        if context.Precision is not None:
+            context.Precision = convert_unit(context.Precision, old_length, new_length)
+
     has_map_unit = False
     if (
         ifc_file.schema == "IFC2X3"

@@ -252,6 +252,10 @@ int main(int argc, char** argv) {
 		("stderr-progress", "output progress to stderr stream")
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
+		("fail-on-error", "return a non-zero exit code when one or more errors were logged during "
+			"geometry conversion (e.g. an element failed to convert). By default IfcConvert exits "
+			"successfully as long as an output file could be written, even if some elements were "
+			"silently dropped. Enable this flag so scripts and CI can detect partial conversions.")
 		("log-format", po::value<std::string>(&log_format), "log format: plain or json")
 		("log-file", new po::typed_value<path_t, char_t>(&log_file), "redirect log output to file");
 
@@ -449,6 +453,7 @@ int main(int argc, char** argv) {
 
 	const bool mmap = vmap.count("mmap") != 0;
 	const bool no_progress = vmap.count("no-progress") != 0;
+	const bool fail_on_error = vmap.count("fail-on-error") != 0;
 	const bool quiet = vmap.count("quiet") != 0;
 	const bool stderr_progress = vmap.count("stderr-progress") != 0;
 
@@ -670,7 +675,7 @@ int main(int argc, char** argv) {
 				time_t start, end;
 				time(&start);
                 if (output_extension == XML) {
-                    XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename), logger);
+                    XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename), &logger);
                     logger.Status("Writing XML output...");
                     s.finalize();
                 } else {
@@ -829,14 +834,14 @@ int main(int argc, char** argv) {
 	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
         const path_t mtl_filename = change_extension(output_filename, MTL);
-		serializer = boost::make_shared<WaveFrontOBJSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), geometry_settings, serializer_settings, logger);
+		serializer = boost::make_shared<WaveFrontOBJSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), geometry_settings, serializer_settings, &logger);
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == DAE) {
-		serializer = boost::make_shared<ColladaSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, logger);
+		serializer = boost::make_shared<ColladaSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, &logger);
 #endif
 #ifdef WITH_GLTF
 	} else if (output_extension == GLB) {
-		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, logger);
+		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, &logger);
 #endif
 #ifdef WITH_USD
 	} else if (output_extension == USD || output_extension == USDA || output_extension == USDC) {
@@ -853,15 +858,15 @@ int main(int argc, char** argv) {
 		serializer = boost::make_shared<IgesSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, logger);
 	} else if (output_extension == SVG) {
 		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, logger);
+		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, &logger);
 #ifdef WITH_HDF5
 	} else if (output_extension == HDF) {
 		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, false, logger);
+		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, false, &logger);
 #endif
-#endif	
+#endif
 	} else if (output_extension == TTL) {
-		serializer = boost::make_shared<TtlWktSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, logger);
+		serializer = boost::make_shared<TtlWktSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings, &logger);
 	} else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
@@ -885,6 +890,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (!serializer->ready()) {
+		logger.Error("SYS", 25, "Unable to open output file '" + IfcUtil::path::to_utf8(output_filename) + "' for writing; check that the directory exists and is writable");
 		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
 		write_log(!quiet);
 		return EXIT_FAILURE;
@@ -1005,7 +1011,7 @@ int main(int argc, char** argv) {
 		if (!vmap.count("cache-file")) {
 			cache_file = input_filename + CACHE + HDF;
 		}
-		cache.reset(new HdfSerializer(IfcUtil::path::to_utf8(cache_file), geometry_settings, serializer_settings, false, logger));
+		cache.reset(new HdfSerializer(IfcUtil::path::to_utf8(cache_file), geometry_settings, serializer_settings, false, &logger));
 		context_iterator->set_cache(cache.get());
 	}
 #endif
@@ -1220,6 +1226,11 @@ int main(int argc, char** argv) {
 		successful = false;
 	}
 
+	if (fail_on_error && logger.MaxSeverity() >= Logger::LOG_ERROR) {
+		logger.Error("SYS", 26, "Errors encountered during processing, failing due to --fail-on-error.");
+		successful = false;
+	}
+
 	if (logger.Verbosity() == Logger::LOG_PERF) {
 		logger.PrintPerformanceStats();
 	}
@@ -1279,7 +1290,7 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 
 #ifdef WITH_IFCXML
 	if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
-		ifc_file = IfcParse::parse_ifcxml(filename, logger);
+		ifc_file = IfcParse::parse_ifcxml(filename, &logger);
     } else
 #endif
     {

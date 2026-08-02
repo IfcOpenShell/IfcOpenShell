@@ -4,6 +4,8 @@
 /_deps-vs*-x*-installed/
 /_installed-vs*-x*/
 /build/
+/build.log
+/output/
 /src/examples/build/
 # ifctester docs output
 /src/ifctester/test/build/
@@ -22,6 +24,7 @@
 __pycache__
 *.py.bak
 venv
+uv.lock
 
 # Visual Studio Code files
 .vscode
@@ -127,6 +130,7 @@ src/ifcopenshell-python/ifcopenshell/express/*.exp.cache.dat
 
 # temp files from AI coding tools
 *.claude
+CLAUDE.local.md
 *.py.tmp*
 *.json.tmp*
 

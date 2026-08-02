@@ -225,7 +225,11 @@ def display_shape(shape, clr=None, viewer_handle=None):
 
 
 def set_shape_transparency(ais, t, update_viewer=True):
-    handle.Context.SetTransparency(ais, t, update_viewer)
+    # AIS_InteractiveContext.SetTransparency()'s argument count differs across
+    # pythonocc-core versions (#1037); AIS_InteractiveObject.SetTransparency() is stable.
+    ais.SetTransparency(t)
+    if update_viewer:
+        handle.Context.UpdateCurrentViewer()
 
 
 def get_bounding_box_center(bbox):

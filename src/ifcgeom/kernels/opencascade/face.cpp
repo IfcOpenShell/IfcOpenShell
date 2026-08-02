@@ -31,6 +31,7 @@
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <BRep_Tool.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
 
 #include <Standard_Macro.hxx>
 #include <TopoDS_Shape.hxx>
@@ -354,6 +355,27 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	if (fd.wires().empty()) {
 		Logger::Root().Warning("GEO", 162, "Face with no boundaries", face->instance);
 		return false;
+	}
+
+	// #527: A face whose inner boundary intersects the outer boundary (or
+	// another inner boundary) is invalid per the schema. Open Cascade heals or
+	// drops such a face silently, so the intended hole is lost with no
+	// diagnostic. The distance between two non-intersecting loops is strictly
+	// positive; a distance at (or below) the modelling precision means the
+	// boundaries touch or cross. Emit a clear warning so the invalid input is
+	// not silently lost. wires() is ordered outer-first, inner-bounds after.
+	if (fd.wires().size() > 1) {
+		const auto& fwires = fd.wires();
+		bool reported = false;
+		for (size_t i = 1; i < fwires.size() && !reported; ++i) {
+			for (size_t j = 0; j < i && !reported; ++j) {
+				BRepExtrema_DistShapeShape dss(fwires[i], fwires[j]);
+				if (dss.IsDone() && dss.Value() < precision_) {
+					logger().Warning("GEO", 402, "Face inner boundary intersects another face boundary", face->instance);
+					reported = true;
+				}
+			}
+		}
 	}
 
 	if (fd.surface().IsNull()) {

@@ -24,7 +24,7 @@ Blender versions:
 - 64-bit MacOS Intel (``macos-x64``)
 - 64-bit MacOS Silicon (``macos-arm64``)
 - 64-bit Windows (``windows-x64``)
-- Blender 4.3, 4.4, or 4.5 with Python 3.11
+- Blender 5.1 or 5.2 with Python 3.13
 
 Developer builds may exist for different versions of Python but there will be
 no guarantee of the uptime or stability of these builds.

@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 from collections import namedtuple
 from collections.abc import Callable, Generator, Sequence
 from typing import Any, Literal, Optional, Union, overload
 
 import ifcopenshell
 import ifcopenshell.guid
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 
@@ -112,8 +114,14 @@ def get_pset(
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
-                if definition.Name == name:
-                    pset = definition
+                # IfcPropertySetDefinitionSet is a defined type wrapping a list
+                # of property set definitions, so unpack it into its members.
+                if definition.is_a("IfcPropertySetDefinitionSet"):
+                    definitions = definition.wrappedValue
+                else:
+                    definitions = (definition,)
+                pset = next((d for d in definitions if d.Name == name), None)
+                if pset:
                     break
 
     if pset:
@@ -221,15 +229,22 @@ def get_psets(
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
-                if (
-                    psets_only
-                    and not definition.is_a("IfcPropertySet")
-                    and not definition.is_a("IfcPreDefinedPropertySet")
-                ):
-                    continue
-                if qtos_only and not definition.is_a("IfcElementQuantity"):
-                    continue
-                psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
+                # IfcPropertySetDefinitionSet is a defined type wrapping a list
+                # of property set definitions, so unpack it into its members.
+                if definition.is_a("IfcPropertySetDefinitionSet"):
+                    definitions = definition.wrappedValue
+                else:
+                    definitions = (definition,)
+                for definition in definitions:
+                    if (
+                        psets_only
+                        and not definition.is_a("IfcPropertySet")
+                        and not definition.is_a("IfcPreDefinedPropertySet")
+                    ):
+                        continue
+                    if qtos_only and not definition.is_a("IfcElementQuantity"):
+                        continue
+                    psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
     return psets
 
 
@@ -316,6 +331,8 @@ def get_quantity(
             data["properties"] = get_quantities(quantity.HasQuantities, verbose=verbose)
             del data["HasQuantities"]
             result = data
+        else:
+            assert False, quantity
         if verbose:
             result = {"id": quantity.id(), "class": quantity.is_a(), "value": result}
         return result
@@ -372,6 +389,7 @@ def get_property(
         if prop.Name != name:
             continue
         is_single_value = False  # For now we pass value type only for single values.
+        result_type = None
         if prop.is_a("IfcPropertySingleValue"):
             # 2 IfcPropertySingleValue.NominalValue
             result = v.wrappedValue if (v := prop[2]) else None
@@ -394,6 +412,8 @@ def get_property(
             data["properties"] = get_properties(prop.HasProperties, verbose=verbose)
             del data["HasProperties"]
             result = data
+        else:
+            assert False, prop
         if verbose:
             result = {"id": prop.id(), "class": prop.is_a(), "value": result}
             if is_single_value:
@@ -1125,7 +1145,8 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
     """
     Retrieves all subelements of an element based on the spatial decomposition
     hierarchy. This includes all subspaces and elements contained in subspaces,
-    parts of an aggregate, all openings, and all fills of any openings.
+    parts of an aggregate, all openings, all fills of any openings, and any
+    surface features adhering to an element (IFC4.3 and above).
 
     :param element: The IFC element
     :return: The decomposition of the element
@@ -1159,6 +1180,10 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
             results.add(related)
         for rel in getattr(element, "IsNestedBy", []):
             related = rel.RelatedObjects
+            queue.extend(related)
+            results.update(related)
+        for rel in getattr(element, "HasSurfaceFeatures", []):
+            related = rel.RelatedSurfaceFeatures
             queue.extend(related)
             results.update(related)
         if not is_recursive:
@@ -1251,6 +1276,8 @@ def get_parent(
     - Nesting: components are attached to a host parent
     - Filling: the physical element fills an opening, such as a window filling a hole
     - Voiding: the opening voids another physical element, such as a hole in a wall
+    - Adherence: a surface feature adheres to a host element, such as a road
+      marking adhering to a road course (IFC4.3 and above)
 
     :param element: Any physical or spatial element in the tree
     :param ifc_class: Optionally filter the type of parent you're after. For
@@ -1270,6 +1297,7 @@ def get_parent(
         or get_nest(element)
         or get_filled_void(element)
         or get_voided_element(element)
+        or get_adhered_element(element)
     )
 
     if not ifc_class:
@@ -1319,6 +1347,28 @@ def get_voided_element(element: ifcopenshell.entity_instance) -> Union[ifcopensh
     """
     if rel := getattr(element, "VoidsElements", None):
         return rel[0].RelatingBuildingElement
+
+
+def get_adhered_element(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """If the element is a surface feature, get the element it adheres to
+
+    In IFC4.3 an IfcSurfaceFeature (such as a road marking) adheres to a host
+    element through the IfcRelAdheresToElement relationship. This is a [1:1]
+    cardinality hierarchical relationship, in the same family as aggregation,
+    containment and nesting.
+
+    :param element: The IfcSurfaceFeature
+    :return: The host element that the surface feature adheres to
+
+    Example:
+
+    .. code:: python
+
+        marking = file.by_type("IfcSurfaceFeature")[0]
+        host = ifcopenshell.util.element.get_adhered_element(marking)
+    """
+    if rel := getattr(element, "AdheresToElement", None):
+        return rel[0].RelatingElement
 
 
 def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -1412,6 +1462,29 @@ def get_contained(element: ifcopenshell.entity_instance) -> list[ifcopenshell.en
     if contains_elements := getattr(element, "ContainsElements", ()):
         for rel in contains_elements:
             objects.extend(rel.RelatedElements)
+    return objects
+
+
+def get_surface_features(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """Retrieves the surface features that adhere to an element.
+
+    In IFC4.3 an IfcSurfaceFeature (such as a road marking) adheres to a host
+    element through the IfcRelAdheresToElement relationship.
+
+    :param element: The IFC element
+    :return: The surface features adhering to the element
+
+    Example:
+
+    .. code:: python
+
+        element = file.by_type("IfcCourse")[0]
+        markings = ifcopenshell.util.element.get_surface_features(element)
+    """
+    objects: list[ifcopenshell.entity_instance] = []
+    if has_surface_features := getattr(element, "HasSurfaceFeatures", ()):
+        for rel in has_surface_features:
+            objects.extend(rel.RelatedSurfaceFeatures)
     return objects
 
 
@@ -1519,10 +1592,36 @@ def replace_element(element: ifcopenshell.entity_instance, replacement: ifcopens
         replace_attribute(inverse, element, replacement)
 
 
+@functools.cache
+def _is_set_attribute(schema_identifier: str, ifc_class: str, index: int) -> bool:
+    """Whether attribute `index` of `ifc_class` is declared as an EXPRESS SET.
+
+    SET aggregates may not contain duplicate members, whereas LIST and BAG
+    aggregates may, so only SET-typed attributes are safe to deduplicate.
+    """
+    declaration = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_identifier).declaration_by_name(ifc_class)
+    attribute = declaration.attribute_by_index(index)
+    aggregation = attribute.type_of_attribute().as_aggregation_type()
+    return aggregation is not None and aggregation.type_of_aggregation_string() == "set"
+
+
 def replace_attribute(element: ifcopenshell.entity_instance, old: Any, new: Any) -> None:
     for i, attribute_value in enumerate(element):
         if has_element_reference(attribute_value, old):
-            element[i] = element.walk(lambda v: v == old, lambda v: new, attribute_value)
+            new_value = element.walk(lambda v: v == old, lambda v: new, attribute_value)
+            if (
+                isinstance(attribute_value, tuple)
+                and has_element_reference(attribute_value, new)
+                and _is_set_attribute(element.file.schema_identifier, element.is_a(), i)
+            ):
+                seen: set[Any] = set()
+                deduplicated = []
+                for v in new_value:
+                    if v not in seen:
+                        seen.add(v)
+                        deduplicated.append(v)
+                new_value = tuple(deduplicated)
+            element[i] = new_value
 
 
 def has_element_reference(value: Any, element: ifcopenshell.entity_instance) -> bool:

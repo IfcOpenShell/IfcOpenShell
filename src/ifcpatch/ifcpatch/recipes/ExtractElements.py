@@ -110,8 +110,8 @@ class Patcher(ifcpatch.BasePatcher):
             pass
         if element.is_a("IfcProject"):
             proj = self.new.add(element)
-            for ctx in element.RepresentationContexts:
-                for coop in getattr(ctx, 'HasCoordinateOperation', ()):
+            for ctx in element.RepresentationContexts or ():
+                for coop in getattr(ctx, "HasCoordinateOperation", ()):
                     self.new.add(coop)
             return proj
         return ifcopenshell.api.project.append_asset(

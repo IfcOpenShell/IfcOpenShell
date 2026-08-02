@@ -39,14 +39,35 @@ def test_add_stationing_to_alignment():
 
     alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", start_station=2000.0)
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    referent = referent_nest.RelatedObjects[0]
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    referent = stationing_nest.RelatedObjects[0]
 
     assert referent.PredefinedType == "STATION"
     assert referent.Name == "2+000.000"
     assert ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing")
     assert ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing", prop="Station") == 2000.0
     assert referent.ObjectPlacement != None
+
+    # add a station equation at 1000 distance along. this is station 3+000 in coming and 4+000 outgoing.
+    # this is a gap equation.
+    second_referent = ifcopenshell.api.alignment.add_stationing_referent(
+        file, "4+000.000", alignment, distance_along=1000.0, station=4000.0, incoming_station=3000.0
+    )
+
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    assert len(stationing_nest.RelatedObjects) == 2
+
+    assert second_referent == stationing_nest.RelatedObjects[1]
+
+    assert second_referent.PredefinedType == "STATION"
+    assert second_referent.Name == "4+000.000"
+    assert ifcopenshell.util.element.get_pset(element=second_referent, name="Pset_Stationing")
+    assert ifcopenshell.util.element.get_pset(element=second_referent, name="Pset_Stationing", prop="Station") == 4000.0
+    assert (
+        ifcopenshell.util.element.get_pset(element=second_referent, name="Pset_Stationing", prop="IncomingStation")
+        == 3000.0
+    )
+    assert second_referent.ObjectPlacement != None
 
 
 test_add_stationing_to_alignment()

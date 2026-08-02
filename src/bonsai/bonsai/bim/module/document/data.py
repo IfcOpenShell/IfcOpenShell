@@ -127,36 +127,25 @@ class ObjectDocumentData:
                 identification = None
 
                 if is_information:
-                    if tool.Ifc.get_schema() == "IFC2X3":
-                        identification = relating_document.DocumentId
-                    else:
-                        identification = relating_document.Identification
+                    identification = tool.Document.get_document_information_id(relating_document)
 
                     location = getattr(relating_document, "Location", None)
                     description = getattr(relating_document, "Description", "No description")
                 else:
                     description = relating_document.Description
-                    if tool.Ifc.get_schema() == "IFC2X3":
-                        reference_to_document = relating_document.ReferenceToDocument
-                        if not name and reference_to_document:
-                            name = reference_to_document[0].Name
+                    referenced_document = tool.Document.get_reference_document(relating_document)
 
-                        identification = relating_document.ItemReference
-                        if not identification and reference_to_document:
-                            identification = reference_to_document[0].DocumentId
-                        location = relating_document.Location
-                    else:
-                        referenced_document = relating_document.ReferencedDocument
-                        if not name and referenced_document:
-                            name = referenced_document.Name
+                    if not name and referenced_document:
+                        name = referenced_document.Name
 
-                        identification = relating_document.Identification
-                        if not identification and referenced_document:
-                            identification = referenced_document.Identification
+                    identification = tool.Document.get_external_reference_id(relating_document)
+                    if not identification and referenced_document:
+                        identification = tool.Document.get_document_information_id(referenced_document)
 
-                        location = relating_document.Location
-                        if location is None and referenced_document:
-                            location = referenced_document.Location
+                    location = relating_document.Location
+                    # IFC2X3 IfcDocumentInformation has no Location to fall back to.
+                    if location is None and referenced_document and tool.Ifc.get_schema() != "IFC2X3":
+                        location = referenced_document.Location
 
                 location = cls.convert_to_file_uri(location) if location else None
 

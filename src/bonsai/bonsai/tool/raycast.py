@@ -232,7 +232,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return final_2d, v2
 
     @classmethod
-    def intersect_mouse_2d_bounding_box(cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float]):
+    def intersect_mouse_2d_bounding_box(cls, mouse_pos: tuple[int, int], bbox: list[float]):
         x, y = mouse_pos
         xmin, xmax, ymin, ymax = bbox
 

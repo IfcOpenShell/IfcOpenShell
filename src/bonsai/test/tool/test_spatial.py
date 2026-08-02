@@ -288,3 +288,27 @@ class TestGenerateSpace(NewFile):
             )
         )
         assert np.allclose(TEST_VERTS, sorted([tuple(v.co) for v in mesh.vertices]))
+
+    def test_regenerate_space_preserves_z_location(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        scene = bpy.context.scene
+        product = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(obj)
+        tool.Ifc.link(product, obj)
+        scene.cursor.location = (0, 0, 0)
+
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        space.location.z = 5
+        bpy.context.view_layer.update()
+
+        bpy.context.view_layer.objects.active = space
+        space.select_set(True)
+        obj.select_set(False)
+
+        bpy.ops.bim.generate_space()
+
+        assert np.isclose(space.location.z, 5), f"Expected z=5, got {space.location.z}"

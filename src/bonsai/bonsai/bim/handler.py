@@ -320,9 +320,11 @@ def loadIfcStore(scene: bpy.types.Scene) -> None:
     IfcStore.purge()
     refresh_ui_data()
     if not tool.Ifc.get():
+        tool.Autosave.cancel_timer()
         return
     tool.Ifc.schema()
     IfcStore.relink_all_objects()
+    tool.Autosave.reset_timer()
 
 
 @persistent
@@ -416,9 +418,10 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
 
 
 def viewport_shading_changed_callback(area: bpy.types.Area) -> None:
-    shading = area.spaces.active.shading.type
-    if shading == "RENDERED":
-        tool.Style.get_style_props().active_style_type = "External"
+    shading_type = area.spaces.active.shading.type
+    tool.Style.restore_material_style_types(shading_type)
+    if shading_type == "SOLID":
+        area.spaces.active.shading.color_type = "MATERIAL"
 
 
 def subscribe_to_viewport_shading_changes():

@@ -53,8 +53,8 @@ static const uint32_t PRIM_TRIANGLE_FAN = 6;
 static const uint32_t ELEMENT_ARRAY_BUFFER = 34963;
 static const uint32_t ARRAY_BUFFER = 34962;
 
-GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger)
-	: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
+GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger* logger)
+	: WriteOnlyGeometrySerializer(geometry_settings, settings, logger_or_root(logger))
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")
 	, tmp_filename2_(filename + ".vertices.tmp")
@@ -108,9 +108,13 @@ int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style:
 		base[3] = 1. - style->transparency;
 	}
 
-	if (style->has_specularity())
-		json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}, {"roughnessFactor", 1.0 / style->specularity}}}});
-	else
+	if (style->has_specularity()) {
+		// glTF requires roughnessFactor in [0, 1]. A specular exponent of 0
+		// previously produced 1/0 = inf, which nlohmann::json serialises as
+		// null and makes the file invalid; exponents below 1 exceeded 1. #8073
+		const double roughness = style->specularity > 1.0 ? 1.0 / style->specularity : 1.0;
+		json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}, {"roughnessFactor", roughness}}}});
+	} else
 		json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}}});
 	
 	if (style->transparency == style->transparency && style->transparency > 1.e-9) {

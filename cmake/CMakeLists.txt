@@ -27,13 +27,14 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(VERSION_OVERRIDE)
-    file(READ "../VERSION" "RELEASE_VERSION_")
-    string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
-    message(STATUS "Detected version '${RELEASE_VERSION}'")
-else()
-    set(RELEASE_VERSION "0.8.0")
-endif()
+# The VERSION file in the repository root is the single source of truth for the
+# release version. Read it unconditionally so a plain source build reports the
+# real version through buildinfo.cpp instead of the stale hardcoded 0.8.0
+# fallback (see #8164). VERSION_OVERRIDE still controls the branch name used
+# when ADD_COMMIT_SHA embeds a commit sha.
+file(READ "../VERSION" "RELEASE_VERSION_")
+string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
+message(STATUS "Detected version '${RELEASE_VERSION}'")
 
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
@@ -313,8 +314,12 @@ if(WASM_BUILD)
 else()
     # @todo review this, shouldn't this be all possible header-only now?
     # ... or rewritten using C++17 features?
+    # Boost.System has been header-only since 1.69 and its compiled stub library
+    # was dropped in newer Boost, so requesting it as a component makes
+    # find_package fail on Boost 1.70 and up (for example Boost 1.90). It is
+    # still pulled in transitively by thread / iostreams where needed, so do not
+    # request it explicitly.
     set(BOOST_COMPONENTS
-        system
         program_options
         regex
         thread
@@ -558,8 +563,8 @@ if(COMPILE_SCHEMA)
     # Bootstrap the parser
     message(STATUS "Compiling schema, this will take a while...")
     execute_process(
-        COMMAND ${PYTHON_EXECUTABLE} bootstrap.py express.bnf
-        WORKING_DIRECTORY ../src/ifcexpressparser
+        COMMAND ${PYTHON_EXECUTABLE} bootstrap.py
+        WORKING_DIRECTORY ../src/ifcopenshell-python/ifcopenshell/express
         OUTPUT_FILE express_parser.py
         RESULT_VARIABLE SUCCESS
     )
@@ -570,7 +575,7 @@ if(COMPILE_SCHEMA)
 
     # Generate code
     execute_process(
-        COMMAND ${PYTHON_EXECUTABLE} ../ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
+        COMMAND ${PYTHON_EXECUTABLE} ../ifcopenshell-python/ifcopenshell/express/express_parser.py ../../${COMPILE_SCHEMA}
         WORKING_DIRECTORY ../src/ifcparse
         OUTPUT_VARIABLE COMPILED_SCHEMA_NAME
     )
@@ -659,6 +664,11 @@ if(ADD_COMMIT_SHA)
         )
     endif()
 endif(ADD_COMMIT_SHA)
+
+# Always expose the release version (from the VERSION file) to buildinfo.cpp so
+# that a build without commit-sha info reports the correct version instead of a
+# stale hardcoded fallback. See #8164.
+target_compile_definitions(IfcParse PRIVATE IFCOPENSHELL_VERSION_STRING=${RELEASE_VERSION})
 
 if(MSVC)
     # @todo still needs to be understood better, but the cgal and cgal-simple kernel cause multiply defined boost lambda placeholders _1 ... _3

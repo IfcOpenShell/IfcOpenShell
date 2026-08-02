@@ -18,6 +18,7 @@
 
 
 import ifcopenshell.api.alignment
+import ifcopenshell.geom
 from ifcopenshell import entity_instance, ifcopenshell_wrapper
 from ifcopenshell.api.alignment._map_alignment_segment import _map_alignment_segment
 from typing import Union
