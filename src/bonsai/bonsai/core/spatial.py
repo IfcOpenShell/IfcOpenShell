@@ -229,6 +229,8 @@ def generate_space(
             h = auto_h
 
     if element and element.is_a("IfcSpace"):
+        assert active_obj
+        active_obj.location.z = z
         spatial.set_space_representation_from_polygon(active_obj, element, space_polygon, h, polygon_is_si=True)
     else:
         if relating_type:
