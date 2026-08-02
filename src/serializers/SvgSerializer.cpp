@@ -2629,6 +2629,32 @@ namespace {
 		return (q0 <= q1) ? quant_edge_key{ q0, q1 } : quant_edge_key{ q1, q0 };
 	}
 
+	// Flattens a 3D point onto the current view/drawing plane by dropping its depth (Z)
+	// coordinate. Used ONLY by the coincident-edge dedup passes below
+	// (compute_coincident_edge_best_priority()/compute_coincident_edge_overlap_coverage()) --
+	// unlike cross_coplanar's own matching (which needs true 3D coincidence, since it's about two
+	// products genuinely touching in the model), dedup is about "which of two edges paints on top
+	// of the other in the final flat SVG", which is a *screen-space* question. By the time
+	// draw_hlr() runs, hlr_items' edges are already expressed in the camera-aligned frame HLR was
+	// computed in -- X/Y are already the (pre-scale, pre-mirror) SVG plot coordinates and Z is
+	// purely depth-into-screen (see SvgSerializer::write()'s own comment on this, where the same
+	// convention is relied on for path-text output); dropping Z is therefore all "projection"
+	// requires here, with no plane-basis reconstruction needed. Two edges belonging to genuinely
+	// different, non-touching 3D locations (e.g. a sloped wall edge crossing a level slab edge at
+	// different heights) can still land almost exactly on top of each other once flattened --
+	// confirmed directly against a real drawing (issue #3742 follow-up): a wall's own diagonal
+	// edge and a slab's own top-face outline edge differed by up to ~0.7 model units of depth
+	// (their true 3D lines are NOT collinear, so the pre-existing 3D-space collinearity test
+	// correctly, but unhelpfully, rejected them as unrelated), yet agreed to within a fraction of
+	// a millimetre in X/Y, painting a visually-duplicate stray line end-to-end alongside the
+	// slab's correct outline. Parallel/orthographic projection (the only kind these architectural
+	// drawings use) preserves a segment's own [0,1] parametrization under projection, so overlap
+	// fractions computed here remain valid when re-applied to the original, unprojected 3D edge
+	// for clipping (see compute_coincident_edge_overlap_coverage()).
+	gp_Pnt project_to_view_plane(const gp_Pnt& p) {
+		return gp_Pnt(p.X(), p.Y(), 0.0);
+	}
+
 	// Computes, for every coincident-edge bucket that genuinely mixes classes across more than
 	// one product, the best (lowest-number) class priority present. Deliberately does NOT
 	// resolve buckets where every contributing product agrees on the same class -- e.g. both
@@ -2665,7 +2691,12 @@ namespace {
 				if (v0.IsNull() || v1.IsNull()) {
 					continue;
 				}
-				auto key = make_edge_key(BRep_Tool::Pnt(v0), BRep_Tool::Pnt(v1), scale);
+				// Keyed on the SCREEN-projected position, not true 3D -- see
+				// project_to_view_plane()'s own comment for why.
+				auto key = make_edge_key(
+					project_to_view_plane(BRep_Tool::Pnt(v0)),
+					project_to_view_plane(BRep_Tool::Pnt(v1)),
+					scale);
 				buckets[key].push_back({ product, prio });
 			}
 		}
@@ -2772,7 +2803,8 @@ namespace {
 		struct entry {
 			const IfcUtil::IfcBaseEntity* product;
 			int priority;
-			cross_coplanar::LineSeg seg;
+			cross_coplanar::LineSeg seg;      // true 3D -- used only for `.edge`/real length rescaling
+			cross_coplanar::LineSeg proj_seg; // screen-projected -- see project_to_view_plane()
 		};
 		std::vector<entry> entries;
 		for (auto& item : hlr_items) {
@@ -2784,11 +2816,19 @@ namespace {
 			}
 			int prio = coincident_edge_class_priority(cls);
 			for (TopExp_Explorer eexp(shape, TopAbs_EDGE); eexp.More(); eexp.Next()) {
-				auto seg = edge_to_line_seg_from_vertices(TopoDS::Edge(eexp.Current()));
+				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
+				auto seg = edge_to_line_seg_from_vertices(e);
 				if (!seg) {
 					continue; // curved edge -- ineligible for this pass, falls back to exact-key only
 				}
-				entries.push_back({ product, prio, *seg });
+				gp_Pnt pp0 = project_to_view_plane(seg->p0);
+				gp_Pnt pp1 = project_to_view_plane(seg->p1);
+				if (pp0.Distance(pp1) < Precision::Confusion()) {
+					continue; // edge-on to the camera -- projects to a point, no screen-space line to dedup
+				}
+				gp_Vec pv(pp0, pp1);
+				cross_coplanar::LineSeg proj_seg{ pp0, pp1, gp_Dir(pv), pv.Magnitude(), e };
+				entries.push_back({ product, prio, *seg, proj_seg });
 			}
 		}
 
@@ -2803,13 +2843,15 @@ namespace {
 		// already deliberately looser than the position tolerance); the actual collinearity test
 		// below uses the true (non-quantized) perpendicular-distance computation, so no precision
 		// is lost -- only the O(n^2) prefilter grouping is coarser, trading a larger per-bucket
-		// pairwise cost for correctness.
+		// pairwise cost for correctness. Bucketed by the PROJECTED direction -- see
+		// project_to_view_plane()'s own comment for why screen space, not true 3D, is what matters
+		// for this pass.
 		const double dir_scale = 1.0 / kLineBucketAngularTolerance;
 
 		std::unordered_map<quant_pnt, std::vector<size_t>, quant_pnt_hash> buckets;
 		buckets.reserve(entries.size());
 		for (size_t i = 0; i < entries.size(); ++i) {
-			quant_pnt dkey = quantize_direction(entries[i].seg.dir, dir_scale);
+			quant_pnt dkey = quantize_direction(entries[i].proj_seg.dir, dir_scale);
 			buckets[dkey].push_back(i);
 		}
 
@@ -2831,29 +2873,42 @@ namespace {
 					const entry& ej = entries[idxs[b]];
 					if (ei.priority == ej.priority) continue;  // intentional agreement -- leave alone
 
-					// Same collinearity/perp-distance test as cross_coplanar::accumulate_edge_coverage().
-					if (std::abs(ei.seg.dir.Dot(ej.seg.dir)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
+					// Collinearity/perp-distance test in PROJECTED (screen) space -- two edges at
+					// genuinely different depths/3D directions can still paint on top of each
+					// other once flattened by the camera; that's the visual duplicate this pass
+					// exists to resolve, not true 3D coincidence (see project_to_view_plane()).
+					if (std::abs(ei.proj_seg.dir.Dot(ej.proj_seg.dir)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
 						continue;
 					}
-					gp_Vec to_other(ei.seg.p0, ej.seg.p0);
-					double perp_dist = to_other.Crossed(gp_Vec(ei.seg.dir)).Magnitude();
+					gp_Vec to_other(ei.proj_seg.p0, ej.proj_seg.p0);
+					double perp_dist = to_other.Crossed(gp_Vec(ei.proj_seg.dir)).Magnitude();
 					if (perp_dist >= tolerance) {
 						continue;
 					}
 
-					// Overlap in ei's own frame.
-					double t0 = gp_Vec(ei.seg.p0, ej.seg.p0).Dot(gp_Vec(ei.seg.dir));
-					double t1 = gp_Vec(ei.seg.p0, ej.seg.p1).Dot(gp_Vec(ei.seg.dir));
-					double lo_i = std::max(std::min(t0, t1), 0.0);
-					double hi_i = std::min(std::max(t0, t1), ei.seg.length);
-					bool has_i_overlap = (hi_i - lo_i) >= tolerance;
+					// Overlap fraction in ei's own PROJECTED frame, then rescaled onto ei's real
+					// 3D edge length -- parallel/orthographic projection preserves a segment's
+					// [0,1] parametrization (see project_to_view_plane()), so a fraction computed
+					// in screen space maps directly onto the corresponding real-3D sub-range for
+					// clipping the original, unprojected edge.
+					double t0 = gp_Vec(ei.proj_seg.p0, ej.proj_seg.p0).Dot(gp_Vec(ei.proj_seg.dir));
+					double t1 = gp_Vec(ei.proj_seg.p0, ej.proj_seg.p1).Dot(gp_Vec(ei.proj_seg.dir));
+					double lo_i_proj = std::max(std::min(t0, t1), 0.0);
+					double hi_i_proj = std::min(std::max(t0, t1), ei.proj_seg.length);
+					bool has_i_overlap = (hi_i_proj - lo_i_proj) >= tolerance;
+					double real_scale_i = ei.seg.length / ei.proj_seg.length;
+					double lo_i = lo_i_proj * real_scale_i;
+					double hi_i = hi_i_proj * real_scale_i;
 
-					// Overlap in ej's own frame (independently -- must not reuse ei's t-values).
-					double u0 = gp_Vec(ej.seg.p0, ei.seg.p0).Dot(gp_Vec(ej.seg.dir));
-					double u1 = gp_Vec(ej.seg.p0, ei.seg.p1).Dot(gp_Vec(ej.seg.dir));
-					double lo_j = std::max(std::min(u0, u1), 0.0);
-					double hi_j = std::min(std::max(u0, u1), ej.seg.length);
-					bool has_j_overlap = (hi_j - lo_j) >= tolerance;
+					// Overlap in ej's own PROJECTED frame (independently -- must not reuse ei's t-values).
+					double u0 = gp_Vec(ej.proj_seg.p0, ei.proj_seg.p0).Dot(gp_Vec(ej.proj_seg.dir));
+					double u1 = gp_Vec(ej.proj_seg.p0, ei.proj_seg.p1).Dot(gp_Vec(ej.proj_seg.dir));
+					double lo_j_proj = std::max(std::min(u0, u1), 0.0);
+					double hi_j_proj = std::min(std::max(u0, u1), ej.proj_seg.length);
+					bool has_j_overlap = (hi_j_proj - lo_j_proj) >= tolerance;
+					double real_scale_j = ej.seg.length / ej.proj_seg.length;
+					double lo_j = lo_j_proj * real_scale_j;
+					double hi_j = hi_j_proj * real_scale_j;
 
 					if (!has_i_overlap && !has_j_overlap) {
 						continue; // touching at a shared vertex only, not a genuine overlap range
@@ -2917,7 +2972,10 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 				TopExp::Vertices(e, v0, v1);
 				bool keep = true;
 				if (!v0.IsNull() && !v1.IsNull()) {
-					auto key = make_edge_key(BRep_Tool::Pnt(v0), BRep_Tool::Pnt(v1), scale);
+					auto key = make_edge_key(
+						project_to_view_plane(BRep_Tool::Pnt(v0)),
+						project_to_view_plane(BRep_Tool::Pnt(v1)),
+						scale);
 					auto it = coincident_best_priority.find(key);
 					if (it != coincident_best_priority.end() && this_priority > it->second) {
 						keep = false;
