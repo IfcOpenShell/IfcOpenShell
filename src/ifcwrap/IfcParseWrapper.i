@@ -94,6 +94,7 @@
 
 %ignore express::Base::is;
 %ignore express::Base::operator==;
+%ignore express::Base::operator!=;
 %ignore express::Base::Base(std::nullopt_t);
 
 %rename("by_id") instance_by_id;
