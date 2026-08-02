@@ -219,9 +219,7 @@ class entity_instance_mixin:
             return False
 
         if self.file != other.file or not self.is_entity():
-            return self.get_info(
-                recursive=True, include_identifier=False
-            ) == other.get_info(
+            return self.get_info(recursive=True, include_identifier=False) == other.get_info(
                 recursive=True, include_identifier=False
             )
 
