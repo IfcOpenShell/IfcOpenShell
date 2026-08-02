@@ -1541,12 +1541,20 @@ namespace {
 		// Casts a ray through `p`, parallel to the view direction, against every product's solid
 		// (including the point's own product -- see above), and checks whether anything is
 		// genuinely nearer to the camera than `p` itself at that same screen position. Only the
-		// depth-tie case (nothing nearer) should be restored.
-		auto is_genuinely_occluded = [&](const gp_Pnt& p) -> bool {
+		// depth-tie case (nothing nearer) should be restored. `exclude_a`/`exclude_b` (default
+		// none) are used ONLY by is_restorable_at()'s own robustness nudge below -- see its own
+		// comment for why a nudged (off-boundary) probe needs explicit exclusions that an
+		// unnudged, exactly-on-the-boundary probe does not (BOTH the candidate's own product and
+		// the foreign one it's touching -- a nudge can walk into either's own nearby-but-not-
+		// actually-blocking geometry once it's off the exact shared surface).
+		auto is_genuinely_occluded = [&](const gp_Pnt& p, const IfcUtil::IfcBaseEntity* exclude_a = nullptr, const IfcUtil::IfcBaseEntity* exclude_b = nullptr) -> bool {
 			double depth_p = depth(p);
 			gp_Lin ray(p, gp_Dir(view_direction.Direction()));
 			for (size_t i = 0; i < intersectors.size(); ++i) {
 				if (!intersector_loaded[i]) {
+					continue;
+				}
+				if ((exclude_a && item_products[i] == exclude_a) || (exclude_b && item_products[i] == exclude_b)) {
 					continue;
 				}
 				auto& inter = intersectors[i];
@@ -1667,7 +1675,16 @@ namespace {
 		// ~(0,0.97,0.24); both confirmed-wrong "shifted wall" cases match an edge-on face, normal
 		// ~(±1,0,0)). So an edge-on match is treated as no match at all here, leaving the candidate
 		// edge ineligible for restoration via this mechanism.
-		auto point_on_foreign_face = [&](const gp_Pnt& p, const IfcUtil::IfcBaseEntity* self_product, const std::vector<size_t>& candidate_indices) -> bool {
+		// Returns the specific foreign face `p` sits on, and its owning product, if any -- not
+		// just whether one exists. Exposing the match (rather than a plain bool) lets
+		// is_restorable_at() below nudge its own occlusion probe toward that face's own interior,
+		// the same robustness technique find_cross_coplanar_matches()'s occlusion check uses (see
+		// is_genuinely_occluded()'s own comment on why a plain, unoffset ray-cast can miss a
+		// genuine occluder whose own footprint edge happens to align with the tested point) --
+		// and the owning product is needed too, so that nudged probe can exclude it (see
+		// is_restorable_at()'s own comment on why the nudge needs an exclusion the unnudged probe
+		// doesn't).
+		auto point_on_foreign_face = [&](const gp_Pnt& p, const IfcUtil::IfcBaseEntity* self_product, const std::vector<size_t>& candidate_indices) -> boost::optional<std::pair<TopoDS_Face, const IfcUtil::IfcBaseEntity*>> {
 			for (size_t idx : candidate_indices) {
 				if (item_products[idx] == self_product) {
 					continue;
@@ -1693,11 +1710,11 @@ namespace {
 					}
 					BRepClass_FaceClassifier classifier(face, p, tolerance);
 					if (classifier.State() != TopAbs_OUT) {
-						return true;
+						return std::make_pair(face, item_products[idx]);
 					}
 				}
 			}
-			return false;
+			return boost::none;
 		};
 
 		// Cheap bbox-vs-bbox pre-filter: which foreign items could possibly matter for a
@@ -1751,8 +1768,45 @@ namespace {
 				gp_Pnt sample = p0.Translated(gp_Vec(dir) * t);
 				gp_Pnt tsample = sample;
 				projector.Transform(tsample);
-				return point_on_foreign_face(sample, product, shortlist) && !is_genuinely_occluded(sample) &&
-					!point_covered_by_visible(tsample, visible_edges);
+				auto foreign_face = point_on_foreign_face(sample, product, shortlist);
+				if (!foreign_face) {
+					return false;
+				}
+				// Same robustness nudge as find_cross_coplanar_matches()'s own occlusion check
+				// (issue #3742 follow-up) -- tested at `sample` itself, OR a small (5%) nudge
+				// toward the matched foreign face's own interior, so a ray that grazes past the
+				// occluder's own footprint edge (which happens to coincide with this exact point,
+				// by construction -- that's what makes it a foreign-face candidate at all) doesn't
+				// produce a false "nothing nearer" verdict. The nudge target (face_interior_
+				// point()) lies exactly on the foreign face's own plane (an average of its
+				// vertices, all coplanar), so it moves the probe TANGENTIALLY across the shared
+				// boundary, not perpendicular into either product's own volume -- but an oblique
+				// (e.g. isometric) camera still turns that tangential move into a real depth
+				// change, which TWO successively-narrower earlier versions of this fix got wrong:
+				// excluding only the foreign product still let the nudged, now off-the-exact-
+				// boundary point find the CANDIDATE's own nearby-but-not-actually-blocking
+				// geometry and wrongly call it self-occluded -- confirmed as a real regression
+				// against two previously-correct real-file `outline` edges, via direct debug
+				// tracing showing `plain_occ=0` (genuinely fine at the exact boundary) flipping to
+				// `nudged_occ=1` purely from the nudge itself. Both the candidate's own product
+				// AND the foreign one need excluding from this specific probe. The unnudged
+				// `sample` probe needs neither exclusion (a self-hit lands within `tolerance` of
+				// `depth_p` by construction, see is_genuinely_occluded()'s own comment), but the
+				// nudged one needs both, mirroring why find_cross_coplanar_matches() excludes both
+				// `idx_i`/`idx_j` from ITS OWN nudge probes -- here there's no "pair" object, just
+				// two individually-known products (candidate + foreign) to exclude the same way.
+				auto nudge_toward = [&](const gp_Pnt& target) -> gp_Pnt {
+					gp_Vec toward(sample, target);
+					if (toward.SquareMagnitude() < 1.e-12) {
+						return sample;
+					}
+					return sample.Translated(toward * 0.05);
+				};
+				gp_Pnt foreign_centroid = cross_coplanar::face_interior_point(foreign_face->first);
+				const IfcUtil::IfcBaseEntity* foreign_product = foreign_face->second;
+				bool occluded = is_genuinely_occluded(sample) ||
+					is_genuinely_occluded(nudge_toward(foreign_centroid), foreign_product, product);
+				return !occluded && !point_covered_by_visible(tsample, visible_edges);
 			};
 
 			// 31 interior samples (32 bins) across (0, length), never at the true endpoints --
