@@ -67,8 +67,8 @@ def distance_along_from_station(file: ifcopenshell.file, alignment: entity_insta
         print(dist_along) # 100.00
     """
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    if referent_nest is None:
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    if stationing_nest is None:
         start_station = ifcopenshell.api.alignment.get_alignment_start_station(file, alignment)
         return station - start_station
 
@@ -77,7 +77,7 @@ def distance_along_from_station(file: ifcopenshell.file, alignment: entity_insta
             _distance_along_of_referent(referent),
             ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="Station"),
         )
-        for referent in referent_nest.RelatedObjects
+        for referent in stationing_nest.RelatedObjects
     ]
     stations.sort(key=lambda entry: entry[0])
 
