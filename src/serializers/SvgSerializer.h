@@ -80,6 +80,7 @@
 #include <set>
 #include <iterator>
 #include <algorithm>
+#include <functional>
 #include <IntCurvesFace_ShapeIntersector.hxx>
 
 typedef std::pair<const IfcUtil::IfcBaseEntity*, std::string> drawing_key;
@@ -380,6 +381,27 @@ namespace {
 			return true;
 		}
 
+		// Average of a face's own vertices -- a cheap, deliberately-not-exact proxy for "a point
+		// genuinely inside this face's own area", as opposed to any single vertex (always exactly
+		// ON a boundary edge or corner). Good enough for typical convex-ish building faces (walls,
+		// slabs, box-like profiles); not a true area centroid. Used by find_cross_coplanar_
+		// matches()'s own occlusion-robustness nudge -- see its own comment for why a plain
+		// unoffset boundary-point ray-cast can still miss a genuine occluder whose own edge
+		// happens to align with the tested boundary.
+		gp_Pnt face_interior_point(const TopoDS_Face& f) {
+			double sx = 0, sy = 0, sz = 0;
+			int n = 0;
+			for (TopExp_Explorer vexp(f, TopAbs_VERTEX); vexp.More(); vexp.Next()) {
+				gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+				sx += p.X(); sy += p.Y(); sz += p.Z();
+				++n;
+			}
+			if (n == 0) {
+				return gp_Pnt(0, 0, 0);
+			}
+			return gp_Pnt(sx / n, sy / n, sz / n);
+		}
+
 		// A straight edge's endpoints in 3D, plus its (unit) direction and length -- the atom
 		// the edge-coincidence matching below works with. Curved edges (no Geom_Line) and
 		// degenerate (near-zero-length) edges are skipped by edge_to_line_seg, consistent with
@@ -567,6 +589,7 @@ namespace {
 			const boost::optional<layer_projection>& proj_other, const IfcUtil::IfcBaseInterface* material_other, const IfcUtil::IfcBaseInterface* style_other,
 			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_this,
 			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_other,
+			const std::function<bool(const gp_Pnt&)>& is_occluded,
 			edge_coverage_map_t& coverage
 		) {
 			for (TopExp_Explorer eexp(face, TopAbs_EDGE); eexp.More(); eexp.Next()) {
@@ -661,6 +684,38 @@ namespace {
 							ok = mat_this && mat_other && mat_this == mat_other;
 						} else {
 							ok = style_this && style_other && style_this == style_other;
+						}
+						// Screen-space occlusion, checked per sub-interval rather than once for the
+						// whole face: a wholly separate, unrelated third product sitting in front
+						// of THIS specific portion of the shared boundary from the current camera
+						// means classifying it as this pair's relationship would misrepresent
+						// what's actually shown here, even though other portions of the same face
+						// pair may be genuinely unoccluded and should still be accepted. Tested
+						// exactly at `mid` (the interval's own midpoint on the shared boundary
+						// line), deliberately NOT offset into this face's own interior -- `is_
+						// occluded` already excludes both products of the matched pair itself
+						// (see find_cross_coplanar_matches()'s `idx_i`/`idx_j` exclusion), so `mid`
+						// unambiguously answers "is a genuine third party in front of this exact
+						// shared location", the same question and the same answer regardless of
+						// which side's face happens to be walked. An earlier version offset
+						// toward this face's own whole-face average instead, reasoning (by analogy
+						// with an even earlier, already-rejected whole-face design) that testing
+						// exactly on the shared boundary couldn't tell "which side" -- but with the
+						// pair already excluded that concern doesn't apply, and the offset was
+						// actively harmful: this function is called once per direction for the
+						// same matched pair, each call offsetting toward a DIFFERENT face's own
+						// centroid, so the same physical sub-interval could accept on one side and
+						// reject on the other -- producing two independently-split sub-edges with
+						// different endpoints for what should be a single, consistent decision.
+						// `coincident_edge_class_priority()`'s dedup pass matches by (quantized)
+						// endpoint identity, so mismatched split points meant the wrong-side edge
+						// was never recognised as a duplicate and both survived -- confirmed
+						// directly against a real isometric drawing (issue #3742 follow-up): a
+						// lower wall's own `sharp` fallback edge and a slab's own `mat-style-
+						// change` edge, both representing the same physical seam, survived side by
+						// side with slightly different endpoints.
+						if (ok && is_occluded(mid)) {
+							ok = false;
 						}
 						if (ok) {
 							covered.push_back({ cursor, piece_end });
@@ -1041,6 +1096,7 @@ namespace {
 			const boost::optional<layer_projection>& proj_other, const IfcUtil::IfcBaseInterface* material_other, const IfcUtil::IfcBaseInterface* style_other,
 			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_this,
 			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_other,
+			const std::function<bool(const gp_Pnt&)>& is_occluded,
 			cross_coplanar::edge_coverage_map_t& coverage
 		) {
 			for (TopExp_Explorer eexp(face, TopAbs_EDGE); eexp.More(); eexp.Next()) {
@@ -1113,7 +1169,17 @@ namespace {
 							both_resolved = style_this && style_other;
 							equal = both_resolved && style_this == style_other;
 						}
-						if (both_resolved && !equal) {
+						// Per-sub-interval occlusion check, tested exactly at `mid` (not offset into
+						// this face's own interior) -- see cross_coplanar::accumulate_edge_
+						// coverage()'s own occlusion comment above for the full reasoning (per-
+						// interval granularity, and why an unoffset shared-boundary point is both
+						// correct and necessary for both sides of a matched pair to split at the
+						// same points).
+						bool accept = both_resolved && !equal;
+						if (accept && is_occluded(mid)) {
+							accept = false;
+						}
+						if (accept) {
 							covered.push_back({ cursor, piece_end });
 						}
 						cursor = piece_end;
@@ -1457,7 +1523,13 @@ namespace {
 				const TopoDS_Shape& shape = std::get<1>(it);
 				item_products[idx] = std::get<0>(it);
 				item_shapes[idx] = &shape;
-				if (!shape.IsNull()) {
+				// IfcOpeningElement (window/door voids) represents a hole cut *out of* a wall,
+				// not material standing in front of anything -- never a legitimate occluder,
+				// regardless of where its own (uncut) boundary geometry sits. Same gap found
+				// and fixed in find_cross_coplanar_matches()'s own, separate occlusion check
+				// (issue #3742 follow-up, item 4d) -- this is that same fix applied here too.
+				bool is_void = item_products[idx] && item_products[idx]->declaration().is("IfcOpeningElement");
+				if (!shape.IsNull() && !is_void) {
 					intersectors[idx].Load(shape, tolerance);
 					intersector_loaded[idx] = true;
 					BRepBndLib::AddClose(shape, item_boxes[idx]);
@@ -2147,8 +2219,94 @@ namespace {
 				return per_product_mismatch_coverage[product];
 			};
 
-			for (auto ii = items_.begin(); ii != items_.end(); ++ii) {
-				for (auto jj = std::next(ii); jj != items_.end(); ++jj) {
+			// Screen-space occlusion check: a coplanar-and-touching match between two products is
+			// only meaningful for classification purposes when that touching boundary is actually
+			// what's visible from the current camera. Two products can be genuinely, validly
+			// coplanar-and-touching in 3D (e.g. two same-material stacked storeys) while a wholly
+			// separate, unrelated third product sits directly in front of that boundary from this
+			// specific camera (e.g. an upper storey's own wall covering a lower storey's boundary
+			// with a slab) -- without this check, the classification gets attributed to the hidden
+			// pair's relationship instead of representing the genuinely-visible corner between the
+			// third product and either member of the pair, which is what a user actually sees.
+			//
+			// Reuses the exact ray-cast technique restore_coincident_hidden_edges() already uses
+			// (is_genuinely_occluded(), added in 0078c94872) rather than inventing a new mechanism:
+			// one IntCurvesFace_ShapeIntersector loaded per item up front (the expensive part,
+			// confirmed by that function's own ~30x-slowdown history if rebuilt per-sample), reused
+			// for every candidate point via repeated Perform() calls. This is a second, separate
+			// intersector array from restore_coincident_hidden_edges()'s own later in build() --
+			// real, accepted added cost for this drawing/storey (see project_cross_coplanar_
+			// known_issues.md item 4d for why sharing one array across both passes was ruled out of
+			// scope for this fix), not shared, since this pass runs earlier and independently.
+			std::vector<IntCurvesFace_ShapeIntersector> occlusion_intersectors(items_.size());
+			std::vector<bool> occlusion_intersector_loaded(items_.size(), false);
+			{
+				size_t idx = 0;
+				for (auto& it : items_) {
+					const auto* item_product = std::get<0>(it);
+					const TopoDS_Shape& shape = std::get<1>(it);
+					// IfcOpeningElement (window/door voids, and similar non-physical feature
+					// subtractions) can appear in items_ for other purposes (e.g. reveal-edge
+					// classification) but is never a legitimate solid occluder -- it represents a
+					// hole cut *out of* a wall, not material standing in front of anything.
+					// Confirmed directly against a real building file (issue #3742 follow-up): an
+					// opening's own (uncut) boundary geometry was being ray-cast as if opaque,
+					// producing a spurious few-millimetre-scale "nearer" hit against a genuinely
+					// touching, genuinely visible wall seam and wrongly rejecting the match.
+					bool is_void = item_product && item_product->declaration().is("IfcOpeningElement");
+					if (!shape.IsNull() && !is_void) {
+						occlusion_intersectors[idx].Load(shape, cross_coplanar_tolerance_);
+						occlusion_intersector_loaded[idx] = true;
+					}
+					++idx;
+				}
+			}
+			// Same "smaller d is nearer the camera" convention as prefiltered_hlr::is_obscured_()
+			// and restore_coincident_hidden_edges()'s own depth() lambda.
+			auto occlusion_depth = [&](const gp_Pnt& p) {
+				return -(p.XYZ() - view_direction_.Location().XYZ()).Dot(view_direction_.Direction().XYZ());
+			};
+			// Is anything nearer to the camera than `p` itself, along a ray parallel to the view
+			// direction? `exclude_a`/`exclude_b` are the two products of the pair currently being
+			// evaluated (their occlusion_intersectors indices) and are always skipped -- unlike
+			// restore_coincident_hidden_edges()'s own is_genuinely_occluded() (where the tested
+			// point and the tested shape are the *same* shape, so a self-hit naturally lands at
+			// essentially the same depth and is harmless), here `p` is one face's own interior
+			// point being tested against a *different* product's full intersector. When that other
+			// product is the pair's own matched neighbour standing directly on/against it (e.g. two
+			// stacked same-footprint storeys meeting at a shared plane), its solid genuinely
+			// extends away from `p` along the view direction -- a real "nearer hit", not a
+			// depth-tie -- and without this exclusion every such touching pair would wrongly read
+			// as self-occluded, rejecting the very relationship being tested.
+			auto is_occluded_by_other = [&](const gp_Pnt& p, size_t exclude_a, size_t exclude_b) -> bool {
+				double depth_p = occlusion_depth(p);
+				gp_Lin ray(p, gp_Dir(view_direction_.Direction()));
+				for (size_t i = 0; i < occlusion_intersectors.size(); ++i) {
+					if (i == exclude_a || i == exclude_b) {
+						continue;
+					}
+					if (!occlusion_intersector_loaded[i]) {
+						continue;
+					}
+					auto& inter = occlusion_intersectors[i];
+					inter.Perform(ray, -1.0e6, 1.0e6);
+					if (!inter.IsDone()) {
+						continue;
+					}
+					for (int j = 1; j <= inter.NbPnt(); ++j) {
+						double dq = occlusion_depth(inter.Pnt(j));
+						if (dq < depth_p - cross_coplanar_tolerance_) {
+							return true;
+						}
+					}
+				}
+				return false;
+			};
+
+			size_t idx_i = 0;
+			for (auto ii = items_.begin(); ii != items_.end(); ++ii, ++idx_i) {
+				size_t idx_j = idx_i + 1;
+				for (auto jj = std::next(ii); jj != items_.end(); ++jj, ++idx_j) {
 					const auto* product_i = std::get<0>(*ii);
 					const TopoDS_Shape& shape_i = std::get<1>(*ii);
 					const auto* style_i = std::get<2>(*ii);
@@ -2301,6 +2459,69 @@ namespace {
 								continue;
 							}
 
+							// Screen-space occlusion check: face_i and face_j are now confirmed
+							// genuinely coplanar and touching in 3D -- but that alone doesn't mean
+							// every portion of that shared boundary is what's actually visible from
+							// the current camera. Two products can be genuinely, validly coplanar-
+							// and-touching (e.g. two same-material stacked storeys) while a wholly
+							// separate, unrelated third product sits directly in front of PART of
+							// that boundary from this specific camera (e.g. an upper storey's own
+							// wall covering a lower storey's boundary with a slab) -- classifying
+							// that portion as this pair's relationship would misrepresent what's
+							// actually shown. Deliberately NOT checked once here for the whole face
+							// pair (an earlier version of this fix did exactly that, testing each
+							// face's own whole-face interior_point()) -- for a long face (e.g. a
+							// multi-metre wall), a single third-party object partially in front of
+							// one *portion* of the face wrongly rejected coverage for the entire
+							// face, including clearly-visible portions metres away. Instead, this
+							// lambda is threaded into accumulate_edge_coverage()/accumulate_
+							// mismatch_coverage() below and evaluated per accepted sub-interval, at
+							// that interval's own midpoint -- matching the same granularity those
+							// functions already use for material/style resolution. `idx_i`/`idx_j`
+							// are always excluded: they're the two products *of this matched pair
+							// itself*, and one standing directly against/on the other (the touching
+							// relationship being tested) must never count as "occluding" it -- only
+							// a genuinely separate third product should ever cause a sub-interval
+							// to be rejected.
+							//
+							// Tested at up to three points, combined with OR (occluded if ANY finds
+							// a blocker): the boundary midpoint itself, and a small nudge toward
+							// each side's own face-interior point (`centroid_i`/`centroid_j`,
+							// computed once per face pair here, identically for both call
+							// directions below -- unlike an earlier, reverted version of this nudge
+							// that computed it per-side inside accumulate_edge_coverage() itself,
+							// which made the two sides' decisions diverge for the same interval).
+							// The plain-midpoint probe alone can genuinely miss a real occluder
+							// whose own footprint edge happens to align with the tested boundary: a
+							// ray cast at a shallow camera angle drifts laterally before reaching
+							// the occluder's own base height, and can land just outside its
+							// footprint even though the occluder is, in every meaningful sense,
+							// standing on this exact boundary -- confirmed directly against a real
+							// isometric drawing (issue #3742 follow-up) where a wall's own vertical
+							// side, coincident with the base of the wall stacked directly above it,
+							// produced exactly this near-miss (camera-direction-driven drift of
+							// several centimetres past the occluder's own footprint edge). The
+							// small (5%) nudge toward each side's own interior moves the probe just
+							// enough off that exact edge to catch it, while staying local enough to
+							// the interval's own position not to reintroduce the whole-face
+							// granularity problem an earlier version of this fix already fixed.
+							gp_Pnt centroid_i = cross_coplanar::face_interior_point(face_i);
+							gp_Pnt centroid_j = cross_coplanar::face_interior_point(face_j);
+							auto is_occluded_for_pair = [&, centroid_i, centroid_j](const gp_Pnt& p) {
+								if (is_occluded_by_other(p, idx_i, idx_j)) {
+									return true;
+								}
+								auto nudge_toward = [&](const gp_Pnt& centroid) -> gp_Pnt {
+									gp_Vec toward(p, centroid);
+									if (toward.SquareMagnitude() < 1.e-12) {
+										return p;
+									}
+									return p.Translated(toward * 0.05);
+								};
+								return is_occluded_by_other(nudge_toward(centroid_i), idx_i, idx_j)
+									|| is_occluded_by_other(nudge_toward(centroid_j), idx_i, idx_j);
+							};
+
 							// Material/style resolution when either product is layered has moved
 							// to a per-*sub-interval* check inside accumulate_edge_coverage()
 							// below -- a face-level (centroid-based) verdict here would wrongly
@@ -2330,11 +2551,13 @@ namespace {
 									face_i, face_j, segs_j, cross_coplanar_tolerance_,
 									proj_i, material_i, style_i, proj_j, material_j, style_j,
 									edge_face_map_i, edge_face_map_j,
+									is_occluded_for_pair,
 									get_coverage(product_i));
 								cross_coplanar::accumulate_edge_coverage(
 									face_j, face_i, segs_i, cross_coplanar_tolerance_,
 									proj_j, material_j, style_j, proj_i, material_i, style_i,
 									edge_face_map_j, edge_face_map_i,
+									is_occluded_for_pair,
 									get_coverage(product_j));
 							}
 							if (use_mat_style_change_classification_) {
@@ -2342,11 +2565,13 @@ namespace {
 									face_i, face_j, segs_j, cross_coplanar_tolerance_,
 									proj_i, material_i, style_i, proj_j, material_j, style_j,
 									edge_face_map_i, edge_face_map_j,
+									is_occluded_for_pair,
 									get_mismatch_coverage(product_i));
 								mat_style_change::accumulate_mismatch_coverage(
 									face_j, face_i, segs_i, cross_coplanar_tolerance_,
 									proj_j, material_j, style_j, proj_i, material_i, style_i,
 									edge_face_map_j, edge_face_map_i,
+									is_occluded_for_pair,
 									get_mismatch_coverage(product_j));
 							}
 						}

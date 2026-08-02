@@ -312,6 +312,165 @@ def test_cross_coplanar_basic_touching_boundary():
     assert has_edge(edges, wall_b.GlobalId, "outline", (12000.0, 9000.0), (12000.0, 11000.0))
 
 
+def test_cross_coplanar_match_must_not_steal_edge_from_occluded_neighbour():
+    """`find_cross_coplanar_matches()` (`SvgSerializer.h`) can genuinely,
+    validly confirm two products are coplanar-and-touching in 3D while a
+    wholly separate third product sits directly in front of one of them from
+    the current camera -- classifying the touching boundary as this pair's
+    relationship then misrepresents what's actually visible. Reported by the
+    user from a real isometric drawing: two same-material stacked walls with
+    a slab, where the lower wall (hidden behind the upper wall from that
+    camera) was coplanar-matched with the slab, producing a wrongly-
+    classified `cross-coplanar`/`mat-style-change` edge where a plain
+    `outline` corner between the (actually visible) upper wall and slab
+    should have been shown instead.
+
+    `Slab` (large) and `LowerWall` (small) share a touching boundary at
+    X=4 (same material, same top-face plane Z=0.2 -- a genuine, valid
+    cross-coplanar match, confirmed by the control case below). `UpperWall`
+    sits directly above `LowerWall`'s own far portion and centroid (nearer
+    the camera, which looks straight down) WITHOUT covering the X=4 shared
+    edge itself -- so that edge stays genuinely HLR-visible (not just
+    occluded outright, which would trivially hide it regardless of class and
+    prove nothing -- confirmed this distinction matters directly: an earlier
+    attempt at this test, where the occluder also covered the shared edge,
+    produced byte-identical output whether or not the fix was present, since
+    HLR's own real occlusion hid the whole region regardless of
+    classification either way).
+
+    Confirmed via direct before/after comparison against unfixed code
+    (temporarily reverted, rebuilt, tested, then restored): pre-fix, the
+    shared edge is classified `cross-coplanar` on both `Slab` and
+    `LowerWall` despite `LowerWall` being substantially occluded -- exactly
+    the reported bug. Post-fix, the occlusion check runs per accepted
+    sub-interval (see `point_near_edge_interior()`) rather than once for the
+    whole face, so the result is a genuine partial split rather than an
+    all-or-nothing verdict: the portion of the shared edge actually behind
+    `UpperWall` stays `outline`, while the remaining portion -- genuinely
+    unoccluded, since `UpperWall` doesn't cover the entire shared edge --
+    correctly still shows `cross-coplanar`. (A whole-face occlusion check was
+    tried first and rejected: confirmed directly against a real building
+    file that it wrongly rejects an ENTIRE multi-metre-long face over a
+    single unrelated object partially in front of one small portion of it,
+    days after the whole-face version of this fix first shipped -- see
+    project_cross_coplanar_known_issues.md item 4d's follow-up.)
+    """
+    ifc_file, body_context, storey = _make_project()
+    material = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    slab = _add_box(ifc_file, body_context, storey, "Slab", (4.0, 4.0, 0.2), (0.0, 0.0, 0.0), material=material)
+    lower_wall = _add_box(
+        ifc_file, body_context, storey, "LowerWall", (1.0, 1.0, 0.2), (4.0, 0.0, 0.0), material=material
+    )
+    _add_box(ifc_file, body_context, storey, "UpperWall", (0.9, 1.3, 0.5), (4.3, -0.1, 0.5))
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(2.0, 2.0, 10.0),
+        camera_dir=(0.0, 0.0, 1.0),
+        camera_ref=(1.0, 0.0, 0.0),
+        use_cross_coplanar=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    # The portion of the shared X=4 boundary nearer UpperWall must stay plain
+    # outline -- LowerWall being occluded there means its relationship with
+    # Slab isn't what's actually shown for that portion, regardless of how
+    # geometrically valid it is in 3D. The remaining portion, genuinely
+    # unoccluded, must still show cross-coplanar on both sides.
+    occluded_p0, occluded_p1 = (11400.0, 7950.0), (11400.0, 10950.0)
+    visible_p0, visible_p1 = (11400.0, 10950.0), (11400.0, 11950.0)
+    assert has_edge(edges, slab.GlobalId, "outline", occluded_p0, occluded_p1)
+    assert has_edge(edges, slab.GlobalId, "cross-coplanar", visible_p0, visible_p1)
+    assert not has_edge(edges, slab.GlobalId, "cross-coplanar", occluded_p0, occluded_p1)
+    assert has_edge(edges, lower_wall.GlobalId, "cross-coplanar", visible_p0, visible_p1)
+
+
+def test_cross_coplanar_match_control_without_occluder():
+    """Control for `test_cross_coplanar_match_must_not_steal_edge_from_
+    occluded_neighbour()` -- same `Slab`/`LowerWall` pair, no `UpperWall`.
+    Confirms the occlusion-awareness fix doesn't just unconditionally reject
+    every match: the genuine cross-coplanar relationship must still be found
+    and classified correctly when nothing occludes it.
+    """
+    ifc_file, body_context, storey = _make_project()
+    material = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    slab = _add_box(ifc_file, body_context, storey, "Slab", (4.0, 4.0, 0.2), (0.0, 0.0, 0.0), material=material)
+    lower_wall = _add_box(
+        ifc_file, body_context, storey, "LowerWall", (1.0, 1.0, 0.2), (4.0, 0.0, 0.0), material=material
+    )
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(2.0, 2.0, 10.0),
+        camera_dir=(0.0, 0.0, 1.0),
+        camera_ref=(1.0, 0.0, 0.0),
+        use_cross_coplanar=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    shared_p0, shared_p1 = (11500.0, 12000.0), (11500.0, 11000.0)
+    assert has_edge(edges, slab.GlobalId, "cross-coplanar", shared_p0, shared_p1)
+    assert has_edge(edges, lower_wall.GlobalId, "cross-coplanar", shared_p0, shared_p1)
+
+
+def test_cross_coplanar_match_stacked_same_footprint_must_not_self_occlude():
+    """Regression for a follow-up bug in the occlusion-awareness fix added for
+    `test_cross_coplanar_match_must_not_steal_edge_from_occluded_neighbour()`
+    above. Reported by the user from a real isometric drawing: two
+    same-material walls stacked directly on top of each other at the
+    *identical* footprint (confirmed via extracted world-placement matrices --
+    same X/Y placement, differing only in Z, meeting exactly at the boundary)
+    were wrongly classified `outline` instead of `cross-coplanar` at their
+    shared seam, immediately after the occlusion-awareness fix landed.
+
+    Root cause: `is_occluded_by_other()` (`SvgSerializer.h`) ray-cast each
+    face's own interior point toward the camera against *every* item's
+    intersector, with no exclusion at all. For two products stacked directly
+    on the same footprint, a ray from the lower product's own top-face
+    interior point toward the camera immediately re-enters the *upper*
+    product's own solid -- which is one of the two products the match is
+    being evaluated *for*, not a genuinely separate third-party occluder. The
+    fix excludes both products of the pair currently under test from the
+    ray-cast.
+
+    `LowerBox` and `UpperBox` share the exact same (2.0, 2.0) X/Y footprint,
+    stacked directly on top of each other in Z with a shared material -- no
+    third product involved at all, isolating this from the original
+    third-party-occlusion scenario the earlier fix targeted (still covered,
+    unchanged, by the two tests above).
+    """
+    ifc_file, body_context, storey = _make_project()
+    material = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    lower_box = _add_box(
+        ifc_file, body_context, storey, "LowerBox", (2.0, 2.0, 1.0), (0.0, 0.0, 0.0), material=material
+    )
+    upper_box = _add_box(
+        ifc_file, body_context, storey, "UpperBox", (2.0, 2.0, 1.0), (0.0, 0.0, 1.0), material=material
+    )
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(10.0, 10.0, 10.0),
+        camera_dir=(0.5773502691896258, 0.5773502691896258, 0.5773502691896258),
+        camera_ref=(0.7071067811865475, -0.7071067811865475, 0.0),
+        use_cross_coplanar=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    # The shared seam at Z=1 (world) must be classified cross-coplanar on
+    # both boxes -- the two products standing directly on one another is the
+    # touching relationship itself, not evidence that it's hidden.
+    cross_coplanar_edges_lower = [e for e in edges if e.guid == lower_box.GlobalId and e.cls == "cross-coplanar"]
+    cross_coplanar_edges_upper = [e for e in edges if e.guid == upper_box.GlobalId and e.cls == "cross-coplanar"]
+    assert cross_coplanar_edges_lower, "LowerBox has no cross-coplanar edges at all -- self-occlusion regression"
+    assert cross_coplanar_edges_upper, "UpperBox has no cross-coplanar edges at all -- self-occlusion regression"
+    for edge in cross_coplanar_edges_lower + cross_coplanar_edges_upper:
+        assert edge.cls != "outline"
+
+
 def test_mat_style_change_case_a_material_mismatch():
     """Same touching-wall geometry as the cross-coplanar baseline, but the two
     walls have DIFFERENT materials -- `find_cross_coplanar_matches()` only
