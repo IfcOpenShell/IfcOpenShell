@@ -976,8 +976,14 @@ def test_restore_coincident_hidden_edges_partial_occlusion():
     # genuine gap over the occluder's own footprint -- this is what current
     # (unfixed) code structurally cannot produce (it only ever emits the
     # whole edge or nothing, never two disjoint pieces of one original edge).
-    far_third_inner = (10012.940186339896, 10000.204735060386)
-    near_third_inner = (10006.11002328368, 10000.204735060386)
+    # Re-captured after a later fix (issue #3742 follow-up) that bisection-
+    # refines each restorable/occluded transition instead of leaving it at
+    # the coarse 31-sample bin midpoint -- these two values shifted slightly
+    # (by less than one bin width) from that fix, which is expected: it
+    # makes the cutoff track the real occluder silhouette more precisely,
+    # not a regression in this test's own logic.
+    far_third_inner = (10012.803980251783, 10000.204735060386)
+    near_third_inner = (10006.136476218988, 10000.204735060386)
     assert has_edge(edges, slab_a.GlobalId, "outline", target_p0, far_third_inner)
     assert has_edge(edges, slab_a.GlobalId, "outline", near_third_inner, target_p1)
     # No edge may cross into the occluded middle band -- neither of the two

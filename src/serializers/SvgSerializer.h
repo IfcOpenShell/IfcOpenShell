@@ -1743,6 +1743,18 @@ namespace {
 				return {};
 			}
 
+			// Single-point restorability test, reused both for the coarse sample grid below and
+			// for refining a transition's exact location via bisection (see the refine lambda
+			// further down) -- pulled out so both can call the identical, real ray-cast/coverage
+			// test rather than approximating it.
+			auto is_restorable_at = [&](double t) -> bool {
+				gp_Pnt sample = p0.Translated(gp_Vec(dir) * t);
+				gp_Pnt tsample = sample;
+				projector.Transform(tsample);
+				return point_on_foreign_face(sample, product, shortlist) && !is_genuinely_occluded(sample) &&
+					!point_covered_by_visible(tsample, visible_edges);
+			};
+
 			// 31 interior samples (32 bins) across (0, length), never at the true endpoints --
 			// same corner-artifact rationale as the original 3-sample gate (a ray fired exactly
 			// through a corner where unrelated faces converge can pick up a spurious "nearer"
@@ -1755,24 +1767,64 @@ namespace {
 			for (int i = 0; i < kRestoreSampleCount; ++i) {
 				double t = length * static_cast<double>(i + 1) / static_cast<double>(kRestoreSampleCount + 1);
 				ts[i] = t;
-				gp_Pnt sample = p0.Translated(gp_Vec(dir) * t);
-				gp_Pnt tsample = sample;
-				projector.Transform(tsample);
-				restorable[i] = point_on_foreign_face(sample, product, shortlist) && !is_genuinely_occluded(sample) &&
-					!point_covered_by_visible(tsample, visible_edges);
+				restorable[i] = is_restorable_at(t);
 			}
 
-			// Each true sample maps to a bin extending halfway to its neighbours; the two
-			// outermost bins extend all the way to the true endpoints, so endpoint
+			// Refines a boundary that fell between sample `a` (known restorable) and sample `b`
+			// (known NOT restorable) from the coarse bin midpoint down to (close to) the true
+			// restorable/occluded transition, via bisection using the same real test each coarse
+			// sample used. Without this, the visible/hidden cutoff for a restored edge sits at a
+			// fixed bin-boundary position (length / (kRestoreSampleCount + 1) apart) regardless of
+			// where the real occluder's own silhouette actually falls -- for a long edge this is a
+			// real, visible discrepancy, not just numerical noise: confirmed directly from a real
+			// isometric drawing (issue #3742 follow-up) where a slab's own edge, correctly clipped
+			// by a wall standing on it, extended measurably past the wall's own top-edge outline
+			// before this fix, because the coarse bin boundary landed closer to the restorable
+			// side than the true silhouette intersection did. 12 bisection iterations narrows the
+			// bin-width-scale coarse gap down to roughly bin_width / 4096, comfortably under
+			// `tolerance` for any edge this sampling scheme is meant to handle.
+			auto refine_transition = [&](double t_restorable, double t_occluded) -> double {
+				for (int iter = 0; iter < 12; ++iter) {
+					double mid = 0.5 * (t_restorable + t_occluded);
+					if (is_restorable_at(mid)) {
+						t_restorable = mid;
+					} else {
+						t_occluded = mid;
+					}
+				}
+				return 0.5 * (t_restorable + t_occluded);
+			};
+
+			// Each true sample maps to a bin extending halfway to its neighbours by default; the
+			// two outermost bins extend all the way to the true endpoints, so endpoint
 			// restorability is inherited from the outermost interior sample rather than
-			// independently ray-cast there (same rationale as above, generalized).
+			// independently ray-cast there (same rationale as above, generalized). An *interior*
+			// boundary between a restorable sample and a non-restorable neighbour is refined via
+			// bisection instead of left at the coarse midpoint (see refine_transition() above);
+			// a boundary between two restorable (or two non-restorable) samples never needs
+			// refining, since a run of same-verdict bins either all survive or all get dropped
+			// regardless of exactly where their shared midpoint falls.
 			std::vector<std::pair<double, double>> raw;
 			for (int i = 0; i < kRestoreSampleCount; ++i) {
 				if (!restorable[i]) {
 					continue;
 				}
-				double lo = (i == 0) ? 0.0 : 0.5 * (ts[i - 1] + ts[i]);
-				double hi = (i == kRestoreSampleCount - 1) ? length : 0.5 * (ts[i] + ts[i + 1]);
+				double lo;
+				if (i == 0) {
+					lo = 0.0;
+				} else if (restorable[i - 1]) {
+					lo = 0.5 * (ts[i - 1] + ts[i]);
+				} else {
+					lo = refine_transition(ts[i], ts[i - 1]);
+				}
+				double hi;
+				if (i == kRestoreSampleCount - 1) {
+					hi = length;
+				} else if (restorable[i + 1]) {
+					hi = 0.5 * (ts[i] + ts[i + 1]);
+				} else {
+					hi = refine_transition(ts[i], ts[i + 1]);
+				}
 				raw.emplace_back(lo, hi);
 			}
 			auto merged = cross_coplanar::ivs_union(raw, tolerance);
