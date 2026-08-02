@@ -26,10 +26,19 @@ def _cost_item_to_dict(item: ifcopenshell.entity_instance, max_depth: int | None
 
 
 def cost(model: ifcopenshell.file, max_depth: int | None = None) -> list[dict[str, Any]]:
-    """Return a list of IfcCostSchedule entries with nested cost item trees.
+    """List the cost schedules: bills of quantities and their cost items.
 
-    max_depth limits how many levels of subitems are expanded (None = unlimited).
-    At the cutoff level, subitems is replaced with {"truncated": True, "count": N}.
+    Covers ``IfcCostSchedule`` only — this is the money dimension of the
+    model; see ``schedule()`` in this module for the construction programme.
+    Each cost item reports its cost ``values`` as ``formula`` label and
+    ``category`` pairs, together with its nested ``subitems``. Returns an
+    empty list when the model has no cost schedules.
+
+    :param model: The in-memory IFC model.
+    :param max_depth: Levels of cost item nesting to expand, counting root
+        items as level 1. Past the cutoff ``subitems`` is replaced by a
+        ``{"truncated": True, "count": N}`` marker giving the number of items
+        not expanded. ``None`` (default) expands to unlimited depth.
     """
     result = []
     for cost_schedule in model.by_type("IfcCostSchedule"):
