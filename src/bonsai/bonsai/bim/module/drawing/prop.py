@@ -55,6 +55,7 @@ diagram_scales_enum = []
 def purge():
     global diagram_scales_enum
     diagram_scales_enum = []
+    _cancel_pending_camera_representation_persist()
 
 
 def update_target_view_doc(self: "DocProperties", context: bpy.types.Context) -> None:
@@ -471,6 +472,47 @@ class DocProperties(PropertyGroup):
         return tool.Drawing.get_drawing_target_view(active_drawing)
 
 
+_pending_camera_representation_persist: Union[Callable[[], None], None] = None
+_CAMERA_REPRESENTATION_PERSIST_DEBOUNCE = 0.5
+
+
+def _schedule_camera_representation_persist(camera_name: str) -> None:
+    """(Re)schedule a deferred ``bim.update_representation`` for ``camera_name``.
+
+    Called only from a PropertyGroup ``update=`` callback, which fires
+    synchronously mid property-write and must not call ``bpy.ops`` there
+    (see ``update_width_height``). Each call cancels any pending timer and
+    registers a fresh one, so a burst of ticks from a slider drag collapses
+    into a single deferred call once the debounce window of quiet elapses,
+    handed to Blender's main loop where operators are legal.
+    """
+    global _pending_camera_representation_persist
+    if _pending_camera_representation_persist is not None and bpy.app.timers.is_registered(
+        _pending_camera_representation_persist
+    ):
+        bpy.app.timers.unregister(_pending_camera_representation_persist)
+
+    def _do_persist() -> None:
+        global _pending_camera_representation_persist
+        _pending_camera_representation_persist = None
+        obj = bpy.data.objects.get(camera_name)
+        if obj is None or not tool.Ifc.get_entity(obj):
+            return None
+        bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
+        return None
+
+    _pending_camera_representation_persist = _do_persist
+    bpy.app.timers.register(_do_persist, first_interval=_CAMERA_REPRESENTATION_PERSIST_DEBOUNCE)
+
+
+def _cancel_pending_camera_representation_persist() -> None:
+    global _pending_camera_representation_persist
+    pending = _pending_camera_representation_persist
+    if pending is not None and bpy.app.timers.is_registered(pending):
+        bpy.app.timers.unregister(pending)
+    _pending_camera_representation_persist = None
+
+
 def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     self.update_camera_resolution()
     if not self.update_props:
@@ -480,10 +522,16 @@ def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context)
         return
     if not tool.Ifc.get_entity(camera):
         return
-    # Persist the new camera size into the drawing's IFC representation immediately,
-    # so it round-trips without needing to re-activate the drawing.
+    # Stage the new camera size into `representation` immediately (cheap,
+    # touches only this data-block's own property, same as the sibling
+    # update_diagram_scale/update_is_nts callbacks). Persisting it into the
+    # IFC representation itself needs bim.update_representation, which is
+    # unsafe to call from here directly: this callback runs mid property-write,
+    # and the operator can swap out this very camera's data-block (see
+    # tool.Geometry.change_data), so calling it inline would touch data being
+    # written under us. Debounce and defer that part instead.
     if self.update_representation(camera.matrix_world):
-        bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
+        _schedule_camera_representation_persist(camera.name)
 
 
 def update_camera_type(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
