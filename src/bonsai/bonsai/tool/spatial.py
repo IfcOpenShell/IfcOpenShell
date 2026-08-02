@@ -888,14 +888,15 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_space_polygon_from_context_visible_objects(
-        cls, x: float, y: float
+        cls, x: float, y: float, container: Optional[ifcopenshell.entity_instance] = None
     ) -> tuple[
         Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]],
         list[ifcopenshell.entity_instance],
     ]:
         props = tool.Model.get_model_props()
         calculation_rl = props.rl3
-        container = tool.Root.get_default_container()
+        if container is None:
+            container = tool.Root.get_default_container()
         container_obj = tool.Ifc.get_object(container)
         cut_z = container_obj.matrix_world.translation.z + calculation_rl
 
