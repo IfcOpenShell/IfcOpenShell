@@ -885,6 +885,15 @@ class Spatial(bonsai.core.tool.Spatial):
         container_obj = tool.Ifc.get_object(container)
         cut_z = container_obj.matrix_world.translation.z + calculation_rl
 
+        # Commit any moved visible bounding objects before reading IFC geometry,
+        # so the IFC-based cache uses the current Blender positions.
+        for obj in bpy.context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element is None or not any(element.is_a(c) for c in ifcopenshell.util.space.BOUNDING_CLASSES):
+                continue
+            tool.Geometry.commit_placement_if_moved(obj)
+        cls._geom_cache.clear()
+
         boundary_lines, bounding_elements = cls.get_boundary_lines_from_ifc_elements(cut_z)
         polygon, _ = ifcopenshell.util.space.get_space_polygon(boundary_lines, x, y)
         if isinstance(polygon, str):
