@@ -226,7 +226,6 @@ def generate_space(
         spatial.set_space_representation_from_polygon(
             active_obj, element, space_polygon, h, polygon_is_si=True, follow_ceiling=follow_ceiling, base_z=z
         )
-        spatial.translate_obj_to_z_location(active_obj, z)
     else:
         if relating_type:
             name = model.generate_occurrence_name(relating_type, "IfcSpace")

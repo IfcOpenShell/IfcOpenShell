@@ -325,7 +325,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         if self.from_invoke and str(self.relating_type_id) in AuthoringData.data["relating_type_id"]:
             props.relating_type_id = str(self.relating_type_id)
 
-        building_obj = None
+        building_obj, building_element = None, None
         if len(context.selected_objects) == 1 and context.active_object:
             building_obj = context.active_object
             building_element = tool.Ifc.get_entity(building_obj)

@@ -102,10 +102,16 @@
 const double PI2 = M_PI * 2.;
 
 bool SvgSerializer::ready() {
+	svg_ridge_angle_min_deg_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRidgeAngleMinDegrees>().get();
+	svg_valley_angle_min_deg_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgValleyAngleMinDegrees>().get();
+	svg_emit_flush_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgEmitFlushEdges>().get();
+	svg_use_edge_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseEdgeClassification>().get();
+	svg_render_crease_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderCreaseEdges>().get();
+	svg_render_sharp_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderSharpEdges>().get();
 	return true;
 }
 
-void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boost::optional<std::vector<double>> dash_array) {
+void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boost::optional<std::vector<double>> dash_array, boost::optional<std::string> css_class) {
 	/* ShapeFix_Wire fix;
 	Handle(ShapeExtend_WireData) data = new ShapeExtend_WireData;
 	for (TopExp_Explorer edges(result, TopAbs_EDGE); edges.More(); edges.Next()) {
@@ -350,6 +356,12 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 
 	if (!path.empty()) {
 		path.add("\"");
+
+		if (css_class) {
+			path.add(" class=\"");
+			path.add(*css_class);
+			path.add("\"");
+		}
 
 		if (dash_array) {
 			path.add(" stroke-dasharray=\"");
@@ -622,7 +634,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	} else if (elevation_ref_guid_) {
 		is_elevation = *elevation_ref_guid_ == brep_obj->guid();
 	}
-	
+
 	BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
 	make_transform_global.Build();
 	// (When determinant < 0, copy is implied and the input is not mutated.)
@@ -792,6 +804,182 @@ namespace {
 			state = d < 0. ? -1 : 1;
 		}
 		return state;
+	}
+}
+
+namespace {
+	// SVG edge classification (issue #3668). See edge-classification.md at the repo root for
+	// the authoritative definition of the five classes and their evaluation order.
+	enum class edge_style_class { boundary, outline, sharp, crease, flush };
+
+	const char* edge_style_class_name(edge_style_class c) {
+		switch (c) {
+		case edge_style_class::boundary: return "boundary";
+		case edge_style_class::outline:  return "outline";
+		case edge_style_class::sharp:    return "sharp";
+		case edge_style_class::crease:   return "crease";
+		default:                         return "flush";
+		}
+	}
+
+	// Outward face normal, accounting for face orientation. Only planar faces are supported;
+	// returns false otherwise (caller should conservatively treat the edge as an outline).
+	bool face_normal_from_planar_face(const TopoDS_Face& f, gp_Dir& out) {
+		auto s = BRep_Tool::Surface(f);
+		if (s->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+			return false;
+		}
+		auto p = Handle(Geom_Plane)::DownCast(s);
+		gp_Dir d = p->Axis().Direction();
+		if (f.Orientation() == TopAbs_REVERSED) {
+			d.Reverse();
+		}
+		out = d;
+		return true;
+	}
+
+	double clamp_dot(double v) {
+		if (v < -1.0) return -1.0;
+		if (v > 1.0) return 1.0;
+		return v;
+	}
+
+	edge_style_class classify_edge_from_faces(
+		const TopoDS_Edge& edge,
+		const NCollection_List<TopoDS_Shape>& faces,
+		const gp_Dir& projection_direction,
+		double ridge_angle_min_deg,
+		double valley_angle_min_deg
+	) {
+		std::vector<TopoDS_Face> faces_vec;
+		for (NCollection_List<TopoDS_Shape>::Iterator it(faces); it.More(); it.Next()) {
+			const TopoDS_Shape& s = it.Value();
+			if (s.ShapeType() == TopAbs_FACE) {
+				faces_vec.push_back(TopoDS::Face(s));
+			}
+		}
+
+		// Boundary: naked edge, or non-manifold (3+ faces) -- the latter is explicitly out of
+		// scope for the 5-class scheme (a geometry-health/QA concern), so fall back to the
+		// same conservative bucket rather than force-fitting it into outline/sharp/crease.
+		if (faces_vec.size() != 2) {
+			return edge_style_class::boundary;
+		}
+
+		const TopoDS_Face& f0 = faces_vec[0];
+		const TopoDS_Face& f1 = faces_vec[1];
+
+		gp_Dir n0, n1;
+		if (!face_normal_from_planar_face(f0, n0) || !face_normal_from_planar_face(f1, n1)) {
+			// Conservative fallback for non-planar-face edges.
+			return edge_style_class::outline;
+		}
+
+		// Note the negation: `projection_direction` (as constructed by the caller from the
+		// drawing plane's axis) points from the scene *towards the camera*, not into the scene.
+		// A face that's actually front-facing (visible, facing the viewer) has an outward normal
+		// pointing the same general way as that -- i.e. a *positive* dot product -- so negate
+		// here to get the more intuitive "front-facing is negative" convention used below.
+		// Confirmed against this feature's own real-world test scene: the SOUTH ELEVATION
+		// camera's placement matrix transforms local +Z (what the un-negated projection_direction
+		// is built from) to world (0, 1, 0), while the camera's actual Blender-convention view
+		// direction (local -Z) transforms to world (0, -1, 0) -- i.e. exactly opposite.
+		const double d0 = -projection_direction.Dot(n0);
+		const double d1 = -projection_direction.Dot(n1);
+
+		// Front/back/edge-on classification of each face relative to the view direction, using
+		// a tolerance band around zero rather than a bare sign comparison. A face at or near
+		// edge-on to the camera (|d| within the band) is common for regular/symmetric
+		// tessellations viewed from "nice" angles (icospheres, N-gon cylinder/cone
+		// approximations) and must count as outline on both its edges, not just the one that
+		// happens to pair it with a clearly front-facing neighbour.
+		constexpr double kOutlineDotEps = 1.e-5;
+		const bool front0 = d0 < -kOutlineDotEps;
+		const bool back0 = d0 > kOutlineDotEps;
+		const bool front1 = d1 < -kOutlineDotEps;
+		const bool back1 = d1 > kOutlineDotEps;
+
+		// Outline: silhouette, either a genuine front/back flip, or either face is at/near
+		// edge-on to the view direction (also covers both faces edge-on at once).
+		if (!(front0 && front1) && !(back0 && back1)) {
+			return edge_style_class::outline;
+		}
+
+		// Signed deviation from flat (0 degrees between outward normals = perfectly flat, i.e.
+		// coplanar faces have identical outward normals). Positive = convex (ridge/sharp),
+		// negative = concave (valley/crease).
+		//
+		// Sign via a position-based (not orientation-based) test: find a vertex of f1 that
+		// isn't one of the shared edge's own endpoints, and check which side of f0's plane it
+		// falls on. If it's behind f0's plane (opposite side from f0's outward normal), f1
+		// curves back towards the solid's interior relative to f0 -- a convex fold, like a box
+		// corner. This avoids relying on TopoDS_Edge/wire orientation semantics (which proved
+		// unreliable in practice: an earlier attempt using edge.Orientation() combined with
+		// cross(n0, n1) gave a self-consistent-looking but wrong sign on real BRep topology --
+		// verified against known-convex geometry, e.g. every edge of a convex icosphere, where
+		// that approach misclassified a majority of edges as concave).
+		double deviation_deg = std::acos(clamp_dot(n0.Dot(n1))) * 180.0 / M_PI;
+
+		TopoDS_Vertex ev0, ev1;
+		TopExp::Vertices(edge, ev0, ev1);
+		const gp_Pnt edge_p0 = BRep_Tool::Pnt(ev0);
+		const gp_Pnt edge_p1 = BRep_Tool::Pnt(ev1);
+
+		for (TopExp_Explorer vexp(f1, TopAbs_VERTEX); vexp.More(); vexp.Next()) {
+			const gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+			if (p.Distance(edge_p0) > Precision::Confusion() && p.Distance(edge_p1) > Precision::Confusion()) {
+				const bool convex = gp_Vec(edge_p0, p).Dot(gp_Vec(n0.XYZ())) < 0.0;
+				if (!convex) {
+					deviation_deg = -deviation_deg;
+				}
+				break;
+			}
+		}
+
+		// View-relative flip for folds seen from behind through an opening (e.g. the "Rotated
+		// Box w/Boundary" test object -- a box with one face removed; the 3 interior lines
+		// visible through the opening read as the *inside* of an ordinary convex box corner,
+		// which should look like a crease, not a sharp ridge). Two earlier unconditional
+		// versions of this flip (triggered on plain back0&&back1, with no further gate) were
+		// tried and reverted -- see edge-classification.md follow-up notes -- because they
+		// corrupted otherwise-correct classification broadly, manifesting as spurious `crease`
+		// edges on a fully-convex icosphere test case that has no opening at all.
+		//
+		// That corruption wasn't a fundamental inability to distinguish "genuinely seen through
+		// a hole" from "ordinary far side of closed geometry": bucket membership here is purely
+		// a post-hoc query key into an already-completed, correct HLR visibility computation,
+		// so reclassifying an edge can never make a genuinely hidden edge appear or vice versa.
+		// The real cause is a threshold-crossing artifact: near the silhouette, facet-normal
+		// noise on regular/symmetric tessellations (icospheres, N-gon cylinder/cone
+		// approximations) makes some genuinely near-edge-on facets test as "back" under the
+		// flat-normal-based back0/back1 test even though they're still visible. An unconditional
+		// negate then took their small, correctly-`flush` solid-relative deviation and re-tested
+		// it against the *other* threshold -- `ridge_angle_min_deg` (45 degrees by default) and
+		// `valley_angle_min_deg` (12 degrees by default) are deliberately asymmetric, so a gentle
+		// ~20 degree convex facet transition that safely sits under the ridge threshold crosses
+		// well over the much smaller valley threshold once flipped, becoming a spurious `crease`.
+		//
+		// Fix: gate the flip so it can only reinterpret a fold that would already be visible
+		// (sharp or crease) under its own pre-flip threshold -- i.e. only folds sharp/deep
+		// enough to draw from the front get reinterpreted as the opposite class from behind.
+		// Gentle tessellation-noise deviations that are correctly `flush` either way never cross
+		// the asymmetric threshold gap, because they never reach the flip at all. Verified
+		// against the full test scene: every object's classification is byte-for-byte unchanged
+		// except "Rotated Box w/Boundary", whose 3 interior lines now correctly read `crease`
+		// (previously all 4 non-boundary edges read `sharp`).
+		if (back0 && back1) {
+			const bool would_show_unflipped =
+				(deviation_deg >= 0.0) ? (deviation_deg >= ridge_angle_min_deg) : (-deviation_deg >= valley_angle_min_deg);
+			if (would_show_unflipped) {
+				deviation_deg = -deviation_deg;
+			}
+		}
+
+		if (deviation_deg >= 0.0) {
+			return (deviation_deg >= ridge_angle_min_deg) ? edge_style_class::sharp : edge_style_class::flush;
+		} else {
+			return (-deviation_deg >= valley_angle_min_deg) ? edge_style_class::crease : edge_style_class::flush;
+		}
 	}
 }
 
@@ -1208,6 +1396,92 @@ void SvgSerializer::write(const geometry_data& data) {
 					}
 				}
 
+				// SVG edge classification (issue #3668): classify *compound_to_hlr's edges (real
+				// face topology, pre-HLR) into per-class edge-only sub-compounds. The full shape
+				// is still registered via add()/it->second.add() below, unchanged, for correct
+				// occlusion; these buckets only affect which class each edge's visible portion is
+				// later extracted as (see hlr_calc::extract() in SvgSerializer.h).
+				//
+				// Gated behind svg_use_edge_classification_ (default false): the whole block must
+				// be skipped, not just individually suppressed per-edge, so that when disabled
+				// classified_edge_buckets stays empty for *every* product in the document, not
+				// just this one. hlr_calc::extract() only takes the classified-buckets branch
+				// when its shared classified_shapes_ list is non-empty; if even one product added
+				// classified buckets while others didn't, those others would silently fall back
+				// to unclassified linework while this one used classification, an inconsistent
+				// mix. Leaving classified_edge_buckets empty here means add_classified_edges() is
+				// never called for this product either, so every product uniformly falls through
+				// to the pre-existing product_shapes_ fallback -- the original, pre-classification
+				// linework.
+				std::map<std::string, TopoDS_Compound> classified_edge_buckets;
+				if (svg_use_edge_classification_) {
+					NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> edge_face_map;
+					TopExp::MapShapesAndAncestors(*compound_to_hlr, TopAbs_EDGE, TopAbs_FACE, edge_face_map);
+
+					gp_Dir view_dir;
+					try {
+						view_dir = gp_Dir(projection_direction);
+					} catch (const Standard_Failure&) {
+						view_dir = gp::DZ();
+					}
+
+					BRep_Builder BBcls;
+					for (int i = 1; i <= edge_face_map.Extent(); ++i) {
+						const TopoDS_Edge& cls_edge = TopoDS::Edge(edge_face_map.FindKey(i));
+
+						edge_style_class cls = edge_style_class::outline;
+						try {
+							cls = classify_edge_from_faces(cls_edge, edge_face_map.FindFromIndex(i), view_dir, svg_ridge_angle_min_deg_, svg_valley_angle_min_deg_);
+						} catch (const Standard_Failure& e) {
+							logger_.Warning("SER", 30, std::string("SVG edge classification OCC exception: ") + e.GetMessageString());
+						} catch (const std::exception& e) {
+							logger_.Warning("SER", 31, std::string("SVG edge classification exception: ") + e.what());
+						}
+
+						if (cls == edge_style_class::flush && !svg_emit_flush_edges_) {
+							continue;
+						}
+						if (cls == edge_style_class::crease && !svg_render_crease_edges_) {
+							continue;
+						}
+						if (cls == edge_style_class::sharp && !svg_render_sharp_edges_) {
+							continue;
+						}
+
+						std::string name = edge_style_class_name(cls);
+						auto bucket_it = classified_edge_buckets.find(name);
+						if (bucket_it == classified_edge_buckets.end()) {
+							TopoDS_Compound c;
+							BBcls.MakeCompound(c);
+							bucket_it = classified_edge_buckets.emplace(name, c).first;
+						}
+						BBcls.Add(bucket_it->second, cls_edge);
+					}
+
+					// Non-planar faces (e.g. a real analytic cylindrical wall from a
+					// circular-profile column/pile, swept via BRepPrimAPI_MakePrism rather than
+					// faceted) have a silhouette that HLR synthesizes on the fly -- it is not a
+					// pre-existing topological edge, so the edge-only loop above can never bucket
+					// it. OutLineVCompound(S) correlates a curved face's silhouette by the
+					// identity of the originating *face*, not any edge, so add the non-planar
+					// face itself into the outline bucket alongside whatever edges it already
+					// contributed (top/bottom/seam), giving HLR's per-face OutLine reconstruction
+					// something to match against.
+					for (TopExp_Explorer fexp(*compound_to_hlr, TopAbs_FACE); fexp.More(); fexp.Next()) {
+						const TopoDS_Face& f = TopoDS::Face(fexp.Current());
+						if (BRep_Tool::Surface(f)->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+							std::string name = edge_style_class_name(edge_style_class::outline);
+							auto bucket_it = classified_edge_buckets.find(name);
+							if (bucket_it == classified_edge_buckets.end()) {
+								TopoDS_Compound c;
+								BBcls.MakeCompound(c);
+								bucket_it = classified_edge_buckets.emplace(name, c).first;
+							}
+							BBcls.Add(bucket_it->second, f);
+						}
+					}
+				}
+
 				if (is_floor_plan_) {
 					if (storey) {
 						auto it = storey_hlr.find(storey);
@@ -1215,11 +1489,17 @@ void SvgSerializer::write(const geometry_data& data) {
 							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
 						}
 						it->second.add(*compound_to_hlr, data.product);
+						for (auto& kv : classified_edge_buckets) {
+							it->second.add_classified_edges(data.product, kv.first, kv.second);
+						}
 					} else {
 						logger_.Warning("SER", 28, "Unable to invoke HLR due to absence of storey containment", data.product);
 					}
 				} else if (hlr) {
 					hlr->add(*compound_to_hlr, data.product);
+					for (auto& kv : classified_edge_buckets) {
+						hlr->add_classified_edges(data.product, kv.first, kv.second);
+					}
 				}
 			}
 		}
@@ -1767,49 +2047,63 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 }
 
 void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name) {
-	auto hlr_items = (drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr).build();
+	hlr_t& hlr_source = drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr;
+	auto hlr_items = hlr_source.build();
 
-	for (auto& p : hlr_items) {
-		const TopoDS_Shape& hlr_compound_unmirrored = p.second;
+	// SVG edge classification (issue #3668): each item's class is already known -- it was
+	// determined pre-HLR from real face topology (see the classified_edge_buckets block in
+	// write(const geometry_data&)) and threaded through via hlr_calc::extract(). No post-hoc
+	// lookup against HLR's own (face-less) output is needed. Multiple items can share the same
+	// product (one per non-empty class bucket); keep a single path_object/group per product so
+	// per-path classes survive Bonsai's merge_linework_and_add_metadata untouched, rather than
+	// creating a <g> per class (see plan notes on why that clobbers classes in Python).
+	std::map<const IfcUtil::IfcBaseEntity*, path_object*> group_by_product;
 
-		if (!hlr_compound_unmirrored.IsNull()) {
-			// Compound 3D curves for mirroring to work
-			ShapeFix_Edge sfe;
-			TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
-			for (; exp.More(); exp.Next()) {
-				sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
+	for (auto& item : hlr_items) {
+		const IfcUtil::IfcBaseEntity* product = std::get<0>(item);
+		const std::string& cls = std::get<1>(item);
+		const TopoDS_Shape& hlr_compound_unmirrored = std::get<2>(item);
+
+		if (hlr_compound_unmirrored.IsNull()) {
+			continue;
+		}
+
+		// Compound 3D curves for mirroring to work
+		ShapeFix_Edge sfe;
+		TopExp_Explorer exp(hlr_compound_unmirrored, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			sfe.FixAddCurve3d(TopoDS::Edge(exp.Current()));
+		}
+
+		// Mirror to match SVG coord system.
+		// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
+		// not on the TopoDS_Shape input.
+
+		TopoDS_Shape hlr_compound;
+		if (drawing_name.first == nullptr) {
+			gp_Trsf trsf_mirror;
+			if (!mirror_y_) {
+				trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
 			}
-
-			// Mirror to match SVG coord system.
-			// @todo this is very wasteful. We better do the Y-mirror in the SVG writing and
-			// not on the TopoDS_Shape input.
-
-			TopoDS_Shape hlr_compound;
-			if (drawing_name.first == nullptr) {
-				gp_Trsf trsf_mirror;
-				if (!mirror_y_) {
-					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-				}
-				if (mirror_x_) {
-					gp_Trsf mirror_x;
-					mirror_x.SetMirror(gp_Ax2(gp::Origin(), gp::DX()));
-					trsf_mirror.PreMultiply(mirror_x);
-				}
-				BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
-				make_transform_mirror.Build();
-				hlr_compound = make_transform_mirror.Shape();
-			} else {
-				// In case of building storey-based floor plan the mirroring has already
-				// been taken into account before projection.
-				hlr_compound = hlr_compound_unmirrored;
+			if (mirror_x_) {
+				gp_Trsf mirror_x;
+				mirror_x.SetMirror(gp_Ax2(gp::Origin(), gp::DX()));
+				trsf_mirror.PreMultiply(mirror_x);
 			}
+			BRepBuilderAPI_Transform make_transform_mirror(hlr_compound_unmirrored, trsf_mirror, true);
+			make_transform_mirror.Build();
+			hlr_compound = make_transform_mirror.Shape();
+		} else {
+			// In case of building storey-based floor plan the mirroring has already
+			// been taken into account before projection.
+			hlr_compound = hlr_compound_unmirrored;
+		}
 
-			exp.Init(hlr_compound, TopAbs_EDGE);
-			BRep_Builder B;
-			path_object* po;
+		path_object*& po = group_by_product[product];
+		if (!po) {
 			std::string name;
-			if (p.first) {
-				name = nameElement(p.first);
+			if (product) {
+				name = nameElement(product);
 				boost::replace_all(name, "class=\"", "class=\"projection ");
 			} else {
 				name = "class=\"projection\"";
@@ -1819,13 +2113,19 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 			} else {
 				po = &start_path(pln, drawing_name.second, name);
 			}
-			for (; exp.More(); exp.Next()) {
-				TopoDS_Wire w;
-				B.MakeWire(w);
-				B.Add(w, exp.Current());
-				write(*po, w);
-			}
+		}
 
+		boost::optional<std::string> css_class;
+		if (!cls.empty()) {
+			css_class = cls;
+		}
+
+		BRep_Builder B;
+		for (TopExp_Explorer exp_mirrored(hlr_compound, TopAbs_EDGE); exp_mirrored.More(); exp_mirrored.Next()) {
+			TopoDS_Wire w;
+			B.MakeWire(w);
+			B.Add(w, exp_mirrored.Current());
+			write(*po, w, boost::none, css_class);
 		}
 	}
 }
@@ -2235,6 +2535,35 @@ void SvgSerializer::doWriteHeader() {
 			"            stroke: #222222;\n"
 			"            fill: none;\n"
 			"            stroke-opacity: 0.6;\n"
+			"        }\n"
+			// SVG edge classification (issue #3668) -- see edge-classification.md. These
+			// select directly on the <path> element (each classified edge carries its own
+			// class), not on an ancestor <g>, so they win over the inherited .projection
+			// path rule above regardless of specificity.
+			"        path.outline {\n"
+			"            stroke: #000000;\n"
+			"            stroke-width: 0.35px;\n"
+			"            stroke-opacity: 1;\n"
+			"        }\n"
+			"        path.boundary {\n"
+			"            stroke: #000000;\n"
+			"            stroke-width: 0.3px;\n"
+			"            stroke-opacity: 0.9;\n"
+			"        }\n"
+			"        path.sharp {\n"
+			"            stroke: #000000;\n"
+			"            stroke-width: 0.25px;\n"
+			"            stroke-opacity: 0.85;\n"
+			"        }\n"
+			"        path.crease {\n"
+			"            stroke: #000000;\n"
+			"            stroke-width: 0.18px;\n"
+			"            stroke-opacity: 0.7;\n"
+			"        }\n"
+			"        path.flush {\n"
+			"            stroke: #000000;\n"
+			"            stroke-width: 0.1px;\n"
+			"            stroke-opacity: 0.4;\n"
 			"        }\n"
 			"        .IfcDoor path,\n"
 			"        .Symbol path {\n"

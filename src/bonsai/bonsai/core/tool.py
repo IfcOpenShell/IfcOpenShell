@@ -354,6 +354,7 @@ class Drawing:
     def enable_editing_schedules(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
+    def ensure_annotation_in_drawing_plane(cls, obj, camera=None): pass
     def ensure_drawings_parent_document(cls): pass
     def ensure_drawings_parent_group(cls): pass
     def ensure_unique_drawing_name(cls, name): pass
@@ -367,6 +368,7 @@ class Drawing:
     def generate_reference_attributes(cls, reference, **attributes): pass
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view, object_type=None): pass
+    def get_annotation_drawing(cls, element): pass
     def get_annotation_representation(cls, element_type): pass
     def get_assigned_product(cls, element): pass
     def get_assigned_product_workaround(cls, element): pass
@@ -384,6 +386,7 @@ class Drawing:
     def get_drawing_group(cls, drawing): pass
     def get_drawing_references(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
+    def get_group_drawing(cls, group): pass
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
     def get_name(cls, element): pass
@@ -397,6 +400,7 @@ class Drawing:
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
     def import_documents(cls, document_type): pass
+    def import_drawing(cls, drawing): pass
     def import_drawings(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
@@ -663,6 +667,7 @@ class Material:
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
+    def refresh(cls): pass
     def replace_material_with_material_profile(cls, element): pass
     def update_elements_using_material(cls, material): pass
 

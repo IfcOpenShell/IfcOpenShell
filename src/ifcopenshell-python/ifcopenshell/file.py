@@ -23,7 +23,6 @@ import numbers
 import os
 import re
 import time
-import types
 import weakref
 import zipfile
 from collections.abc import Callable, Generator
@@ -244,19 +243,14 @@ file_dict: dict[int, tuple[weakref.ReferenceType[file], int]] = {}
 """Mapping of internal IfcFile pointer address to existing ``ifcopenshell.file``
 and the timestamp when it was created.
 
-Needed only to quickly access related from ``entity_instance`` it's ``file``.
+Needed only to quickly access from ``entity_instance`` its ``file``.
 """
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
-
-# TODO: Workaround for old builds, remove after build stabilizes.
-try:
-    UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
-except:
-    UNKNOWN = 5  # Workaround
+UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
 
 import struct
 
@@ -740,6 +734,7 @@ class file:
         # Don't store these attributes as transactions
         # as the creation it self is already stored with
         # it's arguments
+        transaction = None
         if attrs:
             transaction = self.transaction
             self.transaction = None
@@ -855,11 +850,13 @@ class file:
         :returns: An ifcopenshell.entity_instance
         """
 
+        max_id = None
         if self.transaction:
             max_id = self.wrapped_data.getMaxId()
         inst.wrapped_data.this.disown()
         result = entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
         if self.transaction:
+            assert max_id is not None
             added_elements = [e for e in self.traverse(result) if e.id() > max_id]
             [self.transaction.store_create(e) for e in reversed(added_elements)]
         return result
@@ -1066,13 +1063,8 @@ class file:
 
     @property
     def header(self) -> file_header:
-        # TODO: Workaround for old builds, remove after build stabilizes.
         # TODO: No need for `wrapped_data.header` to be a method - should use `@property`?
-        header = self.wrapped_data.header
-        if isinstance(header, types.MethodType):
-            return file_header(self, self.wrapped_data.header())
-        else:
-            return self.wrapped_data.header
+        return file_header(self, self.wrapped_data.header())
 
     @property
     def storage(self) -> Optional[rocksdb_file_storage]:

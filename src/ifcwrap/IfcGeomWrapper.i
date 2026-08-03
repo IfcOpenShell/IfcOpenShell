@@ -21,6 +21,8 @@
 
 %ignore stream_or_filename::stream;
 %ignore boost::hash_value;
+%ignore IfcGeom::BRepElement::geometry_pointer;
+%ignore IfcGeom::TriangulationElement::geometry_pointer;
 
 // This is only used for RGB colours, hence the size of 3
 %typemap(out) const double* {
@@ -254,6 +256,22 @@ namespace {
 %include "../ifcgeom/Converter.h"
 %include "../ifcgeom/ConversionResult.h"
 %include "../ifcgeom/ConversionSettings.h"
+
+// Keep the owning element alive while its geometry is referenced (#1124).
+%define GEOMETRY_WITH_BACKREF(cls)
+%feature("shadow") cls::geometry %{
+	@property
+	def geometry(self):
+		result = $action(self)
+		result._parent = self
+		return result
+%}
+%enddef
+
+GEOMETRY_WITH_BACKREF(IfcGeom::TriangulationElement)
+GEOMETRY_WITH_BACKREF(IfcGeom::SerializedElement)
+GEOMETRY_WITH_BACKREF(IfcGeom::BRepElement)
+
 %include "../ifcgeom/IfcGeomElement.h"
 %include "../ifcgeom/IfcGeomRepresentation.h"
 %include "../ifcgeom/Iterator.h"
@@ -791,17 +809,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 };
 
 %extend IfcGeom::TriangulationElement {
-	%pythoncode %{
-        # Hide the getters with read-only property implementations
-        geometry = property(geometry)
-	%}
 };
 
 %extend IfcGeom::SerializedElement {
-	%pythoncode %{
-        # Hide the getters with read-only property implementations
-        geometry = property(geometry)
-	%}
 };
 
 %extend IfcGeom::BRepElement {
@@ -824,11 +834,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
     }
 
     %pythoncode %{
-        # Hide the getters with read-only property implementations
-        geometry = property(geometry)
         volume = property(calc_volume_)
         surface_area = property(calc_surface_area_)
-    %}    
+    %}
 };
 
 /*

@@ -480,6 +480,7 @@ class BIM_PT_material_psets(Panel):
     def draw(self, context):
         assert self.layout
         props = tool.Material.get_material_props()
+        ifc_definition_id = None
         if material := props.active_material:
             ifc_definition_id = material.ifc_definition_id
 

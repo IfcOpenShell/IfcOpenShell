@@ -102,13 +102,26 @@ def clash(
     tolerance: float = 0.002,
     scope: str = "storey",
 ) -> dict[str, Any]:
-    """Check element for geometric clashes against other elements.
+    """Check one element for geometric clashes against other elements.
+
+    Reports hard intersections and, optionally, violations of a required
+    clearance. Returns the overall ``pass``, the ``scope`` actually used, a
+    ``checks`` block in which each clash names the other ``element``, the
+    clash ``type``, the ``distance`` and the two closest points ``p1``/``p2``,
+    and a de-duplicated flat ``elements`` list of everything involved.
+    Geometry is computed for every element in scope, so this is slow on large
+    models; ``pass`` is ``None`` with an ``error`` when the element has no
+    usable geometry.
 
     :param model: The IFC model.
     :param element: The element to check.
-    :param clearance: Minimum clearance distance; if provided, runs clearance check.
+    :param clearance: Minimum required clearance distance; when given, also
+        runs the clearance check alongside the intersection check.
     :param tolerance: Intersection tolerance in meters (default 0.002).
-    :param scope: Which elements to check against: "storey" or "all".
+    :param scope: ``"storey"`` (default) checks only elements sharing the
+        same spatial container; ``"all"`` checks every ``IfcElement``.
+        ``"storey"`` falls back to ``"all"`` when the element has no spatial
+        container.
     :return: Dict with clash results suitable for JSON serialization.
     """
     result: dict[str, Any] = {"element": _ref(element)}

@@ -47,7 +47,15 @@ class Nest(bonsai.core.tool.Nest):
             return False
         if relating_object == related_object:
             return False
-        is_compatible_class = relating_object.is_a("IfcElement") and related_object.is_a("IfcElement")
+        # IfcRelNests.RelatingObject/RelatedObjects are typed as the general
+        # IfcObjectDefinition, so nesting is schema-legal both between element
+        # occurrences (the common case, e.g. a faucet nested into a sink) and
+        # between element types (e.g. an assembly type nesting its component
+        # types). Mixing an occurrence with a type isn't a real modeling
+        # pattern, so only allow same-kind pairs. See #2283.
+        is_compatible_class = (relating_object.is_a("IfcElement") and related_object.is_a("IfcElement")) or (
+            relating_object.is_a("IfcTypeProduct") and related_object.is_a("IfcTypeProduct")
+        )
         if not is_compatible_class:
             return False
         # Prevent cyclic references: walk up the full hierarchy from the

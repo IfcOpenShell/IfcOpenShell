@@ -41,6 +41,7 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.ifc import is_cache_locked_by_other_process
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
+from bonsai.bim.module.material.operator import SelectByMaterial
 from bonsai.bim.module.model import prop as _model_prop
 from bonsai.bim.module.model import ui as _model_ui
 from bonsai.bim.module.pset.prop import IfcProperty
@@ -284,11 +285,13 @@ class GizmoPreferences(bpy.types.PropertyGroup):
         draw_gizmos_in_3d_viewport: bool
 
 
+_gizmo_pref_entry = None
 for _gizmo_pref_entry in tool.Parametric.EDIT_TYPES:
     GizmoPreferences.__annotations__[_gizmo_pref_entry.name] = BoolProperty(
         name=_gizmo_pref_entry.name.replace("_", " ").title(),
         default=True,
     )
+assert _gizmo_pref_entry is not None
 del _gizmo_pref_entry
 
 
@@ -394,12 +397,14 @@ class DefaultParameters(bpy.types.PropertyGroup):
     and gives the create operator a preset to copy from."""
 
 
+_default_params_entry = None
 for _default_params_entry in tool.Parametric.EDIT_TYPES:
     if not _default_params_entry.has_default_parameters:
         continue
     DefaultParameters.__annotations__[_default_params_entry.name] = bpy.props.PointerProperty(
         type=getattr(_model_prop, _default_params_entry.props_attr),
     )
+assert _default_params_entry is not None
 del _default_params_entry
 
 
@@ -1850,6 +1855,21 @@ def draw_statusbar(self, context):
 
 def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     # https://blender.stackexchange.com/a/275555/86891
+
+    # Context menu for material name buttons (e.g. `bim.select_by_material`),
+    # offering a quick "Rename Material" entry instead of having to look up
+    # the material in the scene Materials panel to rename it.
+    button_operator = getattr(context, "button_operator", None)
+    if button_operator is not None and button_operator.bl_rna.identifier == SelectByMaterial.bl_rna.identifier:
+        ifc_file = tool.Ifc.get()
+        material = ifc_file.by_id(button_operator.material) if ifc_file else None
+        if material is not None and material.is_a("IfcMaterial"):
+            assert self.layout
+            self.layout.separator()
+            op = self.layout.operator("bim.rename_material", text="Rename Material", icon="GREASEPENCIL")
+            op.material = material.id()
+        return
+
     if (
         not hasattr(context, "button_pointer")
         or not hasattr(context, "button_prop")

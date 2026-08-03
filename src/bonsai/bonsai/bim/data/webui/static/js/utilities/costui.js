@@ -251,6 +251,14 @@ export class CostUI {
     });
 
     CostUI.addRibbonButton({
+      text: "Download CSV",
+      icon: "fa-solid fa-file-csv",
+      callback: () => {
+        CostUI.downloadCsv();
+      },
+    });
+
+    CostUI.addRibbonButton({
       text: "Hide Schedules",
       icon: "fa-regular fa-eye-slash",
       callback: (button) => {
@@ -521,6 +529,81 @@ export class CostUI {
     } else {
       alert("No text selected!");
     }
+  }
+
+  static downloadCsv() {
+    const tables = document.querySelectorAll("table[id^='cost-items-']");
+    if (tables.length === 0) {
+      alert("No cost schedule loaded to export!");
+      return;
+    }
+    tables.forEach((table) => {
+      const scheduleId = table.id.split("-").pop();
+      const csv = CostUI.tableToCsv(table);
+      if (csv === null) {
+        return;
+      }
+      const nameEl = document.querySelector(
+        "#cost-schedule-container-" + scheduleId + " .form-header span"
+      );
+      const scheduleName = nameEl
+        ? nameEl.textContent
+        : "cost_schedule_" + scheduleId;
+      CostUI.triggerCsvDownload(csv, scheduleName + ".csv");
+    });
+  }
+
+  static tableToCsv(table) {
+    const escapeCsvCell = (value) => {
+      const text = (value === null || value === undefined ? "" : value)
+        .toString()
+        .trim();
+      if (/[",\n]/.test(text)) {
+        return '"' + text.replace(/"/g, '""') + '"';
+      }
+      return text;
+    };
+
+    const cellText = (cell) => {
+      const input = cell.querySelector("input");
+      return input ? input.value : cell.innerText;
+    };
+
+    // The Actions column only holds buttons (edit/delete/etc), not data.
+    const isDataColumn = (column) => column && column !== "Actions";
+
+    const headerCells = Array.from(table.querySelectorAll("thead th")).filter(
+      (th) => isDataColumn(th.getAttribute("data-column"))
+    );
+    if (headerCells.length === 0) {
+      return null;
+    }
+
+    const rows = [headerCells.map((th) => escapeCsvCell(th.textContent)).join(",")];
+
+    table.querySelectorAll("tbody tr").forEach((row) => {
+      const cells = Array.from(row.children).filter((cell) =>
+        isDataColumn(cell.getAttribute("data-column"))
+      );
+      if (cells.length === 0) {
+        return; // e.g. the "No cost items found" placeholder row.
+      }
+      rows.push(cells.map((cell) => escapeCsvCell(cellText(cell))).join(","));
+    });
+
+    return rows.join("\n");
+  }
+
+  static triggerCsvDownload(csvContent, filename) {
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   static createCostTable({ costSchedule, currency, callbacks }) {

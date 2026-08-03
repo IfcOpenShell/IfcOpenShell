@@ -54,6 +54,8 @@ def remove_feature(file: ifcopenshell.file, feature: ifcopenshell.entity_instanc
             rels = []
         else:
             rels = feature.ProjectsElements
+    else:
+        assert False, feature
     for rel in rels:
         history = rel.OwnerHistory
         file.remove(rel)

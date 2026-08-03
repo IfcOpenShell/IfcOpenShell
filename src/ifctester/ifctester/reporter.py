@@ -343,6 +343,8 @@ class Json(Reporter):
                 elif requirement.value:
                     label = "Reference"
                     value = requirement.value
+                else:
+                    assert False, requirement
             elif facet_type == "PartOf":
                 label = requirement.relation
                 if requirement.predefinedType:
@@ -357,6 +359,8 @@ class Json(Reporter):
                 label = "Name / Category"
                 if requirement.value:
                     value = requirement.value
+            else:
+                assert False, facet_type
             requirements.append(
                 ResultsRequirement(
                     facet_type=facet_type,

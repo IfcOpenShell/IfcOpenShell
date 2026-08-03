@@ -107,6 +107,15 @@ def disable_editing_material(material_tool: type[tool.Material]) -> None:
     material_tool.disable_editing_material()
 
 
+def rename_material(
+    ifc: type[tool.Ifc], material_tool: type[tool.Material], material: ifcopenshell.entity_instance, name: str
+) -> None:
+    ifc.run("material.edit_material", material=material, attributes={"Name": name})
+    if material_tool.is_editing_materials():
+        material_tool.import_material_definitions(material_tool.get_active_material_type())
+    material_tool.refresh()
+
+
 def assign_material(
     ifc: type[tool.Ifc],
     material_tool: type[tool.Material],
