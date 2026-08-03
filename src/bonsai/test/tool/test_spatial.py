@@ -280,6 +280,21 @@ class _BlockHelper:
         return wall, extrusion
 
     @staticmethod
+    def create_thin_wall(ifc, cx, cy, width, depth, height=10.0):
+        """Create an IFC wall with a thin block representation centered at (cx, cy)."""
+        ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        placement_2d = ifc.createIfcAxis2Placement2D(ifc.createIfcCartesianPoint([0.0, 0.0]))
+        profile = ifc.createIfcRectangleProfileDef("AREA", None, placement_2d, width, depth)
+        placement_3d = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint([cx, cy, 0.0]))
+        extrusion = ifc.createIfcExtrudedAreaSolid(
+            profile, placement_3d, ifc.createIfcDirection([0.0, 0.0, 1.0]), height
+        )
+        shape_rep = ifc.createIfcShapeRepresentation(ctx, "Body", "SweptSolid", [extrusion])
+        wall.Representation = ifc.createIfcProductDefinitionShape(None, None, [shape_rep])
+        return wall
+
+    @staticmethod
     def create_slab(ifc, z=4.0):
         """Create an IfcSlab with a 12x12x1.0 block representation at bottom_z={z}."""
         ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
@@ -488,6 +503,62 @@ class TestGenerateSpace(NewFile):
         assert min_z >= 0, f"Expected extrusion to start at local z>=0, got min_z={min_z}"
         assert max_z > 0, f"Expected extrusion to have positive height, got max_z={max_z}"
         assert np.isclose(obj.location.z, 4.5, atol=0.01), f"Expected location.z=4.5, got {obj.location.z}"
+
+
+class TestGenerateSpaceSlopedRoof(NewFile):
+    def _create_shed_roof(self, ifc, z=4.0, rise=3.0):
+        """Create an IfcRoof whose underside is a sloped plane across the footprint.
+
+        Triangular prism: vertical profile (in the y-z plane) extruded along +x.
+        Profile points (u, v) with placement loc=(-5, 0, z), axis=(1,0,0),
+        ref=(0,0,1):  (0,-5) -> world (-5,-5,z)      eave bottom
+                       (rise,-5) -> world (-5,-5,z+rise) eave top
+                       (rise,5)  -> world (-5,5,z+rise)  ridge
+        ExtrudedDirection (0,0,1) is local, mapping to world +x; depth 10 spans
+        x in [-5, 5].
+        """
+        ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
+        roof = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcRoof")
+        pts = [
+            ifc.createIfcCartesianPoint((0.0, -5.0)),
+            ifc.createIfcCartesianPoint((float(rise), -5.0)),
+            ifc.createIfcCartesianPoint((float(rise), 5.0)),
+        ]
+        polyline = ifc.createIfcPolyline(pts)
+        profile = ifc.createIfcArbitraryClosedProfileDef(ProfileType="CURVE", OuterCurve=polyline)
+        placement = ifc.createIfcAxis2Placement3D(
+            ifc.createIfcCartesianPoint((-5.0, 0.0, z)),
+            ifc.createIfcDirection((1.0, 0.0, 0.0)),
+            ifc.createIfcDirection((0.0, 0.0, 1.0)),
+        )
+        extrude_dir = ifc.createIfcDirection((0.0, 0.0, 1.0))
+        solid = ifc.createIfcExtrudedAreaSolid(profile, placement, extrude_dir, 10.0)
+        rep = ifc.createIfcShapeRepresentation(ctx, "Body", "SweptSolid", [solid])
+        ifcopenshell.api.geometry.assign_representation(ifc, product=roof, representation=rep)
+        return roof
+
+    def test_generate_space_under_shed_roof(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_thin_wall(ifc, 0.0, 4.8, 10.0, 0.4)
+        _BlockHelper.create_thin_wall(ifc, 0.0, -4.8, 10.0, 0.4)
+        _BlockHelper.create_thin_wall(ifc, 4.8, 0.0, 0.4, 10.0)
+        _BlockHelper.create_thin_wall(ifc, -4.8, 0.0, 0.4, 10.0)
+        self._create_shed_roof(ifc, z=4.0, rise=3.0)
+        bpy.context.scene.cursor.location = (0, 0, 0)
+
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        mesh = space.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        verts = np.array([v.co for v in mesh.vertices])
+        min_z = verts[:, 2].min()
+        max_z = verts[:, 2].max()
+        assert min_z >= -0.1
+        assert max_z > 0
+        top_z_north = max([v[2] for v in verts if v[1] > 1])
+        top_z_south = max([v[2] for v in verts if v[1] < -1])
+        assert abs(top_z_north - top_z_south) > 0.05, f"Top should slope along y: {top_z_north} vs {top_z_south}"
 
 
 class TestSpaceVolumeStrategy(NewFile):
