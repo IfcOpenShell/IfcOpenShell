@@ -413,6 +413,17 @@
       hideSelected:    function () { Module._hide_selected_c(); },
       isolateSelected: function () { Module._isolate_selected_c(); },
 
+      // The white-on-dark halo drawn around selected objects (on by default).
+      // The renderer also tints the selection blue, which says nothing when
+      // the object is already blue — hence a cue that does not depend on the
+      // object's colour. Turn it off to get the tint alone.
+      setSelectionOutline: function (on) {
+        Module._ifcv_set_selection_outline_c(on ? 1 : 0);
+      },
+      selectionOutlineEnabled: function () {
+        return Module._ifcv_selection_outline_is_on_c() !== 0;
+      },
+
       // ---- Colour ----------------------------------------------------------
 
       // Paint objects a flat colour, replacing whatever the model baked in.

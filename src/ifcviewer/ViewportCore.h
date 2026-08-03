@@ -703,6 +703,36 @@ public:
     // Called from shutdown() before the device dies.
     void releaseEdgeResources();
 
+    // ---- Selection silhouette outline -------------------------------------
+    //
+    // A halo drawn just outside the selected objects. The fs_main selection
+    // tint mixes toward blue, which says nothing on an object that is already
+    // blue; the halo is a fixed colour against the BACKGROUND instead, so it
+    // reads whatever the element is painted.
+    //
+    // Build the mask + dilation pipelines. Run after buildPipelines(), which
+    // owns the shader module and pipeline layout the mask pass reuses.
+    bool buildSelectionOutlinePipelines();
+
+    // (Re)allocate the coverage mask + dilation scratch to the surface size.
+    // Idempotent when dimensions match.
+    void ensureSelectionOutlineTextures(int w, int h);
+    void releaseSelectionOutlineTextures();
+
+    // Coverage pass: draws the selection into the mask, depth-tested against
+    // the main pass's z so only visible surface contributes. Must be encoded
+    // after the main pass and before encodeSelectionOutlinePass.
+    void encodeSelectionMaskPass(WGPUCommandEncoder enc);
+
+    // Dilate the mask and composite the halo onto the resolved surface.
+    // `dpr` scales the ring widths so they hold their apparent size on a
+    // HiDPI canvas. No-op when nothing is selected.
+    void encodeSelectionOutlinePass(WGPUCommandEncoder enc,
+                                    WGPUTextureView surface_view, int dpr);
+
+    void setSelectionOutlineEnabled(bool on) { selection_outline_enabled_ = on; }
+    bool selectionOutlineEnabled() const     { return selection_outline_enabled_; }
+
     // ---- Pick + raycast (#84-t) -------------------------------------------
     //
     // Build the pick pipeline. Reuses the main shader module's
@@ -1101,6 +1131,39 @@ private:
     WGPURenderPipeline  edge_pipeline_        = nullptr;
     WGPUBindGroup       edge_bind_group_      = nullptr;
     bool                edges_enabled_        = true;
+
+    // Selection silhouette outline. The mask is rendered multisampled so it
+    // can share the main depth attachment, then resolved; the scratch holds
+    // the horizontal half of the separable dilation.
+    struct SelOutlineUniforms {
+        float inner_color[4];
+        float outer_color[4];
+        float inner_radius;   // physical px
+        float outer_radius;   // physical px
+        float _pad0;
+        float _pad1;
+    };
+    WGPURenderPipeline  sel_mask_pipeline_           = nullptr;
+    WGPUTexture         sel_mask_msaa_texture_       = nullptr;
+    WGPUTextureView     sel_mask_msaa_view_          = nullptr;
+    WGPUTexture         sel_mask_texture_            = nullptr;
+    WGPUTextureView     sel_mask_view_               = nullptr;
+    WGPUTexture         sel_scratch_texture_         = nullptr;
+    WGPUTextureView     sel_scratch_view_            = nullptr;
+    int                 sel_mask_w_                  = 0;
+    int                 sel_mask_h_                  = 0;
+    WGPUShaderModule    sel_outline_shader_module_   = nullptr;
+    WGPUBindGroupLayout sel_outline_bgl_             = nullptr;
+    WGPUPipelineLayout  sel_outline_pipeline_layout_ = nullptr;
+    WGPUBuffer          sel_outline_uniform_buffer_  = nullptr;
+    WGPURenderPipeline  sel_dilate_h_pipeline_       = nullptr;
+    WGPUBindGroup       sel_dilate_bind_group_       = nullptr;
+    WGPURenderPipeline  sel_outline_pipeline_        = nullptr;
+    WGPUBindGroup       sel_outline_bind_group_      = nullptr;
+    bool                selection_outline_enabled_   = true;
+
+    // True when there is something to outline and the resources are live.
+    bool selectionOutlineActive() const;
 
     // Pick pass. Reuses pipeline_layout_ — same set of bindings as the
     // main pass since the pick fragment also vertex-pulls instance data.

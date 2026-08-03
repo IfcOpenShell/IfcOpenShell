@@ -993,6 +993,19 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     return vec4<f32>(srgbToLinear(color), alpha_out);
 }
 
+// Selection silhouette mask. Same vertex pulling as vs_main, but the only
+// output is coverage: 1 where a selected object is drawn, nothing anywhere
+// else. The pass shares the main depth buffer read-only, so the mask is the
+// selection AS VISIBLE — an occluded object contributes nothing and gets no
+// halo. encodeSelectionOutlinePass dilates this into the outline.
+@fragment
+fn fs_mask(in: VsOut) -> @location(0) f32 {
+    if (is_section_clipped(in.world_pos)) { discard; }
+    if (in.object_id >= arrayLength(&sel_flags)) { discard; }
+    if ((sel_flags[in.object_id] & 1u) == 0u) { discard; }
+    return 1.0;
+}
+
 // --------------------------- Pick pipeline ---------------------------------
 // Same vertex pulling as vs_main, but VsOutPick carries only the object_id
 // (flat-interpolated). Fragment writes the object_id to an R32UInt target.
@@ -4827,6 +4840,475 @@ void ViewportCore::releaseEdgeResources() {
 }
 
 // ===========================================================================
+// Selection silhouette outline: buildSelectionOutlinePipelines +
+// ensureSelectionOutlineTextures + encodeSelectionMaskPass +
+// encodeSelectionOutlinePass
+//
+// A halo drawn just OUTSIDE the selected objects, so the cue does not depend
+// on the object's own colour the way the fs_main selection tint does — a blue
+// element in a blue-tinted selection is otherwise indistinguishable.
+//
+// Three steps: a geometry pass writes a coverage mask (fs_mask), then two
+// fullscreen passes dilate it. The dilation is separable — a horizontal max
+// into an RGBA8 scratch, then a vertical max composited onto the surface —
+// because the naive 2D disc is O(r^2) taps per pixel and a 3-physical-pixel
+// radius on a HiDPI canvas is already 100+ loads over the whole screen.
+// Separable makes it O(r), and the square structuring element it implies is
+// invisible at this radius.
+// ===========================================================================
+
+namespace {
+
+// Scratch format for the horizontal pass. r = max over the inner radius,
+// g = max over the outer radius, b = this pixel's own coverage passed
+// through so the vertical pass needs only this one texture bound.
+constexpr WGPUTextureFormat kSelScratchFormat = WGPUTextureFormat_RGBA8Unorm;
+
+const char* SEL_OUTLINE_WGSL = R"(
+struct OutlineUniforms {
+    inner_color:  vec4<f32>,   // rgb + alpha of the ring hugging the silhouette
+    outer_color:  vec4<f32>,   // rgb + alpha of the band beyond it
+    inner_radius: f32,         // physical pixels
+    outer_radius: f32,         // physical pixels, >= inner_radius
+    _pad0:        f32,
+    _pad1:        f32,
+};
+
+@group(0) @binding(0) var src: texture_2d<f32>;
+@group(0) @binding(1) var<uniform> u: OutlineUniforms;
+
+// Undo the swap chain's implicit linear->sRGB write encoding, exactly as
+// the main shader does, so the halo's bytes are the colour we asked for.
+fn srgbToLinear(s: vec3<f32>) -> vec3<f32> {
+    let lo = s / 12.92;
+    let hi = pow((s + 0.055) / 1.055, vec3<f32>(2.4));
+    return select(hi, lo, s <= vec3<f32>(0.04045));
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> @builtin(position) vec4<f32> {
+    let x = f32((vid << 1u) & 2u) * 2.0 - 1.0;
+    let y = f32(vid & 2u) * 2.0 - 1.0;
+    return vec4<f32>(x, y, 0.0, 1.0);
+}
+
+// Horizontal half of the dilation. Reads the resolved coverage mask.
+@fragment
+fn fs_dilate_h(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
+    let p     = vec2<i32>(i32(frag.x), i32(frag.y));
+    let max_x = i32(textureDimensions(src).x) - 1;
+    let ri    = i32(u.inner_radius);
+    let ro    = i32(u.outer_radius);
+
+    let here = textureLoad(src, p, 0).r;
+    var inner = 0.0;
+    var outer = 0.0;
+    for (var dx = -ro; dx <= ro; dx = dx + 1) {
+        let m = textureLoad(src, vec2<i32>(clamp(p.x + dx, 0, max_x), p.y), 0).r;
+        outer = max(outer, m);
+        if (dx >= -ri && dx <= ri) { inner = max(inner, m); }
+    }
+    return vec4<f32>(inner, outer, here, 1.0);
+}
+
+// Vertical half, plus the composite. Reads the scratch written above.
+@fragment
+fn fs_outline(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
+    let p     = vec2<i32>(i32(frag.x), i32(frag.y));
+    let max_y = i32(textureDimensions(src).y) - 1;
+    let ri    = i32(u.inner_radius);
+    let ro    = i32(u.outer_radius);
+
+    // Coverage at this pixel. Inside the silhouette there is nothing to
+    // draw: the halo sits strictly outside, so a selected element's own
+    // colour is never painted over.
+    let here = textureLoad(src, p, 0).b;
+    if (here >= 0.999) { discard; }
+
+    var inner = 0.0;
+    var outer = 0.0;
+    for (var dy = -ro; dy <= ro; dy = dy + 1) {
+        let s = textureLoad(src, vec2<i32>(p.x, clamp(p.y + dy, 0, max_y)), 0);
+        outer = max(outer, s.g);
+        if (dy >= -ri && dy <= ri) { inner = max(inner, s.r); }
+    }
+
+    // Two concentric rings, written as differences so they never overlap:
+    // `in_ring` is the dilation minus the shape, `out_ring` is the wider
+    // dilation minus the narrower one.
+    let in_ring  = clamp(inner - here,  0.0, 1.0);
+    let out_ring = clamp(outer - inner, 0.0, 1.0);
+
+    let a_in  = in_ring  * u.inner_color.a;
+    let a_out = out_ring * u.outer_color.a * (1.0 - in_ring);
+    let a     = a_in + a_out;
+    if (a <= 0.004) { discard; }
+
+    // Straight (unpremultiplied) alpha out — the SrcAlpha blend factor
+    // does the premultiply, which is what the surface's premultiplied
+    // alpha mode expects to find in the buffer.
+    let rgb = (srgbToLinear(u.inner_color.rgb) * a_in
+             + srgbToLinear(u.outer_color.rgb) * a_out) / a;
+    return vec4<f32>(rgb, a);
+}
+)";
+
+} // namespace
+
+bool ViewportCore::buildSelectionOutlinePipelines() {
+    // ---- Mask pass. Reuses the main shader module + pipeline layout, so it
+    // vertex-pulls identically and sees the same sel_flags binding. Depth is
+    // the main pass's, bound read-only: LessEqual against already-written
+    // scene depth keeps only the fragments that actually survived.
+    {
+        WGPUColorTargetState target = {};
+        target.format    = WGPUTextureFormat_R8Unorm;
+        target.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = main_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_mask");
+        frag.targetCount = 1;
+        frag.targets     = &target;
+
+        WGPUDepthStencilState depth = {};
+        depth.format               = WGPUTextureFormat_Depth32Float;
+        depth.depthWriteEnabled    = WGPUOptionalBool_False;
+        depth.depthCompare         = WGPUCompareFunction_LessEqual;
+        depth.stencilFront.compare = WGPUCompareFunction_Always;
+        depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout             = pipeline_layout_;
+        rp_desc.label              = svFromCStr("ifcviewer-wgpu.sel_mask_pipeline");
+        rp_desc.vertex.module      = main_shader_module_;
+        rp_desc.vertex.entryPoint  = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount = 0;
+        rp_desc.fragment           = &frag;
+        rp_desc.depthStencil       = &depth;
+        rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+        // No cull: an open shell (a wall face, a plate) would otherwise
+        // punch holes in its own silhouette when seen from behind.
+        rp_desc.primitive.cullMode = WGPUCullMode_None;
+        rp_desc.multisample.count  = kViewportSampleCount;
+        rp_desc.multisample.mask   = 0xFFFFFFFFu;
+
+        sel_mask_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+        if (!sel_mask_pipeline_) {
+            Log::warn() << "wgpu selection mask pipeline creation failed";
+            return false;
+        }
+    }
+
+    // ---- Shared fullscreen resources. One BGL for both dilation passes:
+    // each binds a different source texture through the same shape.
+    WGPUBindGroupLayoutEntry entries[2] = {};
+    entries[0].binding = 0;
+    entries[0].visibility = WGPUShaderStage_Fragment;
+    entries[0].texture.sampleType    = WGPUTextureSampleType_Float;
+    entries[0].texture.viewDimension = WGPUTextureViewDimension_2D;
+    entries[1].binding = 1;
+    entries[1].visibility = WGPUShaderStage_Fragment;
+    entries[1].buffer.type           = WGPUBufferBindingType_Uniform;
+    entries[1].buffer.minBindingSize = sizeof(SelOutlineUniforms);
+
+    WGPUBindGroupLayoutDescriptor bgl_desc = {};
+    bgl_desc.entryCount = 2;
+    bgl_desc.entries    = entries;
+    bgl_desc.label      = svFromCStr("ifcviewer-wgpu.sel_outline_bgl");
+    sel_outline_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+
+    WGPUPipelineLayoutDescriptor pl_desc = {};
+    pl_desc.bindGroupLayoutCount = 1;
+    pl_desc.bindGroupLayouts     = &sel_outline_bgl_;
+    pl_desc.label                = svFromCStr("ifcviewer-wgpu.sel_outline_pipeline_layout");
+    sel_outline_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+
+    WGPUShaderSourceWGSL wgsl_src = {};
+    wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+    wgsl_src.code        = svFromCStr(SEL_OUTLINE_WGSL);
+    WGPUShaderModuleDescriptor sm_desc = {};
+    sm_desc.nextInChain = &wgsl_src.chain;
+    sm_desc.label       = svFromCStr("ifcviewer-wgpu.sel_outline_wgsl");
+    sel_outline_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+
+    WGPUBufferDescriptor ub = {};
+    ub.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+    ub.size  = sizeof(SelOutlineUniforms);
+    ub.label = svFromCStr("ifcviewer-wgpu.sel_outline_uniforms");
+    sel_outline_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &ub);
+
+    // ---- Horizontal dilation into the scratch target. Opaque write.
+    {
+        WGPUColorTargetState target = {};
+        target.format    = kSelScratchFormat;
+        target.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = sel_outline_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_dilate_h");
+        frag.targetCount = 1;
+        frag.targets     = &target;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout             = sel_outline_pipeline_layout_;
+        rp_desc.label              = svFromCStr("ifcviewer-wgpu.sel_dilate_h_pipeline");
+        rp_desc.vertex.module      = sel_outline_shader_module_;
+        rp_desc.vertex.entryPoint  = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount = 0;
+        rp_desc.fragment           = &frag;
+        rp_desc.depthStencil       = nullptr;
+        rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+        rp_desc.primitive.cullMode = WGPUCullMode_None;
+        rp_desc.multisample.count  = 1;
+        rp_desc.multisample.mask   = 0xFFFFFFFFu;
+
+        sel_dilate_h_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+        if (!sel_dilate_h_pipeline_) {
+            Log::warn() << "wgpu selection dilate pipeline creation failed";
+            return false;
+        }
+    }
+
+    // ---- Vertical dilation + composite onto the resolved surface.
+    {
+        WGPUBlendState blend = {};
+        blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+        blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+        blend.color.operation = WGPUBlendOperation_Add;
+        blend.alpha.srcFactor = WGPUBlendFactor_One;
+        blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+        blend.alpha.operation = WGPUBlendOperation_Add;
+
+        WGPUColorTargetState target = {};
+        target.format    = surface_view_format_;
+        target.blend     = &blend;
+        target.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = sel_outline_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_outline");
+        frag.targetCount = 1;
+        frag.targets     = &target;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout             = sel_outline_pipeline_layout_;
+        rp_desc.label              = svFromCStr("ifcviewer-wgpu.sel_outline_pipeline");
+        rp_desc.vertex.module      = sel_outline_shader_module_;
+        rp_desc.vertex.entryPoint  = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount = 0;
+        rp_desc.fragment           = &frag;
+        rp_desc.depthStencil       = nullptr;
+        rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+        rp_desc.primitive.cullMode = WGPUCullMode_None;
+        rp_desc.multisample.count  = 1;
+        rp_desc.multisample.mask   = 0xFFFFFFFFu;
+
+        sel_outline_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+        if (!sel_outline_pipeline_) {
+            Log::warn() << "wgpu selection outline pipeline creation failed";
+            return false;
+        }
+    }
+    return true;
+}
+
+void ViewportCore::ensureSelectionOutlineTextures(int w, int h) {
+    if (w == sel_mask_w_ && h == sel_mask_h_ && sel_mask_view_) return;
+    releaseSelectionOutlineTextures();
+
+    WGPUTextureDescriptor desc = {};
+    desc.dimension     = WGPUTextureDimension_2D;
+    desc.size.width    = std::uint32_t(w);
+    desc.size.height   = std::uint32_t(h);
+    desc.size.depthOrArrayLayers = 1;
+    desc.mipLevelCount = 1;
+
+    // Multisampled coverage target, matching the main pass so it can share
+    // the depth attachment; resolved down to the single-sample mask the
+    // dilation reads. The resolve is what gives the halo the same edge
+    // antialiasing as the geometry it traces.
+    desc.usage       = WGPUTextureUsage_RenderAttachment;
+    desc.format      = WGPUTextureFormat_R8Unorm;
+    desc.sampleCount = kViewportSampleCount;
+    desc.label       = svFromCStr("ifcviewer-wgpu.sel_mask_msaa");
+    sel_mask_msaa_texture_ = wgpuDeviceCreateTexture(device_, &desc);
+    sel_mask_msaa_view_    = wgpuTextureCreateView(sel_mask_msaa_texture_, nullptr);
+
+    desc.usage       = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding;
+    desc.sampleCount = 1;
+    desc.label       = svFromCStr("ifcviewer-wgpu.sel_mask");
+    sel_mask_texture_ = wgpuDeviceCreateTexture(device_, &desc);
+    sel_mask_view_    = wgpuTextureCreateView(sel_mask_texture_, nullptr);
+
+    desc.format = kSelScratchFormat;
+    desc.label  = svFromCStr("ifcviewer-wgpu.sel_scratch");
+    sel_scratch_texture_ = wgpuDeviceCreateTexture(device_, &desc);
+    sel_scratch_view_    = wgpuTextureCreateView(sel_scratch_texture_, nullptr);
+
+    sel_mask_w_ = w;
+    sel_mask_h_ = h;
+
+    // The bind groups name the views we just replaced.
+    if (sel_dilate_bind_group_) {
+        wgpuBindGroupRelease(sel_dilate_bind_group_);
+        sel_dilate_bind_group_ = nullptr;
+    }
+    if (sel_outline_bind_group_) {
+        wgpuBindGroupRelease(sel_outline_bind_group_);
+        sel_outline_bind_group_ = nullptr;
+    }
+}
+
+void ViewportCore::releaseSelectionOutlineTextures() {
+    if (sel_scratch_view_)       { wgpuTextureViewRelease(sel_scratch_view_);   sel_scratch_view_ = nullptr; }
+    if (sel_scratch_texture_)    { wgpuTextureRelease(sel_scratch_texture_);    sel_scratch_texture_ = nullptr; }
+    if (sel_mask_view_)          { wgpuTextureViewRelease(sel_mask_view_);      sel_mask_view_ = nullptr; }
+    if (sel_mask_texture_)       { wgpuTextureRelease(sel_mask_texture_);       sel_mask_texture_ = nullptr; }
+    if (sel_mask_msaa_view_)     { wgpuTextureViewRelease(sel_mask_msaa_view_); sel_mask_msaa_view_ = nullptr; }
+    if (sel_mask_msaa_texture_)  { wgpuTextureRelease(sel_mask_msaa_texture_);  sel_mask_msaa_texture_ = nullptr; }
+    sel_mask_w_ = sel_mask_h_ = 0;
+}
+
+bool ViewportCore::selectionOutlineActive() const {
+    return selection_outline_enabled_ && selection_.count() > 0
+        && sel_mask_pipeline_ && sel_outline_pipeline_ && sel_mask_view_;
+}
+
+void ViewportCore::encodeSelectionMaskPass(WGPUCommandEncoder enc) {
+    if (!selectionOutlineActive() || !depth_view_ || !frame_bind_group_) return;
+
+    WGPURenderPassColorAttachment color = {};
+    color.view          = sel_mask_msaa_view_;
+    color.resolveTarget = sel_mask_view_;
+    color.loadOp        = WGPULoadOp_Clear;
+    // Only the resolve is ever read, so the multisampled samples can go.
+    color.storeOp       = WGPUStoreOp_Discard;
+    color.clearValue    = {0.0, 0.0, 0.0, 0.0};
+    color.depthSlice    = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    // Read-only depth: the scene's own z, already written by the main pass.
+    // WebGPU requires the load/store ops be left undefined when a depth
+    // attachment is read-only, which the zero-init here does.
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view            = depth_view_;
+    depth.depthReadOnly   = true;
+    depth.stencilReadOnly = true;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount   = 1;
+    pass_desc.colorAttachments       = &color;
+    pass_desc.depthStencilAttachment = &depth;
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.sel_mask_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetPipeline(pass, sel_mask_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+
+    // Same draw stream as the main pass, opaque and transparent together —
+    // a selected element that happens to be translucent still gets a halo.
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+        }
+    }
+
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+}
+
+void ViewportCore::encodeSelectionOutlinePass(WGPUCommandEncoder enc,
+                                              WGPUTextureView surface_view,
+                                              int dpr) {
+    if (!selectionOutlineActive() || !surface_view || !sel_dilate_h_pipeline_) return;
+
+    // Ring widths in LOGICAL pixels, scaled here so the halo looks the same
+    // on a HiDPI canvas as it does on a 1x one.
+    const float scale = float(std::max(1, dpr));
+    SelOutlineUniforms u = {};
+    u.inner_color[0] = 1.0f; u.inner_color[1] = 1.0f;
+    u.inner_color[2] = 1.0f; u.inner_color[3] = 1.0f;
+    u.outer_color[0] = 0.04f; u.outer_color[1] = 0.04f;
+    u.outer_color[2] = 0.04f; u.outer_color[3] = 0.85f;
+    u.inner_radius   = 2.0f * scale;
+    u.outer_radius   = 3.0f * scale;
+    wgpuQueueWriteBuffer(queue_, sel_outline_uniform_buffer_, 0, &u, sizeof(u));
+
+    if (!sel_dilate_bind_group_) {
+        WGPUBindGroupEntry e[2] = {};
+        e[0].binding     = 0;
+        e[0].textureView = sel_mask_view_;
+        e[1].binding = 1;
+        e[1].buffer  = sel_outline_uniform_buffer_;
+        e[1].size    = sizeof(SelOutlineUniforms);
+        WGPUBindGroupDescriptor bg = {};
+        bg.layout     = sel_outline_bgl_;
+        bg.entryCount = 2;
+        bg.entries    = e;
+        bg.label      = svFromCStr("ifcviewer-wgpu.sel_dilate_bind_group");
+        sel_dilate_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg);
+    }
+    if (!sel_outline_bind_group_) {
+        WGPUBindGroupEntry e[2] = {};
+        e[0].binding     = 0;
+        e[0].textureView = sel_scratch_view_;
+        e[1].binding = 1;
+        e[1].buffer  = sel_outline_uniform_buffer_;
+        e[1].size    = sizeof(SelOutlineUniforms);
+        WGPUBindGroupDescriptor bg = {};
+        bg.layout     = sel_outline_bgl_;
+        bg.entryCount = 2;
+        bg.entries    = e;
+        bg.label      = svFromCStr("ifcviewer-wgpu.sel_outline_bind_group");
+        sel_outline_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg);
+    }
+
+    {
+        WGPURenderPassColorAttachment color = {};
+        color.view       = sel_scratch_view_;
+        color.loadOp     = WGPULoadOp_Clear;
+        color.storeOp    = WGPUStoreOp_Store;
+        color.clearValue = {0.0, 0.0, 0.0, 1.0};
+        color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+        WGPURenderPassDescriptor pass_desc = {};
+        pass_desc.colorAttachmentCount = 1;
+        pass_desc.colorAttachments     = &color;
+        pass_desc.label                = svFromCStr("ifcviewer-wgpu.sel_dilate_h_pass");
+
+        WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+        wgpuRenderPassEncoderSetPipeline(pass, sel_dilate_h_pipeline_);
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, sel_dilate_bind_group_, 0, nullptr);
+        wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+        wgpuRenderPassEncoderEnd(pass);
+        wgpuRenderPassEncoderRelease(pass);
+    }
+
+    {
+        WGPURenderPassColorAttachment color = {};
+        color.view       = surface_view;
+        color.loadOp     = WGPULoadOp_Load;
+        color.storeOp    = WGPUStoreOp_Store;
+        color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+        WGPURenderPassDescriptor pass_desc = {};
+        pass_desc.colorAttachmentCount = 1;
+        pass_desc.colorAttachments     = &color;
+        pass_desc.label                = svFromCStr("ifcviewer-wgpu.sel_outline_pass");
+
+        WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+        wgpuRenderPassEncoderSetPipeline(pass, sel_outline_pipeline_);
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, sel_outline_bind_group_, 0, nullptr);
+        wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+        wgpuRenderPassEncoderEnd(pass);
+        wgpuRenderPassEncoderRelease(pass);
+    }
+}
+
+// ===========================================================================
 // Pick + raycast (#84-t)
 // ===========================================================================
 
@@ -6413,6 +6895,7 @@ void ViewportCore::configureSurface(int width_px, int height_px) {
     ensureDepthTexture(width_px, height_px);
     ensureMsaaColorTexture(width_px, height_px);
     ensureHizTextures(width_px, height_px);
+    ensureSelectionOutlineTextures(width_px, height_px);
     // depth_view_ was just replaced; force the HiZ + edge bind groups
     // to rebuild against the new view on next encode.
     if (hiz_bind_group_) {
@@ -6897,8 +7380,15 @@ void ViewportCore::render() {
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
 
+    // Selection coverage, while the main pass's depth is still current. The
+    // halo itself composites AFTER the edge pass, so the edge multiply does
+    // not darken it.
+    encodeSelectionMaskPass(enc);
+
     // Edge silhouette + HiZ resolve, before the surface-targeted overlays.
     if (edges_enabled_) encodeEdgePass(enc, view);
+
+    encodeSelectionOutlinePass(enc, view, dpr_int);
 
     int hiz_submitted_slot = -1;
     if (hiz_enabled_) hiz_submitted_slot = encodeHizResolve(enc);

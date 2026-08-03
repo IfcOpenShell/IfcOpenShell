@@ -592,6 +592,14 @@ extern "C" EMSCRIPTEN_KEEPALIVE void show_all_c()         { if (g_app && g_app->
 extern "C" EMSCRIPTEN_KEEPALIVE void hide_all_c()         { if (g_app && g_app->ready) g_app->core.hideAll(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_xray_c()      { if (g_app && g_app->ready) g_app->core.toggleXray(); }
 extern "C" EMSCRIPTEN_KEEPALIVE int  xray_is_active_c()   { return (g_app && g_app->ready && g_app->core.xrayActive()) ? 1 : 0; }
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_selection_outline_c(int on) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setSelectionOutlineEnabled(on != 0);
+    g_app->host.requestFrame();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_selection_outline_is_on_c() {
+    return (g_app && g_app->ready && g_app->core.selectionOutlineEnabled()) ? 1 : 0;
+}
 
 // ===========================================================================
 // Scripting API (web/ifcviewer.js wraps these into the IfcViewer object)
@@ -808,6 +816,7 @@ int main(int /*argc*/, char** /*argv*/) {
         g_app->core.buildHizPipeline();
         g_app->core.buildEdgePipeline();
         g_app->core.buildPickPipeline();
+        g_app->core.buildSelectionOutlinePipelines();
 
         // Load the embedded sample sidecar (mounted into MEMFS via
         // --embed-file in CMakeLists.txt). The sample stays on the
