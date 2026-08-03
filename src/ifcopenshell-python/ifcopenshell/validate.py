@@ -779,15 +779,13 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_l
 
 
 class LogDetectionHandler(Handler):
-    message_logged = False
-
     def __init__(self):
         super().__init__()
         self.default_handler = logging.StreamHandler()
+        self.count = 0
 
     def emit(self, record):
-        if not self.message_logged:
-            self.message_logged = True
+        self.count += 1
         self.default_handler.emit(record)
 
 
@@ -826,6 +824,7 @@ if __name__ == "__main__":
 
     filenames: list[str] = args.files
     some_file_is_invalid = False
+    total_errors = 0
 
     if args.recursion_limit > 0:
         sys.setrecursionlimit(args.recursion_limit)
@@ -859,16 +858,21 @@ if __name__ == "__main__":
             for x in logger.statements:
                 print(json.dumps(x, default=conv))
 
-        if handler:
+        if not args.json:
+            assert handler
             logger.removeHandler(handler)
-            invalid_ifc = handler.message_logged
-        else:  # json_logger.
+            invalid_ifc = bool(handler.count)
+            total_errors += handler.count
+        else:
             invalid_ifc = bool(logger.statements)
 
         if invalid_ifc:
             some_file_is_invalid = True
         else:
             print("No validation issues found.")
+
+    if not args.json:
+        print(f"{total_errors} errors found.")
 
     if some_file_is_invalid:
         exit(1)
