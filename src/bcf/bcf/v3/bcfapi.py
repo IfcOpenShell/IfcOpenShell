@@ -96,10 +96,10 @@ class FoundationClient:
                 webbrowser.open(f"{auth_endpoint}?{query}")
             server.timeout = 100
             server.handle_request()
-            if server.auth_code and server.auth_state == state:  # pylint: disable=E1101
+            if server.auth_code and server.auth_state == state:
                 data = {
                     "grant_type": "authorization_code",
-                    "code": server.auth_code,  # pylint: disable=E1101 type:ignore
+                    "code": server.auth_code,
                     "redirect_uri": f"http://localhost:{server.server_address[1]}/{self.redirect_subdir}",
                 }
                 headers = self._get_access_token_headers()

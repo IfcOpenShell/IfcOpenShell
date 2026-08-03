@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 # fmt: off
-# pylint: skip-file
 
 from math import pi
 from pathlib import Path

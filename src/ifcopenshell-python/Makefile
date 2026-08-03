@@ -80,11 +80,6 @@ test-mathutils:
 	pytest -p no:pytest-blender test/util/test_shape_builder.py
 
 
-.PHONY: qa
-qa:
-	black .
-	pylint ./* --output-format=colorized --disable all --enable E
-
 .PHONY: license
 license:
 	#copyright-header --license LGPL3 --copyright-holder "Thomas Krijnen <thomas@aecgeeks.com>" --copyright-year "2022" --copyright-software "IfcOpenShell" --copyright-software-description "IFC toolkit and geometry engine" -a ./ -o ./

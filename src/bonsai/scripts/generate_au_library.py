@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 # fmt: off
-# pylint: skip-file
 
 import bpy
 import ifcopenshell.api

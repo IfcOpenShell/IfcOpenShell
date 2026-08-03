@@ -370,11 +370,6 @@ test-modal:
 test-reregister:
 	blender --python scripts/reregister_bonsai.py
 
-.PHONY: qa
-qa:
-	black .
-	pylint ./* --output-format=colorized --disable all --enable E --disable import-error
-
 .PHONY: coverage
 coverage:
 	coverage run --source bonsai.core -m pytest -p no:pytest-blender test/core
