@@ -26,7 +26,15 @@ import ifcopenshell
 
 
 def summary(model: ifcopenshell.file) -> dict[str, Any]:
-    """Return a model overview with schema, element counts, and project info."""
+    """Summarise the model: schema, entity counts and project info.
+
+    Returns the ``schema`` version, ``total_entities``, and a ``project``
+    block with the id, name and description of the first ``IfcProject``
+    (omitted if the model has none). The count covers every entity in the
+    file, not just physical elements.
+
+    :param model: The in-memory IFC model.
+    """
     # Count elements by IFC type, sorted by count descending
     type_counter: Counter[str] = Counter()
     total = 0
