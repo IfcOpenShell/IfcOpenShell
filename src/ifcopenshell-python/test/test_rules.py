@@ -5,7 +5,7 @@ import tabulate
 
 import ifcopenshell.express.rule_executor
 import ifcopenshell.validate
-from .fixtures.rules.generate import FailObj, Result, parse_result
+from .fixture_generate import FailObj, Result, parse_result
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:

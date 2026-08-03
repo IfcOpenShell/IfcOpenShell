@@ -52,15 +52,17 @@ def write_fixture(file: ifcopenshell.file, source: str, result: Result, stem: st
             prefix = "fail" if expected_count == 1 else f"fail-expected-{expected_count}"
         case _:
             prefix = result
-    Path(f"{prefix}-{stem}.ifc").write_text(content)
+    (Path(source).parent / f"{prefix}-{stem}.ifc").write_text(content)
 
 
 if __name__ == "__main__":
-    directory = Path(__file__).parent
+    root = Path(__file__).parent.parent
+    directory = Path(__file__).parent / "fixtures/rules"
 
     for path in directory.glob("*.ifc"):
         path.unlink()
 
     for path in sorted(directory.glob("generate_*.py")):
+        module = f"test.fixtures.rules.{path.stem}"
         print(f"=== {path.name} ===")
-        subprocess.run([sys.executable, str(path)], cwd=directory, check=True)
+        subprocess.run([sys.executable, "-m", module], cwd=root, check=True)

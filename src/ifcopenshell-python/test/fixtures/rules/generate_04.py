@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import fail_if, normalize_header, write_fixture
+from ...fixture_generate import fail_if, normalize_header, write_fixture
 
 for i, (r1, r2) in enumerate(
     [("SUPPLIER", None), ("SUPPLIER", "Valid"), ("USERDEFINED", "Valid"), ("USERDEFINED", None)]

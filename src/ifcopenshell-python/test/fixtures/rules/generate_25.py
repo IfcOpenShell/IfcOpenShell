@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import fail_if, normalize_header, write_fixture
+from ...fixture_generate import fail_if, normalize_header, write_fixture
 
 segs = [
     lambda _: None,

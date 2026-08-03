@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header, write_fixture
+from ...fixture_generate import normalize_header, write_fixture
 
 coords = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]
 make_3d = lambda cs: [c + (0.0,) for c in cs]

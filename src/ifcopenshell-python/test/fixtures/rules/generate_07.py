@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import fail_if, normalize_header, write_fixture
+from ...fixture_generate import fail_if, normalize_header, write_fixture
 
 create_none = lambda f: None
 create_polyline = lambda f: f.createIfcPolyline(

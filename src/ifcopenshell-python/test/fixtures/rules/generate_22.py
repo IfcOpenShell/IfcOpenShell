@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header, pass_if, write_fixture
+from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 for cnt in range(0, 3):
     f = ifcopenshell.file(schema="IFC4")

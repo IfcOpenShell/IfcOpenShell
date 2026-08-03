@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header, pass_if, write_fixture
+from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 for i, box_alignment in enumerate(["top-left", "center", "invalid", "CENTER"]):
     f = ifcopenshell.file(schema="IFC2X3")

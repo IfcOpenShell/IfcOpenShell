@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header, pass_if, write_fixture
+from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 coords = [(0.0, 0.0), (10.0, 0.0)]
 coords_2 = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]

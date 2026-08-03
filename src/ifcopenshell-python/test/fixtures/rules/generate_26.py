@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header, write_fixture
+from ...fixture_generate import normalize_header, write_fixture
 
 cases = (
     ("pass", "label-values", ("test1", "test2")),

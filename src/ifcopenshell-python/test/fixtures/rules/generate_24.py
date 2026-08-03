@@ -1,7 +1,7 @@
 import time
 
 import ifcopenshell
-from generate import normalize_header, pass_if, write_fixture
+from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 for ents in [
     ("IfcWall",),

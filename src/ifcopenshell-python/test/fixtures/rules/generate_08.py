@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import fail_if, normalize_header, write_fixture
+from ...fixture_generate import fail_if, normalize_header, write_fixture
 
 create_plane = lambda f: f.createIfcPlane(f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0))))
 create_polyline = lambda f: f.createIfcPolyline(

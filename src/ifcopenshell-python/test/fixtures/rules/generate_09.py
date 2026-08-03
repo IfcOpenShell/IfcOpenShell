@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header, pass_if, write_fixture
+from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 pts = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0)]
 dims = [(2, 3, 3), (3, 3, 2), (2, 2, 2), (3, 3, 3)]

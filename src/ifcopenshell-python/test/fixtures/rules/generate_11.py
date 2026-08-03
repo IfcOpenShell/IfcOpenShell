@@ -1,6 +1,6 @@
 import ifcopenshell
 import ifcopenshell.util.schema
-from generate import normalize_header, pass_if, write_fixture
+from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 depth = 1.0
 for dir_x, dir_z in ((0.0, -1.0), (0.0, 0.0), (1.0, 0.0), (1.0, 0.001), (0.0, 1.0)):

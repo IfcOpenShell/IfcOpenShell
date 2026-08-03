@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header, write_fixture
+from ...fixture_generate import normalize_header, write_fixture
 
 ifc_file = ifcopenshell.file(schema="IFC2X3")
 ifc_file.create_entity(

@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header, pass_if, write_fixture
+from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 task = lambda f: f.createIfcTask(ifcopenshell.guid.new(), None, "sleep", IsMilestone=True)
 wall = lambda f: f.createIfcWall(ifcopenshell.guid.new())
