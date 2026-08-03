@@ -278,3 +278,14 @@ class TestBuildExtrudedClippedSpace(test.bootstrap.IFC4):
         # Chain: bottom clip -> top clip -> IfcExtrudedAreaSolid.
         assert item.FirstOperand.is_a("IfcBooleanClippingResult")
         assert item.FirstOperand.FirstOperand.is_a("IfcExtrudedAreaSolid")
+
+
+class TestBuildBrepSpace(test.bootstrap.IFC4):
+    def test_sloped_wall_brep_has_faces(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 6.0, direction=(0.0, 0.5, 1.0))
+        space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace")
+        shapes = _build_shapes_dict(self.file, [wall])
+        item = subject.build_brep_space(self.file, space, shapes, shapely.box(-4, -4, 4, 4), 0.0)
+        assert item is not None
+        assert item.is_a("IfcFacetedBrep") or item.is_a("IfcPolygonalFaceSet")

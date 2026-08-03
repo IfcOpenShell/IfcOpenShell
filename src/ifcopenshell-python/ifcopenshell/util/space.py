@@ -30,7 +30,10 @@ from typing import Literal, Optional, Union
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.boundary
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
@@ -467,3 +470,132 @@ def build_extruded_clipped_space(
         )
 
     return result
+
+
+def _build_local_shapes(ifc_file: ifcopenshell.file) -> dict:
+    """Build the local-coordinates shapes dict required by auto_generate_boundaries.
+
+    Keys are element ids; values have ``verts`` (local), ``faces``, ``edges``
+    and ``matrix`` as produced by ``ifcopenshell.geom.iterator``.
+    """
+    settings = ifcopenshell.geom.settings()
+    settings.set("disable-opening-subtractions", True)
+    shapes = {}
+    iterator = ifcopenshell.geom.iterator(settings, ifc_file)
+    if iterator.initialize():
+        while True:
+            shape = iterator.get()
+            shapes[shape.id] = {
+                "verts": ifcopenshell.util.shape.get_vertices(shape.geometry),
+                "faces": ifcopenshell.util.shape.get_faces(shape.geometry),
+                "edges": ifcopenshell.util.shape.get_edges(shape.geometry),
+                "matrix": ifcopenshell.util.shape.get_shape_matrix(shape),
+            }
+            if not iterator.next():
+                break
+    return shapes
+
+
+def build_brep_space(
+    ifc_file: ifcopenshell.file,
+    space: ifcopenshell.entity_instance,
+    shapes: dict,
+    space_polygon: shapely.Polygon,
+    base_z: float,
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Build a closed-shell B-rep space from auto-generated boundary faces.
+
+    Seeds the space with a temporary extrusion spanning the bounding elements'
+    vertical extent, generates 1st-level boundaries with
+    ``auto_generate_boundaries``, then merges the boundary polygons into a
+    closed mesh (``IfcFacetedBrep``/``IfcPolygonalFaceSet``).
+
+    :param ifc_file: The IFC file.
+    :param space: The IfcSpace entity.
+    :param shapes: Cached element shapes (world coords) for the z-extent.
+    :param space_polygon: Footprint polygon in world XY.
+    :param base_z: Base elevation in SI.
+    :return: IfcFacetedBrep or IfcPolygonalFaceSet, or None if boundaries
+        cannot be resolved.
+    """
+    all_z = [base_z]
+    for shape_data in shapes.values():
+        all_z.append(shape_data["top_z"])
+        all_z.append(shape_data["bottom_z"])
+    min_z = min(all_z)
+    max_z = max(all_z)
+    height = max_z - min_z
+
+    builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+    centroid = np.array([space_polygon.centroid.x, space_polygon.centroid.y])
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+    exterior = [
+        (float(p[0] - centroid[0]) / unit_scale, float(p[1] - centroid[1]) / unit_scale)
+        for p in space_polygon.exterior.coords[:-1]
+    ]
+    outer_curve = builder.polyline(exterior, closed=True)
+    profile = builder.profile(outer_curve)
+
+    ctx = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+    if ctx is None:
+        return None
+
+    seed = builder.extrude(
+        profile,
+        magnitude=height / unit_scale,
+        position=[centroid[0] / unit_scale, centroid[1] / unit_scale, min_z / unit_scale],
+    )
+    seed_rep = builder.get_representation(ctx, seed)
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=space, representation=seed_rep)
+
+    local_shapes = _build_local_shapes(ifc_file)
+    boundaries = ifcopenshell.util.boundary.auto_generate_boundaries(
+        ifc_file, space, local_shapes, boundary_class="IfcRelSpaceBoundary1stLevel"
+    )
+    if isinstance(boundaries, str) or not boundaries:
+        ifcopenshell.api.geometry.remove_representation(ifc_file, representation=seed_rep)
+        return None
+
+    points = []
+    point_index = {}
+    faces = []
+
+    def add_point(p):
+        key = tuple(np.round(p, 5))
+        if key not in point_index:
+            point_index[key] = len(points)
+            points.append([float(c) for c in p])
+        return point_index[key]
+
+    for boundary in boundaries:
+        connection = boundary.ConnectionGeometry
+        if connection is None:
+            continue
+        surface = connection.SurfaceOnRelatingElement
+        if surface is None or not surface.is_a("IfcCurveBoundedPlane"):
+            continue
+        outer = surface.OuterBoundary
+        if outer is None or not outer.is_a("IfcPolyline"):
+            continue
+        matrix = ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position)
+        poly_points = []
+        for loop_point in outer.Points:
+            local = np.array([float(c) for c in loop_point.Coordinates])
+            if len(local) == 2:
+                local = np.array([*local, 0.0])
+            world = np.delete(matrix @ np.array([*local, 1.0]), 3)
+            poly_points.append(world)
+        if len(poly_points) >= 3:
+            faces.append([add_point(p) for p in poly_points])
+
+    ifcopenshell.api.geometry.remove_representation(ifc_file, representation=seed_rep)
+
+    if not faces:
+        return None
+
+    tri_faces = []
+    for face in faces:
+        for i in range(1, len(face) - 1):
+            tri_faces.append([face[0], face[i], face[i + 1]])
+
+    return builder.mesh(points, tri_faces)
