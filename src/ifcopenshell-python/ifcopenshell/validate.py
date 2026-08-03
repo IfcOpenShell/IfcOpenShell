@@ -52,7 +52,6 @@ import json
 import os
 import sys
 import types
-from collections import namedtuple
 from collections.abc import Iterator
 from logging import Handler, Logger
 from types import EllipsisType
@@ -84,9 +83,6 @@ class ValidationError(Exception):
     def __init__(self, message, attribute=None):
         super().__init__(message)
         self.attribute = attribute
-
-
-log_entry_type = namedtuple("log_entry_type", ("level", "message", "instance", "attribute"))
 
 
 class json_logger:
