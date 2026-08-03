@@ -1,4 +1,5 @@
 import ifcopenshell
+from generate import normalize_header
 
 dims = [
     (1, 0, 0, 0, 0, 0, 0),
@@ -16,4 +17,5 @@ for i, d in enumerate(dims):
         "beard-second",
         f.createIfcMeasureWithUnit(f.createIfcLengthMeasure(5.0), f.createIfcSIUnit(Prefix="NANO", Name="METRE")),
     )
+    normalize_header(f)
     f.write(f"{'pass' if i == 0 else 'fail'}-conv-unit-{i}-ifc2x3.ifc")

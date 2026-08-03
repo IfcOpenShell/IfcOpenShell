@@ -1,6 +1,7 @@
 import time
 
 import ifcopenshell
+from generate import normalize_header
 
 for i in range(3):
     f = ifcopenshell.file(schema="IFC2X3")
@@ -26,4 +27,5 @@ for i in range(3):
                 )
             ],
         )
+    normalize_header(f)
     f.write(f"{'fail' if i == 2 else 'pass'}-{i}-projects-ifc2x3.ifc")

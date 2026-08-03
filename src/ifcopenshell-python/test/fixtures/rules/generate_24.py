@@ -1,6 +1,7 @@
 import time
 
 import ifcopenshell
+from generate import normalize_header
 
 for ents in [
     ("IfcWall",),
@@ -55,4 +56,5 @@ for ents in [
         ifcopenshell.guid.new(), ownerhist, RelatingObject=proj, RelatedObjects=f.by_type("IfcSpace")
     )
     valid = not (set(ents) - {"IfcZone", "IfcSpace"})
+    normalize_header(f)
     f.write(f"{'pass' if valid else 'fail'}-zone-with-{'-'.join(ents)}-{f.schema.lower()}.ifc")

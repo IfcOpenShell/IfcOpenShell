@@ -1,6 +1,7 @@
 import time
 
 import ifcopenshell
+from generate import normalize_header
 
 for i, nm in enumerate(("no-mls", "mls", "mlsu")):
     f = ifcopenshell.file(schema="IFC2X3")
@@ -18,4 +19,5 @@ for i, nm in enumerate(("no-mls", "mls", "mlsu")):
         f.createIfcRelAssociatesMaterial(
             ifcopenshell.guid.new(), ownerhist, RelatedObjects=[wall], RelatingMaterial=mls
         )
+    normalize_header(f)
     f.write(f"{'pass' if i == 2 else 'fail'}-wall-{nm}-ifc2x3.ifc")

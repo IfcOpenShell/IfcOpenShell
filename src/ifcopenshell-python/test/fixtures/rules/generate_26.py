@@ -1,4 +1,5 @@
 import ifcopenshell
+from generate import normalize_header
 
 cases = (
     ("pass", "label-values", ("test1", "test2")),
@@ -15,4 +16,5 @@ for result, name, values in cases:
             for v in values
         ]
     ifc_file.create_entity("IfcPropertyListValue", Name="Test", ListValues=list_values)
+    normalize_header(ifc_file)
     ifc_file.write(f"{result}-property-list-value-{name}.ifc")

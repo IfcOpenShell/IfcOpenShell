@@ -1,4 +1,5 @@
 import ifcopenshell
+from generate import normalize_header
 
 segs = [
     lambda _: None,
@@ -11,6 +12,7 @@ for schema in ("IFC4", "IFC4X3"):
         f = ifcopenshell.file(schema=schema)
         s = seg(f)
         f.createIfcIndexedPolyCurve(f.createIfcCartesianPointList2D([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0)]), s)
+        normalize_header(f)
         f.write(
             f'{"fail" if i == 2 else "pass"}-poly-curve-{"no-segments" if s is None else "-".join(["-".join(map(str, x[0])) for x in s])}-{schema.lower()}.ifc'
         )

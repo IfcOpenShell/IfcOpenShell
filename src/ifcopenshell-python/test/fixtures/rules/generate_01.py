@@ -1,4 +1,5 @@
 import ifcopenshell
+from generate import normalize_header
 
 for i, box_alignment in enumerate(["top-left", "center", "invalid", "CENTER"]):
     f = ifcopenshell.file(schema="IFC2X3")
@@ -12,4 +13,5 @@ for i, box_alignment in enumerate(["top-left", "center", "invalid", "CENTER"]):
     )
 
     suffix = "-uppercase" if box_alignment == "CENTER" else ""
+    normalize_header(f)
     f.write(f"{'pass' if i in (0,1,3) else 'fail'}-{i}-box-alignment-{box_alignment}{suffix}-ifc2x3.ifc")

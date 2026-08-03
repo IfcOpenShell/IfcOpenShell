@@ -1,5 +1,6 @@
 import ifcopenshell
 import ifcopenshell.util.schema
+from generate import normalize_header
 
 depth = 1.0
 for dir_x, dir_z in ((0.0, -1.0), (0.0, 0.0), (1.0, 0.0), (1.0, 0.001), (0.0, 1.0)):
@@ -27,4 +28,5 @@ for dir_x, dir_z in ((0.0, -1.0), (0.0, 0.0), (1.0, 0.0), (1.0, 0.001), (0.0, 1.
         if f.schema == "IFC2X3" and (dir_x, dir_z) == (0.0, 0.0):
             valid = True
 
+        normalize_header(f)
         f.write(f"{'pass' if valid else 'fail'}-extrusion-dir-{dir_x}-{dir_z}-{f.schema.lower()}.ifc")

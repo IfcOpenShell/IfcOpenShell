@@ -1,4 +1,5 @@
 import ifcopenshell
+from generate import normalize_header
 
 for cnt in range(0, 3):
     f = ifcopenshell.file(schema="IFC4")
@@ -18,6 +19,7 @@ for cnt in range(0, 3):
                 [f.createIfcPropertySingleValue("LoadBearing", None, f.createIfcBoolean(True))],
             ),
         )
+    normalize_header(f)
     f.write(f"{'pass' if cnt < 2 else 'fail'}-wall-{cnt}-same-psets.ifc")
 
 
@@ -51,4 +53,5 @@ f.createIfcRelDefinesByProperties(
         [f.createIfcPropertySingleValue("IsBeautiful", None, f.createIfcBoolean(True))],
     ),
 )
+normalize_header(f)
 f.write(f"pass-wall-different-psets.ifc")

@@ -1,6 +1,7 @@
 import itertools
 
 import ifcopenshell
+from generate import normalize_header
 
 
 def EXISTS(v):
@@ -24,4 +25,5 @@ for LiningDepth, LiningThickness in itertools.product((None, 1.0), (None, 1.0)):
             )
         ],
     )
+    normalize_header(f)
     f.write(f"{'pass' if valid else 'fail'}-lining-properties-{LiningDepth}-{LiningThickness}.ifc")

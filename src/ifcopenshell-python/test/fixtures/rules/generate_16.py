@@ -1,6 +1,7 @@
 import time
 
 import ifcopenshell
+from generate import normalize_header
 
 names = [("Same", "Same"), ("Different", "SomethingElse")]
 
@@ -18,5 +19,6 @@ for nms in names:
     units = f.createIfcUnitAssignment(Units=[f.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")])
     ownerhist = f.createIfcOwnerHistory(pando, appl, ChangeAction="ADDED", CreationDate=int(time.time()))
     f.createIfcPropertySet(ifcopenshell.guid.new(), ownerhist, "MyPset", HasProperties=map(make_prop(f), nms))
+    normalize_header(f)
     f.write(f"{'pass' if len(set(nms)) == len(nms) else 'fail'}-property-{'-'.join(map(str.lower, nms))}-ifc2x3.ifc")
 15

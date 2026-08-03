@@ -1,6 +1,7 @@
 import time
 
 import ifcopenshell
+from generate import normalize_header
 
 latitudes = [
     (False, (-361, 0, 0)),
@@ -45,4 +46,5 @@ for i, (is_valid, lat) in enumerate(latitudes):
         ],
     )
     f.createIfcRelAggregates(ifcopenshell.guid.new(), ownerhist, None, None, proj, [site])
+    normalize_header(f)
     f.write(f"{'pass' if is_valid else 'fail'}-site-latitude-{i}-ifc2x3.ifc")

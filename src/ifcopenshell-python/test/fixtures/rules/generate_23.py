@@ -1,4 +1,5 @@
 import ifcopenshell
+from generate import normalize_header
 
 fns = [
     (False, lambda f: f.createIfcLengthMeasure(-1.0)),
@@ -11,4 +12,5 @@ for valid, fn in fns:
     f = ifcopenshell.file(schema="IFC4")
     fs = fn(f)
     f.createIfcTextStyleFontModel("Comic Sans", ("Comic Sans",), FontSize=fs)
+    normalize_header(f)
     f.write(f"{'pass' if valid else 'fail'}-font-{fs.is_a()}-{fs[0]}.ifc")

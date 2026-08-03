@@ -1,4 +1,5 @@
 import ifcopenshell
+from generate import normalize_header
 
 pts = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0)]
 dims = [(2, 3, 3), (3, 3, 2), (2, 2, 2), (3, 3, 3)]
@@ -13,6 +14,7 @@ for d in dims:
     inst = f.create_entity(
         "IfcBezierCurve", 1, list(map(lambda t: make_point(*t), zip(pts, d))), "POLYLINE_FORM", False, False
     )
+    normalize_header(f)
     f.write(
         f"{'pass' if len(set(d)) == 1 else 'fail'}-bspline-curve-point-dimensions-{'-'.join(map(str, d))}-ifc2x3.ifc"
     )

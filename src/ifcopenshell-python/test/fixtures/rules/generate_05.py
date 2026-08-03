@@ -1,4 +1,5 @@
 import ifcopenshell
+from generate import normalize_header
 
 options = {
     "IfcPostalAddress": ({}, {"Country": "The Netherlands"}, {"Country": "The Netherlands", "Town": "Eindhoven"}),
@@ -18,6 +19,7 @@ for ent in ("IfcPostalAddress", "IfcTelecomAddress"):
 
             valid = not (purpose == "USERDEFINED" and ud is None)
 
+            normalize_header(f)
             f.write(f"{'pass' if valid else 'fail'}-{ent}-{purpose}-{ud}-ifc2x3.ifc")
 
     for kwargs in options[ent]:
@@ -26,4 +28,5 @@ for ent in ("IfcPostalAddress", "IfcTelecomAddress"):
         valid = len(kwargs) >= 1
         if not valid:
             kwargs = {"all-unset": 1}
+        normalize_header(f)
         f.write(f"{'pass' if valid else 'fail'}-{ent}-{'-'.join(kwargs.keys())}-ifc2x3.ifc")
