@@ -42,6 +42,7 @@ import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import numpy as np
 import shapely
+import shapely.affinity
 import shapely.ops
 from mathutils import Matrix, Vector
 from natsort import natsorted
@@ -1329,7 +1330,22 @@ class Spatial(bonsai.core.tool.Spatial):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         ifc_file = tool.Ifc.get()
         x, y, z = obj.matrix_world.translation
-        base_z = z / unit_scale
+        origin = obj.matrix_world.translation  # Blender SI
+        # The space builders expect base_z and polygon in SI (world) units.
+        base_z = z
+        poly_si = poly if polygon_is_si else shapely.affinity.scale(poly, unit_scale, unit_scale, origin=(0, 0))
+
+        # Ensure the IFC entity has an ObjectPlacement matching the Blender object,
+        # so the generated representation is in the correct local coordinate system.
+        bpy.context.view_layer.update()
+        matrix = np.array(obj.matrix_world)
+        ifcopenshell.api.geometry.edit_object_placement(
+            ifc_file,
+            product=element,
+            matrix=matrix,
+            is_si=True,
+        )
+
         if cls.get_spatial_props().force_space_height:
             cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
             return
@@ -1341,15 +1357,37 @@ class Spatial(bonsai.core.tool.Spatial):
                 for wall in ifc_file.by_type("IfcWall"):
                     if wall in ifcopenshell.util.element.get_decomposition(container):
                         bounding_walls.append(wall)
-        strategy, top_planes, bottom_planes = cls.get_space_volume_strategy(poly, base_z, bounding_walls, container)
+
+        # Detect planes in world SI (same coordinate system as the geom cache).
+        strategy, top_planes, bottom_planes = cls.get_space_volume_strategy(poly_si, base_z, bounding_walls, container)
+
+        # Build the geometry in the space's local coordinate system so the IFC
+        # representation is relative to the object's ObjectPlacement.
+        local_poly_si = shapely.affinity.translate(poly_si, -origin.x, -origin.y)
+        local_base_z = base_z - origin.z
+
+        def localize_plane(plane):
+            point, normal = plane
+            return (np.array(point) - np.array([origin.x, origin.y, origin.z]), normal)
+
+        local_top_planes = [localize_plane(p) for p in (top_planes or [])]
+        local_bottom_planes = [localize_plane(p) for p in (bottom_planes or [])]
+
         if strategy == "EXTRUDE_CLIP" and top_planes:
             item = ifcopenshell.util.space.build_extruded_clipped_space(
-                ifc_file, poly, base_z, top_planes, bottom_planes or []
+                ifc_file, local_poly_si, local_base_z, local_top_planes, local_bottom_planes
             )
             cls.set_brep_representation_from_mesh(obj, element, item)
         else:
+            shapes = cls.get_or_build_geom_cache()["shapes"]
+            local_shapes = {}
+            for shape_id, shape_data in shapes.items():
+                local_shape_data = dict(shape_data)
+                local_shape_data["top_z"] = shape_data["top_z"] - origin.z
+                local_shape_data["bottom_z"] = shape_data["bottom_z"] - origin.z
+                local_shapes[shape_id] = local_shape_data
             item = ifcopenshell.util.space.build_brep_space(
-                ifc_file, element, cls.get_or_build_geom_cache()["shapes"], poly, base_z
+                ifc_file, element, local_shapes, local_poly_si, local_base_z
             )
             if item is None:
                 cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)

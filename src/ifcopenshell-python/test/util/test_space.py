@@ -24,6 +24,7 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.space as subject
 import math
 import numpy as np
+import os
 import pytest
 import shapely
 import test.bootstrap
@@ -318,5 +319,26 @@ class TestBuildBrepSpace(test.bootstrap.IFC4):
         space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace")
         shapes = _build_shapes_dict(self.file, [wall])
         item = subject.build_brep_space(self.file, space, shapes, shapely.box(-4, -4, 4, 4), 0.0)
+        assert item is not None
+        assert item.is_a("IfcFacetedBrep") or item.is_a("IfcPolygonalFaceSet")
+
+
+class TestBuildBrepSpaceIfc2x3:
+    def test_build_brep_space_on_ifc2x3_uses_rel_space_boundary(self):
+        # IFC2X3 does not have IfcRelSpaceBoundary1stLevel; build_brep_space must
+        # fall back to plain IfcRelSpaceBoundary without raising a schema error.
+        # We use the real IFC2X3 fixture because the installed wrapper in this
+        # environment has a quirk with synthetic IFC2X3 geometry creation.
+        path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "IfcRelSpaceBoundary_TestFiles",
+            "IfcRelSpaceBoundary2ndLevel",
+            "HouseWithGarage_AC22_IFC2X3.ifc",
+        )
+        ifc_file = ifcopenshell.open(path)
+        space = ifc_file.by_type("IfcSpace")[0]
+        shapes = _build_shapes_dict(ifc_file, ifc_file.by_type("IfcWall") + ifc_file.by_type("IfcSlab"))
+        item = subject.build_brep_space(ifc_file, space, shapes, shapely.box(-1, -1, 1, 1), 0.0)
         assert item is not None
         assert item.is_a("IfcFacetedBrep") or item.is_a("IfcPolygonalFaceSet")

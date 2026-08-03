@@ -26,6 +26,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.representation
 import numpy as np
+import pytest
 import shapely
 from mathutils import Matrix, Vector
 
@@ -497,11 +498,10 @@ class TestGenerateSpace(NewFile):
 
         mesh = obj.data
         assert isinstance(mesh, bpy.types.Mesh)
-        verts = [v.co.z for v in mesh.vertices]
-        min_z = min(verts)
-        max_z = max(verts)
-        assert min_z >= 0, f"Expected extrusion to start at local z>=0, got min_z={min_z}"
-        assert max_z > 0, f"Expected extrusion to have positive height, got max_z={max_z}"
+        world_verts = [obj.matrix_world @ v.co for v in mesh.vertices]
+        world_zs = [v.z for v in world_verts]
+        assert min(world_zs) >= -0.1, f"Expected space world bottom near z>=0, got {min(world_zs)}"
+        assert max(world_zs) > 0, f"Expected space to have positive height, got {max(world_zs)}"
         assert np.isclose(obj.location.z, 4.5, atol=0.01), f"Expected location.z=4.5, got {obj.location.z}"
 
 
@@ -609,4 +609,23 @@ class TestSpaceVolumeStrategy(NewFile):
         assert len(top) == 1
         assert len(bottom) == 0
 
-class TestGenerateSpaceSlopedRoof(NewFile):
+
+class TestGenerateSpaceLocation(NewFile):
+    def test_generate_space_at_non_zero_cursor_location(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        # 4 thin walls forming a hollow box around (10, 20).
+        _BlockHelper.create_thin_wall(ifc, 10.0, 20.0 + 4.8, 10.0, 0.4)
+        _BlockHelper.create_thin_wall(ifc, 10.0, 20.0 - 4.8, 10.0, 0.4)
+        _BlockHelper.create_thin_wall(ifc, 10.0 + 4.8, 20.0, 0.4, 10.0)
+        _BlockHelper.create_thin_wall(ifc, 10.0 - 4.8, 20.0, 0.4, 10.0)
+        bpy.context.scene.cursor.location = (10, 20, 0)
+
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        mesh = space.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        world_verts = np.array([space.matrix_world @ v.co for v in mesh.vertices])
+        center = (world_verts.min(axis=0) + world_verts.max(axis=0)) / 2
+        assert center[0] == pytest.approx(10.0, abs=0.1)
+        assert center[1] == pytest.approx(20.0, abs=0.1)

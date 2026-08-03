@@ -565,8 +565,11 @@ def build_brep_space(
     ifcopenshell.api.geometry.assign_representation(ifc_file, product=space, representation=seed_rep)
 
     local_shapes = _build_local_shapes(ifc_file)
+    boundary_class = "IfcRelSpaceBoundary1stLevel"
+    if ifc_file.schema == "IFC2X3":
+        boundary_class = "IfcRelSpaceBoundary"
     boundaries = ifcopenshell.util.boundary.auto_generate_boundaries(
-        ifc_file, space, local_shapes, boundary_class="IfcRelSpaceBoundary1stLevel"
+        ifc_file, space, local_shapes, boundary_class=boundary_class
     )
     if isinstance(boundaries, str) or not boundaries:
         ifcopenshell.api.geometry.remove_representation(ifc_file, representation=seed_rep)
