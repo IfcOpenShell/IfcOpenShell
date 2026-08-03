@@ -23,14 +23,14 @@ import ifcopenshell.api.unit
 import ifcopenshell.util.alignment as sta
 
 try:
-    ifcopenshell.file(schema="IFC4X3_ADD2")
+    ifcopenshell.file(schema="IFC4X3")
     IFC4X3_AVAILABLE = True
 except RuntimeError:
     IFC4X3_AVAILABLE = False
 
 
 def _test_si_stations():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")  # meter
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -52,7 +52,7 @@ def _test_si_stations():
 
 
 def _test_si_stations_millimeter():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     ifcopenshell.api.unit.assign_unit(file)
 
@@ -64,7 +64,7 @@ def _test_si_stations_millimeter():
 
 
 def _test_us_stations():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
     ifcopenshell.api.unit.assign_unit(file, units=[length])

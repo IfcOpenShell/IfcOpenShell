@@ -462,7 +462,7 @@ def create_entity(type: str, schema: str = "IFC4", *args: Any, **kwargs: Any) ->
     if fi := _global_ifc_models.get(schema.lower()):
         pass
     else:
-        fi = _global_ifc_models[schema.lower()] = file(schema=schema)
+        fi = _global_ifc_models[schema.lower()] = file(schema_identifier=schema)
     return fi.create_entity(type, *args, **kwargs)
 
 

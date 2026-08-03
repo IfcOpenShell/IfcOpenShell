@@ -187,7 +187,7 @@ try:
                         exclude.update([st.name().upper() for st in ifcopenshell.util.schema.get_subtypes(declaration)])
 
                     # For creating C++ instances so that some of the calls here work
-                    self.shadow_file = ifcopenshell.file(schema_identifier=self.ifc_schema)
+                    self.shadow_file = ifcopenshell.file(schema=self.schema)
                     # But we only create them once per type because we basically only need access to 'semi-static' such as get_attribute_category()
                     self.instance_map = {}
 
