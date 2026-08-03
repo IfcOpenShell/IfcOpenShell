@@ -35,12 +35,6 @@ except ImportError:
 from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
 
-try:
-    QString = unicode
-except NameError:
-    # Python 3
-    QString = str
-
 os.environ["QT_API"] = "pyqt5"
 try:
     from pyqode.qt import QtCore
@@ -303,7 +297,7 @@ class application(QtWidgets.QApplication):
                     s = get_supertype(t)
                     if s:
                         add(s)
-                    s2, t2 = map(QString, (s, t))
+                    s2, t2 = map(str, (s, t))
                     if t2 not in items:
                         itm = items[t2] = QtWidgets.QTreeWidgetItem(items.get(s2, self), [t2])
                         itm.setData(0, QtCore.Qt.UserRole, t2)
@@ -313,7 +307,7 @@ class application(QtWidgets.QApplication):
                     add(t)
 
             for p in products:
-                t = QString(p.is_a())
+                t = str(p.is_a())
                 itm = items[p] = QtWidgets.QTreeWidgetItem(items.get(t, self), [p.Name or "<no name>"])
                 itm.setData(0, QtCore.Qt.UserRole, t)
                 self.children[t].append(p)
@@ -366,10 +360,7 @@ class application(QtWidgets.QApplication):
                         if hasattr(value_str, "wrappedValue"):
                             value_str = value_str.wrappedValue
 
-                        if isinstance(value_str, unicode):
-                            value_str = value_str.encode("utf-8")
-                        else:
-                            value_str = str(value_str)
+                        value_str = str(value_str)
 
                         if hasattr(value, "is_a"):
                             type_str = " <i>(%s)</i>" % value.is_a()
