@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 for cnt in range(0, 3):
     f = ifcopenshell.file(schema="IFC4")
@@ -20,7 +20,7 @@ for cnt in range(0, 3):
             ),
         )
     normalize_header(f)
-    f.write(f"{'pass' if cnt < 2 else 'fail'}-wall-{cnt}-same-psets.ifc")
+    write_fixture(f, __file__, pass_if(cnt < 2), f"wall-{cnt}-same-psets")
 
 
 f = ifcopenshell.file(schema="IFC4")
@@ -54,4 +54,4 @@ f.createIfcRelDefinesByProperties(
     ),
 )
 normalize_header(f)
-f.write(f"pass-wall-different-psets.ifc")
+write_fixture(f, __file__, "pass", "wall-different-psets")

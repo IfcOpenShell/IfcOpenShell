@@ -1,7 +1,7 @@
 import time
 
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 for i, nm in enumerate(("no-mls", "mls", "mlsu")):
     f = ifcopenshell.file(schema="IFC2X3")
@@ -20,4 +20,4 @@ for i, nm in enumerate(("no-mls", "mls", "mlsu")):
             ifcopenshell.guid.new(), ownerhist, RelatedObjects=[wall], RelatingMaterial=mls
         )
     normalize_header(f)
-    f.write(f"{'pass' if i == 2 else 'fail'}-wall-{nm}-ifc2x3.ifc")
+    write_fixture(f, __file__, pass_if(i == 2), f"wall-{nm}-ifc2x3")

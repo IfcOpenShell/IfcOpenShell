@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, write_fixture
 
 ifc_file = ifcopenshell.file(schema="IFC2X3")
 ifc_file.create_entity(
@@ -7,4 +7,4 @@ ifc_file.create_entity(
     CurveWidth=ifc_file.create_entity("IfcDescriptiveMeasure", "by layer"),
 )
 normalize_header(ifc_file)
-ifc_file.write("pass-IfcCurveStyle-ifc2x3.ifc")
+write_fixture(ifc_file, __file__, "pass", "IfcCurveStyle-ifc2x3")

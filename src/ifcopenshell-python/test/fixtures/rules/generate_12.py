@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, write_fixture
 
 coords = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]
 make_3d = lambda cs: [c + (0.0,) for c in cs]
@@ -20,7 +20,7 @@ f.createIfcArbitraryProfileDefWithVoids(
     ],
 )
 normalize_header(f)
-f.write(f"pass-arbitrary-profile-with-voids-ifc2x3.ifc")
+write_fixture(f, __file__, "pass", "arbitrary-profile-with-voids-ifc2x3")
 
 f = ifcopenshell.file(schema="IFC2X3")
 f.createIfcArbitraryProfileDefWithVoids(
@@ -33,7 +33,7 @@ f.createIfcArbitraryProfileDefWithVoids(
     ],
 )
 normalize_header(f)
-f.write(f"fail-arbitrary-profile-with-voids-curve-ifc2x3.ifc")
+write_fixture(f, __file__, "fail", "arbitrary-profile-with-voids-curve-ifc2x3")
 
 f = ifcopenshell.file(schema="IFC2X3")
 f.createIfcArbitraryProfileDefWithVoids(
@@ -46,7 +46,7 @@ f.createIfcArbitraryProfileDefWithVoids(
     ],
 )
 normalize_header(f)
-f.write(f"fail-arbitrary-profile-with-voids-3d-outer-ifc2x3.ifc")
+write_fixture(f, __file__, "fail", "arbitrary-profile-with-voids-3d-outer-ifc2x3")
 
 f = ifcopenshell.file(schema="IFC2X3")
 f.createIfcArbitraryProfileDefWithVoids(
@@ -59,7 +59,7 @@ f.createIfcArbitraryProfileDefWithVoids(
     ],
 )
 normalize_header(f)
-f.write(f"fail-arbitrary-profile-with-voids-3d-inner-ifc2x3.ifc")
+write_fixture(f, __file__, "fail", "arbitrary-profile-with-voids-3d-inner-ifc2x3")
 
 f = ifcopenshell.file(schema="IFC2X3")
 f.createIfcArbitraryProfileDefWithVoids(
@@ -72,7 +72,7 @@ f.createIfcArbitraryProfileDefWithVoids(
     ],
 )
 normalize_header(f)
-f.write(f"fail-arbitrary-profile-with-voids-3d-inner-2-ifc2x3.ifc")
+write_fixture(f, __file__, "fail", "arbitrary-profile-with-voids-3d-inner-2-ifc2x3")
 
 f = ifcopenshell.file(schema="IFC2X3")
 f.createIfcArbitraryProfileDefWithVoids(
@@ -82,4 +82,4 @@ f.createIfcArbitraryProfileDefWithVoids(
     [f.createIfcLine(f.createIfcCartesianPoint((0.0, 0.0)), f.createIfcVector(f.createIfcDirection((0.0, 0.0)), 1.0))],
 )
 normalize_header(f)
-f.write(f"fail-arbitrary-profile-with-voids-inner-line-ifc2x3.ifc")
+write_fixture(f, __file__, "fail", "arbitrary-profile-with-voids-inner-line-ifc2x3")

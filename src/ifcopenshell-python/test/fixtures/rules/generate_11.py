@@ -1,6 +1,6 @@
 import ifcopenshell
 import ifcopenshell.util.schema
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 depth = 1.0
 for dir_x, dir_z in ((0.0, -1.0), (0.0, 0.0), (1.0, 0.0), (1.0, 0.001), (0.0, 1.0)):
@@ -29,4 +29,4 @@ for dir_x, dir_z in ((0.0, -1.0), (0.0, 0.0), (1.0, 0.0), (1.0, 0.001), (0.0, 1.
             valid = True
 
         normalize_header(f)
-        f.write(f"{'pass' if valid else 'fail'}-extrusion-dir-{dir_x}-{dir_z}-{f.schema.lower()}.ifc")
+        write_fixture(f, __file__, pass_if(valid), f"extrusion-dir-{dir_x}-{dir_z}-{f.schema.lower()}")

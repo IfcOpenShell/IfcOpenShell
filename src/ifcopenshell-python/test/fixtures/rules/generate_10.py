@@ -1,7 +1,7 @@
 import itertools
 
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 defaults = {"Girth": 1.0, "WallThickness": 0.11}
 depths = [2.0, 3.0]
@@ -22,4 +22,4 @@ for d, w in itertools.product(depths, widths):
         "AREA", None, f.createIfcAxis2Placement2D(f.createIfcCartesianPoint((0.0, 0.0))), **D
     )
     normalize_header(f)
-    f.write(f"{'pass' if valid else 'fail'}-cshape-profile-width-{w}-depth-{d}-ifc2x3.ifc")
+    write_fixture(f, __file__, pass_if(valid), f"cshape-profile-width-{w}-depth-{d}-ifc2x3")

@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 options = {
     "IfcPostalAddress": ({}, {"Country": "The Netherlands"}, {"Country": "The Netherlands", "Town": "Eindhoven"}),
@@ -20,7 +20,7 @@ for ent in ("IfcPostalAddress", "IfcTelecomAddress"):
             valid = not (purpose == "USERDEFINED" and ud is None)
 
             normalize_header(f)
-            f.write(f"{'pass' if valid else 'fail'}-{ent}-{purpose}-{ud}-ifc2x3.ifc")
+            write_fixture(f, __file__, pass_if(valid), f"{ent}-{purpose}-{ud}-ifc2x3")
 
     for kwargs in options[ent]:
         f = ifcopenshell.file(schema="IFC2X3")
@@ -29,4 +29,4 @@ for ent in ("IfcPostalAddress", "IfcTelecomAddress"):
         if not valid:
             kwargs = {"all-unset": 1}
         normalize_header(f)
-        f.write(f"{'pass' if valid else 'fail'}-{ent}-{'-'.join(kwargs.keys())}-ifc2x3.ifc")
+        write_fixture(f, __file__, pass_if(valid), f"{ent}-{'-'.join(kwargs.keys())}-ifc2x3")

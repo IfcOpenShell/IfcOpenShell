@@ -1,7 +1,7 @@
 import time
 
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 names = [("Same", "Same"), ("Different", "SomethingElse")]
 
@@ -20,5 +20,4 @@ for nms in names:
     ownerhist = f.createIfcOwnerHistory(pando, appl, ChangeAction="ADDED", CreationDate=int(time.time()))
     f.createIfcPropertySet(ifcopenshell.guid.new(), ownerhist, "MyPset", HasProperties=map(make_prop(f), nms))
     normalize_header(f)
-    f.write(f"{'pass' if len(set(nms)) == len(nms) else 'fail'}-property-{'-'.join(map(str.lower, nms))}-ifc2x3.ifc")
-15
+    write_fixture(f, __file__, pass_if(len(set(nms)) == len(nms)), f"property-{'-'.join(map(str.lower, nms))}-ifc2x3")

@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 fns = [
     (False, lambda f: f.createIfcLengthMeasure(-1.0)),
@@ -13,4 +13,4 @@ for valid, fn in fns:
     fs = fn(f)
     f.createIfcTextStyleFontModel("Comic Sans", ("Comic Sans",), FontSize=fs)
     normalize_header(f)
-    f.write(f"{'pass' if valid else 'fail'}-font-{fs.is_a()}-{fs[0]}.ifc")
+    write_fixture(f, __file__, pass_if(valid), f"font-{fs.is_a()}-{fs[0]}")

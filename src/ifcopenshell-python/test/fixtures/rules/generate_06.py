@@ -2,7 +2,7 @@ import itertools
 import time
 
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 for pty, ety in itertools.product(("GRILLE", "USERDEFINED"), (None, "Something")):
     f = ifcopenshell.file(schema="IFC2X3")
@@ -14,4 +14,4 @@ for pty, ety in itertools.product(("GRILLE", "USERDEFINED"), (None, "Something")
     f.createIfcAirTerminalType(ifcopenshell.guid.new(), ownerhist, "My Type", ElementType=ety, PredefinedType=pty)
     valid = pty != "USERDEFINED" or ety is not None
     normalize_header(f)
-    f.write(f"{'pass' if valid else 'fail'}-air-terminal-type-{pty}-{ety}-ifc2x3.ifc")
+    write_fixture(f, __file__, pass_if(valid), f"air-terminal-type-{pty}-{ety}-ifc2x3")

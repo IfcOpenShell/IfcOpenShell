@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, write_fixture
 
 cases = (
     ("pass", "label-values", ("test1", "test2")),
@@ -17,4 +17,4 @@ for result, name, values in cases:
         ]
     ifc_file.create_entity("IfcPropertyListValue", Name="Test", ListValues=list_values)
     normalize_header(ifc_file)
-    ifc_file.write(f"{result}-property-list-value-{name}.ifc")
+    write_fixture(ifc_file, __file__, result, f"property-list-value-{name}")

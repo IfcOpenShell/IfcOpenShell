@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 coords = [(0.0, 0.0), (10.0, 0.0)]
 coords_2 = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]
@@ -76,4 +76,4 @@ for is_valid, dims, rep_type, name, fn in options:
         ]
     )
     normalize_header(f)
-    f.write(f"{'pass' if is_valid else 'fail'}-shaperep-{rep_type.lower()}-{name}-ifc2x3.ifc")
+    write_fixture(f, __file__, pass_if(is_valid), f"shaperep-{rep_type.lower()}-{name}-ifc2x3")

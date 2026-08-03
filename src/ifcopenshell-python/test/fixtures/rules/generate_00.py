@@ -1,7 +1,7 @@
 import time
 
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 for i in range(3):
     f = ifcopenshell.file(schema="IFC2X3")
@@ -28,4 +28,4 @@ for i in range(3):
             ],
         )
     normalize_header(f)
-    f.write(f"{'fail' if i == 2 else 'pass'}-{i}-projects-ifc2x3.ifc")
+    write_fixture(f, __file__, pass_if(i != 2), f"{i}-projects-ifc2x3")

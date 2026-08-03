@@ -1,5 +1,5 @@
 import ifcopenshell
-from generate import normalize_header
+from generate import normalize_header, pass_if, write_fixture
 
 for depth in (-1.0, 0.0, 1.0):
     f = ifcopenshell.file(schema="IFC2X3")
@@ -12,4 +12,4 @@ for depth in (-1.0, 0.0, 1.0):
         depth,
     )
     normalize_header(f)
-    f.write(f"{'pass' if depth > 0. else 'fail'}-extrusion-depth-{depth}-ifc2x3.ifc")
+    write_fixture(f, __file__, pass_if(depth > 0.0), f"extrusion-depth-{depth}-ifc2x3")
