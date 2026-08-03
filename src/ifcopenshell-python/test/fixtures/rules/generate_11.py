@@ -1,9 +1,10 @@
 import ifcopenshell
+import ifcopenshell.util.schema
 
 depth = 1.0
 for dir_x, dir_z in ((0.0, -1.0), (0.0, 0.0), (1.0, 0.0), (1.0, 0.001), (0.0, 1.0)):
 
-    schemas = ["IFC2X3"]
+    schemas: list[ifcopenshell.util.schema.IFC_SCHEMA] = ["IFC2X3"]
     if (dir_x, dir_z) == (0.0, 0.0):
         schemas.append("IFC4")
 
