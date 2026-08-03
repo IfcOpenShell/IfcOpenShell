@@ -410,6 +410,13 @@ def detect_space_volume_strategy(
     return "EXTRUDE_CLIP", top_planes, bottom_planes
 
 
+def _footprint_coords(space_polygon: shapely.Polygon):
+    """Yield (x, y) boundary coordinates of a footprint polygon (exterior then holes)."""
+    for coords in [space_polygon.exterior.coords, *[ring.coords for ring in space_polygon.interiors]]:
+        for point in coords:
+            yield point[0], point[1]
+
+
 def build_extruded_clipped_space(
     ifc_file: ifcopenshell.file,
     space_polygon: shapely.Polygon,
@@ -447,8 +454,17 @@ def build_extruded_clipped_space(
     profile = builder.profile(outer_curve, inner_curves=inner_curves)
 
     all_z = [base_z]
-    for point, _ in top_planes + bottom_planes:
+    for point, normal in top_planes + bottom_planes:
         all_z.append(float(point[2]))
+        for x, y in _footprint_coords(space_polygon):
+            # A sloped plane's height varies across the footprint. The anchor
+            # point is near the centre, so also cover the plane at the polygon
+            # vertices, otherwise the high side of a sloped ceiling is capped
+            # below the plane it should reach.
+            if abs(normal[2]) < 1e-6:
+                continue
+            plane_z = (float(np.dot(normal, point)) - float(normal[0]) * x - float(normal[1]) * y) / float(normal[2])
+            all_z.append(plane_z)
     min_z = min(all_z)
     max_z = max(all_z)
     height = max_z - min_z

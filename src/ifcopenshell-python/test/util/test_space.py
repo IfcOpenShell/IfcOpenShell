@@ -297,6 +297,19 @@ class TestBuildExtrudedClippedSpace(test.bootstrap.IFC4):
         assert item.FirstOperand.is_a("IfcBooleanClippingResult")
         assert item.FirstOperand.FirstOperand.is_a("IfcExtrudedAreaSolid")
 
+    def test_sloped_top_plane_reaches_footprint_max(self):
+        # A sloped ceiling's high side must reach the plane at the footprint
+        # edge (z=7.0 at y=-5), not be capped at the plane anchor z=5.5.
+        # 3D coords guard against the polygon carrying Z from the bisection.
+        space_polygon = shapely.Polygon([(-5, -5, 0), (5, -5, 0), (5, 5, 0), (-5, 5, 0)])
+        top_plane = (np.array([0.0, 0.0, 5.5]), np.array([0.0, 0.287, 0.958]))
+        bottom_plane = (np.array([0.0, 0.0, 0.0]), np.array([0.0, 0.0, -1.0]))
+        item = subject.build_extruded_clipped_space(self.file, space_polygon, 0.0, [top_plane], [bottom_plane])
+        shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), item)
+        verts = ifcopenshell.util.shape.get_vertices(shape)
+        assert verts[:, 2].min() == pytest.approx(0.0, abs=0.1)
+        assert verts[:, 2].max() == pytest.approx(7.0, abs=0.1)
+
 
 class TestBuildBrepSpace(test.bootstrap.IFC4):
     def test_sloped_wall_brep_has_faces(self):

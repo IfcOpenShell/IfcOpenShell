@@ -511,9 +511,12 @@ class TestGenerateSpaceSlopedRoof(NewFile):
 
         Triangular prism: vertical profile (in the y-z plane) extruded along +x.
         Profile points (u, v) with placement loc=(-5, 0, z), axis=(1,0,0),
-        ref=(0,0,1):  (0,-5) -> world (-5,-5,z)      eave bottom
-                       (rise,-5) -> world (-5,-5,z+rise) eave top
-                       (rise,5)  -> world (-5,5,z+rise)  ridge
+        ref=(0,0,1). The local frame maps u to world +z (u=0 -> z, u=rise ->
+        z+rise) and v to world -y (v=-5 -> y=+5, v=+5 -> y=-5):
+                       (0,-5)    -> world (-5, +5, z)      eave (low) at north
+                       (rise,-5) -> world (-5, +5, z+rise) vertical edge
+                       (rise,5)  -> world (-5, -5, z+rise) ridge at south
+        The underside is the sloped face from (y=+5, z) to (y=-5, z+rise).
         ExtrudedDirection (0,0,1) is local, mapping to world +x; depth 10 spans
         x in [-5, 5].
         """
