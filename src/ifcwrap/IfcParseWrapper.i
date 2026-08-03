@@ -87,6 +87,7 @@
 %ignore ifcopenshell::spf_header::logger;
 %ignore ifcopenshell::spf_header::owner_file;
 %ignore ifcopenshell::spf_header::write;
+%ignore ifcopenshell::spf_header::assign;
 
 %ignore ifcopenshell::HeaderEntity::is;
 
