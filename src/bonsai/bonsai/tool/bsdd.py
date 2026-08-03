@@ -138,7 +138,6 @@ class Bsdd(bonsai.core.tool.Bsdd):
     def get_dictionaries(cls) -> list[bsdd.DictionaryContractV1]:
         prefs = tool.Blender.get_addon_preferences()
         baseurl = getattr(prefs, "bsdd_baseurl", "https://api.bsdd.buildingsmart.org/api/")
-        cls.client = bsdd.Client()
         if hasattr(cls.client, "baseurl"):
             cls.client.baseurl = baseurl
         response = cls.client.get_dictionary(include_test_dictionaries=prefs.bsdd_load_test_dictionaries)

@@ -132,5 +132,12 @@ class SelectSimilarData:
             if pset.endswith("Common"):
                 keys.extend([f'/.*Common/."{name}"' for name in properties.keys() if name != "id"])
             else:
-                keys.extend([f"{pset}.{name}" for name in properties.keys() if name != "id"])
+                pset_part = f'"{pset}"' if " " in pset else pset
+                keys.extend(
+                    [
+                        f'{pset_part}."{name}"' if " " in name else f"{pset_part}.{name}"
+                        for name in properties.keys()
+                        if name != "id"
+                    ]
+                )
         return [(k, k, "") for k in keys]

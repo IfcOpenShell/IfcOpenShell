@@ -9,7 +9,7 @@
       type="image/x-icon"
       href="https://bonsaibim.org/assets/images/favicon-blender.png"
     />
-    <link rel="stylesheet" href="/static/css/index.css" id="index-stylesheet" />
+    <link rel="stylesheet" href="/static/css/index.css?v={{v}}" id="index-stylesheet" />
     <link
       rel="stylesheet"
       id="tabulator-stylesheet"
@@ -21,7 +21,7 @@
     />
     <script
       type="text/javascript"
-      src="/static/js/jquery.min.js"
+      src="/static/js/jquery.min.js?v={{v}}"
     ></script>
     <script
       type="text/javascript"
@@ -34,7 +34,7 @@
     <script>
       var SOCKET_PORT = {{port}};
     </script>
-    <script defer src="./static/js/index.js"></script>
+    <script defer src="./static/js/index.js?v={{v}}"></script>
   </head>
   <body>
     <nav>

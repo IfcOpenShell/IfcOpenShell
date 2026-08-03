@@ -2292,31 +2292,17 @@ class Model(bonsai.core.tool.Model):
         deform_layer = bm.verts.layers.deform.active
 
         # Sanity check
-        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
         if deform_layer:
             for vert in bm.verts:
                 vert_group_indices = tool.Blender.bmesh_get_vertex_groups(vert, deform_layer)
-                is_circle = False
-                for group_index in vert_group_indices:
-                    group_type = "IFCARCINDEX" if group_index in groups["IFCARCINDEX"] else "IFCCIRCLE"
-                    group_verts[group_type].setdefault(group_index, 0)
-                    group_verts[group_type][group_index] += 1
-                    if group_type == "IFCCIRCLE":
-                        is_circle = True
+                is_circle = any(gi in groups["IFCCIRCLE"] for gi in vert_group_indices)
+                is_arc = any(gi in groups["IFCARCINDEX"] for gi in vert_group_indices)
+                if (is_circle or is_arc) and not vert.link_edges:
+                    return (False, "CIRCLE" if is_circle else "3POINT_ARC")
                 if is_circle:
                     pass  # Circles are allowed to be unclosed
                 elif len(vert.link_edges) != 2:  # Unclosed loop or forked loop
                     return (False, "UNCLOSED_LOOP")
-
-        for group_type, group_counts in group_verts.items():
-            if group_type == "IFCARCINDEX":
-                for group_count in group_counts.values():
-                    if group_count != 3:  # Each arc needs 3 verts
-                        return (False, "3POINT_ARC")
-            elif group_type == "IFCCIRCLE":
-                for group_count in group_counts.values():
-                    if group_count != 2:  # Each circle needs 2 verts
-                        return (False, "CIRCLE")
 
         loop_edges = list(bm.edges)
 
@@ -2339,6 +2325,28 @@ class Model(bonsai.core.tool.Model):
                         loop_edges.remove(edge)
                         has_found_connected_edge = True
             loops.append(loop)
+
+        # Sanity check, per loop rather than across the whole mesh
+        if deform_layer:
+            for loop in loops:
+                loop_group_counts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
+                loop_verts = {v for edge in loop for v in edge.verts}
+                for vert in loop_verts:
+                    for group_index in tool.Blender.bmesh_get_vertex_groups(vert, deform_layer):
+                        if group_index in groups["IFCARCINDEX"]:
+                            group_type = "IFCARCINDEX"
+                        elif group_index in groups["IFCCIRCLE"]:
+                            group_type = "IFCCIRCLE"
+                        else:
+                            continue
+                        loop_group_counts[group_type].setdefault(group_index, 0)
+                        loop_group_counts[group_type][group_index] += 1
+                for group_count in loop_group_counts["IFCARCINDEX"].values():
+                    if group_count != 3:  # Each arc needs 3 verts
+                        return (False, "3POINT_ARC")
+                for group_count in loop_group_counts["IFCCIRCLE"].values():
+                    if group_count != 2:  # Each circle needs 2 verts
+                        return (False, "CIRCLE")
 
         tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
 
@@ -2520,26 +2528,10 @@ class Model(bonsai.core.tool.Model):
         deform_layer = bm.verts.layers.deform.active
 
         # Sanity check
-        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
         if deform_layer:
             for vert in bm.verts:
-                vert_group_indices = tool.Blender.bmesh_get_vertex_groups(vert, deform_layer)
-                for group_index in vert_group_indices:
-                    group_type = "IFCARCINDEX" if group_index in groups["IFCARCINDEX"] else "IFCCIRCLE"
-                    group_verts[group_type].setdefault(group_index, 0)
-                    group_verts[group_type][group_index] += 1
                 if len(vert.link_edges) > 2:  # Forked loop
                     return (False, "FORKED_LOOP")
-
-        for group_type, group_counts in group_verts.items():
-            if group_type == "IFCARCINDEX":
-                for group_count in group_counts.values():
-                    if group_count != 3:  # Each arc needs 3 verts
-                        return (False, "3POINT_ARC")
-            elif group_type == "IFCCIRCLE":
-                for group_count in group_counts.values():
-                    if group_count != 2:  # Each circle needs 2 verts
-                        return (False, "CIRCLE")
 
         loop_edges = list(bm.edges)
 
@@ -2562,6 +2554,28 @@ class Model(bonsai.core.tool.Model):
                         loop_edges.remove(edge)
                         has_found_connected_edge = True
             loops.append(loop)
+
+        # Sanity check, per loop rather than across the whole mesh
+        if deform_layer:
+            for loop in loops:
+                loop_group_counts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
+                loop_verts = {v for edge in loop for v in edge.verts}
+                for vert in loop_verts:
+                    for group_index in tool.Blender.bmesh_get_vertex_groups(vert, deform_layer):
+                        if group_index in groups["IFCARCINDEX"]:
+                            group_type = "IFCARCINDEX"
+                        elif group_index in groups["IFCCIRCLE"]:
+                            group_type = "IFCCIRCLE"
+                        else:
+                            continue
+                        loop_group_counts[group_type].setdefault(group_index, 0)
+                        loop_group_counts[group_type][group_index] += 1
+                for group_count in loop_group_counts["IFCARCINDEX"].values():
+                    if group_count != 3:  # Each arc needs 3 verts
+                        return (False, "3POINT_ARC")
+                for group_count in loop_group_counts["IFCCIRCLE"].values():
+                    if group_count != 2:  # Each circle needs 2 verts
+                        return (False, "CIRCLE")
 
         tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
 

@@ -93,6 +93,30 @@ def _stroke_lines_alpha(
     gpu.state.blend_set("NONE")
 
 
+def _connected_components(
+    vertex_groups: dict[int, list[bmesh.types.BMVert]],
+) -> list[list[bmesh.types.BMVert]]:
+    """Split each vertex group's members into their connected components,
+    since a duplicated arc/circle loop shares its source loop's group index."""
+    components = []
+    for verts in vertex_groups.values():
+        remaining = set(verts)
+        while remaining:
+            seed = remaining.pop()
+            stack = [seed]
+            component = [seed]
+            while stack:
+                v = stack.pop()
+                for edge in v.link_edges:
+                    other = edge.other_vert(v)
+                    if other in remaining:
+                        remaining.discard(other)
+                        stack.append(other)
+                        component.append(other)
+            components.append(component)
+    return components
+
+
 class ProfileDecorator:
     installed = None
 
@@ -265,7 +289,7 @@ class ProfileDecorator:
         # Draw arcs
         arc_centroids = []
         arc_segments = []
-        for arc in arcs.values():
+        for arc in _connected_components(arcs):
             if len(arc) != 3:
                 continue
             sorted_arc = [None, None, None]
@@ -292,7 +316,7 @@ class ProfileDecorator:
         # Draw circles
         circle_centroids = []
         circle_segments = []
-        for circle in circles.values():
+        for circle in _connected_components(circles):
             if len(circle) != 2:
                 continue
             p1 = obj.matrix_world @ circle[0].co

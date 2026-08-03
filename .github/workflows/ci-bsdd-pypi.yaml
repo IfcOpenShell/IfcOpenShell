@@ -18,8 +18,8 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6 # https://github.com/actions/setup-python
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7 # https://github.com/actions/setup-python
         with:
           python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
       - name: Compile

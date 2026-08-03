@@ -12,7 +12,7 @@ function create_gantt_chart(json_data) {
         vShowTaskInfoLink: 1, // Show link in tool tip (0/1)
         vShowEndWeekDate: 0,  // Show/Hide the date for the last day of the week in header for daily
         vUseSingleCell: 10000, // Set the threshold cell per table row (Helps performance for large data.
-        vFormatArr: ['Day', 'Week', 'Month', 'Quarter'], // Even with setUseSingleCell using Hour format on such a large chart can cause issues in some browsers,
+        vFormatArr: ['Hour', 'Day', 'Week', 'Month', 'Quarter'], // vUseSingleCell keeps Hour usable on large charts.
         vShowRes: true, // Disable the resource column.
         vShowComp: false, // Disable the completion column.
         vShowDur: false, // Disable the duration column, because jsgantt doesn't calculate durations the way we want.

@@ -204,9 +204,9 @@
             },
             "IfcCovering + IfcCoveringType": {
                 "Qto_CoveringBaseQuantities": {
-                    "GrossArea": "gross_get_max_side_area",
-                    "NetArea": "net_get_max_side_area",
-                    "Width": "gross_get_min_xyz"
+                    "GrossArea": "gross_get_covering_area",
+                    "NetArea": "net_get_covering_area",
+                    "Width": "gross_get_covering_width"
                 }
             },
             "IfcCurtainWall + IfcCurtainWallType": {
@@ -265,21 +265,21 @@
             },
             "IfcEarthworksCut": {
                 "Qto_EarthworksCutBaseQuantities": {
-                    "Depth": null,
-                    "Length": null,
+                    "Depth": "net_get_z",
+                    "Length": "net_get_x",
                     "LooseVolume": null,
-                    "UndisturbedVolume": null,
+                    "UndisturbedVolume": "net_get_volume",
                     "Weight": null,
-                    "Width": null
+                    "Width": "net_get_y"
                 }
             },
             "IfcEarthworksFill": {
                 "Qto_EarthworksFillBaseQuantities": {
-                    "CompactedVolume": null,
-                    "Depth": null,
-                    "Length": null,
+                    "CompactedVolume": "net_get_volume",
+                    "Depth": "net_get_z",
+                    "Length": "net_get_x",
                     "LooseVolume": null,
-                    "Width": null
+                    "Width": "net_get_y"
                 }
             },
             "IfcElectricAppliance + IfcElectricApplianceType": {
@@ -363,12 +363,12 @@
                     "GrossSurfaceArea": null,
                     "GrossVolume": null,
                     "GrossWeight": "gross_get_weight",
-                    "Height": "net_get_z",
-                    "Length": "net_get_max_xy",
+                    "Height": "net_get_footing_height",
+                    "Length": "net_get_footing_length",
                     "NetVolume": "net_get_volume",
                     "NetWeight": "net_get_weight",
                     "OuterSurfaceArea": null,
-                    "Width": null
+                    "Width": "net_get_footing_width"
                 }
             },
             "IfcGeotechnicalStratum": {
@@ -472,11 +472,11 @@
             },
             "IfcOpeningElement": {
                 "Qto_OpeningElementBaseQuantities": {
-                    "Area": "gross_get_max_side_area",
-                    "Depth": "gross_get_z",
-                    "Height": "gross_get_y",
+                    "Area": "gross_get_opening_area",
+                    "Depth": "gross_get_opening_depth",
+                    "Height": "gross_get_opening_height",
                     "Volume": "gross_get_volume",
-                    "Width": "gross_get_x"
+                    "Width": "gross_get_opening_width"
                 }
             },
             "IfcOutlet + IfcOutletType": {
@@ -585,11 +585,11 @@
             },
             "IfcReinforcedSoil": {
                 "Qto_ReinforcedSoilBaseQuantities": {
-                    "Area": null,
-                    "Depth": null,
-                    "Length": null,
-                    "Volume": null,
-                    "Width": null
+                    "Area": "net_get_footprint_area",
+                    "Depth": "net_get_z",
+                    "Length": "net_get_x",
+                    "Volume": "net_get_volume",
+                    "Width": "net_get_y"
                 }
             },
             "IfcReinforcingElement + IfcReinforcingElementType": {
@@ -665,16 +665,16 @@
                 "Qto_SpaceBaseQuantities": {
                     "FinishCeilingHeight": null,
                     "FinishFloorHeight": null,
-                    "GrossCeilingArea": null,
-                    "GrossFloorArea": null,
-                    "GrossPerimeter": null,
-                    "GrossVolume": null,
+                    "GrossCeilingArea": "gross_get_top_area",
+                    "GrossFloorArea": "gross_get_footprint_area",
+                    "GrossPerimeter": "gross_get_footprint_perimeter",
+                    "GrossVolume": "gross_get_volume",
                     "GrossWallArea": null,
-                    "Height": null,
-                    "NetCeilingArea": null,
-                    "NetFloorArea": null,
+                    "Height": "net_get_z",
+                    "NetCeilingArea": "net_get_top_area",
+                    "NetFloorArea": "net_get_footprint_area",
                     "NetPerimeter": null,
-                    "NetVolume": null,
+                    "NetVolume": "net_get_volume",
                     "NetWallArea": null
                 }
             },
@@ -769,13 +769,13 @@
             },
             "IfcWall + IfcWallType": {
                 "Qto_WallBaseQuantities": {
-                    "GrossFootPrintArea": null,
+                    "GrossFootPrintArea": "gross_get_footprint_area",
                     "GrossSideArea": "gross_get_side_area",
                     "GrossVolume": "gross_get_volume",
                     "GrossWeight": "gross_get_weight",
                     "Height": "net_get_z",
                     "Length": "net_get_x",
-                    "NetFootPrintArea": null,
+                    "NetFootPrintArea": "net_get_footprint_area",
                     "NetSideArea": "net_get_side_area",
                     "NetVolume": "net_get_volume",
                     "NetWeight": "net_get_weight",

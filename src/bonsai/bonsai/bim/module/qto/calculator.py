@@ -104,7 +104,7 @@ def get_footing_length(o: bpy.types.Object) -> float:
         return get_length(o)
     if predefined_type == "FOOTING_BEAM" or predefined_type == "STRIP_FOOTING":
         return get_z(o)
-    elif predefined_type == "PAD_FOOTING":
+    elif predefined_type == "PAD_FOOTING" or predefined_type == "PILE_CAP":
         return max(get_x(o), get_y(o))
     else:
         return get_length(o)
@@ -197,10 +197,24 @@ def get_footing_height(o: bpy.types.Object) -> float:
         return get_height(o)
     if predefined_type == "FOOTING_BEAM" or predefined_type == "STRIP_FOOTING":
         return get_y(o)
-    elif predefined_type == "PAD_FOOTING":
+    elif predefined_type == "PAD_FOOTING" or predefined_type == "PILE_CAP":
         return get_z(o)
     else:
         return get_height(o)
+
+
+def get_footing_width(o: bpy.types.Object) -> float:
+    element = tool.Ifc.get_entity(o)
+    assert element
+    predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+    if not predefined_type:
+        return get_width(o)
+    if predefined_type == "FOOTING_BEAM" or predefined_type == "STRIP_FOOTING":
+        return get_x(o)
+    elif predefined_type == "PAD_FOOTING" or predefined_type == "PILE_CAP":
+        return get_width(o)
+    else:
+        return get_width(o)
 
 
 def get_height(o: bpy.types.Object) -> float:
@@ -225,7 +239,7 @@ def get_opening_depth(obj: bpy.types.Object) -> float:
     if is_opening_horizontal(obj):
         return get_height(obj)
     else:
-        return get_width(obj)
+        return get_y(obj)
 
 
 def get_opening_mapping_area(obj: bpy.types.Object) -> float:

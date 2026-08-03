@@ -113,6 +113,19 @@ class BIM_PT_camera(Panel):
             row.prop(props, "fill_mode")
             row = self.layout.row()
             row.prop(props, "cut_mode")
+
+        row = self.layout.row()
+        row.prop(props, "use_edge_classification")
+        if props.use_edge_classification:
+            row = self.layout.row()
+            row.prop(props, "render_creases")
+            row.prop(props, "valley_angle_min_degrees")
+            row = self.layout.row()
+            row.prop(props, "render_sharp")
+            row.prop(props, "ridge_angle_min_degrees")
+            row = self.layout.row()
+            row.prop(props, "render_flush")
+
         row = self.layout.row()
         row.prop(props, "width")
         row = self.layout.row()
@@ -319,6 +332,8 @@ class BIM_PT_drawings(Panel):
 
                 row3.separator(factor=0.5, type="SPACE")
 
+                row3.operator("bim.copy_annotation_to_drawing", icon="PASTEDOWN", text="")
+
                 row3.operator("bim.select_all_drawings", icon="CHECKBOX_HLT", text="")
                 row3.operator("bim.create_drawing", text="", icon="OUTPUT")
                 row3.operator("bim.convert_svg_to_dxf", text="", icon="SEQ_PREVIEW").view = active_drawing.name
@@ -326,6 +341,7 @@ class BIM_PT_drawings(Panel):
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
+            self.layout.prop(self.props, "show_drawings_on_sheets_only")
 
 
 class BIM_PT_schedules(Panel):
@@ -858,8 +874,8 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             layout.label(text="", translate=False)
             return
 
-        row = layout.row(align=True)
         if item.is_drawing:
+            row = layout.row(align=True)
             row.label(text="", icon="BLANK1")
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
             row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
@@ -880,6 +896,9 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                     item.ifc_definition_id
                 )
         else:
+            # Give category headers a distinct inset background so they stand out from drawing rows.
+            box = layout.box()
+            row = box.row(align=True)
             if item.target_view == "PLAN_VIEW":
                 icon = "UV_FACESEL"
             elif item.target_view == "ELEVATION_VIEW":
@@ -900,7 +919,55 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                 op = row.operator("bim.toggle_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT")
                 op.target_view = item.target_view
                 op.option = "EXPAND"
-            row.prop(item, "name", text="", icon=icon, emboss=False)
+            group = tool.Drawing.get_visible_drawings_in_category(item.target_view)
+            all_selected = bool(group) and all(d.is_selected for d in group)
+            row.operator(
+                "bim.toggle_drawing_category_selection",
+                text="",
+                icon="CHECKBOX_HLT" if all_selected else "CHECKBOX_DEHLT",
+                emboss=False,
+            ).target_view = item.target_view
+            row.separator(factor=0.5, type="SPACE")
+            # Clicking the header name toggles expand/contract, same as the disclosure triangle.
+            op = row.operator("bim.toggle_target_view", text=item.name, icon=icon, emboss=False)
+            op.target_view = item.target_view
+            op.option = "CONTRACT" if item.is_expanded else "EXPAND"
+
+    def filter_items(self, context, data: DocProperties, propname: str):
+        drawings = getattr(data, propname)
+        helper_funcs = bpy.types.UI_UL_list
+
+        flt_flags = []
+        flt_neworder = []
+
+        if self.filter_name:
+            flt_flags = helper_funcs.filter_items_by_name(
+                self.filter_name,
+                self.bitflag_filter_item,
+                drawings,
+                "name",
+                reverse=self.use_filter_sort_reverse,
+            )
+        if not flt_flags:
+            flt_flags = [self.bitflag_filter_item] * len(drawings)
+
+        props = tool.Drawing.get_document_props()
+        if props.show_drawings_on_sheets_only:
+            ifc_file = tool.Ifc.get()
+            sheeted_ids = tool.Drawing.get_sheeted_drawing_ids()
+            # Target view headers are only shown if they contain a sheeted drawing.
+            sheeted_target_views = {
+                tool.Drawing.get_drawing_target_view(ifc_file.by_id(drawing_id)) for drawing_id in sheeted_ids
+            }
+            for i, item in enumerate(drawings):
+                if item.is_drawing:
+                    is_visible = item.ifc_definition_id in sheeted_ids
+                else:
+                    is_visible = item.target_view in sheeted_target_views
+                if not is_visible:
+                    flt_flags[i] &= ~self.bitflag_filter_item
+
+        return flt_flags, flt_neworder
 
 
 class BIM_UL_sheets(bpy.types.UIList):
@@ -964,14 +1031,14 @@ class BIM_UL_sheets(bpy.types.UIList):
 
         if self.filter_name:
             filter_name = self.filter_name.lower()
-            active_sheet = None
+            active_sheet_index = None
             for sheet in data.sheets:
                 if sheet.is_sheet:
-                    active_sheet = sheet
                     active_sheet_index = len(flt_flags)
                 if filter_name in sheet.name.lower() or filter_name in sheet.identification.lower():
                     flt_flags.append(self.bitflag_filter_item)
                     if not sheet.is_sheet:
+                        assert active_sheet_index is not None
                         flt_flags[active_sheet_index] = self.bitflag_filter_item
                 else:
                     flt_flags.append(0)

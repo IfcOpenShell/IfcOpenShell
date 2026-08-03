@@ -463,7 +463,6 @@ class application(QtWidgets.QApplication):
             qtViewer3d.__init__(self, widget)
             self.ais_to_product = {}
             self.product_to_ais = {}
-            self.counter = 0
             self.window = widget
             self.thread = None
 
@@ -488,11 +487,11 @@ class application(QtWidgets.QApplication):
                 ais = display_shape(shape, viewer_handle=v)
                 product = f[shape.data.id]
 
-                if USE_OCCT_HANDLE:
-                    ais.GetObject().SetSelectionPriority(self.counter)
-                self.ais_to_product[self.counter] = product
+                # Keyed by the AIS object itself (its __eq__/__hash__ track the
+                # underlying OCCT instance) instead of AIS_InteractiveObject.SetSelectionPriority(),
+                # which no longer exists on general AIS objects in modern pythonocc-core (#1098).
+                self.ais_to_product[ais] = product
                 self.product_to_ais[product] = ais
-                self.counter += 1
 
                 QtWidgets.QApplication.processEvents()
 
@@ -573,8 +572,9 @@ class application(QtWidgets.QApplication):
             v.InitSelected()
             if v.MoreSelected():
                 ais = v.SelectedInteractive()
-                inst = self.ais_to_product[ais.GetObject().SelectionPriority()]
-                self.instanceSelected.emit(inst)
+                inst = self.ais_to_product.get(ais)
+                if inst is not None:
+                    self.instanceSelected.emit(inst)
 
     class window(QtWidgets.QMainWindow):
 
