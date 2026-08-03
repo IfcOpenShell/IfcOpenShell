@@ -22,6 +22,7 @@ import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.shape
 import ifcopenshell.util.space as subject
+import math
 import numpy as np
 import pytest
 import shapely
@@ -265,6 +266,23 @@ class TestDetectSpaceVolumeStrategy(test.bootstrap.IFC4):
             self.file, shapes, tree, shapely.box(-4, -4, 4, 4), 0.0, [wall]
         )
         assert strategy == "BREP"
+
+    def test_curved_vertical_wall_returns_extrude_clip(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pts = []
+        for i in range(9):
+            angle = -math.pi / 2.0 + math.pi * i / 8.0
+            pts.append((5.0 * math.cos(angle), 5.0 * math.sin(angle)))
+        _add_extruded_body(self.file, wall, pts, 6.0)
+        shapes = _build_shapes_dict(self.file, [wall])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, top, bottom = subject.detect_space_volume_strategy(
+            self.file, shapes, tree, shapely.box(-4, -4, 4, 4), 0.0, [wall]
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(top) == 1
+        assert len(bottom) == 0
 
 
 class TestBuildExtrudedClippedSpace(test.bootstrap.IFC4):

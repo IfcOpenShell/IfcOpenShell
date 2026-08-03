@@ -573,4 +573,37 @@ class TestSpaceVolumeStrategy(NewFile):
         assert len(top) == 1
         assert len(bottom) == 0
 
+    @staticmethod
+    def _create_sloped_slab(ifc, z=4.0, rise=3.0):
+        """Create an IfcSlab whose underside is a sloped plane across the footprint."""
+        ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
+        slab = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
+        pts = [
+            ifc.createIfcCartesianPoint((0.0, -5.0)),
+            ifc.createIfcCartesianPoint((float(rise), -5.0)),
+            ifc.createIfcCartesianPoint((float(rise), 5.0)),
+        ]
+        polyline = ifc.createIfcPolyline(pts)
+        profile = ifc.createIfcArbitraryClosedProfileDef(ProfileType="CURVE", OuterCurve=polyline)
+        placement = ifc.createIfcAxis2Placement3D(
+            ifc.createIfcCartesianPoint((-5.0, 0.0, z)),
+            ifc.createIfcDirection((1.0, 0.0, 0.0)),
+            ifc.createIfcDirection((0.0, 0.0, 1.0)),
+        )
+        extrude_dir = ifc.createIfcDirection((0.0, 0.0, 1.0))
+        solid = ifc.createIfcExtrudedAreaSolid(profile, placement, extrude_dir, 10.0)
+        rep = ifc.createIfcShapeRepresentation(ctx, "Body", "SweptSolid", [solid])
+        ifcopenshell.api.geometry.assign_representation(ifc, product=slab, representation=rep)
+        return slab
+
+    def test_sloped_slab_returns_extrude_clip(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self._create_sloped_slab(ifc, z=4.0, rise=3.0)
+        space_polygon = shapely.box(-5, -5, 5, 5)
+        strategy, top, bottom = subject.get_space_volume_strategy(space_polygon, 0.0, [])
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(top) == 1
+        assert len(bottom) == 0
+
 class TestGenerateSpaceSlopedRoof(NewFile):
