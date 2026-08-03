@@ -46,6 +46,13 @@ struct FullBufferImpl final : FileReader::Impl {
 #else
         auto stream = fopen(fn.c_str(), "rb");
 #endif
+        if (stream == nullptr) {
+            // Missing or unreadable file. Leave the buffer empty so the
+            // caller sees a zero-length input and reports a read error;
+            // handing a null FILE* to the CRT below terminates the whole
+            // process instead of failing the parse.
+            return;
+        }
         fseek(stream, 0, SEEK_END);
         buf_.resize((size_t)ftell(stream));
         rewind(stream);
@@ -84,6 +91,13 @@ struct PagedFileImpl final : FileReader::Impl {
 #else
         fp_ = fopen(fn.c_str(), "rb");
 #endif
+        if (fp_ == nullptr) {
+            // As above: behave like an empty file rather than passing a
+            // null FILE* to fseek. get() then throws out_of_range for any
+            // position and fetchPage_() is never reached.
+            file_size_ = 0;
+            return;
+        }
         fseek(fp_, 0, SEEK_END);
         file_size_ = (size_t)ftell(fp_);
         rewind(fp_);

@@ -1449,6 +1449,7 @@ class SvgWriter:
                     angle_tg = rise / run
                     angle = round(degrees(atan(angle_tg)))
                 else:
+                    angle_tg = None
                     angle = 90
 
                 # ues SLOPE_ANGLE as default
@@ -1462,6 +1463,7 @@ class SvgWriter:
                 elif object_type == "SLOPE_PERCENT":
                     if angle == 90:
                         return "-"
+                    assert angle_tg is not None
                     return f"{round(angle_tg * 100)} %"
 
             tag = element.Description or get_label_text()

@@ -225,9 +225,11 @@ def format_distance(
             unit_system, unit_length, unit_fraction = unit_mapping[custom_unit]
 
     value *= unit_scale
+    tx_dist = None
 
     # Imperial Formatting
     if unit_system == "IMPERIAL":
+        toInches = None
         if in_unit_length:
             if unit_length == "INCHES":
                 toInches = 1
@@ -241,6 +243,7 @@ def format_distance(
             toInches = 1550
             inPerFoot = 144
 
+        assert toInches is not None
         decInches = value * toInches
         decFeet = decInches / 12
 
@@ -383,6 +386,7 @@ def format_distance(
         if precision and isinstance(precision, float):
             value = precision * round(float(value) / precision)
 
+        fmt = None
         if decimal_places is not None:
             fmt = "%1." + str(decimal_places) + "f"
 
@@ -465,6 +469,7 @@ def format_distance(
         assert f"Unexpected unit_system - '{unit_system}'."
         # tx_dist = fmt % value
 
+    assert tx_dist is not None
     return tx_dist
 
 

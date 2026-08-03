@@ -320,6 +320,7 @@ def log_internal_cpp_errors(
 
     if log_content is None:
         log_content = ifcopenshell.get_log()
+    lines = None
     msgs = list(map(json.loads, filter(None, log_content.split("\n"))))
     chr_offsets = [chr_offset_re.findall(m["message"]) for m in msgs]
     instance_messages = [for_instance_re.findall(m["message"]) for m in msgs]
@@ -356,6 +357,7 @@ def log_internal_cpp_errors(
                     except:
                         inst = None
                 else:
+                    assert lines is not None
                     inst = next(
                         (
                             l.decode("ascii", errors="ignore").strip()
@@ -691,14 +693,16 @@ def validate_ifc_header(
             if not value:
                 log_error(header_entity, name, index, AGGREGATE_TYPE, "EMPTY LIST")
                 return
-            if not all(isinstance(last_value := v, str) for v in value):
-                log_error(
-                    header_entity,
-                    name,
-                    index,
-                    AGGREGATE_TYPE,
-                    f"LIST with {type(last_value).__name__} (value: {last_value})",
-                )
+            for v in value:
+                if not isinstance(v, str):
+                    log_error(
+                        header_entity,
+                        name,
+                        index,
+                        AGGREGATE_TYPE,
+                        f"LIST with {type(v).__name__} (value: {v})",
+                    )
+                    break
             return
 
         if not isinstance(value, str):

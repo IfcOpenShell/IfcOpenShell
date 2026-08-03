@@ -413,12 +413,13 @@ class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
     skip_invoke: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def _execute(self, context):
+        objects: list[bpy.types.Object]
         if self.obj:
-            objects = [bpy.data.objects.get(self.obj)]
+            requested_obj = bpy.data.objects.get(self.obj)
+            objects = [requested_obj] if requested_obj is not None else []
         else:
             objects = context.selected_objects
 
-        objects: list[bpy.types.Object]
         for obj in objects:
             was_active_object = obj == context.active_object
 
@@ -630,10 +631,13 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                     local_z = wall_matrix.to_3x3() @ Vector((0, 0, 1))
                     direction_sense = getattr(usage, "DirectionSense", "POSITIVE")
 
-                    if usage.LayerSetDirection == "AXIS2":
+                    layer_set_direction = usage.LayerSetDirection
+                    if layer_set_direction == "AXIS2":
                         z_axis = tuple(local_y) if direction_sense == "POSITIVE" else tuple(-local_y)
-                    elif usage.LayerSetDirection == "AXIS3":
+                    elif layer_set_direction == "AXIS3":
                         z_axis = tuple(local_z) if direction_sense == "POSITIVE" else tuple(-local_z)
+                    else:
+                        assert False, layer_set_direction
 
                     item = builder.extrude(
                         profile,
@@ -763,6 +767,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         WebThickness=default_web_thickness / unit_scale,
                         FlangeThickness=default_flange_thickness / unit_scale,
                     )
+                else:
+                    assert False, representation_template
 
             rel = ifcopenshell.api.material.assign_material(
                 tool.Ifc.get(), products=[element], type="IfcMaterialProfileSet"

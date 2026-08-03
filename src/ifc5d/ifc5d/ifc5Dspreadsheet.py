@@ -386,11 +386,70 @@ class Ifc5Dwriter:
                 "PredefinedType": cost_schedule.PredefinedType,
             }
 
+    # Presentation formats (.ods / .xlsx) mirror exactly what the Bonsai cost
+    # panel shows for a cost item: ID (Identification), Name, Quantity,
+    # Value (RateSubtotal) and the calculated Total Cost. Everything else
+    # (internal bookkeeping columns, Description, Unit, per-category cost
+    # breakdowns) is bonsai/csv2ifc round-trip plumbing and stays out of the
+    # presentation formats. The .csv format keeps the full column set since
+    # csv2ifc reads those extra columns back in on import.
+    PRESENTATION_COLUMNS = ("Identification", "Name", "Quantity", "RateSubtotal", "TotalPrice")
+
+    # Header text as shown in presentation formats, matching the Bonsai cost
+    # panel's own column labels (see BIM_UL_cost_items_trait.draw_header).
+    PRESENTATION_LABELS = {
+        "Identification": "ID",
+        "RateSubtotal": "Value",
+        "TotalPrice": "Total Cost",
+    }
+
     def multiply_cells(self, cell1, cell2):
         return "={}*{}".format(cell1, cell2)
 
     def sum_cells(self, list_of_cells):
         return "=SUM({})".format(",".join(list_of_cells))
+
+    def get_visible_headers(self, schedule_id: int) -> list[str]:
+        """Internal column keys shown in presentation formats, in panel order."""
+        headers = self.sheet_data[schedule_id]["headers"]
+        return [h for h in self.PRESENTATION_COLUMNS if h in headers]
+
+    def get_display_label(self, column: str) -> str:
+        """Header text to write for a column in presentation formats."""
+        return self.PRESENTATION_LABELS.get(column, column)
+
+    def is_numeric_column(self, column: str) -> bool:
+        return column in ("Quantity", "RateSubtotal", "TotalPrice") or column.endswith(" Cost")
+
+    def get_total_price_formula(self, schedule_id: int, cost_item_index: int, first_data_row: int) -> Union[str, None]:
+        """Spreadsheet formula for the TotalPrice cell of a cost item, or None for a plain value.
+
+        Sum items get ``=SUM(...)`` over the TotalPrice cells of their direct
+        children, leaf items with a quantity and a rate get ``=Quantity*RateSubtotal``.
+        Assumes one cost item per row, in ``cost_items`` order, starting at
+        ``first_data_row`` (1-based).
+        """
+        items = self.sheet_data[schedule_id]["cost_items"]
+        headers = self.get_visible_headers(schedule_id)
+        if "TotalPrice" not in headers:
+            return None
+        item = items[cost_item_index]
+        col = lambda name: self.column_indexes[headers.index(name)]
+        if item["ItemIsASum"]:
+            prefix = item["Hierarchy"] + "."
+            child_rows = [
+                first_data_row + i
+                for i, other in enumerate(items)
+                if other["Hierarchy"].startswith(prefix) and "." not in other["Hierarchy"][len(prefix) :]
+            ]
+            if child_rows:
+                total_col = col("TotalPrice")
+                return self.sum_cells(["{}{}".format(total_col, r) for r in child_rows])
+            return None
+        if "Quantity" in headers and "RateSubtotal" in headers and item.get("Quantity") and item.get("RateSubtotal"):
+            row = first_data_row + cost_item_index
+            return self.multiply_cells("{}{}".format(col("Quantity"), row), "{}{}".format(col("RateSubtotal"), row))
+        return None
 
     def get_cell_position(self, schedule_id, attribute):
         def get_position_in_list(item, item_list):
@@ -478,34 +537,29 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
                 cell.addElement(P(text=value))
             elif type == "formula":
                 cell = TableCell(formula=value, stylename=style)
+            else:
+                assert False, type
             row.addElement(cell)
 
-        def add_cost_item_rows(table, cost_data):
+        first_data_row = 6  # 3 metadata rows, 1 blank row, 1 header row.
+
+        def add_cost_item_rows(table, cost_data, cost_item_index):
             row = TableRow()
             self.row_count += 1
+            style = self.colours.get(cost_data["Index"])
 
-            for i, column in enumerate(self.sheet_data[cost_schedule.id()]["headers"]):
-                if column == "Total Price" and cost_data["Quantity"] != 0 and cost_data["Rate Subtotal"]:
-                    cell_quantity = self.get_cell_position(cost_schedule.id(), "Quantity")
-                    cell_subtotal_rate = self.get_cell_position(cost_schedule.id(), "Rate Subtotal")
-                    value = self.multiply_cells(cell_quantity, cell_subtotal_rate)
-                    cell = TableCell(formula=value, stylename=self.colours.get(cost_data["Index"]))
+            for column in self.get_visible_headers(cost_schedule.id()):
+                value = cost_data.get(column, "")
+                formula = None
+                if column == "TotalPrice":
+                    formula = self.get_total_price_formula(cost_schedule.id(), cost_item_index, first_data_row)
+                if formula:
+                    cell = TableCell(formula=formula, stylename=style)
+                elif self.is_numeric_column(column) and isinstance(value, (int, float)):
+                    cell = TableCell(valuetype="float", value=value, stylename=style)
                 else:
-                    value = cost_data.get(column, "")
-                    cell = TableCell(valuetype="string", stylename=self.colours.get(cost_data["Index"]))
+                    cell = TableCell(valuetype="string", stylename=style)
                     cell.addElement(P(text=value))
-                # TODO:FIX QUANTITY AND COST TO SHOW AS NUMBERS AND CURRENCIES
-                # elif "Cost" in column or "Rate" in column:
-                #     value = cost_data.get(column, "")
-                #     cell = TableCell(valuetype="string", stylename=self.colours.get(cost_data["Index"]))
-                #     cell.addElement(P(text=value))
-                #     # cell.addElement(P(text=u"${}".format(value))) # The current displayed value
-                #     print("Should add rate ", "${}".format(value))
-                # elif "Quantity" in column:
-                #     value = cost_data.get(column, "")
-                #     cell = TableCell(valuetype="float", stylename=self.colours.get(cost_data["Index"]))
-                #     print("Should add quantity",value)
-                #     cell.addElement(P(text=value))
                 row.addElement(cell)
             table.addElement(row)
 
@@ -532,20 +586,22 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
         table.addElement(new)
 
         header_row = TableRow()
-        for header in self.sheet_data[cost_schedule.id()]["headers"]:
-            add_cell(type="text", value=header, row=header_row, style="fed8b1")
+        for header in self.get_visible_headers(cost_schedule.id()):
+            add_cell(type="text", value=self.get_display_label(header), row=header_row, style="fed8b1")
         table.addElement(header_row)
 
         self.row_count = 5
-        for cost_item_data in self.sheet_data[cost_schedule.id()]["cost_items"]:
-            add_cost_item_rows(table, cost_item_data)
+        for i, cost_item_data in enumerate(self.sheet_data[cost_schedule.id()]["cost_items"]):
+            add_cost_item_rows(table, cost_item_data, i)
 
         self.doc.spreadsheet.addElement(table)
 
 
 class Ifc5DXlsxWriter(Ifc5Dwriter):
     def write(self) -> None:
-        import xlsxwriter
+        # openpyxl rather than xlsxwriter: it is what ifccsv already uses and
+        # what ships with Bonsai, so XLSX export works out of the box there.
+        import openpyxl
 
         super().write()
         os.makedirs(self.output, exist_ok=True)
@@ -556,24 +612,31 @@ class Ifc5DXlsxWriter(Ifc5Dwriter):
             else:
                 file_name += cost_schedule.Name or ""
         self.file_path = os.path.join(self.output, "{}.xlsx".format(file_name))
-        self.workbook = xlsxwriter.Workbook(self.file_path)
+        self.workbook = openpyxl.Workbook()
+        self.workbook.remove(self.workbook.active)
         for cost_schedule in self.cost_schedules:
             self.write_table(cost_schedule)
-        self.workbook.close()
+        self.workbook.save(self.file_path)
 
     def write_table(self, cost_schedule):
-        worksheet = self.workbook.add_worksheet(self.sheet_data[cost_schedule.id()]["Name"])
-        headers = self.sheet_data[cost_schedule.id()]["headers"]
-        for i, header in enumerate(headers):
-            worksheet.write(0, i, header)
+        import re
 
-        row = 1
-        for cost_item_data in self.sheet_data[cost_schedule.id()]["cost_items"]:
-            col = 0
+        sheet_id = cost_schedule.id()
+        title = re.sub(r"[\[\]:*?/\\]", "_", self.sheet_data[sheet_id]["Name"])[:31]
+        worksheet = self.workbook.create_sheet(title)
+        headers = self.get_visible_headers(sheet_id)
+        worksheet.append([self.get_display_label(h) for h in headers])
+
+        first_data_row = 2  # Row 1 is the header.
+        for i, cost_item_data in enumerate(self.sheet_data[sheet_id]["cost_items"]):
+            row = []
             for header in headers:
-                worksheet.write(row, col, cost_item_data.get(header, ""))
-                col += 1
-            row += 1
+                formula = None
+                if header == "TotalPrice":
+                    formula = self.get_total_price_formula(sheet_id, i, first_data_row)
+                # openpyxl treats strings starting with "=" as formulas.
+                row.append(formula if formula else cost_item_data.get(header, None))
+            worksheet.append(row)
 
 
 class Ifc5DPdfWriter(Ifc5Dwriter):
@@ -715,6 +778,8 @@ if __name__ == "__main__":
         writer = Ifc5DOdsWriter(args["input"], args["output"])
     elif args["format"] == "XLSX":
         writer = Ifc5DXlsxWriter(args["input"], args["output"])
+    else:
+        assert False, args
     writer.write()
 
     logger.info("Finished conversion in %ss", time.time() - start)

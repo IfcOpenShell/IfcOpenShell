@@ -144,6 +144,8 @@ class Usecase:
         elif unit_type == "volume":
             dimensional_exponents = self.file.createIfcDimensionalExponents(3, 0, 0, 0, 0, 0, 0)
             name_prefix = "cubic"
+        else:
+            assert False, unit_type
 
         si_unit = self.file.createIfcSIUnit(
             None,
@@ -159,6 +161,8 @@ class Usecase:
             name = "{}mile".format(name_prefix + " " if name_prefix else "")
         elif data["raw"] == "THOU":
             name = "{}thou".format(name_prefix + " " if name_prefix else "")
+        else:
+            assert False, data
         value_component = self.file.create_entity(
             "IfcReal", **{"wrappedValue": ifcopenshell.util.unit.si_conversions[name]}
         )

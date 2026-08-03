@@ -734,6 +734,7 @@ class file:
         # Don't store these attributes as transactions
         # as the creation it self is already stored with
         # it's arguments
+        transaction = None
         if attrs:
             transaction = self.transaction
             self.transaction = None
@@ -849,11 +850,13 @@ class file:
         :returns: An ifcopenshell.entity_instance
         """
 
+        max_id = None
         if self.transaction:
             max_id = self.wrapped_data.getMaxId()
         inst.wrapped_data.this.disown()
         result = entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
         if self.transaction:
+            assert max_id is not None
             added_elements = [e for e in self.traverse(result) if e.id() > max_id]
             [self.transaction.store_create(e) for e in reversed(added_elements)]
         return result

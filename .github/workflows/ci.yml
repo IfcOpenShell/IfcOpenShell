@@ -43,12 +43,12 @@ jobs:
       CLICOLOR_FORCE: "1"
       CMAKE_COLOR_DIAGNOSTICS: "ON"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
             submodules: recursive
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: 3.11
 
@@ -257,13 +257,15 @@ jobs:
           cd ../ifcdiff && make test || ERROR=1
           cd ../ifcpatch && make test || ERROR=1
           pip install -e ../ifc5d --no-deps
-          pip install odfpy xlsxwriter
+          pip install odfpy openpyxl
           cd ../ifc5d && make test || ERROR=1
           pip install -e ../ifcquery --no-deps
           cd ../ifcquery && make test || ERROR=1
           pip install -e ../ifcedit --no-deps
           cd ../ifcedit && make test || ERROR=1
-          pip install mcp
+          # Pinned <2: mcp 2.0.0 renamed mcp.server.fastmcp.FastMCP to
+          # mcp.server.mcpserver.MCPServer, which ifcmcp doesn't support yet.
+          pip install "mcp>=1.0,<2"
           pip install -e ../ifcmcp --no-deps
           cd ../ifcmcp && make test || ERROR=1
           pip install -e ../ifctester --no-deps

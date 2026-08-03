@@ -112,76 +112,84 @@ def assign_cost_item_quantity(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "cost_item": cost_item,
-        "products": products or [],
-        "prop_name": prop_name,
-        "formula": formula,
-        "ifc_class": ifc_class,
-    }
-    return usecase.execute()
+    return usecase.execute(
+        cost_item=cost_item,
+        products=products or [],
+        prop_name=prop_name,
+        formula=formula,
+        ifc_class=ifc_class,
+    )
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        if self.settings["prop_name"] or self.settings["formula"]:
-            self.quantities = set(self.settings["cost_item"].CostQuantities or [])
-        for product in self.settings["products"]:
-            if product.is_a("IfcSpatialElement"):
+    def execute(
+        self,
+        cost_item: ifcopenshell.entity_instance,
+        products: list[ifcopenshell.entity_instance],
+        prop_name: str,
+        formula: str,
+        ifc_class: str,
+    ):
+        self.cost_item = cost_item
+        self.prop_name = prop_name
+        if self.prop_name or formula:
+            self.quantities = set(cost_item.CostQuantities or [])
+        for product in products:
+            if product.is_a("IfcSpatialElement") and not product.is_a("IfcSpace"):
                 continue
-            self.assign_cost_control(related_object=product, cost_item=self.settings["cost_item"])
-            if self.settings["formula"]:
-                tree = ast.parse(self.settings["formula"], mode="eval")
+            ifcopenshell.api.control.assign_control(
+                self.file,
+                related_objects=[product],
+                relating_control=cost_item,
+            )
+            if formula:
+                tree = ast.parse(formula, mode="eval")
                 collector = VariableExtractor()
                 collector.visit(tree)
                 variables = collector.variables
 
+                values: dict[str, float | None] = {}
                 for variable in variables:
                     getter = self.get_value_from_pset if "." in variable else self.get_value_from_qset
                     value = getter(product, variable)
+                    values[variable] = value
 
-                if value is None:
-                    print(
-                        f"WARNING: Variable '{variable}' in product '{product.Name}' "
-                        f"is missing (None). Check Pset/Qset or property name."
-                    )
-                elif value == 0:
-                    print(
-                        f"WARNING: Variable '{variable}' in product '{product.Name}' "
-                        f"has value 0. Verify if this is correct."
-                    )
+                    if value is None:
+                        print(
+                            f"WARNING: Variable '{variable}' in product '{product.Name}' "
+                            f"is missing (None). Check Pset/Qset or property name."
+                        )
+                    elif value == 0:
+                        print(
+                            f"WARNING: Variable '{variable}' in product '{product.Name}' "
+                            f"has value 0. Verify if this is correct."
+                        )
 
                 evaluator = FormulaEvaluator(values)
                 result = evaluator.visit(tree.body)
 
                 new_quantity = None
                 for quantity in self.quantities:
-                    if (
-                        quantity.Formula == self.settings["formula"] and len(self.settings["products"]) == 1
-                    ):  # Todo improve it
+                    if quantity.Formula == formula and len(products) == 1:  # Todo improve it
                         new_quantity = quantity
-                        self.settings["ifc_class"] = quantity.is_a()
+                        ifc_class = quantity.is_a()
                         continue
                 if new_quantity is None:
-                    new_quantity = self.file.create_entity(self.settings["ifc_class"], Name="Unnamed")
-                    new_quantity.Formula = self.settings["formula"]
+                    new_quantity = self.file.create_entity(ifc_class, Name="Unnamed")
+                    new_quantity.Formula = formula
                     self.quantities.add(new_quantity)
 
                 new_quantity[3] = result
                 continue
 
-            if self.settings["prop_name"]:
-                if (
-                    self.settings["cost_item"].CostQuantities
-                    and self.settings["cost_item"].CostQuantities[0].Name.lower() != self.settings["prop_name"].lower()
-                ):
+            if self.prop_name:
+                if cost_item.CostQuantities and cost_item.CostQuantities[0].Name.lower() != self.prop_name.lower():
                     continue
                 self.add_quantity_from_related_object(product)
-        if self.settings["prop_name"] or self.settings["formula"]:
-            self.settings["cost_item"].CostQuantities = list(self.quantities)
+        if self.prop_name or formula:
+            cost_item.CostQuantities = list(self.quantities)
         else:
             self.update_cost_item_count()
 
@@ -189,7 +197,7 @@ class Usecase:
         self,
         product: ifcopenshell.entity_instance,
         v: str,
-    ) -> float:
+    ) -> float | None:
         pset_name = v.split(".")[0]
         pset = ifcopenshell.util.element.get_pset(product, pset_name)
         pset_property_name = v.split(".")[1]
@@ -199,19 +207,10 @@ class Usecase:
         self,
         product: ifcopenshell.entity_instance,
         v: str,
-    ) -> float:
+    ) -> float | None:
         qtos = ifcopenshell.util.element.get_psets(product, qtos_only=True)
         quantities = next(iter(qtos.values()), {})
         return (quantities or {}).get(v, None)
-
-    def assign_cost_control(
-        self, related_object: ifcopenshell.entity_instance, cost_item: ifcopenshell.entity_instance
-    ) -> ifcopenshell.entity_instance:
-        return ifcopenshell.api.control.assign_control(
-            self.file,
-            related_objects=[related_object],
-            relating_control=cost_item,
-        )
 
     def add_quantity_from_related_object(self, element: ifcopenshell.entity_instance) -> None:
         for relationship in element.IsDefinedBy:
@@ -222,23 +221,24 @@ class Usecase:
         if not qto.is_a("IfcElementQuantity"):
             return
         for prop in qto.Quantities:
-            if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == self.settings["prop_name"].lower():
+            if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == self.prop_name.lower():
                 self.quantities.add(prop)
 
     def update_cost_item_count(self):
+        cost_item = self.cost_item
         # This is a bold assumption
         # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
-        if not self.settings["cost_item"].CostQuantities:
+        if not cost_item.CostQuantities:
             ifcopenshell.api.cost.add_cost_item_quantity(
                 self.file,
-                cost_item=self.settings["cost_item"],
+                cost_item=cost_item,
                 ifc_class="IfcQuantityCount",
             )
-        if len(self.settings["cost_item"].CostQuantities) == 1:
-            quantity = self.settings["cost_item"].CostQuantities[0]
+        if len(cost_item.CostQuantities) == 1:
+            quantity = cost_item.CostQuantities[0]
             if quantity.is_a("IfcQuantityCount"):
                 count = 0
-                for rel in self.settings["cost_item"].Controls:
+                for rel in cost_item.Controls:
                     for obj in rel.RelatedObjects:
                         # Only increment if not a resource
                         if not obj.is_a("IfcConstructionResource"):
@@ -256,7 +256,7 @@ OPERATORS = {
 }
 
 
-def build_full_name(node):
+def build_full_name(node: ast.expr) -> str:
     # used for variables with dots
     parts = []
     while isinstance(node, ast.Attribute):
@@ -270,33 +270,33 @@ def build_full_name(node):
 
 
 class VariableExtractor(ast.NodeVisitor):
-    def __init__(self):
-        self.variables = set()
+    def __init__(self) -> None:
+        self.variables: set[str] = set()
 
-    def visit_Name(self, node):
+    def visit_Name(self, node: ast.Name) -> None:
         self.variables.add(node.id)
 
-    def visit_Attribute(self, node):
+    def visit_Attribute(self, node: ast.Attribute) -> None:
         self.variables.add(build_full_name(node))
 
 
 class FormulaEvaluator(ast.NodeVisitor):
-    def __init__(self, values):
+    def __init__(self, values: dict[str, float | None]):
         self.values = values
 
-    def visit_BinOp(self, node):
+    def visit_BinOp(self, node: ast.BinOp) -> float:
         left = self.visit(node.left)
         right = self.visit(node.right)
         return OPERATORS[type(node.op)](left, right)  # ty: ignore[too-many-positional-arguments]
 
-    def visit_Name(self, node):
+    def visit_Name(self, node: ast.Name) -> float | None:
         return self.values[node.id]
 
-    def visit_Attribute(self, node):
+    def visit_Attribute(self, node: ast.Attribute) -> float | None:
         return self.values[build_full_name(node)]
 
-    def visit_Constant(self, node):
+    def visit_Constant(self, node: ast.Constant) -> Any:
         return node.value
 
-    def generic_visit(self, node):
+    def generic_visit(self, node: ast.AST) -> Any:
         raise ValueError(f"Operation not permitted: {type(node).__name__}")

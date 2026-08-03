@@ -89,6 +89,9 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
         x = np.array((1, 0, 0))
         o = placement.Location.Coordinates
 
+    else:
+        assert False, placement
+
     return a2p(o, z, x)
 
 

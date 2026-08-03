@@ -124,6 +124,9 @@ class Pset(bonsai.core.tool.Pset):
             return bpy.context.scene.GroupPsetProperties
         elif obj_type == "Zone":
             return bpy.context.scene.ZonePsetProperties
+        elif obj_type == "Cost":
+            # No psets for cost items currently.
+            assert False, obj_type
         assert_never(obj_type)
 
     @classmethod

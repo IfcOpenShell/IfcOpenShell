@@ -94,9 +94,15 @@ def list_functions(module: str) -> list[dict]:
 
 
 def function_docs(module: str, function: str) -> dict:
-    """Full documentation for a single API function.
+    """Show the full documentation for one ifcopenshell.api function.
 
-    Returns a dict with: module, function, description, params (with types/defaults/descriptions), return_type
+    Returns the summary and long description, every parameter with its type,
+    default and description, and the return type. Read this before calling
+    ``run_api()`` so that parameter names and value types are correct.
+
+    :param module: API module name, for example ``'root'``.
+    :param function: Function name within the module, for example
+        ``'create_entity'``.
     """
     fn = _get_underlying_function(module, function)
     if fn is None:
