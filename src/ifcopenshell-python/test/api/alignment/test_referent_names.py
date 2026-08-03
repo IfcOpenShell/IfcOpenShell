@@ -105,7 +105,18 @@ def test_with_default_names(default_names_alignment):
     v_nest = ifcopenshell.api.alignment.update_key_point_referents(file, vertical)
 
     expected_h = ["P.O.B.", "P.C.", "P.T.", "P.C.", "P.T.", "P.C.", "P.T.", "P.O.E."]
-    expected_v = ["V.P.O.B.", "P.V.C.", "P.V.T.", "P.V.C.", "P.V.T.", "P.V.C.", "P.V.T.", "P.V.C.", "P.V.T.", "V.P.O.E."]
+    expected_v = [
+        "V.P.O.B.",
+        "P.V.C.",
+        "P.V.T.",
+        "P.V.C.",
+        "P.V.T.",
+        "P.V.C.",
+        "P.V.T.",
+        "P.V.C.",
+        "P.V.T.",
+        "V.P.O.E.",
+    ]
 
     assert [r.Name.split(" (")[0] for r in h_nest.RelatedObjects] == expected_h
     assert [r.Name.split(" (")[0] for r in v_nest.RelatedObjects] == expected_v
