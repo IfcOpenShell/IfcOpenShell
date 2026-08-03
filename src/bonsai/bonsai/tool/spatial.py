@@ -1363,12 +1363,29 @@ class Spatial(bonsai.core.tool.Spatial):
 
         # Build the geometry in the space's local coordinate system so the IFC
         # representation is relative to the object's ObjectPlacement.
-        local_poly_si = shapely.affinity.translate(poly_si, -origin.x, -origin.y)
+        # Use the full inverse of the object's placement matrix so rotated spaces
+        # keep the correct footprint orientation.
+        matrix_inv = np.array(obj.matrix_world.inverted())
+        # shapely.affine_transform expects [a, b, d, e, xoff, yoff]
+        # where x' = a*x + b*y + xoff, y' = d*x + e*y + yoff.
+        affine_params = [
+            matrix_inv[0, 0],
+            matrix_inv[0, 1],
+            matrix_inv[1, 0],
+            matrix_inv[1, 1],
+            matrix_inv[0, 3],
+            matrix_inv[1, 3],
+        ]
+        local_poly_si = shapely.affinity.affine_transform(poly_si, affine_params)
         local_base_z = base_z - origin.z
 
         def localize_plane(plane):
             point, normal = plane
-            return (np.array(point) - np.array([origin.x, origin.y, origin.z]), normal)
+            local_point = matrix_inv @ np.array([*point, 1.0])
+            rotation_inv = matrix_inv[:3, :3]
+            local_normal = rotation_inv @ np.array(normal)
+            local_normal = local_normal / np.linalg.norm(local_normal)
+            return (local_point[:3], local_normal)
 
         local_top_planes = [localize_plane(p) for p in (top_planes or [])]
         local_bottom_planes = [localize_plane(p) for p in (bottom_planes or [])]

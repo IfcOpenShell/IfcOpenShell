@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
@@ -608,6 +610,78 @@ class TestSpaceVolumeStrategy(NewFile):
         assert strategy == "EXTRUDE_CLIP"
         assert len(top) == 1
         assert len(bottom) == 0
+
+
+class TestRegenerateSpaceFromRealIfc2x3(NewFile):
+    def load_house_with_garage(self):
+        filepath = (
+            Path(__file__).parents[3]
+            / "ifcopenshell-python"
+            / "test"
+            / "IfcRelSpaceBoundary_TestFiles"
+            / "IfcRelSpaceBoundary2ndLevel"
+            / "HouseWithGarage_AC22_IFC2X3.ifc"
+        ).resolve()
+        bpy.ops.bim.load_project(filepath=filepath.as_posix())
+        ifc = tool.Ifc.get()
+        return ifc
+
+    def _regenerate_space(self, ifc, space_id):
+        space = ifc.by_id(space_id)
+        obj = tool.Ifc.get_object(space)
+        assert obj
+        import numpy as np
+
+        original_verts = np.array([obj.matrix_world @ v.co for v in obj.data.vertices])
+        original_bounds = (
+            original_verts[:, 0].min(),
+            original_verts[:, 0].max(),
+            original_verts[:, 1].min(),
+            original_verts[:, 1].max(),
+            original_verts[:, 2].min(),
+            original_verts[:, 2].max(),
+        )
+
+        # Delete existing related IfcRelSpaceBoundary as in the manual repro.
+        for b in list(space.BoundedBy or []):
+            ifcopenshell.api.boundary.remove_boundary(ifc, b)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.update()
+
+        # Patch Spatial helpers so generate_space uses the active IfcSpace.
+        original_get_selected_objects = tool.Spatial.get_selected_objects
+        original_get_active_obj = tool.Spatial.get_active_obj
+        try:
+            tool.Spatial.get_selected_objects = classmethod(lambda cls: [obj])
+            tool.Spatial.get_active_obj = classmethod(lambda cls: obj)
+            bpy.ops.bim.generate_space()
+        finally:
+            tool.Spatial.get_selected_objects = original_get_selected_objects
+            tool.Spatial.get_active_obj = original_get_active_obj
+
+        regen_verts = np.array([obj.matrix_world @ v.co for v in obj.data.vertices])
+        return original_bounds, (
+            regen_verts[:, 0].min(),
+            regen_verts[:, 0].max(),
+            regen_verts[:, 1].min(),
+            regen_verts[:, 1].max(),
+            regen_verts[:, 2].min(),
+            regen_verts[:, 2].max(),
+        )
+
+    def test_regenerate_space_5710_keeps_world_location(self):
+        ifc = self.load_house_with_garage()
+        original, regen = self._regenerate_space(ifc, 5710)
+        for o, r in zip(original, regen):
+            assert r == pytest.approx(o, abs=0.02)
+
+    def test_regenerate_space_2363_keeps_world_location(self):
+        ifc = self.load_house_with_garage()
+        original, regen = self._regenerate_space(ifc, 2363)
+        for o, r in zip(original, regen):
+            assert r == pytest.approx(o, abs=0.02)
 
 
 class TestGenerateSpaceLocation(NewFile):
