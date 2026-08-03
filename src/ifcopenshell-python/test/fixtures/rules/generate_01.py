@@ -11,4 +11,5 @@ for i, box_alignment in enumerate(["top-left", "center", "invalid", "CENTER"]):
         box_alignment,
     )
 
-    f.write(f"{'pass' if i in (0,1) else 'fail'}-{i}-box-alignment-{box_alignment}-ifc2x3.ifc")
+    suffix = "-uppercase" if box_alignment == "CENTER" else ""
+    f.write(f"{'pass' if i in (0,1,3) else 'fail'}-{i}-box-alignment-{box_alignment}{suffix}-ifc2x3.ifc")
