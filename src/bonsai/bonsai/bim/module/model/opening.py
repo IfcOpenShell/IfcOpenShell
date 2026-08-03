@@ -39,7 +39,7 @@ import numpy as np
 import shapely
 from bpy.types import Operator, SpaceView3D
 from gpu_extras.batch import batch_for_shader
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Vector
 
 import bonsai.core.geometry
 import bonsai.tool as tool
@@ -309,7 +309,7 @@ class FilledOpeningGenerator:
                 else:
                     new_matrix.translation.x = point_on_side_axis.x
                     new_matrix.translation.y = point_on_side_axis.y
-                    new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
+                    new_matrix = new_matrix @ Euler((0, 0, radians(180.0))).to_matrix().to_4x4()
 
                 if should_set_z_level:
                     if filling.is_a("IfcDoor"):
@@ -570,10 +570,10 @@ class FilledOpeningGenerator:
         # making sure if min_x or min_z != 0 to shift the opening accordingly
         # to prevent something like #2784
         if not has_width_attribute:
-            opening_position.x = min(v[0] for v in filling_obj.bound_box)
+            opening_position.x = min(v[0] for v in filling_obj.bound_box) / unit_scale
 
         if not has_height_attribute:
-            opening_position.z = min(v[2] for v in filling_obj.bound_box)
+            opening_position.z = min(v[2] for v in filling_obj.bound_box) / unit_scale
 
         extrusion = shape_builder.extrude(
             shape_builder.rectangle(size=opening_size),
@@ -725,6 +725,7 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.flip_object(obj, "XY")
             ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), filled_opening, obj.matrix_world)
             tool.Geometry.reload_representation(filled_object)
+
 
         return {"FINISHED"}
 

@@ -904,7 +904,7 @@ class ShapeBuilder:
 
     def mirror_2d_point(
         self,
-        point_2d: VectorType,
+        point: VectorType,
         mirror_axes: VectorType = (1.0, 1.0),
         mirror_point: VectorType = (0.0, 0.0),
     ) -> np.ndarray:
@@ -920,9 +920,10 @@ class ShapeBuilder:
         """
         mirror_axes: np.ndarray = np.where(np.array(mirror_axes) > 0, -1, 1)
         mirror_point: np.ndarray = np.array(mirror_point)
-        relative_point = point_2d - mirror_point
+        relative_point = point[0:2] - mirror_point
         relative_point = relative_point * mirror_axes
         point_2d_res = relative_point + mirror_point
+        point_2d_res = np.append(point_2d_res, point[2:])
         return point_2d_res
 
     def create_axis2_placement_3d(
@@ -1042,7 +1043,10 @@ class ShapeBuilder:
         np_XY = slice(2)
         np_X, np_Y, np_Z = 0, 1, 2
 
-        multiple_objects = isinstance(curve_or_item, collections.abc.Iterable)
+        # Use list/tuple check rather than Iterable — entity_instance objects are iterable
+        # over their IFC attributes, so isinstance(entity, Iterable) is always True and
+        # would wrongly treat a single entity as a sequence of attribute values.
+        multiple_objects = isinstance(curve_or_item, (list, tuple))
         curve_or_item = [curve_or_item] if not multiple_objects else curve_or_item
         multiple_transformations = not isinstance(mirror_axes[0], (float, int))
         mirror_axes_data = [mirror_axes] if not multiple_transformations else mirror_axes
@@ -1050,6 +1054,8 @@ class ShapeBuilder:
         processed_objects: list[ifcopenshell.entity_instance] = []
         for curve_or_item_el in curve_or_item:
             for mirror_axes in mirror_axes_data:
+                axis_flip_count = sum([a > 0.0 for a in mirror_axes])
+
                 c = (
                     ifcopenshell.util.element.copy_deep(self.file, curve_or_item_el)
                     if create_copy
@@ -1083,12 +1089,19 @@ class ShapeBuilder:
                     c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                 elif c.is_a("IfcExtrudedAreaSolid"):
-                    placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(c.Position)[:3, :3]
-                    base_position = c.Position.Location.Coordinates
-                    # TODO: add support for Z-axis too
-                    new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
-                    new_position = np_to_3d(new_position, base_position[np_Z])
-                    c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
+                    if c.Position is not None:
+                        placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(c.Position)[:3, :3]
+                        base_position = c.Position.Location.Coordinates
+                        # TODO: add support for Z-axis too
+                        new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
+                        new_position = np_to_3d(new_position, base_position[np_Z])
+                        c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
+                    else:
+                        # Position is optional; None means identity (origin, no rotation).
+                        # Profile coords are already in the parent frame — just mirror them.
+                        placement_matrix_ = np.eye(3)
+                        base_position = np.zeros(3)
+                        new_position = np.zeros(3)
 
                     # TODO: add support for Z-axis too
                     self.translate(c.SweptArea.OuterCurve, base_position[np_XY])
@@ -1131,6 +1144,43 @@ class ShapeBuilder:
                     c.Trim1[0].Coordinates, c.Trim2[0].Coordinates = trim_coords
 
                     self.mirror(c.BasisCurve, mirror_axes, mirror_point)
+                elif c.is_a("IfcPolygonalFaceSet"):
+                    if c.file.get_total_inverses(c.Coordinates) > 1:
+                        # if Coordinates is used more than once, this probably means that another representation item
+                        # is referencing the same coordinate list. To not disturb this other item, clone the coordinates
+                        new_coords_elem = ifcopenshell.util.element.copy(c.file, c.Coordinates)
+                        c.Coordinates = new_coords_elem
+                    new_coords = []
+                    for coord in c.Coordinates.CoordList:
+                        new_coord_2d = self.mirror_2d_point([coord[0], coord[1]], mirror_axes, mirror_point)
+                        new_coords.append([float(new_coord_2d[0]), float(new_coord_2d[1]), float(coord[2])])
+                    c.Coordinates.CoordList = new_coords
+
+                    if (axis_flip_count % 2) != 0:
+                        for face in c.Faces:
+                            new_indices = []
+                            for index in face.CoordIndex:
+                                new_indices.append(int(index))
+                            new_indices.reverse()
+                            face.CoordIndex = new_indices
+
+                            if face.is_a("IfcIndexedPolygonalFaceWithVoids"):
+                                new_inner_indices = []
+                                for inner_loop in face.InnerCoordIndices:
+                                    new_indices = []
+                                    for index in inner_loop:
+                                        new_indices.append(index)
+                                    new_indices.reverse()
+                                    new_inner_indices.append(new_indices)
+                                face.InnerCoordIndices = new_inner_indices
+                elif c.is_a("IfcBoundingBox"):
+                    old_corner = c.Corner.Coordinates
+                    new_corner_2d = self.mirror_2d_point([old_corner[0], old_corner[1]], mirror_axes, mirror_point)
+                    x_correction = c.XDim if mirror_axes[0] > 0.0 else 0.0
+                    y_correction = c.YDim if mirror_axes[1] > 0.0 else 0.0
+                    c.Corner.Coordinates = [float(new_corner_2d[0] - x_correction), float(new_corner_2d[1]) - y_correction, old_corner[2]]
+                elif c.is_a("IfcGeometricSet"):
+                    self.mirror(c.Elements, mirror_axes, mirror_point)
                 else:
                     raise Exception(f"{c} is not supported for mirror() method.")
 

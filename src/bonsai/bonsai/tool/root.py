@@ -102,19 +102,72 @@ class Root(bonsai.core.tool.Root):
                 exclude_callback=exclude_callback,
                 copied_entities=copied_entities,
             )
-        elif dest.is_a("IfcTypeProduct"):
-            if not source.RepresentationMaps:
-                return copied_entities
-            dest.RepresentationMaps = [
+
+            for aspect in source.Representation.HasShapeAspects:
                 ifcopenshell.util.element.copy_deep(
                     tool.Ifc.get(),
-                    m,
+                    aspect,
                     exclude=["IfcGeometricRepresentationContext"],
                     exclude_callback=exclude_callback,
                     copied_entities=copied_entities,
                 )
-                for m in source.RepresentationMaps
-            ]
+
+            for representation in source.Representation.Representations:
+                for item in representation.Items:
+                    if item.StyledByItem:
+                        for styled_by in item.StyledByItem:
+                            new_styled_by = ifcopenshell.util.element.copy(tool.Ifc.get(), styled_by)
+                            new_styled_by.Item = copied_entities[styled_by.Item.id()]
+                            copied_entities[styled_by.id()] = new_styled_by
+
+        elif dest.is_a("IfcTypeProduct"):
+            if not source.RepresentationMaps:
+                return copied_entities
+
+            # Copy representation maps while preserving mapped representation structures
+            new_maps = []
+            for rep_map in source.RepresentationMaps:
+                source_rep = rep_map.MappedRepresentation
+
+                # Copy the map itself
+                new_map = ifcopenshell.util.element.copy(tool.Ifc.get(), rep_map)
+
+                # Handle the mapped representation - preserve mapping structure if present
+                if (source_rep.RepresentationType == 'MappedRepresentation' and
+                    len(source_rep.Items) == 1 and
+                    source_rep.Items[0].is_a("IfcMappedItem")):
+                    # This is a mapped representation - preserve the structure
+                    new_rep = ifcopenshell.util.element.copy(tool.Ifc.get(), source_rep)
+                    new_rep.Items = [ifcopenshell.util.element.copy(tool.Ifc.get(), item) for item in source_rep.Items]
+                    new_map.MappedRepresentation = new_rep
+                else:
+                    # Not a mapped representation - use copy_deep as before
+                    new_map.MappedRepresentation = ifcopenshell.util.element.copy_deep(
+                        tool.Ifc.get(),
+                        source_rep,
+                        exclude=["IfcGeometricRepresentationContext"],
+                        exclude_callback=exclude_callback,
+                        copied_entities=copied_entities,
+                    )
+
+                for aspect in rep_map.HasShapeAspects:
+                    ifcopenshell.util.element.copy_deep(
+                        tool.Ifc.get(),
+                        aspect,
+                        exclude=["IfcGeometricRepresentationContext"],
+                        exclude_callback=exclude_callback,
+                        copied_entities=copied_entities,
+                    )
+
+                for item in rep_map.MappedRepresentation.Items:
+                    if item.StyledByItem:
+                        for styled_by in item.StyledByItem:
+                            new_styled_by = ifcopenshell.util.element.copy(tool.Ifc.get(), styled_by)
+                            new_styled_by.Item = copied_entities[styled_by.Item.id()]
+                            copied_entities[styled_by.id()] = new_styled_by
+
+                new_maps.append(new_map)
+            dest.RepresentationMaps = new_maps
         return copied_entities
 
     @classmethod
