@@ -48,7 +48,7 @@ def _build_shapes_dict(ifc_file, elements):
     return shapes
 
 
-def _add_extruded_body(ifc_file, element, coords_2d, depth, z_offset=0.0):
+def _add_extruded_body(ifc_file, element, coords_2d, depth, z_offset=0.0, direction=(0.0, 0.0, 1.0)):
     """Add a body representation (extruded polyline) to an element."""
     if not ifc_file.by_type("IfcProject"):
         ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
@@ -76,7 +76,7 @@ def _add_extruded_body(ifc_file, element, coords_2d, depth, z_offset=0.0):
         ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
         ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
     )
-    direction = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+    direction = ifc_file.createIfcDirection(direction)
     solid = ifc_file.createIfcExtrudedAreaSolid(profile, placement, direction, depth)
     rep = ifc_file.create_entity(
         "IfcShapeRepresentation",
@@ -221,3 +221,47 @@ class TestGetVerticalBoundingPlanes(test.bootstrap.IFC4):
         assert strategy == "EXTRUDE_CLIP"
         assert len(planes) == 1
         assert np.allclose(planes[0][0], [0.0, 0.0, 3.0], atol=0.1)
+
+
+class TestDetectSpaceVolumeStrategy(test.bootstrap.IFC4):
+    def test_vertical_walls_flat_slab_returns_extrude_clip(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, slab, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 0.3, z_offset=3.0)
+        shapes = _build_shapes_dict(self.file, [wall, slab])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, top, bottom = subject.detect_space_volume_strategy(
+            self.file, shapes, tree, shapely.box(-5, -5, 5, 5), 0.0, [wall]
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(top) == 1
+        assert len(bottom) == 0
+
+    def test_vertical_walls_flat_slab_returns_extrude_clip_from_rl_origin(self):
+        # Same as above but rays cast from an RL cut elevation (z=1.0).
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, slab, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 0.3, z_offset=3.0)
+        shapes = _build_shapes_dict(self.file, [wall, slab])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, top, bottom = subject.detect_space_volume_strategy(
+            self.file, shapes, tree, shapely.box(-5, -5, 5, 5), 0.0, [wall], start_z=1.0
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(top) == 1
+        assert len(bottom) == 0
+
+    def test_sloped_wall_returns_brep(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 6.0, direction=(0.0, 0.5, 1.0))
+        shapes = _build_shapes_dict(self.file, [wall])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, _, _ = subject.detect_space_volume_strategy(
+            self.file, shapes, tree, shapely.box(-4, -4, 4, 4), 0.0, [wall]
+        )
+        assert strategy == "BREP"

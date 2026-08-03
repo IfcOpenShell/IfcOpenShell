@@ -345,3 +345,60 @@ def get_vertical_bounding_planes(
         planes.append((anchor, mean_normal))
 
     return "EXTRUDE_CLIP", planes
+
+
+def detect_space_volume_strategy(
+    ifc_file: ifcopenshell.file,
+    shapes: dict,
+    tree: ifcopenshell.geom.tree,
+    space_polygon: shapely.Polygon,
+    base_z: float,
+    bounding_walls: list[ifcopenshell.entity_instance],
+    start_z: Optional[float] = None,
+) -> tuple[str, Optional[list], Optional[list]]:
+    """Decide whether a space can be represented as a clipped extrusion.
+
+    A space is "EXTRUDE_CLIP" when all bounding walls have vertical side faces
+    and the detected top/bottom bounding planes are few and piecewise-planar
+    (0-2 top planes, 0-1 bottom plane). Otherwise it is "BREP".
+
+    :param ifc_file: The IFC file.
+    :param shapes: Cached element shapes.
+    :param tree: Geometry tree with bounding elements.
+    :param space_polygon: Space footprint in world XY.
+    :param base_z: Base elevation in SI.
+    :param bounding_walls: List of wall elements bounding the space.
+    :param start_z: Ray-cast origin elevation (RL cut level) in SI.
+    :return: ("EXTRUDE_CLIP", top_planes, bottom_planes) or ("BREP", None, None).
+    """
+    tol = 0.02
+    for wall in bounding_walls:
+        shape_data = shapes.get(wall.id())
+        if not shape_data:
+            continue
+        verts = shape_data["verts"]
+        faces = shape_data["faces"]
+        if len(verts) == 0 or len(faces) == 0:
+            continue
+        v1 = verts[faces[:, 1]] - verts[faces[:, 0]]
+        v2 = verts[faces[:, 2]] - verts[faces[:, 0]]
+        normals = np.cross(v1, v2)
+        norms = np.linalg.norm(normals, axis=1)
+        normals = normals[norms > 1e-8]
+        if len(normals) == 0:
+            continue
+        normals = normals / np.linalg.norm(normals, axis=1)[:, np.newaxis]
+        side_mask = np.abs(normals[:, 2]) < 0.5
+        if np.any(side_mask) and np.mean(np.abs(normals[side_mask, 2])) > tol:
+            return "BREP", None, None
+
+    _, top_planes = get_vertical_bounding_planes(ifc_file, shapes, tree, space_polygon, base_z, "UP", start_z=start_z)
+
+    _, bottom_planes = get_vertical_bounding_planes(
+        ifc_file, shapes, tree, space_polygon, base_z, "DOWN", start_z=start_z
+    )
+
+    if len(top_planes) > 2 or len(bottom_planes) > 1:
+        return "BREP", None, None
+
+    return "EXTRUDE_CLIP", top_planes, bottom_planes
