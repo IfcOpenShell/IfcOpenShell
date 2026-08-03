@@ -55,6 +55,7 @@ import sys
 import types
 from collections.abc import Iterator
 from logging import Handler, Logger
+from pathlib import Path
 from types import EllipsisType
 from typing import TYPE_CHECKING, Any, Optional, Union, TypeAlias, Literal
 from typing_extensions import TypedDict, NotRequired
@@ -414,7 +415,7 @@ def get_entity_attributes(schema: schema_definition, entity: str) -> tuple[entit
     return entity_attrs
 
 
-def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger], express_rules=False) -> None:
+def validate(f: ifcopenshell.file | str | Path, logger: Logger | json_logger, express_rules: bool = False) -> None:
     """
     For an IFC population model `f` (or filepath to such a file) validate whether the entity attribute values are correctly supplied. As this
     is a function that is applied after a file has been parsed, certain types of errors in syntax, duplicate
