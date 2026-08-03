@@ -31,7 +31,7 @@ import ifcopenshell.util.shape
 import test.bootstrap
 
 
-def _add_extruded_body(ifc_file, element, coords_2d, depth, z_offset=0.0):
+def _add_extruded_body(ifc_file, element, coords_2d, depth, z_offset=0.0, direction=(0.0, 0.0, 1.0)):
     """Add a body representation (extruded polyline) to an element."""
     if not ifc_file.by_type("IfcProject"):
         ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
@@ -59,7 +59,7 @@ def _add_extruded_body(ifc_file, element, coords_2d, depth, z_offset=0.0):
         ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
         ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
     )
-    direction = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+    direction = ifc_file.createIfcDirection((float(direction[0]), float(direction[1]), float(direction[2])))
     solid = ifc_file.createIfcExtrudedAreaSolid(profile, placement, direction, depth)
     rep = ifc_file.create_entity(
         "IfcShapeRepresentation",
@@ -265,6 +265,43 @@ class TestAutoGenerateBoundaries(test.bootstrap.IFC4):
         assert boundary.RelatingSpace == space
         assert boundary.RelatedBuildingElement == wall
         assert boundary.PhysicalOrVirtualBoundary == "PHYSICAL"
+
+    def test_generates_boundary_for_sloped_wall(self):
+        # A wall whose inner face is tilted away from the space (extrusion
+        # direction (0, 0.5, 1.0) makes the face ~153 deg from the seed face
+        # normal) previously matched no seed face, so no boundary was
+        # generated. The relaxed fallback match should attribute the space's
+        # north face to the wall.
+        space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        _add_extruded_body(self.file, space, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, wall, [[-5, 5], [5, 5], [5, 5.2], [-5, 5.2]], 3.0, direction=(0.0, 0.5, 1.0))
+        shapes = _build_shapes_dict(self.file, [space, wall])
+        result = subject.auto_generate_boundaries(self.file, space, shapes, "IfcRelSpaceBoundary")
+        assert isinstance(result, list)
+        wall_boundaries = _boundaries_for(result, wall)
+        assert len(wall_boundaries) == 1
+        assert wall_boundaries[0].PhysicalOrVirtualBoundary == "PHYSICAL"
+        assert _outer_boundary_area(wall_boundaries[0]) == pytest.approx(26.83, abs=1e-2)
+
+    def test_generates_boundary_for_sloped_roof(self):
+        # A roof slab extruded at a tilt so its underside is a sloped plane
+        # (~163 deg from the seed top face normal) cutting across the space's
+        # top face. Previously no seed face matched it, so no boundary was
+        # generated.
+        space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace")
+        roof = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, space, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(
+            self.file, roof, [[-5, -7], [5, -7], [5, -5], [-5, -5]], 2.0, z_offset=3.2, direction=(0.0, 1.0, 0.3)
+        )
+        shapes = _build_shapes_dict(self.file, [space, roof])
+        result = subject.auto_generate_boundaries(self.file, space, shapes, "IfcRelSpaceBoundary")
+        assert isinstance(result, list)
+        roof_boundaries = _boundaries_for(result, roof)
+        assert len(roof_boundaries) == 1
+        assert roof_boundaries[0].PhysicalOrVirtualBoundary == "PHYSICAL"
+        assert _outer_boundary_area(roof_boundaries[0]) == pytest.approx(19.16, abs=1e-2)
 
     def test_wall_boundary_with_window_has_no_inner_boundary(self):
         space, wall, window = _add_wall_with_window(self.file)
