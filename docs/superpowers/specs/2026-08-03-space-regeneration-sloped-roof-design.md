@@ -37,6 +37,20 @@ boundary cannot be expressed as a clipped extrusion.
 └───────────────────┘ └───────────────────┘
 ```
 
+## Prior art
+
+- **CBIP** (Lilis et al.): constructive solid geometry approach that builds
+  space volumes as half-space intersections of bounding planes — the basis for
+  the parametric clipping path.
+- **Fichter et al. 2021**: ray-tracing method for automatic boundary
+  generation; motivates the use of `geom.tree.select_ray` for top/bottom plane
+  detection.
+- **Lilis et al. 2021**: semi-automatic boundary recognition; informs the
+  fallback to existing `boundary.auto_generate_boundaries` machinery.
+- **Ying & Lee 2019**: faceting of curved walls; motivates the B-rep fallback
+  for curved-in-plan walls that cannot be represented as vertical extruded
+  profiles.
+
 ## Detection criteria
 
 Use the parametric `IfcExtrudedAreaSolid` + `IfcBooleanClippingResult` path
@@ -133,3 +147,22 @@ For non-extrudable cases (sloped walls, curved roofs, etc.):
   back to the B-rep path.
 - If the B-rep path also fails, return an error string and leave the existing
   space representation unchanged.
+
+## Known limitations and non-goals
+
+- **Curved (single/double-curvature) roofs and domes** are handled only via the
+  B-rep fallback; they are not expressible as `IfcExtrudedAreaSolid` +
+  `IfcBooleanClippingResult` in this design.
+- The B-rep fallback produces **non-parametric** geometry: the resulting
+  `IfcFacetedBrep`/`IfcPolygonalFaceSet` cannot be re-edited parametrically by
+  the user afterwards. This is an accepted trade-off; the parametric path is
+  preferred whenever detection succeeds.
+- The B-rep fallback depends on `boundary.auto_generate_boundaries`, so it
+  inherits its assumptions: bounding elements must be related to the space and
+  the seed volume must intersect them. Gap-closing faces may produce
+  non-manifold output for degenerate envelopes; we accept this for
+  non-extrudable edge cases.
+- The parametric path requires a single closed outer footprint with optional
+  inner holes. Multi-region disconnected footprints are not supported and fall
+  back to B-rep.
+
