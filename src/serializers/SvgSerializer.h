@@ -43,6 +43,7 @@
 #include <BRepTopAdaptor_FClass2d.hxx>
 #include <BRepClass_FaceClassifier.hxx>
 #include <Geom_Plane.hxx>
+#include <Geom_Line.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <TopExp_Explorer.hxx>
