@@ -29,8 +29,11 @@ from __future__ import annotations
 from typing import Literal, Optional, Union
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.unit
 import numpy as np
 import shapely
 
@@ -402,3 +405,65 @@ def detect_space_volume_strategy(
         return "BREP", None, None
 
     return "EXTRUDE_CLIP", top_planes, bottom_planes
+
+
+def build_extruded_clipped_space(
+    ifc_file: ifcopenshell.file,
+    space_polygon: shapely.Polygon,
+    base_z: float,
+    top_planes: list[tuple[np.ndarray, np.ndarray]],
+    bottom_planes: list[tuple[np.ndarray, np.ndarray]],
+) -> ifcopenshell.entity_instance:
+    """Build an IfcExtrudedAreaSolid clipped to top/bottom planes.
+
+    :param ifc_file: The IFC file.
+    :param space_polygon: Footprint polygon in world XY.
+    :param base_z: Base elevation in SI.
+    :param top_planes: List of (point, normal) tuples for top clipping planes.
+    :param bottom_planes: List of (point, normal) tuples for bottom clipping planes.
+    :return: IfcBooleanClippingResult chain.
+    """
+    builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+    centroid = np.array([space_polygon.centroid.x, space_polygon.centroid.y])
+    exterior = [
+        (float(p[0] - centroid[0]) / unit_scale, float(p[1] - centroid[1]) / unit_scale)
+        for p in space_polygon.exterior.coords[:-1]
+    ]
+    inner_curves = []
+    for interior in space_polygon.interiors:
+        inner = [
+            (float(p[0] - centroid[0]) / unit_scale, float(p[1] - centroid[1]) / unit_scale)
+            for p in interior.coords[:-1]
+        ]
+        inner_curve = builder.polyline(inner, closed=True)
+        inner_curves.append(inner_curve)
+
+    outer_curve = builder.polyline(exterior, closed=True)
+    profile = builder.profile(outer_curve, inner_curves=inner_curves)
+
+    all_z = [base_z]
+    for point, _ in top_planes + bottom_planes:
+        all_z.append(float(point[2]))
+    min_z = min(all_z)
+    max_z = max(all_z)
+    height = max_z - min_z
+
+    extrusion = builder.extrude(
+        profile,
+        magnitude=height / unit_scale,
+        position=[(centroid[0] / unit_scale), (centroid[1] / unit_scale), min_z / unit_scale],
+    )
+
+    result = extrusion
+    for point, normal in top_planes + bottom_planes:
+        # clip_solid takes location in SI; it converts to project units internally.
+        result = ifcopenshell.api.geometry.clip_solid(
+            ifc_file,
+            item=result,
+            location=[float(point[i]) for i in range(3)],
+            normal=[float(normal[i]) for i in range(3)],
+        )
+
+    return result

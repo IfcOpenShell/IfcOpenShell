@@ -265,3 +265,16 @@ class TestDetectSpaceVolumeStrategy(test.bootstrap.IFC4):
             self.file, shapes, tree, shapely.box(-4, -4, 4, 4), 0.0, [wall]
         )
         assert strategy == "BREP"
+
+
+class TestBuildExtrudedClippedSpace(test.bootstrap.IFC4):
+    def test_shed_roof_clips_to_sloped_plane(self):
+        space_polygon = shapely.box(-5, -5, 5, 5)
+        top_plane = (np.array([0.0, 0.0, 4.0]), np.array([0.0, 0.0, 1.0]))
+        bottom_plane = (np.array([0.0, 0.0, 0.0]), np.array([0.0, 0.0, -1.0]))
+        item = subject.build_extruded_clipped_space(self.file, space_polygon, 0.0, [top_plane], [bottom_plane])
+        assert item.is_a("IfcBooleanClippingResult")
+        assert item.SecondOperand.is_a("IfcHalfSpaceSolid")
+        # Chain: bottom clip -> top clip -> IfcExtrudedAreaSolid.
+        assert item.FirstOperand.is_a("IfcBooleanClippingResult")
+        assert item.FirstOperand.FirstOperand.is_a("IfcExtrudedAreaSolid")
