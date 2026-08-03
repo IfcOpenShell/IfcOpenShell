@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import builtins
 import re
-from decimal import Decimal, InvalidOperation
+import warnings
 from functools import lru_cache
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
@@ -1011,29 +1011,22 @@ class Material(Facet):
         return MaterialResult(is_pass, reason)
 
 
-def to_finite_decimal(value: Any) -> Decimal:
-    try:
-        result = Decimal(str(value))
-    except InvalidOperation:
-        raise ValueError(f"Not a decimal value: {value!r}")
-    if not result.is_finite():
-        raise ValueError(f"Not a finite decimal value: {value!r}")
-    return result
-
-
-def get_fraction_digits(value: Any) -> int:
-    return max(0, -to_finite_decimal(value).normalize().as_tuple().exponent)
-
-
-def get_total_digits(value: Any) -> int:
-    scaled = to_finite_decimal(value).normalize().scaleb(get_fraction_digits(value))
-    return len(str(abs(int(scaled))))
+# Not supported by IDS: buildingSMART/IDS developer-guide.md.
+UNSUPPORTED_RESTRICTIONS = frozenset({"totalDigits", "fractionDigits", "whiteSpace"})
 
 
 class Restriction:
     def __init__(self, options=None, base="string"):
         self.base = base
         self.options = options or {}
+        self._warn_unsupported()
+
+    def _warn_unsupported(self):
+        for constraint in sorted(UNSUPPORTED_RESTRICTIONS & self.options.keys()):
+            warnings.warn(
+                f"IDS does not support the '{constraint}' restriction; it is not "
+                "enforced and will be ignored during validation."
+            )
 
     def parse(self, ids_dict):
         if not ids_dict:
@@ -1049,6 +1042,7 @@ class Restriction:
                 self.options[key] = value["@value"]
             else:
                 self.options[key] = [v["@value"] for v in value]
+        self._warn_unsupported()
         return self
 
     def asdict(self) -> dict[str, Any]:
@@ -1108,12 +1102,6 @@ class Restriction:
                         return False
                 elif constraint == "minInclusive":
                     if float(other) < float(value):
-                        return False
-                elif constraint == "totalDigits":
-                    if get_total_digits(other) > int(value):
-                        return False
-                elif constraint == "fractionDigits":
-                    if get_fraction_digits(other) > int(value):
                         return False
             except ValueError:
                 return False
