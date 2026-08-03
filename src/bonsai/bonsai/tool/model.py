@@ -2465,6 +2465,8 @@ class Model(bonsai.core.tool.Model):
             edges = ifcopenshell.util.shape.get_edges(geometry)
             boundary_lines = [shapely.LineString([v[e[0]], v[e[1]]]) for e in edges]
             unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+            if not hasattr(unioned_boundaries, "geoms"):
+                continue
             closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
             for polygon in closed_polygons.geoms:
                 polygons[curve] = polygon
@@ -2481,9 +2483,11 @@ class Model(bonsai.core.tool.Model):
                     outer_inner.setdefault(curve, []).append(curve2)
                     inner_outer.setdefault(curve2, []).append(curve)
 
-        # Odd-even rule for nested curves
-        nested_level = {c: len(inner_outer[c]) if c in inner_outer else 0 for c in curves}
-        for curve in sorted(curves, key=lambda c: nested_level[c]):
+        # Odd-even rule for nested curves. Only curves that actually resolved to a
+        # polygon above are candidates: a curve outside `polygons` traced no closed
+        # area and must not be promoted to its own outer profile.
+        nested_level = {c: len(inner_outer[c]) if c in inner_outer else 0 for c in polygons}
+        for curve in sorted(polygons, key=lambda c: nested_level[c]):
             level = nested_level[curve]
             if level % 2 == 0:
                 if curve in outer_inner:
