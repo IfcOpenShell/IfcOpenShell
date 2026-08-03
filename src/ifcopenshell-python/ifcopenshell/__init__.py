@@ -237,7 +237,7 @@ def open(
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
         f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, *optional_logger_args(logger))
     elif bypass_types:
-        f = ifcopenshell_wrapper.file(ifcopenshell_wrapper.uninitialized_tag(), *optional_logger_args(logger))
+        f = ifcopenshell_wrapper.file.create_uninitialized(*optional_logger_args(logger))
         for ty in bypass_types:
             f.bypass_type(ty)
         if mmap:

@@ -260,6 +260,7 @@ private:
 %}
 
 %newobject ifcopenshell::file::key_value_store_iter;
+%newobject ifcopenshell::file::create_uninitialized;
 
 %extend ifcopenshell::file {
 	/*
@@ -272,6 +273,10 @@ private:
 
 	file(const std::string& schema) {
 		return new ifcopenshell::file(ifcopenshell::schema_by_name(schema));
+	}
+
+	static ifcopenshell::file* create_uninitialized(logger* logger=nullptr) {
+		return new ifcopenshell::file(ifcopenshell::uninitialized_tag{}, logger_or_root(logger));
 	}
 
 	std::vector<express::Base> _get_inverse(const express::Base& e) {
