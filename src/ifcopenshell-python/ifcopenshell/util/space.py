@@ -26,11 +26,12 @@ for IFC analysis.
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.shape
+import numpy as np
 import shapely
 
 BOUNDING_CLASSES = ("IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate")
@@ -244,3 +245,101 @@ def get_height_from_wall_tops(
     if lowest_top_z is not None:
         return lowest_top_z - base_z
     return None
+
+
+def _nearest_ray_hits(
+    tree: ifcopenshell.geom.tree,
+    origins: list[tuple[float, float, float]],
+    ray_dir: np.ndarray,
+) -> list[ifcopenshell.geom.hit]:
+    """Nearest hit per origin; select_ray returns all hits including duplicates."""
+    hits = []
+    for origin in origins:
+        results = sorted(tree.select_ray(origin, ray_dir, length=1e4), key=lambda h: h.distance)
+        if results:
+            hits.append(results[0])
+    return hits
+
+
+def get_vertical_bounding_planes(
+    ifc_file: ifcopenshell.file,
+    shapes: dict,
+    tree: ifcopenshell.geom.tree,
+    space_polygon: shapely.Polygon,
+    base_z: float,
+    direction: Literal["UP", "DOWN"],
+    start_z: Optional[float] = None,
+) -> tuple[str, list[tuple[np.ndarray, np.ndarray]]]:
+    """Detect the top or bottom bounding planes for a space footprint.
+
+    Rays are cast from ``start_z`` (the RL cut elevation passed by the Bonsai
+    tool layer) so they start in the same horizontal slice of the room where
+    the footprint polygon was found. When ``start_z`` is None, rays start at
+    ``base_z + 0.001``.
+
+    :param ifc_file: The IFC file.
+    :param shapes: Cached element shapes keyed by element id.
+    :param tree: Geometry tree with all bounding elements added.
+    :param space_polygon: Space footprint in world XY.
+    :param base_z: Base elevation of the space in SI.
+    :param direction: "UP" for top (ceiling/roof) or "DOWN" for bottom (floor/slab).
+    :param start_z: Elevation to cast rays from in SI (the RL cut level).
+    :return: (strategy, planes). Strategy is "EXTRUDE_CLIP" when hits were
+        found, otherwise "BREP". Planes are (point, normal) tuples in SI; the
+        normal points toward the removed side (half-space convention).
+    """
+    ray_dir = np.array([0.0, 0.0, 1.0]) if direction == "UP" else np.array([0.0, 0.0, -1.0])
+    origin_z = start_z if start_z is not None else base_z + 0.001
+
+    bounds = space_polygon.bounds
+    cx = (bounds[0] + bounds[2]) / 2.0
+    cy = (bounds[1] + bounds[3]) / 2.0
+    sample_offsets = [(0.0, 0.0)]
+    if bounds[2] - bounds[0] > 0.1:
+        sample_offsets.append((0.25 * (bounds[2] - bounds[0]), 0.0))
+        sample_offsets.append((-0.25 * (bounds[2] - bounds[0]), 0.0))
+    if bounds[3] - bounds[1] > 0.1:
+        sample_offsets.append((0.0, 0.25 * (bounds[3] - bounds[1])))
+        sample_offsets.append((0.0, -0.25 * (bounds[3] - bounds[1])))
+
+    hits = _nearest_ray_hits(tree, [(cx + dx, cy + dy, origin_z) for dx, dy in sample_offsets], ray_dir)
+    if not hits:
+        return "EXTRUDE_CLIP", []  # open top / void below: no bounding planes
+
+    tol_floor = 0.05
+    plane_hits = []
+    for result in hits:
+        point = np.array(result.position, dtype=float)
+        normal = np.array(result.normal, dtype=float)
+        if abs(normal[2]) < 0.5:
+            continue  # vertical face; not a top/bottom bounding plane
+        if direction == "UP" and point[2] < base_z - tol_floor:
+            continue  # RL below the space base: ignore hits under it
+        if direction == "DOWN" and abs(point[2] - base_z) < tol_floor:
+            continue  # flat floor at the space base: no bottom clip needed
+        plane_hits.append((point, normal))
+
+    tol_normal = 0.02
+    tol_distance = 0.05
+    plane_groups: list[tuple[np.ndarray, list[np.ndarray]]] = []
+    for point, normal in plane_hits:
+        added = False
+        for anchor, members in plane_groups:
+            plane_normal = np.array(members[0])
+            if np.linalg.norm(normal - plane_normal) < tol_normal:
+                if abs(np.dot(point - anchor, plane_normal)) < tol_distance:
+                    members.append(normal)
+                    added = True
+                    break
+        if not added:
+            plane_groups.append((point, [normal]))
+
+    planes = []
+    for anchor, normals in plane_groups:
+        mean_normal = np.mean(normals, axis=0)
+        mean_normal /= np.linalg.norm(mean_normal)
+        if np.dot(mean_normal, ray_dir) < 0:
+            mean_normal = -mean_normal
+        planes.append((anchor, mean_normal))
+
+    return "EXTRUDE_CLIP", planes

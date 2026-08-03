@@ -22,6 +22,7 @@ import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.shape
 import ifcopenshell.util.space as subject
+import numpy as np
 import pytest
 import shapely
 import test.bootstrap
@@ -184,3 +185,39 @@ class TestGetAutoSpaceHeight(test.bootstrap.IFC4):
         space_polygon = shapely.box(-100, -100, -90, -90)
         height = subject.get_auto_space_height(self.file, shapes, space_polygon, 0.0, [])
         assert height is None
+
+
+class TestGetVerticalBoundingPlanes(test.bootstrap.IFC4):
+    def test_flat_ceiling_returns_single_plane(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, slab, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 0.3, z_offset=3.0)
+        shapes = _build_shapes_dict(self.file, [wall, slab])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        space_polygon = shapely.box(-5, -5, 5, 5)
+        strategy, planes = subject.get_vertical_bounding_planes(
+            self.file, shapes, tree, space_polygon, base_z=0.0, direction="UP"
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(planes) == 1
+        assert np.allclose(planes[0][0], [0.0, 0.0, 3.0], atol=0.1)
+        assert np.allclose(planes[0][1], [0.0, 0.0, 1.0], atol=0.01)
+
+    def test_flat_ceiling_returns_single_plane_from_rl_origin(self):
+        # Same result when rays are cast from an RL cut elevation (z=1.0)
+        # instead of the default base_z + 0.001.
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, slab, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 0.3, z_offset=3.0)
+        shapes = _build_shapes_dict(self.file, [wall, slab])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, planes = subject.get_vertical_bounding_planes(
+            self.file, shapes, tree, shapely.box(-5, -5, 5, 5), base_z=0.0, direction="UP", start_z=1.0
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(planes) == 1
+        assert np.allclose(planes[0][0], [0.0, 0.0, 3.0], atol=0.1)
