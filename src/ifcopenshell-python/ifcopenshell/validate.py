@@ -50,6 +50,7 @@ import functools
 import itertools
 import json
 import os
+import re
 import sys
 import types
 from collections.abc import Iterator
@@ -778,15 +779,27 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_l
                 )
 
 
+COLOR_RED = "\033[1;91m"
+COLOR_CYAN = "\033[96m"
+COLOR_YELLOW = "\033[93m"
+COLOR_RESET = "\033[0m"
+
+INSTANCE_LINE_RE = re.compile(r"(?m)^(\s*#\d+=.*)$")
+CARET_LINE_RE = re.compile(r"(?m)^(\s*\^[\s\^]*)$")
+
+
 class LogDetectionHandler(Handler):
     def __init__(self):
         super().__init__()
-        self.default_handler = logging.StreamHandler()
         self.count = 0
 
     def emit(self, record):
         self.count += 1
-        self.default_handler.emit(record)
+        print(f"{COLOR_RED}--- Error {self.count} ---{COLOR_RESET}", file=sys.stderr)
+        message = INSTANCE_LINE_RE.sub(rf"{COLOR_CYAN}\1{COLOR_RESET}", record.getMessage())
+        message = CARET_LINE_RE.sub(rf"{COLOR_YELLOW}\1{COLOR_RESET}", message)
+        print(message, file=sys.stderr)
+        print(file=sys.stderr)
 
 
 if __name__ == "__main__":
@@ -872,7 +885,7 @@ if __name__ == "__main__":
             print("No validation issues found.")
 
     if not args.json:
-        print(f"{total_errors} errors found.")
+        print(f"{COLOR_RED}{total_errors} error(s) found.{COLOR_RESET}")
 
     if some_file_is_invalid:
         exit(1)
