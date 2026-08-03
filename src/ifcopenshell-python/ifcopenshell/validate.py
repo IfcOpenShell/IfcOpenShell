@@ -56,7 +56,8 @@ from collections import namedtuple
 from collections.abc import Iterator
 from logging import Handler, Logger
 from types import EllipsisType
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union, TypeAlias, Literal
+from typing_extensions import TypedDict, NotRequired
 
 import ifcopenshell
 import ifcopenshell.express.rule_executor
@@ -89,11 +90,27 @@ log_entry_type = namedtuple("log_entry_type", ("level", "message", "instance", "
 
 
 class json_logger:
+    statements: list[Statement]
+    state: State
+
+    StateItem: TypeAlias = Literal["attribute", "instance", "type"]
+
+    class StateBase(TypedDict):
+        type: NotRequired[str]
+        instance: NotRequired[Any]
+        attribute: NotRequired[str | None]
+
+    class State(StateBase, closed=True): ...
+
+    class Statement(StateBase, closed=True):
+        level: str
+        message: str
+
     def __init__(self):
         self.statements = []
         self.state = {}
 
-    def set_state(self, key: str, value: Any):
+    def set_state(self, key: StateItem, value: Any) -> None:
         self.state[key] = value
 
     def log(self, level, message, *args):
