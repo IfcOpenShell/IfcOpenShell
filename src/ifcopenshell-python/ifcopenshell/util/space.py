@@ -284,9 +284,11 @@ def get_vertical_bounding_planes(
     :param base_z: Base elevation of the space in SI.
     :param direction: "UP" for top (ceiling/roof) or "DOWN" for bottom (floor/slab).
     :param start_z: Elevation to cast rays from in SI (the RL cut level).
-    :return: (strategy, planes). Strategy is "EXTRUDE_CLIP" when hits were
-        found, otherwise "BREP". Planes are (point, normal) tuples in SI; the
-        normal points toward the removed side (half-space convention).
+    :return: (strategy, planes). Strategy is always "EXTRUDE_CLIP"; an empty
+        planes list means open top (direction="UP") or void below
+        (direction="DOWN"). The strategy decision between extrusion and B-rep
+        happens in the calling layer. Planes are (point, normal) tuples in SI;
+        the normal points toward the removed side (half-space convention).
     """
     ray_dir = np.array([0.0, 0.0, 1.0]) if direction == "UP" else np.array([0.0, 0.0, -1.0])
     origin_z = start_z if start_z is not None else base_z + 0.001
