@@ -16,10 +16,15 @@ for d, w in itertools.product(depths, widths):
 
     f = ifcopenshell.file(schema="IFC2X3")
 
-    valid = (Girth < (Depth / 2.0)) and ((WallThickness < Width / 2.0) and (WallThickness < Depth / 2.0))
+    girth_valid = Girth < (Depth / 2.0)
+    wallthickness_valid = (WallThickness < Width / 2.0) and (WallThickness < Depth / 2.0)
+    valid = girth_valid and wallthickness_valid
+    errors_if_fail = int(not girth_valid) + int(not wallthickness_valid)
 
     inst = f.createIfcCShapeProfileDef(
         "AREA", None, f.createIfcAxis2Placement2D(f.createIfcCartesianPoint((0.0, 0.0))), **D
     )
     normalize_header(f)
-    write_fixture(f, __file__, pass_if(valid), f"cshape-profile-width-{w}-depth-{d}-ifc2x3")
+    write_fixture(
+        f, __file__, pass_if(valid, errors_if_fail=errors_if_fail), f"cshape-profile-width-{w}-depth-{d}-ifc2x3"
+    )

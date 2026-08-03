@@ -1,34 +1,33 @@
-import glob
-import os
+from pathlib import Path
 
 import pytest
 import tabulate
 
 import ifcopenshell.express.rule_executor
 import ifcopenshell.validate
+from .fixtures.rules.generate import FailObj, Result, parse_result
 
 
-def pytest_generate_tests(metafunc):
-    if "filename" not in metafunc.fixturenames:
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    if "filepath" not in metafunc.fixturenames:
         return
     rule = metafunc.config.getoption("--rule")
-    filenames = [
-        fn
-        for fn in glob.glob(os.path.join(os.path.dirname(__file__), "fixtures/rules/*.ifc"))
-        if not rule or rule in os.path.basename(fn)
-    ]
-    metafunc.parametrize("filename", filenames, ids=[os.path.basename(fn) for fn in filenames])
+    filepaths = [fp for fp in (Path(__file__).parent / "fixtures/rules").glob("*.ifc") if not rule or rule in fp.name]
+    metafunc.parametrize(
+        "filepath,expected_result",
+        [(fp, parse_result(fp)) for fp in filepaths],
+        ids=[fp.name for fp in filepaths],
+    )
 
 
-def test_file(filename):
-    base = os.path.basename(filename)
-    file = ifcopenshell.open(filename)
+def test_file(filepath: Path, expected_result: Result):
+    file = ifcopenshell.open(filepath)
     logger = ifcopenshell.validate.json_logger()
     ifcopenshell.express.rule_executor.run(file, logger)
     results = logger.statements
 
     print()
-    print(base)
+    print(filepath.name)
     print()
     print(f"{len(results)} errors")
 
@@ -42,10 +41,11 @@ def test_file(filename):
             )
         )
 
-    if base.startswith("fail-"):
-        assert len(results) > 0
-    if base.startswith("pass-"):
-        assert len(results) == 0
+    match expected_result:
+        case FailObj(expected_count=expected_count):
+            assert len(results) == expected_count
+        case "pass":
+            assert len(results) == 0
 
 
 if __name__ == "__main__":
