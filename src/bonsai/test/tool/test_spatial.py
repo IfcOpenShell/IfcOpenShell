@@ -26,7 +26,8 @@ import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.representation
 import numpy as np
-from mathutils import Matrix
+import shapely
+from mathutils import Matrix, Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -270,7 +271,7 @@ class _BlockHelper:
         wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         placement_2d = ifc.createIfcAxis2Placement2D(ifc.createIfcCartesianPoint([0.0, 0.0]))
         profile = ifc.createIfcRectangleProfileDef("AREA", None, placement_2d, 10.0, 10.0)
-        placement_3d = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint([-5.0, -5.0, 0.0]))
+        placement_3d = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint([0.0, 0.0, 0.0]))
         extrusion = ifc.createIfcExtrudedAreaSolid(
             profile, placement_3d, ifc.createIfcDirection([0.0, 0.0, 1.0]), height
         )
@@ -285,7 +286,7 @@ class _BlockHelper:
         slab = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
         placement_2d = ifc.createIfcAxis2Placement2D(ifc.createIfcCartesianPoint([0.0, 0.0]))
         profile = ifc.createIfcRectangleProfileDef("AREA", None, placement_2d, 12.0, 12.0)
-        placement_3d = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint([-6.0, -6.0, z]))
+        placement_3d = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint([0.0, 0.0, z]))
         extrusion = ifc.createIfcExtrudedAreaSolid(profile, placement_3d, ifc.createIfcDirection([0.0, 0.0, 1.0]), 1.0)
         shape_rep = ifc.createIfcShapeRepresentation(ctx, "Body", "SweptSolid", [extrusion])
         slab.Representation = ifc.createIfcProductDefinitionShape(None, None, [shape_rep])
@@ -384,6 +385,7 @@ class TestGenerateSpace(NewFile):
         spatial_props = tool.Spatial.get_spatial_props()
         spatial_props.space_height = 6
         bpy.context.view_layer.objects.active = space
+        space.hide_viewport = False
         space.select_set(True)
 
         bpy.ops.bim.apply_space_height_to_selection()
@@ -456,7 +458,7 @@ class TestGenerateSpace(NewFile):
             ifc.createIfcIndexedPolygonalFace([3, 7, 5, 1]),
             ifc.createIfcIndexedPolygonalFace([8, 4, 2, 6]),
         ]
-        face_set = ifc.createIfcPolygonalFaceSet(points, closed=True, faces=faces)
+        face_set = ifc.createIfcPolygonalFaceSet(points, True, faces)
         shape_rep = ifc.createIfcShapeRepresentation(ctx, "Body", "Tessellation", [face_set])
 
         space_element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
@@ -486,3 +488,18 @@ class TestGenerateSpace(NewFile):
         assert min_z >= 0, f"Expected extrusion to start at local z>=0, got min_z={min_z}"
         assert max_z > 0, f"Expected extrusion to have positive height, got max_z={max_z}"
         assert np.isclose(obj.location.z, 4.5, atol=0.01), f"Expected location.z=4.5, got {obj.location.z}"
+
+
+class TestSpaceVolumeStrategy(NewFile):
+    def test_vertical_box_returns_extrude_clip(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_wall(ifc, height=10.0)
+        _BlockHelper.create_slab(ifc, z=4.0)
+        space_polygon = shapely.box(-5, -5, 5, 5)
+        strategy, top, bottom = subject.get_space_volume_strategy(space_polygon, 0.0, [ifc.by_type("IfcWall")[0]])
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(top) == 1
+        assert len(bottom) == 0
+
+class TestGenerateSpaceSlopedRoof(NewFile):
