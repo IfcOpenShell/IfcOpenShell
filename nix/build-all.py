@@ -1135,6 +1135,8 @@ if "OpenCOLLADA" in targets:
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/",
             # OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in error in cmake 4.
             f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+            f"-DUSE_STATIC={OFF_ON[BUILD_STATIC]}",
+            f"-DUSE_SHARED={OFF_ON[not BUILD_STATIC]}",
             *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
