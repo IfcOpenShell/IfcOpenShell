@@ -5749,8 +5749,8 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 if not ok:
                     face_index = None
 
-            # Prefer faces perpendicular to the camera rather than faces that
-            # directly face the camera (e.g. top of a wall in plan view).
+            # Prefer the most useful face for the current camera orientation:
+            # side-faces in plan view, front-faces in section/elevation.
             face_index = _prefer_perp_face_index(obj, pt_world, face_index)
 
             if face_index is not None and face_index < len(obj.data.polygons):
@@ -5945,7 +5945,7 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         return candidates
 
     @staticmethod
-    def _snap_on_coplanar_faces(obj, hit_pt_world, tol_z=1e-3):
+    def _snap_on_coplanar_faces(obj, hit_pt_world, tol_z=1e-3, cam_view=None):
         """Return FACE snap candidates by projecting hit_pt onto each vertical face plane.
 
         Accepts any face with a near-horizontal normal (wall-like faces) regardless of
@@ -5953,16 +5953,28 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         final per-candidate screen-distance gate already prevent false positives, so no
         Z-based filtering is needed here.  (Z is also irrelevant for 2D annotation
         projections.)
+
+        cam_view: normalized camera forward vector. When provided, back-facing polygons
+        (normal.dot(cam_view) > 0) are skipped so section/elevation views don't snap to
+        the rear surface of a cut wall.
         """
         from mathutils import Vector
         mx = obj.matrix_world
         mesh = obj.data
         hit_pt = Vector(hit_pt_world)
         candidates = []
+        cam_is_plan = abs(cam_view.z) > 0.7 if cam_view is not None else True
         for poly in mesh.polygons:
             normal_w = (mx.to_3x3() @ poly.normal).normalized()
             if abs(normal_w.z) > 0.9:
                 continue
+            if cam_view is not None:
+                dot = normal_w.dot(cam_view)
+                if dot > 0:
+                    continue
+                score = _face_score_for_cam(abs(dot), cam_is_plan)
+                if score < 0.5:
+                    continue
             verts_w = [mx @ mesh.vertices[vi].co for vi in poly.vertices]
             n = len(verts_w)
             face_center_w = sum(verts_w, Vector((0.0, 0.0, 0.0))) / n
@@ -6026,13 +6038,33 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         if self._snap_mode == "FACE":
             if hit_pt is None or not self.objs_2d_bbox:
                 return None
+            _face_cam_view = None
+            _cam = bpy.context.scene.camera
+            if _cam:
+                from mathutils import Vector as _Vec
+                _face_cam_view = (_cam.matrix_world.to_3x3() @ _Vec((0.0, 0.0, -1.0))).normalized()
+
+            # snapping_points[0]["point"] can be stale: the previous frame's IFC snap
+            # overrides it, and mousemove_count resets on any non-MOUSEMOVE event so
+            # Blender's snap doesn't refresh for several frames.  Using that stale value as
+            # hit_pt makes _snap_on_coplanar_faces project from the old cursor position,
+            # freezing snap_world while the cursor moves → d2 grows → snap disappears.
+            # Fix: always recompute hit_pt from the current cursor via a camera-facing plane
+            # intersection (cheap, no BVH required).  x,z track the cursor exactly; the face
+            # projection corrects y to the wall surface.
+            if _face_cam_view is not None:
+                _plane_n = _face_cam_view if abs(_face_cam_view.z) < 0.7 else _Vec((0.0, 0.0, 1.0))
+                _fresh = tool.Raycast.ray_cast_to_plane(context, event, _Vec((0, 0, 0)), _plane_n)
+                if _fresh is not None:
+                    hit_pt = _fresh
+
             nearby_cands = []  # (cand, elem, obj, max_screen_tol)
             # Check hit_obj itself first: handles the case where the cursor
             # lands exactly on the wall/edge boundary (hit_obj IS the wall).
             if hit_obj and hit_obj.data and isinstance(hit_obj.data, bpy.types.Mesh):
                 hit_elem = tool.Ifc.get_entity(hit_obj)
                 if hit_elem and hasattr(hit_elem, "GlobalId"):
-                    for c in self._snap_on_coplanar_faces(hit_obj, hit_pt):
+                    for c in self._snap_on_coplanar_faces(hit_obj, hit_pt, cam_view=_face_cam_view):
                         nearby_cands.append((c, hit_elem, hit_obj, 30))
             extra_count = 0
             for obj, _bbox2d in self.objs_2d_bbox:
@@ -6051,7 +6083,7 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                     continue
                 nearby_cands.extend(
                     (c, extra_elem, obj, _SCREEN_TOL)
-                    for c in self._snap_on_coplanar_faces(obj, hit_pt)
+                    for c in self._snap_on_coplanar_faces(obj, hit_pt, cam_view=_face_cam_view)
                 )
                 extra_count += 1
 
@@ -6460,9 +6492,22 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         MOUSEMOVE events, so this placeholder only needs to survive until then.
         We must also populate snap_mouse_point (a Blender prop collection) because
         calculate_distance_and_angle accesses it immediately after invoke.
+
+        In section/elevation view the camera looks horizontally, so the default z=0
+        horizontal plane has no intersection with horizontal camera rays (returns origin).
+        Instead use the plane whose normal IS the camera forward vector — this is always
+        intersectable and gives correct (x, z) initial hit_pt so snap fires on frame 1.
         """
         from mathutils import Vector
-        plane_pt = tool.Raycast.ray_cast_to_plane(context, event, Vector((0, 0, 0)), Vector((0, 0, 1)))
+        plane_normal = Vector((0, 0, 1))  # default: horizontal plane for plan view
+        cam = bpy.context.scene.camera
+        if cam:
+            cv = (cam.matrix_world.to_3x3() @ Vector((0.0, 0.0, -1.0))).normalized()
+            if abs(cv.z) < 0.7:  # section/elevation: camera looks mostly horizontally
+                plane_normal = cv
+        plane_pt = tool.Raycast.ray_cast_to_plane(context, event, Vector((0, 0, 0)), plane_normal)
+        if plane_pt is None:
+            plane_pt = Vector((0, 0, 0))
         snap = {"type": "Plane", "point": plane_pt, "object": None, "group": "Plane", "distance": 10}
         self.snapping_points = [snap]
         tool.Snap.update_snapping_point(plane_pt, "Plane")
@@ -6478,16 +6523,39 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         return {"RUNNING_MODAL"}
 
 
+def _face_score_for_cam(dot_abs: float, cam_is_plan: bool) -> float:
+    """Score how 'useful' a face is for snapping given the camera orientation.
+
+    Prefer faces whose normals are *perpendicular* to the camera direction
+    (score = 1 − |dot|, high when dot ≈ 0).  These are the faces that appear
+    as visible edge lines in the drawing — wall side faces in plan, wall end
+    faces in section — which is where users want dimension anchors to land.
+
+    Faces that face the camera head-on (|dot| ≈ 1) score ≈ 0 and are rejected
+    by the score < 0.5 gate in the callers.  The cam_is_plan parameter is kept
+    for future use (e.g. Blender orthographic NUM1/NUM3/NUM7 views).
+
+    TODO: extend to Blender's orthographic side-views (NUM1/NUM3/NUM7) which
+    use region_data.view_matrix rather than scene.camera.
+    """
+    return 1.0 - dot_abs
+
+
 def _prefer_perp_face_index(
     obj: "bpy.types.Object",
     hit_world: "Vector",
     current_index: "Optional[int]",
     world_matrix=None,
 ) -> "Optional[int]":
-    """Return the polygon index most perpendicular to the camera near *hit_world*.
+    """Return the polygon index best suited for snapping near *hit_world*.
 
-    If the camera is unavailable or the current face is already sufficiently
-    perpendicular (|dot| < 0.5), returns *current_index* unchanged.
+    In plan view (camera mostly vertical) this returns the face most
+    perpendicular to the camera direction (wall side-faces). In
+    section/elevation view (camera mostly horizontal) it returns the face
+    most parallel to the camera direction (faces visible in the section).
+
+    If the camera is unavailable or the current face already scores > 0.5,
+    returns *current_index* unchanged.
     *world_matrix* overrides ``obj.matrix_world``; useful when *obj* is a mesh
     inside a collection instance whose effective transform differs from its own
     ``matrix_world``.
@@ -6497,23 +6565,26 @@ def _prefer_perp_face_index(
         return current_index
 
     cam_view = (camera.matrix_world.to_3x3() @ Vector((0.0, 0.0, -1.0))).normalized()
+    cam_is_plan = abs(cam_view.z) > 0.7
     mx = world_matrix if world_matrix is not None else obj.matrix_world
     mx3 = mx.to_3x3()
 
     if current_index is not None and current_index < len(obj.data.polygons):
         current_n = (mx3 @ obj.data.polygons[current_index].normal).normalized()
-        if abs(current_n.dot(cam_view)) < 0.5:
+        current_dot = abs(current_n.dot(cam_view))
+        current_score = _face_score_for_cam(current_dot, cam_is_plan)
+        if current_score > 0.5:
             return current_index
 
     best_idx = current_index
     best_score = -1.0
     for i, poly in enumerate(obj.data.polygons):
         n_world = (mx3 @ poly.normal).normalized()
-        perp = 1.0 - abs(n_world.dot(cam_view))
-        if perp < 0.5:
+        score = _face_score_for_cam(abs(n_world.dot(cam_view)), cam_is_plan)
+        if score < 0.5:
             continue
         dist = (mx @ poly.center - hit_world).length
-        score = perp - dist / 4.0
+        score -= dist / 4.0
         if score > best_score:
             best_score = score
             best_idx = i
@@ -7096,25 +7167,28 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             vis = obj.visible_get()
             return h or hv or not vis
 
-        # In FACE mode only snap to faces whose normal is roughly perpendicular to
-        # the camera view direction (i.e., wall/vertical faces in plan view, not
-        # floor/ceiling faces).  |dot| < 0.5 ≈ within 60° of perpendicular.
+        # In FACE mode filter faces by camera orientation so that only
+        # "useful" faces pass through: in plan view prefer wall side-faces
+        # (edge-on to camera), in section/elevation prefer faces that face
+        # the camera.  See _face_score_for_cam for the scoring logic.
+        # TODO: extend to Blender's orthographic side-views (NUM1/NUM3/NUM7).
         _face_cam_view = None
+        _face_cam_is_plan = False
         if self._snap_mode == "FACE":
             _cam = bpy.context.scene.camera
             if _cam:
                 _face_cam_view = (_cam.matrix_world.to_3x3() @ Vector((0.0, 0.0, -1.0))).normalized()
+                _face_cam_is_plan = abs(_face_cam_view.z) > 0.7
 
         def _face_perp_ok(normal_w):
-            """Return True when the face is acceptably perpendicular to the camera."""
+            """Return True when the face is useful for snapping in the current camera."""
             if _face_cam_view is None:
                 return True
-            return abs(normal_w.dot(_face_cam_view)) < 0.5
+            dot = abs(normal_w.dot(_face_cam_view))
+            return _face_score_for_cam(dot, _face_cam_is_plan) > 0.5
 
         # Scene-BVH pierce-through: O(log N) vs the previous O(N) per-object loop.
         # Each iteration steps past the last hit surface to reach the next object.
-        _DBG_GUIDS = {"1kGw8dvBT2zgE3OsifqnY8", "3YfgKSYh971wjlK2f3vaxy"}
-
         direct: list = []
         ray_hit_objs: set = set()   # all IFC objects the ray passed through (any face)
         ray_origin = Vector(origin)
@@ -7128,20 +7202,13 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
                 break
             ray_origin = loc_w + direction * _EPS
             ifc_obj = getattr(hit_obj_eval, "original", hit_obj_eval)
-            _dbg_guid = getattr(tool.Ifc.get_entity(ifc_obj), "GlobalId", None)
-            if _dbg_guid in _DBG_GUIDS:
-                print(f"[dbg-ray] hit {_dbg_guid} obj={ifc_obj.name}")
             if ifc_obj == self._annotation_obj:
-                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: is annotation obj")
                 continue
             if _is_hidden(ifc_obj):
-                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: hidden h={ifc_obj.hide_get(view_layer=view_layer)} hv={ifc_obj.hide_viewport} vis={ifc_obj.visible_get()}")
                 continue
             if ifc_obj.type != "MESH":
-                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: type={ifc_obj.type}")
                 continue
             if not tool.Ifc.get_entity(ifc_obj):
-                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: no IFC entity")
                 continue
             ray_hit_objs.add(ifc_obj)   # track even if face is non-perp
             mx = ifc_obj.matrix_world
@@ -7155,10 +7222,8 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
                 else nrm_w.normalized()
             )
             if not _face_perp_ok(normal):
-                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: face not perp normal={normal} dot={abs(normal.dot(_face_cam_view)) if _face_cam_view else 'N/A'}")
                 continue
             dist = (loc_w - origin).length
-            if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} ACCEPTED dist={dist:.4f}")
             direct.append((dist, ifc_obj, ifc_obj, mx, loc_w, normal, fi))
         if direct:
             direct.sort(key=lambda c: c[0])
