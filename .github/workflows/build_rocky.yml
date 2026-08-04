@@ -19,6 +19,8 @@ jobs:
       - name: Create Build Repository Branch
         run: |
           cd build-outputs-init
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
           git checkout -b rockylinux9-x64-shared
           mkdir -p Linux/x86_64/install
           touch Linux/x86_64/install/.gitkeep
