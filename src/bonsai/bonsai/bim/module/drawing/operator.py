@@ -312,6 +312,18 @@ class CopyAnnotationToDrawing(bpy.types.Operator, tool.Ifc.Operator):
         self.report({"INFO"}, message)
 
 
+def polygonize_boundary_lines(boundary_lines: list[shapely.LineString]) -> shapely.GeometryCollection:
+    """Union and polygonize boundary lines, empty if they don't close a region.
+
+    ``shapely.union_all`` returns a scalar geometry (no ``.geoms``) instead of
+    a multi-geometry when the lines collapse to a single connected piece.
+    """
+    unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+    if not hasattr(unioned_boundaries, "geoms"):
+        return shapely.GeometryCollection()
+    return shapely.polygonize(unioned_boundaries.geoms)
+
+
 class CreateDrawing(bpy.types.Operator):
     """Creates/refreshes a .svg drawing
 
@@ -1158,14 +1170,9 @@ class CreateDrawing(bpy.types.Operator):
                     start, end = tool.Drawing.extend_line(start, end, 0.5)
                     boundary_lines.append(shapely.LineString([start, end]))
 
-            unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
             # A single connected boundary (or none at all) leaves nothing to
-            # fill, same as when polygonize finds no closed region below.
-            closed_polygons = (
-                shapely.polygonize(unioned_boundaries.geoms)
-                if hasattr(unioned_boundaries, "geoms")
-                else shapely.GeometryCollection()
-            )
+            # fill, same as when polygonize finds no closed region.
+            closed_polygons = polygonize_boundary_lines(boundary_lines)
 
             for polygon in closed_polygons.geoms:
                 # Less than 0.1mm2 is not worth styling on sheet
