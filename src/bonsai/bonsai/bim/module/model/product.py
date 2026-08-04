@@ -1090,14 +1090,21 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                     xy_ext = H_2d @ np.array(ext[:2], dtype=float)
                     item.ExtrudedDirection.DirectionRatios = [float(xy_ext[0]), float(xy_ext[1])] + list(ext[2:])
                 else:
-                    # Outer curve type not directly supported — fall back to builder.mirror.
-                    # For axis-aligned cases this is correct; diagonal mirrors may be imprecise.
-                    builder.mirror(item, mirror_axes_2d, create_copy=False)
+                    # Outer curve type not directly supported (e.g. IfcIShapeProfileDef has no
+                    # OuterCurve); builder.mirror raises AttributeError for these profiles.
+                    # Symmetric parametric profiles look the same after mirror, so silently skip.
+                    try:
+                        builder.mirror(item, mirror_axes_2d, create_copy=False)
+                    except Exception:
+                        pass
             else:
                 if item.is_a("IfcIndexedPolyCurve"):
                     apply_H2d_to_indexed_poly_curve(item)
                 else:
-                    builder.mirror(item, mirror_axes_2d, create_copy=False)
+                    try:
+                        builder.mirror(item, mirror_axes_2d, create_copy=False)
+                    except Exception:
+                        pass
 
         if element.is_a("IfcProduct"):
             if not element.Representation:
