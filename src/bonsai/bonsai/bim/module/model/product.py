@@ -777,8 +777,6 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         usage_type = tool.Model.get_usage_type(element)
         type_has_reps = bool(type_element and (type_element.RepresentationMaps or []))
-        print(f"[mirror_obj] {element.GlobalId} ({element.is_a()}) usage_type={usage_type!r}  mirror_axes={mirror_axes}")
-        print(f"[mirror_obj]   obj.matrix_world euler={tuple(round(v,4) for v in obj.matrix_world.to_euler())}  t={tuple(round(v,4) for v in obj.matrix_world.translation)}")
         # LAYER2 (walls) and LAYER3 (slabs) generate instance-specific bodies via DumbWallGenerator /
         # DumbSlabGenerator rather than mapping the type's RepresentationMaps.  assign_inverted_type
         # only flips the *type* geometry and would leave the instance body unchanged, so both layer
@@ -833,7 +831,6 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 new_mat = new_R.to_4x4()
                 new_mat.translation = new_t
                 obj.matrix_world = new_mat
-                print(f"[mirror_obj]   new_R det={round(new_R.determinant(),4)}  new euler={tuple(round(v,4) for v in new_mat.to_euler())}  new t={tuple(round(v,4) for v in new_mat.translation)}")
                 # For non-layer elements (e.g. PROFILE beams) the IFC ObjectPlacement is the
                 # element's origin and must be kept in sync with obj.matrix_world.  Without this
                 # call, clicking the element after the mirror triggers a Bonsai depsgraph sync
@@ -1034,7 +1031,6 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             pts.CoordList = new_coords
 
         def mirror_item(item, rep_id="?"):
-            print(f"[invert_general_object]   rep={rep_id!r}  item={item.is_a()} #{item.id()}")
             if item.is_a("IfcBooleanResult"):
                 mirror_item(item.FirstOperand, rep_id)
                 try:
@@ -1081,15 +1077,9 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                     mirror_item(sub, rep_id)
             elif item.is_a("IfcExtrudedAreaSolid"):
                 sw = item.SweptArea
-                print(f"[invert_general_object]     ExtrudedAreaSolid: SweptArea={sw.is_a() if sw else None}  H_2d={H_2d.tolist()}")
                 oc = getattr(sw, "OuterCurve", None) if sw else None
                 if oc and oc.is_a("IfcIndexedPolyCurve"):
-                    print(f"[invert_general_object]       OuterCurve={oc.is_a()}")
-                    print(f"[invert_general_object]         Segments={[s.is_a() for s in (oc.Segments or [])]}")
-                    pts = oc.Points
-                    print(f"[invert_general_object]         CoordList (first 4)={list(pts.CoordList)[:4] if pts else None}")
                     apply_H2d_to_indexed_poly_curve(oc)
-                    print(f"[invert_general_object]         CoordList AFTER (first 4)={list(oc.Points.CoordList)[:4]}")
                     # Mirror Position location
                     if item.Position is not None:
                         base = list(item.Position.Location.Coordinates)
@@ -1102,30 +1092,17 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 else:
                     # Outer curve type not directly supported — fall back to builder.mirror.
                     # For axis-aligned cases this is correct; diagonal mirrors may be imprecise.
-                    try:
-                        builder.mirror(item, mirror_axes_2d, create_copy=False)
-                    except Exception as e:
-                        print(f"[invert_general_object]     builder.mirror FAILED: {e}")
+                    builder.mirror(item, mirror_axes_2d, create_copy=False)
             else:
-                print(f"[invert_general_object]     → H_2d={H_2d.tolist()}")
                 if item.is_a("IfcIndexedPolyCurve"):
-                    pts = item.Points
-                    segs = item.Segments or []
-                    print(f"[invert_general_object]       Segments={[s.is_a() for s in segs]}")
-                    print(f"[invert_general_object]       CoordList (first 4)={list(pts.CoordList)[:4] if pts else None}")
                     apply_H2d_to_indexed_poly_curve(item)
-                    print(f"[invert_general_object]       CoordList AFTER (first 4)={list(item.Points.CoordList)[:4]}")
                 else:
-                    try:
-                        builder.mirror(item, mirror_axes_2d, create_copy=False)
-                    except Exception as e:
-                        print(f"[invert_general_object]     builder.mirror FAILED: {e}")
+                    builder.mirror(item, mirror_axes_2d, create_copy=False)
 
         if element.is_a("IfcProduct"):
             if not element.Representation:
                 return
             for representation in element.Representation.Representations:
-                print(f"[invert_general_object] rep={representation.RepresentationIdentifier!r}/{representation.RepresentationType!r}  items={len(representation.Items)}")
                 for item in representation.Items:
                     mirror_item(item, representation.RepresentationIdentifier)
         elif element.is_a("IfcTypeProduct"):
