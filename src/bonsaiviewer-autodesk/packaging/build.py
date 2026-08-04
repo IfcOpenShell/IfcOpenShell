@@ -1,3 +1,5 @@
+# /// script
+# ///
 """Build the Autodesk connector bundle for the current OS.
 
 Runs `cargo build --release` and packages the resulting binary +
