@@ -229,25 +229,37 @@ class TestGetGrossSideAreaWithoutOpeningRelationship(test.bim.bootstrap.NewFile)
         return obj
 
     def build_wall_with_baked_hole(
-        self, length: float, height: float, thickness: float, hole_size: float
+        self,
+        length: float,
+        height: float,
+        thickness: float,
+        hole_size: float,
+        main_axis: str = "x",
     ) -> bpy.types.Mesh:
         """A rectangular wall with a square hole cut straight into the mesh.
 
         No IfcOpeningElement is involved: the hole is a topological gap in
         the body geometry itself, like an opening baked into an
         IfcIndexedPolygonalFaceWithVoids.
+
+        :param main_axis: which local axis the wall runs along ("x" or "y").
+            The thickness always runs along the other horizontal axis, and
+            height is always along Z. #9237 was Bonsai only handling "x".
         """
         cx, cz = length / 2, height / 2
         outer = [(0, 0), (length, 0), (length, height), (0, height)]
         h = hole_size / 2
         inner = [(cx - h, cz - h), (cx + h, cz - h), (cx + h, cz + h), (cx - h, cz + h)]
 
+        def point(along_main: float, along_thickness: float, z: float) -> tuple[float, float, float]:
+            return (along_main, along_thickness, z) if main_axis == "x" else (along_thickness, along_main, z)
+
         mesh = bpy.data.meshes.new("WallWithBakedHole")
         bm = bmesh.new()
 
-        def make_ring(y: float):
-            outer_v = [bm.verts.new((x, y, z)) for x, z in outer]
-            inner_v = [bm.verts.new((x, y, z)) for x, z in inner]
+        def make_ring(thickness_pos: float):
+            outer_v = [bm.verts.new(point(x, thickness_pos, z)) for x, z in outer]
+            inner_v = [bm.verts.new(point(x, thickness_pos, z)) for x, z in inner]
             return outer_v, inner_v
 
         outer_front, inner_front = make_ring(0.0)
@@ -315,6 +327,33 @@ class TestGetGrossSideAreaWithoutOpeningRelationship(test.bim.bootstrap.NewFile)
         assert calculator.has_openings(obj) == []
         assert round(calculator.get_net_side_area(obj), 3) == round(length * height - hole * hole, 3)
         assert round(calculator.get_gross_side_area(obj), 3) == round(length * height, 3)
+
+    def test_y_oriented_wall_baked_opening_is_recovered(self):
+        """Regression test for #9237.
+
+        A wall whose length runs along local Y (thickness along X) used to
+        report its end face instead of its elevation face, because
+        get_net_side_area/get_gross_side_area hardcoded main_axis="x".
+        """
+        self.setup_file()
+        length, height, thickness, hole = 4.0, 3.0, 0.2, 1.0
+        obj = self.make_wall(self.build_wall_with_baked_hole(length, height, thickness, hole, main_axis="y"))
+
+        assert calculator.get_x(obj) < calculator.get_y(obj)
+        assert calculator.has_openings(obj) == []
+        assert round(calculator.get_net_side_area(obj), 3) == round(length * height - hole * hole, 3)
+        assert round(calculator.get_gross_side_area(obj), 3) == round(length * height, 3)
+
+    def test_x_and_y_oriented_walls_agree(self):
+        """The same wall, modelled with its length along local X or local Y,
+        must report the same NetSideArea and GrossSideArea (#9237)."""
+        self.setup_file()
+        length, height, thickness, hole = 4.0, 3.0, 0.2, 1.0
+        obj_x = self.make_wall(self.build_wall_with_baked_hole(length, height, thickness, hole, main_axis="x"))
+        obj_y = self.make_wall(self.build_wall_with_baked_hole(length, height, thickness, hole, main_axis="y"))
+
+        assert round(calculator.get_net_side_area(obj_x), 3) == round(calculator.get_net_side_area(obj_y), 3)
+        assert round(calculator.get_gross_side_area(obj_x), 3) == round(calculator.get_gross_side_area(obj_y), 3)
 
     def test_non_rectangular_wall_without_openings_is_not_overstated(self):
         self.setup_file()
