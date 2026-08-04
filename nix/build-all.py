@@ -36,6 +36,8 @@ Available arguments:
     ``-without-xxx`` - do not build dependency ``xxx`` (e.g. ``--without-swig``)
     ``-mac-cross-compile-intel`` - cross compile for Intel Mac on Apple Silicon host
     ``-shared`` - build shared libraries. By default will build static.
+    ``-ifcopenshell-shared`` - build only IfcOpenShell's own libraries as shared
+        (dependencies stay static). Redundant if ``-shared`` is also passed.
     ``-diskcleanup`` - clean up build directories after finishing building dependencies
     ``-v`` - enable verbose logs
 
@@ -381,6 +383,9 @@ else:
 
 OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = "shared" not in flags
+"""Whether dependencies are built static."""
+IFCOPENSHELL_STATIC = BUILD_STATIC and "ifcopenshell-shared" not in flags
+"""Whether IfcOpenShell's own libraries are built static."""
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
 LINK_TYPE = "static" if BUILD_STATIC else "shared"
@@ -1412,7 +1417,7 @@ os.makedirs(ifcos_build_dir, exist_ok=True)
 cmake_args = [
     "-DUSE_MMAP=OFF",
     "-DBUILD_EXAMPLES=OFF",
-    "-DBUILD_SHARED_LIBS=" + OFF_ON[not BUILD_STATIC],
+    "-DBUILD_SHARED_LIBS=" + OFF_ON[not IFCOPENSHELL_STATIC],
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DCREATE_BUNDLE=On",
