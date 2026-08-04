@@ -1074,7 +1074,9 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                         dir_local = np.array(item.ExtrudedDirection.DirectionRatios)
                         dir_local_new = H_pos @ dir_local
                         item.ExtrudedDirection.DirectionRatios = tuple(float(v) for v in dir_local_new)
-                    else:
+                    elif not item.is_a("IfcMappedItem"):
+                        # IfcMappedItem references shared type geometry that must not be
+                        # modified in-place; its opening placement is already handled above.
                         builder.mirror(item, mirror_axes_2d, create_copy=False)
 
     def invert_general_object(self, element, mirror_axes=(1, 0, 0)):
