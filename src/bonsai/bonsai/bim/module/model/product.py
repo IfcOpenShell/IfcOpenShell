@@ -872,6 +872,27 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             representation=ifcopenshell.util.representation.get_representation(element, active_context),
         )
 
+        # For LAYER2/LAYER3 elements, _apply_opening_mirror computes opening positions
+        # relative to the wall's pre-move IFC origin.  When the wall's Blender matrix is
+        # subsequently updated (wall moves to its mirrored world position), that origin
+        # becomes stale and the opening's IFC placement ends up in the wrong location.
+        # Fix: rebuild each filled opening from the filling's current (already-mirrored)
+        # world position, which produces the correct placement and void geometry.
+        if usage_type in ("LAYER2", "LAYER3") and element.HasOpenings:
+            from bonsai.bim.module.model.opening import FilledOpeningGenerator
+            for rel in element.HasOpenings:
+                opening = rel.RelatedOpeningElement
+                for fill_rel in opening.HasFillings:
+                    filling = fill_rel.RelatedBuildingElement
+                    fill_obj = tool.Ifc.get_object(filling)
+                    if fill_obj:
+                        FilledOpeningGenerator().generate(
+                            fill_obj,
+                            obj,
+                            target=fill_obj.matrix_world.translation,
+                            preserve_placement=True,
+                        )
+
     def _apply_opening_mirror(self, element, mirror_axes, M_slab_before, opening_placements_before, frame_change, M_slab_new=None):
         """Mirror IfcOpeningElement placements and geometry in element-local space.
 
