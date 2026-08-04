@@ -102,7 +102,7 @@ jobs:
           # INSTALL_RPATH to "@loader_path" on Apple.
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
             BUILD_BONSAIVIEWER=ON QT_DIR="${QT_DIR}" \
-            python3 ./nix/build-all.py -v --diskcleanup --shared ${MAC_INTEL} \
+            python3 ./nix/build-all.py -v --diskcleanup --ifcopenshell-shared ${MAC_INTEL} \
             | tee build.log
 
       - name: Upload Build Logs
