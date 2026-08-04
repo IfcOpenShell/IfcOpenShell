@@ -302,15 +302,22 @@ def get_vertical_bounding_planes(
     bounds = space_polygon.bounds
     cx = (bounds[0] + bounds[2]) / 2.0
     cy = (bounds[1] + bounds[3]) / 2.0
-    sample_offsets = [(0.0, 0.0)]
+    sample_points = [(cx, cy)]
     if bounds[2] - bounds[0] > 0.1:
-        sample_offsets.append((0.25 * (bounds[2] - bounds[0]), 0.0))
-        sample_offsets.append((-0.25 * (bounds[2] - bounds[0]), 0.0))
+        sample_points.append((cx + 0.25 * (bounds[2] - bounds[0]), cy))
+        sample_points.append((cx - 0.25 * (bounds[2] - bounds[0]), cy))
     if bounds[3] - bounds[1] > 0.1:
-        sample_offsets.append((0.0, 0.25 * (bounds[3] - bounds[1])))
-        sample_offsets.append((0.0, -0.25 * (bounds[3] - bounds[1])))
+        sample_points.append((cx, cy + 0.25 * (bounds[3] - bounds[1])))
+        sample_points.append((cx, cy - 0.25 * (bounds[3] - bounds[1])))
 
-    hits = _nearest_ray_hits(tree, [(cx + dx, cy + dy, origin_z) for dx, dy in sample_offsets], ray_dir)
+    # Sample from footprint corners, offset toward centroid so the ray origin
+    # sits inside the space (not on a bounding wall).  This catches elements
+    # (e.g. sloped roofs) that only cover a corner of the space.
+    for coords in space_polygon.exterior.coords[:-1]:
+        vx, vy = coords[0], coords[1]
+        sample_points.append((vx + 0.05 * (cx - vx), vy + 0.05 * (cy - vy)))
+
+    hits = _nearest_ray_hits(tree, [(x, y, origin_z) for x, y in sample_points], ray_dir)
     if not hits:
         return "EXTRUDE_CLIP", []  # open top / void below: no bounding planes
 

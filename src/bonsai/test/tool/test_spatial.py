@@ -685,10 +685,16 @@ class TestRegenerateSpaceFromRealIfc2x3(NewFile):
         ifc = self.load_house_with_garage()
         (original_bounds, original_origin), (regen_bounds, regen_origin) = self._regenerate_space(ifc, 2363)
         assert (regen_origin - original_origin).length < 0.02
-        # X, Y, Z-min stable; Z-max may differ because the regenerated space
-        # correctly detects the roof and clips to a different top elevation.
-        for j in (0, 1, 4):
+        # X and Y stable; Z may differ because the regenerated space detects the
+        # sloped roof and clips the extrusion.
+        for j in (0, 1, 2, 3, 4):
             assert regen_bounds[j] == pytest.approx(original_bounds[j], abs=0.02)
+        # Verify the regenerated body contains boolean clipping (roof clipping).
+        space = ifc.by_id(2363)
+        body = ifcopenshell.util.representation.get_representation(space, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        boolean_items = [i for i in (body.Items or []) if i.is_a("IfcBooleanClippingResult")]
+        assert len(boolean_items) >= 1, "Expected roof clipping but got no boolean result"
 
     def test_regenerate_space_twice_does_not_duplicate_half_spaces(self):
         ifc = self.load_house_with_garage()
