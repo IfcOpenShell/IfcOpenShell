@@ -1135,13 +1135,27 @@ def _get_line_position(self) -> float:
                             m = math.sqrt(dx * dx + dy * dy + dz * dz)
                             if m > 1e-10:
                                 ddx, ddy, ddz = dx / m, dy / m, dz / m
-                                # cross(world_Z=(0,0,1), dim_dir) = (-ddy, ddx, 0)
-                                ox, oy, oz = -ddy, ddx, 0.0
-                                om = math.sqrt(ox * ox + oy * oy)
+                                cam = _bpy.context.scene.camera
+                                cam_is_plan = True
+                                cvx, cvy, cvz = 0.0, 0.0, 1.0
+                                if cam:
+                                    from mathutils import Vector as _Vec
+                                    cv = (cam.matrix_world.to_3x3() @ _Vec((0, 0, -1))).normalized()
+                                    cvx, cvy, cvz = cv.x, cv.y, cv.z
+                                    cam_is_plan = abs(cvz) > 0.7
+                                if cam_is_plan:
+                                    # cross(world_Z, dim_dir)
+                                    ox, oy, oz = -ddy, ddx, 0.0
+                                else:
+                                    # cross(cam_dir, dim_dir)
+                                    ox = cvy * ddz - cvz * ddy
+                                    oy = cvz * ddx - cvx * ddz
+                                    oz = cvx * ddy - cvy * ddx
+                                om = math.sqrt(ox * ox + oy * oy + oz * oz)
                                 if om > 1e-6:
-                                    od = (ox / om, oy / om, 0.0)
+                                    od = (ox / om, oy / om, oz / om)
                                     pt = anchors[0]["pt"]
-                                    return float(pt[0] * od[0] + pt[1] * od[1])
+                                    return float(pt[0] * od[0] + pt[1] * od[1] + pt[2] * od[2])
     except Exception:
         pass
     return 0.0
@@ -1180,6 +1194,12 @@ def _set_line_position(self, value: float) -> None:
 
     from bonsai.bim.module.drawing.operator import _update_blender_curve
 
+    cam = _bpy.context.scene.camera
+    cam_dir_tuple = None
+    if cam:
+        from mathutils import Vector as _Vec
+        cam_dir_tuple = tuple((cam.matrix_world.to_3x3() @ _Vec((0, 0, -1))).normalized())
+
     for obj, element, pset_data in targets:
         pset_entity = file.by_id(pset_data["id"])
         ifcopenshell.api.pset.edit_pset(file, pset=pset_entity, properties={"LinePosition": value})
@@ -1198,7 +1218,9 @@ def _set_line_position(self, value: float) -> None:
             except Exception:
                 pass
 
-        resolved_pts = drawing_api.regenerate_dimension(file, element, placement_override=placement_override)
+        resolved_pts = drawing_api.regenerate_dimension(
+            file, element, placement_override=placement_override, camera_dir=cam_dir_tuple
+        )
         if resolved_pts:
             _update_blender_curve(element, resolved_pts)
 

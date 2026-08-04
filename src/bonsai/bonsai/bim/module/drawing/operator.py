@@ -6397,10 +6397,15 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                     placement_override[elem.id()] = np.array(elem_obj.matrix_world)
             except Exception:
                 pass
+        _cam = bpy.context.scene.camera
+        _cam_dir_tuple = None
+        if _cam:
+            _cam_dir_tuple = tuple((bpy.context.scene.camera.matrix_world.to_3x3() @ Vector((0, 0, -1))).normalized())
         resolved_pts = drawing_api.regenerate_dimension(
             file, annotation,
             shape_cache=getattr(self, "_shape_cache", None),
             placement_override=placement_override,
+            camera_dir=_cam_dir_tuple,
         )
         if resolved_pts:
             _update_blender_curve(annotation, resolved_pts)
@@ -7669,12 +7674,18 @@ def _do_write_anchor(annotation, annotation_obj, new_anchor: dict, vertex_index:
     if _is_elevation:
         _update_elevation_marker_z(file, annotation, shape_cache=shape_cache, placement_override=placement_override)
     else:
+        import bpy as _bpy
         import ifcopenshell.api.drawing as drawing_api
+        _cam = _bpy.context.scene.camera
+        _cam_dir_tuple = None
+        if _cam:
+            _cam_dir_tuple = tuple((_cam.matrix_world.to_3x3() @ Vector((0, 0, -1))).normalized())
         resolved_pts = drawing_api.regenerate_dimension(
             file,
             annotation,
             shape_cache=shape_cache,
             placement_override=placement_override,
+            camera_dir=_cam_dir_tuple,
         )
         if resolved_pts:
             _update_blender_curve(annotation, resolved_pts)
@@ -7944,6 +7955,11 @@ class RegenerateDimensions(bpy.types.Operator, tool.Ifc.Operator):
 
         from bonsai.bim.module.drawing.handler import _sync_dimension_anchors_to_curve
 
+        _cam = context.scene.camera
+        _cam_dir_tuple = None
+        if _cam:
+            _cam_dir_tuple = tuple((_cam.matrix_world.to_3x3() @ Vector((0, 0, -1))).normalized())
+
         updated = 0
         for annotation in candidates:
             pset = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
@@ -7998,6 +8014,7 @@ class RegenerateDimensions(bpy.types.Operator, tool.Ifc.Operator):
                     settings=geom_settings,
                     shape_cache=shape_cache,
                     placement_override=placement_override,
+                    camera_dir=_cam_dir_tuple,
                 )
                 if not resolved_pts:
                     continue

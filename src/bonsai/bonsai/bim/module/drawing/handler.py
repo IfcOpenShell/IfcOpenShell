@@ -113,6 +113,12 @@ def regenerate_dims_for_layer(file, layer) -> None:
     geom_settings = ifcopenshell.geom.settings()
     geom_settings.set("APPLY_DEFAULT_MATERIALS", False)
 
+    cam = bpy.context.scene.camera
+    cam_dir_tuple = None
+    if cam:
+        from mathutils import Vector as _Vec
+        cam_dir_tuple = tuple((cam.matrix_world.to_3x3() @ _Vec((0, 0, -1))).normalized())
+
     for ann_id in annotation_ids:
         try:
             annotation = file.by_id(ann_id)
@@ -143,6 +149,7 @@ def regenerate_dims_for_layer(file, layer) -> None:
             settings=geom_settings,
             shape_cache=_dim_shape_cache,
             placement_override=placement_override,
+            camera_dir=cam_dir_tuple,
         )
         if resolved_pts:
             _update_blender_curve(annotation, resolved_pts)

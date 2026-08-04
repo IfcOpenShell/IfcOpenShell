@@ -2818,8 +2818,23 @@ class DimensionLinePositionWidget(types.GizmoGroup):
     # Helpers
 
     @staticmethod
-    def _offset_dir(obj: bpy.types.Object) -> "Vector | None":
-        """World-space unit direction perpendicular to the dimension line and world_Z."""
+    def _cam_dir() -> "Vector | None":
+        """Scene camera forward direction, or None."""
+        cam = bpy.context.scene.camera
+        if not cam:
+            return None
+        return (cam.matrix_world.to_3x3() @ Vector((0.0, 0.0, -1.0))).normalized()
+
+    @classmethod
+    def _offset_dir(cls, obj: bpy.types.Object) -> "Vector | None":
+        """World-space direction perpendicular to the dimension line and in the view plane.
+
+        Plan view  (camera mostly vertical): cross(world_Z, dim_dir) — preserves
+        existing stored LinePosition values.
+        Section/elevation (camera mostly horizontal): cross(cam_forward, dim_dir) —
+        keeps the offset axis inside the view plane so the gizmo moves the line
+        visually sideways (up/down in section) rather than into/out of the screen.
+        """
         if not obj.data or not hasattr(obj.data, "splines") or not obj.data.splines:
             return None
         spline = obj.data.splines[0]
@@ -2831,8 +2846,10 @@ class DimensionLinePositionWidget(types.GizmoGroup):
         if dim.length < 1e-10:
             return None
         dim.normalize()
-        world_z = Vector((0.0, 0.0, 1.0))
-        od = world_z.cross(dim)
+        cam_view = cls._cam_dir()
+        cam_is_plan = (cam_view is None) or abs(cam_view.z) > 0.7
+        ref = Vector((0.0, 0.0, 1.0)) if cam_is_plan else cam_view
+        od = ref.cross(dim)
         if od.length < 1e-6:
             od = Vector((1.0, 0.0, 0.0)).cross(dim)
         if od.length < 1e-6:
@@ -2920,7 +2937,11 @@ class DimensionLinePositionWidget(types.GizmoGroup):
             except Exception:
                 pass
 
-        resolved_pts = drawing_api.regenerate_dimension(file, element, placement_override=placement_override)
+        cam_view = self._cam_dir()
+        cam_dir_tuple = tuple(cam_view) if cam_view is not None else None
+        resolved_pts = drawing_api.regenerate_dimension(
+            file, element, placement_override=placement_override, camera_dir=cam_dir_tuple
+        )
         if resolved_pts:
             _update_blender_curve(element, resolved_pts)
         tool.Blender.update_viewport()
