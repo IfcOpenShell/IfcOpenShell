@@ -1159,7 +1159,13 @@ class CreateDrawing(bpy.types.Operator):
                     boundary_lines.append(shapely.LineString([start, end]))
 
             unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-            closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+            # A single connected boundary (or none at all) leaves nothing to
+            # fill, same as when polygonize finds no closed region below.
+            closed_polygons = (
+                shapely.polygonize(unioned_boundaries.geoms)
+                if hasattr(unioned_boundaries, "geoms")
+                else shapely.GeometryCollection()
+            )
 
             for polygon in closed_polygons.geoms:
                 # Less than 0.1mm2 is not worth styling on sheet
