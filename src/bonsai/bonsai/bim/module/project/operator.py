@@ -281,7 +281,7 @@ class RefreshLibrary(bpy.types.Operator):
         elements = {e for e in elements if not tool.Project.is_element_assigned_to_project_library(e, rels)}
         self.props.add_library_project_library("Unassigned", len(elements), 0, False)
 
-        root_context = tool.Project.get_root_context(library_file)
+        root_context = library_file.by_type("IfcProject")[0]
         hierarchy = tool.Project.get_project_hierarchy(library_file)
         tool.Project.load_project_libraries_to_ui(root_context, hierarchy)
         return {"FINISHED"}
@@ -761,21 +761,22 @@ class EditProjectLibrary(bpy.types.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.project_library_attributes)
         ifcopenshell.api.attribute.edit_attributes(library_file, project_library, attributes)
 
-        # Update parent library.
+        # Update parent library. Tear down the old IfcRelDeclares/IfcRelNests before
+        # creating the new one; a library must have exactly one of the two, never both.
         previous_parent_library = tool.Project.get_parent_library(project_library)
         new_parent_library = library_file.by_id(int(props.parent_library))
         if previous_parent_library != new_parent_library:
-            if previous_parent_library is None:
-                # Edited library was a root in a library-only file; nest it under the new parent.
+            if previous_parent_library is not None:
+                if previous_parent_library.is_a("IfcProject"):
+                    ifcopenshell.api.project.unassign_declaration(
+                        library_file, [project_library], previous_parent_library
+                    )
+                else:
+                    ifcopenshell.api.nest.unassign_object(library_file, [project_library])
+            if new_parent_library.is_a("IfcProject"):
+                ifcopenshell.api.project.assign_declaration(library_file, [project_library], new_parent_library)
+            else:
                 ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
-            elif previous_parent_library.is_a("IfcProject"):
-                # Then new one is IfcProjectLibrary.
-                ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
-            else:  # Previous is IfcProjectLibrary.
-                ifcopenshell.api.nest.unassign_object(library_file, [project_library])
-                # If new one is IfcProject, then it's already assigned by default.
-                if new_parent_library.is_a("IfcProjectLibrary"):
-                    ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
 
         props.is_editing_project_library = False
         bpy.ops.bim.refresh_library()
@@ -809,12 +810,9 @@ class AddProjectLibrary(bpy.types.Operator):
         props = tool.Project.get_project_props()
         library_file = IfcStore.library_file
         assert library_file
-        root_context = tool.Project.get_root_context(library_file)
+        root_context = library_file.by_type("IfcProject")[0]
         project_library = ifcopenshell.api.root.create_entity(library_file, "IfcProjectLibrary")
-        if root_context.is_a("IfcProject"):
-            ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
-        else:
-            ifcopenshell.api.nest.assign_object(library_file, [project_library], root_context)
+        ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
         ProjectLibraryData.load()  # Update enum.
         props.selected_project_library = str(project_library.id())
         props.is_editing_project_library = True
@@ -1301,6 +1299,10 @@ class LoadProjectElements(bpy.types.Operator):
         tool.Project.set_default_modeling_dimensions()
         tool.Root.reload_grid_decorator()
         bonsai.bim.handler.refresh_ui_data()
+        for screen in bpy.data.screens:
+            for area in screen.areas:
+                if area.type == "VIEW_3D":
+                    bonsai.bim.handler.viewport_shading_changed_callback(area)
         return {"FINISHED"}
 
     def get_decomposition_elements(self) -> set[ifcopenshell.entity_instance]:
@@ -1578,10 +1580,13 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
         json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
 
         def should_clear_cache() -> bool:
-            if not self.use_cache:
-                return True
+            # Nothing to clear if the cache file was never created (e.g. a
+            # fresh link). Check this first so os.remove below is never
+            # called on a non-existent path, regardless of use_cache.
             if not blend_filepath.exists():
                 return False
+            if not self.use_cache:
+                return True
             data = json.loads(json_filepath.read_text())
             # Empty 'query' - model loaded without custom query.
             # Missing 'query' - model was loaded before custom queries were introduced in Bonsai.

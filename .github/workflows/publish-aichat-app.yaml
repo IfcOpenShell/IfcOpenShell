@@ -27,12 +27,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (recursive)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
       - name: Checkout intermediate Pages repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: IfcOpenShell/aichat_ifcopenshell_org_static_html
           ref: gh-pages
@@ -42,7 +42,7 @@ jobs:
         run: |
           rsync -av --delete --exclude='.git/' src/ifcchat/ output/
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.x"
       - name: Download wheels

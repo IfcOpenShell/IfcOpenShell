@@ -195,6 +195,37 @@ class TestGetElementValue(test.bootstrap.IFC4):
         assert subject.get_element_value(element, "/Pset_.*Common/.Status") == ["New"]
         assert subject.get_element_value(element, "/Pset_.*Common/.Status.0") == "New"
 
+    def test_selecting_a_nested_complex_quantity(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        complex_quantity = self.file.create_entity(
+            "IfcPhysicalComplexQuantity",
+            Name="Layer1",
+            Discrimination="layer",
+            HasQuantities=[
+                self.file.create_entity("IfcQuantityLength", Name="Width", LengthValue=0.1),
+                self.file.create_entity("IfcQuantityLength", Name="Height", LengthValue=2.5),
+            ],
+        )
+        quantity = self.file.create_entity(
+            "IfcElementQuantity",
+            GlobalId=ifcopenshell.guid.new(),
+            Name="Qto_Custom",
+            Quantities=[complex_quantity, self.file.create_entity("IfcQuantityArea", Name="NetArea", AreaValue=5.0)],
+        )
+        self.file.create_entity(
+            "IfcRelDefinesByProperties",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[element],
+            RelatingPropertyDefinition=quantity,
+        )
+        # A simple quantity in the same set still resolves normally.
+        assert subject.get_element_value(element, "Qto_Custom.NetArea") == 5.0
+        # Nested quantities of a complex quantity are reachable with the natural path.
+        assert subject.get_element_value(element, "Qto_Custom.Layer1.Width") == 0.1
+        assert subject.get_element_value(element, "Qto_Custom.Layer1.Height") == 2.5
+        # The explicit "properties" path is preserved for backwards compatibility.
+        assert subject.get_element_value(element, "Qto_Custom.Layer1.properties.Width") == 0.1
+
 
 class TestFilterElements(test.bootstrap.IFC4):
     def test_selecting_by_globalid(self):
@@ -279,6 +310,12 @@ class TestFilterElements(test.bootstrap.IFC4):
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New"]})
         assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
+        # On multi-valued properties, != means "no value equals" and stays the
+        # complement of = (#8129).
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New", "Demolish"]})
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=New") == {element2}
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=Temporary") == {element, element2}
 
     def test_selecting_by_property_with_comparisons(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

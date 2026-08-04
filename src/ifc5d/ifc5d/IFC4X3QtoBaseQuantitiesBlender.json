@@ -585,11 +585,11 @@
             },
             "IfcReinforcedSoil": {
                 "Qto_ReinforcedSoilBaseQuantities": {
-                    "Area": null,
-                    "Depth": null,
-                    "Length": null,
-                    "Volume": null,
-                    "Width": null
+                    "Area": "get_net_footprint_area",
+                    "Depth": "get_height",
+                    "Length": "get_length",
+                    "Volume": "get_net_volume",
+                    "Width": "get_width"
                 }
             },
             "IfcReinforcingElement + IfcReinforcingElementType": {

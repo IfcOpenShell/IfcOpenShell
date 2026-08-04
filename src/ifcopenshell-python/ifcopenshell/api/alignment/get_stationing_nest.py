@@ -20,12 +20,18 @@ import ifcopenshell
 from ifcopenshell import entity_instance
 
 
-def get_referent_nest(file: ifcopenshell.file, alignment: entity_instance) -> entity_instance:
+def get_stationing_nest(file: ifcopenshell.file, alignment: entity_instance) -> entity_instance:
     """
-    Searches for the IfcRelNest that contains IfcReferent.
+    Searches for the IfcRelNests that defines the alignment's stationing scheme.
+
+    The returned nest is nested to the IfcAlignment and its RelatedObjects contains only the
+    IfcReferent(s) (PredefinedType="STATION") that establish the alignment's starting station and
+    any station equations along it, as created by add_stationing_referent. It does not contain any
+    other kind of referent (e.g. key-point referents from update_key_point_referents live in their
+    own, separate IfcRelNests).
 
     :param file:
-    :param alignment: The IfcAlignment which hosts IfcReferent
+    :param alignment: The IfcAlignment which hosts the stationing IfcReferent(s)
     :return: Returns the IfcRelNests or None
     """
     if not alignment.is_a("IfcAlignment"):
