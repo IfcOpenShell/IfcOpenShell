@@ -320,9 +320,8 @@ if BUILD_CFG == "MinSizeRel":
     cecho("     WARNING: MinSizeRel build can suffer from a significant performance loss.", RED)
 
 cecho(f"* IFCOS_NUM_BUILD_PROCS  = {IFCOS_NUM_BUILD_PROCS}", MAGENTA)
-cecho(""" - How many compiler processes may be run in parallel.
-""")
-cecho(f" * IFCOS_SCHEMAS = '{os.environ.get('IFCOS_SCHEMAS')}'", MAGENTA)
+cecho(""" - How many compiler processes may be run in parallel.""")
+cecho(f"* IFCOS_SCHEMAS = '{os.environ.get('IFCOS_SCHEMAS')}'", MAGENTA)
 cecho(""" - IFC Schemas to compile. If not provided, fallback to default provided in cmake.
 """)
 
