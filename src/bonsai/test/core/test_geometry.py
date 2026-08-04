@@ -219,7 +219,6 @@ class TestRemoveRepresentation:
     def test_removing_an_actively_used_mapped_representation_by_remapping_usages_to_an_empty(self, ifc, geometry):
         ifc.get_entity("obj").should_be_called().will_return("element")
         geometry.get_element_type("element").should_be_called().will_return("type")
-        geometry.is_mapped_representation("mapped_rep").should_be_called().will_return(False)
         geometry.is_type_product("element").should_be_called().will_return(True)
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("data")
@@ -233,14 +232,27 @@ class TestRemoveRepresentation:
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
         subject.remove_representation(ifc, geometry, obj="obj", representation="mapped_rep")
 
-    def test_removing_an_unused_mapped_representation(self, ifc, geometry):
+    def test_removing_an_unused_mapped_representation_anchored_to_the_type(self, ifc, geometry):
         ifc.get_entity("obj").should_be_called().will_return("element")
         geometry.get_element_type("element").should_be_called().will_return("type")
-        geometry.is_mapped_representation("mapped_rep").should_be_called().will_return(True)
+        geometry.is_type_product("element").should_be_called().will_return(False)
+        geometry.is_mapped_representation_of_type("mapped_rep", "type").should_be_called().will_return(True)
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return(None)
         ifc.run("geometry.unassign_representation", product="type", representation="representation").should_be_called()
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
+        subject.remove_representation(ifc, geometry, obj="obj", representation="mapped_rep")
+
+    def test_removing_a_mapped_representation_whose_map_floats_off_the_type(self, ifc, geometry):
+        # See #9216: the map isn't in element_type.RepresentationMaps (eg. Revit
+        # imports), so removal must happen at the occurrence level, not the type's.
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        geometry.get_element_type("element").should_be_called().will_return("type")
+        geometry.is_type_product("element").should_be_called().will_return(False)
+        geometry.is_mapped_representation_of_type("mapped_rep", "type").should_be_called().will_return(False)
+        geometry.get_representation_data("mapped_rep").should_be_called().will_return(None)
+        ifc.run("geometry.unassign_representation", product="element", representation="mapped_rep").should_be_called()
+        ifc.run("geometry.remove_representation", representation="mapped_rep").should_be_called()
         subject.remove_representation(ifc, geometry, obj="obj", representation="mapped_rep")
 
     def test_remove_a_mapped_representation_by_an_element_with_no_type(self, ifc, geometry):
@@ -258,8 +270,8 @@ class TestRemoveRepresentation:
     def test_removing_an_actively_used_representation(self, ifc, geometry):
         ifc.get_entity("obj").should_be_called().will_return("element")
         geometry.get_element_type("element").should_be_called().will_return("type")
-        geometry.is_mapped_representation("representation").should_be_called().will_return(False)
         geometry.is_type_product("element").should_be_called().will_return(False)
+        geometry.is_mapped_representation_of_type("representation", "type").should_be_called().will_return(False)
         geometry.get_representation_data("representation").should_be_called().will_return("data")
         geometry.has_data_users("data").should_be_called().will_return(True)
         geometry.switch_from_representation("obj", "representation").should_be_called()
@@ -272,8 +284,8 @@ class TestRemoveRepresentation:
     def test_removing_an_unused_representation(self, ifc, geometry):
         ifc.get_entity("obj").should_be_called().will_return("element")
         geometry.get_element_type("element").should_be_called().will_return("type")
-        geometry.is_mapped_representation("representation").should_be_called().will_return(False)
         geometry.is_type_product("element").should_be_called().will_return(False)
+        geometry.is_mapped_representation_of_type("representation", "type").should_be_called().will_return(False)
         geometry.get_representation_data("representation").should_be_called().will_return(None)
         ifc.run(
             "geometry.unassign_representation", product="element", representation="representation"
