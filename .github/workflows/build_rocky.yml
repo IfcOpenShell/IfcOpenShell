@@ -134,9 +134,12 @@ jobs:
               done
           fi
 
+          # Ensure that all shared libraries in provided dest `$1`
+          # are present using their SONAMEs (at least as symlinks).
           ensure_soname_links() {
               dest="$1"
               find "$dest" -maxdepth 1 -type f -name "*.so*" | while IFS= read -r shared_object; do
+                  # TODO: actual pattern is "Library soname" instead of "Shared library"?
                   soname=$(readelf -d "$shared_object" 2>/dev/null | sed -n 's/.*(SONAME).*Shared library: \[\(.*\)\].*/\1/p' | head -n 1)
                   [ -n "$soname" ] || continue
                   [ -e "$dest/$soname" ] && continue
@@ -144,6 +147,8 @@ jobs:
               done
           }
 
+          # Copy all libs from `install/ifcopenshell` to the provided `$1`.
+          # Set `$2` to `0` to skip including geometry writers.
           stage_runtime_payload() {
               dest="$1"
               include_geometry_writers="${2:-1}"
@@ -161,18 +166,22 @@ jobs:
               ensure_soname_links "$dest"
           }
 
+          # Copy all libs from `QT_DIR` to the provided `$2`.
           stage_qt_runtime_payload() {
               exe_path="$1"
               dest="$2"
               [ -n "${QT_DIR:-}" ] && [ -d "$QT_DIR/lib" ] || return 0
 
+              # Skip executables that don't depend on QT (don't have `libQt6` referenced).
               if ! LD_LIBRARY_PATH="$QT_DIR/lib:${LD_LIBRARY_PATH:-}" ldd "$exe_path" 2>/dev/null | grep -q "libQt6"; then
                   return 0
               fi
 
+              # Copy all QT libs to `dest`.
               find "$QT_DIR/lib" -maxdepth 1 \( -type f -o -type l \) -name "*.so*" -exec cp -P {} "$dest/" \;
               ensure_soname_links "$dest"
 
+              # Copy QT plugins.
               if [ -d "$QT_DIR/plugins" ]; then
                   pushd "$QT_DIR/plugins" > /dev/null
                   find . \( -type f -o -type l \) -name "*.so*" | while IFS= read -r plugin_file; do
@@ -180,6 +189,7 @@ jobs:
                       cp -P "$plugin_file" "$dest/plugins/$plugin_file"
                   done
                   popd > /dev/null
+                  # Point plugins rpath to `$dest`.
                   if [ -d "$dest/plugins" ]; then
                       find "$dest/plugins" -type f -name "*.so*" -exec patchelf --set-rpath '$ORIGIN/../..:$ORIGIN' {} \;
                   fi
@@ -190,17 +200,23 @@ jobs:
               printf "[Paths]\nPrefix = .\n" > "$dest/qt.conf"
           }
 
+          # Check all binaries in the dest `$1`
+          # and report if they're still missing dependencies or are static.
           check_runtime_dependencies() {
               package_dir="$1"
               missing=0
+              # Iterate over all .so files.
               while IFS= read -r binary_file; do
+                  # Skip non-binaries.
                   readelf -h "$binary_file" >/dev/null 2>&1 || continue
+                  # Report non-dynamic binaries.
                   if ! env -u LD_LIBRARY_PATH ldd "$binary_file" > "$package_dir/.ldd.out" 2>&1; then
                       echo "ldd failed for $binary_file"
                       cat "$package_dir/.ldd.out"
                       missing=1
                       continue
                   fi
+                  # Report missing dependencies.
                   if grep -q "not found" "$package_dir/.ldd.out"; then
                       echo "Missing runtime dependencies for $binary_file"
                       grep "not found" "$package_dir/.ldd.out"
@@ -208,12 +224,15 @@ jobs:
                   fi
               done < <(find "$package_dir" -type f \( -perm /111 -o -name "*.so" -o -name "*.so.*" \))
               rm -f "$package_dir/.ldd.out"
+              # TODO: should error?
               if [ "$missing" -ne 0 ]; then
                   echo "Runtime dependency check found issues; continuing packaging."
               fi
               return 0
           }
 
+          # Iterate over all built Python wrappers in `install/ifcopenshell/python-x.y.z`.
+          # and zip them, bundling all dynamic libs from `lib`.
           ls -d python-* | while read py_version; do
               postfix=`echo ${py_version: -1} | sed s/[0-9]//`
               numbers=`echo $py_version | grep -oE '[0-9]+\.[0-9]+' | tr -d '.'`
@@ -227,12 +246,15 @@ jobs:
               fi
               [ -d ifcopenshell/__pycache__ ] && rm -rf ifcopenshell/__pycache__
               find ifcopenshell -name "*.pyc" -delete
+              # TODO: packs qt libs also?
               stage_runtime_payload ifcopenshell
               zip -y -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip ifcopenshell
               mv *.zip ~/output
               popd > /dev/null
           done
 
+          # Iterate over all executables in `install/ifcopenshell/bin` and zip them.
+          # Each zip bundles dynamic libs from `lib` and also qt libs.
           find "$install_root/bin" -maxdepth 1 -type f -perm /111 ! -name "*.zip" ! -name "*.so" ! -name "*.so.*" ! -name "*.dylib" ! -name "*.dll" | while read exe_path; do
               exe=`basename "$exe_path"`
               package_dir="$install_root/.package-${exe}"
