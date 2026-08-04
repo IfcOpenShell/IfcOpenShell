@@ -306,6 +306,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                 ${kernel_libraries}
                 ${tree_libraries}
                 ${mapping_libraries}
+                geometry_serializer
                 ${geometry_serializer_libraries}
                 ${document_serializer_libraries}
                 ${linework_processing_libraries}
