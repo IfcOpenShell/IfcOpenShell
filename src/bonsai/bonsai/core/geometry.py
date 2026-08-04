@@ -156,8 +156,7 @@ def remove_representation(
     # the type (typical of Revit imports) must be removed at the occurrence level
     # instead -- the type branch would no-op and leave it unremovable.
     if element_type and (
-        geometry.is_type_product(element)
-        or geometry.is_mapped_representation_of_type(representation, element_type)
+        geometry.is_type_product(element) or geometry.is_mapped_representation_of_type(representation, element_type)
     ):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
