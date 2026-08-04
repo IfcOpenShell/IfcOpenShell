@@ -7,7 +7,7 @@ index d765b108..6800c2a7 100644
  
  # Set the library variable
 -if(UNIX)
-+if(0)
++if(@USE_SHARED@)
  	set(OPENCOLLADA_LIBRARIES
  		ftoa_shared
  		buffer_shared

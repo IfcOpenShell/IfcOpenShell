@@ -1112,9 +1112,9 @@ if "libxml2" in targets:
 if "OpenCOLLADA" in targets:
     patches = ["./patches/opencollada/pr622_and_disable_subdirs.patch"]
 
-    # This patch allows static libraries config on Unix,
-    # because the config is weird and doesn't allow non-shared libraries on Unix.
-    patches.append("./patches/opencollada/allow_static_libraries_config_on_unix.patch")
+    # OpenCOLLADAConfig.cmake.in hardcodes shared-lib targets on Unix regardless of
+    # whether shared libs were actually built. We make it follow `USE_SHARED` instead.
+    patches.append("./patches/opencollada/config_select_libs_by_use_shared.patch")
 
     if "wasm" in flags:
         # This is necessary for the WASM build, because recent versions of
