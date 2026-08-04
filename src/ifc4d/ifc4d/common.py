@@ -316,9 +316,7 @@ class ScheduleIfcGenerator:
                 # from are ordinary relationships, and they are written out as
                 # IfcRelSequence like any other, so a scheduler can recompute
                 # the span the same way P6 did.
-                "PredefinedType": (
-                    "ATTENDANCE" if activity.get("Type") == "Level of Effort" else "CONSTRUCTION"
-                ),
+                "PredefinedType": ("ATTENDANCE" if activity.get("Type") == "Level of Effort" else "CONSTRUCTION"),
             },
         )
         self.create_udf_pset(activity)
@@ -351,12 +349,8 @@ class ScheduleIfcGenerator:
         task_time.ScheduleFinish = date(activity["FinishDate"], "IfcDateTime")
         task_time.DurationType = "WORKTIME"
         planned = activity["PlannedDuration"]
-        if planned is not None and (
-            float(planned) or activity["StartDate"] == activity["FinishDate"]
-        ):
-            task_time.ScheduleDuration = date(
-                timedelta(days=float(planned) / hours_per_day), "IfcDuration"
-            )
+        if planned is not None and (float(planned) or activity["StartDate"] == activity["FinishDate"]):
+            task_time.ScheduleDuration = date(timedelta(days=float(planned) / hours_per_day), "IfcDuration")
 
         for attribute, value in (
             ("ActualStart", activity.get("ActualStartDate")),
@@ -396,10 +390,7 @@ class ScheduleIfcGenerator:
         ifcopenshell.api.pset.edit_pset(
             self.file,
             pset=pset,
-            properties={
-                title: self.file.create_entity(ifc_type, value)
-                for title, (ifc_type, value) in udfs.items()
-            },
+            properties={title: self.file.create_entity(ifc_type, value) for title, (ifc_type, value) in udfs.items()},
         )
 
     def create_code_pset(self, activity: Activity) -> None:
@@ -408,14 +399,11 @@ class ScheduleIfcGenerator:
         codes = activity.get("Codes")
         if not codes:
             return
-        pset = ifcopenshell.api.pset.add_pset(
-            self.file, product=activity["ifc"], name="P6_ActivityCodes"
-        )
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=activity["ifc"], name="P6_ActivityCodes")
         ifcopenshell.api.pset.edit_pset(
             self.file,
             pset=pset,
-            properties={name: self.file.create_entity("IfcLabel", value)
-                        for name, (value, _) in codes.items()},
+            properties={name: self.file.create_entity("IfcLabel", value) for name, (value, _) in codes.items()},
         )
         # A P6 code carries a short value and a readable description — "SO" and
         # "Start on Site Milestone". Both matter to a reader, and IfcProperty
@@ -441,8 +429,7 @@ class ScheduleIfcGenerator:
                 (
                     rel
                     for rel in successor.IsSuccessorFrom or []
-                    if rel.RelatingProcess == predecessor
-                    and rel.SequenceType == relationship["Type"]
+                    if rel.RelatingProcess == predecessor and rel.SequenceType == relationship["Type"]
                 ),
                 None,
             )

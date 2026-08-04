@@ -229,8 +229,8 @@ class P62Ifc:
         name and value live up here.
         """
         for code_type in root.findall("pr:ActivityCodeType", self.ns):
-            self.code_types[code_type.findtext("pr:ObjectId", namespaces=self.ns)] = (
-                code_type.findtext("pr:Name", namespaces=self.ns)
+            self.code_types[code_type.findtext("pr:ObjectId", namespaces=self.ns)] = code_type.findtext(
+                "pr:Name", namespaces=self.ns
             )
         for code in root.findall("pr:ActivityCode", self.ns):
             self.code_values[code.findtext("pr:ObjectId", namespaces=self.ns)] = (

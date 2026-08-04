@@ -31,19 +31,13 @@ class TestUnassignSequence(test.bootstrap.IFC4):
 
     def test_unassigning_a_sequence(self):
         predecessor, successor = self._pair()
-        ifcopenshell.api.sequence.assign_sequence(
-            self.file, relating_process=predecessor, related_process=successor
-        )
-        ifcopenshell.api.sequence.unassign_sequence(
-            self.file, relating_process=predecessor, related_process=successor
-        )
+        ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=predecessor, related_process=successor)
+        ifcopenshell.api.sequence.unassign_sequence(self.file, relating_process=predecessor, related_process=successor)
         assert len(self.file.by_type("IfcRelSequence")) == 0
 
     def test_doing_nothing_if_the_tasks_are_not_sequenced(self):
         predecessor, successor = self._pair()
-        ifcopenshell.api.sequence.unassign_sequence(
-            self.file, relating_process=predecessor, related_process=successor
-        )
+        ifcopenshell.api.sequence.unassign_sequence(self.file, relating_process=predecessor, related_process=successor)
         assert len(self.file.by_type("IfcRelSequence")) == 0
 
     def test_unassigning_every_sequence_between_the_pair_by_default(self):
@@ -55,9 +49,7 @@ class TestUnassignSequence(test.bootstrap.IFC4):
                 related_process=successor,
                 sequence_type=sequence_type,
             )
-        ifcopenshell.api.sequence.unassign_sequence(
-            self.file, relating_process=predecessor, related_process=successor
-        )
+        ifcopenshell.api.sequence.unassign_sequence(self.file, relating_process=predecessor, related_process=successor)
         assert len(self.file.by_type("IfcRelSequence")) == 0
 
     def test_unassigning_only_the_named_type(self):
@@ -97,15 +89,9 @@ class TestUnassignSequence(test.bootstrap.IFC4):
 
     def test_leaving_the_other_direction_alone(self):
         task1, task2 = self._pair()
-        ifcopenshell.api.sequence.assign_sequence(
-            self.file, relating_process=task1, related_process=task2
-        )
-        ifcopenshell.api.sequence.assign_sequence(
-            self.file, relating_process=task2, related_process=task1
-        )
-        ifcopenshell.api.sequence.unassign_sequence(
-            self.file, relating_process=task1, related_process=task2
-        )
+        ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task1, related_process=task2)
+        ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task2, related_process=task1)
+        ifcopenshell.api.sequence.unassign_sequence(self.file, relating_process=task1, related_process=task2)
         rels = self.file.by_type("IfcRelSequence")
         assert len(rels) == 1
         assert rels[0].RelatingProcess == task2

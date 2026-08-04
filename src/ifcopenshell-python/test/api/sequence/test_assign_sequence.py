@@ -85,11 +85,7 @@ class TestAssignSequence(test.bootstrap.IFC4):
     def test_not_confusing_the_two_directions_of_a_pair(self):
         task1 = ifcopenshell.api.sequence.add_task(self.file)
         task2 = ifcopenshell.api.sequence.add_task(self.file)
-        forwards = ifcopenshell.api.sequence.assign_sequence(
-            self.file, relating_process=task1, related_process=task2
-        )
-        backwards = ifcopenshell.api.sequence.assign_sequence(
-            self.file, relating_process=task2, related_process=task1
-        )
+        forwards = ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task1, related_process=task2)
+        backwards = ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task2, related_process=task1)
         assert forwards != backwards
         assert len(self.file.by_type("IfcRelSequence")) == 2
