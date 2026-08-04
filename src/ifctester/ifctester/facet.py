@@ -636,6 +636,15 @@ class PartOf(Facet):
         return parent
 
 
+class BoundedValues(list):
+    """List of an IfcPropertyBoundedValue's values, plus its upper/lower bound."""
+
+    def __init__(self, *args, upper=None, lower=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.upper = upper
+        self.lower = lower
+
+
 class Property(Facet):
     def __init__(
         self,
@@ -804,13 +813,14 @@ class Property(Facet):
                                 for v in props[pset_name][prop_entity.Name]
                             ]
                     elif prop_entity.is_a("IfcPropertyBoundedValue"):
-                        values = []
+                        bound_attributes = ["UpperBoundValue", "LowerBoundValue", "SetPointValue"]
+                        raw_values = {}
                         data_type = None
-                        for attribute in ["UpperBoundValue", "LowerBoundValue", "SetPointValue"]:
+                        for attribute in bound_attributes:
                             value = getattr(prop_entity, attribute)
                             if value is not None:
                                 data_type = value.is_a()
-                                values.append(value.wrappedValue)
+                                raw_values[attribute] = value.wrappedValue
                         assert data_type is not None, prop_entity
                         if self.dataType and data_type.lower() != self.dataType.lower():
                             is_pass = False
@@ -818,16 +828,21 @@ class Property(Facet):
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
-                            values = [
-                                ifcopenshell.util.unit.convert(
+                            raw_values = {
+                                attribute: ifcopenshell.util.unit.convert(
                                     v,
                                     getattr(unit, "Prefix", None),
                                     unit.Name,
                                     None,
                                     ifcopenshell.util.unit.si_type_names[unit.UnitType],
                                 )
-                                for v in values
-                            ]
+                                for attribute, v in raw_values.items()
+                            }
+                        values = BoundedValues(
+                            (raw_values[a] for a in bound_attributes if a in raw_values),
+                            upper=raw_values.get("UpperBoundValue"),
+                            lower=raw_values.get("LowerBoundValue"),
+                        )
                         props[pset_name][prop_entity.Name] = values
                     elif prop_entity.is_a("IfcPropertyTableValue"):
                         values = []
@@ -881,6 +896,25 @@ class Property(Facet):
                             # "i_require_foo" = ["a", "b"] such as in enumerated properties
                             cast_value = cast_to_value(self.value, value[0])
                             if cast_value not in value:
+                                is_pass = False
+                                reason = {"type": "VALUE", "actual": value}
+                                break
+                        elif not isinstance(self.value, str) and isinstance(value, BoundedValues):
+                            # Restriction against Upper/LowerBoundValue only; SetPointValue is
+                            # ignored and a missing bound on a constrained side fails.
+                            has_max_constraint = any(c in self.value.options for c in ("maxInclusive", "maxExclusive"))
+                            has_min_constraint = any(c in self.value.options for c in ("minInclusive", "minExclusive"))
+                            is_range_pass = True
+                            if has_max_constraint and value.upper is None:
+                                is_range_pass = False
+                            if has_min_constraint and value.lower is None:
+                                is_range_pass = False
+                            if is_range_pass:
+                                for bound in (value.upper, value.lower):
+                                    if bound is not None and bound != self.value:
+                                        is_range_pass = False
+                                        break
+                            if not is_range_pass:
                                 is_pass = False
                                 reason = {"type": "VALUE", "actual": value}
                                 break
