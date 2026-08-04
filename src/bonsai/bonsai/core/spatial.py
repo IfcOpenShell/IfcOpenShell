@@ -205,6 +205,7 @@ def generate_space(
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
 
     if element and element.is_a("IfcSpace"):
+        z = active_obj.location.z
         container = ifcopenshell.util.element.get_parent(element) or root.get_default_container()
     else:
         container = root.get_default_container()
@@ -235,7 +236,6 @@ def generate_space(
 
     if element and element.is_a("IfcSpace"):
         assert active_obj
-        active_obj.location.z = z
         spatial.set_space_representation_from_polygon(
             active_obj,
             element,

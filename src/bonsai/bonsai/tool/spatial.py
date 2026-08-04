@@ -890,9 +890,13 @@ class Spatial(bonsai.core.tool.Spatial):
 
         # Commit any moved visible bounding objects before reading IFC geometry,
         # so the IFC-based cache uses the current Blender positions.
+        # Walls/roofs/slabs that affect the space footprint or height must be
+        # committed before the cache is rebuilt; otherwise the IFC geometry read by
+        # the iterator will be stale and a moved roof/slab will not be picked up.
+        affected_classes = ifcopenshell.util.space.BOUNDING_CLASSES + ifcopenshell.util.space.HEIGHT_DETECTION_CLASSES
         for obj in bpy.context.visible_objects:
             element = tool.Ifc.get_entity(obj)
-            if element is None or not any(element.is_a(c) for c in ifcopenshell.util.space.BOUNDING_CLASSES):
+            if element is None or not any(element.is_a(c) for c in affected_classes):
                 continue
             tool.Geometry.commit_placement_if_moved(obj)
         cls._geom_cache.clear()
@@ -956,6 +960,55 @@ class Spatial(bonsai.core.tool.Spatial):
         )
 
     @classmethod
+    def _get_or_create_body_context(cls, ifc_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        """Return the Model/Body/MODEL_VIEW context, creating one if absent."""
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        if context is not None:
+            return context
+        # Some subcontexts may not expose the inherited ContextType value, so also
+        # search by ContextIdentifier/TargetView directly.
+        for ctx in ifc_file.by_type("IfcGeometricRepresentationSubContext"):
+            if ctx.ContextIdentifier == "Body" and getattr(ctx, "TargetView", None) == "MODEL_VIEW":
+                return ctx
+        # Create a minimal context if none exists.
+        model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+        if model_context is None:
+            model_context = ifc_file.createIfcGeometricRepresentationContext(
+                ContextType="Model",
+                CoordinateSpaceDimension=3,
+                Precision=1e-5,
+                WorldCoordinateSystem=ifc_file.createIfcAxis2Placement3D(
+                    ifc_file.createIfcCartesianPoint([0.0, 0.0, 0.0])
+                ),
+                TrueNorth=ifc_file.createIfcDirection([0.0, 1.0, 0.0]),
+            )
+        return ifc_file.createIfcGeometricRepresentationSubContext(
+            ParentContext=model_context,
+            ContextIdentifier="Body",
+            TargetView="MODEL_VIEW",
+            ContextType="Model",
+        )
+
+    @classmethod
+    def _remove_existing_body_representations(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Optional[ifcopenshell.entity_instance]:
+        """Remove every existing Body representation from an element.
+
+        Returns the context of the first removed representation, or None.
+        """
+        ifc_file = tool.Ifc.get()
+        if element.Representation is None:
+            return None
+        body_reps = [r for r in element.Representation.Representations if r.RepresentationIdentifier == "Body"]
+        context = None
+        for rep in body_reps:
+            context = rep.ContextOfItems
+            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
+        return context
+
+    @classmethod
     def set_brep_representation_from_mesh(
         cls,
         obj: bpy.types.Object,
@@ -963,17 +1016,14 @@ class Spatial(bonsai.core.tool.Spatial):
         item: ifcopenshell.entity_instance,
     ) -> None:
         """Assign a representation item (clipped solid or B-rep) to the element."""
-        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if old_body:
-            context = old_body.ContextOfItems
-            ifcopenshell.api.geometry.unassign_representation(tool.Ifc.get(), product=element, representation=old_body)
-            ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=old_body)
-        else:
-            context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        ifc_file = tool.Ifc.get()
+        context = cls._remove_existing_body_representations(element)
+        if context is None:
+            context = cls._get_or_create_body_context(ifc_file)
 
-        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
         new_body = builder.get_representation(context, item)
-        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=element, representation=new_body)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
@@ -1292,13 +1342,9 @@ class Spatial(bonsai.core.tool.Spatial):
         curve = builder.polyline(coords_2d, closed=True)
         item = builder.extrude(curve, magnitude=depth_ifc)
 
-        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if old_body:
-            context = old_body.ContextOfItems
-            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=old_body)
-            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_body)
-        else:
-            context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        context = cls._remove_existing_body_representations(element)
+        if context is None:
+            context = cls._get_or_create_body_context(ifc_file)
 
         new_body = builder.get_representation(context, item)
         ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
@@ -1345,6 +1391,11 @@ class Spatial(bonsai.core.tool.Spatial):
             matrix=matrix,
             is_si=True,
         )
+
+        for b in list(element.BoundedBy or []):
+            ifcopenshell.api.boundary.remove_boundary(ifc_file, b)
+
+        cls._remove_existing_body_representations(element)
 
         if cls.get_spatial_props().force_space_height:
             cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)

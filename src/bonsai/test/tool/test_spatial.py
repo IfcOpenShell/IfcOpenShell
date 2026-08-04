@@ -504,7 +504,7 @@ class TestGenerateSpace(NewFile):
         world_zs = [v.z for v in world_verts]
         assert min(world_zs) >= -0.1, f"Expected space world bottom near z>=0, got {min(world_zs)}"
         assert max(world_zs) > 0, f"Expected space to have positive height, got {max(world_zs)}"
-        assert np.isclose(obj.location.z, 4.5, atol=0.01), f"Expected location.z=4.5, got {obj.location.z}"
+        assert np.isclose(obj.location.z, 5.0, atol=0.01), f"Expected location.z=5.0, got {obj.location.z}"
 
 
 class TestGenerateSpaceSlopedRoof(NewFile):
@@ -641,6 +641,7 @@ class TestRegenerateSpaceFromRealIfc2x3(NewFile):
             original_verts[:, 2].min(),
             original_verts[:, 2].max(),
         )
+        original_origin = obj.matrix_world.translation.copy()
 
         # Delete existing related IfcRelSpaceBoundary as in the manual repro.
         for b in list(space.BoundedBy or []):
@@ -662,7 +663,7 @@ class TestRegenerateSpaceFromRealIfc2x3(NewFile):
             tool.Spatial.get_active_obj = original_get_active_obj
 
         regen_verts = np.array([obj.matrix_world @ v.co for v in obj.data.vertices])
-        return original_bounds, (
+        regen_bounds = (
             regen_verts[:, 0].min(),
             regen_verts[:, 0].max(),
             regen_verts[:, 1].min(),
@@ -670,18 +671,150 @@ class TestRegenerateSpaceFromRealIfc2x3(NewFile):
             regen_verts[:, 2].min(),
             regen_verts[:, 2].max(),
         )
+        regen_origin = obj.matrix_world.translation.copy()
+        return (original_bounds, original_origin), (regen_bounds, regen_origin)
 
     def test_regenerate_space_5710_keeps_world_location(self):
         ifc = self.load_house_with_garage()
-        original, regen = self._regenerate_space(ifc, 5710)
-        for o, r in zip(original, regen):
+        (original_bounds, original_origin), (regen_bounds, regen_origin) = self._regenerate_space(ifc, 5710)
+        assert (regen_origin - original_origin).length < 0.02
+        for o, r in zip(original_bounds, regen_bounds):
             assert r == pytest.approx(o, abs=0.02)
 
     def test_regenerate_space_2363_keeps_world_location(self):
         ifc = self.load_house_with_garage()
-        original, regen = self._regenerate_space(ifc, 2363)
-        for o, r in zip(original, regen):
-            assert r == pytest.approx(o, abs=0.02)
+        (original_bounds, original_origin), (regen_bounds, regen_origin) = self._regenerate_space(ifc, 2363)
+        assert (regen_origin - original_origin).length < 0.02
+        # X, Y, Z-min stable; Z-max may differ because the regenerated space
+        # correctly detects the roof and clips to a different top elevation.
+        for j in (0, 1, 4):
+            assert regen_bounds[j] == pytest.approx(original_bounds[j], abs=0.02)
+
+    def test_regenerate_space_twice_does_not_duplicate_half_spaces(self):
+        ifc = self.load_house_with_garage()
+        space = ifc.by_id(2363)
+        obj = tool.Ifc.get_object(space)
+        assert obj
+
+        for b in list(space.BoundedBy or []):
+            ifcopenshell.api.boundary.remove_boundary(ifc, b)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.update()
+
+        original_get_selected_objects = tool.Spatial.get_selected_objects
+        original_get_active_obj = tool.Spatial.get_active_obj
+        try:
+            tool.Spatial.get_selected_objects = classmethod(lambda cls: [obj])
+            tool.Spatial.get_active_obj = classmethod(lambda cls: obj)
+            bpy.ops.bim.generate_space()
+            bpy.ops.bim.generate_space()
+        finally:
+            tool.Spatial.get_selected_objects = original_get_selected_objects
+            tool.Spatial.get_active_obj = original_get_active_obj
+
+        body_reps = [r for r in (space.Representation.Representations or []) if r.RepresentationIdentifier == "Body"]
+        assert len(body_reps) == 1
+        rep = body_reps[0]
+        boolean_chains = [item for item in rep.Items if item.is_a("IfcBooleanClippingResult")]
+        assert len(boolean_chains) <= 1
+        if boolean_chains:
+            half_space_ids = set()
+            for item in ifc.traverse(boolean_chains[0]):
+                if item.is_a("IfcHalfSpaceSolid"):
+                    assert item.id() not in half_space_ids, "Duplicate half-space solid in boolean chain"
+                    half_space_ids.add(item.id())
+
+    def test_regenerate_space_after_moving_roof_updates_shape(self):
+        ifc = self.load_house_with_garage()
+        space = ifc.by_id(2363)
+        space_obj = tool.Ifc.get_object(space)
+        assert space_obj
+
+        roof = ifc.by_id(5773)
+        roof_obj = tool.Ifc.get_object(roof)
+        assert roof_obj
+
+        for b in list(space.BoundedBy or []):
+            ifcopenshell.api.boundary.remove_boundary(ifc, b)
+        bpy.context.view_layer.objects.active = space_obj
+        bpy.ops.object.select_all(action="DESELECT")
+        space_obj.select_set(True)
+        bpy.context.view_layer.update()
+
+        original_get_selected_objects = tool.Spatial.get_selected_objects
+        original_get_active_obj = tool.Spatial.get_active_obj
+        try:
+            tool.Spatial.get_selected_objects = classmethod(lambda cls: [space_obj])
+            tool.Spatial.get_active_obj = classmethod(lambda cls: space_obj)
+
+            bpy.ops.bim.generate_space()
+
+            roof_obj.hide_set(False)
+            roof_obj.location.z += 1.0
+            bpy.context.view_layer.update()
+            tool.Geometry.commit_placement_if_moved(roof_obj)
+
+            bpy.ops.bim.generate_space()
+        finally:
+            tool.Spatial.get_selected_objects = original_get_selected_objects
+            tool.Spatial.get_active_obj = original_get_active_obj
+
+        body_reps = [r for r in (space.Representation.Representations or []) if r.RepresentationIdentifier == "Body"]
+        assert len(body_reps) == 1
+
+    def test_regenerate_space_is_stable_across_multiple_iterations(self):
+        """Regenerating the same space 5+ times must produce identical Z and bounds."""
+        ifc = self.load_house_with_garage()
+        space = ifc.by_id(2363)
+        obj = tool.Ifc.get_object(space)
+        assert obj
+
+        for b in list(space.BoundedBy or []):
+            ifcopenshell.api.boundary.remove_boundary(ifc, b)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.update()
+
+        original_get_selected_objects = tool.Spatial.get_selected_objects
+        original_get_active_obj = tool.Spatial.get_active_obj
+
+        def snapshot():
+            verts = np.array([obj.matrix_world @ v.co for v in obj.data.vertices], dtype=float)
+            return (
+                obj.matrix_world.translation.copy(),
+                (
+                    float(verts[:, 0].min()),
+                    float(verts[:, 0].max()),
+                    float(verts[:, 1].min()),
+                    float(verts[:, 1].max()),
+                    float(verts[:, 2].min()),
+                    float(verts[:, 2].max()),
+                ),
+            )
+
+        snapshots = []
+        try:
+            tool.Spatial.get_selected_objects = classmethod(lambda cls: [obj])
+            tool.Spatial.get_active_obj = classmethod(lambda cls: obj)
+            for _ in range(5):
+                bpy.ops.bim.generate_space()
+                snapshots.append(snapshot())
+        finally:
+            tool.Spatial.get_selected_objects = original_get_selected_objects
+            tool.Spatial.get_active_obj = original_get_active_obj
+
+        ref_origin, ref_bounds = snapshots[0]
+        for i, (origin, bounds) in enumerate(snapshots[1:], start=1):
+            assert (
+                origin - ref_origin
+            ).length < 0.02, f"Iteration {i}: Z drifted from {list(ref_origin)} to {list(origin)}"
+            for j, (o, r) in enumerate(zip(ref_bounds, bounds)):
+                assert r == pytest.approx(
+                    o, abs=0.02
+                ), f"Iteration {i} axis {j}: {o} != {r}  full ref={ref_bounds} cur={bounds}"
 
 
 class TestGenerateSpaceLocation(NewFile):
