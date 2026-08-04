@@ -233,7 +233,6 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       camera_fov_y_deg_(core_.camera_fov_y_deg_),
       camera_near_    (core_.camera_near_),
       camera_far_     (core_.camera_far_),
-      background_color_(core_.background_color_),
       frame_uniform_buffer_(core_.frame_uniform_buffer_),
       frame_bind_group_    (core_.frame_bind_group_),
       selection_flags_buffer_  (core_.selection_flags_buffer_),
@@ -465,7 +464,13 @@ void ViewportWindow::saveScreenshotRgba8(const std::string& path,
     // QImage takes a stride argument so it doesn't try to read past the
     // last row — wgpu's staging buffer was BGRA8 padded; core already
     // packed the rows tightly into rgba.
-    QImage img(rgba, w, h, w * 4, QImage::Format_RGBA8888);
+    //
+    // Premultiplied, matching what the render pass leaves in the buffer: the
+    // main blend accumulates alpha as One/OneMinusSrcAlpha, so colour there is
+    // already scaled by coverage. Tagging it straight would wash out a
+    // screenshot taken over a translucent background; at the default opaque
+    // alpha the two formats describe the same bytes.
+    QImage img(rgba, w, h, w * 4, QImage::Format_RGBA8888_Premultiplied);
     const QString qpath = QString::fromStdString(path);
     if (img.save(qpath, "PNG")) {
         Log::info() << "[wgpu] saved screenshot: "
@@ -476,8 +481,7 @@ void ViewportWindow::saveScreenshotRgba8(const std::string& path,
 }
 
 void ViewportWindow::setBackgroundColor(float r, float g, float b, float a) {
-    background_color_ = {r, g, b, a};
-    if (isExposed()) requestUpdate();
+    core_.setBackgroundColor(r, g, b, a);
 }
 
 // -----------------------------------------------------------------------------

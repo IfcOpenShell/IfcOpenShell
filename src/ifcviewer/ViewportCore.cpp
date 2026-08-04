@@ -489,6 +489,13 @@ void ViewportCore::setBackfaceCulling(bool enabled) {
     host_->requestFrame();
 }
 
+void ViewportCore::setBackgroundColor(float r, float g, float b, float a) {
+    Eigen::Vector4f next{r, g, b, a};
+    if (background_color_ == next) return;
+    background_color_ = next;
+    host_->requestFrame();
+}
+
 bool ViewportCore::frameSelection() {
     if (selection_.count() == 0) return false;
     float lo[3] = {  std::numeric_limits<float>::infinity(),
@@ -6869,6 +6876,22 @@ void ViewportCore::configureSurface(int width_px, int height_px) {
         case WGPUPresentMode_Fifo:         pm_name = "fifo";         break;
         default: break;
     }
+    // Premultiplied is what lets setBackgroundColor's alpha reach the
+    // compositor, so a clear below alpha 1 shows through to whatever the
+    // viewport is stacked over. Not every surface advertises it, so pick it
+    // only when offered and fall back to Auto — which composites opaquely and
+    // discards the alpha channel — otherwise. The two are indistinguishable
+    // at alpha 1, the default and the only value a caller that never touches
+    // the background will see, so the fallback costs nothing there.
+    auto supportsAlphaMode = [&](WGPUCompositeAlphaMode mode) {
+        for (std::size_t i = 0; i < caps.alphaModeCount; ++i) {
+            if (caps.alphaModes[i] == mode) return true;
+        }
+        return false;
+    };
+    const bool premultiplied =
+        supportsAlphaMode(WGPUCompositeAlphaMode_Premultiplied);
+
     wgpuSurfaceCapabilitiesFreeMembers(caps);
     cfg.presentMode = pm;
     if (!surface_configured_) {
@@ -6886,7 +6909,14 @@ void ViewportCore::configureSurface(int width_px, int height_px) {
         }
         Log::info() << "[wgpu] present mode = " << pm_name << note;
     }
-    cfg.alphaMode = WGPUCompositeAlphaMode_Auto;
+    cfg.alphaMode = premultiplied ? WGPUCompositeAlphaMode_Premultiplied
+                                  : WGPUCompositeAlphaMode_Auto;
+    surface_premultiplied_ = premultiplied;
+    if (!surface_configured_) {
+        Log::info() << "[wgpu] composite alpha = "
+                    << (premultiplied ? "premultiplied (background alpha honoured)"
+                                      : "auto (opaque -- background alpha ignored)");
+    }
 
     wgpuSurfaceConfigure(surface_, &cfg);
     configured_w_       = width_px;
@@ -7292,11 +7322,18 @@ void ViewportCore::render() {
     color.resolveTarget = view;
     color.loadOp        = WGPULoadOp_Clear;
     color.storeOp       = WGPUStoreOp_Store;
+    // A premultiplied surface expects colour already scaled by alpha, so the
+    // clear fades toward transparent instead of tinting what shows through:
+    // leaving it unscaled would have the compositor add the background colour
+    // on top of the layer behind. When the surface could only be configured
+    // opaque the alpha is discarded anyway, and scaling would darken the
+    // colour for nothing — so hold alpha at 1 and write it straight.
+    const float bg_a = surface_premultiplied_ ? background_color_[3] : 1.0f;
     color.clearValue    = {
-        srgbToLinear(background_color_[0]),
-        srgbToLinear(background_color_[1]),
-        srgbToLinear(background_color_[2]),
-        1.0,
+        srgbToLinear(background_color_[0]) * bg_a,
+        srgbToLinear(background_color_[1]) * bg_a,
+        srgbToLinear(background_color_[2]) * bg_a,
+        bg_a,
     };
     color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
 

@@ -248,6 +248,20 @@ public:
     void setBackfaceCulling(bool enabled);
     bool backfaceCulling() const { return backface_culling_; }
 
+    // Background colour, RGBA in [0..1]. An alpha below 1 makes the viewport
+    // composite over whatever is behind it rather than painting a colour of
+    // its own: at alpha 0 it clears to nothing, so the model appears to sit
+    // on top of the layer behind — another canvas, a second 3D view, plain
+    // page content, anything the host stacks there. There is no depth
+    // interaction; the layer behind is strictly behind.
+    //
+    // Honouring the alpha needs a premultiplied surface, which configureSurface
+    // requests when the platform advertises it. Where it does not, the alpha is
+    // ignored and the clear stays opaque. At alpha 1 — the default, and every
+    // caller that leaves the background alone — the two are identical.
+    void setBackgroundColor(float r, float g, float b, float a);
+    const Eigen::Vector4f& backgroundColor() const { return background_color_; }
+
     // Frame the current selection: union the selected objects' world AABBs and
     // fit the camera to them (same 1.30 padding as the desktop "F" hotkey).
     // No-op with an empty selection or no resolvable AABBs; returns whether it
@@ -1504,6 +1518,11 @@ private:
     // an sRGB-to-linear conversion on top so the on-screen colour
     // matches the hex value passed via setBackgroundColor.
     Eigen::Vector4f background_color_ = {0.125f, 0.137f, 0.161f, 1.0f};
+
+    // Whether the surface was configured with a premultiplied alpha mode, and
+    // so whether background_color_'s alpha reaches the compositor at all.
+    // Decided per configureSurface against the surface's advertised modes.
+    bool surface_premultiplied_ = false;
 };
 
 #endif  // VIEWPORTCORE_H

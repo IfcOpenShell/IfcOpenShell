@@ -320,6 +320,40 @@
         if (c.ortho !== undefined) Module._ifcv_set_ortho_c(c.ortho ? 1 : 0);
       },
 
+      // ---- Background ------------------------------------------------------
+
+      // Clear colour, as '#rgb' / '#rrggbb' / '#rrggbbaa' or {r, g, b, a} with
+      // 0-255 channels. Alpha defaults to opaque.
+      //
+      // Unlike setColor, an alpha of 0 here is meaningful rather than the "no
+      // override" sentinel: it clears the canvas to nothing, letting whatever
+      // is behind it in the DOM show through. Stack anything under the canvas
+      // — another 3D view, a map, ordinary page content — and the model draws
+      // on top of it. There is no depth interaction: the layer behind is
+      // strictly behind, so it reads as a backdrop and cannot occlude the
+      // model. Requires a platform that composites the canvas with alpha;
+      // where it does not, the colour still applies and the alpha is ignored.
+      setBackground: function (color) {
+        let r, g, b, a = 255;
+        if (typeof color === 'string') {
+          let hex = color.replace(/^#/, '');
+          if (hex.length === 3) hex = hex.split('').map(function (c) { return c + c; }).join('');
+          if (hex.length !== 6 && hex.length !== 8) {
+            throw new Error('setBackground: expected #rgb, #rrggbb or #rrggbbaa, got ' + color);
+          }
+          r = parseInt(hex.slice(0, 2), 16);
+          g = parseInt(hex.slice(2, 4), 16);
+          b = parseInt(hex.slice(4, 6), 16);
+          if (hex.length === 8) a = parseInt(hex.slice(6, 8), 16);
+        } else if (color && typeof color === 'object') {
+          r = color.r | 0; g = color.g | 0; b = color.b | 0;
+          if (color.a !== undefined) a = color.a | 0;
+        } else {
+          throw new Error('setBackground: expected a colour, got ' + color);
+        }
+        Module._ifcv_set_background_c(r / 255, g / 255, b / 255, a / 255);
+      },
+
       // ---- Navigation ------------------------------------------------------
 
       // Which mouse buttons orbit / pan / select, as one of NAV_PRESETS:

@@ -760,8 +760,6 @@ private:
     uint32_t&                   hiz_reject_count_;
     std::atomic<int>&           hiz_trace_budget_;
 
-    Eigen::Vector4f& background_color_;
-
     // Camera state aliases (storage in core_).
     float (&camera_target_)[3];
     float& camera_distance_;

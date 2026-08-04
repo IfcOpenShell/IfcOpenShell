@@ -635,6 +635,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_ortho_c(int on) {
     if (bool(on) != g_app->core.projectionOrtho()) g_app->core.toggleProjection();
 }
 
+// Background colour, RGBA in [0..1]. Alpha 0 clears the canvas to nothing, so
+// whatever the host page has stacked behind it shows through. See
+// ViewportCore::setBackgroundColor.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_background_c(float r, float g,
+                                                           float b, float a) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setBackgroundColor(r, g, b, a);
+}
+
 // Mouse navigation scheme: "blender" | "rhino" | "revit" | "web". The preset
 // only rewrites the button/modifier table classifyPress reads, so unlike the
 // rest of the scripting API it does not need the GPU app to be live — a host
