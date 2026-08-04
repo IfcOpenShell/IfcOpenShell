@@ -4,7 +4,11 @@ from datetime import date, datetime, timedelta
 from typing import Any, TypedDict, Union
 
 import ifcopenshell
+import ifcopenshell.guid
+import ifcopenshell.util.date
 import ifcopenshell.api.control
+import ifcopenshell.api.owner
+import ifcopenshell.api.pset
 import ifcopenshell.api.resource
 import ifcopenshell.api.sequence
 from typing_extensions import NotRequired
@@ -41,6 +45,20 @@ class Activity(TypedDict):
     PlannedDuration: float
     Status: str
     CalendarObjectId: str
+    Type: NotRequired[str]
+    # {Title: (ifc_type, value)} — the IFC type comes from the P6 UDFType
+    # declaration, not from the value, so it is resolved at parse time.
+    UDFs: NotRequired[dict[str, tuple[str, str]]]
+    Codes: NotRequired[dict[str, str]]
+    ActualStartDate: NotRequired[Union[datetime, None]]
+    ActualFinishDate: NotRequired[Union[datetime, None]]
+    EarlyStartDate: NotRequired[Union[datetime, None]]
+    EarlyFinishDate: NotRequired[Union[datetime, None]]
+    LateStartDate: NotRequired[Union[datetime, None]]
+    LateFinishDate: NotRequired[Union[datetime, None]]
+    TotalFloat: NotRequired[Union[float, None]]
+    FreeFloat: NotRequired[Union[float, None]]
+    PercentComplete: NotRequired[Union[float, None]]
     ifc: Union[ifcopenshell.entity_instance, None]
 
 
@@ -230,8 +248,21 @@ class ScheduleIfcGenerator:
                 )
 
     def create_tasks(self, work_schedule: ifcopenshell.entity_instance) -> None:
-        for wbs in self.wbs.values():
-            self.create_task_from_wbs(wbs, work_schedule)
+        # Depth first, siblings in P6's SequenceNumber order rather than the
+        # order the export happens to list them in. Parents still come before
+        # children, which create_task_from_wbs depends on to find its parent's
+        # IFC task.
+        siblings: dict[Any, list[tuple[float, Any]]] = {}
+        for wbs_id, wbs in self.wbs.items():
+            parent = wbs["ParentObjectId"] if self.wbs.get(wbs["ParentObjectId"]) else None
+            siblings.setdefault(parent, []).append((wbs.get("SequenceNumber") or 0, wbs_id))
+
+        def emit(parent) -> None:
+            for _, wbs_id in sorted(siblings.get(parent, []), key=lambda pair: pair[0]):
+                self.create_task_from_wbs(self.wbs[wbs_id], work_schedule)
+                emit(wbs_id)
+
+        emit(None)
         for activity_id in self.root_activites:
             self.create_task_from_activity(self.activities[activity_id], None, work_schedule)
 
@@ -275,9 +306,23 @@ class ScheduleIfcGenerator:
                 "Identification": str(activity["Identification"]),
                 "Status": activity["Status"],
                 "IsMilestone": activity["StartDate"] == activity["FinishDate"],
-                "PredefinedType": "CONSTRUCTION",
+                # A P6 Level of Effort activity has no duration of its own: it
+                # stretches to span whatever it hangs off, and its dates are
+                # derived from its relationships rather than planned. IFC has no
+                # such concept, and ATTENDANCE is the closest thing in
+                # IfcTaskTypeEnum — support work that runs alongside the tasks
+                # it serves rather than driving them. The derivation itself is
+                # not lost: the SS/FS and FF predecessors P6 computes the span
+                # from are ordinary relationships, and they are written out as
+                # IfcRelSequence like any other, so a scheduler can recompute
+                # the span the same way P6 did.
+                "PredefinedType": (
+                    "ATTENDANCE" if activity.get("Type") == "Level of Effort" else "CONSTRUCTION"
+                ),
             },
         )
+        self.create_udf_pset(activity)
+        self.create_code_pset(activity)
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=activity["ifc"])
         calendar = self.calendars[activity["CalendarObjectId"]]
         # Seems intermittently crashy - can we investigate for larger files?
@@ -286,20 +331,100 @@ class ScheduleIfcGenerator:
             relating_control=calendar["ifc"],
             related_objects=[activity["ifc"]],
         )
-        ifcopenshell.api.sequence.edit_task_time(
+        self.transcribe_task_time(task_time, activity, calendar)
+
+    def transcribe_task_time(
+        self,
+        task_time: ifcopenshell.entity_instance,
+        activity: Activity,
+        calendar: Calendar,
+    ) -> None:
+        """Write P6's times onto the IfcTaskTime verbatim.
+
+        Intentionally do not recalculate durations or finish times. Match P6
+        exactly. Users may recalculate later if needed.
+        """
+        date = ifcopenshell.util.date.datetime2ifc
+        hours_per_day = float(calendar["HoursPerDay"] or 8)
+
+        task_time.ScheduleStart = date(activity["StartDate"], "IfcDateTime")
+        task_time.ScheduleFinish = date(activity["FinishDate"], "IfcDateTime")
+        task_time.DurationType = "WORKTIME"
+        planned = activity["PlannedDuration"]
+        if planned is not None and (
+            float(planned) or activity["StartDate"] == activity["FinishDate"]
+        ):
+            task_time.ScheduleDuration = date(
+                timedelta(days=float(planned) / hours_per_day), "IfcDuration"
+            )
+
+        for attribute, value in (
+            ("ActualStart", activity.get("ActualStartDate")),
+            ("ActualFinish", activity.get("ActualFinishDate")),
+            ("EarlyStart", activity.get("EarlyStartDate")),
+            ("EarlyFinish", activity.get("EarlyFinishDate")),
+            ("LateStart", activity.get("LateStartDate")),
+            ("LateFinish", activity.get("LateFinishDate")),
+        ):
+            if value is not None:
+                setattr(task_time, attribute, date(value, "IfcDateTime"))
+
+        # P6 states float in hours against the activity's own calendar, so the
+        # calendar is consulted for nothing more than that conversion.
+        for attribute, hours in (
+            ("TotalFloat", activity.get("TotalFloat")),
+            ("FreeFloat", activity.get("FreeFloat")),
+        ):
+            if hours is not None:
+                setattr(task_time, attribute, date(timedelta(days=hours / hours_per_day), "IfcDuration"))
+        if activity.get("TotalFloat") is not None:
+            task_time.IsCritical = activity["TotalFloat"] <= 0
+
+        # Completion is an IfcPositiveRatioMeasure, so zero is not merely
+        # uninteresting, it is invalid. An activity that has not started says
+        # nothing rather than saying "0% done".
+        if activity.get("PercentComplete"):
+            task_time.Completion = activity["PercentComplete"]
+
+    def create_udf_pset(self, activity: Activity) -> None:
+        """This activity's P6 user-defined fields, as a P6_UDF property set."""
+        assert self.file
+        udfs = activity.get("UDFs")
+        if not udfs:
+            return
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=activity["ifc"], name="P6_UDF")
+        ifcopenshell.api.pset.edit_pset(
             self.file,
-            task_time=task_time,
-            attributes={
-                "ScheduleStart": activity["StartDate"],
-                "ScheduleFinish": activity["FinishDate"],
-                "DurationType": "WORKTIME" if activity["PlannedDuration"] else None,
-                "ScheduleDuration": (
-                    timedelta(days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"] or 8)) or None
-                    if activity["PlannedDuration"]
-                    else None
-                ),
+            pset=pset,
+            properties={
+                title: self.file.create_entity(ifc_type, value)
+                for title, (ifc_type, value) in udfs.items()
             },
         )
+
+    def create_code_pset(self, activity: Activity) -> None:
+        """This activity's P6 activity codes, as a P6_ActivityCodes set."""
+        assert self.file
+        codes = activity.get("Codes")
+        if not codes:
+            return
+        pset = ifcopenshell.api.pset.add_pset(
+            self.file, product=activity["ifc"], name="P6_ActivityCodes"
+        )
+        ifcopenshell.api.pset.edit_pset(
+            self.file,
+            pset=pset,
+            properties={name: self.file.create_entity("IfcLabel", value)
+                        for name, (value, _) in codes.items()},
+        )
+        # A P6 code carries a short value and a readable description — "SO" and
+        # "Start on Site Milestone". Both matter to a reader, and IfcProperty
+        # already has the second slot, so the description goes on Description
+        # rather than being mangled into the value or dropped.
+        for prop in pset.HasProperties:
+            description = codes.get(prop.Name, (None, ""))[1]
+            if description:
+                prop.Description = description
 
     def create_rel_sequences(self) -> None:
         self.sequence_type_map = {
@@ -309,16 +434,29 @@ class ScheduleIfcGenerator:
             "Finish to Finish": "FINISH_FINISH",
         }
         for relationship in self.relationships.values():
-            rel_sequence = ifcopenshell.api.sequence.assign_sequence(
-                self.file,
-                relating_process=self.activities[relationship["PredecessorActivity"]]["ifc"],
-                related_process=self.activities[relationship["SuccessorActivity"]]["ifc"],
+            predecessor = self.activities[relationship["PredecessorActivity"]]["ifc"]
+            successor = self.activities[relationship["SuccessorActivity"]]["ifc"]
+
+            rel_sequence = next(
+                (
+                    rel
+                    for rel in successor.IsSuccessorFrom or []
+                    if rel.RelatingProcess == predecessor
+                    and rel.SequenceType == relationship["Type"]
+                ),
+                None,
             )
-            ifcopenshell.api.sequence.edit_sequence(
-                self.file,
-                rel_sequence=rel_sequence,
-                attributes={"SequenceType": relationship["Type"]},
-            )
+            if rel_sequence is None:
+                attributes = {
+                    "GlobalId": ifcopenshell.guid.new(),
+                    "RelatingProcess": predecessor,
+                    "RelatedProcess": successor,
+                    "SequenceType": relationship["Type"],
+                }
+                owner_history = ifcopenshell.api.owner.create_owner_history(self.file)
+                if owner_history is not None:
+                    attributes["OwnerHistory"] = owner_history
+                rel_sequence = self.file.create_entity("IfcRelSequence", **attributes)
             lag = float(relationship["Lag"])
             if lag:
                 calendar = self.calendars[self.activities[relationship["PredecessorActivity"]]["CalendarObjectId"]]

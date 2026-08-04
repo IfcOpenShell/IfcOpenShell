@@ -21,6 +21,25 @@ import xml.etree.ElementTree as ET
 
 from .common import ScheduleIfcGenerator
 
+# P6 declares its user-defined fields once at the root and then references them
+# by ObjectId from each activity, so the declaration is the only place the type
+# is known. Each entry is the element P6 carries the value in, and the IFC type
+# it becomes. Text maps to IfcLabel rather than IfcText: these are short tags
+# and names — a planner, a responsible party, a work front — and IfcText means
+# long-form prose.
+# The third element coerces the XML text: IFC's numeric simple types reject a
+# string outright ("Attribute not set"), and the value element carries text
+# whatever the declared type says.
+UDF_DATA_TYPES = {
+    "Text": ("TextValue", "IfcLabel", str),
+    "Double": ("DoubleValue", "IfcReal", float),
+    "Integer": ("IntegerValue", "IfcInteger", int),
+    "Cost": ("CostValue", "IfcMonetaryMeasure", float),
+    "Indicator": ("IndicatorValue", "IfcLabel", str),
+    "Start Date": ("StartDateValue", "IfcDateTime", str),
+    "Finish Date": ("FinishDateValue", "IfcDateTime", str),
+}
+
 
 class P62Ifc:
     def __init__(self):
@@ -31,6 +50,9 @@ class P62Ifc:
         self.default_calendar_id = None
         self.calendars = {}
         self.wbs = {}
+        self.udf_types = {}
+        self.code_types = {}
+        self.code_values = {}
         self.root_activites = []
         self.activities = {}
         self.relationships = {}
@@ -89,10 +111,15 @@ class P62Ifc:
         root = tree.getroot()
         self.ns = {"pr": root.tag[1:].partition("}")[0]}
         project = root.find("pr:Project", self.ns)
-        self.project["Name"] = project.findtext("pr:Name") or "Unnamed"
+        # findtext needs the namespace map too — without it the "pr:" prefix
+        # resolves to nothing, every schedule came out named "Unnamed", and that
+        # is the string a viewer puts in its header.
+        self.project["Name"] = project.findtext("pr:Name", namespaces=self.ns) or "Unnamed"
         self.default_calendar_id = project.findtext("pr:ActivityDefaultCalendarObjectId", namespaces=self.ns)
         self.parse_calendar_xml(root)
         self.parse_calendar_xml(project)
+        self.parse_udf_type_xml(root)
+        self.parse_code_type_xml(root)
         self.parse_wbs_xml(project)
         self.parse_activity_xml(project)
         self.parse_relationship_xml(project)
@@ -154,12 +181,85 @@ class P62Ifc:
                 "HolidayOrExceptions": exceptions,
             }
 
+    def parse_udf_type_xml(self, root):
+        """The declarations for P6's user-defined fields.
+
+        Only Activity fields are read. P6 also allows them on projects,
+        resources and WBS nodes, and those would need somewhere else to land.
+        A type this importer has no mapping for is skipped rather than guessed
+        at, because the value element it would be carried in is not knowable
+        from the value itself.
+        """
+        for udf_type in root.findall("pr:UDFType", self.ns):
+            if udf_type.findtext("pr:SubjectArea", namespaces=self.ns) != "Activity":
+                continue
+            data_type = udf_type.findtext("pr:DataType", namespaces=self.ns)
+            if data_type not in UDF_DATA_TYPES:
+                continue
+            self.udf_types[udf_type.findtext("pr:ObjectId", namespaces=self.ns)] = {
+                "Title": udf_type.findtext("pr:Title", namespaces=self.ns),
+                "DataType": data_type,
+            }
+
+    def parse_udfs(self, activity):
+        """This activity's user-defined fields, as {Title: (ifc_type, value)}."""
+        udfs = {}
+        for udf in activity.findall("pr:UDF", self.ns):
+            declared = self.udf_types.get(udf.findtext("pr:TypeObjectId", namespaces=self.ns))
+            if not declared:
+                continue
+            value_tag, ifc_type, coerce = UDF_DATA_TYPES[declared["DataType"]]
+            value = udf.findtext(f"pr:{value_tag}", namespaces=self.ns)
+            if value is None or value == "":
+                continue
+            try:
+                value = coerce(value)
+            except (TypeError, ValueError):
+                # A value that does not match its own declared type is one bad
+                # field, not a reason to lose the whole programme.
+                continue
+            udfs[declared["Title"]] = (ifc_type, value)
+        return udfs
+
+    def parse_code_type_xml(self, root):
+        """Activity code types and their values, both keyed by ObjectId.
+
+        Codes are a two-table reference like everything else in a P6 export: an
+        activity carries <Code TypeObjectId ValueObjectId>, and the readable
+        name and value live up here.
+        """
+        for code_type in root.findall("pr:ActivityCodeType", self.ns):
+            self.code_types[code_type.findtext("pr:ObjectId", namespaces=self.ns)] = (
+                code_type.findtext("pr:Name", namespaces=self.ns)
+            )
+        for code in root.findall("pr:ActivityCode", self.ns):
+            self.code_values[code.findtext("pr:ObjectId", namespaces=self.ns)] = (
+                code.findtext("pr:CodeValue", namespaces=self.ns),
+                code.findtext("pr:Description", namespaces=self.ns) or "",
+            )
+
+    def parse_codes(self, activity):
+        """This activity's assigned activity codes, as {type: (value, description)}."""
+        codes = {}
+        for code in activity.findall("pr:Code", self.ns):
+            name = self.code_types.get(code.findtext("pr:TypeObjectId", namespaces=self.ns))
+            assigned = self.code_values.get(code.findtext("pr:ValueObjectId", namespaces=self.ns))
+            if name and assigned and assigned[0]:
+                codes[name] = assigned
+        return codes
+
     def parse_wbs_xml(self, project):
         for wbs in project.findall("pr:WBS", self.ns):
             self.wbs[wbs.find("pr:ObjectId", self.ns).text] = {
                 "Name": wbs.find("pr:Name", self.ns).text,
                 "Code": wbs.find("pr:Code", self.ns).text,
                 "ParentObjectId": wbs.find("pr:ParentObjectId", self.ns).text,
+                # P6's own ordering of siblings, which is NOT the order the
+                # export lists them in. It is the only thing that reproduces the
+                # breakdown a planner recognises, and IfcRelNests preserves it
+                # for free because RelatedObjects is an ordered LIST — provided
+                # the tasks are created in this order in the first place.
+                "SequenceNumber": self.parse_float(wbs, "SequenceNumber") or 0,
                 "ifc": None,
                 "rel": None,
                 "activities": [],
@@ -168,8 +268,6 @@ class P62Ifc:
     def parse_activity_xml(self, project):
         for activity in project.findall("pr:Activity", self.ns):
             activity_type = activity.find("pr:Type", self.ns).text
-            if activity_type == "Level of Effort":
-                continue
             activity_id = activity.find("pr:ObjectId", self.ns).text
             wbs_id = activity.find("pr:WBSObjectId", self.ns).text
             if wbs_id:
@@ -187,8 +285,46 @@ class P62Ifc:
                 "PlannedDuration": activity.find("pr:PlannedDuration", self.ns).text,
                 "Status": activity.find("pr:Status", self.ns).text,
                 "CalendarObjectId": calendar_id or self.default_calendar_id,
+                "Type": activity_type,
+                "UDFs": self.parse_udfs(activity),
+                "Codes": self.parse_codes(activity),
+                # StartDate/FinishDate above are P6's CURRENT dates, which is
+                # the live plan — P6 re-plans as actuals land, so on a started
+                # activity the current start is the actual start. That is why
+                # they, and not PlannedStartDate, map to ScheduleStart/Finish.
+                # The actuals are carried separately so the fact that a date is
+                # recorded rather than forecast is not lost.
+                "ActualStartDate": self.parse_date(activity, "ActualStartDate"),
+                "ActualFinishDate": self.parse_date(activity, "ActualFinishDate"),
+                "EarlyStartDate": self.parse_date(activity, "EarlyStartDate"),
+                "EarlyFinishDate": self.parse_date(activity, "EarlyFinishDate"),
+                "LateStartDate": self.parse_date(activity, "LateStartDate"),
+                "LateFinishDate": self.parse_date(activity, "LateFinishDate"),
+                "TotalFloat": self.parse_float(activity, "TotalFloat"),
+                "FreeFloat": self.parse_float(activity, "FreeFloat"),
+                # P6 stores this as a 0..1 fraction, which is already what
+                # IfcPositiveRatioMeasure wants.
+                "PercentComplete": self.parse_float(activity, "PercentComplete"),
                 "ifc": None,
             }
+
+    def parse_date(self, activity, tag):
+        text = activity.findtext(f"pr:{tag}", namespaces=self.ns)
+        if not text:
+            return None
+        try:
+            return datetime.datetime.fromisoformat(text)
+        except ValueError:
+            return None
+
+    def parse_float(self, activity, tag):
+        text = activity.findtext(f"pr:{tag}", namespaces=self.ns)
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            return None
 
     def parse_relationship_xml(self, project):
         for relationship in project.findall("pr:Relationship", self.ns):
