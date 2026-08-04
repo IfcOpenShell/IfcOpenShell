@@ -95,7 +95,7 @@ class FacetDocGenerator:
         # ifc_text = "\n".join([f"{e} /* Testcase */" if e == inst else str(e) for e in f])
         lines = ifc.wrapped_data.to_string().split("\n")[7:-3]
         ifc_text = "\n".join([f"{l} /* Testcase */" if f"#{inst.id()}=" in l else l for l in lines])
-        basename = f"{result}-" + re.sub("[^0-9a-zA-Z]", "_", name.lower())
+        basename = re.sub("[^0-9a-zA-Z]", "_", name.lower()) + f"-{result}"
 
         # Write IFC to disk
         ifc.write(os.path.join(outdir, "testcases", self.facet, f"{basename}.ifc"))
@@ -181,7 +181,7 @@ class IdsDocGenerator:
                 ifc_text += f"{newline}[{pass_or_fail}] {line}"
             else:
                 ifc_text += f"{newline}       {line}"
-        basename = f"{result}-" + re.sub("[^0-9a-zA-Z]", "_", name.lower())
+        basename = re.sub("[^0-9a-zA-Z]", "_", name.lower()) + f"-{result}"
 
         # Write IFC to disk
         ifc.write(os.path.join(outdir, "testcases", "ids", f"{basename}.ifc"))
