@@ -20,4 +20,8 @@ jobs:
         run: |
           cd build-outputs-init
           git checkout -b rockylinux9-x64-shared
+          mkdir -p Linux/x86_64/install
+          touch Linux/x86_64/install/.gitkeep
+          git add Linux/x86_64/install/.gitkeep
+          git commit -m "Add install dir skeleton [skip ci]"
           git push origin rockylinux9-x64-shared
