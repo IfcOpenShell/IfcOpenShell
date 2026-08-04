@@ -106,8 +106,16 @@ def assign_sequence(
         # to be 2000-01-05.
         ifcopenshell.api.sequence.cascade_schedule(model, task=formwork)
     """
+    # Matched on the type as well as the pair. Two tasks may legitimately be
+    # sequenced more than once with different types — the classic case is a
+    # "ladder", where a start to start lets the follower begin once the leader
+    # has begun and a finish to finish stops it ending before the leader ends.
+    # Both constraints are real and neither implies the other, so matching on
+    # the pair alone silently hands back the wrong relationship: a caller adding
+    # a second sequence would instead be handed the first, and editing the type
+    # on it would destroy the constraint that was already there.
     for rel in related_process.IsSuccessorFrom or []:
-        if rel.RelatingProcess == relating_process:
+        if rel.RelatingProcess == relating_process and rel.SequenceType == sequence_type:
             return rel
     rel = file.create_entity(
         "IfcRelSequence",

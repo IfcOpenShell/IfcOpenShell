@@ -19,17 +19,28 @@
 import ifcopenshell
 import ifcopenshell.api.sequence
 import ifcopenshell.util.element
+from typing import Optional
 
 
 def unassign_sequence(
     file: ifcopenshell.file,
     relating_process: ifcopenshell.entity_instance,
     related_process: ifcopenshell.entity_instance,
+    sequence_type: Optional[str] = None,
 ) -> None:
     """Removes a sequence relationship between tasks
 
+    Two tasks may be sequenced more than once with different types — see
+    :func:`ifcopenshell.api.sequence.assign_sequence` — so removing "the"
+    relationship between a pair is ambiguous. Left unspecified, every sequence
+    between the two is removed, which is what "make them unrelated" means and
+    what this did before the parameter existed. Name a type to remove only that
+    one and leave any others in place.
+
     :param relating_process: The previous / predecessor task.
     :param related_process: The next / successor task.
+    :param sequence_type: Optionally, remove only the sequence of this type.
+        Choose from FINISH_START, FINISH_FINISH, START_START, or START_FINISH.
     :return: None
 
     Example:
@@ -58,9 +69,12 @@ def unassign_sequence(
             relating_process=zone1, related_process=zone2)
     """
     for rel in related_process.IsSuccessorFrom or []:
-        if rel.RelatingProcess == relating_process:
-            history = rel.OwnerHistory
-            file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(file, history)
+        if rel.RelatingProcess != relating_process:
+            continue
+        if sequence_type is not None and rel.SequenceType != sequence_type:
+            continue
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
     ifcopenshell.api.sequence.cascade_schedule(file, task=related_process)

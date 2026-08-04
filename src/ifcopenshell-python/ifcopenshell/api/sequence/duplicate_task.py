@@ -156,6 +156,7 @@ class Usecase:
                             self.file,
                             relating_process=relating_process,
                             related_process=related_process,
+                            sequence_type=inverse.SequenceType,
                         )
                         if inverse.TimeLag:
                             ifcopenshell.api.sequence.assign_lag_time(
