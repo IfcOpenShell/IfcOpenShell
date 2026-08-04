@@ -78,9 +78,9 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON \
+          IFCOS_SCHEMAS="2x3;4;4x3_add2" CXXFLAGS="-O3" CFLAGS="-O3" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON \
             uv run --with aqtinstall ./nix/build-all.py \
-            -v --diskcleanup --shared 2>&1 \
+            -v --diskcleanup --ifcopenshell-shared --py-313 2>&1 \
             | tee build.log
 
       - name: Upload Build Logs
