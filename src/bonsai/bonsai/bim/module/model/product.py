@@ -731,6 +731,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         # Compute the geometry inversion axis from the mirror reference's local X (= mirror plane normal).
         # Without a reference, always fall back to inverting along the object's local X.
+        mirror_normal_local = None
         if mirror_ref:
             mirror_normal_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
             mirror_normal_local = obj.matrix_world.to_3x3().inverted() @ mirror_normal_world
@@ -739,8 +740,28 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 1.0 if abs(mirror_normal_local.y) > 0.5 else 0.0,
                 1.0 if abs(mirror_normal_local.z) > 0.5 else 0.0,
             )
+            # True 2D Householder for the mirror normal's XY component.
+            # builder.mirror(axes=(1,1)) applies diag(-1,-1) — a 180° rotation — instead of
+            # the correct Householder [[0,-1],[-1,0]] for a diagonal normal. Computing the
+            # Householder directly fixes geometry and the P_local used in new_R.
+            n_xy = np.array([mirror_normal_local.x, mirror_normal_local.y], dtype=float)
+            n_xy_len = float(np.linalg.norm(n_xy))
+            if n_xy_len > 1e-6:
+                n_xy /= n_xy_len
+                _h = np.eye(2, dtype=float) - 2.0 * np.outer(n_xy, n_xy)
+                mirror_H_local_2d = _h
+                mirror_P_local = Matrix(
+                    [[_h[0, 0], _h[0, 1], 0.0], [_h[1, 0], _h[1, 1], 0.0], [0.0, 0.0, 1.0]]
+                )
+            else:
+                sx = -1.0 if mirror_axes[0] > 0.5 else 1.0
+                sy = -1.0 if mirror_axes[1] > 0.5 else 1.0
+                mirror_H_local_2d = np.array([[sx, 0.0], [0.0, sy]])
+                mirror_P_local = Matrix([[sx, 0, 0], [0, sy, 0], [0, 0, 1]])
         else:
             mirror_axes = (1, 0, 0)
+            mirror_H_local_2d = np.array([[-1.0, 0.0], [0.0, 1.0]])
+            mirror_P_local = Matrix([[-1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
         # Snapshot opening world placements AND slab placement BEFORE any geometry or origin changes.
         # We work in the slab's LOCAL coordinate space so the mirrored relative offset is correct
@@ -756,6 +777,8 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         usage_type = tool.Model.get_usage_type(element)
         type_has_reps = bool(type_element and (type_element.RepresentationMaps or []))
+        print(f"[mirror_obj] {element.GlobalId} ({element.is_a()}) usage_type={usage_type!r}  mirror_axes={mirror_axes}")
+        print(f"[mirror_obj]   obj.matrix_world euler={tuple(round(v,4) for v in obj.matrix_world.to_euler())}  t={tuple(round(v,4) for v in obj.matrix_world.translation)}")
         # LAYER2 (walls) and LAYER3 (slabs) generate instance-specific bodies via DumbWallGenerator /
         # DumbSlabGenerator rather than mapping the type's RepresentationMaps.  assign_inverted_type
         # only flips the *type* geometry and would leave the instance body unchanged, so both layer
@@ -770,7 +793,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             # sees the correct positions.  No element rotation change on this path → frame_change = I.
             if opening_placements_before and M_slab_before is not None:
                 self._apply_opening_mirror(element, mirror_axes, M_slab_before, opening_placements_before, np.eye(3))
-            self.invert_representation(element, mirror_axes)
+            self.invert_representation(element, mirror_axes, mirror_normal_local, mirror_H_local_2d)
             # For LAYER2 walls, layers stack along local Y (LayerSetDirection=AXIS2).  A Y-axis flip
             # reverses that direction, so DirectionSense and OffsetFromReferenceLine must both invert.
             # (X/Z flips don't touch local Y, and the assign_inverted_type path handles Y-mirror via
@@ -791,27 +814,17 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 obj.matrix_world.translation = mirror_ref.matrix_world @ origin_in_mirror
             else:
                 # invert_representation path: reflect translation AND rotation.
-                # P_world = Householder from mirror plane normal = mirror_ref's local X.
-                # P_local = diagonal from the geometry flip applied by invert_representation.
-                #   For IfcExtrudedAreaSolid the 2D profile is flipped along mirror_axes[:2]:
-                #   P_local = diag(1-2*mx, 1-2*my, 1).
-                # Correct formula: new_R = P_world @ R_obj @ P_local
-                #   det(P_world)*det(P_local) = (-1)*(-1) = +1 so new_R is a valid rotation.
-                #   Flat walls (P_local≠P_world) stay at the same orientation; inclined
-                #   roofs (P_local==P_world) flip correctly to ±45° as required.
+                # P_world  = Householder from mirror plane normal (mirror_ref local X).
+                # P_local  = Householder of the mirror normal in the element's local XY plane.
+                #            invert_general_object applies the same Householder to the geometry.
+                # new_R = P_world @ R_obj @ P_local
+                #   det(P_world)*det(P_local) = (-1)*(-1) = +1 → valid rotation, no RH fix needed.
                 n_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
                 P_world = Matrix.Scale(-1, 4, n_world).to_3x3()
-                sx = -1.0 if mirror_axes[0] > 0.5 else 1.0
-                sy = -1.0 if mirror_axes[1] > 0.5 else 1.0
-                P_local = Matrix([[sx, 0, 0], [0, sy, 0], [0, 0, 1]])
                 R_obj = obj.matrix_world.to_3x3()
-                new_R = P_world @ R_obj @ P_local
-                # When det(P_world)=-1 and det(P_local)=+1 (e.g. mirror_axes=(0,0,1)),
-                # new_R has det=-1. Blender decomposes this as (rotation, scale=-1);
-                # block_scale then resets scale to (1,1,1) on the next depsgraph tick,
-                # visually un-mirroring the element (beam flips extrusion direction).
-                # Fix: recompute col[1] = col[2] × col[0] to enforce right-handedness
-                # while preserving local Z (extrusion axis) and X (RefDirection).
+                new_R = P_world @ R_obj @ mirror_P_local
+                # Safety: if P_local is not a proper Householder (e.g. Z-only mirror fallback),
+                # det may be -1; enforce right-handedness by recomputing col[1].
                 if new_R.determinant() < 0:
                     new_R.col[1] = new_R.col[2].cross(new_R.col[0])
                 t_mr = mirror_ref.matrix_world.translation
@@ -820,6 +833,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 new_mat = new_R.to_4x4()
                 new_mat.translation = new_t
                 obj.matrix_world = new_mat
+                print(f"[mirror_obj]   new_R det={round(new_R.determinant(),4)}  new euler={tuple(round(v,4) for v in new_mat.to_euler())}  new t={tuple(round(v,4) for v in new_mat.translation)}")
                 # For non-layer elements (e.g. PROFILE beams) the IFC ObjectPlacement is the
                 # element's origin and must be kept in sync with obj.matrix_world.  Without this
                 # call, clicking the element after the mirror triggers a Bonsai depsgraph sync
@@ -986,16 +1000,45 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                         # modified in-place; its opening placement is already handled above.
                         builder.mirror(item, mirror_axes_2d, create_copy=False)
 
-    def invert_general_object(self, element, mirror_axes=(1, 0, 0)):
-        # ShapeBuilder.mirror works in 2D; use only the XY components
+    def invert_general_object(self, element, mirror_axes=(1, 0, 0), mirror_normal_local=None, H_local_2d=None):
+        # Derive the 2×2 Householder from the continuous local normal when available.
+        # builder.mirror(axes=(1,1)) applies diag(-1,-1) — a 180° rotation — instead of
+        # the correct Householder for a diagonal mirror normal; so we apply H_2d directly.
+        if H_local_2d is not None:
+            H_2d = H_local_2d
+        elif mirror_normal_local is not None:
+            n_xy = np.array([mirror_normal_local.x, mirror_normal_local.y], dtype=float)
+            n_len = float(np.linalg.norm(n_xy))
+            if n_len > 1e-6:
+                n_xy /= n_len
+                H_2d = np.eye(2, dtype=float) - 2.0 * np.outer(n_xy, n_xy)
+            else:
+                sx = -1.0 if mirror_axes[0] > 0.5 else 1.0
+                sy = -1.0 if mirror_axes[1] > 0.5 else 1.0
+                H_2d = np.array([[sx, 0.0], [0.0, sy]])
+        else:
+            sx = -1.0 if mirror_axes[0] > 0.5 else 1.0
+            sy = -1.0 if mirror_axes[1] > 0.5 else 1.0
+            H_2d = np.array([[sx, 0.0], [0.0, sy]])
+
+        z_flip = mirror_axes[2] > 0.5
         mirror_axes_2d = mirror_axes[:2]
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
-        def mirror_item(item):
+        def apply_H2d_to_indexed_poly_curve(ipc):
+            pts = ipc.Points
+            new_coords = []
+            for co in pts.CoordList:
+                xy = H_2d @ np.array(co[:2], dtype=float)
+                new_coords.append([float(xy[0]), float(xy[1])] + list(co[2:]))
+            pts.CoordList = new_coords
+
+        def mirror_item(item, rep_id="?"):
+            print(f"[invert_general_object]   rep={rep_id!r}  item={item.is_a()} #{item.id()}")
             if item.is_a("IfcBooleanResult"):
-                mirror_item(item.FirstOperand)
+                mirror_item(item.FirstOperand, rep_id)
                 try:
-                    mirror_item(item.SecondOperand)
+                    mirror_item(item.SecondOperand, rep_id)
                 except Exception:
                     pass
             elif item.is_a("IfcFacetedBrep") or item.is_a("IfcFacetedBrepWithVoids"):
@@ -1003,7 +1046,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 if item.is_a("IfcFacetedBrepWithVoids"):
                     shells.extend(item.Voids)
 
-                # Mirror all unique vertex coordinates along the flipped axes
+                # Apply H_2d to XY of each vertex; flip Z separately if needed
                 points_done = set()
                 for shell in shells:
                     for face in shell.CfsFaces:
@@ -1015,14 +1058,19 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                                     continue
                                 points_done.add(pt.id())
                                 coords = list(pt.Coordinates)
-                                for i, flip in enumerate(mirror_axes[: len(coords)]):
-                                    if flip > 0.0:
-                                        coords[i] = -coords[i]
+                                if len(coords) >= 2:
+                                    xy = H_2d @ np.array(coords[:2], dtype=float)
+                                    coords[0] = float(xy[0])
+                                    coords[1] = float(xy[1])
+                                if z_flip and len(coords) >= 3:
+                                    coords[2] = -coords[2]
                                 pt.Coordinates = coords
 
-                # Reverse face winding for an odd number of flipped axes (restores outward normals)
-                num_flipped = sum(1 for v in mirror_axes if v > 0.0)
-                if num_flipped % 2 == 1:
+                # Reverse winding when the combined 3D det < 0 (odd number of reflections).
+                # H_2d is -1 for any proper Householder; +1 for the identity fallback (Z-only mirror).
+                h2d_det = int(round(float(np.linalg.det(H_2d))))
+                combined_det = h2d_det * (-1 if z_flip else 1)
+                if combined_det < 0:
                     for shell in shells:
                         for face in shell.CfsFaces:
                             for bound in face.Bounds:
@@ -1030,19 +1078,56 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                                     bound.Bound.Polygon = list(reversed(bound.Bound.Polygon))
             elif item.is_a("IfcMappedItem"):
                 for sub in item.MappingSource.MappedRepresentation.Items:
-                    mirror_item(sub)
+                    mirror_item(sub, rep_id)
+            elif item.is_a("IfcExtrudedAreaSolid"):
+                sw = item.SweptArea
+                print(f"[invert_general_object]     ExtrudedAreaSolid: SweptArea={sw.is_a() if sw else None}  H_2d={H_2d.tolist()}")
+                oc = getattr(sw, "OuterCurve", None) if sw else None
+                if oc and oc.is_a("IfcIndexedPolyCurve"):
+                    print(f"[invert_general_object]       OuterCurve={oc.is_a()}")
+                    print(f"[invert_general_object]         Segments={[s.is_a() for s in (oc.Segments or [])]}")
+                    pts = oc.Points
+                    print(f"[invert_general_object]         CoordList (first 4)={list(pts.CoordList)[:4] if pts else None}")
+                    apply_H2d_to_indexed_poly_curve(oc)
+                    print(f"[invert_general_object]         CoordList AFTER (first 4)={list(oc.Points.CoordList)[:4]}")
+                    # Mirror Position location
+                    if item.Position is not None:
+                        base = list(item.Position.Location.Coordinates)
+                        xy = H_2d @ np.array(base[:2], dtype=float)
+                        item.Position.Location.Coordinates = [float(xy[0]), float(xy[1])] + list(base[2:])
+                    # Mirror extrusion direction (XY only; Z unchanged)
+                    ext = list(item.ExtrudedDirection.DirectionRatios)
+                    xy_ext = H_2d @ np.array(ext[:2], dtype=float)
+                    item.ExtrudedDirection.DirectionRatios = [float(xy_ext[0]), float(xy_ext[1])] + list(ext[2:])
+                else:
+                    # Outer curve type not directly supported — fall back to builder.mirror.
+                    # For axis-aligned cases this is correct; diagonal mirrors may be imprecise.
+                    try:
+                        builder.mirror(item, mirror_axes_2d, create_copy=False)
+                    except Exception as e:
+                        print(f"[invert_general_object]     builder.mirror FAILED: {e}")
             else:
-                try:
-                    builder.mirror(item, mirror_axes_2d, create_copy=False)
-                except Exception:
-                    pass
+                print(f"[invert_general_object]     → H_2d={H_2d.tolist()}")
+                if item.is_a("IfcIndexedPolyCurve"):
+                    pts = item.Points
+                    segs = item.Segments or []
+                    print(f"[invert_general_object]       Segments={[s.is_a() for s in segs]}")
+                    print(f"[invert_general_object]       CoordList (first 4)={list(pts.CoordList)[:4] if pts else None}")
+                    apply_H2d_to_indexed_poly_curve(item)
+                    print(f"[invert_general_object]       CoordList AFTER (first 4)={list(item.Points.CoordList)[:4]}")
+                else:
+                    try:
+                        builder.mirror(item, mirror_axes_2d, create_copy=False)
+                    except Exception as e:
+                        print(f"[invert_general_object]     builder.mirror FAILED: {e}")
 
         if element.is_a("IfcProduct"):
             if not element.Representation:
                 return
             for representation in element.Representation.Representations:
+                print(f"[invert_general_object] rep={representation.RepresentationIdentifier!r}/{representation.RepresentationType!r}  items={len(representation.Items)}")
                 for item in representation.Items:
-                    mirror_item(item)
+                    mirror_item(item, representation.RepresentationIdentifier)
         elif element.is_a("IfcTypeProduct"):
             for representation_map in (element.RepresentationMaps or []):
                 for item in representation_map.MappedRepresentation.Items:
@@ -1083,11 +1168,11 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Model.mark_thumbnail_for_update(element)
 
-    def invert_representation(self, element, mirror_axes=(1, 0, 0)):
+    def invert_representation(self, element, mirror_axes=(1, 0, 0), mirror_normal_local=None, H_local_2d=None):
         if ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"):
             self.invert_door_swing(element)
         else:
-            self.invert_general_object(element, mirror_axes)
+            self.invert_general_object(element, mirror_axes, mirror_normal_local, H_local_2d)
 
     def assign_inverted_type(self, element, mirror_axes=(1, 0, 0)):
         type_element = ifcopenshell.util.element.get_type(element)
