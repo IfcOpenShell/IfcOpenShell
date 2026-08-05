@@ -173,6 +173,7 @@ def build_wheel(
 
         entries[record_name] = None
         write_record(zf, entries, record_name)
+    print(f"Splitting wheel to '{out}'.")
     return out
 
 
