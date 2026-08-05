@@ -50,14 +50,11 @@ def cast_to_value(from_value, to_value):
         pass
 
 
-# See bug 4716.
-def is_x(value, cast_value):
-    if cast_value >= 0:
-        if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
-            return False
-    elif value > cast_value * (1.0 - 1e-6) or value < cast_value * (1.0 + 1e-6):
-        return False
-    return True
+# See bug 4716 and IDS Documentation/ImplementersDocumentation/tolerance.md.
+def is_x(value, cast_value, tolerance=1e-6):
+    lower = cast_value - abs(cast_value) * tolerance - tolerance
+    upper = cast_value + abs(cast_value) * tolerance + tolerance
+    return lower <= value <= upper
 
 
 @lru_cache
