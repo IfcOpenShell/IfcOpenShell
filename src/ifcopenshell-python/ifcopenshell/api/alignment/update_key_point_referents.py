@@ -32,21 +32,6 @@ from ifcopenshell.api.alignment._sort_nest import _sort_nest
 from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 
 
-def _get_key_point_referent_nest(layout: entity_instance) -> Optional[entity_instance]:
-    """
-    Searches layout.IsNestedBy for the IfcRelNests whose RelatedObjects are IfcReferent.
-
-    This is distinct from both get_stationing_nest (scoped to the parent IfcAlignment, and
-    specifically the STATION/station-equation nest) and get_alignment_segment_nest (the *segment*
-    nest that also lives on layout.IsNestedBy, holding IfcAlignmentSegment, never IfcReferent).
-    """
-    for nest in layout.IsNestedBy:
-        for related_object in nest.RelatedObjects:
-            if related_object.is_a("IfcReferent"):
-                return nest
-    return None
-
-
 def _remove_referent(file: ifcopenshell.file, referent: entity_instance) -> None:
     """Cleanly deletes a key-point IfcReferent: its Pset_Stationing, its ObjectPlacement (if
     exclusively owned by it), and finally the referent itself."""
@@ -129,9 +114,11 @@ def update_key_point_referents(
     get_stationing_nest) -- key-point referents never belong in either of those.
 
     :param layout: IfcAlignmentHorizontal, IfcAlignmentVertical, or IfcAlignmentCant
-    :param rel_nests: an existing IfcRelNests to (re)populate. May live anywhere (e.g. the parent
-        IfcAlignment, the layout, or elsewhere) -- the caller decides. If omitted, an existing
-        referent-nest already on `layout` is reused, or a new one is created and related to `layout`.
+    :param rel_nests: an existing IfcRelNests to (re)populate; its RelatingObject must be the
+        IfcAlignment that nests `layout` (TypeError is raised otherwise). If omitted, a new
+        IfcRelNests is always created and related to that IfcAlignment -- there is no implicit
+        search for or reuse of a previously created nest. Callers who want to regenerate into an
+        existing nest must pass it back in explicitly via `rel_nests`.
     :param clear: if True, deletes all IfcReferent currently in rel_nests.RelatedObjects (and their
         Pset_Stationing) before regenerating. If False (default), new referents are appended to
         whatever already exists -- no deduplication.
@@ -167,12 +154,20 @@ def update_key_point_referents(
             f"Expected entity type to be one of {[_ for _ in expected_types]}, instead received {layout.is_a()}"
         )
 
-    if rel_nests is None:
-        rel_nests = _get_key_point_referent_nest(layout)
-        if rel_nests is None:
-            rel_nests = file.createIfcRelNests(
-                GlobalId=ifcopenshell.guid.new(), RelatingObject=layout, RelatedObjects=()
+    alignment = ifcopenshell.api.alignment.get_alignment(layout)
+    if alignment is None:
+        raise ValueError(f"{layout.is_a()} #{layout.id()} is not nested under an IfcAlignment.")
+
+    if rel_nests is not None:
+        if not rel_nests.RelatingObject.is_a("IfcAlignment"):
+            raise TypeError(
+                f"Expected rel_nests.RelatingObject to be IfcAlignment, instead received "
+                f"{rel_nests.RelatingObject.is_a()}"
             )
+    else:
+        rel_nests = file.createIfcRelNests(
+            GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=()
+        )
 
     if clear:
         for referent in list(rel_nests.RelatedObjects):
@@ -189,7 +184,6 @@ def update_key_point_referents(
         )
         return rel_nests
 
-    alignment = ifcopenshell.api.alignment.get_alignment(layout)
     start_station = ifcopenshell.api.alignment.get_alignment_start_station(file, alignment)
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     is_horizontal = layout.is_a("IfcAlignmentHorizontal")

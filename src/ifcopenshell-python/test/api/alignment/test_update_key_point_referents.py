@@ -82,13 +82,13 @@ def test_default_rel_nests_created_when_none_provided():
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
 
     assert nest.is_a("IfcRelNests")
-    assert nest.RelatingObject == horizontal
+    assert nest.RelatingObject == alignment
     assert nest.id() != segment_nest.id()
     assert len(nest.RelatedObjects) == 8
     assert all(r.is_a("IfcReferent") for r in nest.RelatedObjects)
 
 
-def test_second_call_without_rel_nests_reuses_existing_nest():
+def test_second_call_without_rel_nests_creates_separate_nest():
     file = _new_file()
     alignment = _build_alignment(file)
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
@@ -97,10 +97,23 @@ def test_second_call_without_rel_nests_reuses_existing_nest():
     nest1 = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
     nest2 = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
 
-    assert nest1.id() == nest2.id()
-    assert len(nest2.RelatedObjects) == 16
+    assert nest1.id() != nest2.id()
+    assert len(nest1.RelatedObjects) == 8
+    assert len(nest2.RelatedObjects) == 8
     segment_count_after = len(ifcopenshell.api.alignment.get_alignment_segment_nest(horizontal).RelatedObjects)
     assert segment_count_after == segment_count_before
+
+
+def test_passing_previous_nest_back_in_accumulates():
+    file = _new_file()
+    alignment = _build_alignment(file)
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+
+    nest1 = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
+    nest2 = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal, rel_nests=nest1)
+
+    assert nest1.id() == nest2.id()
+    assert len(nest2.RelatedObjects) == 16
 
 
 def test_provided_rel_nests_is_used_as_is():
@@ -108,7 +121,7 @@ def test_provided_rel_nests_is_used_as_is():
     alignment = _build_alignment(file)
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
 
-    # the nest may live anywhere the caller chooses, e.g. hung off the parent IfcAlignment
+    # rel_nests.RelatingObject must be the IfcAlignment that nests `layout`
     rel_nests = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=())
 
     result = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal, rel_nests=rel_nests)
@@ -116,6 +129,17 @@ def test_provided_rel_nests_is_used_as_is():
     assert result.id() == rel_nests.id()
     assert result.RelatingObject == alignment
     assert len(result.RelatedObjects) == 8
+
+
+def test_provided_rel_nests_with_wrong_relating_object_raises_type_error():
+    file = _new_file()
+    alignment = _build_alignment(file)
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+
+    rel_nests = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(), RelatingObject=horizontal, RelatedObjects=())
+
+    with pytest.raises(TypeError):
+        ifcopenshell.api.alignment.update_key_point_referents(file, horizontal, rel_nests=rel_nests)
 
 
 def test_clear_true_removes_old_referents_and_psets():
@@ -356,8 +380,10 @@ def test_returns_ifc_rel_nests():
 
 test_wrong_layout_type_raises_type_error()
 test_default_rel_nests_created_when_none_provided()
-test_second_call_without_rel_nests_reuses_existing_nest()
+test_second_call_without_rel_nests_creates_separate_nest()
+test_passing_previous_nest_back_in_accumulates()
 test_provided_rel_nests_is_used_as_is()
+test_provided_rel_nests_with_wrong_relating_object_raises_type_error()
 test_clear_true_removes_old_referents_and_psets()
 test_clear_false_appends_without_dedup()
 test_default_horizontal_labels_and_order()
