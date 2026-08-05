@@ -43,26 +43,31 @@ Available arguments:
 
 
 Used environment variables:
+    Boolean-like env variables accept the following values (case-insensitive):
+    `opt-in` - `1`, `on`, `true`, `yes`; ``opt-out`` - `0`, `off`, `false`, `no`.
+
     - ``CXXFLAGS``, ``CPPFLAGS``, ``CFLAGS``, ``LDFLAGS``
     - ``BUILD_DIR`` - build directory. By default will use "build" folder in IfcOpenShell repository.
     - ``DEPS_DIR`` - dependencies directory. By default will create automatic folder in build directory.
     - ``BUILD_CFG`` - build configuration, 'RelWithDebInfo' by default.
     - ``USE_CURRENT_PYTHON_VERSION`` - use current python config instead of compile from source
+    `off` by default.
     - ``IFCOS_NUM_BUILD_PROCS`` - number of concurrent processes defaults to available cores + 1
     - ``NO_CLEAN`` - do not clean `ifcopenshell` build directories but continue working on current build
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
     - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (8 schemas), to be supplied as `2x3;4;4x3_add2`
     - ``USE_OCCT`` - whether to use official Open CASCADE instead of Community Edition
-    (`true` by default, any other value is considered `false`)
+    `on` by default
     - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
     used to deduce `PYVERSION` (e.g. '3.13.2'), `PYTHONINCLUDE`,
     `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
     Allows to build wasm without pyodide build environment, which can be useful for debugging build issues.
     Example value: 'pyodide/cpython/installs/python-3.13.2'
-    - ``ADD_COMMIT_SHA`` - if defined with any non-empty value then
+    - ``ADD_COMMIT_SHA`` - `off` by default. If enabled
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
-    - ``BUILD_BONSAIVIEWER`` - enable building BonsaiViewer, value of the env variable has to be truthy.
+    - ``BUILD_BONSAIVIEWER`` - enable building BonsaiViewer, `off` by default.
+    - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
 
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
@@ -136,10 +141,24 @@ logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 logger.addHandler(ch)
 
+
+def is_on_off(value: str | None, *, default: bool) -> bool:
+    if value is None:
+        return default
+    lowered = value.lower()
+    if lowered in {"1", "on", "true", "yes"}:
+        return True
+    if lowered in {"0", "off", "false", "no"}:
+        return False
+    return default
+
+
 PROJECT_NAME = "IfcOpenShell"
-USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
-ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
-BUILD_BONSAIVIEWER = os.getenv("BUILD_BONSAIVIEWER", "").lower() in {"1", "on", "true", "yes"}
+USE_CURRENT_PYTHON_VERSION = is_on_off(os.getenv("USE_CURRENT_PYTHON_VERSION"), default=False)
+ADD_COMMIT_SHA = is_on_off(os.getenv("ADD_COMMIT_SHA"), default=False)
+IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
+BUILD_BONSAIVIEWER = is_on_off(os.getenv("BUILD_BONSAIVIEWER"), default=False)
+USE_OCCT = is_on_off(os.getenv("USE_OCCT"), default=True)
 
 PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
 JSON_VERSION = "3.11.3"
@@ -250,10 +269,6 @@ if WASM:
 
     # 0.31 is required for SIDE_MODULE_CXXFLAGS to be provided.
     assert get_pyodide_build_version() >= (0, 31)
-
-# Set defaults for missing empty environment variables
-
-USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
 
 TOOLSET = None
 if platform.system() == "Darwin":
@@ -414,7 +429,7 @@ if BUILD_BONSAIVIEWER:
 # ifcopenshell.document.rdb.dylib but the CREATE_BUNDLE install rule does
 # not actually drop the dylib next to the wrapper in site-packages — see
 # the commit message that introduced this gate.
-if os.environ.get("IFCOS_BUILD_PYTHON_WRAPPER", "on").lower() in {"0", "off", "false", "no"}:
+if not IFCOS_BUILD_PYTHON_WRAPPER:
     targets.discard("IfcOpenShell-Python")
 if WASM:
     SKIP_TARGETS_FOR_WASM = {
@@ -1420,8 +1435,8 @@ cmake_args = [
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DCREATE_BUNDLE=On",
-    "-DADD_COMMIT_SHA=" + ("On" if ADD_COMMIT_SHA else "Off"),
-    "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
+    "-DADD_COMMIT_SHA=" + OFF_ON[ADD_COMMIT_SHA],
+    "-DVERSION_OVERRIDE=" + OFF_ON[ADD_COMMIT_SHA],
     *MAC_CROSS_COMPILE_INTEL_ARGS,
 ]
 """Default CMake args to use for all CMake configs."""
@@ -1517,18 +1532,16 @@ if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])
     cmake_args.append(f"-DQT_DIR={os.environ['QT_DIR']}")
 
-build_bonsaiviewer = BUILD_BONSAIVIEWER or "BonsaiViewer" in targets
-
 ifcos_build_args = [
     f"-DBUILD_IFCGEOM={OFF_ON['IfcGeom' in targets]}",
     f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
-    f"-DBUILD_BONSAIVIEWER={OFF_ON[build_bonsaiviewer]}",
+    f"-DBUILD_BONSAIVIEWER={OFF_ON['BonsaiViewer' in targets]}",
     f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
 ]
 
 if not WASM and (
-    build_bonsaiviewer
+    "BonsaiViewer" in targets
     or not explicit_targets
     or {"IfcGeom", "IfcConvert", "IfcGeomServer", "BonsaiViewer"} & set(explicit_targets)
 ):
