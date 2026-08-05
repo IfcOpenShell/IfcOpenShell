@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import deque
 from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal, Optional, Union, get_args
@@ -450,9 +451,9 @@ class Usecase:
         new = self.file_add(element)
         self.added_elements[element.id()] = new
         self.check_inverses(element)
-        subelement_queue = self.settings["library"].traverse(element, max_levels=1)[1:]
+        subelement_queue = deque(self.settings["library"].traverse(element, max_levels=1)[1:])
         while subelement_queue:
-            subelement = subelement_queue.pop(0)
+            subelement = subelement_queue.popleft()
             existing_element = self.get_existing_element(subelement)
             if existing_element:
                 self.added_elements[subelement.id()] = existing_element
