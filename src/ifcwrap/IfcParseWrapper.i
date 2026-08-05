@@ -263,13 +263,29 @@ private:
 %newobject ifcopenshell::file::create_uninitialized;
 
 %extend ifcopenshell::file {
-	/*
 	// Use to correlate to entity_instance.file_pointer, so that we
 	// can trace file ownership of instances on the python side.
 	size_t file_pointer() const {
 		return reinterpret_cast<size_t>($self);
 	}
-	*/
+
+	%pythoncode %{
+		def __eq__(self, other):
+			# Attribute access hands out a new wrapper every time, so identity
+			# of the wrapper says nothing about the file it refers to.
+			if self is other:
+				return True
+			if not isinstance(other, file):
+				return NotImplemented
+			return self.file_pointer() == other.file_pointer()
+
+		def __ne__(self, other):
+			result = self.__eq__(other)
+			return result if result is NotImplemented else not result
+
+		def __hash__(self):
+			return self.file_pointer()
+	%}
 
 	file(const std::string& schema) {
 		return new ifcopenshell::file(ifcopenshell::schema_by_name(schema));
@@ -552,12 +568,10 @@ private:
         return oss.str();
 	}
 
-	/*
-	// Just something to have a somewhat sensible value to hash
+	// Identifies the file owning this instance, zero when it has no owner.
 	size_t file_pointer() const {
-		return reinterpret_cast<size_t>($self->file_);
+		return reinterpret_cast<size_t>($self->file());
 	}
-	*/
 
 	unsigned get_argument_index(const std::string& a) const {
 		if ($self->declaration().as_entity()) {

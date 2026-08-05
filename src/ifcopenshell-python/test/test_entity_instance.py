@@ -75,6 +75,20 @@ def test_equality():
     assert f[1] == g[1]
     g[1].Coordinates = (1.0, 0.0)
     assert f[1] != g[1]
+    f.createIfcCartesianPoint((0.0, 0.0))
+    assert f[1] == f[1]
+    assert f[1] != f[2]
+
+
+def test_equality_of_owning_file():
+    f = ifcopenshell.file()
+    g = ifcopenshell.file()
+    f.createIfcCartesianPoint((0.0, 0.0))
+    f.createIfcCartesianPoint((0.0, 0.0))
+    g.createIfcCartesianPoint((0.0, 0.0))
+    assert f[1].file == f[1].file
+    assert f[1].file == f[2].file
+    assert f[1].file != g[1].file
 
 
 def test_setting_logical():
