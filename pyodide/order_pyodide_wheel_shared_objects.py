@@ -2,7 +2,17 @@
 # /// script
 # ///
 # This file was generated with the assistance of an AI coding tool.
-"""Order Pyodide wheel shared objects so wasm side modules load safely."""
+"""Order Pyodide wheel shared objects so wasm side modules load safely.
+
+Pyodide's package loader loads a wheel's bundled ``.so`` files in the order
+they appear in the wheel's zip.
+If a ``.so`` that depends on symbols from another ``.so`` is loaded first,
+loading fails with errors like
+- "Failed to load dynamic library"
+- "Dynamic linking error: cannot resolve symbol"
+
+This is a known issue upstream - https://github.com/pyodide/pyodide/issues/6020.
+"""
 
 from __future__ import annotations
 
