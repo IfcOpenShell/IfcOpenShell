@@ -234,6 +234,7 @@ if WASM:
         cecho("WARNING. Couldn't find 'PYODIDE_ROOT' in environment variables.", YELLOW)
         cecho("Assuming building wasm outside pyodide build environment and resetting necessary variables.", YELLOW)
         os.environ["SIDE_MODULE_CFLAGS"] = get_pyodide_config_var("cflags")
+        os.environ["SIDE_MODULE_CXXFLAGS"] = get_pyodide_config_var("cxxflags")
         os.environ["SIDE_MODULE_LDFLAGS"] = get_pyodide_config_var("ldflags")
         # Override cmake toolchain for all `emcmake` calls,
         # needed for shared libraries (resulting .so wrapper)
@@ -241,6 +242,7 @@ if WASM:
         os.environ["CMAKE_TOOLCHAIN_FILE"] = get_pyodide_config_var("cmake_toolchain_file")
     required_vars = (
         "SIDE_MODULE_CFLAGS",
+        "SIDE_MODULE_CXXFLAGS",
         "SIDE_MODULE_LDFLAGS",
         "CMAKE_TOOLCHAIN_FILE",
     )
