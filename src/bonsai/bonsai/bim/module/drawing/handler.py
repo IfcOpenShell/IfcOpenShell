@@ -325,6 +325,12 @@ def depsgraph_update_post_handler(scene, depsgraph):
     geom_settings = ifcopenshell.geom.settings()
     geom_settings.set("APPLY_DEFAULT_MATERIALS", False)
 
+    cam = bpy.context.scene.camera
+    cam_dir_tuple = None
+    if cam:
+        from mathutils import Vector as _Vec
+        cam_dir_tuple = tuple((cam.matrix_world.to_3x3() @ _Vec((0, 0, -1))).normalized())
+
     _dim_handler_running = True
     try:
         for ann_id in annotation_ids:
@@ -372,6 +378,7 @@ def depsgraph_update_post_handler(scene, depsgraph):
                     settings=geom_settings,
                     shape_cache=_dim_shape_cache,
                     placement_override=placement_override,
+                    camera_dir=cam_dir_tuple,
                 )
                 if resolved_pts:
                     _update_blender_curve(annotation, resolved_pts)
