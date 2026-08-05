@@ -118,20 +118,15 @@ import multiprocessing
 import os
 import platform
 import shutil
-
-# @todo temporary for expired mpfr.org certificate on 2023-04-08
 import ssl
 import subprocess as sp
 import sys
 import sysconfig
 import tarfile
 import threading
-from datetime import datetime
-
-ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[invalid-assignment]
-
 import time
 from collections.abc import Generator, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 from urllib.request import urlretrieve
