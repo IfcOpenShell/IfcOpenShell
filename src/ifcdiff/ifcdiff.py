@@ -426,7 +426,7 @@ class DiffTerminator:
         return False
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Show the difference between two IFC files")
     parser.add_argument("old", type=str, help="The old IFC file")
     parser.add_argument("new", type=str, help="The new IFC file")
@@ -463,3 +463,7 @@ if __name__ == "__main__":
     print("# Diff finished in {:.2f} seconds".format(time.time() - start))
 
     ifc_diff.export(args.output)
+
+
+if __name__ == "__main__":
+    main()
