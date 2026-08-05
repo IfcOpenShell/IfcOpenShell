@@ -7691,6 +7691,92 @@ def _do_write_anchor(annotation, annotation_obj, new_anchor: dict, vertex_index:
             _update_blender_curve(annotation, resolved_pts)
 
 
+def _do_insert_anchor(annotation, annotation_obj, insert_after: int, shape_cache=None) -> int:
+    """Insert a free world-point anchor into BBIM_Dimension and regenerate the curve.
+
+    :param insert_after: Insert the new anchor after this index.
+                         Negative or >= last index → append at end.
+    :returns: Index of the newly inserted anchor.
+    """
+    import ifcopenshell.api.drawing as drawing_api
+    file = tool.Ifc.get()
+
+    pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
+    if pset_data and pset_data.get("Anchors"):
+        try:
+            anchors = json.loads(pset_data["Anchors"])
+        except Exception:
+            anchors = _anchors_from_spline(annotation_obj, file)
+    else:
+        anchors = _anchors_from_spline(annotation_obj, file)
+
+    n = len(anchors)
+
+    if insert_after < 0 or insert_after >= n - 1:
+        # Append: extrapolate one step beyond the last anchor.
+        new_idx = n
+        if n >= 2:
+            pt_a = anchors[-2].get("pt") or [0.0, 0.0, 0.0]
+            pt_b = anchors[-1].get("pt") or [0.0, 0.0, 0.0]
+            delta = [pt_b[i] - pt_a[i] for i in range(3)]
+            new_pt = [pt_b[i] + delta[i] for i in range(3)]
+        else:
+            pt_b = anchors[-1].get("pt") or [0.0, 0.0, 0.0]
+            new_pt = [pt_b[0] + 0.5, pt_b[1], pt_b[2]]
+    else:
+        # Insert between insert_after and insert_after+1.
+        new_idx = insert_after + 1
+        pt_a = anchors[insert_after].get("pt") or [0.0, 0.0, 0.0]
+        pt_b = anchors[insert_after + 1].get("pt") or [0.0, 0.0, 0.0]
+        new_pt = [(pt_a[i] + pt_b[i]) / 2.0 for i in range(3)]
+
+    new_anchor = drawing_api.make_world_anchor(new_pt)
+    anchors.insert(new_idx, new_anchor)
+
+    anchors_json = json.dumps(anchors)
+    if pset_data:
+        pset_entity = file.by_id(pset_data["id"])
+        ifcopenshell.api.run("pset.edit_pset", file, pset=pset_entity, properties={"Anchors": anchors_json})
+    else:
+        ifcopenshell.api.run("pset.add_pset", file, product=annotation, name="BBIM_Dimension")
+        pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
+        pset_entity = file.by_id(pset_data["id"])
+        ifcopenshell.api.run("pset.edit_pset", file, pset=pset_entity, properties={"Anchors": anchors_json})
+
+    from bonsai.bim.module.drawing import handler as _drawing_handler
+    _drawing_handler.invalidate_dim_index()
+
+    placement_override: dict = {}
+    for a in anchors:
+        guid = a.get("guid")
+        if not guid:
+            continue
+        try:
+            elem = file.by_guid(guid)
+            elem_obj = tool.Ifc.get_object(elem)
+            if elem_obj:
+                placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+        except Exception:
+            pass
+
+    import bpy as _bpy
+    _cam = _bpy.context.scene.camera
+    _cam_dir_tuple = None
+    if _cam:
+        _cam_dir_tuple = tuple((_cam.matrix_world.to_3x3() @ Vector((0, 0, -1))).normalized())
+
+    resolved_pts = drawing_api.regenerate_dimension(
+        file,
+        annotation,
+        shape_cache=shape_cache,
+        placement_override=placement_override,
+        camera_dir=_cam_dir_tuple,
+    )
+    if resolved_pts:
+        _update_blender_curve(annotation, resolved_pts)
+
+    return new_idx
+
 
 class AddElevationAnnotation(SetDimensionAnchor):
     """Interactively place a SECTION_LEVEL or PLAN_LEVEL annotation.
@@ -8330,14 +8416,166 @@ def _find_curve_in_item(item: ifcopenshell.entity_instance) -> Optional[ifcopens
 
 
 
-class ClickNearestDimensionAnchor(bpy.types.Operator):
-    """Click handler for dimension anchor dots.
+class RemoveDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
+    """Remove one anchor vertex from a parametric dimension.
 
-    When the active dimension's anchor dots are visible, clicking within
-    RADIUS_PX of a dot activates SetDimensionAnchor for that dot.
+    The dimension must have at least 3 anchors — the last two cannot be removed.
+    Triggered by Alt+click on an anchor dot via ClickNearestDimensionAnchor.
+    """
+
+    bl_idname = "bim.remove_dimension_anchor"
+    bl_label = "Remove Dimension Anchor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    anchor_index: bpy.props.IntProperty(default=0)
+
+    if TYPE_CHECKING:
+        anchor_index: int
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        obj = context.active_object
+        if not obj:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            return False
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        if not pset or not pset.get("Anchors"):
+            return False
+        try:
+            return len(json.loads(pset["Anchors"])) > 2
+        except Exception:
+            return False
+
+    def _execute(self, context):
+        obj = context.active_object
+        annotation = tool.Ifc.get_entity(obj)
+        file = tool.Ifc.get()
+
+        pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
+        try:
+            anchors = json.loads(pset_data["Anchors"])
+        except Exception:
+            self.report({"ERROR"}, "Could not read anchors.")
+            return {"CANCELLED"}
+
+        if len(anchors) <= 2:
+            self.report({"WARNING"}, "Cannot remove: dimension needs at least 2 anchors.")
+            return {"CANCELLED"}
+
+        idx = self.anchor_index
+        if not (0 <= idx < len(anchors)):
+            self.report({"ERROR"}, f"Anchor index {idx} out of range (0–{len(anchors) - 1}).")
+            return {"CANCELLED"}
+
+        del anchors[idx]
+
+        pset_entity = file.by_id(pset_data["id"])
+        ifcopenshell.api.run("pset.edit_pset", file, pset=pset_entity, properties={"Anchors": json.dumps(anchors)})
+
+        from bonsai.bim.module.drawing import handler as _drawing_handler
+        _drawing_handler.invalidate_dim_index()
+
+        from bonsai.bim.module.drawing.gizmos import set_active_anchor
+        set_active_anchor(-1)
+
+        placement_override: dict = {}
+        for a in anchors:
+            guid = a.get("guid")
+            if not guid:
+                continue
+            try:
+                elem = file.by_guid(guid)
+                elem_obj = tool.Ifc.get_object(elem)
+                if elem_obj:
+                    placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+            except Exception:
+                pass
+
+        import ifcopenshell.api.drawing as drawing_api
+        _cam = context.scene.camera
+        _cam_dir_tuple = None
+        if _cam:
+            _cam_dir_tuple = tuple((_cam.matrix_world.to_3x3() @ Vector((0, 0, -1))).normalized())
+
+        resolved_pts = drawing_api.regenerate_dimension(
+            file,
+            annotation,
+            placement_override=placement_override,
+            camera_dir=_cam_dir_tuple,
+        )
+        if resolved_pts:
+            _update_blender_curve(annotation, resolved_pts)
+
+        self.report({"INFO"}, f"Removed anchor {idx}.")
+        return {"FINISHED"}
+
+
+class InsertDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
+    """Insert a new anchor vertex into a parametric dimension and enter face-pick mode.
+
+    Inserts a free world-point anchor after `insert_after` (or appends when
+    insert_after is -1 or >= the last index), then immediately opens
+    SetDimensionAnchor so the user can snap the new point to an IFC face.
+    Triggered by Ctrl+click on a dot or segment midpoint via ClickNearestDimensionAnchor.
+    """
+
+    bl_idname = "bim.insert_dimension_anchor"
+    bl_label = "Insert Dimension Anchor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    insert_after: bpy.props.IntProperty(default=-1)
+
+    if TYPE_CHECKING:
+        insert_after: int
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        obj = context.active_object
+        if not obj:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            return False
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        return bool(pset and pset.get("Anchors"))
+
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
+        obj = context.active_object
+        annotation = tool.Ifc.get_entity(obj)
+
+        new_idx = _do_insert_anchor(annotation, obj, self.insert_after)
+
+        from bonsai.bim.module.drawing.gizmos import set_active_anchor
+        set_active_anchor(new_idx, obj)
+
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+                break
+
+        bpy.ops.bim.set_dimension_anchor("INVOKE_DEFAULT", anchor_index=new_idx)
+        return {"FINISHED"}
+
+
+class ClickNearestDimensionAnchor(bpy.types.Operator):
+    """Click handler for dimension anchor dots and segment midpoints.
+
+    Plain click near a dot → SetDimensionAnchor (re-anchor that vertex).
+    Alt+click near a dot → RemoveDimensionAnchor (delete that vertex).
+    Ctrl+click near a dot or segment midpoint → InsertDimensionAnchor
+        (insert a new vertex after that position and enter face-pick mode).
 
     Implemented as a two-event modal (PRESS consumed in invoke, RELEASE
-    consumed in modal) so SetDimensionAnchor starts on a clean slate —
+    consumed in modal) so the dispatched operator starts on a clean slate —
     no stray LMB events reach it that could trigger view3d.select.
     """
 
@@ -8380,6 +8618,8 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
         best_obj = None
         best_idx = -1
         best_dist_sq = float("inf")
+        # "DOT" = clicked on an anchor vertex; "MIDPOINT" = clicked between two anchors.
+        best_hit_type = "DOT"
 
         for obj in context.scene.objects:
             if obj.type != "CURVE":
@@ -8397,7 +8637,7 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
 
             ptype = _ue.get_predefined_type(element)
             if ptype in ("SECTION_LEVEL", "PLAN_LEVEL"):
-                # Gizmo is drawn at the object origin for elevation annotations.
+                # Elevation annotations: single dot at the object origin.
                 world_pos = obj.matrix_world.translation.copy()
                 sp = location_3d_to_region_2d(region, rv3d, world_pos)
                 if sp:
@@ -8407,10 +8647,14 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
                         best_dist_sq = d2
                         best_idx = 0
                         best_obj = obj
+                        best_hit_type = "DOT"
             else:
-                for i, pt in enumerate(obj.data.splines[0].points):
-                    world_pos = obj.matrix_world @ pt.co.to_3d()
-                    sp = location_3d_to_region_2d(region, rv3d, world_pos)
+                pts = obj.data.splines[0].points
+                world_pts = [obj.matrix_world @ pt.co.to_3d() for pt in pts]
+                screen_pts = [location_3d_to_region_2d(region, rv3d, wp) for wp in world_pts]
+
+                # Check anchor dots first.
+                for i, sp in enumerate(screen_pts):
                     if not sp:
                         continue
                     dx, dy = cx - sp.x, cy - sp.y
@@ -8419,6 +8663,25 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
                         best_dist_sq = d2
                         best_idx = i
                         best_obj = obj
+                        best_hit_type = "DOT"
+
+                # When Ctrl is held, also check segment midpoints so the user
+                # can insert between two anchors without clicking on a dot.
+                if event.ctrl:
+                    for i in range(len(screen_pts) - 1):
+                        sp_a = screen_pts[i]
+                        sp_b = screen_pts[i + 1]
+                        if not sp_a or not sp_b:
+                            continue
+                        mid_x = (sp_a.x + sp_b.x) / 2.0
+                        mid_y = (sp_a.y + sp_b.y) / 2.0
+                        dx, dy = cx - mid_x, cy - mid_y
+                        d2 = dx * dx + dy * dy
+                        if d2 < r2 and d2 < best_dist_sq:
+                            best_dist_sq = d2
+                            best_idx = i  # insert_after = segment start
+                            best_obj = obj
+                            best_hit_type = "MIDPOINT"
 
         if best_obj is None:
             return {"PASS_THROUGH"}
@@ -8428,24 +8691,34 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
         best_obj.select_set(True)
         context.view_layer.objects.active = best_obj
 
-        # Store dot for the modal phase and go modal to consume the PRESS.
-        # The modal will also consume the RELEASE before handing off to
-        # SetDimensionAnchor, so view3d.select never sees either event.
+        # Store state for the modal phase (consumes the imminent RELEASE event
+        # so neither view3d.select nor the dispatched operator sees a stray LMB).
         self._best_obj = best_obj
         self._best_idx = best_idx
+        self._alt = event.alt
+        self._ctrl = event.ctrl
+        self._hit_type = best_hit_type
         context.window_manager.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
         if event.type == "LEFTMOUSE" and event.value == "RELEASE":
-            # Both PRESS and RELEASE are now consumed.  Start the anchor editor.
-            from bonsai.bim.module.drawing.gizmos import set_active_anchor
-            set_active_anchor(self._best_idx, self._best_obj)
-            for area in context.screen.areas:
-                if area.type == "VIEW_3D":
-                    area.tag_redraw()
-                    break
-            bpy.ops.bim.set_dimension_anchor("INVOKE_DEFAULT", anchor_index=self._best_idx)
+            # PRESS + RELEASE both consumed — dispatch the appropriate operator.
+            if self._alt and self._hit_type == "DOT":
+                # Alt+click on a dot → remove that anchor.
+                bpy.ops.bim.remove_dimension_anchor("EXEC_DEFAULT", anchor_index=self._best_idx)
+            elif self._ctrl:
+                # Ctrl+click on a dot or midpoint → insert after that position.
+                bpy.ops.bim.insert_dimension_anchor("INVOKE_DEFAULT", insert_after=self._best_idx)
+            else:
+                # Plain click on a dot → re-anchor (existing behaviour).
+                from bonsai.bim.module.drawing.gizmos import set_active_anchor
+                set_active_anchor(self._best_idx, self._best_obj)
+                for area in context.screen.areas:
+                    if area.type == "VIEW_3D":
+                        area.tag_redraw()
+                        break
+                bpy.ops.bim.set_dimension_anchor("INVOKE_DEFAULT", anchor_index=self._best_idx)
             return {"FINISHED"}
 
         if event.type in ("ESC", "RIGHTMOUSE"):

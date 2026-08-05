@@ -115,6 +115,8 @@ classes = (
     operator.DrawParametricDimension,
     operator.SetDimensionAnchor,
     operator.RegenerateDimensions,
+    operator.RemoveDimensionAnchor,
+    operator.InsertDimensionAnchor,
     operator.ClickNearestDimensionAnchor,
     operator.MakeDimensionParametric,
     operator.BakeParametricDimension,
@@ -220,6 +222,10 @@ def register():
         km = kc.keymaps.new(name="3D View", space_type="VIEW_3D")
         kmi = km.keymap_items.new("bim.click_nearest_dimension_anchor", "LEFTMOUSE", "PRESS")
         _keymaps.append((km, kmi))
+        kmi_alt = km.keymap_items.new("bim.click_nearest_dimension_anchor", "LEFTMOUSE", "PRESS", alt=True)
+        _keymaps.append((km, kmi_alt))
+        kmi_ctrl = km.keymap_items.new("bim.click_nearest_dimension_anchor", "LEFTMOUSE", "PRESS", ctrl=True)
+        _keymaps.append((km, kmi_ctrl))
 
 
 def unregister():
