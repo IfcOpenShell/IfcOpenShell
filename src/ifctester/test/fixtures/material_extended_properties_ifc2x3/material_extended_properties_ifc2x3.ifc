@@ -1,0 +1,13 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2026-08-05T00:00:00',(''),(''),'IfcOpenShell 0.8.6-6f3acc8','IfcOpenShell 0.8.6-6f3acc8','');
+FILE_SCHEMA(('IFC2X3'));
+ENDSEC;
+DATA;
+#1=IFCPROJECT('1Fu_ePwY1DZxzRl9jojPIx',$,'P',$,$,$,$,$,$);
+#2=IFCMATERIAL('Concrete');
+#3=IFCPROPERTYSINGLEVALUE('Bar',$,IFCLABEL('baz'),$);
+#4=IFCEXTENDEDMATERIALPROPERTIES(#2,(#3),$,'Pset_Foo');
+ENDSEC;
+END-ISO-10303-21;

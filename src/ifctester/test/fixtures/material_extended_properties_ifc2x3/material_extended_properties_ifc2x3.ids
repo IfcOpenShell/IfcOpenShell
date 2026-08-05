@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>Material properties in IFC2X3</title>
+        <description>IfcMaterial must carry Pset_Foo.Bar via IfcExtendedMaterialProperties.</description>
+    </info>
+    <specifications>
+        <specification name="Materials must have Pset_Foo.Bar" ifcVersion="IFC2X3">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCMATERIAL</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL">
+                    <propertySet>
+                        <simpleValue>Pset_Foo</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>Bar</simpleValue>
+                    </baseName>
+                </property>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
