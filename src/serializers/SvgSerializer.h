@@ -506,6 +506,105 @@ namespace {
 			return merged;
 		}
 
+		// Splits [t_lo, t_hi] (a raw matched interval, in `seg`'s own parametrization) into
+		// occlusion-CLEAR sub-intervals, instead of the single-midpoint whole-interval verdict
+		// `accumulate_edge_coverage()`/`mat_style_change::accumulate_mismatch_coverage()` used to
+		// rely on. Mirrors `restore_coincident_hidden_edges()`'s own `restorable_intervals()`/
+		// `refine_transition()` (added in P1-4e for exactly this shape of problem there): a coarse
+		// interior sample grid, then a 12-iteration bisection refine at each transition between a
+		// clear sample and an occluded neighbour. Confirmed via issue #3742 follow-up reports
+		// (real project drawings, `coplanar join.ifc`'s own PLAN_VIEW/ORTHOGRAPHIC-X): a single
+		// raw interval's occlusion genuinely varies along its own length far more often than the
+		// old single-midpoint test could ever notice -- a large sub-edge whose one sample point
+		// happened to land in a small, genuinely-occluded patch was rejected in its ENTIRETY,
+		// including portions many times longer than the patch itself that were never actually
+		// occluded at all.
+		std::vector<std::pair<double, double>> occlusion_clear_subintervals(
+			const LineSeg& seg, double t_lo, double t_hi,
+			const std::function<bool(const gp_Pnt&)>& is_occluded, double tol
+		) {
+			double length = t_hi - t_lo;
+			auto is_clear_at = [&](double t) -> bool {
+				gp_Pnt p = seg.p0.Translated(gp_Vec(seg.dir) * t);
+				return !is_occluded(p);
+			};
+			if (length <= tol) {
+				// Degenerate/near-zero interval: same single-point behaviour as before.
+				return is_clear_at(0.5 * (t_lo + t_hi))
+					? std::vector<std::pair<double, double>>{ { t_lo, t_hi } }
+					: std::vector<std::pair<double, double>>{};
+			}
+
+			// 31 interior samples (32 bins), same count/rationale as restorable_intervals()'s own
+			// coarse grid -- comfortably resolves multiple distinct occluders along one interval.
+			constexpr int kSampleCount = 31;
+			std::vector<double> ts(kSampleCount);
+			std::vector<bool> clear(kSampleCount);
+			for (int i = 0; i < kSampleCount; ++i) {
+				double t = t_lo + length * static_cast<double>(i + 1) / static_cast<double>(kSampleCount + 1);
+				ts[i] = t;
+				clear[i] = is_clear_at(t);
+			}
+
+			auto refine_transition = [&](double t_clear, double t_occluded) -> double {
+				for (int iter = 0; iter < 12; ++iter) {
+					double mid = 0.5 * (t_clear + t_occluded);
+					if (is_clear_at(mid)) {
+						t_clear = mid;
+					} else {
+						t_occluded = mid;
+					}
+				}
+				return 0.5 * (t_clear + t_occluded);
+			};
+
+			std::vector<std::pair<double, double>> raw;
+			for (int i = 0; i < kSampleCount; ++i) {
+				if (!clear[i]) {
+					continue;
+				}
+				double lo;
+				if (i == 0) {
+					lo = t_lo;
+				} else if (clear[i - 1]) {
+					lo = 0.5 * (ts[i - 1] + ts[i]);
+				} else {
+					lo = refine_transition(ts[i], ts[i - 1]);
+				}
+				double hi;
+				if (i == kSampleCount - 1) {
+					hi = t_hi;
+				} else if (clear[i + 1]) {
+					hi = 0.5 * (ts[i] + ts[i + 1]);
+				} else {
+					hi = refine_transition(ts[i], ts[i + 1]);
+				}
+				raw.emplace_back(lo, hi);
+			}
+			auto merged = ivs_union(raw, tol);
+
+			// Sliver guard, mirroring restorable_intervals()'s own: clamp to [t_lo, t_hi] and drop
+			// anything narrower than tolerance, plus require a sub-interval that doesn't touch a
+			// true endpoint to be corroborated by >= 2 consecutive clear samples (a lone isolated
+			// clear sample surrounded by occluded ones is more likely borderline/noisy than a
+			// genuine narrow clear stretch).
+			double bin_width = length / static_cast<double>(kSampleCount + 1);
+			std::vector<std::pair<double, double>> filtered;
+			for (auto& iv : merged) {
+				double lo = std::max(t_lo, iv.first);
+				double hi = std::min(t_hi, iv.second);
+				if (hi - lo < tol) {
+					continue;
+				}
+				bool touches_endpoint = (lo - t_lo) <= tol || (t_hi - hi) <= tol;
+				if (!touches_endpoint && (hi - lo) < 2.0 * bin_width - tol) {
+					continue;
+				}
+				filtered.emplace_back(lo, hi);
+			}
+			return filtered;
+		}
+
 		// Resolves the material at a specific 3D point for a (possibly layered) product: a
 		// single dot product against `proj`'s axis/origin plus a binary search into
 		// cumulative_offsets, clamped to a valid layer index -- falls back to `product_level`
@@ -686,40 +785,33 @@ namespace {
 						} else {
 							ok = style_this && style_other && style_this == style_other;
 						}
-						// Screen-space occlusion, checked per sub-interval rather than once for the
-						// whole face: a wholly separate, unrelated third product sitting in front
-						// of THIS specific portion of the shared boundary from the current camera
-						// means classifying it as this pair's relationship would misrepresent
-						// what's actually shown here, even though other portions of the same face
-						// pair may be genuinely unoccluded and should still be accepted. Tested
-						// exactly at `mid` (the interval's own midpoint on the shared boundary
-						// line), deliberately NOT offset into this face's own interior -- `is_
-						// occluded` already excludes both products of the matched pair itself
-						// (see find_cross_coplanar_matches()'s `idx_i`/`idx_j` exclusion), so `mid`
-						// unambiguously answers "is a genuine third party in front of this exact
-						// shared location", the same question and the same answer regardless of
-						// which side's face happens to be walked. An earlier version offset
-						// toward this face's own whole-face average instead, reasoning (by analogy
-						// with an even earlier, already-rejected whole-face design) that testing
-						// exactly on the shared boundary couldn't tell "which side" -- but with the
-						// pair already excluded that concern doesn't apply, and the offset was
-						// actively harmful: this function is called once per direction for the
-						// same matched pair, each call offsetting toward a DIFFERENT face's own
-						// centroid, so the same physical sub-interval could accept on one side and
-						// reject on the other -- producing two independently-split sub-edges with
-						// different endpoints for what should be a single, consistent decision.
-						// `coincident_edge_class_priority()`'s dedup pass matches by (quantized)
-						// endpoint identity, so mismatched split points meant the wrong-side edge
-						// was never recognised as a duplicate and both survived -- confirmed
-						// directly against a real isometric drawing (issue #3742 follow-up): a
-						// lower wall's own `sharp` fallback edge and a slab's own `mat-style-
-						// change` edge, both representing the same physical seam, survived side by
-						// side with slightly different endpoints.
-						if (ok && is_occluded(mid)) {
-							ok = false;
-						}
+						// Screen-space occlusion: a wholly separate, unrelated third product
+						// sitting in front of PART of this shared boundary from the current
+						// camera means classifying that part as this pair's relationship would
+						// misrepresent what's actually shown, even though the rest of the same
+						// raw interval may be genuinely unoccluded and should still be accepted.
+						// Split via occlusion_clear_subintervals() (bisection-refined, same
+						// approach restore_coincident_hidden_edges()'s own restorable_intervals()
+						// already uses) rather than a single midpoint test for the whole
+						// [cursor, piece_end] range -- issue #3742 follow-up reports (real
+						// project drawings) confirmed occlusion genuinely varies within a single
+						// raw interval far more often than a lone sample point could ever catch,
+						// wrongly rejecting long genuinely-visible stretches over one small
+						// occluded patch. Tested along the shared boundary line itself,
+						// deliberately NOT offset into this face's own interior -- `is_occluded`
+						// already excludes both products of the matched pair itself (see
+						// find_cross_coplanar_matches()'s `idx_i`/`idx_j` exclusion), so points on
+						// this line unambiguously answer "is a genuine third party in front of
+						// this exact shared location", the same question and the same answer
+						// regardless of which side's face happens to be walked -- this function is
+						// called once per direction for the same matched pair, and both calls
+						// split at the same real occlusion transitions since both probe the same
+						// physical line, so the two sides' sub-edges still land on matching
+						// endpoints for `coincident_edge_class_priority()`'s dedup pass.
 						if (ok) {
-							covered.push_back({ cursor, piece_end });
+							for (auto& sub : occlusion_clear_subintervals(*seg, cursor, piece_end, is_occluded, tol)) {
+								covered.push_back(sub);
+							}
 						}
 						cursor = piece_end;
 					}
@@ -1170,18 +1262,17 @@ namespace {
 							both_resolved = style_this && style_other;
 							equal = both_resolved && style_this == style_other;
 						}
-						// Per-sub-interval occlusion check, tested exactly at `mid` (not offset into
-						// this face's own interior) -- see cross_coplanar::accumulate_edge_
-						// coverage()'s own occlusion comment above for the full reasoning (per-
-						// interval granularity, and why an unoffset shared-boundary point is both
-						// correct and necessary for both sides of a matched pair to split at the
-						// same points).
+						// Occlusion, split into clear sub-intervals rather than tested once at
+						// `mid` for the whole range -- see cross_coplanar::accumulate_edge_
+						// coverage()'s own occlusion comment above for the full reasoning
+						// (occlusion_clear_subintervals(), why an unoffset shared-boundary point
+						// is both correct and necessary for both sides of a matched pair to split
+						// at the same points).
 						bool accept = both_resolved && !equal;
-						if (accept && is_occluded(mid)) {
-							accept = false;
-						}
 						if (accept) {
-							covered.push_back({ cursor, piece_end });
+							for (auto& sub : cross_coplanar::occlusion_clear_subintervals(*seg, cursor, piece_end, is_occluded, tol)) {
+								covered.push_back(sub);
+							}
 						}
 						cursor = piece_end;
 					}
@@ -2347,11 +2438,13 @@ namespace {
 			// scope for this fix), not shared, since this pass runs earlier and independently.
 			std::vector<IntCurvesFace_ShapeIntersector> occlusion_intersectors(items_.size());
 			std::vector<bool> occlusion_intersector_loaded(items_.size(), false);
+			std::vector<const TopoDS_Shape*> occlusion_shapes(items_.size(), nullptr);
 			{
 				size_t idx = 0;
 				for (auto& it : items_) {
 					const auto* item_product = std::get<0>(it);
 					const TopoDS_Shape& shape = std::get<1>(it);
+					occlusion_shapes[idx] = &shape;
 					// IfcOpeningElement (window/door voids, and similar non-physical feature
 					// subtractions) can appear in items_ for other purposes (e.g. reveal-edge
 					// classification) but is never a legitimate solid occluder -- it represents a
@@ -2368,6 +2461,44 @@ namespace {
 					++idx;
 				}
 			}
+			// Is `p` genuinely ON a foreign face (its plane passing within tolerance, and `p`
+			// itself falling inside that face's own boundary) -- the same coincidence test
+			// restore_coincident_hidden_edges()'s own point_on_foreign_face() already uses to
+			// confirm "a real occluder's footprint edge happens to coincide with this exact
+			// point" before trusting a nudge. Used below to gate is_occluded_for_pair()'s own
+			// nudge: only trust a nudge-discovered hit when the nudge target genuinely sits on a
+			// foreign face that ALSO passes through the original, unnudged boundary point --
+			// otherwise a nudge toward a large face's own (possibly distant) centroid can cross a
+			// small real gap into an unrelated, genuinely separate object and misreport it as
+			// touching (issue #3742 follow-up).
+			auto touches_foreign_face = [&](const gp_Pnt& p, size_t exclude_a, size_t exclude_b) -> bool {
+				for (size_t idx = 0; idx < occlusion_shapes.size(); ++idx) {
+					if (idx == exclude_a || idx == exclude_b || !occlusion_shapes[idx]) {
+						continue;
+					}
+					for (TopExp_Explorer fexp(*occlusion_shapes[idx], TopAbs_FACE); fexp.More(); fexp.Next()) {
+						const TopoDS_Face& face = TopoDS::Face(fexp.Current());
+						gp_Dir n;
+						if (!cross_coplanar::face_normal(face, n)) {
+							continue;
+						}
+						TopExp_Explorer vexp(face, TopAbs_VERTEX);
+						if (!vexp.More()) {
+							continue;
+						}
+						gp_Pnt face_pnt = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+						double plane_dist = std::abs(gp_Vec(face_pnt, p).Dot(n));
+						if (plane_dist >= cross_coplanar_tolerance_) {
+							continue;
+						}
+						BRepClass_FaceClassifier classifier(face, p, cross_coplanar_tolerance_);
+						if (classifier.State() != TopAbs_OUT) {
+							return true;
+						}
+					}
+				}
+				return false;
+			};
 			// Same "smaller d is nearer the camera" convention as prefiltered_hlr::is_obscured_()
 			// and restore_coincident_hidden_edges()'s own depth() lambda.
 			auto occlusion_depth = [&](const gp_Pnt& p) {
@@ -2608,15 +2739,48 @@ namespace {
 							// side, coincident with the base of the wall stacked directly above it,
 							// produced exactly this near-miss (camera-direction-driven drift of
 							// several centimetres past the occluder's own footprint edge). The
-							// small (5%) nudge toward each side's own interior moves the probe just
+							// small nudge toward each side's own interior moves the probe just
 							// enough off that exact edge to catch it, while staying local enough to
 							// the interval's own position not to reintroduce the whole-face
 							// granularity problem an earlier version of this fix already fixed.
+							//
+							// issue #3742 follow-up: a blind 5%-of-centroid-distance nudge has no
+							// relationship to whether a foreign object's own face genuinely touches
+							// this exact boundary point at all -- for a large face (long centroid
+							// distance) sitting only a few millimetres from an unrelated third
+							// product, 5% can land inside that unrelated object's own solid,
+							// misreporting it as if it were standing on this exact boundary. A fixed
+							// nudge cap can't fix this either: this file's own real gap in the
+							// reported case (~0.015 project units) is smaller than the several-
+							// centimetre drift the original fix above needed to tolerate, so no one
+							// constant is small enough to avoid the former and large enough to still
+							// catch the latter. A first attempt tried measuring the nearest foreign
+							// object's distance along the nudge direction and capping the nudge
+							// below it -- confirmed (via a full before/after render of all 10 primary
+							// fixture drawings) to change literally nothing, because that in-plane
+							// tangential direction is generally NOT the direction the actual
+							// occlusion ray travels in (the camera's own view direction, rarely
+							// contained in the shared face's plane at all), so it almost never
+							// intersects the object the nudge actually goes on to hit.
+							//
+							// The fix instead gates the nudge on `touches_foreign_face()`: only
+							// trust a nudge-discovered occlusion when some foreign face's plane
+							// genuinely passes within tolerance of THIS UNNUDGED boundary point `p`
+							// (the same coincidence test restore_coincident_hidden_edges()'s own
+							// point_on_foreign_face() already uses) -- i.e. a real occluder whose
+							// own footprint edge coincides with this exact boundary, which is
+							// precisely the P1-4d scenario the nudge exists for. When nothing
+							// genuinely touches `p` at all, any hit found only after nudging toward
+							// a face's own (possibly distant) centroid is a separate, non-touching
+							// object -- exactly this regression -- and must not count.
 							gp_Pnt centroid_i = cross_coplanar::face_interior_point(face_i);
 							gp_Pnt centroid_j = cross_coplanar::face_interior_point(face_j);
-							auto is_occluded_for_pair = [&, centroid_i, centroid_j](const gp_Pnt& p) {
+							auto is_occluded_for_pair = [&](const gp_Pnt& p) {
 								if (is_occluded_by_other(p, idx_i, idx_j)) {
 									return true;
+								}
+								if (!touches_foreign_face(p, idx_i, idx_j)) {
+									return false;
 								}
 								auto nudge_toward = [&](const gp_Pnt& centroid) -> gp_Pnt {
 									gp_Vec toward(p, centroid);

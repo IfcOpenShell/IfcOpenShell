@@ -471,6 +471,95 @@ def test_cross_coplanar_match_stacked_same_footprint_must_not_self_occlude():
         assert edge.cls != "outline"
 
 
+def test_cross_coplanar_match_partial_occlusion_within_one_raw_interval():
+    """`accumulate_edge_coverage()` (`SvgSerializer.h`) accepts or rejects an
+    entire raw matched interval from a SINGLE occlusion test at its own
+    midpoint (`SvgSerializer.h` ~line 681: `t_mid = 0.5 * (cursor +
+    piece_end)`, tested once via `is_occluded(mid)`) -- there is no
+    sub-splitting based on where occlusion actually starts/stops within that
+    interval, unlike `restore_coincident_hidden_edges()`'s own
+    `restorable_intervals()`/`refine_transition()` (added in P1-4e), which
+    bisection-splits at the real occlusion transition instead of trusting one
+    coarse sample.
+
+    Reported by the user from real project drawings (`coplanar join.ifc`'s
+    own PLAN_VIEW/ORTHOGRAPHIC-X): a large sub-edge that's only PARTLY
+    genuinely occluded by an unrelated third product falls back to `outline`
+    in its ENTIRETY, including the genuinely-unoccluded portions -- while a
+    neighbouring tiny fragment (its own, separately-tested raw interval)
+    happens to land outside the occluder and survives correctly, producing
+    an outcome that looks arbitrarily inconsistent until you realise each
+    fragment only ever gets ONE sample point.
+
+    `WallA`/`WallB` share the exact same (2.0, 0.2, 2.0) footprint touching
+    at X=2 (verbatim `test_cross_coplanar_basic_touching_boundary` geometry,
+    confirmed via that test to classify as one single, whole `cross-coplanar`
+    edge with no occluder present). A small `Occluder` box sits directly in
+    front of the camera's view (smaller Y, nearer the camera which looks
+    along +Y) straddling X=2, covering only the MIDDLE third
+    (world Z=[0.8, 1.2]) of the shared edge's Z=[0, 2] extent -- confirmed via
+    direct debug tracing (temporary, reverted) that occlusion genuinely
+    varies within this SINGLE raw interval (occluded at the interval's own
+    midpoint Z=1.0, clear at both Z=0.1 and Z=1.9), i.e. this is not a
+    multi-raw-interval case like
+    `test_cross_coplanar_match_must_not_steal_edge_from_occluded_neighbour()`
+    above (that test's partial split works via separate raw contributions,
+    each individually uniform -- it does not exercise this bug at all).
+
+    Confirmed directly against unfixed code: the whole Z=[0,2] edge -- both
+    genuinely-unoccluded outer thirds included -- degrades to `outline`, with
+    no `cross-coplanar` edge for this boundary anywhere.
+
+    Post-fix, the two genuinely-unoccluded outer thirds correctly show
+    `cross-coplanar` again. Exact coordinates below were captured empirically
+    from this exact scene (fixed code), not hand-derived -- same convention
+    as `test_restore_coincident_hidden_edges_partial_occlusion`.
+
+    Re-captured (issue #3742 follow-up) after gating the occlusion-awareness
+    nudge on `touches_foreign_face()` -- the transition points shifted by
+    ~0.01 world units (now landing almost exactly on the Occluder's own true
+    Z=[0.8, 1.2] edge, rather than the old ungated nudge's slight overshoot
+    past it), and the small transitional `outline` sliver this test used to
+    also carry disappeared entirely once the nudge no longer overshoots.
+    Neither is a regression in this test's own logic.
+    """
+    ifc_file, body_context, storey = _make_project()
+    material = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    wall_a = _add_box(
+        ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=material
+    )
+    wall_b = _add_box(
+        ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=material
+    )
+    _add_box(ifc_file, body_context, storey, "Occluder", (0.4, 0.3, 0.4), (1.8, -0.5, 0.8))
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(2.0, -5.0, 1.0),
+        camera_dir=(0.0, -1.0, 0.0),
+        use_cross_coplanar=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    # Same X/scale/offset convention as test_cross_coplanar_basic_touching_boundary
+    # (shared boundary at world X=2 -> svg x=10000). far_p1/near_p0 are the
+    # bisection-refined occlusion-clear boundaries (not the occluder's own
+    # hand-placed Z=[0.8,1.2] extent) -- captured empirically from this exact
+    # scene, not hand-derived.
+    far_p0, far_p1 = (10000.0, 11000.0), (10000.0, 10200.004577636719)
+    near_p0, near_p1 = (10000.0, 9799.995422363281), (10000.0, 9000.0)
+    assert has_edge(edges, wall_a.GlobalId, "cross-coplanar", far_p0, far_p1)
+    assert has_edge(edges, wall_a.GlobalId, "cross-coplanar", near_p0, near_p1)
+    assert has_edge(edges, wall_b.GlobalId, "cross-coplanar", far_p0, far_p1)
+    assert has_edge(edges, wall_b.GlobalId, "cross-coplanar", near_p0, near_p1)
+    # No edge may cross into the genuinely-occluded middle band, and no
+    # wrongly-unified single edge may span the whole original extent.
+    assert not has_any_edge(edges, wall_a.GlobalId, far_p1, near_p0)
+    assert not has_any_edge(edges, wall_a.GlobalId, far_p0, near_p1)
+    assert not has_any_edge(edges, wall_b.GlobalId, far_p0, near_p1)
+
+
 def test_mat_style_change_case_a_material_mismatch():
     """Same touching-wall geometry as the cross-coplanar baseline, but the two
     walls have DIFFERENT materials -- `find_cross_coplanar_matches()` only
