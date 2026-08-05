@@ -398,7 +398,7 @@ class Usecase:
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
             "IfcElement": ["HasOpenings"],
-            "IfcDistributionElement": ["IsNestedBy"],
+            "IfcDistributionElement": ["IsNestedBy", "HasPorts"],
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": [
                 "StyledByItem",
