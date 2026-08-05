@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# /// script
+# ///
 """Split optional IfcOpenShell Pyodide payloads into separate wheels."""
 
 from __future__ import annotations

@@ -8,6 +8,13 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Install Python
+        # Installs latest Python version so it's preferred by uv over system Python.
+        run: uv python install
+
       - name: Checkout Repository
         uses: actions/checkout@v7
         with:
@@ -26,7 +33,7 @@ jobs:
       - name: Unpack Dependencies
         run: |
           cd ifcopenshell_build
-          python ../IfcOpenShell/nix/cache_dependencies.py unpack
+          uv run ../IfcOpenShell/nix/cache_dependencies.py unpack
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.23
@@ -42,13 +49,13 @@ jobs:
 
       - name: Order wheel shared objects
         run: |
-          python ./IfcOpenShell/pyodide/order_pyodide_wheel_shared_objects.py dist/ifcopenshell-*.whl
+          uv run ./IfcOpenShell/pyodide/order_pyodide_wheel_shared_objects.py dist/ifcopenshell-*.whl
 
       - name: Split packages
         run: |
           VERSION=v`cat ./IfcOpenShell/VERSION`
           mkdir -p dist-modular
-          python ./IfcOpenShell/pyodide/split_pyodide_ifcopenshell_wheel.py dist/ifcopenshell-*.whl ./dist-modular
+          uv run ./IfcOpenShell/pyodide/split_pyodide_ifcopenshell_wheel.py dist/ifcopenshell-*.whl ./dist-modular
           cd dist-modular
           zip -r -qq ifcopenshell-modular-${VERSION}-${GITHUB_SHA:0:7}-pyodide.zip *.whl
 
@@ -77,7 +84,7 @@ jobs:
       - name: Pack Dependencies
         run: |
           cd ifcopenshell_build
-          python ../IfcOpenShell/nix/cache_dependencies.py pack
+          uv run ../IfcOpenShell/nix/cache_dependencies.py pack
 
       - name: Commit and Push Changes to Build Repository
         run: |

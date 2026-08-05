@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# /// script
+# ///
 # This file was generated with the assistance of an AI coding tool.
 """Order Pyodide wheel shared objects so wasm side modules load safely."""
 
