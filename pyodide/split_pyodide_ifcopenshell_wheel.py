@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 # /// script
 # ///
-"""Split optional IfcOpenShell Pyodide payloads into separate wheels."""
+"""Split optional IfcOpenShell Pyodide payloads into separate wheels.
+
+The main wheel bundles per-schema plugin ``.so`` files and pure Python
+subpackages that most browser sessions probably don't need.
+
+This splits each of those out into its own installable wheel,
+so a Pyodide app can fetch just the base wheel plus whichever schema/plugin wheels it actually needs.
+
+Resulting wheels (roughly):
+- ifcopenshell.whl (main ifcopenshell.py files + _ifcopenshell_wrapper)
+- ifcopenshell_pure_python.whl (api, express, python files only)
+- splitted wheels with a single .so binary - e.g. `ifcopenshell_parse_schema_ifc4.whl`
+"""
 
 from __future__ import annotations
 
