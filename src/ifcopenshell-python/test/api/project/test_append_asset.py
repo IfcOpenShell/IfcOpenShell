@@ -668,6 +668,26 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
             assert len(rels) == 1
             assert set(rels[0].RelatedObjects) == set(ports)
 
+    def test_append_a_non_distribution_element_with_its_ports(self):
+        # IFC2X3 declares HasPorts on IfcElement, not IfcDistributionElement,
+        # so a proxy can carry ports too. IFC4 has no such attribute on IfcElement.
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcBuildingElementProxy")
+        ifcopenshell.api.system.add_port(library, element=element)
+        ifcopenshell.api.system.add_port(library, element=element)
+
+        new_element = ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+
+        ports = self.file.by_type("IfcDistributionPort")
+        if self.file.schema == "IFC2X3":
+            assert len(ports) == 2
+            rels = self.file.by_type("IfcRelConnectsPortToElement")
+            assert len(rels) == 2
+            assert {rel.RelatedElement for rel in rels} == {new_element}
+            assert {rel.RelatingPort for rel in rels} == set(ports)
+        else:
+            assert len(ports) == 0
+
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
     # NOTE: breaks in IFC2X3 since IfcProfileDef doesn't have "HasProperties" inverse in ifc2x3
