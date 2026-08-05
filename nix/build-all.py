@@ -133,7 +133,7 @@ ssl._create_default_https_context = ssl._create_unverified_context  # ty:ignore[
 import time
 from collections.abc import Generator, Sequence
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal
 from urllib.request import urlretrieve
 
 logger = logging.getLogger(__name__)
@@ -252,7 +252,7 @@ if WASM:
     missing_vars = [v for v in required_vars if v not in os.environ]
     assert not missing_vars, f"Some variables required for WASM compilation are missing: {', '.join(missing_vars)}"
 
-    def get_pyodide_build_version() -> "tuple[int, ...]":
+    def get_pyodide_build_version() -> tuple[int, ...]:
         pyodide_build_suffix = "pyodide-build version:"
         output = sp.check_output(["pyodide", "--version"], encoding="utf-8").strip()
         assert pyodide_build_suffix in output, output
@@ -342,7 +342,7 @@ cecho(f"* IFCOS_SCHEMAS = '{os.environ.get('IFCOS_SCHEMAS')}'", MAGENTA)
 cecho(""" - IFC Schemas to compile. If not provided, fallback to default provided in cmake.
 """)
 
-dependency_tree: "dict[str, tuple[str, ...]]" = {
+dependency_tree: dict[str, tuple[str, ...]] = {
     "IfcParse": ("boost", "libxml2", "rocksdb"),
     "IfcGeom": ("IfcParse", "occ", "manifold", "json", "cgal", "eigen", "OpenCOLLADA"),
     "IfcConvert": ("IfcGeom",),
@@ -367,7 +367,7 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
 }
 
 
-def gather_dependencies(dep: str) -> "Generator[str]":
+def gather_dependencies(dep: str) -> Generator[str]:
     yield dep
     for d in dependency_tree[dep]:
         if f"without-{d.lower()}" not in flags:
@@ -455,7 +455,7 @@ print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t
 yacc = "yacc"  # Used during swig building process, installed with `bison` on Debian / `byacc` on Red Hat.
 bison = "bison"
 
-missing_commands: "list[str]" = []
+missing_commands: list[str] = []
 required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz, bison]
 if "wasm" in flags:
     # Skip swig build for WASM.
@@ -499,14 +499,14 @@ except:
     pass
 
 
-def restore_env(var_name: str, old_value: Union[str, None]) -> None:
+def restore_env(var_name: str, old_value: str | None) -> None:
     if old_value is None:
         del os.environ[var_name]
     else:
         os.environ[var_name] = old_value
 
 
-def run(cmds: "Sequence[str]", cwd: "Union[str, None]" = None, can_fail: bool = False) -> str:
+def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False) -> str:
     """
     Wraps `subprocess.Popen.communicate()` and logs the command being executed,
     sets up logging `stderr` to `LOG_FILE` (in append mode) and returns stdout
@@ -516,7 +516,7 @@ def run(cmds: "Sequence[str]", cwd: "Union[str, None]" = None, can_fail: bool = 
     def timestamp() -> str:
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]  # same format as logging
 
-    def stream_reader(pipe, collector: "list[str]", log_file) -> None:
+    def stream_reader(pipe, collector: list[str], log_file) -> None:
         for line in iter(pipe.readline, ""):
             log_file.write(f"{timestamp()} {line}")
             log_file.flush()
@@ -569,7 +569,7 @@ BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BO
 # Helper functions
 
 
-def run_autoconf(dependency_name: str, configure_args: "list[str]", cwd: str) -> None:
+def run_autoconf(dependency_name: str, configure_args: list[str], cwd: str) -> None:
     configure_path = os.path.realpath(os.path.join(cwd, "..", "configure"))
     if not os.path.exists(configure_path):
         run(
@@ -595,7 +595,7 @@ def run_autoconf(dependency_name: str, configure_args: "list[str]", cwd: str) ->
     )
 
 
-def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None, cwd: Union[str, None] = None):
+def run_cmake(arg1, cmake_args: list[str], cmake_dir: str | None = None, cwd: str | None = None):
     if cmake_dir is None:
         P = ".."
     else:
@@ -636,7 +636,7 @@ def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None,
     )
 
 
-def git_clone_or_pull_repository(clone_url: str, target_dir: str, revision: Union[str, None] = None) -> None:
+def git_clone_or_pull_repository(clone_url: str, target_dir: str, revision: str | None = None) -> None:
     """Lazily clones the `git` repository denoted by `clone_url` into
     the `target_dir` or pulls latest changes if the `target_dir` exists (naively assumes
     that a working clone exists there) and optionally checks out a revision
@@ -666,16 +666,16 @@ def build_dependency(
         "autoconf",
         "bjam",
     ],
-    build_tool_args: "list[str]",
+    build_tool_args: list[str],
     download_url: str,
     download_name: str,
     *,
     download_tool: Literal["py", "git"] = download_tool_default,
-    revision: "Union[str, None]" = None,
+    revision: str | None = None,
     patch: list[str] | None = None,
     shell=None,
-    pre_compile_subs: "Sequence[tuple[str, str, str]]" = (),
-    additional_files: "Union[dict[str, str], None]" = None,
+    pre_compile_subs: Sequence[tuple[str, str, str]] = (),
+    additional_files: dict[str, str] | None = None,
     no_append_name=False,
     cmake_dir=None,
     **kwargs,
@@ -813,7 +813,7 @@ def build_dependency(
         shutil.rmtree(build_dir, ignore_errors=True)
 
 
-def get_qt6_aqt_config() -> "tuple[str, str, str]":
+def get_qt6_aqt_config() -> tuple[str, str, str]:
     if platform.system() != "Linux":
         raise ValueError("Automatic Qt6 installation with aqtinstall is only configured for Linux builds.")
 
@@ -1016,8 +1016,8 @@ if "swig" in targets:
     )
 
 if USE_OCCT and "occ" in targets:
-    occt_args: "list[str]" = []
-    patches: "list[str]" = []
+    occt_args: list[str] = []
+    patches: list[str] = []
     if OCCT_VERSION < "7.4":
         patches.append("./patches/occt/enable-exception-handling.patch")
 
@@ -1176,7 +1176,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
 
     # On OSX a dynamic python library is built or it would not be compatible
     # with the system python because of some threading initialization
-    PYTHON_CONFIGURE_ARGS: "list[str]" = []
+    PYTHON_CONFIGURE_ARGS: list[str] = []
     original_path = ""
     if platform.system() == "Darwin":
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
@@ -1262,8 +1262,8 @@ if "boost" in targets:
         )
 
 if "cgal" in targets:
-    gmp_args: "list[str]" = []
-    mpfr_args: "list[str]" = []
+    gmp_args: list[str] = []
+    mpfr_args: list[str] = []
 
     OLD_HOST_CC = None
     if WASM:
@@ -1440,14 +1440,14 @@ cmake_args = [
     *MAC_CROSS_COMPILE_INTEL_ARGS,
 ]
 """Default CMake args to use for all CMake configs."""
-cmake_args_prefix_path: "list[str]" = [
+cmake_args_prefix_path: list[str] = [
     f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
     f"{DEPS_DIR}/install/eigen-install-{EIGEN_VERSION}",
     f"{DEPS_DIR}/install/json-{JSON_VERSION}",
 ]
 
 
-def get_cmake_args_prefix_path(additional_paths: "Sequence[str]" = ()) -> "list[str]":
+def get_cmake_args_prefix_path(additional_paths: Sequence[str] = ()) -> list[str]:
     args_prefix_path = cmake_args_prefix_path.copy()
     args_prefix_path.extend(additional_paths)
     prefix_path = ";".join(args_prefix_path)
@@ -1567,10 +1567,10 @@ if "IfcOpenShell-Python" in targets:
 
     def compile_python_wrapper(
         python_version: str,
-        python_include: Union[str, None] = None,
-        python_executable: Union[str, None] = None,
-        python_path: Union[Path, None] = None,
-    ) -> Union[str, None]:
+        python_include: str | None = None,
+        python_executable: str | None = None,
+        python_path: Path | None = None,
+    ) -> str | None:
         """
         :return: Path to module dir if ``python_executable`` was provided, otherwise ``None``.
         """
