@@ -34,6 +34,9 @@ Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
+[project.scripts]
+ifc5d-spreadsheet = "ifc5d.ifc5Dspreadsheet:main"
+
 [tool.setuptools.packages.find]
 include = ["ifc5d*"]
 exclude = ["test*"]
