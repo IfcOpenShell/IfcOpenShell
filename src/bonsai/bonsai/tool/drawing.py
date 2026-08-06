@@ -2028,6 +2028,10 @@ class Drawing(bonsai.core.tool.Drawing):
         ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"IsManualDrawingReference": True})
 
     @classmethod
+    def is_manual_drawing_reference(cls, element: ifcopenshell.entity_instance) -> bool:
+        return bool(ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsManualDrawingReference"))
+
+    @classmethod
     def is_document_reference(cls, element: ifcopenshell.entity_instance) -> bool:
         """Return True if this annotation links to an external document (not a Bonsai drawing camera)."""
         return bool(ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsDocumentReference"))
