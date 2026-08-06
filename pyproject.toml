@@ -9,6 +9,7 @@ line-length = 120
 include = '''
     src/.*.pyi?$
     |nix/.*.pyi?$
+    |pyodide/.*.pyi?$
 '''
 extend-exclude = '''
     src/ifcopenshell-python/ifcopenshell/express/rules/*

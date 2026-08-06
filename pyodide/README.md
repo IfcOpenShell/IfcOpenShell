@@ -30,3 +30,8 @@ since it's pure cmake without any additional moving parts.
     - it will produce Python package in `IfcOpenShell/ifcopenshell`
 - run `pyodide build`
     - it will produce a wheel in `IfcOpenShell/dist`
+- testing:
+  - ensure you're in pyodide environment
+  - `cd IfcOpenshell/pyodide`
+  - `./run_pytest.py setup`
+  - `./run_pytest.py run`

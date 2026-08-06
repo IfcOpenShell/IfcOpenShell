@@ -16,6 +16,9 @@
 /src/ifcmax/out/
 /src/ifcwrap/out/
 /src/ifctester/webapp/public/pyodide/
+# pyodide wheels
+/dist/
+/dist-modular/
 
 /win/BuildDepsCache*.txt
 
