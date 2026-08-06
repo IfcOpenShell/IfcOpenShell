@@ -218,11 +218,7 @@ class entity_instance_mixin:
         if self.is_a(True) != other.is_a(True):
             return False
 
-        if (
-            settings.compare_instances_by_value
-            or self.file_pointer() != other.file_pointer()
-            or not self.is_entity()
-        ):
+        if settings.compare_instances_by_value or self.file_pointer() != other.file_pointer() or not self.is_entity():
             return self.get_info(recursive=True, include_identifier=False) == other.get_info(
                 recursive=True, include_identifier=False
             )
