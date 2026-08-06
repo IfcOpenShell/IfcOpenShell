@@ -111,6 +111,9 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 src/ifcopenshell-python/ifcopenshell/ifcopenshell.document.*.so
 src/ifcopenshell-python/ifcopenshell/ifcopenshell.geometry.*.so
 src/ifcopenshell-python/ifcopenshell/ifcopenshell.parse.schema*.so
+src/ifcopenshell-python/ifcopenshell/libifcopenshell.geometry.so
+src/ifcopenshell-python/ifcopenshell/libifcopenshell.parse.so
+src/ifcopenshell-python/ifcopenshell/libifcopenshell.plugin.so
 
 # apple
 .DS_Store
