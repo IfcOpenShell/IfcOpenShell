@@ -115,6 +115,11 @@ def test_rocks():
         b = f.key_value_store_query(f"t|{iden}|0")[1:]
         assert set(struct.unpack("Q", b[i : i + 8])[0] for i in range(1, len(b), 9)) == {136, 138}
 
+        g = ifcopenshell.open(fn)
+        for inst in g.by_type("IfcRoot"):
+            assert f.by_guid(inst.GlobalId).id() == inst.id()
+
+        del g
         del f
         gc.collect()
 
