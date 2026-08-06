@@ -426,25 +426,38 @@ class Classification(Facet):
         for leaf_reference in leaf_references:
             references.update(ifcopenshell.util.classification.get_inherited_references(leaf_reference))
 
-        is_pass = bool(references)
-        reason = None
-
-        if not is_pass:
+        if not references:
             if self.cardinality == "optional":
                 return ClassificationResult(True)
             reason = {"type": "NOVALUE"}
+            if self.cardinality == "prohibited":
+                return ClassificationResult(True, {"type": "PROHIBITED"})
+            return ClassificationResult(False, reason)
 
-        if is_pass and self.value:
-            values = [getattr(r, "Identification", getattr(r, "ItemReference", None)) for r in references]
-            is_pass = any([self.value == v for v in values])
-            if not is_pass:
+        # A requested value and a requested system must both hold on the
+        # same reference: a wall classified as "ExpectedValue" under system
+        # "SystemB" must not pass a requirement for "ExpectedValue" under
+        # system "SystemA" just because some other, unrelated reference on
+        # the wall happens to use system "SystemA". self.value/self.system
+        # being unset (falsy) means that side of the pair is not checked.
+        values = []
+        systems = []
+        is_pass = False
+        for reference in references:
+            value = getattr(reference, "Identification", getattr(reference, "ItemReference", None))
+            classification = ifcopenshell.util.classification.get_classification(reference)
+            system = classification.Name if classification else None
+            values.append(value)
+            systems.append(system)
+            if (not self.value or self.value == value) and (not self.system or self.system == system):
+                is_pass = True
+                break
+
+        reason = None
+        if not is_pass:
+            if self.value and not any(self.value == v for v in values):
                 reason = {"type": "VALUE", "actual": values}
-
-        if is_pass and self.system:
-            classifications = filter(None, (ifcopenshell.util.classification.get_classification(r) for r in references))
-            systems = [r.Name for r in classifications]
-            is_pass = any([self.system == s for s in systems])
-            if not is_pass:
+            else:
                 reason = {"type": "SYSTEM", "actual": systems}
 
         if self.cardinality == "prohibited":
