@@ -19,6 +19,8 @@
 
 
 # normalize the line endings of the following files
+*.bat text eol=crlf
+*.cmd text eol=crlf
 *.cpp text
 *.css text
 *.csv text
@@ -34,11 +36,11 @@
 *.po text
 *.pot text
 *.py text
+*.sh text eol=lf
 *.txt text
 
 
 # files not normalized ATM
-# bat
 # bnf
 # blend
 # i
