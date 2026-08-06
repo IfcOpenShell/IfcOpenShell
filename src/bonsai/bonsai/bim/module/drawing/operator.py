@@ -8416,6 +8416,144 @@ def _find_curve_in_item(item: ifcopenshell.entity_instance) -> Optional[ifcopens
 
 
 
+class DriveDimensionLength(bpy.types.Operator, tool.Ifc.Operator):
+    """Set the length of one segment of a parametric dimension by moving one end's element.
+
+    Click the near half of a segment to move the near-end element; click the far half to
+    move the far-end element.  A dialog opens pre-filled with the current length — enter
+    the target value and confirm.
+    """
+
+    bl_idname = "bim.drive_dimension_length"
+    bl_label = "Drive Dimension Length"
+    bl_options = {"REGISTER", "UNDO"}
+
+    segment_index: bpy.props.IntProperty(default=0)
+    # 0 = move anchor[segment_index] (near end); 1 = move anchor[segment_index+1] (far end)
+    move_end: bpy.props.IntProperty(default=1)
+    target_length: bpy.props.FloatProperty(
+        name="Length",
+        description="Target length for this dimension segment",
+        subtype="DISTANCE",
+        unit="LENGTH",
+        min=0.001,
+    )
+
+    def invoke(self, context, event):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return {"CANCELLED"}
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        if not pset or not pset.get("Anchors"):
+            return {"CANCELLED"}
+        try:
+            anchors = json.loads(pset["Anchors"])
+        except Exception:
+            return {"CANCELLED"}
+        if self.segment_index + 1 >= len(anchors):
+            return {"CANCELLED"}
+        pt_a = anchors[self.segment_index].get("pt")
+        pt_b = anchors[self.segment_index + 1].get("pt")
+        if pt_a and pt_b:
+            import math as _math
+            dx, dy, dz = pt_b[0] - pt_a[0], pt_b[1] - pt_a[1], pt_b[2] - pt_a[2]
+            self.target_length = _math.sqrt(dx * dx + dy * dy + dz * dz)
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        from mathutils import Vector
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+        file = tool.Ifc.get()
+        annotation = tool.Ifc.get_entity(obj)
+        if not annotation:
+            return {"CANCELLED"}
+        pset = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
+        if not pset or not pset.get("Anchors"):
+            return {"CANCELLED"}
+        try:
+            anchors = json.loads(pset["Anchors"])
+        except Exception:
+            return {"CANCELLED"}
+
+        idx_a, idx_b = self.segment_index, self.segment_index + 1
+        if idx_b >= len(anchors):
+            return {"CANCELLED"}
+
+        pt_a = anchors[idx_a].get("pt")
+        pt_b = anchors[idx_b].get("pt")
+        if not pt_a or not pt_b:
+            return {"CANCELLED"}
+
+        seg = Vector(pt_b) - Vector(pt_a)
+        current_length = seg.length
+        if current_length < 1e-10:
+            return {"CANCELLED"}
+
+        # move_end=1 → move far anchor (anchor[idx_b]) away from near anchor (fixed).
+        # move_end=0 → move near anchor (anchor[idx_a]) away from far anchor (fixed).
+        # The direction seg points from a→b; negating it gives the b→a direction.
+        if self.move_end == 0:
+            move_idx = idx_a
+            delta = -(self.target_length - current_length) * seg.normalized()
+        else:
+            move_idx = idx_b
+            delta = (self.target_length - current_length) * seg.normalized()
+
+        guid_b = anchors[move_idx].get("guid")
+        if not guid_b:
+            self.report({"WARNING"}, "That anchor has no IFC element — cannot move")
+            return {"CANCELLED"}
+        try:
+            elem_b = file.by_guid(guid_b)
+        except Exception:
+            return {"CANCELLED"}
+        elem_obj = tool.Ifc.get_object(elem_b)
+        if not elem_obj:
+            return {"CANCELLED"}
+
+        elem_obj.matrix_world.translation += delta
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement",
+            file,
+            product=elem_b,
+            matrix=np.array(elem_obj.matrix_world),
+        )
+
+        placement_override: dict = {}
+        for a in anchors:
+            guid = a.get("guid")
+            if not guid:
+                continue
+            try:
+                elem = file.by_guid(guid)
+                o = tool.Ifc.get_object(elem)
+                if o:
+                    placement_override[elem.id()] = np.array(o.matrix_world)
+            except Exception:
+                pass
+
+        import ifcopenshell.api.drawing as drawing_api
+        _cam = bpy.context.scene.camera
+        _cam_dir = None
+        if _cam:
+            _cam_dir = tuple((_cam.matrix_world.to_3x3() @ Vector((0, 0, -1))).normalized())
+        resolved_pts = drawing_api.regenerate_dimension(
+            file, annotation,
+            placement_override=placement_override,
+            camera_dir=_cam_dir,
+        )
+        if resolved_pts:
+            _update_blender_curve(annotation, resolved_pts)
+        if CutDecorator.installed:
+            CutDecorator.install(context)
+        tool.Blender.update_viewport()
+
+
 class RemoveDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
     """Remove one anchor vertex from a parametric dimension.
 
@@ -8570,6 +8708,7 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
     """Click handler for dimension anchor dots and segment midpoints.
 
     Plain click near a dot → SetDimensionAnchor (re-anchor that vertex).
+    Plain click near a segment midpoint → DriveDimensionLength (drive that segment to a typed length).
     Alt+click near a dot → RemoveDimensionAnchor (delete that vertex).
     Ctrl+click near a dot or segment midpoint → InsertDimensionAnchor
         (insert a new vertex after that position and enter face-pick mode).
@@ -8583,6 +8722,12 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
     bl_label = "Click Nearest Dimension Anchor"
 
     RADIUS_PX = 15
+
+    # Tracks which dimension objects have already been "first-clicked" (selected).
+    # A plain click on a segment line is only dispatched to DriveDimensionLength once
+    # the object's name appears here.  Cleared whenever the user clicks away from all
+    # dimensions so the next click re-enters the "first click = select" state.
+    _activated: set = set()
 
     def invoke(self, context, event):
         from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -8620,6 +8765,7 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
         best_dist_sq = float("inf")
         # "DOT" = clicked on an anchor vertex; "MIDPOINT" = clicked between two anchors.
         best_hit_type = "DOT"
+        best_move_end = 1  # only meaningful for MIDPOINT hits
 
         for obj in context.scene.objects:
             if obj.type != "CURVE":
@@ -8665,26 +8811,62 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
                         best_obj = obj
                         best_hit_type = "DOT"
 
-                # When Ctrl is held, also check segment midpoints so the user
-                # can insert between two anchors without clicking on a dot.
-                if event.ctrl:
-                    for i in range(len(screen_pts) - 1):
-                        sp_a = screen_pts[i]
-                        sp_b = screen_pts[i + 1]
-                        if not sp_a or not sp_b:
-                            continue
-                        mid_x = (sp_a.x + sp_b.x) / 2.0
-                        mid_y = (sp_a.y + sp_b.y) / 2.0
-                        dx, dy = cx - mid_x, cy - mid_y
-                        d2 = dx * dx + dy * dy
-                        if d2 < r2 and d2 < best_dist_sq:
-                            best_dist_sq = d2
-                            best_idx = i  # insert_after = segment start
-                            best_obj = obj
-                            best_hit_type = "MIDPOINT"
+                # Check proximity to each segment line (full length, excluding dot zones).
+                # Projects the cursor onto the segment; accepts clicks within RADIUS_PX
+                # perpendicularly, but rejects the RADIUS_PX region around each endpoint
+                # so dot and segment hits never compete.
+                for i in range(len(screen_pts) - 1):
+                    sp_a = screen_pts[i]
+                    sp_b = screen_pts[i + 1]
+                    if not sp_a or not sp_b:
+                        continue
+                    seg_dx = sp_b.x - sp_a.x
+                    seg_dy = sp_b.y - sp_a.y
+                    seg_len_sq = seg_dx * seg_dx + seg_dy * seg_dy
+                    if seg_len_sq < 1e-6:
+                        continue
+                    seg_len = seg_len_sq ** 0.5
+                    # Parametric projection of cursor onto segment (0=sp_a, 1=sp_b).
+                    t = ((cx - sp_a.x) * seg_dx + (cy - sp_a.y) * seg_dy) / seg_len_sq
+                    # Exclude the dot zones at each end.
+                    dot_frac = self.RADIUS_PX / seg_len
+                    if t < dot_frac or t > 1.0 - dot_frac:
+                        continue
+                    # Perpendicular distance from cursor to segment.
+                    foot_x = sp_a.x + t * seg_dx
+                    foot_y = sp_a.y + t * seg_dy
+                    perp_d2 = (cx - foot_x) ** 2 + (cy - foot_y) ** 2
+                    if perp_d2 < r2 and perp_d2 < best_dist_sq:
+                        best_dist_sq = perp_d2
+                        best_idx = i
+                        best_obj = obj
+                        best_hit_type = "MIDPOINT"
+                        # t < 0.5 → cursor is in the near half → move near-end object.
+                        best_move_end = 0 if t < 0.5 else 1
 
         if best_obj is None:
+            print(f"[ClickDim] no hit → clear _activated={ClickNearestDimensionAnchor._activated}")
+            ClickNearestDimensionAnchor._activated.clear()
             return {"PASS_THROUGH"}
+
+        print(f"[ClickDim] hit={best_hit_type} obj={best_obj.name!r} ctrl={event.ctrl} alt={event.alt} _activated={ClickNearestDimensionAnchor._activated}")
+
+        # For midpoint hits (drive-dimension): require a prior interaction with this
+        # dimension before opening the dialog.  First click explicitly selects it
+        # (anchor dots appear) so the user has clear feedback before the second click.
+        if best_hit_type == "MIDPOINT" and not event.ctrl:
+            if best_obj.name not in ClickNearestDimensionAnchor._activated:
+                ClickNearestDimensionAnchor._activated.add(best_obj.name)
+                print(f"[ClickDim] first click → select {best_obj.name!r}")
+                for o in list(context.selected_objects):
+                    o.select_set(False)
+                best_obj.select_set(True)
+                context.view_layer.objects.active = best_obj
+                return {"FINISHED"}
+            print(f"[ClickDim] MIDPOINT dispatch → drive_dimension_length")
+
+        # Any successful non-first-click interaction marks this dimension as activated.
+        ClickNearestDimensionAnchor._activated.add(best_obj.name)
 
         for o in list(context.selected_objects):
             o.select_set(False)
@@ -8698,6 +8880,7 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
         self._alt = event.alt
         self._ctrl = event.ctrl
         self._hit_type = best_hit_type
+        self._move_end = best_move_end
         context.window_manager.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 
@@ -8710,6 +8893,14 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
             elif self._ctrl:
                 # Ctrl+click on a dot or midpoint → insert after that position.
                 bpy.ops.bim.insert_dimension_anchor("INVOKE_DEFAULT", insert_after=self._best_idx)
+            elif self._hit_type == "MIDPOINT":
+                # Plain click on a segment midpoint → drive that segment's length.
+                # Which end moves depends on which half of the segment was clicked.
+                bpy.ops.bim.drive_dimension_length(
+                    "INVOKE_DEFAULT",
+                    segment_index=self._best_idx,
+                    move_end=self._move_end,
+                )
             else:
                 # Plain click on a dot → re-anchor (existing behaviour).
                 from bonsai.bim.module.drawing.gizmos import set_active_anchor

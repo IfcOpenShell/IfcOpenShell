@@ -3022,6 +3022,76 @@ class DimensionLinePositionWidget(types.GizmoGroup):
         return scale_value
 
 
+class DimensionDriveLabelWidget(types.GizmoGroup):
+    """Pen-icon gizmos at each segment midpoint of the active parametric dimension.
+
+    Clicking a pen invokes ``bim.drive_dimension_length`` for that segment,
+    opening a dialog pre-filled with the current length.
+    """
+
+    bl_idname = "BIM_GGT_dimension_drive_label"
+    bl_label = "Dimension Drive Label"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT", "SHOW_MODAL_ALL"}
+
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE"))
+    _MAX_SEGMENTS = 15
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        if not tool.Ifc.get():
+            return False
+        obj = context.active_object
+        if not obj or obj.type != "CURVE":
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            return False
+        import ifcopenshell.util.element as _ue
+        if _ue.get_predefined_type(element) not in cls._DIM_TYPES:
+            return False
+        pset = _ue.get_pset(element, "BBIM_Dimension")
+        return bool(pset and pset.get("Anchors"))
+
+    def setup(self, context: bpy.types.Context) -> None:
+        self._labels: list = []
+        for _ in range(self._MAX_SEGMENTS):
+            gz = self.gizmos.new("BIM_GT_drive_dim_label")
+            gz.color = (0.9, 0.75, 0.1)
+            gz.color_highlight = (1.0, 0.95, 0.3)
+            gz.alpha = 0.85
+            gz.alpha_highlight = 1.0
+            gz.scale_basis = 0.18
+            gz.use_draw_modal = True
+            gz.hide = True
+            self._labels.append(gz)
+
+    def refresh(self, context: bpy.types.Context) -> None:
+        obj = context.active_object
+        if not obj or not obj.data or not getattr(obj.data, "splines", None) or not obj.data.splines:
+            for gz in self._labels:
+                gz.hide = True
+            return
+
+        spline = obj.data.splines[0]
+        pts = [obj.matrix_world @ p.co.to_3d() for p in spline.points]
+        n_segs = min(len(pts) - 1, self._MAX_SEGMENTS)
+
+        for i in range(n_segs):
+            gz = self._labels[i]
+            mid = (pts[i] + pts[i + 1]) * 0.5
+            gz.matrix_basis = Matrix.Translation(mid)
+            gz.segment_index = i
+            gz.hide = False
+
+        for i in range(n_segs, self._MAX_SEGMENTS):
+            self._labels[i].hide = True
+
+    def draw_prepare(self, context: bpy.types.Context) -> None:
+        self.refresh(context)
+
+
 # ============================================================================
 # Core Gizmo Classes
 # ============================================================================
@@ -3986,6 +4056,24 @@ class GizmoPen(StaticTrisGizmoMixin, bpy.types.Gizmo):
         (0.10380929708480835, 0.371035635471344, 0.0),
         (0.21042980253696442, 0.321493536233902, 0.0),
     )
+
+
+class GizmoDriveDimLabel(bpy.types.Gizmo):
+    """Visual-only pen icon at a parametric dimension segment midpoint.
+
+    No draw_select/invoke — click handling is done by ClickNearestDimensionAnchor,
+    which dispatches bim.drive_dimension_length on a plain LMB at a midpoint.
+    """
+
+    bl_idname = "BIM_GT_drive_dim_label"
+    __slots__ = ("segment_index", "custom_shape")
+
+    def setup(self):
+        self.segment_index = 0
+        self.custom_shape = self.new_custom_shape("TRIS", GizmoPen.tris)
+
+    def draw(self, context):
+        self.draw_custom_shape(self.custom_shape)
 
 
 class GizmoValidate(StaticTrisGizmoMixin, bpy.types.Gizmo):
