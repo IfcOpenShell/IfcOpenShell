@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import builtins
+import copy
 import re
 from functools import lru_cache
 from logging import Logger
@@ -700,6 +701,19 @@ class Property(Facet):
                 else:
                     raw_values = [v for k, v in pset_props.items() if k == self.baseName]
                 if any(v is not None for v in raw_values):
+                    return PropertyResult(False, {"type": "PROHIBITED"})
+            return PropertyResult(True, {"type": "PROHIBITED"})
+
+        if self.cardinality == "prohibited" and self.value:
+            # Each matching pset (there may be several when propertySet is a
+            # pattern) must be checked independently: reusing one shared
+            # pass flag let an earlier pset's absence or mismatch mask a
+            # later pset that actually held the prohibited value.
+            for pset_name in psets:
+                probe = copy.copy(self)
+                probe.propertySet = pset_name
+                probe.cardinality = "required"
+                if probe(inst, logger).is_pass:
                     return PropertyResult(False, {"type": "PROHIBITED"})
             return PropertyResult(True, {"type": "PROHIBITED"})
 
