@@ -13,6 +13,14 @@ namespace ifcopenshell {
 			profile_point(const std::array<double, 2>& p, const boost::optional<double>& r = boost::none)
 				: xy(p), radius(r) {
 			}
+
+			// Recent Boost makes optional's converting constructor explicit,
+			// and an explicit constructor cannot be used in copy-initialization
+			// - which is what `{{x, y}, {radius}}` in the profile mappings is.
+			// Taking the double directly keeps every call site working.
+			profile_point(const std::array<double, 2>& p, double r)
+				: xy(p), radius(r) {
+			}
 		};
 
 		struct profile_point_with_edges {

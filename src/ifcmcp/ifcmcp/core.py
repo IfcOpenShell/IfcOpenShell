@@ -35,6 +35,27 @@ from ifcquery import (
 from ifcquery import validate as validate_mod
 
 
+def _use_doc(source: Callable, extra: str = "") -> Callable:
+    """Decorator: copy `source`'s docstring onto the decorated method.
+
+    Keeps the query/edit logic in ``ifcquery``/``ifcedit`` as the single
+    source of truth for what a delegating ``IfcSession`` method does, rather
+    than maintaining a second prose description here. Only ``__doc__`` is
+    copied — unlike `functools.wraps`, this leaves the method's own signature
+    (and MCP tool schema derived from it) untouched.
+
+    :param extra: Optional session-specific note appended after `source`'s
+        docstring, for the handful of methods that translate an argument
+        (e.g. a JSON/MCP-friendly default) before delegating.
+    """
+
+    def decorator(fn: Callable) -> Callable:
+        fn.__doc__ = (source.__doc__ or "").rstrip() + extra
+        return fn
+
+    return decorator
+
+
 def _jsonify(x: Any) -> Any:
     """Convert IfcOpenShell objects / iterables into JSON-safe primitives."""
     if x is None or isinstance(x, (str, int, float, bool)):
@@ -231,20 +252,47 @@ class IfcSession:
         return self.model
 
     def ifc_new(self, schema: str = "IFC4") -> dict[str, Any]:
-        """Create a new empty IFC model in memory."""
+        """Create a new empty IFC model in memory.
+
+        Replaces the model currently held by the session, discarding any unsaved
+        edits. The new model has no file path of its own, so ``ifc_save`` must be
+        given an explicit path.
+
+        :param schema: IFC schema version — ``IFC2X3``, ``IFC4``, ``IFC4X1``,
+            ``IFC4X2`` or ``IFC4X3`` — passed straight to ``ifcopenshell.file()``
+            (default ``IFC4``). ``IFC4X3_ADD2`` is also accepted and, like
+            ``IFC4X3``, produces a model whose ``schema`` reports ``IFC4X3``.
+        """
         self.model = ifcopenshell.file(schema=schema)
         self.model_path = None
         return {"ok": True, "schema": self.model.schema, "entities": sum(1 for _ in self.model)}
 
     def ifc_load(self, path: str) -> str:
-        """Open an IFC file into memory. Returns confirmation string."""
+        """Open an IFC file from disk into the session.
+
+        Replaces the model currently held by the session, discarding any unsaved
+        edits, and remembers the path so a later ``ifc_save`` can overwrite it.
+        Call this before any query or edit method. Returns a confirmation string
+        naming the schema version and entity count.
+
+        :param path: Filesystem path of the IFC file to open.
+        """
         self.model = ifcopenshell.open(path)
         self.model_path = path
         count = sum(1 for _ in self.model)
         return f"Loaded {path}: schema {self.model.schema}, {count} entities"
 
     def ifc_save(self, path: str = "") -> str:
-        """Write the in-memory model to disk. Empty path overwrites the original file."""
+        """Write the in-memory model to disk.
+
+        Overwrites the target file without further confirmation. Edits made by
+        ``ifc_edit``, ``ifc_shape`` and ``ifc_quantify`` exist only in memory
+        until this is called.
+
+        :param path: Destination path. Omit to overwrite the file the model was
+            loaded from; this fails for a model created by ``ifc_new``, which has
+            no original path.
+        """
         model = self._require_model()
         target = path if path else self.model_path
         if not target:
@@ -253,7 +301,11 @@ class IfcSession:
         return f"Saved to {target}"
 
     def ifc_reset(self) -> dict[str, Any]:
-        """Drop the in-memory model."""
+        """Discard the in-memory model.
+
+        Drops the model and its file path, throwing away any edits not already
+        written with ``ifc_save``. Succeeds even when no model is loaded.
+        """
         self.model = None
         self.model_path = None
         return {"ok": True}
@@ -261,39 +313,42 @@ class IfcSession:
     # -------------
     # Query tools
     # -------------
+    @_use_doc(summary.summary)
     def ifc_summary(self) -> dict[str, Any]:
-        """Model overview: schema, entity counts, project info."""
         return summary.summary(self._require_model())
 
+    @_use_doc(tree.tree)
     def ifc_tree(self) -> dict[str, Any] | list[dict[str, Any]]:
-        """Full spatial hierarchy tree (Project -> Site -> Building -> Storeys -> Elements)."""
         return tree.tree(self._require_model())
 
+    @_use_doc(info.info)
     def ifc_info(self, element_id: int) -> dict[str, Any]:
-        """Deep inspection of an entity by step ID (attributes, psets, placement, type, material)."""
         model = self._require_model()
         element = model.by_id(element_id)
         if element is None:
             raise IfcSessionError(f"Element #{element_id} not found.")
         return info.info(model, element)
 
+    @_use_doc(select.select)
     def ifc_select(self, query: str) -> list[dict[str, Any]]:
-        """Filter elements using ifcopenshell selector syntax.
-
-        Examples: ``IfcWall``, ``IfcWall, IfcColumn``, ``! IfcWall``,
-        ``IfcWall, Name = "My Wall"``, ``type = "Concrete Wall"``,
-        ``material = "Concrete"``.
-        """
         return select.select(self._require_model(), query)
 
+    @_use_doc(relations.relations)
     def ifc_relations(self, element_id: int, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
-        """Show relationships for an element. Set traverse='up' to walk hierarchy to IfcProject."""
         model = self._require_model()
         element = model.by_id(element_id)
         if element is None:
             raise IfcSessionError(f"Element #{element_id} not found.")
         return relations.relations(model, element, traverse=traverse if traverse else None)
 
+    @_use_doc(
+        clash_mod.clash,
+        extra=(
+            "\n\nNote: this method takes a plain ``clearance: float`` rather than\n"
+            '``clearance: float | None`` — ``0.0`` (the default) means "skip the\n'
+            'clearance check", matching ``None`` in ``ifcquery.clash.clash()``.'
+        ),
+    )
     def ifc_clash(
         self,
         element_id: int,
@@ -301,7 +356,6 @@ class IfcSession:
         tolerance: float = 0.002,
         scope: str = "storey",
     ) -> dict[str, Any]:
-        """Check element for geometric clashes. clearance=0.0 means no clearance check."""
         model = self._require_model()
         element = model.by_id(element_id)
         if element is None:
@@ -314,33 +368,53 @@ class IfcSession:
             scope=scope,
         )
 
+    @_use_doc(contexts_mod.contexts)
     def ifc_contexts(self) -> list[dict[str, Any]]:
-        """List all geometric representation contexts and subcontexts with their step IDs."""
         return contexts_mod.contexts(self._require_model())
 
+    @_use_doc(materials_mod.materials)
     def ifc_materials(self) -> list[dict[str, Any]]:
-        """List all materials and material sets (layers, constituents, profiles)."""
         return materials_mod.materials(self._require_model())
 
     # ------------------------
     # Edit discovery + execute
     # ------------------------
     def ifc_list(self, module: str = "") -> list[dict]:
-        """List all API modules, or functions within a module. Empty module = all modules."""
+        """Discover the ifcopenshell.api functions available for editing.
+
+        With no argument returns every API module with its description,
+        function names and function count. With a module name returns that
+        module's functions, each with a one-line description and its
+        parameters. This is the starting point for ``ifc_docs`` and
+        ``ifc_edit``; it inspects the installed ifcopenshell package and works
+        without a model loaded.
+
+        :param module: API module name, for example ``'root'``, ``'geometry'``
+            or ``'pset'``. Omit to list all modules.
+        """
         return list_functions(module) if module else list_modules()
 
+    @_use_doc(function_docs)
     def ifc_docs(self, function_path: str) -> dict:
-        """Show full documentation for an API function. Input format: 'module.function'."""
         module, function = function_path.split(".", 1)
         return function_docs(module, function)
 
     def ifc_edit(self, function_path: str, params: Any = "{}") -> dict:
-        """Execute an ifcopenshell.api mutation.
+        """Run an ifcopenshell.api function to modify the model.
 
-        params may be:
-        - JSON string
-        - dict (from tool calling / JS)
-        - JsProxy (handled upstream in embedded.py)
+        This is the general-purpose edit method; use ``ifc_list`` and
+        ``ifc_docs`` first to find the function and its parameters. Changes
+        are made to the in-memory model only, so ``ifc_save`` is needed to
+        persist them. Returns ``{"ok": True, "result": ...}``, or
+        ``{"ok": False, "error": ...}`` when the function is unknown, a
+        parameter cannot be converted, or the call raises.
+
+        :param function_path: ``'module.function'``, for example
+            ``'root.create_entity'``.
+        :param params: Keyword arguments as a JSON string, a dict (tool
+            calling) or a JsProxy (handled upstream in embedded.py). Pass
+            entity references as integer step IDs, and arguments typed as an
+            IFC file as a file path string.
         """
         model = self._require_model()
         module, function = function_path.split(".", 1)
@@ -359,28 +433,20 @@ class IfcSession:
     # ------------------------
     # Extended query + edit tools
     # ------------------------
+    @_use_doc(validate_mod.validate)
     def ifc_validate(self, express_rules: bool = False) -> dict[str, Any]:
-        """Validate the loaded model. Returns {'valid': bool, 'issues': [...]}."""
         return validate_mod.validate(self._require_model(), express_rules=express_rules)
 
+    @_use_doc(schedule.schedule)
     def ifc_schedule(self, max_depth: int | None = None) -> list[dict[str, Any]]:
-        """List work schedules and nested tasks from the model.
-
-        max_depth limits subtask expansion (None = unlimited). At the cutoff,
-        subtasks is replaced with {"truncated": True, "count": N}.
-        """
         return schedule.schedule(self._require_model(), max_depth=max_depth)
 
+    @_use_doc(cost_mod.cost)
     def ifc_cost(self, max_depth: int | None = None) -> list[dict[str, Any]]:
-        """List cost schedules and nested cost items from the model.
-
-        max_depth limits cost item expansion (None = unlimited). At the cutoff,
-        subitems is replaced with {"truncated": True, "count": N}.
-        """
         return cost_mod.cost(self._require_model(), max_depth=max_depth)
 
+    @_use_doc(schema.schema)
     def ifc_schema(self, entity_type: str) -> dict[str, Any]:
-        """Return IFC class documentation for entity_type using the model's schema version."""
         return schema.schema(self._require_model(), entity_type)
 
     def ifc_plot(
@@ -456,18 +522,43 @@ class IfcSession:
     # Shape builder tools
     # ------------------------
     def ifc_shape_list(self) -> list[dict]:
-        """List all ShapeBuilder geometry methods with one-line descriptions and parameter names."""
+        """List the ShapeBuilder methods available for constructing geometry.
+
+        Returns every public ``ifcopenshell.util.shape_builder.ShapeBuilder``
+        method with a one-line description and its parameter names, read
+        directly from that class's own docstrings. Use it to find a method,
+        then ``ifc_shape_docs`` for the details and ``ifc_shape`` to call it.
+        Works without a model loaded.
+        """
         return _list_shape_methods()
 
     def ifc_shape_docs(self, method: str) -> dict:
-        """Full documentation for a ShapeBuilder method: params, types, return value."""
+        """Show the full documentation for one ShapeBuilder method.
+
+        Returns the summary and long description, every parameter with its
+        type and default, and the return type — read directly from
+        ``ShapeBuilder``'s own docstring. Read this before ``ifc_shape`` so
+        that argument names and value shapes are correct. Works without a
+        model loaded.
+
+        :param method: ShapeBuilder method name, for example ``'polyline'``,
+            ``'rectangle'`` or ``'extrude'``.
+        """
         return _shape_method_docs(method)
 
     def ifc_shape(self, method: str, params: Any = "{}") -> dict:
-        """Call a ShapeBuilder method by name. Returns the created entity's step ID.
+        """Call a ShapeBuilder method to build geometry in the model.
 
-        params is a JSON string of keyword arguments. Pass entity references as integer
-        step IDs; vectors as JSON arrays (e.g. [1.0, 0.0, 0.0]).
+        The created entities are added to the in-memory model, so
+        ``ifc_save`` is needed to persist them. On success the result
+        identifies the created entity by step ID and type; an unknown method
+        or a failed call is reported as an error instead.
+
+        :param method: ShapeBuilder method name, as listed by
+            ``ifc_shape_list``.
+        :param params: JSON string of keyword arguments. Pass entity
+            references as integer step IDs and vectors as JSON arrays, e.g.
+            ``[1.0, 0.0, 0.0]``.
         """
         model = self._require_model()
 
@@ -493,11 +584,8 @@ class IfcSession:
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
+    @_use_doc(run_quantify, extra="\n\nCall ``ifc_save`` afterwards to persist the result.")
     def ifc_quantify(self, rule: str, selector: str = "") -> dict[str, Any]:
-        """Run quantity take-off on the model using the named rule.
-
-        Modifies the model in-place; call ifc_save() after.
-        """
         model = self._require_model()
         return run_quantify(model, rule, selector=selector if selector else None)
 

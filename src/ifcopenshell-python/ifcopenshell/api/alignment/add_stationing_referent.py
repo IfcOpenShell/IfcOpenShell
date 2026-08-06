@@ -20,6 +20,7 @@ from typing import Optional
 
 import ifcopenshell
 import ifcopenshell.api.alignment
+from ifcopenshell.api.alignment._sort_nest import _sort_nest
 from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 import ifcopenshell.api.pset
 import ifcopenshell.guid
@@ -114,7 +115,7 @@ def add_stationing_referent(
     pset_stationing = ifcopenshell.api.pset.add_pset(file, product=referent, name="Pset_Stationing")
     ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties=properties)
 
-    nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
+    nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
     if nest is None:
         nest = file.createIfcRelNests(
             GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=(referent,)
@@ -122,8 +123,6 @@ def add_stationing_referent(
     else:
         nest.RelatedObjects += (referent,)
 
-    nest.RelatedObjects = sorted(
-        nest.RelatedObjects, key=lambda x: ifcopenshell.util.element.get_pset(x, name="Pset_Stationing", prop="Station")
-    )
+    _sort_nest(nest, key=lambda x: ifcopenshell.util.element.get_pset(x, name="Pset_Stationing", prop="Station"))
 
     return referent
