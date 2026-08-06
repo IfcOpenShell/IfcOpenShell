@@ -546,37 +546,49 @@ class PartOf(Facet):
                 if not is_pass:
                     reason = {"type": "ENTITY", "actual": ancestors}
         elif self.relation == "IFCRELASSIGNSTOGROUP":
-            group = None
-            for rel in getattr(inst, "HasAssignments", []) or []:
-                if rel.is_a("IfcRelAssignsToGroup"):
-                    group = rel.RelatingGroup
-                    break
+            group = self.get_group(inst)
             is_pass = group is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
-                if group.is_a().upper() != self.name:
-                    is_pass = False
-                    reason = {"type": "ENTITY", "actual": group.is_a().upper()}
-                if self.predefinedType:
-                    predefined_type = ifcopenshell.util.element.get_predefined_type(group)
-                    if not self.predefined_type_matches(group):
-                        is_pass = False
-                        reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
+                is_pass = False
+                ancestors = []
+                while group is not None:
+                    ancestors.append(group.is_a().upper())
+                    if group.is_a().upper() == self.name:
+                        if self.predefinedType:
+                            predefined_type = ifcopenshell.util.element.get_predefined_type(group)
+                            ancestors[-1] += f".{predefined_type}"
+                            if self.predefined_type_matches(group):
+                                is_pass = True
+                        else:
+                            is_pass = True
+                        break
+                    group = self.get_group(group)
+                if not is_pass:
+                    reason = {"type": "ENTITY", "actual": ancestors}
         elif self.relation == "IFCRELCONTAINEDINSPATIALSTRUCTURE":
             container = ifcopenshell.util.element.get_container(inst)
             is_pass = container is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
-                if container.is_a().upper() != self.name:
-                    is_pass = False
-                    reason = {"type": "ENTITY", "actual": container.is_a().upper()}
-                if is_pass and self.predefinedType:
-                    predefined_type = ifcopenshell.util.element.get_predefined_type(container)
-                    if not self.predefined_type_matches(container):
-                        is_pass = False
-                        reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
+                is_pass = False
+                ancestors = []
+                while container is not None:
+                    ancestors.append(container.is_a().upper())
+                    if container.is_a().upper() == self.name:
+                        if self.predefinedType:
+                            predefined_type = ifcopenshell.util.element.get_predefined_type(container)
+                            ancestors[-1] += f".{predefined_type}"
+                            if self.predefined_type_matches(container):
+                                is_pass = True
+                        else:
+                            is_pass = True
+                        break
+                    container = ifcopenshell.util.element.get_aggregate(container)
+                if not is_pass:
+                    reason = {"type": "ENTITY", "actual": ancestors}
         elif self.relation == "IFCRELNESTS":
             nest = ifcopenshell.util.element.get_nest(inst)
             is_pass = nest is not None
@@ -634,6 +646,12 @@ class PartOf(Facet):
                     parent = rel.RelatingGroup
                     break
         return parent
+
+    def get_group(self, element):
+        for rel in getattr(element, "HasAssignments", []) or []:
+            if rel.is_a("IfcRelAssignsToGroup"):
+                return rel.RelatingGroup
+        return None
 
     def predefined_type_matches(self, element: ifcopenshell.entity_instance) -> bool:
         # get_predefined_type() never returns the literal "USERDEFINED": for a
