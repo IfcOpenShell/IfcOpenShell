@@ -30,6 +30,7 @@
 *.gitkeep
 *.h text
 *.html text
+*.i text
 *.ifc text
 *.json text
 *.md text
@@ -43,7 +44,6 @@
 # files not normalized ATM
 # bnf
 # blend
-# i
 # ico
 # mo
 # mpass
