@@ -47,18 +47,6 @@ jobs:
           NEW_FILE=`echo $FILE | sed "s/-/+${GITHUB_SHA:0:7}-/2"`
           mv $FILE $NEW_FILE
 
-      - name: Order wheel shared objects
-        run: |
-          uv run ./IfcOpenShell/pyodide/order_pyodide_wheel_shared_objects.py dist/ifcopenshell-*.whl
-
-      - name: Split packages
-        run: |
-          VERSION=v`cat ./IfcOpenShell/VERSION`
-          mkdir -p dist-modular
-          uv run ./IfcOpenShell/pyodide/split_pyodide_ifcopenshell_wheel.py dist/ifcopenshell-*.whl ./dist-modular
-          cd dist-modular
-          zip -r -qq ifcopenshell-modular-${VERSION}-${GITHUB_SHA:0:7}-pyodide.zip *.whl
-
       - name: Upload Build Logs
         if: always()
         uses: actions/upload-artifact@v7
@@ -67,19 +55,6 @@ jobs:
           path: |
             ifcopenshell_build/*/*/logs/*.log
           retention-days: 30
-
-      - name: Run wheel tests
-        run: |
-          cp -r IfcOpenShell/pyodide/test test
-          # venv set up in build_pyodide.sh.
-          source .venv/bin/activate
-          uv pip install pytest-pyodide
-          PYODIDE_ROOT_DIST=`pyodide config get pyodide_root`/dist
-          # `pytest-pyodide` requires pyodide in 'pyodide' directory in cwd, when running `pytest`.
-          cp -r $PYODIDE_ROOT_DIST test/pyodide
-          cp dist/ifcopenshell-*.whl test/pyodide
-          cd test
-          pytest --capture=no
 
       - name: Pack Dependencies
         run: |
@@ -94,6 +69,31 @@ jobs:
           git add */*/install/cache-*.tar.gz
           git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
           git push || echo "Push failed"
+
+      - name: Order wheel shared objects
+        run: |
+          uv run ./IfcOpenShell/pyodide/order_pyodide_wheel_shared_objects.py dist/ifcopenshell-*.whl
+
+      - name: Split packages
+        run: |
+          VERSION=v`cat ./IfcOpenShell/VERSION`
+          mkdir -p dist-modular
+          uv run ./IfcOpenShell/pyodide/split_pyodide_ifcopenshell_wheel.py dist/ifcopenshell-*.whl ./dist-modular
+          cd dist-modular
+          zip -r -qq ifcopenshell-modular-${VERSION}-${GITHUB_SHA:0:7}-pyodide.zip *.whl
+
+      - name: Run wheel tests
+        run: |
+          cp -r IfcOpenShell/pyodide/test test
+          # venv set up in build_pyodide.sh.
+          source .venv/bin/activate
+          uv pip install pytest-pyodide
+          PYODIDE_ROOT_DIST=`pyodide config get pyodide_root`/dist
+          # `pytest-pyodide` requires pyodide in 'pyodide' directory in cwd, when running `pytest`.
+          cp -r $PYODIDE_ROOT_DIST test/pyodide
+          cp dist/ifcopenshell-*.whl test/pyodide
+          cd test
+          pytest --capture=no
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
