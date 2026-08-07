@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>Entity requirement as xs:restriction on IFC2X3</title>
+        <description>A failing entity requirement written as an enumeration restriction must not crash on IFC2X3.</description>
+    </info>
+    <specifications>
+        <specification name="Flow terminals must be walls" ifcVersion="IFC2X3">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCFLOWTERMINAL</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <entity>
+                    <name>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="IFCWALL"/>
+                        </xs:restriction>
+                    </name>
+                </entity>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
