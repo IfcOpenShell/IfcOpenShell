@@ -973,7 +973,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 
 	if (unify_inputs_) {
-		compound_local = IfcGeom::util::unify(compound_local, 1.e-6);
+		compound_local = IfcGeom::util::heal_for_linework(compound_local, svg_cross_coplanar_tolerance_);
 	}
 
 	{

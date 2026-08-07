@@ -194,6 +194,7 @@ def render_svg(
     render_cross_coplanar: bool = False,
     scale: float = 1.0,
     bounding_rectangle: tuple[float, float] = (20000.0, 20000.0),
+    unify_inputs: bool = False,
 ) -> str:
     """Drive `SvgSerializer` directly (no Blender), matching the pattern
     `ifcopenshell/draw.py` uses. `camera_dir` is the direction *from the scene
@@ -223,6 +224,7 @@ def render_svg(
     sr.setAlwaysProject(True)
     sr.setBoundingRectangle(*bounding_rectangle)
     sr.setScale(scale)
+    sr.setUnifyInputs(unify_inputs)
     sr.addDrawing(camera_pos, camera_dir, camera_ref, "Test", True)
 
     it = ifcopenshell.geom.iterator(geom_settings, ifc_file)
@@ -1872,3 +1874,76 @@ def test_mat_style_change_case_b_partial_overlap_splits_correctly():
     # genuinely present -- not vacuously passing because nothing rendered.
     assert any(abs(y - gap_lo) < 1e-6 for y in a_ys), a_ys
     assert any(abs(y - gap_hi) < 1e-6 for y in a_ys), a_ys
+
+
+def test_unify_inputs_heals_hairline_kink_within_one_product():
+    """`unify_inputs_` (`SvgSerializer::write()`, gated by `setUnifyInputs()`)
+    used to call `IfcGeom::util::unify()` at a hardcoded `1.e-6` tolerance --
+    bare OCCT confusion-level, far below the ~0.1mm of real sub-millimetre
+    noise IFC authoring tools routinely leave behind (snapping, boolean
+    byproducts, export round-tripping). It now reuses `heal_for_linework()`
+    at `svg_cross_coplanar_tolerance_` (default `1e-4` = 0.1mm), the same
+    tolerance this module already trusts for "is this coincident?" decisions
+    elsewhere.
+
+    `Wall`'s own profile has a single redundant vertex sitting 0.05mm off an
+    otherwise dead-straight 2m edge (0.05mm: bigger than the old 1e-6
+    tolerance, smaller than the new 1e-4 one) -- exactly the shape of noise a
+    real authoring/export round-trip leaves behind, just deliberately
+    isolated to one clean synthetic case. Because that vertex's only offset
+    is along the view's own collapsed (Y) axis, its otherwise-3D kink
+    projects, in this elevation view, to a point sitting exactly on what
+    should be one straight edge -- so an unhealed shape emits it as two
+    redundant collinear segments (visually a single line, but two edges),
+    while a properly healed shape (the two near-coplanar side faces either
+    side of the kink merged into one flat face by `ShapeUpgrade_
+    UnifySameDomain`, now reachable because the raised tolerance lets it see
+    past the 0.05mm deviation) emits a clean single rectangle. Both edge
+    lists and coordinates were captured empirically from this exact scene.
+    """
+    ifc_file, body_context, storey = _make_project()
+    kink = 5e-5  # 0.05mm inward bump on an otherwise-straight 2m edge
+    points_2d = [(0.0, 0.0), (1.0, kink), (2.0, 0.0), (2.0, 0.2), (0.0, 0.2), (0.0, 0.0)]
+    wall = _add_arbitrary_profile_slab(
+        ifc_file, body_context, storey, "Wall",
+        points_2d=points_2d,
+        depth=2.0,
+        location=(0.0, 0.0, 0.0),
+        axis=(0.0, 0.0, 1.0),
+        ref_direction=(1.0, 0.0, 0.0),
+        ifc_class="IfcWall",
+    )
+
+    def render(unify_inputs: bool) -> list[Edge]:
+        svg = render_svg(
+            ifc_file,
+            camera_pos=(1.0, -5.0, 1.0),
+            camera_dir=(0.0, -1.0, 0.0),
+            unify_inputs=unify_inputs,
+        )
+        return parse_edges(svg)
+
+    unhealed = render(False)
+    healed = render(True)
+
+    # Clean rectangle corners (world X:[0,2], Z:[0,2] -> svg X:[9000,11000],
+    # Y:[9000,11000] at the default scale/bounding-rectangle centring used
+    # throughout this file).
+    bl, br, tl, tr = (9000.0, 9000.0), (11000.0, 9000.0), (9000.0, 11000.0), (11000.0, 11000.0)
+    kink_bottom, kink_top = (10000.0, 9000.0), (10000.0, 11000.0)
+
+    # Unhealed: the kink vertex survives, splitting the bottom and top edges
+    # into two collinear-in-projection segments each -- six edges, not four.
+    assert len(unhealed) == 6, unhealed
+    assert has_edge(unhealed, wall.GlobalId, "outline", bl, kink_bottom)
+    assert has_edge(unhealed, wall.GlobalId, "outline", kink_bottom, br)
+    assert has_edge(unhealed, wall.GlobalId, "outline", tl, kink_top)
+    assert has_edge(unhealed, wall.GlobalId, "outline", kink_top, tr)
+
+    # Healed: the two near-coplanar faces either side of the kink are merged
+    # away -- a clean four-edge rectangle, no trace of the kink vertex.
+    assert len(healed) == 4, healed
+    assert has_edge(healed, wall.GlobalId, "outline", bl, br)
+    assert has_edge(healed, wall.GlobalId, "outline", tl, tr)
+    assert not has_any_edge(healed, wall.GlobalId, kink_bottom, kink_bottom)
+    assert not has_any_edge(healed, wall.GlobalId, kink_top, kink_top)
