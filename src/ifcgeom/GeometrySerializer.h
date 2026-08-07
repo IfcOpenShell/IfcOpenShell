@@ -57,6 +57,17 @@ inline namespace settings {
 		static constexpr bool defaultvalue = false;
 	};
 
+	struct NameTemplate : public SettingBase<NameTemplate, std::string> {
+		static constexpr const char* const name = "name-template";
+		static constexpr const char* const description = "Generic printf/find-style template to derive per-entity identifiers/names upon serialization, "
+			"superseding --use-element-names, --use-element-guids, --use-element-step-ids, and --use-element-types when specified. "
+			"Recognized placeholders: %N (IfcRoot.Name), %G (GlobalId, compressed IFC form), "
+			"%g (GlobalId, uncompressed/decoded UUID form), %T (entity class, e.g. IfcWall), "
+			"%t (Tag attribute, empty when not applicable), %i (numeric STEP instance id), "
+			"%u (the default unique id scheme), and %% (a literal percent sign). "
+			"Example: --name-template '%T-%N (%G)'. Applicable for OBJ, DAE, GLTF, STP, SVG, and TTL output.";
+	};
+
 	struct UseYUp : public SettingBase<UseYUp, bool> {
 		static constexpr const char* const name = "y-up";
 		static constexpr const char* const description = "Change the 'up' axis to positive Y, default is Z UP. Applicable to OBJ output.";
@@ -266,6 +277,7 @@ class SerializerSettings : public SettingsContainer <
 		UseElementGuids,
 		UseElementStepIds,
 		UseElementTypes,
+		NameTemplate,
 		UseYUp,
 		WriteGltfEcef,
 		FloatingPointDigits,
@@ -302,6 +314,73 @@ class SerializerSettings : public SettingsContainer <
 		SvgPrintSpaceAreas,
 		SvgSpaceNameTransform>>
 {};
+
+}
+}
+
+namespace ifcopenshell {
+namespace geometry {
+
+	// See ifcopenshell::geometry::settings::NameTemplate for supported placeholders.
+	inline std::string format_name_template(const std::string& tmpl, const IfcGeom::Element* o) {
+		std::string result;
+		result.reserve(tmpl.size());
+		for (std::string::size_type i = 0; i < tmpl.size(); ++i) {
+			char c = tmpl[i];
+			if (c != '%' || i + 1 >= tmpl.size()) {
+				result += c;
+				continue;
+			}
+			char spec = tmpl[++i];
+			switch (spec) {
+			case 'N':
+				result += o->name();
+				break;
+			case 'G':
+				result += o->guid();
+				break;
+			case 'g':
+				try {
+					result += ifcopenshell::global_id(o->guid()).formatted();
+				} catch (const std::exception&) {
+					result += o->guid();
+				}
+				break;
+			case 'T':
+				result += o->type();
+				break;
+			case 't': {
+				const express::Entity& product = o->product();
+				const ifcopenshell::entity* decl = product ? product.declaration().as_entity() : nullptr;
+				ptrdiff_t idx = decl ? decl->attribute_index("Tag") : -1;
+				if (idx >= 0) {
+					attribute_value v = product.get_attribute_value((size_t) idx);
+					if (!v.isNull()) {
+						try {
+							result += (std::string) v;
+						} catch (const std::exception&) {
+						}
+					}
+				}
+				break;
+			}
+			case 'i':
+				result += boost::lexical_cast<std::string>(o->id());
+				break;
+			case 'u':
+				result += o->unique_id();
+				break;
+			case '%':
+				result += '%';
+				break;
+			default:
+				result += '%';
+				result += spec;
+				break;
+			}
+		}
+		return result;
+	}
 
 }
 }
@@ -369,6 +448,9 @@ public:
     /// Returns ID for the object depending on the used setting.
     virtual std::string object_id(const IfcGeom::Element* o)
     {
+        if (settings_.get<ifcopenshell::geometry::settings::NameTemplate>().has()) {
+            return ifcopenshell::geometry::format_name_template(settings_.get<ifcopenshell::geometry::settings::NameTemplate>().get(), o);
+        }
         if (settings_.get<ifcopenshell::geometry::settings::UseElementGuids>().get()) return o->guid();
         if (settings_.get<ifcopenshell::geometry::settings::UseElementNames>().get()) return o->name();
 		if (settings_.get<ifcopenshell::geometry::settings::UseElementStepIds>().get()) return "id-" + boost::lexical_cast<std::string>(o->id());
