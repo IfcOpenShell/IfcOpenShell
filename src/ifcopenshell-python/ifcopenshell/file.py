@@ -698,7 +698,7 @@ class file_mixin:
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
         else:
-            raise AttributeError
+            raise AttributeError(f"'file' object has no attribute '{attr}'.")
 
     def __getitem__(self, key: Union[numbers.Integral, str, bytes]) -> ifcopenshell.entity_instance:
         if isinstance(key, numbers.Integral):
