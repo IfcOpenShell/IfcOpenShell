@@ -92,6 +92,10 @@ jobs:
           ./run_pytest.py setup
           ./run_pytest.py run
 
+      - name: Setup tmate session
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
