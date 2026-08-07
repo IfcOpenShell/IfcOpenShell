@@ -16,128 +16,103 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
 from collections.abc import Sequence
+from typing import Optional, Union
 
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method import (
+    HorizontalSegmentDefinition,
+    solve_horizontal_alignment_by_pi_method,
+)
+
+
+def _create_cant_segment(
+    file: ifcopenshell.file,
+    cant_layout: entity_instance,
+    segment: HorizontalSegmentDefinition,
+) -> None:
+    """
+    Appends the cant segment corresponding to one horizontal segment definition. Cant is applied
+    to a single rail (the rail on the outside of the curve). Constant cant is modeled with
+    CONSTANTCANT and varying cant (over a transition curve) with LINEARTRANSITION.
+    """
+    is_transition = segment.start_cant != segment.end_cant
+    if segment.raise_left_rail:
+        start_left, start_right = segment.start_cant, 0.0
+        end_left, end_right = segment.end_cant, 0.0
+    else:
+        start_left, start_right = 0.0, segment.start_cant
+        end_left, end_right = 0.0, segment.end_cant
+
+    design_parameters = file.createIfcAlignmentCantSegment(
+        StartTag=None,
+        EndTag=None,
+        StartDistAlong=segment.start_dist_along,
+        HorizontalLength=segment.segment_length,
+        StartCantLeft=start_left,
+        EndCantLeft=end_left if is_transition else None,
+        StartCantRight=start_right,
+        EndCantRight=end_right if is_transition else None,
+        PredefinedType="LINEARTRANSITION" if is_transition else "CONSTANTCANT",
+    )
+    ifcopenshell.api.alignment.create_layout_segment(file, cant_layout, design_parameters)
 
 
 def layout_horizontal_alignment_by_pi_method(
-    file: ifcopenshell.file, layout: entity_instance, hpoints: Sequence[Sequence[float]], radii: Sequence[float]
+    file: ifcopenshell.file,
+    layout: entity_instance,
+    hpoints: Sequence[Sequence[float]],
+    radii: Sequence[Union[float, Sequence[float]]],
+    cant_layout: Optional[entity_instance] = None,
+    cants: Optional[Sequence[float]] = None,
 ) -> None:
     """
     Appends IfcAlignmentHorizontalSegment to a previously defined IfcAlignmentHorizontal using the PI layout method.
     The zero length segment is updated.
 
+    The geometry is computed by solve_horizontal_alignment_by_pi_method; see that function for the
+    meaning of hpoints, radii, and cants. This function writes the resulting segment definitions to
+    the layout.
+
+    Optionally, a cant profile can be created alongside the horizontal layout. Cant segments are
+    created one-for-one with the horizontal segments: zero cant on tangent runs (CONSTANTCANT),
+    linearly varying cant over spiral transitions (LINEARTRANSITION), and constant cant over
+    circular curves (CONSTANTCANT). The cant is applied to the rail on the outside of the curve.
+    Cant values are expressed in the project length unit. IfcAlignmentCant.RailHeadDistance is
+    taken from the cant_layout. Curves with a non-zero cant require entry and exit spiral
+    transition curves so the cant profile is continuous.
+
     :param file: file
     :param layout: An IfcAlignmentHorizontal layout
     :param hpoints: (X, Y) pairs denoting the location of the horizontal PIs, including start (POB) and end (POE).
-    :param radii: radius values to use for transition
+    :param radii: radius values to use for transition, optionally with spiral transition lengths
+    :param cant_layout: An IfcAlignmentCant layout to receive the cant segments. Required when cants is provided.
+    :param cants: cant values, one per PI curve, applied to the outer rail. Required when cant_layout is provided.
     :return: None
     """
-    if not (len(hpoints) - 2 == len(radii)):
-        raise ValueError("radii should have two fewer elements that hpoints")
+    if (cant_layout is None) != (cants is None):
+        raise ValueError("cant_layout and cants must be provided together")
 
     angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
 
-    xBT, yBT = hpoints[0]
-    xPI, yPI = hpoints[1]
-
-    i = 1
-
-    for radius in radii:
-        # back tangent
-        dxBT = xPI - xBT
-        dyBT = yPI - yBT
-        angleBT = math.atan2(dyBT, dxBT)
-        lengthBT = math.sqrt(dxBT * dxBT + dyBT * dyBT)
-
-        # forward tangent
-        i += 1
-        xFT, yFT = hpoints[i]
-        dxFT = xFT - xPI
-        dyFT = yFT - yPI
-        angleFT = math.atan2(dyFT, dxFT)
-
-        delta = angleFT - angleBT
-
-        tangent = abs(radius * math.tan(delta / 2))
-
-        lc = abs(radius * delta)
-
-        radius *= delta / abs(delta)
-
-        xPC = xPI - tangent * math.cos(angleBT)
-        yPC = yPI - tangent * math.sin(angleBT)
-
-        xPT = xPI + tangent * math.cos(angleFT)
-        yPT = yPI + tangent * math.sin(angleFT)
-
-        tangent_run = lengthBT - tangent
-
-        # create back tangent run
-        if 1.0e-03 < tangent_run:
-            pt = file.createIfcCartesianPoint(
-                Coordinates=(xBT, yBT),
-            )
-            design_parameters = file.createIfcAlignmentHorizontalSegment(
-                StartTag=None,
-                EndTag=None,
-                StartPoint=pt,
-                StartDirection=angleBT / angle_unit_scale,
-                StartRadiusOfCurvature=0.0,
-                EndRadiusOfCurvature=0.0,
-                SegmentLength=tangent_run,
-                GravityCenterLineHeight=None,
-                PredefinedType="LINE",
-            )
-            ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
-
-        # create circular curve
-        if radius != 0.0:
-            pc = file.createIfcCartesianPoint(
-                Coordinates=(xPC, yPC),
-            )
-            design_parameters = file.createIfcAlignmentHorizontalSegment(
-                StartTag=None,
-                EndTag=None,
-                StartPoint=pc,
-                StartDirection=angleBT / angle_unit_scale,
-                StartRadiusOfCurvature=float(radius),
-                EndRadiusOfCurvature=float(radius),
-                SegmentLength=lc,
-                GravityCenterLineHeight=None,
-                PredefinedType="CIRCULARARC",
-            )
-            ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
-
-        xBT = xPT
-        yBT = yPT
-        xPI = xFT
-        yPI = yFT
-
-    # done processing radii
-    # create last tangent run
-    dx = xPI - xBT
-    dy = yPI - yBT
-    angleBT = math.atan2(dy, dx)
-    tangent_run = math.sqrt(dx * dx + dy * dy)
-
-    if 1.0e-03 < tangent_run:
-        pt = file.createIfcCartesianPoint(Coordinates=(xBT, yBT))
-
+    for segment in solve_horizontal_alignment_by_pi_method(hpoints, radii, cants):
+        if cant_layout is not None:
+            _create_cant_segment(file, cant_layout, segment)
+        start_point = file.createIfcCartesianPoint(
+            Coordinates=segment.start_point,
+        )
         design_parameters = file.createIfcAlignmentHorizontalSegment(
             StartTag=None,
             EndTag=None,
-            StartPoint=pt,
-            StartDirection=angleBT / angle_unit_scale,
-            StartRadiusOfCurvature=0.0,
-            EndRadiusOfCurvature=0.0,
-            SegmentLength=tangent_run,
+            StartPoint=start_point,
+            StartDirection=segment.start_direction / angle_unit_scale,
+            StartRadiusOfCurvature=segment.start_radius_of_curvature,
+            EndRadiusOfCurvature=segment.end_radius_of_curvature,
+            SegmentLength=segment.segment_length,
             GravityCenterLineHeight=None,
-            PredefinedType="LINE",
+            PredefinedType=segment.predefined_type,
         )
         ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)

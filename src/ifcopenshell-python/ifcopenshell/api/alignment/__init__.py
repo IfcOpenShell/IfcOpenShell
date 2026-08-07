@@ -32,7 +32,10 @@ This API does not determine alignment parameters based on rules, such as minimum
 This API is under development and subject to code breaking changes in the future.
 
 Presently, this API supports:
-    1. Creating alignments, both horizontal and vertical, using the PI method. Alignment definition can be read from a CSV file.
+    1. Creating alignments, both horizontal and vertical, using the PI method, including clothoid transition spirals and cant.
+       The horizontal PI solve is also available as a pure geometric computation (solve_horizontal_alignment_by_pi_method)
+       for callers that need segment parameters without writing to a file, such as interactive editors.
+       Alignment definition can be read from a CSV file.
     2. Creating alignments segment by segment.
     3. Automatic creation of geometric definitions (IfcCompositeCurve, IfcGradientCurve, IfcSegmentedReferenceCurve)
     4. Automatic definition of stationing
@@ -40,11 +43,10 @@ Presently, this API supports:
     6. Utility functions for printing business logical and geometric representations, as well as minimal geometry evaluations
 
 Future versions of this API may support:
-    1. Defining alignments using the PI method, including transition spirals
-    2. Updating horizontal curve definitions by revising transition spiral parameters and circular curve radii
-    3. Updating vertical curve definitions by revising horizontal length of curves
-    4. Removing a segment at any location along a curve
-    5. Adding a segment at any location along a curve
+    1. Updating horizontal curve definitions by revising transition spiral parameters and circular curve radii
+    2. Updating vertical curve definitions by revising horizontal length of curves
+    3. Removing a segment at any location along a curve
+    4. Adding a segment at any location along a curve
 """
 
 from ._get_segment_start_point_label import register_referent_name_callback
@@ -89,6 +91,12 @@ from .layout_vertical_alignment_by_pi_method import (
     layout_vertical_alignment_by_pi_method,
 )
 from .name_segments import name_segments
+from .solve_horizontal_alignment_by_pi_method import (
+    HorizontalSegmentDefinition,
+    compute_clothoid_end,
+    compute_horizontal_segment_end,
+    solve_horizontal_alignment_by_pi_method,
+)
 from .update_end_point import update_end_point
 from .update_fallback_position import update_fallback_position
 from .update_key_point_referents import update_key_point_referents
@@ -128,10 +136,14 @@ __all__ = [
     "get_stationing_nest",
     "get_vertical_layout",
     "has_zero_length_segment",
+    "HorizontalSegmentDefinition",
+    "compute_clothoid_end",
+    "compute_horizontal_segment_end",
     "layout_horizontal_alignment_by_pi_method",
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
     "register_referent_name_callback",
+    "solve_horizontal_alignment_by_pi_method",
     "update_end_point",
     "update_fallback_position",
     "update_key_point_referents",
