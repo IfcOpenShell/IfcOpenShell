@@ -471,6 +471,98 @@ def test_cross_coplanar_match_stacked_same_footprint_must_not_self_occlude():
         assert edge.cls != "outline"
 
 
+def test_cross_coplanar_match_excludes_whole_object_hidden_neighbour():
+    """Regression for issue #3742's real-file follow-up (a real-world project
+    file used for QA): a product that is itself almost entirely hidden behind
+    OTHER products in a given view must not be allowed to donate its one
+    surviving, same-material seam to a cross-coplanar match -- doing so wrongly
+    steals classification of an unrelated, genuinely-visible neighbour's own
+    edge, which should instead just be a plain `outline` corner between two
+    separate, non-coplanar objects.
+
+    Real-file diagnosis: wall #70370 (`HiddenWall` here) sat almost entirely
+    hidden behind wall #70168 (`VisibleWall`) and slab #82574 (`Slab`) from an
+    isometric camera. `HiddenWall` and `VisibleWall` share the same material
+    and a genuinely coplanar left face (X=6); `HiddenWall` also happens to sit
+    exactly in `Slab`'s own top-face plane (Z=0.2) at a touching (not
+    overlapping) footprint. `find_cross_coplanar_matches()`'s whole-object
+    visibility pre-filter (`SvgSerializer.h`) is supposed to exclude
+    `HiddenWall` from matching entirely once it determines the product
+    contributes essentially nothing to this view -- but an earlier version of
+    that filter's own occlusion test, `touching_foreign_face()`, returned only
+    the FIRST coincident face it found by item index. Since `Slab` (created
+    first, lower item index) is ALSO genuinely coincident with `HiddenWall`'s
+    own top edge (both sit in the same Z=0.2 plane), the filter nudged toward
+    `Slab`'s own (huge, distant, irrelevant here) face centroid instead of
+    `VisibleWall`'s -- missing the real, nearby occluder standing directly on
+    top of `HiddenWall`, and wrongly judging `HiddenWall` still "visible".
+    Fixed by trying every genuinely-touching candidate face's own centroid
+    (OR-combined), not just the first found.
+
+    `HiddenWall` and `VisibleWall` share the exact same (X, Y) footprint,
+    stacked directly in Z (`VisibleWall` on top) -- deliberately the same
+    stacking pattern as `test_cross_coplanar_match_stacked_same_footprint_
+    must_not_self_occlude()` above, so this test also confirms the new
+    whole-object filter doesn't reintroduce that already-fixed self-occlusion
+    bug for the *matched* pair itself (`HiddenWall`/`VisibleWall`) while still
+    correctly excluding `HiddenWall` from view because of the *third* object
+    (`Slab`) it also happens to sit in-plane with.
+
+    This exercises the overall whole-object-exclusion mechanism end to end
+    (confirmed red without the pre-filter at all, green with it) but does NOT
+    specifically discriminate the "wrong first candidate" sub-bug on its own --
+    a top-down camera makes VisibleWall's plain (unnudged) occlusion of
+    HiddenWall sufficient by itself, so the nudge/multi-candidate logic never
+    actually gets exercised by this camera choice. An oblique camera is needed
+    to reproduce the real grazing-ray gap that made the wrong-candidate nudge
+    observable in the first place, but changing only the camera (same
+    geometry) exposed a genuinely-visible OTHER edge of HiddenWall instead
+    (an real, correct silhouette-offset effect from viewing two same-footprint,
+    different-Z-height boxes obliquely under parallel projection, not a bug) --
+    several attempts at reshaping the geometry to isolate the specific
+    "grazing ray, ambiguous coincident candidate" scenario cleanly ran out of
+    time without succeeding. Per this suite's own established precedent (see
+    e.g. `test_cross_coplanar_match_partial_occlusion_within_one_raw_interval`'s
+    own note on this), relying on the real-file verification for that specific
+    mechanism instead: traced directly against the same real-world project file,
+    confirmed `touching_foreign_face()` matching the slab's face first (at
+    `p=(6.20001, *, 0)`, `match_idx` pointing at the slab, not wall #70168)
+    before the fix, and confirmed the real file's own wall #70168/slab #82574
+    corner renders plain `outline` after it.
+    """
+    ifc_file, body_context, storey = _make_project()
+    material = ifcopenshell.api.material.add_material(ifc_file, name="Stone")
+    slab = _add_box(ifc_file, body_context, storey, "Slab", (6.0, 6.0, 0.2), (0.0, 0.0, 0.0))
+    hidden_wall = _add_box(
+        ifc_file, body_context, storey, "HiddenWall", (1.0, 1.0, 0.2), (6.0, 0.0, 0.0), material=material
+    )
+    visible_wall = _add_box(
+        ifc_file, body_context, storey, "VisibleWall", (1.0, 1.0, 1.0), (6.0, 0.0, 0.2), material=material
+    )
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(3.0, 0.5, 10.0),
+        camera_dir=(0.0, 0.0, 1.0),
+        camera_ref=(1.0, 0.0, 0.0),
+        use_cross_coplanar=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    # HiddenWall must contribute no cross-coplanar/mat-style-change edges at
+    # all -- it's excluded from matching entirely, not just partially split.
+    assert not any(e.guid == hidden_wall.GlobalId and e.cls in ("cross-coplanar", "mat-style-change") for e in edges)
+    # VisibleWall and Slab must never coplanar-match with EACH OTHER (their
+    # faces are perpendicular) -- their shared corner must be plain outline,
+    # not contaminated by VisibleWall's own coplanar relationship with the
+    # (excluded) HiddenWall.
+    assert not any(e.guid == visible_wall.GlobalId and e.cls in ("cross-coplanar", "mat-style-change") for e in edges)
+    assert not any(e.guid == slab.GlobalId and e.cls in ("cross-coplanar", "mat-style-change") for e in edges)
+    assert any(e.guid == visible_wall.GlobalId and e.cls == "outline" for e in edges)
+    assert any(e.guid == slab.GlobalId and e.cls == "outline" for e in edges)
+
+
 def test_cross_coplanar_match_partial_occlusion_within_one_raw_interval():
     """`accumulate_edge_coverage()` (`SvgSerializer.h`) accepts or rejects an
     entire raw matched interval from a SINGLE occlusion test at its own

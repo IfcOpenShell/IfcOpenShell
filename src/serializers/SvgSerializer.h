@@ -2541,10 +2541,175 @@ namespace {
 				return false;
 			};
 
+			// Whole-object visibility pre-filter (issue #3742 follow-up, real-file diagnosis): a
+			// product that is itself almost entirely hidden behind OTHER products in this specific
+			// view can still have one localized seam that individually passes is_occluded_by_other
+			// (nothing else happens to stand in front of THAT particular line) even though the
+			// product as a whole contributes essentially nothing to the drawing. Confirmed against
+			// a real building file: a wall (#70370) 95%+ hidden behind a second wall and a slab
+			// still had its one surviving, same-material seam with the visible wall accepted as a
+			// genuine cross-coplanar match, which then wrongly suppressed the plain `outline` corner
+			// between the two genuinely-visible, non-coplanar products (the wall and the slab meet
+			// at a right angle -- they were never coplanar with EACH OTHER at all). The existing
+			// per-point occlusion tests above only ever ask "is this specific shared boundary
+			// blocked" -- they have no notion of "is the object on the other side of this match, as
+			// a whole, visible here at all" -- so a coarse, separate pre-pass is needed.
+			//
+			// A product counts as hidden here only when NONE of its own edges is unoccluded by
+			// every OTHER product (checked via the same is_occluded_by_other used everywhere else
+			// in this pass, self-excluded via exclude_a==exclude_b==idx so a product's own
+			// back-facing/self-occluded edges never count against it -- only OTHER products'
+			// geometry can occlude a point for this purpose).
+			//
+			// NOT "<= 1": `items_`'s own stored shape has already been through this class's own
+			// prefiltering (`setUsePrefiltering`), so by the time this pass runs, a simple,
+			// fully-unoccluded box already has as few as 4 edges total (its own screen silhouette),
+			// not the ~12 a full BRep box would have -- confirmed directly via debug instrumentation
+			// against `test_cross_coplanar_match_must_not_steal_edge_from_occluded_neighbour()`'s
+			// own `LowerWall` (4 total edges, 1 genuinely unoccluded). That one surviving edge is
+			// exactly the meaningful, sizeable portion of the shared boundary that test's own
+			// assertions require to still classify `cross-coplanar` -- an off-by-one here would
+			// have wrongly excluded a real, intended partial match, not just the degenerate
+			// "nothing survives" case this filter exists for. Zero is the only threshold that
+			// can't accidentally suppress a genuinely partially-visible product: it only fires when
+			// literally every one of a product's (already-prefiltered, already-coarse) edges reads
+			// as occluded by something else, matching the precedented "entire group holds only
+			// incorrect paths" real-file cases (see this branch's own known-issues history) rather
+			// than any partial-visibility case, which every existing per-sub-interval mechanism in
+			// this file already handles correctly on its own.
+			//
+			// A grazing-ray nudge (mirroring find_cross_coplanar_matches()'s own is_occluded_for_
+			// pair() / P1-4d, and restore_coincident_hidden_edges()'s own is_genuinely_occluded() /
+			// P1-4f) is needed here: a plain, unnudged is_occluded_by_other() alone was tried first
+			// and found insufficient, traced directly against a real-world project file used for
+			// QA. But a single-best-match nudge (mirroring point_on_foreign_face()'s "the one matching
+			// face" contract, tried first here too) was ALSO insufficient, for a reason specific to
+			// this whole-object gate: a sample point can genuinely sit on more than one OTHER
+			// product's coincident face at once (confirmed directly against the real file -- wall
+			// #70370's own left-face top edge, at floor level, sits simultaneously on the slab's own
+			// top face -- a huge, distant, but perfectly legitimate coincident match -- AND on wall
+			// #70168's own base face AND its own vertical left face, all three genuinely coincident
+			// at that exact point). Taking only the first-found match (by item index, i.e.
+			// arbitrarily) picked the slab's face here, whose centroid sits nowhere near the actual
+			// occluding wall, making the nudge useless even though a *different* candidate's
+			// centroid would have worked. Fixed by trying every genuinely-touching candidate's own
+			// centroid and OR-combining (occluded if ANY nudge finds something nearer) -- the same
+			// "try more than one candidate direction" principle is_occluded_for_pair() already uses
+			// for its own two (known in advance) centroids; this gate just doesn't know its
+			// candidates in advance, so it has to enumerate them.
+			auto touching_foreign_faces = [&](const gp_Pnt& p, size_t exclude_idx) -> std::vector<std::pair<TopoDS_Face, size_t>> {
+				std::vector<std::pair<TopoDS_Face, size_t>> matches;
+				for (size_t i = 0; i < occlusion_shapes.size(); ++i) {
+					if (i == exclude_idx || !occlusion_shapes[i]) {
+						continue;
+					}
+					for (TopExp_Explorer fexp(*occlusion_shapes[i], TopAbs_FACE); fexp.More(); fexp.Next()) {
+						const TopoDS_Face& face = TopoDS::Face(fexp.Current());
+						gp_Dir n;
+						if (!cross_coplanar::face_normal(face, n)) {
+							continue;
+						}
+						TopExp_Explorer vexp(face, TopAbs_VERTEX);
+						if (!vexp.More()) {
+							continue;
+						}
+						gp_Pnt face_pnt = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
+						double plane_dist = std::abs(gp_Vec(face_pnt, p).Dot(n));
+						if (plane_dist >= cross_coplanar_tolerance_) {
+							continue;
+						}
+						BRepClass_FaceClassifier classifier(face, p, cross_coplanar_tolerance_);
+						if (classifier.State() != TopAbs_OUT) {
+							matches.emplace_back(face, i);
+						}
+					}
+				}
+				return matches;
+			};
+			auto is_occluded_for_visibility = [&](const gp_Pnt& p, size_t self_idx) -> bool {
+				if (is_occluded_by_other(p, self_idx, self_idx)) {
+					return true;
+				}
+				for (auto& foreign : touching_foreign_faces(p, self_idx)) {
+					gp_Pnt centroid = cross_coplanar::face_interior_point(foreign.first);
+					gp_Vec toward(p, centroid);
+					if (toward.SquareMagnitude() < 1.e-12) {
+						continue;
+					}
+					gp_Pnt nudged = p.Translated(toward * 0.05);
+					if (is_occluded_by_other(nudged, self_idx, foreign.second)) {
+						return true;
+					}
+				}
+				return false;
+			};
+			constexpr int kMaxUnoccludedNativeEdgesForWholeObjectHidden = 0;
+			std::vector<bool> item_excluded_from_matching(items_.size(), false);
+			{
+				size_t idx = 0;
+				for (auto& it : items_) {
+					if (occlusion_intersector_loaded[idx]) {
+						const TopoDS_Shape& shape = std::get<1>(it);
+						// TopExp::MapShapesAndAncestors (not a plain TopExp_Explorer) so a
+						// manifold edge shared by two faces is counted once, not twice -- a
+						// double-count would specifically defeat the <= 1 threshold on a product
+						// with exactly one genuinely-visible edge.
+						TopTools_IndexedDataMapOfShapeListOfShape edge_face_map;
+						TopExp::MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, edge_face_map);
+						int unoccluded = 0;
+						for (int i = 1; i <= edge_face_map.Extent() &&
+							unoccluded <= kMaxUnoccludedNativeEdgesForWholeObjectHidden; ++i) {
+							const TopoDS_Edge& e = TopoDS::Edge(edge_face_map.FindKey(i));
+							TopoDS_Vertex v0, v1;
+							TopExp::Vertices(e, v0, v1);
+							if (v0.IsNull() || v1.IsNull()) {
+								continue;
+							}
+							// A strict MAJORITY of 11 evenly-spaced interior samples must be clear
+							// for this edge to count as genuinely visible -- not just one sample
+							// (the exact midpoint, or any other single fixed point), which a real-
+							// file trace showed can be unrepresentative of a long edge's real
+							// occlusion (see this pre-filter's own top comment, above). A majority
+							// vote is the coarse equivalent, for a whole-edge go/no-go decision, of
+							// the bisection-refined sub-interval approach occlusion_clear_
+							// subintervals()/restorable_intervals() use elsewhere for a precise
+							// clear/occluded transition -- this filter only needs "is more than
+							// half of this edge's length clear", not the exact boundary. "More than
+							// half" is a natural majority rule, not a new tuned percentage constant.
+							gp_XYZ p0 = BRep_Tool::Pnt(v0).XYZ(), p1 = BRep_Tool::Pnt(v1).XYZ();
+							constexpr int kEdgeVisibilitySampleCount = 11;
+							int clear_samples = 0;
+							for (int s = 1; s <= kEdgeVisibilitySampleCount; ++s) {
+								double t = static_cast<double>(s) / (kEdgeVisibilitySampleCount + 1);
+								gp_Pnt sample(p0 * (1.0 - t) + p1 * t);
+								if (!is_occluded_for_visibility(sample, idx)) {
+									++clear_samples;
+								}
+							}
+							bool edge_visible = clear_samples * 2 > kEdgeVisibilitySampleCount;
+							if (edge_visible) {
+								++unoccluded;
+							}
+						}
+						item_excluded_from_matching[idx] = unoccluded <= kMaxUnoccludedNativeEdgesForWholeObjectHidden;
+					}
+					++idx;
+				}
+			}
+
 			size_t idx_i = 0;
 			for (auto ii = items_.begin(); ii != items_.end(); ++ii, ++idx_i) {
+				if (item_excluded_from_matching[idx_i]) {
+					// Whole-object hidden (see the pre-pass above) -- skip the entire inner loop
+					// for this item, not just one pair, since it must never contribute a match/
+					// mismatch on EITHER side of any pairing.
+					continue;
+				}
 				size_t idx_j = idx_i + 1;
 				for (auto jj = std::next(ii); jj != items_.end(); ++jj, ++idx_j) {
+					if (item_excluded_from_matching[idx_j]) {
+						continue;
+					}
 					const auto* product_i = std::get<0>(*ii);
 					const TopoDS_Shape& shape_i = std::get<1>(*ii);
 					const auto* style_i = std::get<2>(*ii);
