@@ -80,6 +80,6 @@ class IFC_PARSE_API character_encoder {
     operator std::string();
 };
 
-} // namespace IfcWrite
+} // namespace ifcopenshell
 
 #endif
