@@ -108,6 +108,14 @@ ENDIF()
 set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
+#`%feature("python:abc")` is a feature we use in swig template.
+# Nn swig < 4.1 it works only if `-py3` is set explictily,
+# in swig 4.1+ `-py3` is no-op.
+# E.g. Ubuntu 22.04 is still using swig 4.0.2.
+if(SWIG_VERSION VERSION_LESS "4.1")
+    list(APPEND SWIG_DEFINES -py3)
+endif()
+
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 
 if(WITH_CGAL)
