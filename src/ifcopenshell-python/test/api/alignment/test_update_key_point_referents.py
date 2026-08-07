@@ -66,6 +66,10 @@ def _pset_station(referent):
     return ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="Station")
 
 
+def _label(name):
+    return name.rsplit("(", 1)[1].rstrip(")")
+
+
 def test_wrong_layout_type_raises_type_error():
     file = _new_file()
     alignment = _build_alignment(file)
@@ -181,7 +185,7 @@ def test_default_horizontal_labels_and_order():
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
 
     expected = ["P.O.B.", "P.C.", "P.T.", "P.C.", "P.T.", "P.C.", "P.T.", "P.O.E."]
-    assert [r.Name.split(" (")[0] for r in nest.RelatedObjects] == expected
+    assert [_label(r.Name) for r in nest.RelatedObjects] == expected
 
     stations = [_pset_station(r) for r in nest.RelatedObjects]
     assert stations == sorted(stations)
@@ -207,7 +211,7 @@ def test_default_vertical_labels_and_order():
         "P.V.T.",
         "V.P.O.E.",
     ]
-    assert [r.Name.split(" (")[0] for r in nest.RelatedObjects] == expected
+    assert [_label(r.Name) for r in nest.RelatedObjects] == expected
 
     segments = ifcopenshell.api.alignment.get_layout_segments(vertical)
     real_segments = segments[:-1] if ifcopenshell.api.alignment.has_zero_length_segment(vertical) else segments
@@ -224,7 +228,7 @@ def test_name_format():
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
     referent = nest.RelatedObjects[0]
     station = _pset_station(referent)
-    assert referent.Name == f"P.O.B. ({ifcopenshell.util.alignment.station_as_string(file, station)})"
+    assert referent.Name == f"{alignment.Name} {ifcopenshell.util.alignment.station_as_string(file, station)} (P.O.B.)"
 
 
 def test_geometric_placement_when_layout_has_representation():
@@ -292,7 +296,7 @@ def test_cant_layout_boundary_labels():
 
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, cant)
 
-    labels = [r.Name.split(" (")[0] for r in nest.RelatedObjects]
+    labels = [_label(r.Name) for r in nest.RelatedObjects]
     assert labels[0] == "C.P.O.B."
     assert labels[-1] == "C.P.O.E."
     # CONSTANTCANT -> CONSTANTCANT is currently an unfilled "xx" placeholder in the cant lookup
@@ -331,7 +335,7 @@ def test_single_real_segment_produces_only_boundary_labels():
     ifcopenshell.api.alignment.create_layout_segment(file, horizontal, design_parameters)
 
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
-    labels = [r.Name.split(" (")[0] for r in nest.RelatedObjects]
+    labels = [_label(r.Name) for r in nest.RelatedObjects]
     assert labels == ["P.O.B.", "P.O.E."]
 
 

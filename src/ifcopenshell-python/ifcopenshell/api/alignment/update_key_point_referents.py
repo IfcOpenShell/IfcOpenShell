@@ -22,9 +22,9 @@ import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.pset
 import ifcopenshell.guid
-import ifcopenshell.util.alignment
 import ifcopenshell.util.element
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment._get_key_point_tag import _get_key_point_tag
 from ifcopenshell.api.alignment._get_segment_start_point_label import (
     _get_segment_start_point_label,
 )
@@ -76,7 +76,7 @@ def _create_key_point_referent(
             ),
         )
 
-    name = f"{label} ({ifcopenshell.util.alignment.station_as_string(file, station)})"
+    name = f"{alignment.Name} {_get_key_point_tag(file, label, station)}"
 
     referent = file.createIfcReferent(
         GlobalId=ifcopenshell.guid.new(),
@@ -105,7 +105,8 @@ def update_key_point_referents(
     Creates IfcReferent key-point markers for every segment transition in an alignment layout.
 
     Labels are derived from _get_segment_start_point_label (e.g. "P.C.", "P.T.", "P.O.B.",
-    "P.V.C.", ...), with the station appended, e.g. "P.C. (145+98.32)". Different jurisdictions use
+    "P.V.C.", ...), and combined with the alignment name and station to build the Name, e.g.
+    "MyAlignment 145+98.32 (P.C.)". Different jurisdictions use
     different naming systems for these key points -- register_referent_name_callback() lets a
     caller override the default horizontal/vertical/cant labeling before calling this function; if
     a callback is registered, its output is used here instead of the built-in labels. Referents are
@@ -145,7 +146,7 @@ def update_key_point_referents(
         ifcopenshell.api.alignment.register_referent_name_callback(horizontal=my_horizontal_labels)
         horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
         nest = ifcopenshell.api.alignment.update_key_point_referents(model, horizontal)
-        # nest.RelatedObjects[0].Name starts with "Start (" instead of the default "P.O.B. ("
+        # nest.RelatedObjects[0].Name ends with "(Start)" instead of the default "(P.O.B.)"
     """
 
     expected_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]

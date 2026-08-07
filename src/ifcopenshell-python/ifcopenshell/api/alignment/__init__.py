@@ -25,7 +25,7 @@ are automatically created and maintained.
 
 Alignments are created with stationing referents. Each layout segment is assigned a position referent that informs about
 the start point of the segment. An example is the point of curvature of a horizontal circular curve. The referent is
-nested to the segment representing the circular arc and is named with a indicator of the position and the station, e.g. "P.C. (145+98.32)"
+nested to the segment representing the circular arc and is named with the alignment name and an indicator of the position and the station, e.g. "MyAlignment 145+98.32 (P.C.)"
 
 This API does not determine alignment parameters based on rules, such as minimum curve radius as a function of design speed or sight distance.
 
@@ -89,6 +89,7 @@ from .layout_vertical_alignment_by_pi_method import (
     layout_vertical_alignment_by_pi_method,
 )
 from .name_segments import name_segments
+from .update_alignment_parameter_segment_tags import update_alignment_parameter_segment_tags
 from .update_end_point import update_end_point
 from .update_fallback_position import update_fallback_position
 from .update_key_point_referents import update_key_point_referents
@@ -132,6 +133,7 @@ __all__ = [
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
     "register_referent_name_callback",
+    "update_alignment_parameter_segment_tags",
     "update_end_point",
     "update_fallback_position",
     "update_key_point_referents",
