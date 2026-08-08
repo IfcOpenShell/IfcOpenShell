@@ -247,8 +247,9 @@ public:
 	/// Constructs an file object from a file path, supports IFC-SPF and the IfcOpenShell-specific RocksDB format.
     /// </summary>
     /// <param name="path">UTF-8 file path to an IFC-SPF file or RocksDB database directory</param>
-    /// <param name="ty">File type of the path</param>
-    /// <param name="readonly">Whether to open in read-only mode, only supported on RocksDB databases</param>
+    /// <param name="type">File type of the path</param>
+    /// <param name="read_only">Whether to open in read-only mode, only supported on RocksDB databases</param>
+    /// <param name="logger">Logger used while opening the file</param>
     file(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false, ::logger& logger = ::logger::root());
 
     /// <summary>
@@ -263,11 +264,12 @@ public:
 
     /// <summary>
     /// Constructs an file object with the specified schema, file type, and file path.
-    /// @nb path is only used in rocksdb mode, for spf file is in-memory only until write() is called
+    /// @note path is only used in RocksDB mode; an SPF file is in memory only until write() is called.
     /// </summary>
     /// <param name="schema">Pointer to the schema definition to use. Defaults to the IFC4 schema if not specified.</param>
-    /// <param name="ty">The file type to use for the file. Defaults to FT_AUTODETECT.</param>
+    /// <param name="type">The file type to use for the file. Defaults to FT_AUTODETECT.</param>
     /// <param name="path">The file system path to the IFC file. Defaults to an empty string.</param>
+    /// <param name="logger">Logger used while creating the file.</param>
     file(const ifcopenshell::schema_definition* schema = ifcopenshell::schema_by_name("IFC4"), filetype type = FT_AUTODETECT, const std::string& path = "", ::logger& logger = ::logger::root());
 
     /// <summary>

@@ -693,8 +693,7 @@ endif()
 
 # Documentation
 if(BUILD_DOCUMENTATION)
-    set(CMAKE_MODULE_PATH "../docs/cmake")
-    add_subdirectory(../docs docs)
+    add_subdirectory(../docs/cpp-api docs/cpp-api)
 endif()
 
 if(BUILD_EXAMPLES)

@@ -31,29 +31,25 @@ inline namespace settings {
 
 	struct UseElementNames : public SettingBase<UseElementNames, bool> {
 		static constexpr const char* const name = "use-element-names";
-		static constexpr const char* const description = "Use entity instance IfcRoot.Name instead of unique IDs for naming elements upon serialization. "
-			"Applicable for OBJ, DAE, STP, and SVG output.";
+		static constexpr const char* const description = "Use entity instance IfcRoot.Name instead of unique IDs for naming elements upon serialization. Applicable for OBJ, DAE, STP, and SVG output.";
 		static constexpr bool defaultvalue = false;
 	};
 
 	struct UseElementGuids : public SettingBase<UseElementGuids, bool> {
 		static constexpr const char* const name = "use-element-guids";
-		static constexpr const char* const description = "Use entity instance IfcRoot.GlobalId instead of unique IDs for naming elements upon serialization. "
-			"Applicable for OBJ, DAE, STP, and SVG output.";
+		static constexpr const char* const description = "Use entity instance IfcRoot.GlobalId instead of unique IDs for naming elements upon serialization. Applicable for OBJ, DAE, STP, and SVG output.";
 		static constexpr bool defaultvalue = false;
 	};
 
 	struct UseElementStepIds : public SettingBase<UseElementStepIds, bool> {
 		static constexpr const char* const name = "use-element-step-ids";
-		static constexpr const char* const description = "Use the numeric step identifier (entity instance name) for naming elements upon serialization. "
-			"Applicable for OBJ, DAE, STP, and SVG output.";
+		static constexpr const char* const description = "Use the numeric step identifier (entity instance name) for naming elements upon serialization. Applicable for OBJ, DAE, STP, and SVG output.";
 		static constexpr bool defaultvalue = false;
 	};
 
 	struct UseElementTypes : public SettingBase<UseElementTypes, bool> {
 		static constexpr const char* const name = "use-element-types";
-		static constexpr const char* const description = "Use element types instead of unique IDs for naming elements upon serialization. "
-			"Applicable to DAE output.";
+		static constexpr const char* const description = "Use element types instead of unique IDs for naming elements upon serialization. Applicable to DAE output.";
 		static constexpr bool defaultvalue = false;
 	};
 
@@ -71,10 +67,7 @@ inline namespace settings {
 
 	struct FloatingPointDigits : public SettingBase<FloatingPointDigits, int> {
 		static constexpr const char* const name = "digits";
-		static constexpr const char* const description = "Sets the precision to be used to format floating-point values, 15 by default. "
-			"Use a negative value to use the system's default precision (should be 6 typically). "
-			"Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used, "
-			" and any other value means that 6 or 7 decimals are used.";
+		static constexpr const char* const description = "Sets the precision to be used to format floating-point values, 15 by default. Use a negative value to use the system's default precision (should be 6 typically). Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used,  and any other value means that 6 or 7 decimals are used.";
 		static constexpr int defaultvalue = 15;
 	};
 

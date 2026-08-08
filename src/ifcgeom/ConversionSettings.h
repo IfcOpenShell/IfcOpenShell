@@ -117,10 +117,7 @@ namespace ifcopenshell {
 
 			struct ReorientShells : public SettingBase<ReorientShells, bool> {
 				static constexpr const char* const name = "reorient-shells";
-				static constexpr const char* const description = "Specifies whether to orient the faces of IfcConnectedFaceSets. "
-					"This is a potentially time consuming operation, but guarantees a "
-					"consistent orientation of surface normals, even if the faces are not "
-					"properly oriented in the IFC file.";
+				static constexpr const char* const description = "Specifies whether to orient the faces of IfcConnectedFaceSets. This is a potentially time consuming operation, but guarantees a consistent orientation of surface normals, even if the faces are not properly oriented in the IFC file.";
 				static constexpr bool defaultvalue = false;
 			};
 
@@ -144,15 +141,13 @@ namespace ifcopenshell {
 
 			struct LayersetFirst : public SettingBase<LayersetFirst, bool> {
 				static constexpr const char* const name = "layerset-first";
-				static constexpr const char* const description = "Assigns the first layer material of the layerset "
-					"to the complete product.";
+				static constexpr const char* const description = "Assigns the first layer material of the layerset to the complete product.";
 				static constexpr bool defaultvalue = false;
 			};
 
 			struct DisableBooleanResult : public SettingBase<DisableBooleanResult, bool> {
 				static constexpr const char* const name = "disable-boolean-result";
-				static constexpr const char* const description = "Specifies whether to disable the boolean operation within representations "
-			"such as clippings by means of IfcBooleanResult and subtypes";
+				static constexpr const char* const description = "Specifies whether to disable the boolean operation within representations such as clippings by means of IfcBooleanResult and subtypes";
 				static constexpr bool defaultvalue = false;
 			};
 
@@ -170,9 +165,7 @@ namespace ifcopenshell {
 
 			struct PrecisionFactor : public SettingBase<PrecisionFactor, double> {
 				static constexpr const char* const name = "precision-factor";
-				static constexpr const char* const description = "Option to increase linear tolerance for more permissive edge curves and fewer artifacts after "
-					"boolean operations at the expense of geometric detail "
-					"due to vertex collapsing and wire intersection fuzziness.";
+				static constexpr const char* const description = "Option to increase linear tolerance for more permissive edge curves and fewer artifacts after boolean operations at the expense of geometric detail due to vertex collapsing and wire intersection fuzziness.";
 				static constexpr double defaultvalue = 1.0;
 			};
 
@@ -192,41 +185,31 @@ namespace ifcopenshell {
 
 			struct WeldVertices : public SettingBase<WeldVertices, bool> {
 				static constexpr const char* const name = "weld-vertices";
-				static constexpr const char* const description = "Specifies whether vertices are welded, meaning that the coordinates "
-					"vector will only contain unique xyz-triplets. This results in a "
-					"manifold mesh which is useful for modelling applications, but might "
-					"result in unwanted shading artefacts in rendering applications.";
+				static constexpr const char* const description = "Specifies whether vertices are welded, meaning that the coordinates vector will only contain unique xyz-triplets. This results in a manifold mesh which is useful for modelling applications, but might result in unwanted shading artefacts in rendering applications.";
 				static constexpr bool defaultvalue = true;
 			};
 
 			struct UseWorldCoords : public SettingBase<UseWorldCoords, bool> {
 				static constexpr const char* const name = "use-world-coords";
-				static constexpr const char* const description = "Specifies whether to apply the local placements of building elements "
-					"directly to the coordinates of the representation mesh rather than "
-					"to represent the local placement in the 4x3 matrix, which will in that "
-					"case be the identity matrix.";
+				static constexpr const char* const description = "Specifies whether to apply the local placements of building elements directly to the coordinates of the representation mesh rather than to represent the local placement in the 4x3 matrix, which will in that case be the identity matrix.";
 				static constexpr bool defaultvalue = false;
 			};
 
 			struct UnifyShapes : public SettingBase<UnifyShapes, bool> {
 				static constexpr const char* const name = "unify-shapes";
-				static constexpr const char* const description = "Unify adjacent co-planar and co-linear subshapes (topological entities "
-					"sharing the same geometric domain) before triangulation or further processing";
+				static constexpr const char* const description = "Unify adjacent co-planar and co-linear subshapes (topological entities sharing the same geometric domain) before triangulation or further processing";
 				static constexpr bool defaultvalue = false;
 			};
 
 			struct UseMaterialNames : public SettingBase<UseMaterialNames, bool> {
 				static constexpr const char* const name = "use-material-names";
-				static constexpr const char* const description = "Use material names instead of unique IDs for naming materials upon serialization. "
-					"Applicable for OBJ and DAE output.";
+				static constexpr const char* const description = "Use material names instead of unique IDs for naming materials upon serialization. Applicable for OBJ and DAE output.";
 				static constexpr bool defaultvalue = false;
 			};
 
 			struct ConvertBackUnits : public SettingBase<ConvertBackUnits, bool> {
 				static constexpr const char* const name = "convert-back-units";
-				static constexpr const char* const description = "Specifies whether to convert back geometrical output back to the "
-					"unit of measure in which it is defined in the IFC file. Default is "
-					"to use meters.";
+				static constexpr const char* const description = "Specifies whether to convert back geometrical output back to the unit of measure in which it is defined in the IFC file. Default is to use meters.";
 				static constexpr bool defaultvalue = false;
 			};
 
@@ -260,10 +243,7 @@ namespace ifcopenshell {
 
 			struct OutputDimensionality : public SettingBase<OutputDimensionality, OutputDimensionalityTypes> {
 				static constexpr const char* const name = "dimensionality";
-				static constexpr const char* const description =
-					"Specifies whether to include curves and/or surfaces and solids in the output result. "
-					"Defaults to only surfaces and solids (SURFACES_AND_SOLIDS). "
-					"Other possible values are CURVES, CURVES_SURFACES_AND_SOLIDS.";
+				static constexpr const char* const description = "Specifies whether to include curves and/or surfaces and solids in the output result. Defaults to only surfaces and solids (SURFACES_AND_SOLIDS). Other possible values are CURVES, CURVES_SURFACES_AND_SOLIDS.";
 				static constexpr OutputDimensionalityTypes defaultvalue = SURFACES_AND_SOLIDS;
 			};
 
@@ -283,8 +263,7 @@ namespace ifcopenshell {
 
 			struct DisableOpeningSubtractions : public SettingBase<DisableOpeningSubtractions, bool> {
 				static constexpr const char* const name = "disable-opening-subtractions";
-				static constexpr const char* const description = "Specifies whether to disable the boolean subtraction of "
-					"IfcOpeningElement Representations from their RelatingElements.";
+				static constexpr const char* const description = "Specifies whether to disable the boolean subtraction of IfcOpeningElement Representations from their RelatingElements.";
 				static constexpr bool defaultvalue = false;
 			};
 
@@ -302,30 +281,25 @@ namespace ifcopenshell {
 
 			struct DontEmitNormals : public SettingBase<DontEmitNormals, bool> {
 				static constexpr const char* const name = "no-normals";
-				static constexpr const char* const description = "Disables computation of normals.Saves time and file size and is useful "
-					"in instances where you're going to recompute normals for the exported "
-					"model in other modelling application in any case.";
+				static constexpr const char* const description = "Disables computation of normals.Saves time and file size and is useful in instances where you're going to recompute normals for the exported model in other modelling application in any case.";
 				static constexpr bool defaultvalue = false;
 			};
 
 			struct GenerateUvs : public SettingBase<GenerateUvs, bool> {
 				static constexpr const char* const name = "generate-uvs";
-				static constexpr const char* const description = "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
-					"Not guaranteed to work properly if used with --weld-vertices.";
+				static constexpr const char* const description = "Generates UVs (texture coordinates) by using simple box projection. Requires normals. Not guaranteed to work properly if used with --weld-vertices.";
 				static constexpr bool defaultvalue = false;
 			};
 
 			struct ApplyLayerSets : public SettingBase<ApplyLayerSets, bool> {
 				static constexpr const char* const name = "enable-layerset-slicing";
-				static constexpr const char* const description = "Specifies whether to enable the slicing of products according "
-					"to their associated IfcMaterialLayerSet.";
+				static constexpr const char* const description = "Specifies whether to enable the slicing of products according to their associated IfcMaterialLayerSet.";
 				static constexpr bool defaultvalue = false;
 			};
 
 			struct UseElementHierarchy : public SettingBase<UseElementHierarchy, bool> {
 				static constexpr const char* const name = "element-hierarchy";
-				static constexpr const char* const description = "Assign the elements using their e.g IfcBuildingStorey parent."
-					"Applicable to DAE output.";
+				static constexpr const char* const description = "Assign the elements using their e.g IfcBuildingStorey parent.Applicable to DAE output.";
 				static constexpr bool defaultvalue = false;
 			};
 
@@ -343,8 +317,7 @@ namespace ifcopenshell {
 
 			struct SiteLocalPlacement : public SettingBase<SiteLocalPlacement, bool> {
 				static constexpr const char* const name = "site-local-placement";
-				static constexpr const char* const description = "Place elements locally in the IfcSite coordinate system, instead of placing "
-					"them in the IFC global coords. Applicable for OBJ, DAE, and STP output.";
+				static constexpr const char* const description = "Place elements locally in the IfcSite coordinate system, instead of placing them in the IFC global coords. Applicable for OBJ, DAE, and STP output.";
 				static constexpr bool defaultvalue = false;
 			};
 
@@ -421,9 +394,7 @@ namespace ifcopenshell {
 
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
 				static constexpr const char* const name = "keep-bounding-boxes";
-				static constexpr const char* const description =
-					"Default is to removes IfcBoundingBox from model prior to converting geometry."
-					"Setting this option disables that behaviour";
+				static constexpr const char* const description = "Default is to removes IfcBoundingBox from model prior to converting geometry.Setting this option disables that behaviour";
 				static constexpr bool defaultvalue = false;
 			};
 
