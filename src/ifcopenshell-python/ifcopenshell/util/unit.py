@@ -720,7 +720,29 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
             unit_scale *= conversion_factor.ValueComponent.wrappedValue
             unit = conversion_factor.UnitComponent
         if unit.is_a("IfcSIUnit"):
-            unit_scale *= get_prefix_multiplier(unit.Prefix)
+            prefix_multiplier = get_prefix_multiplier(unit.Prefix)
+            # An SI prefix attaches to the base unit symbol, and the prefixed
+            # symbol is raised to the power as a whole: dm3 = (dm)3 = 1e-3 m3,
+            # not 0.1 m3. For units whose dimensions are a pure power of length
+            # (METRE, SQUARE_METRE, CUBIC_METRE) the prefix multiplier must
+            # therefore be raised to the length exponent. Units with mixed or
+            # non-length dimensions (PASCAL, NEWTON, GRAM, ...) keep the linear
+            # multiplier, as there the prefix scales the derived unit itself.
+            # https://github.com/IfcOpenShell/IfcOpenShell/issues/9278
+            dimensions = unit.Dimensions
+            length_exponent = dimensions.LengthExponent
+            if length_exponent > 0 and not any(
+                (
+                    dimensions.MassExponent,
+                    dimensions.TimeExponent,
+                    dimensions.ElectricCurrentExponent,
+                    dimensions.ThermodynamicTemperatureExponent,
+                    dimensions.AmountOfSubstanceExponent,
+                    dimensions.LuminousIntensityExponent,
+                )
+            ):
+                prefix_multiplier **= length_exponent
+            unit_scale *= prefix_multiplier
     return unit_scale
 
 
