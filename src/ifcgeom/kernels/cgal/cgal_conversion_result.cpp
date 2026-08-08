@@ -31,15 +31,15 @@ typedef polyhedron::Facet_const_handle facet_const_handle;
 typedef polyhedron::Halfedge_around_facet_const_circulator halfedge_around_facet_circulator;
 
 namespace {
-	cgal_placement_t make_transform(const ifcopenshell::geom::taxonomy::matrix4& place) {
+	cgal_placement make_transform(const ifcopenshell::geom::taxonomy::matrix4& place) {
 		const auto& m = place.ccomponents();
-		return cgal_placement_t(
+		return cgal_placement(
 			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
 			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
 			m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 	}
 
-	opaque_coordinate<3> opaque_point(const cgal_point_t& p) {
+	opaque_coordinate<3> opaque_point(const cgal_point& p) {
 		return opaque_coordinate<3>(
 			NumberType(p.cartesian(0)),
 			NumberType(p.cartesian(1)),
@@ -54,7 +54,7 @@ namespace {
 		return ((-*minel) > *maxel) ? (-*minel) : *maxel;
 	}
 
-	opaque_coordinate<3> opaque_axis(const cgal_vector_t& v) {
+	opaque_coordinate<3> opaque_axis(const cgal_vector& v) {
 		auto maxval = max_abs3(v.x(), v.y(), v.z());
 		if (maxval == 0) {
 			throw std::runtime_error("Invalid shape type");
@@ -66,7 +66,7 @@ namespace {
 		);
 	}
 
-	opaque_coordinate<4> opaque_plane(const cgal_plane_t& p) {
+	opaque_coordinate<4> opaque_plane(const cgal_plane& p) {
 		auto maxval = max_abs3(p.a(), p.b(), p.c());
 		if (maxval == 0) {
 			throw std::runtime_error("Invalid shape type");
@@ -79,16 +79,16 @@ namespace {
 		);
 	}
 
-	cgal_plane_t plane_from_opaque(const opaque_coordinate<4>& p) {
+	cgal_plane plane_from_opaque(const opaque_coordinate<4>& p) {
 #ifdef IFOPSH_SIMPLE_KERNEL
-		return cgal_plane_t(
+		return cgal_plane(
 			p.get(0).to_double(),
 			p.get(1).to_double(),
 			p.get(2).to_double(),
 			p.get(3).to_double()
 		);
 #else
-		return cgal_plane_t(
+		return cgal_plane(
 			p.get(0).value_as<CGAL::Epeck::FT>(),
 			p.get(1).value_as<CGAL::Epeck::FT>(),
 			p.get(2).value_as<CGAL::Epeck::FT>(),
@@ -104,7 +104,7 @@ namespace {
 		});
 	}
 
-	void apply_normalized_plane_map(const plane_map<kernel_>& mp, std::list<cgal_plane_t>& planes) {
+	void apply_normalized_plane_map(const plane_map<kernel_>& mp, std::list<cgal_plane>& planes) {
 		for (auto& plane : planes) {
 			auto it = mp.find(normalized_plane_for_map<kernel_>(plane));
 			if (it != mp.end()) {
@@ -113,10 +113,10 @@ namespace {
 		}
 	}
 
-	cgal_vector_t wire_normal(const cgal_wire_t& wire) {
+	cgal_vector wire_normal(const cgal_wire& wire) {
 		typename kernel_::FT a(0), b(0), c(0);
 		if (wire.size() < 3) {
-			return cgal_vector_t(a, b, c);
+			return cgal_vector(a, b, c);
 		}
 		for (std::size_t i = 0; i < wire.size(); ++i) {
 			const auto& curr = wire[i];
@@ -125,10 +125,10 @@ namespace {
 			b += (curr.z() - next.z()) * (curr.x() + next.x());
 			c += (curr.x() - next.x()) * (curr.y() + next.y());
 		}
-		return cgal_vector_t(a, b, c);
+		return cgal_vector(a, b, c);
 	}
 
-	cgal_point_t wire_centroid(const cgal_wire_t& wire) {
+	cgal_point wire_centroid(const cgal_wire& wire) {
 		if (wire.empty()) {
 			throw std::runtime_error("Invalid shape type");
 		}
@@ -139,10 +139,10 @@ namespace {
 			}
 		}
 		kernel_::FT n(wire.size());
-		return cgal_point_t(p[0] / n, p[1] / n, p[2] / n);
+		return cgal_point(p[0] / n, p[1] / n, p[2] / n);
 	}
 
-	kernel_::FT wire_length(const cgal_wire_t& wire) {
+	kernel_::FT wire_length(const cgal_wire& wire) {
 		kernel_::FT len(0);
 		if (wire.size() < 2) {
 			return len;
@@ -156,7 +156,7 @@ namespace {
 		return len;
 	}
 
-	kernel_::FT wire_area(const cgal_wire_t& wire) {
+	kernel_::FT wire_area(const cgal_wire& wire) {
 		kernel_::FT area(0);
 		if (wire.size() < 3) {
 			return area;
@@ -170,8 +170,8 @@ namespace {
 		return area;
 	}
 
-	cgal_wire_t moved_wire(const cgal_wire_t& wire, const cgal_placement_t& trsf) {
-		cgal_wire_t result;
+	cgal_wire moved_wire(const cgal_wire& wire, const cgal_placement& trsf) {
+		cgal_wire result;
 		result.reserve(wire.size());
 		for (const auto& point : wire) {
 			result.push_back(point.transform(trsf));
@@ -179,12 +179,12 @@ namespace {
 		return result;
 	}
 
-	void write_off_point(std::stringstream& sstream, const cgal_point_t& point) {
+	void write_off_point(std::stringstream& sstream, const cgal_point& point) {
 		sstream << "OFF\n1 0 0\n";
 		sstream << point.x() << " " << point.y() << " " << point.z() << "\n";
 	}
 
-	void write_off_wire(std::stringstream& sstream, const cgal_wire_t& wire) {
+	void write_off_wire(std::stringstream& sstream, const cgal_wire& wire) {
 		const bool face = wire.size() >= 3;
 		sstream << "OFF\n" << wire.size() << " " << (face ? 1 : 0) << " 0\n";
 		for (const auto& point : wire) {
@@ -268,12 +268,12 @@ namespace {
 	}
 }
 
-ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_shape_t& shape, bool convex, ifcopenshell::logger& logger) {
+ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_polyhedron& shape, bool convex, ifcopenshell::logger& logger) {
 	shape_ = shape;
 	convex_tag_ = convex;
-	auto& poly = std::get<cgal_shape_t>(*shape_);
+	auto& poly = std::get<cgal_polyhedron>(*shape_);
 
-	std::set<cgal_shape_t::Facet_handle> faces_to_remove;
+	std::set<cgal_polyhedron::Facet_handle> faces_to_remove;
 
 	for (const auto& face : CGAL::faces(poly)) {
 		auto V = newell(*face).to_vector();
@@ -315,30 +315,30 @@ ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_shape_t& shape, bool conve
 	}
 }
 
-ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_point_t& point, bool convex) {
+ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_point& point, bool convex) {
 	shape_ = point;
 	convex_tag_ = convex;
 }
 
-ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_wire_t& wire, bool convex) {
+ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_wire& wire, bool convex) {
 	shape_ = wire;
 	convex_tag_ = convex;
 }
 
-const cgal_shape_t& ifcopenshell::geom::cgal_shape::poly() const {
+const cgal_polyhedron& ifcopenshell::geom::cgal_shape::poly() const {
 #ifndef IFOPSH_SIMPLE_KERNEL
 	to_poly();
 #endif
-	if (!shape_ || !std::holds_alternative<cgal_shape_t>(*shape_)) {
+	if (!shape_ || !std::holds_alternative<cgal_polyhedron>(*shape_)) {
 		throw std::runtime_error("Invalid shape type");
 	}
-	return std::get<cgal_shape_t>(*shape_);
+	return std::get<cgal_polyhedron>(*shape_);
 }
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 void ifcopenshell::geom::cgal_shape::to_poly() const {
 	if (!shape_) {
-		cgal_shape_t poly;
+		cgal_polyhedron poly;
 		convert_to_polyhedron(*nef_, poly, std::numeric_limits<std::size_t>::max());
 		if (poly.size_of_vertices() > 0) {
 			// @todo why is this necessary? we have the mark of the volumes?
@@ -372,15 +372,15 @@ void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings se
 	const bool all_triangles = std::all_of(base_shape.facets_begin(), base_shape.facets_end(), [](auto f) { return f.is_triangle(); });
 	const bool has_iden_transform = place.is_identity();
 
-	std::unique_ptr<cgal_shape_t> shape_copy_holder;
-	cgal_shape_t* shape_to_use;
+	std::unique_ptr<cgal_polyhedron> shape_copy_holder;
+	cgal_polyhedron* shape_to_use;
 
 	if (!all_triangles || !has_iden_transform) {
 		// A copy is made when triangulate_faces() is required or when vertex positions need be transformed
-		shape_copy_holder.reset(new cgal_shape_t(base_shape));
+		shape_copy_holder.reset(new cgal_polyhedron(base_shape));
 		shape_to_use = shape_copy_holder.get();
 	} else {
-		shape_to_use = const_cast<cgal_shape_t*>(&base_shape);
+		shape_to_use = const_cast<cgal_polyhedron*>(&base_shape);
 	}
 
 	const bool setting_use_original_edges = settings.get<ifcopenshell::geom::settings::CgalEmitOriginalEdges>().get();
@@ -396,7 +396,7 @@ void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings se
 		const auto& m = place.ccomponents();
 
 		// @todo check
-		const cgal_placement_t trsf(
+		const cgal_placement trsf(
 			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
 			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
 			m(2, 0), m(2, 1), m(2, 2), m(2, 3));
@@ -455,8 +455,8 @@ void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings se
 		}
 	}
 
-	// std::map<cgal_vertex_descriptor_t, kernel_::Vector_3> vertex_normals;
-	// boost::associative_property_map<std::map<cgal_vertex_descriptor_t, kernel_::Vector_3>> vertex_normals_map(vertex_normals);
+	// std::map<cgal_vertex_descriptor, kernel_::Vector_3> vertex_normals;
+	// boost::associative_property_map<std::map<cgal_vertex_descriptor, kernel_::Vector_3>> vertex_normals_map(vertex_normals);
 	
 	// Triangulate the shape and compute the normals
 	std::map<facet_const_handle, kernel_::Vector_3> face_normals;
@@ -601,7 +601,7 @@ void ifcopenshell::geom::cgal_shape::Serialize(const ifcopenshell::geom::taxonom
 		}
 		write_off_wire(sstream, w);
 	} else {
-		cgal_shape_t s = poly();
+		cgal_polyhedron s = poly();
 
 		if (!place.is_identity()) {
 			const auto trsf = make_transform(place);
@@ -794,7 +794,7 @@ opaque_coordinate<3> ifcopenshell::geom::cgal_shape::axis()
 	auto shp = poly();
 	if (shp.size_of_facets() == 1) {
 		auto pl = facet_plane_equation()(*shp.facets_begin());
-		return opaque_axis(cgal_vector_t(pl.a(), pl.b(), pl.c()));
+		return opaque_axis(cgal_vector(pl.a(), pl.b(), pl.c()));
 	} else {
 		throw std::runtime_error("Invalid shape type");
 	}
@@ -804,7 +804,7 @@ opaque_coordinate<4> ifcopenshell::geom::cgal_shape::plane_equation()
 {
 	if (is_wire() && wire().size() >= 3) {
 		auto normal = wire_normal(wire());
-		return opaque_plane(cgal_plane_t(wire().front(), CGAL::Direction_3<kernel_>(normal)));
+		return opaque_plane(cgal_plane(wire().front(), CGAL::Direction_3<kernel_>(normal)));
 	}
 	auto shp = poly();
 	if (shp.size_of_facets() == 1) {
@@ -891,15 +891,15 @@ std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::edges()
 	if (is_wire()) {
 		const auto& w = wire();
 		for (std::size_t i = 1; i < w.size(); ++i) {
-			result.push_back(new cgal_shape(cgal_wire_t{ w[i - 1], w[i] }));
+			result.push_back(new cgal_shape(cgal_wire{ w[i - 1], w[i] }));
 		}
 		if (w.size() > 2) {
-			result.push_back(new cgal_shape(cgal_wire_t{ w.back(), w.front() }));
+			result.push_back(new cgal_shape(cgal_wire{ w.back(), w.front() }));
 		}
 		return result;
 	}
 	for (auto ed : poly().edges()) {
-		result.push_back(new cgal_shape(cgal_wire_t{ ed.vertex()->point(), ed.opposite()->vertex()->point() }));
+		result.push_back(new cgal_shape(cgal_wire{ ed.vertex()->point(), ed.opposite()->vertex()->point() }));
 	}
 	return result;
 }
@@ -917,7 +917,7 @@ std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::facets()
 		return result;
 	}
 	for (auto face : faces(poly())) {
-		std::vector<cgal_point_t> ps;
+		std::vector<cgal_point> ps;
 
 		auto it = face->facet_begin();
 		do {
@@ -959,7 +959,7 @@ conversion_result_shape* ifcopenshell::geom::cgal_shape::intersect(conversion_re
 namespace {
 	template <typename polyhedron_type>
 	void concatenate_polyhedra(polyhedron_type& p1, const polyhedron_type& p2) {
-		std::vector<cgal_point_t> points1, points2;
+		std::vector<cgal_point> points1, points2;
 		std::vector<std::vector<std::size_t>> faces1, faces2;
 
 		// Extract soups
@@ -1012,7 +1012,7 @@ conversion_result_shape* ifcopenshell::geom::cgal_shape::moved(ifcopenshell::geo
 		return new cgal_shape(moved_wire(wire(), trsf), convex_tag_);
 	}
 
-	cgal_shape_t s = poly();
+	cgal_polyhedron s = poly();
 	for (auto &vertex : s.vertex_handles()) {
 		vertex->point() = vertex->point().transform(trsf);
 	}

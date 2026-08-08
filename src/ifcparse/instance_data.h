@@ -72,8 +72,8 @@ public:
 };
 class IFC_PARSE_API blank {};
 class IFC_PARSE_API derived {};
-class IFC_PARSE_API empty_aggregate_t {};
-class IFC_PARSE_API empty_aggregate_of_aggregate_t {};
+class IFC_PARSE_API empty_aggregate {};
+class IFC_PARSE_API empty_aggregate_of_aggregate {};
 
 } // namespace ifcopenshell
 
@@ -134,7 +134,7 @@ namespace impl {
     };
 
     template <>
-    struct variant_type_name<ifcopenshell::empty_aggregate_t> {
+    struct variant_type_name<ifcopenshell::empty_aggregate> {
         static std::string get() { return "aggregate"; }
     };
 
@@ -144,7 +144,7 @@ namespace impl {
     };
 
     template <>
-    struct variant_type_name<ifcopenshell::empty_aggregate_of_aggregate_t> {
+    struct variant_type_name<ifcopenshell::empty_aggregate_of_aggregate> {
         static std::string get() { return "aggregate of aggregate"; }
     };
 }
@@ -191,7 +191,7 @@ typedef parameter_pack <
     express::base,
 
     // AGGREGATES:
-    empty_aggregate_t,
+    empty_aggregate,
     // An aggregate of integers, e.g. (1,2,3). Stored as int64_t for the
     // same reason as the scalar int64_t above.
     std::vector<int64_t>,
@@ -207,7 +207,7 @@ typedef parameter_pack <
     std::vector<express::base>,
 
     // AGGREGATES OF AGGREGATES:
-    empty_aggregate_of_aggregate_t,
+    empty_aggregate_of_aggregate,
     // An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
     std::vector<std::vector<int64_t>>,
     // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
@@ -227,17 +227,17 @@ struct pack_to_variant_array<parameter_pack<Args...>> {
 using in_memory_attribute_storage = pack_to_variant_array<type_variant_parameter_pack>::type;
 
 template <typename Pack>
-struct type_encoder_t;
+struct type_encoder_impl;
 
 template <typename... Types>
-struct type_encoder_t<parameter_pack<Types...>> {
+struct type_encoder_impl<parameter_pack<Types...>> {
     template <typename U>
     static char encode_type() {
         return 'A' + ::impl::TypeIndex_v<U, Types...>;
     }
 };
 
-using type_encoder = type_encoder_t<type_variant_parameter_pack>;
+using type_encoder = type_encoder_impl<type_variant_parameter_pack>;
 
 class IFC_PARSE_API mutable_attribute_value {
   public:
@@ -299,8 +299,8 @@ namespace impl {
     bool serialize(std::string& buffer, const ifcopenshell::blank& value);
 
     bool serialize(std::string& buffer, const ifcopenshell::derived& value);
-    bool serialize(std::string& buffer, const ifcopenshell::empty_aggregate_t& value);
-    bool serialize(std::string& buffer, const ifcopenshell::empty_aggregate_of_aggregate_t& value);
+    bool serialize(std::string& buffer, const ifcopenshell::empty_aggregate& value);
+    bool serialize(std::string& buffer, const ifcopenshell::empty_aggregate_of_aggregate& value);
 
     bool serialize(std::string& buffer, const boost::logic::tribool& value);
 
@@ -475,9 +475,9 @@ public:
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE:
                 return visitor((std::vector<std::vector<express::base>>)*this);
             case ifcopenshell::Argument_EMPTY_AGGREGATE:
-                return visitor(empty_aggregate_t{});
+                return visitor(empty_aggregate{});
             case ifcopenshell::Argument_AGGREGATE_OF_EMPTY_AGGREGATE:
-                return visitor(empty_aggregate_of_aggregate_t{});
+                return visitor(empty_aggregate_of_aggregate{});
             default:
                 return visitor(blank{});
         }

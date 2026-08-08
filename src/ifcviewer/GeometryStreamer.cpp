@@ -512,7 +512,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         auto run_iterator = [&](ifcopenshell::geom::settings& iter_settings) -> bool {
             if (remaining.empty()) return true;
 
-            std::vector<ifcopenshell::geom::filter_t> filters;
+            std::vector<ifcopenshell::geom::filter_function> filters;
             ifcopenshell::geom::instance_id_filter idf{
                 /*include=*/true, /*traverse=*/false, remaining};
             filters.push_back(idf);

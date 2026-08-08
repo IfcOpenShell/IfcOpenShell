@@ -19,7 +19,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
 	settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-	std::vector<ifcopenshell::geom::filter_t> no_openings_and_spaces = {
+	std::vector<ifcopenshell::geom::filter_function> no_openings_and_spaces = {
 		ifcopenshell::geom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
 	};
 
@@ -138,12 +138,12 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 			const auto& m = g.Placement()->ccomponents();
 			const auto& n = geom_object->transformation().data()->ccomponents();
 
-			const cgal_placement_t trsf(
+			const cgal_placement trsf(
 				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
 				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
 				m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 
-			const cgal_placement_t trsf2(
+			const cgal_placement trsf2(
 				n(0, 0), n(0, 1), n(0, 2), n(0, 3),
 				n(1, 0), n(1, 1), n(1, 2), n(1, 3),
 				n(2, 0), n(2, 1), n(2, 2), n(2, 3));

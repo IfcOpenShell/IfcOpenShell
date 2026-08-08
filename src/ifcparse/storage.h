@@ -220,19 +220,19 @@ namespace ifcopenshell {
 
         class inverse_index {
         public:
-            typedef std::map<std::tuple<short, short>, std::vector<uint32_t>> legacy_bucket_t;
-            typedef std::unordered_map<int, legacy_bucket_t> legacy_map_t;
-            typedef legacy_map_t::key_type key_type;
-            typedef legacy_map_t::mapped_type mapped_type;
-            typedef legacy_map_t::value_type value_type;
-            typedef legacy_map_t::iterator iterator;
-            typedef legacy_map_t::const_iterator const_iterator;
+            typedef std::map<std::tuple<short, short>, std::vector<uint32_t>> legacy_bucket;
+            typedef std::unordered_map<int, legacy_bucket> legacy_map;
+            typedef legacy_map::key_type key_type;
+            typedef legacy_map::mapped_type mapped_type;
+            typedef legacy_map::value_type value_type;
+            typedef legacy_map::iterator iterator;
+            typedef legacy_map::const_iterator const_iterator;
             typedef std::vector<inverse_record>::const_iterator record_iterator;
 
         private:
             mutable std::vector<inverse_record> records_;
             mutable bool sorted_ = true;
-            mutable std::unique_ptr<legacy_map_t> materialized_;
+            mutable std::unique_ptr<legacy_map> materialized_;
 
             static bool record_less(const inverse_record& a, const inverse_record& b) {
                 if (a.referenced_id != b.referenced_id) {
@@ -259,9 +259,9 @@ namespace ifcopenshell {
                 materialized_.reset();
             }
 
-            legacy_map_t& materialize() const {
+            legacy_map& materialize() const {
                 if (!materialized_) {
-                    materialized_ = std::make_unique<legacy_map_t>();
+                    materialized_ = std::make_unique<legacy_map>();
                     materialized_->reserve(records_.size());
                     for (const auto& record : records_) {
                         (*materialized_)[(int)record.referenced_id][{(short)record.source_entity, (short)record.attribute_index}].push_back(record.source_id);
@@ -421,42 +421,42 @@ namespace ifcopenshell {
 
             unresolved_references* references_to_resolve = nullptr;
 
-            typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type_t;
-            typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage_t;
-            typedef map_transformer<entity_instance_by_name_storage_t, std::function<express::base(shared_pointer_type)>> entity_instance_by_name_t;
-            typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name_t;
-            typedef std::map<std::string, express::base> entity_instance_by_guid_t;
-            typedef inverse_index entities_by_ref_t;
-            typedef entity_instance_by_name_t::iterator iterator;
+            typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
+            typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
+            typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
+            typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name;
+            typedef std::map<std::string, express::base> entity_instance_by_guid;
+            typedef inverse_index entities_by_ref;
+            typedef entity_instance_by_name::iterator iterator;
 
             in_memory_file_storage(ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root()) : logger_(logger), file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::base(data); }) {};
             in_memory_file_storage(const in_memory_file_storage& other) = delete;
             in_memory_file_storage(const in_memory_file_storage&& other) = delete;
 
 
-            class type_iterator : public entities_by_type_t::const_iterator {
+            class type_iterator : public entities_by_type::const_iterator {
             public:
                 using iterator_category = std::forward_iterator_tag;
-                using value_type = entities_by_type_t::key_type;
-                using difference_type = typename entities_by_type_t::const_iterator::difference_type;
+                using value_type = entities_by_type::key_type;
+                using difference_type = typename entities_by_type::const_iterator::difference_type;
                 using pointer = value_type const*;
                 using reference = value_type const&;
 
-                type_iterator() : entities_by_type_t::const_iterator() {};
+                type_iterator() : entities_by_type::const_iterator() {};
 
-                type_iterator(const entities_by_type_t::const_iterator& iterator)
-                    : entities_by_type_t::const_iterator(iterator) {};
+                type_iterator(const entities_by_type::const_iterator& iterator)
+                    : entities_by_type::const_iterator(iterator) {};
 
-                entities_by_type_t::key_type const* operator->() const {
-                    return &entities_by_type_t::const_iterator::operator->()->first;
+                entities_by_type::key_type const* operator->() const {
+                    return &entities_by_type::const_iterator::operator->()->first;
                 }
 
-                entities_by_type_t::key_type const& operator*() const {
-                    return entities_by_type_t::const_iterator::operator*().first;
+                entities_by_type::key_type const& operator*() const {
+                    return entities_by_type::const_iterator::operator*().first;
                 }
 
                 type_iterator& operator++() {
-                    entities_by_type_t::const_iterator::operator++();
+                    entities_by_type::const_iterator::operator++();
                     return *this;
                 }
 
@@ -467,12 +467,12 @@ namespace ifcopenshell {
                 }
             };
 
-            entity_instance_by_name_storage_t byid_;
-            type_instance_by_name_t tbyid_;
-            entities_by_type_t bytype_excl_;
-            entities_by_ref_t byref_excl_;
-            entity_instance_by_guid_t byguid_;
-            entity_instance_by_name_t byid_read_;
+            entity_instance_by_name_storage byid_;
+            type_instance_by_name tbyid_;
+            entities_by_type bytype_excl_;
+            entities_by_ref byref_excl_;
+            entity_instance_by_guid byguid_;
+            entity_instance_by_name byid_read_;
 
             template <typename Reader>
             shared_pointer_type load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1, bool coerce_attribute_count = true);
@@ -529,35 +529,35 @@ namespace ifcopenshell {
             // to make sure that instance pointer are constant during file lifetime
             // cache instances because we want stable pointers
             // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the file side?
-            typedef std::map<uint32_t, shared_pointer_type> entity_by_iden_cache_t;
-            entity_by_iden_cache_t instance_cache_, type_instance_cache_;
+            typedef std::map<uint32_t, shared_pointer_type> entity_by_iden_cache;
+            entity_by_iden_cache instance_cache_, type_instance_cache_;
             std::mutex instance_cache_mutex_;
 
             // @todo all these size_ts should probably be uint32_t for consistency with in-mem storage
 
             // lookup id->identity
-            // typedef rocksdb_map_adapter<size_t, size_t> identity_by_id_t;
-            // identity_by_id_t byid_;
-            typedef rocksdb_set_view<size_t> instance_name_view_t;
-            instance_name_view_t instance_ids_;
-            typedef set_to_map_transformer<instance_name_view_t, std::function<express::base(size_t)>> entity_instance_by_name_t;
-            entity_instance_by_name_t instance_by_name_;
+            // typedef rocksdb_map_adapter<size_t, size_t> identity_by_id;
+            // identity_by_id byid_;
+            typedef rocksdb_set_view<size_t> instance_name_view;
+            instance_name_view instance_ids_;
+            typedef set_to_map_transformer<instance_name_view, std::function<express::base(size_t)>> entity_instance_by_name;
+            entity_instance_by_name instance_by_name_;
 
-            // typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<ifcopenshell::IfcBaseClass*(size_t)>, std::function<size_t(ifcopenshell::IfcBaseClass*)>> entity_by_id_t;
+            // typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<ifcopenshell::IfcBaseClass*(size_t)>, std::function<size_t(ifcopenshell::IfcBaseClass*)>> entity_by_id;
             // storage is now Instance name -> Identity -> Pointer (cached)
-            // entity_by_id_t byidentity_;
+            // entity_by_id byidentity_;
 
             // index in schema to binary serialized ids
-            typedef rocksdb_map_adapter<size_t, std::string> instance_id_str_by_type_t;
-            instance_id_str_by_type_t bytype_;
+            typedef rocksdb_map_adapter<size_t, std::string> instance_id_str_by_type;
+            instance_id_str_by_type bytype_;
 
             // guid -> id
-            typedef rocksdb_map_adapter<std::string, size_t> instance_id_by_guid_str_t;
-            instance_id_by_guid_str_t byguid_internal_;
+            typedef rocksdb_map_adapter<std::string, size_t> instance_id_by_guid_str;
+            instance_id_by_guid_str byguid_internal_;
 
             // guid -> id -> instance
-            typedef map_transformer<rocksdb_map_adapter<std::string, size_t>, std::function<express::base(size_t)>, std::function<size_t(const express::base&)>> entity_instance_by_guid_t;
-            entity_instance_by_guid_t byguid_;
+            typedef map_transformer<rocksdb_map_adapter<std::string, size_t>, std::function<express::base(size_t)>, std::function<size_t(const express::base&)>> entity_instance_by_guid;
+            entity_instance_by_guid byguid_;
 
             typedef std::tuple<int, int, int> inverse_attr_record;
             enum INVERSE_ATTR {
@@ -565,8 +565,8 @@ namespace ifcopenshell {
                 INSTANCE_TYPE,
                 ATTRIBUTE_INDEX
             };
-            typedef rocksdb_map_adapter<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
-            entities_by_ref_t byref_excl_;
+            typedef rocksdb_map_adapter<inverse_attr_record, std::vector<uint32_t>> entities_by_ref;
+            entities_by_ref byref_excl_;
 
             bool read_only_ = false;
 
@@ -675,7 +675,7 @@ namespace ifcopenshell {
             };
 
             // @todo rocksdb_instance_iterator?
-            using const_iterator = entity_instance_by_name_t::iterator;
+            using const_iterator = entity_instance_by_name::iterator;
 
             void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
             void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);

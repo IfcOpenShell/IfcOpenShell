@@ -138,11 +138,11 @@ private:
         return bypassed_instances_;
     }
 
-    const ifcopenshell::impl::in_memory_file_storage::entities_by_ref_t& inverses() const {
+    const ifcopenshell::impl::in_memory_file_storage::entities_by_ref& inverses() const {
         return storage_.byref_excl_;
     }
 
-    ifcopenshell::impl::in_memory_file_storage::entities_by_ref_t& inverses() {
+    ifcopenshell::impl::in_memory_file_storage::entities_by_ref& inverses() {
         return storage_.byref_excl_;
     }
 
@@ -184,27 +184,27 @@ class uninitialized_tag {};
 /// The file takes ownership of instances added to this file and deletes them when the file is deleted.
 class IFC_PARSE_API file {
 private:
-    typedef std::map<uint32_t, express::base> entity_entity_map_t;
+    typedef std::map<uint32_t, express::base> entity_entity_map;
 
     // @todo determine the constness of things (probably needs to be all const, we don't want to overwrite)
     // @todo we have variant_iterator and MapVariant, we probably need to retain only one?
 public:
     using const_iterator = variant_iterator<impl::in_memory_file_storage::iterator, impl::rocks_db_file_storage::const_iterator>;
     using type_iterator = variant_iterator<impl::in_memory_file_storage::type_iterator, impl::rocks_db_file_storage::rocksdb_types_iterator>;
-    using storage_t = std::variant<std::monostate, impl::in_memory_file_storage, impl::rocks_db_file_storage>;
+    using storage_type = std::variant<std::monostate, impl::in_memory_file_storage, impl::rocks_db_file_storage>;
 
-    typedef variant_map<impl::in_memory_file_storage::entity_instance_by_guid_t, impl::rocks_db_file_storage::entity_instance_by_guid_t> entity_instance_by_guid_t;
-    entity_instance_by_guid_t byguid_;
-    typedef variant_map<impl::in_memory_file_storage::entity_instance_by_name_t, impl::rocks_db_file_storage::entity_instance_by_name_t> entity_by_id_t;
-    entity_by_id_t byid_;
-    typedef variant_map<impl::in_memory_file_storage::entities_by_ref_t, impl::rocks_db_file_storage::entities_by_ref_t> entities_by_ref_t;
-    entities_by_ref_t byref_excl_;
+    typedef variant_map<impl::in_memory_file_storage::entity_instance_by_guid, impl::rocks_db_file_storage::entity_instance_by_guid> entity_instance_by_guid;
+    entity_instance_by_guid byguid_;
+    typedef variant_map<impl::in_memory_file_storage::entity_instance_by_name, impl::rocks_db_file_storage::entity_instance_by_name> entity_by_id;
+    entity_by_id byid_;
+    typedef variant_map<impl::in_memory_file_storage::entities_by_ref, impl::rocks_db_file_storage::entities_by_ref> entities_by_ref;
+    entities_by_ref byref_excl_;
 
     bool check_existance_before_adding = true;
     bool calculate_unit_factors = true;
 
     // @todo temporarily public for header
-    storage_t storage_;
+    storage_type storage_;
 
     std::set<std::string> types_to_bypass_loading_;
 
@@ -215,7 +215,7 @@ public:
     const ifcopenshell::schema_definition* schema_;
     const ifcopenshell::declaration* ifcroot_type_;
 
-    entity_entity_map_t entity_file_map_;
+    entity_entity_map entity_file_map_;
 
     unsigned int max_id_;
 
@@ -293,13 +293,13 @@ public:
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order
-    entity_by_id_t::iterator begin() const {
+    entity_by_id::iterator begin() const {
         return byid_.begin();
     }
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order
-    entity_by_id_t::iterator end() const {
+    entity_by_id::iterator end() const {
         return byid_.end();
     }
 
@@ -411,7 +411,7 @@ public:
     void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
     void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
 
-    entity_instance_by_guid_t internal_guid_map() { return byguid_; };
+    entity_instance_by_guid internal_guid_map() { return byguid_; };
 
     void add_type_ref(const express::base& new_entity);
     void remove_type_ref(const express::base& new_entity);

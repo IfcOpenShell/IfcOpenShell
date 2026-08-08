@@ -2390,17 +2390,17 @@ PREDEFINED             = IFC_PARSE_API= \
 EXPAND_AS_DEFINED      = Kernel_ \
                          cgal_shape \
                          cgal_kernel \
-                         cgal_placement_t \
-                         cgal_point_t \
-                         cgal_direction_t \
-                         cgal_vector_t \
-                         cgal_plane_t \
-                         cgal_curve_t \
-                         cgal_wire_t \
-                         cgal_face_t \
-                         cgal_shape_t \
-                         cgal_vertex_descriptor_t \
-                         cgal_face_descriptor_t \
+                         cgal_placement \
+                         cgal_point \
+                         cgal_direction \
+                         cgal_vector \
+                         cgal_plane \
+                         cgal_curve \
+                         cgal_wire \
+                         cgal_face \
+                         cgal_polyhedron \
+                         cgal_vertex_descriptor \
+                         cgal_face_descriptor \
                          create_cube \
                          create_polyhedron
 

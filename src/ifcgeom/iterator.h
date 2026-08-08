@@ -125,7 +125,7 @@ namespace ifcopenshell::geom {
 		
 		ifcopenshell::geom::settings settings_;
 		ifcopenshell::file* ifc_file;
-		std::vector<ifcopenshell::geom::filter_t> filters_;
+		std::vector<ifcopenshell::geom::filter_function> filters_;
 		int num_threads_;
 		std::string geometry_library_;
 		ifcopenshell::logger& logger_;
@@ -183,7 +183,7 @@ namespace ifcopenshell::geom {
 		ifcopenshell::geom::taxonomy::direction3::ptr remove_offset_();
 	public:
 
-		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geom::filter_t>& filters, int num_threads, ifcopenshell::logger& logger = ifcopenshell::logger::root())
+		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geom::filter_function>& filters, int num_threads, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
@@ -280,8 +280,8 @@ namespace ifcopenshell::geom {
 
 		ifcopenshell::file* file() const { return ifc_file; }
 
-		const std::vector<ifcopenshell::geom::filter_t>& filters() const { return filters_; }
-        std::vector<ifcopenshell::geom::filter_t>& filters() { return filters_; }
+		const std::vector<ifcopenshell::geom::filter_function>& filters() const { return filters_; }
+        std::vector<ifcopenshell::geom::filter_function>& filters() { return filters_; }
 
 		const ifcopenshell::geom::taxonomy::point3& bounds_min() const { return bounds_min_; }
 		const ifcopenshell::geom::taxonomy::point3& bounds_max() const { return bounds_max_; }

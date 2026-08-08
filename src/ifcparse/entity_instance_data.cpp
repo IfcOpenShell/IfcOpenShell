@@ -18,8 +18,8 @@ public:
     int operator()(const double& /*i*/) const { return -1; }
     int operator()(const std::string& /*i*/) const { return -1; }
     int operator()(const boost::dynamic_bitset<>& /*i*/) const { return -1; }
-    int operator()(const empty_aggregate_t& /*unused*/) const { return 0; }
-    int operator()(const empty_aggregate_of_aggregate_t& /*unused*/) const { return 0; }
+    int operator()(const empty_aggregate& /*unused*/) const { return 0; }
+    int operator()(const empty_aggregate_of_aggregate& /*unused*/) const { return 0; }
     int operator()(const std::vector<int64_t>& i) const { return (int)i.size(); }
     int operator()(const std::vector<double>& i) const { return (int)i.size(); }
     int operator()(const std::vector<std::vector<int64_t>>& i) const { return (int)i.size(); }
@@ -379,17 +379,17 @@ bool ::impl::serialize(std::string& val, const derived&)
     return true;
 }
 
-bool ::impl::serialize(std::string& val, const empty_aggregate_t&)
+bool ::impl::serialize(std::string& val, const empty_aggregate&)
 {
     val.resize(1);
-    val[0] = type_encoder::encode_type<empty_aggregate_t>();
+    val[0] = type_encoder::encode_type<empty_aggregate>();
     return true;
 }
 
-bool ::impl::serialize(std::string& val, const empty_aggregate_of_aggregate_t&)
+bool ::impl::serialize(std::string& val, const empty_aggregate_of_aggregate&)
 {
     val.resize(1);
-    val[0] = type_encoder::encode_type<empty_aggregate_of_aggregate_t>();
+    val[0] = type_encoder::encode_type<empty_aggregate_of_aggregate>();
     return true;
 }
 
@@ -544,8 +544,8 @@ template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vec
 
 // @todo why do these need to be included, but are not in BaseEntity::set()?
 template IFC_PARSE_API void rocks_db_attribute_storage::set<derived>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const derived& value);
-template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate_t>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_t& value);
-template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate_of_aggregate_t>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_of_aggregate_t& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const empty_aggregate& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate_of_aggregate>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_of_aggregate& value);
 
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<blank>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<int64_t>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
@@ -567,8 +567,8 @@ template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vec
 
 // @todo why do these need to be included, but are not in BaseEntity::set()?
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<derived>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
-template IFC_PARSE_API bool rocks_db_attribute_storage::has<empty_aggregate_t>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
-template IFC_PARSE_API bool rocks_db_attribute_storage::has<empty_aggregate_of_aggregate_t>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<empty_aggregate>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<empty_aggregate_of_aggregate>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 
 template <typename T>
 T* instance_data::get_storage_of_type() const {

@@ -1470,7 +1470,7 @@ namespace {
 		return bbox;
 	}
 
-	std::optional<manifold::Manifold> boolean_result_from_operands(const std::vector<manifold::Manifold>& operands, taxonomy::boolean_result::operation_t operation) {
+	std::optional<manifold::Manifold> boolean_result_from_operands(const std::vector<manifold::Manifold>& operands, taxonomy::boolean_result::operation_type operation) {
 		if (operands.empty()) {
 			return std::nullopt;
 		}

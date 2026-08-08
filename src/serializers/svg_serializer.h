@@ -552,7 +552,7 @@ namespace {
 	};
 }
 
-typedef prefiltered_hlr hlr_t;
+typedef prefiltered_hlr hlr_engine;
 
 class SERIALIZERS_API svg_serializer : public ifcopenshell::geom::write_only_geometry_serializer {
 public:
@@ -602,7 +602,7 @@ protected:
 	express::base storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
 	std::map<drawing_key, drawing_meta> drawing_metadata;
-    std::map<express::base, hlr_t> storey_hlr;
+    std::map<express::base, hlr_engine> storey_hlr;
 
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
@@ -611,7 +611,7 @@ protected:
 	
 	std::list<geometry_data> element_buffer_;
 
-	hlr_t* hlr;
+	hlr_engine* hlr;
 
 	std::string namespace_prefix_;
 

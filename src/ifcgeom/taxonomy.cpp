@@ -486,7 +486,7 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 }
 
 ///////////////////
-piecewise_function::piecewise_function(double start, const spans_t& s, const express::base& instance) : function_item(instance), start_(start), spans_(s) {
+piecewise_function::piecewise_function(double start, const span_list& s, const express::base& instance) : function_item(instance), start_(start), spans_(s) {
 }
 
 piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const express::base& instance) : function_item(instance), start_(start) {
@@ -495,7 +495,7 @@ piecewise_function::piecewise_function(double start, const std::vector<piecewise
     }
 };
 
-const piecewise_function::spans_t& piecewise_function::spans() const { return spans_; }
+const piecewise_function::span_list& piecewise_function::spans() const { return spans_; }
 bool piecewise_function::is_empty() const { return spans_.empty(); }
 double piecewise_function::start() const { return start_; }
 double piecewise_function::end() const { return start_ + length(); }
@@ -829,7 +829,7 @@ std::optional<function_item::ptr> ifcopenshell::geom::taxonomy::loop_to_function
 			fi_ = loop_->fi;
 		} else {
          // piecewise_function is a specialization of function_item - callers don't need to know this detail
-			piecewise_function::spans_t spans;
+			piecewise_function::span_list spans;
 			spans.reserve(loop_->children.size());
 			for (auto& edge_ : loop_->children) {
 				if (edge_->basis && edge_->basis->kind() == CIRCLE) {

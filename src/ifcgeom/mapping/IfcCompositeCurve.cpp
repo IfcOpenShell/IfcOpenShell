@@ -23,7 +23,7 @@ using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
-	taxonomy::piecewise_function::spans_t spans;
+	taxonomy::piecewise_function::span_list spans;
 
 #ifdef SCHEMA_HAS_IfcSegment
 	// 4x3

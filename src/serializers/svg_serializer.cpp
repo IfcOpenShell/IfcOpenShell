@@ -1627,7 +1627,7 @@ void svg_serializer::write(const geometry_data& data) {
 					if (storey) {
 						auto it = storey_hlr.find(storey);
 						if (it == storey_hlr.end()) {
-							it = storey_hlr.insert({ storey, hlr_t(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
+							it = storey_hlr.insert({ storey, hlr_engine(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
 						}
 						it->second.add(*compound_to_hlr, data.product);
 						for (auto& kv : classified_edge_buckets) {
@@ -2188,7 +2188,7 @@ std::array<std::array<double, 3>, 3> svg_serializer::resize() {
 }
 
 void svg_serializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name) {
-	hlr_t& hlr_source = drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr;
+	hlr_engine& hlr_source = drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr;
 	auto hlr_items = hlr_source.build();
 
 	// SVG edge classification (issue #3668): each item's class is already known -- it was
@@ -2518,7 +2518,7 @@ void svg_serializer::finalize() {
 
 			// @todo do we have always have pln here?
 			if (use_hlr && pln) {
-				hlr = new hlr_t(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, *pln);
+				hlr = new hlr_engine(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, *pln);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };

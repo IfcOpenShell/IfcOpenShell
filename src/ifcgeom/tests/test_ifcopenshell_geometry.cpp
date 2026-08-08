@@ -129,7 +129,7 @@ std::vector<ifcopenshell::geom::geometry_conversion_task> representation_tasks(
         ifcopenshell::geom::kernels::construct(&file, "passthrough", settings), &file, settings, log);
 
     std::vector<ifcopenshell::geom::geometry_conversion_task> tasks;
-    std::vector<ifcopenshell::geom::filter_t> filters;
+    std::vector<ifcopenshell::geom::filter_function> filters;
     converter.mapping()->get_representations(tasks, filters);
     return tasks;
 }

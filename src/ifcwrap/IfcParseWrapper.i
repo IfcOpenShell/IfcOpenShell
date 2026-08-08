@@ -1228,7 +1228,7 @@ from .entity_instance import entity_instance_mixin
 				} else {
 					return pythonize_vector(v);
 				}
-            } else if constexpr (std::is_same_v<u, empty_aggregate_t> || std::is_same_v<u, empty_aggregate_of_aggregate_t> || std::is_same_v<u, blank>) {
+            } else if constexpr (std::is_same_v<u, empty_aggregate> || std::is_same_v<u, empty_aggregate_of_aggregate> || std::is_same_v<u, blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
             } else if constexpr (is_std_vector_v<u>) {
@@ -1298,7 +1298,7 @@ from .entity_instance import entity_instance_mixin
                         Py_INCREF(Py_None);
                         return static_cast<PyObject*>(Py_None);
                     }
-                } else if constexpr (std::is_same_v<u, empty_aggregate_t> || std::is_same_v<u, empty_aggregate_of_aggregate_t> || std::is_same_v<u, blank>) {
+                } else if constexpr (std::is_same_v<u, empty_aggregate> || std::is_same_v<u, empty_aggregate_of_aggregate> || std::is_same_v<u, blank>) {
                     Py_INCREF(Py_None);
                     return static_cast<PyObject*>(Py_None);
                 } else {
@@ -1394,7 +1394,7 @@ from .entity_instance import entity_instance_mixin
                                 Py_INCREF(Py_None);
                                 attribute_val_py = static_cast<PyObject*>(Py_None);
                             }
-                        } else if constexpr (std::is_same_v<value_type, empty_aggregate_t> || std::is_same_v<value_type, empty_aggregate_of_aggregate_t> || std::is_same_v<value_type, blank>) {
+                        } else if constexpr (std::is_same_v<value_type, empty_aggregate> || std::is_same_v<value_type, empty_aggregate_of_aggregate> || std::is_same_v<value_type, blank>) {
                             Py_INCREF(Py_None);
                             attribute_val_py = static_cast<PyObject*>(Py_None);
                         } else {

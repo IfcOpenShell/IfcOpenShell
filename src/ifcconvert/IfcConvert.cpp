@@ -247,7 +247,7 @@ struct exclusion_traverse_filter : public geom_filter { exclusion_traverse_filte
 
 size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_traverse_filter&, exclusion_filter&, exclusion_traverse_filter&);
 void parse_filter(geom_filter &, const std::vector<std::string>&);
-std::vector<ifcopenshell::geom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
+std::vector<ifcopenshell::geom::filter_function> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
 bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
@@ -694,7 +694,7 @@ int main(int argc, char** argv) {
     if (exclude_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_filter); }
     if (exclude_traverse_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_traverse_filter); }
 
-    std::vector<ifcopenshell::geom::filter_t> filter_funcs = setup_filters(used_filters, ifcopenshell::path::to_utf8(output_extension));
+    std::vector<ifcopenshell::geom::filter_function> filter_funcs = setup_filters(used_filters, ifcopenshell::path::to_utf8(output_extension));
     if (filter_funcs.empty()) {
         cerr_ << "[error] Failed to set up geometry filters\n";
         return EXIT_FAILURE;
@@ -1260,9 +1260,9 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_t
 
 /// @todo Clean up this filter initialization code further.
 /// @return References to the used filter functors, if none an error occurred.
-std::vector<ifcopenshell::geom::filter_t> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
+std::vector<ifcopenshell::geom::filter_function> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
 {
-    std::vector<ifcopenshell::geom::filter_t> filter_funcs;
+    std::vector<ifcopenshell::geom::filter_function> filter_funcs;
     for(auto& f: filters) {
         if (f.type == geom_filter::ENTITY_TYPE) {
             entity_filter.include = f.include;

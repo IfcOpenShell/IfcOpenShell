@@ -30,7 +30,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve& inst) {
 
 	auto segments = inst.Segments();
 
-	taxonomy::piecewise_function::spans_t spans;
+	taxonomy::piecewise_function::span_list spans;
 
 	for (auto& segment : segments) {
 		if (segment.as<IfcSchema::IfcCurveSegment>()) {

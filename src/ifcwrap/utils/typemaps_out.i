@@ -45,7 +45,7 @@
 					Py_INCREF(Py_None);
 					return static_cast<PyObject*>(Py_None); 
 				}
-            } else if constexpr (std::is_same_v<u, empty_aggregate_t> || std::is_same_v<u, empty_aggregate_of_aggregate_t> || std::is_same_v<u, blank>) {
+            } else if constexpr (std::is_same_v<u, empty_aggregate> || std::is_same_v<u, empty_aggregate_of_aggregate> || std::is_same_v<u, blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
             } else {

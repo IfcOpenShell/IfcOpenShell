@@ -91,7 +91,7 @@ namespace geom {
 			initialize_units_();
 		}
 		virtual ifcopenshell::geom::taxonomy::ptr map(const express::base&);
-		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters);
+		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_function>& filters);
         virtual std::map<std::string, express::base> get_layers(const express::base&);
 		virtual void initialize_settings();
 		virtual double get_length_unit() const { return length_unit_; }

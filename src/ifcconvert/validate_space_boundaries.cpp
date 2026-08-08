@@ -112,7 +112,7 @@ void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bo
 
 		guid_pairs_visited.insert({ Aguid, Bguid });
 
-		cgal_shape_t x_poly;
+		cgal_polyhedron x_poly;
 		x.convert_to_polyhedron(x_poly);
 
 		{

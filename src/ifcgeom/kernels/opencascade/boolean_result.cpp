@@ -47,7 +47,7 @@ namespace {
 } 
 
 namespace {
-	BOPAlgo_Operation op_to_occt(taxonomy::boolean_result::operation_t t) {
+	BOPAlgo_Operation op_to_occt(taxonomy::boolean_result::operation_type t) {
 		switch (t) {
 		case taxonomy::boolean_result::UNION: return BOPAlgo_FUSE;
 		case taxonomy::boolean_result::INTERSECTION: return BOPAlgo_COMMON;

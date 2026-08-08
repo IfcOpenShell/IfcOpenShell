@@ -56,7 +56,7 @@ namespace ifcopenshell::geom {
         /// Optional description for the filtering criteria of this filter.
         std::string description;
 
-		bool match(const express::base& prod, const ifcopenshell::geom::filter_t& pred) const {
+		bool match(const express::base& prod, const ifcopenshell::geom::filter_function& pred) const {
             bool is_match = pred(prod);
             if (!is_match && traverse) {
                 is_match = traverse_match(prod, pred);
@@ -64,7 +64,7 @@ namespace ifcopenshell::geom {
             return is_match == include;
         }
 
-        bool traverse_match(const express::base& prod, const ifcopenshell::geom::filter_t& pred) const
+        bool traverse_match(const express::base& prod, const ifcopenshell::geom::filter_function& pred) const
         {
             express::base parent, current = prod;
 			// @todo examine if this can indeed be static. For now usage is only
@@ -171,7 +171,7 @@ namespace ifcopenshell::geom {
     };
 
 	struct layer_filter : public wildcard_filter {
-		typedef std::map<std::string, express::base> layer_map_t;
+		typedef std::map<std::string, express::base> layer_map;
 
         layer_filter() {}
         layer_filter(bool include, bool traverse, const std::set<std::string>& patterns)
@@ -181,7 +181,7 @@ namespace ifcopenshell::geom {
 			// @todo
 			ifcopenshell::geom::settings s;
             static auto mapping = ifcopenshell::geom::impl::mapping_implementations().construct(prod.file(), s);
-			layer_map_t layers = mapping->get_layers(prod);
+			layer_map layers = mapping->get_layers(prod);
             return std::find_if(layers.begin(), layers.end(), wildcards_match(values)) != layers.end();
         }
 
@@ -191,7 +191,7 @@ namespace ifcopenshell::geom {
 
 		struct wildcards_match {
             wildcards_match(const std::set<boost::regex>& patterns) : patterns(patterns) {}
-			bool operator()(const layer_map_t::value_type& layer_map_value) const {
+			bool operator()(const layer_map::value_type& layer_map_value) const {
                 return wildcard_filter::match_values(patterns, layer_map_value.first);
             }
 

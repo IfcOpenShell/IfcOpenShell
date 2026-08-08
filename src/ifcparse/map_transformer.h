@@ -35,13 +35,13 @@ public:
 
     static constexpr bool read_only = std::is_void<TransformBack>::value;
     struct back_storage_fallback {};
-    using back_storage_t = typename std::conditional<read_only, back_storage_fallback, TransformBack>::type;
+    using back_storage = typename std::conditional<read_only, back_storage_fallback, TransformBack>::type;
 
   private:
     BaseMap* base_map_;
     Transform transform_;
 
-    back_storage_t transform_back_;
+    back_storage transform_back_;
 
 public:
     // read-only constructor with TransformBack=void

@@ -90,7 +90,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 		}
 
 		std::clock_t poly_begin = std::clock();
-		cgal_shape_t x_poly;
+		cgal_polyhedron x_poly;
 		x.convert_to_polyhedron(x_poly);
 		std::clock_t poly_end = std::clock();
 		conversion_to_poly += (poly_end - poly_begin) / (double)CLOCKS_PER_SEC;
@@ -136,7 +136,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 
 					std::vector<Kernel_::FT> parameters;
 
-					std::transform(vertices(x_poly).begin(), vertices(x_poly).end(), std::back_inserter(parameters), [&P0, D](cgal_vertex_descriptor_t& v) {
+					std::transform(vertices(x_poly).begin(), vertices(x_poly).end(), std::back_inserter(parameters), [&P0, D](cgal_vertex_descriptor& v) {
 						return (v->point() - P0) * D;
 					});
 

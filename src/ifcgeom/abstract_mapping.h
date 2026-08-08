@@ -44,7 +44,7 @@ namespace geom {
     /// The filter function (free or member function) or function object (use boost::ref() to reference to it)
     /// should return true if the geometry for the product is wanted to be included in the output.
     /// http://www.boost.org/doc/libs/1_62_0/doc/html/function/tutorial.html
-	typedef boost::function<bool(const express::base&)> filter_t;
+	typedef boost::function<bool(const express::base&)> filter_function;
     
 	class IFC_GEOM_API abstract_mapping {
 	protected:
@@ -58,7 +58,7 @@ namespace geom {
 		virtual ~abstract_mapping() {}
 
 		virtual ifcopenshell::geom::taxonomy::ptr map(const express::base&) = 0;
-        virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) = 0;
+        virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_function>& filters) = 0;
         virtual express::base get_decomposing_entity(const express::base& product, bool include_openings = true) = 0;
 		virtual std::map<std::string, express::base> get_layers(const express::base&) = 0;
 		virtual std::vector<express::base> find_openings(const express::base&) = 0;

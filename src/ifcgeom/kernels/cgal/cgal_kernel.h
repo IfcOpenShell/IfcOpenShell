@@ -60,11 +60,11 @@ namespace ifcopenshell {
 		namespace utils {
 			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_cube(double d);
 			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_cube(const kernel_::Point_3& lower, const kernel_::Point_3& upper);
-			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false, logger& logger = ifcopenshell::logger::root());
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_polyhedron(std::list<cgal_face> &face_list, bool stitch_borders = false, logger& logger = ifcopenshell::logger::root());
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<kernel_> &nef_polyhedron, logger& logger = ifcopenshell::logger::root());
-			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list, logger& logger = ifcopenshell::logger::root());
+			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<kernel_> create_nef_polyhedron(std::list<cgal_face> &face_list, logger& logger = ifcopenshell::logger::root());
 			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<kernel_> &polyhedron, logger& logger = ifcopenshell::logger::root());
 #endif
 		}
@@ -82,7 +82,7 @@ namespace ifcopenshell {
 					PP_NONE
 				};
 
-				bool preprocess_boolean_operand(const express::base& log_reference, const std::list<cgal_shape_t>& first_operands, const std::list<CGAL::Nef_polyhedron_3<kernel_>>& first_operands_nef, const std::list<kernel_::Plane_3>& all_operand_planes, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<kernel_>& result, boolean_operand_preprocess proc);
+				bool preprocess_boolean_operand(const express::base& log_reference, const std::list<cgal_polyhedron>& first_operands, const std::list<CGAL::Nef_polyhedron_3<kernel_>>& first_operands_nef, const std::list<kernel_::Plane_3>& all_operand_planes, const cgal_polyhedron& shape_const, CGAL::Nef_polyhedron_3<kernel_>& result, boolean_operand_preprocess proc);
 
 				bool thin_solid(const CGAL::Nef_polyhedron_3<kernel_>& a, CGAL::Nef_polyhedron_3<kernel_>& result);
 
@@ -109,15 +109,15 @@ namespace ifcopenshell {
 #endif
 				}
 
-				bool convert(const taxonomy::extrusion::ptr, cgal_shape_t&);
-				bool convert(const taxonomy::face::ptr, std::list<cgal_face_t>&);
-				bool convert(const taxonomy::loop::ptr, cgal_wire_t&);
-				// bool convert(const taxonomy::matrix4::ptr, cgal_placement_t&);
-				bool convert(const taxonomy::shell::ptr, cgal_shape_t&);
+				bool convert(const taxonomy::extrusion::ptr, cgal_polyhedron&);
+				bool convert(const taxonomy::face::ptr, std::list<cgal_face>&);
+				bool convert(const taxonomy::loop::ptr, cgal_wire&);
+				// bool convert(const taxonomy::matrix4::ptr, cgal_placement&);
+				bool convert(const taxonomy::shell::ptr, cgal_polyhedron&);
 
-				bool process_extrusion(const cgal_face_t& bottom_face, taxonomy::direction3::ptr direction, double height, cgal_shape_t& shape);
+				bool process_extrusion(const cgal_face& bottom_face, taxonomy::direction3::ptr direction, double height, cgal_polyhedron& shape);
 				bool process_as_2d_polygon(const taxonomy::boolean_result::ptr br, std::list<CGAL::Polygon_2<kernel_>>& loops, double& z0, double& z1);
-                bool process_as_2d_polygon(const std::list<std::list<std::pair<express::base, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<kernel_>>& loops, double& z0, double& z1);
+                bool process_as_2d_polygon(const std::list<std::list<std::pair<express::base, cgal_polyhedron>>>& operands, std::list<CGAL::Polygon_2<kernel_>>& loops, double& z0, double& z1);
 
 				virtual bool convert_impl(const taxonomy::shell::ptr, ifcopenshell::geom::conversion_results&);
 				virtual bool convert_impl(const taxonomy::extrusion::ptr, ifcopenshell::geom::conversion_results&);

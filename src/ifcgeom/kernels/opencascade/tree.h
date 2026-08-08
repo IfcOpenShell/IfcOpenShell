@@ -914,7 +914,7 @@ namespace ifcopenshell::geom {
 			}
 
 			std::vector<T> select_box(const T& t, bool completely_within = false, double extend=-1.e-5) const {
-				typename map_t::const_iterator it = shapes_.find(t);
+				typename shape_map::const_iterator it = shapes_.find(t);
 				if (it == shapes_.end()) {
 					return std::vector<T>();
 				}
@@ -1410,11 +1410,11 @@ namespace ifcopenshell::geom {
 			}
 
 		protected:
-			typedef NCollection_UBTree<T, Bnd_Box> tree_t;
-			typedef std::map<T, TopoDS_Shape> map_t;
+			typedef NCollection_UBTree<T, Bnd_Box> spatial_tree;
+			typedef std::map<T, TopoDS_Shape> shape_map;
 
-			tree_t tree_;
-			map_t shapes_;
+			spatial_tree tree_;
+			shape_map shapes_;
             std::map<T, Bnd_Box> aabbs_;
             std::map<T, Bnd_OBB> obbs_; 
             std::map<T, double> max_protrusions_; 
@@ -1436,11 +1436,11 @@ namespace ifcopenshell::geom {
 			
 			bool enable_face_styles_ = false;
 
-			class selector : public tree_t::Selector
+			class selector : public spatial_tree::Selector
 			{
 			public:
 				selector(const Bnd_Box& b)
-					: tree_t::Selector()
+					: spatial_tree::Selector()
 					, bounds_(b)
 				{}
 
@@ -1857,9 +1857,9 @@ namespace ifcopenshell::geom {
 		}
 
 	protected:
-        typedef NCollection_DataMap<TopoDS_Shape, int, TopTools_ShapeMapHasher> face_style_map_t;
+        typedef NCollection_DataMap<TopoDS_Shape, int, TopTools_ShapeMapHasher> face_style_map;
 
-		face_style_map_t face_styles_;
+		face_style_map face_styles_;
 		std::vector<ifcopenshell::geom::taxonomy::style::ptr> styles_;
 	};
 

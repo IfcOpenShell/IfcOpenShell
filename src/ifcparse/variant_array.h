@@ -123,7 +123,7 @@ namespace impl {
         using type = std::tuple<>;
     };
     template <typename... Types>
-    using map_types_t = typename map_types<Types...>::type;
+    using mapped_types = typename map_types<Types...>::type;
 
     // Create aligned_union from paramater pack stored in tuple for storage in variant
     template <typename T>
@@ -138,7 +138,7 @@ namespace impl {
 template<typename... Types>
 class variant_array {
 public:
-    using types_tuple = ::impl::map_types_t<Types...>;
+    using types_tuple = ::impl::mapped_types<Types...>;
 
     variant_array(size_t size)
         : size_and_indices_(size ? new uint8_t[size + 1] : nullptr)
@@ -190,7 +190,7 @@ public:
         destroy_at_index(index);
 
         size_and_indices_[index + 1] = ::impl::TypeIndex_v<u, Types...>;
-        using v = typename std::tuple_element<::impl::TypeIndex_v<u, Types...>, ::impl::map_types_t<Types... >>::type;
+        using v = typename std::tuple_element<::impl::TypeIndex_v<u, Types...>, ::impl::mapped_types<Types... >>::type;
         if constexpr (::impl::is_unique_ptr<v>::value) {
             new(&storage_[index]) v(new u(value));
         } else {
@@ -221,7 +221,7 @@ public:
         if (!has<T>(index)) {
             throw std::bad_cast();
         }
-        using v = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::map_types_t<Types... >>::type;
+        using v = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::mapped_types<Types... >>::type;
         if constexpr (::impl::is_unique_ptr<v>::value) {
             return **reinterpret_cast<v*>(&storage_[index]);
         } else {
@@ -249,7 +249,7 @@ public:
                 ::impl::variant_type_name<T>::get(), get_type_name(size_and_indices_[index + 1])
             );
         }
-        using v = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::map_types_t<Types... >>::type;
+        using v = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::mapped_types<Types... >>::type;
         if constexpr (::impl::is_unique_ptr<v>::value) {
             return **reinterpret_cast<const v*>(&storage_[index]);
         } else {
@@ -272,7 +272,7 @@ public:
     }
 
 private:
-    using storage_type = typename ::impl::make_union_from_tuple<::impl::map_types_t<Types...>>::type;
+    using storage_type = typename ::impl::make_union_from_tuple<::impl::mapped_types<Types...>>::type;
 
     uint8_t* size_and_indices_;
     storage_type* storage_;
@@ -294,7 +294,7 @@ private:
     template<std::size_t Index>
     void destroy_type_at_index(std::size_t index, std::integral_constant<std::size_t, Index>) {
         if (size_and_indices_[index + 1] == Index - 1) {
-            using t = typename std::tuple_element_t<Index - 1, ::impl::map_types_t<Types...>>;
+            using t = typename std::tuple_element_t<Index - 1, ::impl::mapped_types<Types...>>;
             if constexpr (!std::is_trivially_destructible<t>::value) {
                 reinterpret_cast<t*>(&storage_[index])->~t();
             }
@@ -311,7 +311,7 @@ private:
     template<typename Visitor, std::size_t Index>
     auto apply_visitor_impl(Visitor&& visitor, std::size_t index, std::integral_constant<std::size_t, Index>) const {
         if (size_and_indices_[index + 1] == Index - 1) {
-            using t = typename std::tuple_element_t<Index - 1, ::impl::map_types_t<Types...>>;
+            using t = typename std::tuple_element_t<Index - 1, ::impl::mapped_types<Types...>>;
             if constexpr (::impl::is_unique_ptr<t>::value) {
                 return visitor(**reinterpret_cast<t*>(&storage_[index]));
             } else {
@@ -326,8 +326,8 @@ private:
         static_cast<void>(visitor);
         static_cast<void>(index);
         throw std::runtime_error("Invalid variant index");
-        if constexpr (!std::is_void_v<decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::map_types_t<Types...>> &>()))>) {
-            return decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::map_types_t<Types...>> &>())){};
+        if constexpr (!std::is_void_v<decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::mapped_types<Types...>> &>()))>) {
+            return decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::mapped_types<Types...>> &>())){};
         }
     }
 

@@ -63,7 +63,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
     double start = basis_curve_fn->start();
     double basis_curve_length = basis_curve_fn->length();
 
-    taxonomy::piecewise_function::spans_t offset_spans;
+    taxonomy::piecewise_function::span_list offset_spans;
 
 #if defined SCHEMA_HAS_IfcDistanceExpression
    double first_distance = first_offset_value.DistanceAlong();

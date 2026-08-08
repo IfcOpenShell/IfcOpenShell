@@ -24,7 +24,7 @@
 using namespace ifcopenshell::geom;
 
 namespace {
-	taxonomy::boolean_result::operation_t boolean_op_type(IfcSchema::IfcBooleanOperator::Value op) {
+	taxonomy::boolean_result::operation_type boolean_op_type(IfcSchema::IfcBooleanOperator::Value op) {
 		if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
 			return taxonomy::boolean_result::SUBTRACTION;
 		} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {

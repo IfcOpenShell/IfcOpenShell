@@ -1330,8 +1330,8 @@ namespace {
             }
             data_ << ")";
         }
-        void operator()(const empty_aggregate_t& /*unused*/) const { data_ << "()"; }
-        void operator()(const empty_aggregate_of_aggregate_t& /*unused*/) const { data_ << "()"; }
+        void operator()(const empty_aggregate& /*unused*/) const { data_ << "()"; }
+        void operator()(const empty_aggregate_of_aggregate& /*unused*/) const { data_ << "()"; }
     };
 
     template <>
@@ -2469,7 +2469,7 @@ template void ifcopenshell::impl::in_memory_file_storage::read_from_stream(file_
 void file::recalculate_id_counter() {
     /*
     // @todo
-    entity_by_id_t::key_type k = 0;
+    entity_by_id::key_type k = 0;
     for (auto& p : byid_) {
         if (p.first > k) {
             k = p.first;
@@ -2582,7 +2582,7 @@ express::base file::add_entity(const express::base& entity, int id) {
 
     // If this instance has been inserted before, return
     // a reference to the copy that was created from it.
-    entity_entity_map_t::iterator mit = entity_file_map_.find(entity.identity());
+    entity_entity_map::iterator mit = entity_file_map_.find(entity.identity());
     if (mit != entity_file_map_.end()) {
         return mit->second;
     }
@@ -2593,9 +2593,9 @@ express::base file::add_entity(const express::base& entity, int id) {
         auto entity_attributes = traverse(entity, 1);
         for (auto it = entity_attributes.begin() + 1; it != entity_attributes.end(); ++it) {
             if (*it != entity) {
-                entity_entity_map_t::iterator mit2 = entity_file_map_.find(it->identity());
+                entity_entity_map::iterator mit2 = entity_file_map_.find(it->identity());
                 if (mit2 == entity_file_map_.end()) {
-                    entity_file_map_.insert(entity_entity_map_t::value_type(it->identity(), add_entity(*it)));
+                    entity_file_map_.insert(entity_entity_map::value_type(it->identity(), add_entity(*it)));
                 }
             }
         }
@@ -2618,8 +2618,8 @@ express::base file::add_entity(const express::base& entity, int id) {
             if constexpr (std::is_same_v<u, express::base>) {
             } else if constexpr (std::is_same_v<u, std::vector<express::base>>) {
             } else if constexpr (std::is_same_v<u, std::vector<std::vector<express::base>>>) {
-            } else if constexpr (std::is_same_v<u, empty_aggregate_t>) {
-            } else if constexpr (std::is_same_v<u, empty_aggregate_of_aggregate_t>) {
+            } else if constexpr (std::is_same_v<u, empty_aggregate>) {
+            } else if constexpr (std::is_same_v<u, empty_aggregate_of_aggregate>) {
             } else {
                 new_entity.set_attribute_value(i, v);
             }
@@ -2648,7 +2648,7 @@ express::base file::add_entity(const express::base& entity, int id) {
         }
 
         if (attr_type == ifcopenshell::Argument_ENTITY_INSTANCE) {
-            entity_entity_map_t::const_iterator eit = entity_file_map_.find(((express::base)(attr)).identity());
+            entity_entity_map::const_iterator eit = entity_file_map_.find(((express::base)(attr)).identity());
             if (eit == entity_file_map_.end()) {
                 throw ifcopenshell::exception("Unable to map instance to file");
             }
@@ -2658,7 +2658,7 @@ express::base file::add_entity(const express::base& entity, int id) {
             std::vector<express::base> instances = attr;
             std::vector<express::base> new_instances;
             for (auto& i : instances) {
-                entity_entity_map_t::const_iterator eit = entity_file_map_.find(i.identity());
+                entity_entity_map::const_iterator eit = entity_file_map_.find(i.identity());
                 if (eit == entity_file_map_.end()) {
                     throw ifcopenshell::exception("Unable to map instance to file");
                 }
@@ -2672,7 +2672,7 @@ express::base file::add_entity(const express::base& entity, int id) {
             for (auto& v : instances) {
                 new_instances.emplace_back();
                 for (auto& i : v) {
-                    entity_entity_map_t::const_iterator eit = entity_file_map_.find(i.identity());
+                    entity_entity_map::const_iterator eit = entity_file_map_.find(i.identity());
                     if (eit == entity_file_map_.end()) {
                         throw ifcopenshell::exception("Unable to map instance to file");
                     }
@@ -2719,7 +2719,7 @@ express::base file::add_entity(const express::base& entity, int id) {
         }
     }
 
-    entity_file_map_.insert(entity_entity_map_t::value_type(entity.identity(), new_entity));
+    entity_file_map_.insert(entity_entity_map::value_type(entity.identity(), new_entity));
 
     // For subtypes of IfcRoot, the GUID mapping needs to be updated.
     /*

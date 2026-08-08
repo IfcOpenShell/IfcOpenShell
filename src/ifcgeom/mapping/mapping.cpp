@@ -118,10 +118,10 @@ std::vector<IfcSchema::IfcProduct> mapping::products_represented_by(const IfcSch
 }
 
 namespace {
-std::vector<IfcSchema::IfcProduct> filter_products(const std::vector<IfcSchema::IfcProduct>& unfiltered_products, const std::vector<filter_t>& filters) {
+std::vector<IfcSchema::IfcProduct> filter_products(const std::vector<IfcSchema::IfcProduct>& unfiltered_products, const std::vector<filter_function>& filters) {
     std::vector<IfcSchema::IfcProduct> ifcproducts;
     for (auto& prod : unfiltered_products) {
-        if (boost::all(filters, [prod](const filter_t& f) { return f(prod); })) {
+        if (boost::all(filters, [prod](const filter_function& f) { return f(prod); })) {
             ifcproducts.push_back(prod);
         }
     }
@@ -228,7 +228,7 @@ std::vector<express::base> mapping::find_openings(const express::base& inst) {
 }
 
 
-void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) {
+void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_function>& filters) {
     std::vector<IfcSchema::IfcRepresentation> representations;
     const bool has_context_ids = settings_.get<settings::ContextIds>().has();
     const bool uses_priorities = !has_context_ids && settings_.get<settings::ContextPriorities>().has();

@@ -303,10 +303,10 @@ typedef item const* ptr;
 			public:
 				DECLARE_PTR(matrix4)
 
-				enum tag_t {
+				enum tag_type {
 					IDENTITY, AFFINE_WO_SCALE, AFFINE_W_UNIFORM_SCALE, AFFINE_W_NONUNIFORM_SCALE, OTHER
 				};
-				tag_t tag;
+				tag_type tag;
 
 				matrix4() : eigen_base(), tag(IDENTITY) {}
 				matrix4(const Eigen::Matrix4d& c) : eigen_base(c), tag(OTHER) {}
@@ -476,15 +476,15 @@ typedef item const* ptr;
 			struct IFC_GEOM_API piecewise_function : public function_item {
             DECLARE_PTR(piecewise_function)
 
-				using spans_t = std::vector<function_item::const_ptr>;
+				using span_list = std::vector<function_item::const_ptr>;
 
-            piecewise_function(double start, const spans_t& s, const express::base& instance = express::base());
+            piecewise_function(double start, const span_list& s, const express::base& instance = express::base());
             piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const express::base& instance = express::base());
             piecewise_function(piecewise_function&&) = default;
             piecewise_function(const piecewise_function&) = default;
             virtual ~piecewise_function() = default;
 
-				const spans_t& spans() const;
+				const span_list& spans() const;
             size_t span_count() const {return spans_.size();}
             function_item::const_ptr span_fn(size_t i) { return spans_[i]; }
 				bool is_empty() const;
@@ -502,7 +502,7 @@ typedef item const* ptr;
 
             private:
                 double start_ = 0.0; // starting value of the pwf
-                spans_t spans_;
+                span_list spans_;
             };
 
          struct IFC_GEOM_API gradient_function : public function_item {
@@ -1271,15 +1271,15 @@ typedef item const* ptr;
 			struct IFC_GEOM_API boolean_result : public collection_base<geom_item> {
 				DECLARE_PTR(boolean_result)
 
-				enum operation_t {
+				enum operation_type {
 					UNION, SUBTRACTION, INTERSECTION
 				};
 
 				virtual boolean_result* clone_() const { return new boolean_result(*this); }
 				virtual kinds kind() const { return BOOLEAN_RESULT; }
-				operation_t operation;
+				operation_type operation;
 
-				static const std::string& operation_str(operation_t op) {
+				static const std::string& operation_str(operation_type op) {
 					using namespace std::string_literals;
 					static std::string s[] = { "union"s, "subtraction"s, "intersection"s };
 					return s[(size_t)op];

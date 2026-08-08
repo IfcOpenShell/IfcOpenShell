@@ -47,17 +47,17 @@
 
 #define kernel_ Simplekernel_
 #define cgal_shape SimpleCgalShape
-#define cgal_placement_t cgal_simple_placement_t
-#define cgal_point_t cgal_simple_point_t
-#define cgal_direction_t cgal_simple_direction_t
-#define cgal_vector_t cgal_simple_vector_t
-#define cgal_plane_t cgal_simple_plane_t
-#define cgal_curve_t cgal_simple_curve_t
-#define cgal_wire_t cgal_simple_wire_t
-#define cgal_face_t cgal_simple_face_t
-#define cgal_shape_t cgal_simple_shape_t
-#define cgal_vertex_descriptor_t cgal_simple_vertex_descriptor_t
-#define cgal_face_descriptor_t cgal_simple_face_descriptor_t
+#define cgal_placement cgal_simple_placement
+#define cgal_point cgal_simple_point
+#define cgal_direction cgal_simple_direction
+#define cgal_vector cgal_simple_vector
+#define cgal_plane cgal_simple_plane
+#define cgal_curve cgal_simple_curve
+#define cgal_wire cgal_simple_wire
+#define cgal_face cgal_simple_face
+#define cgal_polyhedron cgal_simple_polyhedron
+#define cgal_vertex_descriptor cgal_simple_vertex_descriptor
+#define cgal_face_descriptor cgal_simple_face_descriptor
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel kernel_;
 
@@ -69,24 +69,24 @@ typedef CGAL::Exact_predicates_exact_constructions_kernel kernel_;
 
 #endif
 
-typedef kernel_::Aff_transformation_3 cgal_placement_t;
-typedef kernel_::Point_3 cgal_point_t;
-typedef kernel_::Vector_3 cgal_direction_t;
-typedef kernel_::Vector_3 cgal_vector_t;
-typedef kernel_::Plane_3 cgal_plane_t;
-typedef std::vector<kernel_::Point_3> cgal_curve_t;
-typedef std::vector<kernel_::Point_3> cgal_wire_t;
+typedef kernel_::Aff_transformation_3 cgal_placement;
+typedef kernel_::Point_3 cgal_point;
+typedef kernel_::Vector_3 cgal_direction;
+typedef kernel_::Vector_3 cgal_vector;
+typedef kernel_::Plane_3 cgal_plane;
+typedef std::vector<kernel_::Point_3> cgal_curve;
+typedef std::vector<kernel_::Point_3> cgal_wire;
 
 namespace {
-	struct cgal_face_t {
-		cgal_wire_t outer;
-		std::vector<cgal_wire_t> inner;
+	struct cgal_face {
+		cgal_wire outer;
+		std::vector<cgal_wire> inner;
 	};
 }
 
-typedef CGAL::Polyhedron_3<kernel_> cgal_shape_t;
-typedef boost::graph_traits<CGAL::Polyhedron_3<kernel_>>::vertex_descriptor cgal_vertex_descriptor_t;
-typedef boost::graph_traits<CGAL::Polyhedron_3<kernel_>>::face_descriptor cgal_face_descriptor_t;
+typedef CGAL::Polyhedron_3<kernel_> cgal_polyhedron;
+typedef boost::graph_traits<CGAL::Polyhedron_3<kernel_>>::vertex_descriptor cgal_vertex_descriptor;
+typedef boost::graph_traits<CGAL::Polyhedron_3<kernel_>>::face_descriptor cgal_face_descriptor;
 
 #include "../../../ifcgeom/conversion_result.h"
 
@@ -179,18 +179,18 @@ namespace ifcopenshell { namespace geom {
 
 	class IFC_GEOMLIBRARY_API cgal_shape : public ifcopenshell::geom::conversion_result_shape {
 	private:
-		typedef std::variant<cgal_shape_t, cgal_point_t, cgal_wire_t> cgal_shape_storage_t;
+		typedef std::variant<cgal_polyhedron, cgal_point, cgal_wire> cgal_shape_storage;
 
 		bool convex_tag_ = false;
-		mutable std::optional<cgal_shape_storage_t> shape_;
+		mutable std::optional<cgal_shape_storage> shape_;
 #ifndef IFOPSH_SIMPLE_KERNEL
 		mutable std::optional<CGAL::Nef_polyhedron_3<kernel_>> nef_;
 #endif
       public:
 
-		cgal_shape(const cgal_shape_t& shape, bool convex = false, ifcopenshell::logger& logger = ifcopenshell::logger::root());
-		cgal_shape(const cgal_point_t& point, bool convex = false);
-		cgal_shape(const cgal_wire_t& wire, bool convex = false);
+		cgal_shape(const cgal_polyhedron& shape, bool convex = false, ifcopenshell::logger& logger = ifcopenshell::logger::root());
+		cgal_shape(const cgal_point& point, bool convex = false);
+		cgal_shape(const cgal_wire& wire, bool convex = false);
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 		cgal_shape(const CGAL::Nef_polyhedron_3<kernel_>& shape, bool convex = false) {
@@ -218,13 +218,13 @@ namespace ifcopenshell { namespace geom {
 			return "cgal";
 #endif
 		}
-		operator const cgal_shape_t& () const { return poly(); }
-		const cgal_shape_t& poly() const;
-		bool is_poly() const { return shape_ && std::holds_alternative<cgal_shape_t>(*shape_); }
-		bool is_point() const { return shape_ && std::holds_alternative<cgal_point_t>(*shape_); }
-		bool is_wire() const { return shape_ && std::holds_alternative<cgal_wire_t>(*shape_); }
-		const cgal_point_t& point() const { return std::get<cgal_point_t>(*shape_); }
-		const cgal_wire_t& wire() const { return std::get<cgal_wire_t>(*shape_); }
+		operator const cgal_polyhedron& () const { return poly(); }
+		const cgal_polyhedron& poly() const;
+		bool is_poly() const { return shape_ && std::holds_alternative<cgal_polyhedron>(*shape_); }
+		bool is_point() const { return shape_ && std::holds_alternative<cgal_point>(*shape_); }
+		bool is_wire() const { return shape_ && std::holds_alternative<cgal_wire>(*shape_); }
+		const cgal_point& point() const { return std::get<cgal_point>(*shape_); }
+		const cgal_wire& wire() const { return std::get<cgal_wire>(*shape_); }
 
 		virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const;
 		virtual void Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const;
