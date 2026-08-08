@@ -12,6 +12,8 @@
 using ifcopenshell::geom::opaque_number;
 using ifcopenshell::geom::opaque_coordinate;
 using ifcopenshell::geom::conversion_result_shape;
+using ifcopenshell::geom::normalized_plane_for_map;
+using ifcopenshell::geom::plane_map;
 
 #ifdef IFOPSH_SIMPLE_KERNEL
 #define NumberType opaque_number
@@ -266,7 +268,7 @@ namespace {
 	}
 }
 
-ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_shape_t& shape, bool convex, ::logger& logger) {
+ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_shape_t& shape, bool convex, ifcopenshell::logger& logger) {
 	shape_ = shape;
 	convex_tag_ = convex;
 	auto& poly = std::get<cgal_shape_t>(*shape_);
@@ -362,7 +364,7 @@ void ifcopenshell::geom::cgal_shape::to_nef() const {
 }
 #endif
 
-void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
+void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
 	if (is_point() || is_wire()) {
 		return;
 	}
@@ -415,7 +417,7 @@ void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings se
 
 	if (!all_triangles) {
 		if (!shape_to_use->is_valid()) {
-			logger.message(::logger::LOG_ERROR, "GEO", 64, "Invalid Polyhedron_3 in object (before triangulation)");
+			logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 64, "Invalid Polyhedron_3 in object (before triangulation)");
 			return;
 		}
 
@@ -423,19 +425,19 @@ void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings se
 		try {
 			success = CGAL::Polygon_mesh_processing::triangulate_faces(*shape_to_use);
 		} catch (...) {
-			logger.message(::logger::LOG_ERROR, "GEO", 65, "Triangulation crashed");
+			logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 65, "Triangulation crashed");
 			return;
 		}
 
 		CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_to_use);
 
 		if (!success) {
-			logger.message(::logger::LOG_ERROR, "GEO", 66, "Triangulation failed");
+			logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 66, "Triangulation failed");
 			return;
 		}
 
 		if (!shape_to_use->is_valid()) {
-			logger.message(::logger::LOG_ERROR, "GEO", 67, "Invalid Polyhedron_3 in object (after triangulation)");
+			logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 67, "Invalid Polyhedron_3 in object (after triangulation)");
 			return;
 		}
 	}
@@ -464,7 +466,7 @@ void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings se
 	try {
 		CGAL::Polygon_mesh_processing::compute_face_normals(*shape_to_use, face_normals_map);
 	} catch (...) {
-		logger.message(::logger::LOG_ERROR, "GEO", 68, "Face normal calculation failed");
+		logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 68, "Face normal calculation failed");
 		return;
 	}
 
@@ -1033,7 +1035,7 @@ bool ifcopenshell::geom::cgal_shape::surface_area_along_direction(double tol, co
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 
-void ifcopenshell::geom::cgal_shape_half_space_decomposition::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
+void ifcopenshell::geom::cgal_shape_half_space_decomposition::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
 	throw std::runtime_error("Not implemented");
 }
 

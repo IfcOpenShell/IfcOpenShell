@@ -76,7 +76,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 	bool trim_cartesian_failed = !trim_cartesian;
 	if (trim_cartesian) {
 		if ((pnts[0]->ccomponents() - pnts[1]->ccomponents()).norm() < (2 * tol)) {
-			logger_.message(::logger::LOG_WARNING, "GEO", 295, "Skipping segment with length below tolerance level:", inst);
+			logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 295, "Skipping segment with length below tolerance level:", inst);
 			return nullptr;
 		}
 		tc->start = pnts[0];
@@ -140,7 +140,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
 			if (v0.IsSame(v1)) {
-				::logger::root().warning("Skipping degenerate segment", l);
+				ifcopenshell::logger::root().warning("Skipping degenerate segment", l);
 				return false;
 			}
 		}
@@ -168,7 +168,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
 			e = TopoDS::Edge(BRepBuilderAPI_MakeEdge(v0, v1).Edge().Oriented(e.Orientation()));
-			::logger::root().warning("Substituted edge with linear approximation", l);
+			ifcopenshell::logger::root().warning("Substituted edge with linear approximation", l);
 		}
 	}
 

@@ -66,12 +66,12 @@ namespace ifcopenshell {
 	protected:
 		std::string geometry_library_;
 		ifcopenshell::geom::settings settings_;
-		::logger& logger_;
+		ifcopenshell::logger& logger_;
 	public:
 		bool propagate_exceptions = false;
 		bool partial_success_is_success = true;
 			
-		abstract_kernel(const std::string& geometry_library, const ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root())
+		abstract_kernel(const std::string& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 			: geometry_library_(geometry_library)
 			, settings_(settings)
 			, logger_(logger) {}
@@ -89,7 +89,7 @@ namespace ifcopenshell {
 		virtual bool accepts(const ifcopenshell::geom::conversion_result_shape& shape) const {
 			return shape.backend_id() == backend_id();
 		}
-		::logger& logger() const { return logger_; }
+		ifcopenshell::logger& logger() const { return logger_; }
 
 		virtual bool supports_boolean_operations() const = 0;
 
@@ -137,7 +137,7 @@ namespace ifcopenshell {
 			const ifcopenshell::geom::conversion_results& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes) = 0;
 		virtual bool unify_shapes(const ifcopenshell::geom::conversion_results&, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
 
-		virtual abstract_kernel* clone(::logger& logger) const = 0;
+		virtual abstract_kernel* clone(ifcopenshell::logger& logger) const = 0;
 	};
 }
 }
@@ -229,7 +229,7 @@ namespace {
 	template <typename T>
 	struct dispatch_curve_creation<T, ifcopenshell::geom::taxonomy::curves::max> {
 		static bool dispatch(const ifcopenshell::geom::taxonomy::ptr& item, T&) {
-			::logger::root().error("GEO", 28, "No conversion for " + std::to_string(item->kind()));
+			ifcopenshell::logger::root().error("GEO", 28, "No conversion for " + std::to_string(item->kind()));
 			return false;
 		}
 	};
@@ -251,7 +251,7 @@ namespace {
 	template <typename T>
 	struct dispatch_surface_creation<T, ifcopenshell::geom::taxonomy::surfaces::max> {
 		static bool dispatch(const ifcopenshell::geom::taxonomy::ptr& item, T&) {
-			::logger::root().error("GEO", 29, "No conversion for " + std::to_string(item->kind()));
+			ifcopenshell::logger::root().error("GEO", 29, "No conversion for " + std::to_string(item->kind()));
 			return false;
 		}
 	};

@@ -9,7 +9,7 @@
 
 #include "../ifcparse/logger.h"
 
-RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes, ::logger* logger)
+RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes, ifcopenshell::logger* logger)
 	: input_filename_(input_filename)
 	, rocksdb_filename_(rocksdb_filename)
 	, skip_supertypes_(skip_supertypes)
@@ -22,7 +22,7 @@ namespace {
 	{
 		auto s = sizeof(size_t);
 		val.resize(s + 2);
-		val[0] = type_encoder::encode_type<express::base>();
+		val[0] = ifcopenshell::type_encoder::encode_type<express::base>();
 		// 1 = entity - stored by id (entity name)
 		// 2 = type - stored by identity (internal counter in class)
 		val[1] = t.index() == 0 ? 'i' : 't';
@@ -40,7 +40,7 @@ namespace {
 	{
 		// no attempt at alignment
 		val.resize(t.size() * (sizeof(size_t) + 1) + 1);
-		val[0] = type_encoder::encode_type<std::vector<express::base>>();
+		val[0] = ifcopenshell::type_encoder::encode_type<std::vector<express::base>>();
 		char* ptr = val.data() + 1;
 		for (auto it = t.begin(); it != t.end(); ++it) {
 			*ptr = it->index() == 0 ? 'i' : 't';
@@ -60,7 +60,7 @@ namespace {
 	bool serialize(std::string& val, const std::vector<std::vector<ifcopenshell::reference_or_simple_type>>& t)
 	{
 		std::ostringstream oss;
-		oss.put(type_encoder::encode_type<std::vector<std::vector<express::base>>>());
+		oss.put(ifcopenshell::type_encoder::encode_type<std::vector<std::vector<express::base>>>());
 
 		auto write_size = [&oss](size_t sz) {
 			std::string size_str;
@@ -160,7 +160,7 @@ void RocksDbSerializer::write_streaming_() {
 						// references
 						simple_type_instances.push_back(t);
 					}
-					rocks_db_attribute_storage{}.set(&storage, decl, name, i, t);
+					ifcopenshell::rocks_db_attribute_storage{}.set(&storage, decl, name, i, t);
 				});
 			}
 
@@ -174,7 +174,7 @@ void RocksDbSerializer::write_streaming_() {
 					(is_header ? decl->name() : std::to_string(p.first.name_)) + "|" +
 					std::to_string(index);
 
-				if (storage.db->Get(storage.ropts, key, &tmp) == rocksdb::Status::OK() && tmp.size() == (sizeof(size_t) + 2) && tmp[0] == type_encoder::encode_type<express::base>() && tmp[1] == 't')
+				if (storage.db->Get(storage.ropts, key, &tmp) == rocksdb::Status::OK() && tmp.size() == (sizeof(size_t) + 2) && tmp[0] == ifcopenshell::type_encoder::encode_type<express::base>() && tmp[1] == 't')
 				{
 					size_t iden;
 					memcpy(&iden, tmp.data() + 2, sizeof(size_t));
@@ -259,7 +259,7 @@ void RocksDbSerializer::write_streaming_() {
 				// @todo if statement?
 				// if (val.array_.storage_ptr->size() > 0) {
 					val.apply_visitor([&](const auto& t) {
-						rocks_db_attribute_storage{}.set(&storage, &inst.declaration(), inst.identity(), 0, t);
+						ifcopenshell::rocks_db_attribute_storage{}.set(&storage, &inst.declaration(), inst.identity(), 0, t);
 					});
 				// }
 
@@ -298,7 +298,7 @@ void RocksDbSerializer::write_streaming_() {
 						memcpy(s.data(), &v, sizeof(size_t));
 						storage.db->Put(storage.wopts, "g|" + (std::string)data->get_attribute_value(0), s);
 					} else {
-						::logger::root().error("Instance #" + std::to_string(name) + " has no GlobalId, omitted from guid index");
+						ifcopenshell::logger::root().error("Instance #" + std::to_string(name) + " has no GlobalId, omitted from guid index");
 					}
 				}
 			}

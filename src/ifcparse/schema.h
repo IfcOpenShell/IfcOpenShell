@@ -36,9 +36,9 @@
 #include <optional>
 
 // Forward declarations
-class instance_data;
-
 namespace ifcopenshell {
+
+class instance_data;
 
 class declaration;
 

@@ -82,7 +82,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 
 	if (non_polygonal) {
 		if (loft->children.size() < 2) {
-            ::logger::root().error("GEO", 177, "Not enough sections to loft");
+            ifcopenshell::logger::root().error("GEO", 177, "Not enough sections to loft");
             return false;
         }
 
@@ -122,7 +122,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 		auto first_wire_count = sections.front().size();
         for (auto& section : sections) {
 			if (section.size() != first_wire_count) {
-				::logger::root().error("GEO", 178, "Inconsistent number of wires in sections");
+				ifcopenshell::logger::root().error("GEO", 178, "Inconsistent number of wires in sections");
 				return false;
 			}
 		}
@@ -159,7 +159,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 
 			return true;
 		} else {
-			::logger::root().error("Lofting more than two sections is not supported");
+			ifcopenshell::logger::root().error("Lofting more than two sections is not supported");
 			return false;
 		}
 	}
@@ -275,7 +275,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 	*/
 
     if (shps.size() < 2) {
-        ::logger::root().error("GEO", 179, "Not enough sections to loft");
+        ifcopenshell::logger::root().error("GEO", 179, "Not enough sections to loft");
         return false;
     }
 

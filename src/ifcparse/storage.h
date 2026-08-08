@@ -123,9 +123,9 @@ private:
 
 #endif
 
-class mutable_attribute_value;
-
 namespace ifcopenshell {
+
+    class mutable_attribute_value;
 
     struct IFC_PARSE_API instance_reference {
         int v;
@@ -412,7 +412,7 @@ namespace ifcopenshell {
                 return std::move(read_simple_type_instances);
             }
 
-            std::reference_wrapper<::logger> logger_;
+            std::reference_wrapper<ifcopenshell::logger> logger_;
             // IfcParse::FileReader* stream;
 
             // Either one of these needs to be set
@@ -429,7 +429,7 @@ namespace ifcopenshell {
             typedef inverse_index entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
-            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root()) : logger_(logger), file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::base(data); }) {};
+            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root()) : logger_(logger), file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::base(data); }) {};
             in_memory_file_storage(const in_memory_file_storage& other) = delete;
             in_memory_file_storage(const in_memory_file_storage&& other) = delete;
 

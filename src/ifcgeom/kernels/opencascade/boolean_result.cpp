@@ -117,7 +117,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, c
 
 			const double first_operand_volume = util::shape_volume(a);
 			if (first_operand_volume <= ALMOST_ZERO) {
-				logger_.message(::logger::LOG_WARNING, "GEO", 119, "Empty solid for:", c->instance);
+				logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 119, "Empty solid for:", c->instance);
 			}
 		} else {
 
@@ -139,7 +139,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, c
 					// #2665 we also set a precision-independent threshold, because in the boolean op routine
 					// the working fuzziness might still be increased.
 					if (d < tol * 20. || d < 0.00002) {
-						logger_.message(::logger::LOG_WARNING, "GEO", 121, "Halfspace subtraction yields unchanged volume:", c->instance);
+						logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 121, "Halfspace subtraction yields unchanged volume:", c->instance);
 						continue;
 					} else {
 						S = result;

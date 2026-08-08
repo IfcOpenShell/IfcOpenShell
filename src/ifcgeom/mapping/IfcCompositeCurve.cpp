@@ -128,7 +128,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 	for (auto it = segments->begin(); it != segments->end(); ++it) {
 
 		if (!(*it)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
-			::logger::root().error("Not implemented", *it);
+			ifcopenshell::logger::root().error("Not implemented", *it);
 			return false;
 		}
 
@@ -141,13 +141,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 		TopoDS_Wire segment;
 
 		if (curve->as<IfcSchema::IfcLine>()) {
-			::logger::root().notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
+			ifcopenshell::logger::root().notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
 			Handle_Geom_Curve handle;
 			convert_curve(curve, handle);
 			double u0 = 0.0;
 			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
 			if (u1 < getValue(GV_PRECISION)) {
-				::logger::root().warning("Segment length below tolerance", *it);
+				ifcopenshell::logger::root().warning("Segment length below tolerance", *it);
 			}
 			BRepBuilderAPI_MakeEdge me(handle, u0, u1);
 			if (me.IsDone()) {
@@ -157,7 +157,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 			}
 		} else if (!convert_wire(curve, segment)) {
 			const bool failed_on_purpose = curve->as<IfcSchema::IfcPolyline>() && !segment.IsNull();
-			::logger::root().message(failed_on_purpose ? ::logger::LOG_WARNING : ::logger::LOG_ERROR, "Failed to convert curve:", curve);
+			ifcopenshell::logger::root().message(failed_on_purpose ? ifcopenshell::logger::LOG_WARNING : ifcopenshell::logger::LOG_ERROR, "Failed to convert curve:", curve);
 			continue;
 		}
 
@@ -173,7 +173,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 	}
 
 	if (converted_segments.Extent() == 0) {
-		::logger::root().message(::logger::LOG_ERROR, "No segment successfully converted:", l);
+		ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "No segment successfully converted:", l);
 		return false;
 	}
 

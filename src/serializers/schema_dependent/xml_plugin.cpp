@@ -27,7 +27,7 @@
 
 namespace {
 
-boost::shared_ptr<serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
+boost::shared_ptr<ifcopenshell::geom::serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
 	return boost::make_shared<POSTFIX_SCHEMA(xml_serializer)>(context.file, context.output_filename);
 }
 

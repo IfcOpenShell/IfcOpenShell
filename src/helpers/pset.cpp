@@ -69,7 +69,7 @@ std::string schema_name(const express::base& instance) {
     throw ifcopenshell::exception("No helper implementation was built for schema " + name);
 }
 
-property_value from_attribute(const attribute_value& value);
+property_value from_attribute(const ifcopenshell::attribute_value& value);
 
 template <typename T>
 property_list scalar_list(const std::vector<T>& values) {
@@ -81,7 +81,7 @@ property_list scalar_list(const std::vector<T>& values) {
     return result;
 }
 
-property_value from_attribute(const attribute_value& value) {
+property_value from_attribute(const ifcopenshell::attribute_value& value) {
     if (value.isNull()) {
         return {};
     }
@@ -103,7 +103,7 @@ property_value from_attribute(const attribute_value& value) {
     case ifcopenshell::Argument_STRING:
         return static_cast<std::string>(value);
     case ifcopenshell::Argument_ENUMERATION: {
-        const enumeration_reference enumeration = value;
+        const ifcopenshell::enumeration_reference enumeration = value;
         return enumeration.value() ? enumeration.value() : "";
     }
     case ifcopenshell::Argument_BINARY: {

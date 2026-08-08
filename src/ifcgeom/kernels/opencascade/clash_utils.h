@@ -5,6 +5,8 @@
 
 #include "../ifc_geomlibrary_api.h"
 
+namespace ifcopenshell::geom {
+
 struct IFC_GEOMLIBRARY_API ray {
     float origin[3];
     float dir[3];
@@ -29,3 +31,5 @@ IFC_GEOMLIBRARY_API void edgeEdgeDist(gp_Vec& x, gp_Vec& y,				// closest points
 IFC_GEOMLIBRARY_API double distanceTriangleTriangleSquared(gp_Vec& cp, gp_Vec& cq, const std::array<gp_Vec, 3> p, const std::array<gp_Vec, 3> q);
 
 IFC_GEOMLIBRARY_API bool trianglesIntersect(const gp_Vec& a1, const gp_Vec& b1, const gp_Vec& c1, const gp_Vec& a2, const gp_Vec& b2, const gp_Vec& c2/*, Segment* intersection*/, gp_Vec& int1, gp_Vec& int2, bool ignoreCoplanar);
+
+} // namespace ifcopenshell::geom

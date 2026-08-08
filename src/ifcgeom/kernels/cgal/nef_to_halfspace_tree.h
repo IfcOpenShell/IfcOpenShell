@@ -52,6 +52,8 @@
 #include <memory>
 #include <functional>
 
+namespace ifcopenshell::geom {
+
 // Functor to lexicographically sort Plane_3
 template <typename Kernel>
 struct plane_less {
@@ -1377,5 +1379,7 @@ bool write_to_obj(const CGAL::Nef_polyhedron_3<Kernel>& a, std::ostream& ofs, si
 	vis.write(ofs);
 	return volume_index == std::numeric_limits<size_t>::max();
 }
+
+} // namespace ifcopenshell::geom
 
 #endif

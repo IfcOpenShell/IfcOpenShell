@@ -40,7 +40,7 @@ private:
 public:
     /// @note IGESControl_Controller::Init() must be called prior to instantiating iges_serializer.
     /// See http://tracker.dev.opencascade.org/view.php?id=23679 for more information.
-    iges_serializer(const std::string& out_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr)
+    iges_serializer(const std::string& out_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr)
         : open_cascade_based_serializer(out_filename, settings, logger)
 	{}
 	virtual ~iges_serializer() {}

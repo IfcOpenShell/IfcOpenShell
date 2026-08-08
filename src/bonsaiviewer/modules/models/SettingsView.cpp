@@ -75,10 +75,10 @@ QString formatCachedUnitScale(double meters_per_unit) {
     return QString("Cached scale: 1 unit = %1 m").arg(formatNumber(meters_per_unit));
 }
 
-std::string enumString(const attribute_value& av) {
+std::string enumString(const ifcopenshell::attribute_value& av) {
     if (av.isNull()) return {};
     if (av.type() != ifcopenshell::Argument_ENUMERATION) return {};
-    enumeration_reference enumeration = av;
+    ifcopenshell::enumeration_reference enumeration = av;
     return std::string(enumeration.value() ? enumeration.value() : "");
 }
 

@@ -9,7 +9,7 @@ bool open_cascade_kernel::convert(const taxonomy::extrusion::ptr extrusion, Topo
 	const double& height = extrusion->depth;
 
 	if (height < settings_.get<settings::Precision>().get()) {
-		::logger::root().error("GEO", 89, "Non-positive extrusion height encountered for:", extrusion->instance);
+		ifcopenshell::logger::root().error("GEO", 89, "Non-positive extrusion height encountered for:", extrusion->instance);
 		return false;
 	}
 
@@ -23,7 +23,7 @@ bool open_cascade_kernel::convert(const taxonomy::extrusion::ptr extrusion, Topo
 	// move the TopoDS_Shape, but obviously not both.
 	gp_GTrsf gtrsf;
 	if (!convert(&extrusion->matrix, gtrsf)) {
-		::logger::root().error("Unable to move extrusion");
+		ifcopenshell::logger::root().error("Unable to move extrusion");
 	}
 	auto trsf = gtrsf.Trsf();
 	*/

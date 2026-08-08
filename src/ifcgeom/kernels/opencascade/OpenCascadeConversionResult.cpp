@@ -68,7 +68,7 @@ ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::open_cascade_sh
 	return new open_cascade_shape(shape_);
 }
 
-void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
+void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
 
 	// @todo remove duplication with open_cascade_kernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);
 	// above can be static?
@@ -108,7 +108,7 @@ void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::set
 		try {
 			BRepMesh_IncrementalMesh(shape_, settings.get<settings::MesherLinearDeflection>().get(), false, settings.get<settings::MesherAngularDeflection>().get());
 		} catch (...) {
-			::logger::root().message(::logger::LOG_ERROR, "GEO", 183, "Failed to triangulate shape");
+			ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "GEO", 183, "Failed to triangulate shape");
 			return;
 		}
 	}
@@ -134,7 +134,7 @@ void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::set
 		opencascade::handle<Poly_Triangulation> tri = BRep_Tool::Triangulation(face, loc);
 
 		if (tri.IsNull()) {
-			::logger::root().message(::logger::LOG_ERROR, "GEO", 184, "Triangulation missing for face");
+			ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "GEO", 184, "Triangulation missing for face");
 		} else {
 			// Keep track of the number of times an edge is used
 			// Manifold edges (i.e. edges used twice) are deemed invisible
@@ -640,7 +640,7 @@ namespace {
 					try {
 						BRepMesh_IncrementalMesh(s, tol);
 					} catch (...) {
-						::logger::root().message(::logger::LOG_ERROR, "GEO", 186, "Failed to triangulate shape");
+						ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "GEO", 186, "Failed to triangulate shape");
 						return;
 					}
 					meshed = true;

@@ -70,7 +70,7 @@ typedef IfcSchema::IfcBuildingElement element_t;
 typedef IfcSchema::IfcBuiltElement element_t;
 #endif
 
-std::string format_string(const attribute_value& argument) {
+std::string format_string(const ifcopenshell::attribute_value& argument) {
 	// Argument is a runtime tagged variant for the various data types in a IFC model,
 	// in this particular case we only care about flattening it to a string.
 	// @todo mostly duplicated from XmlSerializer.cpp
@@ -213,7 +213,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Redirect the output (both progress and log) to stdout
-    ::logger::root().set_output(&std::cout, &std::cout);
+    ifcopenshell::logger::root().set_output(&std::cout, &std::cout);
 
     // Parse the IFC file provided in argv[1]
     ifcopenshell::file file(argv[1]);

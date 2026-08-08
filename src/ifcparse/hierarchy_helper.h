@@ -180,9 +180,9 @@ class IFC_SCHEMA_API hierarchy_helper : public ifcopenshell::file {
                         break;
                     }
                 } catch (std::exception& e) {
-                    ::logger::root().error(e);
+                    ifcopenshell::logger::root().error(e);
                 } catch (...) {
-                    ::logger::root().error("Unknown error in addRelatedObject()");
+                    ifcopenshell::logger::root().error("Unknown error in addRelatedObject()");
                 }
             }
             if (!found) {

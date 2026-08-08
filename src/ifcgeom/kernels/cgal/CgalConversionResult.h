@@ -188,7 +188,7 @@ namespace ifcopenshell { namespace geom {
 #endif
       public:
 
-		cgal_shape(const cgal_shape_t& shape, bool convex = false, ::logger& logger = ::logger::root());
+		cgal_shape(const cgal_shape_t& shape, bool convex = false, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 		cgal_shape(const cgal_point_t& point, bool convex = false);
 		cgal_shape(const cgal_wire_t& wire, bool convex = false);
 
@@ -226,7 +226,7 @@ namespace ifcopenshell { namespace geom {
 		const cgal_point_t& point() const { return std::get<cgal_point_t>(*shape_); }
 		const cgal_wire_t& wire() const { return std::get<cgal_wire_t>(*shape_); }
 
-		virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
+		virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const;
 		virtual void Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const;
 
 		virtual ifcopenshell::geom::conversion_result_shape* clone() const {
@@ -319,7 +319,7 @@ namespace ifcopenshell { namespace geom {
 #endif
 		}
 
-		virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
+		virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const;
 		virtual void Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const;
 
 		virtual int surface_genus() const;

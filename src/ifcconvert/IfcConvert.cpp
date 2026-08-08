@@ -219,7 +219,7 @@ bool file_exists(const std::string& filename) {
 
 static std::basic_stringstream<path_t::value_type> log_stream;
 void write_log(bool);
-void fix_quantities(ifcopenshell::file&, bool, bool, bool, logger& logger = ::logger::root());
+void fix_quantities(ifcopenshell::file&, bool, bool, bool, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 std::string format_duration(time_t start, time_t end);
 
 /// @todo make the filters non-global
@@ -249,7 +249,7 @@ size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_t
 void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<ifcopenshell::geom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
-bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false, logger& logger = ::logger::root());
+bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
 // from https://stackoverflow.com/questions/31696328/boost-program-options-using-zero-parameter-options-multiple-times
 struct verbosity_counter {
@@ -271,7 +271,7 @@ int main(int argc, char** argv) {
 	typedef po::command_line_parser command_line_parser;
 	typedef char char_t;
 #endif
-	logger logger;
+	ifcopenshell::logger logger;
 
 	inclusion_filter include_filter;
 	inclusion_traverse_filter include_traverse_filter;
@@ -471,9 +471,9 @@ int main(int argc, char** argv) {
 	if (vmap.count("log-format") == 1) {
 		boost::to_lower(log_format);
 		if (log_format == "plain") {
-			logger.output_format(::logger::FMT_PLAIN);
+			logger.output_format(ifcopenshell::logger::FMT_PLAIN);
 		} else if (log_format == "json") {
-			logger.output_format(::logger::FMT_JSON);
+			logger.output_format(ifcopenshell::logger::FMT_JSON);
 		} else {
 			cerr_ << "[error] --log-format should be either plain or json" << std::endl;
 			print_usage();
@@ -555,19 +555,19 @@ int main(int argc, char** argv) {
 
 	switch (vcounter.count) {
 	case 0:
-		logger.verbosity(::logger::LOG_ERROR);
+		logger.verbosity(ifcopenshell::logger::LOG_ERROR);
 		break;
 	case 1:
-		logger.verbosity(::logger::LOG_NOTICE);
+		logger.verbosity(ifcopenshell::logger::LOG_NOTICE);
 		break;
 	case 2:
-		logger.verbosity(::logger::LOG_DEBUG);
+		logger.verbosity(ifcopenshell::logger::LOG_DEBUG);
 		break;
 	case 3:
-		logger.verbosity(::logger::LOG_PERF);
+		logger.verbosity(ifcopenshell::logger::LOG_PERF);
 		break;
 	case 4:
-		logger.verbosity(::logger::LOG_PERF);
+		logger.verbosity(ifcopenshell::logger::LOG_PERF);
 		logger.print_performance_stats_on_element(true);
 		break;
 	}
@@ -618,7 +618,7 @@ int main(int argc, char** argv) {
 				context.schema_name = ifc_file ? ifc_file->schema()->name() : document_serializer_info->schema_name;
 				context.stream = use_input_filename;
 
-				boost::shared_ptr<serializer> serializer = document_serializer_registry.create(output_extension_utf8, context);
+				boost::shared_ptr<ifcopenshell::geom::serializer> serializer = document_serializer_registry.create(output_extension_utf8, context);
 				if (serializer->is_streaming() != use_input_filename) {
 					throw ifcopenshell::exception("Selected document serializer streaming mode does not match its registry metadata");
 				}
@@ -752,7 +752,7 @@ int main(int argc, char** argv) {
 		settings
 	};
 
-	boost::shared_ptr<geometry_serializer> serializer; /**< @todo use std::unique_ptr when possible */
+	boost::shared_ptr<ifcopenshell::geom::geometry_serializer> serializer; /**< @todo use std::unique_ptr when possible */
 	try {
 		geometry_serializer_registry.configure(output_extension_utf8, serializer_context);
 		serializer = geometry_serializer_registry.create(output_extension_utf8, serializer_context);
@@ -895,7 +895,7 @@ int main(int argc, char** argv) {
 		context_iterator.reset(new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings), settings, ifc_file, filter_funcs, num_threads, logger));
 	}	
 
-	logger.message(::logger::LOG_PERF, "file geometry conversion");
+	logger.message(ifcopenshell::logger::LOG_PERF, "file geometry conversion");
 
     if (context_iterator && !context_iterator->initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
@@ -965,7 +965,7 @@ int main(int argc, char** argv) {
 				if (stderr_progress)
 					cerr_ << std::flush;
 			} else if (vcounter.count == 2) {
-				logger.message(::logger::LOG_DEBUG, "SYS", 23, "Progress " + boost::lexical_cast<std::string>(progress));
+				logger.message(ifcopenshell::logger::LOG_DEBUG, "SYS", 23, "Progress " + boost::lexical_cast<std::string>(progress));
 			} else {
 				progress = progress / 2;
 				if (old_progress != progress) logger.progress_bar(progress);
@@ -1005,7 +1005,7 @@ int main(int argc, char** argv) {
     // Make sure the dtor is explicitly run here (e.g. output files are closed before renaming them).
     serializer.reset();
 
-	logger.message(::logger::LOG_PERF, "GEO", 26, "done file geometry conversion");
+	logger.message(ifcopenshell::logger::LOG_PERF, "GEO", 26, "done file geometry conversion");
 
 	bool successful;
 	if (geometry_serializer_info->writes_final_output) {
@@ -1023,17 +1023,17 @@ int main(int argc, char** argv) {
             output_temp_filename << "' for the conversion result.";
     }
 
-	if (settings.get<ifcopenshell::geom::settings::ValidateQuantities>().get() && logger.max_severity() >= ::logger::LOG_ERROR) {
+	if (settings.get<ifcopenshell::geom::settings::ValidateQuantities>().get() && logger.max_severity() >= ifcopenshell::logger::LOG_ERROR) {
 		logger.error("SYS", 24, "Errors encountered during processing.");
 		successful = false;
 	}
 
-	if (fail_on_error && logger.max_severity() >= ::logger::LOG_ERROR) {
+	if (fail_on_error && logger.max_severity() >= ifcopenshell::logger::LOG_ERROR) {
 		logger.error("SYS", 26, "Errors encountered during processing, failing due to --fail-on-error.");
 		successful = false;
 	}
 
-	if (logger.verbosity() == ::logger::LOG_PERF) {
+	if (logger.verbosity() == ifcopenshell::logger::LOG_PERF) {
 		logger.print_performance_stats();
 	}
 
@@ -1080,7 +1080,7 @@ void write_log(bool header) {
 
 #include <boost/algorithm/string/predicate.hpp>
 
-bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties, logger& logger) {
+bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties, ifcopenshell::logger& logger) {
     time_t start, end;
 
     // Prevent file::Init() prints by setting output to null temporarily
@@ -1314,7 +1314,7 @@ namespace latebound_access {
 			enum_type->enumeration_items().end(),
 			t);
 
-		return set(inst, attr, enumeration_reference(enum_type, it - enum_type->enumeration_items().begin()));
+		return set(inst, attr, ifcopenshell::enumeration_reference(enum_type, it - enum_type->enumeration_items().begin()));
 	}
 
 	template <typename T>
@@ -1323,7 +1323,7 @@ namespace latebound_access {
 		auto i = decl->attribute_index(attr);
 
 		auto attr_type = decl->attribute_by_index(i)->type_of_attribute();
-		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, enumeration_reference>::value) {
+		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, ifcopenshell::enumeration_reference>::value) {
 			set_enumeration(inst, attr, attr_type->as_named_type()->declared_type()->as_enumeration_type(), t);
 		} else {
 			inst.set_attribute_value(i, t);
@@ -1336,7 +1336,7 @@ namespace latebound_access {
 	}
 }
 
-void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger) {
+void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger) {
 	{
 		auto delete_reversed = [&f](const std::vector<express::base>& insts) {
 			// Lists are traversed back to front as the list may be mutated when

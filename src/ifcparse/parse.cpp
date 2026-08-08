@@ -61,7 +61,7 @@
 using namespace ifcopenshell;
 
 template <typename Reader>
-spf_lexer<Reader>::spf_lexer(Reader* stream_, ::logger& log)
+spf_lexer<Reader>::spf_lexer(Reader* stream_, ifcopenshell::logger& log)
     : decoder_(nullptr)
     , logger_(log) {
     stream = stream_;
@@ -638,7 +638,7 @@ void warn_attribute_count(
     std::optional<size_t> instance_name,
     size_t expected_size,
     size_t actual_size,
-    ::logger& logger
+    ifcopenshell::logger& logger
 ) {
     if (!declaration || expected_size == actual_size) {
         return;
@@ -700,9 +700,9 @@ struct direct_aggregate {
     direct_aggregate_storage storage;
     size_t pending_empty_aggregates = 0;
     size_t values = 0;
-    ::logger& logger_;
+    ifcopenshell::logger& logger_;
 
-    explicit direct_aggregate(::logger& logger)
+    explicit direct_aggregate(ifcopenshell::logger& logger)
         : logger_(logger) {}
 
     template <typename T>
@@ -873,7 +873,7 @@ void set_direct_attribute(
     if constexpr (std::is_same_v<std::decay_t<T>, ifcopenshell::reference_or_simple_type>) {
         if (instance_name && references_to_resolve) {
             references_to_resolve->push_back(std::make_pair(
-                mutable_attribute_value{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index},
+                ifcopenshell::mutable_attribute_value{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index},
                 value
             ));
         }
@@ -914,7 +914,7 @@ direct_aggregate read_direct_aggregate(
     const ifcopenshell::entity* entity,
     int attribute_index,
     const ifcopenshell::aggregation_type* aggregate_type,
-    ::logger& logger
+    ifcopenshell::logger& logger
 ) {
     direct_aggregate aggregate(logger);
     token next = tokens->next();
@@ -1021,7 +1021,7 @@ shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
                         skip_aggregate(tokens);
                     }
                 } catch (exception& e) {
-                    logger_.get().message(::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
+                    logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
                     --values_read;
                 }
             } else {
@@ -1654,7 +1654,7 @@ express::base::set_attribute_value(const std::string& s, const T& t)
 // Creates the maps
 //
 #ifdef USE_MMAP
-file::file(const std::string& fn, bool mmap, ::logger& log)
+file::file(const std::string& fn, bool mmap, ifcopenshell::logger& log)
     : logger_(log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
@@ -1687,7 +1687,7 @@ bool ifcopenshell::file::initialize(const std::string& fn, bool mmap) {
 }
 #endif
 
-file::file(const uninitialized_tag&, ::logger& log)
+file::file(const uninitialized_tag&, ifcopenshell::logger& log)
     : good_(file_open_status::UNKNOWN), logger_(log), schema_(nullptr), ifcroot_type_(nullptr), max_id_(0), header_(nullptr) {}
 
 bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool readonly) {
@@ -1744,7 +1744,7 @@ void ifcopenshell::file::bypass_type(const std::string& type_name) {
     types_to_bypass_loading_.insert(type_name);
 }
 
-file::file(const std::string& path, filetype ty, bool readonly, ::logger& log)
+file::file(const std::string& path, filetype ty, bool readonly, ifcopenshell::logger& log)
     : logger_(log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
@@ -1753,7 +1753,7 @@ file::file(const std::string& path, filetype ty, bool readonly, ::logger& log)
     initialize(path, ty, readonly);
 }
 
-file::file(std::istream& stream, int length, ::logger& log)
+file::file(std::istream& stream, int length, ifcopenshell::logger& log)
     : logger_(log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
@@ -1778,7 +1778,7 @@ file::file(std::istream& stream, int length, ::logger& log)
 
 }
 
-file::file(void* data, int length, ::logger& log)
+file::file(void* data, int length, ifcopenshell::logger& log)
     : logger_(log)
     , schema_(nullptr)
     , ifcroot_type_(nullptr)
@@ -1798,7 +1798,7 @@ file::file(void* data, int length, ::logger& log)
 
 }
 
-file::file(const ifcopenshell::schema_definition* schema, filetype ty, const std::string& path, ::logger& log)
+file::file(const ifcopenshell::schema_definition* schema, filetype ty, const std::string& path, ifcopenshell::logger& log)
     : logger_(log)
     , schema_(schema)
     , ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
@@ -2017,7 +2017,7 @@ void ifcopenshell::instance_streamer<Reader>::push_page(const std::string& page)
 }
 
 template <typename Reader>
-ifcopenshell::instance_streamer<Reader>::instance_streamer(ifcopenshell::file* f, ::logger& log)
+ifcopenshell::instance_streamer<Reader>::instance_streamer(ifcopenshell::file* f, ifcopenshell::logger& log)
     : stream_(nullptr)
     , owner_(f)
     , token_stream_(3, token{})
@@ -2042,7 +2042,7 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(ifcopenshell::file* f
 }
 
 template <typename Reader>
-ifcopenshell::instance_streamer<Reader>::instance_streamer(const std::string& fn, bool mmap, ifcopenshell::file* f, ::logger& log)
+ifcopenshell::instance_streamer<Reader>::instance_streamer(const std::string& fn, bool mmap, ifcopenshell::file* f, ifcopenshell::logger& log)
     : stream_(nullptr)
     , owner_(f)
     , token_stream_(3, token{})
@@ -2070,7 +2070,7 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(const std::string& fn
 }
 
 template <typename Reader>
-ifcopenshell::instance_streamer<Reader>::instance_streamer(void* data, int length, ifcopenshell::file* f, ::logger& log)
+ifcopenshell::instance_streamer<Reader>::instance_streamer(void* data, int length, ifcopenshell::file* f, ifcopenshell::logger& log)
     : stream_(nullptr)
     , owner_(f)
     , token_stream_(3, token{})
@@ -2094,7 +2094,7 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(void* data, int lengt
 }
 
 template <typename Reader>
-ifcopenshell::instance_streamer<Reader>::instance_streamer(Reader* stream, ifcopenshell::file* f, ::logger& log)
+ifcopenshell::instance_streamer<Reader>::instance_streamer(Reader* stream, ifcopenshell::file* f, ifcopenshell::logger& log)
     : stream_(stream)
     , owner_(f)
     , token_stream_(3, token{})
@@ -2168,13 +2168,13 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointe
             try {
                 entity_type = schema_->declaration_by_name(token_stream_[2].as_string());
             } catch (const exception& ex) {
-                logger_.get().message(::logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].start_pos));
+                logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].start_pos));
                 current_id = 0;
                 goto advance;
             }
 
             if (entity_type->as_entity() == nullptr) {
-                logger_.get().message(::logger::LOG_ERROR, "Non-entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].start_pos));
+                logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].start_pos));
                 current_id = 0;
                 goto advance;
             }
@@ -2210,9 +2210,9 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointe
         try {
             next_token = lexer_->next();
         } catch (const exception& e) {
-            logger_.get().message(::logger::LOG_ERROR, std::string(e.what()) + ". Parsing terminated");
+            logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + ". Parsing terminated");
         } catch (...) {
-            logger_.get().message(::logger::LOG_ERROR, "Parsing terminated");
+            logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Parsing terminated");
         }
 
         if (!lexer_->stream->eof() && !next_token) {
@@ -2268,7 +2268,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
         } else {
             good_ = file_open_status::UNSUPPORTED_SCHEMA;
         }
-        logger_.get().message(::logger::LOG_ERROR, "No support for file schema encountered (" + boost::algorithm::join(schemas, ", ") + ")");
+        logger_.get().message(ifcopenshell::logger::LOG_ERROR, "No support for file schema encountered (" + boost::algorithm::join(schemas, ", ") + ")");
         return;
     }
 
@@ -2293,11 +2293,11 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 if (byguid_.find(guid) != byguid_.end()) {
                     std::stringstream ss;
                     ss << "Instance encountered with non-unique GlobalId " << guid;
-                    logger_.get().message(::logger::LOG_WARNING, ss.str());
+                    logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
                 }
                 byguid_[guid] = instance;
             } catch (const exception& ex) {
-                logger_.get().message(::logger::LOG_ERROR, ex.what());
+                logger_.get().message(ifcopenshell::logger::LOG_ERROR, ex.what());
             }
         }
 
@@ -2307,7 +2307,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
         if (byid_.find(current_id) != byid_.end()) {
             std::stringstream ss;
             ss << "Overwriting instance with name #" << current_id;
-            logger_.get().message(::logger::LOG_WARNING, ss.str());
+            logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
         }
 
         byid_.insert({(uint32_t)current_id, std::get<2>(*inst)});
@@ -2600,7 +2600,7 @@ express::base file::add_entity(const express::base& entity, int id) {
             }
         }
     } catch (...) {
-        logger_.get().message(::logger::LOG_ERROR, "Failed to visit forward references of", entity);
+        logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Failed to visit forward references of", entity);
     }
 
     // An instance is being added from another file. A copy of the
@@ -2729,11 +2729,11 @@ express::base file::add_entity(const express::base& entity, int id) {
             if (byguid_.find(guid) != byguid_.end()) {
                 std::stringstream ss;
                 ss << "Overwriting entity with guid " << guid;
-                logger_.get().message(::logger::LOG_WARNING, ss.str());
+                logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
             }
             byguid_.insert({ guid, new_entity });
         } catch (const std::exception& ex) {
-            logger_.get().message(::logger::LOG_ERROR, ex.what());
+            logger_.get().message(ifcopenshell::logger::LOG_ERROR, ex.what());
         }
     }
     */

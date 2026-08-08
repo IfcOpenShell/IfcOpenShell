@@ -27,8 +27,8 @@
 #include <boost/lexical_cast.hpp>
 #include <iomanip>
 
-wavefront_obj_serializer::wavefront_obj_serializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geom::settings& settings, ::logger* logger)
-	: write_only_geometry_serializer(settings, logger)
+wavefront_obj_serializer::wavefront_obj_serializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger)
+	: ifcopenshell::geom::write_only_geometry_serializer(settings, logger)
 	, obj_stream(obj_filename)
 	, mtl_stream(mtl_filename)
 	, vcount_total(1)

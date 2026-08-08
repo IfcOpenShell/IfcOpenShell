@@ -28,14 +28,14 @@
 #include "../ifcgeom/GeometrySerializer.h"
 
 // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
-class SERIALIZERS_API wavefront_obj_serializer : public write_only_geometry_serializer {
+class SERIALIZERS_API wavefront_obj_serializer : public ifcopenshell::geom::write_only_geometry_serializer {
 private:
 	stream_or_filename obj_stream;
 	stream_or_filename mtl_stream;
 	size_t vcount_total, ncount_total;
 	std::set<std::string> materials;
 public:
-	wavefront_obj_serializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr);
+	wavefront_obj_serializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr);
 	virtual ~wavefront_obj_serializer() {}
 	bool ready();
 	void writeHeader();

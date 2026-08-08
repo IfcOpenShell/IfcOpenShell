@@ -131,19 +131,19 @@ void ifcopenshell::unescape_xml(std::string& str) {
     boost::replace_all(str, "&gt;", ">");
 }
 
-void instance_data::populate_derived_() {
+void ifcopenshell::instance_data::populate_derived_() {
     if (auto* ent = declaration_->as_entity()) {
         for (auto it = ent->derived().begin(); it != ent->derived().end(); ++it) {
             if (*it) {
                 set_attribute_value(
                     std::distance(ent->derived().begin(), it),
-                    derived{});
+                    ifcopenshell::derived{});
             }
         }
     }
 }
 
-attribute_value express::entity::get(const std::string& name) const {
+ifcopenshell::attribute_value express::entity::get(const std::string& name) const {
     auto attrs = declaration().as_entity()->all_attributes();
     auto iter = attrs.begin();
     size_t idx = 0;

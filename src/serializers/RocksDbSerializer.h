@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-class SERIALIZERS_API RocksDbSerializer : public serializer {
+class SERIALIZERS_API RocksDbSerializer : public ifcopenshell::geom::serializer {
 private:
 	std::string input_filename_;
 	std::string rocksdb_filename_;
@@ -16,7 +16,7 @@ private:
 
 	void write_streaming_();
 public:
-	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes = {}, ::logger* logger = nullptr);
+	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes = {}, ifcopenshell::logger* logger = nullptr);
 
 	virtual ~RocksDbSerializer() {}
 

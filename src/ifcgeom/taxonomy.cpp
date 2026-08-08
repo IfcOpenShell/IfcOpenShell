@@ -861,7 +861,7 @@ std::optional<function_item::ptr> ifcopenshell::geom::taxonomy::loop_to_function
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else if (edge_->start.index() == 1 && edge_->end.index() == 1) {
 					if (edge_->basis && edge_->basis->kind() != LINE) {
-						::logger::root().message(::logger::severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
+						ifcopenshell::logger::root().message(ifcopenshell::logger::severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
 					}
 					const auto& s = std::get<point3::ptr>(edge_->start)->ccomponents();
 					const auto& e = std::get<point3::ptr>(edge_->end)->ccomponents();
@@ -876,7 +876,7 @@ std::optional<function_item::ptr> ifcopenshell::geom::taxonomy::loop_to_function
 					};
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else {
-					::logger::root().message(::logger::severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
+					ifcopenshell::logger::root().message(ifcopenshell::logger::severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
 					return std::nullopt;
 				}
 			}

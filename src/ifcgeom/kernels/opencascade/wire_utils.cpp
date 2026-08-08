@@ -90,7 +90,7 @@ bool ifcopenshell::geom::util::approximate_plane_through_wire(const TopoDS_Wire&
 	// obtaining a 2d points for the Delaunay, infinity is passed here, so this
 	// can't for assessing degenerativeness.
 	if (v.Magnitude() < 1.e-7) {
-		::logger::root().warning("GEO", 215, "Degenerate face boundary in normal estimation");
+		ifcopenshell::logger::root().warning("GEO", 215, "Degenerate face boundary in normal estimation");
 		return false;
 	}
 
@@ -237,7 +237,7 @@ ifcopenshell::geom::util::triangulate_wire_result ifcopenshell::geom::util::tria
 
 					auto it = mapping.find(uvnodes[k]);
 					if (it == mapping.end()) {
-						::logger::root().error("GEO", 216, "Internal error: unable to unproject uv-mesh");
+						ifcopenshell::logger::root().error("GEO", 216, "Internal error: unable to unproject uv-mesh");
 						return TRIANGULATE_WIRE_FAIL;
 					}
 
@@ -281,7 +281,7 @@ ifcopenshell::geom::util::triangulate_wire_result ifcopenshell::geom::util::tria
 				}
 				faces.Append(triangle_face);
 			} else {
-				::logger::root().error("GEO", 217, "Internal error: missing face");
+				ifcopenshell::logger::root().error("GEO", 217, "Internal error: missing face");
 				return TRIANGULATE_WIRE_FAIL;
 			}
 		}
@@ -312,7 +312,7 @@ ifcopenshell::geom::util::triangulate_wire_result ifcopenshell::geom::util::tria
 		if (!contains) {
 #endif
 			// All existing edges need to exist in the new faces
-			::logger::root().error("GEO", 218, "Internal error, missing edge from triangulation");
+			ifcopenshell::logger::root().error("GEO", 218, "Internal error, missing edge from triangulation");
 			non_manifold = true;
 		}
 		}
@@ -323,7 +323,7 @@ ifcopenshell::geom::util::triangulate_wire_result ifcopenshell::geom::util::tria
 		// Existing edges are boundaries with use 1
 		// New edges are internal with use 2
 		if (n != (mape.Contains(v) ? 1 : 2)) {
-			::logger::root().error("GEO", 219, "Internal error, non-manifold result from triangulation");
+			ifcopenshell::logger::root().error("GEO", 219, "Internal error, non-manifold result from triangulation");
 			non_manifold = true;
 		}
 	}
@@ -794,12 +794,12 @@ bool ifcopenshell::geom::util::fill_nonmanifold_wires_with_planar_faces(TopoDS_S
 		shape = solid.SolidFromShell(TopoDS::Shell(shape));
 	} catch (const Standard_Failure& e) {
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			::logger::root().error("GEO", 220, e.GetMessageString());
+			ifcopenshell::logger::root().error("GEO", 220, e.GetMessageString());
 		} else {
-			::logger::root().error("GEO", 221, "Unknown error creating solid");
+			ifcopenshell::logger::root().error("GEO", 221, "Unknown error creating solid");
 		}
 	} catch (...) {
-		::logger::root().error("GEO", 222, "Unknown error creating solid");
+		ifcopenshell::logger::root().error("GEO", 222, "Unknown error creating solid");
 	}
 
 	return true;
@@ -812,12 +812,12 @@ bool ifcopenshell::geom::util::convert_curve_to_wire(const opencascade::handle<G
 		return true;
 	} catch (const Standard_Failure& e) {
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			::logger::root().error("GEO", 223, e.GetMessageString());
+			ifcopenshell::logger::root().error("GEO", 223, e.GetMessageString());
 		} else {
-			::logger::root().error("GEO", 224, "Unknown error converting curve to wire");
+			ifcopenshell::logger::root().error("GEO", 224, "Unknown error converting curve to wire");
 		}
 	} catch (...) {
-		::logger::root().error("GEO", 225, "Unknown error converting curve to wire");
+		ifcopenshell::logger::root().error("GEO", 225, "Unknown error converting curve to wire");
 	}
 	return false;
 }
@@ -838,7 +838,7 @@ void ifcopenshell::geom::util::assert_closed_wire(TopoDS_Wire& wire, double tol)
 			wire = mw.Wire();
 		}
 
-		::logger::root().warning("GEO", 226, "Wire not closed");
+		ifcopenshell::logger::root().warning("GEO", 226, "Wire not closed");
 	}
 }
 
@@ -848,7 +848,7 @@ bool ifcopenshell::geom::util::convert_wire_to_face(const TopoDS_Wire& w, TopoDS
 	NCollection_List<TopoDS_Shape> results;
 
 	if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
-		::logger::root().warning("GEO", 227, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+		ifcopenshell::logger::root().warning("GEO", 227, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 		util::select_largest(results, wire);
 	}
 
@@ -879,7 +879,7 @@ bool ifcopenshell::geom::util::convert_wire_to_face(const TopoDS_Wire& w, TopoDS
 	BRepBuilderAPI_FaceError er = mf.Error();
 
 	if (er != BRepBuilderAPI_FaceDone) {
-		::logger::root().error("GEO", 228, "Failed to create face.");
+		ifcopenshell::logger::root().error("GEO", 228, "Failed to create face.");
 		return false;
 	}
 	face = mf.Face();
@@ -906,7 +906,7 @@ bool ifcopenshell::geom::util::convert_wire_to_faces(const TopoDS_Wire& w, TopoD
 
 	NCollection_List<TopoDS_Shape> results;
 	if (settings.use_wire_intersection_check && util::wire_intersections(w, results, settings)) {
-		::logger::root().warning("GEO", 229, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+		ifcopenshell::logger::root().warning("GEO", 229, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 	} else {
 		results.Clear();
 		results.Append(w);
@@ -932,7 +932,7 @@ bool ifcopenshell::geom::util::convert_wire_to_faces(const TopoDS_Wire& w, TopoD
 		BRepBuilderAPI_FaceError er = mf.Error();
 
 		if (er != BRepBuilderAPI_FaceDone) {
-			::logger::root().error("GEO", 230, "Failed to create face.");
+			ifcopenshell::logger::root().error("GEO", 230, "Failed to create face.");
 			continue;
 		}
 
@@ -949,7 +949,7 @@ bool ifcopenshell::geom::util::convert_wire_to_faces(const TopoDS_Wire& w, TopoD
 		if (p.first >= max_area / 10.) {
 			B.Add(faces, p.second);
 		} else {
-			::logger::root().warning("GEO", 231, "Ignoring self-intersection loop with area " + boost::lexical_cast<std::string>(p.first));
+			ifcopenshell::logger::root().warning("GEO", 231, "Ignoring self-intersection loop with area " + boost::lexical_cast<std::string>(p.first));
 		}
 	}
 

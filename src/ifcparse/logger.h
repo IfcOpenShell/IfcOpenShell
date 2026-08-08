@@ -34,6 +34,8 @@
 #include <string>
 #include <vector>
 
+namespace ifcopenshell {
+
 class IFC_PARSE_API log_message {
   public:
     char code[7];
@@ -152,14 +154,16 @@ class IFC_PARSE_API logger {
 // Using `logger* = nullptr` instead of `logger& = logger::root()` helps,
 // since `nullptr` is convertable Python's `None`.
 // `logger_or_root` is just covering the boilerplate for this pattern.
-inline logger& logger_or_root(logger* logger) { return logger ? *logger : ::logger::root(); }
+inline logger& logger_or_root(logger* logger) { return logger ? *logger : logger::root(); }
+
+} // namespace ifcopenshell
 
 #define PERF(x)                                                      \
                                                                      \
-    ::logger::root().message(::logger::LOG_PERF, x);                 \
+    ::ifcopenshell::logger::root().message(::ifcopenshell::logger::LOG_PERF, x); \
                                                                      \
     BOOST_SCOPE_EXIT(void) {                                         \
-        ::logger::root().message(::logger::LOG_PERF, "done " + std::string(x)); \
+        ::ifcopenshell::logger::root().message(::ifcopenshell::logger::LOG_PERF, "done " + std::string(x)); \
     }                                                                \
     BOOST_SCOPE_EXIT_END
 

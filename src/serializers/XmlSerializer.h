@@ -11,15 +11,15 @@
 
 #include <boost/shared_ptr.hpp>
 
-class xml_serializer : public serializer {
+class xml_serializer : public ifcopenshell::geom::serializer {
 private:
-	boost::shared_ptr<serializer> implementation_;
+	boost::shared_ptr<ifcopenshell::geom::serializer> implementation_;
 
 protected:
 	std::string xml_filename;
 
 public:
-	xml_serializer(ifcopenshell::file* file, const std::string& xml_filename, ::logger& logger = ::logger::root())
+	xml_serializer(ifcopenshell::file* file, const std::string& xml_filename, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 		: xml_filename(xml_filename)
 	{
 		if (!file) {

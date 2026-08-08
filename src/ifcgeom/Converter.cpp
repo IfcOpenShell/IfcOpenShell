@@ -4,7 +4,7 @@
 
 using namespace ifcopenshell::geom;
 
-ifcopenshell::geom::converter::converter(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& logger)
+ifcopenshell::geom::converter::converter(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger)
 	: kernel_(std::move(geometry_library))
 	, logger_(logger)
 {
@@ -18,7 +18,7 @@ ifcopenshell::geom::converter::~converter() {
 }
 
 namespace {
-	void substitute_with_box_based_on_density(::logger& logger, ifcopenshell::geom::conversion_results& items, double& density) {
+	void substitute_with_box_based_on_density(ifcopenshell::logger& logger, ifcopenshell::geom::conversion_results& items, double& density) {
 		int nv = 0;
 		void* box = nullptr;
 		double volume = 0.;
@@ -102,7 +102,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 						}
 
 						if (!success) {
-							::logger::root().error("Failed processing layerset");
+							ifcopenshell::logger::root().error("Failed processing layerset");
 						}
 					}
 				}
@@ -219,10 +219,10 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 				kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes);
 			}
 		} catch (const std::exception& e) {
-			logger_.message(::logger::LOG_ERROR, "GEO", 33, std::string("Error processing openings for: ") + e.what() + ":", product);
+			logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 33, std::string("Error processing openings for: ") + e.what() + ":", product);
 			caught_error = true;
 		} catch (...) {
-			logger_.message(::logger::LOG_ERROR, "GEO", 34, "Error processing openings for:", product);
+			logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 34, "Error processing openings for:", product);
 		}
 
 		if (!(caught_error && opened_shapes.size() < shapes.size())) {
@@ -306,12 +306,12 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 								if (elem->geometry().calculate_surface_area(a_calc)) {
 									double diff = std::abs(a_calc - a_file);
 									if (diff / std::sqrt(a_file) > getValue(GV_PRECISION)) {
-										::logger::root().error("Validation of surface area failed for:", product);
+										ifcopenshell::logger::root().error("Validation of surface area failed for:", product);
 									} else {
-										::logger::root().notice("Validation of surface area succeeded for:", product);
+										ifcopenshell::logger::root().notice("Validation of surface area succeeded for:", product);
 									}
 								} else {
-									::logger::root().error("Validation of surface area failed for:", product);
+									ifcopenshell::logger::root().error("Validation of surface area failed for:", product);
 								}
 							} else if (q->as<IfcSchema::IfcQuantityVolume>() && q->Name() == "Volume") {
 								double v_calc;
@@ -319,12 +319,12 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 								if (elem->geometry().calculate_volume(v_calc)) {
 									double diff = std::abs(v_calc - v_file);
 									if (diff / std::sqrt(v_file) > getValue(GV_PRECISION)) {
-										::logger::root().error("Validation of volume failed for:", product);
+										ifcopenshell::logger::root().error("Validation of volume failed for:", product);
 									} else {
-										::logger::root().notice("Validation of volume succeeded for:", product);
+										ifcopenshell::logger::root().notice("Validation of volume succeeded for:", product);
 									}
 								} else {
-									::logger::root().error("Validation of volume failed for:", product);
+									ifcopenshell::logger::root().error("Validation of volume failed for:", product);
 								}
 							} else if (q->as<IfcSchema::IfcPhysicalComplexQuantity>() && q->Name() == "Shape Validation Properties") {
 								auto qs2 = q->as<IfcSchema::IfcPhysicalComplexQuantity>()->HasQuantities();
@@ -343,9 +343,9 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 									}
 								}
 								if (!all_succeeded) {
-									::logger::root().error("Validation of surface genus failed for:", product);
+									ifcopenshell::logger::root().error("Validation of surface genus failed for:", product);
 								} else {
-									::logger::root().notice("Validation of surface genus succeeded for:", product);
+									ifcopenshell::logger::root().notice("Validation of surface genus succeeded for:", product);
 								}
 							}
 						}

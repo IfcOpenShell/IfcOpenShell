@@ -29,15 +29,15 @@
 
 #include <TopoDS_Shape.hxx>
 
-class SERIALIZERS_API open_cascade_based_serializer : public write_only_geometry_serializer {
+class SERIALIZERS_API open_cascade_based_serializer : public ifcopenshell::geom::write_only_geometry_serializer {
 	open_cascade_based_serializer(const open_cascade_based_serializer&); //N/A
 	open_cascade_based_serializer& operator =(const open_cascade_based_serializer&); //N/A
 protected:
 	const std::string out_filename;
 	const char* getSymbolForUnitMagnitude(float mag);
 public:
-	explicit open_cascade_based_serializer(const std::string& out_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr)
-		: write_only_geometry_serializer(settings, logger)
+	explicit open_cascade_based_serializer(const std::string& out_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr)
+		: ifcopenshell::geom::write_only_geometry_serializer(settings, logger)
 		, out_filename(out_filename)
 	{}
 	virtual ~open_cascade_based_serializer() {}

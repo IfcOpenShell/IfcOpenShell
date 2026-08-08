@@ -204,11 +204,11 @@ void ifcopenshell::geom::iterator::process_concurrently() {
 	worker_loggers_.reserve(conc_threads);
 	for (unsigned i = 0; i < conc_threads; ++i) {
 		worker_loggers_.emplace_back(std::make_unique<logger>());
-		::logger& worker_logger = *worker_loggers_.back();
+		ifcopenshell::logger& worker_logger = *worker_loggers_.back();
 		worker_logger.verbosity(logger_.verbosity());
 		worker_logger.output_format(logger_.output_format());
 		worker_logger.print_performance_stats_on_element(logger_.print_performance_stats_on_element());
-		if (worker_logger.output_format() != ::logger::FMT_INMEMORY) {
+		if (worker_logger.output_format() != ifcopenshell::logger::FMT_INMEMORY) {
 			worker_logger.set_output(static_cast<std::ostream*>(nullptr), static_cast<std::ostream*>(nullptr));
 		}
 		kernel_pool.push_back(new ifcopenshell::geom::converter(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>(converter_->kernel()->clone(worker_logger)), ifc_file, settings_, worker_logger));
@@ -362,7 +362,7 @@ express::base ifcopenshell::geom::iterator::create_shape_model_for_next_entity()
 
 void ifcopenshell::geom::iterator::create_element_(ifcopenshell::geom::converter* kernel, ifcopenshell::geom::settings settings, geometry_conversion_result* rep)
 {
-	::logger& kernel_logger = kernel->logger();
+	ifcopenshell::logger& kernel_logger = kernel->logger();
 
 	if (!settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get()) {
 		rep->item = kernel->mapping()->map(rep->representation);
@@ -422,13 +422,13 @@ void ifcopenshell::geom::iterator::create_element_(ifcopenshell::geom::converter
 	kernel_logger.set_product(std::optional<express::base>{});
 }
 
-ifcopenshell::geom::element* ifcopenshell::geom::iterator::process_based_on_settings(ifcopenshell::geom::settings settings, ifcopenshell::geom::brep_element* elem, ::logger& logger, ifcopenshell::geom::triangulation_element* previous)
+ifcopenshell::geom::element* ifcopenshell::geom::iterator::process_based_on_settings(ifcopenshell::geom::settings settings, ifcopenshell::geom::brep_element* elem, ifcopenshell::logger& logger, ifcopenshell::geom::triangulation_element* previous)
 {
 	if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::SERIALIZED) {
 		try {
 			return new ifcopenshell::geom::serialized_element(*elem);
 		} catch (...) {
-			logger.message(::logger::LOG_ERROR, "GEO", 54, "Getting a serialized element from model failed.");
+			logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 54, "Getting a serialized element from model failed.");
 			return nullptr;
 		}
 	} else if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::TRIANGULATED) {
@@ -440,7 +440,7 @@ ifcopenshell::geom::element* ifcopenshell::geom::iterator::process_based_on_sett
 					return new triangulation_element(*elem, previous->geometry_pointer());
 				}
 			} catch (...) {
-				logger.message(::logger::LOG_ERROR, "GEO", 55, "Getting a triangulation element from model failed.");
+				logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 55, "Getting a triangulation element from model failed.");
 			}
 			return (triangulation_element*)nullptr;
 		});

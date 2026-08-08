@@ -241,19 +241,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 								i += 1;
 								j += 1;
 							} else {
-								::logger::root().error("Unexpected amount of fillet edges generated");
+								ifcopenshell::logger::root().error("Unexpected amount of fillet edges generated");
 							}					
 						} else {
-							::logger::root().error("Unable to build fillet, probably edge too short");
+							ifcopenshell::logger::root().error("Unable to build fillet, probably edge too short");
 						}
 					} else {
-						::logger::root().error("Colinear edges, not applying fillet");
+						ifcopenshell::logger::root().error("Colinear edges, not applying fillet");
 					}
 					i++;
 					j++;
 				}
 			} else {
-				::logger::root().error("Not enough edges for applying fillet");
+				ifcopenshell::logger::root().error("Not enough edges for applying fillet");
 			}
 
 			TopoDS_Wire new_wire;
@@ -266,7 +266,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 
 			wire = new_wire;
 		} else {
-			::logger::root().error("Directrix is not polyhedral, ignoring FilletRadius");
+			ifcopenshell::logger::root().error("Directrix is not polyhedral, ignoring FilletRadius");
 		}
 	}
 
@@ -317,7 +317,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 		}
 
 		if (!is_valid) {
-			::logger::root().message(::logger::LOG_WARNING, "Failed to subtract inner radius void for:", l);
+			ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_WARNING, "Failed to subtract inner radius void for:", l);
 		}
 	}
 

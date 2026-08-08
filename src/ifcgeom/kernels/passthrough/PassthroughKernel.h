@@ -11,10 +11,10 @@ namespace kernels {
 
 class IFC_GEOMLIBRARY_API passthrough_kernel : public abstract_kernel {
 public:
-	passthrough_kernel(const ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root())
+	passthrough_kernel(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 		: abstract_kernel("passthrough", settings, logger) {}
 
-	virtual abstract_kernel* clone(::logger& logger) const {
+	virtual abstract_kernel* clone(ifcopenshell::logger& logger) const {
 		return new passthrough_kernel(settings(), logger);
 	}
 

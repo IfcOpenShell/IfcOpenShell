@@ -41,7 +41,7 @@ class POSTFIX_SCHEMA(json_serializer) : public json_serializer {
     ifcopenshell::geom::abstract_mapping* mapping_;
 
   public:
-    POSTFIX_SCHEMA(json_serializer)(ifcopenshell::file* file, const std::string& json_filename, json_serializer::Dialect dialect, ::logger& logger = ::logger::root())
+    POSTFIX_SCHEMA(json_serializer)(ifcopenshell::file* file, const std::string& json_filename, json_serializer::Dialect dialect, ifcopenshell::logger& logger = ifcopenshell::logger::root())
         : json_serializer(0, "", dialect), mapping_(ifcopenshell::geom::impl::mapping_implementations().construct(file, settings_, logger))
     {
         this->file = file;

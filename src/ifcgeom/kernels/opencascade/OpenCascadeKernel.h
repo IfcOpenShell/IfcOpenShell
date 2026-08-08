@@ -110,13 +110,13 @@ private:
 
 	double precision_;
 public:
-	open_cascade_kernel(const ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root())
+	open_cascade_kernel(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 		: abstract_kernel("opencascade", settings, logger)
 		, faceset_helper_(nullptr)
 		, precision_(settings.get<ifcopenshell::geom::settings::Precision>().get())
 	{}
 
-	virtual abstract_kernel* clone(::logger& logger) const {
+	virtual abstract_kernel* clone(ifcopenshell::logger& logger) const {
 		return new open_cascade_kernel(settings(), logger);
 	}
 

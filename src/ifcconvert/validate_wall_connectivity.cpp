@@ -9,7 +9,7 @@
 
 using namespace ifcopenshell::geom;
 
-void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
+void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger = ifcopenshell::logger::root()) {
 	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress, logger);
 
 	ifcopenshell::geom::settings settings;

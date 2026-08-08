@@ -37,8 +37,8 @@ class IFC_PARSE_API global_id {
 
   public:
     static const unsigned int length = 22;
-    global_id(logger& logger = ::logger::root());
-    global_id(const std::string& value, logger& logger = ::logger::root());
+    global_id(logger& logger = ifcopenshell::logger::root());
+    global_id(const std::string& value, logger& logger = ifcopenshell::logger::root());
     operator const std::string&() const;
     operator const boost::uuids::uuid&() const;
     const std::string& formatted() const;

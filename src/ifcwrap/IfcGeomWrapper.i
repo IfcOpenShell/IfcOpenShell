@@ -730,20 +730,20 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 
 	// I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 	// anyway it does not matter as SWIG generates C code without actual constructors
-	ifcopenshell::geom::iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, int num_threads, logger* logger = nullptr) {
-		::logger& logger_ = logger_or_root(logger);
+	ifcopenshell::geom::iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, int num_threads, ifcopenshell::logger* logger = nullptr) {
+		ifcopenshell::logger& logger_ = ifcopenshell::logger_or_root(logger);
 		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), settings, file, num_threads, logger_);
 	}
 
-	ifcopenshell::geom::iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads, logger* logger = nullptr) {
-		::logger& logger_ = logger_or_root(logger);
+	ifcopenshell::geom::iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads, ifcopenshell::logger* logger = nullptr) {
+		ifcopenshell::logger& logger_ = ifcopenshell::logger_or_root(logger);
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		ifcopenshell::geom::entity_filter ef{ include, false, elems_set };
 		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), settings, file, {ef}, num_threads, logger_);
 	}
 
-	ifcopenshell::geom::iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads, logger* logger = nullptr) {
-		::logger& logger_ = logger_or_root(logger);
+	ifcopenshell::geom::iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads, ifcopenshell::logger* logger = nullptr) {
+		ifcopenshell::logger& logger_ = ifcopenshell::logger_or_root(logger);
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		ifcopenshell::geom::attribute_filter af;
 		af.attribute_name = "GlobalId";
@@ -752,8 +752,8 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads, logger_);
 	}
 
-	ifcopenshell::geom::iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, std::vector<int> elems, bool include, int num_threads, logger* logger = nullptr) {
-		::logger& logger_ = logger_or_root(logger);
+	ifcopenshell::geom::iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, std::vector<int> elems, bool include, int num_threads, ifcopenshell::logger* logger = nullptr) {
+		ifcopenshell::logger& logger_ = ifcopenshell::logger_or_root(logger);
 		std::set<int> elems_set(elems.begin(), elems.end());
 		ifcopenshell::geom::instance_id_filter af(include, false, elems_set);
 		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads, logger_);
@@ -1077,12 +1077,12 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 %}
 
 %inline %{
-	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::Representation::representation*, ifcopenshell::geom::transformation*> create_shape(ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation, const char* const geometry_library="opencascade", logger* logger = nullptr) {
-		return helper_fn_create_shape(logger_or_root(logger), geometry_library, settings, instance, representation);
+	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::Representation::representation*, ifcopenshell::geom::transformation*> create_shape(ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation, const char* const geometry_library="opencascade", ifcopenshell::logger* logger = nullptr) {
+		return helper_fn_create_shape(ifcopenshell::logger_or_root(logger), geometry_library, settings, instance, representation);
 	}
 
 	// Manual definition of overload without representation argument
-	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::Representation::representation*, ifcopenshell::geom::transformation*> create_shape(ifcopenshell::geom::settings& settings, const express::base& instance, const char* const geometry_library="opencascade", logger* logger = nullptr) {
+	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::Representation::representation*, ifcopenshell::geom::transformation*> create_shape(ifcopenshell::geom::settings& settings, const express::base& instance, const char* const geometry_library="opencascade", ifcopenshell::logger* logger = nullptr) {
 		return create_shape(settings, instance, express::base(), geometry_library, logger);
 	}
 %}
@@ -1342,9 +1342,9 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 		}	
 	}
 
-	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons, logger* logger = nullptr) {
+	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons, ifcopenshell::logger* logger = nullptr) {
 		std::vector<svgfill::polygon_2> r;
-		if (svgfill::arrange_polygons(settings, polygons, r, logger_or_root(logger))) {
+		if (svgfill::arrange_polygons(settings, polygons, r, ifcopenshell::logger_or_root(logger))) {
 			return r;
 		} else {
 			throw std::runtime_error("Failed to arrange polygons");

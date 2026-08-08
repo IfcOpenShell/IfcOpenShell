@@ -35,6 +35,8 @@
 namespace ifcopenshell {
 namespace serializers {
 
+using ifcopenshell::geom::geometry_serializer;
+
 struct SERIALIZERS_API geometry_serializer_info {
 	std::string format;
 	std::string name;

@@ -453,7 +453,7 @@ std::string collada_serializer::object_id(const ifcopenshell::geom::element* o) 
             : "";
         return o->type() + slabSuffix;
     }
-    return geometry_serializer::object_id(o);
+    return ifcopenshell::geom::geometry_serializer::object_id(o);
 }
 
 void collada_serializer::collada_exporter::endDocument() {

@@ -1,7 +1,7 @@
 #include "ConversionResult.h"
 #include "IfcGeomRepresentation.h"
 
-ifcopenshell::geom::Representation::triangulation* ifcopenshell::geom::conversion_result_shape::Triangulate(const ifcopenshell::geom::settings& settings, ::logger& logger) const
+ifcopenshell::geom::Representation::triangulation* ifcopenshell::geom::conversion_result_shape::Triangulate(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) const
 {
 	auto t = ifcopenshell::geom::Representation::triangulation::empty(settings);
 	static ifcopenshell::geom::taxonomy::matrix4 iden;

@@ -52,7 +52,7 @@ std::string schema_name(const express::base& instance) {
 // A primitive scalar attribute value formatted for display, or std::nullopt for
 // IFC null and for non-primitive values (entity references, aggregates/lists,
 // binary) — which the properties UI omits.
-std::optional<std::string> format_scalar(const attribute_value& value) {
+std::optional<std::string> format_scalar(const ifcopenshell::attribute_value& value) {
     if (value.isNull()) {
         return std::nullopt;
     }
@@ -60,7 +60,7 @@ std::optional<std::string> format_scalar(const attribute_value& value) {
     case ifcopenshell::Argument_STRING:
         return static_cast<std::string>(value);
     case ifcopenshell::Argument_ENUMERATION: {
-        const enumeration_reference enumeration = value;
+        const ifcopenshell::enumeration_reference enumeration = value;
         return enumeration.value() ? std::string(enumeration.value()) : std::string();
     }
     case ifcopenshell::Argument_INT:
@@ -288,13 +288,13 @@ std::optional<std::string> get_string_attribute(const express::base& element,
     if (index < 0) {
         return std::nullopt;
     }
-    const attribute_value value = element.get_attribute_value(static_cast<std::size_t>(index));
+    const ifcopenshell::attribute_value value = element.get_attribute_value(static_cast<std::size_t>(index));
     if (value.isNull()) {
         return std::nullopt;
     }
     switch (value.type()) {
     case ifcopenshell::Argument_ENUMERATION: {
-        const enumeration_reference enumeration = value;
+        const ifcopenshell::enumeration_reference enumeration = value;
         return enumeration.value() ? std::string(enumeration.value()) : std::string();
     }
     case ifcopenshell::Argument_STRING:

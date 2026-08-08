@@ -32,6 +32,8 @@
 #include <iomanip>
 #include <iostream>
 
+using ifcopenshell::logger;
+
 namespace {
 
 std::string get_time(bool with_milliseconds = false) {
@@ -140,6 +142,8 @@ void json_message(T& out, const express::base& current_product, logger::severity
 }
 
 } // namespace
+
+namespace ifcopenshell {
 
 log_message::log_message(
     int severity,
@@ -378,3 +382,5 @@ void logger::output_format(format format) {
 logger::format logger::output_format() const {
     return format_;
 }
+
+} // namespace ifcopenshell

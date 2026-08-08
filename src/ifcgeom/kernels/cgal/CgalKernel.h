@@ -60,12 +60,12 @@ namespace ifcopenshell {
 		namespace utils {
 			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_cube(double d);
 			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_cube(const kernel_::Point_3& lower, const kernel_::Point_3& upper);
-			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false, logger& logger = ::logger::root());
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false, logger& logger = ifcopenshell::logger::root());
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<kernel_> &nef_polyhedron, logger& logger = ::logger::root());
-			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list, logger& logger = ::logger::root());
-			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<kernel_> &polyhedron, logger& logger = ::logger::root());
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<kernel_> &nef_polyhedron, logger& logger = ifcopenshell::logger::root());
+			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list, logger& logger = ifcopenshell::logger::root());
+			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<kernel_> &polyhedron, logger& logger = ifcopenshell::logger::root());
 #endif
 		}
 
@@ -93,11 +93,11 @@ namespace ifcopenshell {
 #endif
 			public:
 
-				cgal_kernel(const ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root())
+				cgal_kernel(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 					: abstract_kernel("cgal", settings, logger)
 				{}
 
-				virtual abstract_kernel* clone(::logger& logger) const {
+				virtual abstract_kernel* clone(ifcopenshell::logger& logger) const {
 					return new cgal_kernel(settings(), logger);
 				}
 

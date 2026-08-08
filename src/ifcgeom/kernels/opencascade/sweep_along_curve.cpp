@@ -182,7 +182,7 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 			for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
 				if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
 					directrix_on_plane = false;
-					logger_.message(::logger::LOG_WARNING, "GEO", 202, "The Directrix does not lie on the ReferenceSurface", scs->instance);
+					logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 202, "The Directrix does not lie on the ReferenceSurface", scs->instance);
 					break;
 				}
 			}

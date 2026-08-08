@@ -66,7 +66,7 @@ namespace usd_utils {
   	}	
 }
 
-class SERIALIZERS_API usd_serializer : public write_only_geometry_serializer {
+class SERIALIZERS_API usd_serializer : public ifcopenshell::geom::write_only_geometry_serializer {
 private:
     bool ready_ = false;
 	const std::string filename_;
@@ -86,7 +86,7 @@ private:
 	std::set<std::string> emitted_names_;
 	std::map<int, std::string> element_names_;
 public:
-	usd_serializer(const std::string&, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr);
+	usd_serializer(const std::string&, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr);
 	virtual ~usd_serializer();
 	bool ready() { return ready_; }
 	void writeHeader();

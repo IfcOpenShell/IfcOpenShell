@@ -23,7 +23,7 @@ void ifcopenshell::geom::impl::mapping_registry::bind(const std::string& schema_
 	entry.module_ = module.meta().id.empty() ? plugin::module(mapping_plugin_metadata(schema_name)) : module;
 }
 
-ifcopenshell::geom::abstract_mapping* ifcopenshell::geom::impl::mapping_registry::construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& log) {
+ifcopenshell::geom::abstract_mapping* ifcopenshell::geom::impl::mapping_registry::construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& log) {
 	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
 	auto it = entries_.find(schema_name_lower);
 	if (it == entries_.end()) {
@@ -56,6 +56,6 @@ void ifcopenshell::geom::impl::mapping_factory_implementation::bind(const std::s
 	mapping_registry_instance().bind(schema_name, fn, plugin::module(mapping_plugin_metadata(schema_name)));
 }
 
-ifcopenshell::geom::abstract_mapping* ifcopenshell::geom::impl::mapping_factory_implementation::construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& log) {
+ifcopenshell::geom::abstract_mapping* ifcopenshell::geom::impl::mapping_factory_implementation::construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& log) {
 	return mapping_registry_instance().construct(file, settings, log);
 }

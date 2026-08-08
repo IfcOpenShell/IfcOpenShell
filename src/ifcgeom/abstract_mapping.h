@@ -49,12 +49,12 @@ namespace geom {
 	class IFC_GEOM_API abstract_mapping {
 	protected:
 		ifcopenshell::geom::settings settings_;
-		::logger& logger_;
+		ifcopenshell::logger& logger_;
 
 		bool use_caching_ = true;
 
 	public:
-		abstract_mapping(ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root()) : settings_(settings), logger_(logger) {}
+		abstract_mapping(ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root()) : settings_(settings), logger_(logger) {}
 		virtual ~abstract_mapping() {}
 
 		virtual ifcopenshell::geom::taxonomy::ptr map(const express::base&) = 0;
@@ -73,19 +73,19 @@ namespace geom {
 
 		const ifcopenshell::geom::settings& settings() const { return settings_; }
 		ifcopenshell::geom::settings& settings() { return settings_; }
-		::logger& logger() const { return logger_; }
+		ifcopenshell::logger& logger() const { return logger_; }
 
 		bool use_caching() const { return use_caching_; }
 		bool& use_caching() { return use_caching_; }
     };
 
 	namespace impl {
-		typedef boost::function3<abstract_mapping*, ifcopenshell::file*, ifcopenshell::geom::settings&, ::logger&> mapping_fn;
+		typedef boost::function3<abstract_mapping*, ifcopenshell::file*, ifcopenshell::geom::settings&, ifcopenshell::logger&> mapping_fn;
 
 		class IFC_GEOM_API mapping_registry {
 		public:
 			void bind(const std::string& schema_name, mapping_fn fn, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
-			abstract_mapping* construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root());
+			abstract_mapping* construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
 		private:
 			struct entry {
@@ -102,7 +102,7 @@ namespace geom {
 		public:
 			mapping_factory_implementation();
 			void bind(const std::string& schema_name, mapping_fn);
-			abstract_mapping* construct(ifcopenshell::file*, ifcopenshell::geom::settings&, ::logger& logger = ::logger::root());
+			abstract_mapping* construct(ifcopenshell::file*, ifcopenshell::geom::settings&, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 		};
 
 		IFC_GEOM_API mapping_factory_implementation& mapping_implementations();

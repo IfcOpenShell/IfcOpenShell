@@ -144,7 +144,7 @@ double get_storey_elevation_s(const express::base& storey) {
     if (declaration != nullptr) {
         const std::ptrdiff_t index = declaration->attribute_index("Elevation");
         if (index >= 0) {
-            const attribute_value value = storey.get_attribute_value(static_cast<std::size_t>(index));
+            const ifcopenshell::attribute_value value = storey.get_attribute_value(static_cast<std::size_t>(index));
             if (!value.isNull() && value.type() == ifcopenshell::Argument_DOUBLE) {
                 return static_cast<double>(value);
             }

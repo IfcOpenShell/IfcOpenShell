@@ -29,7 +29,7 @@ namespace ifcopenshell {
 
 				namespace {
 					struct POSTFIX_SCHEMA(factory_t) {
-						abstract_mapping* operator()(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& logger) const {
+						abstract_mapping* operator()(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) const {
 							return new POSTFIX_SCHEMA(mapping)(file, settings, logger);
 						}
 					};

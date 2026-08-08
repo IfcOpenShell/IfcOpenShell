@@ -53,7 +53,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 				}
 			}
 #else
-			::logger::root().warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
+			ifcopenshell::logger::root().warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
 #endif
 		}
 	}
@@ -126,7 +126,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 	if (fallback) {
         auto mapped_fallback = taxonomy::cast<taxonomy::matrix4>(map(fallback));
         if (!result->ccomponents().isApprox(mapped_fallback->ccomponents())) {
-            ::logger::root().warning("Computed placement differs from fallback", inst);
+            ifcopenshell::logger::root().warning("Computed placement differs from fallback", inst);
         }
     }
 
@@ -134,7 +134,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 
 	auto abs_det = std::abs(result->ccomponents().determinant());
 	if (abs_det < 1.e-7) {
-		::logger::root().warning("Ignoring singular matrix:", inst);
+		ifcopenshell::logger::root().warning("Ignoring singular matrix:", inst);
 		return nullptr;
 	}
 

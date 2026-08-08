@@ -120,7 +120,7 @@ taxonomy::loop::ptr ifcopenshell::geom::profile_helper(const taxonomy::matrix4::
 		if (fillet.IsDone()) {
 			face = TopoDS::Face(fillet.Shape());
 		} else {
-			::logger::root().error("Failed to process profile fillets");
+			ifcopenshell::logger::root().error("Failed to process profile fillets");
 		}
 	}
 	*/

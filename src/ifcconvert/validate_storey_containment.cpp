@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
+void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger = ifcopenshell::logger::root()) {
 	ifcopenshell::geom::settings settings;
 
 	settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;

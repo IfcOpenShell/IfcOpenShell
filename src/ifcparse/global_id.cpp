@@ -111,7 +111,7 @@ ifcopenshell::global_id::global_id(logger& logger) {
     boost::uuids::uuid test_uuid;
     std::copy(test_vector.begin(), test_vector.end(), test_uuid.begin());
     if (uuid_data_ != test_uuid) {
-        logger.message(::logger::LOG_ERROR, "SYS", 34, "Internal error generating GlobalId");
+        logger.message(ifcopenshell::logger::LOG_ERROR, "SYS", 34, "Internal error generating GlobalId");
     }
 #endif
 }
@@ -130,7 +130,7 @@ ifcopenshell::global_id::global_id(const std::string& string, logger& logger)
 #ifndef NDEBUG
     const std::string test_string = compress(&uuid_data_.data[0]);
     if (string_data_ != test_string) {
-        logger.message(::logger::LOG_ERROR, "SYS", 35, "Internal error generating GlobalId");
+        logger.message(ifcopenshell::logger::LOG_ERROR, "SYS", 35, "Internal error generating GlobalId");
     }
 #endif
 }

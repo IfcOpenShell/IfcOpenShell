@@ -37,7 +37,7 @@
 
 // @todo don't do std::less but use hashing and cache hash values.
 
-namespace boost { inline std::size_t hash_value(const blank&) { return 0; } }
+namespace boost { inline std::size_t hash_value(const boost::blank&) { return 0; } }
 
 namespace ifcopenshell {
 

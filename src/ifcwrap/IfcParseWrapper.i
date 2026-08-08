@@ -291,8 +291,8 @@ private:
 		return new ifcopenshell::file(ifcopenshell::schema_by_name(schema));
 	}
 
-	static ifcopenshell::file* create_uninitialized(logger* logger=nullptr) {
-		return new ifcopenshell::file(ifcopenshell::uninitialized_tag{}, logger_or_root(logger));
+	static ifcopenshell::file* create_uninitialized(ifcopenshell::logger* logger=nullptr) {
+		return new ifcopenshell::file(ifcopenshell::uninitialized_tag{}, ifcopenshell::logger_or_root(logger));
 	}
 
 	std::vector<express::base> _get_inverse(const express::base& e) {
@@ -991,10 +991,10 @@ from .entity_instance import entity_instance_mixin
 %newobject stream_from_string;
 
 %inline %{
-	ifcopenshell::file* open(const std::string& fn, bool readonly=false, logger* logger=nullptr) {
+	ifcopenshell::file* open(const std::string& fn, bool readonly=false, ifcopenshell::logger* logger=nullptr) {
 		ifcopenshell::file* f;
 		Py_BEGIN_ALLOW_THREADS;
-		f = new ifcopenshell::file(fn, ifcopenshell::FT_AUTODETECT, readonly, logger_or_root(logger));
+		f = new ifcopenshell::file(fn, ifcopenshell::FT_AUTODETECT, readonly, ifcopenshell::logger_or_root(logger));
 		Py_END_ALLOW_THREADS;
 		return f;
 	}
@@ -1152,7 +1152,7 @@ from .entity_instance import entity_instance_mixin
 	static std::stringstream ifcopenshell_log_stream;
 %}
 %init %{
-	::logger::root().set_output(0, &ifcopenshell_log_stream);
+	ifcopenshell::logger::root().set_output(0, &ifcopenshell_log_stream);
 %}
 %inline %{
 	std::string get_log() {
@@ -1161,20 +1161,20 @@ from .entity_instance import entity_instance_mixin
 		return log;
 	}
 	void turn_on_detailed_logging() {
-		::logger::root().set_output(&std::cout, &std::cout);
-		::logger::root().verbosity(::logger::LOG_DEBUG);
+		ifcopenshell::logger::root().set_output(&std::cout, &std::cout);
+		ifcopenshell::logger::root().verbosity(ifcopenshell::logger::LOG_DEBUG);
 	}
 	void turn_off_detailed_logging() {
-		::logger::root().set_output(0, &ifcopenshell_log_stream);
-		::logger::root().verbosity(::logger::LOG_WARNING);
+		ifcopenshell::logger::root().set_output(0, &ifcopenshell_log_stream);
+		ifcopenshell::logger::root().verbosity(ifcopenshell::logger::LOG_WARNING);
 	}
 	void set_log_format_json() {
 		ifcopenshell_log_stream.str("");
-		::logger::root().output_format(::logger::FMT_JSON);
+		ifcopenshell::logger::root().output_format(ifcopenshell::logger::FMT_JSON);
 	}
 	void set_log_format_text() {
 		ifcopenshell_log_stream.str("");
-		::logger::root().output_format(::logger::FMT_PLAIN);
+		ifcopenshell::logger::root().output_format(ifcopenshell::logger::FMT_PLAIN);
 	}
 %}
 

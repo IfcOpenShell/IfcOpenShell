@@ -23,13 +23,15 @@
 #include "ifc_geom_api.h"
 #include "../ifcparse/file.h"
 
+namespace ifcopenshell::geom {
+
 class IFC_GEOM_API serializer {
-	::logger& logger_;
+	ifcopenshell::logger& logger_;
 public:
-	explicit serializer(::logger& logger = ::logger::root()) : logger_(logger) {}
+	explicit serializer(ifcopenshell::logger& logger = ifcopenshell::logger::root()) : logger_(logger) {}
 	virtual ~serializer() {}
 
-	::logger& logger() const { return logger_; }
+	ifcopenshell::logger& logger() const { return logger_; }
 
 	virtual bool ready() = 0;
 	virtual bool is_streaming() const { return false; }
@@ -37,5 +39,7 @@ public:
 	virtual void finalize() = 0;
 	virtual void setFile(ifcopenshell::file&) = 0;
 };
+
+} // namespace ifcopenshell::geom
 
 #endif

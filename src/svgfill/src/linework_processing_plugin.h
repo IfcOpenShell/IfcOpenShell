@@ -56,7 +56,7 @@ struct api {
 		const std::string&,
 		const std::optional<std::string>&,
 		std::vector<polygon_2>&) = nullptr;
-	bool (*arrange_polygons)(arrange_polygon_settings, const std::vector<polygon_2>&, std::vector<polygon_2>&, logger&) = nullptr;
+	bool (*arrange_polygons)(arrange_polygon_settings, const std::vector<polygon_2>&, std::vector<polygon_2>&, ifcopenshell::logger&) = nullptr;
 	abstract_arrangement* (*create_arrangement)(solver) = nullptr;
 	void (*destroy_arrangement)(abstract_arrangement*) = nullptr;
 };

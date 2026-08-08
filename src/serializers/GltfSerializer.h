@@ -30,7 +30,7 @@ using json = nlohmann::json;
 
 #include <map>
 
-class SERIALIZERS_API gltf_serializer : public write_only_geometry_serializer {
+class SERIALIZERS_API gltf_serializer : public ifcopenshell::geom::write_only_geometry_serializer {
 private:
 	std::string filename_, tmp_filename1_, tmp_filename2_;
 	std::ofstream fstream_, tmp_fstream1_, tmp_fstream2_;
@@ -43,7 +43,7 @@ private:
 
 	int writeMaterial(const ifcopenshell::geom::taxonomy::style::ptr style);
 public:
-	gltf_serializer(const std::string& filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr);
+	gltf_serializer(const std::string& filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr);
 	virtual ~gltf_serializer();
 	bool ready();
 	void writeHeader();

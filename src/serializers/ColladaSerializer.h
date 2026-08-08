@@ -50,7 +50,7 @@
 #include <boost/numeric/ublas/io.hpp>
 
 
-class SERIALIZERS_API collada_serializer : public write_only_geometry_serializer
+class SERIALIZERS_API collada_serializer : public ifcopenshell::geom::write_only_geometry_serializer
 {
 	// TODO The vast amount of implement details of collada_serializer could be hidden to the cpp file.
 private:
@@ -219,8 +219,8 @@ private:
 	std::string unit_name;
 	float unit_magnitude;
 public:
-    collada_serializer(const std::string& dae_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr)
-        : write_only_geometry_serializer(settings, logger)
+    collada_serializer(const std::string& dae_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr)
+        : ifcopenshell::geom::write_only_geometry_serializer(settings, logger)
 		, exporter("IfcOpenShell", dae_filename, this, settings.get<ifcopenshell::geom::settings::FloatingPointDigits>().get() >= 15)
     {
         exporter.serializer = this;

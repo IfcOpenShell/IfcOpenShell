@@ -380,11 +380,11 @@ namespace {
 		// SVG edge classification (issue #3668): see add_classified_edges().
 		std::list<std::tuple<express::base, std::string, TopoDS_Shape>> classified_items_;
 
-		::logger& logger_;
+		ifcopenshell::logger& logger_;
 
 	public:
 
-		prefiltered_hlr(::logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
+		prefiltered_hlr(ifcopenshell::logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
 			: logger_(logger)
 			, use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
@@ -554,7 +554,7 @@ namespace {
 
 typedef prefiltered_hlr hlr_t;
 
-class SERIALIZERS_API svg_serializer : public write_only_geometry_serializer {
+class SERIALIZERS_API svg_serializer : public ifcopenshell::geom::write_only_geometry_serializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
 	typedef std::vector< boost::shared_ptr<util::string_buffer::float_item> > float_item_list;
@@ -625,8 +625,8 @@ protected:
 	subtract_before_project subtraction_settings_;
 
 public:
-	svg_serializer(const stream_or_filename& out_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr)
-		: write_only_geometry_serializer(settings, logger)
+	svg_serializer(const stream_or_filename& out_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr)
+		: ifcopenshell::geom::write_only_geometry_serializer(settings, logger)
 		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())
 		, ymin(+std::numeric_limits<double>::infinity())
@@ -787,9 +787,9 @@ public:
 	std::string idElement(express::base elem);
     std::string object_id(express::base storey, const ifcopenshell::geom::element* o) {
 		if (storey) {
-			return idElement(storey) + "-" + geometry_serializer::object_id(o);
+			return idElement(storey) + "-" + ifcopenshell::geom::geometry_serializer::object_id(o);
 		} else {
-			return geometry_serializer::object_id(o);
+			return ifcopenshell::geom::geometry_serializer::object_id(o);
 		}
 	}
 

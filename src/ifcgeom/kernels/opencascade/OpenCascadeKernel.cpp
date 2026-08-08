@@ -190,7 +190,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 				const auto& m = it3->Placement()->ccomponents();
 				// @todo
 				// if (entity_shape_gtrsf.Form() == gp_Other) {
-				// 	::logger::root().message(::logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
+				// 	ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
 				// }
 				gp_Trsf entity_shape_gtrsf;
 				entity_shape_gtrsf.SetValues(
@@ -217,7 +217,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 						if (util::boolean_operation(bst, result, opening_list, BOPAlgo_CUT, intermediate_result)) {
 							result = intermediate_result;
 						} else {
-							logger_.message(::logger::LOG_ERROR, "GEO", 192, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
+							logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 192, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
 						}
 
 						jt = it;
@@ -417,7 +417,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 						}
 // 
 // 						if (!success) {
-// 							::logger::root().error("Failed processing layerset");
+// 							ifcopenshell::logger::root().error("Failed processing layerset");
 // 						}
 // 					}
 // 				}
@@ -445,7 +445,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 		if (some_items_without_style) {
-// 			::logger::root().warning("No material and surface styles for:", product);
+// 			ifcopenshell::logger::root().warning("No material and surface styles for:", product);
 // 		}
 // 	}
 // 
@@ -472,7 +472,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			parent_id = parent_object->data().id();
 // 		}
 // 	} catch (const std::exception& e) {
-// 		::logger::root().error(e);
+// 		ifcopenshell::logger::root().error(e);
 // 	}
 // 
 // 	const std::string name = product->Name().value_or("");
@@ -484,9 +484,9 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			convert(product->ObjectPlacement(), trsf);
 // 		}
 // 	} catch (const std::exception& e) {
-// 		::logger::root().error(e);
+// 		ifcopenshell::logger::root().error(e);
 // 	} catch (...) {
-// 		::logger::root().error("Failed to construct placement");
+// 		ifcopenshell::logger::root().error("Failed to construct placement");
 // 	}
 // 
 // 	// Does the IfcElement have any IfcOpenings?
@@ -507,10 +507,10 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		try {
 // 			convert_openings(product, openings, shapes, trsf, opened_shapes);
 // 		} catch (const std::exception& e) {
-// 			::logger::root().message(::logger::LOG_ERROR, std::string("error processing openings for: ") + e.what() + ":", product);
+// 			ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, std::string("error processing openings for: ") + e.what() + ":", product);
 // 			caught_error = true;
 // 		} catch (...) {
-// 			::logger::root().message(::logger::LOG_ERROR, "error processing openings for:", product);
+// 			ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "error processing openings for:", product);
 // 		}
 // 
 // 		if (caught_error && opened_shapes.size() < shapes.size()) {
@@ -575,12 +575,12 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 								if (elem->geometry().calculate_surface_area(a_calc)) {
 // 									double diff = std::abs(a_calc - a_file);
 // 									if (diff / std::sqrt(a_file) > getValue(GV_PRECISION)) {
-// 										::logger::root().error("Validation of surface area failed for:", product);
+// 										ifcopenshell::logger::root().error("Validation of surface area failed for:", product);
 // 									} else {
-// 										::logger::root().notice("Validation of surface area succeeded for:", product);
+// 										ifcopenshell::logger::root().notice("Validation of surface area succeeded for:", product);
 // 									}
 // 								} else {
-// 									::logger::root().error("Validation of surface area failed for:", product);
+// 									ifcopenshell::logger::root().error("Validation of surface area failed for:", product);
 // 								}
 // 							} else if (q->as<IfcSchema::IfcQuantityVolume>() && q->Name() == "Volume") {
 // 								double v_calc;
@@ -588,12 +588,12 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 								if (elem->geometry().calculate_volume(v_calc)) {
 // 									double diff = std::abs(v_calc - v_file);
 // 									if (diff / std::sqrt(v_file) > getValue(GV_PRECISION)) {
-// 										::logger::root().error("Validation of volume failed for:", product);
+// 										ifcopenshell::logger::root().error("Validation of volume failed for:", product);
 // 									} else {
-// 										::logger::root().notice("Validation of volume succeeded for:", product);
+// 										ifcopenshell::logger::root().notice("Validation of volume succeeded for:", product);
 // 									}
 // 								} else {
-// 									::logger::root().error("Validation of volume failed for:", product);
+// 									ifcopenshell::logger::root().error("Validation of volume failed for:", product);
 // 								}
 // 							} else if (q->as<IfcSchema::IfcPhysicalComplexQuantity>() && q->Name() == "Shape Validation Properties") {
 // 								auto qs2 = q->as<IfcSchema::IfcPhysicalComplexQuantity>()->HasQuantities();
@@ -612,9 +612,9 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 									}
 // 								}
 // 								if (!all_succeeded) {
-// 									::logger::root().error("Validation of surface genus failed for:", product);
+// 									ifcopenshell::logger::root().error("Validation of surface genus failed for:", product);
 // 								} else {
-// 									::logger::root().notice("Validation of surface genus succeeded for:", product);
+// 									ifcopenshell::logger::root().notice("Validation of surface genus succeeded for:", product);
 // 								}
 // 							}
 // 						}
@@ -646,7 +646,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 	} catch (const ifcopenshell::exception& e) {
-// 		::logger::root().error(e);
+// 		ifcopenshell::logger::root().error(e);
 // 		// @todo reset representation_mapped_to to zero?
 // 	}
 // 	return representation_mapped_to;
@@ -670,15 +670,15 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
 // 
 // 	if (products->size() && maps->size()) {
-// 		::logger::root().warning("Representation used by IfcRepresentationMap and IfcProductDefinitionShape", representation);
+// 		ifcopenshell::logger::root().warning("Representation used by IfcRepresentationMap and IfcProductDefinitionShape", representation);
 // 	}
 // 
 // 	if (prodreps->size() > 1) {
-// 		::logger::root().warning("Multiple IfcProductDefinitionShapes for representation", representation);
+// 		ifcopenshell::logger::root().warning("Multiple IfcProductDefinitionShapes for representation", representation);
 // 	}
 // 
 // 	if (maps->size() > 1) {
-// 		::logger::root().warning("Multiple IfcRepresentationMaps for representation", representation);
+// 		ifcopenshell::logger::root().warning("Multiple IfcRepresentationMaps for representation", representation);
 // 	}
 // 
 // 	if (maps->size() == 1) {
@@ -721,7 +721,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			parent_id = parent_object->data().id();
 // 		}
 // 	} catch (const std::exception& e) {
-// 		::logger::root().error(e);
+// 		ifcopenshell::logger::root().error(e);
 // 	}
 // 
 // 	const std::string name = product->Name().value_or("");
@@ -733,9 +733,9 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			convert(product->ObjectPlacement(), trsf);
 // 		}
 // 	} catch (const std::exception& e) {
-// 		::logger::root().error(e);
+// 		ifcopenshell::logger::root().error(e);
 // 	} catch (...) {
-// 		::logger::root().error("Failed to construct placement");
+// 		ifcopenshell::logger::root().error("Failed to construct placement");
 // 	}
 // 
 // 	std::string context_string = "";
@@ -937,7 +937,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	// range. It's only a safeguard though, so can probably be approximated.
 // 	const double axis_length = own_axis_start.Distance(own_axis_end);
 // 	if (length_required > axis_length) {
-// 		::logger::root().warning("The wall axis is not long enough to accommodate the fold points");
+// 		ifcopenshell::logger::root().warning("The wall axis is not long enough to accommodate the fold points");
 // 		return false;
 // 	}
 // 
@@ -957,7 +957,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		gp_Trsf other;
 // 		if (other_wall->ObjectPlacement()) {
 // 			if (!convert(other_wall->ObjectPlacement(), other)) {
-// 				::logger::root().error("Failed to convert placement", other_wall);
+// 				ifcopenshell::logger::root().error("Failed to convert placement", other_wall);
 // 				continue;
 // 			}
 // 		}
@@ -965,7 +965,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		IfcSchema::IfcRepresentation* axis_representation = find_representation(other_wall, "Axis");
 // 
 // 		if (!axis_representation) {
-// 			::logger::root().warning("Joined wall has no axis representation", other_wall);
+// 			ifcopenshell::logger::root().warning("Joined wall has no axis representation", other_wall);
 // 			continue;
 // 		}
 // 
@@ -1059,7 +1059,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 				Vs1.Cross(Vs2);
 // 
 // 				if (Vs1.IsNormal(Vc, 1.e-5)) {
-// 					::logger::root().warning("Connected walls are parallel");
+// 					ifcopenshell::logger::root().warning("Connected walls are parallel");
 // 					parallel = true;
 // 				} else if (w < axis_u1 || w > axis_u2) {
 // 					point_outside_param_range = p;
@@ -1394,7 +1394,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		Handle_Geom_Circle axis_line = Handle_Geom_Circle::DownCast(axis_curve);
 // 		reference_surface = new Geom_CylindricalSurface(axis_li->Position(), axis_line->Radius());
 // 	} else {
-// 		::logger::root().message(::logger::LOG_ERROR, "Unsupported underlying curve of Axis representation:", product);
+// 		ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "Unsupported underlying curve of Axis representation:", product);
 // 		return false;
 // 	}
 // 

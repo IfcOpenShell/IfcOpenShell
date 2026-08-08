@@ -57,7 +57,7 @@ bool open_cascade_kernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& sh
 		}
 
 		if (!success) {
-			logger_.message(::logger::LOG_WARNING, "GEO", 198, "Failed to convert face:", face->instance);
+			logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 198, "Failed to convert face:", face->instance);
 			continue;
 		}
 
@@ -70,7 +70,7 @@ bool open_cascade_kernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& sh
 					if (face_area(triangle) > min_face_area) {
 						face_list.Append(triangle);
 					} else {
-						logger_.message(::logger::LOG_WARNING, "GEO", 199, "Degenerate face:", face->instance);
+						logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 199, "Degenerate face:", face->instance);
 					}
 				}
 			}
@@ -78,7 +78,7 @@ bool open_cascade_kernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& sh
 			if (face_area(occ_face) > min_face_area) {
 				face_list.Append(occ_face);
 			} else {
-				logger_.message(::logger::LOG_WARNING, "GEO", 200, "Degenerate face:", face->instance);
+				logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 200, "Degenerate face:", face->instance);
 			}
 		}
 	}

@@ -149,7 +149,7 @@ ifcopenshell::geom::open_cascade_kernel::faceset_helper::faceset_helper(
 		auto num_retained = std::count(retained.begin(), retained.end(), true);
 
 		if (unique.size() != num_retained) {
-			::logger::root().notice("GEO", 168, "Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
+			ifcopenshell::logger::root().notice("GEO", 168, "Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
 		}
 
 		typedef std::array<int, 2> edge_t;
@@ -206,7 +206,7 @@ ifcopenshell::geom::open_cascade_kernel::faceset_helper::faceset_helper(
 	}
 
 	if (duplicates_.size() || loops_removed || (non_manifold && shell->closed.value_or(false))) {
-		::logger::root().warning("GEO", 169, boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
+		ifcopenshell::logger::root().warning("GEO", 169, boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
 	}
 }
 
@@ -277,7 +277,7 @@ bool ifcopenshell::geom::open_cascade_kernel::faceset_helper::wires(const ifcope
 			!kernel_->settings().get<ifcopenshell::geom::settings::NoWireIntersectionTolerance>().get(), 0.,
 			kernel_->settings().get<ifcopenshell::geom::settings::Precision>().get()}))
 		{
-			::logger::root().warning("GEO", 170, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+			ifcopenshell::logger::root().warning("GEO", 170, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 			non_manifold_ = true;
 			wires = results;
 		} else {

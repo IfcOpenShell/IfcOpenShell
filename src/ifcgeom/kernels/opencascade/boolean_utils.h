@@ -89,17 +89,17 @@ namespace ifcopenshell::geom {
 
 		IFC_GEOMLIBRARY_API int eliminate_touching_operands(double prec, const TopoDS_Shape& a, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape>& c);
 
-		IFC_GEOMLIBRARY_API int eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, ::logger& logger = ::logger::root());
+		IFC_GEOMLIBRARY_API int eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
-		IFC_GEOMLIBRARY_API bool boolean_subtraction_2d_using_builder(const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, TopoDS_Shape& result, double eps, ::logger& logger = ::logger::root());
+		IFC_GEOMLIBRARY_API bool boolean_subtraction_2d_using_builder(const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, TopoDS_Shape& result, double eps, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
 		struct boolean_settings {
 			bool debug, attempt_2d;
 			double precision;
 			// Set by callers that carry a per-conversion logger (e.g. kernels deriving
-			// from abstract_kernel). Falls back to the global ::logger::root() singleton.
-			::logger* logger = nullptr;
-			::logger& log() const { return logger ? *logger : ::logger::root(); }
+			// from abstract_kernel). Falls back to the global ifcopenshell::logger::root() singleton.
+			ifcopenshell::logger* logger = nullptr;
+			ifcopenshell::logger& log() const { return logger ? *logger : ifcopenshell::logger::root(); }
 		};
 
 		IFC_GEOMLIBRARY_API bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const NCollection_List<TopoDS_Shape>&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);

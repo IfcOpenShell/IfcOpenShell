@@ -40,14 +40,14 @@ class format_value_visitor : public boost::static_visitor<std::string> {
 
     template <typename T>
     json operator()(const T& t) const {
-        if constexpr (std::is_same_v<std::decay_t<T>, derived> || std::is_same_v<std::decay_t<T>, boost::dynamic_bitset<>> || std::is_same_v<std::decay_t<T>, express::base> || std::is_same_v<std::decay_t<T>, std::vector<int>> || std::is_same_v<std::decay_t<T>, std::vector<double>> || std::is_same_v<std::decay_t<T>, std::vector<std::string>> || std::is_same_v<std::decay_t<T>, std::vector<boost::dynamic_bitset<>>> || std::is_same_v<std::decay_t<T>, std::vector<express::base>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<express::base>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<int>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>> || std::is_same_v<std::decay_t<T>, empty_aggregate_t> || std::is_same_v<std::decay_t<T>, empty_aggregate_of_aggregate_t> || std::is_same_v<std::decay_t<T>, blank>) {
+        if constexpr (std::is_same_v<std::decay_t<T>, ifcopenshell::derived> || std::is_same_v<std::decay_t<T>, boost::dynamic_bitset<>> || std::is_same_v<std::decay_t<T>, express::base> || std::is_same_v<std::decay_t<T>, std::vector<int>> || std::is_same_v<std::decay_t<T>, std::vector<double>> || std::is_same_v<std::decay_t<T>, std::vector<std::string>> || std::is_same_v<std::decay_t<T>, std::vector<boost::dynamic_bitset<>>> || std::is_same_v<std::decay_t<T>, std::vector<express::base>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<express::base>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<int>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>> || std::is_same_v<std::decay_t<T>, ifcopenshell::empty_aggregate_t> || std::is_same_v<std::decay_t<T>, ifcopenshell::empty_aggregate_of_aggregate_t> || std::is_same_v<std::decay_t<T>, ifcopenshell::blank>) {
             return "";
         } else if constexpr (std::is_same_v<std::decay_t<T>, boost::logic::tribool>) {
             // @todo handle indeterminate
             return "";
         } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
             return t;
-        } else if constexpr (std::is_same_v<std::decay_t<T>, enumeration_reference>) {
+        } else if constexpr (std::is_same_v<std::decay_t<T>, ifcopenshell::enumeration_reference>) {
             return t.value();
         } else {
             return t;
@@ -69,7 +69,7 @@ class get_type_visitor : public boost::static_visitor<std::string> {
 // Returns related entity instances using IFC's objectified relationship
 // model. The second and third argument require a member function pointer.
 template <typename T, typename U, typename V, typename F, typename G>
-auto get_related(::logger& log, T t, F f, G g) {
+auto get_related(ifcopenshell::logger& log, T t, F f, G g) {
     auto li = (t.*f)();
     std::vector<V> acc;
     for (auto& u : li) {
@@ -97,7 +97,7 @@ auto get_related(::logger& log, T t, F f, G g) {
     return acc;
 }
 
-void format_entity_instance(::logger& log, express::base instance, json& tree, express::base parent = express::base()) {
+void format_entity_instance(ifcopenshell::logger& log, express::base instance, json& tree, express::base parent = express::base()) {
     /*
     {
         "id" : string,            // Element GUID (IFC GloballyUniqueId)
@@ -119,7 +119,7 @@ void format_entity_instance(::logger& log, express::base instance, json& tree, e
     json child;
 
     auto write_to_json = [&](const std::string& keyJson, const std::string& keyIfc) {
-        attribute_value val;
+        ifcopenshell::attribute_value val;
         try {
             val = instance.as<express::entity>().get(keyIfc);
         } catch (const ifcopenshell::exception&) {
@@ -168,7 +168,7 @@ void format_entity_instance(::logger& log, express::base instance, json& tree, e
 // A function to be called recursively. Template specialization is used
 // to descend into decomposition, containment and property relationships.
 template <typename A>
-void descend(::logger& log, A instance, json& tree, express::base parent = express::base()) {
+void descend(ifcopenshell::logger& log, A instance, json& tree, express::base parent = express::base()) {
     if (instance.declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
         descend(log, instance.template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
     } else {
@@ -181,7 +181,7 @@ void descend(::logger& log, A instance, json& tree, express::base parent = expre
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
 // IfcRelDecomposes, IfcRelDefinesByType, IfcRelDefinesByProperties relations.
 template <>
-void descend(::logger& log, IfcSchema::IfcObjectDefinition product, json& tree, express::base parent) {
+void descend(ifcopenshell::logger& log, IfcSchema::IfcObjectDefinition product, json& tree, express::base parent) {
     if (product.declaration().is(IfcSchema::IfcElement::Class())) {
         auto voids = product.as<IfcSchema::IfcElement>().FillsVoids();
         if (voids.size() == 1 && voids.front().RelatingOpeningElement() != parent) {
@@ -267,7 +267,7 @@ void POSTFIX_SCHEMA(json_serializer)::finalize() {
 
     auto projects = file->instances_by_type<IfcSchema::IfcProject>();
     if (projects.size() != 1) {
-        logger().message(::logger::LOG_ERROR, "SER", 7, "Expected a single IfcProject");
+        logger().message(ifcopenshell::logger::LOG_ERROR, "SER", 7, "Expected a single IfcProject");
         return;
     }
     IfcSchema::IfcProject project = projects.front();

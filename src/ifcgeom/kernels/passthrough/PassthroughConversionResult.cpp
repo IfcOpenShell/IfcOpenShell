@@ -286,7 +286,7 @@ ifcopenshell::geom::passthrough_shape::passthrough_shape(const std::vector<passt
 ifcopenshell::geom::passthrough_shape::passthrough_shape(std::vector<passthrough_part>&& parts)
 	: parts_(normalize_parts(parts)) {}
 
-void ifcopenshell::geom::passthrough_shape::Triangulate(ifcopenshell::geom::settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger&) const {
+void ifcopenshell::geom::passthrough_shape::Triangulate(ifcopenshell::geom::settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger&) const {
 	auto mesh = build_mesh(parts_, &place);
 	std::vector<int> indices(mesh.vertices.size());
 	for (size_t i = 0; i < mesh.vertices.size(); ++i) {

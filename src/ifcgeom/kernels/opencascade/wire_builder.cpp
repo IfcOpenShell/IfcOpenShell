@@ -117,12 +117,12 @@ bool ifcopenshell::geom::util::create_edge_over_curve_with_log_messages(const op
 						}
 					}
 					if (dmin == std::numeric_limits<double>::infinity()) {
-						::logger::root().error("GEO", 205, "No extrema for point");
+						ifcopenshell::logger::root().error("GEO", 205, "No extrema for point");
 					} else if (dmin > eps2) {
-						::logger::root().error("GEO", 206, "Distance of " + boost::lexical_cast<std::string>(std::sqrt(dmin)) + " exceeds tolerance");
+						ifcopenshell::logger::root().error("GEO", 206, "Distance of " + boost::lexical_cast<std::string>(std::sqrt(dmin)) + " exceeds tolerance");
 					}
 				} else {
-					::logger::root().error("GEO", 207, "Failed to calculate extrema for point");
+					ifcopenshell::logger::root().error("GEO", 207, "Failed to calculate extrema for point");
 				}
 			}
 		}
@@ -172,7 +172,7 @@ void ifcopenshell::geom::util::wire_builder::operator()(const TopoDS_Shape& a, c
 	if (dist > 1000. * p_) {
 		mw_.Add(w1);
 		mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-		::logger::root().warning("GEO", 208, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
+		ifcopenshell::logger::root().warning("GEO", 208, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
 		goto check;
 	}
 
@@ -200,28 +200,28 @@ void ifcopenshell::geom::util::wire_builder::operator()(const TopoDS_Shape& a, c
 			// Preferably adjust the segment that is linear
 			if (is_line1 || (is_circle1 && !is_line2)) {
 				mw_.Add(adjust(w1, w12, p2));
-				::logger::root().notice("GEO", 209, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
+				ifcopenshell::logger::root().notice("GEO", 209, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
 			} else if ((is_line2 || is_circle2) && !last) {
 				mw_.Add(w1);
 				override_next_ = true;
 				next_override_ = p1;
-				::logger::root().notice("GEO", 210, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
+				ifcopenshell::logger::root().notice("GEO", 210, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
 			} else {
 				// In all other cases an edge is added
 				mw_.Add(w1);
 				mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-				::logger::root().warning("GEO", 211, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
+				ifcopenshell::logger::root().warning("GEO", 211, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
 			}
 		} else {
-			::logger::root().error("GEO", 212, "Internal error, inconsistent wire segments", inst_);
+			ifcopenshell::logger::root().error("GEO", 212, "Internal error, inconsistent wire segments", inst_);
 			mw_.Add(w1);
 		}
 	}
 
 check:
 	if (mw_.Error() == BRepBuilderAPI_NonManifoldWire) {
-		::logger::root().error("GEO", 213, "Non-manifold curve segments:", inst_);
+		ifcopenshell::logger::root().error("GEO", 213, "Non-manifold curve segments:", inst_);
 	} else if (mw_.Error() == BRepBuilderAPI_DisconnectedWire) {
-		::logger::root().error("GEO", 214, "Failed to join curve segments:", inst_);
+		ifcopenshell::logger::root().error("GEO", 214, "Failed to join curve segments:", inst_);
 	}
 }

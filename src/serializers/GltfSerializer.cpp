@@ -53,8 +53,8 @@ static const uint32_t PRIM_TRIANGLE_FAN = 6;
 static const uint32_t ELEMENT_ARRAY_BUFFER = 34963;
 static const uint32_t ARRAY_BUFFER = 34962;
 
-gltf_serializer::gltf_serializer(const std::string& filename, const ifcopenshell::geom::settings& settings, ::logger* logger)
-	: write_only_geometry_serializer(settings, logger)
+gltf_serializer::gltf_serializer(const std::string& filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger)
+	: ifcopenshell::geom::write_only_geometry_serializer(settings, logger)
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")
 	, tmp_filename2_(filename + ".vertices.tmp")
@@ -523,7 +523,7 @@ namespace {
 	}
 
 	void proj_log(void* data, int, const char* c) {
-		auto logger = static_cast<::logger*>(data);
+		auto logger = static_cast<ifcopenshell::logger*>(data);
 		if (logger) {
 			logger->error("SER", 1, "PROJ: " + std::string(c));
 		}

@@ -18,7 +18,7 @@ typedef CGAL::AABB_traits<Kernel_, Primitive> Traits;
 typedef CGAL::AABB_tree<Traits> Tree;
 typedef Tree::Point_and_primitive_id Point_and_primitive_id;
 
-void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
+void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger = ifcopenshell::logger::root()) {
 	intersection_validator v(f, { "IfcWall", "IfcSpace", "IfcSlab", "IfcCovering" }, 1.e-5, no_progress, quiet, stderr_progress, logger);
 
 	auto rels = f.instances_by_type("IfcRelSpaceBoundary");

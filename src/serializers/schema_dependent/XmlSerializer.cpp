@@ -39,7 +39,7 @@ std::map<std::string, std::string> POSTFIX_SCHEMA(argument_name_map);
 
 // Format an IFC attribute and maybe returns as string. Only literal scalar 
 // values are converted. Things like entity instances and lists are omitted.
-std::optional<std::string> format_attribute(ifcopenshell::geom::abstract_mapping* mapping, attribute_value argument, ifcopenshell::argument_type argument_type, const std::string& argument_name) {
+std::optional<std::string> format_attribute(ifcopenshell::geom::abstract_mapping* mapping, ifcopenshell::attribute_value argument, ifcopenshell::argument_type argument_type, const std::string& argument_name) {
 	std::optional<std::string> value;
 	
 	// Hard-code lat-lon as it represents an array
@@ -131,7 +131,7 @@ std::optional<std::string> format_attribute(ifcopenshell::geom::abstract_mapping
 }
 
 // Appends to a node with possibly existing attributes
-ptree* format_entity_instance(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const express::base& instance, ptree& child, ptree& tree, bool as_link = false) {
+ptree* format_entity_instance(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const express::base& instance, ptree& child, ptree& tree, bool as_link = false) {
 	const unsigned n = instance.declaration().as_entity()->attribute_count();
 	for (unsigned i = 0; i < n; ++i) {
 		try {
@@ -176,7 +176,7 @@ ptree* format_entity_instance(::logger& log, ifcopenshell::geom::abstract_mappin
 
 // Formats an entity instances as a ptree node, and insert into the DOM. Recurses
 // over the entity attributes and writes them as xml attributes of the node.
-ptree* format_entity_instance(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const express::base& instance, ptree& tree, bool as_link = false) {
+ptree* format_entity_instance(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const express::base& instance, ptree& tree, bool as_link = false) {
     ptree child;
     return format_entity_instance(log, mapping, instance, child, tree, as_link);
 }
@@ -188,7 +188,7 @@ std::string qualify_unrooted_instance(const express::base& inst) {
 // A function to be called recursively. Template specialization is used 
 // to descend into decomposition, containment and property relationships.
 template <typename A>
-ptree* descend(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, A instance, ptree& tree, express::base parent = express::base()) {
+ptree* descend(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, A instance, ptree& tree, express::base parent = express::base()) {
 	if (instance.declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
 		return descend(log, mapping, instance.template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
 	} else {
@@ -199,7 +199,7 @@ ptree* descend(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, A i
 // Returns related entity instances using IFC's objectified relationship
 // model. The second and third argument require a member function pointer.
 template <typename T, typename U, typename V, typename F, typename G>
-auto get_related(::logger& log, T t, F f, G g) {
+auto get_related(ifcopenshell::logger& log, T t, F f, G g) {
 	auto li = (t.*f)();
     std::vector<V> acc;
     for (auto& u : li) {
@@ -230,7 +230,7 @@ auto get_related(::logger& log, T t, F f, G g) {
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
 // IfcRelDecomposes, IfcRelDefinesByType, IfcRelDefinesByProperties relations.
 template <>
-ptree* descend(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, IfcSchema::IfcObjectDefinition product, ptree& tree, express::base parent) {
+ptree* descend(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, IfcSchema::IfcObjectDefinition product, ptree& tree, express::base parent) {
 	if (product.declaration().is(IfcSchema::IfcElement::Class())) {
 		auto voids = product.as<IfcSchema::IfcElement>().FillsVoids();
 		if (voids.size() == 1 && voids.front().RelatingOpeningElement() != parent) {
@@ -365,7 +365,7 @@ ptree* descend(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, Ifc
 }
 
 // Format IfcProperty instances and insert into the DOM. IfcComplexProperties are flattened out.
-void format_properties(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const std::vector<IfcSchema::IfcProperty>& properties, ptree& node) {
+void format_properties(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const std::vector<IfcSchema::IfcProperty>& properties, ptree& node) {
     for (auto& p : properties) {
         if (auto complex = p.as<IfcSchema::IfcComplexProperty>()) {
 			format_properties(log, mapping, complex.HasProperties(), node);
@@ -375,7 +375,7 @@ void format_properties(::logger& log, ifcopenshell::geom::abstract_mapping* mapp
 	}
 }
 
-void writeGroupToNode(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, IfcSchema::IfcGroup group, ptree& node, std::set<std::string> notRootGroups) {
+void writeGroupToNode(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, IfcSchema::IfcGroup group, ptree& node, std::set<std::string> notRootGroups) {
 	// @todo tfk: instead of a set<string> shouldn't we just have a set<IfcGroup>, the current approach
 	// might not work with non-unique or NIL group names.
 
@@ -407,7 +407,7 @@ void writeGroupToNode(::logger& log, ifcopenshell::geom::abstract_mapping* mappi
 }
 
 // Format IfcElementQuantity instances and insert into the DOM.
-void format_quantities(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const std::vector<IfcSchema::IfcPhysicalQuantity>& quantities, ptree& node) {
+void format_quantities(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const std::vector<IfcSchema::IfcPhysicalQuantity>& quantities, ptree& node) {
 	for (auto& p : quantities) {
 		ptree* node2 = format_entity_instance(log, mapping, p, node);
 		if (node2 && p.declaration().is(IfcSchema::IfcPhysicalComplexQuantity::Class())) {
@@ -417,7 +417,7 @@ void format_quantities(::logger& log, ifcopenshell::geom::abstract_mapping* mapp
 }
 
 // Format IfcTask instances and insert into the DOM.
-void format_tasks(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, IfcSchema::IfcTask task, ptree& node) {
+void format_tasks(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, IfcSchema::IfcTask task, ptree& node) {
 	ptree* ntask = format_entity_instance(log, mapping, task, node);
 
 	if (ntask) {
@@ -532,7 +532,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 
 	auto projects = file->instances_by_type<IfcSchema::IfcProject>();
 	if (projects.size() != 1) {
-		log.message(::logger::LOG_ERROR, "Expected a single IfcProject");
+		log.message(ifcopenshell::logger::LOG_ERROR, "Expected a single IfcProject");
 		return;
 	}
     IfcSchema::IfcProject& project = projects.front();
@@ -568,7 +568,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 	catch (const ifcopenshell::exception& ex) {
 		std::stringstream ss;
 		ss << "Failed to get ifc file header file_description implementation_level, error: '" << ex.what() << "'";
-		log.message(::logger::LOG_ERROR, "SER", 14, ss.str());
+		log.message(ifcopenshell::logger::LOG_ERROR, "SER", 14, ss.str());
 	}
 	try {
 		header.put("file_name.name", file->header().file_name().name());
@@ -576,7 +576,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 	catch (const ifcopenshell::exception& ex) {
 		std::stringstream ss;
 		ss << "Failed to get ifc file header file_name name, error: '" << ex.what() << "'";
-		log.message(::logger::LOG_ERROR, "SER", 15, ss.str());
+		log.message(ifcopenshell::logger::LOG_ERROR, "SER", 15, ss.str());
 	}
     try {
         header.put("file_name.time_stamp", file->header().file_name().time_stamp());
@@ -584,7 +584,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
     catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name time_stamp, error: '" << ex.what() << "'";
-        log.message(::logger::LOG_ERROR, "SER", 16, ss.str());
+        log.message(ifcopenshell::logger::LOG_ERROR, "SER", 16, ss.str());
     }
     try {
         header.put("file_name.preprocessor_version", file->header().file_name().preprocessor_version());
@@ -592,7 +592,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
     catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name preprocessor_version, error: '" << ex.what() << "'";
-        log.message(::logger::LOG_ERROR, "SER", 17, ss.str());
+        log.message(ifcopenshell::logger::LOG_ERROR, "SER", 17, ss.str());
     }
     try {
         header.put("file_name.originating_system", file->header().file_name().originating_system());
@@ -600,7 +600,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
     catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name originating_system, error: '" << ex.what() << "'";
-        log.message(::logger::LOG_ERROR, "SER", 18, ss.str());
+        log.message(ifcopenshell::logger::LOG_ERROR, "SER", 18, ss.str());
     }
     try {
 		// @nb inconsistent spelling
@@ -609,7 +609,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
     catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name authorization, error: '" << ex.what() << "'";
-        log.message(::logger::LOG_ERROR, "SER", 19, ss.str());
+        log.message(ifcopenshell::logger::LOG_ERROR, "SER", 19, ss.str());
 	}
 
 	// Descend into the decomposition structure of the IFC file.

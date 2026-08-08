@@ -128,14 +128,14 @@ namespace ifcopenshell::geom {
 		std::vector<ifcopenshell::geom::filter_t> filters_;
 		int num_threads_;
 		std::string geometry_library_;
-		::logger& logger_;
+		ifcopenshell::logger& logger_;
 
 		// When single-threaded
 		ifcopenshell::geom::converter* converter_;
 		
 		// When multi-threaded
 		std::vector<ifcopenshell::geom::converter*> kernel_pool;
-		std::vector<std::unique_ptr<::logger>> worker_loggers_;
+		std::vector<std::unique_ptr<ifcopenshell::logger>> worker_loggers_;
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
 		triangulation_element* current_triangulation;
@@ -170,7 +170,7 @@ namespace ifcopenshell::geom {
 		ifcopenshell::geom::element* process_based_on_settings(
 			ifcopenshell::geom::settings settings,
 			ifcopenshell::geom::brep_element* elem,
-			::logger& logger,
+			ifcopenshell::logger& logger,
 			ifcopenshell::geom::triangulation_element* previous = nullptr);
 
 		void flush_worker_log(ifcopenshell::geom::converter* kernel);
@@ -183,7 +183,7 @@ namespace ifcopenshell::geom {
 		ifcopenshell::geom::taxonomy::direction3::ptr remove_offset_();
 	public:
 
-		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geom::filter_t>& filters, int num_threads, ::logger& logger = ::logger::root())
+		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geom::filter_t>& filters, int num_threads, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
@@ -195,7 +195,7 @@ namespace ifcopenshell::geom {
 		{
 		}
 
-		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, ::logger& logger = ::logger::root())
+		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(1)
@@ -205,7 +205,7 @@ namespace ifcopenshell::geom {
 		{
 		}
 
-		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, int num_threads, ::logger& logger = ::logger::root())
+		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, int num_threads, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(num_threads)

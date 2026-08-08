@@ -3,6 +3,8 @@
 #include "exception.h"
 #include "file.h"
 
+using namespace ifcopenshell;
+
 // @todo is size() still needed?
 class size_visitor {
 public:
@@ -37,7 +39,7 @@ namespace {
         if (storage_model_ == 0) {
             try {
                 return array_.storage_ptr->get<T>(index_);
-            } catch (const impl::storage_type_mismatch& e) {
+            } catch (const ::impl::storage_type_mismatch& e) {
                 throw ifcopenshell::exception(
                     // entity_or_type not passed, but in v0.9 this is beginning to make sense
                     (entity_or_type
@@ -66,7 +68,7 @@ namespace {
                     (is_header ? "h|" : (entity_or_type->as_entity() ? "i|" : "t|")) +
                     (is_header ? entity_or_type->name() : std::to_string(instance_name_)) + "|" +
                     std::to_string(index_), &str);
-                impl::deserialize(array_.db_ptr, str, val);
+                ::impl::deserialize(array_.db_ptr, str, val);
             } else {
                 static_assert(
                     std::is_same_v<T, enumeration_reference> ||
@@ -287,7 +289,7 @@ ifcopenshell::argument_type attribute_value::type() const
 
 #ifdef IFOPSH_WITH_ROCKSDB
 
-bool impl::serialize(std::string& val, const express::base& t)
+bool ::impl::serialize(std::string& val, const express::base& t)
 {
     auto s = sizeof(size_t);
     val.resize(s + 2);
@@ -300,7 +302,7 @@ bool impl::serialize(std::string& val, const express::base& t)
     return true;
 }
 
-bool impl::serialize(std::string& val, const enumeration_reference& v)
+bool ::impl::serialize(std::string& val, const enumeration_reference& v)
 {
     auto s = sizeof(size_t);
     val.resize(s * 2 + 1);
@@ -312,7 +314,7 @@ bool impl::serialize(std::string& val, const enumeration_reference& v)
     return true;
 }
 
-bool impl::serialize(std::string& val, const std::vector<express::base>& t)
+bool ::impl::serialize(std::string& val, const std::vector<express::base>& t)
 {
     // no attempt at alignment
     val.resize(t.size() * (sizeof(size_t) + 1) + 1);
@@ -328,7 +330,7 @@ bool impl::serialize(std::string& val, const std::vector<express::base>& t)
     return true;
 }
 
-bool impl::serialize(std::string& val, const std::vector<std::vector<express::base>>& t)
+bool ::impl::serialize(std::string& val, const std::vector<std::vector<express::base>>& t)
 {
     std::ostringstream oss;
 	oss.put(type_encoder::encode_type<std::vector<std::vector<express::base>>>());
@@ -363,35 +365,35 @@ bool impl::serialize(std::string& val, const std::vector<std::vector<express::ba
     return true;
 }
 
-bool impl::serialize(std::string& val, const blank&)
+bool ::impl::serialize(std::string& val, const blank&)
 {
     val.resize(1);
     val[0] = type_encoder::encode_type<blank>();
     return true;
 }
 
-bool impl::serialize(std::string& val, const derived&)
+bool ::impl::serialize(std::string& val, const derived&)
 {
     val.resize(1);
     val[0] = type_encoder::encode_type<derived>();
     return true;
 }
 
-bool impl::serialize(std::string& val, const empty_aggregate_t&)
+bool ::impl::serialize(std::string& val, const empty_aggregate_t&)
 {
     val.resize(1);
     val[0] = type_encoder::encode_type<empty_aggregate_t>();
     return true;
 }
 
-bool impl::serialize(std::string& val, const empty_aggregate_of_aggregate_t&)
+bool ::impl::serialize(std::string& val, const empty_aggregate_of_aggregate_t&)
 {
     val.resize(1);
     val[0] = type_encoder::encode_type<empty_aggregate_of_aggregate_t>();
     return true;
 }
 
-bool impl::serialize(std::string& val, const boost::logic::tribool& t)
+bool ::impl::serialize(std::string& val, const boost::logic::tribool& t)
 {
     char tt = t == boost::logic::indeterminate ? 2 : t ? 1 : 0;
     val.resize(sizeof(char) + 1);
@@ -400,7 +402,7 @@ bool impl::serialize(std::string& val, const boost::logic::tribool& t)
     return true;
 }
 
-bool impl::serialize(std::string& val, const boost::dynamic_bitset<>& t)
+bool ::impl::serialize(std::string& val, const boost::dynamic_bitset<>& t)
 {
     std::string tmp;
     boost::to_string(t, tmp);
@@ -408,7 +410,7 @@ bool impl::serialize(std::string& val, const boost::dynamic_bitset<>& t)
     return true;
 }
 
-bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, boost::logic::tribool& t) {
+bool ::impl::deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, boost::logic::tribool& t) {
     if (val[0] != type_encoder::encode_type<boost::logic::tribool>()) {
         return false;
     }
@@ -424,7 +426,7 @@ bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::st
     return true;
 }
 
-bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, boost::dynamic_bitset<>& t) {
+bool ::impl::deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, boost::dynamic_bitset<>& t) {
     if (val[0] != type_encoder::encode_type<boost::dynamic_bitset<>>()) {
         return false;
     }
@@ -432,7 +434,7 @@ bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::st
     return true;
 }
 
-bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& val, std::vector<express::base>& t) {
+bool ::impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& val, std::vector<express::base>& t) {
     auto n = (val.size() - 1) / (sizeof(size_t) + 1);
     for (int i = 0; i < n; ++i) {
         auto ptr = val.data() + 1 + (sizeof(size_t) + 1) * i;
@@ -451,7 +453,7 @@ bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const
     return true;
 }
 
-bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& val, std::vector<std::vector<express::base>>& t) {
+bool ::impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& val, std::vector<std::vector<express::base>>& t) {
 	char const* ptr = val.data() + 1;
 
 	// size_t outer_size;
@@ -514,7 +516,7 @@ void rocks_db_attribute_storage::set(void* storage, const ifcopenshell::declarat
     const bool is_header = decl->schema() == &Header_section_schema::get_schema();
     ifcopenshell::impl::rocks_db_file_storage* rdb_storage = (ifcopenshell::impl::rocks_db_file_storage*)storage;
     std::string v;
-    impl::serialize(v, value);
+    ::impl::serialize(v, value);
     rdb_storage->db->Put(
         rdb_storage->wopts,
         (is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +

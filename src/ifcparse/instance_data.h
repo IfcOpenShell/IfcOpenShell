@@ -45,6 +45,8 @@
 #include <boost/logic/tribool.hpp>
 #include <boost/dynamic_bitset.hpp>
 
+namespace ifcopenshell {
+
 class IFC_PARSE_API enumeration_reference {
 private:
     const ifcopenshell::enumeration_type* enumeration_;
@@ -73,14 +75,16 @@ class IFC_PARSE_API derived {};
 class IFC_PARSE_API empty_aggregate_t {};
 class IFC_PARSE_API empty_aggregate_of_aggregate_t {};
 
+} // namespace ifcopenshell
+
 namespace impl {
     template <>
-    struct variant_type_name<blank> {
+    struct variant_type_name<ifcopenshell::blank> {
         static std::string get() { return "null"; }
     };
 
     template <>
-    struct variant_type_name<derived> {
+    struct variant_type_name<ifcopenshell::derived> {
         static std::string get() { return "derived"; }
     };
 
@@ -120,7 +124,7 @@ namespace impl {
     };
 
     template <>
-    struct variant_type_name<enumeration_reference> {
+    struct variant_type_name<ifcopenshell::enumeration_reference> {
         static std::string get() { return "enumeration"; }
     };
 
@@ -130,7 +134,7 @@ namespace impl {
     };
 
     template <>
-    struct variant_type_name<empty_aggregate_t> {
+    struct variant_type_name<ifcopenshell::empty_aggregate_t> {
         static std::string get() { return "aggregate"; }
     };
 
@@ -140,10 +144,12 @@ namespace impl {
     };
 
     template <>
-    struct variant_type_name<empty_aggregate_of_aggregate_t> {
+    struct variant_type_name<ifcopenshell::empty_aggregate_of_aggregate_t> {
         static std::string get() { return "aggregate of aggregate"; }
     };
 }
+
+namespace ifcopenshell {
 
 template<typename... Args>
 struct parameter_pack {
@@ -239,11 +245,11 @@ class IFC_PARSE_API mutable_attribute_value {
     uint8_t index_;
 };
 
-namespace ifcopenshell {
-    namespace impl {
-        class IFC_PARSE_API rocks_db_file_storage;
-    }
+namespace impl {
+    class IFC_PARSE_API rocks_db_file_storage;
 }
+
+} // namespace ifcopenshell
 
 #ifdef IFOPSH_WITH_ROCKSDB
 
@@ -261,14 +267,14 @@ namespace impl {
     bool serialize(std::string& buffer, const T& value) {
         auto byte_count = sizeof(typename T::value_type) * value.size();
         buffer.resize(byte_count + 1);
-        buffer[0] = type_encoder::encode_type<T>();
+        buffer[0] = ifcopenshell::type_encoder::encode_type<T>();
         memcpy(buffer.data() + 1, value.data(), byte_count);
         return true;
     }
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value&& is_contiguous_container<typename T::value_type>::value, int>::type = 0>
     bool serialize(std::string& buffer, const T& value) {
-        buffer = std::string(1, type_encoder::encode_type<T>());
+        buffer = std::string(1, ifcopenshell::type_encoder::encode_type<T>());
         for (auto& nested_value : value) {
             std::string nested_buffer;
             serialize(nested_buffer, nested_value);
@@ -285,16 +291,16 @@ namespace impl {
     template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
     bool serialize(std::string& buffer, const T& value) {
         buffer.resize(sizeof(T) + 1);
-        buffer[0] = type_encoder::encode_type<T>();
+        buffer[0] = ifcopenshell::type_encoder::encode_type<T>();
         memcpy(buffer.data() + 1, &value, sizeof(T));
         return true;
     }
 
-    bool serialize(std::string& buffer, const blank& value);
+    bool serialize(std::string& buffer, const ifcopenshell::blank& value);
 
-    bool serialize(std::string& buffer, const derived& value);
-    bool serialize(std::string& buffer, const empty_aggregate_t& value);
-    bool serialize(std::string& buffer, const empty_aggregate_of_aggregate_t& value);
+    bool serialize(std::string& buffer, const ifcopenshell::derived& value);
+    bool serialize(std::string& buffer, const ifcopenshell::empty_aggregate_t& value);
+    bool serialize(std::string& buffer, const ifcopenshell::empty_aggregate_of_aggregate_t& value);
 
     bool serialize(std::string& buffer, const boost::logic::tribool& value);
 
@@ -302,7 +308,7 @@ namespace impl {
     
     bool serialize(std::string& buffer, const express::base& value);
 
-    bool serialize(std::string& buffer, const enumeration_reference& value);
+    bool serialize(std::string& buffer, const ifcopenshell::enumeration_reference& value);
 
     bool serialize(std::string& buffer, const std::vector<express::base>& value);
 
@@ -311,7 +317,7 @@ namespace impl {
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value && !is_contiguous_container<typename T::value_type>::value, int>::type = 0>
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value, bool has_type_prefix = true) {
         static_cast<void>(storage);
-        if (has_type_prefix && buffer[0] != type_encoder::encode_type<T>()) {
+        if (has_type_prefix && buffer[0] != ifcopenshell::type_encoder::encode_type<T>()) {
             return false;
         }
         auto element_count = (buffer.size() - (has_type_prefix ? 1 : 0)) / sizeof(typename T::value_type);
@@ -324,7 +330,7 @@ namespace impl {
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value) {
         // @todo
         auto ptr = buffer.data();
-        if (*ptr != type_encoder::encode_type<T>()) {
+        if (*ptr != ifcopenshell::type_encoder::encode_type<T>()) {
             return false;
         }
         ptr++;
@@ -345,7 +351,7 @@ namespace impl {
     template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value) {
         static_cast<void>(storage);
-        if (buffer[0] != type_encoder::encode_type<T>()) {
+        if (buffer[0] != ifcopenshell::type_encoder::encode_type<T>()) {
             return false;
         }
         memcpy(&value, buffer.data() + 1, sizeof(T));
@@ -362,6 +368,8 @@ namespace impl {
     }
 
 #endif
+
+namespace ifcopenshell {
 
 // short lived
 class IFC_PARSE_API attribute_value {
@@ -593,5 +601,7 @@ class IFC_PARSE_API instance_data {
 
     void to_string(std::ostream& stream, bool uppercase = false) const;
 };
+
+} // namespace ifcopenshell
 
 #endif

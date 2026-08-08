@@ -446,7 +446,7 @@ struct intersection_validator {
 
 	std::set<const ifcopenshell::IfcBaseEntity*> successfully_processed;
 
-	intersection_validator(ifcopenshell::file& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
+	intersection_validator(ifcopenshell::file& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger = ifcopenshell::logger::root()) {
 
 		ifcopenshell::geom::settings settings;
 		settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;

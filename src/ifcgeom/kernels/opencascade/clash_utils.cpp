@@ -6,6 +6,8 @@
 #define GU_CULLING_EPSILON_RAY_TRIANGLE FLT_EPSILON*FLT_EPSILON
 #define PX_MAX_F32 3.4028234663852885981170418348452e+38F
 
+namespace ifcopenshell::geom {
+
 typedef uint32_t px_u32;
 
 // Why can't I use std::clamp?
@@ -588,3 +590,5 @@ bool trianglesIntersect(const gp_Vec& a1, const gp_Vec& b1, const gp_Vec& c1, co
 	}
 	return false;
 }
+
+} // namespace ifcopenshell::geom

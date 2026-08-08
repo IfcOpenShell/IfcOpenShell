@@ -102,7 +102,7 @@ private:
     const ifcopenshell::schema_definition* schema_;
     ifcopenshell::impl::in_memory_file_storage storage_;
     ifcopenshell::file_open_status good_ = ifcopenshell::file_open_status::SUCCESS;
-    std::reference_wrapper<::logger> logger_;
+    std::reference_wrapper<ifcopenshell::logger> logger_;
     int progress_;
     ifcopenshell::unresolved_references references_to_resolve_;
     int yielded_header_instances_ = 0;
@@ -156,13 +156,13 @@ private:
 
     void push_page(const std::string& page_data);
 
-    instance_streamer(ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root());
+    instance_streamer(ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
-    instance_streamer(const std::string& path, bool use_mmap = false, ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root());
+    instance_streamer(const std::string& path, bool use_mmap = false, ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
-    instance_streamer(void* data, int data_size, ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root());
+    instance_streamer(void* data, int data_size, ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
-    instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root());
+    instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     void bypass_types(const std::set<std::string>& type_names);
 
@@ -210,7 +210,7 @@ public:
 
   private:
     file_open_status good_ = file_open_status::SUCCESS;
-    std::reference_wrapper<::logger> logger_;
+    std::reference_wrapper<ifcopenshell::logger> logger_;
 
     const ifcopenshell::schema_definition* schema_;
     const ifcopenshell::declaration* ifcroot_type_;
@@ -241,7 +241,7 @@ public:
     /// </summary>
     /// <param name="path">UTF-8 file path to an IFC-SPF file</param>
     /// <param name="mmap">Whether to use memory-mapped I/O</param>
-    file(const std::string& path, bool use_mmap, ::logger& logger = ::logger::root());
+    file(const std::string& path, bool use_mmap, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 #endif
     /// <summary>
 	/// Constructs an file object from a file path, supports IFC-SPF and the IfcOpenShell-specific RocksDB format.
@@ -250,17 +250,17 @@ public:
     /// <param name="type">File type of the path</param>
     /// <param name="read_only">Whether to open in read-only mode, only supported on RocksDB databases</param>
     /// <param name="logger">Logger used while opening the file</param>
-    file(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false, ::logger& logger = ::logger::root());
+    file(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     /// <summary>
 	/// Constructs an file object from a stream containing IFC-SPF data.
     /// </summary>
-    file(std::istream& stream, int data_size, ::logger& logger = ::logger::root());
+    file(std::istream& stream, int data_size, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     /// <summary>
 	/// Constructs an file object from a memory buffer containing IFC-SPF data.
     /// </summary>
-    file(void* data, int data_size, ::logger& logger = ::logger::root());
+    file(void* data, int data_size, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     /// <summary>
     /// Constructs an file object with the specified schema, file type, and file path.
@@ -270,12 +270,12 @@ public:
     /// <param name="type">The file type to use for the file. Defaults to FT_AUTODETECT.</param>
     /// <param name="path">The file system path to the IFC file. Defaults to an empty string.</param>
     /// <param name="logger">Logger used while creating the file.</param>
-    file(const ifcopenshell::schema_definition* schema = ifcopenshell::schema_by_name("IFC4"), filetype type = FT_AUTODETECT, const std::string& path = "", ::logger& logger = ::logger::root());
+    file(const ifcopenshell::schema_definition* schema = ifcopenshell::schema_by_name("IFC4"), filetype type = FT_AUTODETECT, const std::string& path = "", ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     /// <summary>
     /// Constructs an unitialized file object. Call initialize() later on. Allows to specify which types to bypass during load.
     /// </summary>
-    file(const uninitialized_tag& tag, ::logger& logger = ::logger::root());
+    file(const uninitialized_tag& tag, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     bool initialize(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false);
 #ifdef USE_MMAP
@@ -289,7 +289,7 @@ public:
     ~file();
 
     ifcopenshell::file_open_status good() const { return good_; }
-    ::logger& logger() const { return logger_.get(); }
+    ifcopenshell::logger& logger() const { return logger_.get(); }
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order

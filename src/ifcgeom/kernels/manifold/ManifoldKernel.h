@@ -13,10 +13,10 @@ namespace kernels {
 
 class IFC_GEOMLIBRARY_API manifold_kernel : public abstract_kernel {
 public:
-	manifold_kernel(const ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root())
+	manifold_kernel(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 		: abstract_kernel("manifold", settings, logger) {}
 
-	virtual abstract_kernel* clone(::logger& logger) const {
+	virtual abstract_kernel* clone(ifcopenshell::logger& logger) const {
 		return new manifold_kernel(settings(), logger);
 	}
 

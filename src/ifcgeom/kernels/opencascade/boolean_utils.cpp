@@ -405,7 +405,7 @@ bool ifcopenshell::geom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape
 	return true;
 }
 
-int ifcopenshell::geom::util::eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, ::logger& logger) {
+int ifcopenshell::geom::util::eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, ifcopenshell::logger& logger) {
 	int N = 0;
 	NCollection_List<TopoDS_Shape>::Iterator it(bs);
 	for (; it.More(); it.Next()) {
@@ -573,7 +573,7 @@ int ifcopenshell::geom::util::eliminate_touching_operands(double prec, const Top
 	return N;
 }
 
-bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const NCollection_List<TopoDS_Shape> & b_input, TopoDS_Shape & result, double eps, ::logger& logger) {
+bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const NCollection_List<TopoDS_Shape> & b_input, TopoDS_Shape & result, double eps, ifcopenshell::logger& logger) {
 	ifcopenshell::geom::impl::tree<int> edge_tree;
 
 	NCollection_List<TopoDS_Shape> ab_input = b_input;
@@ -885,7 +885,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 		a = unify(a_input, fuzziness * 1000.);
 
 		settings.log().message(
-			::logger::LOG_DEBUG, "GEO", 127,
+			ifcopenshell::logger::LOG_DEBUG, "GEO", 127,
 			"Simplified operand A from "s +
 			std::to_string(count(a_input, TopAbs_FACE)) +
 			" to "s +
@@ -897,7 +897,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 			for (; it.More(); it.Next()) {
 				b.Append(unify(it.Value(), fuzziness));
 				settings.log().message(
-					::logger::LOG_DEBUG, "GEO", 128,
+					ifcopenshell::logger::LOG_DEBUG, "GEO", 128,
 					"Simplified operand B from "s +
 					std::to_string(count(it.Value(), TopAbs_FACE)) +
 					" to "s +
@@ -965,7 +965,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 		return true;
 	}
 
-	if (!is_2d && ::logger::LOG_NOTICE >= settings.log().verbosity()) {
+	if (!is_2d && ifcopenshell::logger::LOG_NOTICE >= settings.log().verbosity()) {
 		PERF("preliminary manifoldness check");
 
 		if (!a.IsNull()) {

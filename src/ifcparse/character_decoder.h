@@ -57,7 +57,7 @@ class IFC_PARSE_API character_decoder {
     inline static ConversionMode mode = UTF8;
     inline static char substitution_character = '_';
 
-    character_decoder(Reader* stream, logger& logger = ::logger::root());
+    character_decoder(Reader* stream, logger& logger = ifcopenshell::logger::root());
     ~character_decoder();
     // Gets a decoded string representation at the token stream
     // read pointer and advances the underlying token stream.

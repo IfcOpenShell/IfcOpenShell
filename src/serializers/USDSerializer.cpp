@@ -36,8 +36,8 @@
 
 #include <math.h>
 
-usd_serializer::usd_serializer(const std::string& out_filename, const ifcopenshell::geom::settings& settings, ::logger* logger):
-	write_only_geometry_serializer(settings, logger),
+usd_serializer::usd_serializer(const std::string& out_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger):
+	ifcopenshell::geom::write_only_geometry_serializer(settings, logger),
 	filename_(out_filename)
 {
 	std::size_t found = filename_.find_last_of("/\\");

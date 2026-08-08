@@ -86,7 +86,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid& inst) {
 		}
 
 		if (intersecting) {
-			::logger::root().warning("Warning Axis and SweptArea intersecting", l);
+			ifcopenshell::logger::root().warning("Warning Axis and SweptArea intersecting", l);
 		}
 	}
 	*/

@@ -769,16 +769,16 @@ namespace {
 		const auto shell_info = diagnose_shell(shell);
 		const auto before = diagnose_mesh(before_part.mesh, precision);
 		const auto after = diagnose_mesh(after_mesh, precision);
-		::logger::root().warning(
+		ifcopenshell::logger::root().warning(
 			"Manifold kernel: solid shell manifold validation failed; before_transform=" +
 			std::string(before_part.solid ? "solid" : "mesh-only") +
 			" (" + manifold_error_string(before_status) + "), after_transform=(" + manifold_error_string(after_status) + ")",
 			shell->instance);
-		::logger::root().warning("Manifold kernel: solid shell diagnosis: " + solid_shell_failure_diagnosis(before_part, before, after, before_status, after_status), shell->instance);
-		::logger::root().warning("Manifold kernel: solid shell input: " + shell_diagnostics_string(shell_info), shell->instance);
-		::logger::root().warning("Manifold kernel: solid shell mesh before transform: " + mesh_diagnostics_string(before), shell->instance);
-		::logger::root().warning("Manifold kernel: solid shell transform: " + matrix_diagnostics_string(place), shell->instance);
-		::logger::root().warning("Manifold kernel: solid shell mesh after transform: " + mesh_diagnostics_string(after), shell->instance);
+		ifcopenshell::logger::root().warning("Manifold kernel: solid shell diagnosis: " + solid_shell_failure_diagnosis(before_part, before, after, before_status, after_status), shell->instance);
+		ifcopenshell::logger::root().warning("Manifold kernel: solid shell input: " + shell_diagnostics_string(shell_info), shell->instance);
+		ifcopenshell::logger::root().warning("Manifold kernel: solid shell mesh before transform: " + mesh_diagnostics_string(before), shell->instance);
+		ifcopenshell::logger::root().warning("Manifold kernel: solid shell transform: " + matrix_diagnostics_string(place), shell->instance);
+		ifcopenshell::logger::root().warning("Manifold kernel: solid shell mesh after transform: " + mesh_diagnostics_string(after), shell->instance);
 	}
 
 	double signed_area(const manifold::SimplePolygon& polygon) {
@@ -1492,7 +1492,7 @@ namespace {
 bool manifold_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, ifcopenshell::geom::conversion_results& results) {
 	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get(), dilation_hack, settings_.get<settings::CircleSegments>().get());
 	if (!part) {
-		::logger::root().warning("Manifold kernel: failed to convert extrusion, requires planar bounds with line, circle or ellipse edges", extrusion->instance);
+		ifcopenshell::logger::root().warning("Manifold kernel: failed to convert extrusion, requires planar bounds with line, circle or ellipse edges", extrusion->instance);
 		return false;
 	}
 	results.emplace_back(ifcopenshell::geom::conversion_result(
@@ -1507,11 +1507,11 @@ bool manifold_kernel::convert_impl(const taxonomy::shell::ptr shell, ifcopenshel
 	manifold::Manifold::Error status = manifold::Manifold::Error::NoError;
 	auto part = part_from_shell(shell, settings_.get<settings::Precision>().get(), dilation_hack, &status);
 	if (!part) {
-		::logger::root().warning("Manifold kernel: failed to convert shell, requires planar polygonal faces with explicit vertices", shell->instance);
+		ifcopenshell::logger::root().warning("Manifold kernel: failed to convert shell, requires planar polygonal faces with explicit vertices", shell->instance);
 		return false;
 	}
 	if (!part->solid) {
-		::logger::root().notice("Manifold kernel: shell converted as mesh only (" + manifold_error_string(status) + ")", shell->instance);
+		ifcopenshell::logger::root().notice("Manifold kernel: shell converted as mesh only (" + manifold_error_string(status) + ")", shell->instance);
 	}
 	results.emplace_back(ifcopenshell::geom::conversion_result(
 		shell->instance.id(),
@@ -1528,7 +1528,7 @@ bool manifold_kernel::convert_impl(const taxonomy::solid::ptr solid, ifcopenshel
 		manifold::Manifold::Error before_status = manifold::Manifold::Error::NoError;
 		auto part = part_from_shell(shell, precision, dilation_hack, &before_status);
 		if (!part) {
-			::logger::root().warning("Manifold kernel: failed to convert solid shell, requires planar polygonal faces with explicit vertices", shell->instance);
+			ifcopenshell::logger::root().warning("Manifold kernel: failed to convert solid shell, requires planar polygonal faces with explicit vertices", shell->instance);
 			return false;
 		}
 		auto place = shell->matrix ? shell->matrix : taxonomy::make<taxonomy::matrix4>();
@@ -1570,21 +1570,21 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, ifcop
         dilation_hack = first ? 0. : precision * 10.;
 		if (!first && br->operation == taxonomy::boolean_result::SUBTRACTION && face) {
 			if (!first_bbox) {
-				::logger::root().warning("Manifold kernel: cannot fit halfspace operand without a valid first operand bounds", child->instance);
+				ifcopenshell::logger::root().warning("Manifold kernel: cannot fit halfspace operand without a valid first operand bounds", child->instance);
 				return false;
 			}
 			halfspace_build_state state;
             auto part = part_from_halfspace_solid(state, solid, face, *first_bbox, precision, dilation_hack);
 			if (!part) {
 				if (state.unchanged && br->operation == taxonomy::boolean_result::SUBTRACTION) {
-					::logger::root().warning("Manifold kernel: halfspace subtraction yields unchanged volume", child->instance);
+					ifcopenshell::logger::root().warning("Manifold kernel: halfspace subtraction yields unchanged volume", child->instance);
 					continue;
 				}
-				::logger::root().warning("Manifold kernel: failed to fit halfspace boolean operand to first operand bounds", child->instance);
+				ifcopenshell::logger::root().warning("Manifold kernel: failed to fit halfspace boolean operand to first operand bounds", child->instance);
 				return false;
 			}
 			if (!part->solid) {
-				::logger::root().warning("Manifold kernel: fitted halfspace operand is not a valid manifold solid", child->instance);
+				ifcopenshell::logger::root().warning("Manifold kernel: fitted halfspace operand is not a valid manifold solid", child->instance);
 				return false;
 			}
 			operand = *part->solid;
@@ -1594,12 +1594,12 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, ifcop
 		} else {
 			ifcopenshell::geom::conversion_results converted;
 			if (!abstract_kernel::convert(child, converted)) {
-				::logger::root().warning("Manifold kernel: failed to convert boolean operand", child->instance);
+				ifcopenshell::logger::root().warning("Manifold kernel: failed to convert boolean operand", child->instance);
 				return false;
 			}
 			operand = results_to_operand(converted);
 			if (!operand) {
-				::logger::root().warning("Manifold kernel: boolean operand is not a valid manifold solid", child->instance);
+				ifcopenshell::logger::root().warning("Manifold kernel: boolean operand is not a valid manifold solid", child->instance);
 				return false;
 			}
 			if (!style) {
@@ -1612,7 +1612,7 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, ifcop
 		if (first) {
 			auto bbox = operand->BoundingBox();
 			if (!bbox.IsFinite()) {
-				::logger::root().warning("Manifold kernel: first boolean operand has no valid bounds", child->instance);
+				ifcopenshell::logger::root().warning("Manifold kernel: first boolean operand has no valid bounds", child->instance);
 				return false;
 			}
 			first_bbox = bbox;
@@ -1623,7 +1623,7 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, ifcop
     dilation_hack = 0.;
 	auto result = boolean_result_from_operands(operands, br->operation);
 	if (!result || result->IsEmpty()) {
-		::logger::root().warning("Manifold kernel: boolean operation produced no result", br->instance);
+		ifcopenshell::logger::root().warning("Manifold kernel: boolean operation produced no result", br->instance);
 		return false;
 	}
 	results.emplace_back(ifcopenshell::geom::conversion_result(
@@ -1638,7 +1638,7 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
 	std::vector<manifold::Manifold> opening_operands;
 	auto entity_bbox = results_bbox(entity_shapes);
 	if (!entity_bbox) {
-		::logger::root().warning("Manifold kernel: host shape has no valid bounds for halfspace fitting");
+		ifcopenshell::logger::root().warning("Manifold kernel: host shape has no valid bounds for halfspace fitting");
 		return false;
 	}
     dilation_hack = settings_.get<settings::Precision>().get() * 10.;
@@ -1646,19 +1646,19 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
 		const auto relative = taxonomy::make<taxonomy::matrix4>(entity_trsf.ccomponents().inverse() * opening.second.ccomponents());
 		ifcopenshell::geom::conversion_results converted;
 		if (!abstract_kernel::convert(opening.first, converted)) {
-			::logger::root().warning("Manifold kernel: failed to convert opening operand", opening.first->instance);
+			ifcopenshell::logger::root().warning("Manifold kernel: failed to convert opening operand", opening.first->instance);
 			return false;
 		}
 		for (const auto& result : converted) {
 			auto moved = std::unique_ptr<ifcopenshell::geom::conversion_result_shape>(result.Shape()->moved(taxonomy::make<taxonomy::matrix4>(relative->ccomponents() * result.Placement()->ccomponents())));
 			auto* shape = dynamic_cast<ifcopenshell::geom::manifold_shape*>(moved.get());
 			if (!shape) {
-				::logger::root().warning("Manifold kernel: opening result is not a manifold shape");
+				ifcopenshell::logger::root().warning("Manifold kernel: opening result is not a manifold shape");
 				return false;
 			}
 			auto operand = shape->as_manifold();
 			if (!operand) {
-				::logger::root().warning("Manifold kernel: opening result is not a valid manifold solid", opening.first->instance);
+				ifcopenshell::logger::root().warning("Manifold kernel: opening result is not a valid manifold solid", opening.first->instance);
 				return false;
 			}
 			opening_operands.push_back(*operand);
@@ -1672,7 +1672,7 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
 	for (const auto& entity_shape : entity_shapes) {
 		auto operand = result_to_manifold(entity_shape);
 		if (!operand) {
-			::logger::root().warning("Manifold kernel: host shape is not a valid manifold solid");
+			ifcopenshell::logger::root().warning("Manifold kernel: host shape is not a valid manifold solid");
 			return false;
 		}
 		auto result = *operand - opening_union;

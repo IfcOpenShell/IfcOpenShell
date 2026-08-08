@@ -11,20 +11,20 @@
 
 #include <boost/shared_ptr.hpp>
 
-class json_serializer : public serializer {
+class json_serializer : public ifcopenshell::geom::serializer {
   public:
     enum Dialect {
         JSON_DIALECT_CREOOX
     };
   private:
-    boost::shared_ptr<serializer> implementation_;
+    boost::shared_ptr<ifcopenshell::geom::serializer> implementation_;
 
   protected:
     std::string json_filename;
     Dialect dialect_;
 
   public:
-    json_serializer(ifcopenshell::file* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX, ::logger& logger = ::logger::root())
+    json_serializer(ifcopenshell::file* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX, ifcopenshell::logger& logger = ifcopenshell::logger::root())
         : json_filename(json_filename)
         , dialect_(dialect)
     {

@@ -2753,7 +2753,7 @@ std::string svg_serializer::nameElement(express::base storey, const ifcopenshell
 	ifcopenshell::escape_xml(n);
 
 	return nameElement_({
-		{"id", with_section_heights_from_storey_ ? object_id(storey, elem) : geometry_serializer::object_id(elem)},
+		{"id", with_section_heights_from_storey_ ? object_id(storey, elem) : ifcopenshell::geom::geometry_serializer::object_id(elem)},
 		{"class", elem->type()},
 		{namespace_prefix_ + "name", n},
 		{namespace_prefix_ + "guid", elem->guid()}

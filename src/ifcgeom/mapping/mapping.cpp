@@ -40,7 +40,7 @@ using namespace ifcopenshell::geom;
 
 namespace {
     struct POSTFIX_SCHEMA(factory_t) {
-        abstract_mapping* operator()(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& logger) const {
+        abstract_mapping* operator()(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) const {
             ifcopenshell::geom::POSTFIX_SCHEMA(mapping)* m = new ifcopenshell::geom::POSTFIX_SCHEMA(mapping)(file, settings, logger);
             return m;
         }
@@ -774,7 +774,7 @@ taxonomy::ptr mapping::map(const express::base& inst) {
             cache_.insert({iden, item});
         }
     } else if (!matched) {
-        logger_.message(::logger::LOG_ERROR, "GEO", 307, "No operation defined for:", inst);
+        logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 307, "No operation defined for:", inst);
     }
     return item;
 }
@@ -927,7 +927,7 @@ void mapping::initialize_units_() {
     } catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to determine unit information '" << ex.what() << "'";
-        logger_.message(::logger::LOG_ERROR, "GEO", 311, ss.str());
+        logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 311, ss.str());
     }
 
     if (!length_unit_encountered) {
@@ -1012,7 +1012,7 @@ void mapping::initialize_settings() {
 
     if (any_precision_encountered) {
         if (lowest_precision_encountered < 1.e-7) {
-            logger_.message(::logger::LOG_WARNING, "SYS", 33, "Precision lower than 0.0000001 meter not enforced");
+            logger_.message(ifcopenshell::logger::LOG_WARNING, "SYS", 33, "Precision lower than 0.0000001 meter not enforced");
             precision_to_set = 1.e-7;
         } else {
             precision_to_set = lowest_precision_encountered;
@@ -1063,7 +1063,7 @@ bool mapping::get_layerset_information(const express::base& p, layerset_informat
         IfcSchema::IfcRepresentation axis_representation = find_representation(product, "Axis");
 
         if (!axis_representation) {
-            logger_.message(::logger::LOG_WARNING, "GEO", 315, "No axis representation for:", product);
+            logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 315, "No axis representation for:", product);
             return false;
         }
 
@@ -1138,7 +1138,7 @@ bool mapping::get_layerset_information(const express::base& p, layerset_informat
         }
 
         if (extrusions.size() != 1) {
-            logger_.message(::logger::LOG_WARNING, "GEO", 316, "No single extrusion found in body representation for:", product);
+            logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 316, "No single extrusion found in body representation for:", product);
             return false;
         }
 
@@ -1153,7 +1153,7 @@ bool mapping::get_layerset_information(const express::base& p, layerset_informat
         if (has_position) {
             auto m4 = taxonomy::cast<taxonomy::matrix4>(map(extrusion.Position()));
             if (!m4) {
-                logger_.message(::logger::LOG_ERROR, "GEO", 317, "Failed to convert placement for extrusion of:", product);
+                logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 317, "Failed to convert placement for extrusion of:", product);
                 return false;
             } else {
                 extrusion_position = m4;
@@ -1163,7 +1163,7 @@ bool mapping::get_layerset_information(const express::base& p, layerset_informat
         taxonomy::direction3::ptr extrusion_direction = taxonomy::cast<taxonomy::direction3>(map(extrusion.ExtrudedDirection()));
 
         if (!extrusion_direction) {
-            logger_.message(::logger::LOG_ERROR, "GEO", 318, "Failed to convert direction for extrusion of:", product);
+            logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 318, "Failed to convert direction for extrusion of:", product);
             return false;
         }
 

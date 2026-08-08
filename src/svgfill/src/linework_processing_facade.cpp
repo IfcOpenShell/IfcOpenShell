@@ -137,7 +137,7 @@ bool svgfill::arrange_polygons(
 	arrange_polygon_settings settings,
 	const std::vector<polygon_2>& polygons,
 	std::vector<polygon_2>& arranged,
-	logger& logger)
+	ifcopenshell::logger& logger)
 {
 	return provider().api.arrange_polygons(settings, polygons, arranged, logger);
 }

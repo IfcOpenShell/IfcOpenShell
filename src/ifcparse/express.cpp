@@ -8,7 +8,7 @@ uint32_t express::base::identity() const { return data()->identity(); }
 
 uint32_t express::base::id() const { return data()->id(); }
 
-const instance_data* express::base::data() const {
+const ifcopenshell::instance_data* express::base::data() const {
 #ifdef IFOPSH_SAFE_INSTANCE
     auto sp = data_.lock();
     if (sp) {
@@ -21,7 +21,7 @@ const instance_data* express::base::data() const {
 #endif
 }
 
-instance_data* express::base::data() {
+ifcopenshell::instance_data* express::base::data() {
 #ifdef IFOPSH_SAFE_INSTANCE
     auto sp = data_.lock();
     if (sp) {

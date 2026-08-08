@@ -54,8 +54,10 @@ struct in_memory_file_storage;
 }
 } // namespace ifcopenshell
 
+namespace ifcopenshell {
 class instance_data;
 class attribute_value;
+}
 
 namespace express {
 
@@ -67,8 +69,8 @@ class declared_type;
 class IFC_PARSE_API base {
   protected:
     ifcopenshell::pointer_type data_;
-    const instance_data* data() const;
-    instance_data* data();
+    const ifcopenshell::instance_data* data() const;
+    ifcopenshell::instance_data* data();
   public:
     operator bool() const {
 #ifdef IFOPSH_SAFE_INSTANCE
@@ -120,7 +122,7 @@ class IFC_PARSE_API base {
     
     void unset_attribute_value(size_t attribute_index);
 
-    attribute_value get_attribute_value(size_t attribute_index) const;
+    ifcopenshell::attribute_value get_attribute_value(size_t attribute_index) const;
 
     uint32_t identity() const;
 
@@ -160,7 +162,7 @@ class IFC_PARSE_API entity : public base {
   public:
     using base::base;
 
-    attribute_value get(const std::string& attribute_name) const;
+    ifcopenshell::attribute_value get(const std::string& attribute_name) const;
 
     template <typename T>
     T get_value(const std::string& attribute_name) const;

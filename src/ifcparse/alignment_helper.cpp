@@ -488,7 +488,7 @@ Ifc4x3_add2::IfcAlignment addAlignment(hierarchy_helper<Ifc4x3_add2>& file, cons
     return alignment;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentSegment& segment, logger& logger) {
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentSegment& segment, ifcopenshell::logger& logger) {
     std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
     auto design_parameters = segment.DesignParameters();
     auto horizontal = design_parameters.as<Ifc4x3_add2::IfcAlignmentHorizontalSegment>();
@@ -514,7 +514,7 @@ Ifc4x3_add2::IfcLengthMeasure create_length(hierarchy_helper<Ifc4x3_add2>& file,
 }
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentHorizontalSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentHorizontalSegment& segment, logger& logger) {
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentHorizontalSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentHorizontalSegment& segment, ifcopenshell::logger& logger) {
     std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
     auto start_point = segment.StartPoint();
     auto start_direction = segment.StartDirection();
@@ -770,7 +770,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
     return result;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentVerticalSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentVerticalSegment& segment, logger& logger) {
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentVerticalSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentVerticalSegment& segment, ifcopenshell::logger& logger) {
     std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
     auto start_distance_along = segment.StartDistAlong();
     auto horizontal_length = segment.HorizontalLength();
@@ -862,7 +862,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
     return result;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentCantSegment& segment, logger& logger) {
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentCantSegment& segment, ifcopenshell::logger& logger) {
     std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
     auto type = segment.PredefinedType();
     if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_BLOSSCURVE) {
