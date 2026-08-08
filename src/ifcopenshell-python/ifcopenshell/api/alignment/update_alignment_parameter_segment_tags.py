@@ -25,25 +25,32 @@ from ifcopenshell.api.alignment._get_segment_start_point_label import (
 )
 
 
-def update_alignment_parameter_segment_tags(file: ifcopenshell.file, layout: entity_instance) -> None:
+def update_alignment_parameter_segment_tags(
+    file: ifcopenshell.file, layout: entity_instance, label_end_tag: bool = False
+) -> None:
     """
-    Sets IfcAlignmentParameterSegment.StartTag/EndTag for every segment transition in an alignment
-    layout. Unlike update_key_point_referents, this does not create any IfcReferent or IfcRelNests --
-    it only mutates the StartTag/EndTag string attributes already present on each segment's
-    DesignParameters.
+    Sets IfcAlignmentParameterSegment.StartTag (and, optionally, EndTag) for every segment
+    transition in an alignment layout. Unlike update_key_point_referents, this does not create any
+    IfcReferent or IfcRelNests -- it only mutates the StartTag/EndTag string attributes already
+    present on each segment's DesignParameters.
 
-    For each transition between two consecutive segments, the outgoing segment's EndTag and the
-    incoming segment's StartTag are both set to the same computed tag (they describe the same
-    physical point), using the same label-and-station format as update_key_point_referents' Name
-    minus the alignment name (via _get_key_point_tag), e.g. "145+98.32 (P.C.)". Every real segment
-    ends up with both StartTag and EndTag populated: the first segment's StartTag and the last
-    segment's EndTag come from the "Beginning of Alignment"/"End of Alignment" boundary labels.
+    Every real segment's StartTag is set to a computed tag describing the point where it begins,
+    using the same label-and-station format as update_key_point_referents' Name minus the alignment
+    name (via _get_key_point_tag), e.g. "145+98.32 (P.C.)". The first segment's StartTag comes from
+    the "Beginning of Alignment" boundary label.
+
+    EndTag is left untouched unless `label_end_tag` is True. When enabled, for each transition
+    between two consecutive segments, the outgoing segment's EndTag is set to the same tag as the
+    incoming segment's StartTag (they describe the same physical point), and the last segment's
+    EndTag is set from the "End of Alignment" boundary label.
 
     Labels come from _get_segment_start_point_label -- if a callback has been registered via
     register_referent_name_callback(), its output is used instead of the built-in labels, exactly as
     in update_key_point_referents.
 
     :param layout: IfcAlignmentHorizontal, IfcAlignmentVertical, or IfcAlignmentCant
+    :param label_end_tag: if True, also sets EndTag on every real segment. If False (default),
+        EndTag is left untouched.
     :return: None -- this function mutates segment.DesignParameters.StartTag/EndTag in place
 
     Example:
@@ -85,7 +92,7 @@ def update_alignment_parameter_segment_tags(file: ifcopenshell.file, layout: ent
         tag = _get_key_point_tag(file, label, station)
 
         dp.StartTag = tag
-        if prev_segment is not None:
+        if prev_segment is not None and label_end_tag:
             prev_segment.DesignParameters.EndTag = tag
 
         if is_horizontal:
@@ -95,6 +102,7 @@ def update_alignment_parameter_segment_tags(file: ifcopenshell.file, layout: ent
 
         prev_segment = segment
 
-    label = _get_segment_start_point_label(prev_segment, None)
-    station = start_station + distance_along
-    prev_segment.DesignParameters.EndTag = _get_key_point_tag(file, label, station)
+    if label_end_tag:
+        label = _get_segment_start_point_label(prev_segment, None)
+        station = start_station + distance_along
+        prev_segment.DesignParameters.EndTag = _get_key_point_tag(file, label, station)

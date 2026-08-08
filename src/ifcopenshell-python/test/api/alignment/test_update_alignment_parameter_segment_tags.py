@@ -138,7 +138,7 @@ def test_single_real_segment_produces_only_boundary_tags():
     )
     ifcopenshell.api.alignment.create_layout_segment(file, horizontal, design_parameters)
 
-    ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(file, horizontal)
+    ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(file, horizontal, label_end_tag=True)
 
     segments = _real_segments(horizontal)
     assert len(segments) == 1
@@ -147,12 +147,39 @@ def test_single_real_segment_produces_only_boundary_tags():
     assert _label(dp.EndTag) == "P.O.E."
 
 
+def test_end_tag_not_labelled_by_default():
+    file = _new_file_no_context()
+    alignment = ifcopenshell.api.alignment.create(file, "A1", include_geometry=False)
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+
+    design_parameters = file.createIfcAlignmentHorizontalSegment(
+        StartTag=None,
+        EndTag=None,
+        StartPoint=file.createIfcCartesianPoint((0.0, 0.0)),
+        StartDirection=0.0,
+        StartRadiusOfCurvature=0.0,
+        EndRadiusOfCurvature=0.0,
+        SegmentLength=100.0,
+        GravityCenterLineHeight=None,
+        PredefinedType="LINE",
+    )
+    ifcopenshell.api.alignment.create_layout_segment(file, horizontal, design_parameters)
+
+    ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(file, horizontal)
+
+    segments = _real_segments(horizontal)
+    assert len(segments) == 1
+    dp = segments[0].DesignParameters
+    assert _label(dp.StartTag) == "P.O.B."
+    assert dp.EndTag is None
+
+
 def test_horizontal_tag_labels_and_adjacency():
     file = _new_file()
     alignment = _build_alignment(file)
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
 
-    ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(file, horizontal)
+    ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(file, horizontal, label_end_tag=True)
 
     segments = _real_segments(horizontal)
     assert len(segments) == 7
@@ -177,7 +204,7 @@ def test_vertical_tag_labels_and_adjacency():
     alignment = _build_alignment(file)
     vertical = ifcopenshell.api.alignment.get_vertical_layout(alignment)
 
-    ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(file, vertical)
+    ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(file, vertical, label_end_tag=True)
 
     segments = _real_segments(vertical)
     assert len(segments) == 9
@@ -242,7 +269,7 @@ def test_cant_layout_boundary_tags():
     )
     ifcopenshell.api.alignment.create_layout_segment(file, cant, dp2)
 
-    ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(file, cant)
+    ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(file, cant, label_end_tag=True)
 
     segments = _real_segments(cant)
     assert _label(segments[0].DesignParameters.StartTag) == "C.P.O.B."
@@ -273,6 +300,7 @@ test_returns_none()
 test_no_referents_or_rel_nests_created()
 test_no_real_segments_leaves_tags_none()
 test_single_real_segment_produces_only_boundary_tags()
+test_end_tag_not_labelled_by_default()
 test_horizontal_tag_labels_and_adjacency()
 test_vertical_tag_labels_and_adjacency()
 test_cant_layout_boundary_tags()
