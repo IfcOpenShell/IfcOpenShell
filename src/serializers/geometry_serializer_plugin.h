@@ -24,7 +24,7 @@
 #include "../ifcgeom/geometry_serializer.h"
 #include "../plugin/plugin.h"
 
-#include <boost/function.hpp>
+#include <functional>
 #include <memory>
 
 #include <filesystem>
@@ -61,8 +61,8 @@ struct SERIALIZERS_API geometry_serializer_context {
 
 class SERIALIZERS_API geometry_serializer_registry {
 public:
-	typedef boost::function<std::shared_ptr<geometry_serializer>(const geometry_serializer_context&)> create_fn;
-	typedef boost::function<void(geometry_serializer_context&)> configure_fn;
+	typedef std::function<std::shared_ptr<geometry_serializer>(const geometry_serializer_context&)> create_fn;
+	typedef std::function<void(geometry_serializer_context&)> configure_fn;
 
 	void bind(const geometry_serializer_info& info, create_fn create, configure_fn configure = configure_fn(), const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 	bool has(const std::string& extension) const;

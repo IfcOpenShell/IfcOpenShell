@@ -23,8 +23,7 @@
 #include "tree.h"
 #include "../plugin/plugin.h"
 
-#include <boost/function.hpp>
-
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -74,7 +73,7 @@ namespace ifcopenshell {
 
 			class IFC_GEOM_API tree_registry {
 			public:
-				typedef boost::function0<abstract_tree*> create_fn;
+				typedef std::function<abstract_tree*()> create_fn;
 
 				void bind(const tree_info& info, create_fn create, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 				bool has(const std::string& backend_id) const;

@@ -33,7 +33,6 @@
 #include "../ifcgeom/abstract_mapping.h"
 
 #include <boost/foreach.hpp>
-#include <boost/function.hpp>
 #include <boost/regex.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/case_conv.hpp>

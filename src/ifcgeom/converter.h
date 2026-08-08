@@ -9,7 +9,6 @@
 #include "../ifcgeom/abstract_kernel.h"
 #include "../ifcgeom/element.h"
 
-#include <boost/function.hpp>
 #include <memory>
 
 namespace ifcopenshell { namespace geom {

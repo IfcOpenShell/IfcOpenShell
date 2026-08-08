@@ -23,8 +23,7 @@
 #include "../ifcgeom/abstract_kernel.h"
 #include "../plugin/plugin.h"
 
-#include <boost/function.hpp>
-
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -43,7 +42,7 @@ namespace ifcopenshell {
 
 			class IFC_GEOM_API kernel_registry {
 			public:
-				typedef boost::function2<abstract_kernel*, ifcopenshell::file*, ifcopenshell::geom::settings&> create_fn;
+				typedef std::function<abstract_kernel*(ifcopenshell::file*, ifcopenshell::geom::settings&)> create_fn;
 
 				void bind(const kernel_info& info, create_fn create, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 				bool has(const std::string& backend_id) const;

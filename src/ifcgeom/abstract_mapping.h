@@ -25,8 +25,7 @@
 #include "../ifcgeom/conversion_settings.h"
 #include "../plugin/plugin.h"
 
-#include <boost/function.hpp>
-
+#include <functional>
 #include <map>
 #include <string>
 #include <tuple>
@@ -41,10 +40,10 @@ namespace geom {
 		std::vector<express::base> products;
 	};
 
-    /// The filter function (free or member function) or function object (use boost::ref() to reference to it)
+    /// The filter function (free or member function) or function object (use std::ref() to reference to it)
     /// should return true if the geometry for the product is wanted to be included in the output.
     /// http://www.boost.org/doc/libs/1_62_0/doc/html/function/tutorial.html
-	typedef boost::function<bool(const express::base&)> filter_function;
+	typedef std::function<bool(const express::base&)> filter_function;
     
 	class IFC_GEOM_API abstract_mapping {
 	protected:
@@ -80,7 +79,7 @@ namespace geom {
     };
 
 	namespace impl {
-		typedef boost::function3<abstract_mapping*, ifcopenshell::file*, ifcopenshell::geom::settings&, ifcopenshell::logger&> mapping_fn;
+		typedef std::function<abstract_mapping*(ifcopenshell::file*, ifcopenshell::geom::settings&, ifcopenshell::logger&)> mapping_fn;
 
 		class IFC_GEOM_API mapping_registry {
 		public:

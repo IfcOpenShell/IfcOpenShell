@@ -3,8 +3,6 @@
 
 #include "../ifcgeom/taxonomy.h"
 
-#include <boost/function.hpp>
-
 namespace ifcopenshell { namespace geom {
 
 /// @brief Computes a point on a helmert curve at s.

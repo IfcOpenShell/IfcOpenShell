@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <map>
 #include <set>
@@ -1276,9 +1277,9 @@ std::vector<ifcopenshell::geom::filter_function> setup_filters(const std::vector
         entity_filter.entity_names = entities;
     }
 
-    if (!layer_filter.values.empty()) { filter_funcs.push_back(boost::ref(layer_filter));  }
-    if (!entity_filter.entity_names.empty()) { filter_funcs.push_back(boost::ref(entity_filter)); }
-    if (!attribute_filter.values.empty()) { filter_funcs.push_back(boost::ref(attribute_filter)); }
+    if (!layer_filter.values.empty()) { filter_funcs.push_back(std::ref(layer_filter));  }
+    if (!entity_filter.entity_names.empty()) { filter_funcs.push_back(std::ref(entity_filter)); }
+    if (!attribute_filter.values.empty()) { filter_funcs.push_back(std::ref(attribute_filter)); }
 
     return filter_funcs;
 }

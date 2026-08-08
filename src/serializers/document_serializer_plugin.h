@@ -25,7 +25,7 @@
 #include "../ifcparse/file.h"
 #include "../plugin/plugin.h"
 
-#include <boost/function.hpp>
+#include <functional>
 #include <memory>
 
 #include <filesystem>
@@ -64,7 +64,7 @@ struct SERIALIZERS_API document_serializer_context {
 
 class SERIALIZERS_API document_serializer_registry {
 public:
-	typedef boost::function<std::shared_ptr<serializer>(const document_serializer_context&)> create_fn;
+	typedef std::function<std::shared_ptr<serializer>(const document_serializer_context&)> create_fn;
 
 	void bind(const document_serializer_info& info, create_fn create, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 	const document_serializer_info* find(const std::string& format, const std::string& schema_name = std::string()) const;
