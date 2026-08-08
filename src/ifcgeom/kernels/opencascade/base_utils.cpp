@@ -812,7 +812,7 @@ bool ifcopenshell::geom::util::flatten_shape_list(const std::vector<ifcopenshell
 
 	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
 		TopoDS_Shape merged;
-		const TopoDS_Shape& s = std::static_pointer_cast<ifcopenshell::geom::open_cascade_shape>(it->Shape())->shape();
+		const TopoDS_Shape& s = std::static_pointer_cast<ifcopenshell::geom::open_cascade_shape>(it->shape())->shape();
 		if (fuse || create_shell) {
 			merged = util::ensure_fit_for_subtraction(s, tol);
 		} else {
@@ -820,7 +820,7 @@ bool ifcopenshell::geom::util::flatten_shape_list(const std::vector<ifcopenshell
 		}
 
 		// @todo refactor, also should be GTrsf
-		const auto& m = it->Placement()->ccomponents();
+		const auto& m = it->placement()->ccomponents();
 		gp_Trsf trsf;
 		trsf.SetValues(
 			m(0, 0), m(0, 1), m(0, 2), m(0, 3),

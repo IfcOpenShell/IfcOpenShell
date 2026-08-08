@@ -1,11 +1,11 @@
 #include "conversion_result.h"
 #include "representation.h"
 
-ifcopenshell::geom::triangulation* ifcopenshell::geom::conversion_result_shape::Triangulate(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) const
+ifcopenshell::geom::triangulation* ifcopenshell::geom::conversion_result_shape::triangulate(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) const
 {
 	auto t = ifcopenshell::geom::triangulation::empty(settings);
 	static ifcopenshell::geom::taxonomy::matrix4 iden;
-	Triangulate(settings, iden, t, -1, -1, logger);
+	triangulate(settings, iden, t, -1, -1, logger);
 	return t;
 }
 

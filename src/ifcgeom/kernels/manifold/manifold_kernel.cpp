@@ -1412,7 +1412,7 @@ namespace {
 		}
 		for (const auto& result : results) {
 			if (result.hasStyle()) {
-				return result.StylePtr();
+				return result.style_ptr();
 			}
 		}
 		return nullptr;
@@ -1650,7 +1650,7 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
 			return false;
 		}
 		for (const auto& result : converted) {
-			auto moved = std::unique_ptr<ifcopenshell::geom::conversion_result_shape>(result.Shape()->moved(taxonomy::make<taxonomy::matrix4>(relative->ccomponents() * result.Placement()->ccomponents())));
+			auto moved = std::unique_ptr<ifcopenshell::geom::conversion_result_shape>(result.shape()->moved(taxonomy::make<taxonomy::matrix4>(relative->ccomponents() * result.placement()->ccomponents())));
 			auto* shape = dynamic_cast<ifcopenshell::geom::manifold_shape*>(moved.get());
 			if (!shape) {
 				ifcopenshell::logger::root().warning("Manifold kernel: opening result is not a manifold shape");
@@ -1679,7 +1679,7 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
 		cut_shapes.emplace_back(ifcopenshell::geom::conversion_result(
 			entity_shape.ItemId(),
 			new ifcopenshell::geom::manifold_shape(result),
-			entity_shape.StylePtr()));
+			entity_shape.style_ptr()));
 	}
 	return !cut_shapes.empty();
 }

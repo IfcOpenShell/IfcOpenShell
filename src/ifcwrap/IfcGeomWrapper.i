@@ -1168,7 +1168,7 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 %extend ifcopenshell::geom::conversion_result_shape {
 	std::string serialize_obj() {
 		ifcopenshell::geom::settings settings;
-		std::unique_ptr<ifcopenshell::geom::triangulation> triangulation($self->Triangulate(settings));
+		std::unique_ptr<ifcopenshell::geom::triangulation> triangulation($self->triangulate(settings));
 		std::ostringstream result;
 
 		for (auto it = triangulation->verts().begin(); it != triangulation->verts().end();) {
@@ -1204,7 +1204,7 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 	std::string serialize() {
 		std::string result;
 		ifcopenshell::geom::taxonomy::matrix4 iden;
-		$self->Serialize(iden, result);
+		$self->serialize(iden, result);
 		return result;
 	}
 
@@ -1317,7 +1317,7 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 	std::string serialize() {
 		std::string result;
 		ifcopenshell::geom::taxonomy::matrix4 iden;
-		$self->Serialize(iden, result);
+		$self->serialize(iden, result);
 		return result;
 	}
 

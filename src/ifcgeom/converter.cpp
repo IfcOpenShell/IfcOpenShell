@@ -23,12 +23,12 @@ namespace {
 		void* box = nullptr;
 		double volume = 0.;
 		for (auto& i : items) {
-			nv += i.Shape()->num_vertices();
-			volume = i.Shape()->bounding_box(box);
+			nv += i.shape()->num_vertices();
+			volume = i.shape()->bounding_box(box);
 		}
 		density = nv / volume;
 		if (density > 1e5) {
-			items[0].Shape()->set_box(box);
+			items[0].shape()->set_box(box);
 			items.erase(items.begin() + 1, items.end());
 			logger.notice("GEO", 30, "Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
 		}
@@ -135,7 +135,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 		bool some_items_without_style = false;
 		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
 			// @todo implement num_faces()
-			if (!it->hasStyle() /* && it->Shape()->num_faces() */) {
+			if (!it->hasStyle() /* && it->shape()->num_faces() */) {
 				some_items_without_style = true;
 				break;
 			}
@@ -153,7 +153,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 		for (auto& s : shapes) {
 			if (s.hasStyle()) {
 				// @todo the uglyness
-				const_cast<taxonomy::style*>(&*s.StylePtr())->transparency = settings_.get<ifcopenshell::geom::settings::ForceSpaceTransparency>().get();
+				const_cast<taxonomy::style*>(&*s.style_ptr())->transparency = settings_.get<ifcopenshell::geom::settings::ForceSpaceTransparency>().get();
 			}
 		}
 	}
@@ -335,7 +335,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 										int genus = (int)q2->as<IfcSchema::IfcQuantityCount>()->CountValue();
 										for (auto& part : elem->geometry()) {
 											if (part.ItemId() == item_id) {
-												if (util::surface_genus(part.Shape()) != genus) {
+												if (util::surface_genus(part.shape()) != genus) {
 													all_succeeded = false;
 												}
 											}

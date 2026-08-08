@@ -251,9 +251,9 @@ bool ifcopenshell::geom::util::apply_folded_layerset(const std::vector<conversio
 
 		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a, b;
-			if (split_solid_by_shell(std::static_pointer_cast<open_cascade_shape>(it->Shape())->shape(), shells.First(), a, b, tol)) {
-				result.push_back(conversion_result(it->ItemId(), it->Placement(), new open_cascade_shape(b), (!!styles[0] ? styles[0] : it->StylePtr())));
-				result.push_back(conversion_result(it->ItemId(), it->Placement(), new open_cascade_shape(a), (!!styles[1] ? styles[1] : it->StylePtr())));
+			if (split_solid_by_shell(std::static_pointer_cast<open_cascade_shape>(it->shape())->shape(), shells.First(), a, b, tol)) {
+				result.push_back(conversion_result(it->ItemId(), it->placement(), new open_cascade_shape(b), (!!styles[0] ? styles[0] : it->style_ptr())));
+				result.push_back(conversion_result(it->ItemId(), it->placement(), new open_cascade_shape(a), (!!styles[1] ? styles[1] : it->style_ptr())));
 			} else {
 				continue;
 			}
@@ -265,13 +265,13 @@ bool ifcopenshell::geom::util::apply_folded_layerset(const std::vector<conversio
 
 		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 
-			const TopoDS_Shape& s = std::static_pointer_cast<open_cascade_shape>(it->Shape())->shape();
+			const TopoDS_Shape& s = std::static_pointer_cast<open_cascade_shape>(it->shape())->shape();
 			TopoDS_Shape sld = ensure_fit_for_subtraction(s, tol);
 
 			std::vector<TopoDS_Shape> slices;
 			if (split(s, shells, tol, slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(conversion_result(it->ItemId(), it->Placement(), new open_cascade_shape(slices[i]), (!!styles[i] ? styles[i] : it->StylePtr())));
+					result.push_back(conversion_result(it->ItemId(), it->placement(), new open_cascade_shape(slices[i]), (!!styles[i] ? styles[i] : it->style_ptr())));
 				}
 			} else {
 				return false;
@@ -293,9 +293,9 @@ bool ifcopenshell::geom::util::apply_layerset(const std::vector<conversion_resul
 
 		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a, b;
-			if (split_solid_by_surface(std::static_pointer_cast<open_cascade_shape>(it->Shape())->shape(), surfaces[1], a, b, tol)) {
-				result.push_back(conversion_result(it->ItemId(), it->Placement(),new open_cascade_shape(b), (!!styles[0] ? styles[0] : it->StylePtr())));
-				result.push_back(conversion_result(it->ItemId(), it->Placement(),new open_cascade_shape(a), (!!styles[1] ? styles[1] : it->StylePtr())));
+			if (split_solid_by_surface(std::static_pointer_cast<open_cascade_shape>(it->shape())->shape(), surfaces[1], a, b, tol)) {
+				result.push_back(conversion_result(it->ItemId(), it->placement(),new open_cascade_shape(b), (!!styles[0] ? styles[0] : it->style_ptr())));
+				result.push_back(conversion_result(it->ItemId(), it->placement(),new open_cascade_shape(a), (!!styles[1] ? styles[1] : it->style_ptr())));
 			} else {
 				continue;
 			}
@@ -310,7 +310,7 @@ bool ifcopenshell::geom::util::apply_layerset(const std::vector<conversion_resul
 		// layer operations are applied in the correct order. This seems to be always the case.
 		Bnd_Box bb;
 		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
-			BRepBndLib::Add(it->Shape(), bb);
+			BRepBndLib::Add(it->shape(), bb);
 		}
 
 		double x1, y1, z1, x2, y2, z2;
@@ -336,7 +336,7 @@ bool ifcopenshell::geom::util::apply_layerset(const std::vector<conversion_resul
 
 		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 
-			const TopoDS_Shape& s = std::static_pointer_cast<open_cascade_shape>(it->Shape())->shape();
+			const TopoDS_Shape& s = std::static_pointer_cast<open_cascade_shape>(it->shape())->shape();
 			TopoDS_Shape sld = ensure_fit_for_subtraction(s, tol);
 
 			NCollection_List<TopoDS_Shape> operands;
@@ -354,14 +354,14 @@ bool ifcopenshell::geom::util::apply_layerset(const std::vector<conversion_resul
 			/*
 			// enable this is you want to see how IfcOpenShell has placed the layer surfaces
 			for (auto& x : operands) {
-				result.push_back(conversion_result(it->ItemId(), it->Placement(), x, nullptr));
+				result.push_back(conversion_result(it->ItemId(), it->placement(), x, nullptr));
 			}
 			*/
 
 			std::vector<TopoDS_Shape> slices;
 			if (split(s, operands, tol, slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(conversion_result(it->ItemId(), it->Placement(), new open_cascade_shape(slices[i]), (!!styles[i] ? styles[i] : it->StylePtr())));
+					result.push_back(conversion_result(it->ItemId(), it->placement(), new open_cascade_shape(slices[i]), (!!styles[i] ? styles[i] : it->style_ptr())));
 				}
 			} else {
 				return false;

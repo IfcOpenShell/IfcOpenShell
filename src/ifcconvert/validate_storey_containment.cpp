@@ -134,8 +134,8 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 		std::vector<double> intersection_volumes(nefs.size());
 
 		for (auto& g : geom_object->geometry()) {
-			auto s = std::static_pointer_cast<ifcopenshell::geom::cgal_shape>(g.Shape())->poly();
-			const auto& m = g.Placement()->ccomponents();
+			auto s = std::static_pointer_cast<ifcopenshell::geom::cgal_shape>(g.shape())->poly();
+			const auto& m = g.placement()->ccomponents();
 			const auto& n = geom_object->transformation().data()->ccomponents();
 
 			const cgal_placement trsf(

@@ -40,8 +40,8 @@ public:
 	std::optional<manifold::Manifold> as_manifold() const;
 	virtual std::string_view backend_id() const { return "manifold"; }
 
-	virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const;
-	virtual void Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const;
+	virtual void triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const;
+	virtual void serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const;
 
 	virtual int surface_genus() const;
 	virtual bool is_manifold() const;

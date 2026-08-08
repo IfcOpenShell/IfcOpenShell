@@ -26,20 +26,20 @@ ifcopenshell::geom::serialization::serialization(const brep& brep)
 		int sid = -1;
 
 		if (it->hasStyle()) {
-            const auto& clr = it->Style().get_color().ccomponents();
+            const auto& clr = it->style().get_color().ccomponents();
 			surface_styles_.push_back(clr(0));
 			surface_styles_.push_back(clr(1));
 			surface_styles_.push_back(clr(2));
 
-			sid = it->Style().instance ? it->Style().instance.id() : -1;
+			sid = it->style().instance ? it->style().instance.id() : -1;
 		} else {
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);
 		}
 
-		if (it->hasStyle() && it->Style().has_transparency()) {
-			surface_styles_.push_back(1. - it->Style().transparency);
+		if (it->hasStyle() && it->style().has_transparency()) {
+			surface_styles_.push_back(1. - it->style().transparency);
 		} else {
 			surface_styles_.push_back(1.);
 		}
@@ -49,7 +49,7 @@ ifcopenshell::geom::serialization::serialization(const brep& brep)
 
 	ifcopenshell::geom::taxonomy::matrix4 identity;
 	auto* comp = brep.as_compound();
-	comp->Serialize(identity, brep_data_);
+	comp->serialize(identity, brep_data_);
 	delete comp;
 }
 
@@ -100,9 +100,9 @@ bool ifcopenshell::geom::brep::calculate_projected_surface_area(const ifcopenshe
 
 	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator it = begin(); it != end(); ++it) {
 		double x, y, z;
-		it->Shape()->surface_area_along_direction(settings().get<ifcopenshell::geom::settings::MesherLinearDeflection>().get(), place, x, y, z);
+		it->shape()->surface_area_along_direction(settings().get<ifcopenshell::geom::settings::MesherLinearDeflection>().get(), place, x, y, z);
 
-		if (it->Shape()->is_manifold()) {
+		if (it->shape()->is_manifold()) {
 			x /= 2.;
 			y /= 2.;
 			z /= 2.;
@@ -127,10 +127,10 @@ ifcopenshell::geom::triangulation::triangulation(const brep& shape_model)
 
 		int surface_style_id = -1;
 		if (iit->hasStyle()) {
-			auto jt = std::find(materials_.begin(), materials_.end(), iit->StylePtr());
+			auto jt = std::find(materials_.begin(), materials_.end(), iit->style_ptr());
 			if (jt == materials_.end()) {
 				surface_style_id = (int)materials_.size();
-				materials_.push_back(iit->StylePtr());
+				materials_.push_back(iit->style_ptr());
 			} else {
 				surface_style_id = (int)(jt - materials_.begin());
 			}
@@ -147,7 +147,7 @@ ifcopenshell::geom::triangulation::triangulation(const brep& shape_model)
 			}
 		}
 
-		iit->Shape()->Triangulate(settings(), *iit->Placement(), this, iit->ItemId(), surface_style_id);
+		iit->shape()->triangulate(settings(), *iit->placement(), this, iit->ItemId(), surface_style_id);
 	}
 }
 
@@ -212,7 +212,7 @@ void ifcopenshell::geom::triangulation::registerEdgeCount(int n1, int n2, std::m
 
 const ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::brep::item(int i) const {
 	if (i >= 0 && i < shapes_.size()) {
-		return shapes_[i].Shape()->moved(shapes_[i].Placement());
+		return shapes_[i].shape()->moved(shapes_[i].placement());
 	} else {
 		return nullptr;
 	}

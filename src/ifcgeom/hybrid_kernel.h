@@ -109,7 +109,7 @@ namespace ifcopenshell {
 					for (auto& k : kernels_) {
 						bool is_valid = true;
 						for (auto& s : entity_shapes) {
-							if (!k->accepts(*s.Shape())) {
+							if (!k->accepts(*s.shape())) {
 								is_valid = false;
 								break;
 							}

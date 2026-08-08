@@ -1466,7 +1466,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
 				latebound_access::set(quantity_count, "Name", std::string("Surface Genus"));
 				latebound_access::set(quantity_count, "Description", '#' + boost::lexical_cast<std::string>(part.ItemId()));
-				latebound_access::set(quantity_count, "CountValue", (int64_t) part.Shape()->surface_genus());
+				latebound_access::set(quantity_count, "CountValue", (int64_t) part.shape()->surface_genus());
 
 				quantities_2.push_back(quantity_count);				
 			}

@@ -286,7 +286,7 @@ ifcopenshell::geom::passthrough_shape::passthrough_shape(const std::vector<passt
 ifcopenshell::geom::passthrough_shape::passthrough_shape(std::vector<passthrough_part>&& parts)
 	: parts_(normalize_parts(parts)) {}
 
-void ifcopenshell::geom::passthrough_shape::Triangulate(ifcopenshell::geom::settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger&) const {
+void ifcopenshell::geom::passthrough_shape::triangulate(ifcopenshell::geom::settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger&) const {
 	auto mesh = build_mesh(parts_, &place);
 	std::vector<int> indices(mesh.vertices.size());
 	for (size_t i = 0; i < mesh.vertices.size(); ++i) {
@@ -302,7 +302,7 @@ void ifcopenshell::geom::passthrough_shape::Triangulate(ifcopenshell::geom::sett
 	}
 }
 
-void ifcopenshell::geom::passthrough_shape::Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& result) const {
+void ifcopenshell::geom::passthrough_shape::serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& result) const {
 	auto mesh = build_mesh(parts_, &place);
 	std::stringstream stream;
 	for (const auto& vertex : mesh.vertices) {

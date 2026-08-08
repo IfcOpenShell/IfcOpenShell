@@ -68,7 +68,7 @@ ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::open_cascade_sh
 	return new open_cascade_shape(shape_);
 }
 
-void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
+void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
 
 	// @todo remove duplication with open_cascade_kernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);
 	// above can be static?
@@ -104,7 +104,7 @@ void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::set
 		}
 	}
 	if (!has_triangulation) {
-		// Triangulate the shape
+		// triangulate the shape
 		try {
 			BRepMesh_IncrementalMesh(shape_, settings.get<settings::MesherLinearDeflection>().get(), false, settings.get<settings::MesherAngularDeflection>().get());
 		} catch (...) {
@@ -372,7 +372,7 @@ void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::set
 	}
 }
 
-void ifcopenshell::geom::open_cascade_shape::Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
+void ifcopenshell::geom::open_cascade_shape::serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
 	auto s = ifcopenshell::geom::util::apply_transformation(shape_, place);
 	std::stringstream sstream;
 #if OCC_VERSION_HEX >= 0x70600

@@ -889,7 +889,7 @@ class context:
     def write_obj(ofn, *, elem=None, item=None):
         s = ifcopenshell.geom.settings(USE_WORLD_COORDS=True, WELD_VERTICES=False)
         if item:
-            geom = item.Triangulate(s)
+            geom = item.triangulate(s)
         else:
             geom = elem.geometry
 

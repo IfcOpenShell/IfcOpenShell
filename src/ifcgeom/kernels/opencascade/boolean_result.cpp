@@ -122,13 +122,13 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 		} else {
 
 			for (auto& r : cr) {
-				auto S = std::static_pointer_cast<open_cascade_shape>(r.Shape())->shape();
+				auto S = std::static_pointer_cast<open_cascade_shape>(r.shape())->shape();
 				if (S.IsNull()) {
 					logger_.error("GEO", 120, "Null operand");
 					continue;
 				}
 				gp_GTrsf trsf;
-				convert(r.Placement(), trsf);
+				convert(r.placement(), trsf);
 				// @todo it really confuses me why I cannot use Moved() here instead
 				S.Location(S.Location() * trsf.Trsf());
 

@@ -89,10 +89,10 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 		abstract_kernel::convert(op.first, opening_shapes);
 
 		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
-			auto opening_shape_i = std::static_pointer_cast<open_cascade_shape>(opening_shapes[i].Shape())->shape();
+			auto opening_shape_i = std::static_pointer_cast<open_cascade_shape>(opening_shapes[i].shape())->shape();
 			const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shape_i, settings_.get<settings::Precision>().get());
 
-			auto gtrsf = opening_shapes[i].Placement();
+			auto gtrsf = opening_shapes[i].placement();
 			// @todo check
 			Eigen::Matrix4d m = relative * gtrsf->ccomponents();
 			gp_Trsf trsf;
@@ -119,7 +119,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 
 		std::list<TopoDS_Shape> parts;
 
-		auto it3_shape = std::static_pointer_cast<open_cascade_shape>(it3->Shape())->shape();
+		auto it3_shape = std::static_pointer_cast<open_cascade_shape>(it3->shape())->shape();
 		if (it3_shape.IsNull()) {
 			logger_.error("GEO", 187, "Null operand");
 			continue;
@@ -187,7 +187,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 				} else {
 					entity_shape_unlocated = util::ensure_fit_for_subtraction(entity_part, settings_.get<settings::Precision>().get());
 				}
-				const auto& m = it3->Placement()->ccomponents();
+				const auto& m = it3->placement()->ccomponents();
 				// @todo
 				// if (entity_shape_gtrsf.Form() == gp_Other) {
 				// 	ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
@@ -262,19 +262,19 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 			combined_result = C;
 		}
 
-		cut_shapes.push_back(ifcopenshell::geom::conversion_result(it3->ItemId(), new open_cascade_shape(combined_result), it3->StylePtr()));
+		cut_shapes.push_back(ifcopenshell::geom::conversion_result(it3->ItemId(), new open_cascade_shape(combined_result), it3->style_ptr()));
 	}
 	return true;
 }
 
 bool ifcopenshell::geom::open_cascade_kernel::unify_shapes(const std::vector<ifcopenshell::geom::conversion_result>& input, std::vector<ifcopenshell::geom::conversion_result>& output) {
 	std::transform(input.begin(), input.end(), std::back_inserter(output), [this](auto v) {
-		auto& s = std::static_pointer_cast<open_cascade_shape>(v.Shape())->shape();
+		auto& s = std::static_pointer_cast<open_cascade_shape>(v.shape())->shape();
 		return ifcopenshell::geom::conversion_result(
 			v.ItemId(),
-			v.Placement(),
+			v.placement(),
 			new open_cascade_shape(util::unify(s, settings_.get<ifcopenshell::geom::settings::Precision>().get())),
-			v.StylePtr());
+			v.style_ptr());
 	});
 	return true;
 }
@@ -439,7 +439,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	} else {
 // 		bool some_items_without_style = false;
 // 		for (std::vector<ifcopenshell::geom::conversion_result>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
-// 			if (!it->hasStyle() && util::count(it->Shape(), TopAbs_FACE)) {
+// 			if (!it->hasStyle() && util::count(it->shape(), TopAbs_FACE)) {
 // 				some_items_without_style = true;
 // 				break;
 // 			}
@@ -457,7 +457,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		for (auto& s : shapes) {
 // 			if (s.hasStyle()) {
 // 				for (auto& p : style_cache) {
-// 					if (p.second == s.StylePtr()) {
+// 					if (p.second == s.style_ptr()) {
 // 						std::const_pointer_cast<ifcopenshell::geom::SurfaceStyle>(p.second)->Transparency() = settings.force_space_transparency();
 // 					}
 // 				}
@@ -604,7 +604,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 										int genus = (int)q2->as<IfcSchema::IfcQuantityCount>()->CountValue();
 // 										for (auto& part : elem->geometry()) {
 // 											if (part.ItemId() == item_id) {
-// 												if (util::surface_genus(part.Shape()) != genus) {
+// 												if (util::surface_genus(part.shape()) != genus) {
 // 													all_succeeded = false;
 // 												}
 // 											}
@@ -779,7 +779,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 
 // 	TopoDS_Vertex a, b;
 // 	for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
-// 		TopExp_Explorer exp(it->Shape(), TopAbs_VERTEX);
+// 		TopExp_Explorer exp(it->shape(), TopAbs_VERTEX);
 // 		for (; exp.More(); exp.Next()) {
 // 			b = TopoDS::Vertex(exp.Current());
 // 			if (a.IsNull()) {

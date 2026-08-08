@@ -507,9 +507,9 @@ namespace ifcopenshell::geom {
 #else
 		virtual std::string_view backend_id() const = 0;
 #endif
-		virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const = 0;
-		ifcopenshell::geom::triangulation* Triangulate(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const;
-		virtual void Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const = 0;
+		virtual void triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const = 0;
+		ifcopenshell::geom::triangulation* triangulate(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const;
+		virtual void serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const = 0;
 				
 		virtual int surface_genus() const = 0;
 		virtual bool is_manifold() const = 0;
@@ -578,11 +578,11 @@ namespace ifcopenshell::geom {
 		{}
 		void append(ifcopenshell::geom::taxonomy::matrix4::ptr trsf);
 		void prepend(ifcopenshell::geom::taxonomy::matrix4::ptr trsf);
-		std::shared_ptr<conversion_result_shape> Shape() const { return shape_; }
-		ifcopenshell::geom::taxonomy::matrix4::ptr Placement() const { return placement_; }
+		std::shared_ptr<conversion_result_shape> shape() const { return shape_; }
+		ifcopenshell::geom::taxonomy::matrix4::ptr placement() const { return placement_; }
 		bool hasStyle() const { return !!style_; }
-		const ifcopenshell::geom::taxonomy::style& Style() const { return *style_; }
-		ifcopenshell::geom::taxonomy::style::ptr StylePtr() const { return style_; }
+		const ifcopenshell::geom::taxonomy::style& style() const { return *style_; }
+		ifcopenshell::geom::taxonomy::style::ptr style_ptr() const { return style_; }
 		void setStyle(ifcopenshell::geom::taxonomy::style::ptr newStyle) { style_ = newStyle; }
 		int ItemId() const { return id; }
 		conversion_result_shape* apply_transform(double unit_scale = 1.) const {

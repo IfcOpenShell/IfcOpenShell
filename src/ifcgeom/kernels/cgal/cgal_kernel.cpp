@@ -912,8 +912,8 @@ bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::b
 	std::list<CGAL::Nef_polyhedron_3<kernel_>> first_operands_nef, second_operands_nef;
 
 	for (auto& shp : entity_shapes) {
-		cgal_polyhedron entity_shape = *std::static_pointer_cast<cgal_shape>(shp.Shape());
-		const auto& m = shp.Placement()->ccomponents();
+		cgal_polyhedron entity_shape = *std::static_pointer_cast<cgal_shape>(shp.shape());
+		const auto& m = shp.placement()->ccomponents();
 		if (!m.isIdentity()) {
 			cgal_placement trsf;
 			convert_placement(m, trsf);
@@ -943,9 +943,9 @@ bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::b
 		abstract_kernel::convert(op.first, opening_shapes);
 
 		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
-			cgal_polyhedron entity_shape_unlocated = *std::static_pointer_cast<cgal_shape>(opening_shapes[i].Shape());
+			cgal_polyhedron entity_shape_unlocated = *std::static_pointer_cast<cgal_shape>(opening_shapes[i].shape());
 			cgal_polyhedron entity_shape(entity_shape_unlocated);
-			auto gtrsf = opening_shapes[i].Placement();
+			auto gtrsf = opening_shapes[i].placement();
 			// @todo check
 			Eigen::Matrix4d m = opening_trsf.ccomponents() * gtrsf->ccomponents();
 			if (!m.isIdentity()) {
@@ -1008,7 +1008,7 @@ bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::b
 			return false;
 		}
 
-		cut_shapes.push_back(ifcopenshell::geom::conversion_result(it->ItemId(), new cgal_shape(a_poly), it->StylePtr()));
+		cut_shapes.push_back(ifcopenshell::geom::conversion_result(it->ItemId(), new cgal_shape(a_poly), it->style_ptr()));
 		it++;
 		nit++;
 	}
@@ -2068,11 +2068,11 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vect
 		}
 
 		for (auto it = cr.begin(); it != cr.end(); ++it) {
-			cgal_polyhedron entity_shape_unlocated = *std::static_pointer_cast<cgal_shape>(it->Shape());
+			cgal_polyhedron entity_shape_unlocated = *std::static_pointer_cast<cgal_shape>(it->shape());
 			cgal_polyhedron entity_shape(entity_shape_unlocated);
-			if (!it->Placement()->is_identity()) {
+			if (!it->placement()->is_identity()) {
 				cgal_placement trsf;
-				convert_placement(it->Placement(), trsf);
+				convert_placement(it->placement(), trsf);
 				for (auto &vertex : vertices(entity_shape)) {
 					vertex->point() = vertex->point().transform(trsf);
 				}

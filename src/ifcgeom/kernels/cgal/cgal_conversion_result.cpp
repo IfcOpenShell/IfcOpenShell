@@ -364,7 +364,7 @@ void ifcopenshell::geom::cgal_shape::to_nef() const {
 }
 #endif
 
-void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
+void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
 	if (is_point() || is_wire()) {
 		return;
 	}
@@ -458,7 +458,7 @@ void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings se
 	// std::map<cgal_vertex_descriptor, kernel_::Vector_3> vertex_normals;
 	// boost::associative_property_map<std::map<cgal_vertex_descriptor, kernel_::Vector_3>> vertex_normals_map(vertex_normals);
 	
-	// Triangulate the shape and compute the normals
+	// triangulate the shape and compute the normals
 	std::map<facet_const_handle, kernel_::Vector_3> face_normals;
 	boost::associative_property_map<std::map<facet_const_handle, kernel_::Vector_3>> face_normals_map(face_normals);
 
@@ -586,7 +586,7 @@ void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings se
 
 }
 
-void ifcopenshell::geom::cgal_shape::Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
+void ifcopenshell::geom::cgal_shape::serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
 	std::stringstream sstream;
 	if (is_point()) {
 		auto p = point();
@@ -1035,11 +1035,11 @@ bool ifcopenshell::geom::cgal_shape::surface_area_along_direction(double tol, co
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 
-void ifcopenshell::geom::cgal_shape_half_space_decomposition::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
+void ifcopenshell::geom::cgal_shape_half_space_decomposition::triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geom::cgal_shape_half_space_decomposition::Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
+void ifcopenshell::geom::cgal_shape_half_space_decomposition::serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
 	throw std::runtime_error("Not implemented");
 }
 

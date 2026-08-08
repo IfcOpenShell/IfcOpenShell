@@ -1771,11 +1771,11 @@ namespace ifcopenshell::geom {
 				TopoDS_Iterator it(compound);
 				for (; it.More(); it.Next(), ++git) {
 					// Assumption is that the number of styles is small, so the linear lookup time is not significant.
-					auto sit = std::find(styles_.begin(), styles_.end(), git->StylePtr());
+					auto sit = std::find(styles_.begin(), styles_.end(), git->style_ptr());
 					size_t index;
 					if (sit == styles_.end()) {
 						index = styles_.size();
-						styles_.push_back(git->StylePtr());
+						styles_.push_back(git->style_ptr());
 					} else {
 						index = std::distance(styles_.begin(), sit);
 					}
