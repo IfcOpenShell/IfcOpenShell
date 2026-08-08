@@ -174,7 +174,8 @@ bool cgal_kernel::convert(const taxonomy::shell::ptr l, cgal_polyhedron& shape) 
 			}
 		}
 	}
-	if (false && l->children.size() > 100) {
+#if 0
+	if (l->children.size() > 100) {
 		static double inf = 1.e9; //  std::numeric_limits<double>::infinity();
 		std::pair<Eigen::Vector3d, Eigen::Vector3d> minmax(
 			Eigen::Vector3d(+inf, +inf, +inf),
@@ -206,6 +207,7 @@ bool cgal_kernel::convert(const taxonomy::shell::ptr l, cgal_polyhedron& shape) 
 			return true;
 		}
 	}
+#endif
 
 	std::list<cgal_face> face_list;
 	for (auto& f : l->children) {
@@ -576,7 +578,7 @@ namespace {
 				std::swap(aid, bid);
 			}
 
-			if (((aid + 1) == bid) || ((aid == 0) && (bid = (segments.size() - 1)))) {
+			if (((aid + 1) == bid) || ((aid == 0) && (static_cast<std::size_t>(bid) == segments.size() - 1))) {
 				// consecutive segments.
 				return;
 			}
@@ -814,6 +816,7 @@ bool cgal_kernel::convert(const taxonomy::loop::ptr loop, cgal_wire& result) {
 	}
 
 	auto delta_dot = max_dot - min_dot;
+	(void)delta_dot;
 	// @todo this can be used to assess face planarity.
 
 	/*
@@ -900,6 +903,11 @@ namespace {
 bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings, const std::vector<ifcopenshell::geom::conversion_result> & entity_shapes, const ifcopenshell::geom::taxonomy::matrix4 & entity_trsf, std::vector<ifcopenshell::geom::conversion_result> & cut_shapes)
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
+	(void)entity;
+	(void)openings;
+	(void)entity_shapes;
+	(void)entity_trsf;
+	(void)cut_shapes;
 	return false;
 #else
 	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<kernel_>> second_operand_collector;
@@ -1075,13 +1083,13 @@ bool cgal_kernel::process_extrusion(const cgal_face& bottom_face, taxonomy::dire
 				if (i0 > i1) {
 					std::swap(i0, i1);
 				}
-				auto p = external_edges.insert({ { i0, i1 }, { i, j} });
-				if (!p.second) {
+				auto insertion = external_edges.insert({ { i0, i1 }, { i, j} });
+				if (!insertion.second) {
 					// Mark as internal before erasure in external
 					// This is {i,j} at the time the edge use was inserted.
-					internal_edges.insert(p.first->second);
+					internal_edges.insert(insertion.first->second);
 					// not inserted, remove
-					external_edges.erase(p.first);
+					external_edges.erase(insertion.first);
 
 					// @nb note the difference here in indices, {i0, i1} is point indices in
 					// point_map. i is index in faces_to_extrude, j is segment index in wire.
@@ -1109,11 +1117,11 @@ bool cgal_kernel::process_extrusion(const cgal_face& bottom_face, taxonomy::dire
 		const bool reverse = fnorm * dir > 0;
 
 		if (reverse) {
-			cgal_face bottom_face;
+			cgal_face reversed_bottom_face;
 			for (auto vertex = w.rbegin(); vertex != w.rend(); ++vertex) {
-				bottom_face.outer.push_back(*vertex);
+				reversed_bottom_face.outer.push_back(*vertex);
 			}
-			face_list.push_back(bottom_face);
+			face_list.push_back(reversed_bottom_face);
 		} else {
 			face_list.push_back(cgal_face{ w });
 		}
@@ -1421,6 +1429,7 @@ bool cgal_kernel::preprocess_boolean_operand(const express::base& log_reference,
 
 			for (auto it = shape.vertices_begin(); it != shape.vertices_end(); ++it) {
 				for (auto& x : first_operands) {
+					(void)x;
 					// @nb snapping_tolerance 'snaps' the barycentric coords to 0 or 1
 					// so that not only the point aligns to the face, but to an edge
 					// as well. Snapping only to face would cause a rotation of line b:
@@ -1767,7 +1776,7 @@ namespace {
 	}
 }
 
-bool cgal_kernel::process_as_2d_polygon(const std::list<std::list<std::pair<express::base, cgal_polyhedron>>>& operands, std::list<CGAL::Polygon_2<kernel_>>& loops, double& z0, double& z1) {
+bool cgal_kernel::process_as_2d_polygon(const std::list<std::list<std::pair<express::base, cgal_polyhedron>>>& operands, std::list<CGAL::Polygon_2<kernel_>>&, double&, double&) {
 	if (operands.front().size() != 1) {
 		return false;
 	}
@@ -1888,10 +1897,10 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vect
 			logger().notice("GEO", 101, "Holes are not disjoint");
 
 			CGAL::Polygon_set_2<kernel_> result;
-			auto it = loops.begin();
-			result.insert(*it++);
-			for (; it != loops.end(); ++it) {
-				result.difference(*it);
+			auto loop_it = loops.begin();
+			result.insert(*loop_it++);
+			for (; loop_it != loops.end(); ++loop_it) {
+				result.difference(*loop_it);
 			}
 			result.polygons_with_holes(std::back_inserter(pwhs));
 #endif
@@ -1906,8 +1915,8 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vect
 #endif
 
 		std::list<CGAL::Polygon_2<kernel_>> decom_polies;
-		for (auto& pwh : pwhs) {
-			decompositor(pwh, std::back_inserter(decom_polies));
+		for (auto& polygon_with_holes : pwhs) {
+			decompositor(polygon_with_holes, std::back_inserter(decom_polies));
 		}
 
 		std::transform(decom_polies.begin(), decom_polies.end(), std::back_inserter(results), [this, &br, &z0, &z1, &first_item_style](const CGAL::Polygon_2<kernel_>& p2) {
@@ -2020,8 +2029,8 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vect
 				
 				auto& w = fs.front().outer;
 				CGAL::Polygon_2<kernel_> ps;
-				for (auto& p : w) {
-					ps.push_back({ p.x(), p.y() });
+				for (auto& wire_point : w) {
+					ps.push_back({ wire_point.x(), wire_point.y() });
 				}
 				if (!ps.is_simple()) {
                     logger().warning("GEO", 103, "Polygonal boundary not simple", face->children[0]->instance);
@@ -2252,10 +2261,10 @@ void polyhedron_builder::operator()(CGAL::Polyhedron_3<kernel_>::HalfedgeDS &hds
 			std::list<CGAL::Polygon_2<kernel_>> decom_polies;
 			decompositor(pwh, std::back_inserter(decom_polies));
 
-			for (auto& p : decom_polies) {
+			for (auto& decomposed_polygon : decom_polies) {
 				facet_vertices.emplace_back();
-				for (auto it = p.vertices_begin(); it != p.vertices_end(); ++it) {
-					auto pit = points_2d.find(*it);
+				for (auto vertex_it = decomposed_polygon.vertices_begin(); vertex_it != decomposed_polygon.vertices_end(); ++vertex_it) {
+					auto pit = points_2d.find(*vertex_it);
 					if (pit == points_2d.end()) {
 						// Likely there are intersections in the polygonal boundaries.
 						// For now let's just skip over the triangle. We can also use

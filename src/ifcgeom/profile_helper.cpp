@@ -4,8 +4,9 @@ using namespace ifcopenshell::geom;
 
 taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, double radius) {
 	std::vector<profile_point_with_edges_3d> pps(loop->children.size());
-	for (int b = 0; b < loop->children.size(); ++b) {
-		int c = (b - 1) % loop->children.size();
+	const auto child_count = static_cast<int>(loop->children.size());
+	for (int b = 0; b < child_count; ++b) {
+		int c = (b + child_count - 1) % child_count;
 		pps[b] = { 
 			std::get<taxonomy::point3::ptr>(loop->children[c]->start)->ccomponents(), 
 			radius, loop->children[c], loop->children[b]
@@ -59,7 +60,7 @@ void ifcopenshell::geom::remove_duplicate_points_from_loop(std::vector<taxonomy:
 
 	for (;;) {
 		bool removed = false;
-		int n = polygon.size() - (closed ? 0 : 1);
+		const std::size_t n = polygon.size() - (closed ? 0u : 1u);
 		for (size_t i = 0; i < n; ++i) {
 			// wrap around to the first point in case of a closed loop
 			auto j = (i + 1) % polygon.size();
@@ -153,8 +154,9 @@ taxonomy::loop::ptr ifcopenshell::geom::profile_helper(const taxonomy::matrix4::
 	}
 
 	std::vector<profile_point_with_edges> pps(points.size());
-	for (int b = 0; b < points.size(); ++b) {
-		int c = (b + points.size() - 1) % points.size();
+	const auto point_count = static_cast<int>(points.size());
+	for (int b = 0; b < point_count; ++b) {
+		int c = (b + point_count - 1) % point_count;
 		pps[b] = { Eigen::Vector2d(points[b].xy[0], points[b].xy[1]), points[b].radius, loop->children[c], loop->children[b] };
 	}
 
@@ -215,7 +217,7 @@ std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>
 
 	for (;;) {
         bool removed = false;
-        int n = polygon.size() - (closed ? 0 : 1);
+		const std::size_t n = polygon.size() - (closed ? 0u : 1u);
         for (size_t i = 0; i < n; ++i) {
             // wrap around to the first point in case of a closed loop
             auto j = (i + 1) % polygon.size();

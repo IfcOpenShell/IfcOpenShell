@@ -33,6 +33,10 @@ ifcopenshell::impl::rocks_db_file_storage::rocksdb_types_iterator::value_type co
 }
 
 express::base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
+#ifndef IFOPSH_WITH_ROCKSDB
+    (void)number;
+    (void)r;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
     std::lock_guard<std::mutex> lock(instance_cache_mutex_);
 
@@ -81,6 +85,10 @@ express::base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t
 
 namespace {
     std::unique_ptr<rocksdb::DB> init_db(const std::string& filepath, bool readonly) {
+#ifndef IFOPSH_WITH_ROCKSDB
+        (void)filepath;
+        (void)readonly;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
         rocksdb::Options options;
         // options.disable_auto_compactions = true;
@@ -93,7 +101,7 @@ namespace {
 
         /*
         tbo.block_size = 16 * 1024;
-        tbo.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10 /*bits/key/, false));
+        tbo.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false)); // bits/key
         tbo.partition_filters = true;
         tbo.index_type = rocksdb::BlockBasedTableOptions::kHashSearch;
         tbo.cache_index_and_filter_blocks = true;
@@ -143,14 +151,14 @@ namespace {
 
 // @todo naming
 ifcopenshell::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& filepath, ifcopenshell::file* ffile, bool readonly)
-    : file(ffile)
-    , db(init_db(filepath, readonly))
-    // @todo streaming serializer does not populate the byguid map
-    , byguid_internal_(db.get(), "g|"),
-      byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](const express::base& v) { return v.identity(); })
+    : db(init_db(filepath, readonly))
+    , file(ffile)
     , instance_ids_(db.get(), "i|")
     , instance_by_name_(&instance_ids_, [this](size_t v) { return assert_existance(v, entityinstance_ref); })
     , bytype_(db.get(), "t|")
+    // @todo streaming serializer does not populate the byguid map
+    , byguid_internal_(db.get(), "g|"),
+      byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](const express::base& v) { return v.identity(); })
     , byref_excl_(db.get(), "v|")
     // @todo by_identity is probably not correct here, this mapping is Name -> Identity, so Fn should have access to full pair?
     // , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](ifcopenshell::IfcBaseClass* v) { return v->identity(); })
@@ -192,6 +200,9 @@ express::base ifcopenshell::impl::rocks_db_file_storage::instance_by_id(int id)
 
 void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const express::base& inst)
 {
+#ifndef IFOPSH_WITH_ROCKSDB
+    (void)inst;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
     auto id = inst.id();
 
@@ -337,6 +348,8 @@ ifcopenshell::filetype ifcopenshell::guess_file_type(const std::string& fn) {
 }
 
 express::base ifcopenshell::impl::rocks_db_file_storage::create(const ifcopenshell::declaration* decl, int id) {
+    (void)decl;
+    (void)id;
     return express::base{};
     /*
     if (decl->as_entity() || decl->as_type_declaration()) {

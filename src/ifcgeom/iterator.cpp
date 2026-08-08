@@ -87,7 +87,7 @@ bool ifcopenshell::geom::iterator::initialize() {
 		if (folded.size() < tasks_.size()) {
 			auto old_size = tasks_.size();
 			tasks_.clear();
-			size_t i = 0;
+			int i = 0;
 			for (auto& p : folded) {
 				tasks_.emplace_back();
 				tasks_.back().index = i++;

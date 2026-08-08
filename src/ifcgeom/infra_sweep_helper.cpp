@@ -334,10 +334,10 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
                                     continue;
                                 }
 
-                                const auto& p1 = tag_to_point_on_w1[t];
-                                const auto& p2 = tag_to_point_on_w2[t];
+                                const auto& tagged_point_on_w1 = tag_to_point_on_w1[t];
+                                const auto& tagged_point_on_w2 = tag_to_point_on_w2[t];
 
-                                auto p3 = (lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
+                                auto p3 = (lerp(tagged_point_on_w1->ccomponents(), tagged_point_on_w2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
 
                                 std::set<std::string> tags_for_this_point_on_subsequent_profile = {t};
 
@@ -432,18 +432,6 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			loft->children.back()->matrix->components() = m;
 		}
 
-		auto find_closest = [](const std::vector<double>& v, double target) -> std::vector<double>::const_iterator {
-            auto it = std::lower_bound(v.begin(), v.end(), target);
-
-            if (it == v.begin()) {
-                return it;
-            }
-
-            double after = *it;
-            double before = *(it - 1);
-
-            return (std::abs(after - target) < std::abs(target - before)) ? it : (it - 1);
-        };
 	}
 
 	return loft;

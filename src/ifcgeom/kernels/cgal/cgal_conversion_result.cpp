@@ -138,7 +138,7 @@ namespace {
 				p[i] += point.cartesian(i);
 			}
 		}
-		kernel_::FT n(wire.size());
+		kernel_::FT n(static_cast<double>(wire.size()));
 		return cgal_point(p[0] / n, p[1] / n, p[2] / n);
 	}
 
@@ -563,14 +563,14 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 		} while (current_halfedge != face->facet_begin());
 
 		t->addFace(item_id, surface_style_id, vertexidx[0], vertexidx[1], vertexidx[2]);
-		for (size_t i = 0; i < 3; ++i) {
-			if (is_face_boundary[i]) {
+		for (size_t boundary_index = 0; boundary_index < 3; ++boundary_index) {
+			if (is_face_boundary[boundary_index]) {
 				// In CGAL, the vertex of a halfedge is the incident vertex, i.e
 				// the second vertex of the edge, so in order to get corresponding
 				// vertex and edge indices we need to find vertexids (i-1, i) for
 				// the boundary registered in i.
-				auto a = vertexidx[(i + 2) % 3];
-				auto b = vertexidx[(i + 3) % 3];
+				auto a = vertexidx[(boundary_index + 2) % 3];
+				auto b = vertexidx[(boundary_index + 3) % 3];
 				if (a > b) {
 					std::swap(a, b);
 				}
@@ -766,7 +766,7 @@ opaque_coordinate<3> ifcopenshell::geom::cgal_shape::position()
 				p[i] += it->cartesian(i);
 			}			
 		}
-		kernel_::FT N(std::distance(shp.points_begin(), shp.points_end()));
+		kernel_::FT N(static_cast<double>(std::distance(shp.points_begin(), shp.points_end())));
 		for (int i = 0; i < 3; ++i) {
 			p[i] /= N;
 		}
@@ -816,6 +816,7 @@ opaque_coordinate<4> ifcopenshell::geom::cgal_shape::plane_equation()
 std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::convex_decomposition()
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
+	(void)other;
 	throw std::runtime_error("Not implemented");
 #else
 	std::vector<conversion_result_shape*> result;
@@ -842,6 +843,7 @@ std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::convex_dec
 conversion_result_shape* ifcopenshell::geom::cgal_shape::halfspaces()
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
+	(void)other;
 	throw std::runtime_error("Not implemented");
 #else
 	return new cgal_shape_half_space_decomposition(nef(), convex_tag_);
@@ -932,6 +934,7 @@ std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::facets()
 conversion_result_shape* ifcopenshell::geom::cgal_shape::add(conversion_result_shape* other)
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
+	(void)other;
 	throw std::runtime_error("Not implemented");
 #else
 	return new cgal_shape(this->nef() + ((cgal_shape*)other)->nef());
@@ -1028,18 +1031,18 @@ std::size_t ifcopenshell::geom::cgal_shape::map(const std::vector<opaque_coordin
 	throw std::runtime_error("Not implemented");
 }
 
-bool ifcopenshell::geom::cgal_shape::surface_area_along_direction(double tol, const ifcopenshell::geom::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
+bool ifcopenshell::geom::cgal_shape::surface_area_along_direction(double, const ifcopenshell::geom::taxonomy::matrix4::ptr&, double&, double&, double&) const {
 	// @todo
 	return false;
 }
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 
-void ifcopenshell::geom::cgal_shape_half_space_decomposition::triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
+void ifcopenshell::geom::cgal_shape_half_space_decomposition::triangulate(ifcopenshell::geom::settings, const ifcopenshell::geom::taxonomy::matrix4&, ifcopenshell::geom::triangulation*, int, int, ifcopenshell::logger&) const {
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geom::cgal_shape_half_space_decomposition::serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
+void ifcopenshell::geom::cgal_shape_half_space_decomposition::serialize(const ifcopenshell::geom::taxonomy::matrix4&, std::string&) const {
 	throw std::runtime_error("Not implemented");
 }
 
@@ -1047,7 +1050,7 @@ int ifcopenshell::geom::cgal_shape_half_space_decomposition::num_vertices() cons
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geom::cgal_shape_half_space_decomposition::set_box(void * b) {
+void ifcopenshell::geom::cgal_shape_half_space_decomposition::set_box(void*) {
 	throw std::runtime_error("Not implemented");
 }
 
@@ -1172,17 +1175,17 @@ std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape_half_space_
 	return res;
 }
 
-conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::add(conversion_result_shape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::add(conversion_result_shape*)
 {
 	throw std::runtime_error("Not implemented");
 }
 
-conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::subtract(conversion_result_shape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::subtract(conversion_result_shape*)
 {
 	throw std::runtime_error("Not implemented");
 }
 
-conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::intersect(conversion_result_shape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::intersect(conversion_result_shape*)
 {
 	throw std::runtime_error("Not implemented");
 }
@@ -1192,7 +1195,7 @@ std::pair<opaque_coordinate<3>, opaque_coordinate<3>> ifcopenshell::geom::cgal_s
 	throw std::runtime_error("Not implemented");
 }
 
-double ifcopenshell::geom::cgal_shape_half_space_decomposition::bounding_box(void *& b) const {
+double ifcopenshell::geom::cgal_shape_half_space_decomposition::bounding_box(void*&) const {
 	throw std::runtime_error("Not implemented");
 }
 

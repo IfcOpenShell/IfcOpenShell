@@ -132,8 +132,8 @@ std::optional<std::string> format_attribute(ifcopenshell::geom::abstract_mapping
 
 // Appends to a node with possibly existing attributes
 ptree* format_entity_instance(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const express::base& instance, ptree& child, ptree& tree, bool as_link = false) {
-	const unsigned n = instance.declaration().as_entity()->attribute_count();
-	for (unsigned i = 0; i < n; ++i) {
+	const std::size_t n = instance.declaration().as_entity()->attribute_count();
+	for (std::size_t i = 0; i < n; ++i) {
 		try {
 		    instance.get_attribute_value(i);
 		} catch (const std::exception&) {
@@ -792,9 +792,9 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 				}
 			} else if (auto matlist = mat.concrete().as<IfcSchema::IfcMaterialList>()) {
                 auto mats = matlist.Materials();
-				for (auto& mat : mats) {
+				for (auto& list_material : mats) {
 					ptree subnode;
-                    format_entity_instance(log, mapping_, mat, subnode, node);
+                    format_entity_instance(log, mapping_, list_material, subnode, node);
 				}
 			}
             format_entity_instance(log, mapping_, mat.concrete(), node, materials);

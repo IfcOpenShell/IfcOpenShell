@@ -266,7 +266,6 @@ typename std::conditional_t<
     std::vector<T>>
 cast_vector(const std::vector<U>& values) {
     if constexpr (is_std_vector<U>::value) {
-        using value_type = typename U::value_type;
         std::vector<std::vector<T>> result;
         result.reserve(values.size());
         for (const auto& value : values) {

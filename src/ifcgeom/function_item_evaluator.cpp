@@ -89,9 +89,9 @@ struct piecewise_fn_evaluator : public fn_evaluator {
 struct gradient_fn_evaluator : public fn_evaluator {
     gradient_fn_evaluator(taxonomy::gradient_function::const_ptr fn, const ifcopenshell::geom::settings& settings) :
        fn_evaluator(settings),
-       fn_(fn), 
        horizontal_evaluator_(settings, fn->get_horizontal()),
-       vertical_evaluator_(settings, fn->get_vertical())
+       vertical_evaluator_(settings, fn->get_vertical()),
+       fn_(fn)
     {
         start_ = fn_->get_vertical()->start();
     }
@@ -121,9 +121,9 @@ struct gradient_fn_evaluator : public fn_evaluator {
 
 struct cant_fn_evaluator : public fn_evaluator {
    cant_fn_evaluator(taxonomy::cant_function::const_ptr fn, const ifcopenshell::geom::settings& settings) : fn_evaluator(settings),
-      fn_(fn),
       gradient_evaluator_(settings, fn->get_gradient()),
-      cant_evaluator_(settings, fn->get_cant()) {
+      cant_evaluator_(settings, fn->get_cant()),
+      fn_(fn) {
         start_ = fn_->get_cant()->start();
     }
 
@@ -185,9 +185,9 @@ struct cant_fn_evaluator : public fn_evaluator {
 
 struct offset_fn_evaluator : public fn_evaluator {
     offset_fn_evaluator(taxonomy::offset_function::const_ptr fn, const ifcopenshell::geom::settings& settings) : fn_evaluator(settings),
-                                                                                                                       fn_(fn),
                                                                                                                        basis_evaluator_(settings, fn->get_basis()),
-                                                                                                                       offset_evaluator_(settings, fn->get_offset()) {
+                                                                                                                       offset_evaluator_(settings, fn->get_offset()),
+                                                                                                                       fn_(fn) {
     }
 
     fn_evaluator* clone() const override { return new offset_fn_evaluator(*this); }

@@ -294,6 +294,9 @@ public:
         }
 
         bool operator==(const iterator& other) const {
+#ifndef IFOPSH_WITH_ROCKSDB
+            (void)other;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
             if (!it_ && !other.it_) return true;
             if (it_ && other.it_)
@@ -322,7 +325,10 @@ public:
         return iterator();
     }
 
-    iterator find(const key_type& key) const {
+        iterator find(const key_type& key) const {
+#ifndef IFOPSH_WITH_ROCKSDB
+            (void)key;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
         std::string key_str = key_to_string(key);
         std::string full_key = prefix_ + key_str;
@@ -334,7 +340,10 @@ public:
         return end();
     }
 
-    size_t erase(const key_type& key) {
+        size_t erase(const key_type& key) {
+#ifndef IFOPSH_WITH_ROCKSDB
+            (void)key;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
         std::string key_str = key_to_string(key);
         std::string full_key = prefix_ + key_str;

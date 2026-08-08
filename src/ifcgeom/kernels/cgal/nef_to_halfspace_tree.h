@@ -196,7 +196,7 @@ plane_map<Kernel> snap_halfspaces(const std::list<CGAL::Plane_3<Kernel>>& planes
 		kdtree.search(std::back_inserter(results_neg), fsn);
 
 		auto sum = std::accumulate(++results_pos.begin(), results_pos.end(), results_pos.front(), [](point_d a, point_d b) {return point_d(a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]); });
-		int N = results_pos.size();
+		std::size_t N = results_pos.size();
 		auto sum2 = std::accumulate(results_neg.begin(), results_neg.end(), sum, [](point_d a, point_d b) {return point_d(a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]); });
 		N += results_neg.size();
 

@@ -15,7 +15,7 @@ IFC_GEOM_API std::vector<double> helmert_curve_point(double A0, double A1, doubl
 /// On the C++ side, the dcast operator take care of this, but dcast is not accessible on the python side.
 /// @param loop 
 /// @return 
-static taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop::ptr loop) {
+inline taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop::ptr loop) {
     return ifcopenshell::geom::taxonomy::dcast<taxonomy::function_item>(loop);
 }
 

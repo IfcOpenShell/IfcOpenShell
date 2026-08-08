@@ -245,10 +245,6 @@ class IFC_PARSE_API mutable_attribute_value {
     uint8_t index_;
 };
 
-namespace impl {
-    class IFC_PARSE_API rocks_db_file_storage;
-}
-
 } // namespace ifcopenshell
 
 #ifdef IFOPSH_WITH_ROCKSDB
@@ -579,12 +575,15 @@ class IFC_PARSE_API instance_data {
     void set_attribute_value(std::size_t attribute_index, T&& value) {
         if (storage_) {
             storage_->set(attribute_index, value);
+            return;
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
             rocks_db_attribute_storage{}.set(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, id_ ? id_ : identity_, attribute_index, value);
+            return;
         }
 #endif
+        throw std::logic_error("RocksDB storage is unavailable");
     }
 
     template<typename T>
@@ -597,6 +596,7 @@ class IFC_PARSE_API instance_data {
             return rocks_db_attribute_storage{}.has<T>(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, id_ ? id_ : identity_, attribute_index);
         }
 #endif
+        throw std::logic_error("RocksDB storage is unavailable");
     }
 
     void to_string(std::ostream& stream, bool uppercase = false) const;

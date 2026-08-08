@@ -60,7 +60,7 @@ class get_type_visitor : public boost::static_visitor<std::string> {
     get_type_visitor() = default;
 
     template <typename T>
-    std::string operator()(const T& t) const {
+    std::string operator()(const T&) const {
         // @todo more types
         return "number";
     }
@@ -416,7 +416,7 @@ void POSTFIX_SCHEMA(json_serializer)::finalize() {
             }
 #ifdef SCHEMA_HAS_IfcPreDefinedPropertySet
         // ifc2x3 does not have this type yet, just inherits from IfcPropertySetDefinition
-        } else if (auto pset = inst.as<IfcSchema::IfcPreDefinedPropertySet>()) {
+        } else if (auto predefined_pset = inst.as<IfcSchema::IfcPreDefinedPropertySet>()) {
 #else
         } else {
 #endif

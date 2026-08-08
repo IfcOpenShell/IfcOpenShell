@@ -1074,6 +1074,12 @@ namespace {
 }
 
 void ifcopenshell::impl::rocks_db_file_storage::register_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index) {
+#ifndef IFOPSH_WITH_ROCKSDB
+    (void)id_from;
+    (void)from_entity;
+    (void)inst_id;
+    (void)attribute_index;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
     static std::string s;
     uint32_t v = id_from;
@@ -1096,6 +1102,12 @@ void ifcopenshell::impl::rocks_db_file_storage::register_inverse(unsigned id_fro
 }
 
 void ifcopenshell::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, const express::base& inst, int attribute_index) {
+#ifndef IFOPSH_WITH_ROCKSDB
+    (void)id_from;
+    (void)from_entity;
+    (void)inst;
+    (void)attribute_index;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
     static std::string s;
     auto inst_id = inst.id();
@@ -1118,6 +1130,9 @@ void ifcopenshell::impl::rocks_db_file_storage::unregister_inverse(unsigned id_f
 
 void ifcopenshell::impl::rocks_db_file_storage::add_type_ref(const express::base& new_entity)
 {
+#ifndef IFOPSH_WITH_ROCKSDB
+    (void)new_entity;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
     size_t v;
     std::string s(sizeof(size_t), ' ');
@@ -1148,6 +1163,9 @@ void ifcopenshell::impl::rocks_db_file_storage::add_type_ref(const express::base
 
 void ifcopenshell::impl::rocks_db_file_storage::remove_type_ref(const express::base& new_entity)
 {
+#ifndef IFOPSH_WITH_ROCKSDB
+    (void)new_entity;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
     if (new_entity.declaration().as_entity()) {
         std::string s;
@@ -1444,7 +1462,7 @@ unsigned ifcopenshell::IfcBaseEntity::set_id(const std::optional<unsigned>& i) {
 namespace {
 // @todo remove redundancy with python wrapper code (which is not identical due to
 // different handling of enumerations)
-ifcopenshell::argument_type get_argument_type(const ifcopenshell::declaration* decl, size_t i) {
+[[maybe_unused]] ifcopenshell::argument_type get_argument_type(const ifcopenshell::declaration* decl, size_t i) {
     const ifcopenshell::parameter_type* pt = 0;
     if (decl->as_entity() != nullptr) {
         pt = decl->as_entity()->attribute_by_index(i)->type_of_attribute();
@@ -1613,10 +1631,7 @@ express::base::set_attribute_value(size_t i, const T& t) {
         apply_individual_instance_visitor(current_attribute, (int)i).apply(visitor);
     }
 
-    {
-        void* const storage = std::visit([](const auto& m) { return (void*)&m; }, file()->storage_);
-        data()->set_attribute_value(i, t);
-    }
+    data()->set_attribute_value(i, t);
     auto new_attribute = get_attribute_value(i);
 
     // Register inverse indices in file
@@ -2820,12 +2835,10 @@ void file::process_deletion_(const express::base& entity) {
                 } break;
                 case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
                     std::vector<std::vector<express::base>> instance_list_list = attr;
-                    bool updated = false;
                     for (auto& li : instance_list_list) {
                         auto it = std::remove(li.begin(), li.end(), entity);
                         if (it != li.end()) {
                             li.erase(it, li.end());
-                            updated = true;
                         }
                     }
                     related_instance.set_attribute_value(i, instance_list_list);
@@ -3432,6 +3445,9 @@ attribute_value instance_data::get_attribute_value(size_t index) const
 }
 
 bool ifcopenshell::impl::rocks_db_file_storage::read_schema(const ifcopenshell::schema_definition*& schema) {
+#ifndef IFOPSH_WITH_ROCKSDB
+    (void)schema;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
     std::string value;
     auto key = "h|file_schema|0";

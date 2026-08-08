@@ -79,11 +79,16 @@ namespace {
             return val;
         }
 #endif
+        throw std::logic_error("RocksDB storage is unavailable");
     }
 
     template<typename T>
     inline bool dispatch_has_(attribute_value::pointer_type array_, uint8_t storage_model_, size_t instance_name_, const ifcopenshell::declaration* entity_or_type, uint8_t index_)
     {
+#ifndef IFOPSH_WITH_ROCKSDB
+        (void)instance_name_;
+        (void)entity_or_type;
+#endif
         if (storage_model_ == 0) {
             return array_.storage_ptr->has<T>(index_);
         }
@@ -103,10 +108,15 @@ namespace {
             return str[0] == type_encoder::encode_type<T>();
         }
 #endif
+        throw std::logic_error("RocksDB storage is unavailable");
     }
 
     inline size_t dispatch_index_(attribute_value::pointer_type array_, uint8_t storage_model_, size_t instance_name_, const ifcopenshell::declaration* entity_or_type, uint8_t index_)
     {
+#ifndef IFOPSH_WITH_ROCKSDB
+        (void)instance_name_;
+        (void)entity_or_type;
+#endif
         if (storage_model_ == 0) {
             return array_.storage_ptr->index(index_);
         }
@@ -123,6 +133,7 @@ namespace {
             return (size_t) str[0] - 'A';
         }
 #endif 
+        throw std::logic_error("RocksDB storage is unavailable");
     }
 }
 
@@ -196,6 +207,7 @@ attribute_value::operator enumeration_reference() const
         return enumeration_reference(decl, v);
     }
 #endif
+    throw std::logic_error("RocksDB storage is unavailable");
 }
 
 attribute_value::operator boost::dynamic_bitset<>() const
@@ -229,6 +241,7 @@ attribute_value::operator express::base () const
         }
     }
 #endif
+    throw std::logic_error("RocksDB storage is unavailable");
 }
 
 attribute_value::operator std::vector<int64_t>() const

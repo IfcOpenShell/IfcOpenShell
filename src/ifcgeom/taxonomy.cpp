@@ -187,19 +187,6 @@ namespace {
        throw std::runtime_error("not implemented");
    }
 
-	bool compare(const style& a, const style& b) {
-		const int order[5] = {
-			less_to_order(a.name, b.name),
-			less_to_order(a.diffuse, b.diffuse),
-			less_to_order(a.specular, b.specular),
-			less_to_order(a.specularity, b.specularity),
-			less_to_order(a.transparency, b.transparency)
-		};
-		auto it = std::find_if(std::begin(order), std::end(order), [](int x) { return x; });
-		if (it == std::end(order)) return false;
-		return *it == -1;
-	}
-
 	/* A compile-time for loop over the taxonomy kinds */
 	template <size_t N>
 	struct dispatch_comparison {
@@ -245,10 +232,10 @@ bool ifcopenshell::geom::taxonomy::less(item::const_ptr a, item::const_ptr b) {
 
 namespace {
 	bool compare(const trimmed_curve& a, const trimmed_curve& b) {
-		int a_which_start = a.start.index();
-		int a_which_end = a.end.index();
-		int b_which_start = b.start.index();
-		int b_which_end = b.end.index();
+		std::size_t a_which_start = a.start.index();
+		std::size_t a_which_end = a.end.index();
+		std::size_t b_which_start = b.start.index();
+		std::size_t b_which_end = b.end.index();
 		if (std::tie(a.orientation, a_which_start, a_which_end) ==
 			std::tie(b.orientation, b_which_start, b_which_end)) {
 

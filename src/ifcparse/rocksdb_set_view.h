@@ -163,6 +163,9 @@ public:
         }
 
         bool operator==(const iterator& other) const {
+#ifndef IFOPSH_WITH_ROCKSDB
+            (void)other;
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
             if (!it_ && !other.it_)
                 return true;

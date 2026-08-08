@@ -364,7 +364,7 @@ namespace ifcopenshell { namespace geom {
 		virtual std::size_t map(const std::vector<opaque_coordinate<4>>& from, const std::vector<opaque_coordinate<4>>& to);
 		virtual conversion_result_shape* moved(ifcopenshell::geom::taxonomy::matrix4::ptr) const;
 
-		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geom::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const {
+		virtual bool surface_area_along_direction(double, const ifcopenshell::geom::taxonomy::matrix4::ptr&, double&, double&, double&) const {
 			return false;
 		}
 	};

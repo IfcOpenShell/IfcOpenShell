@@ -1629,20 +1629,20 @@ typedef item const* ptr;
 			for (auto& i : deep->children) {
 				// @todo Sad... now that we have templated collection members,
 				// we can't generally use collection_base anymore as a cast target.
-				if (auto s = std::dynamic_pointer_cast<taxonomy::collection>(i)) {
-					ifcopenshell::geom::visit<taxonomy::collection>(s, fn);
-				} else if (auto s = std::dynamic_pointer_cast<taxonomy::loop>(i)) {
-					ifcopenshell::geom::visit<taxonomy::loop>(s, fn);
-				} else if (auto s = std::dynamic_pointer_cast<taxonomy::face>(i)) {
-					ifcopenshell::geom::visit<taxonomy::face>(s, fn);
-				} else if (auto s = std::dynamic_pointer_cast<taxonomy::shell>(i)) {
-					ifcopenshell::geom::visit<taxonomy::shell>(s, fn);
-				} else if (auto s = std::dynamic_pointer_cast<taxonomy::solid>(i)) {
-					ifcopenshell::geom::visit<taxonomy::solid>(s, fn);
-				} else if (auto s = std::dynamic_pointer_cast<taxonomy::loft>(i)) {
-					ifcopenshell::geom::visit<taxonomy::loft>(s, fn);
-				} else if (auto s = std::dynamic_pointer_cast<taxonomy::boolean_result>(i)) {
-					ifcopenshell::geom::visit<taxonomy::boolean_result>(s, fn);
+				if (auto collection = std::dynamic_pointer_cast<taxonomy::collection>(i)) {
+					ifcopenshell::geom::visit<taxonomy::collection>(collection, fn);
+				} else if (auto loop = std::dynamic_pointer_cast<taxonomy::loop>(i)) {
+					ifcopenshell::geom::visit<taxonomy::loop>(loop, fn);
+				} else if (auto face = std::dynamic_pointer_cast<taxonomy::face>(i)) {
+					ifcopenshell::geom::visit<taxonomy::face>(face, fn);
+				} else if (auto shell = std::dynamic_pointer_cast<taxonomy::shell>(i)) {
+					ifcopenshell::geom::visit<taxonomy::shell>(shell, fn);
+				} else if (auto solid = std::dynamic_pointer_cast<taxonomy::solid>(i)) {
+					ifcopenshell::geom::visit<taxonomy::solid>(solid, fn);
+				} else if (auto loft = std::dynamic_pointer_cast<taxonomy::loft>(i)) {
+					ifcopenshell::geom::visit<taxonomy::loft>(loft, fn);
+				} else if (auto boolean_result = std::dynamic_pointer_cast<taxonomy::boolean_result>(i)) {
+					ifcopenshell::geom::visit<taxonomy::boolean_result>(boolean_result, fn);
 				}
 				else {
 					fn(i);

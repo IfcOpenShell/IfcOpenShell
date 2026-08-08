@@ -24,7 +24,7 @@ class json_serializer : public ifcopenshell::geom::serializer {
     Dialect dialect_;
 
   public:
-    json_serializer(ifcopenshell::file* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX, ifcopenshell::logger& logger = ifcopenshell::logger::root())
+    json_serializer(ifcopenshell::file* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX, ifcopenshell::logger& = ifcopenshell::logger::root())
         : json_filename(json_filename)
         , dialect_(dialect)
     {

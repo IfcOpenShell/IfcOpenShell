@@ -95,6 +95,7 @@ void expand(const std::string& s, std::vector<unsigned char>& v) {
 #endif
 
 ifcopenshell::global_id::global_id(logger& logger) {
+    (void)logger;
     uuid_data_ = gen();
     std::vector<unsigned char> v(uuid_data_.size());
     std::copy(uuid_data_.begin(), uuid_data_.end(), v.begin());
@@ -118,6 +119,7 @@ ifcopenshell::global_id::global_id(logger& logger) {
 
 ifcopenshell::global_id::global_id(const std::string& string, logger& logger)
     : string_data_(string) {
+    (void)logger;
     std::vector<unsigned char> result;
     expand(string_data_, result);
     std::copy(result.begin(), result.end(), uuid_data_.begin());

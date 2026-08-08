@@ -211,7 +211,7 @@ void ifcopenshell::geom::triangulation::registerEdgeCount(int n1, int n2, std::m
 }
 
 const ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::brep::item(int i) const {
-	if (i >= 0 && i < shapes_.size()) {
+	if (i >= 0 && static_cast<std::size_t>(i) < shapes_.size()) {
 		return shapes_[i].shape()->moved(shapes_[i].placement());
 	} else {
 		return nullptr;
@@ -219,7 +219,7 @@ const ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::brep::ite
 }
 
 int ifcopenshell::geom::brep::item_id(int i) const {
-	if (i >= 0 && i < shapes_.size()) {
+	if (i >= 0 && static_cast<std::size_t>(i) < shapes_.size()) {
 		return shapes_[i].ItemId();
 	} else {
 		return 0;

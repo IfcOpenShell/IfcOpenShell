@@ -17,24 +17,6 @@ ifcopenshell::geom::converter::~converter() {
     delete mapping_;
 }
 
-namespace {
-	void substitute_with_box_based_on_density(ifcopenshell::logger& logger, std::vector<ifcopenshell::geom::conversion_result>& items, double& density) {
-		int nv = 0;
-		void* box = nullptr;
-		double volume = 0.;
-		for (auto& i : items) {
-			nv += i.shape()->num_vertices();
-			volume = i.shape()->bounding_box(box);
-		}
-		density = nv / volume;
-		if (density > 1e5) {
-			items[0].shape()->set_box(box);
-			items.erase(items.begin() + 1, items.end());
-			logger.notice("GEO", 30, "Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
-		}
-	}
-}
-
 ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for_representation_and_product(taxonomy::ptr representation_node, const express::base product_, const taxonomy::matrix4::ptr& place_) {
     auto product = product_.as<express::entity>();
     
@@ -179,7 +161,8 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 
 	const bool no_openings = openings.empty();
     const bool disable_opening_subtractions = settings_.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().get();
-    const bool above_limit = settings_.get<ifcopenshell::geom::settings::MaxVoidsPerElement>().has() && settings_.get<ifcopenshell::geom::settings::MaxVoidsPerElement>().get() != 0 && openings.size() > settings_.get<ifcopenshell::geom::settings::MaxVoidsPerElement>().get();
+    const auto max_voids = settings_.get<ifcopenshell::geom::settings::MaxVoidsPerElement>();
+    const bool above_limit = max_voids.has() && max_voids.get() != 0 && openings.size() > static_cast<std::size_t>(max_voids.get());
 
 	if (above_limit) {
 		logger_.warning("GEO", 403, "Element has more openings than the maximum allowed. Openings will not be processed for this element:", product);
