@@ -72,7 +72,7 @@ namespace ifcopenshell::geom {
 		std::string _guid;
 		std::string _context;
 		std::string _unique_id;
-		transformation _transformation;
+		ifcopenshell::geom::transformation _transformation;
         const express::entity product_;
 		std::vector<const ifcopenshell::geom::element*> _parents;
 	public:
@@ -107,7 +107,7 @@ namespace ifcopenshell::geom {
 		// Return the representation's identifier (e.g. "Body") if present, or it's context type (e.g. "Model").
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
-		const transformation& transformation() const { return _transformation; }
+		const ifcopenshell::geom::transformation& transformation() const { return _transformation; }
         const express::entity& product() const { return product_; }
 		const std::vector<const ifcopenshell::geom::element*>& parents() const { return _parents; }
 		void SetParents(std::vector<const ifcopenshell::geom::element*>& newparents) { _parents = newparents; }
@@ -173,8 +173,8 @@ namespace ifcopenshell::geom {
 			: element(shape_model)
 			, _geometry(boost::shared_ptr<ifcopenshell::geom::Representation::triangulation>(new ifcopenshell::geom::Representation::triangulation(shape_model.geometry())))
 		{}
-		triangulation_element(const ifcopenshell::geom::element& element, const boost::shared_ptr<ifcopenshell::geom::Representation::triangulation>& geometry)
-			: element(element)
+		triangulation_element(const ifcopenshell::geom::element& source, const boost::shared_ptr<ifcopenshell::geom::Representation::triangulation>& geometry)
+			: element(source)
 			, _geometry(geometry)
 		{}
 	private:
