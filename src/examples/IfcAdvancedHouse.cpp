@@ -131,13 +131,13 @@ int main() {
 	setSurfaceColour(file, ground_representation.as<IfcSchema::IfcProductDefinitionShape>(), 0.15, 0.25, 0.05);
 
     /*
-    // Note that IFC lacks elementary surfaces that STEP does have, such as spherical_surface.
-    // BRepBuilderAPI_NurbsConvert can be used to serialize such surfaces as nurbs surfaces.
+	// Note that IFC lacks elementary surfaces that STEP does have, such as spherical_surface.
+	// BRepBuilderAPI_NurbsConvert can be used to serialize such surfaces as nurbs surfaces.
 	TopoDS_Shape sphere = BRepPrimAPI_MakeSphere(gp_Pnt(), 1000.).Shape();
-	IfcSchema::IfcProductDefinitionShape* sphere_representation = ifcopenshell::geom::serialise(sphere, true);
+	auto sphere_representation = ifcopenshell::geom::serialise(file, sphere, true);
 	if (S(IfcSchema::Identifier) == "IFC4") {
 		sphere = BRepBuilderAPI_NurbsConvert(sphere, true).Shape();
-		sphere_representation = ifcopenshell::geom::serialise(sphere, true);
+		sphere_representation = ifcopenshell::geom::serialise(file, sphere, true);
 	}
     */
 
