@@ -105,7 +105,7 @@ bool open_cascade_kernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& sh
 	return true;
 }
 
-bool open_cascade_kernel::convert_impl(const taxonomy::shell::ptr shell, ifcopenshell::geom::conversion_results& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::shell::ptr shell, std::vector<ifcopenshell::geom::conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;

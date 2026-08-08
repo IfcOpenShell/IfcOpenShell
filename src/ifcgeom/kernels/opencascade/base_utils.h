@@ -78,7 +78,7 @@ namespace ifcopenshell::geom {
 		IFC_GEOMLIBRARY_API TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 		IFC_GEOMLIBRARY_API TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
 
-		IFC_GEOMLIBRARY_API bool flatten_shape_list(const ifcopenshell::geom::conversion_results& shapes, TopoDS_Shape& result, bool fuse, bool create_shell, double tol);
+		IFC_GEOMLIBRARY_API bool flatten_shape_list(const std::vector<ifcopenshell::geom::conversion_result>& shapes, TopoDS_Shape& result, bool fuse, bool create_shell, double tol);
 		IFC_GEOMLIBRARY_API bool validate_shape(const TopoDS_Shape&);
 
 		IFC_GEOMLIBRARY_API TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance);

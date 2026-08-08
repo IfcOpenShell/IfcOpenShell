@@ -1406,7 +1406,7 @@ namespace {
 		return result;
 	}
 
-	taxonomy::style::ptr fallback_style(const taxonomy::geom_item::ptr& item, const ifcopenshell::geom::conversion_results& results) {
+	taxonomy::style::ptr fallback_style(const taxonomy::geom_item::ptr& item, const std::vector<ifcopenshell::geom::conversion_result>& results) {
 		if (item->surface_style) {
 			return item->surface_style;
 		}
@@ -1427,7 +1427,7 @@ namespace {
 		return shape->as_manifold();
 	}
 
-	std::optional<manifold::Manifold> results_to_operand(const ifcopenshell::geom::conversion_results& results) {
+	std::optional<manifold::Manifold> results_to_operand(const std::vector<ifcopenshell::geom::conversion_result>& results) {
 		std::vector<manifold::Manifold> operands;
 		for (const auto& result : results) {
 			auto operand = result_to_manifold(result);
@@ -1444,7 +1444,7 @@ namespace {
 		return manifold::Manifold::BatchBoolean(operands, manifold::OpType::Add);
 	}
 
-	std::optional<manifold::Box> results_bbox(const ifcopenshell::geom::conversion_results& results) {
+	std::optional<manifold::Box> results_bbox(const std::vector<ifcopenshell::geom::conversion_result>& results) {
 		bool any = false;
 		manifold::Box bbox;
 		for (const auto& result : results) {
@@ -1489,7 +1489,7 @@ namespace {
 	}
 }
 
-bool manifold_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, ifcopenshell::geom::conversion_results& results) {
+bool manifold_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get(), dilation_hack, settings_.get<settings::CircleSegments>().get());
 	if (!part) {
 		ifcopenshell::logger::root().warning("Manifold kernel: failed to convert extrusion, requires planar bounds with line, circle or ellipse edges", extrusion->instance);
@@ -1503,7 +1503,7 @@ bool manifold_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, ifc
 	return true;
 }
 
-bool manifold_kernel::convert_impl(const taxonomy::shell::ptr shell, ifcopenshell::geom::conversion_results& results) {
+bool manifold_kernel::convert_impl(const taxonomy::shell::ptr shell, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	manifold::Manifold::Error status = manifold::Manifold::Error::NoError;
 	auto part = part_from_shell(shell, settings_.get<settings::Precision>().get(), dilation_hack, &status);
 	if (!part) {
@@ -1521,7 +1521,7 @@ bool manifold_kernel::convert_impl(const taxonomy::shell::ptr shell, ifcopenshel
 	return true;
 }
 
-bool manifold_kernel::convert_impl(const taxonomy::solid::ptr solid, ifcopenshell::geom::conversion_results& results) {
+bool manifold_kernel::convert_impl(const taxonomy::solid::ptr solid, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	std::vector<manifold::Manifold> shells;
 	for (const auto& shell : solid->children) {
 		const auto precision = settings_.get<settings::Precision>().get();
@@ -1556,7 +1556,7 @@ bool manifold_kernel::convert_impl(const taxonomy::solid::ptr solid, ifcopenshel
 	return true;
 }
 
-bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, ifcopenshell::geom::conversion_results& results) {
+bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	std::vector<manifold::Manifold> operands;
 	taxonomy::style::ptr style;
 	std::optional<manifold::Box> first_bbox;
@@ -1592,7 +1592,7 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, ifcop
 				style = child->surface_style;
 			}
 		} else {
-			ifcopenshell::geom::conversion_results converted;
+			std::vector<ifcopenshell::geom::conversion_result> converted;
 			if (!abstract_kernel::convert(child, converted)) {
 				ifcopenshell::logger::root().warning("Manifold kernel: failed to convert boolean operand", child->instance);
 				return false;
@@ -1634,7 +1634,7 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, ifcop
 	return true;
 }
 
-bool manifold_kernel::convert_openings(const express::base&, const std::vector<std::pair<taxonomy::ptr, taxonomy::matrix4>>& openings, const ifcopenshell::geom::conversion_results& entity_shapes, const taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes) {
+bool manifold_kernel::convert_openings(const express::base&, const std::vector<std::pair<taxonomy::ptr, taxonomy::matrix4>>& openings, const std::vector<ifcopenshell::geom::conversion_result>& entity_shapes, const taxonomy::matrix4& entity_trsf, std::vector<ifcopenshell::geom::conversion_result>& cut_shapes) {
 	std::vector<manifold::Manifold> opening_operands;
 	auto entity_bbox = results_bbox(entity_shapes);
 	if (!entity_bbox) {
@@ -1644,7 +1644,7 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
     dilation_hack = settings_.get<settings::Precision>().get() * 10.;
 	for (const auto& opening : openings) {
 		const auto relative = taxonomy::make<taxonomy::matrix4>(entity_trsf.ccomponents().inverse() * opening.second.ccomponents());
-		ifcopenshell::geom::conversion_results converted;
+		std::vector<ifcopenshell::geom::conversion_result> converted;
 		if (!abstract_kernel::convert(opening.first, converted)) {
 			ifcopenshell::logger::root().warning("Manifold kernel: failed to convert opening operand", opening.first->instance);
 			return false;

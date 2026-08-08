@@ -56,18 +56,18 @@ namespace ifcopenshell::geom {
 
 		class IFC_GEOM_API brep : public representation {
 		private:
-			const ifcopenshell::geom::conversion_results shapes_;
+			const std::vector<ifcopenshell::geom::conversion_result> shapes_;
 			brep(const brep& other);
 			brep& operator=(const brep& other);
 		public:
-			brep(const ifcopenshell::geom::settings& settings, const std::string& entity, const std::string& id, const ifcopenshell::geom::conversion_results& shapes)
+			brep(const ifcopenshell::geom::settings& settings, const std::string& entity, const std::string& id, const std::vector<ifcopenshell::geom::conversion_result>& shapes)
 				: representation(settings, entity, id)
 				, shapes_(shapes)
 			{}
 			virtual ~brep() {}
-			ifcopenshell::geom::conversion_results::const_iterator begin() const { return shapes_.begin(); }
-			ifcopenshell::geom::conversion_results::const_iterator end() const { return shapes_.end(); }
-			const ifcopenshell::geom::conversion_results& shapes() const { return shapes_; }
+			std::vector<ifcopenshell::geom::conversion_result>::const_iterator begin() const { return shapes_.begin(); }
+			std::vector<ifcopenshell::geom::conversion_result>::const_iterator end() const { return shapes_.end(); }
+			const std::vector<ifcopenshell::geom::conversion_result>& shapes() const { return shapes_; }
 			ifcopenshell::geom::conversion_result_shape* as_compound(bool force_meters = false) const;
 
 			bool calculate_volume(double&) const;

@@ -452,7 +452,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 	return true;
 }
 
-bool open_cascade_kernel::convert_impl(const taxonomy::loft::ptr loft, ifcopenshell::geom::conversion_results& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::loft::ptr loft, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	TopoDS_Shape shape;
 	if (!convert(loft, shape)) {
 		return false;

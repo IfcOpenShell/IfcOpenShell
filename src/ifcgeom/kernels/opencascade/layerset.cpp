@@ -167,7 +167,7 @@ namespace {
 }
 
 
-bool ifcopenshell::geom::util::apply_folded_layerset(const conversion_results& items, const std::vector< std::vector<opencascade::handle<Geom_Surface>>>& surfaces, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& styles, conversion_results& result, double tol) {
+bool ifcopenshell::geom::util::apply_folded_layerset(const std::vector<conversion_result>& items, const std::vector< std::vector<opencascade::handle<Geom_Surface>>>& surfaces, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& styles, std::vector<conversion_result>& result, double tol) {
 	Bnd_Box bb;
 	TopoDS_Shape input;
 	flatten_shape_list(items, input, false, false, tol);
@@ -249,7 +249,7 @@ bool ifcopenshell::geom::util::apply_folded_layerset(const conversion_results& i
 
 	} else if (shells.Extent() == 1) {
 
-		for (conversion_results::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a, b;
 			if (split_solid_by_shell(std::static_pointer_cast<open_cascade_shape>(it->Shape())->shape(), shells.First(), a, b, tol)) {
 				result.push_back(conversion_result(it->ItemId(), it->Placement(), new open_cascade_shape(b), (!!styles[0] ? styles[0] : it->StylePtr())));
@@ -263,7 +263,7 @@ bool ifcopenshell::geom::util::apply_folded_layerset(const conversion_results& i
 
 	} else {
 
-		for (conversion_results::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 
 			const TopoDS_Shape& s = std::static_pointer_cast<open_cascade_shape>(it->Shape())->shape();
 			TopoDS_Shape sld = ensure_fit_for_subtraction(s, tol);
@@ -284,14 +284,14 @@ bool ifcopenshell::geom::util::apply_folded_layerset(const conversion_results& i
 
 }
 
-bool ifcopenshell::geom::util::apply_layerset(const conversion_results& items, const std::vector<opencascade::handle<Geom_Surface>>& surfaces, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& styles, conversion_results& result, double tol) {
+bool ifcopenshell::geom::util::apply_layerset(const std::vector<conversion_result>& items, const std::vector<opencascade::handle<Geom_Surface>>& surfaces, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& styles, std::vector<conversion_result>& result, double tol) {
 	if (surfaces.size() < 3) {
 
 		return false;
 
 	} else if (surfaces.size() == 3) {
 
-		for (conversion_results::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a, b;
 			if (split_solid_by_surface(std::static_pointer_cast<open_cascade_shape>(it->Shape())->shape(), surfaces[1], a, b, tol)) {
 				result.push_back(conversion_result(it->ItemId(), it->Placement(),new open_cascade_shape(b), (!!styles[0] ? styles[0] : it->StylePtr())));
@@ -309,7 +309,7 @@ bool ifcopenshell::geom::util::apply_layerset(const conversion_results& items, c
 		// Determine whether sequence of surfaces is consistent with surface normal, so that
 		// layer operations are applied in the correct order. This seems to be always the case.
 		Bnd_Box bb;
-		for (conversion_results::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 			BRepBndLib::Add(it->Shape(), bb);
 		}
 
@@ -334,7 +334,7 @@ bool ifcopenshell::geom::util::apply_layerset(const conversion_results& items, c
 		mass.ChangeCoord() += n1.XYZ();
 		*/
 
-		for (conversion_results::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 
 			const TopoDS_Shape& s = std::static_pointer_cast<open_cascade_shape>(it->Shape())->shape();
 			TopoDS_Shape sld = ensure_fit_for_subtraction(s, tol);

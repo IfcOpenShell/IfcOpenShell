@@ -98,7 +98,7 @@ bool ifcopenshell::geom::Representation::brep::calculate_volume(double& volume) 
 bool ifcopenshell::geom::Representation::brep::calculate_projected_surface_area(const ifcopenshell::geom::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
 	along_x = along_y = along_z = 0.;
 
-	for (ifcopenshell::geom::conversion_results::const_iterator it = begin(); it != end(); ++it) {
+	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator it = begin(); it != end(); ++it) {
 		double x, y, z;
 		it->Shape()->surface_area_along_direction(settings().get<ifcopenshell::geom::settings::MesherLinearDeflection>().get(), place, x, y, z);
 
@@ -120,7 +120,7 @@ ifcopenshell::geom::Representation::triangulation::triangulation(const brep& sha
 	: representation(shape_model.settings(), shape_model.entity(), shape_model.id())
 	, weld_offset_(0)
 {
-	for (ifcopenshell::geom::conversion_results::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++iit) {
+	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++iit) {
 		
 		// Don't weld vertices that belong to different items to prevent non-manifold situations.
 		resetWelds();

@@ -252,7 +252,7 @@ namespace {
 	}
 }
 
-bool passthrough_kernel::convert_impl(const taxonomy::shell::ptr shell, ifcopenshell::geom::conversion_results& results) {
+bool passthrough_kernel::convert_impl(const taxonomy::shell::ptr shell, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	if (!shell_supported(shell)) {
 		return false;
 	}
@@ -264,7 +264,7 @@ bool passthrough_kernel::convert_impl(const taxonomy::shell::ptr shell, ifcopens
 	return true;
 }
 
-bool passthrough_kernel::convert_impl(const taxonomy::solid::ptr solid, ifcopenshell::geom::conversion_results& results) {
+bool passthrough_kernel::convert_impl(const taxonomy::solid::ptr solid, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	if (!solid || solid->children.size() != 1) {
 		return false;
 	}
@@ -284,7 +284,7 @@ bool passthrough_kernel::convert_impl(const taxonomy::solid::ptr solid, ifcopens
 	return true;
 }
 
-bool passthrough_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, ifcopenshell::geom::conversion_results& results) {
+bool passthrough_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	auto shell = shell_from_extrusion(extrusion, settings_.get<settings::Precision>().get());
 	if (!shell) {
 		return false;
@@ -298,6 +298,6 @@ bool passthrough_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, 
 }
 
 bool passthrough_kernel::convert_openings(const express::base&, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>&,
-	const ifcopenshell::geom::conversion_results&, const ifcopenshell::geom::taxonomy::matrix4&, ifcopenshell::geom::conversion_results&) {
+	const std::vector<ifcopenshell::geom::conversion_result>&, const ifcopenshell::geom::taxonomy::matrix4&, std::vector<ifcopenshell::geom::conversion_result>&) {
 	return false;
 }

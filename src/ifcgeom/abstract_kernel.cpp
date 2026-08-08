@@ -15,7 +15,7 @@ const char* ifcopenshell::not_supported_error::what() const noexcept {
 	return "Not supported.";
 }
 
-bool ifcopenshell::geom::kernels::abstract_kernel::convert(const taxonomy::ptr item, ifcopenshell::geom::conversion_results& results) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert(const taxonomy::ptr item, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	if (settings_.get<settings::CacheShapes>().get()) {
 		auto it = cache_.find(item);
 		if (it != cache_.end()) {
@@ -67,7 +67,7 @@ const ifcopenshell::geom::settings& ifcopenshell::geom::kernels::abstract_kernel
 	return settings_;
 }
 
-bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::collection::ptr collection, ifcopenshell::geom::conversion_results& r) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::collection::ptr collection, std::vector<ifcopenshell::geom::conversion_result>& r) {
 	auto s = r.size();
 	for (auto& c : collection->children) {
 		if (!convert(c, r) && !partial_success_is_success) {
@@ -85,42 +85,42 @@ bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::
 	return r.size() > s;
 }
 
-bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::function_item::ptr item, ifcopenshell::geom::conversion_results& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::function_item::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs) {
    function_item_evaluator evaluator(settings(),item);
    auto expl = evaluator.evaluate();
 	expl->instance = item->instance;
 	return convert(expl, cs);
 }
 
-bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::functor_item::ptr item, ifcopenshell::geom::conversion_results& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::functor_item::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;
     return convert(expl, cs);
 }
 
-bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::piecewise_function::ptr item, ifcopenshell::geom::conversion_results& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::piecewise_function::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;
     return convert(expl, cs);
 }
 
-bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::gradient_function::ptr item, ifcopenshell::geom::conversion_results& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::gradient_function::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;
     return convert(expl, cs);
 }
 
-bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::cant_function::ptr item, ifcopenshell::geom::conversion_results& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::cant_function::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;
     return convert(expl, cs);
 }
 
-bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::offset_function::ptr item, ifcopenshell::geom::conversion_results& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::offset_function::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;

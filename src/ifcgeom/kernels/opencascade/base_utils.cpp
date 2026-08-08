@@ -803,14 +803,14 @@ bool ifcopenshell::geom::util::create_solid_from_faces(const NCollection_List<To
 	return valid_shell;
 }
 
-bool ifcopenshell::geom::util::flatten_shape_list(const ifcopenshell::geom::conversion_results& shapes, TopoDS_Shape& result, bool fuse, bool create_shell, double tol) {
+bool ifcopenshell::geom::util::flatten_shape_list(const std::vector<ifcopenshell::geom::conversion_result>& shapes, TopoDS_Shape& result, bool fuse, bool create_shell, double tol) {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
 
 	result = TopoDS_Shape();
 
-	for (ifcopenshell::geom::conversion_results::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
+	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
 		TopoDS_Shape merged;
 		const TopoDS_Shape& s = std::static_pointer_cast<ifcopenshell::geom::open_cascade_shape>(it->Shape())->shape();
 		if (fuse || create_shell) {

@@ -82,7 +82,7 @@ namespace {
 	}
 }
 
-bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, conversion_results& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vector<conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 	bool valid_result = false;
 	bool first = true;
@@ -94,7 +94,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, c
 	taxonomy::style::ptr first_item_style;
 
 	for (auto& c : br->children) {
-		ifcopenshell::geom::conversion_results cr;
+		std::vector<ifcopenshell::geom::conversion_result> cr;
 		abstract_kernel::convert(c, cr);
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			// @todo A will be null on union/intersection, intended?

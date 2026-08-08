@@ -62,7 +62,7 @@ namespace ifcopenshell {
 
 	class IFC_GEOM_API abstract_kernel {
 	private:
-		std::unordered_map<taxonomy::item::ptr, ifcopenshell::geom::conversion_results, ifcopenshell::geom::taxonomy::hash_functor, ifcopenshell::geom::taxonomy::equal_functor> cache_;
+		std::unordered_map<taxonomy::item::ptr, std::vector<ifcopenshell::geom::conversion_result>, ifcopenshell::geom::taxonomy::hash_functor, ifcopenshell::geom::taxonomy::equal_functor> cache_;
 	protected:
 		std::string geometry_library_;
 		ifcopenshell::geom::settings settings_;
@@ -78,7 +78,7 @@ namespace ifcopenshell {
 
 		virtual ~abstract_kernel() = default;
 
-		virtual bool convert(const taxonomy::ptr, ifcopenshell::geom::conversion_results&);
+		virtual bool convert(const taxonomy::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 		const ifcopenshell::geom::settings& settings() const;
 		const std::string& geometry_library() const {
 			return geometry_library_;
@@ -93,49 +93,49 @@ namespace ifcopenshell {
 
 		virtual bool supports_boolean_operations() const = 0;
 
-		virtual bool convert_impl(const taxonomy::matrix4::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::point3::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::direction3::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::line::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::circle::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::ellipse::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::bspline_curve::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::edge::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::loop::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::shell::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::face::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::extrusion::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::node::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::colour::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::boolean_result::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::plane::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::offset_curve::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::revolve::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::bspline_surface::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::cylinder::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::sphere::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::torus::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::solid::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::sweep_along_curve::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::loft::ptr, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::collection::ptr, ifcopenshell::geom::conversion_results&);
-		virtual bool convert_impl(const taxonomy::function_item::ptr item, ifcopenshell::geom::conversion_results& cs);
-      virtual bool convert_impl(const taxonomy::functor_item::ptr item, ifcopenshell::geom::conversion_results& cs);
-      virtual bool convert_impl(const taxonomy::piecewise_function::ptr item, ifcopenshell::geom::conversion_results& cs);
-      virtual bool convert_impl(const taxonomy::gradient_function::ptr item, ifcopenshell::geom::conversion_results& cs);
-      virtual bool convert_impl(const taxonomy::cant_function::ptr item, ifcopenshell::geom::conversion_results& cs);
-      virtual bool convert_impl(const taxonomy::offset_function::ptr item, ifcopenshell::geom::conversion_results& cs);
+		virtual bool convert_impl(const taxonomy::matrix4::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::point3::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::direction3::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::line::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::circle::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::ellipse::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::bspline_curve::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::edge::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::loop::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::shell::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::face::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::extrusion::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::node::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::colour::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::boolean_result::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::plane::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::offset_curve::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::revolve::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::bspline_surface::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::cylinder::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::sphere::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::torus::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::solid::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::sweep_along_curve::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::loft::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::collection::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+		virtual bool convert_impl(const taxonomy::function_item::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs);
+      virtual bool convert_impl(const taxonomy::functor_item::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs);
+      virtual bool convert_impl(const taxonomy::piecewise_function::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs);
+      virtual bool convert_impl(const taxonomy::gradient_function::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs);
+      virtual bool convert_impl(const taxonomy::cant_function::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs);
+      virtual bool convert_impl(const taxonomy::offset_function::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs);
 
 		/*
 		virtual void set_offset(const std::array<double, 3> &p_offset);
 		virtual void set_rotation(const std::array<double, 4> &p_rotation);
 		*/
 
-		virtual bool apply_layerset(ifcopenshell::geom::conversion_results&, const ifcopenshell::geom::layerset_information&) { throw not_implemented_error(); }
-		virtual bool apply_folded_layerset(ifcopenshell::geom::conversion_results&, const ifcopenshell::geom::layerset_information&, const std::map<express::base, ifcopenshell::geom::layerset_information>&) { throw not_implemented_error(); }
+		virtual bool apply_layerset(std::vector<ifcopenshell::geom::conversion_result>&, const ifcopenshell::geom::layerset_information&) { throw not_implemented_error(); }
+		virtual bool apply_folded_layerset(std::vector<ifcopenshell::geom::conversion_result>&, const ifcopenshell::geom::layerset_information&, const std::map<express::base, ifcopenshell::geom::layerset_information>&) { throw not_implemented_error(); }
 		virtual bool convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings,
-			const ifcopenshell::geom::conversion_results& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes) = 0;
-		virtual bool unify_shapes(const ifcopenshell::geom::conversion_results&, ifcopenshell::geom::conversion_results&) { throw not_implemented_error(); }
+			const std::vector<ifcopenshell::geom::conversion_result>& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, std::vector<ifcopenshell::geom::conversion_result>& cut_shapes) = 0;
+		virtual bool unify_shapes(const std::vector<ifcopenshell::geom::conversion_result>&, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
 
 		virtual abstract_kernel* clone(ifcopenshell::logger& logger) const = 0;
 	};
@@ -148,7 +148,7 @@ namespace {
 	/* A compile-time for loop over the taxonomy kinds */
 	template <size_t N>
 	struct dispatch_conversion {
-		static bool dispatch(ifcopenshell::geom::kernels::abstract_kernel* kernel, ifcopenshell::geom::taxonomy::kinds item_kind, const ifcopenshell::geom::taxonomy::ptr& item, ifcopenshell::geom::conversion_results& results) {
+		static bool dispatch(ifcopenshell::geom::kernels::abstract_kernel* kernel, ifcopenshell::geom::taxonomy::kinds item_kind, const ifcopenshell::geom::taxonomy::ptr& item, std::vector<ifcopenshell::geom::conversion_result>& results) {
 			if (N == item_kind) {
 				auto concrete_item = std::static_pointer_cast<ifcopenshell::geom::taxonomy::type_by_kind::type<N>>(item);
 				return kernel->convert_impl(concrete_item, results);
@@ -160,7 +160,7 @@ namespace {
 
 	template <>
 	struct dispatch_conversion<ifcopenshell::geom::taxonomy::type_by_kind::max> {
-        static bool dispatch(ifcopenshell::geom::kernels::abstract_kernel* kernel, ifcopenshell::geom::taxonomy::kinds, const ifcopenshell::geom::taxonomy::ptr& item, ifcopenshell::geom::conversion_results&) {
+        static bool dispatch(ifcopenshell::geom::kernels::abstract_kernel* kernel, ifcopenshell::geom::taxonomy::kinds, const ifcopenshell::geom::taxonomy::ptr& item, std::vector<ifcopenshell::geom::conversion_result>&) {
             if (kernel->partial_success_is_success) {
 				std::string created_from;
 				if (item->instance) {
@@ -174,7 +174,7 @@ namespace {
 
 	template <size_t N>
 	struct dispatch_with_upgrade {
-		static bool dispatch(ifcopenshell::geom::kernels::abstract_kernel* kernel, const ifcopenshell::geom::taxonomy::ptr& item, ifcopenshell::geom::conversion_results& results) {
+		static bool dispatch(ifcopenshell::geom::kernels::abstract_kernel* kernel, const ifcopenshell::geom::taxonomy::ptr& item, std::vector<ifcopenshell::geom::conversion_result>& results) {
 			auto concrete_item = ifcopenshell::geom::taxonomy::template dcast<ifcopenshell::geom::taxonomy::upgrades::type<N>>(item);
 			if (concrete_item) {
 				return kernel->convert_impl(concrete_item, results);
@@ -186,7 +186,7 @@ namespace {
 
 	template <>
 	struct dispatch_with_upgrade<ifcopenshell::geom::taxonomy::upgrades::max> {
-		static bool dispatch(ifcopenshell::geom::kernels::abstract_kernel* kernel, const ifcopenshell::geom::taxonomy::ptr& item, ifcopenshell::geom::conversion_results&) {
+		static bool dispatch(ifcopenshell::geom::kernels::abstract_kernel* kernel, const ifcopenshell::geom::taxonomy::ptr& item, std::vector<ifcopenshell::geom::conversion_result>&) {
             if (kernel->partial_success_is_success) {
 				std::string created_from;
 				if (item->instance) {

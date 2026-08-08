@@ -132,20 +132,20 @@ public:
 	bool convert(const ifcopenshell::geom::taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
 	bool convert(const ifcopenshell::geom::taxonomy::sweep_along_curve::ptr, TopoDS_Shape&);
 
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::edge::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::loop::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::face::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::solid::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::shell::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::extrusion::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::revolve::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::boolean_result::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::loft::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::sweep_along_curve::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::edge::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::loop::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::face::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::solid::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::shell::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::extrusion::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::revolve::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::boolean_result::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::loft::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::sweep_along_curve::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 
 	virtual bool convert_openings(const express::base& entity, const std::vector<std::pair<ifcopenshell::geom::taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings,
-		const ifcopenshell::geom::conversion_results& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes);
-	virtual bool unify_shapes(const ifcopenshell::geom::conversion_results& input, ifcopenshell::geom::conversion_results& output);
+		const std::vector<ifcopenshell::geom::conversion_result>& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, std::vector<ifcopenshell::geom::conversion_result>& cut_shapes);
+	virtual bool unify_shapes(const std::vector<ifcopenshell::geom::conversion_result>& input, std::vector<ifcopenshell::geom::conversion_result>& output);
 
 	typedef std::variant<boost::blank, Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
 	curve_creation_visitor_result_type convert_curve(const ifcopenshell::geom::taxonomy::ptr);

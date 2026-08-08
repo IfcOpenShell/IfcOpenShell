@@ -100,7 +100,7 @@ bool open_cascade_kernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape
 	return !result.IsNull();
 }
 
-bool open_cascade_kernel::convert_impl(const taxonomy::solid::ptr solid, ifcopenshell::geom::conversion_results& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::solid::ptr solid, std::vector<ifcopenshell::geom::conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;

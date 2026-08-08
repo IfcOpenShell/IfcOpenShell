@@ -23,15 +23,15 @@ public:
 	virtual bool supports_openings() const { return true; }
 	virtual bool supports_boolean_operations() const { return true; }
 
-	virtual bool convert_impl(const taxonomy::extrusion::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const taxonomy::shell::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const taxonomy::solid::ptr, ifcopenshell::geom::conversion_results&);
-	virtual bool convert_impl(const taxonomy::boolean_result::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const taxonomy::extrusion::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const taxonomy::shell::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const taxonomy::solid::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const taxonomy::boolean_result::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 
 	double dilation_hack = 0.;
 
 	virtual bool convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings,
-		const ifcopenshell::geom::conversion_results& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes);
+		const std::vector<ifcopenshell::geom::conversion_result>& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, std::vector<ifcopenshell::geom::conversion_result>& cut_shapes);
 };
 
 }

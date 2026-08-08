@@ -315,7 +315,7 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 	return true;
 }
 
-bool open_cascade_kernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs, ifcopenshell::geom::conversion_results& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs, std::vector<ifcopenshell::geom::conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;

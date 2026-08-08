@@ -70,7 +70,7 @@ bool open_cascade_kernel::convert(const taxonomy::extrusion::ptr extrusion, Topo
 	return !shape.IsNull();
 }
 
-bool open_cascade_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, ifcopenshell::geom::conversion_results& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, std::vector<ifcopenshell::geom::conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;

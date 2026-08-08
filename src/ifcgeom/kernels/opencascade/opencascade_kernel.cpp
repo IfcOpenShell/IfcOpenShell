@@ -44,7 +44,7 @@ namespace {
 using namespace ifcopenshell::geom;
 
 bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings,
-	const ifcopenshell::geom::conversion_results& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes) {
+	const std::vector<ifcopenshell::geom::conversion_result>& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, std::vector<ifcopenshell::geom::conversion_result>& cut_shapes) {
 
 	util::boolean_settings bst;
 	bst.attempt_2d = settings_.get<settings::BooleanAttempt2d>().get();
@@ -83,7 +83,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 		Eigen::Matrix4d relative = entity_trsf.ccomponents().inverse() * opening_trsf.ccomponents();
 		// opening_trsf = relative;
 
-		ifcopenshell::geom::conversion_results opening_shapes;
+		std::vector<ifcopenshell::geom::conversion_result> opening_shapes;
 		
 		// @todo
 		abstract_kernel::convert(op.first, opening_shapes);
@@ -110,7 +110,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 	std::sort(opening_vector.begin(), opening_vector.end(), opening_sorter());
 
 	// Iterate over the shapes of the IfcProduct
-	for (ifcopenshell::geom::conversion_results::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++it3) {
+	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++it3) {
 
 		TopoDS_Compound C;
 		BRep_Builder B;
@@ -267,7 +267,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 	return true;
 }
 
-bool ifcopenshell::geom::open_cascade_kernel::unify_shapes(const ifcopenshell::geom::conversion_results& input, ifcopenshell::geom::conversion_results& output) {
+bool ifcopenshell::geom::open_cascade_kernel::unify_shapes(const std::vector<ifcopenshell::geom::conversion_result>& input, std::vector<ifcopenshell::geom::conversion_result>& output) {
 	std::transform(input.begin(), input.end(), std::back_inserter(output), [this](auto v) {
 		auto& s = std::static_pointer_cast<open_cascade_shape>(v.Shape())->shape();
 		return ifcopenshell::geom::conversion_result(
@@ -279,7 +279,7 @@ bool ifcopenshell::geom::open_cascade_kernel::unify_shapes(const ifcopenshell::g
 	return true;
 }
 
-bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revolve::ptr r, ifcopenshell::geom::conversion_results& results) {
+bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revolve::ptr r, std::vector<ifcopenshell::geom::conversion_result>& results) {
 
 
 	gp_Ax1 ax(
@@ -375,7 +375,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	representation_id_builder << representation->data().id();
 // 
 // 	ifcopenshell::geom::Representation::brep* shape;
-// 	ifcopenshell::geom::conversion_results shapes, shapes2;
+// 	std::vector<ifcopenshell::geom::conversion_result> shapes, shapes2;
 // 
 // 	if (!convert_shapes(representation, shapes)) {
 // 		return 0;
@@ -430,7 +430,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	const IfcSchema::IfcMaterial* single_material = get_single_material_association(product);
 // 	if (single_material) {
 // 		auto s = get_style(single_material);
-// 		for (ifcopenshell::geom::conversion_results::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+// 		for (std::vector<ifcopenshell::geom::conversion_result>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 // 			if (!it->hasStyle() && s) {
 // 				it->setStyle(s);
 // 				material_style_applied = true;
@@ -438,7 +438,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		}
 // 	} else {
 // 		bool some_items_without_style = false;
-// 		for (ifcopenshell::geom::conversion_results::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+// 		for (std::vector<ifcopenshell::geom::conversion_result>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 // 			if (!it->hasStyle() && util::count(it->Shape(), TopAbs_FACE)) {
 // 				some_items_without_style = true;
 // 				break;
@@ -502,7 +502,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			representation_id_builder << "-" << (*it)->data().id();
 // 		}
 // 
-// 		ifcopenshell::geom::conversion_results opened_shapes;
+// 		std::vector<ifcopenshell::geom::conversion_result> opened_shapes;
 // 		bool caught_error = false;
 // 		try {
 // 			convert_openings(product, openings, shapes, trsf, opened_shapes);
@@ -518,7 +518,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		}
 // 
 // 		if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-// 			for (ifcopenshell::geom::conversion_results::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++it) {
+// 			for (std::vector<ifcopenshell::geom::conversion_result>::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++it) {
 // 				it->prepend(trsf);
 // 			}
 // 			trsf = gp_Trsf();
@@ -526,7 +526,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		}
 // 		shape = new ifcopenshell::geom::Representation::brep(element_settings, representation_id_builder.str(), opened_shapes);
 // 	} else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-// 		for (ifcopenshell::geom::conversion_results::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+// 		for (std::vector<ifcopenshell::geom::conversion_result>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 // 			it->prepend(trsf);
 // 		}
 // 		trsf = gp_Trsf();
@@ -770,7 +770,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		return false;
 // 	}
 // 
-// 	conversion_results items;
+// 	std::vector<conversion_result> items;
 // 	{
 // 		Kernel temp = *this;
 // 		temp.setValue(GV_DIMENSIONALITY, -1.);
@@ -778,7 +778,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	}
 // 
 // 	TopoDS_Vertex a, b;
-// 	for (conversion_results::const_iterator it = items.begin(); it != items.end(); ++it) {
+// 	for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 // 		TopExp_Explorer exp(it->Shape(), TopAbs_VERTEX);
 // 		for (; exp.More(); exp.Next()) {
 // 			b = TopoDS::Vertex(exp.Current());
@@ -798,7 +798,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	return true;
 // }
 // 
-// bool ifcopenshell::geom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const conversion_results& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<double>& thicknesses, std::vector< std::vector<Handle_Geom_Surface> >& result) {
+// bool ifcopenshell::geom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const std::vector<conversion_result>& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<double>& thicknesses, std::vector< std::vector<Handle_Geom_Surface> >& result) {
 // 	/*
 // 	 * @todo isn't it easier to do this based on the non-folded surfaces of
 // 	 * the connected walls and fold both pairs of layersets simultaneously?
@@ -969,7 +969,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			continue;
 // 		}
 // 
-// 		conversion_results axis_items;
+// 		std::vector<conversion_result> axis_items;
 // 		{
 // 			Kernel temp = *this;
 // 			temp.setValue(GV_DIMENSIONALITY, -1.);
@@ -1377,7 +1377,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	return style_cache[material->data().id()] = material_style;
 // }
 // 
-// void ifcopenshell::geom::Kernel::apply_layerset(ifcopenshell::geom::conversion_results& r, const ifcopenshell::geom::layerset_information& info) {
+// void ifcopenshell::geom::Kernel::apply_layerset(std::vector<ifcopenshell::geom::conversion_result>& r, const ifcopenshell::geom::layerset_information& info) {
 // 	convert(info.layers);
 // 
 // 	if (info.layers.empty()) {
@@ -1398,8 +1398,8 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		return false;
 // 	}
 // 
-// 	ifcopenshell::geom::conversion_results r2;
-// 	if (ifcopenshell::geom::util::apply_layerset(r, const std::vector<ifcopenshell::geom::taxonomy::style>&, conversion_results& r2, double tol)) {
+// 	std::vector<ifcopenshell::geom::conversion_result> r2;
+// 	if (ifcopenshell::geom::util::apply_layerset(r, const std::vector<ifcopenshell::geom::taxonomy::style>&, std::vector<conversion_result>& r2, double tol)) {
 // 		std::swap(r, r2)
 // 	}
 // }

@@ -840,7 +840,7 @@ bool cgal_kernel::convert(const taxonomy::loop::ptr loop, cgal_wire& result) {
 }
 
 
-bool cgal_kernel::convert_impl(const taxonomy::shell::ptr shell, conversion_results& results) {
+bool cgal_kernel::convert_impl(const taxonomy::shell::ptr shell, std::vector<conversion_result>& results) {
 	cgal_polyhedron shape;
 	if (!convert(shell, shape)) {
 		return false;
@@ -857,7 +857,7 @@ bool cgal_kernel::convert_impl(const taxonomy::shell::ptr shell, conversion_resu
 	return true;
 }
 
-bool cgal_kernel::convert_impl(const taxonomy::solid::ptr solid, conversion_results& results) {
+bool cgal_kernel::convert_impl(const taxonomy::solid::ptr solid, std::vector<conversion_result>& results) {
 	if (solid->children.size() > 1) {
         logger().error("UNS", 5, "Multiple shells in solid not supported at the moment");
 		return false;
@@ -897,7 +897,7 @@ namespace {
 	}
 }
 
-bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings, const ifcopenshell::geom::conversion_results & entity_shapes, const ifcopenshell::geom::taxonomy::matrix4 & entity_trsf, ifcopenshell::geom::conversion_results & cut_shapes)
+bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings, const std::vector<ifcopenshell::geom::conversion_result> & entity_shapes, const ifcopenshell::geom::taxonomy::matrix4 & entity_trsf, std::vector<ifcopenshell::geom::conversion_result> & cut_shapes)
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
 	return false;
@@ -939,7 +939,7 @@ bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::b
 		Eigen::Matrix4d relative = entity_trsf.ccomponents().inverse() * opening_trsf.ccomponents();
 		opening_trsf = relative;
 
-		conversion_results opening_shapes;
+		std::vector<conversion_result> opening_shapes;
 		abstract_kernel::convert(op.first, opening_shapes);
 
 		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
@@ -1018,7 +1018,7 @@ bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::b
 }
 
 
-bool cgal_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, conversion_results& results) {
+bool cgal_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, std::vector<conversion_result>& results) {
 	cgal_polyhedron shape;
 	if (!convert(extrusion, shape)) {
 		return false;
@@ -1845,7 +1845,7 @@ namespace {
 	}
 }
 
-bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, conversion_results& results) {
+bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vector<conversion_result>& results) {
 	double z0, z1;
 	std::list<CGAL::Polygon_2<kernel_>> loops;
 
@@ -1962,7 +1962,7 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, conversio
 		// abstract_kernel::convert(c, results);
 		// continue;
 
-		conversion_results cr;
+		std::vector<conversion_result> cr;
 
 		operands.emplace_back();
 		operands.back().first = c->instance;

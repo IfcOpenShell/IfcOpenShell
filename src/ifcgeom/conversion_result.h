@@ -598,12 +598,10 @@ namespace ifcopenshell::geom {
 		}
 	};
 
-	typedef std::vector<conversion_result> conversion_results;
-
 #ifndef SWIG
 	namespace util {
 		// @todo this is now moved to occt kernel, do we need something similar in cgal?
-		// bool flatten_shape_list(const ifcopenshell::geom::conversion_results& shapes, TopoDS_Shape& result, bool fuse, double tol);
+		// bool flatten_shape_list(const std::vector<ifcopenshell::geom::conversion_result>& shapes, TopoDS_Shape& result, bool fuse, double tol);
 
 		// Function to find boundary loops from triangles
 		template <typename NT>

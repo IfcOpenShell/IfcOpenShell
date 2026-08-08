@@ -46,7 +46,7 @@ namespace ifcopenshell { namespace geom {
 		double total_map_time = 0.;
 		double total_geom_time = 0.;
 
-		ifcopenshell::geom::conversion_results convert(express::base item);
+		std::vector<ifcopenshell::geom::conversion_result> convert(express::base item);
 
 		ifcopenshell::geom::brep_element* create_brep_for_representation_and_product(const express::base representation, const express::base product);
 		// ifcopenshell::geom::brep_element* create_brep_for_processed_representation(const express::base representation, const express::base product, ifcopenshell::geom::brep_element* brep);

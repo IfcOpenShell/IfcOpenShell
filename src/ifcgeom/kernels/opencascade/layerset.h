@@ -11,9 +11,9 @@
 
 namespace ifcopenshell::geom {
 	namespace util {
-		bool apply_layerset(const conversion_results&, const std::vector<opencascade::handle<Geom_Surface>>&, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>&, conversion_results&, double tol);
+		bool apply_layerset(const std::vector<conversion_result>&, const std::vector<opencascade::handle<Geom_Surface>>&, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>&, std::vector<conversion_result>&, double tol);
 
-		bool apply_folded_layerset(const conversion_results&, const std::vector<std::vector<opencascade::handle<Geom_Surface>>>&, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>&, conversion_results&, double tol);
+		bool apply_folded_layerset(const std::vector<conversion_result>&, const std::vector<std::vector<opencascade::handle<Geom_Surface>>>&, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>&, std::vector<conversion_result>&, double tol);
 
 		bool split_solid_by_surface(const TopoDS_Shape&, const opencascade::handle<Geom_Surface>&, TopoDS_Shape&, TopoDS_Shape&, double tol);
 

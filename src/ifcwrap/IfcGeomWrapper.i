@@ -1036,7 +1036,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 					// https://github.com/IfcOpenShell/IfcOpenShell/issues/1649
 					instance.declaration().is("IfcProfileDef")
 				) {
-					ifcopenshell::geom::conversion_results shapes;
+					std::vector<ifcopenshell::geom::conversion_result> shapes;
 					try {
 						shapes = kernel.convert(instance);
 					} catch (...) {

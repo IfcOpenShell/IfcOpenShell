@@ -48,7 +48,7 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual bool convert(const taxonomy::ptr item, ifcopenshell::geom::conversion_results& rs)
+				virtual bool convert(const taxonomy::ptr item, std::vector<ifcopenshell::geom::conversion_result>& rs)
 				{
 					auto ops = mapping_->find_openings(item->instance);
 					bool has_openings = ops.size();
@@ -77,7 +77,7 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual bool apply_layerset(ifcopenshell::geom::conversion_results& items, const ifcopenshell::geom::layerset_information& layers)
+				virtual bool apply_layerset(std::vector<ifcopenshell::geom::conversion_result>& items, const ifcopenshell::geom::layerset_information& layers)
 				{
 					for (auto& k : kernels_) {
 						bool success = false;
@@ -90,7 +90,7 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual bool apply_folded_layerset(ifcopenshell::geom::conversion_results& items, const ifcopenshell::geom::layerset_information& layers, const std::map<express::base, ifcopenshell::geom::layerset_information>& folds)
+				virtual bool apply_folded_layerset(std::vector<ifcopenshell::geom::conversion_result>& items, const ifcopenshell::geom::layerset_information& layers, const std::map<express::base, ifcopenshell::geom::layerset_information>& folds)
 				{
 					for (auto& k : kernels_) {
 						bool success = false;
@@ -104,7 +104,7 @@ namespace ifcopenshell {
 					return false;
 				}
                 virtual bool convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings,
-					const ifcopenshell::geom::conversion_results& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes)
+					const std::vector<ifcopenshell::geom::conversion_result>& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, std::vector<ifcopenshell::geom::conversion_result>& cut_shapes)
 				{
 					for (auto& k : kernels_) {
 						bool is_valid = true;

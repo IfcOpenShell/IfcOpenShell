@@ -394,7 +394,7 @@ bool open_cascade_kernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& w
 	return true;
 }
 
-bool open_cascade_kernel::convert_impl(const taxonomy::loop::ptr loop, ifcopenshell::geom::conversion_results& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::loop::ptr loop, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	TopoDS_Wire shape;
 	if (!convert(loop, shape)) {
 		return false;
@@ -408,7 +408,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::loop::ptr loop, ifcopensh
 	return true;
 }
 
-bool open_cascade_kernel::convert_impl(const taxonomy::edge::ptr edge, ifcopenshell::geom::conversion_results& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::edge::ptr edge, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	TopoDS_Wire shape = std::get<TopoDS_Wire>(convert_curve(edge));
 
 	results.emplace_back(conversion_result(

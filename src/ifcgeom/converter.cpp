@@ -18,7 +18,7 @@ ifcopenshell::geom::converter::~converter() {
 }
 
 namespace {
-	void substitute_with_box_based_on_density(ifcopenshell::logger& logger, ifcopenshell::geom::conversion_results& items, double& density) {
+	void substitute_with_box_based_on_density(ifcopenshell::logger& logger, std::vector<ifcopenshell::geom::conversion_result>& items, double& density) {
 		int nv = 0;
 		void* box = nullptr;
 		double volume = 0.;
@@ -45,7 +45,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 	representation_id_builder << representation_node->instance.id();
 
 	ifcopenshell::geom::Representation::brep* shape;
-	ifcopenshell::geom::conversion_results shapes;
+	std::vector<ifcopenshell::geom::conversion_result> shapes;
 
 	if (!kernel_->convert(representation_node, shapes)) {
 		return 0;
@@ -191,7 +191,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 			representation_id_builder << "-" << op.id();
 		}
 
-		ifcopenshell::geom::conversion_results opened_shapes;
+		std::vector<ifcopenshell::geom::conversion_result> opened_shapes;
 		bool caught_error = false;
 		try {
 			std::vector<std::pair<taxonomy::ptr, taxonomy::matrix4>> opening_items;
@@ -244,7 +244,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 	}
 
 	if (settings_.get<ifcopenshell::geom::settings::UnifyShapes>().get()) {
-		ifcopenshell::geom::conversion_results unified_shapes;
+		std::vector<ifcopenshell::geom::conversion_result> unified_shapes;
 		try {
 			if (kernel_->unify_shapes(shapes, unified_shapes)) {
 				std::swap(shapes, unified_shapes);
@@ -403,11 +403,11 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 	);
 }
 
-ifcopenshell::geom::conversion_results ifcopenshell::geom::converter::convert(express::base item)
+std::vector<ifcopenshell::geom::conversion_result> ifcopenshell::geom::converter::convert(express::base item)
 {
 	std::clock_t map_start = std::clock();
 	auto geom_item = mapping_->map(item);
-	ifcopenshell::geom::conversion_results results;
+	std::vector<ifcopenshell::geom::conversion_result> results;
 	if (geom_item) {
 		std::clock_t geom_start = std::clock();
 		if (!kernel_->convert(geom_item, results)) {
