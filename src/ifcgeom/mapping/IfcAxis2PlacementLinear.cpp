@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #if defined SCHEMA_HAS_IfcAxis2PlacementLinear
 

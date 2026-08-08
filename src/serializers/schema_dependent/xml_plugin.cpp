@@ -27,8 +27,8 @@
 
 namespace {
 
-boost::shared_ptr<Serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
-	return boost::make_shared<POSTFIX_SCHEMA(XmlSerializer)>(context.file, context.output_filename);
+boost::shared_ptr<serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
+	return boost::make_shared<POSTFIX_SCHEMA(xml_serializer)>(context.file, context.output_filename);
 }
 
 }

@@ -28,21 +28,21 @@
 #include "../ifcgeom/GeometrySerializer.h"
 
  // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
-class SERIALIZERS_API TtlWktSerializer : public WriteOnlyGeometrySerializer {
+class SERIALIZERS_API ttl_wkt_serializer : public write_only_geometry_serializer {
 private:
 	stream_or_filename filename_;
 public:
-	TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr);
-	virtual ~TtlWktSerializer() {}
+	ttl_wkt_serializer(const stream_or_filename& filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr);
+	virtual ~ttl_wkt_serializer() {}
 	bool ready();
 	void writeHeader();
-	void write(const IfcGeom::TriangulationElement* o);
-	void write(const IfcGeom::BRepElement* /*o*/);
+	void write(const ifcopenshell::geom::triangulation_element* o);
+	void write(const ifcopenshell::geom::brep_element* /*o*/);
 	void finalize() {}
 	bool isTesselated() const;
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(ifcopenshell::file&) {}
-	std::string ttl_object_id(const IfcGeom::Element* o, const char* const postfix = nullptr);
+	std::string ttl_object_id(const ifcopenshell::geom::element* o, const char* const postfix = nullptr);
 };
 
 #endif

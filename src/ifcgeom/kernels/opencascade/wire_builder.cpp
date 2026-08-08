@@ -15,7 +15,7 @@
 #include <GeomAdaptor_Curve.hxx>
 
 // Returns the first edge of a wire
-TopoDS_Edge IfcGeom::util::first_edge(const TopoDS_Wire & w) {
+TopoDS_Edge ifcopenshell::geom::util::first_edge(const TopoDS_Wire & w) {
 	TopoDS_Vertex v1, v2;
 	TopExp::Vertices(w, v1, v2);
     NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> wm;
@@ -24,7 +24,7 @@ TopoDS_Edge IfcGeom::util::first_edge(const TopoDS_Wire & w) {
 }
 
 // Returns new wire with the edge replaced by a linear edge with the vertex v moved to p
-TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v, const gp_Pnt & p) {
+TopoDS_Wire ifcopenshell::geom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v, const gp_Pnt & p) {
 	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 
@@ -66,7 +66,7 @@ TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v
 
 		GC_MakeCircle mc(p1, p2, p3);
 		if (!mc.IsDone()) {
-			throw IfcGeom::geometry_exception("Failed to adjust circle");
+			throw ifcopenshell::geom::geometry_exception("Failed to adjust circle");
 		}
 
 		TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(mc.Value(), p1, p3).Edge();
@@ -74,15 +74,15 @@ TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v
 		builder.Add(edge);
 		return builder.Wire();
 	} else {
-		throw IfcGeom::geometry_exception("Unexpected wire to adjust");
+		throw ifcopenshell::geom::geometry_exception("Unexpected wire to adjust");
 	}
 }
 
-double IfcGeom::util::deflection_for_approximating_circle(double radius, double param) {
+double ifcopenshell::geom::util::deflection_for_approximating_circle(double radius, double param) {
 	return -radius * std::cos(1. / 2. * param) * std::cos(param) - radius * std::sin(1. / 2. * param) * std::sin(param) + radius;
 }
 
-bool IfcGeom::util::create_edge_over_curve_with_log_messages(const opencascade::handle<Geom_Curve>& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result) {
+bool ifcopenshell::geom::util::create_edge_over_curve_with_log_messages(const opencascade::handle<Geom_Curve>& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result) {
 	if (crv->IsClosed() && p1.Distance(p2) <= eps) {
 		BRepBuilderAPI_MakeEdge me(crv);
 		if (me.IsDone()) {
@@ -132,7 +132,7 @@ bool IfcGeom::util::create_edge_over_curve_with_log_messages(const opencascade::
 	return true;
 }
 
-void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a) {
+void ifcopenshell::geom::util::wire_builder::operator()(const TopoDS_Shape& a) {
 	const TopoDS_Wire& w = TopoDS::Wire(a);
 	if (override_next_) {
 		override_next_ = false;
@@ -143,7 +143,7 @@ void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a) {
 	}
 }
 
-void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a, const TopoDS_Shape& b, bool last) {
+void ifcopenshell::geom::util::wire_builder::operator()(const TopoDS_Shape& a, const TopoDS_Shape& b, bool last) {
 	TopoDS_Wire w1 = TopoDS::Wire(a);
 	const TopoDS_Wire& w2 = TopoDS::Wire(b);
 

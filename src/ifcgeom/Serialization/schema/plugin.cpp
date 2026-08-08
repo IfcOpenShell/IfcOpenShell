@@ -25,28 +25,28 @@
 
 #include <boost/dll/alias.hpp>
 
-express::Base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shape& shape, bool advanced);
-express::Base POSTFIX_SCHEMA(tesselate)(ifcopenshell::file& f, const TopoDS_Shape& shape, double deflection);
+express::base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shape& shape, bool advanced);
+express::base POSTFIX_SCHEMA(tesselate)(ifcopenshell::file& f, const TopoDS_Shape& shape, double deflection);
 
 namespace {
-	const ifcopenshell::geometry::OpenCascadeShape& require_opencascade_shape(const IfcGeom::ConversionResultShape& shape) {
-		const auto* oc_shape = dynamic_cast<const ifcopenshell::geometry::OpenCascadeShape*>(&shape);
+	const ifcopenshell::geom::open_cascade_shape& require_opencascade_shape(const ifcopenshell::geom::conversion_result_shape& shape) {
+		const auto* oc_shape = dynamic_cast<const ifcopenshell::geom::open_cascade_shape*>(&shape);
 		if (!oc_shape) {
 			throw ifcopenshell::exception("OpenCascade geometry IFC writer requires an opencascade conversion result shape");
 		}
 		return *oc_shape;
 	}
 
-	express::Base serialise_adapter(ifcopenshell::file& f, const IfcGeom::ConversionResultShape& shape, bool advanced) {
+	express::base serialise_adapter(ifcopenshell::file& f, const ifcopenshell::geom::conversion_result_shape& shape, bool advanced) {
 		return POSTFIX_SCHEMA(serialise)(f, require_opencascade_shape(shape).shape(), advanced);
 	}
 
-	express::Base tesselate_adapter(ifcopenshell::file& f, const IfcGeom::ConversionResultShape& shape, double deflection) {
+	express::base tesselate_adapter(ifcopenshell::file& f, const ifcopenshell::geom::conversion_result_shape& shape, double deflection) {
 		return POSTFIX_SCHEMA(tesselate)(f, require_opencascade_shape(shape).shape(), deflection);
 	}
 }
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace opencascade_geometry_ifc_writer_plugin {
 
 		ifcopenshell::plugin::abi_info plugin_abi() {
@@ -64,6 +64,6 @@ namespace IfcGeom {
 	}
 }
 
-BOOST_DLL_ALIAS(IfcGeom::opencascade_geometry_ifc_writer_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
-BOOST_DLL_ALIAS(IfcGeom::opencascade_geometry_ifc_writer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(IfcGeom::opencascade_geometry_ifc_writer_plugin::register_plugin, ifcopenshell_register_opencascade_geometry_ifc_writer_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin::register_plugin, ifcopenshell_register_opencascade_geometry_ifc_writer_plugin_v1)

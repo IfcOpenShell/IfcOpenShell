@@ -98,7 +98,7 @@ Eigen::Matrix4d helmert_meters_from_parameters(const HelmertTransformation& para
 // when MapUnit is absent on the IfcProjectedCRS.  This is retained for UI /
 // metadata inspection; transform composition derives map unit scale from
 // IfcMapConversion.Scale instead.
-std::optional<express::Base> get_map_unit(ifcopenshell::file* ifc_file);
+std::optional<express::base> get_map_unit(ifcopenshell::file* ifc_file);
 
 // "How do I rotate project east to get to grid east?" — i.e. -atan2(xao, xaa)
 // converted to degrees, anticlockwise positive.  Mirrors

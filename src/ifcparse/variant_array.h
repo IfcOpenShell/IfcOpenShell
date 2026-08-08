@@ -57,7 +57,7 @@ namespace impl {
     };
 
     template <typename T>
-    struct VariantTypeName;
+    struct variant_type_name;
 
     // Trait to detect unique_ptr
     template <typename...> struct is_unique_ptr : std::false_type {};
@@ -66,23 +66,23 @@ namespace impl {
 
     // Trait to find index of type in parameter pack considering inheritance
     template <typename T, typename... Ts>
-    struct TypeIndex;
+    struct type_index;
 
     // Base case: When the first type in the pack is the type we're looking for, or is a base class of it
     template <typename T, typename U, typename... Ts>
-    struct TypeIndex<T, U, Ts...>
+    struct type_index<T, U, Ts...>
         : std::integral_constant<std::size_t, (std::is_pointer_v<T> ? std::is_base_of_v<std::remove_pointer_t<U>, std::remove_pointer_t<T>> : std::is_same_v<T, U>) ? 0 :
-        (TypeIndex<T, Ts...>::value == std::numeric_limits<std::size_t>::max()
+        (type_index<T, Ts...>::value == std::numeric_limits<std::size_t>::max()
             ? std::numeric_limits<std::size_t>::max()
-            : 1 + TypeIndex<T, Ts...>::value)> {};
+            : 1 + type_index<T, Ts...>::value)> {};
 
     // Recursion termination: When the parameter pack is empty
     template <typename T>
-    struct TypeIndex<T> : std::integral_constant<std::size_t, std::numeric_limits<std::size_t>::max()> {};
+    struct type_index<T> : std::integral_constant<std::size_t, std::numeric_limits<std::size_t>::max()> {};
 
     // Helper variable template
     template <typename T, typename... Ts>
-    constexpr std::size_t TypeIndex_v = TypeIndex<T, Ts...>::value;
+    constexpr std::size_t TypeIndex_v = type_index<T, Ts...>::value;
 
     // Trait to determine if a type is small enough to be stored directly
     template <typename T>
@@ -92,7 +92,7 @@ namespace impl {
 
     // Metafunction to transform T to unique_ptr<T> based on size
     template <typename T>
-    struct TransformType {
+    struct transform_type {
         using type = typename std::conditional<
             is_small_object<T>::value,
             T,
@@ -102,28 +102,28 @@ namespace impl {
 
     // Helper to prepend a type to a tuple
     template <typename T, typename Tuple>
-    struct TuplePrepend;
+    struct tuple_prepend;
     template <typename T, typename... Types>
-    struct TuplePrepend<T, std::tuple<Types...>> {
+    struct tuple_prepend<T, std::tuple<Types...>> {
         using type = std::tuple<T, Types...>;
     };
 
     // Map types based on above size transform
     template <typename... Types>
-    struct MapTypes;
+    struct map_types;
     template <typename FirstType, typename... RestTypes>
-    struct MapTypes<FirstType, RestTypes...> {
-        using type = typename TuplePrepend<
-            typename TransformType<FirstType>::type,
-            typename MapTypes<RestTypes...>::type
+    struct map_types<FirstType, RestTypes...> {
+        using type = typename tuple_prepend<
+            typename transform_type<FirstType>::type,
+            typename map_types<RestTypes...>::type
         >::type;
     };
     template <>
-    struct MapTypes<> {
+    struct map_types<> {
         using type = std::tuple<>;
     };
     template <typename... Types>
-    using MapTypes_t = typename MapTypes<Types...>::type;
+    using map_types_t = typename map_types<Types...>::type;
 
     // Create aligned_union from paramater pack stored in tuple for storage in variant
     template <typename T>
@@ -138,11 +138,11 @@ namespace impl {
 template<typename... Types>
 class variant_array {
 public:
-    using TypesTuple = ::impl::MapTypes_t<Types...>;
+    using types_tuple = ::impl::map_types_t<Types...>;
 
     variant_array(size_t size)
         : size_and_indices_(size ? new uint8_t[size + 1] : nullptr)
-        , storage_(size ? new StorageType[size] : nullptr)
+        , storage_(size ? new storage_type[size] : nullptr)
     {
         if (size) {
             size_and_indices_[0] = (uint8_t)size;
@@ -181,20 +181,20 @@ public:
 
     template<typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant_array>>>
     void set(std::size_t index, T&& value) {
-        using U = std::decay_t<T>;
-        static_assert(::impl::TypeIndex_v<U, Types...> < sizeof...(Types), "Type not supported by variant");
+        using u = std::decay_t<T>;
+        static_assert(::impl::TypeIndex_v<u, Types...> < sizeof...(Types), "Type not supported by variant");
         if (index >= size()) {
             throw std::out_of_range("Index " + std::to_string(index) + " is out of range for storage of size " + std::to_string(size()));
         }
 
         destroy_at_index(index);
 
-        size_and_indices_[index + 1] = ::impl::TypeIndex_v<U, Types...>;
-        using V = typename std::tuple_element<::impl::TypeIndex_v<U, Types...>, ::impl::MapTypes_t<Types... >>::type;
-        if constexpr (::impl::is_unique_ptr<V>::value) {
-            new(&storage_[index]) V(new U(value));
+        size_and_indices_[index + 1] = ::impl::TypeIndex_v<u, Types...>;
+        using v = typename std::tuple_element<::impl::TypeIndex_v<u, Types...>, ::impl::map_types_t<Types... >>::type;
+        if constexpr (::impl::is_unique_ptr<v>::value) {
+            new(&storage_[index]) v(new u(value));
         } else {
-            new(&storage_[index]) U(std::forward<T>(value));
+            new(&storage_[index]) u(std::forward<T>(value));
         }
     }
 
@@ -221,17 +221,17 @@ public:
         if (!has<T>(index)) {
             throw std::bad_cast();
         }
-        using V = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::MapTypes_t<Types... >>::type;
-        if constexpr (::impl::is_unique_ptr<V>::value) {
-            return **reinterpret_cast<V*>(&storage_[index]);
+        using v = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::map_types_t<Types... >>::type;
+        if constexpr (::impl::is_unique_ptr<v>::value) {
+            return **reinterpret_cast<v*>(&storage_[index]);
         } else {
-            return *reinterpret_cast<V*>(&storage_[index]);
+            return *reinterpret_cast<v*>(&storage_[index]);
         }
     }
 
     template<typename T>
     bool has(std::size_t index) const {
-        return index < size() && size_and_indices_[index + 1] == ::impl::TypeIndex<T, Types...>::value;
+        return index < size() && size_and_indices_[index + 1] == ::impl::type_index<T, Types...>::value;
     }
 
     template<typename T>
@@ -241,19 +241,19 @@ public:
 				"Index " + std::to_string(index) + " is out of range for storage of size " + std::to_string(size())
             );
         }
-        if (size_and_indices_[index + 1] != ::impl::TypeIndex<T, Types...>::value) {
+        if (size_and_indices_[index + 1] != ::impl::type_index<T, Types...>::value) {
             // @todo this exception is silly. Figure out what
             // to do, but at the moment it is specifically caught
             // in various places.
             throw impl::storage_type_mismatch(
-                ::impl::VariantTypeName<T>::get(), get_type_name(size_and_indices_[index + 1])
+                ::impl::variant_type_name<T>::get(), get_type_name(size_and_indices_[index + 1])
             );
         }
-        using V = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::MapTypes_t<Types... >>::type;
-        if constexpr (::impl::is_unique_ptr<V>::value) {
-            return **reinterpret_cast<const V*>(&storage_[index]);
+        using v = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::map_types_t<Types... >>::type;
+        if constexpr (::impl::is_unique_ptr<v>::value) {
+            return **reinterpret_cast<const v*>(&storage_[index]);
         } else {
-            return *reinterpret_cast<const V*>(&storage_[index]);
+            return *reinterpret_cast<const v*>(&storage_[index]);
         }
     }
 
@@ -272,10 +272,10 @@ public:
     }
 
 private:
-    using StorageType = typename ::impl::make_union_from_tuple<::impl::MapTypes_t<Types...>>::type;
+    using storage_type = typename ::impl::make_union_from_tuple<::impl::map_types_t<Types...>>::type;
 
     uint8_t* size_and_indices_;
-    StorageType* storage_;
+    storage_type* storage_;
 
     void destroy_at_index(std::size_t index) {
         destroy_type_at_index(index, std::integral_constant<std::size_t, sizeof...(Types)>{});
@@ -294,9 +294,9 @@ private:
     template<std::size_t Index>
     void destroy_type_at_index(std::size_t index, std::integral_constant<std::size_t, Index>) {
         if (size_and_indices_[index + 1] == Index - 1) {
-            using T = typename std::tuple_element_t<Index - 1, ::impl::MapTypes_t<Types...>>;
-            if constexpr (!std::is_trivially_destructible<T>::value) {
-                reinterpret_cast<T*>(&storage_[index])->~T();
+            using t = typename std::tuple_element_t<Index - 1, ::impl::map_types_t<Types...>>;
+            if constexpr (!std::is_trivially_destructible<t>::value) {
+                reinterpret_cast<t*>(&storage_[index])->~t();
             }
             size_and_indices_[index + 1] = sizeof...(Types);
         } else {
@@ -311,11 +311,11 @@ private:
     template<typename Visitor, std::size_t Index>
     auto apply_visitor_impl(Visitor&& visitor, std::size_t index, std::integral_constant<std::size_t, Index>) const {
         if (size_and_indices_[index + 1] == Index - 1) {
-            using T = typename std::tuple_element_t<Index - 1, ::impl::MapTypes_t<Types...>>;
-            if constexpr (::impl::is_unique_ptr<T>::value) {
-                return visitor(**reinterpret_cast<T*>(&storage_[index]));
+            using t = typename std::tuple_element_t<Index - 1, ::impl::map_types_t<Types...>>;
+            if constexpr (::impl::is_unique_ptr<t>::value) {
+                return visitor(**reinterpret_cast<t*>(&storage_[index]));
             } else {
-                return visitor(*reinterpret_cast<T*>(&storage_[index]));
+                return visitor(*reinterpret_cast<t*>(&storage_[index]));
             }
         }
         return apply_visitor_impl(std::forward<Visitor>(visitor), index, std::integral_constant<std::size_t, Index - 1>{});
@@ -326,8 +326,8 @@ private:
         static_cast<void>(visitor);
         static_cast<void>(index);
         throw std::runtime_error("Invalid variant index");
-        if constexpr (!std::is_void_v<decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::MapTypes_t<Types...>> &>()))>) {
-            return decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::MapTypes_t<Types...>> &>())){};
+        if constexpr (!std::is_void_v<decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::map_types_t<Types...>> &>()))>) {
+            return decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::map_types_t<Types...>> &>())){};
         }
     }
 
@@ -337,7 +337,7 @@ private:
             return "";
         } else {
             if (type_index == I - 1) {
-                return ::impl::VariantTypeName<std::tuple_element_t<I - 1, std::tuple<Types...>>>::get();
+                return ::impl::variant_type_name<std::tuple_element_t<I - 1, std::tuple<Types...>>>::get();
             } else {
                 return get_type_name_impl<I - 1>(type_index);
             }

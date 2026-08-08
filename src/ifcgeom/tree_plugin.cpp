@@ -31,22 +31,22 @@ namespace {
 	constexpr const char* tree_plugin_prefix = "geometry.tree.";
 }
 
-const char* ifcopenshell::geometry::trees::tree_plugin_registration_symbol() {
+const char* ifcopenshell::geom::trees::tree_plugin_registration_symbol() {
 	return "ifcopenshell_register_tree_plugin_v1";
 }
 
-ifcopenshell::plugin::metadata ifcopenshell::geometry::trees::tree_plugin_metadata(const std::string& plugin_name) {
+ifcopenshell::plugin::metadata ifcopenshell::geom::trees::tree_plugin_metadata(const std::string& plugin_name) {
 	plugin::metadata metadata;
 	metadata.kind_ = plugin::kind::tree;
 	metadata.id = std::string(tree_plugin_prefix) + plugin_name;
 	return metadata;
 }
 
-std::filesystem::path ifcopenshell::geometry::trees::tree_plugin_directory() {
-	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geometry::trees::load_tree_plugins));
+std::filesystem::path ifcopenshell::geom::trees::tree_plugin_directory() {
+	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geom::trees::load_tree_plugins));
 }
 
-void ifcopenshell::geometry::trees::load_tree_plugins(tree_registry& registry) {
+void ifcopenshell::geom::trees::load_tree_plugins(tree_registry& registry) {
 	plugin::manager manager;
 	plugin::add_search_paths_or_default(manager, &tree_plugin_directory);
 
@@ -61,7 +61,7 @@ void ifcopenshell::geometry::trees::load_tree_plugins(tree_registry& registry) {
 	}
 }
 
-bool ifcopenshell::geometry::trees::load_tree_plugin(tree_registry& registry, const std::string& backend_id) {
+bool ifcopenshell::geom::trees::load_tree_plugin(tree_registry& registry, const std::string& backend_id) {
 	plugin::manager manager;
 	plugin::add_search_paths_or_default(manager, &tree_plugin_directory);
 

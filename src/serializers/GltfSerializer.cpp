@@ -53,8 +53,8 @@ static const uint32_t PRIM_TRIANGLE_FAN = 6;
 static const uint32_t ELEMENT_ARRAY_BUFFER = 34963;
 static const uint32_t ARRAY_BUFFER = 34962;
 
-GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger)
-	: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
+gltf_serializer::gltf_serializer(const std::string& filename, const ifcopenshell::geom::settings& settings, ::logger* logger)
+	: write_only_geometry_serializer(settings, logger)
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")
 	, tmp_filename2_(filename + ".vertices.tmp")
@@ -64,18 +64,18 @@ GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::
 	, bufferViewId(0)
 	{}
 
-GltfSerializer::~GltfSerializer() {
+gltf_serializer::~gltf_serializer() {
 	tmp_fstream1_.close();
 	tmp_fstream2_.close();
 	ifcopenshell::path::delete_file(tmp_filename1_);
 	ifcopenshell::path::delete_file(tmp_filename2_);
 }
 
-bool GltfSerializer::ready() {
+bool gltf_serializer::ready() {
 	return fstream_.is_open() && tmp_fstream1_.is_open() && tmp_fstream2_.is_open();
 }
 
-void GltfSerializer::writeHeader() {
+void gltf_serializer::writeHeader() {
 	json_["asset"]["generator"] = "IfcOpenShell IfcConvert " + std::string(IFCOPENSHELL_VERSION);
 	json_["asset"]["version"] = "2.0";
 	json_["scene"] = 0;
@@ -88,7 +88,7 @@ void GltfSerializer::writeHeader() {
 	json_["materials"] = json::array();
 }
 
-int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style) {
+int gltf_serializer::writeMaterial(const ifcopenshell::geom::taxonomy::style::ptr style) {
 	auto it = materials_.find(style->name);
 	if (it != materials_.end()) {
 		return it->second;
@@ -181,7 +181,7 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end, int bufferV
 	return j["accessors"].size() - 1;
 }
 
-void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
+void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) {
 	if (o->geometry().material_ids().empty()) {
 		return;
 	}
@@ -221,7 +221,7 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 			json parent_node = json::object();
 
 			std::array<double, 16> matrix_flat;
-            if (settings_.get<ifcopenshell::geometry::settings::SeparateZUpNode>().get() || settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get() || !is_root) {
+            if (settings_.get<ifcopenshell::geom::settings::SeparateZUpNode>().get() || settings_.get<ifcopenshell::geom::settings::WriteGltfEcef>().get() || !is_root) {
 				// y-up transform is only accounted for on root
 				matrix_flat = {
 					mm(0,0), mm(1,0), mm(2,0), mm(3,0),
@@ -264,7 +264,7 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	json node;
     {
 		std::array<double, 16> matrix_flat;
-        if (settings_.get<ifcopenshell::geometry::settings::SeparateZUpNode>().get() || settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get() || !o->parents().empty()) {
+        if (settings_.get<ifcopenshell::geom::settings::SeparateZUpNode>().get() || settings_.get<ifcopenshell::geom::settings::WriteGltfEcef>().get() || !o->parents().empty()) {
 			// y-up transform is only accounted for on root
 			matrix_flat = {
 				m(0,0), m(1,0), m(2,0), m(3,0),
@@ -416,9 +416,9 @@ void write_block(std::ostream& fs, It begin, It end) {
 	write_padding<iden>(fs, N);
 }
 
-void GltfSerializer::finalize() {
+void gltf_serializer::finalize() {
     // separate z up
-    if (settings_.get<ifcopenshell::geometry::settings::SeparateZUpNode>().get()) {
+    if (settings_.get<ifcopenshell::geom::settings::SeparateZUpNode>().get()) {
         z_up_transform_ = json::object();
         (*z_up_transform_)["name"] = "Z_UP";
 		static const std::array<double, 16> z_up_matrix = {
@@ -461,7 +461,7 @@ void GltfSerializer::finalize() {
 	}
 
 	json scene_0;
-    if (geometry_settings().get<ifcopenshell::geometry::settings::UseElementHierarchy>().get()) {
+    if (settings().get<ifcopenshell::geom::settings::UseElementHierarchy>().get()) {
         scene_0["nodes"] = roots_;
     } else if (north_rotation_ || ecef_transform_ || z_up_transform_) {
 		scene_0["nodes"] = std::array<size_t, 1>{json_["nodes"].size() - 1};
@@ -530,8 +530,8 @@ namespace {
 	}
 }
 
-void GltfSerializer::setFile(ifcopenshell::file& f) {
-	if (!settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get()) {
+void gltf_serializer::setFile(ifcopenshell::file& f) {
+	if (!settings_.get<ifcopenshell::geom::settings::WriteGltfEcef>().get()) {
 		return;
 	}
 
@@ -539,17 +539,17 @@ void GltfSerializer::setFile(ifcopenshell::file& f) {
 	std::optional<std::array<double, 3>> crs_x_axis;
 	std::optional<std::array<double, 3>> eastings_northings_elevation;
 
-	std::vector<express::Base> coordops;
+	std::vector<express::base> coordops;
 	try {
 		coordops = f.instances_by_type("IfcCoordinateOperation");
 	} catch (ifcopenshell::exception&) {
 		// Ignored. Schema likely doesn't support IfcCoordinateOperation.
 	}
 	for (auto& coordop : coordops) {
-		express::Base source_crs = coordop.as<express::Entity>().get("SourceCRS");
+		express::base source_crs = coordop.as<express::entity>().get("SourceCRS");
 		if (source_crs.declaration().is("IfcGeometricRepresentationContext")) {
-            express::Base target_crs = coordop.as<express::Entity>().get("TargetCRS");
-			auto name_attr = target_crs.as<express::Entity>().get("Name");
+            express::base target_crs = coordop.as<express::entity>().get("TargetCRS");
+			auto name_attr = target_crs.as<express::entity>().get("Name");
 			if (coordop.declaration().is("IfcMapConversion")) {
 					
 				if (!name_attr.isNull()) {
@@ -557,15 +557,15 @@ void GltfSerializer::setFile(ifcopenshell::file& f) {
 					crs_epsg = epsg_code;
 
 					// @todo in which unit are these?
-					double eastings = coordop.as<express::Entity>().get("Eastings");
-					double northings = coordop.as<express::Entity>().get("Northings");
-					double height = coordop.as<express::Entity>().get("OrthogonalHeight");
+					double eastings = coordop.as<express::entity>().get("Eastings");
+					double northings = coordop.as<express::entity>().get("Northings");
+					double height = coordop.as<express::entity>().get("OrthogonalHeight");
 					height = 0.;
 
 					eastings_northings_elevation = { { eastings, northings, height} };
 
-					auto xaxis_attr = coordop.as<express::Entity>().get("XAxisAbscissa");
-					auto yaxis_attr = coordop.as<express::Entity>().get("XAxisOrdinate");
+					auto xaxis_attr = coordop.as<express::entity>().get("XAxisAbscissa");
+					auto yaxis_attr = coordop.as<express::entity>().get("XAxisOrdinate");
 					if (!xaxis_attr.isNull() && !yaxis_attr.isNull()) {
 						double xaxis = xaxis_attr;
 						double yaxis = yaxis_attr;
@@ -581,8 +581,8 @@ void GltfSerializer::setFile(ifcopenshell::file& f) {
 		auto sites = f.instances_by_type("IfcSite");
 
 		if (sites.size() == 1) {
-			auto lat_attr = sites.front().as<express::Entity>().get("RefLatitude");
-			auto lon_attr = sites.front().as<express::Entity>().get("RefLongitude");
+			auto lat_attr = sites.front().as<express::entity>().get("RefLatitude");
+			auto lon_attr = sites.front().as<express::entity>().get("RefLongitude");
 
 			if (!lat_attr.isNull() && !lon_attr.isNull()) {
 				std::vector<int64_t> lat_dms = lat_attr;
@@ -601,7 +601,7 @@ void GltfSerializer::setFile(ifcopenshell::file& f) {
 				double elev = 0.;
 
 				/*
-				auto elev_attr = (*sites->begin()).as<express::Entity>().get("RefElevation");
+				auto elev_attr = (*sites->begin()).as<express::entity>().get("RefElevation");
 				if (!elev_attr->isNull()) {
 					elev = *elev_attr;
 				}
@@ -616,12 +616,12 @@ void GltfSerializer::setFile(ifcopenshell::file& f) {
 	auto contexts = f.instances_by_type_excl_subtypes("IfcGeometricRepresentationContext");
 
 	if (!contexts.empty()) {
-        auto context = contexts.front().as<express::Entity>();
+        auto context = contexts.front().as<express::entity>();
 		auto north_attr = context.get("TrueNorth");
 		if (!north_attr.isNull()) {
-			express::Base north = north_attr;
+			express::base north = north_attr;
 			if (north.declaration().is("IfcDirection")) {
-				std::vector<double> ratios = north.as<express::Entity>().get("DirectionRatios");
+				std::vector<double> ratios = north.as<express::entity>().get("DirectionRatios");
 				crs_x_axis = { { ratios[1], -ratios[0], 0. } };
 			}
 		}

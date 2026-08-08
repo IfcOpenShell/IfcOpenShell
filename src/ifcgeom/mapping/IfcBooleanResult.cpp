@@ -21,7 +21,7 @@
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 namespace {
 	taxonomy::boolean_result::operation_t boolean_op_type(IfcSchema::IfcBooleanOperator::Value op) {

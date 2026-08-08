@@ -33,22 +33,19 @@
 	// is wrapped in a try-catch block manually.
 	try {
 		$result = $1.apply_visitor([](const auto& v){
-			using U = std::decay_t<decltype(v)>;
-            if constexpr (is_std_vector_v<U>) {
+			using u = std::decay_t<decltype(v)>;
+            if constexpr (is_std_vector_v<u>) {
 				return pythonize_vector(v);
-            } else if constexpr (std::is_same_v<U, enumeration_reference>) {
+            } else if constexpr (std::is_same_v<u, enumeration_reference>) {
                 return pythonize(std::string(v.value()));
-			} else if constexpr (std::is_same_v<U, derived>) {
+			} else if constexpr (std::is_same_v<u, derived>) {
 				if (feature_use_attribute_value_derived) {
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
 					Py_INCREF(Py_None);
 					return static_cast<PyObject*>(Py_None); 
 				}
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, blank>) {
-                Py_INCREF(Py_None);
-				return static_cast<PyObject*>(Py_None); 
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, derived> || std::is_same_v<U, blank>) {
+            } else if constexpr (std::is_same_v<u, empty_aggregate_t> || std::is_same_v<u, empty_aggregate_of_aggregate_t> || std::is_same_v<u, blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
             } else {
@@ -83,26 +80,21 @@
 	}
 %enddef
 
-CREATE_VECTOR_TYPEMAP_OUT(express::Base)
+CREATE_VECTOR_TYPEMAP_OUT(express::base)
 CREATE_VECTOR_TYPEMAP_OUT(bool)
 CREATE_VECTOR_TYPEMAP_OUT(int)
 CREATE_VECTOR_TYPEMAP_OUT(unsigned int)
 CREATE_VECTOR_TYPEMAP_OUT(double)
 CREATE_VECTOR_TYPEMAP_OUT(std::string)
-// CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::Material)
+// CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::geom::Material)
 CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::inverse_attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::entity const *)
 CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::declaration const *)
-CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::geom::conversion_result_shape *)
 CREATE_VECTOR_TYPEMAP_OUT(log_message)
 
-%typemap(out) ifcopenshell::geometry::Settings::value_variant_t {
-	pythonizing_visitor vis;
-	$result = std::visit(vis, $1);
-}
-
-%typemap(out) ifcopenshell::geometry::SerializerSettings::value_variant_t {
+%typemap(out) ifcopenshell::geom::settings::value_variant_t {
 	pythonizing_visitor vis;
 	$result = std::visit(vis, $1);
 }
@@ -134,33 +126,33 @@ CREATE_VECTOR_TYPEMAP_OUT(log_message)
 
 %enddef
 
-vector_of_item(ifcopenshell::geometry::taxonomy::item)
-vector_of_item(ifcopenshell::geometry::taxonomy::boolean_result)
-vector_of_item(ifcopenshell::geometry::taxonomy::bspline_curve)
-vector_of_item(ifcopenshell::geometry::taxonomy::bspline_surface)
-vector_of_item(ifcopenshell::geometry::taxonomy::circle)
-vector_of_item(ifcopenshell::geometry::taxonomy::collection)
-vector_of_item(ifcopenshell::geometry::taxonomy::colour)
-vector_of_item(ifcopenshell::geometry::taxonomy::cylinder)
-vector_of_item(ifcopenshell::geometry::taxonomy::direction3)
-vector_of_item(ifcopenshell::geometry::taxonomy::edge)
-vector_of_item(ifcopenshell::geometry::taxonomy::ellipse)
-vector_of_item(ifcopenshell::geometry::taxonomy::extrusion)
-vector_of_item(ifcopenshell::geometry::taxonomy::face)
-vector_of_item(ifcopenshell::geometry::taxonomy::line)
-vector_of_item(ifcopenshell::geometry::taxonomy::loft)
-vector_of_item(ifcopenshell::geometry::taxonomy::loop)
-vector_of_item(ifcopenshell::geometry::taxonomy::matrix4)
-vector_of_item(ifcopenshell::geometry::taxonomy::node)
-vector_of_item(ifcopenshell::geometry::taxonomy::offset_curve)
-vector_of_item(ifcopenshell::geometry::taxonomy::piecewise_function)
-vector_of_item(ifcopenshell::geometry::taxonomy::plane)
-vector_of_item(ifcopenshell::geometry::taxonomy::point3)
-vector_of_item(ifcopenshell::geometry::taxonomy::revolve)
-vector_of_item(ifcopenshell::geometry::taxonomy::shell)
-vector_of_item(ifcopenshell::geometry::taxonomy::solid)
-vector_of_item(ifcopenshell::geometry::taxonomy::sphere)
-vector_of_item(ifcopenshell::geometry::taxonomy::torus)
-vector_of_item(ifcopenshell::geometry::taxonomy::style)
-vector_of_item(ifcopenshell::geometry::taxonomy::sweep_along_curve)
-vector_of_item(ifcopenshell::geometry::taxonomy::geom_item)
+vector_of_item(ifcopenshell::geom::taxonomy::item)
+vector_of_item(ifcopenshell::geom::taxonomy::boolean_result)
+vector_of_item(ifcopenshell::geom::taxonomy::bspline_curve)
+vector_of_item(ifcopenshell::geom::taxonomy::bspline_surface)
+vector_of_item(ifcopenshell::geom::taxonomy::circle)
+vector_of_item(ifcopenshell::geom::taxonomy::collection)
+vector_of_item(ifcopenshell::geom::taxonomy::colour)
+vector_of_item(ifcopenshell::geom::taxonomy::cylinder)
+vector_of_item(ifcopenshell::geom::taxonomy::direction3)
+vector_of_item(ifcopenshell::geom::taxonomy::edge)
+vector_of_item(ifcopenshell::geom::taxonomy::ellipse)
+vector_of_item(ifcopenshell::geom::taxonomy::extrusion)
+vector_of_item(ifcopenshell::geom::taxonomy::face)
+vector_of_item(ifcopenshell::geom::taxonomy::line)
+vector_of_item(ifcopenshell::geom::taxonomy::loft)
+vector_of_item(ifcopenshell::geom::taxonomy::loop)
+vector_of_item(ifcopenshell::geom::taxonomy::matrix4)
+vector_of_item(ifcopenshell::geom::taxonomy::node)
+vector_of_item(ifcopenshell::geom::taxonomy::offset_curve)
+vector_of_item(ifcopenshell::geom::taxonomy::piecewise_function)
+vector_of_item(ifcopenshell::geom::taxonomy::plane)
+vector_of_item(ifcopenshell::geom::taxonomy::point3)
+vector_of_item(ifcopenshell::geom::taxonomy::revolve)
+vector_of_item(ifcopenshell::geom::taxonomy::shell)
+vector_of_item(ifcopenshell::geom::taxonomy::solid)
+vector_of_item(ifcopenshell::geom::taxonomy::sphere)
+vector_of_item(ifcopenshell::geom::taxonomy::torus)
+vector_of_item(ifcopenshell::geom::taxonomy::style)
+vector_of_item(ifcopenshell::geom::taxonomy::sweep_along_curve)
+vector_of_item(ifcopenshell::geom::taxonomy::geom_item)

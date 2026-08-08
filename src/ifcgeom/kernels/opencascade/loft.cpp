@@ -29,10 +29,9 @@
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
 // @todo duplicated
 namespace {
@@ -55,7 +54,7 @@ bool has_intersection(const std::set<T, Cmp>& A,
 }
 }
 
-bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& result) {
+bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& result) {
 	if (loft->children.size() < 2) {
 		return false;
 	}
@@ -453,15 +452,15 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::loft::ptr loft, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::loft::ptr loft, ifcopenshell::geom::conversion_results& results) {
 	TopoDS_Shape shape;
 	if (!convert(loft, shape)) {
 		return false;
 	}
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
 		loft->instance.id(),
 		loft->matrix,
-		new OpenCascadeShape(shape),
+		new open_cascade_shape(shape),
 		loft->surface_style
 	));
 	return true;

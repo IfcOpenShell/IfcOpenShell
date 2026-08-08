@@ -185,13 +185,10 @@ class IfcStore:
             os.makedirs(os.path.dirname(cache_path), exist_ok=True)
             IfcStore.cache_path = cache_path
             cache_path = Path(IfcStore.cache_path)
-            cache_settings = ifcopenshell.geom.settings()
-            serializer_settings = ifcopenshell.geom.serializer_settings()
+            settings = ifcopenshell.geom.settings()
             cache_preexists = cache_path.exists()
             try:
-                IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
-                    IfcStore.cache_path, cache_settings, serializer_settings
-                )
+                IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, settings)
                 if cache_preexists:
                     print(f"Successfully loaded existing cache: {cache_path.name}.")
                 else:
@@ -206,9 +203,7 @@ class IfcStore:
 
                 os.remove(IfcStore.cache_path)
                 try:
-                    IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
-                        IfcStore.cache_path, cache_settings, serializer_settings
-                    )
+                    IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, settings)
                     print("New cache was created.")
                 except Exception as e:
                     print(f"Failed to create a cache: {str(e)}.")

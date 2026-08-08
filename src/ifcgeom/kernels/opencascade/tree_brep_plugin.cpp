@@ -23,7 +23,7 @@
 #include <boost/dll/alias.hpp>
 
 namespace ifcopenshell {
-	namespace geometry {
+	namespace geom {
 		namespace trees {
 			namespace opencascade_brep_tree_plugin {
 
@@ -50,6 +50,6 @@ namespace ifcopenshell {
 	}
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::geometry::trees::opencascade_brep_tree_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geometry::trees::opencascade_brep_tree_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geometry::trees::opencascade_brep_tree_plugin::register_plugin, ifcopenshell_register_tree_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::trees::opencascade_brep_tree_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::trees::opencascade_brep_tree_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::trees::opencascade_brep_tree_plugin::register_plugin, ifcopenshell_register_tree_plugin_v1)

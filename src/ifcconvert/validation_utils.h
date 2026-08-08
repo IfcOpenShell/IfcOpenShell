@@ -448,26 +448,26 @@ struct intersection_validator {
 
 	intersection_validator(ifcopenshell::file& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
 
-		ifcopenshell::geometry::Settings settings;
-		settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-		settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-		settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-		settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-		settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
+		ifcopenshell::geom::settings settings;
+		settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+		settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+		settings.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
+		settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+		settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
+		settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-		std::vector<ifcopenshell::geometry::filter_t> spaces_and_walls = {
-			IfcGeom::entity_filter(true, false, entities)
+		std::vector<ifcopenshell::geom::filter_t> spaces_and_walls = {
+			ifcopenshell::geom::entity_filter(true, false, entities)
 		};
 
-		IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings), settings, &f, spaces_and_walls, 1, logger);
+		ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "cgal", settings), settings, &f, spaces_and_walls, 1, logger);
 
 		if (!context_iterator.initialize()) {
 			return;
 		}
 
-		auto polycube = ifcopenshell::geometry::utils::create_cube(eps);
-		auto cube = ifcopenshell::geometry::utils::create_nef_polyhedron(polycube);
+		auto polycube = ifcopenshell::geom::utils::create_cube(eps);
+		auto cube = ifcopenshell::geom::utils::create_nef_polyhedron(polycube);
 
 		size_t num_created = 0;
 		int old_progress = quiet ? 0 : -1;
@@ -477,7 +477,7 @@ struct intersection_validator {
 			if (num_created) {
 				has_more = context_iterator.next();
 			}
-			IfcGeom::BRepElement* geom_object = nullptr;
+			ifcopenshell::geom::brep_element* geom_object = nullptr;
 			if (has_more) {
 				geom_object = context_iterator.get_native();
 			}
@@ -491,7 +491,7 @@ struct intersection_validator {
 			std::wcout << sss.c_str() << std::endl;
 
 			for (auto& g : geom_object->geometry()) {
-				cgal_shape_t s = *std::static_pointer_cast<ifcopenshell::geometry::CgalShape>(g.Shape());
+				cgal_shape_t s = *std::static_pointer_cast<ifcopenshell::geom::cgal_shape>(g.Shape());
 				const auto& m = g.Placement()->ccomponents();
 				const auto& n = geom_object->transformation().data()->ccomponents();
 
@@ -511,7 +511,7 @@ struct intersection_validator {
 				}
 
 				std::clock_t nef_begin = std::clock();
-				CGAL::Nef_polyhedron_3<Kernel_> nef = ifcopenshell::geometry::utils::create_nef_polyhedron(s);
+				CGAL::Nef_polyhedron_3<Kernel_> nef = ifcopenshell::geom::utils::create_nef_polyhedron(s);
 				std::clock_t nef_end = std::clock();
 				total_nef_time += (nef_end - nef_begin) / (double) CLOCKS_PER_SEC;
 				if (nef.is_empty()) {

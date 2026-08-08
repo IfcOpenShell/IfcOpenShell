@@ -24,7 +24,7 @@
 
 #include <filesystem>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 
 typedef void register_opencascade_geometry_ifc_writer_plugin_fn(opencascade_geometry_ifc_writer_registry&, const ifcopenshell::plugin::module&);
 

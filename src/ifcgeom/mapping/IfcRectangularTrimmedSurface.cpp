@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularTrimmedSurface& inst) {
 	// @todo we'll need to add support for p-curves at some point, but not now.
@@ -31,7 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularTrimmedSurface& i
 		return false;
 	}
 	gp_Pln pln;
-	IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) inst.BasisSurface(), pln);
+	ifcopenshell::geom::Kernel::convert((IfcSchema::IfcPlane*) inst.BasisSurface(), pln);
 
 	BRepBuilderAPI_MakeFace mf(pln, inst.U1(), inst.U2(), inst.V1(), inst.V2());
 

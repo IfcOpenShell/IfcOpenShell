@@ -37,17 +37,17 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("svg");
 }
 
-boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {
+boost::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
 	if (context.output_temp_stream) {
-		return boost::make_shared<SvgSerializer>(
-			*context.output_temp_stream, context.geometry_settings, context.serializer_settings);
+		return boost::make_shared<svg_serializer>(
+			*context.output_temp_stream, context.settings);
 	}
-	return boost::make_shared<SvgSerializer>(context.output_temp_filename, context.geometry_settings, context.serializer_settings);
+	return boost::make_shared<svg_serializer>(context.output_temp_filename, context.settings);
 }
 
 void configure_serializer(geometry_serializer_context& context) {
-	context.geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().value = true;
-	context.geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+	context.settings.get<ifcopenshell::geom::settings::UseElementHierarchy>().value = true;
+	context.settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
 }
 
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {

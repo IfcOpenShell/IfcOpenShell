@@ -37,8 +37,8 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("usd");
 }
 
-boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {
-	return boost::make_shared<USDSerializer>(context.output_filename, context.geometry_settings, context.serializer_settings);
+boost::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
+	return boost::make_shared<usd_serializer>(context.output_filename, context.settings);
 }
 
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {

@@ -3,9 +3,8 @@
 #include "boolean_utils.h"
 #include "base_utils.h"
 
-using namespace IfcGeom;
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
 
 // @todo should we reapply the technique to apply openings in batches?
 namespace {
@@ -15,7 +14,7 @@ namespace {
 		}
 	};
  
-	bool apply_in_batches(IfcGeom::util::boolean_settings bst, const TopoDS_Shape& first_operand, std::vector< std::pair<double, TopoDS_Shape> >& opening_vector, BOPAlgo_Operation occ_op, TopoDS_Shape& result) {
+	bool apply_in_batches(ifcopenshell::geom::util::boolean_settings bst, const TopoDS_Shape& first_operand, std::vector< std::pair<double, TopoDS_Shape> >& opening_vector, BOPAlgo_Operation occ_op, TopoDS_Shape& result) {
 		auto it = opening_vector.begin();
 		auto jt = it;
  
@@ -29,7 +28,7 @@ namespace {
 				}
  
 				TopoDS_Shape intermediate_result;
-				if (IfcGeom::util::boolean_operation(bst, result, opening_list, occ_op, intermediate_result)) {
+				if (ifcopenshell::geom::util::boolean_operation(bst, result, opening_list, occ_op, intermediate_result)) {
 					result = intermediate_result;
 				} else {
 					return false;
@@ -83,7 +82,7 @@ namespace {
 	}
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, conversion_results& results) {
     return handle_occt_exception([&]() -> bool {
 	bool valid_result = false;
 	bool first = true;
@@ -95,11 +94,11 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	taxonomy::style::ptr first_item_style;
 
 	for (auto& c : br->children) {
-		IfcGeom::ConversionResults cr;
-		AbstractKernel::convert(c, cr);
+		ifcopenshell::geom::conversion_results cr;
+		abstract_kernel::convert(c, cr);
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			// @todo A will be null on union/intersection, intended?
-			IfcGeom::util::flatten_shape_list(cr, a, false, true, settings_.get<settings::Precision>().get());
+			ifcopenshell::geom::util::flatten_shape_list(cr, a, false, true, settings_.get<settings::Precision>().get());
 			first_item_style = c->surface_style;
 			if (!first_item_style && c->kind() == taxonomy::COLLECTION) {
 				// @todo recursively right?
@@ -107,10 +106,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 			}
 
 			if (settings_.get<settings::DisableBooleanResult>().get()) {
-				results.emplace_back(IfcGeom::ConversionResult(
+				results.emplace_back(ifcopenshell::geom::conversion_result(
 					br->instance.id(),
 					br->matrix,
-					new OpenCascadeShape(a),
+					new open_cascade_shape(a),
 					br->surface_style ? br->surface_style : first_item_style
 				));
 				return true;
@@ -123,7 +122,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		} else {
 
 			for (auto& r : cr) {
-				auto S = std::static_pointer_cast<OpenCascadeShape>(r.Shape())->shape();
+				auto S = std::static_pointer_cast<open_cascade_shape>(r.Shape())->shape();
 				if (S.IsNull()) {
 					logger_.error("GEO", 120, "Null operand");
 					continue;
@@ -190,10 +189,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		std::swap(r, a);
 	}
 
-	results.emplace_back(IfcGeom::ConversionResult(
+	results.emplace_back(ifcopenshell::geom::conversion_result(
 		br->instance.id(),
 		br->matrix,
-		new OpenCascadeShape(a),
+		new open_cascade_shape(a),
 		br->surface_style ? br->surface_style : first_item_style
 	));
 

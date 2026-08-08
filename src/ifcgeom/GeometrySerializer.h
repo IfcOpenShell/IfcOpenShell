@@ -25,280 +25,6 @@
 #include "../ifcparse/logger.h"
 #include <fstream>
 
-namespace ifcopenshell {
-namespace geometry {
-inline namespace settings {
-
-	struct UseElementNames : public SettingBase<UseElementNames, bool> {
-		static constexpr const char* const name = "use-element-names";
-		static constexpr const char* const description = "Use entity instance IfcRoot.Name instead of unique IDs for naming elements upon serialization. Applicable for OBJ, DAE, STP, and SVG output.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct UseElementGuids : public SettingBase<UseElementGuids, bool> {
-		static constexpr const char* const name = "use-element-guids";
-		static constexpr const char* const description = "Use entity instance IfcRoot.GlobalId instead of unique IDs for naming elements upon serialization. Applicable for OBJ, DAE, STP, and SVG output.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct UseElementStepIds : public SettingBase<UseElementStepIds, bool> {
-		static constexpr const char* const name = "use-element-step-ids";
-		static constexpr const char* const description = "Use the numeric step identifier (entity instance name) for naming elements upon serialization. Applicable for OBJ, DAE, STP, and SVG output.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct UseElementTypes : public SettingBase<UseElementTypes, bool> {
-		static constexpr const char* const name = "use-element-types";
-		static constexpr const char* const description = "Use element types instead of unique IDs for naming elements upon serialization. Applicable to DAE output.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct UseYUp : public SettingBase<UseYUp, bool> {
-		static constexpr const char* const name = "y-up";
-		static constexpr const char* const description = "Change the 'up' axis to positive Y, default is Z UP. Applicable to OBJ output.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct WriteGltfEcef : public SettingBase<WriteGltfEcef, bool> {
-		static constexpr const char* const name = "ecef";
-		static constexpr const char* const description = "Write glTF in Earth-Centered Earth-Fixed coordinates. Requires PROJ.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct FloatingPointDigits : public SettingBase<FloatingPointDigits, int> {
-		static constexpr const char* const name = "digits";
-		static constexpr const char* const description = "Sets the precision to be used to format floating-point values, 15 by default. Use a negative value to use the system's default precision (should be 6 typically). Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used,  and any other value means that 6 or 7 decimals are used.";
-		static constexpr int defaultvalue = 15;
-	};
-
-	struct BaseUri : public SettingBase<BaseUri, std::string> {
-		static constexpr const char* const name = "base-uri";
-		static constexpr const char* const description = "Base URI for products to be used in RDF-based serializations.";
-	};
-
-	struct WktUseSection : public SettingBase<WktUseSection, bool> {
-		static constexpr const char* const name = "wkt-use-section";
-		static constexpr const char* const description = "Use a geometrical section rather than full polyhedral output and footprint in TTL WKT";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SeparateZUpNode : public SettingBase<SeparateZUpNode, bool> {
-        static constexpr const char* const name = "separate-z-up-node";
-        static constexpr const char* const description = "Introduce a separate Z-Up node into the GlTF hierarchy instead of multiplying the transform into the root node matrices";
-        static constexpr bool defaultvalue = false;
-    };
-
-	struct SvgBounds : public SettingBase<SvgBounds, std::string> {
-		static constexpr const char* const name = "bounds";
-		static constexpr const char* const description = "Specifies the bounding rectangle, for example 512x512, to which the output will be scaled. Only used when converting to SVG.";
-	};
-
-	struct SvgScale : public SettingBase<SvgScale, std::string> {
-		static constexpr const char* const name = "scale";
-		static constexpr const char* const description = "Interprets SVG bounds in mm, centers layout and draw elements to scale. Only used when converting to SVG. Example 1:100.";
-	};
-
-	struct SvgCenter : public SettingBase<SvgCenter, std::string> {
-		static constexpr const char* const name = "center";
-		static constexpr const char* const description = "When using --scale, specifies the location in the range [0 1]x[0 1] around which to center the drawings. Example 0.5x0.5.";
-	};
-
-	struct SvgSectionRef : public SettingBase<SvgSectionRef, std::string> {
-		static constexpr const char* const name = "section-ref";
-		static constexpr const char* const description = "Element at which cross sections should be created.";
-	};
-
-	struct SvgElevationRef : public SettingBase<SvgElevationRef, std::string> {
-		static constexpr const char* const name = "elevation-ref";
-		static constexpr const char* const description = "Element at which drawings should be created.";
-	};
-
-	struct SvgElevationRefGuid : public SettingBase<SvgElevationRefGuid, std::string> {
-		static constexpr const char* const name = "elevation-ref-guid";
-		static constexpr const char* const description = "Element guids at which drawings should be created.";
-	};
-
-	struct SvgAutoSection : public SettingBase<SvgAutoSection, bool> {
-		static constexpr const char* const name = "auto-section";
-		static constexpr const char* const description = "Creates SVG cross section drawings automatically based on model extents.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgAutoElevation : public SettingBase<SvgAutoElevation, bool> {
-		static constexpr const char* const name = "auto-elevation";
-		static constexpr const char* const description = "Creates SVG elevation drawings automatically based on model extents.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgDrawStoreyHeights : public SettingBase<SvgDrawStoreyHeights, std::string> {
-		static constexpr const char* const name = "draw-storey-heights";
-		static constexpr const char* const description = "Draws a horizontal line at the height of building storeys in vertical drawings. Accepted values are none, full, and left.";
-	};
-
-	struct SvgProfileThreshold : public SettingBase<SvgProfileThreshold, int> {
-		static constexpr const char* const name = "profile-threshold";
-		static constexpr const char* const description = "Limits the number of projected wire profiles for non-wall and non-slab elements in SVG output. A negative value disables the limit.";
-		static constexpr int defaultvalue = -1;
-	};
-
-	struct SvgStoreyHeightLineLength : public SettingBase<SvgStoreyHeightLineLength, double> {
-		static constexpr const char* const name = "storey-height-line-length";
-		static constexpr const char* const description = "Length of the line when --draw-storey-heights=left.";
-	};
-
-	struct SvgUseNamespace : public SettingBase<SvgUseNamespace, bool> {
-		static constexpr const char* const name = "svg-xmlns";
-		static constexpr const char* const description = "Stores name and guid in a separate namespace as opposed to data-name, data-guid.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgUseHlrPoly : public SettingBase<SvgUseHlrPoly, bool> {
-		static constexpr const char* const name = "svg-poly";
-		static constexpr const char* const description = "Uses the polygonal algorithm for hidden line rendering.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgUsePrefiltering : public SettingBase<SvgUsePrefiltering, bool> {
-		static constexpr const char* const name = "svg-prefilter";
-		static constexpr const char* const description = "Prefilter faces and shapes before feeding to the hidden-line algorithm.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgUnifyInputs : public SettingBase<SvgUnifyInputs, bool> {
-		static constexpr const char* const name = "svg-unify-inputs";
-		static constexpr const char* const description = "Unify input shapes before SVG projection.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgSegmentProjection : public SettingBase<SvgSegmentProjection, bool> {
-		static constexpr const char* const name = "svg-segment-projection";
-		static constexpr const char* const description = "Segment result of projection with respect to original products.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgSubtractBefore : public SettingBase<SvgSubtractBefore, std::string> {
-		static constexpr const char* const name = "svg-subtract-before";
-		static constexpr const char* const description = "Controls which shapes are cut before SVG hidden-line projection. Accepted values are auto, slabs-and-walls, and always.";
-	};
-
-	struct SvgPolygonal : public SettingBase<SvgPolygonal, bool> {
-		static constexpr const char* const name = "svg-write-poly";
-		static constexpr const char* const description = "Approximate every curve as polygonal in SVG output.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgAlwaysProject : public SettingBase<SvgAlwaysProject, bool> {
-		static constexpr const char* const name = "svg-project";
-		static constexpr const char* const description = "Always enable hidden line rendering instead of only on elevations.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgWithoutStoreys : public SettingBase<SvgWithoutStoreys, bool> {
-		static constexpr const char* const name = "svg-without-storeys";
-		static constexpr const char* const description = "Do not emit drawings for building storeys.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgNoCss : public SettingBase<SvgNoCss, bool> {
-		static constexpr const char* const name = "svg-no-css";
-		static constexpr const char* const description = "Do not emit CSS style declarations.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgMirrorY : public SettingBase<SvgMirrorY, bool> {
-		static constexpr const char* const name = "svg-mirror-y";
-		static constexpr const char* const description = "Mirror SVG output along the Y axis.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgMirrorX : public SettingBase<SvgMirrorX, bool> {
-		static constexpr const char* const name = "svg-mirror-x";
-		static constexpr const char* const description = "Mirror SVG output along the X axis.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgDoorArcs : public SettingBase<SvgDoorArcs, bool> {
-		static constexpr const char* const name = "door-arcs";
-		static constexpr const char* const description = "Draw door opening arcs for IfcDoor elements.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgSectionHeight : public SettingBase<SvgSectionHeight, double> {
-		static constexpr const char* const name = "section-height";
-		static constexpr const char* const description = "Specifies the cut section height for SVG 2D geometry.";
-	};
-
-	struct SvgSectionHeightFromStoreys : public SettingBase<SvgSectionHeightFromStoreys, bool> {
-		static constexpr const char* const name = "section-height-from-storeys";
-		static constexpr const char* const description = "Derives section height from storey elevation. Use --section-height to override the default offset of 1.2.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgPrintSpaceNames : public SettingBase<SvgPrintSpaceNames, bool> {
-		static constexpr const char* const name = "print-space-names";
-		static constexpr const char* const description = "Prints IfcSpace LongName and Name in the geometry output. Applicable for SVG output.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgPrintSpaceAreas : public SettingBase<SvgPrintSpaceAreas, bool> {
-		static constexpr const char* const name = "print-space-areas";
-		static constexpr const char* const description = "Prints calculated IfcSpace areas in square meters. Applicable for SVG output.";
-		static constexpr bool defaultvalue = false;
-	};
-
-	struct SvgSpaceNameTransform : public SettingBase<SvgSpaceNameTransform, std::string> {
-		static constexpr const char* const name = "space-name-transform";
-		static constexpr const char* const description = "Additional transform to the space labels in SVG.";
-	};
-}
-
-class SerializerSettings : public SettingsContainer <
-	// @todo should we use tuple_cat here to unify the settings into a single class?
-    std::tuple<
-		UseElementNames,
-		UseElementGuids,
-		UseElementStepIds,
-		UseElementTypes,
-		UseYUp,
-		WriteGltfEcef,
-		FloatingPointDigits,
-		BaseUri,
-		WktUseSection,
-		SeparateZUpNode,
-		SvgBounds,
-		SvgScale,
-		SvgCenter,
-		SvgSectionRef,
-		SvgElevationRef,
-		SvgElevationRefGuid,
-		SvgAutoSection,
-		SvgAutoElevation,
-		SvgDrawStoreyHeights,
-		SvgProfileThreshold,
-		SvgStoreyHeightLineLength,
-		SvgUseNamespace,
-		SvgUseHlrPoly,
-		SvgUsePrefiltering,
-		SvgUnifyInputs,
-		SvgSegmentProjection,
-		SvgSubtractBefore,
-		SvgPolygonal,
-		SvgAlwaysProject,
-		SvgWithoutStoreys,
-		SvgNoCss,
-		SvgMirrorY,
-		SvgMirrorX,
-		SvgDoorArcs,
-		SvgSectionHeight,
-		SvgSectionHeightFromStoreys,
-		SvgPrintSpaceNames,
-		SvgPrintSpaceAreas,
-		SvgSpaceNameTransform>>
-{};
-
-}
-}
-
 class IFC_GEOM_API stream_or_filename {
 private:
 	std::shared_ptr<std::ofstream> ofs_;
@@ -336,48 +62,43 @@ public:
 	}
 };
 
-class IFC_GEOM_API GeometrySerializer : public Serializer {
+class IFC_GEOM_API geometry_serializer : public serializer {
 public:
 	enum read_type { READ_BREP, READ_TRIANGULATION };
 
-    GeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr)
-		: Serializer(logger_or_root(logger))
-		, geometry_settings_(geometry_settings)
+    geometry_serializer(const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr)
+		: serializer(logger_or_root(logger))
 		, settings_(settings)
 	{}
-	virtual ~GeometrySerializer() {} 
+	virtual ~geometry_serializer() {}
 
 	virtual bool isTesselated() const = 0;
-	virtual void write(const IfcGeom::TriangulationElement* o) = 0;
-	virtual void write(const IfcGeom::BRepElement* o) = 0;
+	virtual void write(const ifcopenshell::geom::triangulation_element* o) = 0;
+	virtual void write(const ifcopenshell::geom::brep_element* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
-	virtual IfcGeom::Element* read(ifcopenshell::file& f, const std::string& guid, const std::string& representation_id, read_type rt = READ_BREP) = 0;
+	virtual ifcopenshell::geom::element* read(ifcopenshell::file& f, const std::string& guid, const std::string& representation_id, read_type rt = READ_BREP) = 0;
 
-    const ifcopenshell::geometry::SerializerSettings& settings() const { return settings_; }
-	ifcopenshell::geometry::SerializerSettings& settings() { return settings_; }
-
-	const ifcopenshell::geometry::Settings& geometry_settings() const { return geometry_settings_; }
-	ifcopenshell::geometry::Settings& geometry_settings() { return geometry_settings_; }
+    const ifcopenshell::geom::settings& settings() const { return settings_; }
+	ifcopenshell::geom::settings& settings() { return settings_; }
 
     /// Returns ID for the object depending on the used setting.
-    virtual std::string object_id(const IfcGeom::Element* o)
+    virtual std::string object_id(const ifcopenshell::geom::element* o)
     {
-        if (settings_.get<ifcopenshell::geometry::settings::UseElementGuids>().get()) return o->guid();
-        if (settings_.get<ifcopenshell::geometry::settings::UseElementNames>().get()) return o->name();
-		if (settings_.get<ifcopenshell::geometry::settings::UseElementStepIds>().get()) return "id-" + boost::lexical_cast<std::string>(o->id());
+        if (settings_.get<ifcopenshell::geom::settings::UseElementGuids>().get()) return o->guid();
+        if (settings_.get<ifcopenshell::geom::settings::UseElementNames>().get()) return o->name();
+		if (settings_.get<ifcopenshell::geom::settings::UseElementStepIds>().get()) return "id-" + boost::lexical_cast<std::string>(o->id());
 		return o->unique_id();
     }
 
 protected:
-	ifcopenshell::geometry::Settings geometry_settings_;
-	ifcopenshell::geometry::SerializerSettings settings_;
+	ifcopenshell::geom::settings settings_;
 };
 
-class IFC_GEOM_API WriteOnlyGeometrySerializer : public GeometrySerializer {
+class IFC_GEOM_API write_only_geometry_serializer : public geometry_serializer {
 public:
-	WriteOnlyGeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr) : GeometrySerializer(geometry_settings, settings, logger) {}
+	write_only_geometry_serializer(const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr) : geometry_serializer(settings, logger) {}
 
-	virtual IfcGeom::Element* read(ifcopenshell::file&, const std::string&, const std::string&, read_type = READ_BREP) {
+	virtual ifcopenshell::geom::element* read(ifcopenshell::file&, const std::string&, const std::string&, read_type = READ_BREP) {
 		throw std::runtime_error("Not supported");
 	};
 };

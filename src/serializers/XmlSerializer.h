@@ -11,15 +11,15 @@
 
 #include <boost/shared_ptr.hpp>
 
-class XmlSerializer : public Serializer {
+class xml_serializer : public serializer {
 private:
-	boost::shared_ptr<Serializer> implementation_;
+	boost::shared_ptr<serializer> implementation_;
 
 protected:
 	std::string xml_filename;
 
 public:
-	XmlSerializer(ifcopenshell::file* file, const std::string& xml_filename, ::logger& logger = ::logger::root())
+	xml_serializer(ifcopenshell::file* file, const std::string& xml_filename, ::logger& logger = ::logger::root())
 		: xml_filename(xml_filename)
 	{
 		if (!file) {
@@ -33,7 +33,7 @@ public:
 		implementation_ = ifcopenshell::serializers::document_serializer_registry_instance().create("xml", context);
 	}
 
-	virtual ~XmlSerializer() {}
+	virtual ~xml_serializer() {}
 
 	bool ready() { return true; }
 	void writeHeader() {}

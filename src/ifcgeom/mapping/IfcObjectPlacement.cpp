@@ -19,14 +19,14 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include <deque>
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 	if (placement_rel_to_type_ || placement_rel_to_instance_) {
-		using QueueItem = std::pair<IfcSchema::IfcObjectPlacement, int>;
-		std::deque<QueueItem> q = {{inst, 0}};
+		using queue_item = std::pair<IfcSchema::IfcObjectPlacement, int>;
+		std::deque<queue_item> q = {{inst, 0}};
 		while (!q.empty()) {
 			auto [placement, depth] = q.front();
 			q.pop_front();
@@ -59,7 +59,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 	}
 
 	IfcSchema::IfcObjectPlacement relative_to;
-	express::Base transform;
+	express::base transform;
 
 	IfcSchema::IfcAxis2Placement3D fallback;
 

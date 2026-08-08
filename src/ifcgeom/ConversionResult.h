@@ -40,7 +40,7 @@
 #include <vector>
 #include <unordered_map>
 
-struct EdgeKey {
+struct edge_key {
 	int v1, v2;
 
 	// These are not part of the hash or equality,
@@ -51,7 +51,7 @@ struct EdgeKey {
 	// conflicting original vertex indices.
 	int ov1, ov2;
 
-	EdgeKey(int a, int b)
+	edge_key(int a, int b)
 		: ov1(a)
 		, ov2(b)
 	{
@@ -64,7 +64,7 @@ struct EdgeKey {
 		}
 	}
 
-	bool operator==(const EdgeKey& other) const {
+	bool operator==(const edge_key& other) const {
 		return v1 == other.v1 && v2 == other.v2;
 	}
 };
@@ -72,18 +72,18 @@ struct EdgeKey {
 #ifndef SWIG
 namespace std {
 	template <>
-	struct hash<EdgeKey> {
-		std::size_t operator()(const EdgeKey& ek) const {
+	struct hash<edge_key> {
+		std::size_t operator()(const edge_key& ek) const {
 			return std::hash<int>()(ek.v1) ^ std::hash<int>()(ek.v2);
 		}
 	};
 }
 #endif
 
-namespace IfcGeom {	
+namespace ifcopenshell::geom {
 
 	namespace Representation {
-		class IFC_GEOM_API Triangulation;
+		class IFC_GEOM_API triangulation;
 	}
 
 #ifndef SWIG
@@ -123,21 +123,21 @@ namespace IfcGeom {
 	}
 #endif
 
-	class IFC_GEOM_API OpaqueNumber {
+	class IFC_GEOM_API opaque_number {
 	protected:
-		struct NumberConcept {
-			virtual ~NumberConcept() {}
+		struct number_concept {
+			virtual ~number_concept() {}
 			virtual double to_double() const = 0;
 			virtual std::string to_string() const = 0;
-			virtual std::shared_ptr<const NumberConcept> add(const NumberConcept& other) const = 0;
-			virtual std::shared_ptr<const NumberConcept> subtract(const NumberConcept& other) const = 0;
-			virtual std::shared_ptr<const NumberConcept> multiply(const NumberConcept& other) const = 0;
-			virtual std::shared_ptr<const NumberConcept> divide(const NumberConcept& other) const = 0;
-			virtual std::shared_ptr<const NumberConcept> negate() const = 0;
-			virtual std::shared_ptr<const NumberConcept> from_double(double value) const = 0;
-            virtual std::shared_ptr<const NumberConcept> from_int(int value) const = 0;
-            virtual bool equals(const NumberConcept& other) const = 0;
-			virtual bool less_than(const NumberConcept& other) const = 0;
+			virtual std::shared_ptr<const number_concept> add(const number_concept& other) const = 0;
+			virtual std::shared_ptr<const number_concept> subtract(const number_concept& other) const = 0;
+			virtual std::shared_ptr<const number_concept> multiply(const number_concept& other) const = 0;
+			virtual std::shared_ptr<const number_concept> divide(const number_concept& other) const = 0;
+			virtual std::shared_ptr<const number_concept> negate() const = 0;
+			virtual std::shared_ptr<const number_concept> from_double(double value) const = 0;
+            virtual std::shared_ptr<const number_concept> from_int(int value) const = 0;
+            virtual bool equals(const number_concept& other) const = 0;
+			virtual bool less_than(const number_concept& other) const = 0;
 			virtual const std::type_info& type() const = 0;
 			virtual const void* value_ptr() const = 0;
 		};
@@ -151,14 +151,14 @@ namespace IfcGeom {
 #endif
 
 		template <typename T>
-		struct NumberModel : NumberConcept {
+		struct number_model : number_concept {
 			T value;
 
-			NumberModel(const T& v)
+			number_model(const T& v)
 				: value(v) {}
 
-			static const NumberModel& as_same(const NumberConcept& other) {
-				auto same = dynamic_cast<const NumberModel*>(&other);
+			static const number_model& as_same(const number_concept& other) {
+				auto same = dynamic_cast<const number_model*>(&other);
 				if (same == nullptr) {
 					throw std::runtime_error("Incompatible opaque number types");
 				}
@@ -182,39 +182,39 @@ namespace IfcGeom {
 				return ss.str();
 			}
 
-			virtual std::shared_ptr<const NumberConcept> add(const NumberConcept& other) const {
-				return std::make_shared<NumberModel>(value + as_same(other).value);
+			virtual std::shared_ptr<const number_concept> add(const number_concept& other) const {
+				return std::make_shared<number_model>(value + as_same(other).value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> subtract(const NumberConcept& other) const {
-				return std::make_shared<NumberModel>(value - as_same(other).value);
+			virtual std::shared_ptr<const number_concept> subtract(const number_concept& other) const {
+				return std::make_shared<number_model>(value - as_same(other).value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> multiply(const NumberConcept& other) const {
-				return std::make_shared<NumberModel>(value * as_same(other).value);
+			virtual std::shared_ptr<const number_concept> multiply(const number_concept& other) const {
+				return std::make_shared<number_model>(value * as_same(other).value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> divide(const NumberConcept& other) const {
-				return std::make_shared<NumberModel>(value / as_same(other).value);
+			virtual std::shared_ptr<const number_concept> divide(const number_concept& other) const {
+				return std::make_shared<number_model>(value / as_same(other).value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> negate() const {
-				return std::make_shared<NumberModel>(-value);
+			virtual std::shared_ptr<const number_concept> negate() const {
+				return std::make_shared<number_model>(-value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> from_double(double v) const {
-				return std::make_shared<NumberModel>(T(v));
+			virtual std::shared_ptr<const number_concept> from_double(double v) const {
+				return std::make_shared<number_model>(T(v));
 			}
 
-			virtual std::shared_ptr<const NumberConcept> from_int(int v) const {
-                return std::make_shared<NumberModel>(T(v));
+			virtual std::shared_ptr<const number_concept> from_int(int v) const {
+                return std::make_shared<number_model>(T(v));
             }
 
-			virtual bool equals(const NumberConcept& other) const {
+			virtual bool equals(const number_concept& other) const {
 				return value == as_same(other).value;
 			}
 
-			virtual bool less_than(const NumberConcept& other) const {
+			virtual bool less_than(const number_concept& other) const {
 				return value < as_same(other).value;
 			}
 
@@ -234,9 +234,9 @@ namespace IfcGeom {
 		struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
 
 	private:
-		std::shared_ptr<const NumberConcept> data_;
+		std::shared_ptr<const number_concept> data_;
 
-		const NumberConcept& data() const {
+		const number_concept& data() const {
 			if (!data_) {
 				throw std::runtime_error("Empty opaque number");
 			}
@@ -244,20 +244,20 @@ namespace IfcGeom {
 		}
 
 	protected:
-		OpaqueNumber(std::shared_ptr<const NumberConcept> data)
+		opaque_number(std::shared_ptr<const number_concept> data)
 			: data_(std::move(data)) {}
 
 	public:
-		OpaqueNumber() = default;
-		virtual ~OpaqueNumber() = default;
+		opaque_number() = default;
+		virtual ~opaque_number() = default;
 
 #ifndef SWIG
 		template <
 			typename T,
 			typename Decayed = std::decay_t<T>,
-			typename = std::enable_if_t<!std::is_base_of<OpaqueNumber, Decayed>::value && !is_shared_ptr<Decayed>::value>>
-		explicit OpaqueNumber(T&& value)
-			: data_(std::make_shared<NumberModel<Decayed>>(std::forward<T>(value))) {}
+			typename = std::enable_if_t<!std::is_base_of<opaque_number, Decayed>::value && !is_shared_ptr<Decayed>::value>>
+		explicit opaque_number(T&& value)
+			: data_(std::make_shared<number_model<Decayed>>(std::forward<T>(value))) {}
 #endif
 
 		double to_double() const {
@@ -280,102 +280,102 @@ namespace IfcGeom {
 			return *static_cast<const T*>(data().value_ptr());
 		}
 
-		OpaqueNumber add(const OpaqueNumber& other) const {
-			return OpaqueNumber(data().add(other.data()));
+		opaque_number add(const opaque_number& other) const {
+			return opaque_number(data().add(other.data()));
 		}
 
-		OpaqueNumber subtract(const OpaqueNumber& other) const {
-			return OpaqueNumber(data().subtract(other.data()));
+		opaque_number subtract(const opaque_number& other) const {
+			return opaque_number(data().subtract(other.data()));
 		}
 
-		OpaqueNumber multiply(const OpaqueNumber& other) const {
-			return OpaqueNumber(data().multiply(other.data()));
+		opaque_number multiply(const opaque_number& other) const {
+			return opaque_number(data().multiply(other.data()));
 		}
 
-		OpaqueNumber divide(const OpaqueNumber& other) const {
-			return OpaqueNumber(data().divide(other.data()));
+		opaque_number divide(const opaque_number& other) const {
+			return opaque_number(data().divide(other.data()));
 		}
 
-		OpaqueNumber negated() const {
-			return OpaqueNumber(data().negate());
+		opaque_number negated() const {
+			return opaque_number(data().negate());
 		}
 
-		OpaqueNumber abs() const {
+		opaque_number abs() const {
             auto zero = data().from_int(0);
-            return OpaqueNumber(data().less_than(*zero) ? data().negate() : *this);
+            return opaque_number(data().less_than(*zero) ? data().negate() : *this);
         }
 
-		OpaqueNumber same_type(double value) const {
-			return OpaqueNumber(data().from_double(value));
+		opaque_number same_type(double value) const {
+			return opaque_number(data().from_double(value));
 		}
 
-		OpaqueNumber same_type(int value) const {
-            return OpaqueNumber(data().from_int(value));
+		opaque_number same_type(int value) const {
+            return opaque_number(data().from_int(value));
         }
 
-		bool equals(const OpaqueNumber& other) const {
+		bool equals(const opaque_number& other) const {
 			return data().equals(other.data());
 		}
 
-		bool less_than(const OpaqueNumber& other) const {
+		bool less_than(const opaque_number& other) const {
 			return data().less_than(other.data());
 		}
 
-		OpaqueNumber operator+(const OpaqueNumber& other) const {
+		opaque_number operator+(const opaque_number& other) const {
 			return add(other);
 		}
 
-		OpaqueNumber operator-(const OpaqueNumber& other) const {
+		opaque_number operator-(const opaque_number& other) const {
 			return subtract(other);
 		}
 
-		OpaqueNumber operator*(const OpaqueNumber& other) const {
+		opaque_number operator*(const opaque_number& other) const {
 			return multiply(other);
 		}
 
-		OpaqueNumber operator/(const OpaqueNumber& other) const {
+		opaque_number operator/(const opaque_number& other) const {
 			return divide(other);
 		}
 
-		bool operator==(const OpaqueNumber& other) const {
+		bool operator==(const opaque_number& other) const {
 			return equals(other);
 		}
 
-		bool operator<(const OpaqueNumber& other) const {
+		bool operator<(const opaque_number& other) const {
 			return less_than(other);
 		}
 
-		OpaqueNumber operator-() const {
+		opaque_number operator-() const {
 			return negated();
 		}
 	};
 #ifndef SWIG
 	template <size_t N>
-	struct IFC_GEOM_API OpaqueCoordinate {
+	struct IFC_GEOM_API opaque_coordinate {
 	private:
-		std::array<OpaqueNumber, N> values_;
+		std::array<opaque_number, N> values_;
 
-		static OpaqueNumber as_number(OpaqueNumber value) {
+		static opaque_number as_number(opaque_number value) {
 			return value;
 		}
 
 	public:
 #ifndef SWIG
 		template <typename... Args, typename = std::enable_if_t<sizeof...(Args) == N>>
-		OpaqueCoordinate(Args&&... args) {
+		opaque_coordinate(Args&&... args) {
 			init_<0>(std::forward<Args>(args)...);
 		}
 #endif
 
-		OpaqueCoordinate() = default;
+		opaque_coordinate() = default;
 
 		std::size_t size() const {
 			return N;
 		}
 
-		OpaqueNumber get(size_t i) const {
+		opaque_number get(size_t i) const {
 			if (i >= N) {
-				return OpaqueNumber();
+				return opaque_number();
 			}
 			return values_[i];
 		}
@@ -384,7 +384,7 @@ namespace IfcGeom {
 			return get(i).to_double();
 		}
 
-		void set(size_t i, const OpaqueNumber& n) {
+		void set(size_t i, const opaque_number& n) {
 			if (i < N) {
 				values_[i] = n;
 			}
@@ -399,55 +399,55 @@ namespace IfcGeom {
 			return result;
 		}
 
-		OpaqueCoordinate operator-() const {
-			OpaqueCoordinate result;
+		opaque_coordinate operator-() const {
+			opaque_coordinate result;
 			for (size_t i = 0; i < N; ++i) {
 				result.values_[i] = values_[i].negated();
 			}
 			return result;
 		}
 
-		OpaqueCoordinate operator+(const OpaqueCoordinate& other) const {
-			OpaqueCoordinate result;
+		opaque_coordinate operator+(const opaque_coordinate& other) const {
+			opaque_coordinate result;
 			for (size_t i = 0; i < N; ++i) {
 				result.values_[i] = values_[i].add(other.values_[i]);
 			}
 			return result;
 		}
 
-		OpaqueCoordinate operator-(const OpaqueCoordinate& other) const {
-			OpaqueCoordinate result;
+		opaque_coordinate operator-(const opaque_coordinate& other) const {
+			opaque_coordinate result;
 			for (size_t i = 0; i < N; ++i) {
 				result.values_[i] = values_[i].subtract(other.values_[i]);
 			}
 			return result;
 		}
 
-		OpaqueCoordinate operator*(const OpaqueNumber& scalar) const {
-			OpaqueCoordinate result;
+		opaque_coordinate operator*(const opaque_number& scalar) const {
+			opaque_coordinate result;
 			for (size_t i = 0; i < N; ++i) {
 				result.values_[i] = values_[i].multiply(scalar);
 			}
 			return result;
 		}
 
-		OpaqueCoordinate operator/(const OpaqueNumber& scalar) const {
-			OpaqueCoordinate result;
+		opaque_coordinate operator/(const opaque_number& scalar) const {
+			opaque_coordinate result;
 			for (size_t i = 0; i < N; ++i) {
 				result.values_[i] = values_[i].divide(scalar);
 			}
 			return result;
 		}
 
-		OpaqueCoordinate scale(double scalar) const {
+		opaque_coordinate scale(double scalar) const {
 			return *this * values_[0].same_type(scalar);
 		}
 
-		OpaqueNumber dot(const OpaqueCoordinate& other) const {
+		opaque_number dot(const opaque_coordinate& other) const {
 			if constexpr (N == 0) {
-				return OpaqueNumber(0.0);
+				return opaque_number(0.0);
 			} else {
-				OpaqueNumber result = values_[0].multiply(other.values_[0]);
+				opaque_number result = values_[0].multiply(other.values_[0]);
 				for (size_t i = 1; i < N; ++i) {
 					result = result.add(values_[i].multiply(other.values_[i]));
 				}
@@ -459,7 +459,7 @@ namespace IfcGeom {
 			return std::sqrt(dot(*this).to_double());
 		}
 
-		OpaqueCoordinate normalized() const {
+		opaque_coordinate normalized() const {
 			const double length = norm();
 			if (length == 0.0) {
 				return *this;
@@ -467,7 +467,7 @@ namespace IfcGeom {
 			return *this / values_[0].same_type(length);
 		}
 
-		OpaqueCoordinate normalized_by_max_abs() const {
+		opaque_coordinate normalized_by_max_abs() const {
 			double max_abs = 0.0;
 			for (const auto& value : values_) {
 				max_abs = (std::max)(max_abs, std::fabs(value.to_double()));
@@ -489,29 +489,29 @@ namespace IfcGeom {
 	};
 #else
 	template <size_t N>
-	struct IFC_GEOM_API OpaqueCoordinate {
-		OpaqueCoordinate();
-		OpaqueCoordinate(const OpaqueCoordinate& other);
-		OpaqueCoordinate& operator=(const OpaqueCoordinate& other);
-		~OpaqueCoordinate();
+	struct IFC_GEOM_API opaque_coordinate {
+		opaque_coordinate();
+		opaque_coordinate(const opaque_coordinate& other);
+		opaque_coordinate& operator=(const opaque_coordinate& other);
+		~opaque_coordinate();
 		std::size_t size() const;
-		OpaqueNumber get(size_t i) const;
+		opaque_number get(size_t i) const;
 		double get_double(size_t i) const;
-		void set(size_t i, const OpaqueNumber& n);
+		void set(size_t i, const opaque_number& n);
 		std::vector<double> to_double() const;
 	};
 #endif
 
-	class IFC_GEOM_API ConversionResultShape {
+	class IFC_GEOM_API conversion_result_shape {
 	public:
 #ifdef SWIG
 		virtual std::string backend_id() const = 0;
 #else
 		virtual std::string_view backend_id() const = 0;
 #endif
-		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const = 0;
-		IfcGeom::Representation::Triangulation* Triangulate(const ifcopenshell::geometry::Settings& settings, ::logger& logger = ::logger::root()) const;
-		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const = 0;
+		virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const = 0;
+		ifcopenshell::geom::Representation::triangulation* Triangulate(const ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root()) const;
+		virtual void Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const = 0;
 				
 		virtual int surface_genus() const = 0;
 		virtual bool is_manifold() const = 0;
@@ -523,73 +523,73 @@ namespace IfcGeom {
 		// @todo choose one prototype
 		virtual double bounding_box(void*&) const = 0;
 		// @todo this must be something with a virtual dtor so that we can delete it.
-		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const = 0;
+		virtual std::pair<opaque_coordinate<3>, opaque_coordinate<3>> bounding_box() const = 0;
 		virtual void set_box(void* b) = 0;
 		
-		virtual OpaqueNumber length() = 0;
-		virtual OpaqueNumber area() = 0;
-		virtual OpaqueNumber volume() = 0;
+		virtual opaque_number length() = 0;
+		virtual opaque_number area() = 0;
+		virtual opaque_number volume() = 0;
 
-		virtual OpaqueCoordinate<3> position() = 0;
-		virtual OpaqueCoordinate<3> axis() = 0;
-		virtual OpaqueCoordinate<4> plane_equation() = 0;
+		virtual opaque_coordinate<3> position() = 0;
+		virtual opaque_coordinate<3> axis() = 0;
+		virtual opaque_coordinate<4> plane_equation() = 0;
 
-		virtual std::vector<ConversionResultShape*> convex_decomposition() = 0;
-		virtual ConversionResultShape* halfspaces() = 0;
-		virtual ConversionResultShape* box() = 0;
-		virtual ConversionResultShape* solid() = 0;
-		virtual ConversionResultShape* wrap_in_compound() = 0;
+		virtual std::vector<conversion_result_shape*> convex_decomposition() = 0;
+		virtual conversion_result_shape* halfspaces() = 0;
+		virtual conversion_result_shape* box() = 0;
+		virtual conversion_result_shape* solid() = 0;
+		virtual conversion_result_shape* wrap_in_compound() = 0;
 
-		virtual std::vector<ConversionResultShape*> vertices() = 0;
-		virtual std::vector<ConversionResultShape*> edges() = 0;
-		virtual std::vector<ConversionResultShape*> facets() = 0;
+		virtual std::vector<conversion_result_shape*> vertices() = 0;
+		virtual std::vector<conversion_result_shape*> edges() = 0;
+		virtual std::vector<conversion_result_shape*> facets() = 0;
 
-		virtual ConversionResultShape* add(ConversionResultShape*) = 0;
-		virtual ConversionResultShape* subtract(ConversionResultShape*) = 0;
-		virtual ConversionResultShape* intersect(ConversionResultShape*) = 0;
-		virtual ConversionResultShape* concat(ConversionResultShape*) = 0;
+		virtual conversion_result_shape* add(conversion_result_shape*) = 0;
+		virtual conversion_result_shape* subtract(conversion_result_shape*) = 0;
+		virtual conversion_result_shape* intersect(conversion_result_shape*) = 0;
+		virtual conversion_result_shape* concat(conversion_result_shape*) = 0;
 
-		virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) = 0;
-		virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) = 0;
-		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const = 0;
+		virtual std::size_t map(opaque_coordinate<4>& from, opaque_coordinate<4>& to) = 0;
+		virtual std::size_t map(const std::vector<opaque_coordinate<4>>& from, const std::vector<opaque_coordinate<4>>& to) = 0;
+		virtual conversion_result_shape* moved(ifcopenshell::geom::taxonomy::matrix4::ptr) const = 0;
 		
-		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const = 0;
+		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geom::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const = 0;
 
-		virtual ~ConversionResultShape() {}
+		virtual ~conversion_result_shape() {}
 		
 	};
 
-	class IFC_GEOM_API ConversionResult {
+	class IFC_GEOM_API conversion_result {
 	private:
 		int id;
-		ifcopenshell::geometry::taxonomy::matrix4::ptr placement_;
-		std::shared_ptr<ConversionResultShape> shape_;
-		ifcopenshell::geometry::taxonomy::style::ptr style_;
+		ifcopenshell::geom::taxonomy::matrix4::ptr placement_;
+		std::shared_ptr<conversion_result_shape> shape_;
+		ifcopenshell::geom::taxonomy::style::ptr style_;
 	public:
-		ConversionResult(int id, ifcopenshell::geometry::taxonomy::matrix4::ptr placement, ConversionResultShape* shape, ifcopenshell::geometry::taxonomy::style::ptr style)
-			: id(id), placement_(placement ? placement : ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape), style_(style)
+		conversion_result(int id, ifcopenshell::geom::taxonomy::matrix4::ptr placement, conversion_result_shape* shape, ifcopenshell::geom::taxonomy::style::ptr style)
+			: id(id), placement_(placement ? placement : ifcopenshell::geom::taxonomy::make<ifcopenshell::geom::taxonomy::matrix4>()), shape_(shape), style_(style)
 		{}
-		ConversionResult(int id, ifcopenshell::geometry::taxonomy::matrix4::ptr placement, ConversionResultShape* shape)
-			: id(id), placement_(placement ? placement : ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape)
+		conversion_result(int id, ifcopenshell::geom::taxonomy::matrix4::ptr placement, conversion_result_shape* shape)
+			: id(id), placement_(placement ? placement : ifcopenshell::geom::taxonomy::make<ifcopenshell::geom::taxonomy::matrix4>()), shape_(shape)
 		{}
-		ConversionResult(int id, ConversionResultShape* shape, ifcopenshell::geometry::taxonomy::style::ptr style)
-			: id(id), placement_(ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape), style_(style)
+		conversion_result(int id, conversion_result_shape* shape, ifcopenshell::geom::taxonomy::style::ptr style)
+			: id(id), placement_(ifcopenshell::geom::taxonomy::make<ifcopenshell::geom::taxonomy::matrix4>()), shape_(shape), style_(style)
 		{}
-		ConversionResult(int id, ConversionResultShape* shape)
-			: id(id), placement_(ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>()), shape_(shape)
+		conversion_result(int id, conversion_result_shape* shape)
+			: id(id), placement_(ifcopenshell::geom::taxonomy::make<ifcopenshell::geom::taxonomy::matrix4>()), shape_(shape)
 		{}
-		void append(ifcopenshell::geometry::taxonomy::matrix4::ptr trsf);
-		void prepend(ifcopenshell::geometry::taxonomy::matrix4::ptr trsf);
-		std::shared_ptr<ConversionResultShape> Shape() const { return shape_; }
-		ifcopenshell::geometry::taxonomy::matrix4::ptr Placement() const { return placement_; }
+		void append(ifcopenshell::geom::taxonomy::matrix4::ptr trsf);
+		void prepend(ifcopenshell::geom::taxonomy::matrix4::ptr trsf);
+		std::shared_ptr<conversion_result_shape> Shape() const { return shape_; }
+		ifcopenshell::geom::taxonomy::matrix4::ptr Placement() const { return placement_; }
 		bool hasStyle() const { return !!style_; }
-		const ifcopenshell::geometry::taxonomy::style& Style() const { return *style_; }
-		ifcopenshell::geometry::taxonomy::style::ptr StylePtr() const { return style_; }
-		void setStyle(ifcopenshell::geometry::taxonomy::style::ptr newStyle) { style_ = newStyle; }
+		const ifcopenshell::geom::taxonomy::style& Style() const { return *style_; }
+		ifcopenshell::geom::taxonomy::style::ptr StylePtr() const { return style_; }
+		void setStyle(ifcopenshell::geom::taxonomy::style::ptr newStyle) { style_ = newStyle; }
 		int ItemId() const { return id; }
-		ConversionResultShape* apply_transform(double unit_scale = 1.) const {
+		conversion_result_shape* apply_transform(double unit_scale = 1.) const {
 			if (unit_scale != 1.) {
-				auto m = ifcopenshell::geometry::taxonomy::matrix4::ptr(placement_->clone_());
+				auto m = ifcopenshell::geom::taxonomy::matrix4::ptr(placement_->clone_());
 				m->pre_multiply_scale(unit_scale);
 				return shape_->moved(m);
 			} else {
@@ -598,17 +598,17 @@ namespace IfcGeom {
 		}
 	};
 
-	typedef std::vector<ConversionResult> ConversionResults;
+	typedef std::vector<conversion_result> conversion_results;
 
 #ifndef SWIG
 	namespace util {
 		// @todo this is now moved to occt kernel, do we need something similar in cgal?
-		// bool flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, double tol);
+		// bool flatten_shape_list(const ifcopenshell::geom::conversion_results& shapes, TopoDS_Shape& result, bool fuse, double tol);
 
 		// Function to find boundary loops from triangles
 		template <typename NT>
 		std::vector<std::vector<int>> find_boundary_loops(const std::vector<NT>& positions, const std::vector<std::tuple<int, int, int>>& triangles) {
-			std::unordered_map<EdgeKey, int> edge_count;
+			std::unordered_map<edge_key, int> edge_count;
 
 			// Count how many triangles each edge belongs to
 			for (const auto& triangle : triangles) {
@@ -621,7 +621,7 @@ namespace IfcGeom {
 			}
 
 			// Boundary edges have count 1
-			std::vector<EdgeKey> boundary_edges;
+			std::vector<edge_key> boundary_edges;
 			for (auto& p : edge_count) {
 				if (p.second == 1) {
 					boundary_edges.push_back(p.first);

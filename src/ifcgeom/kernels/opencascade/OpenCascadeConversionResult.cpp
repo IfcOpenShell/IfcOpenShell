@@ -29,9 +29,9 @@
 #include <TopTools_FormatVersion.hxx>
 #endif
 
-using IfcGeom::OpaqueNumber;
-using IfcGeom::OpaqueCoordinate;
-using IfcGeom::ConversionResultShape;
+using ifcopenshell::geom::opaque_number;
+using ifcopenshell::geom::opaque_coordinate;
+using ifcopenshell::geom::conversion_result_shape;
 
 namespace {
 	// We bypass the conversion to gp_GTrsf, because it does not work
@@ -46,31 +46,31 @@ namespace {
 	}
 }
 
-ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape(const TopoDS_Shape& shape)
+ifcopenshell::geom::open_cascade_shape::open_cascade_shape(const TopoDS_Shape& shape)
 	: shape_(shape) {}
 
-ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape(TopoDS_Shape&& shape)
+ifcopenshell::geom::open_cascade_shape::open_cascade_shape(TopoDS_Shape&& shape)
 	: shape_(std::move(shape)) {}
 
-const TopoDS_Shape& ifcopenshell::geometry::OpenCascadeShape::shape() const {
+const TopoDS_Shape& ifcopenshell::geom::open_cascade_shape::shape() const {
 	return shape_;
 }
 
-ifcopenshell::geometry::OpenCascadeShape::operator const TopoDS_Shape& () {
+ifcopenshell::geom::open_cascade_shape::operator const TopoDS_Shape& () {
 	return shape_;
 }
 
-std::string_view ifcopenshell::geometry::OpenCascadeShape::backend_id() const {
+std::string_view ifcopenshell::geom::open_cascade_shape::backend_id() const {
 	return "opencascade";
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::clone() const {
-	return new OpenCascadeShape(shape_);
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::open_cascade_shape::clone() const {
+	return new open_cascade_shape(shape_);
 }
 
-void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
+void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
 
-	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);
+	// @todo remove duplication with open_cascade_kernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);
 	// above can be static?
 
 	// A 3x3 matrix to rotate the vertex normals
@@ -243,7 +243,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		}
 
 		if (polyhedral_output_without_holes || polyhedral_output_with_holes) {
-			auto loops = IfcGeom::util::find_boundary_loops(t->verts(), triangle_indices);
+			auto loops = ifcopenshell::geom::util::find_boundary_loops(t->verts(), triangle_indices);
 			if (polyhedral_output_without_holes) {
 				if (!loops.empty() && !loops[0].empty()) {
 					t->addFace(item_id, surface_style_id, loops[0]);
@@ -257,7 +257,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 	}
 
 	if (!t->normals().empty() && settings.get<settings::GenerateUvs>().get()) {
-		t->uvs_ref() = IfcGeom::Representation::Triangulation::box_project_uvs(t->verts(), t->normals());
+		t->uvs_ref() = ifcopenshell::geom::Representation::triangulation::box_project_uvs(t->verts(), t->normals());
 	}
 
 	if (num_faces == 0) {
@@ -372,8 +372,8 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 	}
 }
 
-void ifcopenshell::geometry::OpenCascadeShape::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& r) const {
-	auto s = IfcGeom::util::apply_transformation(shape_, place);
+void ifcopenshell::geom::open_cascade_shape::Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
+	auto s = ifcopenshell::geom::util::apply_transformation(shape_, place);
 	std::stringstream sstream;
 #if OCC_VERSION_HEX >= 0x70600
 	BRepTools::Write(s, sstream, false, false, TopTools_FormatVersion_VERSION_2);
@@ -383,90 +383,90 @@ void ifcopenshell::geometry::OpenCascadeShape::Serialize(const ifcopenshell::geo
 	r = sstream.str();
 }
 
-int ifcopenshell::geometry::OpenCascadeShape::surface_genus() const {
-	return IfcGeom::util::surface_genus(shape_);
+int ifcopenshell::geom::open_cascade_shape::surface_genus() const {
+	return ifcopenshell::geom::util::surface_genus(shape_);
 }
 
-bool ifcopenshell::geometry::OpenCascadeShape::is_manifold() const {
-	return IfcGeom::util::is_manifold(shape_);
+bool ifcopenshell::geom::open_cascade_shape::is_manifold() const {
+	return ifcopenshell::geom::util::is_manifold(shape_);
 }
 
-int ifcopenshell::geometry::OpenCascadeShape::num_vertices() const
+int ifcopenshell::geom::open_cascade_shape::num_vertices() const
 {
-	return IfcGeom::util::count(shape_, TopAbs_VERTEX);
+	return ifcopenshell::geom::util::count(shape_, TopAbs_VERTEX);
 }
 
-int ifcopenshell::geometry::OpenCascadeShape::num_edges() const
+int ifcopenshell::geom::open_cascade_shape::num_edges() const
 {
-	return IfcGeom::util::count(shape_, TopAbs_EDGE);
+	return ifcopenshell::geom::util::count(shape_, TopAbs_EDGE);
 }
 
-int ifcopenshell::geometry::OpenCascadeShape::num_faces() const
+int ifcopenshell::geom::open_cascade_shape::num_faces() const
 {
-	return IfcGeom::util::count(shape_, TopAbs_FACE);
+	return ifcopenshell::geom::util::count(shape_, TopAbs_FACE);
 }
 
-OpaqueNumber ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape::length()
+opaque_number ifcopenshell::geom::open_cascade_shape::open_cascade_shape::length()
 {
 	GProp_GProps prop;
 	BRepGProp::LinearProperties(shape_, prop);
 	double l = prop.Mass();
-	return OpaqueNumber(l);
+	return opaque_number(l);
 }
 
-OpaqueNumber ifcopenshell::geometry::OpenCascadeShape::area()
+opaque_number ifcopenshell::geom::open_cascade_shape::area()
 {
 	GProp_GProps prop;
 	BRepGProp::SurfaceProperties(shape_, prop);
 	double l = prop.Mass();
-	return OpaqueNumber(l);
+	return opaque_number(l);
 }
 
-OpaqueNumber ifcopenshell::geometry::OpenCascadeShape::volume()
+opaque_number ifcopenshell::geom::open_cascade_shape::volume()
 {
 	GProp_GProps prop;
 	BRepGProp::VolumeProperties(shape_, prop);
 	double l = prop.Mass();
-	return OpaqueNumber(l);
+	return opaque_number(l);
 }
 
 #include <Geom_Plane.hxx>
 
-OpaqueCoordinate<3> ifcopenshell::geometry::OpenCascadeShape::position()
+opaque_coordinate<3> ifcopenshell::geom::open_cascade_shape::position()
 {
 	if (shape_.ShapeType() == TopAbs_FACE) {
 		auto surf = BRep_Tool::Surface(TopoDS::Face(shape_));
 		auto plane = Handle(Geom_Plane)::DownCast(surf);
 		if (plane) {
 			auto loc = plane->Location();
-			return OpaqueCoordinate<3>(
-				OpaqueNumber(loc.X()),
-				OpaqueNumber(loc.Y()),
-				OpaqueNumber(loc.Z())
+			return opaque_coordinate<3>(
+				opaque_number(loc.X()),
+				opaque_number(loc.Y()),
+				opaque_number(loc.Z())
 			);
 		}
 	}
 	throw std::runtime_error("Invalid shape type");
 }
 
-OpaqueCoordinate<3> ifcopenshell::geometry::OpenCascadeShape::axis()
+opaque_coordinate<3> ifcopenshell::geom::open_cascade_shape::axis()
 {
 	if (shape_.ShapeType() == TopAbs_FACE) {
 		auto surf = BRep_Tool::Surface(TopoDS::Face(shape_));
 		auto plane = Handle(Geom_Plane)::DownCast(surf);
 		if (plane) {
 			auto dir = plane->Axis().Direction();
-			return OpaqueCoordinate<3>(
-				OpaqueNumber(dir.X()),
-				OpaqueNumber(dir.Y()),
-				OpaqueNumber(dir.Z())
+			return opaque_coordinate<3>(
+				opaque_number(dir.X()),
+				opaque_number(dir.Y()),
+				opaque_number(dir.Z())
 			);
 		}
 	}
 	throw std::runtime_error("Invalid shape type");
 }
 
-OpaqueCoordinate<4> ifcopenshell::geometry::OpenCascadeShape::plane_equation()
+opaque_coordinate<4> ifcopenshell::geom::open_cascade_shape::plane_equation()
 {
 	if (shape_.ShapeType() == TopAbs_FACE) {
 		auto surf = BRep_Tool::Surface(TopoDS::Face(shape_));
@@ -474,121 +474,121 @@ OpaqueCoordinate<4> ifcopenshell::geometry::OpenCascadeShape::plane_equation()
 		if (plane) {
 			double a, b, c, d;
 			plane->Pln().Coefficients(a, b, c, d);
-			return OpaqueCoordinate<4>(
-				OpaqueNumber(a),
-				OpaqueNumber(b),
-				OpaqueNumber(c),
-				OpaqueNumber(d)
+			return opaque_coordinate<4>(
+				opaque_number(a),
+				opaque_number(b),
+				opaque_number(c),
+				opaque_number(d)
 			);
 		}
 	}
 	throw std::runtime_error("Invalid shape type");
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::convex_decomposition()
+std::vector<conversion_result_shape*> ifcopenshell::geom::open_cascade_shape::convex_decomposition()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape * ifcopenshell::geometry::OpenCascadeShape::halfspaces()
+conversion_result_shape * ifcopenshell::geom::open_cascade_shape::halfspaces()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::solid()
+conversion_result_shape* ifcopenshell::geom::open_cascade_shape::solid()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape * ifcopenshell::geometry::OpenCascadeShape::box()
+conversion_result_shape * ifcopenshell::geom::open_cascade_shape::box()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::wrap_in_compound()
+conversion_result_shape* ifcopenshell::geom::open_cascade_shape::wrap_in_compound()
 {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
 	builder.Add(compound, shape_);
-	return new OpenCascadeShape(std::move(compound));
+	return new open_cascade_shape(std::move(compound));
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::vertices()
+std::vector<conversion_result_shape*> ifcopenshell::geom::open_cascade_shape::vertices()
 {
     NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapes(shape_, TopAbs_VERTEX, map);
-	std::vector<ConversionResultShape*> vec;
+	std::vector<conversion_result_shape*> vec;
 	for (int i = 1; i <= map.Extent(); ++i) {
-		vec.push_back(new OpenCascadeShape(map.FindKey(i)));
+		vec.push_back(new open_cascade_shape(map.FindKey(i)));
 	}
 	return vec;
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::edges()
+std::vector<conversion_result_shape*> ifcopenshell::geom::open_cascade_shape::edges()
 {
     NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapes(shape_, TopAbs_EDGE, map);
-	std::vector<ConversionResultShape*> vec;
+	std::vector<conversion_result_shape*> vec;
 	for (int i = 1; i <= map.Extent(); ++i) {
-		vec.push_back(new OpenCascadeShape(map.FindKey(i)));
+		vec.push_back(new open_cascade_shape(map.FindKey(i)));
 	}
 	return vec;
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::facets()
+std::vector<conversion_result_shape*> ifcopenshell::geom::open_cascade_shape::facets()
 {
     NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapes(shape_, TopAbs_FACE, map);
-	std::vector<ConversionResultShape*> vec;
+	std::vector<conversion_result_shape*> vec;
 	for (int i = 1; i <= map.Extent(); ++i) {
-		vec.push_back(new OpenCascadeShape(map.FindKey(i)));
+		vec.push_back(new open_cascade_shape(map.FindKey(i)));
 	}
 	return vec;
 }
 
 namespace {
-	ConversionResultShape* boolean_op(BOPAlgo_Operation op, const TopoDS_Shape& shape_, const TopoDS_Shape& other_shape) {
-		IfcGeom::util::boolean_settings st;
+	conversion_result_shape* boolean_op(BOPAlgo_Operation op, const TopoDS_Shape& shape_, const TopoDS_Shape& other_shape) {
+		ifcopenshell::geom::util::boolean_settings st;
 		st.attempt_2d = true;
 		st.debug = false;
 		st.precision = 1.e-5;
 
 		TopoDS_Shape result;
-		if (IfcGeom::util::boolean_operation(st, shape_, other_shape, op, result)) {
-			return new ifcopenshell::geometry::OpenCascadeShape(result);
+		if (ifcopenshell::geom::util::boolean_operation(st, shape_, other_shape, op, result)) {
+			return new ifcopenshell::geom::open_cascade_shape(result);
 		} else {
 			throw std::runtime_error("Failed to process boolean operation");
 		}
 	}
 }
 
-ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::add(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::open_cascade_shape::add(conversion_result_shape* other)
 {
-	return boolean_op(BOPAlgo_FUSE, shape_, ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_);
+	return boolean_op(BOPAlgo_FUSE, shape_, ((ifcopenshell::geom::open_cascade_shape*)other)->shape_);
 }
 
-ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::subtract(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::open_cascade_shape::subtract(conversion_result_shape* other)
 {
-	return boolean_op(BOPAlgo_CUT, shape_, ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_);
+	return boolean_op(BOPAlgo_CUT, shape_, ((ifcopenshell::geom::open_cascade_shape*)other)->shape_);
 }
 
-ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::intersect(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::open_cascade_shape::intersect(conversion_result_shape* other)
 {
-	return boolean_op(BOPAlgo_COMMON, shape_, ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_);
+	return boolean_op(BOPAlgo_COMMON, shape_, ((ifcopenshell::geom::open_cascade_shape*)other)->shape_);
 }
 
-ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::concat(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::open_cascade_shape::concat(conversion_result_shape* other)
 {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	
 	auto& left = shape_;
-	auto& right = ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_;
+	auto& right = ((ifcopenshell::geom::open_cascade_shape*)other)->shape_;
 
 	// This reads a bit strange, but we want to specifically avoid compounds of faces that are
 	// the result of shell instances that are not sewn into a shell (yet).
-	if (left.ShapeType() == TopAbs_COMPOUND && !IfcGeom::util::is_compound_of_faces(left)) {
+	if (left.ShapeType() == TopAbs_COMPOUND && !ifcopenshell::geom::util::is_compound_of_faces(left)) {
 		compound = TopoDS::Compound(left);
 	} else {
 		builder.MakeCompound(compound);
@@ -597,17 +597,17 @@ ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::concat(Conversi
 	
 	builder.Add(compound, right);
 
-	return new OpenCascadeShape(std::move(compound));
+	return new open_cascade_shape(std::move(compound));
 }
 
-std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::OpenCascadeShape::bounding_box() const
+std::pair<opaque_coordinate<3>, opaque_coordinate<3>> ifcopenshell::geom::open_cascade_shape::bounding_box() const
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::moved(ifcopenshell::geometry::taxonomy::matrix4::ptr t) const
+conversion_result_shape* ifcopenshell::geom::open_cascade_shape::moved(ifcopenshell::geom::taxonomy::matrix4::ptr t) const
 {
-	return new OpenCascadeShape(IfcGeom::util::apply_transformation(shape_, *t));
+	return new open_cascade_shape(ifcopenshell::geom::util::apply_transformation(shape_, *t));
 }
 
 namespace {
@@ -694,7 +694,7 @@ namespace {
 }
 
 
-bool ifcopenshell::geometry::OpenCascadeShape::surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const
+bool ifcopenshell::geom::open_cascade_shape::surface_area_along_direction(double tol, const ifcopenshell::geom::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const
 {
 	gp_GTrsf trsf;
 
@@ -717,10 +717,10 @@ bool ifcopenshell::geometry::OpenCascadeShape::surface_area_along_direction(doub
 	return true;
 }
 
-std::size_t ifcopenshell::geometry::OpenCascadeShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
+std::size_t ifcopenshell::geom::open_cascade_shape::map(opaque_coordinate<4>&, opaque_coordinate<4>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-std::size_t ifcopenshell::geometry::OpenCascadeShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
+std::size_t ifcopenshell::geom::open_cascade_shape::map(const std::vector<opaque_coordinate<4>>&, const std::vector<opaque_coordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
 }

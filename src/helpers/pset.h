@@ -43,7 +43,7 @@ using element_properties = std::map<std::string, property_map>;
 // IFC null. Entity values are retained for compound property metadata that
 // cannot be flattened to a scalar.
 struct property_value {
-    using storage_type = std::variant<std::monostate, bool, std::int64_t, double, std::string, express::Base, property_list, property_map>;
+    using storage_type = std::variant<std::monostate, bool, std::int64_t, double, std::string, express::base, property_list, property_map>;
 
     storage_type value;
 
@@ -55,7 +55,7 @@ struct property_value {
     property_value(double value) : value(value) {}
     property_value(const char* value) : value(std::string(value)) {}
     property_value(std::string value) : value(std::move(value)) {}
-    property_value(express::Base value) : value(std::move(value)) {}
+    property_value(express::base value) : value(std::move(value)) {}
     property_value(property_list value) : value(std::move(value)) {}
     property_value(property_map value) : value(std::move(value)) {}
 
@@ -73,7 +73,7 @@ std::ostream& operator<<(std::ostream& stream, const property_value& value);
 // the returned value contains a property_map. A selected IFC null property is
 // represented by an engaged optional containing a null property_value.
 std::optional<property_value> get_pset(
-    const express::Base& element,
+    const express::base& element,
     const std::string& name,
     const std::optional<std::string>& property_name = std::nullopt,
     bool psets_only = false,
@@ -83,27 +83,27 @@ std::optional<property_value> get_pset(
 
 // Mirrors ifcopenshell.util.element.get_psets, including occurrence-over-type
 // precedence and the definition instance id in each returned property map.
-element_properties get_psets(const express::Base& element,
+element_properties get_psets(const express::base& element,
                              bool psets_only = false,
                              bool qtos_only = false,
                              bool should_inherit = true,
                              bool verbose = false);
 
 std::optional<property_value> get_property_definition(
-    const express::Base& definition,
+    const express::base& definition,
     const std::optional<std::string>& property_name = std::nullopt,
     bool verbose = false);
 
-std::optional<property_value> get_quantity(const std::vector<express::Base>& quantities,
+std::optional<property_value> get_quantity(const std::vector<express::base>& quantities,
                                            const std::string& name,
                                            bool verbose = false);
-property_map get_quantities(const std::vector<express::Base>& quantities,
+property_map get_quantities(const std::vector<express::base>& quantities,
                             bool verbose = false);
 
-std::optional<property_value> get_property(const std::vector<express::Base>& properties,
+std::optional<property_value> get_property(const std::vector<express::base>& properties,
                                            const std::string& name,
                                            bool verbose = false);
-property_map get_properties(const std::vector<express::Base>& properties,
+property_map get_properties(const std::vector<express::base>& properties,
                             bool verbose = false);
 
 #endif // PSET_H

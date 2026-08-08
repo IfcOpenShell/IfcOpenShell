@@ -40,7 +40,7 @@ class format_value_visitor : public boost::static_visitor<std::string> {
 
     template <typename T>
     json operator()(const T& t) const {
-        if constexpr (std::is_same_v<std::decay_t<T>, derived> || std::is_same_v<std::decay_t<T>, boost::dynamic_bitset<>> || std::is_same_v<std::decay_t<T>, express::Base> || std::is_same_v<std::decay_t<T>, std::vector<int>> || std::is_same_v<std::decay_t<T>, std::vector<double>> || std::is_same_v<std::decay_t<T>, std::vector<std::string>> || std::is_same_v<std::decay_t<T>, std::vector<boost::dynamic_bitset<>>> || std::is_same_v<std::decay_t<T>, std::vector<express::Base>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<express::Base>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<int>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>> || std::is_same_v<std::decay_t<T>, empty_aggregate_t> || std::is_same_v<std::decay_t<T>, empty_aggregate_of_aggregate_t> || std::is_same_v<std::decay_t<T>, blank>) {
+        if constexpr (std::is_same_v<std::decay_t<T>, derived> || std::is_same_v<std::decay_t<T>, boost::dynamic_bitset<>> || std::is_same_v<std::decay_t<T>, express::base> || std::is_same_v<std::decay_t<T>, std::vector<int>> || std::is_same_v<std::decay_t<T>, std::vector<double>> || std::is_same_v<std::decay_t<T>, std::vector<std::string>> || std::is_same_v<std::decay_t<T>, std::vector<boost::dynamic_bitset<>>> || std::is_same_v<std::decay_t<T>, std::vector<express::base>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<express::base>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<int>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>> || std::is_same_v<std::decay_t<T>, empty_aggregate_t> || std::is_same_v<std::decay_t<T>, empty_aggregate_of_aggregate_t> || std::is_same_v<std::decay_t<T>, blank>) {
             return "";
         } else if constexpr (std::is_same_v<std::decay_t<T>, boost::logic::tribool>) {
             // @todo handle indeterminate
@@ -75,11 +75,11 @@ auto get_related(::logger& log, T t, F f, G g) {
     for (auto& u : li) {
         try {
             auto vs = (u.template as<U>().*g)();
-            if constexpr (std::is_base_of_v<express::Base, decltype(vs)>) {
+            if constexpr (std::is_base_of_v<express::base, decltype(vs)>) {
                 if (auto vv = vs.template as<V>()) {
                     acc.push_back(vv);
                 }
-            } else if constexpr (std::is_base_of_v<express::Select, decltype(vs)>) {
+            } else if constexpr (std::is_base_of_v<express::select, decltype(vs)>) {
                 if (auto vv = vs.concrete().template as<V>()) {
                     acc.push_back(vv);
                 }
@@ -97,7 +97,7 @@ auto get_related(::logger& log, T t, F f, G g) {
     return acc;
 }
 
-void format_entity_instance(::logger& log, express::Base instance, json& tree, express::Base parent = express::Base()) {
+void format_entity_instance(::logger& log, express::base instance, json& tree, express::base parent = express::base()) {
     /*
     {
         "id" : string,            // Element GUID (IFC GloballyUniqueId)
@@ -121,7 +121,7 @@ void format_entity_instance(::logger& log, express::Base instance, json& tree, e
     auto write_to_json = [&](const std::string& keyJson, const std::string& keyIfc) {
         attribute_value val;
         try {
-            val = instance.as<express::Entity>().get(keyIfc);
+            val = instance.as<express::entity>().get(keyIfc);
         } catch (const ifcopenshell::exception&) {
             // simply laziness like no attribute Tag on IfcProject
             return;
@@ -168,7 +168,7 @@ void format_entity_instance(::logger& log, express::Base instance, json& tree, e
 // A function to be called recursively. Template specialization is used
 // to descend into decomposition, containment and property relationships.
 template <typename A>
-void descend(::logger& log, A instance, json& tree, express::Base parent = express::Base()) {
+void descend(::logger& log, A instance, json& tree, express::base parent = express::base()) {
     if (instance.declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
         descend(log, instance.template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
     } else {
@@ -181,7 +181,7 @@ void descend(::logger& log, A instance, json& tree, express::Base parent = expre
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
 // IfcRelDecomposes, IfcRelDefinesByType, IfcRelDefinesByProperties relations.
 template <>
-void descend(::logger& log, IfcSchema::IfcObjectDefinition product, json& tree, express::Base parent) {
+void descend(::logger& log, IfcSchema::IfcObjectDefinition product, json& tree, express::base parent) {
     if (product.declaration().is(IfcSchema::IfcElement::Class())) {
         auto voids = product.as<IfcSchema::IfcElement>().FillsVoids();
         if (voids.size() == 1 && voids.front().RelatingOpeningElement() != parent) {
@@ -262,7 +262,7 @@ IfcSchema::IfcUnit get_unit_from_prop(IfcSchema::IfcProperty& prop) {
 
 } // namespace
 
-void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
+void POSTFIX_SCHEMA(json_serializer)::finalize() {
     json output;
 
     auto projects = file->instances_by_type<IfcSchema::IfcProject>();
@@ -296,7 +296,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
     output["groups"] = json::array();
 
     // Maps for deduplication of properties and quantities
-    std::map<express::Entity, size_t> property_to_index;
+    std::map<express::entity, size_t> property_to_index;
     std::unordered_map<json, std::size_t> json_to_index;
 
     // Obtain sequence of units because properties, quantities reference them by index.
@@ -322,7 +322,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
         }
     }
 
-    auto format_property = [&](const express::Entity& prop_) {
+    auto format_property = [&](const express::entity& prop_) {
         json jprop;
         /*
         {
@@ -349,7 +349,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
         return jprop;
     };
 
-    auto format_quantity = [&](const express::Entity& qto_) {
+    auto format_quantity = [&](const express::entity& qto_) {
         json jprop;
         /*
           {
@@ -376,7 +376,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
     };
 
     auto deduplicate = [&](auto base_formatter) {
-        return [&, base_formatter](const express::Entity& prop) mutable -> std::size_t {
+        return [&, base_formatter](const express::entity& prop) mutable -> std::size_t {
             if (auto it = property_to_index.find(prop); it != property_to_index.end()) {
                 return it->second;
             }

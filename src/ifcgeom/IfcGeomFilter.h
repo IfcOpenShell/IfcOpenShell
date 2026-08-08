@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 /** @file   IfcGeomFilter.h
-    @brief  A set of predefined product filters for IfcGeom::Iterator */
+    @brief  A set of predefined product filters for ifcopenshell::geom::iterator */
 
 #ifndef IFCGEOMFILTER_H
 #define IFCGEOMFILTER_H
@@ -40,7 +40,7 @@
 
 #include <functional>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 
     struct filter
     {
@@ -56,7 +56,7 @@ namespace IfcGeom {
         /// Optional description for the filtering criteria of this filter.
         std::string description;
 
-		bool match(const express::Base& prod, const ifcopenshell::geometry::filter_t& pred) const {
+		bool match(const express::base& prod, const ifcopenshell::geom::filter_t& pred) const {
             bool is_match = pred(prod);
             if (!is_match && traverse) {
                 is_match = traverse_match(prod, pred);
@@ -64,15 +64,15 @@ namespace IfcGeom {
             return is_match == include;
         }
 
-        bool traverse_match(const express::Base& prod, const ifcopenshell::geometry::filter_t& pred) const
+        bool traverse_match(const express::base& prod, const ifcopenshell::geom::filter_t& pred) const
         {
-            express::Base parent, current = prod;
+            express::base parent, current = prod;
 			// @todo examine if this can indeed be static. For now usage is only
 			// in IfcConvert so invocation is bound to a single file with a single
 			// schema.
 			// @todo pass settings
-			ifcopenshell::geometry::Settings s;
-            static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod.file(), s);
+			ifcopenshell::geom::settings s;
+            static auto mapping = ifcopenshell::geom::impl::mapping_implementations().construct(prod.file(), s);
             while ((parent = mapping->get_decomposing_entity(current, traverse_openings))) {
                 if (pred(parent)) {
                     return true;
@@ -132,9 +132,9 @@ namespace IfcGeom {
 		attribute_filter(const std::string& attribute_name)
 			: attribute_name(attribute_name) {}
 
-		std::string value(const express::Base& prod) const {
+		std::string value(const express::base& prod) const {
 			try {
-				return (std::string) prod.as<express::Entity>().get(attribute_name);
+				return (std::string) prod.as<express::entity>().get(attribute_name);
 			} catch (...) {
 				// Either
 				// (a) not an attribute name for this entity instance
@@ -146,11 +146,11 @@ namespace IfcGeom {
             }
         }
 
-		bool match(express::Base prod) const {
+		bool match(express::base prod) const {
 			return wildcard_filter::match(value(prod));
 		}
 
-		bool operator()(express::Base prod) const {
+		bool operator()(express::base prod) const {
 			return filter::match(prod, std::bind(&attribute_filter::match, this, std::placeholders::_1));
         }
 
@@ -171,21 +171,21 @@ namespace IfcGeom {
     };
 
 	struct layer_filter : public wildcard_filter {
-		typedef std::map<std::string, express::Base> layer_map_t;
+		typedef std::map<std::string, express::base> layer_map_t;
 
         layer_filter() {}
         layer_filter(bool include, bool traverse, const std::set<std::string>& patterns)
 			: wildcard_filter(include, traverse, patterns) {}
 
-		bool match(express::Base prod) const {
+		bool match(express::base prod) const {
 			// @todo
-			ifcopenshell::geometry::Settings s;
-            static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod.file(), s);
+			ifcopenshell::geom::settings s;
+            static auto mapping = ifcopenshell::geom::impl::mapping_implementations().construct(prod.file(), s);
 			layer_map_t layers = mapping->get_layers(prod);
             return std::find_if(layers.begin(), layers.end(), wildcards_match(values)) != layers.end();
         }
 
-		bool operator()(express::Base prod) const {
+		bool operator()(express::base prod) const {
             return filter::match(prod, std::bind(&layer_filter::match, this, std::placeholders::_1));
         }
 
@@ -218,7 +218,7 @@ namespace IfcGeom {
             : filter(include, traverse)
 			, entity_names(entity_names) {}
 
-		bool match(express::Base prod) const {
+		bool match(express::base prod) const {
             // The set is iterated over to able to filter on subtypes.
 			for (auto& name : entity_names) {
 				if (prod.declaration().is(name)) {
@@ -228,7 +228,7 @@ namespace IfcGeom {
             return false;
         }
 
-		bool operator()(express::Base prod) const {
+		bool operator()(express::base prod) const {
             return filter::match(prod, std::bind(&entity_filter::match, this, std::placeholders::_1));
         }
 
@@ -250,11 +250,11 @@ namespace IfcGeom {
 			: filter(include, traverse)
 			, instance_ids_(instance_ids) {}
 
-		bool match(express::Base prod) const {
+		bool match(express::base prod) const {
 			return instance_ids_.find(prod.id()) != instance_ids_.end();
 		}
 
-		bool operator()(express::Base prod) const {
+		bool operator()(express::base prod) const {
 			return filter::match(prod, std::bind(&instance_id_filter::match, this, std::placeholders::_1));
 		}
 

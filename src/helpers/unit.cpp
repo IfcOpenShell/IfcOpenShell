@@ -212,7 +212,7 @@ std::string to_lower(const std::string& s) {
     throw ifcopenshell::exception("No helper implementation was built for schema " + name);
 }
 
-std::optional<double> numeric_value(const express::Base& value) {
+std::optional<double> numeric_value(const express::base& value) {
     if (!value) {
         return std::nullopt;
     }
@@ -230,7 +230,7 @@ std::optional<double> numeric_value(const express::Base& value) {
 }
 
 template <typename Schema>
-std::optional<double> si_scale_from_named_unit_s(express::Base unit) {
+std::optional<double> si_scale_from_named_unit_s(express::base unit) {
     double scale = 1.0;
     while (auto conversion = unit.template as<typename Schema::IfcConversionBasedUnit>()) {
         if (const auto it = SI_CONVERSIONS.find(to_lower(conversion.Name()));
@@ -271,7 +271,7 @@ std::optional<double> si_scale_from_named_unit_s(express::Base unit) {
 }
 
 template <typename Schema>
-std::optional<express::Base> get_unit_assignment_s(ifcopenshell::file* ifc_file) {
+std::optional<express::base> get_unit_assignment_s(ifcopenshell::file* ifc_file) {
     const auto projects = ifc_file->template instances_by_type<typename Schema::IfcProject>();
     if (projects.empty()) {
         return std::nullopt;
@@ -284,7 +284,7 @@ std::optional<express::Base> get_unit_assignment_s(ifcopenshell::file* ifc_file)
 }
 
 template <typename Schema>
-std::optional<express::Base> get_project_unit_s(ifcopenshell::file* ifc_file,
+std::optional<express::base> get_project_unit_s(ifcopenshell::file* ifc_file,
                                                 const std::string& unit_type) {
     const auto assignment = get_unit_assignment_s<Schema>(ifc_file);
     if (!assignment) {
@@ -316,7 +316,7 @@ double calculate_unit_scale_s(ifcopenshell::file* ifc_file, const std::string& u
 }
 
 template <typename Schema>
-void unit_name_s(const express::Base& unit, std::string& prefix, std::string& name) {
+void unit_name_s(const express::base& unit, std::string& prefix, std::string& name) {
     prefix.clear();
     name.clear();
     if (auto si = unit.template as<typename Schema::IfcSIUnit>()) {
@@ -332,7 +332,7 @@ void unit_name_s(const express::Base& unit, std::string& prefix, std::string& na
 }
 
 template <typename Schema>
-double convert_unit_s(double value, const express::Base& from_unit, const express::Base& to_unit) {
+double convert_unit_s(double value, const express::base& from_unit, const express::base& to_unit) {
     std::string from_prefix;
     std::string from_name;
     std::string to_prefix;
@@ -352,7 +352,7 @@ double get_prefix_multiplier(const std::string& prefix) {
     return (it == SI_PREFIXES.end()) ? 1.0 : it->second;
 }
 
-std::optional<double> si_scale_from_named_unit(express::Base unit) {
+std::optional<double> si_scale_from_named_unit(express::base unit) {
     if (!unit) {
         return std::nullopt;
     }
@@ -365,7 +365,7 @@ std::optional<double> si_scale_from_named_unit(express::Base unit) {
     unsupported_schema(name);
 }
 
-std::optional<express::Base> get_unit_assignment(ifcopenshell::file* ifc_file) {
+std::optional<express::base> get_unit_assignment(ifcopenshell::file* ifc_file) {
     const auto name = ifc_file->schema()->name();
 #define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
     if (name == Identifier)                       \
@@ -375,7 +375,7 @@ std::optional<express::Base> get_unit_assignment(ifcopenshell::file* ifc_file) {
     unsupported_schema(name);
 }
 
-std::optional<express::Base> get_project_unit(ifcopenshell::file* ifc_file,
+std::optional<express::base> get_project_unit(ifcopenshell::file* ifc_file,
                                               const std::string& unit_type) {
     const auto name = ifc_file->schema()->name();
 #define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
@@ -434,7 +434,7 @@ double convert(double value,
     return value;
 }
 
-double convert_unit(double value, express::Base from_unit, express::Base to_unit) {
+double convert_unit(double value, express::base from_unit, express::base to_unit) {
     if (!from_unit || !to_unit) {
         return value;
     }

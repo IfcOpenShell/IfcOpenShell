@@ -54,7 +54,7 @@ public:
     void removeModel(uint32_t session_model_id);
     std::vector<BasicElementInfo> basicElementInfoForModel(uint32_t session_model_id) const;
     std::optional<BasicElementInfo> findBasicElementInfo(uint32_t object_id) const;
-    std::optional<express::Base> findEntity(uint32_t object_id) const;
+    std::optional<express::base> findEntity(uint32_t object_id) const;
 
 private:
     void onSidecarElementsReady(uint32_t session_model_id,

@@ -2,10 +2,9 @@
 
 #include "base_utils.h"
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
 namespace {
 	// @todo move into taxonomy;
@@ -24,7 +23,7 @@ namespace {
 	}
 }
 
-bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shape) {
+bool open_cascade_kernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shape) {
 	std::unique_ptr<faceset_helper> helper_scope;
 	if (shell_polyhedral(l)) {
 		helper_scope.reset(new faceset_helper(this, l));
@@ -106,17 +105,17 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::shell::ptr shell, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::shell::ptr shell, ifcopenshell::geom::conversion_results& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;
 	if (!convert(shell, shape)) {
 		return false;
 	}
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
 		shell->instance.id(),
 		shell->matrix,
-		new OpenCascadeShape(shape),
+		new open_cascade_shape(shape),
 		shell->surface_style
 	));
 	return true;

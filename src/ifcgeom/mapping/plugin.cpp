@@ -23,13 +23,13 @@
 #include <boost/dll/alias.hpp>
 
 namespace ifcopenshell {
-	namespace geometry {
+	namespace geom {
 		namespace impl {
 			namespace mapping_plugin {
 
 				namespace {
 					struct POSTFIX_SCHEMA(factory_t) {
-						abstract_mapping* operator()(ifcopenshell::file* file, Settings& settings, ::logger& logger) const {
+						abstract_mapping* operator()(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& logger) const {
 							return new POSTFIX_SCHEMA(mapping)(file, settings, logger);
 						}
 					};
@@ -53,6 +53,6 @@ namespace ifcopenshell {
 	}
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::geometry::impl::mapping_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geometry::impl::mapping_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geometry::impl::mapping_plugin::register_plugin, ifcopenshell_register_mapping_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::impl::mapping_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::impl::mapping_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::impl::mapping_plugin::register_plugin, ifcopenshell_register_mapping_plugin_v1)

@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRepresentation& inst) {
 	auto items_to_include = this->settings_.get<settings::OutputDimensionality>().get();

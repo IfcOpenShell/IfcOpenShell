@@ -130,10 +130,10 @@ simpletype_impl_type = "return *((ifcopenshell::type_declaration*)%(schema_name_
 simpletype_impl_class = "return *((ifcopenshell::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 simpletype_impl_explicit_constructor = "data_ = e;"
 simpletype_impl_constructor = "data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v);"
-simpletype_impl_constructor_templated = "data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, cast_vector<express::Base>(v));"
+simpletype_impl_constructor_templated = "data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, cast_vector<express::base>(v));"
 simpletype_impl_cast = "return get_attribute_value(0);"
 simpletype_impl_cast_templated = (
-    "std::vector<express::Base> es = get_attribute_value(0); return cast_vector<%(underlying_type)s>(es);"
+    "std::vector<express::base> es = get_attribute_value(0); return cast_vector<%(underlying_type)s>(es);"
 )
 
 simpletype_impl_declaration = (
@@ -141,9 +141,9 @@ simpletype_impl_declaration = (
 )
 
 select = """%(documentation)s
-class IFC_SCHEMA_API %(name)s : public express::Select {
+class IFC_SCHEMA_API %(name)s : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
 %(template_items)s
@@ -153,16 +153,16 @@ public:
 
 select_list_item = """    // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, %(item_name)s>, int> = 0>
-    // %(item_name)s as() const { return express::Base::as<%(item_name)s>(); }
+    // %(item_name)s as() const { return express::base::as<%(item_name)s>(); }
 """
 
-select_cast_function = """    %(name)s(const %(item_name)s& c) : express::Select(c) {};
+select_cast_function = """    %(name)s(const %(item_name)s& c) : express::select(c) {};
 """
 
 enumeration = """%(documentation)s
-class IFC_SCHEMA_API %(name)s : public express::DeclaredType {
+class IFC_SCHEMA_API %(name)s : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {%(values)s} Value;
     static const char* ToString(Value v);
@@ -196,7 +196,7 @@ const ifcopenshell::enumeration_type& %(schema_name)s::%(name)s::Class() { retur
 
 /*
 %(schema_name)s::%(name)s::%(name)s(const std::weak_ptr<instance_data>& e)
-    : express::DeclaredType(e)
+    : express::declared_type(e)
 {}
 
 %(schema_name)s::%(name)s::%(name)s(Value v) {
@@ -259,22 +259,22 @@ optional_attr_stmt = "return !get_attribute_value(%(index)d).isNull();"
 get_attr_stmt = "%(null_check)s %(non_optional_type)s v = get_attribute_value(%(index)d); return v;"
 get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(get_attribute_value(%(index)d));"
 get_attr_stmt_entity = (
-    "%(null_check)s return ((express::Base)(get_attribute_value(%(index)d))).as<%(non_optional_type_no_pointer)s>();"
+    "%(null_check)s return ((express::base)(get_attribute_value(%(index)d))).as<%(non_optional_type_no_pointer)s>();"
 )
-get_attr_stmt_array = "%(null_check)s std::vector<express::Base> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
-get_attr_stmt_nested_array = "%(null_check)s std::vector<std::vector<express::Base>> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
+get_attr_stmt_array = "%(null_check)s std::vector<express::base> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
+get_attr_stmt_nested_array = "%(null_check)s std::vector<std::vector<express::base>> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
 
 get_inverse = "return cast_vector<%(type)s>(file()->get_inverse(data()->id(), %(schema_name_upper)s_types[%(type_index)d], %(index)d));"
 
 set_attr_stmt = "%(check_optional_set_begin)sset_attribute_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 set_attr_instance = "%(check_optional_set_begin)sset_attribute_value(%(index)d, v);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 set_attr_stmt_enum = "%(check_optional_set_begin)sset_attribute_value(%(index)d, enumeration_reference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-set_attr_stmt_array = "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-set_attr_stmt_nested_array = "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_array = "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_nested_array = "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 
 constructor_stmt = "set_attribute_value(%(index)d, (%(name)s));"
 constructor_stmt_enum = "set_attribute_value(%(index)d, (enumeration_reference(&%(type)s::Class(),(size_t)%(name)s)));"
-constructor_stmt_array = "set_attribute_value(%(index)d, cast_vector<express::Base>(%(name)s));"
+constructor_stmt_array = "set_attribute_value(%(index)d, cast_vector<express::base>(%(name)s));"
 constructor_stmt_derived = ""
 constructor_stmt_instance = "set_attribute_value(%(index)d, %(name)s);"
 

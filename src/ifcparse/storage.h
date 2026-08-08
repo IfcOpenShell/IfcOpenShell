@@ -135,7 +135,7 @@ namespace ifcopenshell {
         }
     };
 
-    typedef std::variant<instance_reference, express::Base> reference_or_simple_type;
+    typedef std::variant<instance_reference, express::base> reference_or_simple_type;
     typedef std::vector<std::pair<mutable_attribute_value, std::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
 
     class file;
@@ -421,15 +421,15 @@ namespace ifcopenshell {
 
             unresolved_references* references_to_resolve = nullptr;
 
-            typedef std::map<const ifcopenshell::declaration*, std::vector<express::Base>> entities_by_type_t;
+            typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type_t;
             typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage_t;
-            typedef map_transformer<entity_instance_by_name_storage_t, std::function<express::Base(shared_pointer_type)>> entity_instance_by_name_t;
+            typedef map_transformer<entity_instance_by_name_storage_t, std::function<express::base(shared_pointer_type)>> entity_instance_by_name_t;
             typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name_t;
-            typedef std::map<std::string, express::Base> entity_instance_by_guid_t;
+            typedef std::map<std::string, express::base> entity_instance_by_guid_t;
             typedef inverse_index entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
-            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root()) : logger_(logger), file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::Base(data); }) {};
+            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root()) : logger_(logger), file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::base(data); }) {};
             in_memory_file_storage(const in_memory_file_storage& other) = delete;
             in_memory_file_storage(const in_memory_file_storage&& other) = delete;
 
@@ -480,21 +480,21 @@ namespace ifcopenshell {
             void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
 
             void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
-            void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::Base& entity, int attribute_index);
+            void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
 
             template <typename Reader>
             void read_from_stream(Reader* stream, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
 
             file_open_status good_ = file_open_status::SUCCESS;
 
-            express::Base instance_by_id(int instance_id);
+            express::base instance_by_id(int instance_id);
 
-            void add_type_ref(const express::Base& new_entity) {
+            void add_type_ref(const express::base& new_entity) {
                 if (auto* ty = new_entity.declaration().as_entity()) {
                     bytype_excl_[ty].push_back(new_entity);
                 }
             }
-            void remove_type_ref(const express::Base& new_entity) {
+            void remove_type_ref(const express::base& new_entity) {
                 if (auto* ty = new_entity.declaration().as_entity()) {
                     auto it = bytype_excl_.find(ty);
                     if (it != bytype_excl_.end()) {
@@ -506,12 +506,12 @@ namespace ifcopenshell {
                 }
             }
 
-            void process_deletion_inverse(const express::Base& entity);
+            void process_deletion_inverse(const express::base& entity);
 
             template <typename T>
             T create(int instance_id = -1);
 
-            express::Base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
+            express::base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
         };
 
         class IFC_PARSE_API rocks_db_file_storage {
@@ -540,7 +540,7 @@ namespace ifcopenshell {
             // identity_by_id_t byid_;
             typedef rocksdb_set_view<size_t> instance_name_view_t;
             instance_name_view_t instance_ids_;
-            typedef set_to_map_transformer<instance_name_view_t, std::function<express::Base(size_t)>> entity_instance_by_name_t;
+            typedef set_to_map_transformer<instance_name_view_t, std::function<express::base(size_t)>> entity_instance_by_name_t;
             entity_instance_by_name_t instance_by_name_;
 
             // typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<ifcopenshell::IfcBaseClass*(size_t)>, std::function<size_t(ifcopenshell::IfcBaseClass*)>> entity_by_id_t;
@@ -556,7 +556,7 @@ namespace ifcopenshell {
             instance_id_by_guid_str_t byguid_internal_;
 
             // guid -> id -> instance
-            typedef map_transformer<rocksdb_map_adapter<std::string, size_t>, std::function<express::Base(size_t)>, std::function<size_t(const express::Base&)>> entity_instance_by_guid_t;
+            typedef map_transformer<rocksdb_map_adapter<std::string, size_t>, std::function<express::base(size_t)>, std::function<size_t(const express::base&)>> entity_instance_by_guid_t;
             entity_instance_by_guid_t byguid_;
 
             typedef std::tuple<int, int, int> inverse_attr_record;
@@ -576,7 +576,7 @@ namespace ifcopenshell {
 
             bool read_schema(const ifcopenshell::schema_definition*& schema);
 
-            express::Base assert_existance(size_t instance_id, instance_ref reference_type);
+            express::base assert_existance(size_t instance_id, instance_ref reference_type);
 
             // @todo merge iterators (template?)
             class IFC_PARSE_API rocksdb_types_iterator {
@@ -678,20 +678,20 @@ namespace ifcopenshell {
             using const_iterator = entity_instance_by_name_t::iterator;
 
             void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
-            void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::Base& entity, int attribute_index);
+            void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
 
             // @todo a bit hard as a map because of value_type being an aggregate
-            void add_type_ref(const express::Base& new_entity);
-            void remove_type_ref(const express::Base& new_entity);
+            void add_type_ref(const express::base& new_entity);
+            void remove_type_ref(const express::base& new_entity);
 
-            express::Base instance_by_id(int instance_id);
+            express::base instance_by_id(int instance_id);
 
-            void process_deletion_inverse(const express::Base& entity);
+            void process_deletion_inverse(const express::base& entity);
 
             template <typename T>
             T create(int instance_id = -1);
 
-            express::Base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
+            express::base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
         };
     }
 }

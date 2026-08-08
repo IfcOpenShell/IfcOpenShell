@@ -2,11 +2,10 @@
 
 #include <BRepPrimAPI_MakePrism.hxx>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
 
-bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS_Shape& shape) {
+bool open_cascade_kernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS_Shape& shape) {
 	const double& height = extrusion->depth;
 
 	if (height < settings_.get<settings::Precision>().get()) {
@@ -71,7 +70,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS
 	return !shape.IsNull();
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, ifcopenshell::geom::conversion_results& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;
@@ -79,10 +78,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, I
 		return false;
 	}
 
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
 		extrusion->instance.id(),
 		extrusion->matrix,
-		new OpenCascadeShape(shape),
+		new open_cascade_shape(shape),
 		extrusion->surface_style
 	));
 	return true;

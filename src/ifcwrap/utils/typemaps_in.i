@@ -70,7 +70,7 @@
 CREATE_VECTOR_TYPEMAP_IN(int, INTEGER, int)
 CREATE_VECTOR_TYPEMAP_IN(double, REAL, float)
 CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
-CREATE_VECTOR_TYPEMAP_IN(express::Base, ENTITY INSTANCE, entity instance)
+CREATE_VECTOR_TYPEMAP_IN(express::base, ENTITY INSTANCE, entity instance)
 
 // @todo use macros.
 
@@ -299,7 +299,7 @@ CREATE_OPTIONAL_TYPEMAP_IN(std::string, string, str)
 			void* argp1 = nullptr;
 			auto res1 = SWIG_ConvertPtr(element, &argp1, type_obj, 0);
 			if (SWIG_IsOK(res1)) {
-				auto arg1 = reinterpret_cast<IfcGeom::OpaqueCoordinate<4>*>(argp1);
+				auto arg1 = reinterpret_cast<ifcopenshell::geom::opaque_coordinate<4>*>(argp1);
 				result_vector.push_back(*arg1);
 			}
 		}
@@ -307,19 +307,19 @@ CREATE_OPTIONAL_TYPEMAP_IN(std::string, string, str)
 	}
 %}
 
-%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const std::vector<IfcGeom::OpaqueCoordinate<4>>& {
-	$1 = check_aggregate_of_swig_type($input, SWIGTYPE_p_IfcGeom__OpaqueCoordinateT_4_t) ? 1 : 0;
+%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const std::vector<ifcopenshell::geom::opaque_coordinate<4>>& {
+	$1 = check_aggregate_of_swig_type($input, SWIGTYPE_p_ifcopenshell__geom__opaque_coordinateT_4_t) ? 1 : 0;
 }
-%typemap(arginit) const std::vector<IfcGeom::OpaqueCoordinate<4>>& {
-	$1 = new std::vector<IfcGeom::OpaqueCoordinate<4>>();
+%typemap(arginit) const std::vector<ifcopenshell::geom::opaque_coordinate<4>>& {
+	$1 = new std::vector<ifcopenshell::geom::opaque_coordinate<4>>();
 }
-%typemap(in) const std::vector<IfcGeom::OpaqueCoordinate<4>>& {
-	if (!check_aggregate_of_swig_type($input, SWIGTYPE_p_IfcGeom__OpaqueCoordinateT_4_t)) {
+%typemap(in) const std::vector<ifcopenshell::geom::opaque_coordinate<4>>& {
+	if (!check_aggregate_of_swig_type($input, SWIGTYPE_p_ifcopenshell__geom__opaque_coordinateT_4_t)) {
 		SWIG_exception(SWIG_TypeError, "");
 	}
-	*$1 = python_sequence_as_swig_object_vector<IfcGeom::OpaqueCoordinate<4>>($input, SWIGTYPE_p_IfcGeom__OpaqueCoordinateT_4_t);
+	*$1 = python_sequence_as_swig_object_vector<ifcopenshell::geom::opaque_coordinate<4>>($input, SWIGTYPE_p_ifcopenshell__geom__opaque_coordinateT_4_t);
 }
-%typemap(freearg) const std::vector<IfcGeom::OpaqueCoordinate<4>>& {
+%typemap(freearg) const std::vector<ifcopenshell::geom::opaque_coordinate<4>>& {
 	delete $1;
 }
 

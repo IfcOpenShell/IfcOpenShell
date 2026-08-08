@@ -5,7 +5,7 @@
 
 #include "AbstractKernel.h"
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 const char* ifcopenshell::not_implemented_error::what() const noexcept {
 	return "Not implemented.";
@@ -15,7 +15,7 @@ const char* ifcopenshell::not_supported_error::what() const noexcept {
 	return "Not supported.";
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::ptr item, IfcGeom::ConversionResults& results) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert(const taxonomy::ptr item, ifcopenshell::geom::conversion_results& results) {
 	if (settings_.get<settings::CacheShapes>().get()) {
 		auto it = cache_.find(item);
 		if (it != cache_.end()) {
@@ -62,12 +62,12 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 	return res;
 }
 
-const Settings& ifcopenshell::geometry::kernels::AbstractKernel::settings() const
+const ifcopenshell::geom::settings& ifcopenshell::geom::kernels::abstract_kernel::settings() const
 {
 	return settings_;
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::collection::ptr collection, IfcGeom::ConversionResults& r) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::collection::ptr collection, ifcopenshell::geom::conversion_results& r) {
 	auto s = r.size();
 	for (auto& c : collection->children) {
 		if (!convert(c, r) && !partial_success_is_success) {
@@ -85,42 +85,42 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 	return r.size() > s;
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::function_item::ptr item, IfcGeom::ConversionResults& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::function_item::ptr item, ifcopenshell::geom::conversion_results& cs) {
    function_item_evaluator evaluator(settings(),item);
    auto expl = evaluator.evaluate();
 	expl->instance = item->instance;
 	return convert(expl, cs);
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::functor_item::ptr item, IfcGeom::ConversionResults& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::functor_item::ptr item, ifcopenshell::geom::conversion_results& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;
     return convert(expl, cs);
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::piecewise_function::ptr item, ifcopenshell::geom::conversion_results& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;
     return convert(expl, cs);
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::gradient_function::ptr item, IfcGeom::ConversionResults& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::gradient_function::ptr item, ifcopenshell::geom::conversion_results& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;
     return convert(expl, cs);
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::cant_function::ptr item, IfcGeom::ConversionResults& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::cant_function::ptr item, ifcopenshell::geom::conversion_results& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;
     return convert(expl, cs);
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::offset_function::ptr item, IfcGeom::ConversionResults& cs) {
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::offset_function::ptr item, ifcopenshell::geom::conversion_results& cs) {
     function_item_evaluator evaluator(settings(), item);
     auto expl = evaluator.evaluate();
     expl->instance = item->instance;

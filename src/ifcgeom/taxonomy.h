@@ -41,7 +41,7 @@ namespace boost { inline std::size_t hash_value(const blank&) { return 0; } }
 
 namespace ifcopenshell {
 
-	namespace geometry {
+	namespace geom {
 
 		namespace taxonomy {
 
@@ -113,7 +113,7 @@ typedef item const* ptr;
 			// Implementer note: If you add a new item type, be sure to do the following
 			// 1) Add a new kind to this list
 			// 2) Update the values array used by kind_to_string()
-			// 3) Update the KindsTuple with the class name of the new item
+			// 3) Update the kinds_tuple with the class name of the new item
 			// 4) Add compare function (see compare functions in taxonomy.cpp starting around line 9)
 			// 4) Update Python bindings
 			//    a) update list of assign_repr in IfcGeomWrapper.i
@@ -165,7 +165,7 @@ typedef item const* ptr;
 			public:
 				DECLARE_PTR(item)
 
-				express::Base instance;
+				express::base instance;
 
 				std::optional<bool> orientation;
 
@@ -185,7 +185,7 @@ typedef item const* ptr;
 					return computed_hash_;
 				}
 
-				item(const express::Base& instance = express::Base()) : identity_(counter_++), computed_hash_(0), instance(instance) {}
+				item(const express::base& instance = express::base()) : identity_(counter_++), computed_hash_(0), instance(instance) {}
 
 				virtual ~item() {}
 
@@ -416,8 +416,8 @@ typedef item const* ptr;
 				style::ptr surface_style;
 				matrix4::ptr matrix;
 
-				geom_item(const express::Base& instance = express::Base()) : item(instance), surface_style(nullptr) {}
-				geom_item(const express::Base instance, matrix4::ptr m) : item(instance), surface_style(nullptr), matrix(m) {}
+				geom_item(const express::base& instance = express::base()) : item(instance), surface_style(nullptr) {}
+				geom_item(const express::base instance, matrix4::ptr m) : item(instance), surface_style(nullptr), matrix(m) {}
 				geom_item(matrix4::ptr m) : surface_style(nullptr), matrix(m) {}
 			};
 
@@ -429,7 +429,7 @@ typedef item const* ptr;
 			struct IFC_GEOM_API function_item : public implicit_item {
                 DECLARE_PTR(function_item)
 
-                function_item(const express::Base& instance = express::Base()) : implicit_item(instance) {}
+                function_item(const express::base& instance = express::base()) : implicit_item(instance) {}
                 function_item(function_item&&) = default;
                 function_item(const function_item&) = default;
 
@@ -450,7 +450,7 @@ typedef item const* ptr;
 			struct IFC_GEOM_API functor_item : public function_item {
             DECLARE_PTR(functor_item)
 
-            functor_item(double length, std::function<Eigen::Matrix4d(double u)> fn, const express::Base& instance = express::Base()) : function_item(instance),
+            functor_item(double length, std::function<Eigen::Matrix4d(double u)> fn, const express::base& instance = express::base()) : function_item(instance),
 						 length_(length), fn_(fn) {}
             functor_item(functor_item&&) = default;
             functor_item(const functor_item&) = default;
@@ -478,8 +478,8 @@ typedef item const* ptr;
 
 				using spans_t = std::vector<function_item::const_ptr>;
 
-            piecewise_function(double start, const spans_t& s, const express::Base& instance = express::Base());
-            piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const express::Base& instance = express::Base());
+            piecewise_function(double start, const spans_t& s, const express::base& instance = express::base());
+            piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const express::base& instance = express::base());
             piecewise_function(piecewise_function&&) = default;
             piecewise_function(const piecewise_function&) = default;
             virtual ~piecewise_function() = default;
@@ -507,7 +507,7 @@ typedef item const* ptr;
 
          struct IFC_GEOM_API gradient_function : public function_item {
              DECLARE_PTR(gradient_function)
-             gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const express::Base& instance = express::Base());
+             gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const express::base& instance = express::base());
              gradient_function(gradient_function&&) = default;
              gradient_function(const gradient_function&) = default;
              virtual ~gradient_function() = default;
@@ -533,7 +533,7 @@ typedef item const* ptr;
 
          struct IFC_GEOM_API cant_function : public function_item {
              DECLARE_PTR(cant_function)
-             cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const express::Base& instance = express::Base());
+             cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const express::base& instance = express::base());
              cant_function(cant_function&&) = default;
              cant_function(const cant_function&) = default;
              virtual ~cant_function() = default;
@@ -560,7 +560,7 @@ typedef item const* ptr;
 
          struct IFC_GEOM_API offset_function : public function_item {
              DECLARE_PTR(offset_function)
-             offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const express::Base& instance = express::Base());
+             offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const express::base& instance = express::base());
              offset_function(offset_function&&) = default;
              offset_function(const offset_function&) = default;
              virtual ~offset_function() = default;
@@ -1292,38 +1292,38 @@ typedef item const* ptr;
 			};
 
 			namespace impl {
-				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, torus, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, sweep_along_curve, node, collection, boolean_result, function_item, functor_item, piecewise_function, gradient_function, cant_function,offset_function> KindsTuple;
-				typedef std::tuple<line, circle, ellipse, bspline_curve, offset_curve, loop, edge> CurvesTuple;
-				typedef std::tuple<plane, cylinder, sphere, torus, bspline_surface, extrusion, revolve> SurfacesTuple;
-				typedef std::tuple<edge, loop, face, piecewise_function> UpgradesTuple;
+				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, torus, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, sweep_along_curve, node, collection, boolean_result, function_item, functor_item, piecewise_function, gradient_function, cant_function,offset_function> kinds_tuple;
+				typedef std::tuple<line, circle, ellipse, bspline_curve, offset_curve, loop, edge> curves_tuple;
+				typedef std::tuple<plane, cylinder, sphere, torus, bspline_surface, extrusion, revolve> surfaces_tuple;
+				typedef std::tuple<edge, loop, face, piecewise_function> upgrades_tuple;
 			}
 
 			struct type_by_kind {
 				template <std::size_t N>
-				using type = typename std::tuple_element<N, impl::KindsTuple>::type;
+				using type = typename std::tuple_element<N, impl::kinds_tuple>::type;
 
-				static const size_t max = std::tuple_size<impl::KindsTuple>::value;
+				static const size_t max = std::tuple_size<impl::kinds_tuple>::value;
 			};
 
 			struct curves {
 				template <std::size_t N>
-				using type = typename std::tuple_element<N, impl::CurvesTuple>::type;
+				using type = typename std::tuple_element<N, impl::curves_tuple>::type;
 
-				static const size_t max = std::tuple_size<impl::CurvesTuple>::value;
+				static const size_t max = std::tuple_size<impl::curves_tuple>::value;
 			};
 
 			struct surfaces {
 				template <std::size_t N>
-				using type = typename std::tuple_element<N, impl::SurfacesTuple>::type;
+				using type = typename std::tuple_element<N, impl::surfaces_tuple>::type;
 
-				static const size_t max = std::tuple_size<impl::SurfacesTuple>::value;
+				static const size_t max = std::tuple_size<impl::surfaces_tuple>::value;
 			};
 
 			struct upgrades {
 				template <std::size_t N>
-				using type = typename std::tuple_element<N, impl::UpgradesTuple>::type;
+				using type = typename std::tuple_element<N, impl::upgrades_tuple>::type;
 
-				static const size_t max = std::tuple_size<impl::UpgradesTuple>::value;
+				static const size_t max = std::tuple_size<impl::upgrades_tuple>::value;
 			};
 
 			IFC_GEOM_API std::optional<face::ptr> loop_to_face_upgrade_impl(ptr item);
@@ -1630,19 +1630,19 @@ typedef item const* ptr;
 				// @todo Sad... now that we have templated collection members,
 				// we can't generally use collection_base anymore as a cast target.
 				if (auto s = std::dynamic_pointer_cast<taxonomy::collection>(i)) {
-					ifcopenshell::geometry::visit<taxonomy::collection>(s, fn);
+					ifcopenshell::geom::visit<taxonomy::collection>(s, fn);
 				} else if (auto s = std::dynamic_pointer_cast<taxonomy::loop>(i)) {
-					ifcopenshell::geometry::visit<taxonomy::loop>(s, fn);
+					ifcopenshell::geom::visit<taxonomy::loop>(s, fn);
 				} else if (auto s = std::dynamic_pointer_cast<taxonomy::face>(i)) {
-					ifcopenshell::geometry::visit<taxonomy::face>(s, fn);
+					ifcopenshell::geom::visit<taxonomy::face>(s, fn);
 				} else if (auto s = std::dynamic_pointer_cast<taxonomy::shell>(i)) {
-					ifcopenshell::geometry::visit<taxonomy::shell>(s, fn);
+					ifcopenshell::geom::visit<taxonomy::shell>(s, fn);
 				} else if (auto s = std::dynamic_pointer_cast<taxonomy::solid>(i)) {
-					ifcopenshell::geometry::visit<taxonomy::solid>(s, fn);
+					ifcopenshell::geom::visit<taxonomy::solid>(s, fn);
 				} else if (auto s = std::dynamic_pointer_cast<taxonomy::loft>(i)) {
-					ifcopenshell::geometry::visit<taxonomy::loft>(s, fn);
+					ifcopenshell::geom::visit<taxonomy::loft>(s, fn);
 				} else if (auto s = std::dynamic_pointer_cast<taxonomy::boolean_result>(i)) {
-					ifcopenshell::geometry::visit<taxonomy::boolean_result>(s, fn);
+					ifcopenshell::geom::visit<taxonomy::boolean_result>(s, fn);
 				}
 				else {
 					fn(i);
@@ -1741,8 +1741,8 @@ typedef item const* ptr;
 
 		struct IFC_GEOM_API layerset_information {
 			std::vector<double> thicknesses;
-			std::vector<ifcopenshell::geometry::taxonomy::ptr> layers;
-			std::vector<ifcopenshell::geometry::taxonomy::style> styles;
+			std::vector<ifcopenshell::geom::taxonomy::ptr> layers;
+			std::vector<ifcopenshell::geom::taxonomy::style> styles;
 		};
 
 		enum connection_type {
@@ -1752,7 +1752,7 @@ typedef item const* ptr;
 			NOTDEFINED
 		};
 
-		typedef std::tuple<connection_type, connection_type, express::Base> endpoint_connection;
+		typedef std::tuple<connection_type, connection_type, express::base> endpoint_connection;
 	}
 
 }

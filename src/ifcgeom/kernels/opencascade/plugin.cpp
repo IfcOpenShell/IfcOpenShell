@@ -23,7 +23,7 @@
 #include <boost/dll/alias.hpp>
 
 namespace ifcopenshell {
-	namespace geometry {
+	namespace geom {
 		namespace kernels {
 			namespace opencascade_plugin {
 
@@ -35,8 +35,8 @@ namespace ifcopenshell {
 					return kernel_plugin_metadata("opencascade");
 				}
 
-				AbstractKernel* create_kernel(ifcopenshell::file*, Settings& settings) {
-					return new IfcGeom::OpenCascadeKernel(settings);
+				abstract_kernel* create_kernel(ifcopenshell::file*, ifcopenshell::geom::settings& settings) {
+					return new ifcopenshell::geom::open_cascade_kernel(settings);
 				}
 
 				void register_plugin(kernel_registry& registry, const plugin::module& module) {
@@ -51,6 +51,6 @@ namespace ifcopenshell {
 	}
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::geometry::kernels::opencascade_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geometry::kernels::opencascade_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geometry::kernels::opencascade_plugin::register_plugin, ifcopenshell_register_kernel_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::opencascade_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::opencascade_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::opencascade_plugin::register_plugin, ifcopenshell_register_kernel_plugin_v1)

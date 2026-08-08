@@ -10,20 +10,20 @@
 #include <algorithm>
 
 void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
-	ifcopenshell::geometry::Settings settings;
+	ifcopenshell::geom::settings settings;
 
-	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
+	settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
+	settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-	std::vector<ifcopenshell::geometry::filter_t> no_openings_and_spaces = {
-		IfcGeom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
+	std::vector<ifcopenshell::geom::filter_t> no_openings_and_spaces = {
+		ifcopenshell::geom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
 	};
 
-	IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings), settings, &f, no_openings_and_spaces, 1, logger);
+	ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "cgal", settings), settings, &f, no_openings_and_spaces, 1, logger);
 
 	auto get_elevation = [](const ifcopenshell::IfcBaseClass* a) {
 		return ((const ifcopenshell::IfcBaseEntity*)a)->get_value<double>("Elevation", 0.);
@@ -81,13 +81,13 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 		// std::wcout << p.first << " - " << p.second << std::endl;
 		Kernel_::Point_3 p1(-LARGE, -LARGE, p.first);
 		Kernel_::Point_3 p2(+LARGE, +LARGE, p.second);
-		auto poly = ifcopenshell::geometry::utils::create_cube(p1, p2);
-		return ifcopenshell::geometry::utils::create_nef_polyhedron(poly);
+		auto poly = ifcopenshell::geom::utils::create_cube(p1, p2);
+		return ifcopenshell::geom::utils::create_nef_polyhedron(poly);
 	});
 
 	/*
 	for (auto& n : nefs) {
-		auto poly = ifcopenshell::geometry::utils::create_polyhedron(n);
+		auto poly = ifcopenshell::geom::utils::create_polyhedron(n);
 		auto bounds = CGAL::Polygon_mesh_processing::bbox_3(poly);
 		for (int i = 0; i < 3; ++i) {
 			std::wcout << bounds.min(i) << std::endl;
@@ -111,7 +111,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		IfcGeom::BRepElement* geom_object = nullptr;
+		ifcopenshell::geom::brep_element* geom_object = nullptr;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}
@@ -134,7 +134,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 		std::vector<double> intersection_volumes(nefs.size());
 
 		for (auto& g : geom_object->geometry()) {
-			auto s = std::static_pointer_cast<ifcopenshell::geometry::CgalShape>(g.Shape())->poly();
+			auto s = std::static_pointer_cast<ifcopenshell::geom::cgal_shape>(g.Shape())->poly();
 			const auto& m = g.Placement()->ccomponents();
 			const auto& n = geom_object->transformation().data()->ccomponents();
 
@@ -166,7 +166,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 			}
 			*/
 
-			CGAL::Nef_polyhedron_3<Kernel_> part_nef = ifcopenshell::geometry::utils::create_nef_polyhedron(s);
+			CGAL::Nef_polyhedron_3<Kernel_> part_nef = ifcopenshell::geom::utils::create_nef_polyhedron(s);
 
 			if (!part_nef.is_simple()) {
 				// std::wcout << "not simple" << std::endl;
@@ -175,7 +175,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 
 			std::vector<double>::iterator accumulator = intersection_volumes.begin();
 			std::for_each(nefs.begin(), nefs.end(), [&accumulator, &part_nef](const CGAL::Nef_polyhedron_3<Kernel_>& storey_nef) {
-				auto poly = ifcopenshell::geometry::utils::create_polyhedron(part_nef * storey_nef);
+				auto poly = ifcopenshell::geom::utils::create_polyhedron(part_nef * storey_nef);
 				CGAL::Polygon_mesh_processing::triangulate_faces(poly);
 				*accumulator += CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly));
 				accumulator++;

@@ -35,24 +35,24 @@
 #include "../../../ifcgeom/kernels/ifc_geomlibrary_api.h"
 
 namespace ifcopenshell {
-	namespace geometry {
+	namespace geom {
 
-		using IfcGeom::OpaqueCoordinate;
-		using IfcGeom::OpaqueNumber;
+		using ifcopenshell::geom::opaque_coordinate;
+		using ifcopenshell::geom::opaque_number;
 
-		class IFC_GEOMLIBRARY_API OpenCascadeShape : public IfcGeom::ConversionResultShape {
+		class IFC_GEOMLIBRARY_API open_cascade_shape : public ifcopenshell::geom::conversion_result_shape {
 		public:
-			OpenCascadeShape(const TopoDS_Shape& shape);
-			OpenCascadeShape(TopoDS_Shape&& shape);
+			open_cascade_shape(const TopoDS_Shape& shape);
+			open_cascade_shape(TopoDS_Shape&& shape);
 
 			const TopoDS_Shape& shape() const;
 			operator const TopoDS_Shape& ();
 			virtual std::string_view backend_id() const;
 
-			virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
-			virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
+			virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
+			virtual void Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const;
 
-			virtual IfcGeom::ConversionResultShape* clone() const;
+			virtual ifcopenshell::geom::conversion_result_shape* clone() const;
 
 			virtual double bounding_box(void*&) const {
 				throw std::runtime_error("Not implemented");
@@ -70,36 +70,36 @@ namespace ifcopenshell {
 			virtual int num_faces() const;
 
 			// @todo this must be something with a virtual dtor so that we can delete it.
-			virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const;
+			virtual std::pair<opaque_coordinate<3>, opaque_coordinate<3>> bounding_box() const;
 
-			virtual OpaqueNumber length();
-			virtual OpaqueNumber area();
-			virtual OpaqueNumber volume();
+			virtual opaque_number length();
+			virtual opaque_number area();
+			virtual opaque_number volume();
 
-			virtual OpaqueCoordinate<3> position();
-			virtual OpaqueCoordinate<3> axis();
-			virtual OpaqueCoordinate<4> plane_equation();
+			virtual opaque_coordinate<3> position();
+			virtual opaque_coordinate<3> axis();
+			virtual opaque_coordinate<4> plane_equation();
 
-			virtual std::vector<ConversionResultShape*> convex_decomposition();
-			virtual ConversionResultShape* halfspaces();
-			virtual ConversionResultShape* solid();
-			virtual ConversionResultShape* box();
-			virtual ConversionResultShape* wrap_in_compound();
+			virtual std::vector<conversion_result_shape*> convex_decomposition();
+			virtual conversion_result_shape* halfspaces();
+			virtual conversion_result_shape* solid();
+			virtual conversion_result_shape* box();
+			virtual conversion_result_shape* wrap_in_compound();
 
-			virtual std::vector<ConversionResultShape*> vertices();
-			virtual std::vector<ConversionResultShape*> edges();
-			virtual std::vector<ConversionResultShape*> facets();
+			virtual std::vector<conversion_result_shape*> vertices();
+			virtual std::vector<conversion_result_shape*> edges();
+			virtual std::vector<conversion_result_shape*> facets();
 
-			virtual ConversionResultShape* add(ConversionResultShape*);
-			virtual ConversionResultShape* subtract(ConversionResultShape*);
-			virtual ConversionResultShape* intersect(ConversionResultShape*);
-			virtual ConversionResultShape* concat(ConversionResultShape*);
+			virtual conversion_result_shape* add(conversion_result_shape*);
+			virtual conversion_result_shape* subtract(conversion_result_shape*);
+			virtual conversion_result_shape* intersect(conversion_result_shape*);
+			virtual conversion_result_shape* concat(conversion_result_shape*);
 
-			virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
-			virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
-			virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
+			virtual std::size_t map(opaque_coordinate<4>& from, opaque_coordinate<4>& to);
+			virtual std::size_t map(const std::vector<opaque_coordinate<4>>& from, const std::vector<opaque_coordinate<4>>& to);
+			virtual conversion_result_shape* moved(ifcopenshell::geom::taxonomy::matrix4::ptr) const;
 
-			virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const;
+			virtual bool surface_area_along_direction(double tol, const ifcopenshell::geom::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const;
 		private:
 			TopoDS_Shape shape_;
 		};

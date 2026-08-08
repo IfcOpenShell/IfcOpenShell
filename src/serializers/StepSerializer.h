@@ -29,15 +29,15 @@
 
 #include "../serializers/OpenCascadeBasedSerializer.h"
 
-class StepSerializer : public OpenCascadeBasedSerializer
+class step_serializer : public open_cascade_based_serializer
 {
 private:
 	STEPControl_Writer writer;	
 public:
-	explicit StepSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& serializer_settings, ::logger* logger = nullptr)
-		: OpenCascadeBasedSerializer(out_filename, geometry_settings, serializer_settings, logger)
+	explicit step_serializer(const std::string& out_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr)
+		: open_cascade_based_serializer(out_filename, settings, logger)
 	{}
-	virtual ~StepSerializer() {}
+	virtual ~step_serializer() {}
 	void writeShape(const std::string& name, const TopoDS_Shape& shape) {
 		std::stringstream ss;
 		std::streambuf *sb = std::cout.rdbuf(ss.rdbuf());

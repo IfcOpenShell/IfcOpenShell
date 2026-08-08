@@ -12,18 +12,18 @@ namespace {
 
 }
 
-ifcopenshell::geometry::impl::mapping_registry& ifcopenshell::geometry::impl::mapping_registry_instance() {
+ifcopenshell::geom::impl::mapping_registry& ifcopenshell::geom::impl::mapping_registry_instance() {
 	static mapping_registry registry;
 	return registry;
 }
 
-void ifcopenshell::geometry::impl::mapping_registry::bind(const std::string& schema_name, ifcopenshell::geometry::impl::mapping_fn fn, const plugin::module& module) {
+void ifcopenshell::geom::impl::mapping_registry::bind(const std::string& schema_name, ifcopenshell::geom::impl::mapping_fn fn, const plugin::module& module) {
 	auto& entry = entries_[mapping_key(schema_name)];
 	entry.fn_ = fn;
 	entry.module_ = module.meta().id.empty() ? plugin::module(mapping_plugin_metadata(schema_name)) : module;
 }
 
-ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::mapping_registry::construct(ifcopenshell::file* file, Settings& s, ::logger& log) {
+ifcopenshell::geom::abstract_mapping* ifcopenshell::geom::impl::mapping_registry::construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& log) {
 	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
 	auto it = entries_.find(schema_name_lower);
 	if (it == entries_.end()) {
@@ -33,7 +33,7 @@ ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::mapping_
 	if (it == entries_.end()) {
 		throw ifcopenshell::exception("No geometry mapping registered for " + schema_name_lower);
 	}
-	auto new_mapping = it->second.fn_(file, s, log);
+	auto new_mapping = it->second.fn_(file, settings, log);
 	try {
 		new_mapping->initialize_settings();
 	} catch (const std::exception& e) {
@@ -43,19 +43,19 @@ ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::mapping_
 	return new_mapping;
 }
 
-ifcopenshell::geometry::impl::MappingFactoryImplementation& ifcopenshell::geometry::impl::mapping_implementations() {
-	static MappingFactoryImplementation impl;
+ifcopenshell::geom::impl::mapping_factory_implementation& ifcopenshell::geom::impl::mapping_implementations() {
+	static mapping_factory_implementation impl;
 	return impl;
 }
 
-ifcopenshell::geometry::impl::MappingFactoryImplementation::MappingFactoryImplementation() {
+ifcopenshell::geom::impl::mapping_factory_implementation::mapping_factory_implementation() {
 	mapping_registry_instance();
 }
 
-void ifcopenshell::geometry::impl::MappingFactoryImplementation::bind(const std::string& schema_name, ifcopenshell::geometry::impl::mapping_fn fn) {
+void ifcopenshell::geom::impl::mapping_factory_implementation::bind(const std::string& schema_name, ifcopenshell::geom::impl::mapping_fn fn) {
 	mapping_registry_instance().bind(schema_name, fn, plugin::module(mapping_plugin_metadata(schema_name)));
 }
 
-ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(ifcopenshell::file* file, Settings& s, ::logger& log) {
-	return mapping_registry_instance().construct(file, s, log);
+ifcopenshell::geom::abstract_mapping* ifcopenshell::geom::impl::mapping_factory_implementation::construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& log) {
+	return mapping_registry_instance().construct(file, settings, log);
 }

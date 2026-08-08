@@ -31,39 +31,39 @@
 #include "../ifcgeom/IfcGeomRepresentation.h"
 #include "../ifcgeom/ifc_geom_api.h"
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 
-	class Transformation {
+	class transformation {
 	private:
-		ifcopenshell::geometry::Settings settings_;
-		ifcopenshell::geometry::taxonomy::matrix4::ptr matrix_, matrix_orig_units_;
+		ifcopenshell::geom::settings settings_;
+		ifcopenshell::geom::taxonomy::matrix4::ptr matrix_, matrix_orig_units_;
 	public:
-        Transformation(const ifcopenshell::geometry::Settings& settings, const ifcopenshell::geometry::taxonomy::matrix4::ptr& matrix)
+        transformation(const ifcopenshell::geom::settings& settings, const ifcopenshell::geom::taxonomy::matrix4::ptr& matrix)
             : settings_(settings), matrix_(matrix)
 		{
-            const bool convert = settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get();
-            auto unit_magnitude = settings.get<ifcopenshell::geometry::settings::LengthUnit>().get();
+            const bool convert = settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().get();
+            auto unit_magnitude = settings.get<ifcopenshell::geom::settings::LengthUnit>().get();
             if (matrix_ && convert && unit_magnitude != 1.0) {
-				matrix_orig_units_ = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>(*matrix);
+				matrix_orig_units_ = ifcopenshell::geom::taxonomy::make<ifcopenshell::geom::taxonomy::matrix4>(*matrix);
                 // only multiple the translation components of the matrix with the unit magnitude, not the rotation/scaling components
                 matrix_orig_units_->components().col(3).head<3>() /= unit_magnitude;
             } else {
                 matrix_orig_units_ = nullptr;
 			}
         }
-		const ifcopenshell::geometry::taxonomy::matrix4::ptr& data() const {
+		const ifcopenshell::geom::taxonomy::matrix4::ptr& data() const {
             if (matrix_orig_units_) {            
 				return matrix_orig_units_;
             }
 			if (matrix_) {
 				return matrix_;
 			}
-			static ifcopenshell::geometry::taxonomy::matrix4::ptr iden = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
+			static ifcopenshell::geom::taxonomy::matrix4::ptr iden = ifcopenshell::geom::taxonomy::make<ifcopenshell::geom::taxonomy::matrix4>();
 			return iden;
 		}
 	};
 
-	class Element {
+	class element {
 	private:
 		int _id;
 		int _parent_id;
@@ -72,17 +72,17 @@ namespace IfcGeom {
 		std::string _guid;
 		std::string _context;
 		std::string _unique_id;
-		Transformation _transformation;
-        const express::Entity product_;
-		std::vector<const IfcGeom::Element*> _parents;
+		transformation _transformation;
+        const express::entity product_;
+		std::vector<const ifcopenshell::geom::element*> _parents;
 	public:
 
-		friend bool operator == (const Element& element1, const Element& element2) {
+		friend bool operator == (const element& element1, const element& element2) {
 			return element1.id() == element2.id();
 		}
 
 		// Use the id to compare, or the elevation is the elements are IfcBuildingStoreys and the elevation is set
-		friend bool operator < (const Element& element1, const Element& element2) {
+		friend bool operator < (const element& element1, const element& element2) {
 			if (element1.type() == "IfcBuildingStorey" && element2.type() == "IfcBuildingStorey") {
 				size_t attr_index = element1.product().declaration().as_entity()->attribute_index("Elevation");
 				auto elev_attr1 = element1.product().get_attribute_value(attr_index);
@@ -107,13 +107,13 @@ namespace IfcGeom {
 		// Return the representation's identifier (e.g. "Body") if present, or it's context type (e.g. "Model").
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
-		const Transformation& transformation() const { return _transformation; }
-        const express::Entity& product() const { return product_; }
-		const std::vector<const IfcGeom::Element*>& parents() const { return _parents; }
-		void SetParents(std::vector<const IfcGeom::Element*>& newparents) { _parents = newparents; }
+		const transformation& transformation() const { return _transformation; }
+        const express::entity& product() const { return product_; }
+		const std::vector<const ifcopenshell::geom::element*>& parents() const { return _parents; }
+		void SetParents(std::vector<const ifcopenshell::geom::element*>& newparents) { _parents = newparents; }
 
-		Element(const ifcopenshell::geometry::Settings& settings, int id, int parent_id, const std::string& name, const std::string& type,
-            const std::string& guid, const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4::ptr& trsf, const express::Entity& product)
+		element(const ifcopenshell::geom::settings& settings, int id, int parent_id, const std::string& name, const std::string& type,
+            const std::string& guid, const std::string& context, const ifcopenshell::geom::taxonomy::matrix4::ptr& trsf, const express::entity& product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
 		{ 
@@ -139,19 +139,19 @@ namespace IfcGeom {
 
 			_unique_id = oss.str();
 		}
-		virtual ~Element() {}
+		virtual ~element() {}
 	};
 
-	class BRepElement : public Element {
+	class brep_element : public element {
 	private:
-		boost::shared_ptr<IfcGeom::Representation::BRep> _geometry;
+		boost::shared_ptr<ifcopenshell::geom::Representation::brep> _geometry;
 	public:
-		const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry_pointer() const { return _geometry; }
-		const IfcGeom::Representation::BRep& geometry() const { return *_geometry; }
-		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
-            const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4::ptr& trsf, const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry,
-			const express::Entity& product)
-			: Element(geometry->settings(), id, parent_id, name, type, guid, context, trsf, product)
+		const boost::shared_ptr<ifcopenshell::geom::Representation::brep>& geometry_pointer() const { return _geometry; }
+		const ifcopenshell::geom::Representation::brep& geometry() const { return *_geometry; }
+		brep_element(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
+            const std::string& context, const ifcopenshell::geom::taxonomy::matrix4::ptr& trsf, const boost::shared_ptr<ifcopenshell::geom::Representation::brep>& geometry,
+			const express::entity& product)
+			: element(geometry->settings(), id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)
 		{}
 
@@ -159,44 +159,44 @@ namespace IfcGeom {
 			return geometry().calculate_projected_surface_area(this->transformation().data(), along_x, along_y, along_z);
 		}
 	private:
-		BRepElement(const BRepElement& other);
-		BRepElement& operator=(const BRepElement& other);		
+		brep_element(const brep_element& other);
+		brep_element& operator=(const brep_element& other);
 	};
 
-	class TriangulationElement : public Element {
+	class triangulation_element : public element {
 	private:
-		boost::shared_ptr< IfcGeom::Representation::Triangulation > _geometry;
+		boost::shared_ptr< ifcopenshell::geom::Representation::triangulation > _geometry;
 	public:
-		const IfcGeom::Representation::Triangulation& geometry() const { return *_geometry; }
-		const boost::shared_ptr< IfcGeom::Representation::Triangulation>& geometry_pointer() const { return _geometry; }
-		TriangulationElement(const IfcGeom::BRepElement& shape_model)
-			: Element(shape_model)
-			, _geometry(boost::shared_ptr<IfcGeom::Representation::Triangulation>(new IfcGeom::Representation::Triangulation(shape_model.geometry())))
+		const ifcopenshell::geom::Representation::triangulation& geometry() const { return *_geometry; }
+		const boost::shared_ptr< ifcopenshell::geom::Representation::triangulation>& geometry_pointer() const { return _geometry; }
+		triangulation_element(const ifcopenshell::geom::brep_element& shape_model)
+			: element(shape_model)
+			, _geometry(boost::shared_ptr<ifcopenshell::geom::Representation::triangulation>(new ifcopenshell::geom::Representation::triangulation(shape_model.geometry())))
 		{}
-		TriangulationElement(const IfcGeom::Element& element, const boost::shared_ptr<IfcGeom::Representation::Triangulation>& geometry)
-			: Element(element)
+		triangulation_element(const ifcopenshell::geom::element& element, const boost::shared_ptr<ifcopenshell::geom::Representation::triangulation>& geometry)
+			: element(element)
 			, _geometry(geometry)
 		{}
 	private:
-		TriangulationElement(const TriangulationElement& other);
-		TriangulationElement& operator=(const TriangulationElement& other);
+		triangulation_element(const triangulation_element& other);
+		triangulation_element& operator=(const triangulation_element& other);
 	};
 
-	class SerializedElement : public Element {
+	class serialized_element : public element {
 	private:
-		IfcGeom::Representation::Serialization* _geometry;
+		ifcopenshell::geom::Representation::serialization* _geometry;
 	public:
-		const IfcGeom::Representation::Serialization& geometry() const { return *_geometry; }
-		SerializedElement(const BRepElement& shape_model)
-			: Element(shape_model)
-			, _geometry(new IfcGeom::Representation::Serialization(shape_model.geometry()))
+		const ifcopenshell::geom::Representation::serialization& geometry() const { return *_geometry; }
+		serialized_element(const brep_element& shape_model)
+			: element(shape_model)
+			, _geometry(new ifcopenshell::geom::Representation::serialization(shape_model.geometry()))
 		{}
-		virtual ~SerializedElement() {
+		virtual ~serialized_element() {
 			delete _geometry;
 		}
 	private:
-		SerializedElement(const SerializedElement& other);
-		SerializedElement& operator=(const SerializedElement& other);
+		serialized_element(const serialized_element& other);
+		serialized_element& operator=(const serialized_element& other);
 	};
 }
 

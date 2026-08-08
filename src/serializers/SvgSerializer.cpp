@@ -152,110 +152,108 @@ subtract_before_project parse_subtract_before_project(const std::string& value) 
 	throw std::runtime_error("Invalid use of --svg-subtract-before, expected auto|slabs-and-walls|always");
 }
 
-SvgSerializer::storey_height_display_types parse_storey_height_display(const std::string& value) {
+svg_serializer::storey_height_display_types parse_storey_height_display(const std::string& value) {
 	const auto display = boost::to_lower_copy(value);
 	if (display == "none") {
-		return SvgSerializer::SH_NONE;
+		return svg_serializer::SH_NONE;
 	}
 	if (display == "full") {
-		return SvgSerializer::SH_FULL;
+		return svg_serializer::SH_FULL;
 	}
 	if (display == "left") {
-		return SvgSerializer::SH_LEFT;
+		return svg_serializer::SH_LEFT;
 	}
 	throw std::runtime_error("Invalid use of --draw-storey-heights, expected none|full|left");
 }
 
 }
 
-bool SvgSerializer::ready() {
+bool svg_serializer::ready() {
 	return true;
 }
 
-void SvgSerializer::apply_settings() {
-	using namespace ifcopenshell::geometry::settings;
-
-	if (settings().get<SvgBounds>().has()) {
-		const auto bounds = parse_svg_bounds(settings().get<SvgBounds>().get());
+void svg_serializer::apply_settings() {
+	if (settings().get<ifcopenshell::geom::settings::SvgBounds>().has()) {
+		const auto bounds = parse_svg_bounds(settings().get<ifcopenshell::geom::settings::SvgBounds>().get());
 		setBoundingRectangle(bounds.first, bounds.second);
 	}
 
-	if (settings().get<SvgScale>().has()) {
-		setScale(parse_svg_scale(settings().get<SvgScale>().get()));
+	if (settings().get<ifcopenshell::geom::settings::SvgScale>().has()) {
+		setScale(parse_svg_scale(settings().get<ifcopenshell::geom::settings::SvgScale>().get()));
 	}
 
-	if (settings().get<SvgCenter>().has()) {
-		const auto center = parse_svg_center(settings().get<SvgCenter>().get());
+	if (settings().get<ifcopenshell::geom::settings::SvgCenter>().has()) {
+		const auto center = parse_svg_center(settings().get<ifcopenshell::geom::settings::SvgCenter>().get());
 		setDrawingCenter(center.first, center.second);
 	}
 
-	if (settings().get<SvgSectionHeightFromStoreys>().get() && file) {
-		if (settings().get<SvgSectionHeight>().has()) {
-			setSectionHeightsFromStoreys(settings().get<SvgSectionHeight>().get());
+	if (settings().get<ifcopenshell::geom::settings::SvgSectionHeightFromStoreys>().get() && file) {
+		if (settings().get<ifcopenshell::geom::settings::SvgSectionHeight>().has()) {
+			setSectionHeightsFromStoreys(settings().get<ifcopenshell::geom::settings::SvgSectionHeight>().get());
 		} else {
 			setSectionHeightsFromStoreys();
 		}
-	} else if (settings().get<SvgSectionHeight>().has()) {
-		setSectionHeight(settings().get<SvgSectionHeight>().get());
+	} else if (settings().get<ifcopenshell::geom::settings::SvgSectionHeight>().has()) {
+		setSectionHeight(settings().get<ifcopenshell::geom::settings::SvgSectionHeight>().get());
 	}
 
-	setPrintSpaceNames(settings().get<SvgPrintSpaceNames>().get());
-	setPrintSpaceAreas(settings().get<SvgPrintSpaceAreas>().get());
-	setDrawDoorArcs(settings().get<SvgDoorArcs>().get());
-	setAutoSection(settings().get<SvgAutoSection>().get());
-	setAutoElevation(settings().get<SvgAutoElevation>().get());
-	setUseNamespace(settings().get<SvgUseNamespace>().get());
-	setUseHlrPoly(settings().get<SvgUseHlrPoly>().get());
-	setUsePrefiltering(settings().get<SvgUsePrefiltering>().get());
-	setUnifyInputs(settings().get<SvgUnifyInputs>().get());
-	setSegmentProjection(settings().get<SvgSegmentProjection>().get());
-	setPolygonal(settings().get<SvgPolygonal>().get());
-	setAlwaysProject(settings().get<SvgAlwaysProject>().get());
-	setWithoutStoreys(settings().get<SvgWithoutStoreys>().get());
-	setNoCSS(settings().get<SvgNoCss>().get());
-	setMirrorY(settings().get<SvgMirrorY>().get());
-	setMirrorX(settings().get<SvgMirrorX>().get());
-	setProfileThreshold(settings().get<SvgProfileThreshold>().get());
+	setPrintSpaceNames(settings().get<ifcopenshell::geom::settings::SvgPrintSpaceNames>().get());
+	setPrintSpaceAreas(settings().get<ifcopenshell::geom::settings::SvgPrintSpaceAreas>().get());
+	setDrawDoorArcs(settings().get<ifcopenshell::geom::settings::SvgDoorArcs>().get());
+	setAutoSection(settings().get<ifcopenshell::geom::settings::SvgAutoSection>().get());
+	setAutoElevation(settings().get<ifcopenshell::geom::settings::SvgAutoElevation>().get());
+	setUseNamespace(settings().get<ifcopenshell::geom::settings::SvgUseNamespace>().get());
+	setUseHlrPoly(settings().get<ifcopenshell::geom::settings::SvgUseHlrPoly>().get());
+	setUsePrefiltering(settings().get<ifcopenshell::geom::settings::SvgUsePrefiltering>().get());
+	setUnifyInputs(settings().get<ifcopenshell::geom::settings::SvgUnifyInputs>().get());
+	setSegmentProjection(settings().get<ifcopenshell::geom::settings::SvgSegmentProjection>().get());
+	setPolygonal(settings().get<ifcopenshell::geom::settings::SvgPolygonal>().get());
+	setAlwaysProject(settings().get<ifcopenshell::geom::settings::SvgAlwaysProject>().get());
+	setWithoutStoreys(settings().get<ifcopenshell::geom::settings::SvgWithoutStoreys>().get());
+	setNoCSS(settings().get<ifcopenshell::geom::settings::SvgNoCss>().get());
+	setMirrorY(settings().get<ifcopenshell::geom::settings::SvgMirrorY>().get());
+	setMirrorX(settings().get<ifcopenshell::geom::settings::SvgMirrorX>().get());
+	setProfileThreshold(settings().get<ifcopenshell::geom::settings::SvgProfileThreshold>().get());
 
-	if (settings().get<SvgSubtractBefore>().has()) {
-		setSubtractionSettings(parse_subtract_before_project(settings().get<SvgSubtractBefore>().get()));
+	if (settings().get<ifcopenshell::geom::settings::SvgSubtractBefore>().has()) {
+		setSubtractionSettings(parse_subtract_before_project(settings().get<ifcopenshell::geom::settings::SvgSubtractBefore>().get()));
 	}
 
-	if (settings().get<SvgDrawStoreyHeights>().has()) {
-		setDrawStoreyHeights(parse_storey_height_display(settings().get<SvgDrawStoreyHeights>().get()));
+	if (settings().get<ifcopenshell::geom::settings::SvgDrawStoreyHeights>().has()) {
+		setDrawStoreyHeights(parse_storey_height_display(settings().get<ifcopenshell::geom::settings::SvgDrawStoreyHeights>().get()));
 	}
 
-	if (settings().get<SvgStoreyHeightLineLength>().has()) {
-		setStoreyHeightLineLength(settings().get<SvgStoreyHeightLineLength>().get());
+	if (settings().get<ifcopenshell::geom::settings::SvgStoreyHeightLineLength>().has()) {
+		setStoreyHeightLineLength(settings().get<ifcopenshell::geom::settings::SvgStoreyHeightLineLength>().get());
 	}
 
-	if (settings().get<SvgSpaceNameTransform>().has()) {
-		setSpaceNameTransform(settings().get<SvgSpaceNameTransform>().get());
+	if (settings().get<ifcopenshell::geom::settings::SvgSpaceNameTransform>().has()) {
+		setSpaceNameTransform(settings().get<ifcopenshell::geom::settings::SvgSpaceNameTransform>().get());
 	}
 
-	if (settings().get<SvgSectionRef>().has()) {
-		setSectionRef(settings().get<SvgSectionRef>().get());
+	if (settings().get<ifcopenshell::geom::settings::SvgSectionRef>().has()) {
+		setSectionRef(settings().get<ifcopenshell::geom::settings::SvgSectionRef>().get());
 	}
 
-	if (settings().get<SvgElevationRef>().has()) {
-		setElevationRef(settings().get<SvgElevationRef>().get());
+	if (settings().get<ifcopenshell::geom::settings::SvgElevationRef>().has()) {
+		setElevationRef(settings().get<ifcopenshell::geom::settings::SvgElevationRef>().get());
 	}
 
-	if (settings().get<SvgElevationRefGuid>().has()) {
-		setElevationRefGuid(settings().get<SvgElevationRefGuid>().get());
+	if (settings().get<ifcopenshell::geom::settings::SvgElevationRefGuid>().has()) {
+		setElevationRefGuid(settings().get<ifcopenshell::geom::settings::SvgElevationRefGuid>().get());
 	}
 
 	// SVG edge classification (issue #3668): geometry settings, read here so the
 	// ctor's apply_settings() call applies them for all callers (Bonsai/SWIG + IfcConvert).
-	svg_ridge_angle_min_deg_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRidgeAngleMinDegrees>().get();
-	svg_valley_angle_min_deg_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgValleyAngleMinDegrees>().get();
-	svg_emit_flush_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgEmitFlushEdges>().get();
-	svg_use_edge_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseEdgeClassification>().get();
-	svg_render_crease_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderCreaseEdges>().get();
-	svg_render_sharp_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderSharpEdges>().get();
+	svg_ridge_angle_min_deg_ = settings().get<ifcopenshell::geom::settings::SvgRidgeAngleMinDegrees>().get();
+	svg_valley_angle_min_deg_ = settings().get<ifcopenshell::geom::settings::SvgValleyAngleMinDegrees>().get();
+	svg_emit_flush_edges_ = settings().get<ifcopenshell::geom::settings::SvgEmitFlushEdges>().get();
+	svg_use_edge_classification_ = settings().get<ifcopenshell::geom::settings::SvgUseEdgeClassification>().get();
+	svg_render_crease_edges_ = settings().get<ifcopenshell::geom::settings::SvgRenderCreaseEdges>().get();
+	svg_render_sharp_edges_ = settings().get<ifcopenshell::geom::settings::SvgRenderSharpEdges>().get();
 }
 
-void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std::optional<std::vector<double>> dash_array, std::optional<std::string> css_class) {
+void svg_serializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std::optional<std::vector<double>> dash_array, std::optional<std::string> css_class) {
 	/* ShapeFix_Wire fix;
 	Handle(ShapeExtend_WireData) data = new ShapeExtend_WireData;
 	for (TopExp_Explorer edges(result, TopAbs_EDGE); edges.More(); edges.Next()) {
@@ -472,7 +470,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std:
 				ycoords.push_back(path.add(p2.Y()));
 			} else if (ty != STANDARD_TYPE(Geom_Line)) {
 				BRepAdaptor_Curve crv(edge);
-				GCPnts_QuasiUniformDeflection tessellater(crv, geometry_settings().get<ifcopenshell::geometry::settings::MesherLinearDeflection>().get());
+				GCPnts_QuasiUniformDeflection tessellater(crv, settings().get<ifcopenshell::geom::settings::MesherLinearDeflection>().get());
 				// NB: Start at 2: 1-based and skip the first point, assume it coincides with p1.
 				for (int i = 2; i <= tessellater.NbPoints(); ++i) {
 					gp_Pnt pi = tessellater.Value(i);
@@ -525,29 +523,29 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std:
 	}
 }
 
-SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const express::Base& storey, const std::string& id) {
+svg_serializer::path_object& svg_serializer::start_path(const gp_Pln& pln, const express::base& storey, const std::string& id) {
 	auto key = std::make_pair(std::make_pair(storey, ""), path_object());
-	SvgSerializer::path_object& p = paths.insert(key)->second;
+	svg_serializer::path_object& p = paths.insert(key)->second;
 	drawing_metadata[key.first].pln_3d = pln;
 	p.first = id;
 	return p;
 }
 
-SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const std::string& drawing_name, const std::string& id) {
-    auto key = std::make_pair(std::make_pair(express::Base{}, drawing_name), path_object());
-	SvgSerializer::path_object& p = paths.insert(key)->second;
+svg_serializer::path_object& svg_serializer::start_path(const gp_Pln& pln, const std::string& drawing_name, const std::string& id) {
+    auto key = std::make_pair(std::make_pair(express::base{}, drawing_name), path_object());
+	svg_serializer::path_object& p = paths.insert(key)->second;
 	drawing_metadata[key.first].pln_3d = pln;
 	p.first = id;
 	return p;
 }
 
 namespace {
-	std::optional<std::pair<express::Base, double>> storey_elevation_from_element(const IfcGeom::BRepElement* o) {
+	std::optional<std::pair<express::base, double>> storey_elevation_from_element(const ifcopenshell::geom::brep_element* o) {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
 				try {
 					double e = p->product().get("Elevation");
-					double storey_elevation = e * o->geometry().settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
+					double storey_elevation = e * o->geometry().settings().get<ifcopenshell::geom::settings::LengthUnit>().get();
 					return std::make_pair(p->product(), storey_elevation);
 				} catch (...) {
 					continue;
@@ -619,7 +617,7 @@ namespace {
 		*/
 		auto& shell = compound;
 
-		if (IfcGeom::util::count(shell, TopAbs_FACE) != 6) {
+		if (ifcopenshell::geom::util::count(shell, TopAbs_FACE) != 6) {
 			return std::nullopt;
 		}
 
@@ -655,11 +653,11 @@ namespace {
 	};
 
 	template <typename It>
-	void enumerate_string_properties(const express::Base& product, It output_it) {
-		auto rels = product.as<express::Entity>().get_inverse("IsDefinedBy");
+	void enumerate_string_properties(const express::base& product, It output_it) {
+		auto rels = product.as<express::entity>().get_inverse("IsDefinedBy");
 		for (auto& rel : rels) {
 			if (rel.declaration().is("IfcRelDefinesByProperties")) {
-				auto pset = ((express::Base)rel.get("RelatingPropertyDefinition")).as<express::Entity>();
+				auto pset = ((express::base)rel.get("RelatingPropertyDefinition")).as<express::entity>();
 				if (!pset.declaration().is("IfcPropertySet")) {
 					continue;
                 }
@@ -667,14 +665,14 @@ namespace {
 				if (!pset.get("Name").isNull()) {
 					pset_name = (std::string) pset.get("Name");
 				}
-				std::vector<express::Base> props = pset.get("HasProperties");
+				std::vector<express::base> props = pset.get("HasProperties");
 				for (auto& prop : props) {
 					if (prop.declaration().is("IfcPropertySingleValue")) {
-                        std::string name = prop.as<express::Entity>().get("Name");
-                        if (prop.as<express::Entity>().get("NominalValue").isNull()) {
+                        std::string name = prop.as<express::entity>().get("Name");
+                        if (prop.as<express::entity>().get("NominalValue").isNull()) {
                             continue;
                         }
-                        express::Base v = prop.as<express::Entity>().get("NominalValue");
+                        express::base v = prop.as<express::entity>().get("NominalValue");
 						auto value = v.get_attribute_value(0);
 						if (value.type() == ifcopenshell::Argument_STRING) {
 							std::string v_str = value;
@@ -688,20 +686,20 @@ namespace {
 }
 
 namespace {
-	std::optional<std::string> get_curve_style_name(const express::Base& item) {
-		auto refs = item.as<express::Entity>().get_inverse("StyledByItem");
+	std::optional<std::string> get_curve_style_name(const express::base& item) {
+		auto refs = item.as<express::entity>().get_inverse("StyledByItem");
 		for (auto& ref : refs) {
 			if (ref.declaration().is("IfcStyledItem")) {
-				std::vector<express::Base> styles = ref.as<express::Entity>().get("Styles");
+				std::vector<express::base> styles = ref.as<express::entity>().get("Styles");
 				for (auto& s : styles) {
-					std::vector<express::Entity> pss;
+					std::vector<express::entity> pss;
 					if (s.declaration().is("IfcPresentationStyleAssignment")) {
-                        std::vector<express::Base> pstyles = s.as<express::Entity>().get("Styles");
+                        std::vector<express::base> pstyles = s.as<express::entity>().get("Styles");
 						for (auto& ssss : pstyles) {
-							pss.push_back(ssss.as<express::Entity>());
+							pss.push_back(ssss.as<express::entity>());
 						}
 					} else {
-                        pss.push_back(s.as<express::Entity>());
+                        pss.push_back(s.as<express::entity>());
 					}
 					for (auto& ps : pss) {
 						if (ps.declaration().is("IfcCurveStyle")) {
@@ -718,7 +716,7 @@ namespace {
 	}
 }
 
-void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
+void svg_serializer::write(const ifcopenshell::geom::brep_element* brep_obj) {
 
 	std::optional<std::string> object_type;
 	if (!brep_obj->product().get("ObjectType").isNull()) {
@@ -728,7 +726,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	std::vector<std::optional<std::vector<double>>> dash_arrays;
 
 	auto itm = brep_obj->geometry().as_compound();
-	TopoDS_Shape compound_local = ((ifcopenshell::geometry::OpenCascadeShape*)itm)->shape();
+	TopoDS_Shape compound_local = ((ifcopenshell::geom::open_cascade_shape*)itm)->shape();
 	delete itm;
 
 	for (auto& x : brep_obj->geometry()) {
@@ -854,7 +852,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 
 		if (pln) {
 			// Move pln to have projection of origin at plane center.
-			// This is necessary to have Poly and BRep HLR at the same position
+			// This is necessary to have Poly and brep HLR at the same position
 			// (Poly) is wrong otherwise.
 			double pu, pv;
 			Extrema_ExtPElS ext;
@@ -889,12 +887,12 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	}
 
 	auto p = storey_elevation_from_element(brep_obj);
-    auto storey = p ? p->first : express::Base{};
+    auto storey = p ? p->first : express::base{};
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 
 	if (unify_inputs_) {
-		compound_local = IfcGeom::util::unify(compound_local, 1.e-6);
+		compound_local = ifcopenshell::geom::util::unify(compound_local, 1.e-6);
 	}
 
 	{
@@ -906,9 +904,9 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 		for (; it.More(); it.Next()) {
 			auto& s = it.Value();
 			if (s.ShapeType() == TopAbs_WIRE && s.Closed()) {
-				IfcGeom::util::wire_tolerance_settings wts{ false, false, Precision::Confusion(), Precision::Confusion() };
+				ifcopenshell::geom::util::wire_tolerance_settings wts{ false, false, Precision::Confusion(), Precision::Confusion() };
 				TopoDS_Compound faces;
-				IfcGeom::util::convert_wire_to_faces(TopoDS::Wire(s), faces, wts);
+				ifcopenshell::geom::util::convert_wire_to_faces(TopoDS::Wire(s), faces, wts);
 				BB.Add(comp2, faces);
 				any_wires_converted_to_face = true;
 			} else {
@@ -918,7 +916,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 		compound_local = comp2;
 	}
 
-	if (only_valid_ && !IfcGeom::util::validate_shape(compound_local)) {
+	if (only_valid_ && !ifcopenshell::geom::util::validate_shape(compound_local)) {
 		return;
 	}
 
@@ -1058,7 +1056,7 @@ namespace {
 		// curves back towards the solid's interior relative to f0 -- a convex fold, like a box
 		// corner. This avoids relying on TopoDS_Edge/wire orientation semantics (which proved
 		// unreliable in practice: an earlier attempt using edge.Orientation() combined with
-		// cross(n0, n1) gave a self-consistent-looking but wrong sign on real BRep topology --
+		// cross(n0, n1) gave a self-consistent-looking but wrong sign on real brep topology --
 		// verified against known-convex geometry, e.g. every edge of a convex icosphere, where
 		// that approach misclassified a majority of edges as concave).
 		double deviation_deg = std::acos(clamp_dot(n0.Dot(n1))) * 180.0 / M_PI;
@@ -1126,7 +1124,7 @@ namespace {
 	}
 }
 
-void SvgSerializer::write(const geometry_data& data) {
+void svg_serializer::write(const geometry_data& data) {
 	std::vector<section_data> section_heights_storage;
 	const std::vector<section_data>* section_heights_used = &section_heights_storage;
 
@@ -1180,20 +1178,20 @@ void SvgSerializer::write(const geometry_data& data) {
 		std::optional<std::string> operation_type;
 
 		try {
-			std::vector<express::Entity> rels;
+			std::vector<express::entity> rels;
 			if (data.product.declaration().schema()->name() == "IFC2X3") {
-				rels = data.product.as<express::Entity>().get_inverse("IsDefinedBy");
+				rels = data.product.as<express::entity>().get_inverse("IsDefinedBy");
 			} else {
 				// Damn you, IFC
-                rels = data.product.as<express::Entity>().get_inverse("IsTypedBy");
+                rels = data.product.as<express::entity>().get_inverse("IsTypedBy");
 			}
 			for (auto& rel : rels) {
 				if (rel.declaration().name() == "IfcRelDefinesByType") {
-                    express::Base ty = rel.as<express::Entity>().get("RelatingType");
+                    express::base ty = rel.as<express::entity>().get("RelatingType");
 					const std::string& ty_entity_name = ty.declaration().name();
 					// Damn you, IFC
 					if (ty_entity_name == "IfcDoorStyle" || ty_entity_name == "IfcDoorType") {
-                        operation_type = ty.as<express::Entity>().get("OperationType");
+                        operation_type = ty.as<express::entity>().get("OperationType");
 					}
 				}
 			}
@@ -1275,7 +1273,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		gp_Vec projection_direction;
 		gp_Pln projection_plane;
 
-		express::Base storey;
+		express::base storey;
 		std::string drawing_name;
 
 		bool use_hlr = always_project_;
@@ -1708,7 +1706,7 @@ void SvgSerializer::write(const geometry_data& data) {
 			auto proj = projection_direction ^ bbdif ^ projection_direction;
 
 			std::string object_type;
-            auto ot_arg = data.product.as<express::Entity>().get("ObjectType");
+            auto ot_arg = data.product.as<express::entity>().get("ObjectType");
 			if (!ot_arg.isNull()) {
 				object_type = (std::string) ot_arg;
 				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
@@ -1911,12 +1909,12 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				}
 				
-				if (file && data.product.declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::util::count(wire, TopAbs_EDGE) == 1) {
+				if (file && data.product.declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && ifcopenshell::geom::util::count(wire, TopAbs_EDGE) == 1) {
 					
 					std::string elev_str;
 
 					const double lu = file->get_unit("LENGTHUNIT").second;
-                    auto a = data.product.as<express::Entity>().get("Elevation");
+                    auto a = data.product.as<express::entity>().get("Elevation");
 					if (!a.isNull()) {
 						double elev = a;
 						
@@ -2062,7 +2060,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					labels.push_back(data.ifc_name);
 				}
 				if (print_space_names_ && data.product.declaration().is("IfcSpace")) {
-                    auto attr = data.product.as<express::Entity>().get("LongName");
+                    auto attr = data.product.as<express::entity>().get("LongName");
 					if (!attr.isNull()) {
 						std::string long_name = attr;
 						if (!long_name.empty()) {
@@ -2121,11 +2119,11 @@ void SvgSerializer::write(const geometry_data& data) {
 	}
 }
 
-void SvgSerializer::setBoundingRectangle(double width, double height) {
+void svg_serializer::setBoundingRectangle(double width, double height) {
 	size_ = std::make_pair(width, height);
 }
 
-std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
+std::array<std::array<double, 3>, 3> svg_serializer::resize() {
 	// identity matrix;
 	std::array<std::array<double, 3>, 3> m = {{ {{1,0,0}},{{0,1,0}},{{0,0,1}} }};
 
@@ -2189,7 +2187,7 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 	return m;
 }
 
-void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name) {
+void svg_serializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name) {
 	hlr_t& hlr_source = drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr;
 	auto hlr_items = hlr_source.build();
 
@@ -2200,10 +2198,10 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 	// product (one per non-empty class bucket); keep a single path_object/group per product so
 	// per-path classes survive Bonsai's merge_linework_and_add_metadata untouched, rather than
 	// creating a <g> per class (see plan notes on why that clobbers classes in Python).
-	std::map<express::Base, path_object*> group_by_product;
+	std::map<express::base, path_object*> group_by_product;
 
 	for (auto& item : hlr_items) {
-		express::Base product = std::get<0>(item);
+		express::base product = std::get<0>(item);
 		const std::string& cls = std::get<1>(item);
 		const TopoDS_Shape& hlr_compound_unmirrored = std::get<2>(item);
 
@@ -2273,7 +2271,7 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 	}
 }
 
-void SvgSerializer::resetScale() {
+void svg_serializer::resetScale() {
 	// reset the bounding box, as a subsequent drawing (elevation, section) will be centered, but use the same scale.
 	// this is a separate call now as we first need to read drawing extents for automatically positioning sections and
 	// elevations
@@ -2283,7 +2281,7 @@ void SvgSerializer::resetScale() {
 	ymax = -std::numeric_limits<double>::infinity();
 }
 
-void SvgSerializer::addTextAnnotations(const drawing_key& k) {
+void svg_serializer::addTextAnnotations(const drawing_key& k) {
 	auto& meta = drawing_metadata[k];
 
 	std::optional<std::pair<double, double>> range;
@@ -2299,12 +2297,12 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 		}
 	}
 
-	std::vector<express::Base> annotations;
+	std::vector<express::base> annotations;
 	if (file) {
 		annotations = file->instances_by_type("IfcAnnotation");
 	}
 	for (auto& ann_ : annotations) {
-        auto ann = ann_.as<express::Entity>();
+        auto ann = ann_.as<express::entity>();
 
 		auto ot = ann.get("ObjectType");
 		auto nm = ann.get("Name");
@@ -2317,9 +2315,9 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 			auto desc = (std::string) ds;
 
 			if (object_type == "Text") {
-				auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_, logger());
+				auto mapping = ifcopenshell::geom::impl::mapping_implementations().construct(file, settings_, logger());
 				auto item = mapping->map(pl);
-				auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
+				auto matrix = ifcopenshell::geom::taxonomy::cast<ifcopenshell::geom::taxonomy::matrix4>(item);
 				delete mapping;
 				if (item) {
 					gp_Trsf trsf;
@@ -2428,7 +2426,7 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 	}
 }
 
-void SvgSerializer::finalize() {
+void svg_serializer::finalize() {
 	doWriteHeader();
 
 	for (auto& p : drawing_metadata) {
@@ -2532,16 +2530,16 @@ void SvgSerializer::finalize() {
 				const auto& section = boost::get<vertical_section>(sd);
 				const auto& ax = section.plane.Position();
 				
-				draw_hlr(ax, { express::Base{}, drawing_name });
+				draw_hlr(ax, { express::base{}, drawing_name });
 			}
 
-			addTextAnnotations({express::Base{}, drawing_name});
+			addTextAnnotations({express::base{}, drawing_name});
 
 			if (file && storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
 				auto storeys = file->instances_by_type("IfcBuildingStorey");
 				const double lu = file->get_unit("LENGTHUNIT").second;
 				for (auto& s : storeys) {
-                    auto storey = s.as<express::Entity>();
+                    auto storey = s.as<express::entity>();
 					auto a = storey.get("Elevation");
 					if (!a.isNull()) {
 						double elev = a;
@@ -2587,7 +2585,7 @@ void SvgSerializer::finalize() {
 
 			auto m3 = resize();
 
-			auto k = std::make_pair(express::Base{}, drawing_name);
+			auto k = std::make_pair(express::base{}, drawing_name);
 			drawing_metadata[k].matrix_3 = m3;
 
 			resetScale();
@@ -2634,12 +2632,12 @@ void SvgSerializer::finalize() {
 	svg_file.stream << "</svg>" << std::endl;
 }
 
-void SvgSerializer::writeHeader() {
+void svg_serializer::writeHeader() {
 	// This doesn't do anything anymore because there is now the option that an
 	// IfcAnnotation[ObjectType=DRAWING] defines the SVG viewBox and dimensions
 }
 
-void SvgSerializer::doWriteHeader() {
+void svg_serializer::doWriteHeader() {
 	svg_file.stream << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
 	if (use_namespace_) {
 		svg_file.stream << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
@@ -2750,34 +2748,34 @@ return oss.str();
 	}
 }
 
-std::string SvgSerializer::nameElement(express::Base storey, const IfcGeom::Element* elem) {
+std::string svg_serializer::nameElement(express::base storey, const ifcopenshell::geom::element* elem) {
 	auto n = elem->name();
 	ifcopenshell::escape_xml(n);
 
 	return nameElement_({
-		{"id", with_section_heights_from_storey_ ? object_id(storey, elem) : GeometrySerializer::object_id(elem)},
+		{"id", with_section_heights_from_storey_ ? object_id(storey, elem) : geometry_serializer::object_id(elem)},
 		{"class", elem->type()},
 		{namespace_prefix_ + "name", n},
 		{namespace_prefix_ + "guid", elem->guid()}
 		});
 }
 
-std::string SvgSerializer::idElement(express::Base elem_) {
-    auto elem = elem_.as<express::Entity>();
+std::string svg_serializer::idElement(express::base elem_) {
+    auto elem = elem_.as<express::entity>();
 	const std::string type = elem.declaration().is("IfcBuildingStorey") ? "storey" : "product";
 	const std::string name =
-		(settings().get<ifcopenshell::geometry::settings::UseElementGuids>().get()
+		(settings().get<ifcopenshell::geom::settings::UseElementGuids>().get()
 			? static_cast<std::string>(elem.get("GlobalId"))
-			: ((settings().get<ifcopenshell::geometry::settings::UseElementNames>().get() && !elem.get("Name").isNull()))
+			: ((settings().get<ifcopenshell::geom::settings::UseElementNames>().get() && !elem.get("Name").isNull()))
 			? static_cast<std::string>(elem.get("Name"))
-			: (settings().get<ifcopenshell::geometry::settings::UseElementStepIds>().get())
+			: (settings().get<ifcopenshell::geom::settings::UseElementStepIds>().get())
 			? ("id-" + boost::lexical_cast<std::string>(elem.id()))
 			: ifcopenshell::global_id(elem.get("GlobalId")).formatted());
 	return type + "-" + name;
 }
 
-std::string SvgSerializer::nameElement(express::Base elem_) {
-    auto elem = elem_.as<express::Entity>();
+std::string svg_serializer::nameElement(express::base elem_) {
+    auto elem = elem_.as<express::entity>();
 	if (!elem) { return ""; }
 
 	const std::string& entity = elem.declaration().name();
@@ -2795,14 +2793,12 @@ std::string SvgSerializer::nameElement(express::Base elem_) {
 		});
 }
 
-void SvgSerializer::setFile(ifcopenshell::file& f) {
-	using namespace ifcopenshell::geometry::settings;
-
+void svg_serializer::setFile(ifcopenshell::file& f) {
 	file = &f;
 	auto apply_section_heights_from_storeys = [&]() {
-		if (settings().get<SvgSectionHeightFromStoreys>().get()) {
-			if (settings().get<SvgSectionHeight>().has()) {
-				setSectionHeightsFromStoreys(settings().get<SvgSectionHeight>().get());
+		if (settings().get<ifcopenshell::geom::settings::SvgSectionHeightFromStoreys>().get()) {
+			if (settings().get<ifcopenshell::geom::settings::SvgSectionHeight>().has()) {
+				setSectionHeightsFromStoreys(settings().get<ifcopenshell::geom::settings::SvgSectionHeight>().get());
 			} else {
 				setSectionHeightsFromStoreys();
 			}
@@ -2811,7 +2807,7 @@ void SvgSerializer::setFile(ifcopenshell::file& f) {
 
 	auto storeys = f.instances_by_type("IfcBuildingStorey");
 	if (storeys.empty()) {
-		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_, logger());
+		auto mapping = ifcopenshell::geom::impl::mapping_implementations().construct(file, settings_, logger());
 
 		std::vector<const ifcopenshell::declaration*> to_derive_from;
 		to_derive_from.push_back(f.schema()->declaration_by_name("IfcBuilding"));
@@ -2819,10 +2815,10 @@ void SvgSerializer::setFile(ifcopenshell::file& f) {
 		for (auto it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
 			auto insts = f.instances_by_type(*it);
 			for (auto& inst : insts) {
-                auto product = inst.as<express::Entity>();	
+                auto product = inst.as<express::entity>();
 				if (!product.get("ObjectPlacement").isNull()) {
 					auto item = mapping->map(product.get("ObjectPlacement"));
-					auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
+					auto matrix = ifcopenshell::geom::taxonomy::cast<ifcopenshell::geom::taxonomy::matrix4>(item);
 					gp_Trsf trsf;
 					if (matrix) {
 						// @todo shouldn't this take into account configurable section height?
@@ -2846,12 +2842,12 @@ void SvgSerializer::setFile(ifcopenshell::file& f) {
 	apply_section_heights_from_storeys();
 }
 
-void SvgSerializer::setSectionHeight(double h, express::Base storey) {
+void svg_serializer::setSectionHeight(double h, express::base storey) {
 	section_data_.emplace();
 	section_data_->push_back(horizontal_plan{ storey, h, 0., std::numeric_limits<double>::infinity() });
 }
 
-void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
+void svg_serializer::setSectionHeightsFromStoreys(double offset) {
 	if (!file) {
 		logger().error("SER", 32, "No file specified");
 		return;
@@ -2862,7 +2858,7 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	const double lu = file->get_unit("LENGTHUNIT").second;
     if (!storeys.empty()) {
         for (auto& s : storeys) {
-            auto attr_value = s.as<express::Entity>().get("Elevation");	
+            auto attr_value = s.as<express::entity>().get("Elevation");
             if (!attr_value.isNull()) {
                 double elev;
                 try {
@@ -2898,7 +2894,7 @@ namespace {
 	}
 }
 
-std::string SvgSerializer::writeMetadata(const drawing_meta& m) {
+std::string svg_serializer::writeMetadata(const drawing_meta& m) {
 	gp_Trsf trsf;
 	trsf.SetTransformation(m.pln_3d.Position(), gp::XOY());
 	NCollection_Mat4<double> mat4;

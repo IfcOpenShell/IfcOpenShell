@@ -9,11 +9,11 @@
 #include <list>
 #include <vector>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace util {
-		bool apply_layerset(const ConversionResults&, const std::vector<opencascade::handle<Geom_Surface>>&, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&, ConversionResults&, double tol);
+		bool apply_layerset(const conversion_results&, const std::vector<opencascade::handle<Geom_Surface>>&, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>&, conversion_results&, double tol);
 
-		bool apply_folded_layerset(const ConversionResults&, const std::vector<std::vector<opencascade::handle<Geom_Surface>>>&, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&, ConversionResults&, double tol);
+		bool apply_folded_layerset(const conversion_results&, const std::vector<std::vector<opencascade::handle<Geom_Surface>>>&, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>&, conversion_results&, double tol);
 
 		bool split_solid_by_surface(const TopoDS_Shape&, const opencascade::handle<Geom_Surface>&, TopoDS_Shape&, TopoDS_Shape&, double tol);
 

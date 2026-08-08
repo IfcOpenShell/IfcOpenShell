@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
@@ -95,7 +95,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	}
 
 	if (spans.empty()) {
-		std::vector<express::Entity> profile = inst.file()->get_inverse(inst.id(), &IfcSchema::IfcProfileDef::Class(), -1);
+		std::vector<express::entity> profile = inst.file()->get_inverse(inst.id(), &IfcSchema::IfcProfileDef::Class(), -1);
         const bool force_close = !profile.empty();
 		loop->closed = force_close;
 		loop->instance = inst;
@@ -182,7 +182,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 
 	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
-	std::vector<express::Base> profile = inst.data().get_inverse(&IfcSchema::IfcProfileDef::Class(), -1);
+	std::vector<express::base> profile = inst.data().get_inverse(&IfcSchema::IfcProfileDef::Class(), -1);
 	const bool force_close = profile && profile->size() > 0;
 
 	util::wire_builder bld(getValue(GV_PRECISION), l);

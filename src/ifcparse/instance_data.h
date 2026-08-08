@@ -75,72 +75,72 @@ class IFC_PARSE_API empty_aggregate_of_aggregate_t {};
 
 namespace impl {
     template <>
-    struct VariantTypeName<blank> {
+    struct variant_type_name<blank> {
         static std::string get() { return "null"; }
     };
 
     template <>
-    struct VariantTypeName<derived> {
+    struct variant_type_name<derived> {
         static std::string get() { return "derived"; }
     };
 
     template <>
-    struct VariantTypeName<int> {
+    struct variant_type_name<int> {
         static std::string get() { return "int"; }
     };
 
     template <>
-    struct VariantTypeName<int64_t> {
+    struct variant_type_name<int64_t> {
         static std::string get() { return "int"; }
     };
 
     template <>
-    struct VariantTypeName<bool> {
+    struct variant_type_name<bool> {
         static std::string get() { return "bool"; }
     };
 
     template <>
-    struct VariantTypeName<boost::logic::tribool> {
+    struct variant_type_name<boost::logic::tribool> {
         static std::string get() { return "logical"; }
     };
 
     template <>
-    struct VariantTypeName<double> {
+    struct variant_type_name<double> {
         static std::string get() { return "real"; }
     };
 
     template <>
-    struct VariantTypeName<std::string> {
+    struct variant_type_name<std::string> {
         static std::string get() { return "string"; }
     };
 
     template <>
-    struct VariantTypeName<boost::dynamic_bitset<>> {
+    struct variant_type_name<boost::dynamic_bitset<>> {
         static std::string get() { return "binary"; }
     };
 
     template <>
-    struct VariantTypeName<enumeration_reference> {
+    struct variant_type_name<enumeration_reference> {
         static std::string get() { return "enumeration"; }
     };
 
     template <>
-    struct VariantTypeName<express::Base> {
+    struct variant_type_name<express::base> {
         static std::string get() { return "instance"; }
     };
 
     template <>
-    struct VariantTypeName<empty_aggregate_t> {
+    struct variant_type_name<empty_aggregate_t> {
         static std::string get() { return "aggregate"; }
     };
 
     template <typename T, typename Allocator>
-    struct VariantTypeName<std::vector<T, Allocator>> {
-        static std::string get() { return "aggregate of " + VariantTypeName<T>::get(); }
+    struct variant_type_name<std::vector<T, Allocator>> {
+        static std::string get() { return "aggregate of " + variant_type_name<T>::get(); }
     };
 
     template <>
-    struct VariantTypeName<empty_aggregate_of_aggregate_t> {
+    struct variant_type_name<empty_aggregate_of_aggregate_t> {
         static std::string get() { return "aggregate of aggregate"; }
     };
 }
@@ -182,7 +182,7 @@ typedef parameter_pack <
     // An entity instance argument. It will either serialize to
     // e.g. #123 or datatype identifier for simple types, e.g.
     // IFCREAL(12.3)
-    express::Base,
+    express::base,
 
     // AGGREGATES:
     empty_aggregate_t,
@@ -198,7 +198,7 @@ typedef parameter_pack <
     // An aggregate of entity instances. It will either serialize to
     // e.g. (#1,#2,#3) or datatype identifier for simple types,
     // e.g. (IFCREAL(1.2),IFCINTEGER(3.))
-    std::vector<express::Base>,
+    std::vector<express::base>,
 
     // AGGREGATES OF AGGREGATES:
     empty_aggregate_of_aggregate_t,
@@ -207,7 +207,7 @@ typedef parameter_pack <
     // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
     std::vector<std::vector<double>>,
     // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
-    std::vector<std::vector<express::Base>>>
+    std::vector<std::vector<express::base>>>
 type_variant_parameter_pack;
 
 template<typename Pack>
@@ -221,17 +221,17 @@ struct pack_to_variant_array<parameter_pack<Args...>> {
 using in_memory_attribute_storage = pack_to_variant_array<type_variant_parameter_pack>::type;
 
 template <typename Pack>
-struct TypeEncoder_t;
+struct type_encoder_t;
 
 template <typename... Types>
-struct TypeEncoder_t<parameter_pack<Types...>> {
+struct type_encoder_t<parameter_pack<Types...>> {
     template <typename U>
     static char encode_type() {
         return 'A' + ::impl::TypeIndex_v<U, Types...>;
     }
 };
 
-using TypeEncoder = TypeEncoder_t<type_variant_parameter_pack>;
+using type_encoder = type_encoder_t<type_variant_parameter_pack>;
 
 class IFC_PARSE_API mutable_attribute_value {
   public:
@@ -261,14 +261,14 @@ namespace impl {
     bool serialize(std::string& buffer, const T& value) {
         auto byte_count = sizeof(typename T::value_type) * value.size();
         buffer.resize(byte_count + 1);
-        buffer[0] = TypeEncoder::encode_type<T>();
+        buffer[0] = type_encoder::encode_type<T>();
         memcpy(buffer.data() + 1, value.data(), byte_count);
         return true;
     }
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value&& is_contiguous_container<typename T::value_type>::value, int>::type = 0>
     bool serialize(std::string& buffer, const T& value) {
-        buffer = std::string(1, TypeEncoder::encode_type<T>());
+        buffer = std::string(1, type_encoder::encode_type<T>());
         for (auto& nested_value : value) {
             std::string nested_buffer;
             serialize(nested_buffer, nested_value);
@@ -285,7 +285,7 @@ namespace impl {
     template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
     bool serialize(std::string& buffer, const T& value) {
         buffer.resize(sizeof(T) + 1);
-        buffer[0] = TypeEncoder::encode_type<T>();
+        buffer[0] = type_encoder::encode_type<T>();
         memcpy(buffer.data() + 1, &value, sizeof(T));
         return true;
     }
@@ -300,18 +300,18 @@ namespace impl {
 
     bool serialize(std::string& buffer, const boost::dynamic_bitset<>& value);
     
-    bool serialize(std::string& buffer, const express::Base& value);
+    bool serialize(std::string& buffer, const express::base& value);
 
     bool serialize(std::string& buffer, const enumeration_reference& value);
 
-    bool serialize(std::string& buffer, const std::vector<express::Base>& value);
+    bool serialize(std::string& buffer, const std::vector<express::base>& value);
 
-    bool serialize(std::string& buffer, const std::vector<std::vector<express::Base>>& value);
+    bool serialize(std::string& buffer, const std::vector<std::vector<express::base>>& value);
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value && !is_contiguous_container<typename T::value_type>::value, int>::type = 0>
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value, bool has_type_prefix = true) {
         static_cast<void>(storage);
-        if (has_type_prefix && buffer[0] != TypeEncoder::encode_type<T>()) {
+        if (has_type_prefix && buffer[0] != type_encoder::encode_type<T>()) {
             return false;
         }
         auto element_count = (buffer.size() - (has_type_prefix ? 1 : 0)) / sizeof(typename T::value_type);
@@ -324,7 +324,7 @@ namespace impl {
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value) {
         // @todo
         auto ptr = buffer.data();
-        if (*ptr != TypeEncoder::encode_type<T>()) {
+        if (*ptr != type_encoder::encode_type<T>()) {
             return false;
         }
         ptr++;
@@ -345,7 +345,7 @@ namespace impl {
     template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value) {
         static_cast<void>(storage);
-        if (buffer[0] != TypeEncoder::encode_type<T>()) {
+        if (buffer[0] != type_encoder::encode_type<T>()) {
             return false;
         }
         memcpy(&value, buffer.data() + 1, sizeof(T));
@@ -356,9 +356,9 @@ namespace impl {
 
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, boost::dynamic_bitset<>& value);
 
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<express::Base>& value);
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<express::base>& value);
 
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<std::vector<express::Base>>& value);
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<std::vector<express::base>>& value);
     }
 
 #endif
@@ -408,17 +408,17 @@ public:
     operator double() const;
     operator std::string() const;
     operator boost::dynamic_bitset<>() const;
-    operator express::Base() const;
+    operator express::base() const;
 
     operator std::vector<int64_t>() const;
     operator std::vector<double>() const;
     operator std::vector<std::string>() const;
     operator std::vector<boost::dynamic_bitset<>>() const;
-    operator std::vector<express::Base>() const;
+    operator std::vector<express::base>() const;
 
     operator std::vector<std::vector<int64_t>>() const;
     operator std::vector<std::vector<double>>() const;
-    operator std::vector<std::vector<express::Base>>() const;
+    operator std::vector<std::vector<express::base>>() const;
 
     operator enumeration_reference() const;
 
@@ -449,7 +449,7 @@ public:
             case ifcopenshell::Argument_ENUMERATION:
                 return visitor((enumeration_reference)*this);
             case ifcopenshell::Argument_ENTITY_INSTANCE:
-                return visitor((express::Base) * this);
+                return visitor((express::base) * this);
             case ifcopenshell::Argument_AGGREGATE_OF_INT:
                 return visitor((std::vector<int64_t>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_DOUBLE:
@@ -459,13 +459,13 @@ public:
             case ifcopenshell::Argument_AGGREGATE_OF_BINARY:
                 return visitor((std::vector<boost::dynamic_bitset<>>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE:
-                return visitor((std::vector<express::Base>)*this);
+                return visitor((std::vector<express::base>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_INT:
                 return visitor((std::vector<std::vector<int64_t>>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE:
                 return visitor((std::vector<std::vector<double>>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE:
-                return visitor((std::vector<std::vector<express::Base>>)*this);
+                return visitor((std::vector<std::vector<express::base>>)*this);
             case ifcopenshell::Argument_EMPTY_AGGREGATE:
                 return visitor(empty_aggregate_t{});
             case ifcopenshell::Argument_AGGREGATE_OF_EMPTY_AGGREGATE:

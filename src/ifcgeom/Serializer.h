@@ -23,11 +23,11 @@
 #include "ifc_geom_api.h"
 #include "../ifcparse/file.h"
 
-class IFC_GEOM_API Serializer {
+class IFC_GEOM_API serializer {
 	::logger& logger_;
 public:
-	explicit Serializer(::logger& logger = ::logger::root()) : logger_(logger) {}
-	virtual ~Serializer() {}
+	explicit serializer(::logger& logger = ::logger::root()) : logger_(logger) {}
+	virtual ~serializer() {}
 
 	::logger& logger() const { return logger_; }
 

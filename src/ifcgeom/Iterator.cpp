@@ -15,7 +15,7 @@
 * - For non-concurrent iterators, a false return may occur if initialization of the first
 *   element fails, even if subsequent elements could be initialized successfully.
 */
-bool IfcGeom::Iterator::initialize() {
+bool ifcopenshell::geom::iterator::initialize() {
 	using std::chrono::high_resolution_clock;
 
 	if (initialization_outcome_) {
@@ -23,7 +23,7 @@ bool IfcGeom::Iterator::initialize() {
 	}
 
 	time_points[0] = high_resolution_clock::now();
-	std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
+	std::vector<ifcopenshell::geom::geometry_conversion_task> reps;
 	if (num_threads_ != 1) {
 		// @todo this shouldn't be necessary with properly immutable taxonomy items
 		converter_->mapping()->use_caching() = false;
@@ -38,7 +38,7 @@ bool IfcGeom::Iterator::initialize() {
 	for (auto& task : reps) {
 		geometry_conversion_result res;
 		res.index = task.index;
-		if (!settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+		if (!settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get()) {
 			res.representation = task.representation;
 			res.products_2 = task.products;
 		} else {
@@ -46,25 +46,25 @@ bool IfcGeom::Iterator::initialize() {
 			if (!res.item) {
 				continue;
 			}
-			std::transform(task.products.begin(), task.products.end(), std::back_inserter(res.products), [this, &res](const express::Base& prod) {
+			std::transform(task.products.begin(), task.products.end(), std::back_inserter(res.products), [this, &res](const express::base& prod) {
 				auto prod_item = converter_->mapping()->map(prod);
-				return std::make_pair(prod, ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
+				return std::make_pair(prod, ifcopenshell::geom::taxonomy::cast<ifcopenshell::geom::taxonomy::geom_item>(prod_item)->matrix);
 			});
 		}
 		tasks_.push_back(res);
 	}
 
-	if (settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get()) {
+	if (settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geom::settings::PermissiveShapeReuse>().get()) {
 		std::unordered_map<
-			ifcopenshell::geometry::taxonomy::item::ptr,
-			std::vector<std::pair<express::Base, ifcopenshell::geometry::taxonomy::matrix4::ptr>>> folded;
+			ifcopenshell::geom::taxonomy::item::ptr,
+			std::vector<std::pair<express::base, ifcopenshell::geom::taxonomy::matrix4::ptr>>> folded;
 
 		for (auto& r : tasks_) {
 			auto i = r.item;
 
 			Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
 
-			while (auto col = std::dynamic_pointer_cast<ifcopenshell::geometry::taxonomy::collection>(i)) {
+			while (auto col = std::dynamic_pointer_cast<ifcopenshell::geom::taxonomy::collection>(i)) {
 				if (col->children.size() == 1) {
 					if (col->matrix) {
 						m4 *= col->matrix->ccomponents();
@@ -76,7 +76,7 @@ bool IfcGeom::Iterator::initialize() {
 			}
 
 			for (auto& p : r.products) {
-				auto pl = ifcopenshell::geometry::taxonomy::matrix4::ptr(p.second->clone_());
+				auto pl = ifcopenshell::geom::taxonomy::matrix4::ptr(p.second->clone_());
 				pl->components() *= m4;
 				folded[i].push_back(
 					{ p.first, pl }
@@ -98,13 +98,13 @@ bool IfcGeom::Iterator::initialize() {
 		}
 	}
 
-	if (settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+	if (settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get()) {
 		remove_offset_();
 	}
 
 	size_t num_products = 0;
 	for (auto& r : tasks_) {
-		num_products += !settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() ? r.products_2.size() : r.products.size();
+		num_products += !settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get() ? r.products_2.size() : r.products.size();
 	}
 
 	time_points[2] = high_resolution_clock::now();
@@ -116,7 +116,7 @@ bool IfcGeom::Iterator::initialize() {
 
 	std::vector<taxonomy::ptr> items;
 	std::map<taxonomy::ptr, taxonomy::matrix4> placements;
-	std::transform(products.begin(), products.end(), std::back_inserter(items), [this, &placements](express::Base p) {
+	std::transform(products.begin(), products.end(), std::back_inserter(items), [this, &placements](express::base p) {
 	auto item = converter_->mapping()->map(p);
 	// Product placements do not affect item reuse and should temporarily be swapped to identity
 	if (item) {
@@ -132,7 +132,7 @@ bool IfcGeom::Iterator::initialize() {
 	geometry_conversion_result r;
 	r.item = *it;
 	std::transform(it, jt, std::back_inserter(r.products), [&r, &placements](taxonomy::ptr product_node) {
-	return std::make_pair((express::Base) product_node->instance, placements[product_node]);
+	return std::make_pair((express::base) product_node->instance, placements[product_node]);
 	});
 	tasks_.push_back(r);
 	it = jt;
@@ -144,7 +144,7 @@ bool IfcGeom::Iterator::initialize() {
 	if (tasks_.size() == 0) {
 		logger_.warning("GEO", 51, "No representations encountered, aborting");
 		initialization_outcome_ = false;
-	} else if (!settings_.get<ifcopenshell::geometry::settings::DeferProcessingFirstElement>().get()) {
+	} else if (!settings_.get<ifcopenshell::geom::settings::DeferProcessingFirstElement>().get()) {
 
 		task_iterator_ = tasks_.begin();
 
@@ -167,13 +167,13 @@ bool IfcGeom::Iterator::initialize() {
 	return *initialization_outcome_;
 }
 
-void IfcGeom::Iterator::flush_worker_log(ifcopenshell::geometry::Converter* kernel) {
+void ifcopenshell::geom::iterator::flush_worker_log(ifcopenshell::geom::converter* kernel) {
 	if (kernel && &kernel->logger() != &logger_) {
 		logger_.append(kernel->logger());
 	}
 }
 
-void IfcGeom::Iterator::process_finished_rep(geometry_conversion_result* rep, ifcopenshell::geometry::Converter* kernel) {
+void ifcopenshell::geom::iterator::process_finished_rep(geometry_conversion_result* rep, ifcopenshell::geom::converter* kernel) {
 	flush_worker_log(kernel);
 
 	if (rep->elements.empty()) {
@@ -194,7 +194,7 @@ void IfcGeom::Iterator::process_finished_rep(geometry_conversion_result* rep, if
 	progress_ = (int)(++processed_ * 100 / tasks_.size());
 }
 
-void IfcGeom::Iterator::process_concurrently() {
+void ifcopenshell::geom::iterator::process_concurrently() {
 	size_t conc_threads = num_threads_;
 	if (conc_threads > tasks_.size()) {
 		conc_threads = tasks_.size();
@@ -211,13 +211,13 @@ void IfcGeom::Iterator::process_concurrently() {
 		if (worker_logger.output_format() != ::logger::FMT_INMEMORY) {
 			worker_logger.set_output(static_cast<std::ostream*>(nullptr), static_cast<std::ostream*>(nullptr));
 		}
-		kernel_pool.push_back(new ifcopenshell::geometry::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(converter_->kernel()->clone(worker_logger)), ifc_file, settings_, worker_logger));
+		kernel_pool.push_back(new ifcopenshell::geom::converter(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>(converter_->kernel()->clone(worker_logger)), ifc_file, settings_, worker_logger));
 	}
 
 	std::vector<std::future<geometry_conversion_result*>> threadpool;
 
 	for (auto& rep : tasks_) {
-		ifcopenshell::geometry::Converter* K = nullptr;
+		ifcopenshell::geom::converter* K = nullptr;
 		if (threadpool.size() < kernel_pool.size()) {
 			K = kernel_pool[threadpool.size()];
 		}
@@ -242,8 +242,8 @@ void IfcGeom::Iterator::process_concurrently() {
 
 		std::future<geometry_conversion_result*> fu = std::async(
 			std::launch::async, [this](
-				ifcopenshell::geometry::Converter* kernel,
-				ifcopenshell::geometry::Settings settings,
+				ifcopenshell::geom::converter* kernel,
+				ifcopenshell::geom::settings settings,
 				geometry_conversion_result* rep) {
 			// Catch exceptions to be safe from freezing the iterator.
 			try {
@@ -281,7 +281,7 @@ void IfcGeom::Iterator::process_concurrently() {
 
 	finished_ = true;
 
-	logger_.set_product(std::optional<express::Base>{});
+	logger_.set_product(std::optional<express::base>{});
 
 	if (!terminating_) {
 		logger_.status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
@@ -291,7 +291,7 @@ void IfcGeom::Iterator::process_concurrently() {
 
 /// Computes model's bounding box (bounds_min and bounds_max).
 /// @note Can take several minutes for large files.
-void IfcGeom::Iterator::compute_bounds(bool with_geometry)
+void ifcopenshell::geom::iterator::compute_bounds(bool with_geometry)
 {
 	for (int i = 0; i < 3; ++i) {
 		bounds_min_.components()(i) = std::numeric_limits<double>::infinity();
@@ -301,9 +301,9 @@ void IfcGeom::Iterator::compute_bounds(bool with_geometry)
 	if (with_geometry) {
 		size_t num_created = 0;
 		do {
-			IfcGeom::Element* geom_object = get();
-			const IfcGeom::TriangulationElement* o = static_cast<const IfcGeom::TriangulationElement*>(geom_object);
-			const IfcGeom::Representation::Triangulation& mesh = o->geometry();
+			ifcopenshell::geom::element* geom_object = get();
+			const ifcopenshell::geom::triangulation_element* o = static_cast<const ifcopenshell::geom::triangulation_element*>(geom_object);
+			const ifcopenshell::geom::Representation::triangulation& mesh = o->geometry();
 			auto mat = o->transformation().data()->ccomponents();
 			Eigen::Vector4d vec, transformed;
 
@@ -321,17 +321,17 @@ void IfcGeom::Iterator::compute_bounds(bool with_geometry)
 			}
 		} while (++num_created, next());
 	} else {
-		std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
+		std::vector<ifcopenshell::geom::geometry_conversion_task> reps;
 		converter_->mapping()->get_representations(reps, filters_);
 
-		std::vector<express::Base> products;
+		std::vector<express::base> products;
 		for (auto& r : reps) {
 			std::copy(r.products.begin(), r.products.end(), std::back_inserter(products));
 		}
 
 		for (auto& product : products) {
 			auto prod_item = converter_->mapping()->map(product);
-			auto vec = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix->translation_part();
+			auto vec = ifcopenshell::geom::taxonomy::cast<ifcopenshell::geom::taxonomy::geom_item>(prod_item)->matrix->translation_part();
 
 			for (int i = 0; i < 3; ++i) {
 				bounds_min_.components()(i) = std::min(bounds_min_.components()(i), vec(i));
@@ -341,7 +341,7 @@ void IfcGeom::Iterator::compute_bounds(bool with_geometry)
 	}
 }
 
-express::Base IfcGeom::Iterator::create_shape_model_for_next_entity() {
+express::base ifcopenshell::geom::iterator::create_shape_model_for_next_entity() {
 	geometry_conversion_result* task = nullptr;
 	for (; task_iterator_ < tasks_.end();) {
 		task = &*task_iterator_++;
@@ -356,44 +356,44 @@ express::Base IfcGeom::Iterator::create_shape_model_for_next_entity() {
 		process_finished_rep(task);
         return task->item->instance;
 	} else {
-        return express::Base{};
+        return express::base{};
 	}
 }
 
-void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kernel, ifcopenshell::geometry::Settings settings, geometry_conversion_result* rep)
+void ifcopenshell::geom::iterator::create_element_(ifcopenshell::geom::converter* kernel, ifcopenshell::geom::settings settings, geometry_conversion_result* rep)
 {
 	::logger& kernel_logger = kernel->logger();
 
-	if (!settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+	if (!settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get()) {
 		rep->item = kernel->mapping()->map(rep->representation);
 		if (!rep->item) {
 			return;
 		}
-		std::transform(rep->products_2.begin(), rep->products_2.end(), std::back_inserter(rep->products), [this, &rep, kernel](const express::Base& prod) {
+		std::transform(rep->products_2.begin(), rep->products_2.end(), std::back_inserter(rep->products), [this, &rep, kernel](const express::base& prod) {
 			auto prod_item = kernel->mapping()->map(prod);
-			return std::make_pair(prod, ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
+			return std::make_pair(prod, ifcopenshell::geom::taxonomy::cast<ifcopenshell::geom::taxonomy::geom_item>(prod_item)->matrix);
 		});
 	} else {
 	}
 
 	auto product_node = rep->products.front();
-	const express::Base product = product_node.first;
+	const express::base product = product_node.first;
 	const auto& place = product_node.second;
 
 	kernel_logger.set_product(product);
 
-	IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(create_processed_element_([kernel, settings, product, place, rep]() {
+	ifcopenshell::geom::brep_element* brep = static_cast<ifcopenshell::geom::brep_element*>(create_processed_element_([kernel, settings, product, place, rep]() {
 		return kernel->create_brep_for_representation_and_product(rep->item, product, place);
 	}));
 
 	if (!brep) {
-        kernel_logger.set_product(std::optional<express::Base>{});
+        kernel_logger.set_product(std::optional<express::base>{});
 		return;
 	}
 
 	auto elem = process_based_on_settings(settings, brep, kernel_logger);
 	if (!elem) {
-        kernel_logger.set_product(std::optional<express::Base>{});
+        kernel_logger.set_product(std::optional<express::base>{});
 		return;
 	}
 
@@ -402,16 +402,16 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 
 	for (auto it = rep->products.begin() + 1; it != rep->products.end(); ++it) {
 		const auto& p = *it;
-		const express::Base product2 = p.first;
+		const express::base product2 = p.first;
 		const auto& place2 = p.second;
 
 		kernel_logger.set_product(product2);
 
-		IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(create_processed_element_([kernel, settings, product2, place2, brep]() {
+		ifcopenshell::geom::brep_element* brep2 = static_cast<ifcopenshell::geom::brep_element*>(create_processed_element_([kernel, settings, product2, place2, brep]() {
 			return kernel->create_brep_for_processed_representation(product2, place2, brep);
 		}));
 		if (brep2) {
-			auto elem2 = process_based_on_settings(settings, brep2, kernel_logger, dynamic_cast<IfcGeom::TriangulationElement*>(elem));
+			auto elem2 = process_based_on_settings(settings, brep2, kernel_logger, dynamic_cast<ifcopenshell::geom::triangulation_element*>(elem));
 			if (elem2) {
 				rep->breps.push_back(brep2);
 				rep->elements.push_back(elem2);
@@ -419,37 +419,37 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 		}
 	}
 
-	kernel_logger.set_product(std::optional<express::Base>{});
+	kernel_logger.set_product(std::optional<express::base>{});
 }
 
-IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geometry::Settings settings, IfcGeom::BRepElement* elem, ::logger& logger, IfcGeom::TriangulationElement* previous)
+ifcopenshell::geom::element* ifcopenshell::geom::iterator::process_based_on_settings(ifcopenshell::geom::settings settings, ifcopenshell::geom::brep_element* elem, ::logger& logger, ifcopenshell::geom::triangulation_element* previous)
 {
-	if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
+	if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::SERIALIZED) {
 		try {
-			return new IfcGeom::SerializedElement(*elem);
+			return new ifcopenshell::geom::serialized_element(*elem);
 		} catch (...) {
 			logger.message(::logger::LOG_ERROR, "GEO", 54, "Getting a serialized element from model failed.");
 			return nullptr;
 		}
-	} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
+	} else if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::TRIANGULATED) {
 		return create_processed_element_([elem, previous, &logger]() {
 			try {
 				if (!previous) {
-					return new TriangulationElement(*elem);
+					return new triangulation_element(*elem);
 				} else {
-					return new TriangulationElement(*elem, previous->geometry_pointer());
+					return new triangulation_element(*elem, previous->geometry_pointer());
 				}
 			} catch (...) {
 				logger.message(::logger::LOG_ERROR, "GEO", 55, "Getting a triangulation element from model failed.");
 			}
-			return (TriangulationElement*)nullptr;
+			return (triangulation_element*)nullptr;
 		});
 	} else {
 		return elem;
 	}
 }
 
-bool IfcGeom::Iterator::wait_for_element() {
+bool ifcopenshell::geom::iterator::wait_for_element() {
 	while (true) {
 		size_t s;
 		{
@@ -467,7 +467,7 @@ bool IfcGeom::Iterator::wait_for_element() {
 	}
 }
 
-void IfcGeom::Iterator::log_timepoints() const {
+void ifcopenshell::geom::iterator::log_timepoints() const {
 	using std::chrono::high_resolution_clock;
 	using std::chrono::duration;
 	using namespace std::string_literals;
@@ -485,9 +485,9 @@ void IfcGeom::Iterator::log_timepoints() const {
 	}
 }
 
-void IfcGeom::Iterator::validate_iterator_state() const {
+void ifcopenshell::geom::iterator::validate_iterator_state() const {
 	if (!initialization_outcome_) {
-		throw std::runtime_error("Iterator not initialized");
+		throw std::runtime_error("iterator not initialized");
 	}
 
 	// Causes:
@@ -499,13 +499,13 @@ void IfcGeom::Iterator::validate_iterator_state() const {
 	}
 
 	if (task_result_ptr_exhausted) {
-		throw std::runtime_error("Iterator is exhausted");
+		throw std::runtime_error("iterator is exhausted");
 	}
 }
 
 /// Moves to the next shape representation, create its geometry, and returns the associated product.
 /// Use get() to retrieve the created geometry.
-express::Base IfcGeom::Iterator::next() {
+express::base ifcopenshell::geom::iterator::next() {
 	using std::chrono::high_resolution_clock;
 	validate_iterator_state();
 
@@ -516,11 +516,11 @@ express::Base IfcGeom::Iterator::next() {
 
 	if (num_threads_ != 1) {
 		if (!wait_for_element()) {
-			logger_.set_product(std::optional<express::Base>{});
+			logger_.set_product(std::optional<express::base>{});
 			time_points[3] = high_resolution_clock::now();
 			log_timepoints();
 			task_result_ptr_exhausted = true;
-            return express::Base{};
+            return express::base{};
 		}
 
 		task_result_iterator_++;
@@ -532,11 +532,11 @@ express::Base IfcGeom::Iterator::next() {
 		// shape representation
 		if (task_result_iterator_ == --all_processed_elements_.end()) {
 			if (!create()) {
-				logger_.set_product(std::optional<express::Base>{});
+				logger_.set_product(std::optional<express::base>{});
 				time_points[3] = high_resolution_clock::now();
 				log_timepoints();
 				task_result_ptr_exhausted = true;
-                return express::Base{};
+                return express::base{};
 			}
 		}
 
@@ -548,21 +548,21 @@ express::Base IfcGeom::Iterator::next() {
 }
 
 /// Gets the representation of the current geometrical entity.
-IfcGeom::Element* IfcGeom::Iterator::get()
+ifcopenshell::geom::element* ifcopenshell::geom::iterator::get()
 {
 	validate_iterator_state();
 
 	auto ret = *task_result_iterator_;
 
 	// If we want to organize the element considering their hierarchy
-	if (settings_.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get()) {
+	if (settings_.get<ifcopenshell::geom::settings::UseElementHierarchy>().get()) {
 		// We are going to build a vector with the element parents.
 		// First, create the parent vector
-		std::vector<const IfcGeom::Element*> parents;
+		std::vector<const ifcopenshell::geom::element*> parents;
 
 		// if the element has a parent
 		if (ret->parent_id() != -1) {
-			const IfcGeom::Element* parent_object = NULL;
+			const ifcopenshell::geom::element* parent_object = NULL;
 			bool hasParent = true;
 
 			// get the parent
@@ -598,7 +598,7 @@ IfcGeom::Element* IfcGeom::Iterator::get()
 				hasParent = hasParent && parent_object->parent_id() != -1;
 			}
 
-			// when done push the parent list in the Element object
+			// when done push the parent list in the element object
 			ret->SetParents(parents);
 		}
 	}
@@ -606,19 +606,19 @@ IfcGeom::Element* IfcGeom::Iterator::get()
 	return ret;
 }
 
-const IfcGeom::Element* IfcGeom::Iterator::get_object(int id) {
-	ifcopenshell::geometry::taxonomy::matrix4::ptr m4;
+const ifcopenshell::geom::element* ifcopenshell::geom::iterator::get_object(int id) {
+	ifcopenshell::geom::taxonomy::matrix4::ptr m4;
 	int parent_id = -1;
 	std::string instance_type, product_name, product_guid;
-    express::Base ifc_product;
+    express::base ifc_product;
 
 	try {
         ifc_product = ifc_file->instance_by_id(id);
 		instance_type = ifc_product.declaration().name();
 
 		if (ifc_product.declaration().is("IfcRoot")) {
-			product_guid = ifc_product.as<express::Entity>().get_value<std::string>("GlobalId");
-            product_name = ifc_product.as<express::Entity>().get_value<std::string>("Name", "");
+			product_guid = ifc_product.as<express::entity>().get_value<std::string>("GlobalId");
+            product_name = ifc_product.as<express::entity>().get_value<std::string>("Name", "");
 		}
 
 		auto parent_object = converter_->mapping()->get_decomposing_entity(ifc_product);
@@ -628,7 +628,7 @@ const IfcGeom::Element* IfcGeom::Iterator::get_object(int id) {
 
 		// fails in case of IfcProject
 		auto mapped = converter_->mapping()->map(ifc_product);
-		auto casted = mapped ? ifcopenshell::geometry::taxonomy::dcast<ifcopenshell::geometry::taxonomy::geom_item>(mapped) : nullptr;
+		auto casted = mapped ? ifcopenshell::geom::taxonomy::dcast<ifcopenshell::geom::taxonomy::geom_item>(mapped) : nullptr;
 
 		if (casted) {
 			m4 = casted->matrix;
@@ -639,12 +639,12 @@ const IfcGeom::Element* IfcGeom::Iterator::get_object(int id) {
 		logger_.error("GEO", 59, "Unknown error returning product");
 	}
 
-	Element* ifc_object = new Element(settings_, id, parent_id, product_name, instance_type, product_guid, "", m4, ifc_product.as<express::Entity>());
+	element* ifc_object = new element(settings_, id, parent_id, product_name, instance_type, product_guid, "", m4, ifc_product.as<express::entity>());
 	return ifc_object;
 }
 
-express::Base IfcGeom::Iterator::create() {
-    express::Base product;
+express::base ifcopenshell::geom::iterator::create() {
+    express::base product;
 	try {
 		product = create_shape_model_for_next_entity();
 	} catch (const std::exception& e) {
@@ -657,20 +657,19 @@ express::Base IfcGeom::Iterator::create() {
 	return product;
 }
 
-ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offset_() {
+ifcopenshell::geom::taxonomy::direction3::ptr ifcopenshell::geom::iterator::remove_offset_() {
 	
-	using namespace ifcopenshell::geometry::taxonomy;
-	using namespace ifcopenshell::geometry::settings;
+	using namespace ifcopenshell::geom::taxonomy;
 	
-	if (!settings_.get<MaxOffset>().has()) {
+	if (!settings_.get<ifcopenshell::geom::settings::MaxOffset>().has()) {
 		return nullptr;
 	}
 	
-	if (!settings_.get<NoParallelMapping>().get()) {
+	if (!settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get()) {
 		throw std::runtime_error("remove_offset() can only be called with defer-processing-first-element and no-parallel-mapping settings");
 	}
 
-	auto collect_offset = [&](const item::ptr& itm, const std::vector<std::pair<express::Base, matrix4::ptr>>& pr) -> std::pair<double, Eigen::Vector3d> {
+	auto collect_offset = [&](const item::ptr& itm, const std::vector<std::pair<express::base, matrix4::ptr>>& pr) -> std::pair<double, Eigen::Vector3d> {
 		std::function<std::pair<double, Eigen::Vector3d>(const item::ptr&, Eigen::Matrix4d)> traverse;
 		traverse = [&](const item::ptr& node, Eigen::Matrix4d m4) -> std::pair<double, Eigen::Vector3d> {
 			if (auto shl = std::dynamic_pointer_cast<shell>(node)) {
@@ -679,7 +678,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 				v << p->components()(0), p->components()(1), p->components()(2), 1.0;
 				Eigen::Vector3d translation_part = (m4 * v).head<3>();
 				double translation_amnt = translation_part.norm();
-				if (translation_amnt > settings_.get<MaxOffset>().get()) {
+				if (translation_amnt > settings_.get<ifcopenshell::geom::settings::MaxOffset>().get()) {
 					return { translation_amnt, translation_part };
 				} else {
 					return { 0.0, Eigen::Vector3d::Zero() };
@@ -692,7 +691,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 				}
 				Eigen::Vector3d translation_part = m4.block<3, 1>(0, 3);
 				double translation_amnt = translation_part.norm();
-				if (translation_amnt > settings_.get<MaxOffset>().get()) {
+				if (translation_amnt > settings_.get<ifcopenshell::geom::settings::MaxOffset>().get()) {
 					return { translation_amnt, translation_part };
 				} else if (auto col = std::dynamic_pointer_cast<collection>(node)) {
 					std::vector<std::pair<double, Eigen::Vector3d>> child_transforms;
@@ -717,8 +716,8 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 
 	Eigen::Vector3d vec;
 
-	if (settings_.get<ApplyOffset>().has()) {
-		auto vs = settings_.get<ApplyOffset>().get();
+	if (settings_.get<ifcopenshell::geom::settings::ApplyOffset>().has()) {
+		auto vs = settings_.get<ifcopenshell::geom::settings::ApplyOffset>().get();
 		if (vs.size() != 3) {
 			throw std::runtime_error("ApplyOffset setting must be a vector of size 3");
 		}
@@ -750,7 +749,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 	Eigen::Matrix4d translation_matrix = Eigen::Matrix4d::Identity();
 	translation_matrix.block<3, 1>(0, 3) = vec;
 
-	auto remove_offset = [&](const item::ptr& itm, const std::vector<std::pair<express::Base, matrix4::ptr>>& pr) -> bool {
+	auto remove_offset = [&](const item::ptr& itm, const std::vector<std::pair<express::base, matrix4::ptr>>& pr) -> bool {
 		std::function<bool(const item::ptr&, Eigen::Matrix4d)> traverse;
 		traverse = [&](const item::ptr& node, Eigen::Matrix4d m4) -> bool {
 			if (auto shl = std::dynamic_pointer_cast<shell>(node)) {
@@ -759,7 +758,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 				v << p->components()(0), p->components()(1), p->components()(2), 1.0;
 				Eigen::Vector3d translation_part = (m4 * v).head<3>();
 				double translation_amnt = translation_part.norm();
-				if (translation_amnt > settings_.get<MaxOffset>().get()) {
+				if (translation_amnt > settings_.get<ifcopenshell::geom::settings::MaxOffset>().get()) {
 					shl->matrix = make<matrix4>(translation_matrix);
 				}
 				return true;
@@ -771,7 +770,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 					}
 					Eigen::Vector3d translation_part = m4b.block<3, 1>(0, 3);
 					double translation_amnt = translation_part.norm();
-					if (translation_amnt > settings_.get<MaxOffset>().get()) {
+					if (translation_amnt > settings_.get<ifcopenshell::geom::settings::MaxOffset>().get()) {
 						auto inverted_rot_scale3 = m4.block<3, 3>(0, 0).inverse();
 						Eigen::Matrix4d inverted_rot_scale = Eigen::Matrix4d::Identity();
 						inverted_rot_scale.block<3, 3>(0, 0) = inverted_rot_scale3;
@@ -807,7 +806,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 		for (auto& p : task.products) {
 			auto bb = p.second->components().block<3, 1>(0, 3);
 			double translation_amnt = bb.norm();
-			if (translation_amnt > settings_.get<MaxOffset>().get()) {
+			if (translation_amnt > settings_.get<ifcopenshell::geom::settings::MaxOffset>().get()) {
 				// block has an underlying mutable ref to the matrix
 				bb += vec;
 			} else {
@@ -829,7 +828,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 	return make<direction3>(vec);
 }
 
-IfcGeom::Iterator::~Iterator() {
+ifcopenshell::geom::iterator::~iterator() {
 	if (num_threads_ != 1) {
 		terminating_ = true;
 

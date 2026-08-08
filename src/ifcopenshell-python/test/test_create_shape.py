@@ -47,21 +47,8 @@ class TestGeomSettings:
                 settings.set(settings.USE_PYTHON_OPENCASCADE, True)
             assert "USE_PYTHON_OPENCASCADE = False" in repr(settings)
 
-    def test_serializer_settings(self):
-        settings = ifcopenshell.geom.serializer_settings()
-        assert set(get_args(ifcopenshell.geom.SERIALIZER_SETTING)) == set(
-            settings.setting_names()
-        ), "Also need to update IfcPython.i, if new settings were added/removed."
-
-        # Only for settings.
-        assert "use-python-opencascade" not in settings.setting_names()
-        with pytest.raises(AttributeError):
-            settings.get(settings.USE_PYTHON_OPENCASCADE)
-        with pytest.raises(RuntimeError):
-            settings.get("use-python-opencascade")
-        with pytest.raises(RuntimeError):
-            settings.set("use-python-opencascade", True)
-        assert "USE_PYTHON_OPENCASCADE" not in repr(settings)
+        settings.set("base-uri", "https://example.test/")
+        assert settings.get("base-uri") == "https://example.test/"
 
 
 class TestTriangulationAttributes(test.bootstrap.IFC4):

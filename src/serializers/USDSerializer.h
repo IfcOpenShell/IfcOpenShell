@@ -66,7 +66,7 @@ namespace usd_utils {
   	}	
 }
 
-class SERIALIZERS_API USDSerializer : public WriteOnlyGeometrySerializer {
+class SERIALIZERS_API usd_serializer : public write_only_geometry_serializer {
 private:
     bool ready_ = false;
 	const std::string filename_;
@@ -75,28 +75,28 @@ private:
 	std::map<std::string, pxr::UsdShadeMaterial> materials_;
 	std::map<std::string, std::string> meshes_;
 
-	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&);
+	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<ifcopenshell::geom::taxonomy::style::ptr>&);
 	template <typename T>
-	T writeNode(const IfcGeom::Element*, const IfcGeom::Element* = nullptr);
-	std::vector<std::pair<IfcGeom::Element const*, IfcGeom::Element const*>> parents_;
+	T writeNode(const ifcopenshell::geom::element*, const ifcopenshell::geom::element* = nullptr);
+	std::vector<std::pair<ifcopenshell::geom::element const*, ifcopenshell::geom::element const*>> parents_;
 
 	std::set<int> written_;
 	std::map<int, std::string> paths_;
-	std::map<int, ifcopenshell::geometry::taxonomy::matrix4::ptr> placements_;
+	std::map<int, ifcopenshell::geom::taxonomy::matrix4::ptr> placements_;
 	std::set<std::string> emitted_names_;
 	std::map<int, std::string> element_names_;
 public:
-	USDSerializer(const std::string&, const ifcopenshell::geometry::Settings&, const ifcopenshell::geometry::SerializerSettings&, ::logger* logger = nullptr);
-	virtual ~USDSerializer();
+	usd_serializer(const std::string&, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr);
+	virtual ~usd_serializer();
 	bool ready() { return ready_; }
 	void writeHeader();
-	void write(const IfcGeom::TriangulationElement*);
-	void write(const IfcGeom::BRepElement*) {}
+	void write(const ifcopenshell::geom::triangulation_element*);
+	void write(const ifcopenshell::geom::brep_element*) {}
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string&, float) {}
 	void setFile(ifcopenshell::file&) {}
-	std::string object_id_unique(const IfcGeom::Element* o);
+	std::string object_id_unique(const ifcopenshell::geom::element* o);
 };
 
 #endif

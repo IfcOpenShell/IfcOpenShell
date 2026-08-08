@@ -30,18 +30,18 @@
 #define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/schemas/x-definitions.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
-class POSTFIX_SCHEMA(XmlSerializer) : public XmlSerializer {
+class POSTFIX_SCHEMA(xml_serializer) : public xml_serializer {
 private:
 	ifcopenshell::file* file;
 
 	// @todo
-	ifcopenshell::geometry::Settings settings_;
-	ifcopenshell::geometry::abstract_mapping* mapping_;
+	ifcopenshell::geom::settings settings_;
+	ifcopenshell::geom::abstract_mapping* mapping_;
 
 public:
-	POSTFIX_SCHEMA(XmlSerializer)(ifcopenshell::file* file, const std::string& xml_filename, ::logger& logger = ::logger::root())
-		: XmlSerializer(0, "")
-		, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_, logger))
+	POSTFIX_SCHEMA(xml_serializer)(ifcopenshell::file* file, const std::string& xml_filename, ::logger& logger = ::logger::root())
+		: xml_serializer(0, "")
+		, mapping_(ifcopenshell::geom::impl::mapping_implementations().construct(file, settings_, logger))
 	{
 		this->file = file;
 		this->xml_filename = xml_filename;

@@ -239,12 +239,12 @@ class Implementation(codegen.Base):
                 for i in type.inverse
             ]
 
-            superclass = "%s(e)" % type.supertypes[0] if len(type.supertypes) == 1 else "express::Entity(e)"
+            superclass = "%s(e)" % type.supertypes[0] if len(type.supertypes) == 1 else "express::entity(e)"
 
             superclass_num_attrs = (
                 "%s(const std::weak_ptr<instance_data>&(in_memory_attribute_storage(%%d)))" % type.supertypes[0]
                 if len(type.supertypes) == 1
-                else "express::Entity(const std::weak_ptr<instance_data>&(in_memory_attribute_storage(%d)))"
+                else "express::entity(const std::weak_ptr<instance_data>&(in_memory_attribute_storage(%d)))"
             ) % len(constructor_arguments)
 
             write(
@@ -309,7 +309,7 @@ class Implementation(codegen.Base):
         for class_name, type in mapping.schema.simpletypes.items():
             type_str = mapping.make_type_string(mapping.flatten_type_string(type))
             attr_type = mapping.make_argument_type(type)
-            superclass = mapping.simple_type_parent(class_name) or "express::DeclaredType"
+            superclass = mapping.simple_type_parent(class_name) or "express::declared_type"
 
             simpletype_impl_is = (
                 templates.simpletype_impl_is_with_supertype
@@ -378,7 +378,7 @@ class Implementation(codegen.Base):
                                 ("%s v" % type_str,),
                                 (
                                     "set_attribute_value(0, %s(v));"
-                                    % ("cast_vector<express::Base>" if mapping.is_templated_list(type) else "")
+                                    % ("cast_vector<express::base>" if mapping.is_templated_list(type) else "")
                                 ),
                             ),
                             # ("v", "", constructor, "", ("%s v" % type_str,), ""),

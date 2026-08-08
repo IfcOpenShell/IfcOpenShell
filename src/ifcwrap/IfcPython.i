@@ -59,7 +59,7 @@
 %}
 %template(DoubleArray3) std::array<double, 3>;
 
-%ignore ifcopenshell::geometry::Converter;
+%ignore ifcopenshell::geom::converter;
 
 // Not relevant for python: new_IfcBaseClass() calls instantiate()
 %ignore schema_definition::instantiate;
@@ -75,8 +75,8 @@
 %ignore ifcopenshell::load_schema_plugins;
 
 // Not relevant for python usage
-%ignore express::Base::data;
-%ignore express::Base::data_weak;
+%ignore express::base::data;
+%ignore express::base::data_weak;
 %ignore *::references_to_resolve;
 
 // SVG serializer internal
@@ -99,9 +99,9 @@
 %ignore curve_to_face_upgrade_impl;
 %ignore loop_to_function_item_upgrade_impl;
 
-%ignore IfcGeom::geometry_exception;
-%ignore IfcGeom::too_many_faces_exception;
-%ignore ifcopenshell::geometry::taxonomy::topology_error;
+%ignore ifcopenshell::geom::geometry_exception;
+%ignore ifcopenshell::geom::too_many_faces_exception;
+%ignore ifcopenshell::geom::taxonomy::topology_error;
 
 // settings, can this done more generally?
 // GeometrySerializer.h
@@ -212,7 +212,7 @@
 %ignore guess_file_type;
 
 // Triangulated representation helper struct
-%ignore EdgeKey;
+%ignore edge_key;
 
 // General python-specific rename rules for comparison operators.
 // Mostly to silence warnings, but might be of use some time.

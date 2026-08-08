@@ -33,17 +33,17 @@
 #include <Interface_Static.hxx>
 #endif
 
-class IgesSerializer : public OpenCascadeBasedSerializer
+class iges_serializer : public open_cascade_based_serializer
 {
 private:
 	IGESControl_Writer writer;
 public:
-    /// @note IGESControl_Controller::Init() must be called prior to instantiating IgesSerializer.
+    /// @note IGESControl_Controller::Init() must be called prior to instantiating iges_serializer.
     /// See http://tracker.dev.opencascade.org/view.php?id=23679 for more information.
-    IgesSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr)
-        : OpenCascadeBasedSerializer(out_filename, geometry_settings, settings, logger)
+    iges_serializer(const std::string& out_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr)
+        : open_cascade_based_serializer(out_filename, settings, logger)
 	{}
-	virtual ~IgesSerializer() {}
+	virtual ~iges_serializer() {}
 	void writeShape(const std::string&, const TopoDS_Shape& shape) {
 		writer.AddShape(shape);
 	}

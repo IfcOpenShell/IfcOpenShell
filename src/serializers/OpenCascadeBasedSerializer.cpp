@@ -31,7 +31,7 @@
 #include <Standard_Version.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 
-bool OpenCascadeBasedSerializer::ready() {
+bool open_cascade_based_serializer::ready() {
 	std::ofstream test_file(ifcopenshell::path::from_utf8(out_filename).c_str(), std::ios_base::binary);
 	bool succeeded = test_file.is_open();
 	test_file.close();
@@ -39,9 +39,9 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement* o) {
+void open_cascade_based_serializer::write(const ifcopenshell::geom::brep_element* o) {
 	auto itm = o->geometry().as_compound();
-	TopoDS_Shape compound = ((ifcopenshell::geometry::OpenCascadeShape*)itm)->shape();
+	TopoDS_Shape compound = ((ifcopenshell::geom::open_cascade_shape*)itm)->shape();
 	writeShape(object_id(o), compound);
 	delete itm;
 }
@@ -49,7 +49,7 @@ void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement* o) {
 #define RATHER_SMALL (1e-3)
 #define APPROXIMATELY_THE_SAME(a,b) (fabs(a-b) < RATHER_SMALL)
 
-const char* OpenCascadeBasedSerializer::getSymbolForUnitMagnitude(float mag) {
+const char* open_cascade_based_serializer::getSymbolForUnitMagnitude(float mag) {
 	if (APPROXIMATELY_THE_SAME(mag, 0.001f)) {
 		return "MM";
 	} else if (APPROXIMATELY_THE_SAME(mag, 0.01f)) {

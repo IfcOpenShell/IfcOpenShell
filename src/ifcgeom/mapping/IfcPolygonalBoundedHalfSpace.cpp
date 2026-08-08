@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalBoundedHalfSpace& inst) {
 	auto s = taxonomy::cast<taxonomy::solid>(map_impl((IfcSchema::IfcHalfSpaceSolid&) inst));

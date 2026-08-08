@@ -4,7 +4,7 @@
 #include "file.h"
 
 // @todo is size() still needed?
-class SizeVisitor {
+class size_visitor {
 public:
     typedef int result_type;
 
@@ -25,9 +25,9 @@ public:
     int operator()(const std::vector<std::string>& i) const { return (int)i.size(); }
     int operator()(const std::vector<boost::dynamic_bitset<>>& i) const { return (int)i.size(); }
     int operator()(const enumeration_reference& /*i*/) const { return -1; }
-    int operator()(const express::Base& /*i*/) const { return -1; }
-    int operator()(const std::vector<express::Base>& i) const { return (int)i.size(); }
-    int operator()(const std::vector<std::vector<express::Base>>& i) const { return (int)i.size(); }
+    int operator()(const express::base& /*i*/) const { return -1; }
+    int operator()(const std::vector<express::base>& i) const { return (int)i.size(); }
+    int operator()(const std::vector<std::vector<express::base>>& i) const { return (int)i.size(); }
 };
 
 namespace {
@@ -59,7 +59,7 @@ namespace {
             if constexpr (
                 // the following types cannot be directly deserialized from rocksdb, but need to be constructed
                 !std::is_same_v<T, enumeration_reference> &&
-                !std::is_same_v<std::remove_cv_t<T>, express::Base>)
+                !std::is_same_v<std::remove_cv_t<T>, express::base>)
             {
                 std::string str;
                 array_.db_ptr->db->Get(rocksdb::ReadOptions{}, 
@@ -70,8 +70,8 @@ namespace {
             } else {
                 static_assert(
                     std::is_same_v<T, enumeration_reference> ||
-                     std::is_same_v<std::remove_cv_t<T>, express::Base>,
-                    "RocksDB deserialization must be specialized for this enumeration_reference and express::Base"
+                     std::is_same_v<std::remove_cv_t<T>, express::base>,
+                    "RocksDB deserialization must be specialized for this enumeration_reference and express::base"
                 );
             }
             return val;
@@ -98,7 +98,7 @@ namespace {
                     return true;
                 }
             }
-            return str[0] == TypeEncoder::encode_type<T>();
+            return str[0] == type_encoder::encode_type<T>();
         }
 #endif
     }
@@ -116,7 +116,7 @@ namespace {
                 (is_header ? "h|" : (entity_or_type->as_entity() ? "i|" : "t|")) +
                 (is_header ? entity_or_type->name() : std::to_string(instance_name_)) + "|" +
                 std::to_string(index_), &str).ok()) {
-                return TypeEncoder::encode_type<blank>() - 'A';
+                return type_encoder::encode_type<blank>() - 'A';
             }
             return (size_t) str[0] - 'A';
         }
@@ -201,10 +201,10 @@ attribute_value::operator boost::dynamic_bitset<>() const
     return dispatch_get_<boost::dynamic_bitset<>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
-attribute_value::operator express::Base () const
+attribute_value::operator express::base () const
 {
     if (storage_model_ == 0) {
-        return dispatch_get_<express::Base>(array_, storage_model_, instance_name_, entity_or_type_, index_);
+        return dispatch_get_<express::base>(array_, storage_model_, instance_name_, entity_or_type_, index_);
     }
 #ifdef IFOPSH_WITH_ROCKSDB
     else {
@@ -249,9 +249,9 @@ attribute_value::operator std::vector<boost::dynamic_bitset<>>() const
     return dispatch_get_<std::vector<boost::dynamic_bitset<>>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
-attribute_value::operator std::vector<express::Base>() const
+attribute_value::operator std::vector<express::base>() const
 {
-    return dispatch_get_<std::vector<express::Base>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
+    return dispatch_get_<std::vector<express::base>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
 attribute_value::operator std::vector<std::vector<int64_t>>() const
@@ -264,9 +264,9 @@ attribute_value::operator std::vector<std::vector<double>>() const
     return dispatch_get_<std::vector<std::vector<double>>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
-attribute_value::operator std::vector<std::vector<express::Base>>() const
+attribute_value::operator std::vector<std::vector<express::base>>() const
 {
-    return dispatch_get_<std::vector<std::vector<express::Base>>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
+    return dispatch_get_<std::vector<std::vector<express::base>>>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
 bool attribute_value::isNull() const
@@ -277,7 +277,7 @@ bool attribute_value::isNull() const
 unsigned int attribute_value::size() const
 {
     // @todo
-    return array_.storage_ptr->apply_visitor(SizeVisitor{}, index_);
+    return array_.storage_ptr->apply_visitor(size_visitor{}, index_);
 }
 
 ifcopenshell::argument_type attribute_value::type() const
@@ -287,11 +287,11 @@ ifcopenshell::argument_type attribute_value::type() const
 
 #ifdef IFOPSH_WITH_ROCKSDB
 
-bool impl::serialize(std::string& val, const express::Base& t)
+bool impl::serialize(std::string& val, const express::base& t)
 {
     auto s = sizeof(size_t);
     val.resize(s + 2);
-    val[0] = TypeEncoder::encode_type<express::Base>();
+    val[0] = type_encoder::encode_type<express::base>();
     // 1 = entity - stored by id (entity name)
     // 2 = type - stored by identity (internal counter in class)
     val[1] = t.declaration().as_entity() ? 'i' : 't';
@@ -304,7 +304,7 @@ bool impl::serialize(std::string& val, const enumeration_reference& v)
 {
     auto s = sizeof(size_t);
     val.resize(s * 2 + 1);
-    val[0] = TypeEncoder::encode_type<enumeration_reference>();
+    val[0] = type_encoder::encode_type<enumeration_reference>();
     size_t vv = v.enumeration()->index_in_schema();
     memcpy(val.data() + 1, &vv, sizeof(size_t));
     vv = v.index();
@@ -312,11 +312,11 @@ bool impl::serialize(std::string& val, const enumeration_reference& v)
     return true;
 }
 
-bool impl::serialize(std::string& val, const std::vector<express::Base>& t)
+bool impl::serialize(std::string& val, const std::vector<express::base>& t)
 {
     // no attempt at alignment
     val.resize(t.size() * (sizeof(size_t) + 1) + 1);
-    val[0] = TypeEncoder::encode_type<std::vector<express::Base>>();
+    val[0] = type_encoder::encode_type<std::vector<express::base>>();
     char* ptr = val.data() + 1;
     for (auto& inst : t) {
         *ptr = inst.declaration().as_entity() ? 'i' : 't';
@@ -328,10 +328,10 @@ bool impl::serialize(std::string& val, const std::vector<express::Base>& t)
     return true;
 }
 
-bool impl::serialize(std::string& val, const std::vector<std::vector<express::Base>>& t)
+bool impl::serialize(std::string& val, const std::vector<std::vector<express::base>>& t)
 {
     std::ostringstream oss;
-	oss.put(TypeEncoder::encode_type<std::vector<std::vector<express::Base>>>());
+	oss.put(type_encoder::encode_type<std::vector<std::vector<express::base>>>());
     
     auto write_size = [&oss](size_t sz) {
         std::string size_str;
@@ -366,28 +366,28 @@ bool impl::serialize(std::string& val, const std::vector<std::vector<express::Ba
 bool impl::serialize(std::string& val, const blank&)
 {
     val.resize(1);
-    val[0] = TypeEncoder::encode_type<blank>();
+    val[0] = type_encoder::encode_type<blank>();
     return true;
 }
 
 bool impl::serialize(std::string& val, const derived&)
 {
     val.resize(1);
-    val[0] = TypeEncoder::encode_type<derived>();
+    val[0] = type_encoder::encode_type<derived>();
     return true;
 }
 
 bool impl::serialize(std::string& val, const empty_aggregate_t&)
 {
     val.resize(1);
-    val[0] = TypeEncoder::encode_type<empty_aggregate_t>();
+    val[0] = type_encoder::encode_type<empty_aggregate_t>();
     return true;
 }
 
 bool impl::serialize(std::string& val, const empty_aggregate_of_aggregate_t&)
 {
     val.resize(1);
-    val[0] = TypeEncoder::encode_type<empty_aggregate_of_aggregate_t>();
+    val[0] = type_encoder::encode_type<empty_aggregate_of_aggregate_t>();
     return true;
 }
 
@@ -395,7 +395,7 @@ bool impl::serialize(std::string& val, const boost::logic::tribool& t)
 {
     char tt = t == boost::logic::indeterminate ? 2 : t ? 1 : 0;
     val.resize(sizeof(char) + 1);
-    val[0] = TypeEncoder::encode_type<boost::logic::tribool>();
+    val[0] = type_encoder::encode_type<boost::logic::tribool>();
     memcpy(val.data() + 1, &tt, sizeof(char));
     return true;
 }
@@ -404,12 +404,12 @@ bool impl::serialize(std::string& val, const boost::dynamic_bitset<>& t)
 {
     std::string tmp;
     boost::to_string(t, tmp);
-	val = std::string(TypeEncoder::encode_type<boost::dynamic_bitset<>>(), 1) + tmp;
+	val = std::string(type_encoder::encode_type<boost::dynamic_bitset<>>(), 1) + tmp;
     return true;
 }
 
 bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, boost::logic::tribool& t) {
-    if (val[0] != TypeEncoder::encode_type<boost::logic::tribool>()) {
+    if (val[0] != type_encoder::encode_type<boost::logic::tribool>()) {
         return false;
     }
     if (val[1] == 0) {
@@ -425,14 +425,14 @@ bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::st
 }
 
 bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, boost::dynamic_bitset<>& t) {
-    if (val[0] != TypeEncoder::encode_type<boost::dynamic_bitset<>>()) {
+    if (val[0] != type_encoder::encode_type<boost::dynamic_bitset<>>()) {
         return false;
     }
     t = boost::dynamic_bitset<>(val.substr(1));
     return true;
 }
 
-bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& val, std::vector<express::Base>& t) {
+bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& val, std::vector<express::base>& t) {
     auto n = (val.size() - 1) / (sizeof(size_t) + 1);
     for (int i = 0; i < n; ++i) {
         auto ptr = val.data() + 1 + (sizeof(size_t) + 1) * i;
@@ -451,7 +451,7 @@ bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const
     return true;
 }
 
-bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& val, std::vector<std::vector<express::Base>>& t) {
+bool impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& val, std::vector<std::vector<express::base>>& t) {
 	char const* ptr = val.data() + 1;
 
 	// size_t outer_size;
@@ -505,7 +505,7 @@ bool rocks_db_attribute_storage::has(void* storage, const ifcopenshell::declarat
             return true;
         }
     }
-    return v.size() && v[0] == TypeEncoder::encode_type<T>();
+    return v.size() && v[0] == type_encoder::encode_type<T>();
 }
 
 template<typename T>
@@ -530,15 +530,15 @@ template IFC_PARSE_API void rocks_db_attribute_storage::set<double>(void* storag
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::string>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::string& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<boost::dynamic_bitset<>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const boost::dynamic_bitset<>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<enumeration_reference>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const enumeration_reference& value);
-template IFC_PARSE_API void rocks_db_attribute_storage::set<express::Base>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, express::Base const& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<express::base>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, express::base const& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<int64_t>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<int64_t>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<double>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<double>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::string>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::string>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<boost::dynamic_bitset<>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<boost::dynamic_bitset<>>& value);
-template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<express::Base>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<express::Base>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<express::base>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<express::base>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<int64_t>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<int64_t>>& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<double>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<double>>& value);
-template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<express::Base>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<express::Base>>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<express::base>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<express::base>>& value);
 
 // @todo why do these need to be included, but are not in BaseEntity::set()?
 template IFC_PARSE_API void rocks_db_attribute_storage::set<derived>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const derived& value);
@@ -553,15 +553,15 @@ template IFC_PARSE_API bool rocks_db_attribute_storage::has<double>(void* storag
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::string>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<boost::dynamic_bitset<>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<enumeration_reference>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
-template IFC_PARSE_API bool rocks_db_attribute_storage::has<express::Base>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<express::base>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<int64_t>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<double>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::string>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<boost::dynamic_bitset<>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
-template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<express::Base>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<express::base>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<int64_t>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<double>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
-template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<express::Base>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<express::base>>>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;
 
 // @todo why do these need to be included, but are not in BaseEntity::set()?
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<derived>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index) const;

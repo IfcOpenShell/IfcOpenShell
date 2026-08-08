@@ -83,9 +83,9 @@ class IFC_PARSE_API spf_lexer {
     // void TokenString(size_t offset, std::string& result);
 };
 
-IFC_PARSE_API std::vector<express::Base> traverse(const express::Base& instance, int max_depth = -1);
+IFC_PARSE_API std::vector<express::base> traverse(const express::base& instance, int max_depth = -1);
 
-IFC_PARSE_API std::vector<express::Base> traverse_breadth_first(const express::Base& instance, int max_depth = -1);
+IFC_PARSE_API std::vector<express::base> traverse_breadth_first(const express::base& instance, int max_depth = -1);
 } // namespace ifcopenshell
 
 IFC_PARSE_API std::ostream& operator<<(std::ostream& stream, const ifcopenshell::file& file);

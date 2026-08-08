@@ -69,9 +69,9 @@ bool handle_occt_exception(Fn&& fn) {
 }
 }
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 
-class IFC_GEOMLIBRARY_API OpenCascadeKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
+class IFC_GEOMLIBRARY_API open_cascade_kernel : public ifcopenshell::geom::kernels::abstract_kernel {
 private:
 
 	/*
@@ -84,16 +84,16 @@ private:
 
 	class faceset_helper {
 	private:
-		OpenCascadeKernel* kernel_;
+		open_cascade_kernel* kernel_;
 		std::set<int> duplicates_;
 		std::map<int, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
 		double eps_;
 		bool non_manifold_;
 		
-		void loop_(const ifcopenshell::geometry::taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback);
+		void loop_(const ifcopenshell::geom::taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback);
 	public:
-		faceset_helper(OpenCascadeKernel* kernel, const ifcopenshell::geometry::taxonomy::shell::ptr l);
+		faceset_helper(open_cascade_kernel* kernel, const ifcopenshell::geom::taxonomy::shell::ptr l);
 		~faceset_helper();
 
 		bool non_manifold() const { return non_manifold_; }
@@ -102,54 +102,54 @@ private:
 		
 		bool edge(int A, int B, TopoDS_Edge& e);
 
-		bool wire(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopoDS_Wire& wire);
-		bool wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, NCollection_List<TopoDS_Shape>& wires);
+		bool wire(const ifcopenshell::geom::taxonomy::loop::ptr loop, TopoDS_Wire& wire);
+		bool wires(const ifcopenshell::geom::taxonomy::loop::ptr loop, NCollection_List<TopoDS_Shape>& wires);
 	};
 
 	faceset_helper* faceset_helper_;
 
 	double precision_;
 public:
-	OpenCascadeKernel(const ifcopenshell::geometry::Settings& settings, ::logger& logger = ::logger::root())
-		: AbstractKernel("opencascade", settings, logger)
+	open_cascade_kernel(const ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root())
+		: abstract_kernel("opencascade", settings, logger)
 		, faceset_helper_(nullptr)
-		, precision_(settings.get<ifcopenshell::geometry::settings::Precision>().get())
+		, precision_(settings.get<ifcopenshell::geom::settings::Precision>().get())
 	{}
 
-	virtual AbstractKernel* clone(::logger& logger) const {
-		return new OpenCascadeKernel(settings(), logger);
+	virtual abstract_kernel* clone(::logger& logger) const {
+		return new open_cascade_kernel(settings(), logger);
 	}
 
 	virtual bool supports_boolean_operations() const { return true; }
 
-	bool convert(const ifcopenshell::geometry::taxonomy::extrusion::ptr, TopoDS_Shape&);
-	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&, bool reversed_surface = false);
-	bool convert(const ifcopenshell::geometry::taxonomy::loop::ptr, TopoDS_Wire&);
-	bool convert(const ifcopenshell::geometry::taxonomy::matrix4::ptr, gp_GTrsf&);
-	bool convert(const ifcopenshell::geometry::taxonomy::shell::ptr, TopoDS_Shape&);
-	bool convert(const ifcopenshell::geometry::taxonomy::solid::ptr, TopoDS_Shape&);
-	bool convert(const ifcopenshell::geometry::taxonomy::loft::ptr, TopoDS_Shape&);
-	bool convert(const ifcopenshell::geometry::taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
-	bool convert(const ifcopenshell::geometry::taxonomy::sweep_along_curve::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geom::taxonomy::extrusion::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geom::taxonomy::face::ptr, TopoDS_Shape&, bool reversed_surface = false);
+	bool convert(const ifcopenshell::geom::taxonomy::loop::ptr, TopoDS_Wire&);
+	bool convert(const ifcopenshell::geom::taxonomy::matrix4::ptr, gp_GTrsf&);
+	bool convert(const ifcopenshell::geom::taxonomy::shell::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geom::taxonomy::solid::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geom::taxonomy::loft::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geom::taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
+	bool convert(const ifcopenshell::geom::taxonomy::sweep_along_curve::ptr, TopoDS_Shape&);
 
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::edge::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::loop::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::face::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::solid::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::shell::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::revolve::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::loft::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::sweep_along_curve::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::edge::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::loop::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::face::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::solid::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::shell::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::extrusion::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::revolve::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::boolean_result::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::loft::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::sweep_along_curve::ptr, ifcopenshell::geom::conversion_results&);
 
-	virtual bool convert_openings(const express::Base& entity, const std::vector<std::pair<ifcopenshell::geometry::taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
-		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
-	virtual bool unify_shapes(const IfcGeom::ConversionResults& input, IfcGeom::ConversionResults& output);
+	virtual bool convert_openings(const express::base& entity, const std::vector<std::pair<ifcopenshell::geom::taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings,
+		const ifcopenshell::geom::conversion_results& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes);
+	virtual bool unify_shapes(const ifcopenshell::geom::conversion_results& input, ifcopenshell::geom::conversion_results& output);
 
 	typedef std::variant<boost::blank, Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
-	curve_creation_visitor_result_type convert_curve(const ifcopenshell::geometry::taxonomy::ptr);
-	Handle(Geom_Surface) convert_surface(const ifcopenshell::geometry::taxonomy::ptr);
+	curve_creation_visitor_result_type convert_curve(const ifcopenshell::geom::taxonomy::ptr);
+	Handle(Geom_Surface) convert_surface(const ifcopenshell::geom::taxonomy::ptr);
 
 	template <typename T, typename U>
 	static T convert_xyz(const U& u) {
@@ -164,8 +164,8 @@ public:
 	}
 };
 
-express::Base POSTFIX_SCHEMA(tesselate_)(const TopoDS_Shape& shape, double deflection);
-express::Base POSTFIX_SCHEMA(serialise_)(const TopoDS_Shape& shape, bool advanced);
+express::base POSTFIX_SCHEMA(tesselate_)(const TopoDS_Shape& shape, double deflection);
+express::base POSTFIX_SCHEMA(serialise_)(const TopoDS_Shape& shape, bool advanced);
 
 }
 #endif

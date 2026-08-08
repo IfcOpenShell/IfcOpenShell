@@ -1,8 +1,8 @@
 #include "profile_helper.h"
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop, double radius) {
+taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, double radius) {
 	std::vector<profile_point_with_edges_3d> pps(loop->children.size());
 	for (int b = 0; b < loop->children.size(); ++b) {
 		int c = (b - 1) % loop->children.size();
@@ -54,7 +54,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop
 	return loop;
 }
 
-void ifcopenshell::geometry::remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol) {
+void ifcopenshell::geom::remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol) {
 	tol *= tol;
 
 	for (;;) {
@@ -80,7 +80,7 @@ void ifcopenshell::geometry::remove_duplicate_points_from_loop(std::vector<taxon
 	}
 }
 
-taxonomy::loop::ptr ifcopenshell::geometry::polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external) {
+taxonomy::loop::ptr ifcopenshell::geom::polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external) {
 	auto loop = taxonomy::make<taxonomy::loop>();
 	loop->external = external;
 	taxonomy::point3::ptr previous;
@@ -96,7 +96,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::polygon_from_points(const std::vecto
 	return loop;
 }
 
-taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matrix4::ptr& m4, const std::vector<profile_point>& points) {
+taxonomy::loop::ptr ifcopenshell::geom::profile_helper(const taxonomy::matrix4::ptr& m4, const std::vector<profile_point>& points) {
 
 	/* TopoDS_Vertex* vertices = new TopoDS_Vertex[numVerts];
 	for (int i = 0; i < numVerts; i++) {

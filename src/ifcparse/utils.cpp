@@ -143,7 +143,7 @@ void instance_data::populate_derived_() {
     }
 }
 
-attribute_value express::Entity::get(const std::string& name) const {
+attribute_value express::entity::get(const std::string& name) const {
     auto attrs = declaration().as_entity()->all_attributes();
     auto iter = attrs.begin();
     size_t idx = 0;
@@ -155,7 +155,7 @@ attribute_value express::Entity::get(const std::string& name) const {
     throw ifcopenshell::exception(name + " not found on " + declaration().name());
 }
 
-std::vector<express::Entity> express::Entity::get_inverse(const std::string& name) const {
+std::vector<express::entity> express::entity::get_inverse(const std::string& name) const {
     const std::vector<const ifcopenshell::inverse_attribute*> attrs = declaration().as_entity()->all_inverse_attributes();
     std::vector<const ifcopenshell::inverse_attribute*>::const_iterator iter = attrs.begin();
     for (; iter != attrs.end(); ++iter) {

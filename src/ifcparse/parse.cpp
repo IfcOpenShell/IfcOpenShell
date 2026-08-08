@@ -940,7 +940,7 @@ direct_aggregate read_direct_aggregate(
                 tokens->next();
                 auto data = storage.load(tokens, entity_instance_name, declaration, entity, attribute_index);
                 storage.read_simple_type_instances.push_back(data);
-                aggregate.append(ifcopenshell::reference_or_simple_type{express::Base(data)});
+                aggregate.append(ifcopenshell::reference_or_simple_type{express::base(data)});
             } catch (exception& e) {
                 logger.error("SYN", 123, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
             }
@@ -1016,7 +1016,7 @@ shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
                     if (retain_value) {
                         auto data = load(tokens, entity_instance_name, simple_declaration, entity, reference_attribute_index);
                         read_simple_type_instances.push_back(data);
-                        storage.set(attribute_index_within_data, express::Base(data));
+                        storage.set(attribute_index_within_data, express::base(data));
                     } else {
                         skip_aggregate(tokens);
                     }
@@ -1056,7 +1056,7 @@ void ifcopenshell::impl::in_memory_file_storage::register_inverse(unsigned id_fr
     byref_excl_.add((uint32_t)inst_id, (uint32_t)id_from, (uint16_t)from_entity->index_in_schema(), attribute_index);
 }
 
-void ifcopenshell::impl::in_memory_file_storage::unregister_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, const express::Base& inst, int attribute_index) {
+void ifcopenshell::impl::in_memory_file_storage::unregister_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, const express::base& inst, int attribute_index) {
     if (!byref_excl_.remove((uint32_t)inst.id(), (uint32_t)id_from, (uint16_t)from_entity->index_in_schema(), attribute_index)) {
         // @todo inverses also need to be populated when multiple instances are added to a new file.
         // throw ifcopenshell::exception("Instance not found among inverses");
@@ -1095,7 +1095,7 @@ void ifcopenshell::impl::rocks_db_file_storage::register_inverse(unsigned id_fro
 #endif
 }
 
-void ifcopenshell::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, const express::Base& inst, int attribute_index) {
+void ifcopenshell::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, const express::base& inst, int attribute_index) {
 #ifdef IFOPSH_WITH_ROCKSDB
     static std::string s;
     auto inst_id = inst.id();
@@ -1116,7 +1116,7 @@ void ifcopenshell::impl::rocks_db_file_storage::unregister_inverse(unsigned id_f
 #endif
 }
 
-void ifcopenshell::impl::rocks_db_file_storage::add_type_ref(const express::Base& new_entity)
+void ifcopenshell::impl::rocks_db_file_storage::add_type_ref(const express::base& new_entity)
 {
 #ifdef IFOPSH_WITH_ROCKSDB
     size_t v;
@@ -1146,7 +1146,7 @@ void ifcopenshell::impl::rocks_db_file_storage::add_type_ref(const express::Base
 #endif
 }
 
-void ifcopenshell::impl::rocks_db_file_storage::remove_type_ref(const express::Base& new_entity)
+void ifcopenshell::impl::rocks_db_file_storage::remove_type_ref(const express::base& new_entity)
 {
 #ifdef IFOPSH_WITH_ROCKSDB
     if (new_entity.declaration().as_entity()) {
@@ -1167,10 +1167,10 @@ void ifcopenshell::impl::rocks_db_file_storage::remove_type_ref(const express::B
 }
 
 namespace {
-    class StringBuilderVisitor : public boost::static_visitor<void> {
+    class string_builder_visitor : public boost::static_visitor<void> {
     private:
-        StringBuilderVisitor(const StringBuilderVisitor&);            //N/A
-        StringBuilderVisitor& operator=(const StringBuilderVisitor&); //N/A
+        string_builder_visitor(const string_builder_visitor&);            //N/A
+        string_builder_visitor& operator=(const string_builder_visitor&); //N/A
 
         std::ostream& data_;
         template <typename T>
@@ -1269,7 +1269,7 @@ namespace {
         bool upper_;
 
     public:
-        StringBuilderVisitor(std::ostream& stream, bool upper = false)
+        string_builder_visitor(std::ostream& stream, bool upper = false)
             : data_(stream),
             upper_(upper) {}
         void operator()(const blank& /*i*/) { data_ << "$"; }
@@ -1294,14 +1294,14 @@ namespace {
         void operator()(const enumeration_reference& i) {
             data_ << "." << i.value() << ".";
         }
-        void operator()(const express::Base& i) {
+        void operator()(const express::base& i) {
             if (i.declaration().as_entity() == nullptr || i.declaration().schema() == &Header_section_schema::get_schema()) {
                 i.to_string(data_, upper_);
             } else {
                 data_ << "#" << i.id();
             }
         }
-        void operator()(const std::vector<express::Base>& i) {
+        void operator()(const std::vector<express::base>& i) {
             data_ << "(";
             for (auto it = i.begin(); it != i.end(); ++it) {
                 if (it != i.begin()) {
@@ -1313,7 +1313,7 @@ namespace {
         }
         void operator()(const std::vector<std::vector<int64_t>>& i);
         void operator()(const std::vector<std::vector<double>>& i);
-        void operator()(const std::vector<std::vector<express::Base>>& i) {
+        void operator()(const std::vector<std::vector<express::base>>& i) {
             data_ << "(";
             for (auto outer_it = i.begin(); outer_it != i.end(); ++outer_it) {
                 if (outer_it != i.begin()) {
@@ -1335,7 +1335,7 @@ namespace {
     };
 
     template <>
-    void StringBuilderVisitor::serialize(const std::vector<std::string>& i) {
+    void string_builder_visitor::serialize(const std::vector<std::string>& i) {
         data_ << "(";
         for (std::vector<std::string>::const_iterator it = i.begin(); it != i.end(); ++it) {
             if (it != i.begin()) {
@@ -1348,7 +1348,7 @@ namespace {
     }
 
     template <>
-    void StringBuilderVisitor::serialize(const std::vector<double>& i) {
+    void string_builder_visitor::serialize(const std::vector<double>& i) {
         data_ << "(";
         for (std::vector<double>::const_iterator it = i.begin(); it != i.end(); ++it) {
             if (it != i.begin()) {
@@ -1360,7 +1360,7 @@ namespace {
     }
 
     template <>
-    void StringBuilderVisitor::serialize(const std::vector<boost::dynamic_bitset<>>& i) {
+    void string_builder_visitor::serialize(const std::vector<boost::dynamic_bitset<>>& i) {
         data_ << "(";
         for (std::vector<boost::dynamic_bitset<>>::const_iterator it = i.begin(); it != i.end(); ++it) {
             if (it != i.begin()) {
@@ -1371,11 +1371,11 @@ namespace {
         data_ << ")";
     }
 
-    void StringBuilderVisitor::operator()(const std::vector<int64_t>& i) { serialize(i); }
-    void StringBuilderVisitor::operator()(const std::vector<double>& i) { serialize(i); }
-    void StringBuilderVisitor::operator()(const std::vector<std::string>& i) { serialize(i); }
-    void StringBuilderVisitor::operator()(const std::vector<boost::dynamic_bitset<>>& i) { serialize(i); }
-    void StringBuilderVisitor::operator()(const std::vector<std::vector<int64_t>>& i) {
+    void string_builder_visitor::operator()(const std::vector<int64_t>& i) { serialize(i); }
+    void string_builder_visitor::operator()(const std::vector<double>& i) { serialize(i); }
+    void string_builder_visitor::operator()(const std::vector<std::string>& i) { serialize(i); }
+    void string_builder_visitor::operator()(const std::vector<boost::dynamic_bitset<>>& i) { serialize(i); }
+    void string_builder_visitor::operator()(const std::vector<std::vector<int64_t>>& i) {
         data_ << "(";
         for (std::vector<std::vector<int64_t>>::const_iterator it = i.begin(); it != i.end(); ++it) {
             if (it != i.begin()) {
@@ -1385,7 +1385,7 @@ namespace {
         }
         data_ << ")";
     }
-    void StringBuilderVisitor::operator()(const std::vector<std::vector<double>>& i) {
+    void string_builder_visitor::operator()(const std::vector<std::vector<double>>& i) {
         data_ << "(";
         for (std::vector<std::vector<double>>::const_iterator it = i.begin(); it != i.end(); ++it) {
             if (it != i.begin()) {
@@ -1406,7 +1406,7 @@ void instance_data::to_string(std::ostream& ss, bool upper) const {
 
     ss << "(";
 
-    StringBuilderVisitor vis(ss, upper);
+    string_builder_visitor vis(ss, upper);
 
     // In almost all cases, storage is initialized with the size of the schema declaration,
     // apparently except in case of header entities and invalid in-line type declarations.
@@ -1467,14 +1467,14 @@ ifcopenshell::argument_type get_argument_type(const ifcopenshell::declaration* d
 class unregister_inverse_visitor {
   private:
     file& file_;
-    const express::Base data_;
+    const express::base data_;
 
   public:
-    unregister_inverse_visitor(file& file, const express::Base& data)
+    unregister_inverse_visitor(file& file, const express::base& data)
         : file_(file),
           data_(data) {}
 
-    void operator()(const express::Base& inst, int index) {
+    void operator()(const express::base& inst, int index) {
         file_.unregister_inverse(data_.id(), data_.declaration().as_entity(), inst, index);
     }
 };
@@ -1482,27 +1482,27 @@ class unregister_inverse_visitor {
 class register_inverse_visitor {
   private:
     file& file_;
-    const express::Base data_;
+    const express::base data_;
 
   public:
-    register_inverse_visitor(file& file, const express::Base& data)
+    register_inverse_visitor(file& file, const express::base& data)
         : file_(file),
           data_(data) {}
 
-    void operator()(const express::Base& inst, int index) {
+    void operator()(const express::base& inst, int index) {
         file_.register_inverse(data_.id(), data_.declaration().as_entity(), inst.id(), index);
     }
 };
 
 class add_to_instance_list_visitor {
   private:
-    std::vector<express::Base>* list_;
+    std::vector<express::base>* list_;
 
   public:
-    add_to_instance_list_visitor(std::vector<express::Base>* list)
+    add_to_instance_list_visitor(std::vector<express::base>* list)
         : list_(list) {}
 
-    void operator()(const express::Base& inst) {
+    void operator()(const express::base& inst) {
         list_->push_back(inst);
     }
 };
@@ -1512,26 +1512,26 @@ class apply_individual_instance_visitor {
     std::optional<attribute_value> attribute_;
     int attribute_index_;
 
-    const express::Base inst_;
+    const express::base inst_;
 
 
     template <typename T>
     void apply_attribute_(T& t, const attribute_value& attr, int index) const {
         switch (attr.type()) {
         case ifcopenshell::Argument_ENTITY_INSTANCE: {
-            express::Base inst = attr;
+            express::base inst = attr;
             t(inst, index);
             break;
         }
         case ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-            std::vector<express::Base> entity_list_attribute = attr;
+            std::vector<express::base> entity_list_attribute = attr;
             for (auto& inst : entity_list_attribute) {
                 t(inst, index);
             }
             break;
         }
         case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-            std::vector<std::vector<express::Base>> nested_list_attr = attr;
+            std::vector<std::vector<express::base>> nested_list_attr = attr;
             for (auto& vec : nested_list_attr) {
                 for (auto& inst : vec) {
                     t(inst, index);
@@ -1549,7 +1549,7 @@ class apply_individual_instance_visitor {
         , attribute_index_(idx)
     {}
 
-    apply_individual_instance_visitor(const express::Base& data)
+    apply_individual_instance_visitor(const express::base& data)
         : inst_(data)
     {}
 
@@ -1569,9 +1569,9 @@ class apply_individual_instance_visitor {
 
 template <typename T>
 typename std::enable_if<
-    (!std::is_base_of_v<express::Base, T> || std::is_same_v<express::Base, T>),
+    (!std::is_base_of_v<express::base, T> || std::is_same_v<express::base, T>),
     void>::type
-express::Base::set_attribute_value(size_t i, const T& t) {
+express::base::set_attribute_value(size_t i, const T& t) {
     if constexpr (std::is_same_v<std::decay_t<T>, double>) {
         if (!std::isfinite(t)) {
             throw ifcopenshell::exception("Only finite values are allowed");
@@ -1597,7 +1597,7 @@ express::Base::set_attribute_value(size_t i, const T& t) {
             auto guid = (std::string) current_attribute;
             auto it = file()->internal_guid_map().find(guid);
             if (it != file()->internal_guid_map().end()) {
-                const std::pair<const std::string, express::Base>& p = *it;
+                const std::pair<const std::string, express::base>& p = *it;
                 if (p.second == *this) {
                     file()->internal_guid_map().erase(it);
                 }
@@ -1607,7 +1607,7 @@ express::Base::set_attribute_value(size_t i, const T& t) {
         }
     }
 
-    if constexpr (std::is_same_v<T, express::Base> || std::is_same_v<T, std::vector<express::Base>> || std::is_same_v<T, std::vector<std::vector<express::Base>>> || std::is_same_v<T, blank>) {
+    if constexpr (std::is_same_v<T, express::base> || std::is_same_v<T, std::vector<express::base>> || std::is_same_v<T, std::vector<std::vector<express::base>>> || std::is_same_v<T, blank>) {
         // Deregister inverse indices in file
         unregister_inverse_visitor visitor(*file(), *this);
         apply_individual_instance_visitor(current_attribute, (int)i).apply(visitor);
@@ -1620,7 +1620,7 @@ express::Base::set_attribute_value(size_t i, const T& t) {
     auto new_attribute = get_attribute_value(i);
 
     // Register inverse indices in file
-    if constexpr (std::is_same_v<T, express::Base> || std::is_same_v<T, std::vector<express::Base>> || std::is_same_v<T, std::vector<std::vector<express::Base>>>) {
+    if constexpr (std::is_same_v<T, express::base> || std::is_same_v<T, std::vector<express::base>> || std::is_same_v<T, std::vector<std::vector<express::base>>>) {
         register_inverse_visitor visitor(*file(), *this);
         apply_individual_instance_visitor(new_attribute, (int)i).apply(visitor);
     }
@@ -1642,9 +1642,9 @@ express::Base::set_attribute_value(size_t i, const T& t) {
 
 template <typename T>
 typename std::enable_if<
-    (!std::is_base_of_v<express::Base, T> || std::is_same_v<express::Base, T>),
+    (!std::is_base_of_v<express::base, T> || std::is_same_v<express::base, T>),
     void>::type
-express::Base::set_attribute_value(const std::string& s, const T& t)
+express::base::set_attribute_value(const std::string& s, const T& t)
 {
     set_attribute_value(declaration().as_entity()->attribute_index(s), t);
 }
@@ -2285,7 +2285,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
         }
 
         auto current_id = std::get<0>(*inst);
-        express::Base instance(std::get<2>(*inst));
+        express::base instance(std::get<2>(*inst));
 
         if (instance.declaration().is(*ifcroot_type_)) {
             try {
@@ -2350,8 +2350,8 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                     auto& storage = owner;
                     auto attr_index = p.first.index_;
                     
-                    if (storage->template has_attribute_value<express::Base>(attr_index)) {
-                        express::Base inst = storage->get_attribute_value(attr_index);
+                    if (storage->template has_attribute_value<express::base>(attr_index)) {
+                        express::base inst = storage->get_attribute_value(attr_index);
                         if (inst && !inst.declaration().as_entity()) {
                             // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
 #ifdef IFOPSH_SAFE_INSTANCE
@@ -2364,16 +2364,16 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                     }
 
                     if (storage->template has_attribute_value<blank>(attr_index)) {
-                        storage->set_attribute_value(attr_index, express::Base(it->second));
+                        storage->set_attribute_value(attr_index, express::base(it->second));
                     } else {
                         logger_.get().error("Duplicate definition for instance reference");
                     }
                 }
-            } else if (auto inst = std::get_if<express::Base>(v)) {
+            } else if (auto inst = std::get_if<express::base>(v)) {
                 owner->set_attribute_value(p.first.index_, *inst);
             }
         } else if (auto* vv = std::get_if<std::vector<reference_or_simple_type>>(&p.second)) {
-            std::vector<express::Base> instances;
+            std::vector<express::base> instances;
             instances.reserve(vv->size());
             for (const auto& vi : *vv) {
                 if (auto* name = std::get_if<instance_reference>(&vi)) {
@@ -2384,9 +2384,9 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                     if (it == byid_.end()) {
                         logger_.get().error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                     } else {
-                        instances.push_back(express::Base(it->second));
+                        instances.push_back(express::base(it->second));
                     }
-                } else if (auto* inst = std::get_if<express::Base>(&vi)) {
+                } else if (auto* inst = std::get_if<express::base>(&vi)) {
                     instances.push_back(*inst);
                 }
             }
@@ -2394,8 +2394,8 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
             auto& storage = owner;
             auto attr_index = p.first.index_;
             
-            if (storage->template has_attribute_value<express::Base>(attr_index)) {
-                express::Base inst = storage->get_attribute_value(attr_index);
+            if (storage->template has_attribute_value<express::base>(attr_index)) {
+                express::base inst = storage->get_attribute_value(attr_index);
                 if (inst && !inst.declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
 #ifdef IFOPSH_SAFE_INSTANCE
@@ -2413,7 +2413,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 logger_.get().error("Duplicate definition for instance reference");
             }
         } else if (auto* vvv = std::get_if<std::vector<std::vector<reference_or_simple_type>>>(&p.second)) {
-            std::vector<std::vector<express::Base>> instances;
+            std::vector<std::vector<express::base>> instances;
             for (const auto& vi : *vvv) {
                 auto& inner = instances.emplace_back();
                 for (const auto& vii : vi) {
@@ -2425,9 +2425,9 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                         if (it == byid_.end()) {
                             logger_.get().error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                         } else {
-                            inner.push_back(express::Base(it->second));
+                            inner.push_back(express::base(it->second));
                         }
-                    } else if (auto* inst = std::get_if<express::Base>(&vii)) {
+                    } else if (auto* inst = std::get_if<express::base>(&vii)) {
                         inner.push_back(*inst);
                     }
                 }
@@ -2436,8 +2436,8 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
             auto& storage = owner;
             auto attr_index = p.first.index_;
             
-            if (storage->template has_attribute_value<express::Base>(attr_index)) {
-                express::Base inst = storage->get_attribute_value(attr_index);
+            if (storage->template has_attribute_value<express::base>(attr_index)) {
+                express::base inst = storage->get_attribute_value(attr_index);
                 if (inst && !inst.declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
 #ifdef IFOPSH_SAFE_INSTANCE
@@ -2480,15 +2480,15 @@ void file::recalculate_id_counter() {
 }
 
 class traversal_recorder {
-    std::vector<express::Base> list_;
-    std::map<int, std::vector<express::Base>> instances_by_level_;
+    std::vector<express::base> list_;
+    std::map<int, std::vector<express::base>> instances_by_level_;
     int mode_;
 
   public:
     traversal_recorder(int mode) : mode_(mode) {
     };
 
-    void push_back(int level, const express::Base& instance) {
+    void push_back(int level, const express::base& instance) {
         if (mode_ == 0) {
             list_.push_back(instance);
         } else {
@@ -2497,11 +2497,11 @@ class traversal_recorder {
         }
     }
 
-    std::vector<express::Base> get_list() const {
+    std::vector<express::base> get_list() const {
         if (mode_ == 0) {
             return list_;
         }
-        std::vector<express::Base> l;
+        std::vector<express::base> l;
         for (const auto& p : instances_by_level_) {
             l.insert(l.end(), p.second.begin(), p.second.end());
         }
@@ -2511,22 +2511,22 @@ class traversal_recorder {
 
 class traversal_visitor {
   private:
-    std::set<express::Base>& visited_;
+    std::set<express::base>& visited_;
     traversal_recorder& list_;
     int level_;
     int max_level_;
 
   public:
-    traversal_visitor(std::set<express::Base>& visited, traversal_recorder& list, int level, int max_level)
+    traversal_visitor(std::set<express::base>& visited, traversal_recorder& list, int level, int max_level)
         : visited_(visited),
           list_(list),
           level_(level),
           max_level_(max_level) {}
 
-    void operator()(const express::Base& inst, int index);
+    void operator()(const express::base& inst, int index);
 };
 
-void traverse_(const express::Base& instance, std::set<express::Base>& visited, traversal_recorder& list, int level, int max_level) {
+void traverse_(const express::base& instance, std::set<express::base>& visited, traversal_recorder& list, int level, int max_level) {
     if (visited.find(instance) != visited.end()) {
         return;
     }
@@ -2541,12 +2541,12 @@ void traverse_(const express::Base& instance, std::set<express::Base>& visited, 
     apply_individual_instance_visitor(instance).apply(visit);
 }
 
-void traversal_visitor::operator()(const express::Base& inst, int /* index */) {
+void traversal_visitor::operator()(const express::base& inst, int /* index */) {
     traverse_(inst, visited_, list_, level_, max_level_);
 }
 
-std::vector<express::Base> ifcopenshell::traverse(const express::Base& instance, int max_level) {
-    std::set<express::Base> visited;
+std::vector<express::base> ifcopenshell::traverse(const express::base& instance, int max_level) {
+    std::set<express::base> visited;
     traversal_recorder recorder(0);
     traverse_(instance, visited, recorder, 0, max_level);
     return recorder.get_list();
@@ -2554,24 +2554,24 @@ std::vector<express::Base> ifcopenshell::traverse(const express::Base& instance,
 
 // I'm cheating this isn't breadth-first, but rather we record visited instances
 // keeping track of their rank and return a list ordered by rank. Is this equivalent?
-std::vector<express::Base> ifcopenshell::traverse_breadth_first(const express::Base& instance, int max_level) {
-    std::set<express::Base> visited;
+std::vector<express::base> ifcopenshell::traverse_breadth_first(const express::base& instance, int max_level) {
+    std::set<express::base> visited;
     traversal_recorder recorder(1);
     traverse_(instance, visited, recorder, 0, max_level);
     return recorder.get_list();
 }
 
 /// @note: for backwards compatibility
-std::vector<express::Base> file::traverse(const express::Base& instance, int max_level) {
+std::vector<express::base> file::traverse(const express::base& instance, int max_level) {
     return ifcopenshell::traverse(instance, max_level);
 }
 
 /// @note: for backwards compatibility
-std::vector<express::Base> file::traverse_breadth_first(const express::Base& instance, int max_level) {
+std::vector<express::base> file::traverse_breadth_first(const express::base& instance, int max_level) {
     return ifcopenshell::traverse_breadth_first(instance, max_level);
 }
 
-express::Base file::add_entity(const express::Base& entity, int id) {
+express::base file::add_entity(const express::base& entity, int id) {
     if (entity.file() == this) {
         return entity;
     }
@@ -2613,13 +2613,13 @@ express::Base file::add_entity(const express::Base& entity, int id) {
     auto num_attributes = (decl->as_entity() ? decl->as_entity()->attribute_count() : 1);
     for (size_t i = 0; i < num_attributes; ++i) {
         entity.get_attribute_value(i).apply_visitor([this, i, decl, &new_entity](const auto& v) {
-            using U = std::decay_t<decltype(v)>;
+            using u = std::decay_t<decltype(v)>;
             // only need to copy non-instance attribute values, others are assigned below after mapping
-            if constexpr (std::is_same_v<U, express::Base>) {
-            } else if constexpr (std::is_same_v<U, std::vector<express::Base>>) {
-            } else if constexpr (std::is_same_v<U, std::vector<std::vector<express::Base>>>) {
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t>) {
-            } else if constexpr (std::is_same_v<U, empty_aggregate_of_aggregate_t>) {
+            if constexpr (std::is_same_v<u, express::base>) {
+            } else if constexpr (std::is_same_v<u, std::vector<express::base>>) {
+            } else if constexpr (std::is_same_v<u, std::vector<std::vector<express::base>>>) {
+            } else if constexpr (std::is_same_v<u, empty_aggregate_t>) {
+            } else if constexpr (std::is_same_v<u, empty_aggregate_of_aggregate_t>) {
             } else {
                 new_entity.set_attribute_value(i, v);
             }
@@ -2648,15 +2648,15 @@ express::Base file::add_entity(const express::Base& entity, int id) {
         }
 
         if (attr_type == ifcopenshell::Argument_ENTITY_INSTANCE) {
-            entity_entity_map_t::const_iterator eit = entity_file_map_.find(((express::Base)(attr)).identity());
+            entity_entity_map_t::const_iterator eit = entity_file_map_.find(((express::base)(attr)).identity());
             if (eit == entity_file_map_.end()) {
                 throw ifcopenshell::exception("Unable to map instance to file");
             }
             // @todo previously, we directly use storage::set() not to trigger inverse recalculation which happens at the end
             new_entity.set_attribute_value(i, eit->second);
         } else if (attr_type == ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-            std::vector<express::Base> instances = attr;
-            std::vector<express::Base> new_instances;
+            std::vector<express::base> instances = attr;
+            std::vector<express::base> new_instances;
             for (auto& i : instances) {
                 entity_entity_map_t::const_iterator eit = entity_file_map_.find(i.identity());
                 if (eit == entity_file_map_.end()) {
@@ -2666,8 +2666,8 @@ express::Base file::add_entity(const express::Base& entity, int id) {
             }
             new_entity.set_attribute_value(i, new_instances);
         } else if (attr_type == ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-            std::vector<std::vector<express::Base>> instances = attr;
-            std::vector<std::vector<express::Base>> new_instances;
+            std::vector<std::vector<express::base>> instances = attr;
+            std::vector<std::vector<express::base>> new_instances;
 
             for (auto& v : instances) {
                 new_instances.emplace_back();
@@ -2683,8 +2683,8 @@ express::Base file::add_entity(const express::Base& entity, int id) {
             new_entity.set_attribute_value(i, new_instances);
         } else if ((potentially_length_measure_decl != nullptr) && potentially_length_measure_decl->is(*schema()->declaration_by_name("IfcLengthMeasure"))) {
             if (boost::math::isnan(conversion_factor)) {
-                std::pair<express::Base, double> this_file_unit = {express::Base{}, 1.0};
-                std::pair<express::Base, double> other_file_unit = {express::Base{}, 1.0};
+                std::pair<express::base, double> this_file_unit = {express::base{}, 1.0};
+                std::pair<express::base, double> other_file_unit = {express::base{}, 1.0};
                 try {
                     this_file_unit = get_unit("LENGTHUNIT");
                     other_file_unit = other_file->get_unit("LENGTHUNIT");
@@ -2743,7 +2743,7 @@ express::Base file::add_entity(const express::Base& entity, int id) {
     return new_entity;
 }
 
-void file::remove_entity(const express::Base& entity) {
+void file::remove_entity(const express::base& entity) {
     auto id = entity.id();
 
     auto file_entity = instance_by_id(id);
@@ -2752,7 +2752,7 @@ void file::remove_entity(const express::Base& entity) {
     // This invalidates the iterator. A workaround is to reverse the loop:
     // boost::shared_ptr<aggregate_of_instance> entities = ...;
     // for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
-    //    express::Base *const inst = *it;
+    //    express::base *const inst = *it;
     //    model->remove_entity(inst);
     // }
 
@@ -2775,7 +2775,7 @@ void file::remove_entity(const express::Base& entity) {
     }
 }
 
-void file::process_deletion_(const express::Base& entity) {
+void file::process_deletion_(const express::base& entity) {
 
     auto references = instances_by_reference(entity.id());
 
@@ -2800,13 +2800,13 @@ void file::process_deletion_(const express::Base& entity) {
                 ifcopenshell::argument_type attr_type = attr.type();
                 switch (attr_type) {
                 case ifcopenshell::Argument_ENTITY_INSTANCE: {
-                    express::Base instance_attribute = attr;
+                    express::base instance_attribute = attr;
                     if (instance_attribute == entity) {
                         related_instance.set_attribute_value(i, blank{});
                     }
                 } break;
                 case ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-                    std::vector<express::Base> instance_list = attr;
+                    std::vector<express::base> instance_list = attr;
                     auto it = std::remove(instance_list.begin(), instance_list.end(), entity);
                     if (it != instance_list.end()) {
                         instance_list.erase(it, instance_list.end());
@@ -2819,7 +2819,7 @@ void file::process_deletion_(const express::Base& entity) {
                     }
                 } break;
                 case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-                    std::vector<std::vector<express::Base>> instance_list_list = attr;
+                    std::vector<std::vector<express::base>> instance_list_list = attr;
                     bool updated = false;
                     for (auto& li : instance_list_list) {
                         auto it = std::remove(li.begin(), li.end(), entity);
@@ -2864,7 +2864,7 @@ void file::process_deletion_(const express::Base& entity) {
     }
 }
 
-void ifcopenshell::impl::in_memory_file_storage::process_deletion_inverse(const express::Base& entity) {
+void ifcopenshell::impl::in_memory_file_storage::process_deletion_inverse(const express::base& entity) {
     auto id = entity.id();
 
     // Delete inverses into entity
@@ -2890,8 +2890,8 @@ namespace {
     }
 }
 
-std::vector<express::Base> file::instances_by_type(const ifcopenshell::declaration* t) {
-    std::vector<express::Base> insts;
+std::vector<express::base> file::instances_by_type(const ifcopenshell::declaration* t) {
+    std::vector<express::base> insts;
     if (t->as_entity() != nullptr) {
         visit_subtypes(t->as_entity(), [this, &insts](const ifcopenshell::entity* ent) {
             auto subtype_insts = instances_by_type_excl_subtypes(ent);
@@ -2901,13 +2901,13 @@ std::vector<express::Base> file::instances_by_type(const ifcopenshell::declarati
     return insts;
 }
 
-std::vector<express::Base> file::instances_by_type_excl_subtypes(const ifcopenshell::declaration* t) {
+std::vector<express::base> file::instances_by_type_excl_subtypes(const ifcopenshell::declaration* t) {
     return std::visit([t](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
             auto it = x.bytype_excl_.find(t);
-            return (it == x.bytype_excl_.end()) ? std::vector<express::Base>{} : it->second;
+            return (it == x.bytype_excl_.end()) ? std::vector<express::base>{} : it->second;
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
-            std::vector<express::Base> ret;
+            std::vector<express::base> ret;
             auto it = x.bytype_.find(t->index_in_schema());
             if (it != x.bytype_.end()) {
                 const auto& s = it->second;
@@ -2921,22 +2921,22 @@ std::vector<express::Base> file::instances_by_type_excl_subtypes(const ifcopensh
             return ret;
         } else {
             throw std::runtime_error("Storage not initialized");
-            std::vector<express::Base> ret;
+            std::vector<express::base> ret;
             return ret;
         }
     }, storage_);
 }
 
-std::vector<express::Base> file::instances_by_type(const std::string& t) {
+std::vector<express::base> file::instances_by_type(const std::string& t) {
     return instances_by_type(schema()->declaration_by_name(t));
 }
 
-std::vector<express::Base> file::instances_by_type_excl_subtypes(const std::string& t) {
+std::vector<express::base> file::instances_by_type_excl_subtypes(const std::string& t) {
     return instances_by_type_excl_subtypes(schema()->declaration_by_name(t));
 }
 
-std::vector<express::Base> file::instances_by_reference(int t) {
-    std::vector<express::Base> ret;
+std::vector<express::base> file::instances_by_reference(int t) {
+    std::vector<express::base> ret;
     std::visit([this, t, &ret](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
             auto range = x.byref_excl_.equal_range((uint32_t)t);
@@ -2968,18 +2968,18 @@ std::vector<express::Base> file::instances_by_reference(int t) {
     return ret;
 }
 
-express::Base file::instance_by_id(int id) {
+express::base file::instance_by_id(int id) {
     return std::visit([id](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
             throw std::runtime_error("Storage not initialized");
-            return express::Base{};
+            return express::base{};
         } else {
             return x.instance_by_id(id);
         }
     }, storage_);
 }
 
-void ifcopenshell::file::add_type_ref(const express::Base& new_entity)
+void ifcopenshell::file::add_type_ref(const express::base& new_entity)
 {
     std::visit([new_entity](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
@@ -2991,7 +2991,7 @@ void ifcopenshell::file::add_type_ref(const express::Base& new_entity)
 }
 
 
-void ifcopenshell::file::remove_type_ref(const express::Base& new_entity) {
+void ifcopenshell::file::remove_type_ref(const express::base& new_entity) {
     std::visit([new_entity](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
             throw std::runtime_error("Storage not initialized");
@@ -3001,7 +3001,7 @@ void ifcopenshell::file::remove_type_ref(const express::Base& new_entity) {
     }, storage_);
 }
 
-void ifcopenshell::file::process_deletion_inverse(const express::Base& inst) {
+void ifcopenshell::file::process_deletion_inverse(const express::base& inst) {
     std::visit([inst](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
             throw std::runtime_error("Storage not initialized");
@@ -3011,7 +3011,7 @@ void ifcopenshell::file::process_deletion_inverse(const express::Base& inst) {
     }, storage_);
 }
 
-express::Base file::instance_by_guid(const std::string& guid) {
+express::base file::instance_by_guid(const std::string& guid) {
     auto it = byguid_.find(guid);
     if (it == byguid_.end()) {
         throw exception("Instance with GlobalId '" + guid + "' not found");
@@ -3046,7 +3046,7 @@ file::type_iterator file::types_end() const {
 std::ostream& operator<<(std::ostream& out, const ifcopenshell::file& file) {
     file.header().write(out);
 
-    typedef std::vector<express::Base> vector_t;
+    typedef std::vector<express::base> vector_t;
     vector_t sorted;
     std::transform(file.begin(), file.end(), std::back_inserter(sorted), [&file](const auto& x) { return x.second; });
     std::sort(sorted.begin(), sorted.end(), [](const auto& a, const auto& b) { return a.id() < b.id(); });
@@ -3149,14 +3149,14 @@ std::vector<int> file::get_inverse_indices_by_id(int instance_id) {
     return return_value;
 }
 
-std::vector<express::Entity> file::get_inverse(int instance_id, const ifcopenshell::declaration* type, int attribute_index) {
-    std::vector<express::Entity> return_value;
+std::vector<express::entity> file::get_inverse(int instance_id, const ifcopenshell::declaration* type, int attribute_index) {
+    std::vector<express::entity> return_value;
     
     if (type == nullptr && attribute_index == -1) {
         // @todo this is silly.
         auto r = instances_by_reference(instance_id);
         for (auto& i : r) {
-            return_value.push_back(i.as<express::Entity>());
+            return_value.push_back(i.as<express::entity>());
         }
         return return_value;
     }
@@ -3172,7 +3172,7 @@ std::vector<express::Entity> file::get_inverse(int instance_id, const ifcopenshe
             for (auto it = range.first; it != range.second; ++it) {
                 if (it->source_entity < source_types.size() && source_types[it->source_entity] &&
                     (attribute_index == -1 || it->attribute_index == attribute_index)) {
-                    return_value.push_back(instance_by_id(it->source_id).template as<express::Entity>());
+                    return_value.push_back(instance_by_id(it->source_id).template as<express::entity>());
                 }
             }
         }
@@ -3188,7 +3188,7 @@ std::vector<express::Entity> file::get_inverse(int instance_id, const ifcopenshe
                         std::vector<uint32_t> vals(it->value().size() / sizeof(uint32_t));
                         memcpy(vals.data(), it->value().data(), it->value().size());
                         for (auto& v : vals) {
-                            return_value.push_back(instance_by_id(v).template as<express::Entity>());
+                            return_value.push_back(instance_by_id(v).template as<express::entity>());
                         }
                         it->Next();
                     }
@@ -3196,7 +3196,7 @@ std::vector<express::Entity> file::get_inverse(int instance_id, const ifcopenshe
                     auto it = x.byref_excl_.find({instance_id, ent->index_in_schema(), attribute_index});
                     if (it != x.byref_excl_.end()) {
                         for (auto& i : it->second) {
-                            return_value.push_back(instance_by_id(i).template as<express::Entity>());
+                            return_value.push_back(instance_by_id(i).template as<express::entity>());
                         }
                     }
                 }
@@ -3251,8 +3251,8 @@ void file::set_default_header_values() {
     header().file_schema().setschema_identifiers(schema_identifiers);
 }
 
-std::pair<express::Base, double> file::get_unit(const std::string& unit_type) {
-    std::pair<express::Base, double> return_value(express::Base{}, 1.);
+std::pair<express::base, double> file::get_unit(const std::string& unit_type) {
+    std::pair<express::base, double> return_value(express::base{}, 1.);
 
     auto projects = instances_by_type(schema()->declaration_by_name("IfcProject"));
     if (projects.empty()) {
@@ -3265,23 +3265,23 @@ std::pair<express::Base, double> file::get_unit(const std::string& unit_type) {
     if (!projects.empty()) {
         auto project = *projects.begin();
 
-        express::Base unit_assignment = project.as<express::Entity>().get("UnitsInContext");
+        express::base unit_assignment = project.as<express::entity>().get("UnitsInContext");
 
-        std::vector<express::Base> units = unit_assignment.as<express::Entity>().get("Units");
+        std::vector<express::base> units = unit_assignment.as<express::entity>().get("Units");
 
         for (auto& unit : units) {
             if (unit.declaration().is("IfcNamedUnit")) {
-                const std::string file_unit_type = unit.as<express::Entity>().get("UnitType");
+                const std::string file_unit_type = unit.as<express::entity>().get("UnitType");
 
                 if (file_unit_type != unit_type) {
                     continue;
                 }
 
-                express::Base siunit;
+                express::base siunit;
                 if (unit.declaration().is("IfcConversionBasedUnit")) {
-                    express::Base mu = unit.as<express::Entity>().get("ConversionFactor");
-                    express::Base vlc = mu.as<express::Entity>().get("ValueComponent");
-                    express::Base unc = mu.as<express::Entity>().get("UnitComponent");
+                    express::base mu = unit.as<express::entity>().get("ConversionFactor");
+                    express::base vlc = mu.as<express::entity>().get("ValueComponent");
+                    express::base unc = mu.as<express::entity>().get("UnitComponent");
                     return_value.second *= static_cast<double>(vlc.get_attribute_value(0));
                     return_value.first = unit;
 
@@ -3294,7 +3294,7 @@ std::pair<express::Base, double> file::get_unit(const std::string& unit_type) {
                 }
 
                 if (siunit) {
-                    attribute_value prefix = siunit.as<express::Entity>().get("Prefix");
+                    attribute_value prefix = siunit.as<express::entity>().get("Prefix");
                     if (!prefix.isNull()) {
                         return_value.second *= si_prefix_to_value(prefix);
                     }
@@ -3306,8 +3306,8 @@ std::pair<express::Base, double> file::get_unit(const std::string& unit_type) {
     return return_value;
 }
 
-void ifcopenshell::file::build_inverses_(const express::Base& inst) {
-    std::function<void(const express::Base&, int)> fn = [this, inst](const express::Base& attr, int idx) {
+void ifcopenshell::file::build_inverses_(const express::base& inst) {
+    std::function<void(const express::base&, int)> fn = [this, inst](const express::base& attr, int idx) {
         if (attr.declaration().as_entity() != nullptr) {
             unsigned entity_attribute_id = attr.id();
             const auto* decl = inst.declaration().as_entity();
@@ -3350,7 +3350,7 @@ void ifcopenshell::file::reset_identity_cache() {
 
 void ifcopenshell::file::build_inverses() {
     for (const auto& pair : *this) {
-        build_inverses_(express::Base(pair.second));
+        build_inverses_(express::base(pair.second));
     }
 }
 
@@ -3365,7 +3365,7 @@ void ifcopenshell::file::register_inverse(unsigned id_from, const ifcopenshell::
     }, storage_);
 }
 
-void ifcopenshell::file::unregister_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, const express::Base& inst, int attribute_index)
+void ifcopenshell::file::unregister_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, const express::base& inst, int attribute_index)
 {
     std::visit([id_from, from_entity, inst, attribute_index](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
@@ -3380,15 +3380,15 @@ std::atomic_uint32_t instance_data::counter_(0);
 
 // bool ifcopenshell::file::guid_map_ = true;
 
-void express::Base::unset_attribute_value(size_t index) {
+void express::base::unset_attribute_value(size_t index) {
     data()->set_attribute_value(index, blank{});
 }
 
-attribute_value express::Base::get_attribute_value(size_t index) const {
+attribute_value express::base::get_attribute_value(size_t index) const {
     return data()->get_attribute_value(index);
 }
 
-void express::Base::to_string(std::ostream& out, bool upper) const
+void express::base::to_string(std::ostream& out, bool upper) const
 {
     const auto *ent = declaration().as_entity();
     if (ent != nullptr && declaration().schema() != &Header_section_schema::get_schema()) {
@@ -3402,7 +3402,7 @@ void express::Base::to_string(std::ostream& out, bool upper) const
     data()->to_string(out, upper);
 }
 
-ifcopenshell::file* express::Base::file() const {
+ifcopenshell::file* express::base::file() const {
     return data()->file();
 }
 
@@ -3450,7 +3450,7 @@ bool ifcopenshell::impl::rocks_db_file_storage::read_schema(const ifcopenshell::
 }
 
     /*
-express::Base::IfcBaseClass(instance_data&& data)
+express::base::IfcBaseClass(instance_data&& data)
     : identity_(counter_++)
     , id_(0)
     , file_(nullptr)
@@ -3465,48 +3465,48 @@ express::Base::IfcBaseClass(instance_data&& data)
 }
     */
 
-void express::Base::set_attribute_value(size_t i, const express::Base& p) {
-    set_attribute_value<express::Base>(i, p);
+void express::base::set_attribute_value(size_t i, const express::base& p) {
+    set_attribute_value<express::base>(i, p);
 }
-void express::Base::set_attribute_value(const std::string& name, const express::Base& p) {
-    set_attribute_value<express::Base>(name, p);
+void express::base::set_attribute_value(const std::string& name, const express::base& p) {
+    set_attribute_value<express::base>(name, p);
 }
 
-template void IFC_PARSE_API express::Base::set_attribute_value<blank>(size_t index, const blank& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<derived>(size_t index, const derived& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<int64_t>(size_t index, const int64_t& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<bool>(size_t index, const bool& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<boost::logic::tribool>(size_t index, const boost::logic::tribool& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<double>(size_t index, const double& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::string>(size_t index, const std::string& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<boost::dynamic_bitset<>>(size_t index, const boost::dynamic_bitset<>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<enumeration_reference>(size_t index, const enumeration_reference& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<int64_t>>(size_t index, const std::vector<int64_t>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<double>>(size_t index, const std::vector<double>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::string>>(size_t index, const std::vector<std::string>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<boost::dynamic_bitset<>>>(size_t index, const std::vector<boost::dynamic_bitset<>>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<express::Base>>(size_t index, const std::vector<express::Base>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<int64_t>>>(size_t index, const std::vector<std::vector<int64_t>>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<double>>>(size_t index, const std::vector<std::vector<double>>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<express::Base>>>(size_t index, const std::vector<std::vector<express::Base>>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<blank>(size_t index, const blank& value);
+template void IFC_PARSE_API express::base::set_attribute_value<derived>(size_t index, const derived& value);
+template void IFC_PARSE_API express::base::set_attribute_value<int64_t>(size_t index, const int64_t& value);
+template void IFC_PARSE_API express::base::set_attribute_value<bool>(size_t index, const bool& value);
+template void IFC_PARSE_API express::base::set_attribute_value<boost::logic::tribool>(size_t index, const boost::logic::tribool& value);
+template void IFC_PARSE_API express::base::set_attribute_value<double>(size_t index, const double& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::string>(size_t index, const std::string& value);
+template void IFC_PARSE_API express::base::set_attribute_value<boost::dynamic_bitset<>>(size_t index, const boost::dynamic_bitset<>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<enumeration_reference>(size_t index, const enumeration_reference& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<int64_t>>(size_t index, const std::vector<int64_t>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<double>>(size_t index, const std::vector<double>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<std::string>>(size_t index, const std::vector<std::string>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<boost::dynamic_bitset<>>>(size_t index, const std::vector<boost::dynamic_bitset<>>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<express::base>>(size_t index, const std::vector<express::base>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<std::vector<int64_t>>>(size_t index, const std::vector<std::vector<int64_t>>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<std::vector<double>>>(size_t index, const std::vector<std::vector<double>>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<std::vector<express::base>>>(size_t index, const std::vector<std::vector<express::base>>& value);
 
-template void IFC_PARSE_API express::Base::set_attribute_value<blank>(const std::string& name, const blank& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<derived>(const std::string& name, const derived& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<int64_t>(const std::string& name, const int64_t& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<bool>(const std::string& name, const bool& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<boost::logic::tribool>(const std::string& name, const boost::logic::tribool& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<double>(const std::string& name, const double& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::string>(const std::string& name, const std::string& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<boost::dynamic_bitset<>>(const std::string& name, const boost::dynamic_bitset<>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<enumeration_reference>(const std::string& name, const enumeration_reference& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<int64_t>>(const std::string& name, const std::vector<int64_t>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<double>>(const std::string& name, const std::vector<double>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::string>>(const std::string& name, const std::vector<std::string>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<boost::dynamic_bitset<>>>(const std::string& name, const std::vector<boost::dynamic_bitset<>>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<express::Base>>(const std::string& name, const std::vector<express::Base>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<int64_t>>>(const std::string& name, const std::vector<std::vector<int64_t>>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<double>>>(const std::string& name, const std::vector<std::vector<double>>& value);
-template void IFC_PARSE_API express::Base::set_attribute_value<std::vector<std::vector<express::Base>>>(const std::string& name, const std::vector<std::vector<express::Base>>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<blank>(const std::string& name, const blank& value);
+template void IFC_PARSE_API express::base::set_attribute_value<derived>(const std::string& name, const derived& value);
+template void IFC_PARSE_API express::base::set_attribute_value<int64_t>(const std::string& name, const int64_t& value);
+template void IFC_PARSE_API express::base::set_attribute_value<bool>(const std::string& name, const bool& value);
+template void IFC_PARSE_API express::base::set_attribute_value<boost::logic::tribool>(const std::string& name, const boost::logic::tribool& value);
+template void IFC_PARSE_API express::base::set_attribute_value<double>(const std::string& name, const double& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::string>(const std::string& name, const std::string& value);
+template void IFC_PARSE_API express::base::set_attribute_value<boost::dynamic_bitset<>>(const std::string& name, const boost::dynamic_bitset<>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<enumeration_reference>(const std::string& name, const enumeration_reference& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<int64_t>>(const std::string& name, const std::vector<int64_t>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<double>>(const std::string& name, const std::vector<double>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<std::string>>(const std::string& name, const std::vector<std::string>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<boost::dynamic_bitset<>>>(const std::string& name, const std::vector<boost::dynamic_bitset<>>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<express::base>>(const std::string& name, const std::vector<express::base>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<std::vector<int64_t>>>(const std::string& name, const std::vector<std::vector<int64_t>>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<std::vector<double>>>(const std::string& name, const std::vector<std::vector<double>>& value);
+template void IFC_PARSE_API express::base::set_attribute_value<std::vector<std::vector<express::base>>>(const std::string& name, const std::vector<std::vector<express::base>>& value);
 
 namespace express {
 template <typename T>
@@ -3527,36 +3527,36 @@ T Entity::get_value(const std::string& name, const T& default_value) const {
 }
 } // namespace express
 
-template int64_t IFC_PARSE_API express::Entity::get_value<int64_t>(const std::string&) const;
-template bool IFC_PARSE_API express::Entity::get_value<bool>(const std::string&) const;
-template boost::logic::tribool IFC_PARSE_API express::Entity::get_value<boost::logic::tribool>(const std::string&) const;
-template double IFC_PARSE_API express::Entity::get_value<double>(const std::string&) const;
-template std::string IFC_PARSE_API express::Entity::get_value<std::string>(const std::string&) const;
-template express::Base IFC_PARSE_API express::Entity::get_value<express::Base>(const std::string&) const;
-template boost::dynamic_bitset<> IFC_PARSE_API express::Entity::get_value<boost::dynamic_bitset<>>(const std::string&) const;
-template enumeration_reference IFC_PARSE_API express::Entity::get_value<enumeration_reference>(const std::string&) const;
-template std::vector<int64_t> IFC_PARSE_API express::Entity::get_value<std::vector<int64_t>>(const std::string&) const;
-template std::vector<double> IFC_PARSE_API express::Entity::get_value<std::vector<double>>(const std::string&) const;
-template std::vector<std::string> IFC_PARSE_API express::Entity::get_value<std::vector<std::string>>(const std::string&) const;
-template std::vector<boost::dynamic_bitset<>> IFC_PARSE_API express::Entity::get_value<std::vector<boost::dynamic_bitset<>>>(const std::string&) const;
-template std::vector<express::Base> IFC_PARSE_API express::Entity::get_value<std::vector<express::Base>>(const std::string&) const;
-template std::vector<std::vector<int64_t>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<int64_t>>>(const std::string&) const;
-template std::vector<std::vector<double>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<double>>>(const std::string&) const;
-template std::vector<std::vector<express::Base>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<express::Base>>>(const std::string&) const;
+template int64_t IFC_PARSE_API express::entity::get_value<int64_t>(const std::string&) const;
+template bool IFC_PARSE_API express::entity::get_value<bool>(const std::string&) const;
+template boost::logic::tribool IFC_PARSE_API express::entity::get_value<boost::logic::tribool>(const std::string&) const;
+template double IFC_PARSE_API express::entity::get_value<double>(const std::string&) const;
+template std::string IFC_PARSE_API express::entity::get_value<std::string>(const std::string&) const;
+template express::base IFC_PARSE_API express::entity::get_value<express::base>(const std::string&) const;
+template boost::dynamic_bitset<> IFC_PARSE_API express::entity::get_value<boost::dynamic_bitset<>>(const std::string&) const;
+template enumeration_reference IFC_PARSE_API express::entity::get_value<enumeration_reference>(const std::string&) const;
+template std::vector<int64_t> IFC_PARSE_API express::entity::get_value<std::vector<int64_t>>(const std::string&) const;
+template std::vector<double> IFC_PARSE_API express::entity::get_value<std::vector<double>>(const std::string&) const;
+template std::vector<std::string> IFC_PARSE_API express::entity::get_value<std::vector<std::string>>(const std::string&) const;
+template std::vector<boost::dynamic_bitset<>> IFC_PARSE_API express::entity::get_value<std::vector<boost::dynamic_bitset<>>>(const std::string&) const;
+template std::vector<express::base> IFC_PARSE_API express::entity::get_value<std::vector<express::base>>(const std::string&) const;
+template std::vector<std::vector<int64_t>> IFC_PARSE_API express::entity::get_value<std::vector<std::vector<int64_t>>>(const std::string&) const;
+template std::vector<std::vector<double>> IFC_PARSE_API express::entity::get_value<std::vector<std::vector<double>>>(const std::string&) const;
+template std::vector<std::vector<express::base>> IFC_PARSE_API express::entity::get_value<std::vector<std::vector<express::base>>>(const std::string&) const;
 
-template int64_t IFC_PARSE_API express::Entity::get_value<int64_t>(const std::string&, const int64_t&) const;
-template bool IFC_PARSE_API express::Entity::get_value<bool>(const std::string&, const bool&) const;
-template boost::logic::tribool IFC_PARSE_API express::Entity::get_value<boost::logic::tribool>(const std::string&, const boost::logic::tribool&) const;
-template double IFC_PARSE_API express::Entity::get_value<double>(const std::string&, const double&) const;
-template std::string IFC_PARSE_API express::Entity::get_value<std::string>(const std::string&, const std::string&) const;
-template express::Base IFC_PARSE_API express::Entity::get_value<express::Base>(const std::string&, const express::Base&) const;
-template boost::dynamic_bitset<> IFC_PARSE_API express::Entity::get_value<boost::dynamic_bitset<>>(const std::string&, const boost::dynamic_bitset<>&) const;
-template enumeration_reference IFC_PARSE_API express::Entity::get_value<enumeration_reference>(const std::string&, const enumeration_reference&) const;
-template std::vector<int64_t> IFC_PARSE_API express::Entity::get_value<std::vector<int64_t>>(const std::string&, const std::vector<int64_t>&) const;
-template std::vector<double> IFC_PARSE_API express::Entity::get_value<std::vector<double>>(const std::string&, const std::vector<double>&) const;
-template std::vector<std::string> IFC_PARSE_API express::Entity::get_value<std::vector<std::string>>(const std::string&, const std::vector<std::string>&) const;
-template std::vector<boost::dynamic_bitset<>> IFC_PARSE_API express::Entity::get_value<std::vector<boost::dynamic_bitset<>>>(const std::string&, const std::vector<boost::dynamic_bitset<>>&) const;
-template std::vector<express::Base> IFC_PARSE_API express::Entity::get_value<std::vector<express::Base>>(const std::string&, const std::vector<express::Base>&) const;
-template std::vector<std::vector<int64_t>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<int64_t>>>(const std::string&, const std::vector<std::vector<int64_t>>&) const;
-template std::vector<std::vector<double>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<double>>>(const std::string&, const std::vector<std::vector<double>>&) const;
-template std::vector<std::vector<express::Base>> IFC_PARSE_API express::Entity::get_value<std::vector<std::vector<express::Base>>>(const std::string&, const std::vector<std::vector<express::Base>>&) const;
+template int64_t IFC_PARSE_API express::entity::get_value<int64_t>(const std::string&, const int64_t&) const;
+template bool IFC_PARSE_API express::entity::get_value<bool>(const std::string&, const bool&) const;
+template boost::logic::tribool IFC_PARSE_API express::entity::get_value<boost::logic::tribool>(const std::string&, const boost::logic::tribool&) const;
+template double IFC_PARSE_API express::entity::get_value<double>(const std::string&, const double&) const;
+template std::string IFC_PARSE_API express::entity::get_value<std::string>(const std::string&, const std::string&) const;
+template express::base IFC_PARSE_API express::entity::get_value<express::base>(const std::string&, const express::base&) const;
+template boost::dynamic_bitset<> IFC_PARSE_API express::entity::get_value<boost::dynamic_bitset<>>(const std::string&, const boost::dynamic_bitset<>&) const;
+template enumeration_reference IFC_PARSE_API express::entity::get_value<enumeration_reference>(const std::string&, const enumeration_reference&) const;
+template std::vector<int64_t> IFC_PARSE_API express::entity::get_value<std::vector<int64_t>>(const std::string&, const std::vector<int64_t>&) const;
+template std::vector<double> IFC_PARSE_API express::entity::get_value<std::vector<double>>(const std::string&, const std::vector<double>&) const;
+template std::vector<std::string> IFC_PARSE_API express::entity::get_value<std::vector<std::string>>(const std::string&, const std::vector<std::string>&) const;
+template std::vector<boost::dynamic_bitset<>> IFC_PARSE_API express::entity::get_value<std::vector<boost::dynamic_bitset<>>>(const std::string&, const std::vector<boost::dynamic_bitset<>>&) const;
+template std::vector<express::base> IFC_PARSE_API express::entity::get_value<std::vector<express::base>>(const std::string&, const std::vector<express::base>&) const;
+template std::vector<std::vector<int64_t>> IFC_PARSE_API express::entity::get_value<std::vector<std::vector<int64_t>>>(const std::string&, const std::vector<std::vector<int64_t>>&) const;
+template std::vector<std::vector<double>> IFC_PARSE_API express::entity::get_value<std::vector<std::vector<double>>>(const std::string&, const std::vector<std::vector<double>>&) const;
+template std::vector<std::vector<express::base>> IFC_PARSE_API express::entity::get_value<std::vector<std::vector<express::base>>>(const std::string&, const std::vector<std::vector<express::base>>&) const;

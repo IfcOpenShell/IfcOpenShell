@@ -101,7 +101,7 @@ int main() {
 	// IfcFacetedBRep. If it would not be a polyhedron, serialise() can only be successful when linked
 	// to the IFC4 model and with `advanced` set to `true` which introduces IfcAdvancedFace. It would
 	// return `0` otherwise.
-	auto building_shape = IfcGeom::serialise(file, building_shell, false).as<IfcSchema::IfcProductDefinitionShape>();
+	auto building_shape = ifcopenshell::geom::serialise(file, building_shell, false).as<IfcSchema::IfcProductDefinitionShape>();
 	
 	file.add_entity(building_shape);
 	auto building_representations = building_shape.Representations();
@@ -117,9 +117,9 @@ int main() {
 	TopoDS_Shape shape;
 	createGroundShape(shape);
 
-	auto ground_representation = IfcGeom::serialise(file, shape, true);
+	auto ground_representation = ifcopenshell::geom::serialise(file, shape, true);
 	if (!ground_representation) {
-        ground_representation = IfcGeom::tesselate(file, shape, 100.);
+        ground_representation = ifcopenshell::geom::tesselate(file, shape, 100.);
 	}
 	file.getSingle<IfcSchema::IfcSite>().setRepresentation(ground_representation.as<IfcSchema::IfcProductDefinitionShape>());
 	
@@ -134,10 +134,10 @@ int main() {
     // Note that IFC lacks elementary surfaces that STEP does have, such as spherical_surface.
     // BRepBuilderAPI_NurbsConvert can be used to serialize such surfaces as nurbs surfaces.
 	TopoDS_Shape sphere = BRepPrimAPI_MakeSphere(gp_Pnt(), 1000.).Shape();
-	IfcSchema::IfcProductDefinitionShape* sphere_representation = IfcGeom::serialise(sphere, true);
+	IfcSchema::IfcProductDefinitionShape* sphere_representation = ifcopenshell::geom::serialise(sphere, true);
 	if (S(IfcSchema::Identifier) == "IFC4") {
 		sphere = BRepBuilderAPI_NurbsConvert(sphere, true).Shape();
-		sphere_representation = IfcGeom::serialise(sphere, true);
+		sphere_representation = ifcopenshell::geom::serialise(sphere, true);
 	}
     */
 

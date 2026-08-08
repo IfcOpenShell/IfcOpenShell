@@ -63,15 +63,14 @@
 #include "wire_utils.h"
 #include "base_utils.h"
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
 
 namespace {
 	struct surface_creation_visitor {
-		OpenCascadeKernel* kernel;
+		open_cascade_kernel* kernel;
 		Handle(Geom_Surface) result;
 
 		Handle(Geom_Surface) operator()(const taxonomy::bspline_surface::ptr& bs) {
@@ -122,34 +121,34 @@ namespace {
 		Handle(Geom_Surface) operator()(const taxonomy::plane::ptr& p) {
 			const auto& m = p->matrix->ccomponents();
 			return result = Handle(Geom_Surface)(new Geom_Plane(
-				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2))));
+				open_cascade_kernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(2))));
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::cylinder::ptr& c) {
 			const auto& m = c->matrix->ccomponents();
 			return result = Handle(Geom_Surface)(new Geom_CylindricalSurface(gp_Ax3(
-				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))
+				open_cascade_kernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(2)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(0))
 			), c->radius));
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::sphere::ptr& s) {
 			const auto& m = s->matrix->ccomponents();
 			return result = Handle(Geom_Surface)(new Geom_SphericalSurface(gp_Ax3(
-				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))
+				open_cascade_kernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(2)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(0))
 			), s->radius));
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::torus::ptr& t) {
 			const auto& m = t->matrix->ccomponents();
 			return result = Handle(Geom_Surface)(new Geom_ToroidalSurface(gp_Ax3(
-				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))
+				open_cascade_kernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(2)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(0))
 			), t->radius1, t->radius2));
 		}
 
@@ -204,7 +203,7 @@ namespace {
 
 			result = Handle(Geom_Surface)(new Geom_SurfaceOfLinearExtrusion(
 				crv,
-				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction)
+				open_cascade_kernel::convert_xyz<gp_Dir>(*e->direction)
 			));
 
 			result->Transform(tr);
@@ -214,8 +213,8 @@ namespace {
 
 		Handle(Geom_Surface) operator()(const taxonomy::revolve::ptr& e) {
 			gp_Ax1 ax(
-				OpenCascadeKernel::convert_xyz<gp_Pnt>(*e->axis_origin),
-				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction));
+				open_cascade_kernel::convert_xyz<gp_Pnt>(*e->axis_origin),
+				open_cascade_kernel::convert_xyz<gp_Dir>(*e->direction));
 
 			gp_Trsf tr;
 			if (e->matrix && !e->matrix->is_identity()) {
@@ -257,7 +256,7 @@ namespace {
 	};
 }
 
-Handle(Geom_Surface) OpenCascadeKernel::convert_surface(const taxonomy::ptr surface) {
+Handle(Geom_Surface) open_cascade_kernel::convert_surface(const taxonomy::ptr surface) {
 	surface_creation_visitor v{ this };
 	if (dispatch_surface_creation<surface_creation_visitor, 0>::dispatch(surface, v)) {
 		return v.result;
@@ -266,7 +265,7 @@ Handle(Geom_Surface) OpenCascadeKernel::convert_surface(const taxonomy::ptr surf
 	}
 }
 
-bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result, bool reversed_surface) {
+bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result, bool reversed_surface) {
 #ifdef IFOPSH_DEBUG
 	std::ostringstream oss;
 	face->print(oss);
@@ -625,16 +624,16 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::face::ptr face, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::face::ptr face, ifcopenshell::geom::conversion_results& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;
 	if (!convert(face, shape)) {
 		return false;
 	}
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
 		face->instance.id(),
-		new OpenCascadeShape(shape),
+		new open_cascade_shape(shape),
 		face->surface_style
 	));
 	return true;

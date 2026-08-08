@@ -21,7 +21,7 @@
 #define _USE_MATH_DEFINES
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcArbitraryOpenProfileDef& inst) {
 	auto mapped = map(inst.Curve());

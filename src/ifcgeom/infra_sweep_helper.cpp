@@ -4,7 +4,7 @@
 
 #include <boost/range/combine.hpp>
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 namespace {
 	// std::lerp when upgrading to C++ 20
@@ -35,7 +35,7 @@ bool has_intersection(const std::set<T, Cmp>& A,
 
 }
 
-taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const express::Base inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections, logger& logger)
+taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::settings& settings, const express::base inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections, logger& logger)
 {
 	std::sort(cross_sections.begin(), cross_sections.end());
 
@@ -46,7 +46,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 	// @todo currently only the case is handled where directrix returns a function_item
 	// @todo this "if" statement is not really required because the function returns at the start if the Directrix is not a function_item function
 	if (fn) {
-		function_item_evaluator evaluator(settings_, fn);
+		function_item_evaluator evaluator(settings, fn);
 		double start = std::max(0., cross_sections.front().dist_along);
 		double end = std::min(fn->length(), cross_sections.back().dist_along);
 
@@ -56,10 +56,10 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 		}
 
 		auto curve_length = end - start;
-		auto param_type = settings_.get<ifcopenshell::geometry::settings::FunctionStepType>().get();
-		auto param = settings_.get<ifcopenshell::geometry::settings::FunctionStepParam>().get();
+		auto param_type = settings.get<ifcopenshell::geom::settings::FunctionStepType>().get();
+		auto param = settings.get<ifcopenshell::geom::settings::FunctionStepParam>().get();
 		size_t num_steps = 0;
-		if (param_type == ifcopenshell::geometry::settings::FunctionStepMethod::MAXSTEPSIZE) {
+		if (param_type == ifcopenshell::geom::settings::FunctionStepMethod::MAXSTEPSIZE) {
 			// parameter is max step size
 			num_steps = (size_t)std::ceil(curve_length / param);
 		} else {

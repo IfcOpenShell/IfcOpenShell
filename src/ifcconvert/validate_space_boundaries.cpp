@@ -2,7 +2,7 @@
 
 #include "validation_utils.h"
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
@@ -45,16 +45,16 @@ void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bo
 		return;
 	}
 
-	ifcopenshell::geometry::Settings settings;
+	ifcopenshell::geom::settings settings;
 
-	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
+	settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
+	settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-	ifcopenshell::geometry::Converter c(ifcopenshell::geometry::kernels::construct(&f2, "cgal", settings), &f2, settings, logger);
+	ifcopenshell::geom::converter c(ifcopenshell::geom::kernels::construct(&f2, "cgal", settings), &f2, settings, logger);
 
 	std::map<std::set<std::string>, std::vector<Kernel_::Point_3>> elem_to_space_boundary_coords;
 

@@ -14,12 +14,12 @@
 #include <sstream>
 #include <unordered_map>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
 
 namespace {
-	using Mesh = manifold::MeshGL64;
-	using Part = ifcopenshell::geometry::ManifoldPart;
+	using mesh_type = manifold::MeshGL64;
+	using part = ifcopenshell::geom::manifold_part;
 
 	std::string manifold_error_string(manifold::Manifold::Error error) {
 		switch (error) {
@@ -53,18 +53,18 @@ namespace {
 		return "unknown error";
 	}
 
-	struct VertexKey {
+	struct vertex_key {
 		long long x;
 		long long y;
 		long long z;
 
-		bool operator==(const VertexKey& other) const {
+		bool operator==(const vertex_key& other) const {
 			return x == other.x && y == other.y && z == other.z;
 		}
 	};
 
-	struct VertexKeyHash {
-		size_t operator()(const VertexKey& key) const {
+	struct vertex_key_hash {
+		size_t operator()(const vertex_key& key) const {
 			auto h = std::hash<long long>()(key.x);
 			h ^= std::hash<long long>()(key.y) + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
 			h ^= std::hash<long long>()(key.z) + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
@@ -72,17 +72,17 @@ namespace {
 		}
 	};
 
-	struct MeshBuilder {
+	struct mesh_builder {
 		double precision;
         double dilation = 0.;
 		std::vector<Eigen::Vector3d> vertices;
-		std::unordered_map<VertexKey, uint64_t, VertexKeyHash> vertex_map;
+		std::unordered_map<vertex_key, uint64_t, vertex_key_hash> vertex_map;
 		std::vector<uint64_t> tri_verts;
 		std::vector<uint64_t> face_ids;
 
-		explicit MeshBuilder(double p) : precision(p > 0. ? p : 1.e-9) {}
+		explicit mesh_builder(double p) : precision(p > 0. ? p : 1.e-9) {}
 
-		VertexKey key(const Eigen::Vector3d& p) const {
+		vertex_key key(const Eigen::Vector3d& p) const {
 			return {
 				(long long)std::llround(p(0) / precision),
 				(long long)std::llround(p(1) / precision),
@@ -111,8 +111,8 @@ namespace {
 			face_ids.push_back(face_id);
 		}
 
-		Mesh build() const {
-			Mesh mesh;
+		mesh_type build() const {
+			mesh_type mesh;
 			mesh.numProp = 3;
 			
 			std::vector<size_t> vertex_use_count(vertices.size(), 0);
@@ -149,42 +149,42 @@ namespace {
 		}
 	};
 
-	struct LoopPoint {
+	struct loop_point {
 		Eigen::Vector3d xyz;
 		manifold::vec2 uv;
 	};
 
-	using LoopPolygon = std::vector<LoopPoint>;
+	using loop_polygon = std::vector<loop_point>;
 
-	struct EdgeKey {
+	struct edge_key {
 		uint64_t a;
 		uint64_t b;
 
-		bool operator==(const EdgeKey& other) const {
+		bool operator==(const edge_key& other) const {
 			return a == other.a && b == other.b;
 		}
 	};
 
-	struct EdgeKeyHash {
-		size_t operator()(const EdgeKey& key) const {
+	struct edge_key_hash {
+		size_t operator()(const edge_key& key) const {
 			auto h = std::hash<uint64_t>()(key.a);
 			h ^= std::hash<uint64_t>()(key.b) + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
 			return h;
 		}
 	};
 
-	struct FaceKey {
+	struct face_key {
 		uint64_t a;
 		uint64_t b;
 		uint64_t c;
 
-		bool operator==(const FaceKey& other) const {
+		bool operator==(const face_key& other) const {
 			return a == other.a && b == other.b && c == other.c;
 		}
 	};
 
-	struct FaceKeyHash {
-		size_t operator()(const FaceKey& key) const {
+	struct face_key_hash {
+		size_t operator()(const face_key& key) const {
 			auto h = std::hash<uint64_t>()(key.a);
 			h ^= std::hash<uint64_t>()(key.b) + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
 			h ^= std::hash<uint64_t>()(key.c) + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
@@ -192,12 +192,12 @@ namespace {
 		}
 	};
 
-	struct EdgeUseCount {
+	struct edge_use_count {
 		size_t forward = 0;
 		size_t reverse = 0;
 	};
 
-	struct MeshDiagnostics {
+	struct mesh_diagnostics {
 		size_t vertices = 0;
 		size_t triangles = 0;
 		size_t unique_edges = 0;
@@ -219,7 +219,7 @@ namespace {
 		double max_area = 0.;
 	};
 
-	struct ShellDiagnostics {
+	struct shell_diagnostics {
 		size_t faces = 0;
 		size_t loops = 0;
 		size_t edges = 0;
@@ -399,10 +399,10 @@ namespace {
 	}
 
 	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points);
-	bool loop_polygon_from_points(const std::vector<Eigen::Vector3d>& points, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, LoopPolygon& polygon);
-	double signed_area(const LoopPolygon& polygon);
+	bool loop_polygon_from_points(const std::vector<Eigen::Vector3d>& points, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, loop_polygon& polygon);
+	double signed_area(const loop_polygon& polygon);
 
-	bool extrusion_face_polygons(const taxonomy::face::ptr& face, int circle_segments, double precision, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y, std::vector<LoopPolygon>& polygons, size_t& outer_index) {
+	bool extrusion_face_polygons(const taxonomy::face::ptr& face, int circle_segments, double precision, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y, std::vector<loop_polygon>& polygons, size_t& outer_index) {
 		polygons.clear();
 		outer_index = 0;
 		if (!extrusion_face_supported(face)) {
@@ -423,7 +423,7 @@ namespace {
 			if (!basis_from_points(points, loop_origin, loop_x, loop_y)) {
 				return false;
 			}
-			LoopPolygon polygon;
+			loop_polygon polygon;
 			if (!loop_polygon_from_points(points, loop_origin, loop_x, loop_y, precision, polygon)) {
 				return false;
 			}
@@ -440,7 +440,7 @@ namespace {
 		double outer_area = 0.;
 		polygons.reserve(loops.size());
 		for (const auto& points : loops) {
-			LoopPolygon polygon;
+			loop_polygon polygon;
 			if (!loop_polygon_from_points(points, origin, x, y, precision, polygon)) {
 				return false;
 			}
@@ -525,7 +525,7 @@ namespace {
 		return 0.5 * area;
 	}
 
-	Eigen::Vector3d mesh_vertex(const Mesh& mesh, size_t index) {
+	Eigen::Vector3d mesh_vertex(const mesh_type& mesh, size_t index) {
 		return Eigen::Vector3d(
 			mesh.vertProperties[index * mesh.numProp + 0],
 			mesh.vertProperties[index * mesh.numProp + 1],
@@ -542,12 +542,12 @@ namespace {
 		return "(" + format_number(value(0)) + ", " + format_number(value(1)) + ", " + format_number(value(2)) + ")";
 	}
 
-	MeshDiagnostics diagnose_mesh(const Mesh& mesh, double precision) {
-		MeshDiagnostics diagnostics;
+	mesh_diagnostics diagnose_mesh(const mesh_type& mesh, double precision) {
+		mesh_diagnostics diagnostics;
 		diagnostics.vertices = mesh.NumVert();
 		diagnostics.triangles = mesh.NumTri();
-		std::unordered_map<EdgeKey, EdgeUseCount, EdgeKeyHash> edge_use_count;
-		std::unordered_map<FaceKey, size_t, FaceKeyHash> face_use_count;
+		std::unordered_map<edge_key, edge_use_count, edge_key_hash> edge_use_count;
+		std::unordered_map<face_key, size_t, face_key_hash> face_use_count;
 		for (size_t i = 0; i < diagnostics.vertices; ++i) {
 			auto p = mesh_vertex(mesh, i);
 			if (!std::isfinite(p(0)) || !std::isfinite(p(1)) || !std::isfinite(p(2))) {
@@ -603,7 +603,7 @@ namespace {
 			}
 			std::array<uint64_t, 3> face = { a, b, c };
 			std::sort(face.begin(), face.end());
-			const FaceKey face_key{ face[0], face[1], face[2] };
+			const face_key face_key{ face[0], face[1], face[2] };
 			auto face_it = face_use_count.find(face_key);
 			if (face_it == face_use_count.end()) {
 				face_use_count.insert({ face_key, 1 });
@@ -611,10 +611,10 @@ namespace {
 				face_it->second++;
 				diagnostics.duplicate_faces++;
 			}
-			std::array<EdgeKey, 3> edges = {
-				EdgeKey{ std::min(a, b), std::max(a, b) },
-				EdgeKey{ std::min(b, c), std::max(b, c) },
-				EdgeKey{ std::min(c, a), std::max(c, a) }
+			std::array<edge_key, 3> edges = {
+				edge_key{ std::min(a, b), std::max(a, b) },
+				edge_key{ std::min(b, c), std::max(b, c) },
+				edge_key{ std::min(c, a), std::max(c, a) }
 			};
 			std::array<bool, 3> forward = {
 				a < b,
@@ -651,8 +651,8 @@ namespace {
 		return diagnostics;
 	}
 
-	ShellDiagnostics diagnose_shell(const taxonomy::shell::ptr& shell) {
-		ShellDiagnostics diagnostics;
+	shell_diagnostics diagnose_shell(const taxonomy::shell::ptr& shell) {
+		shell_diagnostics diagnostics;
 		diagnostics.faces = shell->children.size();
 		for (const auto& face : shell->children) {
 			diagnostics.max_loops_per_face = std::max(diagnostics.max_loops_per_face, face->children.size());
@@ -678,7 +678,7 @@ namespace {
 		return diagnostics;
 	}
 
-	std::string mesh_diagnostics_string(const MeshDiagnostics& diagnostics) {
+	std::string mesh_diagnostics_string(const mesh_diagnostics& diagnostics) {
 		std::ostringstream ss;
 		ss << "verts=" << diagnostics.vertices
 			<< " tris=" << diagnostics.triangles
@@ -711,7 +711,7 @@ namespace {
 		return ss.str();
 	}
 
-	std::string shell_diagnostics_string(const ShellDiagnostics& diagnostics) {
+	std::string shell_diagnostics_string(const shell_diagnostics& diagnostics) {
 		std::ostringstream ss;
 		ss << "faces=" << diagnostics.faces
 			<< " loops=" << diagnostics.loops
@@ -738,7 +738,7 @@ namespace {
 		return ss.str();
 	}
 
-	std::string solid_shell_failure_diagnosis(const Part& part, const MeshDiagnostics& before, const MeshDiagnostics& after, manifold::Manifold::Error before_status, manifold::Manifold::Error after_status) {
+	std::string solid_shell_failure_diagnosis(const part& part, const mesh_diagnostics& before, const mesh_diagnostics& after, manifold::Manifold::Error before_status, manifold::Manifold::Error after_status) {
 		const bool before_problematic =
 			!part.solid ||
 			before_status != manifold::Manifold::Error::NoError ||
@@ -765,7 +765,7 @@ namespace {
 		return "shell looks clean before and after mesh inspection, issue may be in manifold validation details";
 	}
 
-	void log_solid_shell_transform_failure(const taxonomy::shell::ptr& shell, const Part& before_part, const Mesh& after_mesh, const taxonomy::matrix4::ptr& place, double precision, manifold::Manifold::Error before_status, manifold::Manifold::Error after_status) {
+	void log_solid_shell_transform_failure(const taxonomy::shell::ptr& shell, const part& before_part, const mesh_type& after_mesh, const taxonomy::matrix4::ptr& place, double precision, manifold::Manifold::Error before_status, manifold::Manifold::Error after_status) {
 		const auto shell_info = diagnose_shell(shell);
 		const auto before = diagnose_mesh(before_part.mesh, precision);
 		const auto after = diagnose_mesh(after_mesh, precision);
@@ -791,7 +791,7 @@ namespace {
 		return 0.5 * area;
 	}
 
-	double signed_area(const LoopPolygon& polygon) {
+	double signed_area(const loop_polygon& polygon) {
 		double area = 0.;
 		for (size_t i = 0; i < polygon.size(); ++i) {
 			const auto& a = polygon[i].uv;
@@ -920,7 +920,7 @@ namespace {
 		return points.size() >= 3;
 	}
 
-	bool loop_polygon_from_points(const std::vector<Eigen::Vector3d>& points, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, LoopPolygon& polygon) {
+	bool loop_polygon_from_points(const std::vector<Eigen::Vector3d>& points, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, loop_polygon& polygon) {
 		polygon.clear();
 		polygon.reserve(points.size());
 		for (const auto& point : points) {
@@ -942,7 +942,7 @@ namespace {
 		return polygon.size() >= 3;
 	}
 
-	bool append_simple_loop(const taxonomy::loop::ptr& loop, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, LoopPolygon& polygon) {
+	bool append_simple_loop(const taxonomy::loop::ptr& loop, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, loop_polygon& polygon) {
 		polygon.clear();
 		polygon.reserve(loop->children.size());
 		for (const auto& edge : loop->children) {
@@ -974,11 +974,11 @@ namespace {
 		return true;
 	}
 
-	void reverse_loop(LoopPolygon& polygon) {
+	void reverse_loop(loop_polygon& polygon) {
 		std::reverse(polygon.begin(), polygon.end());
 	}
 
-	void append_loop(const LoopPolygon& loop_polygon, MeshBuilder& builder, manifold::PolygonsIdx& polygons) {
+	void append_loop(const loop_polygon& loop_polygon, mesh_builder& builder, manifold::PolygonsIdx& polygons) {
 		manifold::SimplePolygonIdx polygon;
 		polygon.reserve(loop_polygon.size());
 		for (const auto& point : loop_polygon) {
@@ -990,7 +990,7 @@ namespace {
 		polygons.push_back(std::move(polygon));
 	}
 
-	bool append_face(const taxonomy::face::ptr& face, MeshBuilder& builder, uint64_t face_id) {
+	bool append_face(const taxonomy::face::ptr& face, mesh_builder& builder, uint64_t face_id) {
 		if (!face_supported(face)) {
 			return false;
 		}
@@ -1000,14 +1000,14 @@ namespace {
 		if (!face_basis(face, origin, x, y)) {
 			return false;
 		}
-		std::vector<LoopPolygon> loops;
+		std::vector<loop_polygon> loops;
 		loops.reserve(face->children.size());
 		size_t outer_index = 0;
 		double outer_area = 0.;
 		manifold::PolygonsIdx polygons;
 		polygons.reserve(face->children.size());
 		for (const auto& loop : face->children) {
-			LoopPolygon loop_polygon;
+			loop_polygon loop_polygon;
 			if (!append_simple_loop(loop, origin, x, y, builder.precision, loop_polygon)) {
 				return false;
 			}
@@ -1034,8 +1034,8 @@ namespace {
 		return !triangles.empty();
 	}
 
-	bool shell_to_mesh(const taxonomy::shell::ptr& shell, double precision, Mesh& mesh, double dilation) {
-		MeshBuilder builder(precision);
+	bool shell_to_mesh(const taxonomy::shell::ptr& shell, double precision, mesh_type& mesh, double dilation) {
+		mesh_builder builder(precision);
         builder.dilation = dilation;
 		uint64_t face_id = 0;
 		bool any = false;
@@ -1052,7 +1052,7 @@ namespace {
 		return mesh.NumTri() > 0;
 	}
 
-	std::optional<Part> part_from_mesh(const Mesh& mesh, bool require_manifold, manifold::Manifold::Error* status_ptr = nullptr) {
+	std::optional<part> part_from_mesh(const mesh_type& mesh, bool require_manifold, manifold::Manifold::Error* status_ptr = nullptr) {
 		auto solid = std::optional<manifold::Manifold>{};
 		manifold::Manifold candidate(mesh);
 		auto status = candidate.Status();
@@ -1071,16 +1071,16 @@ namespace {
 		return mesh;
 	}
 
-	std::optional<Part> part_from_shell(const taxonomy::shell::ptr& shell, double precision, double dilation, manifold::Manifold::Error* status_ptr = nullptr) {
-		Mesh mesh;
+	std::optional<part> part_from_shell(const taxonomy::shell::ptr& shell, double precision, double dilation, manifold::Manifold::Error* status_ptr = nullptr) {
+		mesh_type mesh;
 		if (!shell_to_mesh(shell, precision, mesh, dilation)) {
 			return std::nullopt;
 		}
 		return part_from_mesh(mesh, false, status_ptr);
 	}
 
-	Mesh transform_mesh(const Mesh& mesh, const taxonomy::matrix4::ptr& place);
-    std::optional<Part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments);
+	mesh_type transform_mesh(const mesh_type& mesh, const taxonomy::matrix4::ptr& place);
+    std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments);
 
 	Eigen::Matrix4d matrix_or_identity(const taxonomy::matrix4::ptr& matrix) {
 		return matrix ? matrix->ccomponents() : Eigen::Matrix4d::Identity();
@@ -1109,7 +1109,7 @@ namespace {
 		return face;
 	}
 
-	bool explicit_loop_polygon(const taxonomy::loop::ptr& loop, const Eigen::Matrix4d& transform, const Eigen::Vector3d& plane_origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, LoopPolygon& polygon) {
+	bool explicit_loop_polygon(const taxonomy::loop::ptr& loop, const Eigen::Matrix4d& transform, const Eigen::Vector3d& plane_origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, loop_polygon& polygon) {
 		polygon.clear();
 		if (!loop || loop->children.size() < 3) {
 			return false;
@@ -1145,12 +1145,12 @@ namespace {
 		};
 	}
 
-	struct HalfspaceBuildState {
+	struct halfspace_build_state {
 		bool unchanged = false;
 		double depth = 0.;
 	};
 
-	std::optional<Part> part_from_polygon_extrusion(std::vector<LoopPolygon> polygons, size_t outer_index, const Eigen::Vector3d& plane_normal, const Eigen::Vector3d& direction, double depth, double precision, double dilation) {
+	std::optional<part> part_from_polygon_extrusion(std::vector<loop_polygon> polygons, size_t outer_index, const Eigen::Vector3d& plane_normal, const Eigen::Vector3d& direction, double depth, double precision, double dilation) {
 		if (depth < precision || polygons.empty() || outer_index >= polygons.size()) {
 			return std::nullopt;
 		}
@@ -1182,7 +1182,7 @@ namespace {
 			return std::nullopt;
 		}
 		auto offset = dir * depth;
-		MeshBuilder builder(precision);
+		mesh_builder builder(precision);
         builder.dilation = dilation;
 		std::vector<std::vector<uint64_t>> bottoms;
 		std::vector<std::vector<uint64_t>> tops;
@@ -1241,7 +1241,7 @@ namespace {
 		return part_from_mesh(builder.build(), true);
 	}
 
-	std::optional<Part> part_from_halfspace_solid(HalfspaceBuildState& state, const taxonomy::solid::ptr& solid, const taxonomy::face::ptr& face,const manifold::Box& reference_box, double precision, double dilation) {
+	std::optional<part> part_from_halfspace_solid(halfspace_build_state& state, const taxonomy::solid::ptr& solid, const taxonomy::face::ptr& face,const manifold::Box& reference_box, double precision, double dilation) {
 		
         auto plane = taxonomy::cast<taxonomy::plane>(face->basis);
 
@@ -1255,7 +1255,7 @@ namespace {
         Eigen::Vector3d origin = transform.col(3).head<3>();
 
 		auto project_along_global_z = [&](const Eigen::Vector3d& p)
-            -> std::optional<LoopPoint> {
+            -> std::optional<loop_point> {
             Eigen::Vector3d hit;
 
             if (std::abs(normal.z()) > precision) {
@@ -1266,7 +1266,7 @@ namespace {
             }
 
             const auto delta = hit - origin;
-            return std::make_optional(LoopPoint{
+            return std::make_optional(loop_point{
                 hit,
                 manifold::vec2(delta.dot(x), delta.dot(y))});
         };
@@ -1300,7 +1300,7 @@ namespace {
 		}
 		const auto diagonal = Eigen::Vector3d(reference_box.max[0] - reference_box.min[0], reference_box.max[1] - reference_box.min[1], reference_box.max[2] - reference_box.min[2]).norm();
 		const auto margin = std::max(precision * 100., diagonal * 1.e-6);
-		LoopPolygon polygon;
+		loop_polygon polygon;
 		if (face->children.empty()) {
 			polygon = {
 				{ origin + x * (u_min - margin) + y * (v_min - margin), manifold::vec2(u_min - margin, v_min - margin) },
@@ -1327,7 +1327,7 @@ namespace {
 		return part_from_polygon_extrusion({std::move(polygon)}, 0, normal, extrusion_dir * -inside_sign, max_depth + margin, precision, dilation);
 	}
 
-	std::optional<Part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments) {
+	std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments) {
 		if (extrusion->depth < precision) {
 			return std::nullopt;
 		}
@@ -1338,7 +1338,7 @@ namespace {
 		Eigen::Vector3d origin;
 		Eigen::Vector3d x;
 		Eigen::Vector3d y;
-		std::vector<LoopPolygon> polygons;
+		std::vector<loop_polygon> polygons;
 		size_t outer_index = 0;
 		if (!extrusion_face_polygons(face, circle_segments, precision, origin, x, y, polygons, outer_index)) {
 			return std::nullopt;
@@ -1361,7 +1361,7 @@ namespace {
 		Eigen::Vector3d origin;
 		Eigen::Vector3d x;
 		Eigen::Vector3d y;
-		std::vector<LoopPolygon> polygons;
+		std::vector<loop_polygon> polygons;
 		size_t outer_index = 0;
 		if (!extrusion_face_polygons(face, settings::CircleSegments::defaultvalue, precision, origin, x, y, polygons, outer_index)) {
 			return false;
@@ -1382,9 +1382,9 @@ namespace {
 		return !polygons.empty();
 	}
 
-	Mesh transform_mesh(const Mesh& mesh, const taxonomy::matrix4::ptr& place) {
+	mesh_type transform_mesh(const mesh_type& mesh, const taxonomy::matrix4::ptr& place) {
 		const auto& m = place->ccomponents();
-		Mesh result = mesh;
+		mesh_type result = mesh;
 		const bool flip = m.block<3, 3>(0, 0).determinant() < 0.;
 		for (size_t i = 0; i < mesh.NumVert(); ++i) {
 			Eigen::Vector4d v(
@@ -1406,7 +1406,7 @@ namespace {
 		return result;
 	}
 
-	taxonomy::style::ptr fallback_style(const taxonomy::geom_item::ptr& item, const IfcGeom::ConversionResults& results) {
+	taxonomy::style::ptr fallback_style(const taxonomy::geom_item::ptr& item, const ifcopenshell::geom::conversion_results& results) {
 		if (item->surface_style) {
 			return item->surface_style;
 		}
@@ -1418,16 +1418,16 @@ namespace {
 		return nullptr;
 	}
 
-	std::optional<manifold::Manifold> result_to_manifold(const IfcGeom::ConversionResult& result) {
-		auto moved = std::unique_ptr<IfcGeom::ConversionResultShape>(result.apply_transform());
-		auto* shape = dynamic_cast<ifcopenshell::geometry::ManifoldShape*>(moved.get());
+	std::optional<manifold::Manifold> result_to_manifold(const ifcopenshell::geom::conversion_result& result) {
+		auto moved = std::unique_ptr<ifcopenshell::geom::conversion_result_shape>(result.apply_transform());
+		auto* shape = dynamic_cast<ifcopenshell::geom::manifold_shape*>(moved.get());
 		if (!shape) {
 			return std::nullopt;
 		}
 		return shape->as_manifold();
 	}
 
-	std::optional<manifold::Manifold> results_to_operand(const IfcGeom::ConversionResults& results) {
+	std::optional<manifold::Manifold> results_to_operand(const ifcopenshell::geom::conversion_results& results) {
 		std::vector<manifold::Manifold> operands;
 		for (const auto& result : results) {
 			auto operand = result_to_manifold(result);
@@ -1444,7 +1444,7 @@ namespace {
 		return manifold::Manifold::BatchBoolean(operands, manifold::OpType::Add);
 	}
 
-	std::optional<manifold::Box> results_bbox(const IfcGeom::ConversionResults& results) {
+	std::optional<manifold::Box> results_bbox(const ifcopenshell::geom::conversion_results& results) {
 		bool any = false;
 		manifold::Box bbox;
 		for (const auto& result : results) {
@@ -1489,21 +1489,21 @@ namespace {
 	}
 }
 
-bool ManifoldKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, IfcGeom::ConversionResults& results) {
+bool manifold_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, ifcopenshell::geom::conversion_results& results) {
 	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get(), dilation_hack, settings_.get<settings::CircleSegments>().get());
 	if (!part) {
 		::logger::root().warning("Manifold kernel: failed to convert extrusion, requires planar bounds with line, circle or ellipse edges", extrusion->instance);
 		return false;
 	}
-	results.emplace_back(IfcGeom::ConversionResult(
+	results.emplace_back(ifcopenshell::geom::conversion_result(
 		extrusion->instance.id(),
 		extrusion->matrix,
-		new ifcopenshell::geometry::ManifoldShape(std::move(*part)),
+		new ifcopenshell::geom::manifold_shape(std::move(*part)),
 		extrusion->surface_style));
 	return true;
 }
 
-bool ManifoldKernel::convert_impl(const taxonomy::shell::ptr shell, IfcGeom::ConversionResults& results) {
+bool manifold_kernel::convert_impl(const taxonomy::shell::ptr shell, ifcopenshell::geom::conversion_results& results) {
 	manifold::Manifold::Error status = manifold::Manifold::Error::NoError;
 	auto part = part_from_shell(shell, settings_.get<settings::Precision>().get(), dilation_hack, &status);
 	if (!part) {
@@ -1513,15 +1513,15 @@ bool ManifoldKernel::convert_impl(const taxonomy::shell::ptr shell, IfcGeom::Con
 	if (!part->solid) {
 		::logger::root().notice("Manifold kernel: shell converted as mesh only (" + manifold_error_string(status) + ")", shell->instance);
 	}
-	results.emplace_back(IfcGeom::ConversionResult(
+	results.emplace_back(ifcopenshell::geom::conversion_result(
 		shell->instance.id(),
 		shell->matrix,
-		new ifcopenshell::geometry::ManifoldShape(std::move(*part)),
+		new ifcopenshell::geom::manifold_shape(std::move(*part)),
 		shell->surface_style));
 	return true;
 }
 
-bool ManifoldKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::ConversionResults& results) {
+bool manifold_kernel::convert_impl(const taxonomy::solid::ptr solid, ifcopenshell::geom::conversion_results& results) {
 	std::vector<manifold::Manifold> shells;
 	for (const auto& shell : solid->children) {
 		const auto precision = settings_.get<settings::Precision>().get();
@@ -1548,15 +1548,15 @@ bool ManifoldKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::Con
 	for (size_t i = 1; i < shells.size(); ++i) {
 		result -= shells[i];
 	}
-	results.emplace_back(IfcGeom::ConversionResult(
+	results.emplace_back(ifcopenshell::geom::conversion_result(
 		solid->instance.id(),
 		solid->matrix,
-		new ifcopenshell::geometry::ManifoldShape(result),
+		new ifcopenshell::geom::manifold_shape(result),
 		solid->surface_style));
 	return true;
 }
 
-bool ManifoldKernel::convert_impl(const taxonomy::boolean_result::ptr br, IfcGeom::ConversionResults& results) {
+bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, ifcopenshell::geom::conversion_results& results) {
 	std::vector<manifold::Manifold> operands;
 	taxonomy::style::ptr style;
 	std::optional<manifold::Box> first_bbox;
@@ -1573,7 +1573,7 @@ bool ManifoldKernel::convert_impl(const taxonomy::boolean_result::ptr br, IfcGeo
 				::logger::root().warning("Manifold kernel: cannot fit halfspace operand without a valid first operand bounds", child->instance);
 				return false;
 			}
-			HalfspaceBuildState state;
+			halfspace_build_state state;
             auto part = part_from_halfspace_solid(state, solid, face, *first_bbox, precision, dilation_hack);
 			if (!part) {
 				if (state.unchanged && br->operation == taxonomy::boolean_result::SUBTRACTION) {
@@ -1592,8 +1592,8 @@ bool ManifoldKernel::convert_impl(const taxonomy::boolean_result::ptr br, IfcGeo
 				style = child->surface_style;
 			}
 		} else {
-			IfcGeom::ConversionResults converted;
-			if (!AbstractKernel::convert(child, converted)) {
+			ifcopenshell::geom::conversion_results converted;
+			if (!abstract_kernel::convert(child, converted)) {
 				::logger::root().warning("Manifold kernel: failed to convert boolean operand", child->instance);
 				return false;
 			}
@@ -1626,15 +1626,15 @@ bool ManifoldKernel::convert_impl(const taxonomy::boolean_result::ptr br, IfcGeo
 		::logger::root().warning("Manifold kernel: boolean operation produced no result", br->instance);
 		return false;
 	}
-	results.emplace_back(IfcGeom::ConversionResult(
+	results.emplace_back(ifcopenshell::geom::conversion_result(
 		br->instance.id(),
 		br->matrix,
-		new ifcopenshell::geometry::ManifoldShape(*result),
+		new ifcopenshell::geom::manifold_shape(*result),
 		br->surface_style ? br->surface_style : style));
 	return true;
 }
 
-bool ManifoldKernel::convert_openings(const express::Base&, const std::vector<std::pair<taxonomy::ptr, taxonomy::matrix4>>& openings, const IfcGeom::ConversionResults& entity_shapes, const taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
+bool manifold_kernel::convert_openings(const express::base&, const std::vector<std::pair<taxonomy::ptr, taxonomy::matrix4>>& openings, const ifcopenshell::geom::conversion_results& entity_shapes, const taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes) {
 	std::vector<manifold::Manifold> opening_operands;
 	auto entity_bbox = results_bbox(entity_shapes);
 	if (!entity_bbox) {
@@ -1644,14 +1644,14 @@ bool ManifoldKernel::convert_openings(const express::Base&, const std::vector<st
     dilation_hack = settings_.get<settings::Precision>().get() * 10.;
 	for (const auto& opening : openings) {
 		const auto relative = taxonomy::make<taxonomy::matrix4>(entity_trsf.ccomponents().inverse() * opening.second.ccomponents());
-		IfcGeom::ConversionResults converted;
-		if (!AbstractKernel::convert(opening.first, converted)) {
+		ifcopenshell::geom::conversion_results converted;
+		if (!abstract_kernel::convert(opening.first, converted)) {
 			::logger::root().warning("Manifold kernel: failed to convert opening operand", opening.first->instance);
 			return false;
 		}
 		for (const auto& result : converted) {
-			auto moved = std::unique_ptr<IfcGeom::ConversionResultShape>(result.Shape()->moved(taxonomy::make<taxonomy::matrix4>(relative->ccomponents() * result.Placement()->ccomponents())));
-			auto* shape = dynamic_cast<ifcopenshell::geometry::ManifoldShape*>(moved.get());
+			auto moved = std::unique_ptr<ifcopenshell::geom::conversion_result_shape>(result.Shape()->moved(taxonomy::make<taxonomy::matrix4>(relative->ccomponents() * result.Placement()->ccomponents())));
+			auto* shape = dynamic_cast<ifcopenshell::geom::manifold_shape*>(moved.get());
 			if (!shape) {
 				::logger::root().warning("Manifold kernel: opening result is not a manifold shape");
 				return false;
@@ -1676,9 +1676,9 @@ bool ManifoldKernel::convert_openings(const express::Base&, const std::vector<st
 			return false;
 		}
 		auto result = *operand - opening_union;
-		cut_shapes.emplace_back(IfcGeom::ConversionResult(
+		cut_shapes.emplace_back(ifcopenshell::geom::conversion_result(
 			entity_shape.ItemId(),
-			new ifcopenshell::geometry::ManifoldShape(result),
+			new ifcopenshell::geom::manifold_shape(result),
 			entity_shape.StylePtr()));
 	}
 	return !cut_shapes.empty();

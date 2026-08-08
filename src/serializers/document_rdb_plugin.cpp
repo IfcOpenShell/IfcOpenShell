@@ -27,7 +27,7 @@
 
 namespace {
 
-boost::shared_ptr<Serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
+boost::shared_ptr<serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
 	if (context.input_filename.empty()) {
 		throw ifcopenshell::exception("RocksDB document serializer requires an input filename");
 	}

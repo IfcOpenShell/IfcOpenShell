@@ -58,7 +58,7 @@
 #include <array>
 #include <tuple>
 
-typedef std::pair<express::Base, std::string> drawing_key;
+typedef std::pair<express::base, std::string> drawing_key;
 
 struct storey_sorter {
 	bool operator()(const drawing_key& ad, const drawing_key& bd) const {
@@ -78,8 +78,8 @@ struct storey_sorter {
 		if (a_is_storey && b_is_storey) {
 			std::optional<double> a_elev, b_elev;
 			try {
-				a_elev = static_cast<double>(a.as<express::Entity>().get("Elevation"));
-				b_elev = static_cast<double>(b.as<express::Entity>().get("Elevation"));
+				a_elev = static_cast<double>(a.as<express::entity>().get("Elevation"));
+				b_elev = static_cast<double>(b.as<express::entity>().get("Elevation"));
 			} catch (...) {};
 			if (a_elev && b_elev) {
 				if (std::equal_to<double>()(*a_elev, *b_elev)) {
@@ -91,8 +91,8 @@ struct storey_sorter {
 
 			std::optional<std::string> a_name, b_name;
 			try {
-				a_name = static_cast<std::string>(a.as<express::Entity>().get("Name"));
-				b_name = static_cast<std::string>(b.as<express::Entity>().get("Name"));
+				a_name = static_cast<std::string>(a.as<express::entity>().get("Name"));
+				b_name = static_cast<std::string>(b.as<express::entity>().get("Name"));
 			} catch (...) {};
 			if (a_name && b_name) {
 				if (std::equal_to<std::string>()(*a_name, *b_name)) {
@@ -102,12 +102,12 @@ struct storey_sorter {
 				}
 			}
 		}
-		return std::less<express::Base>()(a, b);
+		return std::less<express::base>()(a, b);
 	}
 };
 
 struct horizontal_plan {
-	express::Base storey;
+	express::base storey;
 	double elevation, offset, next_elevation;
 };
 
@@ -127,8 +127,8 @@ struct geometry_data {
 	TopoDS_Shape compound_local;
 	std::vector<std::optional<std::vector<double>>> dash_arrays;
 	gp_Trsf trsf;
-	express::Base product;
-	express::Base storey;
+	express::base product;
+	express::base storey;
 	double storey_elevation;
 	std::string ifc_name, svg_name;
 };
@@ -212,23 +212,23 @@ namespace {
 	class hlr_calc {
 	private:
 		const HLRAlgo_Projector& projector_;
-		const std::list<std::pair<express::Base, TopoDS_Shape>>* product_shapes_ = nullptr;
+		const std::list<std::pair<express::base, TopoDS_Shape>>* product_shapes_ = nullptr;
 		// SVG edge classification (issue #3668): per-(product, class) edge-only sub-shapes,
 		// classified pre-HLR on the original (real-face) topology. Empty class string means
 		// "unclassified" (used for the two fallback cases below).
-		const std::list<std::tuple<express::Base, std::string, TopoDS_Shape>>* classified_shapes_ = nullptr;
+		const std::list<std::tuple<express::base, std::string, TopoDS_Shape>>* classified_shapes_ = nullptr;
 
 	public:
-		typedef std::list<std::tuple<express::Base, std::string, TopoDS_Shape>> result_type;
+		typedef std::list<std::tuple<express::base, std::string, TopoDS_Shape>> result_type;
 
 		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
 		{}
 
-		void set_product_shape(const std::list<std::pair<express::Base, TopoDS_Shape>>* product_shapes) {
+		void set_product_shape(const std::list<std::pair<express::base, TopoDS_Shape>>* product_shapes) {
 			product_shapes_ = product_shapes;
 		}
 
-		void set_classified_shapes(const std::list<std::tuple<express::Base, std::string, TopoDS_Shape>>* classified_shapes) {
+		void set_classified_shapes(const std::list<std::tuple<express::base, std::string, TopoDS_Shape>>* classified_shapes) {
 			classified_shapes_ = classified_shapes;
 		}
 
@@ -244,7 +244,7 @@ namespace {
 					r.push_back({ p.first, std::string(), occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
 				}
 			} else {
-				r.push_back({ express::Base{}, std::string(), occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound()) });
+				r.push_back({ express::base{}, std::string(), occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound()) });
 			}
 			return r;
 		}
@@ -289,7 +289,7 @@ namespace {
 				, fclass(nullptr)
 			{
 				TopExp_Explorer exp(face, TopAbs_WIRE);
-				is_convex = exp.More() && IfcGeom::util::is_convex(TopoDS::Wire(exp.Current()), 1.e-5) && ([&exp]() {exp.Next(); return true; })() && !exp.More();
+				is_convex = exp.More() && ifcopenshell::geom::util::is_convex(TopoDS::Wire(exp.Current()), 1.e-5) && ([&exp]() {exp.Next(); return true; })() && !exp.More();
 
 				auto surf = BRep_Tool::Surface(fa);
 				if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
@@ -376,9 +376,9 @@ namespace {
 		HLRAlgo_Projector projector_;
 
 		std::multimap<double, face_info> large_ortho_faces_;
-		std::list<std::pair<express::Base, TopoDS_Shape>> items_;
+		std::list<std::pair<express::base, TopoDS_Shape>> items_;
 		// SVG edge classification (issue #3668): see add_classified_edges().
-		std::list<std::tuple<express::Base, std::string, TopoDS_Shape>> classified_items_;
+		std::list<std::tuple<express::base, std::string, TopoDS_Shape>> classified_items_;
 
 		::logger& logger_;
 
@@ -406,7 +406,7 @@ namespace {
 		// SVG edge classification (issue #3668): register an edge-only sub-shape of `product`'s
 		// original (pre-HLR, real-face) geometry under a given class name. The full shape must
 		// still be added via add() as usual for correct occlusion.
-		void add_classified_edges(express::Base product, const std::string& cls, const TopoDS_Shape& edges) {
+		void add_classified_edges(express::base product, const std::string& cls, const TopoDS_Shape& edges) {
 			classified_items_.push_back({ product, cls, edges });
 		}
 
@@ -451,7 +451,7 @@ namespace {
 			return false;
 		}
 		
-		void add(const TopoDS_Shape& s, express::Base product) {
+		void add(const TopoDS_Shape& s, express::base product) {
 			if (!use_prefiltering_) {
 				items_.insert(items_.end(), {product, s});
 				return;
@@ -465,7 +465,7 @@ namespace {
 			gp_Vec V;
 			gp_Dir D;
 
-			if (IfcGeom::util::is_manifold(s)) {
+			if (ifcopenshell::geom::util::is_manifold(s)) {
 				size_t n_faces_included = 0, n_total = 0;
 				{
 					TopExp_Explorer exp(s, TopAbs_FACE);
@@ -506,7 +506,7 @@ namespace {
 							D = V;
 
 							if (D.Dot(view_direction_.Direction()) > (1. - 1.e-3)) {
-								if (IfcGeom::util::face_area(face) > 2.) {
+								if (ifcopenshell::geom::util::face_area(face) > 2.) {
 									// arbitrary vertex, is ok because orthogonal to view dir
 									TopExp_Explorer expv(face, TopAbs_VERTEX);
 									if (expv.More()) {
@@ -529,7 +529,7 @@ namespace {
 			}
 		}
 
-		std::list<std::tuple<express::Base, std::string, TopoDS_Shape>> build() {
+		std::list<std::tuple<express::base, std::string, TopoDS_Shape>> build() {
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
 				if (!use_prefiltering_ || !is_obscured_(&it->second)) {
@@ -554,7 +554,7 @@ namespace {
 
 typedef prefiltered_hlr hlr_t;
 
-class SERIALIZERS_API SvgSerializer : public WriteOnlyGeometrySerializer {
+class SERIALIZERS_API svg_serializer : public write_only_geometry_serializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
 	typedef std::vector< boost::shared_ptr<util::string_buffer::float_item> > float_item_list;
@@ -599,10 +599,10 @@ protected:
 	bool svg_render_sharp_edges_;
 
 	ifcopenshell::file* file;
-	express::Base storey_;
+	express::base storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
 	std::map<drawing_key, drawing_meta> drawing_metadata;
-    std::map<express::Base, hlr_t> storey_hlr;
+    std::map<express::base, hlr_t> storey_hlr;
 
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
@@ -625,8 +625,8 @@ protected:
 	subtract_before_project subtraction_settings_;
 
 public:
-	SvgSerializer(const stream_or_filename& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr)
-		: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
+	svg_serializer(const stream_or_filename& out_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr)
+		: write_only_geometry_serializer(settings, logger)
 		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())
 		, ymin(+std::numeric_limits<double>::infinity())
@@ -675,18 +675,18 @@ public:
     void writeHeader();
 	void doWriteHeader();
     bool ready();
-    void write(const IfcGeom::TriangulationElement* /*o*/) {}
-    void write(const IfcGeom::BRepElement* o);
+    void write(const ifcopenshell::geom::triangulation_element* /*o*/) {}
+    void write(const ifcopenshell::geom::brep_element* o);
     void write(path_object& p, const TopoDS_Shape& wire, std::optional<std::vector<double>> dash_array=std::nullopt, std::optional<std::string> css_class=std::nullopt);
 	void write(const geometry_data& data);
-    path_object& start_path(const gp_Pln& p, const express::Base& storey, const std::string& id);
+    path_object& start_path(const gp_Pln& p, const express::base& storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
 	bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(ifcopenshell::file& f);
     void setBoundingRectangle(double width, double height);
-    void setSectionHeight(double h, express::Base storey = express::Base());
+    void setSectionHeight(double h, express::base storey = express::base());
 	void setSectionHeightsFromStoreys(double offset=1.2);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
@@ -782,14 +782,14 @@ public:
 	void setDrawingCenter(double x, double y) {
 		center_x_ = x; center_y_ = y;
 	}
-    std::string nameElement(express::Base storey, const IfcGeom::Element* elem);
-	std::string nameElement(express::Base elem);
-	std::string idElement(express::Base elem);
-    std::string object_id(express::Base storey, const IfcGeom::Element* o) {
+    std::string nameElement(express::base storey, const ifcopenshell::geom::element* elem);
+	std::string nameElement(express::base elem);
+	std::string idElement(express::base elem);
+    std::string object_id(express::base storey, const ifcopenshell::geom::element* o) {
 		if (storey) {
-			return idElement(storey) + "-" + GeometrySerializer::object_id(o);
+			return idElement(storey) + "-" + geometry_serializer::object_id(o);
 		} else {
-			return GeometrySerializer::object_id(o);
+			return geometry_serializer::object_id(o);
 		}
 	}
 

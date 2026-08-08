@@ -21,7 +21,7 @@
 #include "../profile_helper.h"
 #include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 // ifc4x1
 //#define SCHEMA_IfcOffsetCurveByDistances_HAS_OffsetValues

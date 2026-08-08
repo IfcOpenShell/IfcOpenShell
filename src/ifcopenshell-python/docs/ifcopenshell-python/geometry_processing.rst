@@ -307,8 +307,8 @@ Here is a typical example to serialising to glTF / glb. Example settings to
 serialise to other formats are shown commented out. Different serialisations
 may require different settings.
 
-In addition to geometry settings, serialisation has its own set of
-:doc:`../ifcopenshell/serialiser_settings`.
+The same settings object also exposes the
+:doc:`serialisation options <../ifcopenshell/serialiser_settings>`.
 
 .. code-block:: python
 
@@ -331,15 +331,14 @@ In addition to geometry settings, serialisation has its own set of
    # settings.set("apply-default-materials", True)
    # settings.set("use-world-coords", True)
    
-   serialiser_settings = ifcopenshell.geom.serializer_settings()
    # Setting element GUIDs is optional, but useful to uniquely identify objects in non-semantic formats.
-   serialiser_settings.set("use-element-guids", True)
+   settings.set("use-element-guids", True)
    
    # Serialise to glTF / glb
-   serialiser = ifcopenshell.geom.serializers.gltf("output.glb", settings, serialiser_settings)
+   serialiser = ifcopenshell.geom.serializers.gltf("output.glb", settings)
    
    # Serialise to obj
-   # serialiser = ifcopenshell.geom.serializers.obj('output.obj', 'output.mtl', settings, serialiser_settings)
+   # serialiser = ifcopenshell.geom.serializers.obj('output.obj', 'output.mtl', settings)
    
    serialiser.setFile(ifc_file)
    serialiser.setUnitNameAndMagnitude("METER", 1.0)

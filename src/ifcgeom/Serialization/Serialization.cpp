@@ -12,12 +12,12 @@ namespace {
 	}
 }
 
-IfcGeom::opencascade_geometry_ifc_writer_registry& IfcGeom::opencascade_geometry_ifc_writer_registry_instance() {
+ifcopenshell::geom::opencascade_geometry_ifc_writer_registry& ifcopenshell::geom::opencascade_geometry_ifc_writer_registry_instance() {
 	static opencascade_geometry_ifc_writer_registry registry;
 	return registry;
 }
 
-void IfcGeom::opencascade_geometry_ifc_writer_registry::bind(const std::string& schema_name, serialise_fn serialise, tesselate_fn tesselate, const ifcopenshell::plugin::module& module) {
+void ifcopenshell::geom::opencascade_geometry_ifc_writer_registry::bind(const std::string& schema_name, serialise_fn serialise, tesselate_fn tesselate, const ifcopenshell::plugin::module& module) {
 	entry entry;
 	entry.serialise_ = serialise;
 	entry.tesselate_ = tesselate;
@@ -25,7 +25,7 @@ void IfcGeom::opencascade_geometry_ifc_writer_registry::bind(const std::string& 
 	entries_[writer_schema_key(schema_name)] = entry;
 }
 
-express::Base IfcGeom::opencascade_geometry_ifc_writer_registry::tesselate(ifcopenshell::file& f, const ConversionResultShape& shape, double deflection) const {
+express::base ifcopenshell::geom::opencascade_geometry_ifc_writer_registry::tesselate(ifcopenshell::file& f, const conversion_result_shape& shape, double deflection) const {
 	auto iter = entries_.find(writer_schema_key(f.schema()->name()));
 	if (iter == entries_.end()) {
 		load_opencascade_geometry_ifc_writer_plugin(const_cast<opencascade_geometry_ifc_writer_registry&>(*this), f.schema()->name());
@@ -37,7 +37,7 @@ express::Base IfcGeom::opencascade_geometry_ifc_writer_registry::tesselate(ifcop
 	return iter->second.tesselate_(f, shape, deflection);
 }
 
-express::Base IfcGeom::opencascade_geometry_ifc_writer_registry::serialise(ifcopenshell::file& f, const ConversionResultShape& shape, bool advanced) const {
+express::base ifcopenshell::geom::opencascade_geometry_ifc_writer_registry::serialise(ifcopenshell::file& f, const conversion_result_shape& shape, bool advanced) const {
 	auto iter = entries_.find(writer_schema_key(f.schema()->name()));
 	if (iter == entries_.end()) {
 		load_opencascade_geometry_ifc_writer_plugin(const_cast<opencascade_geometry_ifc_writer_registry&>(*this), f.schema()->name());
@@ -49,20 +49,20 @@ express::Base IfcGeom::opencascade_geometry_ifc_writer_registry::serialise(ifcop
 	return iter->second.serialise_(f, shape, advanced);
 }
 
-express::Base IfcGeom::tesselate(ifcopenshell::file& f, const ConversionResultShape& shape, double deflection) {
+express::base ifcopenshell::geom::tesselate(ifcopenshell::file& f, const conversion_result_shape& shape, double deflection) {
 	return opencascade_geometry_ifc_writer_registry_instance().tesselate(f, shape, deflection);
 }
 
-express::Base IfcGeom::serialise(ifcopenshell::file& f, const ConversionResultShape& shape, bool advanced) {
+express::base ifcopenshell::geom::serialise(ifcopenshell::file& f, const conversion_result_shape& shape, bool advanced) {
 	return opencascade_geometry_ifc_writer_registry_instance().serialise(f, shape, advanced);
 }
 
-express::Base IfcGeom::tesselate(ifcopenshell::file& f, const TopoDS_Shape& shape, double deflection) {
-	ifcopenshell::geometry::OpenCascadeShape converted(shape);
+express::base ifcopenshell::geom::tesselate(ifcopenshell::file& f, const TopoDS_Shape& shape, double deflection) {
+	ifcopenshell::geom::open_cascade_shape converted(shape);
 	return tesselate(f, converted, deflection);
 }
 
-express::Base IfcGeom::serialise(ifcopenshell::file& f, const TopoDS_Shape& shape, bool advanced) {
-	ifcopenshell::geometry::OpenCascadeShape converted(shape);
+express::base ifcopenshell::geom::serialise(ifcopenshell::file& f, const TopoDS_Shape& shape, bool advanced) {
+	ifcopenshell::geom::open_cascade_shape converted(shape);
 	return serialise(f, converted, advanced);
 }

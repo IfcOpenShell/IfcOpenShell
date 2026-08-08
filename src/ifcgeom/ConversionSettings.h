@@ -29,8 +29,8 @@ namespace std {
 #endif
 
 namespace ifcopenshell {
-	namespace geometry {
-		inline namespace settings {
+	namespace geom {
+		namespace settings_detail {
 
 #ifndef SWIG
 			template <typename T, typename U = int>
@@ -546,32 +546,32 @@ namespace ifcopenshell {
 			};
 
 			template <>
-			struct readable_name<IteratorOutputOptions> {
+			struct readable_name<settings_detail::IteratorOutputOptions> {
 				static constexpr const char* name = "IteratorOutputOptions";
 			};
 
 			template <>
-			struct readable_name<FunctionStepMethod> {
+			struct readable_name<settings_detail::FunctionStepMethod> {
 				static constexpr const char* name = "FunctionStepMethod";
 			};
 
 			template <>
-			struct readable_name<OutputDimensionalityTypes> {
+			struct readable_name<settings_detail::OutputDimensionalityTypes> {
 				static constexpr const char* name = "OutputDimensionalityTypes";
 			};
 
 			template <>
-			struct readable_name<TriangulationMethod> {
+			struct readable_name<settings_detail::TriangulationMethod> {
 				static constexpr const char* name = "TriangulationMethod";
 			};
 		}
 
 		template <typename settings_t>
-		class SettingsContainer {
+		class settings_container {
 		public:
 			typedef std::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>,
-				std::vector<double>, std::vector<std::string>, IteratorOutputOptions, FunctionStepMethod,
-				OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
+				std::vector<double>, std::vector<std::string>, settings_detail::IteratorOutputOptions, settings_detail::FunctionStepMethod,
+				settings_detail::OutputDimensionalityTypes, settings_detail::TriangulationMethod> value_variant_t;
 		private:
 			settings_t settings;
 
@@ -678,15 +678,461 @@ namespace ifcopenshell {
 			}
 		};
 
-		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, ContextPriorities, IteratorOutput, DisableOpeningSubtractions, MaxVoidsPerElement, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
-		>
-		{};
+		namespace settings_detail {
+
+	struct UseElementNames : public settings_detail::SettingBase<UseElementNames, bool> {
+		static constexpr const char* const name = "use-element-names";
+		static constexpr const char* const description = "Use entity instance IfcRoot.Name instead of unique IDs for naming elements upon serialization. Applicable for OBJ, DAE, STP, and SVG output.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct UseElementGuids : public settings_detail::SettingBase<UseElementGuids, bool> {
+		static constexpr const char* const name = "use-element-guids";
+		static constexpr const char* const description = "Use entity instance IfcRoot.GlobalId instead of unique IDs for naming elements upon serialization. Applicable for OBJ, DAE, STP, and SVG output.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct UseElementStepIds : public settings_detail::SettingBase<UseElementStepIds, bool> {
+		static constexpr const char* const name = "use-element-step-ids";
+		static constexpr const char* const description = "Use the numeric step identifier (entity instance name) for naming elements upon serialization. Applicable for OBJ, DAE, STP, and SVG output.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct UseElementTypes : public settings_detail::SettingBase<UseElementTypes, bool> {
+		static constexpr const char* const name = "use-element-types";
+		static constexpr const char* const description = "Use element types instead of unique IDs for naming elements upon serialization. Applicable to DAE output.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct UseYUp : public settings_detail::SettingBase<UseYUp, bool> {
+		static constexpr const char* const name = "y-up";
+		static constexpr const char* const description = "Change the 'up' axis to positive Y, default is Z UP. Applicable to OBJ output.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct WriteGltfEcef : public settings_detail::SettingBase<WriteGltfEcef, bool> {
+		static constexpr const char* const name = "ecef";
+		static constexpr const char* const description = "Write glTF in Earth-Centered Earth-Fixed coordinates. Requires PROJ.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct FloatingPointDigits : public settings_detail::SettingBase<FloatingPointDigits, int> {
+		static constexpr const char* const name = "digits";
+		static constexpr const char* const description = "Sets the precision to be used to format floating-point values, 15 by default. Use a negative value to use the system's default precision (should be 6 typically). Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used,  and any other value means that 6 or 7 decimals are used.";
+		static constexpr int defaultvalue = 15;
+	};
+
+	struct BaseUri : public settings_detail::SettingBase<BaseUri, std::string> {
+		static constexpr const char* const name = "base-uri";
+		static constexpr const char* const description = "Base URI for products to be used in RDF-based serializations.";
+	};
+
+	struct WktUseSection : public settings_detail::SettingBase<WktUseSection, bool> {
+		static constexpr const char* const name = "wkt-use-section";
+		static constexpr const char* const description = "Use a geometrical section rather than full polyhedral output and footprint in TTL WKT";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SeparateZUpNode : public settings_detail::SettingBase<SeparateZUpNode, bool> {
+        static constexpr const char* const name = "separate-z-up-node";
+        static constexpr const char* const description = "Introduce a separate Z-Up node into the GlTF hierarchy instead of multiplying the transform into the root node matrices";
+        static constexpr bool defaultvalue = false;
+    };
+
+	struct SvgBounds : public settings_detail::SettingBase<SvgBounds, std::string> {
+		static constexpr const char* const name = "bounds";
+		static constexpr const char* const description = "Specifies the bounding rectangle, for example 512x512, to which the output will be scaled. Only used when converting to SVG.";
+	};
+
+	struct SvgScale : public settings_detail::SettingBase<SvgScale, std::string> {
+		static constexpr const char* const name = "scale";
+		static constexpr const char* const description = "Interprets SVG bounds in mm, centers layout and draw elements to scale. Only used when converting to SVG. Example 1:100.";
+	};
+
+	struct SvgCenter : public settings_detail::SettingBase<SvgCenter, std::string> {
+		static constexpr const char* const name = "center";
+		static constexpr const char* const description = "When using --scale, specifies the location in the range [0 1]x[0 1] around which to center the drawings. Example 0.5x0.5.";
+	};
+
+	struct SvgSectionRef : public settings_detail::SettingBase<SvgSectionRef, std::string> {
+		static constexpr const char* const name = "section-ref";
+		static constexpr const char* const description = "Element at which cross sections should be created.";
+	};
+
+	struct SvgElevationRef : public settings_detail::SettingBase<SvgElevationRef, std::string> {
+		static constexpr const char* const name = "elevation-ref";
+		static constexpr const char* const description = "Element at which drawings should be created.";
+	};
+
+	struct SvgElevationRefGuid : public settings_detail::SettingBase<SvgElevationRefGuid, std::string> {
+		static constexpr const char* const name = "elevation-ref-guid";
+		static constexpr const char* const description = "Element guids at which drawings should be created.";
+	};
+
+	struct SvgAutoSection : public settings_detail::SettingBase<SvgAutoSection, bool> {
+		static constexpr const char* const name = "auto-section";
+		static constexpr const char* const description = "Creates SVG cross section drawings automatically based on model extents.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgAutoElevation : public settings_detail::SettingBase<SvgAutoElevation, bool> {
+		static constexpr const char* const name = "auto-elevation";
+		static constexpr const char* const description = "Creates SVG elevation drawings automatically based on model extents.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgDrawStoreyHeights : public settings_detail::SettingBase<SvgDrawStoreyHeights, std::string> {
+		static constexpr const char* const name = "draw-storey-heights";
+		static constexpr const char* const description = "Draws a horizontal line at the height of building storeys in vertical drawings. Accepted values are none, full, and left.";
+	};
+
+	struct SvgProfileThreshold : public settings_detail::SettingBase<SvgProfileThreshold, int> {
+		static constexpr const char* const name = "profile-threshold";
+		static constexpr const char* const description = "Limits the number of projected wire profiles for non-wall and non-slab elements in SVG output. A negative value disables the limit.";
+		static constexpr int defaultvalue = -1;
+	};
+
+	struct SvgStoreyHeightLineLength : public settings_detail::SettingBase<SvgStoreyHeightLineLength, double> {
+		static constexpr const char* const name = "storey-height-line-length";
+		static constexpr const char* const description = "Length of the line when --draw-storey-heights=left.";
+	};
+
+	struct SvgUseNamespace : public settings_detail::SettingBase<SvgUseNamespace, bool> {
+		static constexpr const char* const name = "svg-xmlns";
+		static constexpr const char* const description = "Stores name and guid in a separate namespace as opposed to data-name, data-guid.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgUseHlrPoly : public settings_detail::SettingBase<SvgUseHlrPoly, bool> {
+		static constexpr const char* const name = "svg-poly";
+		static constexpr const char* const description = "Uses the polygonal algorithm for hidden line rendering.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgUsePrefiltering : public settings_detail::SettingBase<SvgUsePrefiltering, bool> {
+		static constexpr const char* const name = "svg-prefilter";
+		static constexpr const char* const description = "Prefilter faces and shapes before feeding to the hidden-line algorithm.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgUnifyInputs : public settings_detail::SettingBase<SvgUnifyInputs, bool> {
+		static constexpr const char* const name = "svg-unify-inputs";
+		static constexpr const char* const description = "Unify input shapes before SVG projection.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgSegmentProjection : public settings_detail::SettingBase<SvgSegmentProjection, bool> {
+		static constexpr const char* const name = "svg-segment-projection";
+		static constexpr const char* const description = "Segment result of projection with respect to original products.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgSubtractBefore : public settings_detail::SettingBase<SvgSubtractBefore, std::string> {
+		static constexpr const char* const name = "svg-subtract-before";
+		static constexpr const char* const description = "Controls which shapes are cut before SVG hidden-line projection. Accepted values are auto, slabs-and-walls, and always.";
+	};
+
+	struct SvgPolygonal : public settings_detail::SettingBase<SvgPolygonal, bool> {
+		static constexpr const char* const name = "svg-write-poly";
+		static constexpr const char* const description = "Approximate every curve as polygonal in SVG output.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgAlwaysProject : public settings_detail::SettingBase<SvgAlwaysProject, bool> {
+		static constexpr const char* const name = "svg-project";
+		static constexpr const char* const description = "Always enable hidden line rendering instead of only on elevations.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgWithoutStoreys : public settings_detail::SettingBase<SvgWithoutStoreys, bool> {
+		static constexpr const char* const name = "svg-without-storeys";
+		static constexpr const char* const description = "Do not emit drawings for building storeys.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgNoCss : public settings_detail::SettingBase<SvgNoCss, bool> {
+		static constexpr const char* const name = "svg-no-css";
+		static constexpr const char* const description = "Do not emit CSS style declarations.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgMirrorY : public settings_detail::SettingBase<SvgMirrorY, bool> {
+		static constexpr const char* const name = "svg-mirror-y";
+		static constexpr const char* const description = "Mirror SVG output along the Y axis.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgMirrorX : public settings_detail::SettingBase<SvgMirrorX, bool> {
+		static constexpr const char* const name = "svg-mirror-x";
+		static constexpr const char* const description = "Mirror SVG output along the X axis.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgDoorArcs : public settings_detail::SettingBase<SvgDoorArcs, bool> {
+		static constexpr const char* const name = "door-arcs";
+		static constexpr const char* const description = "Draw door opening arcs for IfcDoor elements.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgSectionHeight : public settings_detail::SettingBase<SvgSectionHeight, double> {
+		static constexpr const char* const name = "section-height";
+		static constexpr const char* const description = "Specifies the cut section height for SVG 2D geometry.";
+	};
+
+	struct SvgSectionHeightFromStoreys : public settings_detail::SettingBase<SvgSectionHeightFromStoreys, bool> {
+		static constexpr const char* const name = "section-height-from-storeys";
+		static constexpr const char* const description = "Derives section height from storey elevation. Use --section-height to override the default offset of 1.2.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgPrintSpaceNames : public settings_detail::SettingBase<SvgPrintSpaceNames, bool> {
+		static constexpr const char* const name = "print-space-names";
+		static constexpr const char* const description = "Prints IfcSpace LongName and Name in the geometry output. Applicable for SVG output.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgPrintSpaceAreas : public settings_detail::SettingBase<SvgPrintSpaceAreas, bool> {
+		static constexpr const char* const name = "print-space-areas";
+		static constexpr const char* const description = "Prints calculated IfcSpace areas in square meters. Applicable for SVG output.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgSpaceNameTransform : public settings_detail::SettingBase<SvgSpaceNameTransform, std::string> {
+		static constexpr const char* const name = "space-name-transform";
+		static constexpr const char* const description = "Additional transform to the space labels in SVG.";
+	};
+}
+
+using geometry_setting_types = std::tuple<
+			settings_detail::MesherLinearDeflection,
+			settings_detail::MesherAngularDeflection,
+			settings_detail::ReorientShells,
+			settings_detail::LengthUnit,
+			settings_detail::PlaneUnit,
+			settings_detail::Precision,
+			settings_detail::OutputDimensionality,
+			settings_detail::LayersetFirst,
+			settings_detail::DisableBooleanResult,
+			settings_detail::NoWireIntersectionCheck,
+			settings_detail::NoWireIntersectionTolerance,
+			settings_detail::PrecisionFactor,
+			settings_detail::DebugBooleanOperations,
+			settings_detail::BooleanAttempt2d,
+			settings_detail::SurfaceColour,
+			settings_detail::WeldVertices,
+			settings_detail::UseWorldCoords,
+			settings_detail::UnifyShapes,
+			settings_detail::UseMaterialNames,
+			settings_detail::ConvertBackUnits,
+			settings_detail::ContextIds,
+			settings_detail::ContextTypes,
+			settings_detail::ContextIdentifiers,
+			settings_detail::ContextPriorities,
+			settings_detail::IteratorOutput,
+			settings_detail::DisableOpeningSubtractions,
+			settings_detail::MaxVoidsPerElement,
+			settings_detail::ApplyDefaultMaterials,
+			settings_detail::DontEmitNormals,
+			settings_detail::GenerateUvs,
+			settings_detail::ApplyLayerSets,
+			settings_detail::UseElementHierarchy,
+			settings_detail::ValidateQuantities,
+			settings_detail::EdgeArrows,
+			settings_detail::BuildingLocalPlacement,
+			settings_detail::SiteLocalPlacement,
+			settings_detail::ForceSpaceTransparency,
+			settings_detail::CircleSegments,
+			settings_detail::CgalSmoothAngleDegrees,
+			settings_detail::SvgRidgeAngleMinDegrees,
+			settings_detail::SvgValleyAngleMinDegrees,
+			settings_detail::SvgEmitFlushEdges,
+			settings_detail::SvgUseEdgeClassification,
+			settings_detail::SvgRenderCreaseEdges,
+			settings_detail::SvgRenderSharpEdges,
+			settings_detail::KeepBoundingBoxes,
+			settings_detail::ComputeCurvature,
+			settings_detail::FunctionStepType,
+			settings_detail::FunctionStepParam,
+			settings_detail::NoParallelMapping,
+			settings_detail::PermissiveShapeReuse,
+			settings_detail::ModelOffset,
+			settings_detail::ModelRotation,
+			settings_detail::TriangulationType,
+			settings_detail::CgalEmitOriginalEdges,
+			settings_detail::OcctNoCleanTriangulation,
+			settings_detail::CacheShapes,
+			settings_detail::DeferProcessingFirstElement,
+			settings_detail::MaxOffset,
+			settings_detail::MaxOffsetDeviation,
+			settings_detail::ApplyOffset,
+			settings_detail::MakeVolume,
+			settings_detail::UseElementNames,
+			settings_detail::UseElementGuids,
+			settings_detail::UseElementStepIds,
+			settings_detail::UseElementTypes,
+			settings_detail::UseYUp,
+			settings_detail::WriteGltfEcef,
+			settings_detail::FloatingPointDigits,
+			settings_detail::BaseUri,
+			settings_detail::WktUseSection,
+			settings_detail::SeparateZUpNode,
+			settings_detail::SvgBounds,
+			settings_detail::SvgScale,
+			settings_detail::SvgCenter,
+			settings_detail::SvgSectionRef,
+			settings_detail::SvgElevationRef,
+			settings_detail::SvgElevationRefGuid,
+			settings_detail::SvgAutoSection,
+			settings_detail::SvgAutoElevation,
+			settings_detail::SvgDrawStoreyHeights,
+			settings_detail::SvgProfileThreshold,
+			settings_detail::SvgStoreyHeightLineLength,
+			settings_detail::SvgUseNamespace,
+			settings_detail::SvgUseHlrPoly,
+			settings_detail::SvgUsePrefiltering,
+			settings_detail::SvgUnifyInputs,
+			settings_detail::SvgSegmentProjection,
+			settings_detail::SvgSubtractBefore,
+			settings_detail::SvgPolygonal,
+			settings_detail::SvgAlwaysProject,
+			settings_detail::SvgWithoutStoreys,
+			settings_detail::SvgNoCss,
+			settings_detail::SvgMirrorY,
+			settings_detail::SvgMirrorX,
+			settings_detail::SvgDoorArcs,
+			settings_detail::SvgSectionHeight,
+			settings_detail::SvgSectionHeightFromStoreys,
+			settings_detail::SvgPrintSpaceNames,
+			settings_detail::SvgPrintSpaceAreas,
+			settings_detail::SvgSpaceNameTransform>;
+
+		class settings : public settings_container<geometry_setting_types> {
+		public:
+			using MesherLinearDeflection = settings_detail::MesherLinearDeflection;
+			using MesherAngularDeflection = settings_detail::MesherAngularDeflection;
+			using ReorientShells = settings_detail::ReorientShells;
+			using LengthUnit = settings_detail::LengthUnit;
+			using PlaneUnit = settings_detail::PlaneUnit;
+			using Precision = settings_detail::Precision;
+			using OutputDimensionality = settings_detail::OutputDimensionality;
+			using LayersetFirst = settings_detail::LayersetFirst;
+			using DisableBooleanResult = settings_detail::DisableBooleanResult;
+			using NoWireIntersectionCheck = settings_detail::NoWireIntersectionCheck;
+			using NoWireIntersectionTolerance = settings_detail::NoWireIntersectionTolerance;
+			using PrecisionFactor = settings_detail::PrecisionFactor;
+			using DebugBooleanOperations = settings_detail::DebugBooleanOperations;
+			using BooleanAttempt2d = settings_detail::BooleanAttempt2d;
+			using SurfaceColour = settings_detail::SurfaceColour;
+			using WeldVertices = settings_detail::WeldVertices;
+			using UseWorldCoords = settings_detail::UseWorldCoords;
+			using UnifyShapes = settings_detail::UnifyShapes;
+			using UseMaterialNames = settings_detail::UseMaterialNames;
+			using ConvertBackUnits = settings_detail::ConvertBackUnits;
+			using ContextIds = settings_detail::ContextIds;
+			using ContextTypes = settings_detail::ContextTypes;
+			using ContextIdentifiers = settings_detail::ContextIdentifiers;
+			using ContextPriorities = settings_detail::ContextPriorities;
+			using IteratorOutput = settings_detail::IteratorOutput;
+			using DisableOpeningSubtractions = settings_detail::DisableOpeningSubtractions;
+			using MaxVoidsPerElement = settings_detail::MaxVoidsPerElement;
+			using ApplyDefaultMaterials = settings_detail::ApplyDefaultMaterials;
+			using DontEmitNormals = settings_detail::DontEmitNormals;
+			using GenerateUvs = settings_detail::GenerateUvs;
+			using ApplyLayerSets = settings_detail::ApplyLayerSets;
+			using UseElementHierarchy = settings_detail::UseElementHierarchy;
+			using ValidateQuantities = settings_detail::ValidateQuantities;
+			using EdgeArrows = settings_detail::EdgeArrows;
+			using BuildingLocalPlacement = settings_detail::BuildingLocalPlacement;
+			using SiteLocalPlacement = settings_detail::SiteLocalPlacement;
+			using ForceSpaceTransparency = settings_detail::ForceSpaceTransparency;
+			using CircleSegments = settings_detail::CircleSegments;
+			using CgalSmoothAngleDegrees = settings_detail::CgalSmoothAngleDegrees;
+			using SvgRidgeAngleMinDegrees = settings_detail::SvgRidgeAngleMinDegrees;
+			using SvgValleyAngleMinDegrees = settings_detail::SvgValleyAngleMinDegrees;
+			using SvgEmitFlushEdges = settings_detail::SvgEmitFlushEdges;
+			using SvgUseEdgeClassification = settings_detail::SvgUseEdgeClassification;
+			using SvgRenderCreaseEdges = settings_detail::SvgRenderCreaseEdges;
+			using SvgRenderSharpEdges = settings_detail::SvgRenderSharpEdges;
+			using KeepBoundingBoxes = settings_detail::KeepBoundingBoxes;
+			using ComputeCurvature = settings_detail::ComputeCurvature;
+			using FunctionStepType = settings_detail::FunctionStepType;
+			using FunctionStepParam = settings_detail::FunctionStepParam;
+			using NoParallelMapping = settings_detail::NoParallelMapping;
+			using PermissiveShapeReuse = settings_detail::PermissiveShapeReuse;
+			using ModelOffset = settings_detail::ModelOffset;
+			using ModelRotation = settings_detail::ModelRotation;
+			using TriangulationType = settings_detail::TriangulationType;
+			using CgalEmitOriginalEdges = settings_detail::CgalEmitOriginalEdges;
+			using OcctNoCleanTriangulation = settings_detail::OcctNoCleanTriangulation;
+			using CacheShapes = settings_detail::CacheShapes;
+			using DeferProcessingFirstElement = settings_detail::DeferProcessingFirstElement;
+			using MaxOffset = settings_detail::MaxOffset;
+			using MaxOffsetDeviation = settings_detail::MaxOffsetDeviation;
+			using ApplyOffset = settings_detail::ApplyOffset;
+			using MakeVolume = settings_detail::MakeVolume;
+
+			using UseElementNames = settings_detail::UseElementNames;
+			using UseElementGuids = settings_detail::UseElementGuids;
+			using UseElementStepIds = settings_detail::UseElementStepIds;
+			using UseElementTypes = settings_detail::UseElementTypes;
+			using UseYUp = settings_detail::UseYUp;
+			using WriteGltfEcef = settings_detail::WriteGltfEcef;
+			using FloatingPointDigits = settings_detail::FloatingPointDigits;
+			using BaseUri = settings_detail::BaseUri;
+			using WktUseSection = settings_detail::WktUseSection;
+			using SeparateZUpNode = settings_detail::SeparateZUpNode;
+			using SvgBounds = settings_detail::SvgBounds;
+			using SvgScale = settings_detail::SvgScale;
+			using SvgCenter = settings_detail::SvgCenter;
+			using SvgSectionRef = settings_detail::SvgSectionRef;
+			using SvgElevationRef = settings_detail::SvgElevationRef;
+			using SvgElevationRefGuid = settings_detail::SvgElevationRefGuid;
+			using SvgAutoSection = settings_detail::SvgAutoSection;
+			using SvgAutoElevation = settings_detail::SvgAutoElevation;
+			using SvgDrawStoreyHeights = settings_detail::SvgDrawStoreyHeights;
+			using SvgProfileThreshold = settings_detail::SvgProfileThreshold;
+			using SvgStoreyHeightLineLength = settings_detail::SvgStoreyHeightLineLength;
+			using SvgUseNamespace = settings_detail::SvgUseNamespace;
+			using SvgUseHlrPoly = settings_detail::SvgUseHlrPoly;
+			using SvgUsePrefiltering = settings_detail::SvgUsePrefiltering;
+			using SvgUnifyInputs = settings_detail::SvgUnifyInputs;
+			using SvgSegmentProjection = settings_detail::SvgSegmentProjection;
+			using SvgSubtractBefore = settings_detail::SvgSubtractBefore;
+			using SvgPolygonal = settings_detail::SvgPolygonal;
+			using SvgAlwaysProject = settings_detail::SvgAlwaysProject;
+			using SvgWithoutStoreys = settings_detail::SvgWithoutStoreys;
+			using SvgNoCss = settings_detail::SvgNoCss;
+			using SvgMirrorY = settings_detail::SvgMirrorY;
+			using SvgMirrorX = settings_detail::SvgMirrorX;
+			using SvgDoorArcs = settings_detail::SvgDoorArcs;
+			using SvgSectionHeight = settings_detail::SvgSectionHeight;
+			using SvgSectionHeightFromStoreys = settings_detail::SvgSectionHeightFromStoreys;
+			using SvgPrintSpaceNames = settings_detail::SvgPrintSpaceNames;
+			using SvgPrintSpaceAreas = settings_detail::SvgPrintSpaceAreas;
+			using SvgSpaceNameTransform = settings_detail::SvgSpaceNameTransform;
+
+			using OutputDimensionalityTypes = settings_detail::OutputDimensionalityTypes;
+			using IteratorOutputOptions = settings_detail::IteratorOutputOptions;
+			using FunctionStepMethod = settings_detail::FunctionStepMethod;
+			using TriangulationMethod = settings_detail::TriangulationMethod;
+
+			static constexpr auto CURVES = settings_detail::CURVES;
+			static constexpr auto SURFACES_AND_SOLIDS = settings_detail::SURFACES_AND_SOLIDS;
+			static constexpr auto CURVES_SURFACES_AND_SOLIDS = settings_detail::CURVES_SURFACES_AND_SOLIDS;
+			static constexpr auto TRIANGULATED = settings_detail::TRIANGULATED;
+			static constexpr auto NATIVE = settings_detail::NATIVE;
+			static constexpr auto SERIALIZED = settings_detail::SERIALIZED;
+			static constexpr auto MAXSTEPSIZE = settings_detail::MAXSTEPSIZE;
+			static constexpr auto MINSTEPS = settings_detail::MINSTEPS;
+			static constexpr auto TRIANGLE_MESH = settings_detail::TRIANGLE_MESH;
+			static constexpr auto POLYHEDRON_WITHOUT_HOLES = settings_detail::POLYHEDRON_WITHOUT_HOLES;
+			static constexpr auto POLYHEDRON_WITH_HOLES = settings_detail::POLYHEDRON_WITH_HOLES;
+		};
 }
 }
 
 // @todo find a place
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 
 #if defined(_MSC_VER)
 #pragma warning(push)

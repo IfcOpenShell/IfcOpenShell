@@ -218,12 +218,12 @@ const file_reader_page& paged_file_impl::fetchPage_(size_t idx) const {
     }
     lru_.push_front(idx);
     auto lit = lru_.begin();
-    auto [emplaced_it, ok] = map_.emplace(idx, Entry{std::move(pg), lit});
+    auto [emplaced_it, ok] = map_.emplace(idx, entry{std::move(pg), lit});
     (void)ok;
     return emplaced_it->second.page;
 }
 
-void paged_file_impl::touch_(std::unordered_map<size_t, Entry>::iterator it) const {
+void paged_file_impl::touch_(std::unordered_map<size_t, entry>::iterator it) const {
     lru_.erase(it->second.it);
     lru_.push_front(it->first);
     it->second.it = lru_.begin();

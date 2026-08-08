@@ -28,20 +28,20 @@
 #include "../ifcgeom/GeometrySerializer.h"
 
 // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
-class SERIALIZERS_API WaveFrontOBJSerializer : public WriteOnlyGeometrySerializer {
+class SERIALIZERS_API wavefront_obj_serializer : public write_only_geometry_serializer {
 private:
 	stream_or_filename obj_stream;
 	stream_or_filename mtl_stream;
 	size_t vcount_total, ncount_total;
 	std::set<std::string> materials;
 public:
-	WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr);
-	virtual ~WaveFrontOBJSerializer() {}
+	wavefront_obj_serializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr);
+	virtual ~wavefront_obj_serializer() {}
 	bool ready();
 	void writeHeader();
-	void writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style);
-	void write(const IfcGeom::TriangulationElement* o);
-	void write(const IfcGeom::BRepElement* /*o*/) {}
+	void writeMaterial(const ifcopenshell::geom::taxonomy::style::ptr style);
+	void write(const ifcopenshell::geom::triangulation_element* o);
+	void write(const ifcopenshell::geom::brep_element* /*o*/) {}
 	void finalize() {}
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}

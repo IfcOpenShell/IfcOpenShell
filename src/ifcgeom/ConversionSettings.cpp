@@ -32,7 +32,7 @@ std::istream& std::operator>>(istream& in, vector<double>& ds) {
 	return in;
 }
 
-std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, IteratorOutputOptions& ioo)
+std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, IteratorOutputOptions& ioo)
 {
 	std::string token;
 	in >> token;
@@ -49,7 +49,7 @@ std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, Ite
 	return in;
 }
 
-std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, FunctionStepMethod& ioo) {
+std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, FunctionStepMethod& ioo) {
     std::string token;
     in >> token;
     boost::to_upper(token);
@@ -63,7 +63,7 @@ std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, Fun
     return in;
 }
 
-std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, OutputDimensionalityTypes& v) {
+std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, OutputDimensionalityTypes& v) {
 	std::string token;
 	in >> token;
 	boost::to_upper(token);
@@ -79,7 +79,7 @@ std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, Out
 	return in;
 }
 
-std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, TriangulationMethod& v) {
+std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, TriangulationMethod& v) {
 	std::string token;
 	in >> token;
 	boost::to_upper(token);
@@ -95,6 +95,6 @@ std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, Tri
 	return in;
 }
 
-IfcGeom::geometry_exception::~geometry_exception() = default;
+ifcopenshell::geom::geometry_exception::~geometry_exception() = default;
 
-IfcGeom::too_many_faces_exception::~too_many_faces_exception() = default;
+ifcopenshell::geom::too_many_faces_exception::~too_many_faces_exception() = default;

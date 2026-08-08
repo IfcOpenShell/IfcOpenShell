@@ -163,32 +163,29 @@ class Drawer:
 
         # self.svg_settings.set_deflection_tolerance(0.0001)
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
-        self.serialiser_settings = ifcopenshell.geom.serializer_settings()
-        self.serialiser_settings.set("svg-without-storeys", True)
-        self.serialiser_settings.set("svg-write-poly", True)
-        self.serialiser_settings.set("svg-poly", True)
+        self.svg_settings.set("svg-without-storeys", True)
+        self.svg_settings.set("svg-write-poly", True)
+        self.svg_settings.set("svg-poly", True)
         # Objects with more than these edges are rendered as wireframe instead of HLR for optimisation
-        self.serialiser_settings.set("profile-threshold", 10000)
-        self.serialiser_settings.set("svg-xmlns", True)
-        self.serialiser_settings.set("svg-project", True)
-        self.serialiser_settings.set("auto-elevation", False)
-        self.serialiser_settings.set("auto-section", False)
-        self.serialiser_settings.set("print-space-names", False)
-        self.serialiser_settings.set("print-space-areas", False)
-        self.serialiser_settings.set("door-arcs", False)
-        self.serialiser_settings.set("svg-no-css", True)
-        self.serialiser_settings.set("elevation-ref-guid", self.camera_element.GlobalId)
-        self.serialiser_settings.set("scale", "1/50")
-        self.serialiser_settings.set("svg-subtract-before", "always")
-        self.serialiser_settings.set("svg-prefilter", True)  # See #3359
-        # self.serialiser_settings.set("svg-prefilter", False)  # See #3359
-        self.serialiser_settings.set("svg-unify-inputs", True)
-        self.serialiser_settings.set("svg-segment-projection", True)
+        self.svg_settings.set("profile-threshold", 10000)
+        self.svg_settings.set("svg-xmlns", True)
+        self.svg_settings.set("svg-project", True)
+        self.svg_settings.set("auto-elevation", False)
+        self.svg_settings.set("auto-section", False)
+        self.svg_settings.set("print-space-names", False)
+        self.svg_settings.set("print-space-areas", False)
+        self.svg_settings.set("door-arcs", False)
+        self.svg_settings.set("svg-no-css", True)
+        self.svg_settings.set("elevation-ref-guid", self.camera_element.GlobalId)
+        self.svg_settings.set("scale", "1/50")
+        self.svg_settings.set("svg-subtract-before", "always")
+        self.svg_settings.set("svg-prefilter", True)  # See #3359
+        # self.svg_settings.set("svg-prefilter", False)  # See #3359
+        self.svg_settings.set("svg-unify-inputs", True)
+        self.svg_settings.set("svg-segment-projection", True)
         if target_view == "REFLECTED_PLAN_VIEW":
-            self.serialiser_settings.set("svg-mirror-y", True)
-        self.serialiser = ifcopenshell.geom.serializers.svg(
-            self.svg_buffer, self.svg_settings, self.serialiser_settings
-        )
+            self.svg_settings.set("svg-mirror-y", True)
+        self.serialiser = ifcopenshell.geom.serializers.svg(self.svg_buffer, self.svg_settings)
         self.serialiser.setFile(ifc)
 
 

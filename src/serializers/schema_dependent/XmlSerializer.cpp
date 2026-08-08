@@ -34,12 +34,12 @@ using boost::property_tree::ptree;
 
 namespace {
 
-// TODO: Make this a member of XmlSerializer?
+// TODO: Make this a member of xml_serializer?
 std::map<std::string, std::string> POSTFIX_SCHEMA(argument_name_map);
 
 // Format an IFC attribute and maybe returns as string. Only literal scalar 
 // values are converted. Things like entity instances and lists are omitted.
-std::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_mapping* mapping, attribute_value argument, ifcopenshell::argument_type argument_type, const std::string& argument_name) {
+std::optional<std::string> format_attribute(ifcopenshell::geom::abstract_mapping* mapping, attribute_value argument, ifcopenshell::argument_type argument_type, const std::string& argument_name) {
 	std::optional<std::string> value;
 	
 	// Hard-code lat-lon as it represents an array
@@ -86,9 +86,9 @@ std::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_map
 			value = stream.str();
 			break; }
 		case ifcopenshell::Argument_ENTITY_INSTANCE: {
-			express::Base e = argument;
+			express::base e = argument;
 			if (e.declaration().as_entity() == nullptr) {
-				auto f = e.as<express::DeclaredType>();
+				auto f = e.as<express::declared_type>();
 				value = format_attribute(mapping, f.get_attribute_value(0), f.get_attribute_value(0).type(), argument_name);
 			} else if (e.declaration().is(IfcSchema::IfcSIUnit::Class()) || e.declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
 				// Some string concatenation to have a unit name as a XML attribute.
@@ -108,7 +108,7 @@ std::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_map
 				value = unit_name;
             } else if (auto placement = e.as<IfcSchema::IfcLocalPlacement>()) {
 				auto item = mapping->map(e);
-				auto matrix = ifcopenshell::geometry::taxonomy::cast< ifcopenshell::geometry::taxonomy::matrix4>(item);
+				auto matrix = ifcopenshell::geom::taxonomy::cast< ifcopenshell::geom::taxonomy::matrix4>(item);
 				
 				std::stringstream stream;
 				for (int i = 0; i < 4; ++i) {
@@ -131,7 +131,7 @@ std::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_map
 }
 
 // Appends to a node with possibly existing attributes
-ptree* format_entity_instance(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, const express::Base& instance, ptree& child, ptree& tree, bool as_link = false) {
+ptree* format_entity_instance(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const express::base& instance, ptree& child, ptree& tree, bool as_link = false) {
 	const unsigned n = instance.declaration().as_entity()->attribute_count();
 	for (unsigned i = 0; i < n; ++i) {
 		try {
@@ -176,19 +176,19 @@ ptree* format_entity_instance(::logger& log, ifcopenshell::geometry::abstract_ma
 
 // Formats an entity instances as a ptree node, and insert into the DOM. Recurses
 // over the entity attributes and writes them as xml attributes of the node.
-ptree* format_entity_instance(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, const express::Base& instance, ptree& tree, bool as_link = false) {
+ptree* format_entity_instance(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const express::base& instance, ptree& tree, bool as_link = false) {
     ptree child;
     return format_entity_instance(log, mapping, instance, child, tree, as_link);
 }
 
-std::string qualify_unrooted_instance(const express::Base& inst) {
+std::string qualify_unrooted_instance(const express::base& inst) {
     return inst.declaration().name() + "_" + std::to_string(inst.id());
 }
 
 // A function to be called recursively. Template specialization is used 
 // to descend into decomposition, containment and property relationships.
 template <typename A>
-ptree* descend(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, A instance, ptree& tree, express::Base parent = express::Base()) {
+ptree* descend(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, A instance, ptree& tree, express::base parent = express::base()) {
 	if (instance.declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
 		return descend(log, mapping, instance.template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
 	} else {
@@ -205,11 +205,11 @@ auto get_related(::logger& log, T t, F f, G g) {
     for (auto& u : li) {
 		try {
             auto vs = (u.template as<U>().*g)();
-            if constexpr (std::is_base_of_v<express::Base, decltype(vs)>) {
+            if constexpr (std::is_base_of_v<express::base, decltype(vs)>) {
                 if (auto vv = vs.template as<V>()) {
 					acc.push_back(vv);
                 }
-            } else if constexpr (std::is_base_of_v<express::Select, decltype(vs)>) {
+            } else if constexpr (std::is_base_of_v<express::select, decltype(vs)>) {
                 if (auto vv = vs.concrete().template as<V>()) {
                     acc.push_back(vv);
                 }                
@@ -230,7 +230,7 @@ auto get_related(::logger& log, T t, F f, G g) {
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
 // IfcRelDecomposes, IfcRelDefinesByType, IfcRelDefinesByProperties relations.
 template <>
-ptree* descend(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcObjectDefinition product, ptree& tree, express::Base parent) {
+ptree* descend(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, IfcSchema::IfcObjectDefinition product, ptree& tree, express::base parent) {
 	if (product.declaration().is(IfcSchema::IfcElement::Class())) {
 		auto voids = product.as<IfcSchema::IfcElement>().FillsVoids();
 		if (voids.size() == 1 && voids.front().RelatingOpeningElement() != parent) {
@@ -365,7 +365,7 @@ ptree* descend(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping,
 }
 
 // Format IfcProperty instances and insert into the DOM. IfcComplexProperties are flattened out.
-void format_properties(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, const std::vector<IfcSchema::IfcProperty>& properties, ptree& node) {
+void format_properties(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const std::vector<IfcSchema::IfcProperty>& properties, ptree& node) {
     for (auto& p : properties) {
         if (auto complex = p.as<IfcSchema::IfcComplexProperty>()) {
 			format_properties(log, mapping, complex.HasProperties(), node);
@@ -375,7 +375,7 @@ void format_properties(::logger& log, ifcopenshell::geometry::abstract_mapping* 
 	}
 }
 
-void writeGroupToNode(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcGroup group, ptree& node, std::set<std::string> notRootGroups) {
+void writeGroupToNode(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, IfcSchema::IfcGroup group, ptree& node, std::set<std::string> notRootGroups) {
 	// @todo tfk: instead of a set<string> shouldn't we just have a set<IfcGroup>, the current approach
 	// might not work with non-unique or NIL group names.
 
@@ -407,7 +407,7 @@ void writeGroupToNode(::logger& log, ifcopenshell::geometry::abstract_mapping* m
 }
 
 // Format IfcElementQuantity instances and insert into the DOM.
-void format_quantities(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, const std::vector<IfcSchema::IfcPhysicalQuantity>& quantities, ptree& node) {
+void format_quantities(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, const std::vector<IfcSchema::IfcPhysicalQuantity>& quantities, ptree& node) {
 	for (auto& p : quantities) {
 		ptree* node2 = format_entity_instance(log, mapping, p, node);
 		if (node2 && p.declaration().is(IfcSchema::IfcPhysicalComplexQuantity::Class())) {
@@ -417,7 +417,7 @@ void format_quantities(::logger& log, ifcopenshell::geometry::abstract_mapping* 
 }
 
 // Format IfcTask instances and insert into the DOM.
-void format_tasks(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcTask task, ptree& node) {
+void format_tasks(::logger& log, ifcopenshell::geom::abstract_mapping* mapping, IfcSchema::IfcTask task, ptree& node) {
 	ptree* ntask = format_entity_instance(log, mapping, task, node);
 
 	if (ntask) {
@@ -526,7 +526,7 @@ void format_tasks(::logger& log, ifcopenshell::geometry::abstract_mapping* mappi
 
 } // ~unnamed namespace
 
-void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
+void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 	POSTFIX_SCHEMA(argument_name_map).insert(std::make_pair("GlobalId", "id"));
 	auto& log = logger();
 
@@ -766,7 +766,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     }
 
 	auto materal_associations = file->instances_by_type<IfcSchema::IfcRelAssociatesMaterial>();
-	std::set<express::Base> emitted_materials;
+	std::set<express::base> emitted_materials;
 	for (auto& rel : materal_associations) {
         IfcSchema::IfcMaterialSelect mat = rel.RelatingMaterial();
 		if (emitted_materials.find(mat) == emitted_materials.end()) {

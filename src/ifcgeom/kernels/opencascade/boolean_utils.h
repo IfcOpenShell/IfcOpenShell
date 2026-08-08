@@ -38,7 +38,7 @@
 #include "../../../ifcparse/logger.h"
 #include "../ifc_geomlibrary_api.h"
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace util {
 
 		IFC_GEOMLIBRARY_API void copy_operand(const NCollection_List<TopoDS_Shape>& l, NCollection_List<TopoDS_Shape>& r);
@@ -97,7 +97,7 @@ namespace IfcGeom {
 			bool debug, attempt_2d;
 			double precision;
 			// Set by callers that carry a per-conversion logger (e.g. kernels deriving
-			// from AbstractKernel). Falls back to the global ::logger::root() singleton.
+			// from abstract_kernel). Falls back to the global ::logger::root() singleton.
 			::logger* logger = nullptr;
 			::logger& log() const { return logger ? *logger : ::logger::root(); }
 		};

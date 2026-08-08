@@ -3,7 +3,7 @@
 #include "profile_helper.h"
 #include "function_item_evaluator.h"
 
-using namespace ifcopenshell::geometry::taxonomy;
+using namespace ifcopenshell::geom::taxonomy;
 
 namespace {
 	bool compare(const trimmed_curve& a, const trimmed_curve& b);
@@ -223,9 +223,9 @@ namespace {
 	};
 }
 
-ifcopenshell::geometry::taxonomy::topology_error::~topology_error() = default;
+ifcopenshell::geom::taxonomy::topology_error::~topology_error() = default;
 
-bool ifcopenshell::geometry::taxonomy::less(item::const_ptr a, item::const_ptr b) {
+bool ifcopenshell::geom::taxonomy::less(item::const_ptr a, item::const_ptr b) {
 	if (a == b) {
 		return false;
 	}
@@ -347,11 +347,11 @@ namespace {
 	}
 }
 
-ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(double dx, double dy, double dz) {
+ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double dx, double dy, double dz) {
 	return create_box(0., 0., 0., dx, dy, dz);
 }
 
-ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(double x, double y, double z, double dx, double dy, double dz) {
+ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x, double y, double z, double dx, double dy, double dz) {
 	auto solid = make<taxonomy::solid>();
 	auto shell = make<taxonomy::shell>();
 	solid->children.push_back(shell);
@@ -486,10 +486,10 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 }
 
 ///////////////////
-piecewise_function::piecewise_function(double start, const spans_t& s, const express::Base& instance) : function_item(instance), start_(start), spans_(s) {
+piecewise_function::piecewise_function(double start, const spans_t& s, const express::base& instance) : function_item(instance), start_(start), spans_(s) {
 }
 
-piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const express::Base& instance) : function_item(instance), start_(start) {
+piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const express::base& instance) : function_item(instance), start_(start) {
     for (auto& pwf : pwfs) {
         spans_.insert(spans_.end(), pwf->spans().begin(), pwf->spans().end());
     }
@@ -512,7 +512,7 @@ double piecewise_function::length() const {
 }
 
 
-gradient_function::gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const express::Base& instance) : 
+gradient_function::gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const express::base& instance) :
 	function_item(instance), horizontal_(horizontal), vertical_(vertical) {
 }
 double gradient_function::start() const { return std::max(horizontal_->start(), vertical_->start()); }
@@ -521,7 +521,7 @@ piecewise_function::const_ptr gradient_function::get_horizontal() const { return
 piecewise_function::const_ptr gradient_function::get_vertical() const { return vertical_; }
 
 
-cant_function::cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const express::Base& instance) : 
+cant_function::cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const express::base& instance) :
 	function_item(instance), gradient_(gradient), cant_(cant) {
 }
 double cant_function::start() const { return std::max(gradient_->start(), cant_->start()); }
@@ -530,7 +530,7 @@ gradient_function::const_ptr cant_function::get_gradient() const { return gradie
 piecewise_function::const_ptr cant_function::get_cant() const { return cant_; }
 
 
-offset_function::offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const express::Base& instance) : function_item(instance),
+offset_function::offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const express::base& instance) : function_item(instance),
                                                                                                                                                                        basis_(basis),
                                                                                                                                                                        offset_(offset) {
 }
@@ -540,15 +540,15 @@ function_item::const_ptr offset_function::get_basis() const { return basis_; }
 piecewise_function::const_ptr offset_function::get_offset() const { return offset_; }
 
 
-ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(const taxonomy::collection::ptr& deep) {
+ifcopenshell::geom::taxonomy::collection::ptr ifcopenshell::geom::flatten(const taxonomy::collection::ptr& deep) {
 	auto flat = make<taxonomy::collection>();
-	ifcopenshell::geometry::visit<taxonomy::collection>(deep, [&flat](taxonomy::ptr i) {
+	ifcopenshell::geom::visit<taxonomy::collection>(deep, [&flat](taxonomy::ptr i) {
 		flat->children.push_back(taxonomy::cast<taxonomy::geom_item>(clone(i)));
 		});
 	return flat;
 }
 
-const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
+const std::string& ifcopenshell::geom::taxonomy::kind_to_string(kinds k) {
 	using namespace std::string_literals;
 
 	static std::string values[] = {
@@ -592,19 +592,19 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 
 IFC_GEOM_API std::atomic_uint32_t item::counter_(0);
 
-void ifcopenshell::geometry::taxonomy::item::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::item::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << kind_to_string(kind()) << std::endl;
 }
 
-void ifcopenshell::geometry::taxonomy::matrix4::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::matrix4::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::colour::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::colour::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::style::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::style::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << "style" << std::endl;
 	o << std::string(indent, ' ') << "     " << "name " << (name) << std::endl;
 	if (diffuse.components_) {
@@ -618,29 +618,29 @@ void ifcopenshell::geometry::taxonomy::style::print(std::ostream& o, int indent)
 	// @todo
 }
 
-void ifcopenshell::geometry::taxonomy::point3::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::point3::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::direction3::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::direction3::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::line::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::line::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::circle::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::circle::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 	o << std::string(indent + 4, ' ') << "radius " << radius << std::endl;
 }
 
-void ifcopenshell::geometry::taxonomy::ellipse::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::ellipse::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 	o << std::string(indent + 4, ' ') << "radii " << radius << " " << radius2 << std::endl;
 }
 
-void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::trimmed_curve::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << kind_to_string(kind());
 	if (!this->orientation.value_or(true)) {
 		o << " [R]";
@@ -674,13 +674,13 @@ void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int
 	}
 }
 
-void ifcopenshell::geometry::taxonomy::extrusion::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::extrusion::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << "extrusion " << depth << std::endl;
 	direction->print(o, indent + 4);
 	basis->print(o, indent + 4);
 }
 
-std::optional<face::ptr> ifcopenshell::geometry::taxonomy::loop_to_face_upgrade_impl(ptr item) {
+std::optional<face::ptr> ifcopenshell::geom::taxonomy::loop_to_face_upgrade_impl(ptr item) {
 	std::optional<face::ptr> face_;
 	auto loop_ = dcast<loop>(item);
 		if (loop_) {
@@ -694,7 +694,7 @@ std::optional<face::ptr> ifcopenshell::geometry::taxonomy::loop_to_face_upgrade_
 	return face_;
 }
 
-std::optional<edge::ptr> ifcopenshell::geometry::taxonomy::curve_to_edge_upgrade_impl(ptr item) {
+std::optional<edge::ptr> ifcopenshell::geom::taxonomy::curve_to_edge_upgrade_impl(ptr item) {
 	std::optional<edge::ptr> edge_;
 	auto circle_ = dcast<circle>(item);
 	auto ellipse_ = dcast<ellipse>(item);
@@ -725,7 +725,7 @@ std::optional<edge::ptr> ifcopenshell::geometry::taxonomy::curve_to_edge_upgrade
 	return edge_;
 }
 
-std::optional<loop::ptr> ifcopenshell::geometry::taxonomy::curve_to_loop_upgrade_impl(ptr item) {
+std::optional<loop::ptr> ifcopenshell::geom::taxonomy::curve_to_loop_upgrade_impl(ptr item) {
 	std::optional<loop::ptr> loop_;
 	auto circle_ = dcast<circle>(item);
 	auto ellipse_ = dcast<ellipse>(item);
@@ -755,7 +755,7 @@ std::optional<loop::ptr> ifcopenshell::geometry::taxonomy::curve_to_loop_upgrade
 	return loop_;
 }
 
-std::optional<loop::ptr> ifcopenshell::geometry::taxonomy::edge_to_loop_upgrade_impl(ptr item) {
+std::optional<loop::ptr> ifcopenshell::geom::taxonomy::edge_to_loop_upgrade_impl(ptr item) {
 	std::optional<loop::ptr> loop_;
 	auto edge_ = dcast<edge>(item);
 	if (edge_) {
@@ -765,7 +765,7 @@ std::optional<loop::ptr> ifcopenshell::geometry::taxonomy::edge_to_loop_upgrade_
 	return loop_;
 }
 
-std::optional<face::ptr> ifcopenshell::geometry::taxonomy::curve_to_face_upgrade_impl(ptr item) {
+std::optional<face::ptr> ifcopenshell::geom::taxonomy::curve_to_face_upgrade_impl(ptr item) {
     std::optional<face::ptr> face_;
     auto circle_ = dcast<circle>(item);
     auto ellipse_ = dcast<ellipse>(item);
@@ -821,7 +821,7 @@ namespace {
 }
 
 
-std::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_function_item_upgrade_impl(ptr item) {
+std::optional<function_item::ptr> ifcopenshell::geom::taxonomy::loop_to_function_item_upgrade_impl(ptr item) {
 	std::optional<function_item::ptr> fi_;
 	auto loop_ = dcast<loop>(item);
 	if (loop_) {
@@ -861,7 +861,7 @@ std::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_func
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else if (edge_->start.index() == 1 && edge_->end.index() == 1) {
 					if (edge_->basis && edge_->basis->kind() != LINE) {
-						::logger::root().message(::logger::Severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
+						::logger::root().message(::logger::severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
 					}
 					const auto& s = std::get<point3::ptr>(edge_->start)->ccomponents();
 					const auto& e = std::get<point3::ptr>(edge_->end)->ccomponents();
@@ -876,7 +876,7 @@ std::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_func
 					};
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else {
-					::logger::root().message(::logger::Severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
+					::logger::root().message(::logger::severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
 					return std::nullopt;
 				}
 			}

@@ -61,7 +61,7 @@ struct has_curve_interpolation : std::false_type {};
 template <typename T>
 struct has_curve_interpolation<T, std::void_t<decltype(std::declval<T>().CurveInterpolation())>> : std::true_type {};
 
-std::string schema_name(const express::Base& instance) {
+std::string schema_name(const express::base& instance) {
     return instance.declaration().schema()->name();
 }
 
@@ -113,7 +113,7 @@ property_value from_attribute(const attribute_value& value) {
         return result;
     }
     case ifcopenshell::Argument_ENTITY_INSTANCE: {
-        const express::Base instance = value;
+        const express::base instance = value;
         if (instance && !instance.declaration().as_entity()) {
             return from_attribute(instance.get_attribute_value(0));
         }
@@ -127,7 +127,7 @@ property_value from_attribute(const attribute_value& value) {
         return scalar_list(static_cast<std::vector<std::string>>(value));
     case ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
         property_list result;
-        for (const auto& instance : static_cast<std::vector<express::Base>>(value)) {
+        for (const auto& instance : static_cast<std::vector<express::base>>(value)) {
             if (instance && !instance.declaration().as_entity()) {
                 result.push_back(from_attribute(instance.get_attribute_value(0)));
             } else {
@@ -171,7 +171,7 @@ property_value from_select_values(const Values& maybe_values) {
     }
 }
 
-property_value verbose_value(const express::Base& instance,
+property_value verbose_value(const express::base& instance,
                              property_value value,
                              const std::optional<std::string>& value_type = std::nullopt) {
     property_map result = {
@@ -355,7 +355,7 @@ std::optional<property_value> predefined_properties_s(
 
 template <typename Schema>
 std::optional<property_value> get_property_definition_s(
-    const express::Base& definition,
+    const express::base& definition,
     const std::optional<std::string>& property_name,
     bool verbose) {
     if (!definition) {
@@ -405,8 +405,8 @@ std::optional<property_value> get_property_definition_s(
 }
 
 template <typename Definition>
-express::Base concrete_definition(const Definition& definition) {
-    if constexpr (std::is_base_of_v<express::Select, Definition>) {
+express::base concrete_definition(const Definition& definition) {
+    if constexpr (std::is_base_of_v<express::select, Definition>) {
         return definition.concrete();
     } else {
         return definition;
@@ -414,7 +414,7 @@ express::Base concrete_definition(const Definition& definition) {
 }
 
 template <typename Schema>
-bool definition_is_pset_s(const express::Base& definition) {
+bool definition_is_pset_s(const express::base& definition) {
     if (definition.template as<typename Schema::IfcPropertySet>()) {
         return true;
     }
@@ -432,7 +432,7 @@ bool definition_is_pset_s(const express::Base& definition) {
 }
 
 template <typename Schema>
-std::optional<std::string> definition_name_s(const express::Base& definition) {
+std::optional<std::string> definition_name_s(const express::base& definition) {
     if (auto pset = definition.template as<typename Schema::IfcPropertySet>()) {
         return pset.Name();
     }
@@ -458,7 +458,7 @@ std::optional<std::string> definition_name_s(const express::Base& definition) {
 
 template <typename Schema>
 void merge_definition_s(element_properties& result,
-                        const express::Base& definition,
+                        const express::base& definition,
                         bool psets_only,
                         bool qtos_only,
                         bool verbose) {
@@ -505,7 +505,7 @@ typename Schema::IfcTypeObject get_type_s(const typename Schema::IfcObject& obje
 }
 
 template <typename Schema>
-element_properties get_psets_s(const express::Base& element,
+element_properties get_psets_s(const express::base& element,
                                bool psets_only,
                                bool qtos_only,
                                bool should_inherit,
@@ -578,7 +578,7 @@ element_properties get_psets_s(const express::Base& element,
 }
 
 template <typename Schema>
-std::optional<property_value> get_inherited_property_s(const express::Base& element,
+std::optional<property_value> get_inherited_property_s(const express::base& element,
                                                        const std::string& pset_name,
                                                        const std::string& property_name,
                                                        bool psets_only,
@@ -605,7 +605,7 @@ std::optional<property_value> get_inherited_property_s(const express::Base& elem
 }
 
 template <typename Schema, typename Entity>
-std::vector<Entity> cast_entities(const std::vector<express::Base>& values) {
+std::vector<Entity> cast_entities(const std::vector<express::base>& values) {
     std::vector<Entity> result;
     result.reserve(values.size());
     for (const auto& value : values) {
@@ -624,7 +624,7 @@ void print_value(std::ostream& stream, const property_value& value) {
                 stream << "null";
             } else if constexpr (std::is_same_v<T, bool>) {
                 stream << (item ? "true" : "false");
-            } else if constexpr (std::is_same_v<T, express::Base>) {
+            } else if constexpr (std::is_same_v<T, express::base>) {
                 if (item) {
                     item.to_string(stream);
                 } else {
@@ -667,7 +667,7 @@ std::ostream& operator<<(std::ostream& stream, const property_value& value) {
     return stream;
 }
 
-element_properties get_psets(const express::Base& element,
+element_properties get_psets(const express::base& element,
                              bool psets_only,
                              bool qtos_only,
                              bool should_inherit,
@@ -685,7 +685,7 @@ element_properties get_psets(const express::Base& element,
     unsupported_schema(name);
 }
 
-std::optional<property_value> get_pset(const express::Base& element,
+std::optional<property_value> get_pset(const express::base& element,
                                        const std::string& name,
                                        const std::optional<std::string>& property_name,
                                        bool psets_only,
@@ -719,7 +719,7 @@ std::optional<property_value> get_pset(const express::Base& element,
 }
 
 std::optional<property_value> get_property_definition(
-    const express::Base& definition,
+    const express::base& definition,
     const std::optional<std::string>& property_name,
     bool verbose) {
     if (!definition) {
@@ -734,7 +734,7 @@ std::optional<property_value> get_property_definition(
     unsupported_schema(name);
 }
 
-std::optional<property_value> get_quantity(const std::vector<express::Base>& quantities,
+std::optional<property_value> get_quantity(const std::vector<express::base>& quantities,
                                            const std::string& name,
                                            bool verbose) {
     if (quantities.empty()) {
@@ -752,7 +752,7 @@ std::optional<property_value> get_quantity(const std::vector<express::Base>& qua
     unsupported_schema(schema);
 }
 
-property_map get_quantities(const std::vector<express::Base>& quantities, bool verbose) {
+property_map get_quantities(const std::vector<express::base>& quantities, bool verbose) {
     if (quantities.empty()) {
         return {};
     }
@@ -767,7 +767,7 @@ property_map get_quantities(const std::vector<express::Base>& quantities, bool v
     unsupported_schema(schema);
 }
 
-std::optional<property_value> get_property(const std::vector<express::Base>& properties,
+std::optional<property_value> get_property(const std::vector<express::base>& properties,
                                            const std::string& name,
                                            bool verbose) {
     if (properties.empty()) {
@@ -785,7 +785,7 @@ std::optional<property_value> get_property(const std::vector<express::Base>& pro
     unsupported_schema(schema);
 }
 
-property_map get_properties(const std::vector<express::Base>& properties, bool verbose) {
+property_map get_properties(const std::vector<express::base>& properties, bool verbose) {
     if (properties.empty()) {
         return {};
     }

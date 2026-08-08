@@ -22,7 +22,7 @@
  * Geometrical data in an IFC file consists of shapes (IfcShapeRepresentation)  *
  * and instances (SUBTYPE OF IfcBuildingElement e.g. IfcWindow).				*
  *																			  *
- * IfcGeom::Representation::Triangulation is a class that represents a		  *
+ * ifcopenshell::geom::Representation::triangulation is a class that represents a		  *
  * triangulated IfcShapeRepresentation.										 *
  *   Triangulation.verts is a 1 dimensional vector of float defining the		*
  *	  cartesian coordinates of the vertices of the triangulated shape in the  *
@@ -32,25 +32,25 @@
  *   Triangulation.edges is a 1 dimensional vector of int in {0,1} that dictates*
  *	   the visibility of the edges that span the faces in Triangulation.faces   *
  *																			  *
- * IfcGeom::Element represents the actual IfcBuildingElements.				  *
+ * ifcopenshell::geom::element represents the actual IfcBuildingElements.				  *
  *   IfcGeomObject.name is the GUID of the element							  *
  *   IfcGeomObject.type is the datatype of the element e.g. IfcWindow		   *
  *   IfcGeomObject.mesh is a pointer to an IfcMesh							  *
  *   IfcGeomObject.transformation.matrix is a 4x3 matrix that defines the	   *
  *	 orientation and translation of the mesh in relation to the world origin  *
  *																			  *
- * IfcGeom::Iterator::initialize()											  *
+ * ifcopenshell::geom::iterator::initialize()											  *
  *   finds the most suitable representation contexts. Returns true iff		  *
  *   at least a single representation will process successfully				 *
  *																			  *
- * IfcGeom::Iterator::get()													 *
- *   returns a pointer to the current IfcGeom::Element						  *
+ * ifcopenshell::geom::iterator::get()													 *
+ *   returns a pointer to the current ifcopenshell::geom::element						  *
  *																			  *
- * IfcGeom::Iterator::next()													*
+ * ifcopenshell::geom::iterator::next()													*
  *   returns true iff a following entity is available for a successive call to  *
- *   IfcGeom::Iterator::get()												   *
+ *   ifcopenshell::geom::iterator::get()												   *
  *																			  *
- * IfcGeom::Iterator::progress()												*
+ * ifcopenshell::geom::iterator::progress()												*
  *   returns an int in [0..100] that indicates the overall progress			 *
  *																			  *
  ********************************************************************************/
@@ -80,21 +80,21 @@
 #include <atomic>
 #include <memory>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 
 	struct IFC_GEOM_API geometry_conversion_result {
 		int index;
 
 		// For NoParallelMapping==true
-		ifcopenshell::geometry::taxonomy::ptr item;
-		std::vector<std::pair<express::Base, ifcopenshell::geometry::taxonomy::matrix4::ptr>> products;
+		ifcopenshell::geom::taxonomy::ptr item;
+		std::vector<std::pair<express::base, ifcopenshell::geom::taxonomy::matrix4::ptr>> products;
 
 		// For NoParallelMapping==false
-		express::Base representation;
-		std::vector<express::Base> products_2;
+		express::base representation;
+		std::vector<express::base> products_2;
 
-		std::vector<IfcGeom::BRepElement*> breps;
-		std::vector<IfcGeom::Element*> elements;
+		std::vector<ifcopenshell::geom::brep_element*> breps;
+		std::vector<ifcopenshell::geom::element*> elements;
 
 		bool is_parallel() const {
             return !!representation;
@@ -102,7 +102,7 @@ namespace IfcGeom {
 	};
 
 
-	class IFC_GEOM_API Iterator {
+	class IFC_GEOM_API iterator {
 	private:
 		std::atomic<bool> finished_{ false };
 		std::atomic<bool> terminating_{ false };
@@ -112,35 +112,35 @@ namespace IfcGeom {
 		std::vector<geometry_conversion_result> tasks_;
 		std::vector<geometry_conversion_result>::iterator task_iterator_;
 
-		std::list<IfcGeom::Element*> all_processed_elements_;
-		std::list<IfcGeom::BRepElement*> all_processed_native_elements_;
+		std::list<ifcopenshell::geom::element*> all_processed_elements_;
+		std::list<ifcopenshell::geom::brep_element*> all_processed_native_elements_;
 
-		std::list<IfcGeom::Element*>::const_iterator task_result_iterator_;
-		std::list<IfcGeom::BRepElement*>::const_iterator native_task_result_iterator_;
+		std::list<ifcopenshell::geom::element*>::const_iterator task_result_iterator_;
+		std::list<ifcopenshell::geom::brep_element*>::const_iterator native_task_result_iterator_;
 
 		std::mutex element_ready_mutex_;
 		bool task_result_ptr_initialized = false;
 		bool task_result_ptr_exhausted = false;
 		size_t async_elements_returned_ = 0;
 		
-		ifcopenshell::geometry::Settings settings_;
+		ifcopenshell::geom::settings settings_;
 		ifcopenshell::file* ifc_file;
-		std::vector<ifcopenshell::geometry::filter_t> filters_;
+		std::vector<ifcopenshell::geom::filter_t> filters_;
 		int num_threads_;
 		std::string geometry_library_;
 		::logger& logger_;
 
 		// When single-threaded
-		ifcopenshell::geometry::Converter* converter_;
+		ifcopenshell::geom::converter* converter_;
 		
 		// When multi-threaded
-		std::vector<ifcopenshell::geometry::Converter*> kernel_pool;
+		std::vector<ifcopenshell::geom::converter*> kernel_pool;
 		std::vector<std::unique_ptr<::logger>> worker_loggers_;
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
-		TriangulationElement* current_triangulation;
-		BRepElement* current_shape_model;
-		SerializedElement* current_serialization;
+		triangulation_element* current_triangulation;
+		brep_element* current_shape_model;
+		serialized_element* current_serialization;
 
 		double lowest_precision_encountered;
 		bool any_precision_encountered;
@@ -148,42 +148,42 @@ namespace IfcGeom {
 		int done;
 		int total;
 
-		ifcopenshell::geometry::taxonomy::point3 bounds_min_;
-		ifcopenshell::geometry::taxonomy::point3 bounds_max_;
+		ifcopenshell::geom::taxonomy::point3 bounds_min_;
+		ifcopenshell::geom::taxonomy::point3 bounds_max_;
 
 		// Should not be destructed because, destructor is blocking
 		std::future<void> init_future_;
 		std::array<std::chrono::high_resolution_clock::time_point, 4> time_points;
 
 		template <typename Fn>
-		Element* create_processed_element_(Fn f) {
+		element* create_processed_element_(Fn f) {
 			return f();
 		}
 
-		express::Base create_shape_model_for_next_entity();
+		express::base create_shape_model_for_next_entity();
 
 		void create_element_(
-			ifcopenshell::geometry::Converter* kernel,
-			ifcopenshell::geometry::Settings settings,
+			ifcopenshell::geom::converter* kernel,
+			ifcopenshell::geom::settings settings,
 			geometry_conversion_result* rep);
 
-		IfcGeom::Element* process_based_on_settings(
-			ifcopenshell::geometry::Settings settings,
-			IfcGeom::BRepElement* elem,
+		ifcopenshell::geom::element* process_based_on_settings(
+			ifcopenshell::geom::settings settings,
+			ifcopenshell::geom::brep_element* elem,
 			::logger& logger,
-			IfcGeom::TriangulationElement* previous = nullptr);
+			ifcopenshell::geom::triangulation_element* previous = nullptr);
 
-		void flush_worker_log(ifcopenshell::geometry::Converter* kernel);
+		void flush_worker_log(ifcopenshell::geom::converter* kernel);
 
 		bool wait_for_element();
 
 		void log_timepoints() const;
 		void validate_iterator_state() const;
 
-		ifcopenshell::geometry::taxonomy::direction3::ptr remove_offset_();
+		ifcopenshell::geom::taxonomy::direction3::ptr remove_offset_();
 	public:
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geometry::filter_t>& filters, int num_threads, ::logger& logger = ::logger::root())
+		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geom::filter_t>& filters, int num_threads, ::logger& logger = ::logger::root())
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
@@ -191,34 +191,34 @@ namespace IfcGeom {
 			, geometry_library_(geometry_library->geometry_library())
 			, logger_(logger)
 			// @todo verify whether settings are correctly passed on
-			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_, logger_))
+			, converter_(new ifcopenshell::geom::converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, ::logger& logger = ::logger::root())
+		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, ::logger& logger = ::logger::root())
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(1)
 			, geometry_library_(geometry_library->geometry_library())
 			, logger_(logger)
-			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_, logger_))
+			, converter_(new ifcopenshell::geom::converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, int num_threads, ::logger& logger = ::logger::root())
+		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, int num_threads, ::logger& logger = ::logger::root())
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library->geometry_library())
 			, logger_(logger)
-			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_, logger_))
+			, converter_(new ifcopenshell::geom::converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
 		}
 
-		~Iterator();
+		~iterator();
 
-		std::vector<ifcopenshell::geometry::taxonomy::item::ptr> get_task_items() const {
-			std::vector<ifcopenshell::geometry::taxonomy::item::ptr> items;
+		std::vector<ifcopenshell::geom::taxonomy::item::ptr> get_task_items() const {
+			std::vector<ifcopenshell::geom::taxonomy::item::ptr> items;
 			items.reserve(tasks_.size());
 			for (const auto& task : tasks_) {
 				items.push_back(task.item);
@@ -226,14 +226,14 @@ namespace IfcGeom {
 			return items;
 		}
 
-		std::vector<std::vector<express::Base>> get_task_products() const {
-            std::vector<std::vector<express::Base>> products;
+		std::vector<std::vector<express::base>> get_task_products() const {
+            std::vector<std::vector<express::base>> products;
 			for (const auto& task : tasks_) {
 				if (task.is_parallel()) {
 					products.push_back(task.products_2);
 				} else {
 					for (auto& product : task.products) {
-                        std::vector<express::Base> p;
+                        std::vector<express::base> p;
 						p.push_back(product.first);
 						products.push_back(p);
 					}
@@ -264,7 +264,7 @@ namespace IfcGeom {
 
 		size_t processed_ = 0;
 
-		void process_finished_rep(geometry_conversion_result* rep, ifcopenshell::geometry::Converter* kernel = nullptr);
+		void process_finished_rep(geometry_conversion_result* rep, ifcopenshell::geom::converter* kernel = nullptr);
 
 		void process_concurrently();
 
@@ -280,28 +280,28 @@ namespace IfcGeom {
 
 		ifcopenshell::file* file() const { return ifc_file; }
 
-		const std::vector<ifcopenshell::geometry::filter_t>& filters() const { return filters_; }
-        std::vector<ifcopenshell::geometry::filter_t>& filters() { return filters_; }
+		const std::vector<ifcopenshell::geom::filter_t>& filters() const { return filters_; }
+        std::vector<ifcopenshell::geom::filter_t>& filters() { return filters_; }
 
-		const ifcopenshell::geometry::taxonomy::point3& bounds_min() const { return bounds_min_; }
-		const ifcopenshell::geometry::taxonomy::point3& bounds_max() const { return bounds_max_; }
+		const ifcopenshell::geom::taxonomy::point3& bounds_min() const { return bounds_min_; }
+		const ifcopenshell::geom::taxonomy::point3& bounds_max() const { return bounds_max_; }
 
 		/// Moves to the next shape representation, create its geometry, and returns the associated product.
 		/// Use get() to retrieve the created geometry.
-		express::Base next();
+		express::base next();
 
 		/// Gets the representation of the current geometrical entity.
-		Element* get();
+		element* get();
 
 		/// Gets the native (Open Cascade or CGAL) representation of the current geometrical entity.
-		BRepElement* get_native()
+		brep_element* get_native()
 		{
 			return *native_task_result_iterator_;
 		}
 
-		const Element* get_object(int id);
+		const element* get_object(int id);
 
-		express::Base create();
+		express::base create();
 	};
 }
 

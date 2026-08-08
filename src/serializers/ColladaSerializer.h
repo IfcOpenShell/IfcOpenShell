@@ -50,97 +50,97 @@
 #include <boost/numeric/ublas/io.hpp>
 
 
-class SERIALIZERS_API ColladaSerializer : public WriteOnlyGeometrySerializer
+class SERIALIZERS_API collada_serializer : public write_only_geometry_serializer
 {
-	// TODO The vast amount of implement details of ColladaSerializer could be hidden to the cpp file.
+	// TODO The vast amount of implement details of collada_serializer could be hidden to the cpp file.
 private:
 	std::stack<int> parentStackId;
 
-	class ColladaExporter
+	class collada_exporter
 	{
 	private:
-		class ColladaGeometries : public COLLADASW::LibraryGeometries
+		class collada_geometries : public COLLADASW::LibraryGeometries
 		{
-			ColladaGeometries(const ColladaGeometries&); //N/A
-			ColladaGeometries& operator =(const ColladaGeometries&); //N/A
+			collada_geometries(const collada_geometries&); //N/A
+			collada_geometries& operator =(const collada_geometries&); //N/A
 		public:
-			explicit ColladaGeometries(COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
+			explicit collada_geometries(COLLADASW::StreamWriter& stream, collada_serializer *_serializer)
 				: COLLADASW::LibraryGeometries(&stream)
                 , serializer(_serializer)
 			{}
             void addFloatSource(const std::string& mesh_id, const std::string& suffix,
                 const std::vector<double>& floats, const char* coords = "XYZ");
-            /// @todo pass simply DeferredObject?
+            /// @todo pass simply deferred_object?
             void write(
                 const std::string &mesh_id, const std::string &default_material_name,
                 const std::vector<double>& positions, const std::vector<double>& normals,
                 const std::vector<int>& faces, const std::vector<int>& edges,
-                const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials,
+                const std::vector<int>& material_ids, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& materials,
                 const std::vector<double>& uvs, const std::vector<std::string>& material_references);
 			void close();
-            ColladaSerializer *serializer;
+            collada_serializer *serializer;
 		};
-		class ColladaScene : public COLLADASW::LibraryVisualScenes
+		class collada_scene : public COLLADASW::LibraryVisualScenes
 		{
 		private:
-			ColladaScene(const ColladaScene&); //N/A
-			ColladaScene& operator =(const ColladaScene&); //N/A
+			collada_scene(const collada_scene&); //N/A
+			collada_scene& operator =(const collada_scene&); //N/A
 
 			const std::string scene_id;
 			bool scene_opened;
 			std::stack<COLLADASW::Node*> parentNodes;
-			std::stack<ifcopenshell::geometry::taxonomy::matrix4> matrixStack;
+			std::stack<ifcopenshell::geom::taxonomy::matrix4> matrixStack;
 		public:
-			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
+			collada_scene(const std::string& scene_id, COLLADASW::StreamWriter& stream, collada_serializer *_serializer)
 				: COLLADASW::LibraryVisualScenes(&stream)
 				, scene_id(scene_id)
 				, scene_opened(false)
                 , serializer(_serializer)
 			{}
 			void add(const std::string& node_id, const std::string& node_name, const std::string& geom_name,
-                const std::vector<std::string>& material_ids, const IfcGeom::Transformation& matrix);
-			void addParent(const IfcGeom::Element& parent);
+                const std::vector<std::string>& material_ids, const ifcopenshell::geom::transformation& matrix);
+			void addParent(const ifcopenshell::geom::element& parent);
 			void closeParent();
 			COLLADASW::Node* GetDirectParent();
 			void write();
-            ColladaSerializer *serializer;
+            collada_serializer *serializer;
 		};
-		class ColladaMaterials : public COLLADASW::LibraryMaterials
+		class collada_materials : public COLLADASW::LibraryMaterials
 		{
-			ColladaMaterials(const ColladaMaterials&); //N/A
-			ColladaMaterials& operator =(const ColladaMaterials&); //N/A
+			collada_materials(const collada_materials&); //N/A
+			collada_materials& operator =(const collada_materials&); //N/A
 		private:
-			class ColladaEffects : public COLLADASW::LibraryEffects
+			class collada_effects : public COLLADASW::LibraryEffects
 			{
-				ColladaEffects(const ColladaEffects&); //N/A
-				ColladaEffects& operator =(const ColladaEffects&); //N/A
+				collada_effects(const collada_effects&); //N/A
+				collada_effects& operator =(const collada_effects&); //N/A
 			public:
-				explicit ColladaEffects(COLLADASW::StreamWriter& stream)
+				explicit collada_effects(COLLADASW::StreamWriter& stream)
 					: COLLADASW::LibraryEffects(&stream)
 				{}
-				void write(const ifcopenshell::geometry::taxonomy::style::ptr& material, const std::string &material_uri);
+				void write(const ifcopenshell::geom::taxonomy::style::ptr& material, const std::string &material_uri);
 				void close();
-                ColladaSerializer *serializer;
+                collada_serializer *serializer;
 			};
-			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> materials;
+			std::vector<ifcopenshell::geom::taxonomy::style::ptr> materials;
 			std::vector<std::string> material_uris;
 		public:
-			explicit ColladaMaterials(COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
+			explicit collada_materials(COLLADASW::StreamWriter& stream, collada_serializer *_serializer)
 				: COLLADASW::LibraryMaterials(&stream)
 				, serializer(_serializer)
 		                , effects(stream)
 			{}
-			void add(const ifcopenshell::geometry::taxonomy::style::ptr& material);
-			std::string getMaterialUri(const ifcopenshell::geometry::taxonomy::style::ptr& material);
-			bool contains(const ifcopenshell::geometry::taxonomy::style::ptr& material);
+			void add(const ifcopenshell::geom::taxonomy::style::ptr& material);
+			std::string getMaterialUri(const ifcopenshell::geom::taxonomy::style::ptr& material);
+			bool contains(const ifcopenshell::geom::taxonomy::style::ptr& material);
 			void write();
-            ColladaSerializer *serializer;
-            ColladaEffects effects;
+            collada_serializer *serializer;
+            collada_effects effects;
 		};
 
-		class DeferredObject {
+		class deferred_object {
 		
-			friend bool operator < (const DeferredObject& def_obj1, const DeferredObject& def_obj2) {
+			friend bool operator < (const deferred_object& def_obj1, const deferred_object& def_obj2) {
 				size_t size = (def_obj1.parents_.size() < def_obj2.parents_.size() ? def_obj1.parents_.size() : def_obj2.parents_.size());
 				size_t cpt = 0;
 
@@ -159,20 +159,20 @@ private:
 
 		public:
 			std::string unique_id, representation_id, type;
-			IfcGeom::Transformation transformation;
+			ifcopenshell::geom::transformation transformation;
 			std::vector<double> vertices;
 			std::vector<double> normals;
 			std::vector<int> faces;
 			std::vector<int> edges;
 			std::vector<int> material_ids;
-			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> materials;
+			std::vector<ifcopenshell::geom::taxonomy::style::ptr> materials;
 			std::vector<std::string> material_references;
             std::vector<double> uvs;
-			std::vector<const IfcGeom::Element*> parents_;
+			std::vector<const ifcopenshell::geom::element*> parents_;
 
-			DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const IfcGeom::Transformation& transformation,
+			deferred_object(const std::string& unique_id, const std::string& representation_id, const std::string& type, const ifcopenshell::geom::transformation& transformation,
 				const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces,
-				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials,
+				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& materials,
 				const std::vector<std::string>& material_references, const std::vector<double>& uvs)
 				: unique_id(unique_id)
 				, representation_id(representation_id)
@@ -188,15 +188,15 @@ private:
 				, uvs(uvs)
 			{}
 
-			std::vector<const IfcGeom::Element*>& parents() { return parents_; }
-			const std::vector<const IfcGeom::Element*>& parents() const { return parents_; }
+			std::vector<const ifcopenshell::geom::element*>& parents() { return parents_; }
+			const std::vector<const ifcopenshell::geom::element*>& parents() const { return parents_; }
 		};
 		COLLADABU::NativeString filename;
 		COLLADASW::StreamWriter stream;
-		ColladaScene scene;
+		collada_scene scene;
 	public:
         /// @param double_precision Whether to use "double precision" (up to 16 decimals) or not (6 or 7 decimals).
-		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer,
+		collada_exporter(const std::string& scene_name, const std::string& fn, collada_serializer *_serializer,
             bool double_precision)
             : filename(fn)
             , stream(COLLADASW::NativeString(filename.c_str(), COLLADASW::NativeString::ENCODING_UTF8), double_precision)
@@ -206,22 +206,22 @@ private:
 			, serializer(_serializer)
 		{
         }
-        ColladaMaterials materials;
-        ColladaGeometries geometries;
-        ColladaSerializer *serializer;
-		std::vector<DeferredObject> deferreds;
-		virtual ~ColladaExporter() {}
+        collada_materials materials;
+        collada_geometries geometries;
+        collada_serializer *serializer;
+		std::vector<deferred_object> deferreds;
+		virtual ~collada_exporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
-		void write(const IfcGeom::TriangulationElement* o);
+		void write(const ifcopenshell::geom::triangulation_element* o);
 		void endDocument();
 	};
-	ColladaExporter exporter;
+	collada_exporter exporter;
 	std::string unit_name;
 	float unit_magnitude;
 public:
-    ColladaSerializer(const std::string& dae_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger* logger = nullptr)
-        : WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
-		, exporter("IfcOpenShell", dae_filename, this, settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get() >= 15)
+    collada_serializer(const std::string& dae_filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr)
+        : write_only_geometry_serializer(settings, logger)
+		, exporter("IfcOpenShell", dae_filename, this, settings.get<ifcopenshell::geom::settings::FloatingPointDigits>().get() >= 15)
     {
         exporter.serializer = this;
         exporter.materials.serializer = this;
@@ -230,8 +230,8 @@ public:
     }
 	bool ready();
 	void writeHeader();
-	void write(const IfcGeom::TriangulationElement* o);
-    void write(const IfcGeom::BRepElement* /*o*/) {}
+	void write(const ifcopenshell::geom::triangulation_element* o);
+    void write(const ifcopenshell::geom::brep_element* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
@@ -240,10 +240,10 @@ public:
 	}
 	void setFile(ifcopenshell::file&) {}
 
-    std::string object_id(const IfcGeom::Element* o) /*override*/;
+    std::string object_id(const ifcopenshell::geom::element* o) /*override*/;
 
 private:
-    static std::string differentiateSlabTypes(const express::Entity& slab);
+    static std::string differentiateSlabTypes(const express::entity& slab);
 };
 
 #endif

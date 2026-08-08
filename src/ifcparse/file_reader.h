@@ -68,7 +68,7 @@ template <typename Impl>
 class file_reader {
 public:
     using impl_type = Impl;
-    using Page = file_reader_page;
+    using page = file_reader_page;
 
     file_reader() = default;
 
@@ -215,7 +215,7 @@ private:
 
 class IFC_PARSE_API paged_file_impl {
 public:
-    struct Entry {
+    struct entry {
         file_reader_page page;
         std::list<size_t>::iterator it;
     };
@@ -232,7 +232,7 @@ public:
 
 private:
     const file_reader_page& fetchPage_(size_t page_index) const;
-    void touch_(std::unordered_map<size_t, Entry>::iterator entry_it) const;
+    void touch_(std::unordered_map<size_t, entry>::iterator entry_it) const;
     void evict_() const;
 
     std::string fn_;
@@ -241,7 +241,7 @@ private:
     size_t page_size_ = 4096;
     size_t capacity_ = 8;
     mutable std::list<size_t> lru_;
-    mutable std::unordered_map<size_t, Entry> map_;
+    mutable std::unordered_map<size_t, entry> map_;
 };
 
 #ifdef USE_MMAP

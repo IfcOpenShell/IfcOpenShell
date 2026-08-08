@@ -31,11 +31,11 @@ namespace {
 	constexpr const char* opencascade_geometry_ifc_writer_plugin_prefix = "geometry.writer.";
 }
 
-const char* IfcGeom::opencascade_geometry_ifc_writer_plugin_registration_symbol() {
+const char* ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin_registration_symbol() {
 	return "ifcopenshell_register_opencascade_geometry_ifc_writer_plugin_v1";
 }
 
-ifcopenshell::plugin::metadata IfcGeom::opencascade_geometry_ifc_writer_plugin_metadata(const std::string& schema_name) {
+ifcopenshell::plugin::metadata ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin_metadata(const std::string& schema_name) {
 	ifcopenshell::plugin::metadata metadata;
 	metadata.kind_ = ifcopenshell::plugin::kind::opencascade_geometry_ifc_writer;
 	metadata.id = opencascade_geometry_ifc_writer_plugin_prefix + boost::to_lower_copy(schema_name);
@@ -43,11 +43,11 @@ ifcopenshell::plugin::metadata IfcGeom::opencascade_geometry_ifc_writer_plugin_m
 	return metadata;
 }
 
-std::filesystem::path IfcGeom::opencascade_geometry_ifc_writer_plugin_directory() {
-	return ifcopenshell::plugin::module_directory(reinterpret_cast<const void*>(&IfcGeom::load_opencascade_geometry_ifc_writer_plugins));
+std::filesystem::path ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin_directory() {
+	return ifcopenshell::plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geom::load_opencascade_geometry_ifc_writer_plugins));
 }
 
-void IfcGeom::load_opencascade_geometry_ifc_writer_plugins(opencascade_geometry_ifc_writer_registry& registry) {
+void ifcopenshell::geom::load_opencascade_geometry_ifc_writer_plugins(opencascade_geometry_ifc_writer_registry& registry) {
 	ifcopenshell::plugin::manager manager;
 	ifcopenshell::plugin::add_search_paths_or_default(manager, &opencascade_geometry_ifc_writer_plugin_directory);
 
@@ -62,7 +62,7 @@ void IfcGeom::load_opencascade_geometry_ifc_writer_plugins(opencascade_geometry_
 	}
 }
 
-bool IfcGeom::load_opencascade_geometry_ifc_writer_plugin(opencascade_geometry_ifc_writer_registry& registry, const std::string& schema_name) {
+bool ifcopenshell::geom::load_opencascade_geometry_ifc_writer_plugin(opencascade_geometry_ifc_writer_registry& registry, const std::string& schema_name) {
 	ifcopenshell::plugin::manager manager;
 	ifcopenshell::plugin::add_search_paths_or_default(manager, &opencascade_geometry_ifc_writer_plugin_directory);
 

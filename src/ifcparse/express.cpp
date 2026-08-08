@@ -1,14 +1,14 @@
 #include "express.h"
 #include "instance_data.h"
 
-const ifcopenshell::declaration& express::Base::declaration() const {
+const ifcopenshell::declaration& express::base::declaration() const {
     return *data()->declaration();
 }
-uint32_t express::Base::identity() const { return data()->identity(); }
+uint32_t express::base::identity() const { return data()->identity(); }
 
-uint32_t express::Base::id() const { return data()->id(); }
+uint32_t express::base::id() const { return data()->id(); }
 
-const instance_data* express::Base::data() const {
+const instance_data* express::base::data() const {
 #ifdef IFOPSH_SAFE_INSTANCE
     auto sp = data_.lock();
     if (sp) {
@@ -21,7 +21,7 @@ const instance_data* express::Base::data() const {
 #endif
 }
 
-instance_data* express::Base::data() { 
+instance_data* express::base::data() {
 #ifdef IFOPSH_SAFE_INSTANCE
     auto sp = data_.lock();
     if (sp) {

@@ -10,8 +10,8 @@ Here's an example of changing settings in C++:
 
 .. code-block:: c++
 
-    SerializerSettings settings;
-    settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS, true);
+    ifcopenshell::geom::settings settings;
+    settings.get<ifcopenshell::geom::settings::ApplyDefaultMaterials>().value = true;
 
 Here's an example of changing settings in Python:
 
@@ -78,7 +78,7 @@ In C++, this is set when the iterator is constructed:
 
 .. code-block:: c++
 
-    IfcGeom::Iterator geom_iterator(settings, ifc_file, filter_funcs, num_threads);
+    ifcopenshell::geom::iterator geom_iterator(settings, ifc_file, filter_funcs, num_threads);
 
 In Python, this is set when the iterator is constructed, and requires a list of
 IFC entity instances:
@@ -102,7 +102,7 @@ In C++, this is set when the iterator is constructed:
 
 .. code-block:: c++
 
-    IfcGeom::Iterator geom_iterator(settings, ifc_file, filter_funcs, num_threads);
+    ifcopenshell::geom::iterator geom_iterator(settings, ifc_file, filter_funcs, num_threads);
 
 In Python, this is set when the iterator is constructed:
 
@@ -272,10 +272,10 @@ Here is an example in C++:
 
 .. code-block:: c++
 
-    SerializerSettings settings;
-    std::vector<int> context_ids;
+    ifcopenshell::geom::settings settings;
+    std::set<int> context_ids;
     // ...
-    settings.set_context_ids(context_ids);
+    settings.get<ifcopenshell::geom::settings::ContextIds>().value = context_ids;
 
 Here is an example in Python:
 
@@ -582,10 +582,10 @@ Here is an example in C++:
 
 .. code-block:: c++
 
-    SerializerSettings settings;
+    ifcopenshell::geom::settings settings;
     double tolerance;
     // ...
-    settings.set_angular_tolerance(tolerance);
+    settings.get<ifcopenshell::geom::settings::MesherAngularDeflection>().value = tolerance;
 
 Here is an example in Python:
 
@@ -609,10 +609,10 @@ Here is an example in C++:
 
 .. code-block:: c++
 
-    SerializerSettings settings;
+    ifcopenshell::geom::settings settings;
     double tolerance;
     // ...
-    settings.set_deflection_tolerance(tolerance);
+    settings.get<ifcopenshell::geom::settings::MesherLinearDeflection>().value = tolerance;
 
 Here is an example in Python:
 

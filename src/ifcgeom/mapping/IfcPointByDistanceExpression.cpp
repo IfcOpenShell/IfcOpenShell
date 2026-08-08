@@ -22,7 +22,7 @@
 #include "../function_item_evaluator.h"
 
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #if defined SCHEMA_HAS_IfcPointByDistanceExpression
 

@@ -31,11 +31,11 @@ namespace {
 	constexpr const char* mapping_plugin_prefix = "geometry.mapping.";
 }
 
-const char* ifcopenshell::geometry::impl::mapping_plugin_registration_symbol() {
+const char* ifcopenshell::geom::impl::mapping_plugin_registration_symbol() {
 	return "ifcopenshell_register_mapping_plugin_v1";
 }
 
-ifcopenshell::plugin::metadata ifcopenshell::geometry::impl::mapping_plugin_metadata(const std::string& schema_name) {
+ifcopenshell::plugin::metadata ifcopenshell::geom::impl::mapping_plugin_metadata(const std::string& schema_name) {
 	plugin::metadata metadata;
 	metadata.kind_ = plugin::kind::mapping;
 	metadata.id = mapping_plugin_prefix + boost::to_lower_copy(schema_name);
@@ -43,11 +43,11 @@ ifcopenshell::plugin::metadata ifcopenshell::geometry::impl::mapping_plugin_meta
 	return metadata;
 }
 
-std::filesystem::path ifcopenshell::geometry::impl::mapping_plugin_directory() {
-	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geometry::impl::load_mapping_plugins));
+std::filesystem::path ifcopenshell::geom::impl::mapping_plugin_directory() {
+	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geom::impl::load_mapping_plugins));
 }
 
-void ifcopenshell::geometry::impl::load_mapping_plugins(mapping_registry& registry) {
+void ifcopenshell::geom::impl::load_mapping_plugins(mapping_registry& registry) {
 	plugin::manager manager;
 	plugin::add_search_paths_or_default(manager, &mapping_plugin_directory);
 
@@ -62,7 +62,7 @@ void ifcopenshell::geometry::impl::load_mapping_plugins(mapping_registry& regist
 	}
 }
 
-bool ifcopenshell::geometry::impl::load_mapping_plugin(mapping_registry& registry, const std::string& schema_name) {
+bool ifcopenshell::geom::impl::load_mapping_plugin(mapping_registry& registry, const std::string& schema_name) {
 	plugin::manager manager;
 	plugin::add_search_paths_or_default(manager, &mapping_plugin_directory);
 

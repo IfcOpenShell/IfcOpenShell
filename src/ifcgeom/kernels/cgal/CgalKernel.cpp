@@ -25,7 +25,7 @@
 #include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
 
 #ifdef IFOPSH_SIMPLE_KERNEL
-#define CgalShape SimpleCgalShape
+#define cgal_shape SimpleCgalShape
 #endif
 
 #include <CGAL/minkowski_sum_3.h>
@@ -38,27 +38,26 @@
 #include <CGAL/Polygon_triangulation_decomposition_2.h>
 #include <CGAL/Polygon_mesh_processing/locate.h>
 
-using namespace IfcGeom;
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
 
 namespace {
-	struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
+	struct polyhedron_builder : public CGAL::Modifier_base<CGAL::Polyhedron_3<kernel_>::HalfedgeDS> {
 	private:
 		std::list<cgal_face_t> *face_list;
       logger& logger_;
 	public:
 		std::optional<cgal_shape_t> from_soup;
-		PolyhedronBuilder(std::list<cgal_face_t> *face_list, logger& logger = ::logger::root());
-		void operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds);
+		polyhedron_builder(std::list<cgal_face_t> *face_list, logger& logger = ::logger::root());
+		void operator()(CGAL::Polyhedron_3<kernel_>::HalfedgeDS &hds);
 	};
 }
 
-CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders, logger& logger) {
+CGAL::Polyhedron_3<kernel_> ifcopenshell::geom::utils::create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders, logger& logger) {
 
 	// Naive creation
-	CGAL::Polyhedron_3<Kernel_> polyhedron;
-	PolyhedronBuilder builder(&face_list, logger);
+	CGAL::Polyhedron_3<kernel_> polyhedron;
+	polyhedron_builder builder(&face_list, logger);
 	polyhedron.delegate(builder);
 	if (builder.from_soup) {
 		polyhedron = *builder.from_soup;
@@ -82,7 +81,7 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 		//    fresult.open("/Users/ken/Desktop/invalid.off");
 		//    fresult << polyhedron << std::endl;
 		//    fresult.close();
-		return CGAL::Polyhedron_3<Kernel_>();
+		return CGAL::Polyhedron_3<kernel_>();
 	}
 	
 	//  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
@@ -91,24 +90,24 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 }
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_>& nef_polyhedron, logger& logger) {
+CGAL::Polyhedron_3<kernel_> ifcopenshell::geom::utils::create_polyhedron(const CGAL::Nef_polyhedron_3<kernel_>& nef_polyhedron, logger& logger) {
 	if (nef_polyhedron.is_simple()) {
 		try {
-			CGAL::Polyhedron_3<Kernel_> polyhedron;
+			CGAL::Polyhedron_3<kernel_> polyhedron;
 			nef_polyhedron.convert_to_polyhedron(polyhedron);
 			return polyhedron;
 		} catch (...) {
 			logger.message(::logger::LOG_ERROR, "GEO", 70, "Conversion from Nef to polyhedron failed!");
-			return CGAL::Polyhedron_3<Kernel_>();
+			return CGAL::Polyhedron_3<kernel_>();
 		}
 	} else {
         logger.message(::logger::LOG_ERROR, "GEO", 71, "Nef polyhedron not simple: cannot create polyhedron!");
-		return CGAL::Polyhedron_3<Kernel_>();
+		return CGAL::Polyhedron_3<kernel_>();
 	}
 }
 
-CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(std::list<cgal_face_t> &face_list, logger& logger) {
-	CGAL::Polyhedron_3<Kernel_> polyhedron = create_polyhedron(face_list, true, logger);
+CGAL::Nef_polyhedron_3<kernel_> ifcopenshell::geom::utils::create_nef_polyhedron(std::list<cgal_face_t> &face_list, logger& logger) {
+	CGAL::Polyhedron_3<kernel_> polyhedron = create_polyhedron(face_list, true, logger);
 	if (polyhedron.is_closed()) {
 		try {
 			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
@@ -119,16 +118,16 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 		}
 	}
 	CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
-	CGAL::Nef_polyhedron_3<Kernel_> nef_polyhedron;
+	CGAL::Nef_polyhedron_3<kernel_> nef_polyhedron;
 	try {
-		nef_polyhedron = CGAL::Nef_polyhedron_3<Kernel_>(polyhedron);
+		nef_polyhedron = CGAL::Nef_polyhedron_3<kernel_>(polyhedron);
 	} catch (...) {
         logger.message(::logger::LOG_ERROR, "GEO", 73, "Conversion to Nef polyhedron failed!");
 	}
 	return nef_polyhedron;
 }
 
-CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron, logger& logger) {
+CGAL::Nef_polyhedron_3<kernel_> ifcopenshell::geom::utils::create_nef_polyhedron(CGAL::Polyhedron_3<kernel_> &polyhedron, logger& logger) {
 	// @todo needed?
 	polyhedron.normalize_border();
 
@@ -145,21 +144,21 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 	if (polyhedron.is_valid(false, 3) && polyhedron.is_closed()) {
 		// @todo is it necessary to triangulat?
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
-		CGAL::Nef_polyhedron_3<Kernel_> nef_polyhedron;
+		CGAL::Nef_polyhedron_3<kernel_> nef_polyhedron;
 		try {
-			nef_polyhedron = CGAL::Nef_polyhedron_3<Kernel_>(polyhedron);
+			nef_polyhedron = CGAL::Nef_polyhedron_3<kernel_>(polyhedron);
 		} catch (...) {
             logger.message(::logger::LOG_ERROR, "GEO", 75, "Conversion to Nef polyhedron failed!");
 		}
 		return nef_polyhedron;
 	} else {
 		logger.message(::logger::LOG_ERROR, "GEO", 76, "Polyhedron not valid: cannot create Nef polyhedron!");
-		return CGAL::Nef_polyhedron_3<Kernel_>();
+		return CGAL::Nef_polyhedron_3<kernel_>();
 	}
 }
 #endif
 
-bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
+bool cgal_kernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 	for (auto& f : l->children) {
 		if (f->basis && f->basis->kind() != taxonomy::PLANE) {
 			logger().error("UNS", 3, "CGAL Kernel: Non-planar faces not supported at the moment");
@@ -200,8 +199,8 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 		logger().notice("GEO", 77, "Density " + boost::lexical_cast<std::string>(density), l->instance);
 		if (density > 5000) {
 			logger().notice("GEO", 78, "Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
-			CGAL::Point_3<Kernel_> lower(minmax.first(0), minmax.first(1), minmax.first(2));
-			CGAL::Point_3<Kernel_> upper(minmax.second(0), minmax.second(1), minmax.second(2));
+			CGAL::Point_3<kernel_> lower(minmax.first(0), minmax.first(1), minmax.first(2));
+			CGAL::Point_3<kernel_> upper(minmax.second(0), minmax.second(1), minmax.second(2));
 			shape = utils::create_cube(lower, upper);
 			return true;
 		}
@@ -234,7 +233,7 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 	return shape.size_of_facets();
 }
 
-bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>& result) {
+bool cgal_kernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>& result) {
 	int num_outer_bounds = 0;
 
 	for (auto& bound : face->children) {
@@ -286,7 +285,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 namespace {
 	// @todo obsolete?
 	/*
-	bool convert_curve(CgalKernel* kernel, const taxonomy::ptr curve, cgal_wire_t& builder) {
+	bool convert_curve(cgal_kernel* kernel, const taxonomy::ptr curve, cgal_wire_t& builder) {
 		if (auto e = taxonomy::dcast<taxonomy::edge>(curve)) {
 			if (true || e->basis == nullptr) {
 				if (builder.empty()) {
@@ -354,7 +353,7 @@ namespace {
 		u = std::atan2(xy(1), xy(0));
 	}
 
-	struct point_projection_visitor_ {
+	struct curve_point_projection_visitor {
 		taxonomy::point3 p;
 		double u;
 		typedef void result_type;
@@ -376,7 +375,7 @@ namespace {
 		}
 	};
 
-	struct point_projection_visitor {
+	struct trim_point_projection_visitor {
 		taxonomy::ptr curve;
 		double u;
 		typedef void result_type;
@@ -386,8 +385,8 @@ namespace {
 		}
 
 		void operator()(const taxonomy::point3::ptr& p) {
-			point_projection_visitor_ v{ *p };
-			dispatch_curve_creation<point_projection_visitor_>::dispatch(curve, v);
+			curve_point_projection_visitor v{ *p };
+			dispatch_curve_creation<curve_point_projection_visitor>::dispatch(curve, v);
 			u = v.u;
 		}
 
@@ -402,13 +401,13 @@ namespace {
 	inline double conic_radius(const taxonomy::ellipse::ptr& e) { return e->radius > e->radius2 ? e->radius : e->radius2; }
 
 	struct cgal_curve_creation_visitor {
-		Settings& settings_;
+		ifcopenshell::geom::settings& settings_;
 		parameter_range param;
 
 		std::vector<taxonomy::point3> points;
 
-		cgal_curve_creation_visitor(Settings& s) : settings_(s), param(unbounded) {}
-		cgal_curve_creation_visitor(Settings& s, const parameter_range& p) : settings_(s), param(p) {}
+		cgal_curve_creation_visitor(ifcopenshell::geom::settings& settings) : settings_(settings), param(unbounded) {}
+		cgal_curve_creation_visitor(ifcopenshell::geom::settings& settings, const parameter_range& p) : settings_(settings), param(p) {}
 
 		void operator()(const taxonomy::line::ptr& l) {
 			if (param == unbounded) {
@@ -496,7 +495,7 @@ namespace {
 				e_basis = taxonomy::cast<taxonomy::edge>(e_basis)->basis;
 			}
 
-			point_projection_visitor v1{ e->basis }, v2{ e->basis };
+			trim_point_projection_visitor v1{ e->basis }, v2{ e->basis };
 			std::visit(v1, e->start);
 			std::visit(v2, e->end);
 
@@ -523,8 +522,8 @@ namespace {
 		}
 	};
 
-	void convert_curve(Settings& s, taxonomy::ptr i, std::vector<taxonomy::point3>& points) {
-		cgal_curve_creation_visitor v(s);
+	void convert_curve(ifcopenshell::geom::settings& settings, taxonomy::ptr i, std::vector<taxonomy::point3>& points) {
+		cgal_curve_creation_visitor v(settings);
 		dispatch_curve_creation<cgal_curve_creation_visitor>::dispatch(i, v);
 		points = v.points;
 	}
@@ -549,10 +548,10 @@ namespace {
 #include <vector>
 #include <fstream>
 
-typedef CGAL::Box_intersection_d::Box_with_handle_d<double, 3, int*> Box;
+typedef CGAL::Box_intersection_d::Box_with_handle_d<double, 3, int*> box;
 
 namespace {
-	void loop_to_segments(const cgal_wire_t& wire, std::vector<Kernel_::Segment_3>& segments) {
+	void loop_to_segments(const cgal_wire_t& wire, std::vector<kernel_::Segment_3>& segments) {
 		for (int i = 0; i < wire.size(); ++i) {
 			int j = (i + 1) % wire.size();
 			segments.emplace_back(wire[i], wire[j]);
@@ -561,14 +560,14 @@ namespace {
 
 	struct intersection_collector {
 
-		const std::vector<Kernel_::Segment_3>& segments;
+		const std::vector<kernel_::Segment_3>& segments;
 		int num_self_intersections = 0;
 
-		explicit intersection_collector(const std::vector<Kernel_::Segment_3>& s)
+		explicit intersection_collector(const std::vector<kernel_::Segment_3>& s)
 			: segments(s)
 		{}
 
-		void operator()(const Box& a, const Box& b) {
+		void operator()(const box& a, const box& b) {
 			int aid = *a.handle();
 			int bid = *b.handle();
 
@@ -590,12 +589,12 @@ namespace {
 		}
 	};
 
-	bool do_segments_intersect(const std::vector<Kernel_::Segment_3>& segments) {
-		std::vector<Box> boxes;
+	bool do_segments_intersect(const std::vector<kernel_::Segment_3>& segments) {
+		std::vector<box> boxes;
 		std::vector<int> handles(segments.size());
 		std::iota(handles.begin(), handles.end(), 0);
 		for (auto it = segments.begin(); it != segments.end(); ++it) {
-			boxes.push_back(Box(it->bbox(), &*(handles.begin() + std::distance(segments.begin(), it))));
+			boxes.push_back(box(it->bbox(), &*(handles.begin() + std::distance(segments.begin(), it))));
 		}
 		intersection_collector x(segments);
 		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), x);
@@ -605,7 +604,7 @@ namespace {
 
 namespace {
 	cgal_direction_t newell(const std::vector<cgal_point_t> & loop) {
-		Kernel_::FT a(0.0), b(0.0), c(0.0);
+		kernel_::FT a(0.0), b(0.0), c(0.0);
 		for (size_t i = 0; i < loop.size(); ++i) {
 			auto & curr = loop[i];
 			auto & next = loop[(i + 1) % loop.size()];
@@ -618,20 +617,20 @@ namespace {
 }
 
 namespace {
-	CGAL::Polygon_2<Kernel_> loop_to_polygon_2(taxonomy::loop::ptr loop) {
-		CGAL::Polygon_2<Kernel_> polygon;
+	CGAL::Polygon_2<kernel_> loop_to_polygon_2(taxonomy::loop::ptr loop) {
+		CGAL::Polygon_2<kernel_> polygon;
 		for (auto& e : loop->children) {
 			auto& p = *std::get<taxonomy::point3::ptr>(e->start);
-			CGAL::Point_2<Kernel_> pnt(p.ccomponents()(0), p.ccomponents()(1));
+			CGAL::Point_2<kernel_> pnt(p.ccomponents()(0), p.ccomponents()(1));
 			polygon.push_back(pnt);
 		}
 		return polygon;
 	}
 
-	CGAL::Polygon_2<Kernel_> wire_to_polygon_2(const cgal_wire_t& w) {
-		CGAL::Polygon_2<Kernel_> polygon;
+	CGAL::Polygon_2<kernel_> wire_to_polygon_2(const cgal_wire_t& w) {
+		CGAL::Polygon_2<kernel_> polygon;
 		for (auto& p : w) {
-			CGAL::Point_2<Kernel_> pnt(p.cartesian(0), p.cartesian(1));
+			CGAL::Point_2<kernel_> pnt(p.cartesian(0), p.cartesian(1));
 			polygon.push_back(pnt);
 		}
 		return polygon;
@@ -645,13 +644,13 @@ namespace {
 
 	class polygon_2_to_wire {
 	private:
-		const CGAL::Aff_transformation_3<Kernel_>& t_;
+		const CGAL::Aff_transformation_3<kernel_>& t_;
 
 	public:
-		polygon_2_to_wire(const CGAL::Aff_transformation_3<Kernel_>& t)
+		polygon_2_to_wire(const CGAL::Aff_transformation_3<kernel_>& t)
 			: t_(t) {}
 
-		cgal_wire_t operator()(const CGAL::Polygon_2<Kernel_>& p) {
+		cgal_wire_t operator()(const CGAL::Polygon_2<kernel_>& p) {
 			cgal_wire_t w;
 			for (auto it = p.vertices_begin(); it != p.vertices_end(); ++it) {
 				cgal_point_t P(it->cartesian(0), it->cartesian(1), 0);
@@ -662,7 +661,7 @@ namespace {
 		}
 	};
 
-	void transform_in_place(cgal_wire_t& w, const CGAL::Aff_transformation_3<Kernel_>& t) {
+	void transform_in_place(cgal_wire_t& w, const CGAL::Aff_transformation_3<kernel_>& t) {
 		for (auto& p : w) {
 			p = p.transform(t);
 		}
@@ -670,11 +669,11 @@ namespace {
 }
 
 namespace {
-	void face_to_poly_with_holes(const cgal_face_t& face, CGAL::Polygon_with_holes_2<Kernel_>& pwh, CGAL::Aff_transformation_3<Kernel_>& place) {
+	void face_to_poly_with_holes(const cgal_face_t& face, CGAL::Polygon_with_holes_2<kernel_>& pwh, CGAL::Aff_transformation_3<kernel_>& place) {
 		// static 
-		Kernel_::Vector_3 Z(0, 0, 1);
+		kernel_::Vector_3 Z(0, 0, 1);
 		// static 
-		Kernel_::Vector_3 X(1, 0, 0);
+		kernel_::Vector_3 X(1, 0, 0);
 
 		auto refz = newell(face.outer);
 		refz /= std::sqrt(CGAL::to_double(refz.squared_length()));
@@ -682,14 +681,14 @@ namespace {
 		auto refy = CGAL::cross_product(refz, refx);
 		auto refl = face.outer.front();
 
-		place = CGAL::Aff_transformation_3<Kernel_>(
+		place = CGAL::Aff_transformation_3<kernel_>(
 			refx.cartesian(0), refy.cartesian(0), refz.cartesian(0), refl.cartesian(0),
 			refx.cartesian(1), refy.cartesian(1), refz.cartesian(1), refl.cartesian(1),
 			refx.cartesian(2), refy.cartesian(2), refz.cartesian(2), refl.cartesian(2)
 			);
 
 		/*
-		CGAL::NT_converter<Kernel_::FT, double> c;
+		CGAL::NT_converter<kernel_::FT, double> c;
 		std::array<std::array<double, 4>, 4> matrix;
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 4; ++j) {
@@ -706,15 +705,15 @@ namespace {
 			transform_in_place(w, ref);
 		}
 
-		std::vector<CGAL::Polygon_2<Kernel_>> holes;
+		std::vector<CGAL::Polygon_2<kernel_>> holes;
 		holes.reserve(face_copy.inner.size());
 		std::transform(face_copy.inner.begin(), face_copy.inner.end(), std::back_inserter(holes), wire_to_polygon_2);
-		pwh = CGAL::Polygon_with_holes_2<Kernel_>(wire_to_polygon_2(face_copy.outer), holes.begin(), holes.end());
+		pwh = CGAL::Polygon_with_holes_2<kernel_>(wire_to_polygon_2(face_copy.outer), holes.begin(), holes.end());
 	}
 }
 
 
-bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
+bool cgal_kernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	// @todo only implement polygonal loops
 
 	std::vector<taxonomy::point3> points;
@@ -748,7 +747,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	}
 
 	// Parse and store the points in a sequence
-	cgal_wire_t polygon = std::vector<Kernel_::Point_3>();
+	cgal_wire_t polygon = std::vector<kernel_::Point_3>();
 	for (auto& p : points) {
 		cgal_point_t pnt(p.ccomponents()(0), p.ccomponents()(1), p.ccomponents()(2));
 		polygon.push_back(pnt);
@@ -784,7 +783,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 		}
 	}
 
-	std::vector<Kernel_::Segment_3> segments;
+	std::vector<kernel_::Segment_3> segments;
 	loop_to_segments(polygon, segments);
 
 	auto inf = 1.e9; //  std::numeric_limits<double>::infinity();
@@ -802,7 +801,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	}
 
 	auto dir = newell(polygon);
-	Kernel_::FT min_dot(+inf), max_dot(-inf);
+	kernel_::FT min_dot(+inf), max_dot(-inf);
 	for (auto& p : polygon) {
 		auto dot = dir * (p - CGAL::ORIGIN);
 		if (dot < min_dot) {
@@ -840,7 +839,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 }
 
 
-bool CgalKernel::convert_impl(const taxonomy::shell::ptr shell, ConversionResults& results) {
+bool cgal_kernel::convert_impl(const taxonomy::shell::ptr shell, conversion_results& results) {
 	cgal_shape_t shape;
 	if (!convert(shell, shape)) {
 		return false;
@@ -848,16 +847,16 @@ bool CgalKernel::convert_impl(const taxonomy::shell::ptr shell, ConversionResult
 	if (shape.size_of_facets() == 0) {
 		return false;
 	}
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
 		shell->instance.id(),
 		shell->matrix,
-		new CgalShape(shape),
+		new cgal_shape(shape),
 		shell->surface_style
 	));
 	return true;
 }
 
-bool CgalKernel::convert_impl(const taxonomy::solid::ptr solid, ConversionResults& results) {
+bool cgal_kernel::convert_impl(const taxonomy::solid::ptr solid, conversion_results& results) {
 	if (solid->children.size() > 1) {
         logger().error("UNS", 5, "Multiple shells in solid not supported at the moment");
 		return false;
@@ -873,10 +872,10 @@ bool CgalKernel::convert_impl(const taxonomy::solid::ptr solid, ConversionResult
 	if (shape.size_of_facets() == 0) {
 		return false;
 	}
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
 		solid->instance.id(),
 		solid->matrix,
-		new CgalShape(shape),
+		new cgal_shape(shape),
 		solid->surface_style
 	));
 	return true;
@@ -892,27 +891,27 @@ namespace {
 
 		return true;
 	}
-	bool convert_placement(ifcopenshell::geometry::taxonomy::matrix4::ptr place, cgal_placement_t& trsf) {
+	bool convert_placement(ifcopenshell::geom::taxonomy::matrix4::ptr place, cgal_placement_t& trsf) {
 		return convert_placement(place->ccomponents(), trsf);
 	}
 }
 
-bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const express::Base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings, const IfcGeom::ConversionResults & entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4 & entity_trsf, IfcGeom::ConversionResults & cut_shapes)
+bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings, const ifcopenshell::geom::conversion_results & entity_shapes, const ifcopenshell::geom::taxonomy::matrix4 & entity_trsf, ifcopenshell::geom::conversion_results & cut_shapes)
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
 	return false;
 #else
-	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<Kernel_>> second_operand_collector;
+	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<kernel_>> second_operand_collector;
 	size_t second_operand_collector_size = 0;
 	
-	std::list<std::pair<express::Base, std::list<cgal_shape_t>>> operands;
+	std::list<std::pair<express::base, std::list<cgal_shape_t>>> operands;
 
-	std::list<express::Base> second_operand_instances;
+	std::list<express::base> second_operand_instances;
 	std::list<cgal_shape_t> first_operands, second_operands;
-	std::list<CGAL::Nef_polyhedron_3<Kernel_>> first_operands_nef, second_operands_nef;
+	std::list<CGAL::Nef_polyhedron_3<kernel_>> first_operands_nef, second_operands_nef;
 
 	for (auto& shp : entity_shapes) {
-		cgal_shape_t entity_shape = *std::static_pointer_cast<CgalShape>(shp.Shape());
+		cgal_shape_t entity_shape = *std::static_pointer_cast<cgal_shape>(shp.Shape());
 		const auto& m = shp.Placement()->ccomponents();
 		if (!m.isIdentity()) {
 			cgal_placement_t trsf;
@@ -924,7 +923,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const express
 		first_operands.push_back(entity_shape);
 
 
-		CGAL::Nef_polyhedron_3<Kernel_> a;
+		CGAL::Nef_polyhedron_3<kernel_> a;
 		if (!preprocess_boolean_operand(entity, {}, {}, {}, entity_shape, a, PP_NONE /*PP_UNIFY_PLANES_INTERNALLY*/)) {
 			return false;
 		}
@@ -932,18 +931,18 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const express
 		first_operands_nef.push_back(a);
 	}
 
-	std::list<Kernel_::Plane_3> all_operand_planes;
+	std::list<kernel_::Plane_3> all_operand_planes;
 
 	for (auto& op : openings) {
 		auto opening_trsf = op.second;
 		Eigen::Matrix4d relative = entity_trsf.ccomponents().inverse() * opening_trsf.ccomponents();
 		opening_trsf = relative;
 
-		ConversionResults opening_shapes;
-		AbstractKernel::convert(op.first, opening_shapes);
+		conversion_results opening_shapes;
+		abstract_kernel::convert(op.first, opening_shapes);
 
 		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
-			cgal_shape_t entity_shape_unlocated = *std::static_pointer_cast<CgalShape>(opening_shapes[i].Shape());
+			cgal_shape_t entity_shape_unlocated = *std::static_pointer_cast<cgal_shape>(opening_shapes[i].Shape());
 			cgal_shape_t entity_shape(entity_shape_unlocated);
 			auto gtrsf = opening_shapes[i].Placement();
 			// @todo check
@@ -955,7 +954,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const express
 					vertex->point() = vertex->point().transform(trsf);
 				}
 			}
-			CGAL::Nef_polyhedron_3<Kernel_> nef;
+			CGAL::Nef_polyhedron_3<kernel_> nef;
 			if (!preprocess_boolean_operand(op.first->instance, {}, {}, {}, entity_shape, nef, PP_NONE)) {
 				continue;
 			}
@@ -1008,7 +1007,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const express
 			return false;
 		}
 
-		cut_shapes.push_back(IfcGeom::ConversionResult(it->ItemId(), new CgalShape(a_poly), it->StylePtr()));
+		cut_shapes.push_back(ifcopenshell::geom::conversion_result(it->ItemId(), new cgal_shape(a_poly), it->StylePtr()));
 		it++;
 		nit++;
 	}
@@ -1018,21 +1017,21 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const express
 }
 
 
-bool CgalKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, ConversionResults& results) {
+bool cgal_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, conversion_results& results) {
 	cgal_shape_t shape;
 	if (!convert(extrusion, shape)) {
 		return false;
 	}
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
 		extrusion->instance.id(),
 		extrusion->matrix,
-		new CgalShape(shape),
+		new cgal_shape(shape),
 		extrusion->surface_style
 	));
 	return true;
 }
 
-bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::direction3::ptr direction, double height, cgal_shape_t& shape) {
+bool cgal_kernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::direction3::ptr direction, double height, cgal_shape_t& shape) {
 
 	bool has_inner_bounds = !bottom_face.inner.empty();
 
@@ -1042,17 +1041,17 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 	// CGAL::Cartesian_converter<CGAL::Epeck, CGAL::Simple_cartesian<double>> C;
 
 	if (has_inner_bounds) {
-		CGAL::Polygon_with_holes_2<Kernel_> pwh;
-		CGAL::Aff_transformation_3<Kernel_> place;
+		CGAL::Polygon_with_holes_2<kernel_> pwh;
+		CGAL::Aff_transformation_3<kernel_> place;
 		// @todo check for segment intersections, analogous to other places.
 		// they are caught now below after triangulation.
 		face_to_poly_with_holes(bottom_face, pwh, place);
-		CGAL::Polygon_triangulation_decomposition_2<Kernel_> decompositor;
-		std::list<CGAL::Polygon_2<Kernel_>> decom_polies;
+		CGAL::Polygon_triangulation_decomposition_2<kernel_> decompositor;
+		std::list<CGAL::Polygon_2<kernel_>> decom_polies;
 		decompositor(pwh, std::back_inserter(decom_polies));
 
 		int n_vertices = 0;
-		std::map<Kernel_::Point_2, size_t> point_map;
+		std::map<kernel_::Point_2, size_t> point_map;
 		for (auto& p : decom_polies) {
 			for (auto it = p.vertices_begin(); it != p.vertices_end(); ++it) {
 				point_map.insert({ *it, point_map.size() });
@@ -1119,7 +1118,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 		}
 
 		int si = 0;
-		for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = w.begin();
+		for (std::vector<kernel_::Point_3>::const_iterator current_vertex = w.begin();
 			current_vertex != w.end();
 			++current_vertex, ++si) {
 			if (internal_edges.find({ wi, si }) != internal_edges.end()) {
@@ -1166,7 +1165,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 	return true;
 
 	/*
-	CGAL::Nef_polyhedron_3<Kernel_> nef_shape = utils::create_nef_polyhedron(face_list);
+	CGAL::Nef_polyhedron_3<kernel_> nef_shape = utils::create_nef_polyhedron(face_list);
 	// Inner
 	// TODO: Would be faster to triangulate top/bottom face template rather than use Nef polyhedra for subtraction
 	for (auto &inner : bottom_face.inner) {
@@ -1178,10 +1177,10 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 		remove_duplicate_points_from_loop(hole_bottom_face.outer);
 		face_list.push_back(hole_bottom_face);
 
-		for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = inner.begin();
+		for (std::vector<kernel_::Point_3>::const_iterator current_vertex = inner.begin();
 			current_vertex != inner.end();
 			++current_vertex) {
-			std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
+			std::vector<kernel_::Point_3>::const_iterator next_vertex = current_vertex;
 			++next_vertex;
 			if (next_vertex == inner.end()) {
 				next_vertex = inner.begin();
@@ -1194,7 +1193,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 		}
 
 		cgal_face_t hole_top_face;
-		for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = inner.rbegin();
+		for (std::vector<kernel_::Point_3>::const_reverse_iterator vertex = inner.rbegin();
 			vertex != inner.rend();
 			++vertex) {
 			hole_top_face.outer.push_back(*vertex + height * dir);
@@ -1226,7 +1225,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 	*/
 }
 
-bool CgalKernel::convert(const taxonomy::extrusion::ptr extrusion, cgal_shape_t &shape) {
+bool cgal_kernel::convert(const taxonomy::extrusion::ptr extrusion, cgal_shape_t &shape) {
 	const double& height = extrusion->depth;
 	if (height < settings_.get<settings::Precision>().get()) {
         logger().message(::logger::LOG_ERROR, "GEO", 89, "Non-positive extrusion height encountered for:", extrusion->instance);
@@ -1241,21 +1240,21 @@ bool CgalKernel::convert(const taxonomy::extrusion::ptr extrusion, cgal_shape_t 
 	return process_extrusion(bottom_face.front(), extrusion->direction, extrusion->depth, shape);
 }
 
-CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(double d) {
+CGAL::Polyhedron_3<kernel_> ifcopenshell::geom::utils::create_cube(double d) {
 	cgal_face_t bottom_face;
-	bottom_face.outer.push_back(Kernel_::Point_3(-d, -d, -d));
-	bottom_face.outer.push_back(Kernel_::Point_3(+d, -d, -d));
-	bottom_face.outer.push_back(Kernel_::Point_3(+d, +d, -d));
-	bottom_face.outer.push_back(Kernel_::Point_3(-d, +d, -d));
+	bottom_face.outer.push_back(kernel_::Point_3(-d, -d, -d));
+	bottom_face.outer.push_back(kernel_::Point_3(+d, -d, -d));
+	bottom_face.outer.push_back(kernel_::Point_3(+d, +d, -d));
+	bottom_face.outer.push_back(kernel_::Point_3(-d, +d, -d));
 
 	cgal_direction_t dir(0, 0, 2 * d);
 
 	std::list<cgal_face_t> face_list = { bottom_face };
 
-	for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
+	for (std::vector<kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
 		current_vertex != bottom_face.outer.end();
 		++current_vertex) {
-		std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
+		std::vector<kernel_::Point_3>::const_iterator next_vertex = current_vertex;
 		++next_vertex;
 
 		if (next_vertex == bottom_face.outer.end()) {
@@ -1274,7 +1273,7 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(double d)
 
 	cgal_face_t top_face;
 
-	for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
+	for (std::vector<kernel_::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
 		vertex != bottom_face.outer.rend();
 		++vertex) {
 		top_face.outer.push_back(*vertex + dir);
@@ -1286,7 +1285,7 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(double d)
 }
 
 
-CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper) {
+CGAL::Polyhedron_3<kernel_> ifcopenshell::geom::utils::create_cube(const kernel_::Point_3& lower, const kernel_::Point_3& upper) {
 	cgal_face_t bottom_face;
 
 	auto a0 = lower.cartesian(0);
@@ -1297,19 +1296,19 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(const Ker
 	auto b1 = upper.cartesian(1);
 	auto b2 = upper.cartesian(2);
 
-	bottom_face.outer.push_back(Kernel_::Point_3(a0, a1, a2));
-	bottom_face.outer.push_back(Kernel_::Point_3(b0, a1, a2));
-	bottom_face.outer.push_back(Kernel_::Point_3(b0, b1, a2));
-	bottom_face.outer.push_back(Kernel_::Point_3(a0, b1, a2));
+	bottom_face.outer.push_back(kernel_::Point_3(a0, a1, a2));
+	bottom_face.outer.push_back(kernel_::Point_3(b0, a1, a2));
+	bottom_face.outer.push_back(kernel_::Point_3(b0, b1, a2));
+	bottom_face.outer.push_back(kernel_::Point_3(a0, b1, a2));
 
 	cgal_direction_t dir(0, 0, b2 - a2);
 
 	std::list<cgal_face_t> face_list = { bottom_face };
 
-	for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
+	for (std::vector<kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
 		current_vertex != bottom_face.outer.end();
 		++current_vertex) {
-		std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
+		std::vector<kernel_::Point_3>::const_iterator next_vertex = current_vertex;
 		++next_vertex;
 
 		if (next_vertex == bottom_face.outer.end()) {
@@ -1328,7 +1327,7 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(const Ker
 
 	cgal_face_t top_face;
 
-	for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
+	for (std::vector<kernel_::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
 		vertex != bottom_face.outer.rend();
 		++vertex) {
 		top_face.outer.push_back(*vertex + dir);
@@ -1341,7 +1340,7 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(const Ker
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 
-bool CgalKernel::thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result) {
+bool cgal_kernel::thin_solid(const CGAL::Nef_polyhedron_3<kernel_>& a, CGAL::Nef_polyhedron_3<kernel_>& result) {
 	// @todo this should be possible as a minkowski sum of facet & cube. rather than a set of boolean ops.
 
 	auto precision_cube_ = precision_cube();
@@ -1361,7 +1360,7 @@ bool CgalKernel::thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_
 	return true;
 }
 
-bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, const std::list<cgal_shape_t>& first_operands, const std::list<CGAL::Nef_polyhedron_3<Kernel_>>& first_operands_nef, const std::list<Kernel_::Plane_3>& all_operand_planes, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, boolean_operand_preprocess proc) {
+bool cgal_kernel::preprocess_boolean_operand(const express::base& log_reference, const std::list<cgal_shape_t>& first_operands, const std::list<CGAL::Nef_polyhedron_3<kernel_>>& first_operands_nef, const std::list<kernel_::Plane_3>& all_operand_planes, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<kernel_>& result, boolean_operand_preprocess proc) {
 	cgal_shape_t shape = shape_const;
 
 	if (!shape.is_valid()) {
@@ -1397,14 +1396,14 @@ bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, 
 
 	if (proc == PP_SNAP_POINTS_TO_FIRST_OPERAND) {
 		static int NN = 0;
-		typedef CGAL::AABB_face_graph_triangle_primitive<cgal_shape_t>                AABB_face_graph_primitive;
+		typedef CGAL::AABB_face_graph_triangle_primitive<cgal_shape_t>                aabb_face_graph_primitive;
 #if CGAL_VERSION_NR >= 1060000000
-	    typedef CGAL::AABB_traits_3<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+	    typedef CGAL::AABB_traits_3<kernel_, aabb_face_graph_primitive>               aabb_face_graph_traits;
 #else
-	    typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+	    typedef CGAL::AABB_traits<kernel_, aabb_face_graph_primitive>               aabb_face_graph_traits;
 #endif
 
-		CGAL::AABB_tree<AABB_face_graph_traits> tree;
+		CGAL::AABB_tree<aabb_face_graph_traits> tree;
 
 		for (auto& op : first_operands) {
 			auto tm = op;
@@ -1414,7 +1413,7 @@ bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, 
 
 			std::transform(tm.facets_begin(), tm.facets_end(), tm.planes_begin(), [](auto& f) {
 				auto h = f.halfedge();
-				return CGAL::Plane_3<Kernel_>(h->vertex()->point(),
+				return CGAL::Plane_3<kernel_>(h->vertex()->point(),
 					h->next()->vertex()->point(),
 					h->next()->next()->vertex()->point());
 			});
@@ -1461,7 +1460,7 @@ bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, 
 	}
 
 	try {
-		result = CGAL::Nef_polyhedron_3<Kernel_>(shape);
+		result = CGAL::Nef_polyhedron_3<kernel_>(shape);
 	} catch (CGAL::Failure_exception& e) {
         logger().notice("GEO", 95, e);
         logger().message(::logger::LOG_ERROR, "GEO", 96, "Could not convert geometry to Nef:", log_reference);
@@ -1469,8 +1468,8 @@ bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, 
 	}
 
 	if (proc == PP_SNAP_PLANES_TO_FIRST_OPERAND) {
-		std::list<Kernel_::Plane_3> planes_fixed;
-		std::list<Kernel_::Plane_3> temp;
+		std::list<kernel_::Plane_3> planes_fixed;
+		std::list<kernel_::Plane_3> temp;
 		for (auto& nef : first_operands_nef) {
 			// @todo eliminate this copy (= to remove const)
 			auto nef_copy = nef;
@@ -1486,14 +1485,14 @@ bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, 
 				result = tree->map(pmap)->evaluate();
 			}
 			{
-				std::list<Kernel_::Plane_3> planes;
+				std::list<kernel_::Plane_3> planes;
 				auto tree = build_halfspace_tree_decomposed(result, planes);
 				auto pmap = snap_halfspaces_2(planes_fixed, planes, 1.e-5);
 				result = tree->map(pmap)->evaluate();
 			}
 		}
 	} else if (proc == PP_UNIFY_PLANES_INTERNALLY) {
-		std::list<Kernel_::Plane_3> planes;
+		std::list<kernel_::Plane_3> planes;
 		auto tree = build_halfspace_tree_decomposed(result, planes);
 		auto pmap = snap_halfspaces(planes, 1.e-6);
 		std::wcout << tree->dump().c_str() << std::endl;
@@ -1502,7 +1501,7 @@ bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, 
 
 		{
 			static int i = 1;
-			auto x = (halfspace_tree_nary_branch<Kernel_>*)&*tree;
+			auto x = (halfspace_tree_nary_branch<kernel_>*)&*tree;
 			int j = 0;
 			for (auto& a : x->operands_) {
 				auto A = a->evaluate();
@@ -1515,7 +1514,7 @@ bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, 
 		}
 		{
 			static int i = 1;
-			auto x = (halfspace_tree_nary_branch<Kernel_>*)&*mapped;
+			auto x = (halfspace_tree_nary_branch<kernel_>*)&*mapped;
 			int j = 0;
 			for (auto& a : x->operands_) {
 				auto A = a->evaluate();
@@ -1573,7 +1572,7 @@ bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, 
 
 #endif
 
-bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result::ptr br, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1) {
+bool cgal_kernel::process_as_2d_polygon(const taxonomy::boolean_result::ptr br, std::list<CGAL::Polygon_2<kernel_>>& loops, double& z0, double& z1) {
 	// @todo can also be for other boolean operations, just depth/matrix operands are different
 	if (br->operation != taxonomy::boolean_result::SUBTRACTION) {
 		return false;
@@ -1717,7 +1716,7 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result::ptr br, s
 #include <CGAL/Polygon_mesh_processing/measure.h>
 
 namespace {
-	bool orthogonal_edge_length(const cgal_shape_t& shape, const cgal_direction_t& face_normal, std::pair<Kernel_::FT, Kernel_::FT>& distances) {
+	bool orthogonal_edge_length(const cgal_shape_t& shape, const cgal_direction_t& face_normal, std::pair<kernel_::FT, kernel_::FT>& distances) {
 		static double inf = 1.e9; // std::numeric_limits<double>::infinity();
 
 		std::vector<double> lengths;
@@ -1767,14 +1766,14 @@ namespace {
 	}
 }
 
-bool CgalKernel::process_as_2d_polygon(const std::list<std::list<std::pair<express::Base, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1) {
+bool cgal_kernel::process_as_2d_polygon(const std::list<std::list<std::pair<express::base, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<kernel_>>& loops, double& z0, double& z1) {
 	if (operands.front().size() != 1) {
 		return false;
 	}
 	auto& first_op = operands.front().front().second;
 
 	cgal_shape_t::Facet_handle largest_face;
-	Kernel_::FT largest_area = 0;
+	kernel_::FT largest_area = 0;
 
 	for (auto& f : faces(first_op)) {
 		auto area = CGAL::Polygon_mesh_processing::face_area(f, first_op);
@@ -1786,7 +1785,7 @@ bool CgalKernel::process_as_2d_polygon(const std::list<std::list<std::pair<expre
 
 	// @todo adapt newell() to work on facet circulator as well
 	std::vector<cgal_point_t> f_points;
-	CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = largest_face->facet_begin();
+	CGAL::Polyhedron_3<kernel_>::Halfedge_around_facet_const_circulator current_halfedge = largest_face->facet_begin();
 	do {
 		f_points.push_back(current_halfedge->vertex()->point());
 		++current_halfedge;
@@ -1795,7 +1794,7 @@ bool CgalKernel::process_as_2d_polygon(const std::list<std::list<std::pair<expre
 	auto fnorm = newell(f_points);
 	fnorm /= std::sqrt(CGAL::to_double(fnorm.squared_length()));
 
-	std::pair<Kernel_::FT, Kernel_::FT> operand_1_distance_along_normal;
+	std::pair<kernel_::FT, kernel_::FT> operand_1_distance_along_normal;
 
 	if (!orthogonal_edge_length(first_op, fnorm, operand_1_distance_along_normal)) {
 		return false;
@@ -1804,7 +1803,7 @@ bool CgalKernel::process_as_2d_polygon(const std::list<std::list<std::pair<expre
 	for (auto it = ++operands.begin(); it != operands.end(); ++it) {
 		for (auto jt = it->begin(); jt != it->end(); ++jt) {
 			auto& nth_op = jt->second;
-			std::pair<Kernel_::FT, Kernel_::FT> operand_n_distance_along_normal;
+			std::pair<kernel_::FT, kernel_::FT> operand_n_distance_along_normal;
 			if (!orthogonal_edge_length(nth_op, fnorm, operand_n_distance_along_normal)) {
 				return false;
 			}
@@ -1845,9 +1844,9 @@ namespace {
 	}
 }
 
-bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, ConversionResults& results) {
+bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, conversion_results& results) {
 	double z0, z1;
-	std::list<CGAL::Polygon_2<Kernel_>> loops;
+	std::list<CGAL::Polygon_2<kernel_>> loops;
 
 	if (process_as_2d_polygon(br, loops, z0, z1)) {
 		taxonomy::style::ptr first_item_style = nullptr;
@@ -1867,13 +1866,13 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			}
 		}
 
-		std::list<CGAL::Polygon_with_holes_2<Kernel_>> pwhs;
+		std::list<CGAL::Polygon_with_holes_2<kernel_>> pwhs;
 
 		auto it = loops.begin();
 		const auto& p = *it;
 
-		CGAL::Polygon_with_holes_2<Kernel_> pwh(p, ++it, loops.end());
-		CGAL::Gps_segment_traits_2<Kernel_> traits;
+		CGAL::Polygon_with_holes_2<kernel_> pwh(p, ++it, loops.end());
+		CGAL::Gps_segment_traits_2<kernel_> traits;
 		if (!CGAL::are_holes_and_boundary_pairwise_disjoint(pwh, traits)) {
 #ifdef IFOPSH_SIMPLE_KERNEL
             throw std::runtime_error("Holes are not disjoint - use a different geometry kernel");
@@ -1887,7 +1886,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 
 			logger().notice("GEO", 101, "Holes are not disjoint");
 
-			CGAL::Polygon_set_2<Kernel_> result;
+			CGAL::Polygon_set_2<kernel_> result;
 			auto it = loops.begin();
 			result.insert(*it++);
 			for (; it != loops.end(); ++it) {
@@ -1900,24 +1899,24 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 		}
 
 #if 0
-		CGAL::Polygon_vertical_decomposition_2<Kernel_> decompositor;
+		CGAL::Polygon_vertical_decomposition_2<kernel_> decompositor;
 #else
-		CGAL::Polygon_triangulation_decomposition_2<Kernel_> decompositor;
+		CGAL::Polygon_triangulation_decomposition_2<kernel_> decompositor;
 #endif
 
-		std::list<CGAL::Polygon_2<Kernel_>> decom_polies;
+		std::list<CGAL::Polygon_2<kernel_>> decom_polies;
 		for (auto& pwh : pwhs) {
 			decompositor(pwh, std::back_inserter(decom_polies));
 		}
 
-		std::transform(decom_polies.begin(), decom_polies.end(), std::back_inserter(results), [this, &br, &z0, &z1, &first_item_style](const CGAL::Polygon_2<Kernel_>& p2) {
+		std::transform(decom_polies.begin(), decom_polies.end(), std::back_inserter(results), [this, &br, &z0, &z1, &first_item_style](const CGAL::Polygon_2<kernel_>& p2) {
 			cgal_face_t f;
 			std::transform(
 				p2.vertices_begin(),
 				p2.vertices_end(),
 				std::back_inserter(f.outer),
-				[](const CGAL::Point_2<Kernel_>& p) {
-				return CGAL::Point_3<Kernel_>(p.cartesian(0), p.cartesian(1), 0);
+				[](const CGAL::Point_2<kernel_>& p) {
+				return CGAL::Point_3<kernel_>(p.cartesian(0), p.cartesian(1), 0);
 			}
 			);
 
@@ -1930,10 +1929,10 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				it->point() = cgal_point_t(p.cartesian(0), p.cartesian(1), p.cartesian(2) + z0);
 			}
 
-			return ConversionResult(
+			return conversion_result(
 				br->instance.id(),
 				br->matrix,
-				new CgalShape(shp),
+				new cgal_shape(shp),
 				br->surface_style ? br->surface_style : first_item_style
 			);
 		});
@@ -1950,19 +1949,19 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 #else
 	bool first = true;
 
-	CGAL::Nef_polyhedron_3<Kernel_> a;
-	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<Kernel_>> second_operand_collector;
+	CGAL::Nef_polyhedron_3<kernel_> a;
+	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<kernel_>> second_operand_collector;
 	size_t second_operand_collector_size = 0;
 
 	taxonomy::style::ptr first_item_style = nullptr;
 
-	std::list<std::pair<express::Base, std::list<cgal_shape_t>>> operands;
+	std::list<std::pair<express::base, std::list<cgal_shape_t>>> operands;
 
 	for (auto& c : br->children) {
-		// AbstractKernel::convert(c, results);
+		// abstract_kernel::convert(c, results);
 		// continue;
 
-		ConversionResults cr;
+		conversion_results cr;
 
 		operands.emplace_back();
 		operands.back().first = c->instance;
@@ -2003,8 +2002,8 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				wmax = 0.;
 			}
 
-			Kernel_::Point_3 lower(uvw_min[0] - eps, uvw_min[1] - eps, wmin);
-			Kernel_::Point_3 upper(uvw_max[0] + eps, uvw_max[1] + eps, wmax);
+			kernel_::Point_3 lower(uvw_min[0] - eps, uvw_min[1] - eps, wmin);
+			kernel_::Point_3 upper(uvw_max[0] + eps, uvw_max[1] + eps, wmax);
 			cgal_shape_t box = utils::create_cube(lower, upper);
 			cgal_placement_t pl;
 			convert_placement(p.matrix, pl);
@@ -2019,7 +2018,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				}
 				
 				auto& w = fs.front().outer;
-				CGAL::Polygon_2<Kernel_> ps;
+				CGAL::Polygon_2<kernel_> ps;
 				for (auto& p : w) {
 					ps.push_back({ p.x(), p.y() });
 				}
@@ -2033,7 +2032,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				cgal_shape_t poly;
 				process_extrusion(fs.front(), z, 200, poly);
 				for (auto& v : vertices(poly)) {
-					v->point() = Kernel_::Point_3(
+					v->point() = kernel_::Point_3(
 						v->point().cartesian(0),
 						v->point().cartesian(1),
 						v->point().cartesian(2) - 100
@@ -2044,8 +2043,8 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				for (auto& v : vertices(poly)) {
 					v->point() = v->point().transform(trsf);
 				}
-				CGAL::Nef_polyhedron_3<Kernel_> poly_nef(poly);
-				CGAL::Nef_polyhedron_3<Kernel_> box_nef(box);
+				CGAL::Nef_polyhedron_3<kernel_> poly_nef(poly);
+				CGAL::Nef_polyhedron_3<kernel_> box_nef(box);
 				auto intersection = poly_nef * box_nef;
 				cgal_shape_t intersection_poly;
 				intersection.convert_to_polyhedron(intersection_poly);
@@ -2057,7 +2056,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			continue;
 		}
 
-		AbstractKernel::convert(c, cr);
+		abstract_kernel::convert(c, cr);
 
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			first_item_style = c->surface_style;
@@ -2068,7 +2067,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 		}
 
 		for (auto it = cr.begin(); it != cr.end(); ++it) {
-			cgal_shape_t entity_shape_unlocated = *std::static_pointer_cast<CgalShape>(it->Shape());
+			cgal_shape_t entity_shape_unlocated = *std::static_pointer_cast<cgal_shape>(it->Shape());
 			cgal_shape_t entity_shape(entity_shape_unlocated);
 			if (!it->Placement()->is_identity()) {
 				cgal_placement_t trsf;
@@ -2086,10 +2085,10 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	/*
 	for (auto& li : operands) {
 		for (auto& s : li.second) {
-			results.emplace_back(ConversionResult(
+			results.emplace_back(conversion_result(
 				br->instance.data().id(),
 				br->matrix,
-				new CgalShape(s),
+				new cgal_shape(s),
 				br->surface_style ? br->surface_style : first_item_style
 			));
 		}
@@ -2108,10 +2107,10 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	// debugging trick
 	for (auto& p : operands) {
 		for (auto& s : p.second) {
-			results.emplace_back(ConversionResult(
+			results.emplace_back(conversion_result(
 				br->instance.data().id(),
 				br->matrix,
-				new CgalShape(s),
+				new cgal_shape(s),
 				br->surface_style ? br->surface_style : first_item_style
 			));
 		}
@@ -2122,15 +2121,15 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	first = true;
 
 	std::list<cgal_shape_t> ops;
-	std::list<CGAL::Nef_polyhedron_3<Kernel_>> nefops;
-	std::list<Kernel_::Plane_3> all_operand_planes;
+	std::list<CGAL::Nef_polyhedron_3<kernel_>> nefops;
+	std::list<kernel_::Plane_3> all_operand_planes;
 
 	for (auto& li : operands) {
 
 		auto entity_instance = li.first;
 		for (auto& entity_shape : li.second) {
 
-			CGAL::Nef_polyhedron_3<Kernel_> nef;
+			CGAL::Nef_polyhedron_3<kernel_> nef;
 			if (!preprocess_boolean_operand(entity_instance, ops, nefops, all_operand_planes, entity_shape, nef,
 				// Snap boolean subtraction operands
 				first ? PP_NONE : PP_MINKOWSKY_DILATE/*PP_SNAP_PLANES_TO_FIRST_OPERAND*/)) {
@@ -2164,7 +2163,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 
 	cgal_shape_t a_poly;
 
-	// CGAL::Nef_polyhedron_3<Kernel_> b;
+	// CGAL::Nef_polyhedron_3<kernel_> b;
 	// thin_solid(a, b);
 
 	try {
@@ -2174,10 +2173,10 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 		return false;
 	}
 
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
 		br->instance.id(),
 		br->matrix,
-		new CgalShape(a_poly),
+		new cgal_shape(a_poly),
 		br->surface_style ? br->surface_style : first_item_style
 	));
 	return true;
@@ -2185,20 +2184,20 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 #endif
 }
 
-PolyhedronBuilder::PolyhedronBuilder(std::list<cgal_face_t>* face_list, logger& logger) : face_list(face_list), logger_(logger) {
+polyhedron_builder::polyhedron_builder(std::list<cgal_face_t>* face_list, logger& logger) : face_list(face_list), logger_(logger) {
 }
 
 #include <CGAL/Polygon_mesh_processing/orient_polygon_soup.h>
 // @todo shouldn't we just always use polygon_soup_to_polygon_mesh instead of the incremental builder?
 #include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
 
-void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds) {
-	// std::list<Kernel_::Point_3> points;
-	std::map<Kernel_::Point_3, size_t> points;
+void polyhedron_builder::operator()(CGAL::Polyhedron_3<kernel_>::HalfedgeDS &hds) {
+	// std::list<kernel_::Point_3> points;
+	std::map<kernel_::Point_3, size_t> points;
 	std::vector<std::vector<std::size_t>> facet_vertices;
 	facet_vertices.reserve(face_list->size());
-	CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> builder(hds, true);
-	std::list<Kernel_::Point_3> unique_points;
+	CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<kernel_>::HalfedgeDS> builder(hds, true);
+	std::list<kernel_::Point_3> unique_points;
 
 	for (auto &face : *face_list) {
 
@@ -2216,9 +2215,9 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 
 		} else {
 
-			std::map<Kernel_::Point_2, size_t> points_2d;
-			CGAL::Polygon_with_holes_2<Kernel_> pwh;
-			CGAL::Aff_transformation_3<Kernel_> place;
+			std::map<kernel_::Point_2, size_t> points_2d;
+			CGAL::Polygon_with_holes_2<kernel_> pwh;
+			CGAL::Aff_transformation_3<kernel_> place;
 			face_to_poly_with_holes(face, pwh, place);
 
 			// we assume the pwh constructor leaves points in order
@@ -2248,8 +2247,8 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 				}
 			}
 
-			CGAL::Polygon_triangulation_decomposition_2<Kernel_> decompositor;
-			std::list<CGAL::Polygon_2<Kernel_>> decom_polies;
+			CGAL::Polygon_triangulation_decomposition_2<kernel_> decompositor;
+			std::list<CGAL::Polygon_2<kernel_>> decom_polies;
 			decompositor(pwh, std::back_inserter(decom_polies));
 
 			for (auto& p : decom_polies) {
@@ -2298,7 +2297,7 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 
 
 	// @todo ugh
-	std::vector<Kernel_::Point_3> unique_points_as_vector(unique_points.begin(), unique_points.end());
+	std::vector<kernel_::Point_3> unique_points_as_vector(unique_points.begin(), unique_points.end());
 
 	if (!CGAL::Polygon_mesh_processing::is_polygon_soup_a_polygon_mesh(facet_vertices)) {
 		// @todo seems to return false now, almost always?
@@ -2351,7 +2350,7 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 // We just always use polygon_soup_to_polygon_mesh() to now.
 // @todo figure out the downsides of this approach.
 
-builder.begin_surface(points.size(), facet_vertices.size()); // , 0, CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS>::ABSOLUTE_INDEXING);
+builder.begin_surface(points.size(), facet_vertices.size()); // , 0, CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<kernel_>::HalfedgeDS>::ABSOLUTE_INDEXING);
 
 for (auto& point : unique_points) {
 	builder.add_vertex(point);

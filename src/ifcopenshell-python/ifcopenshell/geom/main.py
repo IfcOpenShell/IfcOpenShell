@@ -65,8 +65,12 @@ SETTING = Literal[
     "angle-unit",
     "apply-default-materials",
     "apply-offset",
+    "auto-elevation",
+    "auto-section",
+    "base-uri",
     "boolean-attempt-2d",
     "building-local-placement",
+    "bounds",
     "cache-shapes",
     "cgal-original-edges",
     "cgal-smooth-angle-degrees",
@@ -80,9 +84,13 @@ SETTING = Literal[
     "debug",
     "defer-processing-first-element",
     "dimensionality",
+    "digits",
     "disable-boolean-result",
     "disable-opening-subtractions",
     "edge-arrows",
+    "ecef",
+    "elevation-ref",
+    "elevation-ref-guid",
     "element-hierarchy",
     "enable-layerset-slicing",
     "force-space-transparency",
@@ -107,65 +115,55 @@ SETTING = Literal[
     "no-wire-intersection-check",
     "no-wire-intersection-tolerance",
     "permissive-shape-reuse",
+    "print-space-areas",
+    "print-space-names",
     "precision-factor",
     "precision",
+    "profile-threshold",
     "reorient-shells",
     "site-local-placement",
+    "scale",
+    "section-height",
+    "section-height-from-storeys",
+    "section-ref",
+    "separate-z-up-node",
+    "space-name-transform",
+    "storey-height-line-length",
     "surface-colour",
     "svg-emit-flush-edges",
+    "svg-mirror-x",
+    "svg-mirror-y",
+    "svg-no-css",
+    "svg-poly",
+    "svg-prefilter",
+    "svg-project",
     "svg-render-crease-edges",
     "svg-render-sharp-edges",
     "svg-ridge-angle-min-degrees",
+    "svg-segment-projection",
+    "svg-subtract-before",
+    "svg-unify-inputs",
     "svg-use-edge-classification",
     "svg-valley-angle-min-degrees",
+    "svg-without-storeys",
+    "svg-write-poly",
+    "svg-xmlns",
     "triangulation-type",
     "unify-shapes",
     "use-material-names",
+    "use-element-guids",
+    "use-element-names",
+    "use-element-step-ids",
+    "use-element-types",
     "use-python-opencascade",
     "use-world-coords",
     "validate",
     "weld-vertices",
-]
-SERIALIZER_SETTING = Literal[
-    "base-uri",
-    "use-element-names",
-    "use-element-guids",
-    "use-element-step-ids",
-    "use-element-types",
     "y-up",
-    "ecef",
-    "digits",
     "wkt-use-section",
-    "separate-z-up-node",
-    "bounds",
-    "scale",
     "center",
-    "section-ref",
-    "elevation-ref",
-    "elevation-ref-guid",
-    "auto-section",
-    "auto-elevation",
     "draw-storey-heights",
-    "profile-threshold",
-    "storey-height-line-length",
-    "svg-xmlns",
-    "svg-poly",
-    "svg-prefilter",
-    "svg-unify-inputs",
-    "svg-segment-projection",
-    "svg-subtract-before",
-    "svg-write-poly",
-    "svg-project",
-    "svg-without-storeys",
-    "svg-no-css",
-    "svg-mirror-y",
-    "svg-mirror-x",
     "door-arcs",
-    "section-height",
-    "section-height-from-storeys",
-    "print-space-names",
-    "print-space-areas",
-    "space-name-transform",
 ]
 
 # NOTE: hybrid-cgal-simple-opencascade is added just as an example
@@ -203,18 +201,14 @@ class settings_mixin:
         return "%s(%s)" % (type(self).__name__, ", ".join(map(fmt_pair, self.setting_names())))
 
     @staticmethod
-    def name(k: str) -> Union[SETTING, SERIALIZER_SETTING]:
+    def name(k: str) -> SETTING:
         return k.lower().replace("_", "-")
 
     @staticmethod
-    def rname(k: Union[SETTING, SERIALIZER_SETTING]) -> str:
+    def rname(k: SETTING) -> str:
         return k.upper().replace("-", "_")
 
-    @overload
-    def set(self: settings, k: SETTING, v: Any) -> None: ...
-    @overload
-    def set(self: serializer_settings, k: SERIALIZER_SETTING, v: Any) -> None: ...
-    def set(self, k: Union[SETTING, SERIALIZER_SETTING], v: Any) -> None:
+    def set(self, k: SETTING, v: Any) -> None:
         """
         Set value of the setting named `k` to `v`.
 
@@ -231,10 +225,6 @@ class settings_mixin:
         else:
             self.set_(self.name(k), v)
 
-    @overload
-    def get(self: settings, k: SETTING) -> Any: ...
-    @overload
-    def get(self: serializer_settings, k: SERIALIZER_SETTING) -> Any: ...
     def get(self, k: str) -> Any:
         """
         Return value of the setting named `k`.
@@ -246,20 +236,12 @@ class settings_mixin:
             return self.use_python_opencascade
         return self.get_(k)
 
-    @overload
-    def setting_names(self: settings) -> tuple[SETTING, ...]: ...
-    @overload
-    def setting_names(self: serializer_settings) -> tuple[SERIALIZER_SETTING, ...]: ...
     def setting_names(self) -> tuple[str, ...]:
         setting_names = super().setting_names()
         if isinstance(self, settings):
             setting_names += ("use-python-opencascade",)
         return setting_names
 
-    @overload
-    def __getattr__(self: settings, k: str) -> SETTING: ...
-    @overload
-    def __getattr__(self: serializer_settings, k: str) -> SERIALIZER_SETTING: ...
     def __getattr__(self, k: str) -> str:
         # Swig wrapper will try to access "this",
         # ensure we won't accidentally call any c-extension methods
@@ -320,10 +302,6 @@ class settings_mixin:
         for k, v in namespace._get_kwargs():
             if k.replace("_", "-") in names and v is not None:
                 self.set(k.replace("_", "-"), v)
-
-
-class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSettings):
-    pass
 
 
 class settings(settings_mixin, ifcopenshell_wrapper.Settings):
@@ -687,18 +665,18 @@ class _serializer_factory:
         self.__name__ = name
 
     def __call__(self, out_filename: Union[str, PathLike[str]], *args: Any) -> ifcopenshell_wrapper.GeometrySerializer:
-        if self.name == "obj" and len(args) == 3:
+        if self.name == "obj" and len(args) == 2:
             output_filename = args[0]
             output_temp_filename = out_filename
-            geometry_settings, serializer_settings = args[1], args[2]
-        elif len(args) == 2:
+            settings = args[1]
+        elif len(args) == 1:
             output_filename = out_filename
             output_temp_filename = out_filename
-            geometry_settings, serializer_settings = args
+            settings = args[0]
         else:
-            obj_signature = " or (out_filename, mtl_filename, geometry_settings, serializer_settings)"
+            obj_signature = " or (out_filename, mtl_filename, settings)"
             raise TypeError(
-                f"serializers.{self.name}() expects (out_filename, geometry_settings, serializer_settings)"
+                f"serializers.{self.name}() expects (out_filename, settings)"
                 + (obj_signature if self.name == "obj" else "")
             )
 
@@ -711,9 +689,7 @@ class _serializer_factory:
             output_filename = self._path(output_filename)
             output_temp_filename = self._path(output_temp_filename)
 
-        return ifcopenshell_wrapper.create_geometry_serializer(
-            self.extension, output_filename, output_temp_filename, geometry_settings, serializer_settings
-        )
+        return ifcopenshell_wrapper.create_geometry_serializer(self.extension, output_filename, output_temp_filename, settings)
 
     def _is_buffer(self, value: Any) -> bool:
         return isinstance(value, ifcopenshell_wrapper.buffer)

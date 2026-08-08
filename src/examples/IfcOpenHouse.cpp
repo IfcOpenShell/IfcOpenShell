@@ -301,7 +301,7 @@ int main() {
 	// will be tessellated using the deflection specified.
 	TopoDS_Shape shape;
 	createGroundShape(shape);
-	auto ground_representation = IfcGeom::tesselate(file, shape, 100.).as<IfcSchema::IfcProductDefinitionShape>();
+	auto ground_representation = ifcopenshell::geom::tesselate(file, shape, 100.).as<IfcSchema::IfcProductDefinitionShape>();
 	file.getSingle<IfcSchema::IfcSite>().setRepresentation(ground_representation);
 
 	GProp_GProps prop;

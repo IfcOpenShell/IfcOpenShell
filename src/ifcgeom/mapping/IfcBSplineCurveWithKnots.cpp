@@ -22,7 +22,7 @@
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcBSplineCurveWithKnots& inst) {

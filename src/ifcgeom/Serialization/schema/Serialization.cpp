@@ -622,7 +622,7 @@ int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Shape& s, U& item, bool a
 		if (convert_to_ifc(f, TopoDS::Face(exp.Current()), fa, advanced)) {
 			faces.push_back(fa);
 		} else {
-			std::set<express::Base> created;
+			std::set<express::base> created;
             for (auto& face : faces) {
                 auto resources = f.traverse(face);
                 created.insert(resources.begin(), resources.end());
@@ -640,7 +640,7 @@ int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Shape& s, U& item, bool a
 	return faces.size();
 }
 
-express::Base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shape& shape, bool advanced) {
+express::base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shape& shape, bool advanced) {
 
 #ifndef SCHEMA_HAS_IfcAdvancedBrep
 	advanced = false;
@@ -648,7 +648,7 @@ express::Base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shap
 
 	for (TopExp_Explorer exp(shape, TopAbs_COMPSOLID); exp.More();) {
 		/// @todo CompSolids are not supported
-        return express::Base{};
+        return express::base{};
 	}
 
 	IfcSchema::IfcRepresentation rep;
@@ -661,7 +661,7 @@ express::Base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shap
 		for (TopExp_Explorer exp2(exp.Current(), TopAbs_SHELL); exp2.More(); exp2.Next()) {
 			IfcSchema::IfcClosedShell shell;
 			if (!convert_to_ifc(f, exp2.Current(), shell, advanced)) {
-                return express::Base{};
+                return express::base{};
 			}
 			/// @todo Are shells always in this order or does Orientation() needs to be checked?
 			/// > #4216, no, consider using BRepClass3d::OuterShell()
@@ -714,7 +714,7 @@ express::Base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shap
 		for (TopExp_Explorer exp(shape, TopAbs_SHELL); exp.More(); exp.Next()) {
 			IfcSchema::IfcOpenShell shell;
 			if (!convert_to_ifc(f, exp.Current(), shell, advanced)) {
-                return express::Base{};
+                return express::base{};
 			}
 			shells.push_back(shell);
 		}
@@ -750,18 +750,18 @@ express::Base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shap
 				// they are not commonly top-level geometrical descriptions in IFC.
 				// Also note that edges are written as trimmed curves rather than edges.
 
-				std::vector<express::Entity> edges;
+				std::vector<express::entity> edges;
 
 				for (TopExp_Explorer exp(shape, TopAbs_EDGE); exp.More(); exp.Next()) {
 					IfcSchema::IfcCurve c;
 					if (!convert_to_ifc(f, TopoDS::Edge(exp.Current()), c, advanced)) {
-                        return express::Base{};
+                        return express::base{};
 					}
 					edges.push_back(c);
 				}
 
 				if (edges.size() == 0) {
-                    return express::Base{};
+                    return express::base{};
 				} else if (edges.size() == 1) {
                     auto srep = f.create<IfcSchema::IfcShapeRepresentation>();
                     srep.setRepresentationIdentifier("Axis");
@@ -791,7 +791,7 @@ express::Base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shap
 	return pds;
 }
 
-express::Base POSTFIX_SCHEMA(tesselate)(ifcopenshell::file& f, const TopoDS_Shape& shape, double deflection) {
+express::base POSTFIX_SCHEMA(tesselate)(ifcopenshell::file& f, const TopoDS_Shape& shape, double deflection) {
 	// @todo use triangulated face set in ifc4+ schema
 
 	BRepMesh_IncrementalMesh(shape, deflection);

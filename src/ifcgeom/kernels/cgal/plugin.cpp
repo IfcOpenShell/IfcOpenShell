@@ -27,7 +27,7 @@
 #endif
 
 namespace ifcopenshell {
-	namespace geometry {
+	namespace geom {
 		namespace kernels {
 		    namespace cgal_plugin {
 
@@ -40,7 +40,7 @@ namespace ifcopenshell {
 				constexpr const char* plugin_name = "cgal";
 				constexpr const char* backend_id = "cgal";
 				constexpr bool supports_boolean_operations = true;
-				using kernel_type = CgalKernel;
+				using kernel_type = cgal_kernel;
 #endif
 
 				plugin::abi_info plugin_abi() {
@@ -51,7 +51,7 @@ namespace ifcopenshell {
 					return kernel_plugin_metadata(plugin_name);
 				}
 
-				AbstractKernel* create_kernel(ifcopenshell::file*, Settings& settings) {
+				abstract_kernel* create_kernel(ifcopenshell::file*, ifcopenshell::geom::settings& settings) {
 					return new kernel_type(settings);
 				}
 
@@ -67,6 +67,6 @@ namespace ifcopenshell {
 	}
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::geometry::kernels::cgal_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geometry::kernels::cgal_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geometry::kernels::cgal_plugin::register_plugin, ifcopenshell_register_kernel_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::cgal_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::cgal_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::cgal_plugin::register_plugin, ifcopenshell_register_kernel_plugin_v1)

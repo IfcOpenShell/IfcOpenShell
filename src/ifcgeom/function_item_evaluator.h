@@ -5,7 +5,7 @@
 
 #include <boost/function.hpp>
 
-namespace ifcopenshell { namespace geometry {
+namespace ifcopenshell { namespace geom {
 
 /// @brief Computes a point on a helmert curve at s.
 /// Returns (x,y,theta) at L/2. The results are in a vector so they can be returned to python
@@ -18,12 +18,12 @@ IFC_GEOM_API std::vector<double> helmert_curve_point(double A0, double A1, doubl
 /// @param loop 
 /// @return 
 static taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop::ptr loop) {
-    return ifcopenshell::geometry::taxonomy::dcast<taxonomy::function_item>(loop);
+    return ifcopenshell::geom::taxonomy::dcast<taxonomy::function_item>(loop);
 }
 
 /// @brief Abstract class for evaluating a function_item. This class is specialized for each of the function_item types.
 struct IFC_GEOM_API fn_evaluator {
-    fn_evaluator(const ifcopenshell::geometry::Settings& settings, logger& logger = ::logger::root()) : settings_(settings), logger_(logger) {
+    fn_evaluator(const ifcopenshell::geom::settings& settings, logger& logger = ::logger::root()) : settings_(settings), logger_(logger) {
     }
     fn_evaluator(const fn_evaluator& other) = default;
     virtual ~fn_evaluator() = default;
@@ -35,7 +35,7 @@ struct IFC_GEOM_API fn_evaluator {
     virtual double end() const = 0;
     double length() const { return end() - start(); }
 
-    ifcopenshell::geometry::Settings settings_;
+    ifcopenshell::geom::settings settings_;
 
   protected:
     logger& logger_;
@@ -44,7 +44,7 @@ struct IFC_GEOM_API fn_evaluator {
 /// @brief utility class to evaluate function_item objects.
 class IFC_GEOM_API function_item_evaluator {
   public:
-    function_item_evaluator(const ifcopenshell::geometry::Settings& settings, taxonomy::function_item::const_ptr fn, logger& logger = ::logger::root());
+    function_item_evaluator(const ifcopenshell::geom::settings& settings, taxonomy::function_item::const_ptr fn, logger& logger = ::logger::root());
     function_item_evaluator(const function_item_evaluator& other);
     ~function_item_evaluator();
 

@@ -6,7 +6,7 @@
 
 namespace ifcopenshell {
 
-	namespace geometry {
+	namespace geom {
 		struct profile_point {
 			std::array<double, 2> xy;
 			std::optional<double> radius;

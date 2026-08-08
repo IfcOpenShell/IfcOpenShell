@@ -102,7 +102,7 @@ class Header(codegen.Base):
                         all_superclasses.append(superclass)
                         superclass = mapping.simple_type_parent(superclass)
                 else:
-                    superclasses.append("express::DeclaredType")
+                    superclasses.append("express::declared_type")
 
                 # This is no longer used, previously virtual inheritance was used, now
                 # a variant-like approach is used instead, so the definition of selects
@@ -110,7 +110,7 @@ class Header(codegen.Base):
                 # superclasses.extend(get_select_super_types(name, bases=all_superclasses))
 
                 is_emitted = (
-                    lambda nm: nm == "express::DeclaredType"
+                    lambda nm: nm == "express::declared_type"
                     or nm in mapping.schema.selects
                     or nm.lower() in emitted_simpletypes
                 )
@@ -191,7 +191,7 @@ class Header(codegen.Base):
                         all_supertypes.append(tt.supertypes[0])
                         tt = mapping.schema.entities[tt.supertypes[0]]
 
-                    supertypes = list(type.supertypes) if len(type.supertypes) else ["express::Entity"]
+                    supertypes = list(type.supertypes) if len(type.supertypes) else ["express::entity"]
                     # supertypes.extend(get_select_super_types(name, bases=all_supertypes))
                     supertypes = list(map(case_normalize, supertypes))
                     assert len(supertypes) == 1

@@ -52,22 +52,21 @@ struct SERIALIZERS_API geometry_serializer_info {
 struct SERIALIZERS_API geometry_serializer_context {
 	std::string output_filename;
 	std::string output_temp_filename;
-	ifcopenshell::geometry::Settings& geometry_settings;
-	const ifcopenshell::geometry::SerializerSettings& serializer_settings;
+	ifcopenshell::geom::settings& settings;
 	const stream_or_filename* output_stream = nullptr;
 	const stream_or_filename* output_temp_stream = nullptr;
 };
 
 class SERIALIZERS_API geometry_serializer_registry {
 public:
-	typedef boost::function<boost::shared_ptr<GeometrySerializer>(const geometry_serializer_context&)> create_fn;
+	typedef boost::function<boost::shared_ptr<geometry_serializer>(const geometry_serializer_context&)> create_fn;
 	typedef boost::function<void(geometry_serializer_context&)> configure_fn;
 
 	void bind(const geometry_serializer_info& info, create_fn create, configure_fn configure = configure_fn(), const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 	bool has(const std::string& extension) const;
 	const geometry_serializer_info* find(const std::string& extension) const;
 	void configure(const std::string& extension, geometry_serializer_context& context) const;
-	boost::shared_ptr<GeometrySerializer> create(const std::string& extension, const geometry_serializer_context& context) const;
+	boost::shared_ptr<geometry_serializer> create(const std::string& extension, const geometry_serializer_context& context) const;
 	std::vector<geometry_serializer_info> serializers() const;
 
 private:

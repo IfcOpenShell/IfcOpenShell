@@ -25,7 +25,7 @@
 #include <filesystem>
 
 namespace ifcopenshell {
-	namespace geometry {
+	namespace geom {
 		namespace trees {
 
 			typedef void register_tree_plugin_fn(tree_registry&, const ifcopenshell::plugin::module&);

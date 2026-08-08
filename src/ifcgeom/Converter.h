@@ -11,32 +11,32 @@
 
 #include <boost/function.hpp>
 
-namespace ifcopenshell { namespace geometry {
+namespace ifcopenshell { namespace geom {
 
-	class IFC_GEOM_API Converter {
+	class IFC_GEOM_API converter {
 	public:
-		typedef boost::shared_ptr<IfcGeom::Representation::BRep> brep_ptr;
+		typedef boost::shared_ptr<ifcopenshell::geom::Representation::brep> brep_ptr;
 	private:
-		ifcopenshell::geometry::abstract_mapping* mapping_;
-		std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel> kernel_;
-		ifcopenshell::geometry::Settings settings_;
-		std::map<ifcopenshell::geometry::taxonomy::ptr, brep_ptr, ifcopenshell::geometry::taxonomy::less_functor> cache_;
+		ifcopenshell::geom::abstract_mapping* mapping_;
+		std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> kernel_;
+		ifcopenshell::geom::settings settings_;
+		std::map<ifcopenshell::geom::taxonomy::ptr, brep_ptr, ifcopenshell::geom::taxonomy::less_functor> cache_;
 		::logger& logger_;
 
 	public:
-		ifcopenshell::geometry::kernels::AbstractKernel* kernel() { return &*kernel_; }
+		ifcopenshell::geom::kernels::abstract_kernel* kernel() { return &*kernel_; }
 
-		Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, ifcopenshell::file* file, ifcopenshell::geometry::Settings& settings, ::logger& logger = ::logger::root());
+		converter(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root());
 		
-		~Converter();
+		~converter();
 
-		ifcopenshell::geometry::abstract_mapping* mapping() const { return mapping_; }
+		ifcopenshell::geom::abstract_mapping* mapping() const { return mapping_; }
 		::logger& logger() const { return logger_; }
 
 		/*
 		virtual NativeElement<double, double>* convert(
-			const IteratorSettings& settings, express::Base representation,
-			express::Base product)
+			const IteratorSettings& settings, express::base representation,
+			express::base product)
 		{
 			return implementation_->convert(settings, representation, product);
 		}
@@ -45,15 +45,15 @@ namespace ifcopenshell { namespace geometry {
 		double total_map_time = 0.;
 		double total_geom_time = 0.;
 
-		IfcGeom::ConversionResults convert(express::Base item);
+		ifcopenshell::geom::conversion_results convert(express::base item);
 
-		IfcGeom::BRepElement* create_brep_for_representation_and_product(const express::Base representation, const express::Base product);
-		// IfcGeom::BRepElement* create_brep_for_processed_representation(const express::Base representation, const express::Base product, IfcGeom::BRepElement* brep);
+		ifcopenshell::geom::brep_element* create_brep_for_representation_and_product(const express::base representation, const express::base product);
+		// ifcopenshell::geom::brep_element* create_brep_for_processed_representation(const express::base representation, const express::base product, ifcopenshell::geom::brep_element* brep);
 
-		IfcGeom::BRepElement* create_brep_for_representation_and_product(ifcopenshell::geometry::taxonomy::ptr, const express::Base product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place);
-		IfcGeom::BRepElement* create_brep_for_processed_representation(const express::Base product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, IfcGeom::BRepElement*);
+		ifcopenshell::geom::brep_element* create_brep_for_representation_and_product(ifcopenshell::geom::taxonomy::ptr, const express::base product, const ifcopenshell::geom::taxonomy::matrix4::ptr& place);
+		ifcopenshell::geom::brep_element* create_brep_for_processed_representation(const express::base product, const ifcopenshell::geom::taxonomy::matrix4::ptr& place, ifcopenshell::geom::brep_element*);
 
-		const ifcopenshell::geometry::Settings& settings() { return settings_; }
+		const ifcopenshell::geom::settings& settings() { return settings_; }
 	};
 }}
 

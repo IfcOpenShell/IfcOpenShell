@@ -7,24 +7,23 @@
 
 #include <algorithm>
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
 	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress, logger);
 
-	ifcopenshell::geometry::Settings settings;
+	ifcopenshell::geom::settings settings;
 
-	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
+	settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
+	settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-	settings.get<ifcopenshell::geometry::settings::IncludeCurves>().value = true;
-	settings.get<ifcopenshell::geometry::settings::IncludeSurfaces>().value = false;
+	settings.get<ifcopenshell::geom::settings::OutputDimensionality>().value = ifcopenshell::geom::settings::CURVES;
 	
-	ifcopenshell::geometry::Converter c(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings), &f, settings, logger);
+	ifcopenshell::geom::converter c(ifcopenshell::geom::kernels::construct(&f, "cgal", settings), &f, settings, logger);
 
 	auto rels = f.instances_by_type("IfcRelConnectsPathElements");
 	std::map<std::set<const ifcopenshell::IfcBaseClass*>, const ifcopenshell::IfcBaseClass*> rel_by_elem;
@@ -58,8 +57,8 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 		}		
 
 #if 0
-		auto a_poly = ifcopenshell::geometry::utils::create_polyhedron(a.handle()->second);
-		auto b_poly = ifcopenshell::geometry::utils::create_polyhedron(b.handle()->second);
+		auto a_poly = ifcopenshell::geom::utils::create_polyhedron(a.handle()->second);
+		auto b_poly = ifcopenshell::geom::utils::create_polyhedron(b.handle()->second);
 
 		std::wcout << "a" << std::endl;
 		for (auto& v : vertices(a_poly)) {

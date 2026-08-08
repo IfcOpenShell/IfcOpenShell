@@ -54,7 +54,7 @@
 
 // Functor to lexicographically sort Plane_3
 template <typename Kernel>
-struct PlaneLess {
+struct plane_less {
 	bool operator()(const typename Kernel::Plane_3& lhs, const typename Kernel::Plane_3& rhs) const {
 		auto lhs_a = lhs.a();
 		auto lhs_b = lhs.b();
@@ -70,7 +70,7 @@ struct PlaneLess {
 
 // Functor to hash Plane_3
 template <typename Kernel>
-struct PlaneHash {
+struct plane_hash {
 	size_t operator()(const CGAL::Plane_3<Kernel>& plane) const noexcept
 	{
 		// @todo why can I only get this to work on double?
@@ -86,8 +86,8 @@ struct PlaneHash {
 // Utility function to return Nef facet information as string
 template <typename Kernel>
 std::string dump_facet(typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle h) {
-	typedef typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_const_handle SHalfedge_const_handle;
-	typedef typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_around_facet_const_circulator SHalfedge_around_facet_const_circulator;
+	typedef typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_const_handle shalfedge_const_handle;
+	typedef typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_around_facet_const_circulator shalfedge_around_facet_const_circulator;
 
 	std::ostringstream oss;
 
@@ -95,10 +95,10 @@ std::string dump_facet(typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_
 	oss << "Facet plane=" << p << std::endl;
 	
 	auto fc = h->facet_cycles_begin();
-	auto se = SHalfedge_const_handle(fc);
+	auto se = shalfedge_const_handle(fc);
 	CGAL_assertion(se != 0);
-	SHalfedge_around_facet_const_circulator hc_start(se);
-	SHalfedge_around_facet_const_circulator hc_end(hc_start);
+	shalfedge_around_facet_const_circulator hc_start(se);
+	shalfedge_around_facet_const_circulator hc_end(hc_start);
 	CGAL_For_all(hc_start, hc_end) {
 		oss << "      co=" << hc_start->source()->center_vertex()->point() << std::endl;
 	}
@@ -114,8 +114,8 @@ enum halfspace_operation {
 
 // Map of Plane_3 -> Plane_3 used when applied snapping
 template <typename Kernel>
-using plane_map = std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneLess<Kernel>>;
-// using plane_map = std::unordered_map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneHash<Kernel>>;
+using plane_map = std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, plane_less<Kernel>>;
+// using plane_map = std::unordered_map<typename Kernel::Plane_3, typename Kernel::Plane_3, plane_hash<Kernel>>;
 
 template <typename Kernel>
 typename Kernel::Plane_3 normalized_plane_for_map(const typename Kernel::Plane_3& plane) {
@@ -134,10 +134,10 @@ typename Kernel::Plane_3 normalized_plane_for_map(const typename Kernel::Plane_3
 	);
 }
 
-// Lexicographic comparator for CGAL Point_d (operator< is deleted in CGAL 6.x)
-struct Point_d_4d_Less {
-	using Point_d = CGAL::Epick_d<CGAL::Dimension_tag<4>>::Point_d;
-	bool operator()(const Point_d& a, const Point_d& b) const {
+// Lexicographic comparator for CGAL point_d (operator< is deleted in CGAL 6.x)
+struct point_d_4d_less {
+	using point_d = CGAL::Epick_d<CGAL::Dimension_tag<4>>::Point_d;
+	bool operator()(const point_d& a, const point_d& b) const {
 		return std::lexicographical_compare(
 			a.cartesian_begin(), a.cartesian_end(),
 			b.cartesian_begin(), b.cartesian_end());
@@ -151,29 +151,29 @@ plane_map<Kernel> snap_halfspaces(const std::list<CGAL::Plane_3<Kernel>>& planes
 	// @todo this should incorporate some recursive or actual clustering approach so that
 	// in cases of many approximate neighbours it still produces good results.
 
-	typedef CGAL::Epick_d<CGAL::Dimension_tag<4>> KdKernel;
-	typedef KdKernel::Point_d Point_d;
-	typedef CGAL::Search_traits_d<KdKernel> TreeTraits;
-	typedef CGAL::Kd_tree<TreeTraits> Tree;
-	typedef CGAL::Fuzzy_sphere<TreeTraits> Fuzzy_sphere;
+	typedef CGAL::Epick_d<CGAL::Dimension_tag<4>> kd_kernel;
+	typedef kd_kernel::Point_d point_d;
+	typedef CGAL::Search_traits_d<kd_kernel> tree_traits;
+	typedef CGAL::Kd_tree<tree_traits> tree;
+	typedef CGAL::Fuzzy_sphere<tree_traits> fuzzy_sphere;
 
 	plane_map<Kernel> result;
 
-	std::map<Point_d, std::set<Point_d, Point_d_4d_Less>, Point_d_4d_Less> neighbours;
-	std::map<Point_d, std::list<CGAL::Plane_3<Kernel>>, Point_d_4d_Less> originals;
-	std::vector<Point_d> planes_as_point;
+	std::map<point_d, std::set<point_d, point_d_4d_less>, point_d_4d_less> neighbours;
+	std::map<point_d, std::list<CGAL::Plane_3<Kernel>>, point_d_4d_less> originals;
+	std::vector<point_d> planes_as_point;
 
 	for (auto& p : planes) {
 		// @todo can we skip normalization (simply divide by largest component perhaps)
 		double l = std::sqrt(CGAL::to_double(p.orthogonal_vector().squared_length()));
 		// @todo how to properly initialize using p._().exact() without converting to double?
-		Point_d pp(CGAL::to_double(p.a()) / l, CGAL::to_double(p.b()) / l, CGAL::to_double(p.c()) / l, CGAL::to_double(p.d()) / l);
+		point_d pp(CGAL::to_double(p.a()) / l, CGAL::to_double(p.b()) / l, CGAL::to_double(p.c()) / l, CGAL::to_double(p.d()) / l);
 		planes_as_point.push_back(pp);
 		originals[pp].push_back(p);
 	}
 
 	// @todo should we have a proper distance metric for plane equations
-	Tree kdtree(planes_as_point.begin(), planes_as_point.end());
+	tree kdtree(planes_as_point.begin(), planes_as_point.end());
 
 	auto plit = planes.begin();
 	for (size_t i = 0; i < planes.size(); ++i) {
@@ -183,19 +183,19 @@ plane_map<Kernel> snap_halfspaces(const std::list<CGAL::Plane_3<Kernel>>& planes
 
 		auto& query = planes_as_point[i];
 
-		Fuzzy_sphere fs(query, search_radius, 0.);
+		fuzzy_sphere fs(query, search_radius, 0.);
 		// std::cout << "q " << query << std::endl;
 		
-		std::list<Point_d> results_pos, results_neg;
+		std::list<point_d> results_pos, results_neg;
 		kdtree.search(std::back_inserter(results_pos), fs);
 
-		Point_d n(-query[0], -query[1], -query[2], -query[3]);
-		Fuzzy_sphere fsn(n, search_radius, 0.);
+		point_d n(-query[0], -query[1], -query[2], -query[3]);
+		fuzzy_sphere fsn(n, search_radius, 0.);
 		kdtree.search(std::back_inserter(results_neg), fsn);
 
-		auto sum = std::accumulate(++results_pos.begin(), results_pos.end(), results_pos.front(), [](Point_d a, Point_d b) {return Point_d(a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]); });
+		auto sum = std::accumulate(++results_pos.begin(), results_pos.end(), results_pos.front(), [](point_d a, point_d b) {return point_d(a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]); });
 		int N = results_pos.size();
-		auto sum2 = std::accumulate(results_neg.begin(), results_neg.end(), sum, [](Point_d a, Point_d b) {return Point_d(a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]); });
+		auto sum2 = std::accumulate(results_neg.begin(), results_neg.end(), sum, [](point_d a, point_d b) {return point_d(a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]); });
 		N += results_neg.size();
 
 		auto avg = CGAL::Plane_3<Kernel>(sum2[0] / N, sum2[1] / N, sum2[2] / N, sum2[3] / N);
@@ -224,45 +224,45 @@ plane_map<Kernel> snap_halfspaces_2(const std::list<CGAL::Plane_3<Kernel>>& plan
 	// @todo this should incorporate some recursive or actual clustering approach so that
 	// in cases of many approximate neighbours it still produces good results.
 
-	typedef CGAL::Epick_d<CGAL::Dimension_tag<4>> KdKernel;
-	typedef KdKernel::Point_d Point_d;
-	typedef CGAL::Search_traits_d<KdKernel> TreeTraits;
-	typedef CGAL::Kd_tree<TreeTraits> Tree;
-	typedef CGAL::Fuzzy_sphere<TreeTraits> Fuzzy_sphere;
+	typedef CGAL::Epick_d<CGAL::Dimension_tag<4>> kd_kernel;
+	typedef kd_kernel::Point_d point_d;
+	typedef CGAL::Search_traits_d<kd_kernel> tree_traits;
+	typedef CGAL::Kd_tree<tree_traits> tree;
+	typedef CGAL::Fuzzy_sphere<tree_traits> fuzzy_sphere;
 
 	plane_map<Kernel> result;
 
-	std::vector<Point_d> planes_as_point;
-	std::map<Point_d, CGAL::Plane_3<Kernel>, Point_d_4d_Less> normalized_to_original;
+	std::vector<point_d> planes_as_point;
+	std::map<point_d, CGAL::Plane_3<Kernel>, point_d_4d_less> normalized_to_original;
 
 	for (auto& p : planes_fixed) {
 		// @todo can we skip normalization (simply divide by largest component perhaps)
 		double l = std::sqrt(CGAL::to_double(p.orthogonal_vector().squared_length()));
 		// @todo how to properly initialize using p._().exact() without converting to double?
-		Point_d pp(CGAL::to_double(p.a()) / l, CGAL::to_double(p.b()) / l, CGAL::to_double(p.c()) / l, CGAL::to_double(p.d()) / l);
+		point_d pp(CGAL::to_double(p.a()) / l, CGAL::to_double(p.b()) / l, CGAL::to_double(p.c()) / l, CGAL::to_double(p.d()) / l);
 		planes_as_point.push_back(pp);
 		normalized_to_original.insert({ pp, p });
 	}
 
 	// @todo should we have a proper distance metric for plane equations
-	Tree kdtree(planes_as_point.begin(), planes_as_point.end());
+	tree kdtree(planes_as_point.begin(), planes_as_point.end());
 
 	auto plit = planes.begin();
 	for (; plit != planes.end(); ++plit) {
 		// @todo rewrite to use 1 nearest neighbour
 		double l = std::sqrt(CGAL::to_double(plit->orthogonal_vector().squared_length()));
-		Point_d query(CGAL::to_double(plit->a()) / l, CGAL::to_double(plit->b()) / l, CGAL::to_double(plit->c()) / l, CGAL::to_double(plit->d()) / l);
-		Fuzzy_sphere fs(query, search_radius, 0.);
+		point_d query(CGAL::to_double(plit->a()) / l, CGAL::to_double(plit->b()) / l, CGAL::to_double(plit->c()) / l, CGAL::to_double(plit->d()) / l);
+		fuzzy_sphere fs(query, search_radius, 0.);
 		// std::cout << "q " << *plit << std::endl;
 
-		std::list<Point_d> results;
+		std::list<point_d> results;
 		kdtree.search(std::back_inserter(results), fs);
 		if (!results.empty()) {
 			result.insert({ *plit, normalized_to_original.find(results.front())->second });
 			// std::cout << "  " << normalized_to_original.find(results.front())->second << std::endl;
 		} else {
-			Point_d n(-query[0], -query[1], -query[2], -query[3]);
-			Fuzzy_sphere fsn(n, search_radius, 0.);
+			point_d n(-query[0], -query[1], -query[2], -query[3]);
+			fuzzy_sphere fsn(n, search_radius, 0.);
 			kdtree.search(std::back_inserter(results), fsn);
 			if (!results.empty()) {
 				result.insert({ *plit, normalized_to_original.find(results.front())->second.opposite() });
@@ -450,14 +450,14 @@ void extrude(LoopType bottom, const CGAL::Vector_3<Kernel>& V, CGAL::Polyhedron_
 // Create cube of half-distance d
 template <typename Kernel>
 void createCube(CGAL::Polyhedron_3<Kernel>& P, double d) {
-	typedef CGAL::Point_3<Kernel> Point;
-	typedef std::array<CGAL::Point_3<Kernel>, 4> Quad;
+	typedef CGAL::Point_3<Kernel> point;
+	typedef std::array<CGAL::Point_3<Kernel>, 4> quad;
 
-	Quad bottom = { {
-		Point(-d, -d, -d),
-		Point(+d, -d, -d),
-		Point(+d, +d, -d),
-		Point(-d, +d, -d)
+	quad bottom = { {
+		point(-d, -d, -d),
+		point(+d, -d, -d),
+		point(+d, +d, -d),
+		point(-d, +d, -d)
 	} };
 
 	CGAL::Vector_3<Kernel> V(0, 0, d * 2);
@@ -523,11 +523,11 @@ public:
 // Triangulate a nef facet. Used for intersection check to find convex subcomponent
 template <typename Kernel>
 std::vector<CGAL::Triangle_3<Kernel>> triangulate_nef_facet(typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle f) {
-	typedef typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_around_facet_const_circulator SHalfedge_around_facet_const_circulator;
+	typedef typename CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_around_facet_const_circulator shalfedge_around_facet_const_circulator;
 
 	std::vector<typename Kernel::Point_3> ps;
-	SHalfedge_around_facet_const_circulator it(f->facet_cycles_begin());
-	SHalfedge_around_facet_const_circulator first(it);
+	shalfedge_around_facet_const_circulator it(f->facet_cycles_begin());
+	shalfedge_around_facet_const_circulator first(it);
 	CGAL_For_all(it, first) {
 		ps.push_back(it->source()->center_vertex()->point());
 	}
@@ -548,25 +548,25 @@ std::vector<CGAL::Triangle_3<Kernel>> triangulate_nef_facet(typename CGAL::Nef_p
 enum EdgeType { CONCAVE, CONVEX };
 
 template <typename Kernel>
-struct VertexProperties {
+struct vertex_properties {
 	typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle facet;
 	size_t original_index;
 };
 
 template <typename Kernel>
-using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS,
-	VertexProperties<Kernel>,
+using graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS,
+	vertex_properties<Kernel>,
 	boost::property<boost::edge_weight_t, EdgeType>>;
 
 // Build a boost graph with vertex corresponding to Nef facet, edge corresponding to Nef edge
 // marked as reflex or not.
 template <typename Kernel>
-Graph<Kernel> build_facet_edge_graph(const CGAL::Nef_polyhedron_3<Kernel>& poly) {
-	typedef typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle Halffacet_const_handle;
+graph<Kernel> build_facet_edge_graph(const CGAL::Nef_polyhedron_3<Kernel>& poly) {
+	typedef typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle halffacet_const_handle;
 
-	Graph<Kernel> G;
+	graph<Kernel> G;
 
-	std::map<Halffacet_const_handle, size_t> facet_to_idx;
+	std::map<halffacet_const_handle, size_t> facet_to_idx;
 
 	for (auto it = poly.vertices_begin(); it != poly.vertices_end(); ++it) {
 		for (auto a = it->shalfedges_begin(); a != it->shalfedges_end(); ++a) {
@@ -617,14 +617,14 @@ Graph<Kernel> build_facet_edge_graph(const CGAL::Nef_polyhedron_3<Kernel>& poly)
 }
 
 template <typename Kernel>
-void dump_facets(Graph<Kernel>& G) {
+void dump_facets(graph<Kernel>& G) {
 	for (size_t ii = 0; ii < boost::num_vertices(G); ++ii) {
 		// std::cout << ii << " " << dump_facet<Kernel>(G[ii].facet) << std::endl;
 	}
 }
 
 /*
-struct Intersection_visitor {
+struct intersection_visitor {
 	typedef void result_type;
 	void operator()(const Kernel::Point_3& p) const
 	{
@@ -642,7 +642,7 @@ struct Intersection_visitor {
 */
 
 template <typename Kernel>
-struct Segment_collector {
+struct segment_collector {
 	typedef void result_type;
 	std::optional<CGAL::Segment_3<Kernel>> segment;
 
@@ -669,8 +669,8 @@ public:
 	convex_subcomponent_visitor(EdgeType edgetype, ComponentMap& component)
 		: edgetype_(edgetype), components_(component) {}
 
-	template <typename Edge, typename Graph>
-	bool tree_edge(Edge e, const Graph& g) {
+	template <typename Edge, typename graph>
+	bool tree_edge(Edge e, const graph& g) {
 		if (std::get(boost::edge_weight, g, e) == edgetype_) {
 			auto srcid = boost::source(e, g);
 			auto tgtid = boost::target(e, g);
@@ -688,7 +688,7 @@ public:
 			if (*tgt == -1) {
 				bool tgt_has_any_reflex_edge = false;
 
-				typename boost::graph_traits<Graph>::out_edge_iterator ei, ei_end;
+				typename boost::graph_traits<graph>::out_edge_iterator ei, ei_end;
 				for (boost::tie(ei, ei_end) = boost::out_edges(tgtid, g); ei != ei_end; ++ei) {
 					if (std::get(boost::edge_weight, g, *ei) != edgetype_) {
 						tgt_has_any_reflex_edge = true;
@@ -734,9 +734,9 @@ public:
 									auto x = CGAL::intersection(plane_tgt, t);
 									if (x) {
 										// std::cout << "   triangle: " << t << std::endl;
-										// Intersection_visitor v;
+										// intersection_visitor v;
 										// std::visit([](auto x) {std::cout << "   intersects: " << x << std::endl; })(*x);
-										Segment_collector<Kernel> sc;
+										segment_collector<Kernel> sc;
 										std::visit(sc)(*x);
 										if (sc.segment) {
 											if (!std::any_of(edges_i.begin(), edges_i.end(), [&sc](CGAL::Segment_3<Kernel>& s) {
@@ -745,7 +745,7 @@ public:
 												if (!xy) {
 													return false;
 												}
-												Segment_collector<Kernel> scy;
+												segment_collector<Kernel> scy;
 												std::visit(scy)(*xy);
 												return (bool)scy.segment;
 											})) {
@@ -784,7 +784,7 @@ public:
 
 // bfs implementation to that respects a predicate on determining whether an edge is applicable
 template <typename Kernel, typename Fn>
-void bfs(Graph<Kernel>& g, size_t start_vertex, Fn& fn) {
+void bfs(graph<Kernel>& g, size_t start_vertex, Fn& fn) {
 	std::queue<size_t> queue;
 	queue.push(start_vertex);
 
@@ -795,7 +795,7 @@ void bfs(Graph<Kernel>& g, size_t start_vertex, Fn& fn) {
 		auto cur = queue.front();
 		queue.pop();
 
-		typename boost::graph_traits<Graph<Kernel>>::out_edge_iterator ei, ei_end;
+		typename boost::graph_traits<graph<Kernel>>::out_edge_iterator ei, ei_end;
 		for (boost::tie(ei, ei_end) = boost::out_edges(cur, g); ei != ei_end; ++ei) {
 			auto s = boost::source(*ei, g);
 			auto t = boost::target(*ei, g);
@@ -821,14 +821,14 @@ void bfs(Graph<Kernel>& g, size_t start_vertex, Fn& fn) {
 // builds a tree of halfspaces from an input nef polyhedron
 // checks whether output is equivalent and if not uses a convex decomposition first
 template <typename Kernel, typename TreeKernel=Kernel>
-std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree(Graph<Kernel>& G, CGAL::Nef_polyhedron_3<Kernel>& poly, bool negate = false, int level=0) {
-	typedef boost::filtered_graph<Graph<Kernel>, boost::keep_all, std::function<bool(typename Graph<Kernel>::vertex_descriptor)>> FilteredGraph;
+std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree(graph<Kernel>& G, CGAL::Nef_polyhedron_3<Kernel>& poly, bool negate = false, int level=0) {
+	typedef boost::filtered_graph<graph<Kernel>, boost::keep_all, std::function<bool(typename graph<Kernel>::vertex_descriptor)>> filtered_graph;
 
 	auto edge_trait = negate ? CONCAVE : CONVEX;
 
 	/*
 	bool all_convex = true;
-	typename boost::graph_traits<Graph<Kernel>>::edge_iterator ei, ei_end;
+	typename boost::graph_traits<graph<Kernel>>::edge_iterator ei, ei_end;
 	for (boost::tie(ei, ei_end) = boost::edges(G); ei != ei_end; ++ei) {
 		if (std::get(boost::edge_weight, G, *ei) != edge_trait) {
 			// all_convex = false;
@@ -850,11 +850,11 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree(Graph<Kernel>& 
 		std::unique_ptr<halfspace_tree<TreeKernel>> tree;
 		std::list<std::unique_ptr<halfspace_tree<TreeKernel>>> root_expression;
 
-		auto included_in_vertex_subset_0 = [&components_0, &i](typename Graph<Kernel>::vertex_descriptor vd) {
+		auto included_in_vertex_subset_0 = [&components_0, &i](typename graph<Kernel>::vertex_descriptor vd) {
 			return components_0[vd] == i;
 		};
-		FilteredGraph sub_graph_filtered_0(G, boost::keep_all{}, included_in_vertex_subset_0);
-		Graph<Kernel> sub_graph_0;
+		filtered_graph sub_graph_filtered_0(G, boost::keep_all{}, included_in_vertex_subset_0);
+		graph<Kernel> sub_graph_0;
 		boost::copy_graph(sub_graph_filtered_0, sub_graph_0);
 
 		std::vector<int> components(boost::num_vertices(sub_graph_0), -1);
@@ -915,7 +915,7 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree(Graph<Kernel>& 
 
 		size_t vidx = 0;
 		// Convex decomposition is not always optimal, sometimes contains coplanar facets
-		std::unordered_set<typename Kernel::Plane_3, PlaneHash<Kernel>> plane_set;
+		std::unordered_set<typename Kernel::Plane_3, plane_hash<Kernel>> plane_set;
 		for (auto it = components.begin(); it != components.end(); ++it, ++vidx) {
 			auto fct = sub_graph_0[vidx].facet;
 			if (negate) {
@@ -929,11 +929,11 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree(Graph<Kernel>& 
 
 		tree.reset(new halfspace_tree_nary_branch<TreeKernel>(OP_INTERSECTION, std::move(root_expression)));
 
-		auto included_in_vertex_subset = [&components, &largest_component_idx](typename Graph<Kernel>::vertex_descriptor vd) {
+		auto included_in_vertex_subset = [&components, &largest_component_idx](typename graph<Kernel>::vertex_descriptor vd) {
 			return components[vd] != largest_component_idx;
 		};
-		FilteredGraph sub_graph_filtered(sub_graph_0, boost::keep_all{}, included_in_vertex_subset);
-		Graph<Kernel> sub_graph;
+		filtered_graph sub_graph_filtered(sub_graph_0, boost::keep_all{}, included_in_vertex_subset);
+		graph<Kernel> sub_graph;
 		// @todo can we go without this copy?
 		boost::copy_graph(sub_graph_filtered, sub_graph);
 
@@ -1011,7 +1011,7 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree(Graph<Kernel>& 
 // using the Polygon_mesh_processing package and Polygon_triangulation_decomposition_2
 // in case of facets with inner bounds.
 template <typename Kernel>
-struct Halffacet_collector {
+struct halffacet_collector {
 	std::set<typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle> facets;
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Vertex_const_handle) {}
 	void visit(typename CGAL::Nef_polyhedron_3<Kernel>::Halfedge_const_handle) {}
@@ -1029,7 +1029,7 @@ struct Halffacet_collector {
 // using the Polygon_mesh_processing package and Polygon_triangulation_decomposition_2
 // in case of facets with inner bounds.
 template <typename Kernel, bool eliminate_tiny_facets=false>
-class Polysoup_builder {
+class polysoup_builder {
 private:
 	std::map<CGAL::Point_3<Kernel>, size_t> verts;
 	std::vector<std::vector<size_t>> facets;
@@ -1219,7 +1219,7 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(cons
 		std::list<std::unique_ptr<halfspace_tree<TreeKernel>>> sub_expression;
 
 		if (ci->mark()) {
-			Halffacet_collector<Kernel> vis;
+			halffacet_collector<Kernel> vis;
 			poly.visit_shell_objects(typename CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(ci->shells_begin()), vis);
 			for (auto& f : vis.facets) {
 				sub_expression.emplace_back(new halfspace_tree_plane<TreeKernel>(f->plane()));
@@ -1240,7 +1240,7 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(cons
 
 			if (sub_expression.size() != vis.facets.size()) {
 
-				Polysoup_builder<Kernel> vis2;
+				polysoup_builder<Kernel> vis2;
 				poly.visit_shell_objects(CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(ci->shells_begin()), vis2);
 
 				{
@@ -1294,9 +1294,9 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_is_decomposed(c
 }
 
 template <typename Kernel>
-size_t edge_contract(Graph<Kernel>& G) {
+size_t edge_contract(graph<Kernel>& G) {
 	size_t n = 0;
-	typename boost::graph_traits<Graph<Kernel>>::edge_iterator ei, ei_end;
+	typename boost::graph_traits<graph<Kernel>>::edge_iterator ei, ei_end;
 	bool has_contracted = true;
 	while (has_contracted) {
 		has_contracted = false;
@@ -1334,7 +1334,7 @@ template <typename Kernel>
 bool convert_to_polyhedron(const CGAL::Nef_polyhedron_3<Kernel>& a, CGAL::Polyhedron_3<Kernel>& b, size_t volume_index=0) {
 	const bool all_volumes = volume_index == std::numeric_limits<size_t>::max();
 	size_t v = 0;
-	Polysoup_builder<Kernel> vis;
+	polysoup_builder<Kernel> vis;
 	for (auto it = a.volumes_begin(); it != a.volumes_end(); ++it) {
 		if (!it->mark()) {
 			continue;
@@ -1359,7 +1359,7 @@ bool convert_to_polyhedron(const CGAL::Nef_polyhedron_3<Kernel>& a, CGAL::Polyhe
 template <typename Kernel>
 bool write_to_obj(const CGAL::Nef_polyhedron_3<Kernel>& a, std::ostream& ofs, size_t volume_index = 0) {
 	size_t v = 0;
-	Polysoup_builder<Kernel> vis;
+	polysoup_builder<Kernel> vis;
 	for (auto it = a.volumes_begin(); it != a.volumes_end(); ++it) {
 		if (!it->mark()) {
 			continue;

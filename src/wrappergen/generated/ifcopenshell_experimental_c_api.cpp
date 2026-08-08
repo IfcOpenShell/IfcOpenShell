@@ -94,22 +94,22 @@ struct ifcopenshell_schema_definition_t {
 
 struct ifcopenshell_express_base_t {
     std::shared_ptr<ifcopenshell::file> owner;
-    express::Base value;
+    express::base value;
 };
 
 struct ifcopenshell_express_entity_t {
     std::shared_ptr<ifcopenshell::file> owner;
-    express::Entity value;
+    express::entity value;
 };
 
 struct ifcopenshell_express_select_t {
     std::shared_ptr<ifcopenshell::file> owner;
-    express::Select value;
+    express::select value;
 };
 
 struct ifcopenshell_express_declared_type_t {
     std::shared_ptr<ifcopenshell::file> owner;
-    express::DeclaredType value;
+    express::declared_type value;
 };
 
 struct ifcopenshell_full_buffer_impl_t {
@@ -174,12 +174,12 @@ struct ifcopenshell_enumeration_type_list_t {
 
 struct ifcopenshell_express_entity_list_t {
     std::shared_ptr<ifcopenshell::file> owner;
-    std::vector<express::Entity> value;
+    std::vector<express::entity> value;
 };
 
 struct ifcopenshell_express_base_list_t {
     std::shared_ptr<ifcopenshell::file> owner;
-    std::vector<express::Base> value;
+    std::vector<express::base> value;
 };
 
 extern "C" {
@@ -1142,7 +1142,7 @@ char* ifcopenshell_schema_definition_name(ifcopenshell_schema_definition_t* hand
 ifcopenshell_express_base_t* ifcopenshell_base_new() {
     ifcopenshell_last_error_clear();
     try {
-        auto constructed_value = express::Base();
+        auto constructed_value = express::base();
         return new ifcopenshell_express_base_t{ {}, std::move(constructed_value) };
     } catch (const std::exception& exception) {
         set_last_error(exception);
@@ -1207,7 +1207,7 @@ int ifcopenshell_base_id(ifcopenshell_express_base_t* handle) {
 ifcopenshell_express_entity_t* ifcopenshell_entity_new() {
     ifcopenshell_last_error_clear();
     try {
-        auto constructed_value = express::Entity();
+        auto constructed_value = express::entity();
         return new ifcopenshell_express_entity_t{ {}, std::move(constructed_value) };
     } catch (const std::exception& exception) {
         set_last_error(exception);
@@ -1232,7 +1232,7 @@ ifcopenshell_express_entity_list_t* ifcopenshell_entity_get_inverse(ifcopenshell
 ifcopenshell_express_select_t* ifcopenshell_select_new() {
     ifcopenshell_last_error_clear();
     try {
-        auto constructed_value = express::Select();
+        auto constructed_value = express::select();
         return new ifcopenshell_express_select_t{ {}, std::move(constructed_value) };
     } catch (const std::exception& exception) {
         set_last_error(exception);
@@ -1257,7 +1257,7 @@ ifcopenshell_express_base_t* ifcopenshell_select_concrete(ifcopenshell_express_s
 ifcopenshell_express_declared_type_t* ifcopenshell_declared_type_new() {
     ifcopenshell_last_error_clear();
     try {
-        auto constructed_value = express::DeclaredType();
+        auto constructed_value = express::declared_type();
         return new ifcopenshell_express_declared_type_t{ {}, std::move(constructed_value) };
     } catch (const std::exception& exception) {
         set_last_error(exception);

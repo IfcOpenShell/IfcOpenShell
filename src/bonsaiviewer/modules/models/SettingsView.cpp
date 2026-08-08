@@ -82,9 +82,9 @@ std::string enumString(const attribute_value& av) {
     return std::string(enumeration.value() ? enumeration.value() : "");
 }
 
-QString formatNamedUnit(const express::Base& unit) {
+QString formatNamedUnit(const express::base& unit) {
     if (!unit) return "—";
-    auto entity = unit.as<express::Entity>();
+    auto entity = unit.as<express::entity>();
     if (unit.declaration().is("IfcSIUnit")) {
         const std::string prefix = enumString(entity.get("Prefix"));
         const std::string name = enumString(entity.get("Name"));

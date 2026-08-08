@@ -130,7 +130,7 @@ void ifcopenshell::serializers::geometry_serializer_registry::configure(const st
 	}
 }
 
-boost::shared_ptr<GeometrySerializer> ifcopenshell::serializers::geometry_serializer_registry::create(const std::string& extension, const geometry_serializer_context& context) const {
+boost::shared_ptr<geometry_serializer> ifcopenshell::serializers::geometry_serializer_registry::create(const std::string& extension, const geometry_serializer_context& context) const {
 	const auto key = geometry_serializer_key(extension);
 	if (entries_.find(key) == entries_.end()) {
 		load_geometry_serializer_plugin(const_cast<geometry_serializer_registry&>(*this), extension);

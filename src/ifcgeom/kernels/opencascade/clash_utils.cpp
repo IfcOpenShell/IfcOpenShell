@@ -6,7 +6,7 @@
 #define GU_CULLING_EPSILON_RAY_TRIANGLE FLT_EPSILON*FLT_EPSILON
 #define PX_MAX_F32 3.4028234663852885981170418348452e+38F
 
-typedef uint32_t PxU32;
+typedef uint32_t px_u32;
 
 // Why can't I use std::clamp?
 template<typename TC>
@@ -357,23 +357,23 @@ double distanceTriangleTriangleSquared(gp_Vec& cp, gp_Vec& cq, const std::array<
 //Based on the paper A Fast Triangle-Triangle Intersection Test by T. Moeller
 //http://web.stanford.edu/class/cs277/resources/papers/Moller1997b.pdf
 namespace {
-    struct Interval
+    struct interval
     {
         double min;
         double max;
         gp_Vec minPoint;
         gp_Vec maxPoint;
 
-        Interval() : min(FLT_MAX), max(-FLT_MAX), minPoint(gp_Vec(NAN, NAN, NAN)), maxPoint(gp_Vec(NAN, NAN, NAN)) { }
+        interval() : min(FLT_MAX), max(-FLT_MAX), minPoint(gp_Vec(NAN, NAN, NAN)), maxPoint(gp_Vec(NAN, NAN, NAN)) { }
 
-        static bool overlapOrTouch(const Interval& a, const Interval& b)
+        static bool overlapOrTouch(const interval& a, const interval& b)
         {
             return !(a.min > b.max || b.min > a.max);
         }
 
-        static Interval intersection(const Interval& a, const Interval& b)
+        static interval intersection(const interval& a, const interval& b)
         {
-            Interval result;
+            interval result;
             if (!overlapOrTouch(a, b))
                 return result;
 
@@ -407,9 +407,9 @@ namespace {
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/intersection/GuIntersectionTriangleTriangle.cpp
 // With minor modifications to use gp_Vec type.
-static Interval computeInterval(double distanceA, double distanceB, double distanceC, const gp_Vec& a, const gp_Vec& b, const gp_Vec& c, const gp_Vec& dir)
+static interval computeInterval(double distanceA, double distanceB, double distanceC, const gp_Vec& a, const gp_Vec& b, const gp_Vec& c, const gp_Vec& dir)
 {
-    Interval i;
+    interval i;
 
     const bool bA = distanceA > 0;
     const bool bB = distanceB > 0;
@@ -441,7 +441,7 @@ static Interval computeInterval(double distanceA, double distanceB, double dista
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/intersection/GuIntersectionTriangleTriangle.cpp
 // With minor modifications to use gp_Vec type.
-double orient2d(const gp_Vec& a, const gp_Vec& b, const gp_Vec& c, PxU32 x, PxU32 y)
+double orient2d(const gp_Vec& a, const gp_Vec& b, const gp_Vec& c, px_u32 x, px_u32 y)
 {
     return (a.Coord(y) - c.Coord(y)) * (b.Coord(x) - c.Coord(x)) - (a.Coord(x) - c.Coord(x)) * (b.Coord(y) - c.Coord(y));
 }
@@ -450,7 +450,7 @@ double orient2d(const gp_Vec& a, const gp_Vec& b, const gp_Vec& c, PxU32 x, PxU3
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/intersection/GuIntersectionTriangleTriangle.cpp
 // With minor modifications to use gp_Vec type.
-double pointInTriangle(const gp_Vec& a, const gp_Vec& b, const gp_Vec& c, const gp_Vec& point, PxU32 x, PxU32 y)
+double pointInTriangle(const gp_Vec& a, const gp_Vec& b, const gp_Vec& c, const gp_Vec& point, px_u32 x, px_u32 y)
 {
     const double ab = orient2d(a, b, point, x, y);
     const double bc = orient2d(b, c, point, x, y);
@@ -466,7 +466,7 @@ double pointInTriangle(const gp_Vec& a, const gp_Vec& b, const gp_Vec& c, const 
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/intersection/GuIntersectionTriangleTriangle.cpp
 // With minor modifications to use gp_Vec type.
-double linesIntersect(const gp_Vec& startA, const gp_Vec& endA, const gp_Vec& startB, const gp_Vec& endB, PxU32 x, PxU32 y)
+double linesIntersect(const gp_Vec& startA, const gp_Vec& endA, const gp_Vec& startB, const gp_Vec& endB, px_u32 x, px_u32 y)
 {
     const double aaS = orient2d(startA, endA, startB, x, y);
     const double aaE = orient2d(startA, endA, endB, x, y);
@@ -487,7 +487,7 @@ double linesIntersect(const gp_Vec& startA, const gp_Vec& endA, const gp_Vec& st
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/intersection/GuIntersectionTriangleTriangle.cpp
 // With minor modifications to use gp_Vec type.
-void getProjectionIndices(gp_Vec normal, PxU32& x, PxU32& y)
+void getProjectionIndices(gp_Vec normal, px_u32& x, px_u32& y)
 {
     normal.SetCoord(std::abs(normal.X()), std::abs(normal.Y()), std::abs(normal.Z()));
 
@@ -517,8 +517,8 @@ void getProjectionIndices(gp_Vec normal, PxU32& x, PxU32& y)
 // With minor modifications to use gp_Vec type.
 bool trianglesIntersectCoplanar(const gp_Vec& p1_n, const gp_Vec& a1, const gp_Vec& b1, const gp_Vec& c1, const gp_Vec& a2, const gp_Vec& b2, const gp_Vec& c2)
 {
-    PxU32 x = 0;
-    PxU32 y = 0;
+    px_u32 x = 0;
+    px_u32 y = 0;
     getProjectionIndices(p1_n, x, y);
 
     const double third = (1.0 / 3.0);
@@ -570,18 +570,18 @@ bool trianglesIntersect(const gp_Vec& a1, const gp_Vec& b1, const gp_Vec& c1, co
     const double l2 = intersectionDirection.SquareMagnitude();
 	intersectionDirection *= 1.0f / std::sqrt(l2);
 
-	const Interval i1 = computeInterval(p2ToA, p2ToB, p2ToC, a1, b1, c1, intersectionDirection);
-	const Interval i2 = computeInterval(p1ToA, p1ToB, p1ToC, a2, b2, c2, intersectionDirection);
+	const interval i1 = computeInterval(p2ToA, p2ToB, p2ToC, a1, b1, c1, intersectionDirection);
+	const interval i2 = computeInterval(p1ToA, p1ToB, p1ToC, a2, b2, c2, intersectionDirection);
 
-	if (Interval::overlapOrTouch(i1, i2))
+	if (interval::overlapOrTouch(i1, i2))
 	{
 		/*if (intersection)
 		{
-			const Interval i = Interval::intersection(i1, i2);
+			const interval i = interval::intersection(i1, i2);
 			intersection->p0 = i.minPoint;
 			intersection->p1 = i.maxPoint;
 		}*/
-        const Interval i = Interval::intersection(i1, i2);
+        const interval i = interval::intersection(i1, i2);
         int1 = i.minPoint;
         int2 = i.maxPoint;
 		return true;

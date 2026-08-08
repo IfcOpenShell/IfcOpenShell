@@ -25,7 +25,7 @@
 #include <filesystem>
 
 namespace ifcopenshell {
-	namespace geometry {
+	namespace geom {
 		namespace impl {
 
 			typedef void register_mapping_plugin_fn(mapping_registry&, const ifcopenshell::plugin::module&);

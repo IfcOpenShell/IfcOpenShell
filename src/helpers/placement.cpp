@@ -84,7 +84,7 @@ Eigen::Matrix4d axis2_placement_3d_s(const Placement& placement) {
 }
 
 template <typename Schema>
-Eigen::Matrix4d get_axis2_placement_s(const express::Base& placement) {
+Eigen::Matrix4d get_axis2_placement_s(const express::base& placement) {
     if (auto axis3 = placement.template as<typename Schema::IfcAxis2Placement3D>()) {
         return axis2_placement_3d_s<Schema>(axis3);
     }
@@ -113,7 +113,7 @@ Eigen::Matrix4d get_axis2_placement_s(const express::Base& placement) {
 }
 
 template <typename Schema>
-Eigen::Matrix4d get_local_placement_s(const express::Base& placement) {
+Eigen::Matrix4d get_local_placement_s(const express::base& placement) {
     if (auto local = placement.template as<typename Schema::IfcLocalPlacement>()) {
         Eigen::Matrix4d parent = Eigen::Matrix4d::Identity();
         if (const auto relative_to = local.PlacementRelTo()) {
@@ -131,7 +131,7 @@ Eigen::Matrix4d get_local_placement_s(const express::Base& placement) {
 // ifcopenshell.util.placement.get_storey_elevation: the Z of the storey's
 // placement in project units, falling back to the Elevation attribute.
 template <typename Schema>
-double get_storey_elevation_s(const express::Base& storey) {
+double get_storey_elevation_s(const express::base& storey) {
     const auto typed = storey.template as<typename Schema::IfcBuildingStorey>();
     if (!typed) {
         return 0.0;
@@ -170,7 +170,7 @@ Eigen::Matrix4d axes_to_placement(const Eigen::Vector3d& origin,
     return m;
 }
 
-Eigen::Matrix4d get_axis2_placement(const express::Base& placement) {
+Eigen::Matrix4d get_axis2_placement(const express::base& placement) {
     if (!placement) {
         return Eigen::Matrix4d::Identity();
     }
@@ -183,7 +183,7 @@ Eigen::Matrix4d get_axis2_placement(const express::Base& placement) {
     unsupported_schema(name);
 }
 
-Eigen::Matrix4d get_local_placement(const express::Base& placement) {
+Eigen::Matrix4d get_local_placement(const express::base& placement) {
     if (!placement) {
         return Eigen::Matrix4d::Identity();
     }
@@ -196,7 +196,7 @@ Eigen::Matrix4d get_local_placement(const express::Base& placement) {
     unsupported_schema(name);
 }
 
-double get_storey_elevation(const express::Base& storey) {
+double get_storey_elevation(const express::base& storey) {
     if (!storey) {
         return 0.0;
     }

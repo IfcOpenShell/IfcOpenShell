@@ -194,7 +194,7 @@ void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefi
 	}
 }
 
-element_properties get_psets(const express::Base& inst) {
+element_properties get_psets(const express::base& inst) {
 	element_properties props;
 	if (auto object_definition = inst.as<IfcSchema::IfcObjectDefinition>()) {
 		get_psets_s<IfcSchema>(props, object_definition);

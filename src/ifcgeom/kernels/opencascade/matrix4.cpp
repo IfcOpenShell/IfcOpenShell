@@ -1,11 +1,10 @@
 #include "OpenCascadeKernel.h"
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
-bool OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf) {
+bool open_cascade_kernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf) {
 	// @todo check
 	const auto& m = matrix->ccomponents();
 	gp_Mat mat(

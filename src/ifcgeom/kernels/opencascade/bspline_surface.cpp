@@ -2,11 +2,10 @@
 
 #include <Geom_BSplineSurface.hxx>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
 
-bool OpenCascadeKernel::convert(const taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf) {
+bool open_cascade_kernel::convert(const taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf) {
 	const bool is_rational = !!bs->weights;
 
 	NCollection_Array2<gp_Pnt> Poles(0, (int)bs->control_points.size() - 1, 0, (int)(*bs->control_points.begin()).size() - 1);

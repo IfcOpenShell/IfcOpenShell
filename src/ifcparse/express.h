@@ -59,12 +59,12 @@ class attribute_value;
 
 namespace express {
 
-class Base;
-class Select;
-class Entity;
-class DeclaredType;
+class base;
+class select;
+class entity;
+class declared_type;
 
-class IFC_PARSE_API Base {
+class IFC_PARSE_API base {
   protected:
     ifcopenshell::pointer_type data_;
     const instance_data* data() const;
@@ -78,25 +78,25 @@ class IFC_PARSE_API Base {
 #endif
     }
 
-    bool operator<(const Base& other) const {
+    bool operator<(const base& other) const {
         return data() < other.data();
     }
 
-    bool operator==(const Base& other) const {
+    bool operator==(const base& other) const {
         return data() == other.data();
     }
 
-    bool operator!=(const Base& other) const {
+    bool operator!=(const base& other) const {
         return !(*this == other);
     }
 
-    Base() {
+    base() {
 #ifndef IFOPSH_SAFE_INSTANCE
         data_ = nullptr;
 #endif
     };
-    Base(std::nullopt_t) noexcept : Base() {}
-    Base(const ifcopenshell::pointer_type& data) : data_(data) {}
+    base(std::nullopt_t) noexcept : base() {}
+    base(const ifcopenshell::pointer_type& data) : data_(data) {}
 
     // @todo try and make this private over time too
     const ifcopenshell::pointer_type& data_weak() const { return data_; }
@@ -105,18 +105,18 @@ class IFC_PARSE_API Base {
 
     template <typename T>
     typename std::enable_if<
-        (!std::is_base_of_v<express::Base, T> || std::is_same_v<express::Base, T>),
+        (!std::is_base_of_v<express::base, T> || std::is_same_v<express::base, T>),
         void>::type
     set_attribute_value(size_t attribute_index, const T& value);
 
     template <typename T>
     typename std::enable_if<
-        (!std::is_base_of_v<express::Base, T> || std::is_same_v<express::Base, T>),
+        (!std::is_base_of_v<express::base, T> || std::is_same_v<express::base, T>),
         void>::type
     set_attribute_value(const std::string& attribute_name, const T& value);
 
-    void set_attribute_value(size_t attribute_index, const express::Base& value);
-    void set_attribute_value(const std::string& attribute_name, const express::Base& value);
+    void set_attribute_value(size_t attribute_index, const express::base& value);
+    void set_attribute_value(const std::string& attribute_name, const express::base& value);
     
     void unset_attribute_value(size_t attribute_index);
 
@@ -130,20 +130,20 @@ class IFC_PARSE_API Base {
 
     template <class T>
     T as() const {
-        if constexpr (std::is_same_v<Entity, T>) {
+        if constexpr (std::is_same_v<entity, T>) {
             if (declaration().as_entity() != nullptr) {
                 return T(data_weak());
             } else {
                 return T{};
             }
-        } else if constexpr (std::is_same_v<DeclaredType, T>) {
+        } else if constexpr (std::is_same_v<declared_type, T>) {
             if (declaration().as_entity() == nullptr) {
                 return T(data_weak());
             } else {
                 return T{};
             }
-        } else if constexpr (std::is_same_v<Select, T>) {
-            static_assert(std::is_same_v<Select, T>, "Select is abstract");
+        } else if constexpr (std::is_same_v<select, T>) {
+            static_assert(std::is_same_v<select, T>, "select is abstract");
         } else {
             if (declaration().is(T::Class())) {
                 return T(data_weak());
@@ -156,9 +156,9 @@ class IFC_PARSE_API Base {
     ifcopenshell::file* file() const;
 };
 
-class IFC_PARSE_API Entity : public Base {
+class IFC_PARSE_API entity : public base {
   public:
-    using Base::Base;
+    using base::base;
 
     attribute_value get(const std::string& attribute_name) const;
 
@@ -168,44 +168,51 @@ class IFC_PARSE_API Entity : public Base {
     template <typename T>
     T get_value(const std::string& attribute_name, const T& default_value) const;
 
-    std::vector<express::Entity> get_inverse(const std::string& attribute_name) const;
+    std::vector<express::entity> get_inverse(const std::string& attribute_name) const;
 };
 
-class IFC_PARSE_API Select : public Base {
+class IFC_PARSE_API select : public base {
   public:
-    Select() {}
-    Select(std::nullopt_t) noexcept : Base() {}
-    Select(const ifcopenshell::pointer_type& data) : Base(data) {}
-    Select(const Base& base) : Base(base.data_weak()) {}
+    select() {}
+    select(std::nullopt_t) noexcept : base() {}
+    select(const ifcopenshell::pointer_type& data) : base(data) {}
+    select(const base& value) : base(value.data_weak()) {}
 
-    Base concrete() const {
-        return Base(data_weak());
+    base concrete() const {
+        return base(data_weak());
     }
 };
 
 // @todo Investigate whether these should be template classes instead
 // @todo currently this class doesn't do much, decide whether to keep
-//       it or move certain functionality from Base downwards to
-//       Entity and DeclaredType
-class IFC_PARSE_API DeclaredType : public Base {
+//       it or move certain functionality from base downwards to
+//       entity and declared_type
+class IFC_PARSE_API declared_type : public base {
   public:
-    using Base::Base;
+    using base::base;
 };
+
+// Compatibility aliases for checked-in generated schema sources. New generated
+// sources use the snake_case names directly.
+using Base = base;
+using Entity = entity;
+using Select = select;
+using DeclaredType = declared_type;
 
 } // namespace express
 
 namespace std {
 
 template <>
-struct hash<express::Base> {
-    std::size_t operator()(const express::Base& value) const noexcept {
+struct hash<express::base> {
+    std::size_t operator()(const express::base& value) const noexcept {
         return std::hash<uint32_t>{}(value.identity());
     }
 };
 
 template <>
-struct hash<express::Entity> {
-    std::size_t operator()(const express::Entity& value) const noexcept {
+struct hash<express::entity> {
+    std::size_t operator()(const express::entity& value) const noexcept {
         return std::hash<uint32_t>{}(value.identity());
     }
 };
@@ -215,15 +222,15 @@ struct hash<express::Entity> {
 namespace boost {
 
 template <>
-struct hash<express::Base> {
-    std::size_t operator()(const express::Base& value) const noexcept {
+struct hash<express::base> {
+    std::size_t operator()(const express::base& value) const noexcept {
         return std::hash<uint32_t>{}(value.identity());
     }
 };
 
 template <>
-struct hash<express::Entity> {
-    std::size_t operator()(const express::Entity& value) const noexcept {
+struct hash<express::entity> {
+    std::size_t operator()(const express::entity& value) const noexcept {
         return std::hash<uint32_t>{}(value.identity());
     }
 };
@@ -257,7 +264,7 @@ typename std::conditional_t<
     std::vector<T>>
 cast_vector(const std::vector<U>& values) {
     if constexpr (is_std_vector<U>::value) {
-        using V = typename U::value_type;
+        using value_type = typename U::value_type;
         std::vector<std::vector<T>> result;
         result.reserve(values.size());
         for (const auto& value : values) {
@@ -270,7 +277,7 @@ cast_vector(const std::vector<U>& values) {
             if constexpr (std::is_base_of_v<T, U>) {
                 // For a base or identity transform we can just rely on static cast
                 result.push_back(value);
-            } else if constexpr (std::is_base_of_v<express::Select, U> && std::is_same_v<T, express::Base>) {
+            } else if constexpr (std::is_base_of_v<express::select, U> && std::is_same_v<T, express::base>) {
                 // From a select to concrete we simply call the appropriate method
                 result.push_back(value.concrete());
             } else {

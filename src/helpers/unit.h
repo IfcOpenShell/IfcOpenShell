@@ -58,15 +58,15 @@ double get_prefix_multiplier(const std::string& prefix);
 //   value_in_unit * scale == value_in_si_base
 // Walks IfcConversionBasedUnit chains down to IfcSIUnit.  Returns nullopt
 // when the chain bottoms out in IfcContextDependentUnit (cannot convert).
-std::optional<double> si_scale_from_named_unit(express::Base named_unit);
+std::optional<double> si_scale_from_named_unit(express::base named_unit);
 
 // IfcProject.UnitsInContext (the IfcUnitAssignment).  Returns nullopt if
 // the file has no project or no assignment.
-std::optional<express::Base> get_unit_assignment(ifcopenshell::file* ifc_file);
+std::optional<express::base> get_unit_assignment(ifcopenshell::file* ifc_file);
 
 // First unit in the project's IfcUnitAssignment matching `unit_type`
 // (e.g. "LENGTHUNIT").  Returns nullopt if not found.
-std::optional<express::Base> get_project_unit(ifcopenshell::file* ifc_file,
+std::optional<express::base> get_project_unit(ifcopenshell::file* ifc_file,
                                               const std::string& unit_type);
 
 // Project unit -> SI base scale (e.g. project in mm => 0.001).  Defaults
@@ -86,6 +86,6 @@ double convert(double value,
 // Convert between two IfcNamedUnit entities.  Pulls Name and Prefix off each
 // and delegates to convert().  IfcConversionBasedUnit names that don't appear
 // in SI_CONVERSIONS return the value unchanged.
-double convert_unit(double value, express::Base from_unit, express::Base to_unit);
+double convert_unit(double value, express::base from_unit, express::base to_unit);
 
 #endif // UNIT_H

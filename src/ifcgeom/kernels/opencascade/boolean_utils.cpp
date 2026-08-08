@@ -30,7 +30,7 @@
 #include <vector>
 #include <thread>
 
-void IfcGeom::util::copy_operand(const NCollection_List<TopoDS_Shape>& l, NCollection_List<TopoDS_Shape>& r) {
+void ifcopenshell::geom::util::copy_operand(const NCollection_List<TopoDS_Shape>& l, NCollection_List<TopoDS_Shape>& r) {
 #if OCC_VERSION_HEX < 0x70000
 	r.Clear();
 	TopTools_ListIteratorOfListOfShape it(l);
@@ -45,7 +45,7 @@ void IfcGeom::util::copy_operand(const NCollection_List<TopoDS_Shape>& l, NColle
 #endif
 }
 
-TopoDS_Shape IfcGeom::util::copy_operand(const TopoDS_Shape & s) {
+TopoDS_Shape ifcopenshell::geom::util::copy_operand(const TopoDS_Shape & s) {
 #if OCC_VERSION_HEX < 0x70000
 	return BRepBuilderAPI_Copy(s);
 #else
@@ -53,7 +53,7 @@ TopoDS_Shape IfcGeom::util::copy_operand(const TopoDS_Shape & s) {
 #endif
 }
 
-double IfcGeom::util::min_edge_length(const TopoDS_Shape & a) {
+double ifcopenshell::geom::util::min_edge_length(const TopoDS_Shape & a) {
 	double min_edge_len = std::numeric_limits<double>::infinity();
 	TopExp_Explorer exp(a, TopAbs_EDGE);
 	for (; exp.More(); exp.Next()) {
@@ -77,7 +77,7 @@ double IfcGeom::util::min_edge_length(const TopoDS_Shape & a) {
 	return min_edge_len;
 }
 
-double IfcGeom::util::min_vertex_edge_distance(const TopoDS_Shape & a, double min_search, double max_search) {
+double ifcopenshell::geom::util::min_vertex_edge_distance(const TopoDS_Shape & a, double min_search, double max_search) {
 	double M = std::numeric_limits<double>::infinity();
 
 	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> vertices, edges;
@@ -85,7 +85,7 @@ double IfcGeom::util::min_vertex_edge_distance(const TopoDS_Shape & a, double mi
 	TopExp::MapShapes(a, TopAbs_VERTEX, vertices);
 	TopExp::MapShapes(a, TopAbs_EDGE, edges);
 
-	IfcGeom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::tree<int> tree;
 
 	// Add edges to tree
 	for (int i = 1; i <= edges.Extent(); ++i) {
@@ -129,7 +129,7 @@ double IfcGeom::util::min_vertex_edge_distance(const TopoDS_Shape & a, double mi
 	return M;
 }
 
-bool IfcGeom::util::faces_overlap(const TopoDS_Face & f, const TopoDS_Face & g) {
+bool ifcopenshell::geom::util::faces_overlap(const TopoDS_Face & f, const TopoDS_Face & g) {
 	points_on_planar_face_generator pgen(f);
 
 	BRep_Builder B;
@@ -141,7 +141,7 @@ bool IfcGeom::util::faces_overlap(const TopoDS_Face & f, const TopoDS_Face & g) 
 
 	while (pgen(test)) {
 		TopoDS_Vertex V;
-		B.MakeVertex(V, test, Precision::Confusion());
+		B.MakeVertex(V, test, ::Precision::Confusion());
 		x.LoadS2(V);
 		x.Perform();
 		if (x.IsDone() && x.NbSolution() == 1) {
@@ -154,7 +154,7 @@ bool IfcGeom::util::faces_overlap(const TopoDS_Face & f, const TopoDS_Face & g) 
 	return true;
 }
 
-double IfcGeom::util::min_face_face_distance(const TopoDS_Shape & a, double max_search) {
+double ifcopenshell::geom::util::min_face_face_distance(const TopoDS_Shape & a, double max_search) {
 	/*
 	NB: This is currently only implemented for planar surfaces.
 	*/
@@ -164,7 +164,7 @@ double IfcGeom::util::min_face_face_distance(const TopoDS_Shape & a, double max_
 
 	TopExp::MapShapes(a, TopAbs_FACE, faces);
 
-	IfcGeom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::tree<int> tree;
 
 	// Add faces to tree
 	for (int i = 1; i <= faces.Extent(); ++i) {
@@ -229,7 +229,7 @@ double IfcGeom::util::min_face_face_distance(const TopoDS_Shape & a, double max_
 	return M;
 }
 
-int IfcGeom::util::bounding_box_overlap(double p, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & b, NCollection_List<TopoDS_Shape> & c) {
+int ifcopenshell::geom::util::bounding_box_overlap(double p, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & b, NCollection_List<TopoDS_Shape> & c) {
 	int N = 0;
 
 	Bnd_Box A;
@@ -258,7 +258,7 @@ int IfcGeom::util::bounding_box_overlap(double p, const TopoDS_Shape & a, const 
 	return N;
 }
 
-bool IfcGeom::util::get_edge_axis(const TopoDS_Edge & e, gp_Ax1 & ax) {
+bool ifcopenshell::geom::util::get_edge_axis(const TopoDS_Edge & e, gp_Ax1 & ax) {
 	double _, __;
 
 	auto crv = BRep_Tool::Curve(e, _, __);
@@ -279,7 +279,7 @@ bool IfcGeom::util::get_edge_axis(const TopoDS_Edge & e, gp_Ax1 & ax) {
 	return false;
 }
 
-bool IfcGeom::util::is_subset(const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& lhs, const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& rhs) {
+bool ifcopenshell::geom::util::is_subset(const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& lhs, const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& rhs) {
 	if (rhs.Extent() < lhs.Extent()) {
 		return false;
 	}
@@ -292,7 +292,7 @@ bool IfcGeom::util::is_subset(const NCollection_IndexedMap<TopoDS_Shape, TopTool
 	return true;
 }
 
-bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoDS_Face & base, std::pair<double, double>& interval) {
+bool ifcopenshell::geom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoDS_Face & base, std::pair<double, double>& interval) {
 	// This assumes UnifySameDomain has been processed on s, so that
 	// the extrusion top and bottom are a single face.
 
@@ -405,7 +405,7 @@ bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoD
 	return true;
 }
 
-int IfcGeom::util::eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, ::logger& logger) {
+int ifcopenshell::geom::util::eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, ::logger& logger) {
 	int N = 0;
 	NCollection_List<TopoDS_Shape>::Iterator it(bs);
 	for (; it.More(); it.Next()) {
@@ -429,7 +429,7 @@ int IfcGeom::util::eliminate_narrow_operands(double prec, const NCollection_List
 	return N;
 }
 
-int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & bs, NCollection_List<TopoDS_Shape> & c) {
+int ifcopenshell::geom::util::eliminate_touching_operands(double prec, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & bs, NCollection_List<TopoDS_Shape> & c) {
     NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> a_faces;
 	TopExp::MapShapes(a, TopAbs_FACE, a_faces);
 
@@ -445,7 +445,7 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> a_vertices;
 	TopExp::MapShapes(a, TopAbs_VERTEX, a_vertices);
 
-	IfcGeom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::tree<int> tree;
 
 	// Add faces to tree
 	for (int i = 1; i <= a_faces.Extent(); ++i) {
@@ -573,8 +573,8 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 	return N;
 }
 
-bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const NCollection_List<TopoDS_Shape> & b_input, TopoDS_Shape & result, double eps, ::logger& logger) {
-	IfcGeom::impl::tree<int> edge_tree;
+bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const NCollection_List<TopoDS_Shape> & b_input, TopoDS_Shape & result, double eps, ::logger& logger) {
+	ifcopenshell::geom::impl::tree<int> edge_tree;
 
 	NCollection_List<TopoDS_Shape> ab_input = b_input;
 	ab_input.Prepend(a_input);
@@ -756,7 +756,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 
 	// Now build a tree to find inner wires contained in other inner wires
 	// NB first wire is *not* in this tree
-	IfcGeom::impl::tree<int> wire_tree;
+	ifcopenshell::geom::impl::tree<int> wire_tree;
 	for (size_t wire_index = 1; wire_index < wires.size(); ++wire_index) {
 		wire_tree.add(wire_index, wires[wire_index]);
 	}
@@ -806,11 +806,11 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 	return true;
 }
 
-void IfcGeom::util::points_on_planar_face_generator::reset() {
+void ifcopenshell::geom::util::points_on_planar_face_generator::reset() {
 	i = j = (int)inset_;
 }
 
-bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
+bool ifcopenshell::geom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 	while (j < N) {
 		double u = u0 + (u1 - u0) * i / N;
 		double v = v0 + (v1 - v0) * j / N;
@@ -832,7 +832,7 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	using namespace std::string_literals;
 
 	const bool do_unify = true;
@@ -1239,7 +1239,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 							TopExp::MapShapes(bb, TopAbs_EDGE, edges);
 							TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
 						}
-						IfcGeom::impl::tree<int> tree;
+						ifcopenshell::geom::impl::tree<int> tree;
 						for (int i = 1; i <= edges.Extent(); ++i) {
 							tree.add(i, edges.FindKey(i));
 						}
@@ -1425,13 +1425,13 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	return success && !result.IsNull();
 }
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	NCollection_List<TopoDS_Shape> bs;
 	bs.Append(b);
 	return boolean_operation(settings, a, bs, op, result, fuzziness);
 }
 
-TopoDS_Shape IfcGeom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol) {
+TopoDS_Shape ifcopenshell::geom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol) {
 	const bool is_comp = is_compound_of_faces(shape);
 	if (!is_comp) {
 		return shape;

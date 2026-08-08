@@ -41,7 +41,7 @@ struct is_ifc4_or_higher : std::false_type {};
 template <typename Schema>
 struct is_ifc4_or_higher<Schema, std::void_t<typename Schema::IfcMaterialDefinition>> : std::true_type {};
 
-std::string schema_name(const express::Base& instance) {
+std::string schema_name(const express::base& instance) {
     return instance.declaration().schema()->name();
 }
 
@@ -87,7 +87,7 @@ std::optional<std::string> format_scalar(const attribute_value& value) {
 // ifcopenshell.util.element.get_type: the construction type of an occurrence
 // (get_type(type_element) == type_element).
 template <typename Schema>
-express::Base get_type_s(const express::Base& element) {
+express::base get_type_s(const express::base& element) {
     if (element.template as<typename Schema::IfcTypeObject>()) {
         return element;
     }
@@ -111,9 +111,9 @@ express::Base get_type_s(const express::Base& element) {
 }
 
 template <typename Schema>
-std::optional<std::string> get_predefined_type_s(const express::Base& element) {
+std::optional<std::string> get_predefined_type_s(const express::base& element) {
     // Prefer the associated type element's predefined type.
-    if (const express::Base type = get_type_s<Schema>(element)) {
+    if (const express::base type = get_type_s<Schema>(element)) {
         std::optional<std::string> predefined_type = get_string_attribute(type, "PredefinedType");
         if (!predefined_type || *predefined_type == "USERDEFINED") {
             // ElementType (IfcElementType) or ProcessType (IfcTypeProcess) — the
@@ -140,7 +140,7 @@ std::optional<std::string> get_predefined_type_s(const express::Base& element) {
 // ifcopenshell.util.element.get_aggregate: the aggregate parent, via the
 // Decomposes inverse (IfcRelAggregates.RelatingObject).
 template <typename Schema>
-express::Base get_aggregate_s(const express::Base& element) {
+express::base get_aggregate_s(const express::base& element) {
     const auto object = element.template as<typename Schema::IfcObjectDefinition>();
     if (!object) {
         return {};
@@ -162,8 +162,8 @@ express::Base get_aggregate_s(const express::Base& element) {
 // The spatial-structure children aggregated under this element (IsDecomposedBy →
 // RelatedObjects, filtered to spatial elements).
 template <typename Schema>
-std::vector<express::Base> get_spatial_children_s(const express::Base& element) {
-    std::vector<express::Base> children;
+std::vector<express::base> get_spatial_children_s(const express::base& element) {
+    std::vector<express::base> children;
     const auto object = element.template as<typename Schema::IfcObjectDefinition>();
     if (!object) {
         return children;
@@ -182,14 +182,14 @@ std::vector<express::Base> get_spatial_children_s(const express::Base& element) 
 // ifc_class): the directly containing spatial element, or the container of the
 // aggregate parent for an aggregated part.
 template <typename Schema>
-express::Base get_container_s(const express::Base& element) {
+express::base get_container_s(const express::base& element) {
     if (const auto product = element.template as<typename Schema::IfcElement>()) {
         const auto relationships = product.ContainedInStructure();
         if (!relationships.empty()) {
             return relationships.front().RelatingStructure();
         }
     }
-    if (const express::Base aggregate = get_aggregate_s<Schema>(element)) {
+    if (const express::base aggregate = get_aggregate_s<Schema>(element)) {
         return get_container_s<Schema>(aggregate);
     }
     return {};
@@ -197,7 +197,7 @@ express::Base get_container_s(const express::Base& element) {
 
 } // namespace
 
-std::optional<std::string> get_predefined_type(const express::Base& element) {
+std::optional<std::string> get_predefined_type(const express::base& element) {
     if (!element) {
         return std::nullopt;
     }
@@ -211,7 +211,7 @@ std::optional<std::string> get_predefined_type(const express::Base& element) {
     unsupported_schema(name);
 }
 
-std::vector<std::pair<std::string, std::string>> get_scalar_attributes(const express::Base& element) {
+std::vector<std::pair<std::string, std::string>> get_scalar_attributes(const express::base& element) {
     std::vector<std::pair<std::string, std::string>> result;
     if (!element) {
         return result;
@@ -230,7 +230,7 @@ std::vector<std::pair<std::string, std::string>> get_scalar_attributes(const exp
     return result;
 }
 
-express::Base get_type(const express::Base& element) {
+express::base get_type(const express::base& element) {
     if (!element) {
         return {};
     }
@@ -244,7 +244,7 @@ express::Base get_type(const express::Base& element) {
     unsupported_schema(name);
 }
 
-express::Base get_container(const express::Base& element) {
+express::base get_container(const express::base& element) {
     if (!element) {
         return {};
     }
@@ -258,7 +258,7 @@ express::Base get_container(const express::Base& element) {
     unsupported_schema(name);
 }
 
-std::vector<express::Base> get_spatial_children(const express::Base& element) {
+std::vector<express::base> get_spatial_children(const express::base& element) {
     if (!element) {
         return {};
     }
@@ -275,7 +275,7 @@ std::vector<express::Base> get_spatial_children(const express::Base& element) {
 // getattr(element, name) for a string- or enum-valued attribute. Reads by name,
 // so it works uniformly across the various subtypes that carry a given
 // attribute (PredefinedType, Name, ...).
-std::optional<std::string> get_string_attribute(const express::Base& element,
+std::optional<std::string> get_string_attribute(const express::base& element,
                                                 const std::string& name) {
     if (!element) {
         return std::nullopt;

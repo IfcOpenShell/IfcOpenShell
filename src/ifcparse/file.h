@@ -184,7 +184,7 @@ class uninitialized_tag {};
 /// The file takes ownership of instances added to this file and deletes them when the file is deleted.
 class IFC_PARSE_API file {
 private:
-    typedef std::map<uint32_t, express::Base> entity_entity_map_t;
+    typedef std::map<uint32_t, express::base> entity_entity_map_t;
 
     // @todo determine the constness of things (probably needs to be all const, we don't want to overwrite)
     // @todo we have variant_iterator and MapVariant, we probably need to retain only one?
@@ -232,7 +232,7 @@ public:
         batch_deletion_ids_t;
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
-    void process_deletion_(const express::Base& entity);
+    void process_deletion_(const express::base& entity);
 
   public:
 #ifdef USE_MMAP
@@ -311,7 +311,7 @@ public:
     /// IfcWall will also return IfcWallStandardCase entities
     template <class T>
     typename std::vector<T> instances_by_type() {
-        std::vector<express::Base> untyped_list = instances_by_type(&T::Class());
+        std::vector<express::base> untyped_list = instances_by_type(&T::Class());
         std::vector<T> return_value;
         for (auto& untyped : untyped_list) {
             return_value.push_back(untyped.as<T>());
@@ -321,7 +321,7 @@ public:
 
     template <class T>
     typename std::vector<T> instances_by_type_excl_subtypes() {
-        std::vector<express::Base> untyped_list = instances_by_type_excl_subtypes(&T::Class());
+        std::vector<express::base> untyped_list = instances_by_type_excl_subtypes(&T::Class());
         std::vector<T> return_value;
         for (auto& untyped : untyped_list) {
             return_value.push_back(untyped.as<T>());
@@ -332,36 +332,36 @@ public:
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    std::vector<express::Base> instances_by_type(const ifcopenshell::declaration* declaration);
+    std::vector<express::base> instances_by_type(const ifcopenshell::declaration* declaration);
 
     /// Returns all entities in the file that match the positional argument.
-    std::vector<express::Base> instances_by_type_excl_subtypes(const ifcopenshell::declaration* declaration);
+    std::vector<express::base> instances_by_type_excl_subtypes(const ifcopenshell::declaration* declaration);
 
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    std::vector<express::Base> instances_by_type(const std::string& type_name);
+    std::vector<express::base> instances_by_type(const std::string& type_name);
 
     /// Returns all entities in the file that match the positional argument.
-    std::vector<express::Base> instances_by_type_excl_subtypes(const std::string& type_name);
+    std::vector<express::base> instances_by_type_excl_subtypes(const std::string& type_name);
 
     /// Returns all entities in the file that reference the id
-    std::vector<express::Base> instances_by_reference(int reference_id);
+    std::vector<express::base> instances_by_reference(int reference_id);
 
     /// Returns the entity with the specified id
-    express::Base instance_by_id(int instance_id);
+    express::base instance_by_id(int instance_id);
 
     /// Returns the entity with the specified GlobalId
-    express::Base instance_by_guid(const std::string& global_id);
+    express::base instance_by_guid(const std::string& global_id);
 
     /// Performs a depth-first traversal, returning all entity instance
     /// attributes as a flat list. NB: includes the root instance specified
     /// in the first function argument.
-    static std::vector<express::Base> traverse(const express::Base& instance, int max_depth = -1);
+    static std::vector<express::base> traverse(const express::base& instance, int max_depth = -1);
 
     /// Same as traverse() but maintains topological order by using a
     /// breadth-first search
-    static std::vector<express::Base> traverse_breadth_first(const express::Base& instance, int max_depth = -1);
+    static std::vector<express::base> traverse_breadth_first(const express::base& instance, int max_depth = -1);
 
     /// Get the attribute indices corresponding to the list of entity instances
     /// returned by get_inverse().
@@ -372,7 +372,7 @@ public:
         return get_inverse(instance_id, &T::Class(), attribute_index)->template as<T>();
     }
 
-    std::vector<express::Entity> get_inverse(int instance_id, const ifcopenshell::declaration* declaration, int attribute_index);
+    std::vector<express::entity> get_inverse(int instance_id, const ifcopenshell::declaration* declaration, int attribute_index);
 
     size_t get_total_inverses(int instance_id);
 
@@ -384,7 +384,7 @@ public:
 
     void recalculate_id_counter();
 
-    express::Base add_entity(const express::Base& entity, int instance_id = -1);
+    express::base add_entity(const express::base& entity, int instance_id = -1);
 
     /// Removes entity instance from file and unsets references.
     ///
@@ -395,7 +395,7 @@ public:
     ///    ifcopenshell::IfcBaseClass *const inst = *it;
     ///    model->remove_entity(inst);
     /// }
-    void remove_entity(const express::Base& entity);
+    void remove_entity(const express::base& entity);
 
     const spf_header& header() const { return *header_; }
     spf_header& header() { return *header_; }
@@ -404,27 +404,27 @@ public:
 
     const ifcopenshell::schema_definition* schema() const;
 
-    std::pair<express::Base, double> get_unit(const std::string& unit_type);
+    std::pair<express::base, double> get_unit(const std::string& unit_type);
 
     void build_inverses();
 
     void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
-    void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::Base& entity, int attribute_index);
+    void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
 
     entity_instance_by_guid_t internal_guid_map() { return byguid_; };
 
-    void add_type_ref(const express::Base& new_entity);
-    void remove_type_ref(const express::Base& new_entity);
-    void process_deletion_inverse(const express::Base& entity);
+    void add_type_ref(const express::base& new_entity);
+    void remove_type_ref(const express::base& new_entity);
+    void process_deletion_inverse(const express::base& entity);
 
-    void build_inverses_(const express::Base& entity);
+    void build_inverses_(const express::base& entity);
 
     template <typename T>
     T create(int instance_id = -1) {
         return create(&T::Class(), instance_id).template as<T>();
     }
 
-    express::Base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
+    express::base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
 
     void batch() {
         batch_mode_ = true; 

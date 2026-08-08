@@ -31,13 +31,13 @@
 namespace ifcopenshell {
 	class file;
 
-	namespace geometry {
-		class Settings;
+	namespace geom {
+		class settings;
 	}
 }
 
-namespace IfcGeom {
-	class Iterator;
+namespace ifcopenshell::geom {
+	class iterator;
 
 	using tree_point = std::array<double, 3>;
 	using tree_box = std::array<tree_point, 2>;
@@ -45,7 +45,7 @@ namespace IfcGeom {
 	struct IFC_GEOM_API ray_intersection_result {
 		double distance;
 		int style_index;
-		express::Entity instance;
+		express::entity instance;
 		tree_point position;
 		tree_point normal;
 		double ray_distance;
@@ -54,8 +54,8 @@ namespace IfcGeom {
 
 	struct IFC_GEOM_API clash {
 		int clash_type;
-		express::Base a;
-		express::Base b;
+		express::base a;
+		express::base b;
 		double distance;
 		tree_point p1;
 		tree_point p2;
@@ -66,8 +66,8 @@ namespace IfcGeom {
 		tree();
 		explicit tree(const std::string& backend_id);
 		explicit tree(ifcopenshell::file& file);
-		tree(ifcopenshell::file& file, const ifcopenshell::geometry::Settings& settings);
-		explicit tree(IfcGeom::Iterator& iterator);
+		tree(ifcopenshell::file& file, const ifcopenshell::geom::settings& settings);
+		explicit tree(ifcopenshell::geom::iterator& iterator);
 		~tree();
 
 		tree(tree&& other) noexcept;
@@ -76,29 +76,29 @@ namespace IfcGeom {
 		tree(const tree& other) = delete;
 		tree& operator=(const tree& other) = delete;
 
-		void add_file(ifcopenshell::file& file, const ifcopenshell::geometry::Settings& settings);
-		void add_file(IfcGeom::Iterator& iterator);
-		void add_element(IfcGeom::Element* element);
+		void add_file(ifcopenshell::file& file, const ifcopenshell::geom::settings& settings);
+		void add_file(ifcopenshell::geom::iterator& iterator);
+		void add_element(ifcopenshell::geom::element* element);
 
-		std::vector<express::Entity> select_box(const express::Entity& entity, bool completely_within = false, double extend = -1.e-5) const;
-		std::vector<express::Entity> select_box(const tree_point& point) const;
-		std::vector<express::Entity> select_box(const tree_box& bounds, bool completely_within = false) const;
+		std::vector<express::entity> select_box(const express::entity& entity, bool completely_within = false, double extend = -1.e-5) const;
+		std::vector<express::entity> select_box(const tree_point& point) const;
+		std::vector<express::entity> select_box(const tree_box& bounds, bool completely_within = false) const;
 
-		std::vector<express::Entity> select(const express::Entity& entity, bool completely_within = false, double extend = 0.0) const;
-		std::vector<express::Entity> select(const IfcGeom::Element* element, bool completely_within = false, double extend = -1.e-5) const;
-		std::vector<express::Entity> select(const tree_point& point, double extend = 0.0) const;
+		std::vector<express::entity> select(const express::entity& entity, bool completely_within = false, double extend = 0.0) const;
+		std::vector<express::entity> select(const ifcopenshell::geom::element* element, bool completely_within = false, double extend = -1.e-5) const;
+		std::vector<express::entity> select(const tree_point& point, double extend = 0.0) const;
 		std::vector<ray_intersection_result> select_ray(const tree_point& origin, const tree_point& direction, double length = 1000.) const;
 
-		std::vector<clash> clash_intersection_many(const std::vector<express::Base>& set_a, const std::vector<express::Base>& set_b, double tolerance = 0.002, bool check_all = true) const;
-		std::vector<clash> clash_collision_many(const std::vector<express::Base>& set_a, const std::vector<express::Base>& set_b, bool allow_touching = false) const;
-		std::vector<clash> clash_clearance_many(const std::vector<express::Base>& set_a, const std::vector<express::Base>& set_b, double clearance = 0.05, bool check_all = false) const;
+		std::vector<clash> clash_intersection_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, double tolerance = 0.002, bool check_all = true) const;
+		std::vector<clash> clash_collision_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, bool allow_touching = false) const;
+		std::vector<clash> clash_clearance_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, double clearance = 0.05, bool check_all = false) const;
 
 		const std::vector<double>& distances() const;
 		const std::vector<double>& protrusion_distances() const;
 
 		bool enable_face_styles() const;
 		void enable_face_styles(bool enable);
-		const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles() const;
+		const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& styles() const;
 
 		std::string uint8_to_b64(const std::vector<uint8_t>& uuids_array) const;
 		static bool is_manifold(const std::vector<int>& faces);

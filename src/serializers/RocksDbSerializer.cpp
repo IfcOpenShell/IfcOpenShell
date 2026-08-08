@@ -22,14 +22,14 @@ namespace {
 	{
 		auto s = sizeof(size_t);
 		val.resize(s + 2);
-		val[0] = TypeEncoder::encode_type<express::Base>();
+		val[0] = type_encoder::encode_type<express::base>();
 		// 1 = entity - stored by id (entity name)
 		// 2 = type - stored by identity (internal counter in class)
 		val[1] = t.index() == 0 ? 'i' : 't';
 		size_t iden;
 		if (auto* name = std::get_if<ifcopenshell::instance_reference>(&t)) {
 			iden = *name;
-		} else if (auto* inst = std::get_if<express::Base>(&t)) {
+		} else if (auto* inst = std::get_if<express::base>(&t)) {
 			iden = (*inst).identity();
 		}
 		memcpy(val.data() + 2, &iden, s);
@@ -40,7 +40,7 @@ namespace {
 	{
 		// no attempt at alignment
 		val.resize(t.size() * (sizeof(size_t) + 1) + 1);
-		val[0] = TypeEncoder::encode_type<std::vector<express::Base>>();
+		val[0] = type_encoder::encode_type<std::vector<express::base>>();
 		char* ptr = val.data() + 1;
 		for (auto it = t.begin(); it != t.end(); ++it) {
 			*ptr = it->index() == 0 ? 'i' : 't';
@@ -48,7 +48,7 @@ namespace {
 			size_t iden = 0;
 			if (auto* name = std::get_if<ifcopenshell::instance_reference>(&*it)) {
 				iden = *name;
-			} else if (auto* inst = std::get_if<express::Base>(&*it)) {
+			} else if (auto* inst = std::get_if<express::base>(&*it)) {
 				iden = (*inst).identity();
 			}
 			memcpy(ptr, &iden, sizeof(size_t));
@@ -60,7 +60,7 @@ namespace {
 	bool serialize(std::string& val, const std::vector<std::vector<ifcopenshell::reference_or_simple_type>>& t)
 	{
 		std::ostringstream oss;
-		oss.put(TypeEncoder::encode_type<std::vector<std::vector<express::Base>>>());
+		oss.put(type_encoder::encode_type<std::vector<std::vector<express::base>>>());
 
 		auto write_size = [&oss](size_t sz) {
 			std::string size_str;
@@ -82,7 +82,7 @@ namespace {
 				size_t iden = 0;
 				if (auto* name = std::get_if<ifcopenshell::instance_reference>(&*jt)) {
 					iden = *name;
-				} else if (auto* inst = std::get_if<express::Base>(&*jt)) {
+				} else if (auto* inst = std::get_if<express::base>(&*jt)) {
 					iden = (*inst).identity();
 				}
 				std::string iden_str;
@@ -148,13 +148,13 @@ void RocksDbSerializer::write_streaming_() {
 				}
 			}
 
-			std::vector<express::Base> simple_type_instances;
+			std::vector<express::base> simple_type_instances;
 
 			for (size_t i = 0; i < data->storage_->size(); i++) {
 				auto val = data->get_attribute_value(i);
 				val.apply_visitor([&](const auto& t) {
 					using T = std::decay_t<decltype(t)>;
-					if constexpr (std::is_same_v<T, express::Base>) {
+					if constexpr (std::is_same_v<T, express::base>) {
 						// instance is per definition a simple type here, because instance
 						// references are not resolved yet, but provided in vector of
 						// references
@@ -174,7 +174,7 @@ void RocksDbSerializer::write_streaming_() {
 					(is_header ? decl->name() : std::to_string(p.first.name_)) + "|" +
 					std::to_string(index);
 
-				if (storage.db->Get(storage.ropts, key, &tmp) == rocksdb::Status::OK() && tmp.size() == (sizeof(size_t) + 2) && tmp[0] == TypeEncoder::encode_type<express::Base>() && tmp[1] == 't')
+				if (storage.db->Get(storage.ropts, key, &tmp) == rocksdb::Status::OK() && tmp.size() == (sizeof(size_t) + 2) && tmp[0] == type_encoder::encode_type<express::base>() && tmp[1] == 't')
 				{
 					size_t iden;
 					memcpy(&iden, tmp.data() + 2, sizeof(size_t));
@@ -188,20 +188,20 @@ void RocksDbSerializer::write_streaming_() {
 					using T = std::decay_t<decltype(v)>;
 
 					if constexpr (std::is_same_v<T, ifcopenshell::reference_or_simple_type>) {
-						if (auto* inst = std::get_if<express::Base>(&v)) {
+						if (auto* inst = std::get_if<express::base>(&v)) {
 							// So this never happens?
 							simple_type_instances.push_back(*inst);
 						}
 					} else if constexpr (std::is_same_v<T, std::vector<ifcopenshell::reference_or_simple_type>>) {
 						for (auto const& inner : v) {
-							if (auto* inst = std::get_if<express::Base>(&inner)) {
+							if (auto* inst = std::get_if<express::base>(&inner)) {
 								simple_type_instances.push_back(*inst);
 							}
 						}
 					} else if constexpr (std::is_same_v<T, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>) {
 						for (auto const& inner : v) {
 							for (auto const& innermost : inner) {
-								if (auto* inst = std::get_if<express::Base>(&innermost)) {
+								if (auto* inst = std::get_if<express::base>(&innermost)) {
 									simple_type_instances.push_back(*inst);
 								}
 							}

@@ -685,7 +685,7 @@ void convertIfcToDatabase(SessionState& session, QWidget& host) {
                 throw ifcopenshell::exception("RDB serializer does not support streaming from an input filename");
             }
 
-            boost::shared_ptr<Serializer> serializer = registry.create("rdb", context);
+            boost::shared_ptr<serializer> serializer = registry.create("rdb", context);
             serializer->finalize();
         } catch (const std::exception& e) {
             *error_message = QString::fromUtf8(e.what());
@@ -791,7 +791,7 @@ void exportGeometryDatabase(SessionState& session, QWidget& host) {
                 throw ifcopenshell::exception("RDB serializer does not support streaming from an input filename");
             }
 
-            boost::shared_ptr<Serializer> serializer = registry.create("rdb", context);
+            boost::shared_ptr<serializer> serializer = registry.create("rdb", context);
             serializer->finalize();
             serializer.reset();
 

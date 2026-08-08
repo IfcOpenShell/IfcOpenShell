@@ -18,15 +18,15 @@ namespace ifcopenshell {
 	class file;
 }
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 class IFC_GEOMSERIALIZATION_API opencascade_geometry_ifc_writer_registry {
 public:
-	typedef boost::function3<express::Base, ifcopenshell::file&, const ConversionResultShape&, double> tesselate_fn;
-	typedef boost::function3<express::Base, ifcopenshell::file&, const ConversionResultShape&, bool> serialise_fn;
+	typedef boost::function3<express::base, ifcopenshell::file&, const conversion_result_shape&, double> tesselate_fn;
+	typedef boost::function3<express::base, ifcopenshell::file&, const conversion_result_shape&, bool> serialise_fn;
 
 	void bind(const std::string& schema_name, serialise_fn serialise, tesselate_fn tesselate, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
-	express::Base tesselate(ifcopenshell::file& f, const ConversionResultShape& shape, double deflection) const;
-	express::Base serialise(ifcopenshell::file& f, const ConversionResultShape& shape, bool advanced) const;
+	express::base tesselate(ifcopenshell::file& f, const conversion_result_shape& shape, double deflection) const;
+	express::base serialise(ifcopenshell::file& f, const conversion_result_shape& shape, bool advanced) const;
 
 private:
 	struct entry {
@@ -40,10 +40,10 @@ private:
 
 IFC_GEOMSERIALIZATION_API opencascade_geometry_ifc_writer_registry& opencascade_geometry_ifc_writer_registry_instance();
 
-IFC_GEOMSERIALIZATION_API express::Base tesselate(ifcopenshell::file& f, const ConversionResultShape& shape, double deflection);
-IFC_GEOMSERIALIZATION_API express::Base serialise(ifcopenshell::file& f, const ConversionResultShape& shape, bool advanced);
-IFC_GEOMSERIALIZATION_API express::Base tesselate(ifcopenshell::file& f, const TopoDS_Shape& shape, double deflection);
-IFC_GEOMSERIALIZATION_API express::Base serialise(ifcopenshell::file& f, const TopoDS_Shape& shape, bool advanced);
-} // namespace IfcGeom
+IFC_GEOMSERIALIZATION_API express::base tesselate(ifcopenshell::file& f, const conversion_result_shape& shape, double deflection);
+IFC_GEOMSERIALIZATION_API express::base serialise(ifcopenshell::file& f, const conversion_result_shape& shape, bool advanced);
+IFC_GEOMSERIALIZATION_API express::base tesselate(ifcopenshell::file& f, const TopoDS_Shape& shape, double deflection);
+IFC_GEOMSERIALIZATION_API express::base serialise(ifcopenshell::file& f, const TopoDS_Shape& shape, bool advanced);
+} // namespace ifcopenshell::geom
 
 #endif

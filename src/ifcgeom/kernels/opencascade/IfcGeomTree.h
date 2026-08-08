@@ -72,7 +72,7 @@
 #include <IntTools_FaceFace.hxx>
 #include "clash_utils.h"
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace {
 
 		// Approximates the distance `other` protrudes into `volume` by finding the
@@ -1349,9 +1349,9 @@ namespace IfcGeom {
 				return ts_filtered;
 			}
 
-			std::vector<T> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
-				auto shp = (ifcopenshell::geometry::OpenCascadeShape*)elem->geometry().as_compound();
-				TopoDS_Shape compound(std::move(((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape()));
+			std::vector<T> select(const ifcopenshell::geom::brep_element* elem, bool completely_within = false, double extend = -1.e-5) const {
+				auto shp = (ifcopenshell::geom::open_cascade_shape*)elem->geometry().as_compound();
+				TopoDS_Shape compound(std::move(((ifcopenshell::geom::open_cascade_shape*)shp)->shape()));
 				delete shp;
 
 				const auto& m = elem->transformation().data()->ccomponents();
@@ -1380,7 +1380,7 @@ namespace IfcGeom {
 				TopoDS_Vertex v;
 				if (extend > 0.) {
 					BRep_Builder B;
-					B.MakeVertex(v, p, Precision::Confusion());
+					B.MakeVertex(v, p, ::Precision::Confusion());
 				}
 
 				typename std::vector<T>::const_iterator it = ts.begin();
@@ -1425,13 +1425,13 @@ namespace IfcGeom {
             std::unordered_map<T, std::vector<gp_Vec>> normals_;
 
             // Temporary structures for H5
-            std::vector<IfcGeom::TriangulationElement*> triangulation_elements_;
-            std::map<express::Base, std::string> global_ids_;
-            std::map<express::Base, std::string> names_;
-            std::map<express::Base, ifcopenshell::geometry::taxonomy::matrix4::ptr> placements_;
+            std::vector<ifcopenshell::geom::triangulation_element*> triangulation_elements_;
+            std::map<express::base, std::string> global_ids_;
+            std::map<express::base, std::string> names_;
+            std::map<express::base, ifcopenshell::geom::taxonomy::matrix4::ptr> placements_;
             std::map<std::string, std::vector<double>> local_verts_;
             std::map<std::string, std::vector<int>> local_faces_;
-            std::map<std::string, std::vector<ifcopenshell::geometry::taxonomy::style::ptr>> local_materials_;
+            std::map<std::string, std::vector<ifcopenshell::geom::taxonomy::style::ptr>> local_materials_;
             std::map<std::string, std::vector<int>> local_material_ids_;
 			
 			bool enable_face_styles_ = false;
@@ -1465,44 +1465,44 @@ namespace IfcGeom {
 		};
 	}
 
-	class opencascade_tree : public impl::tree<express::Entity> {
+	class opencascade_tree : public impl::tree<express::entity> {
 	public:
 
 		opencascade_tree() {};
 
 		opencascade_tree(ifcopenshell::file& f) {
-			add_file(f, ifcopenshell::geometry::Settings{});
+			add_file(f, ifcopenshell::geom::settings{});
 		}
 
-		opencascade_tree(ifcopenshell::file& f, ifcopenshell::geometry::Settings settings) {
+		opencascade_tree(ifcopenshell::file& f, ifcopenshell::geom::settings settings) {
 			add_file(f, settings);
 		}
 
-		opencascade_tree(IfcGeom::Iterator& it) {
+		opencascade_tree(ifcopenshell::geom::iterator& it) {
 			add_file(it);
 		}		
 
-		void add_file(ifcopenshell::file& f, ifcopenshell::geometry::Settings settings) {
-			ifcopenshell::geometry::Settings settings_ = settings;
-			settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-			settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
-			settings_.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
+		void add_file(ifcopenshell::file& f, ifcopenshell::geom::settings settings) {
+			ifcopenshell::geom::settings settings_ = settings;
+			settings_.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
+			settings_.get<ifcopenshell::geom::settings::UseWorldCoords>().value = true;
+			settings_.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
 
-			IfcGeom::Iterator it(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(new OpenCascadeKernel(settings_)), settings_, &f, {}, 1);
+			ifcopenshell::geom::iterator it(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>(new open_cascade_kernel(settings_)), settings_, &f, {}, 1);
 
 			add_file(it);
 		}
 
-		void add_file(IfcGeom::Iterator& it) {
+		void add_file(ifcopenshell::geom::iterator& it) {
 			if (it.initialize()) {
 				do {
-					add_element(dynamic_cast<IfcGeom::BRepElement*>(it.get()));
+					add_element(dynamic_cast<ifcopenshell::geom::brep_element*>(it.get()));
 				} while (it.next());
 			}
 		}
 
         template <typename T>
-        void apply_matrix_to_flat_verts(const std::vector<T>& flat_list, const ifcopenshell::geometry::taxonomy::matrix4::ptr& matrix, std::vector<T>& result) {
+        void apply_matrix_to_flat_verts(const std::vector<T>& flat_list, const ifcopenshell::geom::taxonomy::matrix4::ptr& matrix, std::vector<T>& result) {
             Eigen::Vector3d vin;
             result.clear();
             result.reserve(flat_list.size());
@@ -1547,7 +1547,7 @@ namespace IfcGeom {
             return dict.empty();
         }
 
-        void add_element(IfcGeom::TriangulationElement* elem) {
+        void add_element(ifcopenshell::geom::triangulation_element* elem) {
 
             Bnd_Box aabb;
             Bnd_OBB obb;
@@ -1705,7 +1705,7 @@ namespace IfcGeom {
                 gp_Vec dir1(v1_pnt, v2_pnt);
                 gp_Vec dir2(v1_pnt, v3_pnt);
                 gp_Vec cross_product = dir1.Crossed(dir2);
-                if (cross_product.Magnitude() > Precision::Confusion()) {
+                if (cross_product.Magnitude() > ::Precision::Confusion()) {
 #if OCC_VERSION_HEX >= 0x80000
                     triangulation.Elements.Append(BVH_Vec4i(
 #else
@@ -1744,12 +1744,12 @@ namespace IfcGeom {
             max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) * 2;
         }
         
-		void add_element(IfcGeom::BRepElement* elem) {
+		void add_element(ifcopenshell::geom::brep_element* elem) {
 			if (!elem) {
 				return;
 			}
 
-			auto compound_generic = (ifcopenshell::geometry::OpenCascadeShape*)elem->geometry().as_compound();
+			auto compound_generic = (ifcopenshell::geom::open_cascade_shape*)elem->geometry().as_compound();
 			TopoDS_Shape compound(std::move(compound_generic->shape()));
             delete compound_generic;
 			
@@ -1795,7 +1795,7 @@ namespace IfcGeom {
 			return protrusion_distances_;
 		}
 
-		std::vector<IfcGeom::ray_intersection_result> select_ray(const gp_Pnt& p0, const gp_Dir& d, double length = 1000.) const {
+		std::vector<ifcopenshell::geom::ray_intersection_result> select_ray(const gp_Pnt& p0, const gp_Dir& d, double length = 1000.) const {
 			gp_Pnt p1 = p0.XYZ() + d.XYZ() * length;
 			auto E = BRepBuilderAPI_MakeEdge(p0, p1).Edge();
 			Bnd_Box bb;
@@ -1852,7 +1852,7 @@ namespace IfcGeom {
 			enable_face_styles_ = b;
 		}
 
-		const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles() const {
+		const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& styles() const {
 			return styles_;
 		}
 
@@ -1860,7 +1860,7 @@ namespace IfcGeom {
         typedef NCollection_DataMap<TopoDS_Shape, int, TopTools_ShapeMapHasher> face_style_map_t;
 
 		face_style_map_t face_styles_;
-		std::vector<ifcopenshell::geometry::taxonomy::style::ptr> styles_;
+		std::vector<ifcopenshell::geom::taxonomy::style::ptr> styles_;
 	};
 
 }

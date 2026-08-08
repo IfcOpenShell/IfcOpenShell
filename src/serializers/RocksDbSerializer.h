@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-class SERIALIZERS_API RocksDbSerializer : public Serializer {
+class SERIALIZERS_API RocksDbSerializer : public serializer {
 private:
 	std::string input_filename_;
 	std::string rocksdb_filename_;

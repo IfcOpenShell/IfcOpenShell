@@ -18,7 +18,7 @@
 
 #include <vector>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace util {
 		IFC_GEOMLIBRARY_API bool approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps);
 
@@ -44,9 +44,9 @@ namespace IfcGeom {
 
 		IFC_GEOMLIBRARY_API void select_largest(const NCollection_List<TopoDS_Shape>& shapes, TopoDS_Shape& largest);
 
-		IFC_GEOMLIBRARY_API bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face, const IfcGeom::util::wire_tolerance_settings& settings);
+		IFC_GEOMLIBRARY_API bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face, const ifcopenshell::geom::util::wire_tolerance_settings& settings);
 
-		IFC_GEOMLIBRARY_API bool convert_wire_to_faces(const TopoDS_Wire& wire, TopoDS_Compound& face, const IfcGeom::util::wire_tolerance_settings& settings);
+		IFC_GEOMLIBRARY_API bool convert_wire_to_faces(const TopoDS_Wire& wire, TopoDS_Compound& face, const ifcopenshell::geom::util::wire_tolerance_settings& settings);
 
 		IFC_GEOMLIBRARY_API void assert_closed_wire(TopoDS_Wire& wire, double tol);
 

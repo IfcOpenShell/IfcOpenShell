@@ -83,7 +83,7 @@ double numeric_property(const property_map& properties,
     return fallback;
 }
 
-double selected_number(const express::Base& selected, double fallback) {
+double selected_number(const express::base& selected, double fallback) {
     if (!selected) {
         return fallback;
     }
@@ -184,7 +184,7 @@ template <typename Schema>
 std::optional<Eigen::Matrix4d> get_wcs_s(ifcopenshell::file* ifc_file) {
     const auto contexts =
         ifc_file->template instances_by_type_excl_subtypes<typename Schema::IfcGeometricRepresentationContext>();
-    express::Base wcs;
+    express::base wcs;
     for (const auto& context : contexts) {
         const auto placement = context.WorldCoordinateSystem();
         if (!placement) {
@@ -202,7 +202,7 @@ std::optional<Eigen::Matrix4d> get_wcs_s(ifcopenshell::file* ifc_file) {
 }
 
 template <typename Schema>
-std::optional<express::Base> get_map_unit_s(ifcopenshell::file* ifc_file) {
+std::optional<express::base> get_map_unit_s(ifcopenshell::file* ifc_file) {
     if constexpr (!is_ifc4_or_higher<Schema>::value) {
         return std::nullopt;
     } else {
@@ -328,7 +328,7 @@ Eigen::Matrix4d helmert_meters_from_parameters(const HelmertTransformation& p,
     return M;
 }
 
-std::optional<express::Base> get_map_unit(ifcopenshell::file* ifc_file) {
+std::optional<express::base> get_map_unit(ifcopenshell::file* ifc_file) {
     const auto name = ifc_file->schema()->name();
 #define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
     if (name == Identifier)                       \

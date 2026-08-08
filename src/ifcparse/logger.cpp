@@ -73,12 +73,12 @@ void write_code(T& out, const std::string& code) {
 }
 
 template <typename T>
-void plain_text_message(T& out, const express::Base& current_product, logger::Severity type, const std::string& code, const std::string& message, const express::Base& instance) {
+void plain_text_message(T& out, const express::base& current_product, logger::severity type, const std::string& code, const std::string& message, const express::base& instance) {
     out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
     write_code(out, code);
     out << "[" << get_time(type <= logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
-        express::Entity entity = current_product.as<express::Entity>();
+        express::entity entity = current_product.as<express::entity>();
         if (entity) {
             std::string global_id = entity.get("GlobalId");
             out << "{" << global_id.c_str() << "} ";
@@ -104,7 +104,7 @@ std::basic_string<T> string_as(const std::string& string) {
 }
 
 template <typename T>
-void json_message(T& out, const express::Base& current_product, logger::Severity type, const std::string& code, const std::string& message, const express::Base& instance) {
+void json_message(T& out, const express::base& current_product, logger::severity type, const std::string& code, const std::string& message, const express::base& instance) {
     boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> property_tree;
 
     static const typename T::char_type time_string[] = {'t', 'i', 'm', 'e', 0};
@@ -146,8 +146,8 @@ log_message::log_message(
     const std::string& code,
     const std::string& timestamp,
     const std::string& message,
-    const express::Base& instance,
-    const express::Base& current_product)
+    const express::base& instance,
+    const express::base& current_product)
     : severity(severity)
     , timestamp(timestamp)
     , message(message)
@@ -170,15 +170,15 @@ logger& logger::root() {
     return root_logger;
 }
 
-const express::Base& logger::current_product() const {
+const express::base& logger::current_product() const {
     return current_product_;
 }
 
-void logger::current_product(const express::Base& product) {
+void logger::current_product(const express::base& product) {
     current_product_ = product;
 }
 
-void logger::set_product(std::optional<express::Base> product) {
+void logger::set_product(std::optional<express::base> product) {
     if (verbosity_ <= LOG_DEBUG && product) {
         message(LOG_DEBUG, "SYS", 3, "Begin processing", *product);
     }
@@ -186,7 +186,7 @@ void logger::set_product(std::optional<express::Base> product) {
         print_performance_stats();
         performance_statistics_.clear();
     }
-    current_product(product.value_or(express::Base{}));
+    current_product(product.value_or(express::base{}));
 }
 
 void logger::set_output(std::ostream* stream1, std::ostream* stream2) {
@@ -204,23 +204,23 @@ void logger::set_output(std::wostream* stream1, std::wostream* stream2) {
     wlog2_ = stream2;
 }
 
-void logger::message(logger::Severity type, const std::string& text, const express::Base& instance) {
+void logger::message(logger::severity type, const std::string& text, const express::base& instance) {
     message(type, std::string(), text, instance);
 }
 
-void logger::message(logger::Severity type, const std::exception& exception, const express::Base& instance) {
+void logger::message(logger::severity type, const std::exception& exception, const express::base& instance) {
     message(type, std::string(exception.what()), instance);
 }
 
-void logger::message(logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& text, const express::Base& instance) {
+void logger::message(logger::severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& text, const express::base& instance) {
     message(type, format_code(code_prefix, code_number), text, instance);
 }
 
-void logger::message(logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::Base& instance) {
+void logger::message(logger::severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::base& instance) {
     message(type, code_prefix, code_number, std::string(exception.what()), instance);
 }
 
-void logger::message(logger::Severity type, const std::string& code, const std::string& text, const express::Base& instance) {
+void logger::message(logger::severity type, const std::string& code, const std::string& text, const express::base& instance) {
     if (type < verbosity_) {
         return;
     }
@@ -359,22 +359,22 @@ void logger::print_performance_stats() {
     }
 }
 
-void logger::verbosity(logger::Severity severity) {
+void logger::verbosity(logger::severity severity) {
     verbosity_ = severity;
 }
 
-logger::Severity logger::verbosity() const {
+logger::severity logger::verbosity() const {
     return verbosity_;
 }
 
-logger::Severity logger::max_severity() const {
+logger::severity logger::max_severity() const {
     return max_severity_;
 }
 
-void logger::output_format(Format format) {
+void logger::output_format(format format) {
     format_ = format;
 }
 
-logger::Format logger::output_format() const {
+logger::format logger::output_format() const {
     return format_;
 }

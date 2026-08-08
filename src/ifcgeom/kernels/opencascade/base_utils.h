@@ -25,7 +25,7 @@
 
 #include <vector>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace util {
 
 		IFC_GEOMLIBRARY_API int count(const TopoDS_Shape&, TopAbs_ShapeEnum, bool unique = false);
@@ -74,11 +74,11 @@ namespace IfcGeom {
 		IFC_GEOMLIBRARY_API double shape_volume(const TopoDS_Shape& s);
 		IFC_GEOMLIBRARY_API double face_area(const TopoDS_Face& f);
 
-		IFC_GEOMLIBRARY_API TopoDS_Shape apply_transformation(const TopoDS_Shape&, const ifcopenshell::geometry::taxonomy::matrix4& t);
+		IFC_GEOMLIBRARY_API TopoDS_Shape apply_transformation(const TopoDS_Shape&, const ifcopenshell::geom::taxonomy::matrix4& t);
 		IFC_GEOMLIBRARY_API TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 		IFC_GEOMLIBRARY_API TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
 
-		IFC_GEOMLIBRARY_API bool flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, bool create_shell, double tol);
+		IFC_GEOMLIBRARY_API bool flatten_shape_list(const ifcopenshell::geom::conversion_results& shapes, TopoDS_Shape& result, bool fuse, bool create_shell, double tol);
 		IFC_GEOMLIBRARY_API bool validate_shape(const TopoDS_Shape&);
 
 		IFC_GEOMLIBRARY_API TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance);

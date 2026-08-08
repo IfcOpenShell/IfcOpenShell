@@ -29,11 +29,11 @@
 
 namespace {
 
-boost::shared_ptr<Serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
-	return boost::make_shared<POSTFIX_SCHEMA(JsonSerializer)>(
+boost::shared_ptr<serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
+	return boost::make_shared<POSTFIX_SCHEMA(json_serializer)>(
 		context.file,
 		context.output_filename,
-		static_cast<JsonSerializer::Dialect>(context.dialect));
+		static_cast<json_serializer::Dialect>(context.dialect));
 }
 
 }

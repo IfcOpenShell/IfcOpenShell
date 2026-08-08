@@ -19,8 +19,8 @@
 
 #include "IfcGeomRepresentation.h"
 
-IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
-	: Representation(brep.settings(), brep.entity(), brep.id())
+ifcopenshell::geom::Representation::serialization::serialization(const brep& brep)
+	: representation(brep.settings(), brep.entity(), brep.id())
 {
 	for (auto it = brep.begin(); it != brep.end(); ++it) {
 		int sid = -1;
@@ -47,19 +47,19 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 		surface_style_ids_.push_back(sid);
 	}
 
-	ifcopenshell::geometry::taxonomy::matrix4 identity;
+	ifcopenshell::geom::taxonomy::matrix4 identity;
 	auto* comp = brep.as_compound();
 	comp->Serialize(identity, brep_data_);
 	delete comp;
 }
 
-IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool force_meters) const {
-	ConversionResultShape* accum = nullptr;
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::Representation::brep::as_compound(bool force_meters) const {
+	conversion_result_shape* accum = nullptr;
 
 	for (auto it = begin(); it != end(); ++it) {
 		double unit_scale = 1.0;
-		if (!force_meters && settings().get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
-			unit_scale = 1.0 / settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
+		if (!force_meters && settings().get<ifcopenshell::geom::settings::ConvertBackUnits>().get()) {
+			unit_scale = 1.0 / settings().get<ifcopenshell::geom::settings::LengthUnit>().get();
 		}
 		auto s = it->apply_transform(unit_scale);
 		if (accum) {
@@ -75,8 +75,8 @@ IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool 
 	return accum;
 }
 
-bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
-	std::unique_ptr<ConversionResultShape> s(as_compound());
+bool ifcopenshell::geom::Representation::brep::calculate_surface_area(double& area) const {
+	std::unique_ptr<conversion_result_shape> s(as_compound());
 	if (!s) {
 		area = 0.;
 		return false;
@@ -85,8 +85,8 @@ bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
 	return true;
 }
 
-bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
-	std::unique_ptr<ConversionResultShape> s(as_compound());
+bool ifcopenshell::geom::Representation::brep::calculate_volume(double& volume) const {
+	std::unique_ptr<conversion_result_shape> s(as_compound());
 	if (!s) {
 		volume = 0.;
 		return false;
@@ -95,12 +95,12 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 	return true;
 }
 
-bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
+bool ifcopenshell::geom::Representation::brep::calculate_projected_surface_area(const ifcopenshell::geom::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
 	along_x = along_y = along_z = 0.;
 
-	for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
+	for (ifcopenshell::geom::conversion_results::const_iterator it = begin(); it != end(); ++it) {
 		double x, y, z;
-		it->Shape()->surface_area_along_direction(settings().get<ifcopenshell::geometry::settings::MesherLinearDeflection>().get(), place, x, y, z);
+		it->Shape()->surface_area_along_direction(settings().get<ifcopenshell::geom::settings::MesherLinearDeflection>().get(), place, x, y, z);
 
 		if (it->Shape()->is_manifold()) {
 			x /= 2.;
@@ -116,11 +116,11 @@ bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcop
 	return true;
 }
 
-IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
-	: Representation(shape_model.settings(), shape_model.entity(), shape_model.id())
+ifcopenshell::geom::Representation::triangulation::triangulation(const brep& shape_model)
+	: representation(shape_model.settings(), shape_model.entity(), shape_model.id())
 	, weld_offset_(0)
 {
-	for (IfcGeom::ConversionResults::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++iit) {
+	for (ifcopenshell::geom::conversion_results::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++iit) {
 		
 		// Don't weld vertices that belong to different items to prevent non-manifold situations.
 		resetWelds();
@@ -136,8 +136,8 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 			}
 		}
 
-		if (settings().get<ifcopenshell::geometry::settings::ApplyDefaultMaterials>().get() && surface_style_id == -1) {
-			const auto& material = IfcGeom::get_default_style(shape_model.entity());
+		if (settings().get<ifcopenshell::geom::settings::ApplyDefaultMaterials>().get() && surface_style_id == -1) {
+			const auto& material = ifcopenshell::geom::get_default_style(shape_model.entity());
 			auto mit = std::find(materials_.begin(), materials_.end(), material);
 			if (mit == materials_.end()) {
 				surface_style_id = (int)materials_.size();
@@ -154,7 +154,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 /// Generates UVs for a single mesh using box projection.
 /// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
 
-std::vector<double> IfcGeom::Representation::Triangulation::box_project_uvs(const std::vector<double>& vertices, const std::vector<double>& normals)
+std::vector<double> ifcopenshell::geom::Representation::triangulation::box_project_uvs(const std::vector<double>& vertices, const std::vector<double>& normals)
 {
 	std::vector<double> uvs;
 	uvs.resize(vertices.size() / 3 * 2);
@@ -182,16 +182,16 @@ std::vector<double> IfcGeom::Representation::Triangulation::box_project_uvs(cons
 	return uvs;
 }
 
-int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_index, double pX, double pY, double pZ) {
-	const bool convert = settings().get<ifcopenshell::geometry::settings::ConvertBackUnits>().get();
-	auto unit_magnitude = settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
+int ifcopenshell::geom::Representation::triangulation::addVertex(int item_id, int material_index, double pX, double pY, double pZ) {
+	const bool convert = settings().get<ifcopenshell::geom::settings::ConvertBackUnits>().get();
+	auto unit_magnitude = settings().get<ifcopenshell::geom::settings::LengthUnit>().get();
 	const double X = convert ? (pX /unit_magnitude) : pX;
 	const double Y = convert ? (pY /unit_magnitude) : pY;
 	const double Z = convert ? (pZ /unit_magnitude) : pZ;
 	int i = (int)verts_.size() / 3;
-	if (settings().get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
-		const VertexKey key = std::make_tuple(item_id, material_index, X, Y, Z);
-		typename VertexKeyMap::const_iterator it = welds.find(key);
+	if (settings().get<ifcopenshell::geom::settings::WeldVertices>().get()) {
+		const vertex_key key = std::make_tuple(item_id, material_index, X, Y, Z);
+		typename vertex_key_map::const_iterator it = welds.find(key);
 		if (it != welds.end()) {
 			// Return index for previously encountered point
 			return it->second;
@@ -205,12 +205,12 @@ int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_
 	return i;
 }
 
-void IfcGeom::Representation::Triangulation::registerEdgeCount(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount) {
-	const Edge e = Edge((std::min)(n1, n2), (std::max)(n1, n2));
+void ifcopenshell::geom::Representation::triangulation::registerEdgeCount(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount) {
+	const edge e = edge((std::min)(n1, n2), (std::max)(n1, n2));
 	edgecount[e] ++;
 }
 
-const IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::item(int i) const {
+const ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::Representation::brep::item(int i) const {
 	if (i >= 0 && i < shapes_.size()) {
 		return shapes_[i].Shape()->moved(shapes_[i].Placement());
 	} else {
@@ -218,7 +218,7 @@ const IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::item(int i)
 	}
 }
 
-int IfcGeom::Representation::BRep::item_id(int i) const {
+int ifcopenshell::geom::Representation::brep::item_id(int i) const {
 	if (i >= 0 && i < shapes_.size()) {
 		return shapes_[i].ItemId();
 	} else {

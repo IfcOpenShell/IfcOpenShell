@@ -3,9 +3,9 @@
 
 #include <boost/math/quadrature/trapezoidal.hpp>
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-std::vector<double> ifcopenshell::geometry::helmert_curve_point(double A0, double A1, double A2, double s) {
+std::vector<double> ifcopenshell::geom::helmert_curve_point(double A0, double A1, double A2, double s) {
     auto theta = [A0, A1, A2](double t) -> double {
        auto a0 = A0 ? t / A0 : 0.0;
        auto a1 = A1 ? A1 * std::pow(t, 2) / (2 * fabs(std::pow(A1, 3))) : 0.0;
@@ -22,7 +22,7 @@ std::vector<double> ifcopenshell::geometry::helmert_curve_point(double A0, doubl
 }
 
 struct functor_fn_evaluator : public fn_evaluator {
-    functor_fn_evaluator(taxonomy::functor_item::const_ptr fn, const ifcopenshell::geometry::Settings& settings) : fn_evaluator(settings),
+    functor_fn_evaluator(taxonomy::functor_item::const_ptr fn, const ifcopenshell::geom::settings& settings) : fn_evaluator(settings),
                                                                                                                           fn_(fn) {
     }
 
@@ -38,7 +38,7 @@ struct functor_fn_evaluator : public fn_evaluator {
 };
 
 struct piecewise_fn_evaluator : public fn_evaluator {
-    piecewise_fn_evaluator(taxonomy::piecewise_function::const_ptr fn, const ifcopenshell::geometry::Settings& settings) : fn_evaluator(settings),
+    piecewise_fn_evaluator(taxonomy::piecewise_function::const_ptr fn, const ifcopenshell::geom::settings& settings) : fn_evaluator(settings),
                                                                                                                           fn_(fn) {
     }
 
@@ -69,7 +69,7 @@ struct piecewise_fn_evaluator : public fn_evaluator {
         double span_start = s;
         for (auto& fn : fn_->spans()) {
             double span_end = span_start + fn->length();
-            auto tolerance = settings_.get<ifcopenshell::geometry::settings::Precision>().get();
+            auto tolerance = settings_.get<ifcopenshell::geom::settings::Precision>().get();
             if (span_start <= u && u < span_end + tolerance) {
                 return {span_start, span_end, fn};
             }
@@ -87,7 +87,7 @@ struct piecewise_fn_evaluator : public fn_evaluator {
 };
 
 struct gradient_fn_evaluator : public fn_evaluator {
-    gradient_fn_evaluator(taxonomy::gradient_function::const_ptr fn, const ifcopenshell::geometry::Settings& settings) : 
+    gradient_fn_evaluator(taxonomy::gradient_function::const_ptr fn, const ifcopenshell::geom::settings& settings) :
        fn_evaluator(settings),
        fn_(fn), 
        horizontal_evaluator_(settings, fn->get_horizontal()),
@@ -120,7 +120,7 @@ struct gradient_fn_evaluator : public fn_evaluator {
 };
 
 struct cant_fn_evaluator : public fn_evaluator {
-   cant_fn_evaluator(taxonomy::cant_function::const_ptr fn, const ifcopenshell::geometry::Settings& settings) : fn_evaluator(settings),
+   cant_fn_evaluator(taxonomy::cant_function::const_ptr fn, const ifcopenshell::geom::settings& settings) : fn_evaluator(settings),
       fn_(fn),
       gradient_evaluator_(settings, fn->get_gradient()),
       cant_evaluator_(settings, fn->get_cant()) {
@@ -184,7 +184,7 @@ struct cant_fn_evaluator : public fn_evaluator {
 };
 
 struct offset_fn_evaluator : public fn_evaluator {
-    offset_fn_evaluator(taxonomy::offset_function::const_ptr fn, const ifcopenshell::geometry::Settings& settings) : fn_evaluator(settings),
+    offset_fn_evaluator(taxonomy::offset_function::const_ptr fn, const ifcopenshell::geom::settings& settings) : fn_evaluator(settings),
                                                                                                                        fn_(fn),
                                                                                                                        basis_evaluator_(settings, fn->get_basis()),
                                                                                                                        offset_evaluator_(settings, fn->get_offset()) {
@@ -208,7 +208,7 @@ struct offset_fn_evaluator : public fn_evaluator {
 
 
 
-function_item_evaluator::function_item_evaluator(const ifcopenshell::geometry::Settings& settings,taxonomy::function_item::const_ptr fn, logger& logger) : logger_(logger) {
+function_item_evaluator::function_item_evaluator(const ifcopenshell::geom::settings& settings,taxonomy::function_item::const_ptr fn, logger& logger) : logger_(logger) {
     auto kind = fn ? fn->kind() : taxonomy::kinds::NODE;
     if (kind == taxonomy::FUNCTOR_ITEM) {
         fn_evaluator_ = new functor_fn_evaluator(std::dynamic_pointer_cast<const taxonomy::functor_item>(fn),settings);
@@ -238,10 +238,10 @@ std::vector<double> function_item_evaluator::evaluation_points() const {
     if (!eval_points_.has_value()) {
         double curve_length = fn_evaluator_->length();
 
-        auto param_type = fn_evaluator_->settings_.get<ifcopenshell::geometry::settings::FunctionStepType>().get();
-        auto param = fn_evaluator_->settings_.get<ifcopenshell::geometry::settings::FunctionStepParam>().get();
+        auto param_type = fn_evaluator_->settings_.get<ifcopenshell::geom::settings::FunctionStepType>().get();
+        auto param = fn_evaluator_->settings_.get<ifcopenshell::geom::settings::FunctionStepParam>().get();
         unsigned num_steps = 0;
-        if (param_type == ifcopenshell::geometry::settings::FunctionStepMethod::MAXSTEPSIZE) {
+        if (param_type == ifcopenshell::geom::settings::FunctionStepMethod::MAXSTEPSIZE) {
             // parameter is max step size
             num_steps = (unsigned)std::ceil(curve_length / param);
         } else {
@@ -298,7 +298,7 @@ Eigen::Matrix4d function_item_evaluator::evaluate(double u) const {
         throw std::runtime_error("Function item not initialized");
     }
     Eigen::Matrix4d m = fn_evaluator_->evaluate(u);
-    if (!fn_evaluator_->settings_.get<ifcopenshell::geometry::settings::ComputeCurvature>().get()) {
+    if (!fn_evaluator_->settings_.get<ifcopenshell::geom::settings::ComputeCurvature>().get()) {
         m.row(3) = Eigen::Vector4d(0, 0, 0, 1);
     }
     return m;

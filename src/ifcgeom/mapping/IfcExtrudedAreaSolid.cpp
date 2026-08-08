@@ -22,7 +22,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid& inst) {
 	const double height = inst.Depth() * length_unit_;

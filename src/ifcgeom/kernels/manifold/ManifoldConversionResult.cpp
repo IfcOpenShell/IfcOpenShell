@@ -10,15 +10,15 @@
 #include <sstream>
 #include <unordered_map>
 
-using IfcGeom::ConversionResultShape;
-using IfcGeom::OpaqueCoordinate;
-using IfcGeom::OpaqueNumber;
+using ifcopenshell::geom::conversion_result_shape;
+using ifcopenshell::geom::opaque_coordinate;
+using ifcopenshell::geom::opaque_number;
 
 namespace {
-	using Mesh = manifold::MeshGL64;
+	using mesh_type = manifold::MeshGL64;
 
-	Mesh transform_mesh(const Mesh& mesh, const ifcopenshell::geometry::taxonomy::matrix4& place) {
-		Mesh result = mesh;
+	mesh_type transform_mesh(const mesh_type& mesh, const ifcopenshell::geom::taxonomy::matrix4& place) {
+		mesh_type result = mesh;
 		const auto& m = place.ccomponents();
 		const bool flip = m.block<3, 3>(0, 0).determinant() < 0.;
 		for (size_t i = 0; i < mesh.NumVert(); ++i) {
@@ -41,7 +41,7 @@ namespace {
 		return result;
 	}
 
-	std::optional<manifold::Manifold> make_manifold(const Mesh& mesh) {
+	std::optional<manifold::Manifold> make_manifold(const mesh_type& mesh) {
 		manifold::Manifold solid(mesh);
 		if (solid.Status() == manifold::Manifold::Error::NoError) {
 			return solid;
@@ -49,7 +49,7 @@ namespace {
 		return std::nullopt;
 	}
 
-	manifold::Box mesh_bbox(const Mesh& mesh) {
+	manifold::Box mesh_bbox(const mesh_type& mesh) {
 		if (!mesh.NumVert()) {
 			return {};
 		}
@@ -79,7 +79,7 @@ namespace {
 		return size[0] * size[1] * size[2];
 	}
 
-	double triangle_area(const Mesh& mesh, size_t tri) {
+	double triangle_area(const mesh_type& mesh, size_t tri) {
 		auto idx = [&](int corner) { return mesh.triVerts[tri * 3 + corner]; };
 		auto point = [&](uint32_t i) {
 			return Eigen::Vector3d(
@@ -93,7 +93,7 @@ namespace {
 		return 0.5 * ((b - a).cross(c - a)).norm();
 	}
 
-	double mesh_area(const Mesh& mesh) {
+	double mesh_area(const mesh_type& mesh) {
 		double area = 0.;
 		for (size_t i = 0; i < mesh.NumTri(); ++i) {
 			area += triangle_area(mesh, i);
@@ -101,7 +101,7 @@ namespace {
 		return area;
 	}
 
-	double mesh_volume(const Mesh& mesh) {
+	double mesh_volume(const mesh_type& mesh) {
 		double volume = 0.;
 		for (size_t i = 0; i < mesh.NumTri(); ++i) {
 			auto idx = [&](int corner) { return mesh.triVerts[i * 3 + corner]; };
@@ -119,14 +119,14 @@ namespace {
 		return std::abs(volume);
 	}
 
-	struct EdgeHash {
+	struct edge_hash {
 		size_t operator()(const std::pair<uint32_t, uint32_t>& edge) const {
 			return std::hash<uint64_t>()((uint64_t(edge.first) << 32) ^ uint64_t(edge.second));
 		}
 	};
 
-	std::unordered_map<std::pair<uint32_t, uint32_t>, int, EdgeHash> count_edges(const Mesh& mesh) {
-		std::unordered_map<std::pair<uint32_t, uint32_t>, int, EdgeHash> edges;
+	std::unordered_map<std::pair<uint32_t, uint32_t>, int, edge_hash> count_edges(const mesh_type& mesh) {
+		std::unordered_map<std::pair<uint32_t, uint32_t>, int, edge_hash> edges;
 		for (size_t i = 0; i < mesh.NumTri(); ++i) {
 			uint32_t tri[3] = {
 				(uint32_t) mesh.triVerts[i * 3 + 0],
@@ -145,7 +145,7 @@ namespace {
 		return edges;
 	}
 
-	double mesh_length(const Mesh& mesh) {
+	double mesh_length(const mesh_type& mesh) {
 		double length = 0.;
 		auto edges = count_edges(mesh);
 		for (const auto& pair : edges) {
@@ -164,40 +164,40 @@ namespace {
 		return length;
 	}
 
-	int mesh_edges(const Mesh& mesh) {
+	int mesh_edges(const mesh_type& mesh) {
 		return (int)count_edges(mesh).size();
 	}
 
-	ifcopenshell::geometry::ManifoldPart make_part(const manifold::Manifold& solid) {
+	ifcopenshell::geom::manifold_part make_part(const manifold::Manifold& solid) {
 		return { solid.GetMeshGL64(), solid };
 	}
 
-	ifcopenshell::geometry::ManifoldPart make_box_part(const manifold::Box& box) {
+	ifcopenshell::geom::manifold_part make_box_part(const manifold::Box& box) {
 		const auto size = box.Size();
 		auto solid = manifold::Manifold::Cube(manifold::vec3(size[0], size[1], size[2]), false).Translate(box.min);
 		return make_part(solid);
 	}
 }
 
-ifcopenshell::geometry::ManifoldShape::ManifoldShape(const manifold::Manifold& solid) {
+ifcopenshell::geom::manifold_shape::manifold_shape(const manifold::Manifold& solid) {
     auto copy = solid;
     auto with_normals = copy.CalculateNormals(3);
     parts_.push_back({with_normals.GetMeshGL64(), solid});
 }
 
-ifcopenshell::geometry::ManifoldShape::ManifoldShape(const ManifoldPart& part)
+ifcopenshell::geom::manifold_shape::manifold_shape(const manifold_part& part)
 	: parts_{ part } {}
 
-ifcopenshell::geometry::ManifoldShape::ManifoldShape(ManifoldPart&& part)
+ifcopenshell::geom::manifold_shape::manifold_shape(manifold_part&& part)
 	: parts_{ std::move(part) } {}
 
-ifcopenshell::geometry::ManifoldShape::ManifoldShape(const std::vector<ManifoldPart>& parts)
+ifcopenshell::geom::manifold_shape::manifold_shape(const std::vector<manifold_part>& parts)
 	: parts_(parts) {}
 
-ifcopenshell::geometry::ManifoldShape::ManifoldShape(std::vector<ManifoldPart>&& parts)
+ifcopenshell::geom::manifold_shape::manifold_shape(std::vector<manifold_part>&& parts)
 	: parts_(std::move(parts)) {}
 
-std::optional<manifold::Manifold> ifcopenshell::geometry::ManifoldShape::as_manifold() const {
+std::optional<manifold::Manifold> ifcopenshell::geom::manifold_shape::as_manifold() const {
 	if (parts_.empty()) {
 		return std::nullopt;
 	}
@@ -215,7 +215,7 @@ std::optional<manifold::Manifold> ifcopenshell::geometry::ManifoldShape::as_mani
 	return manifold::Manifold::BatchBoolean(solids, manifold::OpType::Add);
 }
 
-void ifcopenshell::geometry::ManifoldShape::Triangulate(ifcopenshell::geometry::Settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger&) const {
+void ifcopenshell::geom::manifold_shape::Triangulate(ifcopenshell::geom::settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger&) const {
 	for (const auto& part : parts_) {
 		auto mesh = transform_mesh(part.mesh, place);
 		std::vector<int> indices(mesh.NumVert());
@@ -250,7 +250,7 @@ void ifcopenshell::geometry::ManifoldShape::Triangulate(ifcopenshell::geometry::
 	}
 }
 
-void ifcopenshell::geometry::ManifoldShape::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& result) const {
+void ifcopenshell::geom::manifold_shape::Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& result) const {
 	std::stringstream stream;
 	stream << std::setprecision(17);
 	size_t offset = 0;
@@ -273,7 +273,7 @@ void ifcopenshell::geometry::ManifoldShape::Serialize(const ifcopenshell::geomet
 	result = stream.str();
 }
 
-int ifcopenshell::geometry::ManifoldShape::surface_genus() const {
+int ifcopenshell::geom::manifold_shape::surface_genus() const {
 	int genus = 0;
 	for (const auto& part : parts_) {
 		if (!part.solid) {
@@ -284,11 +284,11 @@ int ifcopenshell::geometry::ManifoldShape::surface_genus() const {
 	return genus;
 }
 
-bool ifcopenshell::geometry::ManifoldShape::is_manifold() const {
+bool ifcopenshell::geom::manifold_shape::is_manifold() const {
 	return std::all_of(parts_.begin(), parts_.end(), [](const auto& part) { return part.solid.has_value(); });
 }
 
-int ifcopenshell::geometry::ManifoldShape::num_vertices() const {
+int ifcopenshell::geom::manifold_shape::num_vertices() const {
 	size_t total = 0;
 	for (const auto& part : parts_) {
 		total += part.mesh.NumVert();
@@ -296,7 +296,7 @@ int ifcopenshell::geometry::ManifoldShape::num_vertices() const {
 	return (int)total;
 }
 
-int ifcopenshell::geometry::ManifoldShape::num_edges() const {
+int ifcopenshell::geom::manifold_shape::num_edges() const {
 	int total = 0;
 	for (const auto& part : parts_) {
 		total += part.solid ? (int)part.solid->NumEdge() : mesh_edges(part.mesh);
@@ -304,7 +304,7 @@ int ifcopenshell::geometry::ManifoldShape::num_edges() const {
 	return total;
 }
 
-int ifcopenshell::geometry::ManifoldShape::num_faces() const {
+int ifcopenshell::geom::manifold_shape::num_faces() const {
 	size_t total = 0;
 	for (const auto& part : parts_) {
 		total += part.solid ? part.solid->NumTri() : part.mesh.NumTri();
@@ -312,7 +312,7 @@ int ifcopenshell::geometry::ManifoldShape::num_faces() const {
 	return (int)total;
 }
 
-double ifcopenshell::geometry::ManifoldShape::bounding_box(void*& box_ptr) const {
+double ifcopenshell::geom::manifold_shape::bounding_box(void*& box_ptr) const {
 	bool initialized = false;
 	auto* box = static_cast<manifold::Box*>(box_ptr);
 	if (!box) {
@@ -335,7 +335,7 @@ double ifcopenshell::geometry::ManifoldShape::bounding_box(void*& box_ptr) const
 	return initialized ? bbox_volume(*box) : 0.;
 }
 
-std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::ManifoldShape::bounding_box() const {
+std::pair<opaque_coordinate<3>, opaque_coordinate<3>> ifcopenshell::geom::manifold_shape::bounding_box() const {
 	void* box_ptr = nullptr;
 	bounding_box(box_ptr);
 	auto* box = static_cast<manifold::Box*>(box_ptr);
@@ -344,19 +344,19 @@ std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::Mani
 		throw std::runtime_error("Invalid shape");
 	}
 	auto result = std::make_pair(
-		OpaqueCoordinate<3>(
-			OpaqueNumber(box->min[0]),
-			OpaqueNumber(box->min[1]),
-			OpaqueNumber(box->min[2])),
-		OpaqueCoordinate<3>(
-			OpaqueNumber(box->max[0]),
-			OpaqueNumber(box->max[1]),
-			OpaqueNumber(box->max[2])));
+		opaque_coordinate<3>(
+			opaque_number(box->min[0]),
+			opaque_number(box->min[1]),
+			opaque_number(box->min[2])),
+		opaque_coordinate<3>(
+			opaque_number(box->max[0]),
+			opaque_number(box->max[1]),
+			opaque_number(box->max[2])));
 	delete box;
 	return result;
 }
 
-void ifcopenshell::geometry::ManifoldShape::set_box(void* box_ptr) {
+void ifcopenshell::geom::manifold_shape::set_box(void* box_ptr) {
 	auto* box = static_cast<manifold::Box*>(box_ptr);
 	if (!box || !box->IsFinite()) {
 		throw std::runtime_error("Invalid shape");
@@ -364,51 +364,51 @@ void ifcopenshell::geometry::ManifoldShape::set_box(void* box_ptr) {
 	parts_ = { make_box_part(*box) };
 }
 
-OpaqueNumber ifcopenshell::geometry::ManifoldShape::length() {
+opaque_number ifcopenshell::geom::manifold_shape::length() {
 	double total = 0.;
 	for (const auto& part : parts_) {
 		total += mesh_length(part.mesh);
 	}
-	return OpaqueNumber(total);
+	return opaque_number(total);
 }
 
-OpaqueNumber ifcopenshell::geometry::ManifoldShape::area() {
+opaque_number ifcopenshell::geom::manifold_shape::area() {
 	double total = 0.;
 	for (const auto& part : parts_) {
 		total += part.solid ? part.solid->SurfaceArea() : mesh_area(part.mesh);
 	}
-	return OpaqueNumber(total);
+	return opaque_number(total);
 }
 
-OpaqueNumber ifcopenshell::geometry::ManifoldShape::volume() {
+opaque_number ifcopenshell::geom::manifold_shape::volume() {
 	double total = 0.;
 	for (const auto& part : parts_) {
 		total += part.solid ? part.solid->Volume() : mesh_volume(part.mesh);
 	}
-	return OpaqueNumber(total);
+	return opaque_number(total);
 }
 
-OpaqueCoordinate<3> ifcopenshell::geometry::ManifoldShape::position() {
+opaque_coordinate<3> ifcopenshell::geom::manifold_shape::position() {
 	throw std::runtime_error("Invalid shape");
 }
 
-OpaqueCoordinate<3> ifcopenshell::geometry::ManifoldShape::axis() {
+opaque_coordinate<3> ifcopenshell::geom::manifold_shape::axis() {
 	throw std::runtime_error("Invalid shape");
 }
 
-OpaqueCoordinate<4> ifcopenshell::geometry::ManifoldShape::plane_equation() {
+opaque_coordinate<4> ifcopenshell::geom::manifold_shape::plane_equation() {
 	throw std::runtime_error("Invalid shape");
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::ManifoldShape::convex_decomposition() {
+std::vector<conversion_result_shape*> ifcopenshell::geom::manifold_shape::convex_decomposition() {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::ManifoldShape::halfspaces() {
+conversion_result_shape* ifcopenshell::geom::manifold_shape::halfspaces() {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::ManifoldShape::box() {
+conversion_result_shape* ifcopenshell::geom::manifold_shape::box() {
 	void* box_ptr = nullptr;
 	bounding_box(box_ptr);
 	auto* box = static_cast<manifold::Box*>(box_ptr);
@@ -416,36 +416,36 @@ ConversionResultShape* ifcopenshell::geometry::ManifoldShape::box() {
 		delete box;
 		throw std::runtime_error("Invalid shape");
 	}
-	auto* result = new ManifoldShape(make_box_part(*box));
+	auto* result = new manifold_shape(make_box_part(*box));
 	delete box;
 	return result;
 }
 
-ConversionResultShape* ifcopenshell::geometry::ManifoldShape::solid() {
+conversion_result_shape* ifcopenshell::geom::manifold_shape::solid() {
 	if (!is_manifold()) {
 		throw std::runtime_error("Invalid shape");
 	}
-	return new ManifoldShape(parts_);
+	return new manifold_shape(parts_);
 }
 
-ConversionResultShape* ifcopenshell::geometry::ManifoldShape::wrap_in_compound() {
-	return new ManifoldShape(parts_);
+conversion_result_shape* ifcopenshell::geom::manifold_shape::wrap_in_compound() {
+	return new manifold_shape(parts_);
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::ManifoldShape::vertices() {
+std::vector<conversion_result_shape*> ifcopenshell::geom::manifold_shape::vertices() {
 	throw std::runtime_error("Not implemented");
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::ManifoldShape::edges() {
+std::vector<conversion_result_shape*> ifcopenshell::geom::manifold_shape::edges() {
 	throw std::runtime_error("Not implemented");
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::ManifoldShape::facets() {
+std::vector<conversion_result_shape*> ifcopenshell::geom::manifold_shape::facets() {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::ManifoldShape::add(ConversionResultShape* other) {
-	auto* rhs = dynamic_cast<ManifoldShape*>(other);
+conversion_result_shape* ifcopenshell::geom::manifold_shape::add(conversion_result_shape* other) {
+	auto* rhs = dynamic_cast<manifold_shape*>(other);
 	if (!rhs) {
 		throw std::runtime_error("Invalid shape");
 	}
@@ -454,11 +454,11 @@ ConversionResultShape* ifcopenshell::geometry::ManifoldShape::add(ConversionResu
 	if (!a || !b) {
 		throw std::runtime_error("Invalid shape");
 	}
-	return new ManifoldShape(make_part(*a + *b));
+	return new manifold_shape(make_part(*a + *b));
 }
 
-ConversionResultShape* ifcopenshell::geometry::ManifoldShape::subtract(ConversionResultShape* other) {
-	auto* rhs = dynamic_cast<ManifoldShape*>(other);
+conversion_result_shape* ifcopenshell::geom::manifold_shape::subtract(conversion_result_shape* other) {
+	auto* rhs = dynamic_cast<manifold_shape*>(other);
 	if (!rhs) {
 		throw std::runtime_error("Invalid shape");
 	}
@@ -467,11 +467,11 @@ ConversionResultShape* ifcopenshell::geometry::ManifoldShape::subtract(Conversio
 	if (!a || !b) {
 		throw std::runtime_error("Invalid shape");
 	}
-	return new ManifoldShape(make_part(*a - *b));
+	return new manifold_shape(make_part(*a - *b));
 }
 
-ConversionResultShape* ifcopenshell::geometry::ManifoldShape::intersect(ConversionResultShape* other) {
-	auto* rhs = dynamic_cast<ManifoldShape*>(other);
+conversion_result_shape* ifcopenshell::geom::manifold_shape::intersect(conversion_result_shape* other) {
+	auto* rhs = dynamic_cast<manifold_shape*>(other);
 	if (!rhs) {
 		throw std::runtime_error("Invalid shape");
 	}
@@ -480,29 +480,29 @@ ConversionResultShape* ifcopenshell::geometry::ManifoldShape::intersect(Conversi
 	if (!a || !b) {
 		throw std::runtime_error("Invalid shape");
 	}
-	return new ManifoldShape(make_part(*a ^ *b));
+	return new manifold_shape(make_part(*a ^ *b));
 }
 
-ConversionResultShape* ifcopenshell::geometry::ManifoldShape::concat(ConversionResultShape* other) {
-	auto* rhs = dynamic_cast<ManifoldShape*>(other);
+conversion_result_shape* ifcopenshell::geom::manifold_shape::concat(conversion_result_shape* other) {
+	auto* rhs = dynamic_cast<manifold_shape*>(other);
 	if (!rhs) {
 		throw std::runtime_error("Invalid shape");
 	}
 	auto parts = parts_;
 	parts.insert(parts.end(), rhs->parts_.begin(), rhs->parts_.end());
-	return new ManifoldShape(std::move(parts));
+	return new manifold_shape(std::move(parts));
 }
 
-std::size_t ifcopenshell::geometry::ManifoldShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
+std::size_t ifcopenshell::geom::manifold_shape::map(opaque_coordinate<4>&, opaque_coordinate<4>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-std::size_t ifcopenshell::geometry::ManifoldShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
+std::size_t ifcopenshell::geom::manifold_shape::map(const std::vector<opaque_coordinate<4>>&, const std::vector<opaque_coordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::ManifoldShape::moved(ifcopenshell::geometry::taxonomy::matrix4::ptr place) const {
-	std::vector<ManifoldPart> moved_parts;
+conversion_result_shape* ifcopenshell::geom::manifold_shape::moved(ifcopenshell::geom::taxonomy::matrix4::ptr place) const {
+	std::vector<manifold_part> moved_parts;
 	moved_parts.reserve(parts_.size());
 	for (const auto& part : parts_) {
 		auto mesh = transform_mesh(part.mesh, *place);
@@ -512,10 +512,10 @@ ConversionResultShape* ifcopenshell::geometry::ManifoldShape::moved(ifcopenshell
 		}
 		moved_parts.emplace_back(mesh, *solid);
 	}
-	return new ManifoldShape(std::move(moved_parts));
+	return new manifold_shape(std::move(moved_parts));
 }
 
-bool ifcopenshell::geometry::ManifoldShape::surface_area_along_direction(double, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
+bool ifcopenshell::geom::manifold_shape::surface_area_along_direction(double, const ifcopenshell::geom::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
 	along_x = along_y = along_z = 0.;
 	for (const auto& part : parts_) {
 		auto mesh = transform_mesh(part.mesh, *place);

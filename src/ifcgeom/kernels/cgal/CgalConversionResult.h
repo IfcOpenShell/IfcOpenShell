@@ -45,8 +45,8 @@
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 
-#define Kernel_ SimpleKernel_
-#define CgalShape SimpleCgalShape
+#define kernel_ Simplekernel_
+#define cgal_shape SimpleCgalShape
 #define cgal_placement_t cgal_simple_placement_t
 #define cgal_point_t cgal_simple_point_t
 #define cgal_direction_t cgal_simple_direction_t
@@ -59,23 +59,23 @@
 #define cgal_vertex_descriptor_t cgal_simple_vertex_descriptor_t
 #define cgal_face_descriptor_t cgal_simple_face_descriptor_t
 
-typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel_;
+typedef CGAL::Exact_predicates_inexact_constructions_kernel kernel_;
 
 #else
 
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Nef_polyhedron_3.h>
-typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel_;
+typedef CGAL::Exact_predicates_exact_constructions_kernel kernel_;
 
 #endif
 
-typedef Kernel_::Aff_transformation_3 cgal_placement_t;
-typedef Kernel_::Point_3 cgal_point_t;
-typedef Kernel_::Vector_3 cgal_direction_t;
-typedef Kernel_::Vector_3 cgal_vector_t;
-typedef Kernel_::Plane_3 cgal_plane_t;
-typedef std::vector<Kernel_::Point_3> cgal_curve_t;
-typedef std::vector<Kernel_::Point_3> cgal_wire_t;
+typedef kernel_::Aff_transformation_3 cgal_placement_t;
+typedef kernel_::Point_3 cgal_point_t;
+typedef kernel_::Vector_3 cgal_direction_t;
+typedef kernel_::Vector_3 cgal_vector_t;
+typedef kernel_::Plane_3 cgal_plane_t;
+typedef std::vector<kernel_::Point_3> cgal_curve_t;
+typedef std::vector<kernel_::Point_3> cgal_wire_t;
 
 namespace {
 	struct cgal_face_t {
@@ -84,28 +84,28 @@ namespace {
 	};
 }
 
-typedef CGAL::Polyhedron_3<Kernel_> cgal_shape_t;
-typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::vertex_descriptor cgal_vertex_descriptor_t;
-typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::face_descriptor cgal_face_descriptor_t;
+typedef CGAL::Polyhedron_3<kernel_> cgal_shape_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<kernel_>>::vertex_descriptor cgal_vertex_descriptor_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<kernel_>>::face_descriptor cgal_face_descriptor_t;
 
 #include "../../../ifcgeom/ConversionResult.h"
 
-namespace ifcopenshell { namespace geometry {
+namespace ifcopenshell { namespace geom {
 
-	using IfcGeom::OpaqueCoordinate;
-	using IfcGeom::OpaqueNumber;
+	using ifcopenshell::geom::opaque_coordinate;
+	using ifcopenshell::geom::opaque_number;
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-	class IFC_GEOMLIBRARY_API NumberEpeck : public OpaqueNumber {
+	class IFC_GEOMLIBRARY_API number_epeck : public opaque_number {
 	private:
-		struct Model : OpaqueNumber::NumberConcept {
+		struct model : opaque_number::number_concept {
 			CGAL::Epeck::FT value;
 
-			Model(const CGAL::Epeck::FT& v)
+			model(const CGAL::Epeck::FT& v)
 				: value(v) {}
 
-			static const Model& as_same(const NumberConcept& other) {
-				auto same = dynamic_cast<const Model*>(&other);
+			static const model& as_same(const number_concept& other) {
+				auto same = dynamic_cast<const model*>(&other);
 				if (same == nullptr) {
 					throw std::runtime_error("Incompatible opaque number types");
 				}
@@ -122,39 +122,39 @@ namespace ifcopenshell { namespace geometry {
 				return ss.str();
 			}
 
-			virtual std::shared_ptr<const NumberConcept> add(const NumberConcept& other) const {
-				return std::make_shared<Model>(value + as_same(other).value);
+			virtual std::shared_ptr<const number_concept> add(const number_concept& other) const {
+				return std::make_shared<model>(value + as_same(other).value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> subtract(const NumberConcept& other) const {
-				return std::make_shared<Model>(value - as_same(other).value);
+			virtual std::shared_ptr<const number_concept> subtract(const number_concept& other) const {
+				return std::make_shared<model>(value - as_same(other).value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> multiply(const NumberConcept& other) const {
-				return std::make_shared<Model>(value * as_same(other).value);
+			virtual std::shared_ptr<const number_concept> multiply(const number_concept& other) const {
+				return std::make_shared<model>(value * as_same(other).value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> divide(const NumberConcept& other) const {
-				return std::make_shared<Model>(value / as_same(other).value);
+			virtual std::shared_ptr<const number_concept> divide(const number_concept& other) const {
+				return std::make_shared<model>(value / as_same(other).value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> negate() const {
-				return std::make_shared<Model>(-value);
+			virtual std::shared_ptr<const number_concept> negate() const {
+				return std::make_shared<model>(-value);
 			}
 
-			virtual std::shared_ptr<const NumberConcept> from_double(double v) const {
-				return std::make_shared<Model>(CGAL::Epeck::FT(v));
+			virtual std::shared_ptr<const number_concept> from_double(double v) const {
+				return std::make_shared<model>(CGAL::Epeck::FT(v));
 			}
 
-			virtual std::shared_ptr<const NumberConcept> from_int(int v) const {
-                return std::make_shared<Model>(CGAL::Epeck::FT(v));
+			virtual std::shared_ptr<const number_concept> from_int(int v) const {
+                return std::make_shared<model>(CGAL::Epeck::FT(v));
             }
 
-			virtual bool equals(const NumberConcept& other) const {
+			virtual bool equals(const number_concept& other) const {
 				return value == as_same(other).value;
 			}
 
-			virtual bool less_than(const NumberConcept& other) const {
+			virtual bool less_than(const number_concept& other) const {
 				return value < as_same(other).value;
 			}
 
@@ -168,8 +168,8 @@ namespace ifcopenshell { namespace geometry {
 		};
 
 	public:
-		NumberEpeck(const CGAL::Epeck::FT& v)
-			: OpaqueNumber(std::make_shared<Model>(v)) {}
+		number_epeck(const CGAL::Epeck::FT& v)
+			: opaque_number(std::make_shared<model>(v)) {}
 
 		const CGAL::Epeck::FT& value() const {
 			return value_as<CGAL::Epeck::FT>();
@@ -177,23 +177,23 @@ namespace ifcopenshell { namespace geometry {
 	};
 #endif
 
-	class IFC_GEOMLIBRARY_API CgalShape : public IfcGeom::ConversionResultShape {
+	class IFC_GEOMLIBRARY_API cgal_shape : public ifcopenshell::geom::conversion_result_shape {
 	private:
 		typedef std::variant<cgal_shape_t, cgal_point_t, cgal_wire_t> cgal_shape_storage_t;
 
 		bool convex_tag_ = false;
 		mutable std::optional<cgal_shape_storage_t> shape_;
 #ifndef IFOPSH_SIMPLE_KERNEL
-		mutable std::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
+		mutable std::optional<CGAL::Nef_polyhedron_3<kernel_>> nef_;
 #endif
       public:
 
-		CgalShape(const cgal_shape_t& shape, bool convex = false, ::logger& logger = ::logger::root());
-		CgalShape(const cgal_point_t& point, bool convex = false);
-		CgalShape(const cgal_wire_t& wire, bool convex = false);
+		cgal_shape(const cgal_shape_t& shape, bool convex = false, ::logger& logger = ::logger::root());
+		cgal_shape(const cgal_point_t& point, bool convex = false);
+		cgal_shape(const cgal_wire_t& wire, bool convex = false);
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-		CgalShape(const CGAL::Nef_polyhedron_3<Kernel_>& shape, bool convex = false) {
+		cgal_shape(const CGAL::Nef_polyhedron_3<kernel_>& shape, bool convex = false) {
 			nef_ = shape;
 			convex_tag_ = convex;
 		}
@@ -204,8 +204,8 @@ namespace ifcopenshell { namespace geometry {
 
 		void to_nef() const;
 
-		operator const CGAL::Nef_polyhedron_3<Kernel_>& () const { to_nef(); return *nef_; }
-		const CGAL::Nef_polyhedron_3<Kernel_>& nef() const { to_nef(); return *nef_; }
+		operator const CGAL::Nef_polyhedron_3<kernel_>& () const { to_nef(); return *nef_; }
+		const CGAL::Nef_polyhedron_3<kernel_>& nef() const { to_nef(); return *nef_; }
 #else
 		// noop on simple kernel
 		void to_poly() const {}
@@ -226,18 +226,18 @@ namespace ifcopenshell { namespace geometry {
 		const cgal_point_t& point() const { return std::get<cgal_point_t>(*shape_); }
 		const cgal_wire_t& wire() const { return std::get<cgal_wire_t>(*shape_); }
 
-		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
-		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
+		virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
+		virtual void Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const;
 
-		virtual IfcGeom::ConversionResultShape* clone() const {
+		virtual ifcopenshell::geom::conversion_result_shape* clone() const {
 			if (shape_) {
-				return std::visit([this](const auto& value) -> IfcGeom::ConversionResultShape* {
-					return new CgalShape(value, convex_tag_);
+				return std::visit([this](const auto& value) -> ifcopenshell::geom::conversion_result_shape* {
+					return new cgal_shape(value, convex_tag_);
 				}, *shape_);
 			}
 #ifndef IFOPSH_SIMPLE_KERNEL
 			if (nef_) {
-				return new CgalShape(*nef_, convex_tag_);
+				return new cgal_shape(*nef_, convex_tag_);
 			}
 #endif
 			return nullptr;
@@ -257,49 +257,49 @@ namespace ifcopenshell { namespace geometry {
 		virtual int num_faces() const;
 
 		// @todo this must be something with a virtual dtor so that we can delete it.
-		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const;
+		virtual std::pair<opaque_coordinate<3>, opaque_coordinate<3>> bounding_box() const;
 
-		virtual OpaqueNumber length();
-		virtual OpaqueNumber area();
-		virtual OpaqueNumber volume();
+		virtual opaque_number length();
+		virtual opaque_number area();
+		virtual opaque_number volume();
 
-		virtual OpaqueCoordinate<3> position();
-		virtual OpaqueCoordinate<3> axis();
-		virtual OpaqueCoordinate<4> plane_equation();
+		virtual opaque_coordinate<3> position();
+		virtual opaque_coordinate<3> axis();
+		virtual opaque_coordinate<4> plane_equation();
 
-		virtual std::vector<ConversionResultShape*> convex_decomposition();
-		virtual ConversionResultShape* halfspaces();
-		virtual ConversionResultShape* solid();
-		virtual ConversionResultShape* box();
-		virtual ConversionResultShape* wrap_in_compound();
+		virtual std::vector<conversion_result_shape*> convex_decomposition();
+		virtual conversion_result_shape* halfspaces();
+		virtual conversion_result_shape* solid();
+		virtual conversion_result_shape* box();
+		virtual conversion_result_shape* wrap_in_compound();
 
-		virtual std::vector<ConversionResultShape*> vertices();
-		virtual std::vector<ConversionResultShape*> edges();
-		virtual std::vector<ConversionResultShape*> facets();
+		virtual std::vector<conversion_result_shape*> vertices();
+		virtual std::vector<conversion_result_shape*> edges();
+		virtual std::vector<conversion_result_shape*> facets();
 
-		virtual ConversionResultShape* add(ConversionResultShape*);
-		virtual ConversionResultShape* subtract(ConversionResultShape*);
-		virtual ConversionResultShape* intersect(ConversionResultShape*);
-		virtual ConversionResultShape* concat(ConversionResultShape*);
+		virtual conversion_result_shape* add(conversion_result_shape*);
+		virtual conversion_result_shape* subtract(conversion_result_shape*);
+		virtual conversion_result_shape* intersect(conversion_result_shape*);
+		virtual conversion_result_shape* concat(conversion_result_shape*);
 
-		virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
-		virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
-		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
+		virtual std::size_t map(opaque_coordinate<4>& from, opaque_coordinate<4>& to);
+		virtual std::size_t map(const std::vector<opaque_coordinate<4>>& from, const std::vector<opaque_coordinate<4>>& to);
+		virtual conversion_result_shape* moved(ifcopenshell::geom::taxonomy::matrix4::ptr) const;
 
-		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const;
+		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geom::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const;
 
 		bool convex_tag() const { return convex_tag_; }
 		bool& convex_tag() { return convex_tag_; }
 	};
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-	class IFC_GEOMLIBRARY_API CgalShapeHalfSpaceDecomposition : public IfcGeom::ConversionResultShape {
+	class IFC_GEOMLIBRARY_API cgal_shape_half_space_decomposition : public ifcopenshell::geom::conversion_result_shape {
 	private:
-		std::unique_ptr<halfspace_tree<Kernel_>> shape_;
-		std::list<CGAL::Plane_3<Kernel_>> planes_;
+		std::unique_ptr<halfspace_tree<kernel_>> shape_;
+		std::list<CGAL::Plane_3<kernel_>> planes_;
 
 	public:
-		CgalShapeHalfSpaceDecomposition(const CGAL::Nef_polyhedron_3<Kernel_>& shape, bool is_convex) {
+		cgal_shape_half_space_decomposition(const CGAL::Nef_polyhedron_3<kernel_>& shape, bool is_convex) {
 			if (is_convex) {
 				shape_ = std::move(build_halfspace_tree_is_decomposed(shape, planes_));
 			} else {
@@ -307,8 +307,8 @@ namespace ifcopenshell { namespace geometry {
 			}
 		}
 
-		CgalShapeHalfSpaceDecomposition(const CGAL::Plane_3<Kernel_>& shape) {
-			shape_.reset(new halfspace_tree_plane<Kernel_>(shape));
+		cgal_shape_half_space_decomposition(const CGAL::Plane_3<kernel_>& shape) {
+			shape_.reset(new halfspace_tree_plane<kernel_>(shape));
 			planes_.push_back(shape);
 		}
 		virtual std::string_view backend_id() const {
@@ -319,8 +319,8 @@ namespace ifcopenshell { namespace geometry {
 #endif
 		}
 
-		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
-		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
+		virtual void Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
+		virtual void Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const;
 
 		virtual int surface_genus() const;
 		virtual bool is_manifold() const;
@@ -332,39 +332,39 @@ namespace ifcopenshell { namespace geometry {
 		virtual double bounding_box(void*&) const;
 
 		// @todo this must be something with a virtual dtor so that we can delete it.
-		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const;
+		virtual std::pair<opaque_coordinate<3>, opaque_coordinate<3>> bounding_box() const;
 		virtual void set_box(void* b);
 
-		virtual OpaqueNumber length();
-		virtual OpaqueNumber area();
-		virtual OpaqueNumber volume();
+		virtual opaque_number length();
+		virtual opaque_number area();
+		virtual opaque_number volume();
 
-		virtual OpaqueCoordinate<3> position();
-		virtual OpaqueCoordinate<3> axis();
-		virtual OpaqueCoordinate<4> plane_equation();
+		virtual opaque_coordinate<3> position();
+		virtual opaque_coordinate<3> axis();
+		virtual opaque_coordinate<4> plane_equation();
 
-		virtual std::vector<ConversionResultShape*> convex_decomposition();
-		virtual ConversionResultShape* halfspaces();
-		virtual ConversionResultShape* solid();
-		virtual ConversionResultShape* box();
-		virtual ConversionResultShape* wrap_in_compound();
+		virtual std::vector<conversion_result_shape*> convex_decomposition();
+		virtual conversion_result_shape* halfspaces();
+		virtual conversion_result_shape* solid();
+		virtual conversion_result_shape* box();
+		virtual conversion_result_shape* wrap_in_compound();
 
-		virtual std::vector<ConversionResultShape*> vertices();
-		virtual std::vector<ConversionResultShape*> edges();
-		virtual std::vector<ConversionResultShape*> facets();
+		virtual std::vector<conversion_result_shape*> vertices();
+		virtual std::vector<conversion_result_shape*> edges();
+		virtual std::vector<conversion_result_shape*> facets();
 
-		virtual ConversionResultShape* add(ConversionResultShape*);
-		virtual ConversionResultShape* subtract(ConversionResultShape*);
-		virtual ConversionResultShape* intersect(ConversionResultShape*);
-		virtual ConversionResultShape* concat(ConversionResultShape*) {
+		virtual conversion_result_shape* add(conversion_result_shape*);
+		virtual conversion_result_shape* subtract(conversion_result_shape*);
+		virtual conversion_result_shape* intersect(conversion_result_shape*);
+		virtual conversion_result_shape* concat(conversion_result_shape*) {
 			return nullptr;
 		}
 
-		virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
-		virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
-		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
+		virtual std::size_t map(opaque_coordinate<4>& from, opaque_coordinate<4>& to);
+		virtual std::size_t map(const std::vector<opaque_coordinate<4>>& from, const std::vector<opaque_coordinate<4>>& to);
+		virtual conversion_result_shape* moved(ifcopenshell::geom::taxonomy::matrix4::ptr) const;
 
-		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const {
+		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geom::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const {
 			return false;
 		}
 	};
@@ -372,7 +372,7 @@ namespace ifcopenshell { namespace geometry {
 }}
 
 #ifdef IFOPSH_SIMPLE_KERNEL
-#undef CgalShape
+#undef cgal_shape
 #endif
 
 #endif

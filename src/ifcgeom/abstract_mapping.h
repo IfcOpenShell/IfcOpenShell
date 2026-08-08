@@ -33,46 +33,46 @@
 
 namespace ifcopenshell {
 
-namespace geometry {
+namespace geom {
 
 	struct IFC_GEOM_API geometry_conversion_task {
 		int index;
-        express::Base representation;
-		std::vector<express::Base> products;
+        express::base representation;
+		std::vector<express::base> products;
 	};
 
     /// The filter function (free or member function) or function object (use boost::ref() to reference to it)
     /// should return true if the geometry for the product is wanted to be included in the output.
     /// http://www.boost.org/doc/libs/1_62_0/doc/html/function/tutorial.html
-	typedef boost::function<bool(const express::Base&)> filter_t;
+	typedef boost::function<bool(const express::base&)> filter_t;
     
 	class IFC_GEOM_API abstract_mapping {
 	protected:
-		Settings settings_;
+		ifcopenshell::geom::settings settings_;
 		::logger& logger_;
 
 		bool use_caching_ = true;
 
 	public:
-		abstract_mapping(Settings& s, ::logger& logger = ::logger::root()) : settings_(s), logger_(logger) {}
+		abstract_mapping(ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root()) : settings_(settings), logger_(logger) {}
 		virtual ~abstract_mapping() {}
 
-		virtual ifcopenshell::geometry::taxonomy::ptr map(const express::Base&) = 0;
+		virtual ifcopenshell::geom::taxonomy::ptr map(const express::base&) = 0;
         virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) = 0;
-        virtual express::Base get_decomposing_entity(const express::Base& product, bool include_openings = true) = 0;
-		virtual std::map<std::string, express::Base> get_layers(const express::Base&) = 0;
-		virtual std::vector<express::Base> find_openings(const express::Base&) = 0;
+        virtual express::base get_decomposing_entity(const express::base& product, bool include_openings = true) = 0;
+		virtual std::map<std::string, express::base> get_layers(const express::base&) = 0;
+		virtual std::vector<express::base> find_openings(const express::base&) = 0;
 		virtual void initialize_settings() = 0;
-		virtual bool get_layerset_information(const express::Base&, layerset_information&, int&) = 0;
-        virtual bool get_wall_neighbours(const express::Base&, std::vector<endpoint_connection>&) = 0;
-        virtual const express::Base get_product_type(const express::Base&) = 0;
-        virtual const express::Base get_single_material_association(const express::Base&) = 0;
+		virtual bool get_layerset_information(const express::base&, layerset_information&, int&) = 0;
+        virtual bool get_wall_neighbours(const express::base&, std::vector<endpoint_connection>&) = 0;
+        virtual const express::base get_product_type(const express::base&) = 0;
+        virtual const express::base get_single_material_association(const express::base&) = 0;
 		virtual double get_length_unit() const = 0;
 		virtual const std::string& get_length_unit_name() const = 0;
-        virtual express::Base representation_of(const express::Base& product) = 0;
+        virtual express::base representation_of(const express::base& product) = 0;
 
-		const Settings& settings() const { return settings_; }
-		Settings& settings() { return settings_; }
+		const ifcopenshell::geom::settings& settings() const { return settings_; }
+		ifcopenshell::geom::settings& settings() { return settings_; }
 		::logger& logger() const { return logger_; }
 
 		bool use_caching() const { return use_caching_; }
@@ -80,12 +80,12 @@ namespace geometry {
     };
 
 	namespace impl {
-		typedef boost::function3<abstract_mapping*, ifcopenshell::file*, Settings&, ::logger&> mapping_fn;
+		typedef boost::function3<abstract_mapping*, ifcopenshell::file*, ifcopenshell::geom::settings&, ::logger&> mapping_fn;
 
 		class IFC_GEOM_API mapping_registry {
 		public:
 			void bind(const std::string& schema_name, mapping_fn fn, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
-			abstract_mapping* construct(ifcopenshell::file* file, Settings& settings, ::logger& logger = ::logger::root());
+			abstract_mapping* construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root());
 
 		private:
 			struct entry {
@@ -98,14 +98,14 @@ namespace geometry {
 
 		IFC_GEOM_API mapping_registry& mapping_registry_instance();
 
-		class IFC_GEOM_API MappingFactoryImplementation {
+		class IFC_GEOM_API mapping_factory_implementation {
 		public:
-			MappingFactoryImplementation();
+			mapping_factory_implementation();
 			void bind(const std::string& schema_name, mapping_fn);
-			abstract_mapping* construct(ifcopenshell::file*, Settings&, ::logger& logger = ::logger::root());
+			abstract_mapping* construct(ifcopenshell::file*, ifcopenshell::geom::settings&, ::logger& logger = ::logger::root());
 		};
 
-		IFC_GEOM_API MappingFactoryImplementation& mapping_implementations();
+		IFC_GEOM_API mapping_factory_implementation& mapping_implementations();
 	}
     
 }

@@ -292,7 +292,7 @@ public:
 
 class Entity : public Command {
 private:
-	const IfcGeom::TriangulationElement* geom;
+	const ifcopenshell::geom::triangulation_element* geom;
 	bool append_line_data;
 	EntityExtension* eext_;
 protected:
@@ -401,7 +401,7 @@ protected:
 		}
 	}
 public:
-	Entity(const IfcGeom::TriangulationElement* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
+	Entity(const ifcopenshell::geom::triangulation_element* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
 };
 
 class Next : public Command {
@@ -467,9 +467,9 @@ static const std::array<std::string, 3> XYZ = { "X", "Y", "Z" };
 
 class QuantityWriter_v0 : public EntityExtension {
 private:
-	const IfcGeom::BRepElement* elem_;
+	const ifcopenshell::geom::brep_element* elem_;
 public:
-	QuantityWriter_v0(const IfcGeom::BRepElement* elem) :
+	QuantityWriter_v0(const ifcopenshell::geom::brep_element* elem) :
 		elem_(elem) 
 	{
 		put_json(TOTAL_SURFACE_AREA, 0.);
@@ -482,9 +482,9 @@ public:
 
 class QuantityWriter_v1 : public EntityExtension {
 private:
-	const IfcGeom::BRepElement* elem_;
+	const ifcopenshell::geom::brep_element* elem_;
 public:
-	QuantityWriter_v1(const IfcGeom::BRepElement* elem) :
+	QuantityWriter_v1(const ifcopenshell::geom::brep_element* elem) :
 		elem_(elem) {
 		double a, b, c, largest_face_area = 0.;
 
@@ -506,7 +506,7 @@ public:
 
 		{
 			auto shp = elem_->geometry().as_compound(true);
-			auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape();
+			auto compound = ((ifcopenshell::geom::open_cascade_shape*)shp)->shape();
 			delete shp;
 			TopExp_Explorer exp(compound, TopAbs_FACE);
 			for (; exp.More(); exp.Next()) {
@@ -567,7 +567,7 @@ int main () {
 	double deflection = 1.e-3;
 	bool has_more = false;
 
-	IfcGeom::Iterator* iterator = 0;
+	ifcopenshell::geom::iterator* iterator = 0;
 	ifcopenshell::file* file = 0;
 	std::vector< std::pair<uint32_t, uint32_t> > setting_pairs;
 
@@ -583,18 +583,18 @@ int main () {
 			char* data = new char[len];
 			memcpy(data, m.string().c_str(), len);
 
-			ifcopenshell::geometry::Settings settings;
-            settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-            settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-            settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-            // settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES, true);
+			ifcopenshell::geom::settings settings;
+            settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+            settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+            settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+            // settings.set(ifcopenshell::geom::IteratorSettings::INCLUDE_CURVES, true);
 
 			/*
 			// @todo
 			std::vector< std::pair<uint32_t, uint32_t> >::const_iterator it = setting_pairs.begin();
 			for (; it != setting_pairs.end(); ++it) {
 				settings.get(it->first, it->second != 0);
-				if (it->first == IfcGeom::IteratorSettings::SEW_SHELLS && it->second) {
+				if (it->first == ifcopenshell::geom::IteratorSettings::SEW_SHELLS && it->second) {
 					// Quantities (especially volume) can be emitted if there are proper
 					// topologically valid geometries being created.
 					emit_quantities = true;
@@ -602,10 +602,10 @@ int main () {
 			}
 			*/
 
-			settings.get<ifcopenshell::geometry::settings::MesherLinearDeflection>().value = deflection;
+			settings.get<ifcopenshell::geom::settings::MesherLinearDeflection>().value = deflection;
 
 			file = new ifcopenshell::file(data, (int)len);
-			iterator = new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, "opencascade", settings), settings, file);
+			iterator = new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, "opencascade", settings), settings, file);
 			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);
@@ -617,7 +617,7 @@ int main () {
 				exit_code = 1;
 				break;
 			}
-			const IfcGeom::TriangulationElement* geom = static_cast<const IfcGeom::TriangulationElement*>(iterator->get());
+			const ifcopenshell::geom::triangulation_element* geom = static_cast<const ifcopenshell::geom::triangulation_element*>(iterator->get());
 			std::unique_ptr<EntityExtension> eext;
 			if (emit_quantities) {
 				eext.reset(new QuantityWriter_v1(iterator->get_native()));

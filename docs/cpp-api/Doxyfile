@@ -1024,14 +1024,13 @@ EXCLUDE_PATTERNS       =
 # wildcard * is used, a substring. Examples: ANamespace, AClass,
 # ANamespace::AClass, ANamespace::*Test
 
-EXCLUDE_SYMBOLS        = "IfcGeom::OpaqueNumber::*" \
-                         "ifcopenshell::geometry::OpaqueNumber::*" \
+EXCLUDE_SYMBOLS        = "ifcopenshell::geom::opaque_number::*" \
                          ifcopenshell::entity::attribute_by_name_cmp \
                          ifcopenshell::impl::rocks_db_file_storage::rocksdb_types_iterator \
                          ifcopenshell::impl::in_memory_file_storage::type_iterator \
                          "util::string_buffer::*_item" \
                          util::string_buffer::item \
-                         IfcGeom::layer_filter::wildcards_match \
+                         ifcopenshell::geom::layer_filter::wildcards_match \
                          ifcopenshell::paged_file_impl::Entry \
                          attribute_value::pointer_type \
                          INCLUDE_PARENT_PARENT_DIR \
@@ -1048,9 +1047,9 @@ EXCLUDE_SYMBOLS        = "IfcGeom::OpaqueNumber::*" \
                          equals_ \
                          less_than_ \
                          negate_ \
-                         ifcopenshell::geometry::utils::create_cube \
-                         ifcopenshell::geometry::utils::create_polyhedron \
-                         ifcopenshell::geometry::utils::create_nef_polyhedron
+                         ifcopenshell::geom::utils::create_cube \
+                         ifcopenshell::geom::utils::create_polyhedron \
+                         ifcopenshell::geom::utils::create_nef_polyhedron
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
 # that contain example code fragments that are included (see the \include
@@ -2389,8 +2388,8 @@ PREDEFINED             = IFC_PARSE_API= \
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
 EXPAND_AS_DEFINED      = Kernel_ \
-                         CgalShape \
-                         CgalKernel \
+                         cgal_shape \
+                         cgal_kernel \
                          cgal_placement_t \
                          cgal_point_t \
                          cgal_direction_t \

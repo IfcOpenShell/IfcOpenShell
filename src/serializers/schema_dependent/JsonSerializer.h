@@ -32,17 +32,17 @@
 #define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/schemas/x-definitions.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
-class POSTFIX_SCHEMA(JsonSerializer) : public JsonSerializer {
+class POSTFIX_SCHEMA(json_serializer) : public json_serializer {
   private:
     ifcopenshell::file* file;
 
     // @todo
-    ifcopenshell::geometry::Settings settings_;
-    ifcopenshell::geometry::abstract_mapping* mapping_;
+    ifcopenshell::geom::settings settings_;
+    ifcopenshell::geom::abstract_mapping* mapping_;
 
   public:
-    POSTFIX_SCHEMA(JsonSerializer)(ifcopenshell::file* file, const std::string& json_filename, JsonSerializer::Dialect dialect, ::logger& logger = ::logger::root())
-        : JsonSerializer(0, "", dialect), mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_, logger))
+    POSTFIX_SCHEMA(json_serializer)(ifcopenshell::file* file, const std::string& json_filename, json_serializer::Dialect dialect, ::logger& logger = ::logger::root())
+        : json_serializer(0, "", dialect), mapping_(ifcopenshell::geom::impl::mapping_implementations().construct(file, settings_, logger))
     {
         this->file = file;
         this->json_filename = json_filename;

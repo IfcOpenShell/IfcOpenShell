@@ -24,18 +24,18 @@
 #include "kernel_registry.h"
 
 namespace ifcopenshell {
-	namespace geometry {
+	namespace geom {
 		namespace kernels {
 
-			class HybridKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
-				std::vector<std::unique_ptr<AbstractKernel>> kernels_;
-				ifcopenshell::geometry::abstract_mapping* mapping_;
+			class hybrid_kernel : public ifcopenshell::geom::kernels::abstract_kernel {
+				std::vector<std::unique_ptr<abstract_kernel>> kernels_;
+				ifcopenshell::geom::abstract_mapping* mapping_;
 				ifcopenshell::file* file_;
 			public:
-				HybridKernel(const std::string& name, ifcopenshell::file* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels, ::logger& logger = ::logger::root())
-					: AbstractKernel(name, settings, logger)
+				hybrid_kernel(const std::string& name, ifcopenshell::file* file, ifcopenshell::geom::settings& settings, std::vector<std::unique_ptr<abstract_kernel>>&& kernels, ::logger& logger = ::logger::root())
+					: abstract_kernel(name, settings, logger)
 					, kernels_(std::move(kernels))
-					, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings, logger))
+					, mapping_(ifcopenshell::geom::impl::mapping_implementations().construct(file, settings, logger))
 					, file_(file)
 				{
 				}
@@ -48,7 +48,7 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual bool convert(const taxonomy::ptr item, IfcGeom::ConversionResults& rs)
+				virtual bool convert(const taxonomy::ptr item, ifcopenshell::geom::conversion_results& rs)
 				{
 					auto ops = mapping_->find_openings(item->instance);
 					bool has_openings = ops.size();
@@ -77,7 +77,7 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual bool apply_layerset(IfcGeom::ConversionResults& items, const ifcopenshell::geometry::layerset_information& layers)
+				virtual bool apply_layerset(ifcopenshell::geom::conversion_results& items, const ifcopenshell::geom::layerset_information& layers)
 				{
 					for (auto& k : kernels_) {
 						bool success = false;
@@ -90,7 +90,7 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual bool apply_folded_layerset(IfcGeom::ConversionResults& items, const ifcopenshell::geometry::layerset_information& layers, const std::map<express::Base, ifcopenshell::geometry::layerset_information>& folds)
+				virtual bool apply_folded_layerset(ifcopenshell::geom::conversion_results& items, const ifcopenshell::geom::layerset_information& layers, const std::map<express::base, ifcopenshell::geom::layerset_information>& folds)
 				{
 					for (auto& k : kernels_) {
 						bool success = false;
@@ -103,8 +103,8 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-                virtual bool convert_openings(const express::Base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
-					const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes)
+                virtual bool convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings,
+					const ifcopenshell::geom::conversion_results& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes)
 				{
 					for (auto& k : kernels_) {
 						bool is_valid = true;
@@ -127,14 +127,14 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual AbstractKernel* clone(::logger& logger) const
+				virtual abstract_kernel* clone(::logger& logger) const
 				{
-					std::vector<std::unique_ptr<AbstractKernel>> ks;
+					std::vector<std::unique_ptr<abstract_kernel>> ks;
 					for (auto& k : kernels_) {
 						ks.emplace_back(k->clone(logger));
 					}
 					// @todo ugly
-					return new HybridKernel(geometry_library(), file_, const_cast<Settings&>(settings()), std::move(ks), logger);
+					return new hybrid_kernel(geometry_library(), file_, const_cast<ifcopenshell::geom::settings&>(settings()), std::move(ks), logger);
 				}
 			};
 		}

@@ -33,8 +33,8 @@
 namespace ifcopenshell {
 	class file;
 
-	namespace geometry {
-		class Settings;
+	namespace geom {
+		class settings;
 
 		namespace trees {
 
@@ -48,27 +48,27 @@ namespace ifcopenshell {
 
 				virtual std::string_view backend_id() const = 0;
 
-				virtual void add_file(ifcopenshell::file& file, const ifcopenshell::geometry::Settings& settings);
-				virtual void add_element(IfcGeom::Element* element);
+				virtual void add_file(ifcopenshell::file& file, const ifcopenshell::geom::settings& settings);
+				virtual void add_element(ifcopenshell::geom::element* element);
 
-				virtual std::vector<express::Entity> select_box(const express::Entity& entity, bool completely_within, double extend) const;
-				virtual std::vector<express::Entity> select_box(const IfcGeom::tree_point& point) const;
-				virtual std::vector<express::Entity> select_box(const IfcGeom::tree_box& bounds, bool completely_within) const;
+				virtual std::vector<express::entity> select_box(const express::entity& entity, bool completely_within, double extend) const;
+				virtual std::vector<express::entity> select_box(const ifcopenshell::geom::tree_point& point) const;
+				virtual std::vector<express::entity> select_box(const ifcopenshell::geom::tree_box& bounds, bool completely_within) const;
 
-				virtual std::vector<express::Entity> select(const express::Entity& entity, bool completely_within, double extend) const;
-				virtual std::vector<express::Entity> select(const IfcGeom::Element* element, bool completely_within, double extend) const;
-				virtual std::vector<express::Entity> select(const IfcGeom::tree_point& point, double extend) const;
-				virtual std::vector<IfcGeom::ray_intersection_result> select_ray(const IfcGeom::tree_point& origin, const IfcGeom::tree_point& direction, double length) const;
+				virtual std::vector<express::entity> select(const express::entity& entity, bool completely_within, double extend) const;
+				virtual std::vector<express::entity> select(const ifcopenshell::geom::element* element, bool completely_within, double extend) const;
+				virtual std::vector<express::entity> select(const ifcopenshell::geom::tree_point& point, double extend) const;
+				virtual std::vector<ifcopenshell::geom::ray_intersection_result> select_ray(const ifcopenshell::geom::tree_point& origin, const ifcopenshell::geom::tree_point& direction, double length) const;
 
-				virtual std::vector<IfcGeom::clash> clash_intersection_many(const std::vector<express::Entity>& set_a, const std::vector<express::Entity>& set_b, double tolerance, bool check_all) const;
-				virtual std::vector<IfcGeom::clash> clash_collision_many(const std::vector<express::Entity>& set_a, const std::vector<express::Entity>& set_b, bool allow_touching) const;
-				virtual std::vector<IfcGeom::clash> clash_clearance_many(const std::vector<express::Entity>& set_a, const std::vector<express::Entity>& set_b, double clearance, bool check_all) const;
+				virtual std::vector<ifcopenshell::geom::clash> clash_intersection_many(const std::vector<express::entity>& set_a, const std::vector<express::entity>& set_b, double tolerance, bool check_all) const;
+				virtual std::vector<ifcopenshell::geom::clash> clash_collision_many(const std::vector<express::entity>& set_a, const std::vector<express::entity>& set_b, bool allow_touching) const;
+				virtual std::vector<ifcopenshell::geom::clash> clash_clearance_many(const std::vector<express::entity>& set_a, const std::vector<express::entity>& set_b, double clearance, bool check_all) const;
 
 				virtual const std::vector<double>& distances() const;
 				virtual const std::vector<double>& protrusion_distances() const;
 				virtual bool enable_face_styles() const;
 				virtual void enable_face_styles(bool enable);
-				virtual const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles() const;
+				virtual const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& styles() const;
 
 			};
 

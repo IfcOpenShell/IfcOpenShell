@@ -12,21 +12,21 @@
 #include <sstream>
 #include <unordered_map>
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 namespace {
-	struct VertexKey {
+	struct vertex_key {
 		long long x;
 		long long y;
 		long long z;
 
-		bool operator==(const VertexKey& other) const {
+		bool operator==(const vertex_key& other) const {
 			return x == other.x && y == other.y && z == other.z;
 		}
 	};
 
-	struct VertexKeyHash {
-		size_t operator()(const VertexKey& key) const {
+	struct vertex_key_hash {
+		size_t operator()(const vertex_key& key) const {
 			auto h = std::hash<long long>()(key.x);
 			h ^= std::hash<long long>()(key.y) + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
 			h ^= std::hash<long long>()(key.z) + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
@@ -34,37 +34,37 @@ namespace {
 		}
 	};
 
-	struct EdgeKey {
+	struct edge_key {
 		int a;
 		int b;
 
-		bool operator==(const EdgeKey& other) const {
+		bool operator==(const edge_key& other) const {
 			return a == other.a && b == other.b;
 		}
 	};
 
-	struct EdgeKeyHash {
-		size_t operator()(const EdgeKey& key) const {
+	struct edge_key_hash {
+		size_t operator()(const edge_key& key) const {
 			auto h = std::hash<int>()(key.a);
 			h ^= std::hash<int>()(key.b) + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
 			return h;
 		}
 	};
 
-	struct Box {
+	struct bounding_box_data {
 		bool valid = false;
 		Eigen::Vector3d min = Eigen::Vector3d::Zero();
 		Eigen::Vector3d max = Eigen::Vector3d::Zero();
 	};
 
-	struct MeshData {
+	struct mesh_data {
 		std::vector<Eigen::Vector3d> vertices;
 		std::vector<std::array<int, 3>> triangles;
-		std::unordered_map<EdgeKey, int, EdgeKeyHash> edge_counts;
-		std::unordered_map<VertexKey, int, VertexKeyHash> vertex_map;
+		std::unordered_map<edge_key, int, edge_key_hash> edge_counts;
+		std::unordered_map<vertex_key, int, vertex_key_hash> vertex_map;
 	};
 
-	VertexKey make_vertex_key(const Eigen::Vector3d& p) {
+	vertex_key make_vertex_key(const Eigen::Vector3d& p) {
 		constexpr double scale = 1.e9;
 		return {
 			(long long)std::llround(p(0) * scale),
@@ -73,8 +73,8 @@ namespace {
 		};
 	}
 
-	EdgeKey make_edge_key(int a, int b) {
-		return a < b ? EdgeKey{ a, b } : EdgeKey{ b, a };
+	edge_key make_edge_key(int a, int b) {
+		return a < b ? edge_key{ a, b } : edge_key{ b, a };
 	}
 
 	Eigen::Matrix4d item_matrix(const taxonomy::geom_item::ptr& item) {
@@ -118,7 +118,7 @@ namespace {
 		return loop_points(loop, points);
 	}
 
-	int add_vertex(MeshData& mesh, const Eigen::Vector3d& p) {
+	int add_vertex(mesh_data& mesh, const Eigen::Vector3d& p) {
 		auto key = make_vertex_key(p);
 		auto it = mesh.vertex_map.find(key);
 		if (it != mesh.vertex_map.end()) {
@@ -130,7 +130,7 @@ namespace {
 		return idx;
 	}
 
-	void add_face(MeshData& mesh, const std::vector<int>& indices) {
+	void add_face(mesh_data& mesh, const std::vector<int>& indices) {
 		if (indices.size() == 3) {
 			mesh.triangles.push_back({ indices[0], indices[1], indices[2] });
 		} else if (indices.size() == 4) {
@@ -142,8 +142,8 @@ namespace {
 		}
 	}
 
-	MeshData build_mesh(const std::vector<PassthroughPart>& parts, const taxonomy::matrix4* place = nullptr) {
-		MeshData mesh;
+	mesh_data build_mesh(const std::vector<passthrough_part>& parts, const taxonomy::matrix4* place = nullptr) {
+		mesh_data mesh;
 		auto external = place ? place->ccomponents() : Eigen::Matrix4d::Identity();
 		std::vector<Eigen::Vector3d> points;
 		for (const auto& part : parts) {
@@ -171,7 +171,7 @@ namespace {
 		return 0.5 * ((b - a).cross(c - a)).norm();
 	}
 
-	double mesh_area(const MeshData& mesh) {
+	double mesh_area(const mesh_data& mesh) {
 		double total = 0.;
 		for (const auto& tri : mesh.triangles) {
 			total += triangle_area(mesh.vertices[tri[0]], mesh.vertices[tri[1]], mesh.vertices[tri[2]]);
@@ -179,7 +179,7 @@ namespace {
 		return total;
 	}
 
-	double mesh_volume(const MeshData& mesh) {
+	double mesh_volume(const mesh_data& mesh) {
 		double total = 0.;
 		for (const auto& tri : mesh.triangles) {
 			const auto& a = mesh.vertices[tri[0]];
@@ -190,7 +190,7 @@ namespace {
 		return std::abs(total) / 6.;
 	}
 
-	double mesh_length(const MeshData& mesh) {
+	double mesh_length(const mesh_data& mesh) {
 		double total = 0.;
 		for (const auto& edge : mesh.edge_counts) {
 			total += (mesh.vertices[edge.first.a] - mesh.vertices[edge.first.b]).norm();
@@ -198,7 +198,7 @@ namespace {
 		return total;
 	}
 
-	void update_box(Box& box, const MeshData& mesh) {
+	void update_box(bounding_box_data& box, const mesh_data& mesh) {
 		for (const auto& vertex : mesh.vertices) {
 			if (!box.valid) {
 				box.valid = true;
@@ -211,7 +211,7 @@ namespace {
 		}
 	}
 
-	double box_volume(const Box& box) {
+	double box_volume(const bounding_box_data& box) {
 		if (!box.valid) {
 			return 0.;
 		}
@@ -256,7 +256,7 @@ namespace {
 		return shell;
 	}
 
-	PassthroughPart normalize_part(const PassthroughPart& part) {
+	passthrough_part normalize_part(const passthrough_part& part) {
 		return {
 			part.shell,
 			part.matrix ? taxonomy::make<taxonomy::matrix4>(part.matrix->ccomponents()) : taxonomy::make<taxonomy::matrix4>(),
@@ -264,8 +264,8 @@ namespace {
 		};
 	}
 
-	std::vector<PassthroughPart> normalize_parts(const std::vector<PassthroughPart>& parts) {
-		std::vector<PassthroughPart> result;
+	std::vector<passthrough_part> normalize_parts(const std::vector<passthrough_part>& parts) {
+		std::vector<passthrough_part> result;
 		result.reserve(parts.size());
 		for (const auto& part : parts) {
 			result.push_back(normalize_part(part));
@@ -274,19 +274,19 @@ namespace {
 	}
 }
 
-ifcopenshell::geometry::PassthroughShape::PassthroughShape(const PassthroughPart& part)
+ifcopenshell::geom::passthrough_shape::passthrough_shape(const passthrough_part& part)
 	: parts_{ normalize_part(part) } {}
 
-ifcopenshell::geometry::PassthroughShape::PassthroughShape(PassthroughPart&& part)
+ifcopenshell::geom::passthrough_shape::passthrough_shape(passthrough_part&& part)
 	: parts_{ normalize_part(part) } {}
 
-ifcopenshell::geometry::PassthroughShape::PassthroughShape(const std::vector<PassthroughPart>& parts)
+ifcopenshell::geom::passthrough_shape::passthrough_shape(const std::vector<passthrough_part>& parts)
 	: parts_(normalize_parts(parts)) {}
 
-ifcopenshell::geometry::PassthroughShape::PassthroughShape(std::vector<PassthroughPart>&& parts)
+ifcopenshell::geom::passthrough_shape::passthrough_shape(std::vector<passthrough_part>&& parts)
 	: parts_(normalize_parts(parts)) {}
 
-void ifcopenshell::geometry::PassthroughShape::Triangulate(ifcopenshell::geometry::Settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger&) const {
+void ifcopenshell::geom::passthrough_shape::Triangulate(ifcopenshell::geom::settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger&) const {
 	auto mesh = build_mesh(parts_, &place);
 	std::vector<int> indices(mesh.vertices.size());
 	for (size_t i = 0; i < mesh.vertices.size(); ++i) {
@@ -302,7 +302,7 @@ void ifcopenshell::geometry::PassthroughShape::Triangulate(ifcopenshell::geometr
 	}
 }
 
-void ifcopenshell::geometry::PassthroughShape::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& result) const {
+void ifcopenshell::geom::passthrough_shape::Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& result) const {
 	auto mesh = build_mesh(parts_, &place);
 	std::stringstream stream;
 	for (const auto& vertex : mesh.vertices) {
@@ -314,176 +314,176 @@ void ifcopenshell::geometry::PassthroughShape::Serialize(const ifcopenshell::geo
 	result = stream.str();
 }
 
-int ifcopenshell::geometry::PassthroughShape::surface_genus() const {
+int ifcopenshell::geom::passthrough_shape::surface_genus() const {
 	return 0;
 }
 
-bool ifcopenshell::geometry::PassthroughShape::is_manifold() const {
+bool ifcopenshell::geom::passthrough_shape::is_manifold() const {
 	return std::all_of(parts_.begin(), parts_.end(), [](const auto& part) { return part.manifold; });
 }
 
-int ifcopenshell::geometry::PassthroughShape::num_vertices() const {
+int ifcopenshell::geom::passthrough_shape::num_vertices() const {
 	return (int)build_mesh(parts_).vertices.size();
 }
 
-int ifcopenshell::geometry::PassthroughShape::num_edges() const {
+int ifcopenshell::geom::passthrough_shape::num_edges() const {
 	return (int)build_mesh(parts_).edge_counts.size();
 }
 
-int ifcopenshell::geometry::PassthroughShape::num_faces() const {
+int ifcopenshell::geom::passthrough_shape::num_faces() const {
 	return (int)build_mesh(parts_).triangles.size();
 }
 
-double ifcopenshell::geometry::PassthroughShape::bounding_box(void*& box_ptr) const {
-	auto* box = static_cast<Box*>(box_ptr);
+double ifcopenshell::geom::passthrough_shape::bounding_box(void*& box_ptr) const {
+	auto* box = static_cast<bounding_box_data*>(box_ptr);
 	if (!box) {
-		box = new Box();
+		box = new bounding_box_data();
 		box_ptr = box;
 	} else {
-		*box = Box();
+		*box = bounding_box_data();
 	}
 	update_box(*box, build_mesh(parts_));
 	return box_volume(*box);
 }
 
-std::pair<IfcGeom::OpaqueCoordinate<3>, IfcGeom::OpaqueCoordinate<3>> ifcopenshell::geometry::PassthroughShape::bounding_box() const {
+std::pair<ifcopenshell::geom::opaque_coordinate<3>, ifcopenshell::geom::opaque_coordinate<3>> ifcopenshell::geom::passthrough_shape::bounding_box() const {
 	void* box_ptr = nullptr;
 	bounding_box(box_ptr);
-	auto* box = static_cast<Box*>(box_ptr);
+	auto* box = static_cast<bounding_box_data*>(box_ptr);
 	if (!box || !box->valid) {
 		delete box;
 		throw std::runtime_error("Invalid shape");
 	}
 	auto result = std::make_pair(
-		IfcGeom::OpaqueCoordinate<3>(
-			IfcGeom::OpaqueNumber(box->min(0)),
-			IfcGeom::OpaqueNumber(box->min(1)),
-			IfcGeom::OpaqueNumber(box->min(2))),
-		IfcGeom::OpaqueCoordinate<3>(
-			IfcGeom::OpaqueNumber(box->max(0)),
-			IfcGeom::OpaqueNumber(box->max(1)),
-			IfcGeom::OpaqueNumber(box->max(2))));
+		ifcopenshell::geom::opaque_coordinate<3>(
+			ifcopenshell::geom::opaque_number(box->min(0)),
+			ifcopenshell::geom::opaque_number(box->min(1)),
+			ifcopenshell::geom::opaque_number(box->min(2))),
+		ifcopenshell::geom::opaque_coordinate<3>(
+			ifcopenshell::geom::opaque_number(box->max(0)),
+			ifcopenshell::geom::opaque_number(box->max(1)),
+			ifcopenshell::geom::opaque_number(box->max(2))));
 	delete box;
 	return result;
 }
 
-void ifcopenshell::geometry::PassthroughShape::set_box(void* box_ptr) {
-	auto* box = static_cast<Box*>(box_ptr);
+void ifcopenshell::geom::passthrough_shape::set_box(void* box_ptr) {
+	auto* box = static_cast<bounding_box_data*>(box_ptr);
 	if (!box || !box->valid) {
 		throw std::runtime_error("Invalid shape");
 	}
 	parts_ = { { make_box_shell(box->min, box->max), taxonomy::make<taxonomy::matrix4>(), true } };
 }
 
-IfcGeom::OpaqueNumber ifcopenshell::geometry::PassthroughShape::length() {
-	return IfcGeom::OpaqueNumber(mesh_length(build_mesh(parts_)));
+ifcopenshell::geom::opaque_number ifcopenshell::geom::passthrough_shape::length() {
+	return ifcopenshell::geom::opaque_number(mesh_length(build_mesh(parts_)));
 }
 
-IfcGeom::OpaqueNumber ifcopenshell::geometry::PassthroughShape::area() {
-	return IfcGeom::OpaqueNumber(mesh_area(build_mesh(parts_)));
+ifcopenshell::geom::opaque_number ifcopenshell::geom::passthrough_shape::area() {
+	return ifcopenshell::geom::opaque_number(mesh_area(build_mesh(parts_)));
 }
 
-IfcGeom::OpaqueNumber ifcopenshell::geometry::PassthroughShape::volume() {
-	return IfcGeom::OpaqueNumber(is_manifold() ? mesh_volume(build_mesh(parts_)) : 0.);
+ifcopenshell::geom::opaque_number ifcopenshell::geom::passthrough_shape::volume() {
+	return ifcopenshell::geom::opaque_number(is_manifold() ? mesh_volume(build_mesh(parts_)) : 0.);
 }
 
-IfcGeom::OpaqueCoordinate<3> ifcopenshell::geometry::PassthroughShape::position() {
+ifcopenshell::geom::opaque_coordinate<3> ifcopenshell::geom::passthrough_shape::position() {
 	throw std::runtime_error("Invalid shape");
 }
 
-IfcGeom::OpaqueCoordinate<3> ifcopenshell::geometry::PassthroughShape::axis() {
+ifcopenshell::geom::opaque_coordinate<3> ifcopenshell::geom::passthrough_shape::axis() {
 	throw std::runtime_error("Invalid shape");
 }
 
-IfcGeom::OpaqueCoordinate<4> ifcopenshell::geometry::PassthroughShape::plane_equation() {
+ifcopenshell::geom::opaque_coordinate<4> ifcopenshell::geom::passthrough_shape::plane_equation() {
 	throw std::runtime_error("Invalid shape");
 }
 
-std::vector<IfcGeom::ConversionResultShape*> ifcopenshell::geometry::PassthroughShape::convex_decomposition() {
+std::vector<ifcopenshell::geom::conversion_result_shape*> ifcopenshell::geom::passthrough_shape::convex_decomposition() {
 	throw std::runtime_error("Not implemented");
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::halfspaces() {
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::passthrough_shape::halfspaces() {
 	throw std::runtime_error("Not implemented");
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::box() {
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::passthrough_shape::box() {
 	void* box_ptr = nullptr;
 	bounding_box(box_ptr);
-	auto* box = static_cast<Box*>(box_ptr);
+	auto* box = static_cast<bounding_box_data*>(box_ptr);
 	if (!box || !box->valid) {
 		delete box;
 		throw std::runtime_error("Invalid shape");
 	}
-	auto* result = new PassthroughShape(PassthroughPart{ make_box_shell(box->min, box->max), taxonomy::make<taxonomy::matrix4>(), true });
+	auto* result = new passthrough_shape(passthrough_part{ make_box_shell(box->min, box->max), taxonomy::make<taxonomy::matrix4>(), true });
 	delete box;
 	return result;
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::solid() {
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::passthrough_shape::solid() {
 	if (!is_manifold()) {
 		throw std::runtime_error("Invalid shape");
 	}
-	return new PassthroughShape(parts_);
+	return new passthrough_shape(parts_);
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::wrap_in_compound() {
-	return new PassthroughShape(parts_);
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::passthrough_shape::wrap_in_compound() {
+	return new passthrough_shape(parts_);
 }
 
-std::vector<IfcGeom::ConversionResultShape*> ifcopenshell::geometry::PassthroughShape::vertices() {
+std::vector<ifcopenshell::geom::conversion_result_shape*> ifcopenshell::geom::passthrough_shape::vertices() {
 	throw std::runtime_error("Not implemented");
 }
 
-std::vector<IfcGeom::ConversionResultShape*> ifcopenshell::geometry::PassthroughShape::edges() {
+std::vector<ifcopenshell::geom::conversion_result_shape*> ifcopenshell::geom::passthrough_shape::edges() {
 	throw std::runtime_error("Not implemented");
 }
 
-std::vector<IfcGeom::ConversionResultShape*> ifcopenshell::geometry::PassthroughShape::facets() {
+std::vector<ifcopenshell::geom::conversion_result_shape*> ifcopenshell::geom::passthrough_shape::facets() {
 	throw std::runtime_error("Not implemented");
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::add(IfcGeom::ConversionResultShape*) {
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::passthrough_shape::add(ifcopenshell::geom::conversion_result_shape*) {
 	throw std::runtime_error("Not implemented");
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::subtract(IfcGeom::ConversionResultShape*) {
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::passthrough_shape::subtract(ifcopenshell::geom::conversion_result_shape*) {
 	throw std::runtime_error("Not implemented");
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::intersect(IfcGeom::ConversionResultShape*) {
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::passthrough_shape::intersect(ifcopenshell::geom::conversion_result_shape*) {
 	throw std::runtime_error("Not implemented");
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::concat(IfcGeom::ConversionResultShape* other) {
-	auto* rhs = dynamic_cast<PassthroughShape*>(other);
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::passthrough_shape::concat(ifcopenshell::geom::conversion_result_shape* other) {
+	auto* rhs = dynamic_cast<passthrough_shape*>(other);
 	if (!rhs) {
 		throw std::runtime_error("Invalid shape");
 	}
 	auto parts = parts_;
 	parts.insert(parts.end(), rhs->parts_.begin(), rhs->parts_.end());
-	return new PassthroughShape(std::move(parts));
+	return new passthrough_shape(std::move(parts));
 }
 
-std::size_t ifcopenshell::geometry::PassthroughShape::map(IfcGeom::OpaqueCoordinate<4>&, IfcGeom::OpaqueCoordinate<4>&) {
+std::size_t ifcopenshell::geom::passthrough_shape::map(ifcopenshell::geom::opaque_coordinate<4>&, ifcopenshell::geom::opaque_coordinate<4>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-std::size_t ifcopenshell::geometry::PassthroughShape::map(const std::vector<IfcGeom::OpaqueCoordinate<4>>&, const std::vector<IfcGeom::OpaqueCoordinate<4>>&) {
+std::size_t ifcopenshell::geom::passthrough_shape::map(const std::vector<ifcopenshell::geom::opaque_coordinate<4>>&, const std::vector<ifcopenshell::geom::opaque_coordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::moved(ifcopenshell::geometry::taxonomy::matrix4::ptr place) const {
-	std::vector<PassthroughPart> moved_parts;
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::passthrough_shape::moved(ifcopenshell::geom::taxonomy::matrix4::ptr place) const {
+	std::vector<passthrough_part> moved_parts;
 	moved_parts.reserve(parts_.size());
 	for (const auto& part : parts_) {
 		auto matrix = part.matrix ? taxonomy::make<taxonomy::matrix4>(place->ccomponents() * part.matrix->ccomponents()) : taxonomy::make<taxonomy::matrix4>(place->ccomponents());
 		moved_parts.push_back({ part.shell, matrix, part.manifold });
 	}
-	return new PassthroughShape(std::move(moved_parts));
+	return new passthrough_shape(std::move(moved_parts));
 }
 
-bool ifcopenshell::geometry::PassthroughShape::surface_area_along_direction(double, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
+bool ifcopenshell::geom::passthrough_shape::surface_area_along_direction(double, const ifcopenshell::geom::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
 	along_x = along_y = along_z = 0.;
 	auto mesh = build_mesh(parts_, place.get());
 	for (const auto& tri : mesh.triangles) {

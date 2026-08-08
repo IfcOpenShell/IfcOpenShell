@@ -8,7 +8,7 @@
 
 namespace ifcopenshell {
 
-	namespace geometry {
+	namespace geom {
 		
 		struct IFC_GEOM_API cross_section {
 			double dist_along;
@@ -21,7 +21,7 @@ namespace ifcopenshell {
 			}
 		};
 
-		IFC_GEOM_API taxonomy::loft::ptr make_loft(const Settings& settings_, const express::Base inst, const taxonomy::function_item::ptr& directrix, std::vector<cross_section>& cross_sections, logger& logger = ::logger::root());
+		IFC_GEOM_API taxonomy::loft::ptr make_loft(const ifcopenshell::geom::settings& settings, const express::base inst, const taxonomy::function_item::ptr& directrix, std::vector<cross_section>& cross_sections, logger& logger = ::logger::root());
 	}
 
 }

@@ -72,11 +72,10 @@ class ExportOBJ(bpy.types.Operator):
         # Conversion from IFC to OBJ
         # Settings for obj
         settings = ifcopenshell.geom.settings()
-        serializer_settings = ifcopenshell.geom.serializer_settings()
 
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.SURFACES_AND_SOLIDS)
         settings.set("apply-default-materials", True)
-        serializer_settings.set("use-element-guids", True)
+        settings.set("use-element-guids", True)
         settings.set("use-world-coords", True)
 
         ifc_file: ifcopenshell.file
@@ -90,7 +89,7 @@ class ExportOBJ(bpy.types.Operator):
         obj_file_path = os.path.join(output_dir, "model.obj")
         mtl_file_path = os.path.join(output_dir, "model.mtl")
 
-        serialiser = ifcopenshell.geom.serializers.obj(obj_file_path, mtl_file_path, settings, serializer_settings)
+        serialiser = ifcopenshell.geom.serializers.obj(obj_file_path, mtl_file_path, settings)
         serialiser.setFile(ifc_file)
         serialiser.setUnitNameAndMagnitude("METER", 1.0)
         serialiser.writeHeader()

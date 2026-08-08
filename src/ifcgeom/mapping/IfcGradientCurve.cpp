@@ -20,7 +20,7 @@
 #include "mapping.h"
 #include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcGradientCurve
 

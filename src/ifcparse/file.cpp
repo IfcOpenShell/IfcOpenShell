@@ -32,19 +32,19 @@ ifcopenshell::impl::rocks_db_file_storage::rocksdb_types_iterator::value_type co
     return storage_->file->schema()->declarations()[*read_id_()];
 }
 
-express::Base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
+express::base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
 #ifdef IFOPSH_WITH_ROCKSDB
     std::lock_guard<std::mutex> lock(instance_cache_mutex_);
 
     if (r == ifcopenshell::impl::rocks_db_file_storage::entityinstance_ref) {
         auto it = instance_cache_.find(number);
         if (it != instance_cache_.end()) {
-            return express::Base(it->second);
+            return express::base(it->second);
         }
     } else {
         auto it = type_instance_cache_.find(number);
         if (it != type_instance_cache_.end()) {
-            return express::Base(it->second);
+            return express::base(it->second);
         }
     }
     
@@ -70,7 +70,7 @@ express::Base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t
         } else {
             type_instance_cache_.insert({number, data});
         }
-        return express::Base(data);
+        return express::base(data);
     } else {
         throw exception("Instance #" + boost::lexical_cast<std::string>(number) + " not found");
     }
@@ -147,7 +147,7 @@ ifcopenshell::impl::rocks_db_file_storage::rocks_db_file_storage(const std::stri
     , db(init_db(filepath, readonly))
     // @todo streaming serializer does not populate the byguid map
     , byguid_internal_(db.get(), "g|"),
-      byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](const express::Base& v) { return v.identity(); })
+      byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](const express::base& v) { return v.identity(); })
     , instance_ids_(db.get(), "i|")
     , instance_by_name_(&instance_ids_, [this](size_t v) { return assert_existance(v, entityinstance_ref); })
     , bytype_(db.get(), "t|")
@@ -183,14 +183,14 @@ ifcopenshell::impl::rocks_db_file_storage::~rocks_db_file_storage()
 }
 
 
-express::Base ifcopenshell::impl::rocks_db_file_storage::instance_by_id(int id)
+express::base ifcopenshell::impl::rocks_db_file_storage::instance_by_id(int id)
 {
     // @todo rename assert_existance() -> instance_by_id();
     // - no cannot be done, because it needs to differentiate between entity instances and typedecls
     return assert_existance(id, entityinstance_ref);
 }
 
-void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const express::Base& inst)
+void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const express::base& inst)
 {
 #ifdef IFOPSH_WITH_ROCKSDB
     auto id = inst.id();
@@ -248,13 +248,13 @@ void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const e
 #endif
 }
 
-express::Base ifcopenshell::impl::in_memory_file_storage::instance_by_id(int id)
+express::base ifcopenshell::impl::in_memory_file_storage::instance_by_id(int id)
 {
     auto it = byid_.find(id);
     if (it == byid_.end()) {
         throw exception("Instance #" + boost::lexical_cast<std::string>(id) + " not found");
     }
-    return express::Base(it->second);
+    return express::base(it->second);
 }
 
 ifcopenshell::file::~file() {}
@@ -336,8 +336,8 @@ ifcopenshell::filetype ifcopenshell::guess_file_type(const std::string& fn) {
     }
 }
 
-express::Base ifcopenshell::impl::rocks_db_file_storage::create(const ifcopenshell::declaration* decl, int id) {
-    return express::Base{};
+express::base ifcopenshell::impl::rocks_db_file_storage::create(const ifcopenshell::declaration* decl, int id) {
+    return express::base{};
     /*
     if (decl->as_entity() || decl->as_type_declaration()) {
         auto* inst = file->schema()->instantiate(decl, rocks_db_attribute_storage{});
@@ -350,7 +350,7 @@ express::Base ifcopenshell::impl::rocks_db_file_storage::create(const ifcopenshe
     */
 }
 
-express::Base ifcopenshell::impl::in_memory_file_storage::create(const ifcopenshell::declaration* decl, int id) {
+express::base ifcopenshell::impl::in_memory_file_storage::create(const ifcopenshell::declaration* decl, int id) {
     uint32_t instance_name;
     if (decl->as_entity() != nullptr) {
         instance_name = id == -1 ? (int)file->fresh_id() : id;
@@ -366,13 +366,13 @@ express::Base ifcopenshell::impl::in_memory_file_storage::create(const ifcopensh
         tbyid_.insert({data->identity(), data});
     }
  
-    express::Base inst(data);
+    express::base inst(data);
     add_type_ref(inst);
 
     return inst;
 }
 
-express::Base ifcopenshell::file::create(const ifcopenshell::declaration* decl, int id) {
+express::base ifcopenshell::file::create(const ifcopenshell::declaration* decl, int id) {
     if (id != -1) {
         if (decl->as_entity() == nullptr) {
             throw ifcopenshell::exception("Assigning instance id during creation is only valid for entity declarations");
@@ -393,12 +393,12 @@ express::Base ifcopenshell::file::create(const ifcopenshell::declaration* decl, 
         }
     }
 
-    return std::visit([&](auto& m) -> express::Base {
+    return std::visit([&](auto& m) -> express::base {
         if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage> ||
                       std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>) {
             return m.create(decl, id);
         } else {
-            return express::Base{};
+            return express::base{};
         }
     }, storage_);
 }

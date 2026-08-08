@@ -39,17 +39,17 @@ Eigen::Matrix4d axes_to_placement(const Eigen::Vector3d& origin,
 // IfcAxis2Placement{2D,3D,Linear} / IfcAxis1Placement -> 4x4 matrix.  Mirrors
 // ifcopenshell.util.placement.get_axis2placement.  Returns identity for null
 // or unparseable inputs.  Translation is in the IFC's project length unit.
-Eigen::Matrix4d get_axis2_placement(const express::Base& placement);
+Eigen::Matrix4d get_axis2_placement(const express::base& placement);
 
 // Resolve an IfcLocalPlacement (or an IfcAxis2Placement* directly) into a
 // 4x4 matrix in the IFC project's length unit, walking the PlacementRelTo
 // chain.  Mirrors ifcopenshell.util.placement.get_local_placement.  Returns
 // identity for a null input.
-Eigen::Matrix4d get_local_placement(const express::Base& placement);
+Eigen::Matrix4d get_local_placement(const express::base& placement);
 
 // ifcopenshell.util.placement.get_storey_elevation: the Z elevation of an
 // IfcBuildingStorey in the project's length unit — the Z of its placement, or
 // the Elevation attribute as a fallback. 0 for a non-storey or null input.
-double get_storey_elevation(const express::Base& storey);
+double get_storey_elevation(const express::base& storey);
 
 #endif // PLACEMENT_H

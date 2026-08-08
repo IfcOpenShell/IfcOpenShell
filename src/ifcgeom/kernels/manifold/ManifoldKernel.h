@@ -8,30 +8,30 @@
 #include "../../../ifcgeom/kernels/manifold/ManifoldConversionResult.h"
 
 namespace ifcopenshell {
-namespace geometry {
+namespace geom {
 namespace kernels {
 
-class IFC_GEOMLIBRARY_API ManifoldKernel : public AbstractKernel {
+class IFC_GEOMLIBRARY_API manifold_kernel : public abstract_kernel {
 public:
-	ManifoldKernel(const Settings& settings, ::logger& logger = ::logger::root())
-		: AbstractKernel("manifold", settings, logger) {}
+	manifold_kernel(const ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root())
+		: abstract_kernel("manifold", settings, logger) {}
 
-	virtual AbstractKernel* clone(::logger& logger) const {
-		return new ManifoldKernel(settings(), logger);
+	virtual abstract_kernel* clone(::logger& logger) const {
+		return new manifold_kernel(settings(), logger);
 	}
 
 	virtual bool supports_openings() const { return true; }
 	virtual bool supports_boolean_operations() const { return true; }
 
-	virtual bool convert_impl(const taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::shell::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::solid::ptr, IfcGeom::ConversionResults&);
-	virtual bool convert_impl(const taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::extrusion::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const taxonomy::shell::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const taxonomy::solid::ptr, ifcopenshell::geom::conversion_results&);
+	virtual bool convert_impl(const taxonomy::boolean_result::ptr, ifcopenshell::geom::conversion_results&);
 
 	double dilation_hack = 0.;
 
-	virtual bool convert_openings(const express::Base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
-		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
+	virtual bool convert_openings(const express::base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>& openings,
+		const ifcopenshell::geom::conversion_results& entity_shapes, const ifcopenshell::geom::taxonomy::matrix4& entity_trsf, ifcopenshell::geom::conversion_results& cut_shapes);
 };
 
 }

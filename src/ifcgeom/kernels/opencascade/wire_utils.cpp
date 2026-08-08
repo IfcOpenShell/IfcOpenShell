@@ -36,7 +36,7 @@
 
 #include <map>
 
-bool IfcGeom::util::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps_) {
+bool ifcopenshell::geom::util::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps_) {
 	// Newell's Method is used for the normal calculation
 	// as a simple edge cross product can give opposite results
 	// for a concave face boundary.
@@ -108,7 +108,7 @@ bool IfcGeom::util::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_P
 	return true;
 }
 
-bool IfcGeom::util::flatten_wire(TopoDS_Wire& wire, double eps) {
+bool ifcopenshell::geom::util::flatten_wire(TopoDS_Wire& wire, double eps) {
 	gp_Pln pln;
 	if (!approximate_plane_through_wire(wire, pln, eps)) {
 		return false;
@@ -129,7 +129,7 @@ bool IfcGeom::util::flatten_wire(TopoDS_Wire& wire, double eps) {
 	return true;
 }
 
-IfcGeom::util::triangulate_wire_result IfcGeom::util::triangulate_wire(const std::vector<TopoDS_Wire>& wires, NCollection_List<TopoDS_Shape>& faces) {
+ifcopenshell::geom::util::triangulate_wire_result ifcopenshell::geom::util::triangulate_wire(const std::vector<TopoDS_Wire>& wires, NCollection_List<TopoDS_Shape>& faces) {
 	// This is a bit of a precarious approach, but seems to work for the
 	// versions of OCCT tested for. OCCT has a Delaunay triangulation function
 	// BRepMesh_Delaun, but it is notoriously hard to interpret the results
@@ -210,7 +210,7 @@ IfcGeom::util::triangulate_wire_result IfcGeom::util::triangulate_wire(const std
 	const TopoDS_Face& face = mf->Face();
 
 	// Create a triangular mesh from the face
-	BRepMesh_IncrementalMesh(face, Precision::Confusion());
+	BRepMesh_IncrementalMesh(face, ::Precision::Confusion());
 
 	int n123[3];
 	TopLoc_Location loc;
@@ -364,13 +364,13 @@ namespace {
 }
 
 namespace {
-	double get_wire_intersection_tolerance(const IfcGeom::util::wire_tolerance_settings& settings, const TopoDS_Wire& wire) {
+	double get_wire_intersection_tolerance(const ifcopenshell::geom::util::wire_tolerance_settings& settings, const TopoDS_Wire& wire) {
 		if (settings.use_wire_intersection_tolerance) {
 			// This corresponds to faceset_helper::epsilon
 			if (settings.vertex_clustering_epsilon > 0.) {
 				return settings.vertex_clustering_epsilon / 3.;
 			} else {
-				return (std::min)(IfcGeom::util::min_edge_length(wire) / 2., settings.precision * 10.);
+				return (std::min)(ifcopenshell::geom::util::min_edge_length(wire) / 2., settings.precision * 10.);
 			}
 		} else {
 			return 0.;
@@ -378,7 +378,7 @@ namespace {
 	}
 }
 
-bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List<TopoDS_Shape>& wires, const wire_tolerance_settings& settings) {
+bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List<TopoDS_Shape>& wires, const wire_tolerance_settings& settings) {
 	double eps = get_wire_intersection_tolerance(settings, wire);
 	double eps_real = settings.precision;
 	
@@ -398,7 +398,7 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List
 
 	// ... to be sure to get consecutive edges
 	BRepTools_WireExplorer exp(wire);
-	IfcGeom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::tree<int> tree;
 
 	int edge_idx = 0;
 	for (; exp.More(); exp.Next()) {
@@ -561,7 +561,7 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List
 	return intersected;
 }
 
-void IfcGeom::util::select_largest(const NCollection_List<TopoDS_Shape>& shapes, TopoDS_Shape& largest) {
+void ifcopenshell::geom::util::select_largest(const NCollection_List<TopoDS_Shape>& shapes, TopoDS_Shape& largest) {
 	double mass = 0.;
     NCollection_List<TopoDS_Shape>::Iterator it(shapes);
 	for (; it.More(); it.Next()) {
@@ -584,10 +584,10 @@ void IfcGeom::util::select_largest(const NCollection_List<TopoDS_Shape>& shapes,
 
 		double m = 1.;
 		for (int i = 0; i < 3; ++i) {
-			if (Precision::IsNegativeInfinite(xyz_min[i])) {
+			if (::Precision::IsNegativeInfinite(xyz_min[i])) {
 				xyz_min[i] = 0.;
 			}
-			if (Precision::IsInfinite(xyz_max[i])) {
+			if (::Precision::IsInfinite(xyz_max[i])) {
 				xyz_max[i] = 0.;
 			}
 			m *= (xyz_max[i] + eps) - (xyz_min[i] - eps);
@@ -601,7 +601,7 @@ void IfcGeom::util::select_largest(const NCollection_List<TopoDS_Shape>& shapes,
 }
 
 
-bool IfcGeom::util::wire_to_sequence_of_point(const TopoDS_Wire& w, NCollection_Sequence<gp_Pnt>& p) {
+bool ifcopenshell::geom::util::wire_to_sequence_of_point(const TopoDS_Wire& w, NCollection_Sequence<gp_Pnt>& p) {
 	TopExp_Explorer exp(w, TopAbs_EDGE);
 	for (; exp.More(); exp.Next()) {
 		double a, b;
@@ -628,7 +628,7 @@ bool IfcGeom::util::wire_to_sequence_of_point(const TopoDS_Wire& w, NCollection_
 	return true;
 }
 
-void IfcGeom::util::sequence_of_point_to_wire(const NCollection_Sequence<gp_Pnt>& p, TopoDS_Wire& w, bool close) {
+void ifcopenshell::geom::util::sequence_of_point_to_wire(const NCollection_Sequence<gp_Pnt>& p, TopoDS_Wire& w, bool close) {
 	BRepBuilderAPI_MakePolygon builder;
 	for (int i = 1; i <= p.Length(); ++i) {
 		builder.Add(p.Value(i));
@@ -639,7 +639,7 @@ void IfcGeom::util::sequence_of_point_to_wire(const NCollection_Sequence<gp_Pnt>
 	w = builder.Wire();
 }
 
-void IfcGeom::util::remove_collinear_points_from_loop(NCollection_Sequence<gp_Pnt>& polygon, bool closed, double tol) {
+void ifcopenshell::geom::util::remove_collinear_points_from_loop(NCollection_Sequence<gp_Pnt>& polygon, bool closed, double tol) {
 	const int start = closed ? 1 : 2;
 	const int end = polygon.Length() - (closed ? 0 : 1);
 	std::vector<bool> to_remove(polygon.Length(), false);
@@ -663,7 +663,7 @@ void IfcGeom::util::remove_collinear_points_from_loop(NCollection_Sequence<gp_Pn
 	}
 }
 
-void IfcGeom::util::remove_duplicate_points_from_loop(NCollection_Sequence<gp_Pnt>& polygon, bool closed, double tol) {
+void ifcopenshell::geom::util::remove_duplicate_points_from_loop(NCollection_Sequence<gp_Pnt>& polygon, bool closed, double tol) {
 	tol *= tol;
 
 	for (;;) {
@@ -716,7 +716,7 @@ namespace {
 
 }
 
-bool IfcGeom::util::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape, double tol) {
+bool ifcopenshell::geom::util::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape, double tol) {
 	BRepOffsetAPI_Sewing sew;
 	sew.Add(shape);
 
@@ -806,7 +806,7 @@ bool IfcGeom::util::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape
 }
 
 
-bool IfcGeom::util::convert_curve_to_wire(const opencascade::handle<Geom_Curve>& curve, TopoDS_Wire& wire) {
+bool ifcopenshell::geom::util::convert_curve_to_wire(const opencascade::handle<Geom_Curve>& curve, TopoDS_Wire& wire) {
 	try {
 		wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
 		return true;
@@ -823,7 +823,7 @@ bool IfcGeom::util::convert_curve_to_wire(const opencascade::handle<Geom_Curve>&
 }
 
 
-void IfcGeom::util::assert_closed_wire(TopoDS_Wire& wire, double tol) {
+void ifcopenshell::geom::util::assert_closed_wire(TopoDS_Wire& wire, double tol) {
 	if (wire.Closed() == 0) {
 		TopoDS_Vertex v0, v1;
 		TopExp::Vertices(wire, v0, v1);
@@ -842,7 +842,7 @@ void IfcGeom::util::assert_closed_wire(TopoDS_Wire& wire, double tol) {
 	}
 }
 
-bool IfcGeom::util::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& face, const IfcGeom::util::wire_tolerance_settings& settings) {
+bool ifcopenshell::geom::util::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& face, const ifcopenshell::geom::util::wire_tolerance_settings& settings) {
 	TopoDS_Wire wire = w;
 
 	NCollection_List<TopoDS_Shape> results;
@@ -887,7 +887,7 @@ bool IfcGeom::util::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& face
 	return true;
 }
 
-bool IfcGeom::util::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compound& faces, const IfcGeom::util::wire_tolerance_settings& settings) {
+bool ifcopenshell::geom::util::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compound& faces, const ifcopenshell::geom::util::wire_tolerance_settings& settings) {
 	bool is_2d = true;
 	TopExp_Explorer exp(w, TopAbs_EDGE);
 	for (; exp.More(); exp.Next()) {

@@ -15,7 +15,7 @@
 
 namespace ifcopenshell {
 
-namespace geometry {
+namespace geom {
     
     class POSTFIX_SCHEMA(mapping) : public abstract_mapping {
 	private:
@@ -23,11 +23,11 @@ namespace geometry {
 		double length_unit_, angle_unit_;
 		std::string length_unit_name_;
 
-		std::map<uint32_t, ifcopenshell::geometry::taxonomy::ptr> cache_;
+		std::map<uint32_t, ifcopenshell::geom::taxonomy::ptr> cache_;
       std::mutex cache_guard_; // provides mutually exclusive access to cache_
 
 		const ifcopenshell::declaration* placement_rel_to_type_;
-		const express::Base placement_rel_to_instance_;
+		const express::base placement_rel_to_instance_;
 
 		Eigen::Matrix4d offset_and_rotation_ = Eigen::Matrix4d::Identity();
 		
@@ -39,7 +39,7 @@ namespace geometry {
 
 		// Set of instances to mark failures that are intended, such as representations not
 		// resulting in any items due to dimensionality filters.
-		std::set<express::Base> failed_on_purpose_;
+		std::set<express::base> failed_on_purpose_;
 		std::set<IfcSchema::IfcRepresentationMap> not_reusable_maps_;
 		std::unordered_set<uint32_t> representation_context_cache_;
 		std::vector<uint32_t> representation_context_priority_cache_;
@@ -52,7 +52,7 @@ namespace geometry {
 		std::mutex representation_context_cache_guard_;
 
 		template <typename T>
-		void process_mapping(bool& matched, taxonomy::ptr& item, const express::Base& inst) {
+		void process_mapping(bool& matched, taxonomy::ptr& item, const express::base& inst) {
 			if (!item && inst.as<T>()) {
 				matched = true;
 				try {
@@ -87,27 +87,27 @@ namespace geometry {
 		}
 		IfcSchema::IfcStyledItem find_style(const IfcSchema::IfcRepresentationItem&);
 	public:
-		POSTFIX_SCHEMA(mapping)(ifcopenshell::file* file, Settings& settings, ::logger& logger = ::logger::root()) : abstract_mapping(settings, logger), file_(file), placement_rel_to_type_(nullptr) {
+		POSTFIX_SCHEMA(mapping)(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ::logger& logger = ::logger::root()) : abstract_mapping(settings, logger), file_(file), placement_rel_to_type_(nullptr) {
 			initialize_units_();
 		}
-		virtual ifcopenshell::geometry::taxonomy::ptr map(const express::Base&);
+		virtual ifcopenshell::geom::taxonomy::ptr map(const express::base&);
 		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters);
-        virtual std::map<std::string, express::Base> get_layers(const express::Base&);
+        virtual std::map<std::string, express::base> get_layers(const express::base&);
 		virtual void initialize_settings();
 		virtual double get_length_unit() const { return length_unit_; }
 		virtual const std::string& get_length_unit_name() const { return length_unit_name_; }
-		virtual std::vector<express::Base> find_openings(const express::Base&);
-		virtual express::Base representation_of(const express::Base& product);
+		virtual std::vector<express::base> find_openings(const express::base&);
+		virtual express::base representation_of(const express::base& product);
 
-		virtual const express::Base get_product_type(const express::Base& product_);
-        virtual const express::Base get_single_material_association(const express::Base& product);
+		virtual const express::base get_product_type(const express::base& product_);
+        virtual const express::base get_single_material_association(const express::base& product);
         IfcSchema::IfcRepresentation representation_mapped_to(const IfcSchema::IfcRepresentation& representation);
         std::vector<IfcSchema::IfcProduct> products_represented_by(const IfcSchema::IfcRepresentation& representation, IfcSchema::IfcRepresentationMap& rmap, bool only_direct = false);
 		bool reuse_ok_(const std::vector<IfcSchema::IfcProduct>& products);
-		express::Base get_decomposing_entity(const express::Base& product, bool include_openings);
+		express::base get_decomposing_entity(const express::base& product, bool include_openings);
 
-		bool get_layerset_information(const express::Base&, layerset_information&, int&);
-        bool get_wall_neighbours(const express::Base&, std::vector<endpoint_connection>&);
+		bool get_layerset_information(const express::base&, layerset_information&, int&);
+        bool get_wall_neighbours(const express::base&, std::vector<endpoint_connection>&);
 		IfcSchema::IfcRepresentation find_representation(const IfcSchema::IfcProduct&, const std::string&);
 
 #include "bind_convert_decl.i"

@@ -21,7 +21,7 @@
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcBSplineSurfaceWithKnots
 

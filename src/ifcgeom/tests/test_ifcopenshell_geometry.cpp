@@ -57,13 +57,13 @@ IfcSchema::IfcWallStandardCase create_wall_with_voids(hierarchy_helper<IfcSchema
 }
 
 std::size_t count_geo403_for_wall(hierarchy_helper<IfcSchema>& file, const IfcSchema::IfcWallStandardCase& wall) {
-    ifcopenshell::geometry::Settings settings;
+    ifcopenshell::geom::settings settings;
     settings.set("max-voids-per-element", MAX_VOIDS);
 
     logger log;
     log.output_format(logger::FMT_INMEMORY);
-    ifcopenshell::geometry::Converter converter(
-        ifcopenshell::geometry::kernels::construct(&file, "opencascade", settings), &file, settings, log);
+    ifcopenshell::geom::converter converter(
+        ifcopenshell::geom::kernels::construct(&file, "opencascade", settings), &file, settings, log);
     delete converter.create_brep_for_representation_and_product(wall.Representation().Representations().back(), wall);
     return log.count("GEO403");
 }
@@ -88,13 +88,13 @@ IfcSchema::IfcRepresentation select_representation(
     const IfcSchema::IfcWallStandardCase& wall,
     const std::vector<std::string>& context_priorities)
 {
-    ifcopenshell::geometry::Settings settings;
+    ifcopenshell::geom::settings settings;
     settings.set("context-priorities", std::vector<std::string>(context_priorities));
 
     logger log;
     log.output_format(logger::FMT_INMEMORY);
-    ifcopenshell::geometry::Converter converter(
-        ifcopenshell::geometry::kernels::construct(&file, "passthrough", settings), &file, settings, log);
+    ifcopenshell::geom::converter converter(
+        ifcopenshell::geom::kernels::construct(&file, "passthrough", settings), &file, settings, log);
 
     auto selected = converter.mapping()->representation_of(wall).as<IfcSchema::IfcRepresentation>();
     REQUIRE(selected);
@@ -116,30 +116,30 @@ IfcSchema::IfcWallStandardCase add_wall_with_representations(
     return wall;
 }
 
-std::vector<ifcopenshell::geometry::geometry_conversion_task> representation_tasks(
+std::vector<ifcopenshell::geom::geometry_conversion_task> representation_tasks(
     hierarchy_helper<IfcSchema>& file,
     const std::vector<std::string>& context_priorities)
 {
-    ifcopenshell::geometry::Settings settings;
+    ifcopenshell::geom::settings settings;
     settings.set("context-priorities", std::vector<std::string>(context_priorities));
 
     logger log;
     log.output_format(logger::FMT_INMEMORY);
-    ifcopenshell::geometry::Converter converter(
-        ifcopenshell::geometry::kernels::construct(&file, "passthrough", settings), &file, settings, log);
+    ifcopenshell::geom::converter converter(
+        ifcopenshell::geom::kernels::construct(&file, "passthrough", settings), &file, settings, log);
 
-    std::vector<ifcopenshell::geometry::geometry_conversion_task> tasks;
-    std::vector<ifcopenshell::geometry::filter_t> filters;
+    std::vector<ifcopenshell::geom::geometry_conversion_task> tasks;
+    std::vector<ifcopenshell::geom::filter_t> filters;
     converter.mapping()->get_representations(tasks, filters);
     return tasks;
 }
 
-const ifcopenshell::geometry::geometry_conversion_task* task_for_product(
-    const std::vector<ifcopenshell::geometry::geometry_conversion_task>& tasks,
-    const express::Base& product)
+const ifcopenshell::geom::geometry_conversion_task* task_for_product(
+    const std::vector<ifcopenshell::geom::geometry_conversion_task>& tasks,
+    const express::base& product)
 {
     for (const auto& task : tasks) {
-        if (std::any_of(task.products.begin(), task.products.end(), [&](const express::Base& task_product) {
+        if (std::any_of(task.products.begin(), task.products.end(), [&](const express::base& task_product) {
                 return task_product.id() == product.id();
             })) {
             return &task;

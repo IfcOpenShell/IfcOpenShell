@@ -25,7 +25,7 @@
 #include <filesystem>
 
 namespace ifcopenshell {
-	namespace geometry {
+	namespace geom {
 		namespace kernels {
 
 			typedef void register_kernel_plugin_fn(kernel_registry&, const ifcopenshell::plugin::module&);

@@ -43,7 +43,7 @@ static std::string& collada_id(std::string& s)
 	return s;
 }
 
-void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const std::string& mesh_id,
+void collada_serializer::collada_exporter::collada_geometries::addFloatSource(const std::string& mesh_id,
     const std::string& suffix, const std::vector<double>& floats, const char* coords /* = "XYZ" */)
 {
 	COLLADASW::FloatSource source(mSW);
@@ -62,11 +62,11 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const
 	source.finish();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
+void collada_serializer::collada_exporter::collada_geometries::write(
     const std::string &mesh_id, const std::string &/**<@todo 'default_material_name' unused, remove? */,
     const std::vector<double>& positions, const std::vector<double>& normals,
     const std::vector<int>& faces, const std::vector<int>& edges,
-    const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& /**<@todo 'materials' unused, remove? */,
+    const std::vector<int>& material_ids, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& /**<@todo 'materials' unused, remove? */,
     const std::vector<double>& uvs, const std::vector<std::string>& material_references)
 {
 	openMesh(mesh_id);
@@ -173,13 +173,13 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 	closeGeometry();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaGeometries::close() {
+void collada_serializer::collada_exporter::collada_geometries::close() {
 	closeLibrary();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaScene::add(
+void collada_serializer::collada_exporter::collada_scene::add(
     const std::string& node_id, const std::string& node_name, const std::string& geom_name,
-    const std::vector<std::string>& material_ids, const IfcGeom::Transformation& transformation)
+    const std::vector<std::string>& material_ids, const ifcopenshell::geom::transformation& transformation)
 {
 	if (!scene_opened) {
 		openVisualScene(scene_id);
@@ -228,14 +228,14 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	node.end();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::Element& parent){
+void collada_serializer::collada_exporter::collada_scene::addParent(const ifcopenshell::geom::element& parent){
 	//we open the visual scene tag if it's not.
 	if (!scene_opened) {
 		openVisualScene(scene_id);
 		scene_opened = true;
 	}
 
-	const IfcGeom::Transformation& parent_trsf = parent.transformation();
+	const ifcopenshell::geom::transformation& parent_trsf = parent.transformation();
 
 	auto transformation_towrite = parent_trsf.data()->ccomponents();
 
@@ -267,12 +267,12 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 	current_node->addMatrix(matrix_array);
 
 	// Add the node to the parent stack
-	matrixStack.push(ifcopenshell::geometry::taxonomy::matrix4(parent_trsf.data()->ccomponents().inverse()));
+	matrixStack.push(ifcopenshell::geom::taxonomy::matrix4(parent_trsf.data()->ccomponents().inverse()));
 	parentNodes.push(current_node);
 	serializer->parentStackId.push(parent.id());
 }
 
-void ColladaSerializer::ColladaExporter::ColladaScene::closeParent()
+void collada_serializer::collada_exporter::collada_scene::closeParent()
 {
 	// Get the top element
 	COLLADASW::Node *current_node = parentNodes.top();
@@ -290,7 +290,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::closeParent()
 	current_node = NULL;
 }
 
-void ColladaSerializer::ColladaExporter::ColladaScene::write() {
+void collada_serializer::collada_exporter::collada_scene::write() {
 	if (scene_opened) {
 		closeVisualScene();
 		closeLibrary();
@@ -300,8 +300,8 @@ void ColladaSerializer::ColladaExporter::ColladaScene::write() {
 	}
 }
 
-void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write(
-    const ifcopenshell::geometry::taxonomy::style::ptr &material, const std::string &material_uri)
+void collada_serializer::collada_exporter::collada_materials::collada_effects::write(
+    const ifcopenshell::geom::taxonomy::style::ptr &material, const std::string &material_uri)
 {
     openEffect(material_uri + "-fx");
 	COLLADASW::EffectProfile effect(mSW);
@@ -329,11 +329,11 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write
 	closeEffect();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::close() {
+void collada_serializer::collada_exporter::collada_materials::collada_effects::close() {
 	closeLibrary();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const ifcopenshell::geometry::taxonomy::style::ptr& material) {
+void collada_serializer::collada_exporter::collada_materials::add(const ifcopenshell::geom::taxonomy::style::ptr& material) {
 	if (!contains(material)) {
 		std::string material_name = material->name;
 
@@ -349,19 +349,19 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const ifcopenshel
 	}
 }
 
-std::string ColladaSerializer::ColladaExporter::ColladaMaterials::getMaterialUri(const ifcopenshell::geometry::taxonomy::style::ptr& material) {
-	std::vector<ifcopenshell::geometry::taxonomy::style::ptr>::iterator it = std::find(materials.begin(), materials.end(), material);
+std::string collada_serializer::collada_exporter::collada_materials::getMaterialUri(const ifcopenshell::geom::taxonomy::style::ptr& material) {
+	std::vector<ifcopenshell::geom::taxonomy::style::ptr>::iterator it = std::find(materials.begin(), materials.end(), material);
 	ptrdiff_t index = std::distance(materials.begin(), it);
 	return material_uris.at(index);
 }
 
-bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const ifcopenshell::geometry::taxonomy::style::ptr& material) {
+bool collada_serializer::collada_exporter::collada_materials::contains(const ifcopenshell::geom::taxonomy::style::ptr& material) {
 	return std::find(materials.begin(), materials.end(), material) != materials.end();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
+void collada_serializer::collada_exporter::collada_materials::write() {
 	effects.close();
-    BOOST_FOREACH(const ifcopenshell::geometry::taxonomy::style::ptr& material, materials) {
+    BOOST_FOREACH(const ifcopenshell::geom::taxonomy::style::ptr& material, materials) {
         std::string material_name = getMaterialUri(material);
 		openMaterial(material_name);
 
@@ -374,7 +374,7 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 	closeLibrary();
 }
 
-void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_name, float unit_magnitude) {
+void collada_serializer::collada_exporter::startDocument(const std::string& unit_name, float unit_magnitude) {
 	stream.startDocument();
 
 	COLLADASW::Asset asset(&stream);
@@ -384,9 +384,9 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 	asset.add();
 }
 
-void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement* o)
+void collada_serializer::collada_exporter::write(const ifcopenshell::geom::triangulation_element* o)
 {
-	const IfcGeom::Representation::Triangulation& mesh = o->geometry();
+	const ifcopenshell::geom::Representation::triangulation& mesh = o->geometry();
 	
     std::string name = serializer->object_id(o);
 	collada_id(name);
@@ -395,24 +395,24 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	collada_id(representation_id);
 
 	std::vector<std::string> material_references;
-	BOOST_FOREACH(const ifcopenshell::geometry::taxonomy::style::ptr& material, mesh.materials()) {
+	BOOST_FOREACH(const ifcopenshell::geom::taxonomy::style::ptr& material, mesh.materials()) {
 		materials.add(material);
 
 		std::string material_name = materials.getMaterialUri(material);
 		material_references.push_back(material_name);
 	}
 
-	DeferredObject deferred(name, representation_id, o->type(), o->transformation(), mesh.verts(), mesh.normals(),
+	deferred_object deferred(name, representation_id, o->type(), o->transformation(), mesh.verts(), mesh.normals(),
 		mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs());
 
-	if (serializer->geometry_settings().get<ifcopenshell::geometry::settings::UseElementHierarchy>().get()) {
+	if (serializer->settings().get<ifcopenshell::geom::settings::UseElementHierarchy>().get()) {
 		deferred.parents() = o->parents();
 	}
 
 	deferreds.push_back(deferred);
 }
 
-std::string ColladaSerializer::differentiateSlabTypes(const express::Entity& slab)
+std::string collada_serializer::differentiateSlabTypes(const express::entity& slab)
 {
 	auto value = slab.get("PredefinedType");
 
@@ -445,22 +445,22 @@ std::string ColladaSerializer::differentiateSlabTypes(const express::Entity& sla
 	return result;
 }
 
-std::string ColladaSerializer::object_id(const IfcGeom::Element* o) /*override*/
+std::string collada_serializer::object_id(const ifcopenshell::geom::element* o) /*override*/
 {
-    if (settings_.get<ifcopenshell::geometry::settings::UseElementTypes>().get()) {
+    if (settings_.get<ifcopenshell::geom::settings::UseElementTypes>().get()) {
         const std::string slabSuffix = (o->product() && o->product().declaration().name() == "IfcSlab")
             ? differentiateSlabTypes(o->product())
             : "";
         return o->type() + slabSuffix;
     }
-    return GeometrySerializer::object_id(o);
+    return geometry_serializer::object_id(o);
 }
 
-void ColladaSerializer::ColladaExporter::endDocument() {
+void collada_serializer::collada_exporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
 	materials.write();
-	bool use_hierarchy = serializer->geometry_settings().get<ifcopenshell::geometry::settings::UseElementHierarchy>().get();
+	bool use_hierarchy = serializer->settings().get<ifcopenshell::geom::settings::UseElementHierarchy>().get();
 	
 	std::set<std::string> geometries_written;
 
@@ -470,7 +470,7 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 		std::sort(deferreds.begin(), deferreds.end());
 	}
 	
-	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
+	for (std::vector<deferred_object>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		if (geometries_written.find(it->representation_id) != geometries_written.end()) {
 			continue;
 		}
@@ -480,7 +480,7 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	}
 	geometries.close();
 
-	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it){
+	for (std::vector<deferred_object>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it){
 		const std::string object_name = it->unique_id;
 
 		if (use_hierarchy)
@@ -530,19 +530,19 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	stream.endDocument();
 }
 
-bool ColladaSerializer::ready() {
+bool collada_serializer::ready() {
 	return true;
 }
 
-void ColladaSerializer::writeHeader() {
+void collada_serializer::writeHeader() {
 	exporter.startDocument(unit_name, unit_magnitude);
 }
 
-void ColladaSerializer::write(const IfcGeom::TriangulationElement* o) {
+void collada_serializer::write(const ifcopenshell::geom::triangulation_element* o) {
     exporter.write(o);
 }
 
-void ColladaSerializer::finalize() {
+void collada_serializer::finalize() {
 	exporter.endDocument();
 }
 

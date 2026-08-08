@@ -1020,7 +1020,7 @@ if USE_OCCT and "occ" in targets:
 
     # Skip ExpToCasExe as we don't need it and it requires additional dependencies.
     # Before 7.7.2 ExpToCasExe is part of DataExchange, DETools doesn't exist yet.
-    # Since we do need DataExchange (used for IgesSerializer), we use a patch to skip only ExpToCasExe.
+    # Since we do need DataExchange (used for iges_serializer), we use a patch to skip only ExpToCasExe.
     if "7.7.2" > OCCT_VERSION >= "7.7":
         patches.append("./patches/occt/no_ExpToCasExe.patch")
     elif OCCT_VERSION >= "7.7.2":

@@ -9,27 +9,27 @@
 #include "../../../ifcparse/logger.h"
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
 
-using IfcGeom::OpaqueNumber;
-using IfcGeom::OpaqueCoordinate;
-using IfcGeom::ConversionResultShape;
+using ifcopenshell::geom::opaque_number;
+using ifcopenshell::geom::opaque_coordinate;
+using ifcopenshell::geom::conversion_result_shape;
 
 #ifdef IFOPSH_SIMPLE_KERNEL
-#define NumberType OpaqueNumber
+#define NumberType opaque_number
 #else
-using ifcopenshell::geometry::NumberEpeck;
-#define NumberType NumberEpeck
+using ifcopenshell::geom::number_epeck;
+#define NumberType number_epeck
 #endif
 
 #ifdef IFOPSH_SIMPLE_KERNEL
-#define CgalShape SimpleCgalShape
+#define cgal_shape SimpleCgalShape
 #endif
 
-typedef CGAL::Polyhedron_3<Kernel_> Polyhedron;
-typedef Polyhedron::Facet_const_handle Facet_const_handle;
-typedef Polyhedron::Halfedge_around_facet_const_circulator Halfedge_around_facet_circulator;
+typedef CGAL::Polyhedron_3<kernel_> polyhedron;
+typedef polyhedron::Facet_const_handle facet_const_handle;
+typedef polyhedron::Halfedge_around_facet_const_circulator halfedge_around_facet_circulator;
 
 namespace {
-	cgal_placement_t make_transform(const ifcopenshell::geometry::taxonomy::matrix4& place) {
+	cgal_placement_t make_transform(const ifcopenshell::geom::taxonomy::matrix4& place) {
 		const auto& m = place.ccomponents();
 		return cgal_placement_t(
 			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
@@ -37,39 +37,39 @@ namespace {
 			m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 	}
 
-	OpaqueCoordinate<3> opaque_point(const cgal_point_t& p) {
-		return OpaqueCoordinate<3>(
+	opaque_coordinate<3> opaque_point(const cgal_point_t& p) {
+		return opaque_coordinate<3>(
 			NumberType(p.cartesian(0)),
 			NumberType(p.cartesian(1)),
 			NumberType(p.cartesian(2))
 		);
 	}
 
-	typename Kernel_::FT max_abs3(const typename Kernel_::FT& a, const typename Kernel_::FT& b, const typename Kernel_::FT& c) {
-		std::array<typename Kernel_::FT, 3> abc{ a, b, c };
+	typename kernel_::FT max_abs3(const typename kernel_::FT& a, const typename kernel_::FT& b, const typename kernel_::FT& c) {
+		std::array<typename kernel_::FT, 3> abc{ a, b, c };
 		auto minel = std::min_element(abc.begin(), abc.end());
 		auto maxel = std::max_element(abc.begin(), abc.end());
 		return ((-*minel) > *maxel) ? (-*minel) : *maxel;
 	}
 
-	OpaqueCoordinate<3> opaque_axis(const cgal_vector_t& v) {
+	opaque_coordinate<3> opaque_axis(const cgal_vector_t& v) {
 		auto maxval = max_abs3(v.x(), v.y(), v.z());
 		if (maxval == 0) {
 			throw std::runtime_error("Invalid shape type");
 		}
-		return OpaqueCoordinate<3>(
+		return opaque_coordinate<3>(
 			NumberType(v.x() / maxval),
 			NumberType(v.y() / maxval),
 			NumberType(v.z() / maxval)
 		);
 	}
 
-	OpaqueCoordinate<4> opaque_plane(const cgal_plane_t& p) {
+	opaque_coordinate<4> opaque_plane(const cgal_plane_t& p) {
 		auto maxval = max_abs3(p.a(), p.b(), p.c());
 		if (maxval == 0) {
 			throw std::runtime_error("Invalid shape type");
 		}
-		return OpaqueCoordinate<4>(
+		return opaque_coordinate<4>(
 			NumberType(p.a() / maxval),
 			NumberType(p.b() / maxval),
 			NumberType(p.c() / maxval),
@@ -77,7 +77,7 @@ namespace {
 		);
 	}
 
-	cgal_plane_t plane_from_opaque(const OpaqueCoordinate<4>& p) {
+	cgal_plane_t plane_from_opaque(const opaque_coordinate<4>& p) {
 #ifdef IFOPSH_SIMPLE_KERNEL
 		return cgal_plane_t(
 			p.get(0).to_double(),
@@ -95,16 +95,16 @@ namespace {
 #endif
 	}
 
-	void insert_normalized_plane_map(plane_map<Kernel_>& mp, const OpaqueCoordinate<4>& from, const OpaqueCoordinate<4>& to) {
+	void insert_normalized_plane_map(plane_map<kernel_>& mp, const opaque_coordinate<4>& from, const opaque_coordinate<4>& to) {
 		mp.insert({
-			normalized_plane_for_map<Kernel_>(plane_from_opaque(from)),
-			normalized_plane_for_map<Kernel_>(plane_from_opaque(to))
+			normalized_plane_for_map<kernel_>(plane_from_opaque(from)),
+			normalized_plane_for_map<kernel_>(plane_from_opaque(to))
 		});
 	}
 
-	void apply_normalized_plane_map(const plane_map<Kernel_>& mp, std::list<cgal_plane_t>& planes) {
+	void apply_normalized_plane_map(const plane_map<kernel_>& mp, std::list<cgal_plane_t>& planes) {
 		for (auto& plane : planes) {
-			auto it = mp.find(normalized_plane_for_map<Kernel_>(plane));
+			auto it = mp.find(normalized_plane_for_map<kernel_>(plane));
 			if (it != mp.end()) {
 				plane = it->second;
 			}
@@ -112,7 +112,7 @@ namespace {
 	}
 
 	cgal_vector_t wire_normal(const cgal_wire_t& wire) {
-		typename Kernel_::FT a(0), b(0), c(0);
+		typename kernel_::FT a(0), b(0), c(0);
 		if (wire.size() < 3) {
 			return cgal_vector_t(a, b, c);
 		}
@@ -130,32 +130,32 @@ namespace {
 		if (wire.empty()) {
 			throw std::runtime_error("Invalid shape type");
 		}
-		std::array<Kernel_::FT, 3> p{ Kernel_::FT(0), Kernel_::FT(0), Kernel_::FT(0) };
+		std::array<kernel_::FT, 3> p{ kernel_::FT(0), kernel_::FT(0), kernel_::FT(0) };
 		for (const auto& point : wire) {
 			for (int i = 0; i < 3; ++i) {
 				p[i] += point.cartesian(i);
 			}
 		}
-		Kernel_::FT n(wire.size());
+		kernel_::FT n(wire.size());
 		return cgal_point_t(p[0] / n, p[1] / n, p[2] / n);
 	}
 
-	Kernel_::FT wire_length(const cgal_wire_t& wire) {
-		Kernel_::FT len(0);
+	kernel_::FT wire_length(const cgal_wire_t& wire) {
+		kernel_::FT len(0);
 		if (wire.size() < 2) {
 			return len;
 		}
 		for (std::size_t i = 1; i < wire.size(); ++i) {
-			len += CGAL::approximate_sqrt(CGAL::Segment_3<Kernel_>(wire[i - 1], wire[i]).squared_length());
+			len += CGAL::approximate_sqrt(CGAL::Segment_3<kernel_>(wire[i - 1], wire[i]).squared_length());
 		}
 		if (wire.size() > 2) {
-			len += CGAL::approximate_sqrt(CGAL::Segment_3<Kernel_>(wire.back(), wire.front()).squared_length());
+			len += CGAL::approximate_sqrt(CGAL::Segment_3<kernel_>(wire.back(), wire.front()).squared_length());
 		}
 		return len;
 	}
 
-	Kernel_::FT wire_area(const cgal_wire_t& wire) {
-		Kernel_::FT area(0);
+	kernel_::FT wire_area(const cgal_wire_t& wire) {
+		kernel_::FT area(0);
 		if (wire.size() < 3) {
 			return area;
 		}
@@ -163,7 +163,7 @@ namespace {
 		for (std::size_t i = 1; i + 1 < wire.size(); ++i) {
 			auto v1 = wire[i] - origin;
 			auto v2 = wire[i + 1] - origin;
-			area += CGAL::approximate_sqrt(CGAL::cross_product(v1, v2).squared_length()) / Kernel_::FT(2);
+			area += CGAL::approximate_sqrt(CGAL::cross_product(v1, v2).squared_length()) / kernel_::FT(2);
 		}
 		return area;
 	}
@@ -198,9 +198,9 @@ namespace {
 	}
 
 	template <typename Facet>
-	CGAL::Direction_3<Kernel_> newell(Facet& face) {
-		typename Kernel_::FT a(0), b(0), c(0);
-		CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face.facet_begin();
+	CGAL::Direction_3<kernel_> newell(Facet& face) {
+		typename kernel_::FT a(0), b(0), c(0);
+		CGAL::Polyhedron_3<kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face.facet_begin();
 		do {
 			auto& curr = current_halfedge->vertex()->point();
 			auto& next = current_halfedge->next()->vertex()->point();
@@ -208,10 +208,10 @@ namespace {
 			b += (curr.z() - next.z()) * (curr.x() + next.x());
 			c += (curr.x() - next.x()) * (curr.y() + next.y());
 		} while (++current_halfedge != face.facet_begin());
-		return CGAL::Direction_3<Kernel_>(a, b, c);
+		return CGAL::Direction_3<kernel_>(a, b, c);
 	}
 
-	struct Plane_equation {
+	struct facet_plane_equation {
 		template <typename Facet>
 		typename Facet::Plane_3 operator()(Facet& face) {
 			typename Facet::Halfedge_handle h = face.halfedge();
@@ -219,7 +219,7 @@ namespace {
 		}
 	};
 
-	bool are_facets_coplanar(const Facet_const_handle& f1, const Facet_const_handle& f2) {
+	bool are_facets_coplanar(const facet_const_handle& f1, const facet_const_handle& f2) {
 		auto normal_1 = CGAL::normal(f1->halfedge()->vertex()->point(),
 			f1->halfedge()->next()->vertex()->point(),
 			f1->halfedge()->next()->next()->vertex()->point());
@@ -231,9 +231,9 @@ namespace {
 		return CGAL::collinear(CGAL::ORIGIN + decltype(normal_1)(0., 0., 0.), CGAL::ORIGIN + normal_1, CGAL::ORIGIN + normal_2);
 	}
 
-	void partition_coplanar_components(const Polyhedron& shape,
-		std::vector<std::set<Facet_const_handle>>& components) {
-		std::set<Facet_const_handle> visited;
+	void partition_coplanar_components(const polyhedron& shape,
+		std::vector<std::set<facet_const_handle>>& components) {
+		std::set<facet_const_handle> visited;
 
 		for (auto& face : shape.facet_handles()) {
 			if (visited.find(face) != visited.end()) {
@@ -242,20 +242,20 @@ namespace {
 
 			components.emplace_back();
 			auto& component = components.back();
-			std::queue<Facet_const_handle> queue;
+			std::queue<facet_const_handle> queue;
 
 			queue.push(face);
 			visited.insert(face);
 
 			while (!queue.empty()) {
-				Facet_const_handle current = queue.front();
+				facet_const_handle current = queue.front();
 				queue.pop();
 
 				component.insert(current);
 
-				Halfedge_around_facet_circulator he = current->facet_begin();
+				halfedge_around_facet_circulator he = current->facet_begin();
 				do {
-					Facet_const_handle neighbour = he->opposite()->face();
+					facet_const_handle neighbour = he->opposite()->face();
 					if (visited.find(neighbour) == visited.end() && neighbour != nullptr && visited.find(neighbour) == visited.end() && are_facets_coplanar(current, neighbour)) {
 						queue.push(neighbour);
 						visited.insert(neighbour);
@@ -266,7 +266,7 @@ namespace {
 	}
 }
 
-ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool convex, ::logger& logger) {
+ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_shape_t& shape, bool convex, ::logger& logger) {
 	shape_ = shape;
 	convex_tag_ = convex;
 	auto& poly = std::get<cgal_shape_t>(*shape_);
@@ -275,7 +275,7 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 
 	for (const auto& face : CGAL::faces(poly)) {
 		auto V = newell(*face).to_vector();
-		CGAL::Plane_3<Kernel_> plane(CGAL::Point_3<Kernel_>(), V);
+		CGAL::Plane_3<kernel_> plane(CGAL::Point_3<kernel_>(), V);
 		auto b1 = plane.base1();
 		auto b2 = plane.base2();
 
@@ -287,20 +287,20 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 		auto C = face->halfedge()->vertex()->point();
 		auto transform_point = [&V, &C, &b1, &b2](const auto& p) {
 			auto dv = p - C;
-			return CGAL::Point_2<Kernel_>(
+			return CGAL::Point_2<kernel_>(
 				dv * b1,
 				dv * b2
 			);
 		};
 
-		std::vector<CGAL::Point_2<Kernel_>> ps;
+		std::vector<CGAL::Point_2<kernel_>> ps;
 			
 		for (auto& he1 : CGAL::halfedges_around_face(face->halfedge(), poly)) {
 			const auto& source = he1->vertex()->point();
 			ps.push_back(transform_point(source));
 		}
 
-		if (!CGAL::Polygon_2<Kernel_>(ps.begin(), ps.end()).is_simple()) {
+		if (!CGAL::Polygon_2<kernel_>(ps.begin(), ps.end()).is_simple()) {
 			logger.warning("GEO", 63, "Removed face due to self-intersections");
 			faces_to_remove.insert(face);
 		}
@@ -313,17 +313,17 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 	}
 }
 
-ifcopenshell::geometry::CgalShape::CgalShape(const cgal_point_t& point, bool convex) {
+ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_point_t& point, bool convex) {
 	shape_ = point;
 	convex_tag_ = convex;
 }
 
-ifcopenshell::geometry::CgalShape::CgalShape(const cgal_wire_t& wire, bool convex) {
+ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_wire_t& wire, bool convex) {
 	shape_ = wire;
 	convex_tag_ = convex;
 }
 
-const cgal_shape_t& ifcopenshell::geometry::CgalShape::poly() const {
+const cgal_shape_t& ifcopenshell::geom::cgal_shape::poly() const {
 #ifndef IFOPSH_SIMPLE_KERNEL
 	to_poly();
 #endif
@@ -334,7 +334,7 @@ const cgal_shape_t& ifcopenshell::geometry::CgalShape::poly() const {
 }
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-void ifcopenshell::geometry::CgalShape::to_poly() const {
+void ifcopenshell::geom::cgal_shape::to_poly() const {
 	if (!shape_) {
 		cgal_shape_t poly;
 		convert_to_polyhedron(*nef_, poly, std::numeric_limits<std::size_t>::max());
@@ -348,7 +348,7 @@ void ifcopenshell::geometry::CgalShape::to_poly() const {
 	}
 }
 
-void ifcopenshell::geometry::CgalShape::to_nef() const {
+void ifcopenshell::geom::cgal_shape::to_nef() const {
 	if (!nef_) {
 		auto shp = poly();
 		if (!convex_tag_) {
@@ -362,7 +362,7 @@ void ifcopenshell::geometry::CgalShape::to_nef() const {
 }
 #endif
 
-void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
+void ifcopenshell::geom::cgal_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
 	if (is_point() || is_wire()) {
 		return;
 	}
@@ -381,9 +381,9 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 		shape_to_use = const_cast<cgal_shape_t*>(&base_shape);
 	}
 
-	const bool setting_use_original_edges = settings.get<ifcopenshell::geometry::settings::CgalEmitOriginalEdges>().get();
+	const bool setting_use_original_edges = settings.get<ifcopenshell::geom::settings::CgalEmitOriginalEdges>().get();
 	
-	std::set<std::set<Kernel_::Point_3>> original_edges;
+	std::set<std::set<kernel_::Point_3>> original_edges;
 	if (setting_use_original_edges) {
 		for (auto it = shape_to_use->edges_begin(); it != shape_to_use->edges_end(); ++it) {
 			original_edges.insert({ it->vertex()->point(), it->prev()->vertex()->point() });
@@ -407,7 +407,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 
 	std::optional<double> smooth_treshold;
 	{
-		auto setting_value = settings.get<ifcopenshell::geometry::settings::CgalSmoothAngleDegrees>().get();
+		auto setting_value = settings.get<ifcopenshell::geom::settings::CgalSmoothAngleDegrees>().get();
 		if (setting_value > 0.) {
 			smooth_treshold = std::cos(setting_value * boost::math::constants::pi<double>() / 180.0);
 		}
@@ -442,8 +442,8 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 
 	// Facet -> planar component map for determining which
 	// edges are to be registered.
-	std::vector<std::set<Facet_const_handle>> components;
-	std::map<Facet_const_handle, typename decltype(components)::const_iterator> facet_to_component;
+	std::vector<std::set<facet_const_handle>> components;
+	std::map<facet_const_handle, typename decltype(components)::const_iterator> facet_to_component;
 	if (!setting_use_original_edges) {
 		partition_coplanar_components(*shape_to_use, components);
 		for (auto it = components.begin(); it != components.end(); ++it) {
@@ -453,12 +453,12 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 		}
 	}
 
-	// std::map<cgal_vertex_descriptor_t, Kernel_::Vector_3> vertex_normals;
-	// boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel_::Vector_3>> vertex_normals_map(vertex_normals);
+	// std::map<cgal_vertex_descriptor_t, kernel_::Vector_3> vertex_normals;
+	// boost::associative_property_map<std::map<cgal_vertex_descriptor_t, kernel_::Vector_3>> vertex_normals_map(vertex_normals);
 	
 	// Triangulate the shape and compute the normals
-	std::map<Facet_const_handle, Kernel_::Vector_3> face_normals;
-	boost::associative_property_map<std::map<Facet_const_handle, Kernel_::Vector_3>> face_normals_map(face_normals);
+	std::map<facet_const_handle, kernel_::Vector_3> face_normals;
+	boost::associative_property_map<std::map<facet_const_handle, kernel_::Vector_3>> face_normals_map(face_normals);
 
 	//  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
 	try {
@@ -470,7 +470,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 
 	// We do welding here in addition to in the triangulation item, because
 	// CGAL does not have a concept of vertices with identity like OCCT has.
-	typedef std::tuple<Kernel_::FT, Kernel_::FT, Kernel_::FT, Kernel_::FT, Kernel_::FT, Kernel_::FT> postion_normal;
+	typedef std::tuple<kernel_::FT, kernel_::FT, kernel_::FT, kernel_::FT, kernel_::FT, kernel_::FT> postion_normal;
 	std::map<postion_normal, size_t> welds;
 
 	std::set<std::pair<int, int>> registered_edges;
@@ -481,9 +481,9 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			std::cout << "warning: non-triangular face!" << std::endl;
 			continue;
 		}
-		CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();
+		CGAL::Polyhedron_3<kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();
 
-		const Kernel_::Vector_3 facet_normal = face_normals_map[face];
+		const kernel_::Vector_3 facet_normal = face_normals_map[face];
 
 		int vertexidx[3];
 		bool is_face_boundary[3];
@@ -494,7 +494,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			auto vertex_norm = facet_normal;
 
 			if (smooth_treshold) {
-				Kernel_::Vector_3 normal_accum(0, 0, 0);
+				kernel_::Vector_3 normal_accum(0, 0, 0);
 				{
 					// circulator around the vertex
 					auto vh_begin = v->vertex_begin();
@@ -502,7 +502,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 						auto vh = vh_begin;
 						do {
 							if (!vh->is_border()) {
-								Facet_const_handle adj_f = vh->facet();
+								facet_const_handle adj_f = vh->facet();
 								const auto fn2 = face_normals_map[adj_f];
 								if ((fn2 * facet_normal) >= *smooth_treshold) {
 									normal_accum = normal_accum + fn2;
@@ -584,7 +584,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 
 }
 
-void ifcopenshell::geometry::CgalShape::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& r) const {
+void ifcopenshell::geom::cgal_shape::Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
 	std::stringstream sstream;
 	if (is_point()) {
 		auto p = point();
@@ -617,7 +617,7 @@ void ifcopenshell::geometry::CgalShape::Serialize(const ifcopenshell::geometry::
 
 #include <CGAL/Polygon_mesh_processing/bbox.h>
 
-double ifcopenshell::geometry::CgalShape::bounding_box(void *& b) const {
+double ifcopenshell::geom::cgal_shape::bounding_box(void *& b) const {
 	if (b == nullptr) {
 		b = new CGAL::Bbox_3;
 	}
@@ -634,7 +634,7 @@ double ifcopenshell::geometry::CgalShape::bounding_box(void *& b) const {
 	return (bb.xmax() - bb.xmin()) * (bb.ymax() - bb.ymin()) * (bb.zmax() - bb.zmin());
 }
 
-int ifcopenshell::geometry::CgalShape::num_vertices() const {
+int ifcopenshell::geom::cgal_shape::num_vertices() const {
 	if (is_point()) {
 		return 1;
 	}
@@ -644,14 +644,14 @@ int ifcopenshell::geometry::CgalShape::num_vertices() const {
 	return (int) poly().size_of_vertices();
 }
 
-void ifcopenshell::geometry::CgalShape::set_box(void * b) {
+void ifcopenshell::geom::cgal_shape::set_box(void * b) {
 	auto& bb = (*((CGAL::Bbox_3*)b));
-	Kernel_::Point_3 lower(bb.xmin(), bb.ymin(), bb.zmin());
-	Kernel_::Point_3 upper(bb.xmax(), bb.ymax(), bb.zmax());
-	shape_ = ifcopenshell::geometry::utils::create_cube(lower, upper);
+	kernel_::Point_3 lower(bb.xmin(), bb.ymin(), bb.zmin());
+	kernel_::Point_3 upper(bb.xmax(), bb.ymax(), bb.zmax());
+	shape_ = ifcopenshell::geom::utils::create_cube(lower, upper);
 }
 
-int ifcopenshell::geometry::CgalShape::surface_genus() const {
+int ifcopenshell::geom::cgal_shape::surface_genus() const {
 	if (is_point() || is_wire()) {
 		return 0;
 	}
@@ -666,12 +666,12 @@ int ifcopenshell::geometry::CgalShape::surface_genus() const {
 	return (int) genus;
 }
 
-bool ifcopenshell::geometry::CgalShape::is_manifold() const {
+bool ifcopenshell::geom::cgal_shape::is_manifold() const {
 	// @todo ?
 	return (is_point() || is_wire()) ? true : poly().is_valid();
 }
 
-int ifcopenshell::geometry::CgalShape::num_edges() const
+int ifcopenshell::geom::cgal_shape::num_edges() const
 {
 	if (is_point()) {
 		return 0;
@@ -686,7 +686,7 @@ int ifcopenshell::geometry::CgalShape::num_edges() const
 	return (int) poly().size_of_halfedges() / 2;
 }
 
-int ifcopenshell::geometry::CgalShape::num_faces() const
+int ifcopenshell::geom::cgal_shape::num_faces() const
 {
 #ifndef IFOPSH_SIMPLE_KERNEL
 	if (nef_) {
@@ -706,15 +706,15 @@ int ifcopenshell::geometry::CgalShape::num_faces() const
 	}
 }
 
-OpaqueNumber ifcopenshell::geometry::CgalShape::CgalShape::length()
+opaque_number ifcopenshell::geom::cgal_shape::cgal_shape::length()
 {
-	Kernel_::FT len = 0;
+	kernel_::FT len = 0;
 	if (is_wire()) {
 		len = wire_length(wire());
 	} else if (!is_point()) {
 		const auto& shp = poly();
 		for (auto it = shp.edges_begin(); it != shp.edges_end(); ++it) {
-			len += CGAL::approximate_sqrt(CGAL::Segment_3<Kernel_>(
+			len += CGAL::approximate_sqrt(CGAL::Segment_3<kernel_>(
 				it->vertex()->point(),
 				it->opposite()->vertex()->point()
 			).squared_length());
@@ -723,30 +723,30 @@ OpaqueNumber ifcopenshell::geometry::CgalShape::CgalShape::length()
 	return NumberType(len);
 }
 
-OpaqueNumber ifcopenshell::geometry::CgalShape::area()
+opaque_number ifcopenshell::geom::cgal_shape::area()
 {
 	if (is_wire()) {
 		return NumberType(wire_area(wire()));
 	}
 	if (is_point()) {
-		return NumberType(Kernel_::FT(0));
+		return NumberType(kernel_::FT(0));
 	}
 	auto s = poly();
 	CGAL::Polygon_mesh_processing::triangulate_faces(s);
 	return NumberType(CGAL::Polygon_mesh_processing::area(s));
 }
 
-OpaqueNumber ifcopenshell::geometry::CgalShape::volume()
+opaque_number ifcopenshell::geom::cgal_shape::volume()
 {
 	if (is_point() || is_wire()) {
-		return NumberType(Kernel_::FT(0));
+		return NumberType(kernel_::FT(0));
 	}
 	auto s = poly();
 	CGAL::Polygon_mesh_processing::triangulate_faces(s);
 	return NumberType(CGAL::Polygon_mesh_processing::volume(s));
 }
 
-OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
+opaque_coordinate<3> ifcopenshell::geom::cgal_shape::position()
 {
 	if (is_point()) {
 		return opaque_point(point());
@@ -757,18 +757,18 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
 	const auto& shp = poly();
 	if (shp.size_of_facets() == 1) {
 		// return centroid;
-		// CGAL::Vector_3<Kernel_> p;
-		std::array<Kernel_::FT, 3> p{ Kernel_::FT(0), Kernel_::FT(0), Kernel_::FT(0) };
+		// CGAL::Vector_3<kernel_> p;
+		std::array<kernel_::FT, 3> p{ kernel_::FT(0), kernel_::FT(0), kernel_::FT(0) };
 		for (auto it = shp.points_begin(); it != shp.points_end(); ++it) {
 			for (int i = 0; i < 3; ++i) {
 				p[i] += it->cartesian(i);
 			}			
 		}
-		Kernel_::FT N(std::distance(shp.points_begin(), shp.points_end()));
+		kernel_::FT N(std::distance(shp.points_begin(), shp.points_end()));
 		for (int i = 0; i < 3; ++i) {
 			p[i] /= N;
 		}
-		return OpaqueCoordinate<3>(
+		return opaque_coordinate<3>(
 			NumberType(p[0]),
 			NumberType(p[1]),
 			NumberType(p[2])
@@ -778,7 +778,7 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
 	}
 }
 
-OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::axis()
+opaque_coordinate<3> ifcopenshell::geom::cgal_shape::axis()
 {
 	if (is_wire()) {
 		if (wire().size() == 2) {
@@ -791,32 +791,32 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::axis()
 	}
 	auto shp = poly();
 	if (shp.size_of_facets() == 1) {
-		auto pl = Plane_equation()(*shp.facets_begin());
+		auto pl = facet_plane_equation()(*shp.facets_begin());
 		return opaque_axis(cgal_vector_t(pl.a(), pl.b(), pl.c()));
 	} else {
 		throw std::runtime_error("Invalid shape type");
 	}
 }
 
-OpaqueCoordinate<4> ifcopenshell::geometry::CgalShape::plane_equation()
+opaque_coordinate<4> ifcopenshell::geom::cgal_shape::plane_equation()
 {
 	if (is_wire() && wire().size() >= 3) {
 		auto normal = wire_normal(wire());
-		return opaque_plane(cgal_plane_t(wire().front(), CGAL::Direction_3<Kernel_>(normal)));
+		return opaque_plane(cgal_plane_t(wire().front(), CGAL::Direction_3<kernel_>(normal)));
 	}
 	auto shp = poly();
 	if (shp.size_of_facets() == 1) {
-		return opaque_plane(Plane_equation()(*shp.facets_begin()));
+		return opaque_plane(facet_plane_equation()(*shp.facets_begin()));
 	}
 	throw std::runtime_error("Invalid shape type");
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::convex_decomposition()
+std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::convex_decomposition()
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
 	throw std::runtime_error("Not implemented");
 #else
-	std::vector<ConversionResultShape*> result;
+	std::vector<conversion_result_shape*> result;
 	auto copy = nef();
 	CGAL::convex_decomposition_3(copy);
 	// the first volume is the outer volume, which is
@@ -828,89 +828,89 @@ std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::convex_de
 		if (ci->mark()) {
 			// @todo couldn't get it to work with the multiple volumes of a complex decomposition
 			// directly, so for now we need to isolate the individual volumes.
-			CGAL::Polyhedron_3<Kernel_> P;
+			CGAL::Polyhedron_3<kernel_> P;
 			copy.convert_inner_shell_to_polyhedron(ci->shells_begin(), P);
-			result.push_back(new CgalShape(P, /*convex=*/ true));
+			result.push_back(new cgal_shape(P, /*convex=*/ true));
 		}
 	}
 	return result;
 #endif
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShape::halfspaces()
+conversion_result_shape* ifcopenshell::geom::cgal_shape::halfspaces()
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
 	throw std::runtime_error("Not implemented");
 #else
-	return new CgalShapeHalfSpaceDecomposition(nef(), convex_tag_);
+	return new cgal_shape_half_space_decomposition(nef(), convex_tag_);
 #endif
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShape::solid()
+conversion_result_shape* ifcopenshell::geom::cgal_shape::solid()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape * ifcopenshell::geometry::CgalShape::box()
+conversion_result_shape * ifcopenshell::geom::cgal_shape::box()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShape::wrap_in_compound()
+conversion_result_shape* ifcopenshell::geom::cgal_shape::wrap_in_compound()
 {
 	return clone();
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::vertices()
+std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::vertices()
 {
-	std::vector<ConversionResultShape*> result;
+	std::vector<conversion_result_shape*> result;
 	if (is_point()) {
-		result.push_back(new CgalShape(point()));
+		result.push_back(new cgal_shape(point()));
 		return result;
 	}
 	if (is_wire()) {
 		for (const auto& p : wire()) {
-			result.push_back(new CgalShape(p));
+			result.push_back(new cgal_shape(p));
 		}
 		return result;
 	}
 	for (const auto& p : poly().points()) {
-		result.push_back(new CgalShape(p));
+		result.push_back(new cgal_shape(p));
 	}
 	return result;
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::edges()
+std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::edges()
 {
-	std::vector<ConversionResultShape*> result;
+	std::vector<conversion_result_shape*> result;
 	if (is_point()) {
 		return result;
 	}
 	if (is_wire()) {
 		const auto& w = wire();
 		for (std::size_t i = 1; i < w.size(); ++i) {
-			result.push_back(new CgalShape(cgal_wire_t{ w[i - 1], w[i] }));
+			result.push_back(new cgal_shape(cgal_wire_t{ w[i - 1], w[i] }));
 		}
 		if (w.size() > 2) {
-			result.push_back(new CgalShape(cgal_wire_t{ w.back(), w.front() }));
+			result.push_back(new cgal_shape(cgal_wire_t{ w.back(), w.front() }));
 		}
 		return result;
 	}
 	for (auto ed : poly().edges()) {
-		result.push_back(new CgalShape(cgal_wire_t{ ed.vertex()->point(), ed.opposite()->vertex()->point() }));
+		result.push_back(new cgal_shape(cgal_wire_t{ ed.vertex()->point(), ed.opposite()->vertex()->point() }));
 	}
 	return result;
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::facets()
+std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::facets()
 {
-	std::vector<ConversionResultShape*> result;
+	std::vector<conversion_result_shape*> result;
 	if (is_point()) {
 		return result;
 	}
 	if (is_wire()) {
 		if (wire().size() >= 3) {
-			result.push_back(new CgalShape(wire()));
+			result.push_back(new cgal_shape(wire()));
 		}
 		return result;
 	}
@@ -922,41 +922,41 @@ std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::facets()
 			ps.push_back(it->vertex()->point());
 		} while (++it != face->facet_begin());
 
-		result.push_back(new CgalShape(ps));
+		result.push_back(new cgal_shape(ps));
 	}
 	return result;
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShape::add(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape::add(conversion_result_shape* other)
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
 	throw std::runtime_error("Not implemented");
 #else
-	return new CgalShape(this->nef() + ((CgalShape*)other)->nef());
+	return new cgal_shape(this->nef() + ((cgal_shape*)other)->nef());
 #endif
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShape::subtract(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape::subtract(conversion_result_shape* other)
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
 	throw std::runtime_error("Not implemented");
 #else
-	return new CgalShape(this->nef() - ((CgalShape*)other)->nef());
+	return new cgal_shape(this->nef() - ((cgal_shape*)other)->nef());
 #endif
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShape::intersect(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape::intersect(conversion_result_shape* other)
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
 	throw std::runtime_error("Not implemented");
 #else
-	return new CgalShape(this->nef() * ((CgalShape*)other)->nef());
+	return new cgal_shape(this->nef() * ((cgal_shape*)other)->nef());
 #endif
 }
 
 namespace {
-	template <typename Polyhedron>
-	void concatenate_polyhedra(Polyhedron& p1, const Polyhedron& p2) {
+	template <typename polyhedron_type>
+	void concatenate_polyhedra(polyhedron_type& p1, const polyhedron_type& p2) {
 		std::vector<cgal_point_t> points1, points2;
 		std::vector<std::vector<std::size_t>> faces1, faces2;
 
@@ -977,26 +977,26 @@ namespace {
 		faces1.insert(faces1.end(), faces2.begin(), faces2.end());
 
 		// Build merged polyhedron
-		Polyhedron merged;
+		polyhedron_type merged;
 		CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(points1, faces1, merged);
 
 		p1 = std::move(merged);
 	}
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShape::concat(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape::concat(conversion_result_shape* other)
 {
 	auto shp = poly();
-	concatenate_polyhedra(shp, ((CgalShape*)other)->poly());
-	return new CgalShape(shp);
+	concatenate_polyhedra(shp, ((cgal_shape*)other)->poly());
+	return new cgal_shape(shp);
 }
 
-std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::CgalShape::bounding_box() const
+std::pair<opaque_coordinate<3>, opaque_coordinate<3>> ifcopenshell::geom::cgal_shape::bounding_box() const
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShape::moved(ifcopenshell::geometry::taxonomy::matrix4::ptr place) const
+conversion_result_shape* ifcopenshell::geom::cgal_shape::moved(ifcopenshell::geom::taxonomy::matrix4::ptr place) const
 {
 	if (place->is_identity()) {
 		return clone();
@@ -1004,10 +1004,10 @@ ConversionResultShape* ifcopenshell::geometry::CgalShape::moved(ifcopenshell::ge
 
 	const auto trsf = make_transform(*place);
 	if (is_point()) {
-		return new CgalShape(point().transform(trsf), convex_tag_);
+		return new cgal_shape(point().transform(trsf), convex_tag_);
 	}
 	if (is_wire()) {
-		return new CgalShape(moved_wire(wire(), trsf), convex_tag_);
+		return new cgal_shape(moved_wire(wire(), trsf), convex_tag_);
 	}
 
 	cgal_shape_t s = poly();
@@ -1015,78 +1015,78 @@ ConversionResultShape* ifcopenshell::geometry::CgalShape::moved(ifcopenshell::ge
 		vertex->point() = vertex->point().transform(trsf);
 	}
 
-	return new CgalShape(s, convex_tag_);
+	return new cgal_shape(s, convex_tag_);
 }
 
-std::size_t ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
+std::size_t ifcopenshell::geom::cgal_shape::map(opaque_coordinate<4>&, opaque_coordinate<4>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-std::size_t ifcopenshell::geometry::CgalShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
+std::size_t ifcopenshell::geom::cgal_shape::map(const std::vector<opaque_coordinate<4>>&, const std::vector<opaque_coordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-bool ifcopenshell::geometry::CgalShape::surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
+bool ifcopenshell::geom::cgal_shape::surface_area_along_direction(double tol, const ifcopenshell::geom::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
 	// @todo
 	return false;
 }
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 
-void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
+void ifcopenshell::geom::cgal_shape_half_space_decomposition::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& r) const {
+void ifcopenshell::geom::cgal_shape_half_space_decomposition::Serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
 	throw std::runtime_error("Not implemented");
 }
 
-int ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::num_vertices() const {
+int ifcopenshell::geom::cgal_shape_half_space_decomposition::num_vertices() const {
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::set_box(void * b) {
+void ifcopenshell::geom::cgal_shape_half_space_decomposition::set_box(void * b) {
 	throw std::runtime_error("Not implemented");
 }
 
-int ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::surface_genus() const {
+int ifcopenshell::geom::cgal_shape_half_space_decomposition::surface_genus() const {
 	throw std::runtime_error("Not implemented");
 }
 
-bool ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::is_manifold() const {
+bool ifcopenshell::geom::cgal_shape_half_space_decomposition::is_manifold() const {
 	throw std::runtime_error("Not implemented");
 }
 
-int ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::num_edges() const
+int ifcopenshell::geom::cgal_shape_half_space_decomposition::num_edges() const
 {
 	throw std::runtime_error("Not implemented");
 }
 
-int ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::num_faces() const
+int ifcopenshell::geom::cgal_shape_half_space_decomposition::num_faces() const
 {
 	throw std::runtime_error("Not implemented");
 }
 
-OpaqueNumber ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::CgalShapeHalfSpaceDecomposition::length()
+opaque_number ifcopenshell::geom::cgal_shape_half_space_decomposition::cgal_shape_half_space_decomposition::length()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-OpaqueNumber ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::area()
+opaque_number ifcopenshell::geom::cgal_shape_half_space_decomposition::area()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-OpaqueNumber ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::volume()
+opaque_number ifcopenshell::geom::cgal_shape_half_space_decomposition::volume()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::position()
+opaque_coordinate<3> ifcopenshell::geom::cgal_shape_half_space_decomposition::position()
 {
 	if (planes_.size() == 1) {
-		auto xyz = CGAL::ORIGIN + planes_.front().d() * CGAL::Vector_3<Kernel_>(planes_.front().a(), planes_.front().b(), planes_.front().c());
-		return OpaqueCoordinate<3>(
+		auto xyz = CGAL::ORIGIN + planes_.front().d() * CGAL::Vector_3<kernel_>(planes_.front().a(), planes_.front().b(), planes_.front().c());
+		return opaque_coordinate<3>(
 			NumberType(xyz.cartesian(0)),
 			NumberType(xyz.cartesian(1)),
 			NumberType(xyz.cartesian(2))
@@ -1096,14 +1096,14 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::pos
 	}
 }
 
-OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::axis()
+opaque_coordinate<3> ifcopenshell::geom::cgal_shape_half_space_decomposition::axis()
 {
 	if (planes_.size() == 1) {
-		std::array<typename Kernel_::FT, 3> abc{ planes_.front().a(), planes_.front().b(), planes_.front().c() };
+		std::array<typename kernel_::FT, 3> abc{ planes_.front().a(), planes_.front().b(), planes_.front().c() };
 		auto minel = std::min_element(abc.begin(), abc.end());
 		auto maxel = std::max_element(abc.begin(), abc.end());
 		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
-		return OpaqueCoordinate<3>(
+		return opaque_coordinate<3>(
 			NumberType(planes_.front().a() / maxval),
 			NumberType(planes_.front().b() / maxval),
 			NumberType(planes_.front().c() / maxval)
@@ -1113,14 +1113,14 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::axi
 	}
 }
 
-OpaqueCoordinate<4> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::plane_equation()
+opaque_coordinate<4> ifcopenshell::geom::cgal_shape_half_space_decomposition::plane_equation()
 {
 	if (planes_.size() == 1) {
-		std::array<typename Kernel_::FT, 3> abc{ planes_.front().a(), planes_.front().b(), planes_.front().c() };
+		std::array<typename kernel_::FT, 3> abc{ planes_.front().a(), planes_.front().b(), planes_.front().c() };
 		auto minel = std::min_element(abc.begin(), abc.end());
 		auto maxel = std::max_element(abc.begin(), abc.end());
 		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
-		return OpaqueCoordinate<4>(
+		return opaque_coordinate<4>(
 			NumberType(planes_.front().a() / maxval),
 			NumberType(planes_.front().b() / maxval),
 			NumberType(planes_.front().c() / maxval),
@@ -1131,76 +1131,76 @@ OpaqueCoordinate<4> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::pla
 	}
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::convex_decomposition()
+std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape_half_space_decomposition::convex_decomposition()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::halfspaces()
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::halfspaces()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::solid()
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::solid()
 {
-	return new CgalShape(shape_->evaluate());
+	return new cgal_shape(shape_->evaluate());
 }
 
-ConversionResultShape * ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::box()
+conversion_result_shape * ifcopenshell::geom::cgal_shape_half_space_decomposition::box()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::vertices()
+std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape_half_space_decomposition::vertices()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::edges()
+std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape_half_space_decomposition::edges()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::facets()
+std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape_half_space_decomposition::facets()
 {
-	std::vector<ConversionResultShape*> res;
+	std::vector<conversion_result_shape*> res;
 	for (auto& p : planes_) {
-		res.push_back(new CgalShapeHalfSpaceDecomposition(p));
+		res.push_back(new cgal_shape_half_space_decomposition(p));
 	}
 	return res;
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::add(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::add(conversion_result_shape* other)
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::subtract(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::subtract(conversion_result_shape* other)
 {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::intersect(ConversionResultShape* other)
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::intersect(conversion_result_shape* other)
 {
 	throw std::runtime_error("Not implemented");
 }
 
-std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::bounding_box() const
+std::pair<opaque_coordinate<3>, opaque_coordinate<3>> ifcopenshell::geom::cgal_shape_half_space_decomposition::bounding_box() const
 {
 	throw std::runtime_error("Not implemented");
 }
 
-double ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::bounding_box(void *& b) const {
+double ifcopenshell::geom::cgal_shape_half_space_decomposition::bounding_box(void *& b) const {
 	throw std::runtime_error("Not implemented");
 }
 
-ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::moved(ifcopenshell::geom::taxonomy::matrix4::ptr) const
 {
 	throw std::runtime_error("Not implemented");
 }
 
-std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) {
-	plane_map<Kernel_> mp;
+std::size_t ifcopenshell::geom::cgal_shape_half_space_decomposition::map(opaque_coordinate<4>& from, opaque_coordinate<4>& to) {
+	plane_map<kernel_> mp;
 	insert_normalized_plane_map(mp, from, to);
 	std::size_t mutated = 0;
 	auto nw = shape_->map(mp, mutated);
@@ -1209,8 +1209,8 @@ std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(OpaqueC
 	return mutated;
 }
 
-std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const std::vector<OpaqueCoordinate<4>>& froms, const std::vector<OpaqueCoordinate<4>>& tos) {
-	plane_map<Kernel_> mp;
+std::size_t ifcopenshell::geom::cgal_shape_half_space_decomposition::map(const std::vector<opaque_coordinate<4>>& froms, const std::vector<opaque_coordinate<4>>& tos) {
+	plane_map<kernel_> mp;
 	if (froms.size() != tos.size()) {
 		throw std::runtime_error("Expected equal size");
 	}
@@ -1229,7 +1229,7 @@ std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const s
 }
 
 
-ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::wrap_in_compound()
+conversion_result_shape* ifcopenshell::geom::cgal_shape_half_space_decomposition::wrap_in_compound()
 {
 	throw std::runtime_error("Not implemented");
 }

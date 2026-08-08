@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& inst) {
 	taxonomy::face::ptr f = taxonomy::cast<taxonomy::face>(map(inst.SweptArea()));
@@ -65,7 +65,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& 
 	bool directrix_on_plane = is_plane;
 
 	if (is_plane) {
-		IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) inst.ReferenceSurface(), pln);
+		ifcopenshell::geom::Kernel::convert((IfcSchema::IfcPlane*) inst.ReferenceSurface(), pln);
 
 		// As per Informal propositions 2: The Directrix shall lie on the ReferenceSurface.
 		// This is not always the case with the test files in the repository. I am not sure
@@ -91,7 +91,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& 
 		crv->D1(u0, directrix_origin, directrix_tangent);
 	}
 
-	if (is_plane && pln.Axis().Direction().IsNormal(directrix_tangent, Precision::Approximation()) && directrix_on_plane) {
+	if (is_plane && pln.Axis().Direction().IsNormal(directrix_tangent, ::Precision::Approximation()) && directrix_on_plane) {
 		directrix.SetTransformation(gp_Ax3(directrix_origin, directrix_tangent, pln.Axis().Direction()), gp::XOY());
 	} else if (!is_plane) {
 		ShapeAnalysis_Surface sas(BRep_Tool::Surface(surface_face));

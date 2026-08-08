@@ -8,8 +8,8 @@
 #include <numeric>
 #include <unordered_map>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
 
 namespace {
 	taxonomy::style::ptr fallback_style(const taxonomy::geom_item::ptr& item, const taxonomy::geom_item::ptr& fallback) {
@@ -252,19 +252,19 @@ namespace {
 	}
 }
 
-bool PassthroughKernel::convert_impl(const taxonomy::shell::ptr shell, IfcGeom::ConversionResults& results) {
+bool passthrough_kernel::convert_impl(const taxonomy::shell::ptr shell, ifcopenshell::geom::conversion_results& results) {
 	if (!shell_supported(shell)) {
 		return false;
 	}
-	results.emplace_back(IfcGeom::ConversionResult(
+	results.emplace_back(ifcopenshell::geom::conversion_result(
 		shell->instance.id(),
 		shell->matrix,
-		new ifcopenshell::geometry::PassthroughShape(PassthroughPart{ shell, taxonomy::make<taxonomy::matrix4>(), shell->closed.value_or(false) }),
+		new ifcopenshell::geom::passthrough_shape(passthrough_part{ shell, taxonomy::make<taxonomy::matrix4>(), shell->closed.value_or(false) }),
 		shell->surface_style));
 	return true;
 }
 
-bool PassthroughKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::ConversionResults& results) {
+bool passthrough_kernel::convert_impl(const taxonomy::solid::ptr solid, ifcopenshell::geom::conversion_results& results) {
 	if (!solid || solid->children.size() != 1) {
 		return false;
 	}
@@ -272,10 +272,10 @@ bool PassthroughKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::
 	if (!shell_supported(shell)) {
 		return false;
 	}
-	results.emplace_back(IfcGeom::ConversionResult(
+	results.emplace_back(ifcopenshell::geom::conversion_result(
 		solid->instance.id(),
 		solid->matrix,
-		new ifcopenshell::geometry::PassthroughShape(PassthroughPart{
+		new ifcopenshell::geom::passthrough_shape(passthrough_part{
 			shell,
 			shell->matrix ? taxonomy::make<taxonomy::matrix4>(shell->matrix->ccomponents()) : taxonomy::make<taxonomy::matrix4>(),
 			true
@@ -284,20 +284,20 @@ bool PassthroughKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::
 	return true;
 }
 
-bool PassthroughKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, IfcGeom::ConversionResults& results) {
+bool passthrough_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, ifcopenshell::geom::conversion_results& results) {
 	auto shell = shell_from_extrusion(extrusion, settings_.get<settings::Precision>().get());
 	if (!shell) {
 		return false;
 	}
-	results.emplace_back(IfcGeom::ConversionResult(
+	results.emplace_back(ifcopenshell::geom::conversion_result(
 		extrusion->instance.id(),
 		extrusion->matrix,
-		new ifcopenshell::geometry::PassthroughShape(PassthroughPart{ shell, taxonomy::make<taxonomy::matrix4>(), true }),
+		new ifcopenshell::geom::passthrough_shape(passthrough_part{ shell, taxonomy::make<taxonomy::matrix4>(), true }),
 		extrusion->surface_style));
 	return true;
 }
 
-bool PassthroughKernel::convert_openings(const express::Base&, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>&,
-	const IfcGeom::ConversionResults&, const ifcopenshell::geometry::taxonomy::matrix4&, IfcGeom::ConversionResults&) {
+bool passthrough_kernel::convert_openings(const express::base&, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geom::taxonomy::matrix4>>&,
+	const ifcopenshell::geom::conversion_results&, const ifcopenshell::geom::taxonomy::matrix4&, ifcopenshell::geom::conversion_results&) {
 	return false;
 }

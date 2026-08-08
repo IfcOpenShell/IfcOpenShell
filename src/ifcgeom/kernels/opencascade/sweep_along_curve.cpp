@@ -31,10 +31,9 @@
 #include <Geom_Circle.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
 namespace {
 	bool wire_is_c1_continuous(const TopoDS_Wire& w, double tol) {
@@ -83,8 +82,8 @@ namespace {
 	}
 }
 
-bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
-    using namespace ifcopenshell::geometry;
+bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
+    using namespace ifcopenshell::geom;
 
 	bool applied_temporary_offset = false;
 	Eigen::Vector3d mean;
@@ -150,7 +149,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 			0.,
 			settings_.get<settings::Precision>().get()
 		};
-		if (!IfcGeom::util::convert_wire_to_face(TopoDS::Wire(face_), face, settings)) {
+		if (!ifcopenshell::geom::util::convert_wire_to_face(TopoDS::Wire(face_), face, settings)) {
 			return false;
 		}
 	} else {
@@ -316,7 +315,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs, ifcopenshell::geom::conversion_results& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;
@@ -356,10 +355,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs,
 	} else {
 		m = scs->matrix;
 	}
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
         scs->instance.id(),
 		m,
-		new OpenCascadeShape(shape),
+		new open_cascade_shape(shape),
 		scs->surface_style
 	));
 	return true;
