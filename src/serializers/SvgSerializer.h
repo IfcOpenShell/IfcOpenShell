@@ -2585,11 +2585,10 @@ namespace {
 			// QA. But a single-best-match nudge (mirroring point_on_foreign_face()'s "the one matching
 			// face" contract, tried first here too) was ALSO insufficient, for a reason specific to
 			// this whole-object gate: a sample point can genuinely sit on more than one OTHER
-			// product's coincident face at once (confirmed directly against the real file -- wall
-			// #70370's own left-face top edge, at floor level, sits simultaneously on the slab's own
-			// top face -- a huge, distant, but perfectly legitimate coincident match -- AND on wall
-			// #70168's own base face AND its own vertical left face, all three genuinely coincident
-			// at that exact point). Taking only the first-found match (by item index, i.e.
+			// product's coincident face at once (confirmed directly against the real file -- a
+			// wall's own left-face top edge, at floor level, sits simultaneously on a slab's own
+			// top face -- a huge, distant, but perfectly legitimate coincident match -- AND on the
+			// wall standing on top of it. Taking only the first-found match (by item index, i.e.
 			// arbitrarily) picked the slab's face here, whose centroid sits nowhere near the actual
 			// occluding wall, making the nudge useless even though a *different* candidate's
 			// centroid would have worked. Fixed by trying every genuinely-touching candidate's own
@@ -2626,9 +2625,63 @@ namespace {
 				}
 				return matches;
 			};
-			auto is_occluded_for_visibility = [&](const gp_Pnt& p, size_t self_idx) -> bool {
-				if (is_occluded_by_other(p, self_idx, self_idx)) {
-					return true;
+			// Returns the item index found genuinely nearer to the camera than `p` (the actual
+			// occluder), or none if nothing is. A renamed, index-returning sibling of
+			// is_occluded_by_other() -- kept separate rather than changing that function's own
+			// bool signature, since it's already used elsewhere in this pass with call sites that
+			// only need the bool.
+			auto find_occluder = [&](const gp_Pnt& p, size_t exclude_a, size_t exclude_b) -> boost::optional<size_t> {
+				double depth_p = occlusion_depth(p);
+				gp_Lin ray(p, gp_Dir(view_direction_.Direction()));
+				for (size_t i = 0; i < occlusion_intersectors.size(); ++i) {
+					if (i == exclude_a || i == exclude_b || !occlusion_intersector_loaded[i]) {
+						continue;
+					}
+					auto& inter = occlusion_intersectors[i];
+					inter.Perform(ray, -1.0e6, 1.0e6);
+					if (!inter.IsDone()) {
+						continue;
+					}
+					for (int j = 1; j <= inter.NbPnt(); ++j) {
+						if (occlusion_depth(inter.Pnt(j)) < depth_p - cross_coplanar_tolerance_) {
+							return i;
+						}
+					}
+				}
+				return boost::none;
+			};
+			// Whole-object visibility alone isn't enough to tell "genuinely swallowed by one
+			// dominant neighbour" (wall #0MmP, entirely subsumed by wall #3_Ty standing on it --
+			// should be excluded) apart from "surrounded by many distinct neighbours" (Slab #2CD3,
+			// touching a different wall along each edge of its own perimeter, which is completely
+			// normal for a slab and must NOT be excluded) -- confirmed directly against a real
+			// building file where BOTH cases independently produced zero visible edges under the
+			// plain per-edge test above, yet only one of them is actually irrelevant to the
+			// drawing. The distinguishing signal is WHO occludes each edge, not just whether it's
+			// occluded: a wholly-subsumed product is blocked by essentially the same one neighbour
+			// everywhere, while a legitimately-present, multiply-connected product like a slab is
+			// blocked by a *different* neighbour on each side. find_occluder_for_visibility() below
+			// mirrors the same plain-then-nudged-candidates logic used elsewhere in this pass but
+			// returns WHICH item satisfied it (the first one found, plain or nudged) instead of
+			// discarding that information -- the per-item occluder set accumulated across every one
+			// of its edges is then used alongside the existing "zero visible edges" rule: only
+			// exclude when that set has at most one distinct member.
+			auto find_occluder_for_visibility = [&](const gp_Pnt& p, size_t self_idx) -> boost::optional<size_t> {
+				// Deliberately does NOT exclude self_idx here, unlike the nudge fallback below --
+				// self-occlusion (this item's own nearer face hiding one of its own farther
+				// edges, e.g. a wall's own front face hiding its own back-face edge) is a real,
+				// common reason a native edge is invisible, not an artifact to suppress. A same-
+				// face self-hit at the sample point itself lands at essentially depth_p and is
+				// harmlessly rejected by find_occluder()'s own tolerance check -- exactly the
+				// reasoning is_genuinely_occluded() already documents for why it never excludes
+				// self either. Confirmed via a real building file (issue #3742 follow-up): two
+				// walls (#14523, #72749) each had exactly one back-face edge that this test
+				// wrongly read as "clear" (and so, wrongly, as genuinely visible) while self-
+				// excluded, because nothing else in the scene stood in front of that specific
+				// edge -- only the wall's own body did.
+				size_t kNoExclusion = items_.size();
+				if (auto occ = find_occluder(p, kNoExclusion, kNoExclusion)) {
+					return occ;
 				}
 				for (auto& foreign : touching_foreign_faces(p, self_idx)) {
 					gp_Pnt centroid = cross_coplanar::face_interior_point(foreign.first);
@@ -2637,13 +2690,33 @@ namespace {
 						continue;
 					}
 					gp_Pnt nudged = p.Translated(toward * 0.05);
-					if (is_occluded_by_other(nudged, self_idx, foreign.second)) {
-						return true;
+					if (auto occ = find_occluder(nudged, self_idx, foreign.second)) {
+						return occ;
 					}
 				}
-				return false;
+				return boost::none;
 			};
-			constexpr int kMaxUnoccludedNativeEdgesForWholeObjectHidden = 0;
+			// Thresholds below were calibrated against seven real/test products (issue #3742
+			// follow-up), not derived a priori: five real-file walls that each genuinely need
+			// excluding (each has at most 2 native edges any camera ray ever finds clear, out
+			// of ~12 total, and 4-8 distinct other products account for hiding the rest); one
+			// real-file slab that must NOT be excluded despite looking similarly hidden by the
+			// unoccluded-edge count alone (0 of its 24 edges tested clear) -- 18 distinct other
+			// products are responsible, each hiding a different part of its perimeter, the
+			// normal, legitimate situation for a slab touching many walls around its footprint;
+			// and one synthetic-test wall (`test_cross_coplanar_match_must_not_steal_edge_from_
+			// occluded_neighbour`'s own `LowerWall`) that must also NOT be excluded despite
+			// having only 1 unoccluded edge -- but unlike the five real "exclude" cases, only
+			// ONE other product (an unrelated wall stacked on top of it) is responsible, a
+			// completely ordinary partial-overlap, not the "swallowed by several different
+			// neighbours at once" pattern the five exclude-cases share. Distinct-occluder count
+			// is therefore bounded on BOTH sides, not just capped: excluding requires at least 2
+			// genuinely different neighbours (rules out LowerWall's single dominant occluder) and
+			// at most 12 (rules out the slab's 18, with headroom on both sides of the resulting
+			// 2-8 "exclude" band and comfortable distance from both 1 and 18).
+			constexpr int kMaxUnoccludedNativeEdgesForWholeObjectHidden = 2;
+			constexpr size_t kMinDistinctOccludersForWholeObjectHidden = 2;
+			constexpr size_t kMaxDistinctOccludersForWholeObjectHidden = 12;
 			std::vector<bool> item_excluded_from_matching(items_.size(), false);
 			{
 				size_t idx = 0;
@@ -2652,13 +2725,23 @@ namespace {
 						const TopoDS_Shape& shape = std::get<1>(it);
 						// TopExp::MapShapesAndAncestors (not a plain TopExp_Explorer) so a
 						// manifold edge shared by two faces is counted once, not twice -- a
-						// double-count would specifically defeat the <= 1 threshold on a product
-						// with exactly one genuinely-visible edge.
+						// double-count would specifically defeat the unoccluded-edge threshold
+						// on a product with only one or two genuinely-visible edges.
 						TopTools_IndexedDataMapOfShapeListOfShape edge_face_map;
 						TopExp::MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, edge_face_map);
 						int unoccluded = 0;
-						for (int i = 1; i <= edge_face_map.Extent() &&
-							unoccluded <= kMaxUnoccludedNativeEdgesForWholeObjectHidden; ++i) {
+						std::set<size_t> occluders;
+						// Deliberately no early exit once `unoccluded` crosses its threshold --
+						// confirmed by real-file investigation (issue #3742 follow-up) that
+						// stopping early makes the accumulated `occluders` set depend on
+						// TopExp::MapShapesAndAncestors's own, otherwise-irrelevant edge
+						// enumeration order (whichever edges happen to be visited before the
+						// threshold trips), not on the product's actual, complete set of
+						// neighbours -- silently wrong for two of the five real "exclude" cases
+						// above. Every edge is always evaluated; the modest extra cost is the
+						// same already-accepted trade-off this filter's own top comment makes
+						// (cheaper than, and strictly precedes, the O(products^2) loop below).
+						for (int i = 1; i <= edge_face_map.Extent(); ++i) {
 							const TopoDS_Edge& e = TopoDS::Edge(edge_face_map.FindKey(i));
 							TopoDS_Vertex v0, v1;
 							TopExp::Vertices(e, v0, v1);
@@ -2682,7 +2765,20 @@ namespace {
 							for (int s = 1; s <= kEdgeVisibilitySampleCount; ++s) {
 								double t = static_cast<double>(s) / (kEdgeVisibilitySampleCount + 1);
 								gp_Pnt sample(p0 * (1.0 - t) + p1 * t);
-								if (!is_occluded_for_visibility(sample, idx)) {
+								// Self (`idx`) is deliberately NOT excluded from occluder attribution
+								// here for the same reason is_genuinely_occluded() never excludes it
+								// either: a sample point on one of this item's own farther faces (e.g.
+								// a wall's own back-face edge) can be legitimately hidden by this same
+								// item's own nearer geometry, and a trivial same-face self-hit lands
+								// at essentially the sample's own depth, harmlessly rejected by
+								// find_occluder()'s tolerance check. But self is excluded from the
+								// `occluders` diversity set just below -- self-occlusion says nothing
+								// about how many genuinely *different* neighbours surround this item.
+								if (auto occ = find_occluder_for_visibility(sample, idx)) {
+									if (*occ != idx) {
+										occluders.insert(*occ);
+									}
+								} else {
 									++clear_samples;
 								}
 							}
@@ -2691,7 +2787,9 @@ namespace {
 								++unoccluded;
 							}
 						}
-						item_excluded_from_matching[idx] = unoccluded <= kMaxUnoccludedNativeEdgesForWholeObjectHidden;
+						item_excluded_from_matching[idx] = unoccluded <= kMaxUnoccludedNativeEdgesForWholeObjectHidden
+							&& occluders.size() >= kMinDistinctOccludersForWholeObjectHidden
+							&& occluders.size() <= kMaxDistinctOccludersForWholeObjectHidden;
 					}
 					++idx;
 				}
