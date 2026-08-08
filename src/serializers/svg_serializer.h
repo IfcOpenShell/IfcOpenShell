@@ -557,7 +557,7 @@ typedef prefiltered_hlr hlr_engine;
 class SERIALIZERS_API svg_serializer : public ifcopenshell::geom::write_only_geometry_serializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
-	typedef std::vector< boost::shared_ptr<util::string_buffer::float_item> > float_item_list;
+	typedef std::vector< std::shared_ptr<util::string_buffer::float_item> > float_item_list;
 	enum storey_height_display_types {
 		SH_NONE, SH_FULL, SH_LEFT
 	};
@@ -668,9 +668,9 @@ public:
 	{
 		apply_settings();
 	}
-    void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
-    void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
-    void addSizeComponent(const boost::shared_ptr<util::string_buffer::float_item>& fi) { radii.push_back(fi); }
+    void addXCoordinate(const std::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
+    void addYCoordinate(const std::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
+    void addSizeComponent(const std::shared_ptr<util::string_buffer::float_item>& fi) { radii.push_back(fi); }
     void growBoundingBox(double x, double y) { if (x < xmin) xmin = x; if (x > xmax) xmax = x; if (y < ymin) ymin = y; if (y > ymax) ymax = y; }
     void writeHeader();
 	void doWriteHeader();

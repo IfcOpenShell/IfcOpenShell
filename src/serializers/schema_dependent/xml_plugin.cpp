@@ -23,12 +23,12 @@
 #include "../../ifcparse/macros.h"
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 namespace {
 
-boost::shared_ptr<ifcopenshell::geom::serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
-	return boost::make_shared<POSTFIX_SCHEMA(xml_serializer)>(context.file, context.output_filename);
+std::shared_ptr<ifcopenshell::geom::serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
+	return std::make_shared<POSTFIX_SCHEMA(xml_serializer)>(context.file, context.output_filename);
 }
 
 }

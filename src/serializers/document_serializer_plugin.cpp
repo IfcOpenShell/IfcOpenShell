@@ -125,7 +125,7 @@ const ifcopenshell::serializers::document_serializer_info* ifcopenshell::seriali
 	return entry ? &entry->info_ : nullptr;
 }
 
-boost::shared_ptr<ifcopenshell::geom::serializer> ifcopenshell::serializers::document_serializer_registry::create(const std::string& format, const document_serializer_context& context) const {
+std::shared_ptr<ifcopenshell::geom::serializer> ifcopenshell::serializers::document_serializer_registry::create(const std::string& format, const document_serializer_context& context) const {
 	const auto schema_name = !context.schema_name.empty() ? context.schema_name :
 		(context.file ? context.file->schema()->name() : std::string());
 	auto* registry = const_cast<document_serializer_registry*>(this);

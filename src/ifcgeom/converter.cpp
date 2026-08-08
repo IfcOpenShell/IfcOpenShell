@@ -280,7 +280,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 		guid,
 		context_string,
 		place,
-		boost::shared_ptr<ifcopenshell::geom::Representation::brep>(shape),
+		std::shared_ptr<ifcopenshell::geom::Representation::brep>(shape),
 		product
 	);
 

@@ -41,7 +41,7 @@
 #include "../ifcparse/utils.h"
 
 #include <boost/program_options.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 #include <boost/optional/optional_io.hpp>
 
 #include <algorithm>
@@ -616,7 +616,7 @@ int main(int argc, char** argv) {
 				context.schema_name = ifc_file ? ifc_file->schema()->name() : document_serializer_info->schema_name;
 				context.stream = use_input_filename;
 
-				boost::shared_ptr<ifcopenshell::geom::serializer> serializer = document_serializer_registry.create(output_extension_utf8, context);
+				std::shared_ptr<ifcopenshell::geom::serializer> serializer = document_serializer_registry.create(output_extension_utf8, context);
 				if (serializer->is_streaming() != use_input_filename) {
 					throw ifcopenshell::exception("Selected document serializer streaming mode does not match its registry metadata");
 				}
@@ -750,7 +750,7 @@ int main(int argc, char** argv) {
 		settings
 	};
 
-	boost::shared_ptr<ifcopenshell::geom::geometry_serializer> serializer; /**< @todo use std::unique_ptr when possible */
+	std::shared_ptr<ifcopenshell::geom::geometry_serializer> serializer; /**< @todo use std::unique_ptr when possible */
 	try {
 		geometry_serializer_registry.configure(output_extension_utf8, serializer_context);
 		serializer = geometry_serializer_registry.create(output_extension_utf8, serializer_context);
@@ -1405,7 +1405,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 
 	express::base quantity;
 	std::vector<express::base> objects;
-	boost::shared_ptr<ifcopenshell::geom::Representation::brep> previous_geometry_pointer;
+	std::shared_ptr<ifcopenshell::geom::Representation::brep> previous_geometry_pointer;
 
 	for (;; ++num_created) {
 		bool has_more = true;

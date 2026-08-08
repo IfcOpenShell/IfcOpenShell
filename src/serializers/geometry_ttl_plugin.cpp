@@ -21,7 +21,7 @@
 #include "ttl_wkt_serializer.h"
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 namespace ifcopenshell {
 namespace serializers {
@@ -35,12 +35,12 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("ttl");
 }
 
-boost::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
+std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
 	if (context.output_temp_stream) {
-		return boost::make_shared<ttl_wkt_serializer>(
+		return std::make_shared<ttl_wkt_serializer>(
 			*context.output_temp_stream, context.settings);
 	}
-	return boost::make_shared<ttl_wkt_serializer>(context.output_temp_filename, context.settings);
+	return std::make_shared<ttl_wkt_serializer>(context.output_temp_filename, context.settings);
 }
 
 void configure_serializer(geometry_serializer_context& context) {

@@ -442,7 +442,7 @@ public:
 	}
 
 private:
-	boost::shared_ptr<geometry_serializer> serializer_;
+	std::shared_ptr<geometry_serializer> serializer_;
 };
 %}
 

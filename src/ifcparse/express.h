@@ -26,7 +26,7 @@
 #include "utils.h"
 
 #include <atomic>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 class aggregate_of_instance;
 

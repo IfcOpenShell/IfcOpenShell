@@ -23,7 +23,7 @@
 #include "step_serializer.h"
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 namespace ifcopenshell {
 namespace serializers {
@@ -37,8 +37,8 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("stp");
 }
 
-boost::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
-	return boost::make_shared<step_serializer>(context.output_temp_filename, context.settings);
+std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
+	return std::make_shared<step_serializer>(context.output_temp_filename, context.settings);
 }
 
 void configure_serializer(geometry_serializer_context& context) {

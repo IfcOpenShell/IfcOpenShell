@@ -390,7 +390,7 @@ public:
     ///
     /// Attention when running remove_entity inside a loop over a list of entities to be removed.
     /// This invalidates the iterator. A workaround is to reverse the loop:
-    /// boost::shared_ptr<aggregate_of_instance> entities = ...;
+    /// std::shared_ptr<aggregate_of_instance> entities = ...;
     /// for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
     ///    ifcopenshell::IfcBaseClass *const inst = *it;
     ///    model->remove_entity(inst);

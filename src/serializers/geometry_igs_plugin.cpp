@@ -23,7 +23,7 @@
 #include "iges_serializer.h"
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 #include <Standard_Version.hxx>
 
@@ -43,11 +43,11 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("igs");
 }
 
-boost::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
+std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
 #if OCC_VERSION_HEX < 0x60900
 	IGESControl_Controller::Init();
 #endif
-	return boost::make_shared<iges_serializer>(context.output_temp_filename, context.settings);
+	return std::make_shared<iges_serializer>(context.output_temp_filename, context.settings);
 }
 
 void configure_serializer(geometry_serializer_context& context) {

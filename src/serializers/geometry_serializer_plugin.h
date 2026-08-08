@@ -25,7 +25,7 @@
 #include "../plugin/plugin.h"
 
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <filesystem>
 #include <map>
@@ -61,14 +61,14 @@ struct SERIALIZERS_API geometry_serializer_context {
 
 class SERIALIZERS_API geometry_serializer_registry {
 public:
-	typedef boost::function<boost::shared_ptr<geometry_serializer>(const geometry_serializer_context&)> create_fn;
+	typedef boost::function<std::shared_ptr<geometry_serializer>(const geometry_serializer_context&)> create_fn;
 	typedef boost::function<void(geometry_serializer_context&)> configure_fn;
 
 	void bind(const geometry_serializer_info& info, create_fn create, configure_fn configure = configure_fn(), const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 	bool has(const std::string& extension) const;
 	const geometry_serializer_info* find(const std::string& extension) const;
 	void configure(const std::string& extension, geometry_serializer_context& context) const;
-	boost::shared_ptr<geometry_serializer> create(const std::string& extension, const geometry_serializer_context& context) const;
+	std::shared_ptr<geometry_serializer> create(const std::string& extension, const geometry_serializer_context& context) const;
 	std::vector<geometry_serializer_info> serializers() const;
 
 private:

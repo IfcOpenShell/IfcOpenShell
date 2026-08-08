@@ -31,10 +31,8 @@
 
 #if CGAL_VERSION_NR >= 1060000000
 #define variant_get std::get_if
-#define my_shared_ptr std::shared_ptr
 #else
 #define variant_get boost::get
-#define my_shared_ptr boost::shared_ptr
 #endif
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel K;
@@ -102,25 +100,31 @@ std::vector<Polygon_2> create_and_convert_offset_polygon(double offset_distance,
 
     remove_close_points(polygon);
 
-    // Create the offset polygons using Epick kernel
-    // create_exterior_skeleton_and_offset_polygons_2()
-    std::vector<my_shared_ptr<CGAL::Polygon_2<CGAL::Epick>>> offset_polygons;
+    // Copy each generated offset polygon out of CGAL's version-dependent
+    // pointer type, then convert it back to the Epeck kernel.
+    std::vector<Polygon_2> exact_offset_polygons;
+    const auto append_polygons = [&exact_offset_polygons](const auto& offset_polygons, bool exterior) {
+        auto begin = offset_polygons.begin();
+        if (exterior) {
+            // The first polygon is the outer frame.
+            ++begin;
+        }
+        for (auto it = begin; it != offset_polygons.end(); ++it) {
+            auto inexact_poly = **it;
+            if (exterior && it == begin) {
+                inexact_poly.reverse_orientation();
+            }
+            remove_close_points(inexact_poly);
+            exact_offset_polygons.push_back(convert_polygon(inexact_poly));
+        }
+    };
 
     if (offset_distance >= 0.) {
-        offset_polygons = CGAL::create_exterior_skeleton_and_offset_polygons_2(offset_distance, polygon);
-        // erase the first outer frame
-        offset_polygons.erase(offset_polygons.begin());
-        offset_polygons.front()->reverse_orientation();
+        const auto offset_polygons = CGAL::create_exterior_skeleton_and_offset_polygons_2(offset_distance, polygon);
+        append_polygons(offset_polygons, true);
     } else {
-        offset_polygons = CGAL::create_interior_skeleton_and_offset_polygons_2(-offset_distance, polygon);
-    }
-
-    // Convert each offset polygon back to the Epeck kernel
-    std::vector<Polygon_2> exact_offset_polygons;
-    for (auto& inexact_poly_ptr : offset_polygons) {
-        remove_close_points(*inexact_poly_ptr);
-        Polygon_2 exact_poly = convert_polygon(*inexact_poly_ptr);
-        exact_offset_polygons.push_back(exact_poly);
+        const auto offset_polygons = CGAL::create_interior_skeleton_and_offset_polygons_2(-offset_distance, polygon);
+        append_polygons(offset_polygons, false);
     }
 
     return exact_offset_polygons;

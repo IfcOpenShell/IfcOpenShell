@@ -41,7 +41,7 @@
 #include <cstring>
 
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/logic/tribool.hpp>
 #include <boost/dynamic_bitset.hpp>
 

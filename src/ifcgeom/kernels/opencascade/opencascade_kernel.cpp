@@ -551,7 +551,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		guid,
 // 		context_string,
 // 		trsf,
-// 		boost::shared_ptr<ifcopenshell::geom::Representation::brep>(shape),
+// 		std::shared_ptr<ifcopenshell::geom::Representation::brep>(shape),
 // 		product
 // 	);
 // 

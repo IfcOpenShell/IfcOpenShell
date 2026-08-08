@@ -23,7 +23,7 @@
 #include "../ifcparse/utils.h"
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 #include <filesystem>
 
@@ -49,7 +49,7 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("obj");
 }
 
-boost::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
+std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
 	if (context.output_temp_stream || context.output_stream) {
 		stream_or_filename obj_filename = context.output_temp_stream
 			? *context.output_temp_stream
@@ -57,10 +57,10 @@ boost::shared_ptr<geometry_serializer> create_serializer(const geometry_serializ
 		stream_or_filename mtl_filename = context.output_stream
 			? *context.output_stream
 			: stream_or_filename(obj_mtl_filename(context.output_filename));
-		return boost::make_shared<wavefront_obj_serializer>(
+		return std::make_shared<wavefront_obj_serializer>(
 			obj_filename, mtl_filename, context.settings);
 	}
-	return boost::make_shared<wavefront_obj_serializer>(context.output_temp_filename, obj_mtl_filename(context.output_filename), context.settings);
+	return std::make_shared<wavefront_obj_serializer>(context.output_temp_filename, obj_mtl_filename(context.output_filename), context.settings);
 }
 
 void configure_serializer(geometry_serializer_context& context) {

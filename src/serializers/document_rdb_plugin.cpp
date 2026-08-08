@@ -23,15 +23,15 @@
 #ifdef IFOPSH_WITH_ROCKSDB
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 namespace {
 
-boost::shared_ptr<ifcopenshell::geom::serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
+std::shared_ptr<ifcopenshell::geom::serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
 	if (context.input_filename.empty()) {
 		throw ifcopenshell::exception("RocksDB document serializer requires an input filename");
 	}
-	return boost::make_shared<RocksDbSerializer>(context.input_filename, context.output_filename, context.skip_supertypes);
+	return std::make_shared<RocksDbSerializer>(context.input_filename, context.output_filename, context.skip_supertypes);
 }
 
 }

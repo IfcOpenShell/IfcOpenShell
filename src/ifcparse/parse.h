@@ -36,7 +36,7 @@
 #include "storage.h"
 
 #include <boost/dynamic_bitset.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <cstring>
 #include <iostream>
 #include <string>

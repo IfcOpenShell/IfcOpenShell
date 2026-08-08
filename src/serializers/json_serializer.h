@@ -9,7 +9,7 @@
 #include "../serializers/serializers_api.h"
 #include "../serializers/document_serializer_plugin.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 class json_serializer : public ifcopenshell::geom::serializer {
   public:
@@ -17,7 +17,7 @@ class json_serializer : public ifcopenshell::geom::serializer {
         JSON_DIALECT_CREOOX
     };
   private:
-    boost::shared_ptr<ifcopenshell::geom::serializer> implementation_;
+    std::shared_ptr<ifcopenshell::geom::serializer> implementation_;
 
   protected:
     std::string json_filename;

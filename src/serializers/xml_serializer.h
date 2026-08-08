@@ -9,11 +9,11 @@
 #include "../plugin/plugin.h"
 #include "../serializers/document_serializer_plugin.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 class xml_serializer : public ifcopenshell::geom::serializer {
 private:
-	boost::shared_ptr<ifcopenshell::geom::serializer> implementation_;
+	std::shared_ptr<ifcopenshell::geom::serializer> implementation_;
 
 protected:
 	std::string xml_filename;

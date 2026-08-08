@@ -23,7 +23,7 @@
 #include "geometry_serializer_plugin.h"
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 namespace ifcopenshell {
 namespace serializers {
@@ -37,8 +37,8 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("dae");
 }
 
-boost::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
-	return boost::make_shared<collada_serializer>(context.output_temp_filename, context.settings);
+std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
+	return std::make_shared<collada_serializer>(context.output_temp_filename, context.settings);
 }
 
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {

@@ -26,7 +26,7 @@
 #include "../plugin/plugin.h"
 
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <filesystem>
 #include <map>
@@ -64,11 +64,11 @@ struct SERIALIZERS_API document_serializer_context {
 
 class SERIALIZERS_API document_serializer_registry {
 public:
-	typedef boost::function<boost::shared_ptr<serializer>(const document_serializer_context&)> create_fn;
+	typedef boost::function<std::shared_ptr<serializer>(const document_serializer_context&)> create_fn;
 
 	void bind(const document_serializer_info& info, create_fn create, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 	const document_serializer_info* find(const std::string& format, const std::string& schema_name = std::string()) const;
-	boost::shared_ptr<serializer> create(const std::string& format, const document_serializer_context& context) const;
+	std::shared_ptr<serializer> create(const std::string& format, const document_serializer_context& context) const;
 	std::vector<document_serializer_info> serializers() const;
 
 private:
