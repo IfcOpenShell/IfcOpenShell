@@ -386,7 +386,7 @@ void collada_serializer::collada_exporter::startDocument(const std::string& unit
 
 void collada_serializer::collada_exporter::write(const ifcopenshell::geom::triangulation_element* o)
 {
-	const ifcopenshell::geom::Representation::triangulation& mesh = o->geometry();
+	const ifcopenshell::geom::triangulation& mesh = o->geometry();
 	BOOST_FOREACH(const ifcopenshell::geom::taxonomy::style::ptr& material, mesh.materials()) {
 		materials.add(material);
 	}

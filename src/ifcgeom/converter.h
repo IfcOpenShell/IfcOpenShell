@@ -16,7 +16,7 @@ namespace ifcopenshell { namespace geom {
 
 	class IFC_GEOM_API converter {
 	public:
-		typedef std::shared_ptr<ifcopenshell::geom::Representation::brep> brep_ptr;
+		typedef std::shared_ptr<ifcopenshell::geom::brep> brep_ptr;
 	private:
 		ifcopenshell::geom::abstract_mapping* mapping_;
 		std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> kernel_;

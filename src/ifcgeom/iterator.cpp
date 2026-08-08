@@ -303,7 +303,7 @@ void ifcopenshell::geom::iterator::compute_bounds(bool with_geometry)
 		do {
 			auto geom_object = get();
 			const ifcopenshell::geom::triangulation_element* o = static_cast<const ifcopenshell::geom::triangulation_element*>(geom_object.get());
-			const ifcopenshell::geom::Representation::triangulation& mesh = o->geometry();
+			const ifcopenshell::geom::triangulation& mesh = o->geometry();
 			auto mat = o->transformation().data()->ccomponents();
 			Eigen::Vector4d vec, transformed;
 

@@ -92,7 +92,7 @@ void wavefront_obj_serializer::write(const ifcopenshell::geom::triangulation_ele
 	obj_stream.stream << "s 1" << "\n";
 	const bool isyup = settings().get<ifcopenshell::geom::settings::UseYUp>().get();
 
-    const ifcopenshell::geom::Representation::triangulation& mesh = o->geometry();
+    const ifcopenshell::geom::triangulation& mesh = o->geometry();
 
 	size_t vcount = mesh.verts().size() / 3;
     size_t ncount = mesh.normals().size() / 3;

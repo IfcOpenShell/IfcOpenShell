@@ -44,7 +44,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 
 	representation_id_builder << representation_node->instance.id();
 
-	ifcopenshell::geom::Representation::brep* shape;
+	ifcopenshell::geom::brep* shape;
 	std::vector<ifcopenshell::geom::conversion_result> shapes;
 
 	if (!kernel_->convert(representation_node, shapes)) {
@@ -254,7 +254,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 		}
 	}
 
-	shape = new ifcopenshell::geom::Representation::brep(settings_, product_type, representation_id_builder.str(), shapes);
+	shape = new ifcopenshell::geom::brep(settings_, product_type, representation_id_builder.str(), shapes);
 
 	std::string context_string = "";
 
@@ -280,7 +280,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 		guid,
 		context_string,
 		place,
-		std::shared_ptr<ifcopenshell::geom::Representation::brep>(shape),
+		std::shared_ptr<ifcopenshell::geom::brep>(shape),
 		product
 	);
 

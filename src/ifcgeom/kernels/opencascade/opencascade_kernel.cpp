@@ -374,7 +374,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 
 // 	representation_id_builder << representation->data().id();
 // 
-// 	ifcopenshell::geom::Representation::brep* shape;
+// 	ifcopenshell::geom::brep* shape;
 // 	std::vector<ifcopenshell::geom::conversion_result> shapes, shapes2;
 // 
 // 	if (!convert_shapes(representation, shapes)) {
@@ -524,16 +524,16 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			trsf = gp_Trsf();
 // 			representation_id_builder << "-world-coords";
 // 		}
-// 		shape = new ifcopenshell::geom::Representation::brep(element_settings, representation_id_builder.str(), opened_shapes);
+// 		shape = new ifcopenshell::geom::brep(element_settings, representation_id_builder.str(), opened_shapes);
 // 	} else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 // 		for (std::vector<ifcopenshell::geom::conversion_result>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 // 			it->prepend(trsf);
 // 		}
 // 		trsf = gp_Trsf();
 // 		representation_id_builder << "-world-coords";
-// 		shape = new ifcopenshell::geom::Representation::brep(element_settings, representation_id_builder.str(), shapes);
+// 		shape = new ifcopenshell::geom::brep(element_settings, representation_id_builder.str(), shapes);
 // 	} else {
-// 		shape = new ifcopenshell::geom::Representation::brep(element_settings, representation_id_builder.str(), shapes);
+// 		shape = new ifcopenshell::geom::brep(element_settings, representation_id_builder.str(), shapes);
 // 	}
 // 
 // 	std::string context_string = "";
@@ -551,7 +551,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		guid,
 // 		context_string,
 // 		trsf,
-// 		std::shared_ptr<ifcopenshell::geom::Representation::brep>(shape),
+// 		std::shared_ptr<ifcopenshell::geom::brep>(shape),
 // 		product
 // 	);
 // 

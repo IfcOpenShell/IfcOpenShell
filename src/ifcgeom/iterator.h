@@ -22,7 +22,7 @@
  * Geometrical data in an IFC file consists of shapes (IfcShapeRepresentation)  *
  * and instances (SUBTYPE OF IfcBuildingElement e.g. IfcWindow).				*
  *																			  *
- * ifcopenshell::geom::Representation::triangulation is a class that represents a		  *
+ * ifcopenshell::geom::triangulation is a class that represents a		  *
  * triangulated IfcShapeRepresentation.										 *
  *   Triangulation.verts is a 1 dimensional vector of float defining the		*
  *	  cartesian coordinates of the vertices of the triangulated shape in the  *

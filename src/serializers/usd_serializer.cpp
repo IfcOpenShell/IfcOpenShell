@@ -203,7 +203,7 @@ void usd_serializer::write(const ifcopenshell::geom::triangulation_element* o) {
     }
     pxr::UsdGeomXform usd_mesh_container = writeNode<pxr::UsdGeomXform>(o); //  writeNode<pxr::UsdGeomMesh>(o);
     auto usd_mesh = pxr::UsdGeomMesh::Define(stage_, pxr::SdfPath(usd_mesh_container.GetPath().GetString() + "/" + o->context()));
-    const ifcopenshell::geom::Representation::triangulation& mesh = o->geometry();
+    const ifcopenshell::geom::triangulation& mesh = o->geometry();
     const auto verts = mesh.verts();
     const auto faces = mesh.faces();
     const auto material_ids = mesh.material_ids();

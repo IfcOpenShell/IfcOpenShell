@@ -215,7 +215,7 @@ std::optional<manifold::Manifold> ifcopenshell::geom::manifold_shape::as_manifol
 	return manifold::Manifold::BatchBoolean(solids, manifold::OpType::Add);
 }
 
-void ifcopenshell::geom::manifold_shape::Triangulate(ifcopenshell::geom::settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger&) const {
+void ifcopenshell::geom::manifold_shape::Triangulate(ifcopenshell::geom::settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger&) const {
 	for (const auto& part : parts_) {
 		auto mesh = transform_mesh(part.mesh, place);
 		std::vector<int> indices(mesh.NumVert());

@@ -68,7 +68,7 @@ ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::open_cascade_sh
 	return new open_cascade_shape(shape_);
 }
 
-void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::Representation::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
+void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
 
 	// @todo remove duplication with open_cascade_kernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);
 	// above can be static?
@@ -257,7 +257,7 @@ void ifcopenshell::geom::open_cascade_shape::Triangulate(ifcopenshell::geom::set
 	}
 
 	if (!t->normals().empty() && settings.get<settings::GenerateUvs>().get()) {
-		t->uvs_ref() = ifcopenshell::geom::Representation::triangulation::box_project_uvs(t->verts(), t->normals());
+		t->uvs_ref() = ifcopenshell::geom::triangulation::box_project_uvs(t->verts(), t->normals());
 	}
 
 	if (num_faces == 0) {

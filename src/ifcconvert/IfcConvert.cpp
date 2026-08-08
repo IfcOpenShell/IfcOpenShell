@@ -1405,7 +1405,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 
 	express::base quantity;
 	std::vector<express::base> objects;
-	std::shared_ptr<ifcopenshell::geom::Representation::brep> previous_geometry_pointer;
+	std::shared_ptr<ifcopenshell::geom::brep> previous_geometry_pointer;
 
 	for (;; ++num_created) {
 		bool has_more = true;

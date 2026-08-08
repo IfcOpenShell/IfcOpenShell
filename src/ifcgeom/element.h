@@ -160,12 +160,12 @@ namespace ifcopenshell::geom {
 
 	class brep_element : public element {
 	private:
-		std::shared_ptr<ifcopenshell::geom::Representation::brep> _geometry;
+		std::shared_ptr<ifcopenshell::geom::brep> _geometry;
 	public:
-		const std::shared_ptr<ifcopenshell::geom::Representation::brep>& geometry_pointer() const { return _geometry; }
-		const ifcopenshell::geom::Representation::brep& geometry() const { return *_geometry; }
+		const std::shared_ptr<ifcopenshell::geom::brep>& geometry_pointer() const { return _geometry; }
+		const ifcopenshell::geom::brep& geometry() const { return *_geometry; }
 		brep_element(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
-            const std::string& context, const ifcopenshell::geom::taxonomy::matrix4::ptr& trsf, const std::shared_ptr<ifcopenshell::geom::Representation::brep>& geometry,
+            const std::string& context, const ifcopenshell::geom::taxonomy::matrix4::ptr& trsf, const std::shared_ptr<ifcopenshell::geom::brep>& geometry,
 			const express::entity& product)
 			: element(geometry->settings(), id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)
@@ -182,15 +182,15 @@ namespace ifcopenshell::geom {
 
 	class triangulation_element : public element {
 	private:
-		std::shared_ptr< ifcopenshell::geom::Representation::triangulation > _geometry;
+		std::shared_ptr< ifcopenshell::geom::triangulation > _geometry;
 	public:
-		const ifcopenshell::geom::Representation::triangulation& geometry() const { return *_geometry; }
-		const std::shared_ptr< ifcopenshell::geom::Representation::triangulation>& geometry_pointer() const { return _geometry; }
+		const ifcopenshell::geom::triangulation& geometry() const { return *_geometry; }
+		const std::shared_ptr< ifcopenshell::geom::triangulation>& geometry_pointer() const { return _geometry; }
 		triangulation_element(const ifcopenshell::geom::brep_element& shape_model)
 			: element(shape_model)
-			, _geometry(std::make_shared<ifcopenshell::geom::Representation::triangulation>(shape_model.geometry()))
+			, _geometry(std::make_shared<ifcopenshell::geom::triangulation>(shape_model.geometry()))
 		{}
-		triangulation_element(const ifcopenshell::geom::element& source, const std::shared_ptr<ifcopenshell::geom::Representation::triangulation>& geometry)
+		triangulation_element(const ifcopenshell::geom::element& source, const std::shared_ptr<ifcopenshell::geom::triangulation>& geometry)
 			: element(source)
 			, _geometry(geometry)
 		{}
@@ -202,12 +202,12 @@ namespace ifcopenshell::geom {
 
 	class serialized_element : public element {
 	private:
-		std::shared_ptr<ifcopenshell::geom::Representation::serialization> _geometry;
+		std::shared_ptr<ifcopenshell::geom::serialization> _geometry;
 	public:
-		const ifcopenshell::geom::Representation::serialization& geometry() const { return *_geometry; }
+		const ifcopenshell::geom::serialization& geometry() const { return *_geometry; }
 		serialized_element(const brep_element& shape_model)
 			: element(shape_model)
-			, _geometry(std::make_shared<ifcopenshell::geom::Representation::serialization>(shape_model.geometry()))
+			, _geometry(std::make_shared<ifcopenshell::geom::serialization>(shape_model.geometry()))
 		{}
 		serialized_element(const serialized_element& other) = default;
 	private:

@@ -27,8 +27,6 @@
 
 namespace ifcopenshell::geom {
 
-	namespace Representation {
-
 		class IFC_GEOM_API representation {
 			representation(const representation&); //N/A
 			representation& operator =(const representation&); //N/A
@@ -235,7 +233,6 @@ namespace ifcopenshell::geom {
 			triangulation& operator=(const triangulation&);
 		};
 
-	}
 }
 
 #endif
