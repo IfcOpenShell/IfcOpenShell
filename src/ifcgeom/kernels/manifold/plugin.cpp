@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "../../kernel_plugin.h"
-#include "ManifoldKernel.h"
+#include "manifold_kernel.h"
 
 #include <boost/dll/alias.hpp>
 

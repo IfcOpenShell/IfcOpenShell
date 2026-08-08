@@ -1,7 +1,7 @@
 #include "base_utils.h"
 
 #include "../../../ifcparse/logger.h"
-#include "OpenCascadeConversionResult.h"
+#include "opencascade_conversion_result.h"
 #include "boolean_utils.h"
 
 #include <Standard_Version.hxx>

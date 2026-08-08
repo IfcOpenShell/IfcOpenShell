@@ -19,7 +19,7 @@
 
 #include "tree.h"
 
-#include "Iterator.h"
+#include "iterator.h"
 #include "tree_registry.h"
 #include "../ifcparse/exception.h"
 

@@ -20,7 +20,7 @@
 #ifdef IFOPSH_WITH_OPENCASCADE
 
 #include "geometry_serializer_plugin.h"
-#include "StepSerializer.h"
+#include "step_serializer.h"
 
 #include <boost/dll/alias.hpp>
 #include <boost/make_shared.hpp>

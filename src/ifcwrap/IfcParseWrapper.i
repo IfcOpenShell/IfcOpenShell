@@ -982,7 +982,7 @@ from .entity_instance import entity_instance_mixin
 %include "../ifcparse/express.h"
 
 %include "../ifcparse/schema.h"
-%include "../serializers/RocksDbSerializer.h"
+%include "../serializers/rocks_db_serializer.h"
 %include "../ifcparse/logger.h"
 
 // The file* returned by open() is to be freed by SWIG/Python

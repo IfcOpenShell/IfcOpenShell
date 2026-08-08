@@ -4,7 +4,7 @@
 #include "../ifcparse/express.h"
 #include "../ifcparse/logger.h"
 
-#include "ConversionSettings.h"
+#include "conversion_settings.h"
 
 #include <boost/variant.hpp>
 #include <boost/functional/hash.hpp>

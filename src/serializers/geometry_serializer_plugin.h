@@ -21,7 +21,7 @@
 #define IFCOPENSHELL_GEOMETRY_SERIALIZER_PLUGIN_H
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom/GeometrySerializer.h"
+#include "../ifcgeom/geometry_serializer.h"
 #include "../plugin/plugin.h"
 
 #include <boost/function.hpp>

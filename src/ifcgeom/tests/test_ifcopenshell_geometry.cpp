@@ -4,7 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "ifcgeom/Converter.h"
+#include "ifcgeom/converter.h"
 #include "ifcgeom/kernel_registry.h"
 #include "ifcparse/hierarchy_helper.h"
 #include "ifcparse/macros.h"

@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "geometry_serializer_plugin.h"
-#include "WavefrontObjSerializer.h"
+#include "wavefront_obj_serializer.h"
 
 #include "../ifcparse/utils.h"
 

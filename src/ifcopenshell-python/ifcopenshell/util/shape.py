@@ -46,7 +46,7 @@ MatrixType = npt.NDArray[np.float64]
 
 tol = 1e-6
 
-# NOTE: See IfcGeomRepresentation.h for W.Triangulation buffer types.
+# NOTE: See representation.h for W.Triangulation buffer types.
 
 # NOTE: For functions that return a single scalar ensure to use .item() to
 # return the Python float instead of numpy float

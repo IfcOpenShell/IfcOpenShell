@@ -1,4 +1,4 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 #include "boolean_utils.h"
 #include "base_utils.h"

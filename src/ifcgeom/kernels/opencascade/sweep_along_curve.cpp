@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 #include "base_utils.h"
 #include "wire_utils.h"
 

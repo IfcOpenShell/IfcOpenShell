@@ -1,4 +1,4 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 #include "wire_builder.h"
 
 #include <Geom_Line.hxx>

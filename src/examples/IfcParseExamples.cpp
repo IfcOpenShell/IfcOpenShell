@@ -73,7 +73,7 @@ typedef IfcSchema::IfcBuiltElement element_t;
 std::string format_string(const ifcopenshell::attribute_value& argument) {
 	// Argument is a runtime tagged variant for the various data types in a IFC model,
 	// in this particular case we only care about flattening it to a string.
-	// @todo mostly duplicated from XmlSerializer.cpp
+	// @todo mostly duplicated from xml_serializer.cpp
 	if (argument.isNull()) {
 		return "-";
 	}

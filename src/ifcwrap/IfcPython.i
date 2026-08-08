@@ -104,7 +104,7 @@
 %ignore ifcopenshell::geom::taxonomy::topology_error;
 
 // settings, can this done more generally?
-// GeometrySerializer.h
+// geometry_serializer.h
 %ignore UseElementNames;
 %ignore UseElementGuids;
 %ignore UseElementStepIds;
@@ -144,7 +144,7 @@
 %ignore SvgPrintSpaceNames;
 %ignore SvgPrintSpaceAreas;
 %ignore SvgSpaceNameTransform;
-// ConversionSettings.h
+// conversion_settings.h
 %ignore MesherLinearDeflection;
 %ignore MesherAngularDeflection;
 %ignore ReorientShells;
@@ -239,9 +239,9 @@
 // can probably be reduced, but for now it's identical to the includes
 // of the module definition below.
 %{
-	#include "../ifcgeom/Iterator.h"
+	#include "../ifcgeom/iterator.h"
 	#include "../ifcgeom/tree.h"
-	#include "../ifcgeom/Serialization/Serialization.h"
+	#include "../ifcgeom/serialization/serialization.h"
 	#include "../ifcgeom/taxonomy.h"
 	#include "../ifcgeom/function_item_evaluator.h"
 
@@ -250,13 +250,13 @@
 	#include "../ifcparse/schema.h"
 	#include "../ifcparse/utils.h"
 
-	#include "../ifcgeom/ConversionSettings.h"
-	#include "../ifcgeom/ConversionResult.h"
+	#include "../ifcgeom/conversion_settings.h"
+	#include "../ifcgeom/conversion_result.h"
 
 	#include "../svgfill/src/svgfill.h"
 
 	// @todo abstract into plug-in interface
-	#include "../serializers/RocksDbSerializer.h"
+	#include "../serializers/rocks_db_serializer.h"
 %}
 
 // Create docstrings for generated python code.
@@ -269,28 +269,28 @@
 %include "utils/typemaps_out.i"
 
 %module ifcopenshell_wrapper %{
-	#include "../ifcgeom/Converter.h"
+	#include "../ifcgeom/converter.h"
 	#include "../ifcgeom/tree.h"
-	#include "../ifcgeom/Serialization/Serialization.h"
+	#include "../ifcgeom/serialization/serialization.h"
 	#include "../ifcgeom/taxonomy.h"
 	#include "../ifcgeom/function_item_evaluator.h"
-	#include "../ifcgeom/Iterator.h"
-	#include "../ifcgeom/ConversionResult.h"
+	#include "../ifcgeom/iterator.h"
+	#include "../ifcgeom/conversion_result.h"
 	#include "../ifcgeom/hybrid_kernel.h"
-	#include "../ifcgeom/GeometrySerializer.h"
+	#include "../ifcgeom/geometry_serializer.h"
 
 	#include "../ifcparse/express.h"
 	#include "../ifcparse/file.h"
 	#include "../ifcparse/schema.h"
 	#include "../ifcparse/utils.h"
 	
-	#include "../ifcgeom/ConversionSettings.h"
-	#include "../ifcgeom/ConversionResult.h"
+	#include "../ifcgeom/conversion_settings.h"
+	#include "../ifcgeom/conversion_result.h"
 
 	#include "../svgfill/src/svgfill.h"
 
 	// @todo abstract into plug-in interface
-	#include "../serializers/RocksDbSerializer.h"
+	#include "../serializers/rocks_db_serializer.h"
 %}
 
 %{

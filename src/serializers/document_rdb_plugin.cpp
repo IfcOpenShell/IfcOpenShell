@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "document_serializer_plugin.h"
-#include "RocksDbSerializer.h"
+#include "rocks_db_serializer.h"
 
 #ifdef IFOPSH_WITH_ROCKSDB
 

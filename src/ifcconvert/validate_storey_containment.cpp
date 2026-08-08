@@ -1,8 +1,8 @@
 #ifdef IFOPSH_WITH_CGAL
 
-#include "../ifcgeom/kernels/cgal/CgalKernel.h"
-#include "../ifcgeom/IfcGeomFilter.h"
-#include "../ifcgeom/Iterator.h"
+#include "../ifcgeom/kernels/cgal/cgal_kernel.h"
+#include "../ifcgeom/filter.h"
+#include "../ifcgeom/iterator.h"
 
 #include <CGAL/Polygon_mesh_processing/measure.h>
 #include <CGAL/Polygon_mesh_processing/bbox.h>

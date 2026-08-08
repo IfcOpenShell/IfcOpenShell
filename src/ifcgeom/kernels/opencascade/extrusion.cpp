@@ -1,4 +1,4 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 #include <BRepPrimAPI_MakePrism.hxx>
 

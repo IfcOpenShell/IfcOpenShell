@@ -41,10 +41,10 @@
 #include <fcntl.h>
 #endif
 
-#include "../ifcgeom/Iterator.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom/iterator.h"
+#include "../ifcgeom/element.h"
 #include "../ifcgeom/kernel_registry.h"
-#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
+#include "../ifcgeom/kernels/opencascade/opencascade_conversion_result.h"
 #include "../ifcparse/file.h"
 #include "../ifcparse/logger.h"
 

@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "../../kernel_plugin.h"
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 #include <boost/dll/alias.hpp>
 

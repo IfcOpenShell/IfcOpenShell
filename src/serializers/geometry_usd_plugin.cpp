@@ -20,7 +20,7 @@
 #ifdef WITH_USD
 
 #include "geometry_serializer_plugin.h"
-#include "USDSerializer.h"
+#include "usd_serializer.h"
 
 #include <boost/dll/alias.hpp>
 #include <boost/make_shared.hpp>

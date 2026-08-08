@@ -1,6 +1,6 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
-#include "IfcGeomTree.h"
+#include "tree.h"
 #include "wire_utils.h"
 
 namespace {

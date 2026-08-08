@@ -20,7 +20,7 @@
 #ifndef IFCOPENSHELL_TREE_H
 #define IFCOPENSHELL_TREE_H
 
-#include "IfcGeomElement.h"
+#include "element.h"
 
 #include <array>
 #include <cstdint>

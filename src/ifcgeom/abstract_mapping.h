@@ -22,7 +22,7 @@
 
 #include "../ifcparse/express.h"
 #include "../ifcgeom/taxonomy.h"
-#include "../ifcgeom/ConversionSettings.h"
+#include "../ifcgeom/conversion_settings.h"
 #include "../plugin/plugin.h"
 
 #include <boost/function.hpp>

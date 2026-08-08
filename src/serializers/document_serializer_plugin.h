@@ -21,7 +21,7 @@
 #define IFCOPENSHELL_DOCUMENT_SERIALIZER_PLUGIN_H
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom/Serializer.h"
+#include "../ifcgeom/serializer.h"
 #include "../ifcparse/file.h"
 #include "../plugin/plugin.h"
 

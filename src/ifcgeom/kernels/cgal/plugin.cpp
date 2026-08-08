@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "../../kernel_plugin.h"
-#include "CgalKernel.h"
+#include "cgal_kernel.h"
 
 #include <boost/dll/alias.hpp>
 

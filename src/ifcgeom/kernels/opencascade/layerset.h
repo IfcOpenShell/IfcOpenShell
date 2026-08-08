@@ -1,7 +1,7 @@
 #ifndef LAYERSET_H
 #define LAYERSET_H
 
-#include "../../ConversionResult.h"
+#include "../../conversion_result.h"
 
 #include <Geom_Surface.hxx>
 #include <TopoDS_Shape.hxx>

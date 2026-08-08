@@ -23,7 +23,7 @@
 #include "../../kernel_registry.h"
 #include "../../tree_registry.h"
 #include "../../../ifcparse/exception.h"
-#include "IfcGeomTree.h"
+#include "tree.h"
 
 namespace ifcopenshell {
 	namespace geom {

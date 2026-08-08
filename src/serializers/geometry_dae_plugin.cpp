@@ -19,7 +19,7 @@
 
 #ifdef WITH_OPENCOLLADA
 
-#include "ColladaSerializer.h"
+#include "collada_serializer.h"
 #include "geometry_serializer_plugin.h"
 
 #include <boost/dll/alias.hpp>

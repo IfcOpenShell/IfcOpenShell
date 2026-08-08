@@ -20,7 +20,7 @@
 #ifdef WITH_GLTF
 
 #include "../document_serializer_plugin.h"
-#include "JsonSerializer.h"
+#include "json_serializer.h"
 
 #include "../../ifcparse/macros.h"
 

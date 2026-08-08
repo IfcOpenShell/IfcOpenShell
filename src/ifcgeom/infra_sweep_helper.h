@@ -2,7 +2,7 @@
 #define LINEAR_SWEEP_HELPER_H
 
 #include "taxonomy.h"
-#include "ConversionSettings.h"
+#include "conversion_settings.h"
 
 #include "ifc_geom_api.h"
 

@@ -1,8 +1,8 @@
 #ifdef IFOPSH_WITH_CGAL
 
-#include "../ifcgeom/kernels/cgal/CgalKernel.h"
-#include "../ifcgeom/IfcGeomFilter.h"
-#include "../ifcgeom/Iterator.h"
+#include "../ifcgeom/kernels/cgal/cgal_kernel.h"
+#include "../ifcgeom/filter.h"
+#include "../ifcgeom/iterator.h"
 #include "../ifcgeom/hybrid_kernel.h"
 
 #include <CGAL/box_intersection_d.h>

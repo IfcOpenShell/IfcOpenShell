@@ -1,7 +1,7 @@
 #ifndef BASE_UTILS_H
 #define BASE_UTILS_H
 
-#include "../../../ifcgeom/ConversionResult.h"
+#include "../../../ifcgeom/conversion_result.h"
 #include "../ifc_geomlibrary_api.h"
 
 #include <gp_Pln.hxx>

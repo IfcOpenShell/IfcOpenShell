@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "../document_serializer_plugin.h"
-#include "XmlSerializer.h"
+#include "xml_serializer.h"
 
 #include "../../ifcparse/macros.h"
 

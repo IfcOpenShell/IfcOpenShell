@@ -27,7 +27,7 @@
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopExp_Explorer.hxx>
-#include <TopoDS_Iterator.hxx>
+#include <TopoDS_iterator.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <BRep_Tool.hxx>
@@ -58,7 +58,7 @@
 #include <BRepAdaptor_HCompCurve.hxx>
 #endif
 
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 #include "face_definition.h"
 #include "wire_utils.h"
 #include "base_utils.h"

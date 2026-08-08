@@ -21,7 +21,7 @@
 #include "AppSettings.h"
 #include "../ifcgeom/hybrid_kernel.h"
 #include "../ifcgeom/taxonomy.h"
-#include "../ifcgeom/IfcGeomFilter.h"
+#include "../ifcgeom/filter.h"
 #include "../ifcparse/express.h"
 
 #include <Eigen/Dense>

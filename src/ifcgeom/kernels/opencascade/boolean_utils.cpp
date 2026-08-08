@@ -1,6 +1,6 @@
 #include "boolean_utils.h"
 
-#include "IfcGeomTree.h"
+#include "tree.h"
 #include "base_utils.h"
 
 #include <BRepBuilderAPI_Copy.hxx>

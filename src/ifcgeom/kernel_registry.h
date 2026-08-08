@@ -20,7 +20,7 @@
 #ifndef KERNEL_REGISTRY_H
 #define KERNEL_REGISTRY_H
 
-#include "../ifcgeom/AbstractKernel.h"
+#include "../ifcgeom/abstract_kernel.h"
 #include "../plugin/plugin.h"
 
 #include <boost/function.hpp>

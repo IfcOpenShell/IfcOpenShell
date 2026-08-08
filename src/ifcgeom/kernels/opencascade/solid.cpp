@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>

@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "../../kernel_plugin.h"
-#include "PassthroughKernel.h"
+#include "passthrough_kernel.h"
 
 #include <boost/dll/alias.hpp>
 

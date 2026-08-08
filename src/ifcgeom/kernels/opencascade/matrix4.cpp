@@ -1,4 +1,4 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;

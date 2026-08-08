@@ -1,5 +1,5 @@
 #include "layerset.h"
-#include "OpenCascadeConversionResult.h"
+#include "opencascade_conversion_result.h"
 
 #include "base_utils.h"
 #include "boolean_utils.h"
@@ -11,7 +11,7 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Solid.hxx>
 #include <TopoDS_Shell.hxx>
-#include <TopoDS_Iterator.hxx>
+#include <TopoDS_iterator.hxx>
 #include <TopExp_Explorer.hxx>
 
 #include <Standard_Macro.hxx>

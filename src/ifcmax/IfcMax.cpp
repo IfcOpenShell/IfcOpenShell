@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -25,9 +25,9 @@
 
 #include "IfcMax.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomiterator.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom/element.h"
 
 static const int NUM_MATERIAL_SLOTS = 24;
 

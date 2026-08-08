@@ -30,7 +30,7 @@
 #include <mutex>
 
 #include "../ifcparse/file.h"
-#include "../ifcgeom/Iterator.h"
+#include "../ifcgeom/iterator.h"
 
 #include "InstancedGeometry.h"
 

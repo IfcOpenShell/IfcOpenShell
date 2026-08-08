@@ -32,7 +32,7 @@
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/SidecarBuilder.h"
 #include "../../../ifcviewer/ViewportWindow.h"
-#include "../../../ifcgeom/Serializer.h"
+#include "../../../ifcgeom/serializer.h"
 #include "../../../serializers/document_serializer_plugin.h"
 
 #include <QDebug>

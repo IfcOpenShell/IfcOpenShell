@@ -169,7 +169,7 @@ SETTING = Literal[
 # NOTE: hybrid-cgal-simple-opencascade is added just as an example
 # It's possible to use any hybrid combination by the format below:
 # "hybrid-library1-library2".
-# List is updated from AbstractKernel.cpp.
+# List is updated from abstract_kernel.cpp.
 GEOMETRY_LIBRARY = Literal["cgal", "cgal-simple", "opencascade", "hybrid-cgal-simple-opencascade"]
 
 

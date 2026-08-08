@@ -1,15 +1,15 @@
 #include "wire_utils.h"
 
 #include "../../../ifcparse/logger.h"
-#include "../../../ifcgeom/ConversionSettings.h"
+#include "../../../ifcgeom/conversion_settings.h"
 
 #include "base_utils.h"
 #include "boolean_utils.h"
-#include "IfcGeomTree.h"
+#include "tree.h"
 
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
-#include <TopoDS_Iterator.hxx>
+#include <TopoDS_iterator.hxx>
 #include <ShapeFix_Wire.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepTools_WireExplorer.hxx>

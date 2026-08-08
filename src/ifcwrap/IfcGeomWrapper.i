@@ -284,13 +284,13 @@ namespace {
 %shared_ptr(ifcopenshell::geom::taxonomy::node);
 
 %include "../ifcgeom/ifc_geom_api.h"
-%include "../ifcgeom/ConversionResult.h"
+%include "../ifcgeom/conversion_result.h"
 // The implementation tuple is intentionally opaque to Python. Letting SWIG
 // emit a type token for all setting descriptors exceeds MSVC's token limit.
 %ignore ifcopenshell::geom::settings_container;
 %ignore ifcopenshell::geom::geometry_setting_types;
 %ignore ifcopenshell::geom::settings::settings_tuple;
-%include "../ifcgeom/ConversionSettings.h"
+%include "../ifcgeom/conversion_settings.h"
 
 // Keep the owning element alive while its geometry is referenced (#1124).
 %define GEOMETRY_WITH_BACKREF(cls)
@@ -307,10 +307,10 @@ GEOMETRY_WITH_BACKREF(ifcopenshell::geom::triangulation_element)
 GEOMETRY_WITH_BACKREF(ifcopenshell::geom::serialized_element)
 GEOMETRY_WITH_BACKREF(ifcopenshell::geom::brep_element)
 
-%include "../ifcgeom/IfcGeomElement.h"
-%include "../ifcgeom/IfcGeomRepresentation.h"
-%include "../ifcgeom/Iterator.h"
-%include "../ifcgeom/GeometrySerializer.h"
+%include "../ifcgeom/element.h"
+%include "../ifcgeom/representation.h"
+%include "../ifcgeom/iterator.h"
+%include "../ifcgeom/geometry_serializer.h"
 %include "../ifcgeom/taxonomy.h"
 %include "../ifcgeom/function_item_evaluator.h"
 

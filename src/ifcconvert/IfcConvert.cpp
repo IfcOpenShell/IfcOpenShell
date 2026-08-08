@@ -33,9 +33,9 @@
 #include "../serializers/document_serializer_plugin.h"
 #include "../serializers/geometry_serializer_plugin.h"
 
-#include "../ifcgeom/IfcGeomFilter.h"
-#include "../ifcgeom/Iterator.h"
-#include "../ifcgeom/IfcGeomRenderStyles.h"
+#include "../ifcgeom/filter.h"
+#include "../ifcgeom/iterator.h"
+#include "../ifcgeom/render_styles.h"
 #include "../ifcgeom/hybrid_kernel.h"
 
 #include "../ifcparse/utils.h"
@@ -926,7 +926,7 @@ int main(int argc, char** argv) {
 	// The functions ifcopenshell::geom::iterator::get() and ifcopenshell::geom::iterator::next()
 	// wrap an iterator of all geometrical products in the Ifc file. 
 	// ifcopenshell::geom::iterator::get() returns an ifcopenshell::geom::triangulation_element or
-	// -brep_element pointer, based on current settings. (see Iterator.h
+	// -brep_element pointer, based on current settings. (see iterator.h
 	// for definition) ifcopenshell::geom::iterator::next() is used to poll whether more
 	// geometrical entities are available. None of these functions throw 
 	// exceptions, neither for parsing errors or geometrical errors. Upon 

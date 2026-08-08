@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "geometry_serializer_plugin.h"
-#include "TtlWktSerializer.h"
+#include "ttl_wkt_serializer.h"
 
 #include <boost/dll/alias.hpp>
 #include <boost/make_shared.hpp>

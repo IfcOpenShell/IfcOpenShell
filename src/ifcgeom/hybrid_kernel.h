@@ -20,7 +20,7 @@
 #ifndef HYBRID_KERNEL_H
 #define HYBRID_KERNEL_H
 
-#include "AbstractKernel.h"
+#include "abstract_kernel.h"
 #include "kernel_registry.h"
 
 namespace ifcopenshell {
