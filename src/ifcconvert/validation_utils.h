@@ -477,7 +477,7 @@ struct intersection_validator {
 			if (num_created) {
 				has_more = context_iterator.next();
 			}
-			ifcopenshell::geom::brep_element* geom_object = nullptr;
+			std::unique_ptr<ifcopenshell::geom::brep_element> geom_object;
 			if (has_more) {
 				geom_object = context_iterator.get_native();
 			}

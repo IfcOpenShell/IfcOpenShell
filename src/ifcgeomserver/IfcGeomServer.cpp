@@ -617,12 +617,14 @@ int main () {
 				exit_code = 1;
 				break;
 			}
-			const ifcopenshell::geom::triangulation_element* geom = static_cast<const ifcopenshell::geom::triangulation_element*>(iterator->get());
+			auto element = iterator->get();
+			const ifcopenshell::geom::triangulation_element* geom = static_cast<const ifcopenshell::geom::triangulation_element*>(element.get());
+			auto native_element = iterator->get_native();
 			std::unique_ptr<EntityExtension> eext;
 			if (emit_quantities) {
-				eext.reset(new QuantityWriter_v1(iterator->get_native()));
+				eext.reset(new QuantityWriter_v1(native_element.get()));
 			} else {
-				eext.reset(new QuantityWriter_v0(iterator->get_native()));
+				eext.reset(new QuantityWriter_v0(native_element.get()));
 			}
 			Entity(geom, eext.get()).write(std::cout);
 			continue;

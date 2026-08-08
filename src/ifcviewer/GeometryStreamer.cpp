@@ -539,7 +539,8 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
             do {
                 if (cancel_requested_.load()) break;
 
-                const ifcopenshell::geom::element* elem = iterator->get();
+				auto element = iterator->get();
+				const ifcopenshell::geom::element* elem = element.get();
                 if (!elem) continue;
 
                 const auto* tri_elem = dynamic_cast<const ifcopenshell::geom::triangulation_element*>(elem);

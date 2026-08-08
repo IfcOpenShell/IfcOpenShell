@@ -103,6 +103,28 @@
 	}
 }
 
+// Iterator results are copies owned by the caller. Release the unique pointer
+// into the most specific Python proxy and transfer deletion to Python.
+%typemap(out) std::unique_ptr<ifcopenshell::geom::element> {
+	ifcopenshell::geom::element* elem = $1.release();
+	ifcopenshell::geom::serialized_element* serialized_elem = dynamic_cast<ifcopenshell::geom::serialized_element*>(elem);
+	ifcopenshell::geom::triangulation_element* triangulation_elem = dynamic_cast<ifcopenshell::geom::triangulation_element*>(elem);
+	ifcopenshell::geom::brep_element* brep_elem = dynamic_cast<ifcopenshell::geom::brep_element*>(elem);
+	if (triangulation_elem) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_ifcopenshell__geom__triangulation_element, SWIG_POINTER_OWN);
+	} else if (serialized_elem) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_ifcopenshell__geom__serialized_element, SWIG_POINTER_OWN);
+	} else if (brep_elem) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(brep_elem), SWIGTYPE_p_ifcopenshell__geom__brep_element, SWIG_POINTER_OWN);
+	} else {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(elem), SWIGTYPE_p_ifcopenshell__geom__element, SWIG_POINTER_OWN);
+	}
+}
+
+%typemap(out) std::unique_ptr<ifcopenshell::geom::brep_element> {
+	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1.release()), SWIGTYPE_p_ifcopenshell__geom__brep_element, SWIG_POINTER_OWN);
+}
+
 %newobject ifcopenshell::geom::Representation::brep::item;
 %newobject ifcopenshell::geom::Representation::brep::as_compound;
 

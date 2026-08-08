@@ -933,15 +933,15 @@ int main(int argc, char** argv) {
 
 	while (true) {
 		
-		ifcopenshell::geom::element* geom_object = context_iterator->get();
+		auto geom_object = context_iterator->get();
 
 		if (is_tesselated)
 		{
-			serializer->write(static_cast<const ifcopenshell::geom::triangulation_element*>(geom_object));
+			serializer->write(static_cast<const ifcopenshell::geom::triangulation_element*>(geom_object.get()));
 		}
 		else
 		{
-			serializer->write(static_cast<const ifcopenshell::geom::brep_element*>(geom_object));
+			serializer->write(static_cast<const ifcopenshell::geom::brep_element*>(geom_object.get()));
 		}
 
         if (!no_progress) {
@@ -1412,7 +1412,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		ifcopenshell::geom::brep_element* geom_object = nullptr;
+		std::unique_ptr<ifcopenshell::geom::brep_element> geom_object;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}

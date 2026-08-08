@@ -44,7 +44,7 @@
  *   at least a single representation will process successfully				 *
  *																			  *
  * ifcopenshell::geom::iterator::get()													 *
- *   returns a pointer to the current ifcopenshell::geom::element						  *
+ *   returns an owned copy of the current ifcopenshell::geom::element				  *
  *																			  *
  * ifcopenshell::geom::iterator::next()													*
  *   returns true iff a following entity is available for a successive call to  *
@@ -291,15 +291,16 @@ namespace ifcopenshell::geom {
 		express::base next();
 
 		/// Gets the representation of the current geometrical entity.
-		element* get();
+		std::unique_ptr<element> get();
 
 		/// Gets the native (Open Cascade or CGAL) representation of the current geometrical entity.
-		brep_element* get_native()
+		std::unique_ptr<brep_element> get_native()
 		{
-			return *native_task_result_iterator_;
+			validate_iterator_state();
+			return std::make_unique<brep_element>(**native_task_result_iterator_);
 		}
 
-		const element* get_object(int id);
+		std::unique_ptr<element> get_object(int id);
 
 		express::base create();
 	};

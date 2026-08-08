@@ -22,6 +22,7 @@
 
 #include <string>
 #include <algorithm>
+#include <memory>
 
 #include "../ifcparse/argument.h"
 #include "../ifcparse/global_id.h"
@@ -73,8 +74,20 @@ namespace ifcopenshell::geom {
 		std::string _context;
 		std::string _unique_id;
 		ifcopenshell::geom::transformation _transformation;
-        const express::entity product_;
+		const express::entity product_;
 		std::vector<const ifcopenshell::geom::element*> _parents;
+		std::vector<std::shared_ptr<const ifcopenshell::geom::element>> _parent_storage;
+
+		friend class iterator;
+		virtual std::unique_ptr<element> clone() const { return std::make_unique<element>(*this); }
+		void set_parents(std::vector<std::unique_ptr<ifcopenshell::geom::element>>&& newparents) {
+			_parents.clear();
+			_parent_storage.clear();
+			for (auto& parent : newparents) {
+				_parents.push_back(parent.get());
+				_parent_storage.emplace_back(std::move(parent));
+			}
+		}
 	public:
 
 		friend bool operator == (const element& element1, const element& element2) {
@@ -108,9 +121,12 @@ namespace ifcopenshell::geom {
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
 		const ifcopenshell::geom::transformation& transformation() const { return _transformation; }
-        const express::entity& product() const { return product_; }
+		const express::entity& product() const { return product_; }
 		const std::vector<const ifcopenshell::geom::element*>& parents() const { return _parents; }
-		void SetParents(std::vector<const ifcopenshell::geom::element*>& newparents) { _parents = newparents; }
+		void SetParents(std::vector<const ifcopenshell::geom::element*>& newparents) {
+			_parent_storage.clear();
+			_parents = newparents;
+		}
 
 		element(const ifcopenshell::geom::settings& settings, int id, int parent_id, const std::string& name, const std::string& type,
             const std::string& guid, const std::string& context, const ifcopenshell::geom::taxonomy::matrix4::ptr& trsf, const express::entity& product)
@@ -158,9 +174,10 @@ namespace ifcopenshell::geom {
 		bool calculate_projected_surface_area(double& along_x, double& along_y, double& along_z) const {
 			return geometry().calculate_projected_surface_area(this->transformation().data(), along_x, along_y, along_z);
 		}
+		brep_element(const brep_element& other) = default;
 	private:
-		brep_element(const brep_element& other);
 		brep_element& operator=(const brep_element& other);
+		std::unique_ptr<element> clone() const override { return std::make_unique<brep_element>(*this); }
 	};
 
 	class triangulation_element : public element {
@@ -177,26 +194,25 @@ namespace ifcopenshell::geom {
 			: element(source)
 			, _geometry(geometry)
 		{}
+		triangulation_element(const triangulation_element& other) = default;
 	private:
-		triangulation_element(const triangulation_element& other);
 		triangulation_element& operator=(const triangulation_element& other);
+		std::unique_ptr<element> clone() const override { return std::make_unique<triangulation_element>(*this); }
 	};
 
 	class serialized_element : public element {
 	private:
-		ifcopenshell::geom::Representation::serialization* _geometry;
+		boost::shared_ptr<ifcopenshell::geom::Representation::serialization> _geometry;
 	public:
 		const ifcopenshell::geom::Representation::serialization& geometry() const { return *_geometry; }
 		serialized_element(const brep_element& shape_model)
 			: element(shape_model)
-			, _geometry(new ifcopenshell::geom::Representation::serialization(shape_model.geometry()))
+			, _geometry(boost::shared_ptr<ifcopenshell::geom::Representation::serialization>(new ifcopenshell::geom::Representation::serialization(shape_model.geometry())))
 		{}
-		virtual ~serialized_element() {
-			delete _geometry;
-		}
+		serialized_element(const serialized_element& other) = default;
 	private:
-		serialized_element(const serialized_element& other);
 		serialized_element& operator=(const serialized_element& other);
+		std::unique_ptr<element> clone() const override { return std::make_unique<serialized_element>(*this); }
 	};
 }
 

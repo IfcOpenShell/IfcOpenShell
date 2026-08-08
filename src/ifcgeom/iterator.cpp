@@ -301,8 +301,8 @@ void ifcopenshell::geom::iterator::compute_bounds(bool with_geometry)
 	if (with_geometry) {
 		size_t num_created = 0;
 		do {
-			ifcopenshell::geom::element* geom_object = get();
-			const ifcopenshell::geom::triangulation_element* o = static_cast<const ifcopenshell::geom::triangulation_element*>(geom_object);
+			auto geom_object = get();
+			const ifcopenshell::geom::triangulation_element* o = static_cast<const ifcopenshell::geom::triangulation_element*>(geom_object.get());
 			const ifcopenshell::geom::Representation::triangulation& mesh = o->geometry();
 			auto mat = o->transformation().data()->ccomponents();
 			Eigen::Vector4d vec, transformed;
@@ -548,7 +548,7 @@ express::base ifcopenshell::geom::iterator::next() {
 }
 
 /// Gets the representation of the current geometrical entity.
-ifcopenshell::geom::element* ifcopenshell::geom::iterator::get()
+std::unique_ptr<ifcopenshell::geom::element> ifcopenshell::geom::iterator::get()
 {
 	validate_iterator_state();
 
@@ -558,24 +558,24 @@ ifcopenshell::geom::element* ifcopenshell::geom::iterator::get()
 	if (settings_.get<ifcopenshell::geom::settings::UseElementHierarchy>().get()) {
 		// We are going to build a vector with the element parents.
 		// First, create the parent vector
-		std::vector<const ifcopenshell::geom::element*> parents;
+		std::vector<std::unique_ptr<ifcopenshell::geom::element>> parents;
 
 		// if the element has a parent
 		if (ret->parent_id() != -1) {
-			const ifcopenshell::geom::element* parent_object = NULL;
+			ifcopenshell::geom::element* parent_object = NULL;
 			bool hasParent = true;
 
 			// get the parent
 			try {
-				parent_object = get_object(ret->parent_id());
+				auto parent = get_object(ret->parent_id());
+				parent_object = parent.get();
+				parents.insert(parents.begin(), std::move(parent));
 			} catch (const std::exception& e) {
 				logger_.error("GEO", 56, e);
 				hasParent = false;
 			}
 
 			// Add the previously found parent to the vector
-			if (hasParent) parents.insert(parents.begin(), parent_object);
-
 			// We need to find all the parents
 			while (parent_object != NULL && hasParent && parent_object->parent_id() != -1) {
 				// Find the next parent
@@ -585,7 +585,9 @@ ifcopenshell::geom::element* ifcopenshell::geom::iterator::get()
                     hasParent = false;
                 } else {
 					try {
-						parent_object = get_object(pid);
+						auto parent = get_object(pid);
+						parent_object = parent.get();
+						parents.insert(parents.begin(), std::move(parent));
 					} catch (const std::exception& e) {
 						logger_.error("GEO", 57, e);
 						hasParent = false;
@@ -593,20 +595,18 @@ ifcopenshell::geom::element* ifcopenshell::geom::iterator::get()
                 }
 				
 				// Add the previously found parent to the vector
-				if (hasParent) parents.insert(parents.begin(), parent_object);
-
 				hasParent = hasParent && parent_object->parent_id() != -1;
 			}
 
 			// when done push the parent list in the element object
-			ret->SetParents(parents);
+			ret->set_parents(std::move(parents));
 		}
 	}
 
-	return ret;
+	return ret->clone();
 }
 
-const ifcopenshell::geom::element* ifcopenshell::geom::iterator::get_object(int id) {
+std::unique_ptr<ifcopenshell::geom::element> ifcopenshell::geom::iterator::get_object(int id) {
 	ifcopenshell::geom::taxonomy::matrix4::ptr m4;
 	int parent_id = -1;
 	std::string instance_type, product_name, product_guid;
@@ -639,8 +639,7 @@ const ifcopenshell::geom::element* ifcopenshell::geom::iterator::get_object(int 
 		logger_.error("GEO", 59, "Unknown error returning product");
 	}
 
-	element* ifc_object = new element(settings_, id, parent_id, product_name, instance_type, product_guid, "", m4, ifc_product.as<express::entity>());
-	return ifc_object;
+	return std::make_unique<element>(settings_, id, parent_id, product_name, instance_type, product_guid, "", m4, ifc_product.as<express::entity>());
 }
 
 express::base ifcopenshell::geom::iterator::create() {

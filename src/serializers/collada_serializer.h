@@ -70,7 +70,6 @@ private:
 			{}
             void addFloatSource(const std::string& mesh_id, const std::string& suffix,
                 const std::vector<double>& floats, const char* coords = "XYZ");
-            /// @todo pass simply deferred_object?
             void write(
                 const std::string &mesh_id, const std::string &default_material_name,
                 const std::vector<double>& positions, const std::vector<double>& normals,
@@ -138,59 +137,6 @@ private:
             collada_effects effects;
 		};
 
-		class deferred_object {
-		
-			friend bool operator < (const deferred_object& def_obj1, const deferred_object& def_obj2) {
-				size_t size = (def_obj1.parents_.size() < def_obj2.parents_.size() ? def_obj1.parents_.size() : def_obj2.parents_.size());
-				size_t cpt = 0;
-
-				// Skip the shared parents
-				while (cpt < size && *(def_obj1.parents_.at(cpt)) == *(def_obj2.parents_.at(cpt))) {
-					cpt++;
-				}
-
-				// If a parent list container the other one
-				if (cpt >= size) {
-					return def_obj1.parents_.size() < def_obj2.parents_.size();
-				} else {
-					return *(def_obj1.parents_.at(cpt)) < *(def_obj2.parents_.at(cpt));
-				}
-			}
-
-		public:
-			std::string unique_id, representation_id, type;
-			ifcopenshell::geom::transformation transformation;
-			std::vector<double> vertices;
-			std::vector<double> normals;
-			std::vector<int> faces;
-			std::vector<int> edges;
-			std::vector<int> material_ids;
-			std::vector<ifcopenshell::geom::taxonomy::style::ptr> materials;
-			std::vector<std::string> material_references;
-            std::vector<double> uvs;
-			std::vector<const ifcopenshell::geom::element*> parents_;
-
-			deferred_object(const std::string& unique_id, const std::string& representation_id, const std::string& type, const ifcopenshell::geom::transformation& transformation,
-				const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces,
-				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& materials,
-				const std::vector<std::string>& material_references, const std::vector<double>& uvs)
-				: unique_id(unique_id)
-				, representation_id(representation_id)
-				, type(type)
-				, transformation(transformation)
-				, vertices(vertices)
-				, normals(normals)
-				, faces(faces)
-				, edges(edges)
-				, material_ids(material_ids)
-				, materials(materials)
-				, material_references(material_references)
-				, uvs(uvs)
-			{}
-
-			std::vector<const ifcopenshell::geom::element*>& parents() { return parents_; }
-			const std::vector<const ifcopenshell::geom::element*>& parents() const { return parents_; }
-		};
 		COLLADABU::NativeString filename;
 		COLLADASW::StreamWriter stream;
 		collada_scene scene;
@@ -209,7 +155,7 @@ private:
         collada_materials materials;
         collada_geometries geometries;
         collada_serializer *serializer;
-		std::vector<deferred_object> deferreds;
+		std::vector<std::unique_ptr<ifcopenshell::geom::triangulation_element>> deferreds;
 		virtual ~collada_exporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
 		void write(const ifcopenshell::geom::triangulation_element* o);

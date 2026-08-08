@@ -387,29 +387,10 @@ void collada_serializer::collada_exporter::startDocument(const std::string& unit
 void collada_serializer::collada_exporter::write(const ifcopenshell::geom::triangulation_element* o)
 {
 	const ifcopenshell::geom::Representation::triangulation& mesh = o->geometry();
-	
-    std::string name = serializer->object_id(o);
-	collada_id(name);
-	
-	std::string representation_id = "representation-" + o->geometry().id();
-	collada_id(representation_id);
-
-	std::vector<std::string> material_references;
 	BOOST_FOREACH(const ifcopenshell::geom::taxonomy::style::ptr& material, mesh.materials()) {
 		materials.add(material);
-
-		std::string material_name = materials.getMaterialUri(material);
-		material_references.push_back(material_name);
 	}
-
-	deferred_object deferred(name, representation_id, o->type(), o->transformation(), mesh.verts(), mesh.normals(),
-		mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs());
-
-	if (serializer->settings().get<ifcopenshell::geom::settings::UseElementHierarchy>().get()) {
-		deferred.parents() = o->parents();
-	}
-
-	deferreds.push_back(deferred);
+	deferreds.push_back(std::make_unique<ifcopenshell::geom::triangulation_element>(*o));
 }
 
 std::string collada_serializer::differentiateSlabTypes(const express::entity& slab)
@@ -467,25 +448,53 @@ void collada_serializer::collada_exporter::endDocument() {
 	//if the setting USE_ELEMENT_HIERARCHY is in use, we sort the deferreds objects by their parents.
 	
 	if (use_hierarchy) {
-		std::sort(deferreds.begin(), deferreds.end());
+		std::sort(deferreds.begin(), deferreds.end(), [](const auto& first, const auto& second) {
+			const auto& first_parents = first->parents();
+			const auto& second_parents = second->parents();
+			const size_t size = (std::min)(first_parents.size(), second_parents.size());
+			size_t index = 0;
+			while (index < size && *first_parents[index] == *second_parents[index]) {
+				++index;
+			}
+			return index >= size
+				? first_parents.size() < second_parents.size()
+				: *first_parents[index] < *second_parents[index];
+		});
 	}
 	
-	for (std::vector<deferred_object>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
-		if (geometries_written.find(it->representation_id) != geometries_written.end()) {
+	for (const auto& object_pointer : deferreds) {
+		const auto& object = *object_pointer;
+		std::string representation_id = "representation-" + object.geometry().id();
+		collada_id(representation_id);
+		if (geometries_written.find(representation_id) != geometries_written.end()) {
 			continue;
 		}
-		geometries_written.insert(it->representation_id);
-		geometries.write(it->representation_id, it->type, it->vertices, it->normals, it->faces, it->edges,
-            it->material_ids, it->materials, it->uvs, it->material_references);
+		geometries_written.insert(representation_id);
+		const auto& mesh = object.geometry();
+		std::vector<std::string> material_references;
+		for (const auto& material : mesh.materials()) {
+			material_references.push_back(materials.getMaterialUri(material));
+		}
+		geometries.write(representation_id, object.type(), mesh.verts(), mesh.normals(), mesh.faces(), mesh.edges(),
+            mesh.material_ids(), mesh.materials(), mesh.uvs(), material_references);
 	}
 	geometries.close();
 
-	for (std::vector<deferred_object>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it){
-		const std::string object_name = it->unique_id;
+	for (const auto& object_pointer : deferreds) {
+		const auto& object = *object_pointer;
+		std::string object_name = serializer->object_id(&object);
+		collada_id(object_name);
+		std::string representation_id = "representation-" + object.geometry().id();
+		collada_id(representation_id);
+		std::vector<std::string> material_references;
+		for (const auto& material : object.geometry().materials()) {
+			material_references.push_back(materials.getMaterialUri(material));
+		}
 
 		if (use_hierarchy)
 		{
-			size_t parentsNumber = it->parents_.size();
+			const auto& parents = object.parents();
+			size_t parentsNumber = parents.size();
 			bool finished = false;
 
 			// If we have no parent in the stack and the object has no parent, nothing to do : skip the loop
@@ -496,17 +505,17 @@ void collada_serializer::collada_exporter::endDocument() {
 				// If we need to add a parent
 				if (serializer->parentStackId.size() <= parentsNumber)
 				{
-					if (serializer->parentStackId.empty()) { scene.addParent(*(it->parents_.at(0))); }
+					if (serializer->parentStackId.empty()) { scene.addParent(*parents.at(0)); }
 					else
 					{
 						size_t diff = parentsNumber - serializer->parentStackId.size();
 
 						// If we have the wrong parent in the list
-						if (serializer->parentStackId.top() != it->parents_.at(parentsNumber - diff - 1)->id()) {
+						if (serializer->parentStackId.top() != parents.at(parentsNumber - diff - 1)->id()) {
 							scene.closeParent();
 						} else {
 							// So far we have the right parents, we just need to add the missing ones
-							for (size_t i = parentsNumber - diff; i < parentsNumber; i++) { scene.addParent(*(it->parents_.at(i))); }
+							for (size_t i = parentsNumber - diff; i < parentsNumber; i++) { scene.addParent(*parents.at(i)); }
 
 							// if diff == 0, we can leave the loop. In fact we have the right number of parents, and the last one is ok
 							if (diff == 0) { finished = true; }
@@ -520,7 +529,7 @@ void collada_serializer::collada_exporter::endDocument() {
 		}
 		
         /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
-		scene.add(object_name, object_name, it->representation_id, it->material_references, it->transformation);
+		scene.add(object_name, object_name, representation_id, material_references, object.transformation());
 	}
 
 	//close the remaining parent tags.

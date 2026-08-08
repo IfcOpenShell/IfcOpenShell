@@ -56,7 +56,8 @@ namespace ifcopenshell {
 						ifcopenshell::geom::iterator iterator(ifcopenshell::geom::kernels::construct(&file, "opencascade", settings_), settings_, &file, {}, 1);
 						if (iterator.initialize()) {
 							do {
-								add_element(iterator.get());
+								auto element = iterator.get();
+								add_element(element.get());
 							} while (iterator.next());
 						}
 					}
@@ -139,7 +140,8 @@ namespace ifcopenshell {
 						ifcopenshell::geom::iterator iterator(ifcopenshell::geom::kernels::construct(&file, "opencascade", settings_), settings_, &file, {}, 1);
 						if (iterator.initialize()) {
 							do {
-								add_element(iterator.get());
+								auto element = iterator.get();
+								add_element(element.get());
 							} while (iterator.next());
 						}
 					}

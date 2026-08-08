@@ -151,7 +151,8 @@ void ifcopenshell::geom::tree::add_file(ifcopenshell::geom::iterator& iterator) 
 	}
 
 	do {
-		add_element(iterator.get());
+		auto element = iterator.get();
+		add_element(element.get());
 	} while (iterator.next());
 }
 

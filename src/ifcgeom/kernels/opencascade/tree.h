@@ -1496,7 +1496,8 @@ namespace ifcopenshell::geom {
 		void add_file(ifcopenshell::geom::iterator& it) {
 			if (it.initialize()) {
 				do {
-					add_element(dynamic_cast<ifcopenshell::geom::brep_element*>(it.get()));
+					auto element = it.get();
+					add_element(dynamic_cast<ifcopenshell::geom::brep_element*>(element.get()));
 				} while (it.next());
 			}
 		}
