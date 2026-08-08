@@ -689,7 +689,9 @@ class _serializer_factory:
             output_filename = self._path(output_filename)
             output_temp_filename = self._path(output_temp_filename)
 
-        return ifcopenshell_wrapper.create_geometry_serializer(self.extension, output_filename, output_temp_filename, settings)
+        return ifcopenshell_wrapper.create_geometry_serializer(
+            self.extension, output_filename, output_temp_filename, settings
+        )
 
     def _is_buffer(self, value: Any) -> bool:
         return isinstance(value, ifcopenshell_wrapper.buffer)
