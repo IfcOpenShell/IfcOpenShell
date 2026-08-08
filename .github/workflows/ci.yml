@@ -121,7 +121,7 @@ jobs:
           cd OpenCOLLADA
           git checkout v1.6.68
           patch -p1 --batch --forward -i ../nix/patches/opencollada/pr622_and_disable_subdirs.patch
-          patch -p1 --batch --forward -i ../nix/patches/opencollada/allow_static_libraries_config_on_unix.patch
+          patch -p1 --batch --forward -i ../nix/patches/opencollada/config_select_libs_by_use_shared.patch
           mkdir build && cd build
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
