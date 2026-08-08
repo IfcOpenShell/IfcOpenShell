@@ -41,8 +41,8 @@
 #include "../ifcparse/utils.h"
 
 #include <boost/program_options.hpp>
-#include <boost/optional/optional_io.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/optional/optional_io.hpp>
 
 #include <algorithm>
 #include <fstream>
@@ -587,8 +587,6 @@ int main(int argc, char** argv) {
 
 	ifcopenshell::file* ifc_file = 0;
 
-	boost::optional<std::list<ifcopenshell::geom::element*>> elems_from_adaptor;
-    
     const path_t IFC = ifcopenshell::path::from_utf8(".ifc");
 
 	auto run_document_serializer = [&](const ifcopenshell::serializers::document_serializer_info* document_serializer_info) {
@@ -891,9 +889,7 @@ int main(int argc, char** argv) {
 	}
 
 	std::unique_ptr<ifcopenshell::geom::iterator> context_iterator;
-	if (!elems_from_adaptor) {
-		context_iterator.reset(new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings), settings, ifc_file, filter_funcs, num_threads, logger));
-	}	
+	context_iterator.reset(new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings), settings, ifc_file, filter_funcs, num_threads, logger));
 
 	logger.message(ifcopenshell::logger::LOG_PERF, "file geometry conversion");
 
@@ -935,14 +931,9 @@ int main(int argc, char** argv) {
 	// available. 
 	size_t num_created = 0;
 
-	std::list<ifcopenshell::geom::element*>::const_iterator elems_from_adaptor_it;
-	if (elems_from_adaptor) {
-		elems_from_adaptor_it = elems_from_adaptor->begin();
-	}
-	
 	while (true) {
 		
-        ifcopenshell::geom::element* geom_object = elems_from_adaptor ? *elems_from_adaptor_it : context_iterator->get();
+		ifcopenshell::geom::element* geom_object = context_iterator->get();
 
 		if (is_tesselated)
 		{
@@ -954,7 +945,7 @@ int main(int argc, char** argv) {
 		}
 
         if (!no_progress) {
-			int progress = context_iterator ? context_iterator->progress() : (int)std::distance(elems_from_adaptor->cbegin(), elems_from_adaptor_it) * 100 / elems_from_adaptor->size();
+			int progress = context_iterator->progress();
 			if (quiet) {
 				for (; old_progress < progress; ++old_progress) {
 					cout_ << ".";
@@ -974,15 +965,8 @@ int main(int argc, char** argv) {
         }
 
 		++num_created;
-		if (context_iterator) {
-			if (!context_iterator->next()) {
-				break;
-			}
-		} else {
-			++elems_from_adaptor_it;
-			if (elems_from_adaptor_it == elems_from_adaptor->end()) {
-				break;
-			}
+		if (!context_iterator->next()) {
+			break;
 		}
     } 
 	if (!no_progress && quiet) {
