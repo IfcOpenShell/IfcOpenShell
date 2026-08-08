@@ -27,12 +27,11 @@
 #include "../serializers/serializers_api.h"
 #include "../ifcgeom/GeometrySerializer.h"
 
- // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
-class SERIALIZERS_API ttl_wkt_serializer : public write_only_geometry_serializer {
+class SERIALIZERS_API ttl_wkt_serializer : public ifcopenshell::geom::write_only_geometry_serializer {
 private:
 	stream_or_filename filename_;
 public:
-	ttl_wkt_serializer(const stream_or_filename& filename, const ifcopenshell::geom::settings& settings, ::logger* logger = nullptr);
+	ttl_wkt_serializer(const stream_or_filename& filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr);
 	virtual ~ttl_wkt_serializer() {}
 	bool ready();
 	void writeHeader();
