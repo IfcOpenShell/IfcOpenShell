@@ -74,6 +74,7 @@
 %ignore ifcopenshell::schema_plugin_metadata;
 %ignore ifcopenshell::schema_plugin_directory;
 %ignore ifcopenshell::load_schema_plugins;
+%ignore ifcopenshell::detail::performance_scope;
 
 // Not relevant for python usage
 %ignore express::base::data;
