@@ -1939,6 +1939,27 @@ spf_header& ifcopenshell::instance_streamer<Reader>::ensure_header() {
 }
 
 template <typename Reader>
+void ifcopenshell::instance_streamer<Reader>::materialize_bypass_types() {
+    if (!schema_) {
+        return;
+    }
+
+    types_to_bypass_materialized_.assign(schema_->declarations().size(), false);
+    for (auto& bp : types_to_bypass_) {
+        std::function<void(const ifcopenshell::entity*)> mark;
+        mark = [&](const ifcopenshell::entity* e) {
+            types_to_bypass_materialized_[e->index_in_schema()] = true;
+            for (auto& subtype : e->subtypes()) {
+                mark(subtype);
+            }
+        };
+        if (auto* e = bp->as_entity()) {
+            mark(e);
+        }
+    }
+}
+
+template <typename Reader>
 void ifcopenshell::instance_streamer<Reader>::initialize_header() {
     storage_.file = owner_;
     storage_.schema = schema_;
@@ -1959,21 +1980,7 @@ void ifcopenshell::instance_streamer<Reader>::initialize_header() {
 
     storage_.schema = schema_;
 
-    if (schema_) {
-        types_to_bypass_materialized_.resize(schema_->declarations().size(), false);
-        for (auto& bp : types_to_bypass_) {
-            std::function<void(const ifcopenshell::entity*)> mark;
-            mark = [&](const ifcopenshell::entity* e) {
-                types_to_bypass_materialized_[e->index_in_schema()] = true;
-                for (auto& subtype : e->subtypes()) {
-                    mark(subtype);
-                }
-            };
-            if (auto* e = bp->as_entity()) {
-                mark(e);
-            }
-        }
-    }
+    materialize_bypass_types();
 }
 
 template <typename Reader>
@@ -2132,6 +2139,7 @@ void ifcopenshell::instance_streamer<Reader>::bypass_types(const std::set<std::s
             continue;
         }
     }
+    materialize_bypass_types();
 }
 
 template <typename Reader>

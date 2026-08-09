@@ -25,3 +25,13 @@ TEST_CASE("IfcPropertySetDefinitionSet references are resolved without replacing
     CHECK(definitions[0].id() == 136);
     CHECK(definitions[1].id() == 138);
 }
+
+TEST_CASE("Bypassed entity types include their subtypes", "[ifcparse]") {
+    const std::string fixture = std::string(IFCOPENSHELL_TEST_FIXTURES) + "/ColumnPSetsOfSets.ifc";
+    ifcopenshell::file file(ifcopenshell::uninitialized_tag{});
+    file.bypass_type("IfcRepresentationItem");
+
+    REQUIRE(file.initialize(fixture));
+    CHECK(file.instances_by_type("IfcRepresentationItem").empty());
+    CHECK(file.instances_by_type("IfcCartesianPoint").empty());
+}

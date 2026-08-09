@@ -112,6 +112,7 @@ private:
     std::vector<bool> types_to_bypass_materialized_;
 
     void initialize_header();
+    void materialize_bypass_types();
     spf_header& ensure_header();
 
   public:
