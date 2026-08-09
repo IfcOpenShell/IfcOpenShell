@@ -156,7 +156,6 @@ ifcopenshell::impl::rocks_db_file_storage::rocks_db_file_storage(const std::stri
     , instance_ids_(db.get(), "i|")
     , instance_by_name_(&instance_ids_, [this](size_t v) { return assert_existance(v, entityinstance_ref); })
     , bytype_(db.get(), "t|")
-    // @todo streaming serializer does not populate the byguid map
     , byguid_internal_(db.get(), "g|"),
       byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](const express::base& v) { return v.identity(); })
     , byref_excl_(db.get(), "v|")
