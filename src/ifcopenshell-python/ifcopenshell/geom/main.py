@@ -37,7 +37,9 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 ShapeElementType = Union[
-    ifcopenshell_wrapper.native_element, ifcopenshell_wrapper.triangulation_element, ifcopenshell_wrapper.serialized_element
+    ifcopenshell_wrapper.native_element,
+    ifcopenshell_wrapper.triangulation_element,
+    ifcopenshell_wrapper.serialized_element,
 ]
 ShapeType = Union[ifcopenshell_wrapper.native, ifcopenshell_wrapper.triangulation, ifcopenshell_wrapper.serialization]
 
