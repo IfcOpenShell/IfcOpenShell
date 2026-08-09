@@ -124,12 +124,12 @@ bool ifcopenshell::geom::kernels::kernel_registry::has(const std::string& backen
 	return entries_.find(kernel_key(backend_id)) != entries_.end();
 }
 
-std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom::kernels::kernel_registry::create(const std::string& backend_id, ifcopenshell::file* file, ifcopenshell::geom::settings& settings) const {
+std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom::kernels::kernel_registry::create(const std::string& backend_id, ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) const {
 	const auto iter = entries_.find(kernel_key(backend_id));
 	if (iter == entries_.end()) {
 		throw ifcopenshell::exception("No geometry kernel registered for " + backend_id);
 	}
-	return std::unique_ptr<abstract_kernel>(iter->second.create_(file, settings));
+	return std::unique_ptr<abstract_kernel>(iter->second.create_(file, settings, logger));
 }
 
 std::vector<ifcopenshell::geom::kernels::kernel_info> ifcopenshell::geom::kernels::kernel_registry::kernels() const {
@@ -145,7 +145,7 @@ ifcopenshell::geom::kernels::kernel_registry& ifcopenshell::geom::kernels::kerne
 	return registry;
 }
 
-std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom::kernels::construct(ifcopenshell::file* file, const std::string& geometry_library, ifcopenshell::geom::settings& settings) {
+std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom::kernels::construct(ifcopenshell::file* file, const std::string& geometry_library, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) {
 	auto geometry_library_lower = boost::to_lower_copy(geometry_library);
 	auto& registry = kernel_registry_instance();
 
@@ -153,7 +153,7 @@ std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom
 		load_kernel_plugin(registry, geometry_library_lower);
 	}
 	if (registry.has(geometry_library_lower)) {
-		return registry.create(geometry_library_lower, file, settings);
+		return registry.create(geometry_library_lower, file, settings, logger);
 	}
 
 	if (geometry_library_lower.rfind("hybrid-", 0) == 0) {
@@ -173,7 +173,7 @@ std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom
 				throw ifcopenshell::exception("Invalid hybrid kernel; no match for prefix of " + geometry_library_lower);
 			}
 
-			kernels.push_back(registry.create(matched_backend_id, file, settings));
+			kernels.push_back(registry.create(matched_backend_id, file, settings, logger));
 			geometry_library_lower = geometry_library_lower.substr(matched_backend_id.size());
 		}
 
@@ -183,7 +183,7 @@ std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom
 		}
 
 		if (!kernels.empty()) {
-			return std::make_unique<hybrid_kernel>(geometry_library, file, settings, std::move(kernels));
+			return std::make_unique<hybrid_kernel>(geometry_library, file, settings, std::move(kernels), logger);
 		}
 	}
 

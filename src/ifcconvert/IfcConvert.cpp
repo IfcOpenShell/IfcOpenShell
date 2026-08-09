@@ -843,7 +843,7 @@ int main(int argc, char** argv) {
     if (is_tesselated && (center_model || center_model_geometry)) {
 		std::vector<double> offset(3);
 
-		ifcopenshell::geom::iterator tmp_context_iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings), settings, ifc_file, filter_funcs, num_threads, logger);
+		ifcopenshell::geom::iterator tmp_context_iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings, logger), settings, ifc_file, filter_funcs, num_threads, logger);
 			
 		time_t bounds_start, bounds_end;
 		time(&bounds_start);
@@ -888,7 +888,7 @@ int main(int argc, char** argv) {
 	}
 
 	std::unique_ptr<ifcopenshell::geom::iterator> context_iterator;
-	context_iterator.reset(new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings), settings, ifc_file, filter_funcs, num_threads, logger));
+	context_iterator.reset(new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings, logger), settings, ifc_file, filter_funcs, num_threads, logger));
 
 	logger.message(ifcopenshell::logger::LOG_PERF, "file geometry conversion");
 
@@ -1370,7 +1370,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 	settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
 	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
 
-	ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "opencascade", settings), settings, &f, {}, 1, logger);
+	ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "opencascade", settings, logger), settings, &f, {}, 1, logger);
 
 	if (!context_iterator.initialize()) {
 		return;

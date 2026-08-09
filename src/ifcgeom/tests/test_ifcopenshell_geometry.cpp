@@ -63,7 +63,7 @@ std::size_t count_geo403_for_wall(hierarchy_helper<IfcSchema>& file, const IfcSc
     ifcopenshell::logger log;
     log.output_format(ifcopenshell::logger::FMT_INMEMORY);
     ifcopenshell::geom::converter converter(
-        ifcopenshell::geom::kernels::construct(&file, "opencascade", settings), &file, settings, log);
+        ifcopenshell::geom::kernels::construct(&file, "opencascade", settings, log), &file, settings, log);
     delete converter.create_brep_for_representation_and_product(wall.Representation().Representations().back(), wall);
     return log.count("GEO403");
 }
@@ -94,7 +94,7 @@ IfcSchema::IfcRepresentation select_representation(
     ifcopenshell::logger log;
     log.output_format(ifcopenshell::logger::FMT_INMEMORY);
     ifcopenshell::geom::converter converter(
-        ifcopenshell::geom::kernels::construct(&file, "passthrough", settings), &file, settings, log);
+        ifcopenshell::geom::kernels::construct(&file, "passthrough", settings, log), &file, settings, log);
 
     auto selected = converter.mapping()->representation_of(wall).as<IfcSchema::IfcRepresentation>();
     REQUIRE(selected);
@@ -126,7 +126,7 @@ std::vector<ifcopenshell::geom::geometry_conversion_task> representation_tasks(
     ifcopenshell::logger log;
     log.output_format(ifcopenshell::logger::FMT_INMEMORY);
     ifcopenshell::geom::converter converter(
-        ifcopenshell::geom::kernels::construct(&file, "passthrough", settings), &file, settings, log);
+        ifcopenshell::geom::kernels::construct(&file, "passthrough", settings, log), &file, settings, log);
 
     std::vector<ifcopenshell::geom::geometry_conversion_task> tasks;
     std::vector<ifcopenshell::geom::filter_function> filters;

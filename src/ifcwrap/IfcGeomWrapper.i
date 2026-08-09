@@ -761,14 +761,14 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 	// anyway it does not matter as SWIG generates C code without actual constructors
 	ifcopenshell::geom::iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, int num_threads, ifcopenshell::logger* logger = nullptr) {
 		ifcopenshell::logger& logger_ = ifcopenshell::logger_or_root(logger);
-		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), settings, file, num_threads, logger_);
+		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings, logger_), settings, file, num_threads, logger_);
 	}
 
 	ifcopenshell::geom::iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads, ifcopenshell::logger* logger = nullptr) {
 		ifcopenshell::logger& logger_ = ifcopenshell::logger_or_root(logger);
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		ifcopenshell::geom::entity_filter ef{ include, false, elems_set };
-		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), settings, file, {ef}, num_threads, logger_);
+		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings, logger_), settings, file, {ef}, num_threads, logger_);
 	}
 
 	ifcopenshell::geom::iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads, ifcopenshell::logger* logger = nullptr) {
@@ -778,14 +778,14 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 		af.attribute_name = "GlobalId";
 		af.populate(elems_set);
 		af.include = include;
-		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads, logger_);
+		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings, logger_), settings, file, {af}, num_threads, logger_);
 	}
 
 	ifcopenshell::geom::iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geom::settings settings, ifcopenshell::file* file, std::vector<int> elems, bool include, int num_threads, ifcopenshell::logger* logger = nullptr) {
 		ifcopenshell::logger& logger_ = ifcopenshell::logger_or_root(logger);
 		std::set<int> elems_set(elems.begin(), elems.end());
 		ifcopenshell::geom::instance_id_filter af(include, false, elems_set);
-		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads, logger_);
+		return new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(file, geometry_library, settings, logger_), settings, file, {af}, num_threads, logger_);
 	}
 %}
 
@@ -993,7 +993,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> helper_fn_create_shape(ifcopenshell::logger& logger, const std::string& geometry_library, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation = express::base()) {
 		ifcopenshell::file* file = instance.file();
 
-		ifcopenshell::geom::converter kernel(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), file, settings, logger);
+		ifcopenshell::geom::converter kernel(ifcopenshell::geom::kernels::construct(file, geometry_library, settings, logger), file, settings, logger);
 		if (instance.declaration().is("IfcProduct")) {
 			if (representation && !representation.declaration().is("IfcRepresentation")) {
 				throw ifcopenshell::exception("Supplied representation not of type IfcRepresentation");

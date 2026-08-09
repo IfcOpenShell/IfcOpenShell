@@ -54,7 +54,7 @@ void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bo
 	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
 	settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-	ifcopenshell::geom::converter c(ifcopenshell::geom::kernels::construct(&f2, "cgal", settings), &f2, settings, logger);
+	ifcopenshell::geom::converter c(ifcopenshell::geom::kernels::construct(&f2, "cgal", settings, logger), &f2, settings, logger);
 
 	std::map<std::set<std::string>, std::vector<Kernel_::Point_3>> elem_to_space_boundary_coords;
 

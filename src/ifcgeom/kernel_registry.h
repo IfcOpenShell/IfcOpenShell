@@ -42,11 +42,11 @@ namespace ifcopenshell {
 
 			class IFC_GEOM_API kernel_registry {
 			public:
-				typedef std::function<abstract_kernel*(ifcopenshell::file*, ifcopenshell::geom::settings&)> create_fn;
+				typedef std::function<abstract_kernel*(ifcopenshell::file*, ifcopenshell::geom::settings&, ifcopenshell::logger&)> create_fn;
 
 				void bind(const kernel_info& info, create_fn create, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 				bool has(const std::string& backend_id) const;
-				std::unique_ptr<abstract_kernel> create(const std::string& backend_id, ifcopenshell::file* file, ifcopenshell::geom::settings& settings) const;
+				std::unique_ptr<abstract_kernel> create(const std::string& backend_id, ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) const;
 				std::vector<kernel_info> kernels() const;
 
 			private:
@@ -60,7 +60,7 @@ namespace ifcopenshell {
 			};
 
 			IFC_GEOM_API kernel_registry& kernel_registry_instance();
-			IFC_GEOM_API std::unique_ptr<abstract_kernel> construct(ifcopenshell::file* file, const std::string& geometry_library, ifcopenshell::geom::settings& settings);
+			IFC_GEOM_API std::unique_ptr<abstract_kernel> construct(ifcopenshell::file* file, const std::string& geometry_library, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
 		}
 	}

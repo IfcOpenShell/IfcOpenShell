@@ -35,8 +35,8 @@ namespace ifcopenshell {
 					return kernel_plugin_metadata("manifold");
 				}
 
-				abstract_kernel* create_kernel(ifcopenshell::file*, ifcopenshell::geom::settings& settings) {
-					return new manifold_kernel(settings);
+				abstract_kernel* create_kernel(ifcopenshell::file*, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) {
+					return new manifold_kernel(settings, logger);
 				}
 
 				void register_plugin(kernel_registry& registry, const plugin::module& module) {

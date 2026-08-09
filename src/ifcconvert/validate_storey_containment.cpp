@@ -23,7 +23,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 		ifcopenshell::geom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
 	};
 
-	ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "cgal", settings), settings, &f, no_openings_and_spaces, 1, logger);
+	ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "cgal", settings, logger), settings, &f, no_openings_and_spaces, 1, logger);
 
 	auto get_elevation = [](const ifcopenshell::IfcBaseClass* a) {
 		return ((const ifcopenshell::IfcBaseEntity*)a)->get_value<double>("Elevation", 0.);

@@ -51,8 +51,8 @@ namespace ifcopenshell {
 					return kernel_plugin_metadata(plugin_name);
 				}
 
-				abstract_kernel* create_kernel(ifcopenshell::file*, ifcopenshell::geom::settings& settings) {
-					return new kernel_type(settings);
+				abstract_kernel* create_kernel(ifcopenshell::file*, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) {
+					return new kernel_type(settings, logger);
 				}
 
 				void register_plugin(kernel_registry& registry, const plugin::module& module) {

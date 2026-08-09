@@ -23,7 +23,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 
 	settings.get<ifcopenshell::geom::settings::OutputDimensionality>().value = ifcopenshell::geom::settings::CURVES;
 	
-	ifcopenshell::geom::converter c(ifcopenshell::geom::kernels::construct(&f, "cgal", settings), &f, settings, logger);
+	ifcopenshell::geom::converter c(ifcopenshell::geom::kernels::construct(&f, "cgal", settings, logger), &f, settings, logger);
 
 	auto rels = f.instances_by_type("IfcRelConnectsPathElements");
 	std::map<std::set<const ifcopenshell::IfcBaseClass*>, const ifcopenshell::IfcBaseClass*> rel_by_elem;

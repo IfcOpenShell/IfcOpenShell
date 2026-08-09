@@ -460,7 +460,7 @@ struct intersection_validator {
 			ifcopenshell::geom::entity_filter(true, false, entities)
 		};
 
-		ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "cgal", settings), settings, &f, spaces_and_walls, 1, logger);
+		ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "cgal", settings, logger), settings, &f, spaces_and_walls, 1, logger);
 
 		if (!context_iterator.initialize()) {
 			return;
