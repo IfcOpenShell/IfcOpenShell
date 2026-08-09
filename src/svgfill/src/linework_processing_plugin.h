@@ -31,7 +31,7 @@ void destroy_arrangement(abstract_arrangement* arrangement);
 
 namespace linework_processing_plugin {
 
-constexpr const char* id = "geometry.svgfill";
+constexpr const char* id = "geometry_svgfill";
 constexpr const char* registration_symbol = "ifcopenshell_register_linework_processing_plugin_v1";
 
 struct api {

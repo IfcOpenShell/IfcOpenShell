@@ -101,7 +101,7 @@ ifcopenshell::entity::~entity() {
     }
 }
 namespace {
-	constexpr const char* schema_plugin_prefix = "parse.schema.";
+	constexpr const char* schema_plugin_prefix = "parse_schema_";
 
 	std::string schema_key(const std::string& schema_name) {
 		return boost::to_upper_copy(schema_name);
@@ -110,7 +110,7 @@ namespace {
 	ifcopenshell::plugin::module builtin_schema_module(const std::string& schema_name) {
 		ifcopenshell::plugin::metadata metadata;
 		metadata.kind_ = ifcopenshell::plugin::kind::parse_schema;
-		metadata.id = "parse.schema." + boost::to_lower_copy(schema_name);
+		metadata.id = "parse_schema_" + boost::to_lower_copy(schema_name);
 		metadata.schema = schema_name;
 		return ifcopenshell::plugin::module::builtin(metadata);
 	}

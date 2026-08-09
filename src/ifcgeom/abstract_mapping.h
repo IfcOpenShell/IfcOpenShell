@@ -88,8 +88,8 @@ namespace geom {
 
 		private:
 			struct entry {
-				mapping_fn fn_;
 				ifcopenshell::plugin::module module_;
+				mapping_fn fn_;
 			};
 
 			std::map<std::string, entry> entries_;

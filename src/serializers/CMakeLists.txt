@@ -12,12 +12,13 @@ endif()
 
 function(add_document_serializer_plugin target output_name)
     cmake_parse_arguments(PLUGIN "" "" "SOURCES;LIBRARIES;DEFINITIONS" ${ARGN})
+    string(REPLACE "." "_" plugin_output_name "${output_name}")
 
     add_library(${target} SHARED ${PLUGIN_SOURCES})
     target_compile_definitions(${target} PRIVATE SERIALIZERS_EXPORTS BOOST_DLL_USE_STD_FS ${PLUGIN_DEFINITIONS})
     target_link_libraries(${target} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse ${PLUGIN_LIBRARIES})
     set_target_properties(${target} PROPERTIES
-        OUTPUT_NAME "ifcopenshell.${output_name}"
+        OUTPUT_NAME "ifcopenshell_${plugin_output_name}"
         RUNTIME_OUTPUT_DIRECTORY "${document_serializer_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${document_serializer_plugin_runtime_dir}"
     )
@@ -30,6 +31,7 @@ endfunction()
 
 function(add_geometry_serializer_plugin target output_name)
     cmake_parse_arguments(PLUGIN "" "" "SOURCES;LIBRARIES;DEFINITIONS" ${ARGN})
+    string(REPLACE "." "_" plugin_output_name "${output_name}")
 
     add_library(${target} SHARED ${PLUGIN_SOURCES})
     target_compile_definitions(${target} PRIVATE SERIALIZERS_EXPORTS BOOST_DLL_USE_STD_FS ${PLUGIN_DEFINITIONS})
@@ -43,7 +45,7 @@ function(add_geometry_serializer_plugin target output_name)
         target_link_libraries(${target} PRIVATE proj::proj)
     endif()
     set_target_properties(${target} PROPERTIES
-        OUTPUT_NAME "ifcopenshell.${output_name}"
+        OUTPUT_NAME "ifcopenshell_${plugin_output_name}"
         RUNTIME_OUTPUT_DIRECTORY "${geometry_serializer_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${geometry_serializer_plugin_runtime_dir}"
     )

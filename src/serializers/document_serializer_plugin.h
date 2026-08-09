@@ -73,9 +73,9 @@ public:
 
 private:
 	struct entry {
+		ifcopenshell::plugin::module module_;
 		document_serializer_info info_;
 		create_fn create_;
-		ifcopenshell::plugin::module module_;
 	};
 
 	const entry* find_entry_(const std::string& format, const std::string& schema_name) const;

@@ -335,7 +335,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                 # expand $ORIGIN; the equivalent placeholder is
                 # @loader_path. Setting $ORIGIN on macOS bakes a literal
                 # "$ORIGIN" into LC_RPATH which resolves to nothing at
-                # runtime — the wrapper's `@rpath/ifcopenshell.document.rdb
+                # runtime — the wrapper's `@rpath/ifcopenshell_document_rdb
                 # .dylib` LC_LOAD_DYLIB then fails to find the plug-in even
                 # though INSTALL(TARGETS … LIBRARY DESTINATION …/ifcopenshell)
                 # above has dropped it right next to the wrapper.

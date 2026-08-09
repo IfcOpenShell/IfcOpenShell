@@ -127,7 +127,7 @@ namespace {
 	}
 
 	std::string decorated_basename(const std::string& basename) {
-		return boost::algorithm::istarts_with(basename, "ifcopenshell.") ? basename : "ifcopenshell." + basename;
+		return boost::algorithm::istarts_with(basename, "ifcopenshell_") ? basename : "ifcopenshell_" + basename;
 	}
 
 	std::vector<std::string> platform_basenames(const std::string& basename) {

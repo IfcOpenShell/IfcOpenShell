@@ -34,7 +34,7 @@ namespace {
 
 std::string geometry_serializer_plugin_prefix(const std::string& format = std::string()) {
 	const auto format_lower = boost::to_lower_copy(format);
-	return format_lower.empty() ? "geometry." : "geometry." + format_lower;
+	return format_lower.empty() ? "geometry_" : "geometry_" + format_lower;
 }
 
 std::string geometry_serializer_key(const std::string& extension) {

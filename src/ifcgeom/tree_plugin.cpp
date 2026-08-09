@@ -21,6 +21,8 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+#include <algorithm>
+
 namespace ifcopenshell {
 namespace plugin {
 PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
@@ -28,7 +30,13 @@ PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, s
 }
 
 namespace {
-	constexpr const char* tree_plugin_prefix = "geometry.tree.";
+	constexpr const char* tree_plugin_prefix = "geometry_tree_";
+
+	std::string tree_plugin_name(const std::string& backend_id) {
+		auto name = boost::to_lower_copy(backend_id);
+		std::replace(name.begin(), name.end(), '.', '_');
+		return name;
+	}
 }
 
 const char* ifcopenshell::geom::trees::tree_plugin_registration_symbol() {
@@ -38,7 +46,7 @@ const char* ifcopenshell::geom::trees::tree_plugin_registration_symbol() {
 ifcopenshell::plugin::metadata ifcopenshell::geom::trees::tree_plugin_metadata(const std::string& plugin_name) {
 	plugin::metadata metadata;
 	metadata.kind_ = plugin::kind::tree;
-	metadata.id = std::string(tree_plugin_prefix) + plugin_name;
+	metadata.id = std::string(tree_plugin_prefix) + tree_plugin_name(plugin_name);
 	return metadata;
 }
 
@@ -65,7 +73,7 @@ bool ifcopenshell::geom::trees::load_tree_plugin(tree_registry& registry, const 
 	plugin::manager manager;
 	plugin::add_search_paths_or_default(manager, &tree_plugin_directory);
 
-	const auto plugin_name = boost::to_lower_copy(backend_id);
+	const auto plugin_name = tree_plugin_name(backend_id);
 	const auto basename = std::string(tree_plugin_prefix) + plugin_name;
 
 	for (const auto& path : manager.discover_exact(basename)) {

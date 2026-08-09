@@ -52,6 +52,7 @@ macro(SET_INSTALL_SELF_RPATH _target)
 endmacro()
 
 function(ifcopenshell_plugin_target TARGET)
+    # Plug-ins are loaded by exact filename and should not receive a platform library prefix.
     set_target_properties(${TARGET} PROPERTIES PREFIX "")
     if((NOT WIN32) AND BUILD_SHARED_LIBS AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
         SET_INSTALL_SELF_RPATH(${TARGET})

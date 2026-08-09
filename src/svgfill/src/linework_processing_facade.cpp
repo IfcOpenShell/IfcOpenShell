@@ -36,8 +36,8 @@ PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, s
 
 namespace {
 struct provider_state {
-	svgfill::linework_processing_plugin::api api;
 	ifcopenshell::plugin::module module;
+	svgfill::linework_processing_plugin::api api;
 };
 
 std::filesystem::path plugin_directory() {

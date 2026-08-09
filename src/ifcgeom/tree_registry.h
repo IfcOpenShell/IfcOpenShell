@@ -81,9 +81,9 @@ namespace ifcopenshell {
 
 			private:
 				struct entry {
+					ifcopenshell::plugin::module module_;
 					tree_info info_;
 					create_fn create_;
-					ifcopenshell::plugin::module module_;
 				};
 
 				std::map<std::string, entry> entries_;

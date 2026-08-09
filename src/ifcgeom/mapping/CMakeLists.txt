@@ -17,7 +17,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     add_library(geometry_mapping_ifc${schema} SHARED ${IFCGEOM_FILES})
     set_target_properties(geometry_mapping_ifc${schema} PROPERTIES
         COMPILE_FLAGS "-DIfcSchema=Ifc${schema}"
-        OUTPUT_NAME "ifcopenshell.geometry.mapping.ifc${schema}"
+        OUTPUT_NAME "ifcopenshell_geometry_mapping_ifc${schema}"
         RUNTIME_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
     )

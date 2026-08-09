@@ -37,7 +37,7 @@ PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, s
 }
 
 namespace {
-	constexpr const char* kernel_plugin_prefix = "geometry.kernel.";
+	constexpr const char* kernel_plugin_prefix = "geometry_kernel_";
 
 	std::string kernel_key(const std::string& backend_id) {
 		return boost::to_lower_copy(backend_id);

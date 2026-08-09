@@ -168,7 +168,7 @@ ifcopenshell_deploy_qt_runtime(BonsaiViewer)
 #      them explicitly. (In a static build these are absent from lib/
 #      and the glob just no-ops, so this rule is safe in both modes.)
 #
-#   2. Plug-ins (ifcopenshell.*.dylib, no `lib` prefix) — dlopen-only
+#   2. Plug-ins (ifcopenshell_*.dylib, no `lib` prefix) — dlopen-only
 #      deps the plug-in loader resolves at runtime. macdeployqt has
 #      no way to know about these.
 #
@@ -177,7 +177,7 @@ ifcopenshell_deploy_qt_runtime(BonsaiViewer)
 # inside the bundle), so plug-ins and core libs both find each other
 # on the first probe.
 #
-# The geometry-writer filter drops ifcopenshell.geometry.writer.*.dylib
+# The geometry-writer filter drops ifcopenshell_geometry_writer_*.dylib
 # (the per-schema OBJ / glTF / DAE / STP / IGS / SVG / TTL export
 # converters — heavy, viewer-irrelevant). Mirrors the Rocky workflow's
 # filter in `stage_runtime_payload` (see 27249770e).
@@ -195,7 +195,7 @@ if(APPLE)
     install(CODE [[
         set(_fw "${CMAKE_INSTALL_PREFIX}/BonsaiViewer.app/Contents/Frameworks")
         file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
-        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell\\.geometry\\.writer\\.")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_writer_")
         if(_ifc_dylibs)
             message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into BonsaiViewer.app/Contents/Frameworks")
             file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")

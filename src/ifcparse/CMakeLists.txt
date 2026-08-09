@@ -95,7 +95,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     )
     target_link_libraries(${SCHEMA_PLUGIN_TARGET} PRIVATE ${plugin_when_not_wasm} IfcParse)
     set_target_properties(${SCHEMA_PLUGIN_TARGET} PROPERTIES
-        OUTPUT_NAME "ifcopenshell.parse.schema.ifc${schema}"
+        OUTPUT_NAME "ifcopenshell_parse_schema_ifc${schema}"
     )
     ifcopenshell_plugin_target(${SCHEMA_PLUGIN_TARGET})
 

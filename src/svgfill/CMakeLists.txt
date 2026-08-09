@@ -56,7 +56,7 @@ endif()
 target_link_libraries(svgfill PRIVATE ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 IFCOPENSHELL_CGAL IfcParse)
 target_compile_definitions(svgfill PUBLIC IFC_SHARED_BUILD)
 set_target_properties(svgfill PROPERTIES PUBLIC_HEADER "${LIB_H_FILES}")
-set_target_properties(svgfill PROPERTIES OUTPUT_NAME "ifcopenshell.geometry.svgfill")
+set_target_properties(svgfill PROPERTIES OUTPUT_NAME "ifcopenshell_geometry_svgfill")
 ifcopenshell_wasm_plugin_link_options(svgfill ifcopenshell_register_linework_processing_plugin_v1)
 
 add_executable(svgfill_exe src/main.cpp)

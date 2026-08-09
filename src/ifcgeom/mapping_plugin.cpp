@@ -28,7 +28,7 @@ PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, s
 }
 
 namespace {
-	constexpr const char* mapping_plugin_prefix = "geometry.mapping.";
+	constexpr const char* mapping_plugin_prefix = "geometry_mapping_";
 }
 
 const char* ifcopenshell::geom::impl::mapping_plugin_registration_symbol() {

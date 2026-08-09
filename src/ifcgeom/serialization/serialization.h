@@ -29,9 +29,9 @@ public:
 
 private:
 	struct entry {
+		ifcopenshell::plugin::module module_;
 		serialise_fn serialise_;
 		tesselate_fn tesselate_;
-		ifcopenshell::plugin::module module_;
 	};
 
 	std::map<std::string, entry> entries_;

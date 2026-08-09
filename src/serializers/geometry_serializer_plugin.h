@@ -73,10 +73,10 @@ public:
 
 private:
 	struct entry {
+		ifcopenshell::plugin::module module_;
 		geometry_serializer_info info_;
 		create_fn create_;
 		configure_fn configure_;
-		ifcopenshell::plugin::module module_;
 	};
 
 	friend SERIALIZERS_API bool load_geometry_serializer_plugin(geometry_serializer_registry& registry, const std::string& extension);
