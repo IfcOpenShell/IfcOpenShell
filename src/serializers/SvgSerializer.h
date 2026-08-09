@@ -1622,9 +1622,21 @@ namespace {
 				// (issue #3742 follow-up, item 4d) -- this is that same fix applied here too.
 				bool is_void = item_products[idx] && item_products[idx]->declaration().is("IfcOpeningElement");
 				if (!shape.IsNull() && !is_void) {
-					intersectors[idx].Load(shape, tolerance);
-					intersector_loaded[idx] = true;
-					BRepBndLib::AddClose(shape, item_boxes[idx]);
+					// A small number of real-world shapes make OCCT's BVH/face-intersector
+					// construction throw (confirmed pre-existing on this codebase's last
+					// committed state, unrelated to any cross-coplanar classification logic --
+					// reproduced against a real building's own geometry). Skip just this one
+					// item's occlusion participation rather than losing the whole restoration
+					// pass (and the whole drawing) to one product's ill-formed geometry;
+					// `intersector_loaded[idx]` staying false is already the exact mechanism
+					// used elsewhere in this function to mean "don't ray-cast against this item.
+					try {
+						intersectors[idx].Load(shape, tolerance);
+						intersector_loaded[idx] = true;
+						BRepBndLib::AddClose(shape, item_boxes[idx]);
+					} catch (const Standard_Failure&) {
+						intersector_loaded[idx] = false;
+					}
 				}
 				++idx;
 			}
