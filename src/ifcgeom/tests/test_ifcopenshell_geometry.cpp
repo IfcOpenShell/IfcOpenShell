@@ -60,8 +60,8 @@ std::size_t count_geo403_for_wall(hierarchy_helper<IfcSchema>& file, const IfcSc
     ifcopenshell::geom::settings settings;
     settings.set("max-voids-per-element", MAX_VOIDS);
 
-    logger log;
-    log.output_format(logger::FMT_INMEMORY);
+    ifcopenshell::logger log;
+    log.output_format(ifcopenshell::logger::FMT_INMEMORY);
     ifcopenshell::geom::converter converter(
         ifcopenshell::geom::kernels::construct(&file, "opencascade", settings), &file, settings, log);
     delete converter.create_brep_for_representation_and_product(wall.Representation().Representations().back(), wall);
@@ -91,8 +91,8 @@ IfcSchema::IfcRepresentation select_representation(
     ifcopenshell::geom::settings settings;
     settings.set("context-priorities", std::vector<std::string>(context_priorities));
 
-    logger log;
-    log.output_format(logger::FMT_INMEMORY);
+    ifcopenshell::logger log;
+    log.output_format(ifcopenshell::logger::FMT_INMEMORY);
     ifcopenshell::geom::converter converter(
         ifcopenshell::geom::kernels::construct(&file, "passthrough", settings), &file, settings, log);
 
@@ -123,8 +123,8 @@ std::vector<ifcopenshell::geom::geometry_conversion_task> representation_tasks(
     ifcopenshell::geom::settings settings;
     settings.set("context-priorities", std::vector<std::string>(context_priorities));
 
-    logger log;
-    log.output_format(logger::FMT_INMEMORY);
+    ifcopenshell::logger log;
+    log.output_format(ifcopenshell::logger::FMT_INMEMORY);
     ifcopenshell::geom::converter converter(
         ifcopenshell::geom::kernels::construct(&file, "passthrough", settings), &file, settings, log);
 
