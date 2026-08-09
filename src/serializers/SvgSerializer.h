@@ -2960,6 +2960,46 @@ namespace {
 								continue;
 							}
 
+							// Back-facing guard (issue #3742 follow-up, real-file diagnosis): a
+							// product standing on another (e.g. a wall on a slab) has its own
+							// UNDERSIDE -- the face resting against/embedded in whatever it stands
+							// on, never visible from any normal architectural viewing angle --
+							// genuinely coplanar and touching with the other product's own top
+							// face. That is a real, valid 3D relationship, but not a screen
+							// boundary either product's own drawing should ever show: confirmed
+							// directly against a real building file (issue #3742 follow-up) that
+							// this is universal (any wall standing on any slab produces it, no
+							// third object needed) and pervasive (45 of 75 products in one real
+							// drawing). Rejects the WHOLE pair here, not just the back-facing
+							// side's own accumulate_*() call below -- gating only one side was
+							// tried and found insufficient: when the wall sits flush with the
+							// slab's own TRUE boundary edge (the common real layout for an
+							// exterior wall on its floor slab), the slab's own top face is
+							// genuinely front-facing and has a real topological edge at that exact
+							// line too, so the other, front-facing side's own call independently
+							// rediscovers the identical false interval, just attributed to the
+							// slab's own edge object instead of the wall's.
+							//
+							// Same convention as classify_edge_from_faces()'s own front/back/
+							// edge-on split (SvgSerializer.cpp) -- confirmed identical, not just
+							// similarly-named: view_direction_.Direction() here and that
+							// function's own projection_direction parameter are built from the
+							// same gp_Pln in every drawing-variant branch (prefiltered_hlr's own
+							// constructor stores view_direction_ from the exact plane
+							// SvgSerializer.cpp passes to it). Edge-on faces are deliberately NOT
+							// rejected here, only clearly back-facing ones: every legitimate
+							// cross-coplanar/mat-style-change match in this file's own test suite
+							// is a vertical touching face viewed edge-on by an axis-aligned plan/
+							// elevation camera (walls side-by-side) -- excluding edge-on too would
+							// reject nearly all of them.
+							constexpr double kCrossCoplanarBackFaceDotEps = 1.e-4; // == classify_edge_from_faces()'s kOutlineDotEps
+							auto is_back_facing = [&](const gp_Dir& n) {
+								return -view_direction_.Direction().Dot(n) > kCrossCoplanarBackFaceDotEps;
+							};
+							if (is_back_facing(n_i) || is_back_facing(n_j)) {
+								continue;
+							}
+
 							// Screen-space occlusion check: face_i and face_j are now confirmed
 							// genuinely coplanar and touching in 3D -- but that alone doesn't mean
 							// every portion of that shared boundary is what's actually visible from

@@ -565,6 +565,83 @@ def test_cross_coplanar_match_excludes_whole_object_hidden_neighbour():
     assert any(e.guid == slab.GlobalId and e.cls == "outline" for e in edges)
 
 
+def test_cross_coplanar_wall_base_on_slab_must_not_false_match():
+    """A wall standing on a slab has its own UNDERSIDE -- the face resting
+    against/embedded in whatever it stands on, never visible from any normal
+    architectural viewing angle -- genuinely coplanar and touching with the
+    slab's own top face. `find_cross_coplanar_matches()` (`SvgSerializer.h`)
+    only ever checked normal-parallel + plane-coincidence, with no notion of
+    "is this face itself ever visible from the camera" -- so this produces a
+    `mat-style-change` candidate right along the wall's own footprint
+    perimeter, the same screen line as the genuine 90-degree corner its
+    VISIBLE side face makes with the slab.
+
+    Confirmed via direct debug instrumentation against a real building file
+    (issue #3742 follow-up) that this is universal -- any wall standing on
+    any slab produces it, no third/hidden object needed at all, unlike the
+    whole-object-visibility bug `test_cross_coplanar_match_excludes_whole_
+    object_hidden_neighbour()` above -- and pervasive: 45 of 75 products in
+    one real drawing had spurious cross-coplanar/mat-style-change edges from
+    exactly this mechanism.
+
+    `Wall` is placed flush with `Slab`'s own true edge (X=0), not floating
+    over its interior -- deliberately, since this is the specific
+    configuration that distinguishes a fix which only suppresses the
+    back-facing side's own coverage from one that rejects the whole matched
+    face pair: `Slab`'s own top face is genuinely front-facing under this
+    camera and has a real topological edge at that exact line too, so a
+    fix that only gates the wall's own (back-facing) contribution would
+    still leave `Slab`'s own edge wrongly covered by the same false match,
+    just attributed to the other product. Both sides are asserted below for
+    exactly this reason.
+
+    `Wall`'s own OUTER face (X=0) also happens to be genuinely coplanar with
+    `Slab`'s own tiny edge-face there (both boxes share a corner, so a
+    footprint-boundary face and its neighbouring side face are always
+    continuations of each other) -- a real, LEGITIMATE second relationship
+    (e.g. representing a distinct plinth/foundation material along a
+    continuing vertical plane), confirmed present for the real wall this
+    bug was diagnosed from too (its own face-normal trace independently
+    found this same side-to-side pairing alongside the bottom/top one).
+    Deliberately placed at X=0 rather than X=4 so THIS pairing is also
+    back-facing under the test camera (both `Wall`'s and `Slab`'s side
+    faces at X=0 point in -X, `d = -view_dir.Dot((-1,0,0)) = +0.577`) and
+    therefore also correctly rejected -- letting this test assert a clean
+    "nothing at all" without that legitimate-but-irrelevant relationship
+    muddying the result. (At X=4 both bottom/top AND side-to-side matches
+    are still individually rejected/kept exactly as intended by the fix,
+    but the side match survives there since it's front-facing, which
+    would otherwise require a coordinate-based assertion to distinguish
+    from the bug this test targets.)
+
+    An oblique/isometric camera is required, not an axis-aligned one -- under
+    a straight-down or elevation camera, the wall's own horizontal underside
+    would be edge-on (zero screen area) rather than clearly back-facing, and
+    wouldn't exercise the bug at all.
+    """
+    ifc_file, body_context, storey = _make_project()
+    concrete = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    timber = ifcopenshell.api.material.add_material(ifc_file, name="Timber")
+    slab = _add_box(
+        ifc_file, body_context, storey, "Slab", (4.0, 4.0, 0.2), (0.0, 0.0, 0.0), ifc_class="IfcSlab", material=concrete
+    )
+    wall = _add_box(ifc_file, body_context, storey, "Wall", (0.2, 1.0, 2.0), (0.0, 1.0, 0.2), material=timber)
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(10.0, 10.0, 10.0),
+        camera_dir=(0.5773502691896258, 0.5773502691896258, 0.5773502691896258),
+        camera_ref=(0.7071067811865475, -0.7071067811865475, 0.0),
+        use_cross_coplanar=True,
+        use_mat_style_change=True,
+        render_cross_coplanar=True,
+    )
+    edges = parse_edges(svg)
+
+    assert not any(e.guid == wall.GlobalId and e.cls in ("cross-coplanar", "mat-style-change") for e in edges)
+    assert not any(e.guid == slab.GlobalId and e.cls in ("cross-coplanar", "mat-style-change") for e in edges)
+
+
 def test_cross_coplanar_match_partial_occlusion_within_one_raw_interval():
     """`accumulate_edge_coverage()` (`SvgSerializer.h`) accepts or rejects an
     entire raw matched interval from a SINGLE occlusion test at its own
