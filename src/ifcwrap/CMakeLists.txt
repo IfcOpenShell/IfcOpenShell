@@ -70,12 +70,12 @@ if(IFCOPENSHELL_IFCWRAP_STANDALONE)
     endif()
 endif()
 
-find_package(SWIG)
+find_package(SWIG 4.1)
 if(NOT SWIG_FOUND)
     message(
         FATAL_ERROR
-        "BUILD_IFCPYTHON enabled, but unable to find SWIG. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed. "
-        "Likely SWIG_EXECUTABLE is missing (current value - '${SWIG_EXECUTABLE}')."
+        "BUILD_IFCPYTHON requires SWIG 4.1 or newer. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed. "
+        "Found version '${SWIG_VERSION}' at '${SWIG_EXECUTABLE}'."
     )
 ENDIF()
 include(GNUInstallDirs)
@@ -107,14 +107,6 @@ ENDIF()
 # not from Python interpreter that might be unrelated to pyodide Python version.
 set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
-
-#`%feature("python:abc")` is a feature we use in swig template.
-# Nn swig < 4.1 it works only if `-py3` is set explictily,
-# in swig 4.1+ `-py3` is no-op.
-# E.g. Ubuntu 22.04 is still using swig 4.0.2.
-if(SWIG_VERSION VERSION_LESS "4.1")
-    list(APPEND SWIG_DEFINES -py3)
-endif()
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 
