@@ -80,6 +80,7 @@ def test_memusage_partial_open():
     import sys
 
     script = f"""
+import sys; sys.path.remove('')
 import psutil
 import ifcopenshell
 
