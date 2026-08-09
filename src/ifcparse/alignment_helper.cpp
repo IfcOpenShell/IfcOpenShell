@@ -777,8 +777,6 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
     auto start_height = segment.StartHeight();
     auto start_gradient = segment.StartGradient();
     auto end_gradient = segment.EndGradient();
-    auto radius_of_curvature = segment.RadiusOfCurvature();
-
     auto type = segment.PredefinedType();
 
     if (type == Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT) {
@@ -862,7 +860,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
     return result;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentCantSegment& segment, ifcopenshell::logger& logger) {
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>&, const Ifc4x3_add2::IfcAlignmentCantSegment& segment, ifcopenshell::logger& logger) {
     std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
     auto type = segment.PredefinedType();
     if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_BLOSSCURVE) {

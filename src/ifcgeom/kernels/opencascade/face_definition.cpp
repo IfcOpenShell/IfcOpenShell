@@ -3,7 +3,7 @@
 #include <TopoDS.hxx>
 #include <Geom_Line.hxx>
 #include <BRep_Tool.hxx>
-#include <TopoDS_iterator.hxx>
+#include <TopoDS_Iterator.hxx>
 
 /* Returns whether wire conforms to a polyhedron, i.e. only edges with linear curves*/
 bool ifcopenshell::geom::util::is_polyhedron(const TopoDS_Wire & wire) {

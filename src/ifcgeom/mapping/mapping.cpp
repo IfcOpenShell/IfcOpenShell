@@ -665,7 +665,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle& style) {
     auto styles = style.Styles();
     IfcSchema::IfcSurfaceStyleShading shading;
     for (auto& s : styles) {
-        if (shading = s.as<IfcSchema::IfcSurfaceStyleShading>()) {
+        if ((shading = s.as<IfcSchema::IfcSurfaceStyleShading>())) {
             break;
         }
     }
@@ -989,7 +989,7 @@ void mapping::initialize_settings() {
                 bool selected_sub_context = false;
                 auto subs = context.HasSubContexts();
                 for (auto& sub : subs) {
-                    if (cids.find(context.id()) != cids.end()) {
+                    if (cids.find(sub.id()) != cids.end()) {
                         selected_sub_context = true;
                         break;
                     }

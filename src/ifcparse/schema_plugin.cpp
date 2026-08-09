@@ -25,9 +25,7 @@
 #include "macros.h"
 #include "si_prefix.h"
 
-#define INCLUDE_SCHEMA(x) STRINGIFY(schemas/x.h)
-#include INCLUDE_SCHEMA(IfcSchema)
-#undef INCLUDE_SCHEMA
+#include INCLUDE_SCHEMA(schemas, IfcSchema)
 
 #define CAT(a, b) a##b
 #define EXPAND_AND_CAT(a, b) CAT(a, b)

@@ -6,46 +6,6 @@
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
 
-// @todo should we reapply the technique to apply openings in batches?
-namespace {
-	struct opening_sorter {
-		bool operator()(const std::pair<double, TopoDS_Shape>& a, const std::pair<double, TopoDS_Shape>& b) const {
-			return a.first > b.first;
-		}
-	};
- 
-	bool apply_in_batches(ifcopenshell::geom::util::boolean_settings bst, const TopoDS_Shape& first_operand, std::vector< std::pair<double, TopoDS_Shape> >& opening_vector, BOPAlgo_Operation occ_op, TopoDS_Shape& result) {
-		auto it = opening_vector.begin();
-		auto jt = it;
- 
-		result = first_operand;
-		for (;; ++it) {
-			if (it == opening_vector.end() || jt->first / it->first > 10.) {
- 
-				NCollection_List<TopoDS_Shape> opening_list;
-				for (auto kt = jt; kt < it; ++kt) {
-					opening_list.Append(kt->second);
-				}
- 
-				TopoDS_Shape intermediate_result;
-				if (ifcopenshell::geom::util::boolean_operation(bst, result, opening_list, occ_op, intermediate_result)) {
-					result = intermediate_result;
-				} else {
-					return false;
-				}
- 
-				jt = it;
-			}
- 
-			if (it == opening_vector.end()) {
-				break;
-			}
-		}
- 
-		return true;
-	}
-} 
-
 namespace {
 	BOPAlgo_Operation op_to_occt(taxonomy::boolean_result::operation_type t) {
 		switch (t) {
@@ -53,6 +13,7 @@ namespace {
 		case taxonomy::boolean_result::INTERSECTION: return BOPAlgo_COMMON;
 		case taxonomy::boolean_result::SUBTRACTION: return BOPAlgo_CUT;
 		}
+		throw std::invalid_argument("Unsupported boolean operation");
 	}
 
 	bool get_single_child(const TopoDS_Shape& s, TopoDS_Shape& child) {

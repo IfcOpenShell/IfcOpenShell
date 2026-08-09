@@ -215,7 +215,7 @@ namespace {
                         << std::hex << std::setw(4) << std::setfill('0')
                         << (c & 0xFFFF);
                 } else {
-                    escaped.put(c);
+                    escaped.put(static_cast<char>(c));
                 }
                 break;
             }
@@ -339,7 +339,7 @@ void ttl_wkt_serializer::write(const ifcopenshell::geom::triangulation_element* 
     } else {
         filename_.stream << ttl_object_id(o, "_geometry") << " a geo:Geometry ;\n";
         bool force_2d = true;
-        double z_value;
+        double z_value = 0.;
         for (size_t i = 2; i < o->geometry().verts().size(); i += 3) {
             const auto& cur = o->geometry().verts()[i];
             if (i == 2) {
@@ -457,18 +457,18 @@ void ttl_wkt_serializer::write(const ifcopenshell::geom::native_element* brep_ob
                 BRepGProp::SurfaceProperties(face, props);
                 auto area = props.Mass();
 
-                BRepTools_WireExplorer it(wire);
+                BRepTools_WireExplorer wire_it(wire);
                 std::vector<double> loop_coords;
-                for (; it.More(); it.Next()) {
-                    const auto& v = it.CurrentVertex();
+                for (; wire_it.More(); wire_it.Next()) {
+                    const auto& v = wire_it.CurrentVertex();
                     auto pnt = BRep_Tool::Pnt(v);
                     loop_coords.push_back(pnt.X());
                     loop_coords.push_back(pnt.Y());
                     loop_coords.push_back(pnt.Z());
                 }
                 std::vector<int> loop_idxs(loop_coords.size() / 3);
-                for (int i = 0; i < loop_idxs.size(); ++i) {
-                    loop_idxs[i] = i;
+                for (std::size_t loop_index = 0; loop_index < loop_idxs.size(); ++loop_index) {
+                    loop_idxs[loop_index] = static_cast<int>(loop_index);
                 }
 
                 std::string postfix = "_section_geometry_" + std::to_string(N++);
@@ -509,7 +509,7 @@ std::string ttl_wkt_serializer::ttl_object_id(const ifcopenshell::geom::element*
 {
 	auto oid = boost::replace_all_copy(object_id(o), "-", "_");
 	if (oid.find('$') == std::string::npos) {
-		return "base:" + oid + (postfix ? postfix : (const char* const)"");
+		return "base:" + oid + (postfix ? postfix : "");
 	} else {
 		std::string base;
 		if (settings_.get<ifcopenshell::geom::settings::BaseUri>().has()) {
@@ -517,7 +517,7 @@ std::string ttl_wkt_serializer::ttl_object_id(const ifcopenshell::geom::element*
 		} else {
 			base = "http://example.org/";
 		}
-		return "<" + base + oid + (postfix ? postfix : (const char* const)"") + ">";
+		return "<" + base + oid + (postfix ? postfix : "") + ">";
 	}
 }
 

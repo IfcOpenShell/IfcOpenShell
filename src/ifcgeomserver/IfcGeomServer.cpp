@@ -372,12 +372,12 @@ protected:
 			
 			int new_index = 0;
 			for (size_t orig = 0; orig < diffuse_color_array.size(); ++orig) {
-				auto& m = diffuse_color_array[orig];
-				if (m) {
+				auto& material = diffuse_color_array[orig];
+				if (material) {
 					for (int i = 0; i < 4; ++i) {
-						diffuse_color_array_condensed.push_back((*m)[i]);
+						diffuse_color_array_condensed.push_back((*material)[i]);
 					}
-					orig_to_condensed_index_map[orig] = new_index++;
+					orig_to_condensed_index_map[static_cast<int>(orig)] = new_index++;
 				}
 			}
 

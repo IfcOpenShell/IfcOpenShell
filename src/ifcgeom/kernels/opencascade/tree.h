@@ -151,9 +151,9 @@ namespace ifcopenshell::geom {
                     bool should_check_again = false
                     ) const {
                 ray v_ray;
-                v_ray.origin[0] = v.X();
-                v_ray.origin[1] = v.Y();
-                v_ray.origin[2] = v.Z();
+                v_ray.origin[0] = static_cast<float>(v.X());
+                v_ray.origin[1] = static_cast<float>(v.Y());
+                v_ray.origin[2] = static_cast<float>(v.Z());
 
                 if (should_check_again) {
                     // The first check may be incorrect if it intersects
@@ -194,12 +194,12 @@ namespace ifcopenshell::geom {
 
                     box box;
                     // + 1e-5 for tolerance
-                    box.corners[0][0] = min_point[0] - 1e-5;
-                    box.corners[0][1] = min_point[1] - 1e-5;
-                    box.corners[0][2] = min_point[2] - 1e-5;
-                    box.corners[1][0] = max_point[0] + 1e-5;
-                    box.corners[1][1] = max_point[1] + 1e-5;
-                    box.corners[1][2] = max_point[2] + 1e-5;
+                    box.corners[0][0] = static_cast<float>(min_point[0] - 1e-5);
+                    box.corners[0][1] = static_cast<float>(min_point[1] - 1e-5);
+                    box.corners[0][2] = static_cast<float>(min_point[2] - 1e-5);
+                    box.corners[1][0] = static_cast<float>(max_point[0] + 1e-5);
+                    box.corners[1][1] = static_cast<float>(max_point[1] + 1e-5);
+                    box.corners[1][2] = static_cast<float>(max_point[2] + 1e-5);
                     /*
                     std::cout << "Ray " 
                         << v_ray.origin[0] << " "
@@ -273,22 +273,22 @@ namespace ifcopenshell::geom {
                 gp_Vec ray_vector = e2 - e1;
                 double edge_length = ray_vector.Magnitude();
 
-                std::array<double, 3> min_int;
-                std::array<double, 3> max_int;
+                std::array<double, 3> min_int{};
+                std::array<double, 3> max_int{};
 
                 ray_vector.Normalize();
 
                 ray v_ray;
-                v_ray.origin[0] = ray_origin.X();
-                v_ray.origin[1] = ray_origin.Y();
-                v_ray.origin[2] = ray_origin.Z();
+                v_ray.origin[0] = static_cast<float>(ray_origin.X());
+                v_ray.origin[1] = static_cast<float>(ray_origin.Y());
+                v_ray.origin[2] = static_cast<float>(ray_origin.Z());
 
-                v_ray.dir[0] = ray_vector.X();
-                v_ray.dir[1] = ray_vector.Y();
-                v_ray.dir[2] = ray_vector.Z();
-                v_ray.dir_inv[0] = 1.0f / ray_vector.X();
-                v_ray.dir_inv[1] = 1.0f / ray_vector.Y();
-                v_ray.dir_inv[2] = 1.0f / ray_vector.Z();
+                v_ray.dir[0] = static_cast<float>(ray_vector.X());
+                v_ray.dir[1] = static_cast<float>(ray_vector.Y());
+                v_ray.dir[2] = static_cast<float>(ray_vector.Z());
+                v_ray.dir_inv[0] = static_cast<float>(1.0 / ray_vector.X());
+                v_ray.dir_inv[1] = static_cast<float>(1.0 / ray_vector.Y());
+                v_ray.dir_inv[2] = static_cast<float>(1.0 / ray_vector.Z());
 
                 double min_distance = std::numeric_limits<double>::infinity();
                 double max_distance = -std::numeric_limits<double>::infinity();
@@ -305,12 +305,12 @@ namespace ifcopenshell::geom {
 
                     box box;
                     // + 1e-5 for tolerance
-                    box.corners[0][0] = min_point[0] - 1e-5;
-                    box.corners[0][1] = min_point[1] - 1e-5;
-                    box.corners[0][2] = min_point[2] - 1e-5;
-                    box.corners[1][0] = max_point[0] + 1e-5;
-                    box.corners[1][1] = max_point[1] + 1e-5;
-                    box.corners[1][2] = max_point[2] + 1e-5;
+                    box.corners[0][0] = static_cast<float>(min_point[0] - 1e-5);
+                    box.corners[0][1] = static_cast<float>(min_point[1] - 1e-5);
+                    box.corners[0][2] = static_cast<float>(min_point[2] - 1e-5);
+                    box.corners[1][0] = static_cast<float>(max_point[0] + 1e-5);
+                    box.corners[1][1] = static_cast<float>(max_point[1] + 1e-5);
+                    box.corners[1][2] = static_cast<float>(max_point[2] + 1e-5);
 
                     if ( ! is_intersect_ray_box(&v_ray, &box)) {
                         continue;
@@ -491,12 +491,12 @@ namespace ifcopenshell::geom {
                 std::unordered_set<int> points_not_in_b_cache;
 
                 double protrusion = -std::numeric_limits<double>::infinity();
-                std::array<double, 3> protrusion_point;
-                std::array<double, 3> surface_point;
+                std::array<double, 3> protrusion_point{};
+                std::array<double, 3> surface_point{};
 
                 double pierce = -std::numeric_limits<double>::infinity();
-                std::array<double, 3> pierce_point1;
-                std::array<double, 3> pierce_point2;
+                std::array<double, 3> pierce_point1{};
+                std::array<double, 3> pierce_point2{};
 
                 for (const auto& pair : bvh_clashes) {
                     const int bvh_a_i = pair.first;
@@ -573,14 +573,14 @@ namespace ifcopenshell::geom {
 
                         const gp_Vec& normal_a = normals_a[i];
                         double v_protrusion = std::numeric_limits<double>::infinity();
-                        std::array<double, 3> v_protrusion_point;
-                        std::array<double, 3> v_surface_point;
+                        std::array<double, 3> v_protrusion_point{};
+                        std::array<double, 3> v_surface_point{};
 
                         // Check for protrusions.
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                const std::array<int, 3>& tri = tris_b[j];
-                                const gp_Vec& normal_b = normals_b[j];
+								const std::array<int, 3>& tri_b = tris_b[j];
+								const gp_Vec& normal_b = normals_b[j];
 
                                 tri_count_++;
 
@@ -591,9 +591,9 @@ namespace ifcopenshell::geom {
                                     continue;
                                 }
 
-                                gp_Vec ta(verts_b[tri[0]].XYZ());
-                                gp_Vec tb(verts_b[tri[1]].XYZ());
-                                gp_Vec tc(verts_b[tri[2]].XYZ());
+								gp_Vec ta(verts_b[tri_b[0]].XYZ());
+								gp_Vec tb(verts_b[tri_b[1]].XYZ());
+								gp_Vec tc(verts_b[tri_b[2]].XYZ());
 
                                 for (const auto& v : points_in_b) {
                                     gp_Vec ray_origin(v.XYZ());
@@ -688,10 +688,10 @@ namespace ifcopenshell::geom {
 
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                const std::array<int, 3>& tri = tris_b[j];
-                                const gp_Pnt& v1_b_pnt = verts_b[tri[0]];
-                                const gp_Pnt& v2_b_pnt = verts_b[tri[1]];
-                                const gp_Pnt& v3_b_pnt = verts_b[tri[2]];
+								const std::array<int, 3>& tri_b = tris_b[j];
+								const gp_Pnt& v1_b_pnt = verts_b[tri_b[0]];
+								const gp_Pnt& v2_b_pnt = verts_b[tri_b[1]];
+								const gp_Pnt& v3_b_pnt = verts_b[tri_b[2]];
                                 const gp_Vec& normal_b = normals_b[j];
 
                                 tri_count_++;
@@ -795,8 +795,8 @@ namespace ifcopenshell::geom {
                 const std::vector<gp_Pnt>& verts_b = verts_.find(tB)->second;
 
                 double min_clearance = std::numeric_limits<double>::infinity();
-                std::array<double, 3> clearance_point1;
-                std::array<double, 3> clearance_point2;
+                std::array<double, 3> clearance_point1{};
+                std::array<double, 3> clearance_point2{};
 
                 for (const auto& pair : bvh_clashes) {
                     const int bvh_a_i = pair.first;
@@ -816,10 +816,10 @@ namespace ifcopenshell::geom {
 
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                const std::array<int, 3>& tri = tris_b[j];
-                                const gp_Pnt& v1_b_pnt = verts_b[tri[0]];
-                                const gp_Pnt& v2_b_pnt = verts_b[tri[1]];
-                                const gp_Pnt& v3_b_pnt = verts_b[tri[2]];
+								const std::array<int, 3>& tri_b = tris_b[j];
+								const gp_Pnt& v1_b_pnt = verts_b[tri_b[0]];
+								const gp_Pnt& v2_b_pnt = verts_b[tri_b[1]];
+								const gp_Pnt& v3_b_pnt = verts_b[tri_b[2]];
 
                                 tri_count_++;
 
@@ -1690,7 +1690,7 @@ namespace ifcopenshell::geom {
             const auto builder = new BVH_LinearBuilder<double, 3>(BVH_Constants_LeafNodeSizeDefault, BVH_Constants_MaxTreeDepth);
             BVH_Triangulation<double, 3> triangulation(builder);
 
-            for (int i = 0; i < elem_verts.size(); i += 3) {
+            for (size_t i = 0; i < elem_verts.size(); i += 3) {
 #if OCC_VERSION_HEX >= 0x80000
                 triangulation.Vertices.Append(BVH_Vec3d(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
 #else
@@ -1699,7 +1699,7 @@ namespace ifcopenshell::geom {
                 verts.push_back(gp_Pnt(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
             }
 
-            for (int i = 0; i < elem_faces.size(); i += 3) {
+            for (size_t i = 0; i < elem_faces.size(); i += 3) {
                 const auto& v1_pnt = verts[elem_faces[i]];
                 const auto& v2_pnt = verts[elem_faces[i + 1]];
                 const auto& v3_pnt = verts[elem_faces[i + 2]];

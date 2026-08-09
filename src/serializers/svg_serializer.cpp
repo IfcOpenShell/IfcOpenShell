@@ -857,7 +857,6 @@ void svg_serializer::write(const ifcopenshell::geom::native_element* brep_obj) {
 			double pu, pv;
 			Extrema_ExtPElS ext;
 			ext.Perform(gp::Origin(), *pln, 1.e-5);
-			auto P0 = pln->Location();
 			pln->SetLocation(ext.Point(1).Value());
 			ext.Point(1).Parameter(pu, pv);
 
@@ -896,7 +895,6 @@ void svg_serializer::write(const ifcopenshell::geom::native_element* brep_obj) {
 	}
 
 	{
-		bool any_wires_converted_to_face = false;
 		BRep_Builder BB;
 		TopoDS_Compound comp2;
 		BB.MakeCompound(comp2);
@@ -908,7 +906,6 @@ void svg_serializer::write(const ifcopenshell::geom::native_element* brep_obj) {
 				TopoDS_Compound faces;
 				ifcopenshell::geom::util::convert_wire_to_faces(TopoDS::Wire(s), faces, wts);
 				BB.Add(comp2, faces);
-				any_wires_converted_to_face = true;
 			} else {
 				BB.Add(comp2, s);
 			}
@@ -1132,7 +1129,7 @@ void svg_serializer::write(const geometry_data& data) {
         section_heights_used = section_data_ ? std::addressof(*section_data_) : nullptr;
 	} else {
 		if (data.storey) {
-			section_heights_storage.push_back(horizontal_plan{ data.storey, data.storey_elevation,  +1. });
+			section_heights_storage.push_back(horizontal_plan{ data.storey, data.storey_elevation, +1., std::numeric_limits<double>::infinity() });
 		} else {
 			logger().warning("SER", 24, "No global section height and unable to determine building storey for:", data.product);
 			return;
@@ -2456,14 +2453,14 @@ void svg_serializer::finalize() {
 				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / 2., 0.),
 				gp_Dir(-1, 0, 0),
 				gp_Dir(0, -1, 0)));
-			deferred_section_data_->push_back(vertical_section{ pln , "Section North South", true });
+			deferred_section_data_->push_back(vertical_section{ pln , "Section North South", true, std::nullopt, std::nullopt });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
 				gp_Pnt((xmin + xmax) / 2., (ymin + ymax) / -2., 0.),
 				gp_Dir(0, -1, 0),
 				gp_Dir(1, 0, 0)));
-			deferred_section_data_->push_back(vertical_section{ pln , "Section East West", true });
+			deferred_section_data_->push_back(vertical_section{ pln , "Section East West", true, std::nullopt, std::nullopt });
 		}
 	}
 
@@ -2473,28 +2470,28 @@ void svg_serializer::finalize() {
 				gp_Pnt(0., -(ymin - 0.1), 0.),
 				gp_Dir(0, 1, 0),
 				gp_Dir(-1, 0, 0)));
-			deferred_section_data_->push_back(vertical_section{ pln , "Elevation South", true });
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation South", true, std::nullopt, std::nullopt });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
 				gp_Pnt(xmax + 0.1, 0., 0.),
 				gp_Dir(1, 0, 0),
 				gp_Dir(0, 1, 0)));
-			deferred_section_data_->push_back(vertical_section{ pln , "Elevation East", true });
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation East", true, std::nullopt, std::nullopt });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
 				gp_Pnt(0., -(ymax + 0.1), 0.),
 				gp_Dir(0, -1, 0),
 				gp_Dir(1, 0, 0)));
-			deferred_section_data_->push_back(vertical_section{ pln , "Elevation North", true });
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation North", true, std::nullopt, std::nullopt });
 		}
 		{
 			gp_Pln pln(gp_Ax3(
 				gp_Pnt(xmin - 0.1, 0., 0.),
 				gp_Dir(-1, 0, 0),
 				gp_Dir(0, -1, 0)));
-			deferred_section_data_->push_back(vertical_section{ pln , "Elevation West", true });
+			deferred_section_data_->push_back(vertical_section{ pln , "Elevation West", true, std::nullopt, std::nullopt });
 		}
 	}
 

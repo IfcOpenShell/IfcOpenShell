@@ -77,13 +77,6 @@ namespace {
 		return a < b ? edge_key{ a, b } : edge_key{ b, a };
 	}
 
-	Eigen::Matrix4d item_matrix(const taxonomy::geom_item::ptr& item) {
-		if (item && item->matrix) {
-			return item->matrix->ccomponents();
-		}
-		return Eigen::Matrix4d::Identity();
-	}
-
 	Eigen::Vector3d transform_point(const Eigen::Matrix4d& m, const Eigen::Vector3d& p) {
 		Eigen::Vector4d v(p(0), p(1), p(2), 1.);
 		return (m * v).head<3>();
@@ -155,7 +148,7 @@ namespace {
 				if (!face_points(face, points)) {
 					continue;
 				}
-                auto total = external * part_matrix; // *item_matrix(face) * item_matrix(face->children.front());
+                auto total = external * part_matrix;
 				std::vector<int> indices;
 				indices.reserve(points.size());
 				for (const auto& point : points) {

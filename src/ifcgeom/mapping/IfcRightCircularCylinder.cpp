@@ -21,7 +21,7 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRightCircularCylinder& inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRightCircularCylinder&) {
 	// @todo
 	return nullptr;
 	/*

@@ -65,7 +65,7 @@ ifcopenshell::geom::open_cascade_kernel::faceset_helper::faceset_helper(
 		gp_Pnt* p = new gp_Pnt(convert_xyz<gp_Pnt>(*points[i]));
 		pnts[i].reset(p);
 		B.MakeVertex(vertices[i], *p, ::Precision::Confusion());
-		tree.add(i, vertices[i]);
+		tree.add(static_cast<int>(i), vertices[i]);
 		box.Add(*p);
 	}
 
@@ -148,7 +148,7 @@ ifcopenshell::geom::open_cascade_kernel::faceset_helper::faceset_helper(
 
 		auto num_retained = std::count(retained.begin(), retained.end(), true);
 
-		if (unique.size() != num_retained) {
+		if (unique.size() != static_cast<size_t>(num_retained)) {
 			ifcopenshell::logger::root().notice("GEO", 168, "Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
 		}
 

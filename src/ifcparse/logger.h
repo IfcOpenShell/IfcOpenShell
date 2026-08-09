@@ -23,7 +23,6 @@
 #include "ifc_parse_api.h"
 #include "express.h"
 
-#include <boost/scope_exit.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -156,15 +155,28 @@ class IFC_PARSE_API logger {
 // `logger_or_root` is just covering the boilerplate for this pattern.
 inline logger& logger_or_root(logger* logger) { return logger ? *logger : logger::root(); }
 
+namespace detail {
+class performance_scope {
+    std::string label_;
+
+  public:
+    explicit performance_scope(const std::string& label) : label_(label) {
+        logger::root().message(logger::LOG_PERF, label_);
+    }
+
+    ~performance_scope() {
+        logger::root().message(logger::LOG_PERF, "done " + label_);
+    }
+
+    performance_scope(const performance_scope&) = delete;
+    performance_scope& operator=(const performance_scope&) = delete;
+};
+} // namespace detail
+
 } // namespace ifcopenshell
 
-#define PERF(x)                                                      \
-                                                                     \
-    ::ifcopenshell::logger::root().message(::ifcopenshell::logger::LOG_PERF, x); \
-                                                                     \
-    BOOST_SCOPE_EXIT(void) {                                         \
-        ::ifcopenshell::logger::root().message(::ifcopenshell::logger::LOG_PERF, "done " + std::string(x)); \
-    }                                                                \
-    BOOST_SCOPE_EXIT_END
+#define IFCOPENSHELL_PERF_NAME_IMPL(line) ifcopenshell_performance_scope_##line
+#define IFCOPENSHELL_PERF_NAME(line) IFCOPENSHELL_PERF_NAME_IMPL(line)
+#define PERF(x) ::ifcopenshell::detail::performance_scope IFCOPENSHELL_PERF_NAME(__LINE__)(x)
 
 #endif

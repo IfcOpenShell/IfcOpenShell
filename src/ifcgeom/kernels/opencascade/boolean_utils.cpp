@@ -310,13 +310,13 @@ bool ifcopenshell::geom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape
 	// top face. When neither of these categories the shape is not a extrusion
 	// or the extrusion direction is not orthogonal to its basis.
 	for (int i = 1; i < mapping.Extent(); ++i) {
-		auto& s = mapping.FindKey(i);
-		if (s.ShapeType() != TopAbs_EDGE) {
+		auto& shape = mapping.FindKey(i);
+		if (shape.ShapeType() != TopAbs_EDGE) {
 			continue;
 		}
 
 		// @todo use a linear tolernace and the face extrimities, see #2218
-		const TopoDS_Edge& e = TopoDS::Edge(s);
+		const TopoDS_Edge& e = TopoDS::Edge(shape);
 		if (!get_edge_axis(e, ax)) {
 			// curved
 			curved_orthogonal.Add(e);
@@ -585,7 +585,7 @@ bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS
 	std::map<int, int> edge_index_to_shape_index;
 
 	std::vector<TopoDS_Shape> shapes;
-	std::vector<std::pair<size_t, TopoDS_Edge>> edges;
+	std::vector<std::pair<int, TopoDS_Edge>> edges;
 	// First is the outer wire
 	std::vector<TopoDS_Wire> wires;
 
@@ -646,19 +646,19 @@ bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS
 			BRepBndLib::Add(exp.Current(), b);
 			b.Enlarge(eps);
 
-			for (auto& i : edge_tree.select_box(b)) {
-				if (i == edge_index) {
+			for (auto& candidate_index : edge_tree.select_box(b)) {
+				if (candidate_index == edge_index) {
 					// Skip self-selection
 					continue;
 				}
 
-				if (edges[i].first == shape_index) {
+				if (edges[candidate_index].first == shape_index) {
 					// Skip edges of the same operand
 					continue;
 				}
 
 				const TopoDS_Edge& e0 = TopoDS::Edge(exp.Current());
-				const TopoDS_Edge& e1 = edges[i].second;
+				const TopoDS_Edge& e1 = edges[candidate_index].second;
 
 				double u11, u12, u21, u22, U1, U2;
 
@@ -670,9 +670,9 @@ bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS
 				if (!ecc.Extrema().IsParallel() && ecc.NbExtrema() >= 1) {
 					// @todo: extend this to work in case of multiple extrema and curved segments.
 
-					for (int i = 1; i <= ecc.NbExtrema(); ++i) {
+					for (int extrema_index = 1; extrema_index <= ecc.NbExtrema(); ++extrema_index) {
 						gp_Pnt p1, p2;
-						ecc.Points(i, p1, p2);
+						ecc.Points(extrema_index, p1, p2);
 
 						// #3616 Only take into account orthogonal distance between closest points on curve
 						// to see whether inside tolerance. Current DY is hardcoded. The sensible default
@@ -685,7 +685,7 @@ bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS
 
 						const bool unbounded_intersects = ortho_distance < eps;
 						if (unbounded_intersects) {
-							ecc.Parameters(i, U1, U2);
+							ecc.Parameters(extrema_index, U1, U2);
 
 							if (u11 > u12) {
 								std::swap(u11, u12);
@@ -734,10 +734,10 @@ bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS
 	}
 
 	// First check for containment in outer wire
-	for (auto it = ++wires.begin(); it != wires.end(); ++it) {
+	for (auto wire_it = ++wires.begin(); wire_it != wires.end(); ++wire_it) {
 		// Considering a single vertex is sufficient because we have already
 		// guaranteed that the edges of different operands do not cross.
-		TopoDS_Iterator it_ed(*it);
+		TopoDS_Iterator it_ed(*wire_it);
 		auto& ed = it_ed.Value();
 
 		TopoDS_Iterator it_v(ed);
@@ -749,7 +749,7 @@ bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS
 			// A wire is not contained in the outer wire, it's a subtraction without
 			// any effect and marked as redundant. Feeding it to the builder algo
 			// will likely cause problems.
-			redundant[std::distance(wires.begin(), it)] = true;
+		redundant[std::distance(wires.begin(), wire_it)] = true;
 			logger.notice("GEO", 124, "Subtraction operand outside of outer bound");
 		}
 	}
@@ -758,7 +758,7 @@ bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS
 	// NB first wire is *not* in this tree
 	ifcopenshell::geom::impl::tree<int> wire_tree;
 	for (size_t wire_index = 1; wire_index < wires.size(); ++wire_index) {
-		wire_tree.add(wire_index, wires[wire_index]);
+		wire_tree.add(static_cast<int>(wire_index), wires[wire_index]);
 	}
 
 	for (size_t wire_index = 1; wire_index < wires.size(); ++wire_index) {
@@ -775,7 +775,7 @@ bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS
 		// than the second element.
 		for (auto& other_index : wire_tree.select_box(b, true)) {
 			// other_index is fully contained in wire_index
-			if (wire_index == other_index) {
+			if (wire_index == static_cast<size_t>(other_index)) {
 				continue;
 			}
 
@@ -1144,21 +1144,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 		builder->Build();
 	}
 	if (builder->IsDone()) {
-		if (false && builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
-			settings.log().notice("GEO", 144, "Builder reports self-intersection in output");
-			success = false;
-
-			/*
-			const auto& ws = builder->DSFiller()->GetReport()->GetAlerts(Message_Warning);
-			for (const auto& w : ws) {
-				if (w->DynamicType() == STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection)) {
-					const auto& x = Handle(BOPAlgo_AlertAcquiredSelfIntersection)::DownCast(w)->GetShape();
-					BRepTools::Write(x, "debug_x.brep");
-					BRepTools::Write(*builder, "debug_r.brep");
-				}
-			}
-			*/
-		} else if(builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
+		if (builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
 			settings.log().notice("GEO", 145, "Builder reports bad positioning and result is empty");
 			success = false;
 		} else {

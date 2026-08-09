@@ -23,7 +23,7 @@ using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcSphericalSurface
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSphericalSurface& inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSphericalSurface&) {
 	return nullptr;
 
 	/*

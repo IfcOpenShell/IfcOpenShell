@@ -21,7 +21,7 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularTrimmedSurface& inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularTrimmedSurface&) {
 	// @todo we'll need to add support for p-curves at some point, but not now.
 	return nullptr;
 

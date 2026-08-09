@@ -385,12 +385,12 @@ namespace {
 	public:
 
 		prefiltered_hlr(ifcopenshell::logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
-			: logger_(logger)
-			, use_prefiltering_(use_prefiltering)
+			: use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
 			, segment_projection_(segment_projection)
 			// @nb negative z in accordance with occt projector convention (and opengl)
 			, view_direction_(view_direction.Axis())
+			, logger_(logger)
 		{
 			if (use_hlr_poly_) {
 				engine_ = new HLRBRep_PolyAlgo;
@@ -648,9 +648,9 @@ public:
 		, polygonal_(false)
 		, emit_building_storeys_(true)
 		, no_css_(false)
+		, unify_inputs_(false)
 		, mirror_y_(false)
 		, mirror_x_(false)
-		, unify_inputs_(false)
 		, profile_threshold_(-1)
 		, svg_ridge_angle_min_deg_(45.)
 		, svg_valley_angle_min_deg_(12.)
@@ -774,7 +774,7 @@ public:
 		only_valid_ = b;
 	}
 
-	bool getOnlyValid(bool b) const {
+	bool getOnlyValid(bool) const {
 		return only_valid_;
 	}
 
@@ -795,7 +795,7 @@ public:
 
 	void addDrawing(const gp_Pnt& pos, const gp_Dir& dir, const gp_Dir& ref, const std::string& name, bool include_projection) {
 		deferred_section_data_.emplace();
-		deferred_section_data_->push_back(vertical_section{ gp_Pln(gp_Ax3(pos, dir, ref)), name, include_projection });
+		deferred_section_data_->push_back(vertical_section{ gp_Pln(gp_Ax3(pos, dir, ref)), name, include_projection, std::nullopt, std::nullopt });
 	}
 
 	void setSubtractionSettings(subtract_before_project sbp) {

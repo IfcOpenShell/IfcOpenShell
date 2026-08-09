@@ -396,8 +396,6 @@ int main(int argc, char** argv) {
 #ifdef HAVE_ICU
     std::string unicode_mode;
 #endif
-    short precision;
-
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
 #ifdef HAVE_ICU
@@ -807,7 +805,7 @@ int main(int argc, char** argv) {
 	if (model_rotation) {
 		std::vector<double> rotation(4);
 		int n = 0;
-		if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf %n", &rotation[0], &rotation[1], &rotation[2], &rotation[3], &n) != 4 || n != rotation_str.size()) {
+		if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf %n", &rotation[0], &rotation[1], &rotation[2], &rotation[3], &n) != 4 || static_cast<std::size_t>(n) != rotation_str.size()) {
 			cerr_ << "[error] Invalid use of --model-rotation\n";
 			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 			print_options(serializer_options);
@@ -828,7 +826,7 @@ int main(int argc, char** argv) {
 	if (model_offset && !(center_model || center_model_geometry)) {
 		std::vector<double> offset(3);
 		int n = 0;
-		if (sscanf(offset_str.c_str(), "%lf;%lf;%lf %n", &offset[0], &offset[1], &offset[2], &n) != 3 || n != offset_str.size()) {
+		if (sscanf(offset_str.c_str(), "%lf;%lf;%lf %n", &offset[0], &offset[1], &offset[2], &n) != 3 || static_cast<std::size_t>(n) != offset_str.size()) {
 			cerr_ << "[error] Invalid use of --model-offset\n";
 			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 			print_options(serializer_options);
@@ -847,8 +845,8 @@ int main(int argc, char** argv) {
 
 		ifcopenshell::geom::iterator tmp_context_iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings), settings, ifc_file, filter_funcs, num_threads, logger);
 			
-		time_t start, end;
-		time(&start);
+		time_t bounds_start, bounds_end;
+		time(&bounds_start);
 		if (!quiet) logger.status("Computing bounds...");
 
 		if (center_model_geometry) {
@@ -865,8 +863,8 @@ int main(int argc, char** argv) {
 		
         tmp_context_iterator.compute_bounds(center_model_geometry);
 
-		time(&end);
-        if (!quiet) logger.status("Done ! Bounds computed in " + format_duration(start, end));
+		time(&bounds_end);
+		if (!quiet) logger.status("Done ! Bounds computed in " + format_duration(bounds_start, bounds_end));
 
         auto center = (tmp_context_iterator.bounds_min().ccomponents() + tmp_context_iterator.bounds_max().ccomponents()) * 0.5;
         offset[0] = -center(0);
@@ -1204,7 +1202,7 @@ void parse_filter(geom_filter &filter, const std::vector<std::string>& values)
     filter.values.insert(values.begin() + (filter.type == geom_filter::ENTITY_ARG ? 2 : 1), values.end());
 }
 
-void validate(boost::any& v, const std::vector<std::string>& values, verbosity_counter*, long) {
+void validate(boost::any& v, const std::vector<std::string>&, verbosity_counter*, long) {
 	if (v.empty()) v = verbosity_counter{ 1 };
 	else ++boost::any_cast<verbosity_counter&>(v).count;
 }

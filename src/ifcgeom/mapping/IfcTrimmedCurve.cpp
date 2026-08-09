@@ -73,7 +73,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	trim_cartesian &= has_pnts[0] && has_pnts[1];
-	bool trim_cartesian_failed = !trim_cartesian;
 	if (trim_cartesian) {
 		if ((pnts[0]->ccomponents() - pnts[1]->ccomponents()).norm() < (2 * tol)) {
 			logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 295, "Skipping segment with length below tolerance level:", inst);

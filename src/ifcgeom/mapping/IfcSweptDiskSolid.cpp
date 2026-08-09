@@ -52,23 +52,8 @@ namespace {
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 	auto loop = taxonomy::cast<taxonomy::loop>(map(inst.Directrix()));
 
-	// Start- EndParam became optional in IFC4
-#ifdef SCHEMA_IfcSweptDiskSolid_StartParam_IS_OPTIONAL
-	auto sp = inst.StartParam();
-	auto ep = inst.EndParam();
-#else
-	std::optional<double> sp, ep;
-	try {
-		sp = inst.StartParam();
-		ep = inst.EndParam();
-	} catch (const ifcopenshell::exception& e) {
-		logger_.warning("GEO", 293, e);
-	}
-#endif
-
-	const double tol = settings_.get<settings::Precision>().get();
-
 #ifdef SCHEMA_HAS_IfcSweptDiskSolidPolygonal
+	const double tol = settings_.get<settings::Precision>().get();
 	if (inst.as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
 		auto fr = inst.as<IfcSchema::IfcSweptDiskSolidPolygonal>().FilletRadius();
 		if (fr && *fr > tol) {
