@@ -111,7 +111,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		std::unique_ptr<ifcopenshell::geom::brep_element> geom_object;
+		std::unique_ptr<ifcopenshell::geom::native_element> geom_object;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}

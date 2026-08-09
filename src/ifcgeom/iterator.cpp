@@ -382,7 +382,7 @@ void ifcopenshell::geom::iterator::create_element_(ifcopenshell::geom::converter
 
 	kernel_logger.set_product(product);
 
-	ifcopenshell::geom::brep_element* brep = static_cast<ifcopenshell::geom::brep_element*>(create_processed_element_([kernel, settings, product, place, rep]() {
+	ifcopenshell::geom::native_element* brep = static_cast<ifcopenshell::geom::native_element*>(create_processed_element_([kernel, settings, product, place, rep]() {
 		return kernel->create_brep_for_representation_and_product(rep->item, product, place);
 	}));
 
@@ -407,7 +407,7 @@ void ifcopenshell::geom::iterator::create_element_(ifcopenshell::geom::converter
 
 		kernel_logger.set_product(product2);
 
-		ifcopenshell::geom::brep_element* brep2 = static_cast<ifcopenshell::geom::brep_element*>(create_processed_element_([kernel, settings, product2, place2, brep]() {
+		ifcopenshell::geom::native_element* brep2 = static_cast<ifcopenshell::geom::native_element*>(create_processed_element_([kernel, settings, product2, place2, brep]() {
 			return kernel->create_brep_for_processed_representation(product2, place2, brep);
 		}));
 		if (brep2) {
@@ -422,7 +422,7 @@ void ifcopenshell::geom::iterator::create_element_(ifcopenshell::geom::converter
 	kernel_logger.set_product(std::optional<express::base>{});
 }
 
-ifcopenshell::geom::element* ifcopenshell::geom::iterator::process_based_on_settings(ifcopenshell::geom::settings settings, ifcopenshell::geom::brep_element* elem, ifcopenshell::logger& logger, ifcopenshell::geom::triangulation_element* previous)
+ifcopenshell::geom::element* ifcopenshell::geom::iterator::process_based_on_settings(ifcopenshell::geom::settings settings, ifcopenshell::geom::native_element* elem, ifcopenshell::logger& logger, ifcopenshell::geom::triangulation_element* previous)
 {
 	if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::SERIALIZED) {
 		try {

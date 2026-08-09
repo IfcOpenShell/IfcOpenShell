@@ -15,7 +15,7 @@ namespace ifcopenshell { namespace geom {
 
 	class IFC_GEOM_API converter {
 	public:
-		typedef std::shared_ptr<ifcopenshell::geom::brep> brep_ptr;
+		typedef std::shared_ptr<ifcopenshell::geom::native> brep_ptr;
 	private:
 		ifcopenshell::geom::abstract_mapping* mapping_;
 		std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> kernel_;
@@ -47,11 +47,11 @@ namespace ifcopenshell { namespace geom {
 
 		std::vector<ifcopenshell::geom::conversion_result> convert(express::base item);
 
-		ifcopenshell::geom::brep_element* create_brep_for_representation_and_product(const express::base representation, const express::base product);
-		// ifcopenshell::geom::brep_element* create_brep_for_processed_representation(const express::base representation, const express::base product, ifcopenshell::geom::brep_element* brep);
+		ifcopenshell::geom::native_element* create_brep_for_representation_and_product(const express::base representation, const express::base product);
+		// ifcopenshell::geom::native_element* create_brep_for_processed_representation(const express::base representation, const express::base product, ifcopenshell::geom::native_element* brep);
 
-		ifcopenshell::geom::brep_element* create_brep_for_representation_and_product(ifcopenshell::geom::taxonomy::ptr, const express::base product, const ifcopenshell::geom::taxonomy::matrix4::ptr& place);
-		ifcopenshell::geom::brep_element* create_brep_for_processed_representation(const express::base product, const ifcopenshell::geom::taxonomy::matrix4::ptr& place, ifcopenshell::geom::brep_element*);
+		ifcopenshell::geom::native_element* create_brep_for_representation_and_product(ifcopenshell::geom::taxonomy::ptr, const express::base product, const ifcopenshell::geom::taxonomy::matrix4::ptr& place);
+		ifcopenshell::geom::native_element* create_brep_for_processed_representation(const express::base product, const ifcopenshell::geom::taxonomy::matrix4::ptr& place, ifcopenshell::geom::native_element*);
 
 		const ifcopenshell::geom::settings& settings() { return settings_; }
 	};

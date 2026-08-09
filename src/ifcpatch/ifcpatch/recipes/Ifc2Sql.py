@@ -297,7 +297,7 @@ class Patcher(ifcpatch.BasePatcher):
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 shape_id = shape.id
                 geometry = shape.geometry
                 geometry_id = geometry.id
@@ -328,13 +328,13 @@ class Patcher(ifcpatch.BasePatcher):
                     geometry_id = geometry_id_
                 elif geometry := ifcopenshell.geom.create_shape(self.settings, representation):
                     geometry_id = geometry_id_
-                    assert isinstance(geometry, W.Triangulation)
+                    assert isinstance(geometry, W.triangulation)
                     self.add_geometry_row(geometry_id, geometry)
 
             shape_id = element_type.id()
             self.shape_rows[shape_id] = (shape_id, *(0.0, 0.0, 0.0), m_bytes, geometry_id)
 
-    def add_geometry_row(self, geometry_id: str, geometry: W.Triangulation) -> None:
+    def add_geometry_row(self, geometry_id: str, geometry: W.triangulation) -> None:
         v = geometry.verts_buffer
         e = geometry.edges_buffer
         f = geometry.faces_buffer

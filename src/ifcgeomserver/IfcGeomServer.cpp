@@ -467,9 +467,9 @@ static const std::array<std::string, 3> XYZ = { "X", "Y", "Z" };
 
 class QuantityWriter_v0 : public EntityExtension {
 private:
-	const ifcopenshell::geom::brep_element* elem_;
+	const ifcopenshell::geom::native_element* elem_;
 public:
-	QuantityWriter_v0(const ifcopenshell::geom::brep_element* elem) :
+	QuantityWriter_v0(const ifcopenshell::geom::native_element* elem) :
 		elem_(elem) 
 	{
 		put_json(TOTAL_SURFACE_AREA, 0.);
@@ -482,9 +482,9 @@ public:
 
 class QuantityWriter_v1 : public EntityExtension {
 private:
-	const ifcopenshell::geom::brep_element* elem_;
+	const ifcopenshell::geom::native_element* elem_;
 public:
-	QuantityWriter_v1(const ifcopenshell::geom::brep_element* elem) :
+	QuantityWriter_v1(const ifcopenshell::geom::native_element* elem) :
 		elem_(elem) {
 		double a, b, c, largest_face_area = 0.;
 
@@ -643,7 +643,7 @@ int main () {
 		}
 		case GET_LOG: {
 			get_log gl; gl.read(std::cin);
-			WriteLog(logger::root().get_log()).write(std::cout);
+			WriteLog(ifcopenshell::logger::root().get_log()).write(std::cout);
 			continue;
 		}
 		case BYE: {

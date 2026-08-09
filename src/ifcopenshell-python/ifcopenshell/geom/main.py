@@ -37,9 +37,9 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 ShapeElementType = Union[
-    ifcopenshell_wrapper.BRepElement, ifcopenshell_wrapper.TriangulationElement, ifcopenshell_wrapper.SerializedElement
+    ifcopenshell_wrapper.native_element, ifcopenshell_wrapper.triangulation_element, ifcopenshell_wrapper.serialized_element
 ]
-ShapeType = Union[ifcopenshell_wrapper.BRep, ifcopenshell_wrapper.Triangulation, ifcopenshell_wrapper.Serialization]
+ShapeType = Union[ifcopenshell_wrapper.native, ifcopenshell_wrapper.triangulation, ifcopenshell_wrapper.serialization]
 
 
 def wrap_shape_creation(settings, shape):
@@ -54,7 +54,7 @@ if has_occ:
     except ImportError:
         from OCC import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
-    def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.Element):
+    def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.element):
         if getattr(settings, "use_python_opencascade", False):
             return utils.create_shape_from_serialization(shape)
         else:
@@ -252,7 +252,7 @@ class settings_mixin:
         if k in map(self.rname, self.setting_names()):
             return k
         else:
-            raise AttributeError("'Settings' object has no attribute '%s'" % k)
+            raise AttributeError("'settings' object has no attribute '%s'" % k)
 
     def build_parser(self, parser) -> None:
         """
@@ -304,11 +304,11 @@ class settings_mixin:
                 self.set(k.replace("_", "-"), v)
 
 
-class settings(settings_mixin, ifcopenshell_wrapper.Settings):
+class settings(settings_mixin, ifcopenshell_wrapper.settings):
     use_python_opencascade = False
 
 
-class iterator(ifcopenshell_wrapper.Iterator):
+class iterator(ifcopenshell_wrapper.iterator):
     def __init__(
         self,
         settings: settings,
@@ -370,7 +370,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
     if has_occ:
 
         def get(self):
-            return wrap_shape_creation(self.settings, ifcopenshell_wrapper.Iterator.get(self))
+            return wrap_shape_creation(self.settings, ifcopenshell_wrapper.iterator.get(self))
 
     def __iter__(self) -> Generator[IteratorOutput, None, None]:
         if self.initialize():
@@ -380,7 +380,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
                     break
 
     def get_task_products(self):
-        return entity_instance.wrap_value(ifcopenshell_wrapper.Iterator.get_task_products(self), self.file)
+        return entity_instance.wrap_value(ifcopenshell_wrapper.iterator.get_task_products(self), self.file)
 
 
 ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
@@ -404,7 +404,7 @@ class tree(ifcopenshell_wrapper.tree):
 
     def select(
         self,
-        value: Union[entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float]],
+        value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]],
         **kwargs,
     ) -> list[entity_instance]:
         def unwrap(value):
@@ -415,7 +415,7 @@ class tree(ifcopenshell_wrapper.tree):
             return value
 
         args = [self, unwrap(value)]
-        if isinstance(value, (entity_instance, ifcopenshell_wrapper.BRepElement)):
+        if isinstance(value, (entity_instance, ifcopenshell_wrapper.native_element)):
             args.append(kwargs.get("completely_within", False))
             if "extend" in kwargs:
                 args.append(kwargs["extend"])
@@ -480,7 +480,7 @@ def create_shape(
     repr: Optional[entity_instance] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger: Optional[ifcopenshell.logger] = None,
-) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation, utils.shape_tuple, TopoDS.TopoDS_Shape]:
+) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.transformation, utils.shape_tuple, TopoDS.TopoDS_Shape]:
     """
     Returns a geometric interpretation of the IFC entity instance
 
@@ -494,7 +494,7 @@ def create_shape(
         - `inst` is IfcRepresentation and `repr` is None -> ShapeType\n
         - `inst` is IfcRepresentationItem and `repr` is None -> ShapeType\n
         - `inst` is IfcProfileDef and `repr` is None -> ShapeType\n
-        - `inst` is IfcPlacement / IfcObjectPlacement -> Transformation\n
+        - `inst` is IfcPlacement / IfcObjectPlacement -> transformation\n
         - `inst` is IfcTypeProduct and `repr` is None -> None\n
         - `inst` is IfcTypeProduct and `repr` is provided -> RuntimeError
         (for IfcTypeProducts provide just IfcRepresentation as `inst`).\n
@@ -664,7 +664,7 @@ class _serializer_factory:
         self.extension = extension
         self.__name__ = name
 
-    def __call__(self, out_filename: Union[str, PathLike[str]], *args: Any) -> ifcopenshell_wrapper.GeometrySerializer:
+    def __call__(self, out_filename: Union[str, PathLike[str]], *args: Any) -> ifcopenshell_wrapper.geometry_serializer:
         if self.name == "obj" and len(args) == 2:
             output_filename = args[0]
             output_temp_filename = out_filename

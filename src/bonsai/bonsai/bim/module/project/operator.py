@@ -2442,7 +2442,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             if iterator.initialize():
                 while True:  # Main loop.
                     shape = iterator.get()
-                    assert isinstance(shape, W.TriangulationElement)
+                    assert isinstance(shape, W.triangulation_element)
                     results.add(self.file.by_id(shape.id))
                     geometry = shape.geometry
 
@@ -2518,7 +2518,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         print("Finished", time.time() - start)
         return {"FINISHED"}
 
-    def process_occurrence(self, shape: W.TriangulationElement) -> None:
+    def process_occurrence(self, shape: W.triangulation_element) -> None:
         element = self.file.by_id(shape.id)
 
         mat = ifcopenshell.util.shape.get_shape_matrix(shape)

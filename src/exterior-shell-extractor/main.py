@@ -206,7 +206,7 @@ class context:
 
         Args:
             file (ifcopenshell.file): file containing elem
-            elem (TriangulationElement): triangulated geometry 
+            elem (triangulation_element): triangulated geometry
             min_thickness (float, optional): minimal thickness of the oriented bounding box to create around elem
 
         Returns:

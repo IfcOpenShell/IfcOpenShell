@@ -1349,7 +1349,7 @@ namespace ifcopenshell::geom {
 				return ts_filtered;
 			}
 
-			std::vector<T> select(const ifcopenshell::geom::brep_element* elem, bool completely_within = false, double extend = -1.e-5) const {
+			std::vector<T> select(const ifcopenshell::geom::native_element* elem, bool completely_within = false, double extend = -1.e-5) const {
 				auto shp = (ifcopenshell::geom::open_cascade_shape*)elem->geometry().as_compound();
 				TopoDS_Shape compound(std::move(((ifcopenshell::geom::open_cascade_shape*)shp)->shape()));
 				delete shp;
@@ -1497,7 +1497,7 @@ namespace ifcopenshell::geom {
 			if (it.initialize()) {
 				do {
 					auto element = it.get();
-					add_element(dynamic_cast<ifcopenshell::geom::brep_element*>(element.get()));
+					add_element(dynamic_cast<ifcopenshell::geom::native_element*>(element.get()));
 				} while (it.next());
 			}
 		}
@@ -1745,7 +1745,7 @@ namespace ifcopenshell::geom {
             max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) * 2;
         }
         
-		void add_element(ifcopenshell::geom::brep_element* elem) {
+		void add_element(ifcopenshell::geom::native_element* elem) {
 			if (!elem) {
 				return;
 			}

@@ -45,7 +45,7 @@ public:
 	bool ready();
 	virtual void writeShape(const std::string& name, const TopoDS_Shape& shape) = 0;
 	void write(const ifcopenshell::geom::triangulation_element* /*o*/) {}
-	void write(const ifcopenshell::geom::brep_element* o);
+	void write(const ifcopenshell::geom::native_element* o);
 	bool isTesselated() const { return false; }
 	void setFile(ifcopenshell::file&) {}
 };

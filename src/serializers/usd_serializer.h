@@ -91,7 +91,7 @@ public:
 	bool ready() { return ready_; }
 	void writeHeader();
 	void write(const ifcopenshell::geom::triangulation_element*);
-	void write(const ifcopenshell::geom::brep_element*) {}
+	void write(const ifcopenshell::geom::native_element*) {}
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string&, float) {}

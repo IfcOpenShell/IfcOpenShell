@@ -63,7 +63,7 @@ namespace ifcopenshell {
 					}
 
 					void add_element(ifcopenshell::geom::element* element) override {
-						auto* brep = dynamic_cast<ifcopenshell::geom::brep_element*>(element);
+						auto* brep = dynamic_cast<ifcopenshell::geom::native_element*>(element);
 						if (!brep) {
 							throw ifcopenshell::exception("Tree backend 'opencascade.brep' requires native brep elements");
 						}
@@ -87,7 +87,7 @@ namespace ifcopenshell {
 					}
 
 					std::vector<express::entity> select(const ifcopenshell::geom::element* element, bool completely_within, double extend) const override {
-						auto* brep = dynamic_cast<const ifcopenshell::geom::brep_element*>(element);
+						auto* brep = dynamic_cast<const ifcopenshell::geom::native_element*>(element);
 						if (!brep) {
 							throw ifcopenshell::exception("Tree backend 'opencascade.brep' requires brep elements for select()");
 						}

@@ -93,7 +93,7 @@ namespace ifcopenshell::geom {
 		express::base representation;
 		std::vector<express::base> products_2;
 
-		std::vector<ifcopenshell::geom::brep_element*> breps;
+		std::vector<ifcopenshell::geom::native_element*> breps;
 		std::vector<ifcopenshell::geom::element*> elements;
 
 		bool is_parallel() const {
@@ -113,10 +113,10 @@ namespace ifcopenshell::geom {
 		std::vector<geometry_conversion_result>::iterator task_iterator_;
 
 		std::list<ifcopenshell::geom::element*> all_processed_elements_;
-		std::list<ifcopenshell::geom::brep_element*> all_processed_native_elements_;
+		std::list<ifcopenshell::geom::native_element*> all_processed_native_elements_;
 
 		std::list<ifcopenshell::geom::element*>::const_iterator task_result_iterator_;
-		std::list<ifcopenshell::geom::brep_element*>::const_iterator native_task_result_iterator_;
+		std::list<ifcopenshell::geom::native_element*>::const_iterator native_task_result_iterator_;
 
 		std::mutex element_ready_mutex_;
 		bool task_result_ptr_initialized = false;
@@ -139,7 +139,7 @@ namespace ifcopenshell::geom {
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
 		triangulation_element* current_triangulation;
-		brep_element* current_shape_model;
+		native_element* current_shape_model;
 		serialized_element* current_serialization;
 
 		double lowest_precision_encountered;
@@ -169,7 +169,7 @@ namespace ifcopenshell::geom {
 
 		ifcopenshell::geom::element* process_based_on_settings(
 			ifcopenshell::geom::settings settings,
-			ifcopenshell::geom::brep_element* elem,
+			ifcopenshell::geom::native_element* elem,
 			ifcopenshell::logger& logger,
 			ifcopenshell::geom::triangulation_element* previous = nullptr);
 
@@ -294,10 +294,10 @@ namespace ifcopenshell::geom {
 		std::unique_ptr<element> get();
 
 		/// Gets the native (Open Cascade or CGAL) representation of the current geometrical entity.
-		std::unique_ptr<brep_element> get_native()
+		std::unique_ptr<native_element> get_native()
 		{
 			validate_iterator_state();
-			return std::make_unique<brep_element>(**native_task_result_iterator_);
+			return std::make_unique<native_element>(**native_task_result_iterator_);
 		}
 
 		std::unique_ptr<element> get_object(int id);

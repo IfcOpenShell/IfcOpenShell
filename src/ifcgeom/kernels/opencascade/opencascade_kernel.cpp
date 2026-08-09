@@ -367,14 +367,14 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	return single_material;
 // }
 // 
-// ifcopenshell::geom::brep_element* ifcopenshell::geom::Kernel::create_brep_for_representation_and_product(
+// ifcopenshell::geom::native_element* ifcopenshell::geom::Kernel::create_brep_for_representation_and_product(
 // 	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
 // {
 // 	std::stringstream representation_id_builder;
 // 
 // 	representation_id_builder << representation->data().id();
 // 
-// 	ifcopenshell::geom::brep* shape;
+// 	ifcopenshell::geom::native* shape;
 // 	std::vector<ifcopenshell::geom::conversion_result> shapes, shapes2;
 // 
 // 	if (!convert_shapes(representation, shapes)) {
@@ -524,16 +524,16 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			trsf = gp_Trsf();
 // 			representation_id_builder << "-world-coords";
 // 		}
-// 		shape = new ifcopenshell::geom::brep(element_settings, representation_id_builder.str(), opened_shapes);
+// 		shape = new ifcopenshell::geom::native(element_settings, representation_id_builder.str(), opened_shapes);
 // 	} else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 // 		for (std::vector<ifcopenshell::geom::conversion_result>::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 // 			it->prepend(trsf);
 // 		}
 // 		trsf = gp_Trsf();
 // 		representation_id_builder << "-world-coords";
-// 		shape = new ifcopenshell::geom::brep(element_settings, representation_id_builder.str(), shapes);
+// 		shape = new ifcopenshell::geom::native(element_settings, representation_id_builder.str(), shapes);
 // 	} else {
-// 		shape = new ifcopenshell::geom::brep(element_settings, representation_id_builder.str(), shapes);
+// 		shape = new ifcopenshell::geom::native(element_settings, representation_id_builder.str(), shapes);
 // 	}
 // 
 // 	std::string context_string = "";
@@ -543,7 +543,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		context_string = *representation->ContextOfItems()->ContextType();
 // 	}
 // 
-// 	auto elem = new brep_element(
+// 	auto elem = new native_element(
 // 		product->data().id(),
 // 		parent_id,
 // 		name,
@@ -551,7 +551,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		guid,
 // 		context_string,
 // 		trsf,
-// 		std::shared_ptr<ifcopenshell::geom::brep>(shape),
+// 		std::shared_ptr<ifcopenshell::geom::native>(shape),
 // 		product
 // 	);
 // 
@@ -710,9 +710,9 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	return products;
 // }
 // 
-// ifcopenshell::geom::brep_element* ifcopenshell::geom::Kernel::create_brep_for_processed_representation(
+// ifcopenshell::geom::native_element* ifcopenshell::geom::Kernel::create_brep_for_processed_representation(
 // 	const IteratorSettings& /*settings*/, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product,
-// 	ifcopenshell::geom::brep_element* brep)
+// 	ifcopenshell::geom::native_element* brep)
 // {
 // 	int parent_id = -1;
 // 	try {
@@ -747,7 +747,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 
 // 	const std::string product_type = product->declaration().name();
 // 
-// 	return new brep_element(
+// 	return new native_element(
 // 		product->data().id(),
 // 		parent_id,
 // 		name,

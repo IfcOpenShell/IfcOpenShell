@@ -362,7 +362,7 @@ void ttl_wkt_serializer::write(const ifcopenshell::geom::triangulation_element* 
     }
 }
 
-void ttl_wkt_serializer::write(const ifcopenshell::geom::brep_element* brep_obj) {
+void ttl_wkt_serializer::write(const ifcopenshell::geom::native_element* brep_obj) {
 #ifdef IFOPSH_WITH_OPENCASCADE
 	filename_.stream << ttl_object_id(brep_obj) << " a geo:Feature ;\n";
 	filename_.stream << "    dcterms:identifier " << escape_for_turtle(

@@ -106,7 +106,7 @@ class ExportOBJ(bpy.types.Operator):
         if iterator.initialize():
             while True:
                 shape = iterator.get()
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 materials = shape.geometry.materials
 
                 for material in materials:

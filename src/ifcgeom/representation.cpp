@@ -19,10 +19,10 @@
 
 #include "representation.h"
 
-ifcopenshell::geom::serialization::serialization(const brep& brep)
-	: representation(brep.settings(), brep.entity(), brep.id())
+ifcopenshell::geom::serialization::serialization(const native& native_geometry)
+	: representation(native_geometry.settings(), native_geometry.entity(), native_geometry.id())
 {
-	for (auto it = brep.begin(); it != brep.end(); ++it) {
+	for (auto it = native_geometry.begin(); it != native_geometry.end(); ++it) {
 		int sid = -1;
 
 		if (it->hasStyle()) {
@@ -48,12 +48,12 @@ ifcopenshell::geom::serialization::serialization(const brep& brep)
 	}
 
 	ifcopenshell::geom::taxonomy::matrix4 identity;
-	auto* comp = brep.as_compound();
+	auto* comp = native_geometry.as_compound();
 	comp->serialize(identity, brep_data_);
 	delete comp;
 }
 
-ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::brep::as_compound(bool force_meters) const {
+ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::native::as_compound(bool force_meters) const {
 	conversion_result_shape* accum = nullptr;
 
 	for (auto it = begin(); it != end(); ++it) {
@@ -75,7 +75,7 @@ ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::brep::as_compou
 	return accum;
 }
 
-bool ifcopenshell::geom::brep::calculate_surface_area(double& area) const {
+bool ifcopenshell::geom::native::calculate_surface_area(double& area) const {
 	std::unique_ptr<conversion_result_shape> s(as_compound());
 	if (!s) {
 		area = 0.;
@@ -85,7 +85,7 @@ bool ifcopenshell::geom::brep::calculate_surface_area(double& area) const {
 	return true;
 }
 
-bool ifcopenshell::geom::brep::calculate_volume(double& volume) const {
+bool ifcopenshell::geom::native::calculate_volume(double& volume) const {
 	std::unique_ptr<conversion_result_shape> s(as_compound());
 	if (!s) {
 		volume = 0.;
@@ -95,7 +95,7 @@ bool ifcopenshell::geom::brep::calculate_volume(double& volume) const {
 	return true;
 }
 
-bool ifcopenshell::geom::brep::calculate_projected_surface_area(const ifcopenshell::geom::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
+bool ifcopenshell::geom::native::calculate_projected_surface_area(const ifcopenshell::geom::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
 	along_x = along_y = along_z = 0.;
 
 	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator it = begin(); it != end(); ++it) {
@@ -116,7 +116,7 @@ bool ifcopenshell::geom::brep::calculate_projected_surface_area(const ifcopenshe
 	return true;
 }
 
-ifcopenshell::geom::triangulation::triangulation(const brep& shape_model)
+ifcopenshell::geom::triangulation::triangulation(const native& shape_model)
 	: representation(shape_model.settings(), shape_model.entity(), shape_model.id())
 	, weld_offset_(0)
 {
@@ -210,7 +210,7 @@ void ifcopenshell::geom::triangulation::registerEdgeCount(int n1, int n2, std::m
 	edgecount[e] ++;
 }
 
-const ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::brep::item(int i) const {
+const ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::native::item(int i) const {
 	if (i >= 0 && static_cast<std::size_t>(i) < shapes_.size()) {
 		return shapes_[i].shape()->moved(shapes_[i].placement());
 	} else {
@@ -218,7 +218,7 @@ const ifcopenshell::geom::conversion_result_shape* ifcopenshell::geom::brep::ite
 	}
 }
 
-int ifcopenshell::geom::brep::item_id(int i) const {
+int ifcopenshell::geom::native::item_id(int i) const {
 	if (i >= 0 && static_cast<std::size_t>(i) < shapes_.size()) {
 		return shapes_[i].ItemId();
 	} else {

@@ -36,16 +36,16 @@
 			using u = std::decay_t<decltype(v)>;
             if constexpr (is_std_vector_v<u>) {
 				return pythonize_vector(v);
-            } else if constexpr (std::is_same_v<u, enumeration_reference>) {
+            } else if constexpr (std::is_same_v<u, ifcopenshell::enumeration_reference>) {
                 return pythonize(std::string(v.value()));
-			} else if constexpr (std::is_same_v<u, derived>) {
+			} else if constexpr (std::is_same_v<u, ifcopenshell::derived>) {
 				if (feature_use_attribute_value_derived) {
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
 					Py_INCREF(Py_None);
 					return static_cast<PyObject*>(Py_None); 
 				}
-            } else if constexpr (std::is_same_v<u, empty_aggregate> || std::is_same_v<u, empty_aggregate_of_aggregate> || std::is_same_v<u, blank>) {
+            } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
             } else {
@@ -92,7 +92,7 @@ CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::inverse_attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::entity const *)
 CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::declaration const *)
 CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::geom::conversion_result_shape *)
-CREATE_VECTOR_TYPEMAP_OUT(log_message)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::log_message)
 
 %typemap(out) ifcopenshell::geom::settings::value_variant_t {
 	pythonizing_visitor vis;

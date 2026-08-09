@@ -1186,9 +1186,9 @@ from .entity_instance import entity_instance_mixin
 	PyObject* convert_cpp_attribute_to_python(const express::base& instance, size_t attribute_index, bool recursive, bool include_identifier) {
 		return instance.get_attribute_value(attribute_index).apply_visitor([recursive, include_identifier](const auto& v){
 			using u = std::decay_t<decltype(v)>;
-            if constexpr (std::is_same_v<u, enumeration_reference>) {
+            if constexpr (std::is_same_v<u, ifcopenshell::enumeration_reference>) {
                 return pythonize(std::string(v.value()));
-			} else if constexpr (std::is_same_v<u, derived>) {
+			} else if constexpr (std::is_same_v<u, ifcopenshell::derived>) {
 				if (feature_use_attribute_value_derived) {
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
@@ -1228,7 +1228,7 @@ from .entity_instance import entity_instance_mixin
 				} else {
 					return pythonize_vector(v);
 				}
-            } else if constexpr (std::is_same_v<u, empty_aggregate> || std::is_same_v<u, empty_aggregate_of_aggregate> || std::is_same_v<u, blank>) {
+            } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
             } else if constexpr (is_std_vector_v<u>) {
@@ -1289,16 +1289,16 @@ from .entity_instance import entity_instance_mixin
 
                 if constexpr (is_std_vector_v<u>) {
                     return pythonize_vector(t);
-                } else if constexpr (std::is_same_v<u, enumeration_reference>) {
+                } else if constexpr (std::is_same_v<u, ifcopenshell::enumeration_reference>) {
                     return pythonize(std::string(t.value()));
-                } else if constexpr (std::is_same_v<u, derived>) {
+                } else if constexpr (std::is_same_v<u, ifcopenshell::derived>) {
                     if (feature_use_attribute_value_derived) {
                         return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
                     } else {
                         Py_INCREF(Py_None);
                         return static_cast<PyObject*>(Py_None);
                     }
-                } else if constexpr (std::is_same_v<u, empty_aggregate> || std::is_same_v<u, empty_aggregate_of_aggregate> || std::is_same_v<u, blank>) {
+                } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                     Py_INCREF(Py_None);
                     return static_cast<PyObject*>(Py_None);
                 } else {
@@ -1385,16 +1385,16 @@ from .entity_instance import entity_instance_mixin
 					} else {
                         if constexpr (is_std_vector_v<value_type>) {
                             attribute_val_py = pythonize_vector(t);
-                        } else if constexpr (std::is_same_v<value_type, enumeration_reference>) {
+                        } else if constexpr (std::is_same_v<value_type, ifcopenshell::enumeration_reference>) {
                             attribute_val_py = pythonize(std::string(t.value()));
-                        } else if constexpr (std::is_same_v<value_type, derived>) {
+                        } else if constexpr (std::is_same_v<value_type, ifcopenshell::derived>) {
                             if (feature_use_attribute_value_derived) {
                                 attribute_val_py = SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
                             } else {
                                 Py_INCREF(Py_None);
                                 attribute_val_py = static_cast<PyObject*>(Py_None);
                             }
-                        } else if constexpr (std::is_same_v<value_type, empty_aggregate> || std::is_same_v<value_type, empty_aggregate_of_aggregate> || std::is_same_v<value_type, blank>) {
+                        } else if constexpr (std::is_same_v<value_type, ifcopenshell::empty_aggregate> || std::is_same_v<value_type, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<value_type, ifcopenshell::blank>) {
                             Py_INCREF(Py_None);
                             attribute_val_py = static_cast<PyObject*>(Py_None);
                         } else {
@@ -1483,14 +1483,14 @@ from .entity_instance import entity_instance_mixin
 	}
 }
 
-%extend logger {
+%extend ifcopenshell::logger {
 	%pythoncode %{
 		def __iter__(self):
 			return iter(self.log_messages())
 	%}
 }
 
-%extend log_message {
+%extend ifcopenshell::log_message {
 	std::string severity_string() const {
 		static const char* const severity_strings[] = {"PERF", "DEBUG", "NOTICE", "WARNING", "ERROR"};
 		return severity_strings[(int)$self->severity];

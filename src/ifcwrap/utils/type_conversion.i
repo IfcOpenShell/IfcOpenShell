@@ -267,7 +267,7 @@
 	PyObject* pythonize(const ifcopenshell::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__inverse_attribute, 0); }
 	PyObject* pythonize(const ifcopenshell::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__entity, 0);             }
 	PyObject* pythonize(const ifcopenshell::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), declaration_type_to_swig(t), 0);             }
-	PyObject* pythonize(const log_message& t)           { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_log_message, 0);                  }
+	PyObject* pythonize(const ifcopenshell::log_message& t) { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_ifcopenshell__log_message, 0); }
 	// @nb ownership
 	PyObject* pythonize(const ifcopenshell::geom::conversion_result_shape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__geom__conversion_result_shape, SWIG_POINTER_OWN); }
 	// PyObject* pythonize(const ifcopenshell::geom::conversion_result_shape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__geom__conversion_result_shape, 0); }

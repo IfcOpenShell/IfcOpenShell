@@ -923,7 +923,7 @@ int main(int argc, char** argv) {
 	// The functions ifcopenshell::geom::iterator::get() and ifcopenshell::geom::iterator::next()
 	// wrap an iterator of all geometrical products in the Ifc file. 
 	// ifcopenshell::geom::iterator::get() returns an ifcopenshell::geom::triangulation_element or
-	// -brep_element pointer, based on current settings. (see iterator.h
+	// -native_element pointer, based on current settings. (see iterator.h
 	// for definition) ifcopenshell::geom::iterator::next() is used to poll whether more
 	// geometrical entities are available. None of these functions throw 
 	// exceptions, neither for parsing errors or geometrical errors. Upon 
@@ -942,7 +942,7 @@ int main(int argc, char** argv) {
 		}
 		else
 		{
-			serializer->write(static_cast<const ifcopenshell::geom::brep_element*>(geom_object.get()));
+			serializer->write(static_cast<const ifcopenshell::geom::native_element*>(geom_object.get()));
 		}
 
         if (!no_progress) {
@@ -1406,14 +1406,14 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 
 	express::base quantity;
 	std::vector<express::base> objects;
-	std::shared_ptr<ifcopenshell::geom::brep> previous_geometry_pointer;
+	std::shared_ptr<ifcopenshell::geom::native> previous_geometry_pointer;
 
 	for (;; ++num_created) {
 		bool has_more = true;
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		std::unique_ptr<ifcopenshell::geom::brep_element> geom_object;
+		std::unique_ptr<ifcopenshell::geom::native_element> geom_object;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}

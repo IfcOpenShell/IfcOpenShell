@@ -89,7 +89,7 @@ public:
 	}
 
 	ifcopenshell::geom::trees::abstract_tree& backend_for_element(ifcopenshell::geom::element* element) const {
-		if (dynamic_cast<ifcopenshell::geom::brep_element*>(element)) {
+		if (dynamic_cast<ifcopenshell::geom::native_element*>(element)) {
 			return backend(default_selection_backend_id);
 		}
 

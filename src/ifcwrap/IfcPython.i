@@ -53,6 +53,7 @@
 %include "std_string.i"
 %include "exception.i"
 %include "std_shared_ptr.i"
+%include "std_unique_ptr.i"
 
 %{
 	#include <array>
@@ -257,6 +258,13 @@
 
 	// @todo abstract into plug-in interface
 	#include "../serializers/rocks_db_serializer.h"
+
+	using ifcopenshell::attribute_value;
+	using ifcopenshell::blank;
+	using ifcopenshell::derived;
+	using ifcopenshell::empty_aggregate;
+	using ifcopenshell::empty_aggregate_of_aggregate;
+	using ifcopenshell::enumeration_reference;
 %}
 
 // Create docstrings for generated python code.

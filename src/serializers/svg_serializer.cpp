@@ -540,7 +540,7 @@ svg_serializer::path_object& svg_serializer::start_path(const gp_Pln& pln, const
 }
 
 namespace {
-	std::optional<std::pair<express::base, double>> storey_elevation_from_element(const ifcopenshell::geom::brep_element* o) {
+	std::optional<std::pair<express::base, double>> storey_elevation_from_element(const ifcopenshell::geom::native_element* o) {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
 				try {
@@ -716,7 +716,7 @@ namespace {
 	}
 }
 
-void svg_serializer::write(const ifcopenshell::geom::brep_element* brep_obj) {
+void svg_serializer::write(const ifcopenshell::geom::native_element* brep_obj) {
 
 	std::optional<std::string> object_type;
 	if (!brep_obj->product().get("ObjectType").isNull()) {

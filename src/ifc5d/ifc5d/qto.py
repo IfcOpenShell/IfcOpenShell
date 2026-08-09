@@ -518,7 +518,7 @@ class IfcOpenShell(QtoCalculator):
                 area_shape = ifcopenshell.geom.create_shape(settings, item.SweptArea)
             except RuntimeError:
                 return
-            assert isinstance(area_shape, W.Triangulation)
+            assert isinstance(area_shape, W.triangulation)
             x = ifcopenshell.util.shape.get_x(area_shape) / cls.unit_scale
             y = ifcopenshell.util.shape.get_y(area_shape) / cls.unit_scale
             z = item.Depth

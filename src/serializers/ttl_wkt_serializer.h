@@ -36,7 +36,7 @@ public:
 	bool ready();
 	void writeHeader();
 	void write(const ifcopenshell::geom::triangulation_element* o);
-	void write(const ifcopenshell::geom::brep_element* /*o*/);
+	void write(const ifcopenshell::geom::native_element* /*o*/);
 	void finalize() {}
 	bool isTesselated() const;
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}

@@ -52,17 +52,17 @@ namespace ifcopenshell::geom {
 			virtual ~representation() {}
 		};
 
-		class IFC_GEOM_API brep : public representation {
+		class IFC_GEOM_API native : public representation {
 		private:
 			const std::vector<ifcopenshell::geom::conversion_result> shapes_;
-			brep(const brep& other);
-			brep& operator=(const brep& other);
+			native(const native& other);
+			native& operator=(const native& other);
 		public:
-			brep(const ifcopenshell::geom::settings& settings, const std::string& entity, const std::string& id, const std::vector<ifcopenshell::geom::conversion_result>& shapes)
+			native(const ifcopenshell::geom::settings& settings, const std::string& entity, const std::string& id, const std::vector<ifcopenshell::geom::conversion_result>& shapes)
 				: representation(settings, entity, id)
 				, shapes_(shapes)
 			{}
-			virtual ~brep() {}
+			virtual ~native() {}
 			std::vector<ifcopenshell::geom::conversion_result>::const_iterator begin() const { return shapes_.begin(); }
 			std::vector<ifcopenshell::geom::conversion_result>::const_iterator end() const { return shapes_.end(); }
 			const std::vector<ifcopenshell::geom::conversion_result>& shapes() const { return shapes_; }
@@ -86,7 +86,7 @@ namespace ifcopenshell::geom {
 			const std::string& brep_data() const { return brep_data_; }
 			const std::vector<double>& surface_styles() const { return surface_styles_; }
 			const std::vector<int>& surface_style_ids() const { return surface_style_ids_; }
-			serialization(const brep& brep);
+			serialization(const native& native_geometry);
 			virtual ~serialization() {}
 		private:
 			serialization();
@@ -138,7 +138,7 @@ namespace ifcopenshell::geom {
 			const std::vector<int>& item_ids() const { return item_ids_; }
 			const std::vector<int>& edges_item_ids() const { return edges_item_ids_; }
 
-			triangulation(const brep& shape_model);
+			triangulation(const native& shape_model);
 
 			triangulation(
 				const ifcopenshell::geom::settings& settings,

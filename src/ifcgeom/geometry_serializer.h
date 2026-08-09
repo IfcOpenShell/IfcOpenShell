@@ -76,7 +76,7 @@ public:
 
 	virtual bool isTesselated() const = 0;
 	virtual void write(const ifcopenshell::geom::triangulation_element* o) = 0;
-	virtual void write(const ifcopenshell::geom::brep_element* o) = 0;
+	virtual void write(const ifcopenshell::geom::native_element* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 	virtual ifcopenshell::geom::element* read(ifcopenshell::file& f, const std::string& guid, const std::string& representation_id, read_type rt = READ_BREP) = 0;
 

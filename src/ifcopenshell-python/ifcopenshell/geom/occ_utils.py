@@ -60,7 +60,7 @@ except ImportError:
 class shape_tuple(NamedTuple):
     """A tuple containing IfcOpenShell serialized element/shape and pythonOCC shape."""
 
-    data: Union[ifcopenshell_wrapper.SerializedElement, ifcopenshell_wrapper.Serialization]
+    data: Union[ifcopenshell_wrapper.serialized_element, ifcopenshell_wrapper.serialization]
     geometry: TopoDS.TopoDS_Shape
     styles: tuple[tuple[float, float, float, float], ...]
     style_ids: tuple[int, ...]
@@ -268,16 +268,16 @@ def serialize_shape(shape):
 
 
 def create_shape_from_serialization(
-    brep_object: Union[ifcopenshell_wrapper.SerializedElement, ifcopenshell_wrapper.Serialization],
+    brep_object: Union[ifcopenshell_wrapper.serialized_element, ifcopenshell_wrapper.serialization],
 ) -> Union[shape_tuple, TopoDS.TopoDS_Shape]:
     brep_data, occ_shape, styles, style_ids = None, None, (), ()
 
     is_product_shape = True
-    if isinstance(brep_object, ifcopenshell_wrapper.SerializedElement):
+    if isinstance(brep_object, ifcopenshell_wrapper.serialized_element):
         brep_data = brep_object.geometry.brep_data
         styles = brep_object.geometry.surface_styles
         style_ids = brep_object.geometry.surface_style_ids
-    elif isinstance(brep_object, ifcopenshell_wrapper.Serialization):
+    elif isinstance(brep_object, ifcopenshell_wrapper.serialization):
         try:
             brep_data = brep_object.brep_data
             styles = brep_object.surface_styles

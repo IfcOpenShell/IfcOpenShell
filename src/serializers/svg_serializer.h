@@ -676,7 +676,7 @@ public:
 	void doWriteHeader();
     bool ready();
     void write(const ifcopenshell::geom::triangulation_element* /*o*/) {}
-    void write(const ifcopenshell::geom::brep_element* o);
+    void write(const ifcopenshell::geom::native_element* o);
     void write(path_object& p, const TopoDS_Shape& wire, std::optional<std::vector<double>> dash_array=std::nullopt, std::optional<std::string> css_class=std::nullopt);
 	void write(const geometry_data& data);
     path_object& start_path(const gp_Pln& p, const express::base& storey, const std::string& id);

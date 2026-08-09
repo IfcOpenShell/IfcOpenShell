@@ -17,7 +17,7 @@ ifcopenshell::geom::converter::~converter() {
     delete mapping_;
 }
 
-ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for_representation_and_product(taxonomy::ptr representation_node, const express::base product_, const taxonomy::matrix4::ptr& place_) {
+ifcopenshell::geom::native_element* ifcopenshell::geom::converter::create_brep_for_representation_and_product(taxonomy::ptr representation_node, const express::base product_, const taxonomy::matrix4::ptr& place_) {
     auto product = product_.as<express::entity>();
     
 	std::stringstream representation_id_builder;
@@ -26,7 +26,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 
 	representation_id_builder << representation_node->instance.id();
 
-	ifcopenshell::geom::brep* shape;
+	ifcopenshell::geom::native* shape;
 	std::vector<ifcopenshell::geom::conversion_result> shapes;
 
 	if (!kernel_->convert(representation_node, shapes)) {
@@ -237,7 +237,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 		}
 	}
 
-	shape = new ifcopenshell::geom::brep(settings_, product_type, representation_id_builder.str(), shapes);
+	shape = new ifcopenshell::geom::native(settings_, product_type, representation_id_builder.str(), shapes);
 
 	std::string context_string = "";
 
@@ -255,7 +255,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 		}
 	}
 
-	auto elem = new ifcopenshell::geom::brep_element(
+	auto elem = new ifcopenshell::geom::native_element(
 		product.id(),
 		parent_id,
 		name,
@@ -263,7 +263,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 		guid,
 		context_string,
 		place,
-		std::shared_ptr<ifcopenshell::geom::brep>(shape),
+		std::shared_ptr<ifcopenshell::geom::native>(shape),
 		product
 	);
 
@@ -342,7 +342,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 	return elem;
 }
 
-ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for_processed_representation(const express::base product_, const taxonomy::matrix4::ptr& place, ifcopenshell::geom::brep_element* brep) {
+ifcopenshell::geom::native_element* ifcopenshell::geom::converter::create_brep_for_processed_representation(const express::base product_, const taxonomy::matrix4::ptr& place, ifcopenshell::geom::native_element* brep) {
     auto product = product_.as<express::entity>();
 
 	int parent_id = -1;
@@ -360,7 +360,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 	const std::string product_type = product.declaration().name();
 	const std::string context_string = brep->context();
 
-	return new ifcopenshell::geom::brep_element(
+	return new ifcopenshell::geom::native_element(
 		product.id(),
 		parent_id,
 		name,
@@ -373,7 +373,7 @@ ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for
 	);
 }
 
-ifcopenshell::geom::brep_element* ifcopenshell::geom::converter::create_brep_for_representation_and_product(const express::base representation, const express::base product) {
+ifcopenshell::geom::native_element* ifcopenshell::geom::converter::create_brep_for_representation_and_product(const express::base representation, const express::base product) {
 	auto interpreted_representation = mapping_->map(representation);
 	if (!interpreted_representation) {
 		interpreted_representation = taxonomy::make<taxonomy::collection>();

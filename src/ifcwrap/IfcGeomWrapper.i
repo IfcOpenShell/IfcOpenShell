@@ -19,28 +19,10 @@
 
 %rename("buffer") stream_or_filename;
 
-// Keep the established Python API names while the underlying C++ types use
-// snake_case.
-%rename("BRep") ifcopenshell::geom::brep;
-%rename("BRepElement") ifcopenshell::geom::brep_element;
-%rename("ConversionResult") ifcopenshell::geom::conversion_result;
-%rename("ConversionResultShape") ifcopenshell::geom::conversion_result_shape;
-%rename("Element") ifcopenshell::geom::element;
-%rename("GeometrySerializer") ifcopenshell::geom::geometry_serializer;
-%rename("Iterator") ifcopenshell::geom::iterator;
-%rename("OpaqueNumber") ifcopenshell::geom::opaque_number;
-%rename("Representation") ifcopenshell::geom::representation;
-%rename("Serialization") ifcopenshell::geom::serialization;
-%rename("SerializedElement") ifcopenshell::geom::serialized_element;
-%rename("Settings") ifcopenshell::geom::settings;
-%rename("Transformation") ifcopenshell::geom::transformation;
-%rename("Triangulation") ifcopenshell::geom::triangulation;
-%rename("TriangulationElement") ifcopenshell::geom::triangulation_element;
-%rename("WriteOnlyGeometrySerializer") ifcopenshell::geom::write_only_geometry_serializer;
-
 %ignore stream_or_filename::stream;
+%ignore ifcopenshell::geom::conversion_result::shape;
 %ignore boost::hash_value;
-%ignore ifcopenshell::geom::brep_element::geometry_pointer;
+%ignore ifcopenshell::geom::native_element::geometry_pointer;
 %ignore ifcopenshell::geom::triangulation_element::geometry_pointer;
 
 // This is only used for RGB colours, hence the size of 3
@@ -85,48 +67,26 @@
 	$1 = &temp;
 }
 
-// Using RTTI return a more specialized type of Element
-// Note that these elements are not to be owned by SWIG/Python as they will be freed automatically upon the next iteration
-// except for the ifcopenshell::geom::element instances which are returned by Iterator::getObject() calls
+// Use RTTI to return the most specialized element proxy. The ownership flag is
+// supplied by the wrapped function, so iterator copies can transfer ownership
+// while borrowed serializer results remain non-owning.
 %typemap(out) ifcopenshell::geom::element* {
 	ifcopenshell::geom::serialized_element* serialized_elem = dynamic_cast<ifcopenshell::geom::serialized_element*>($1);
 	ifcopenshell::geom::triangulation_element* triangulation_elem = dynamic_cast<ifcopenshell::geom::triangulation_element*>($1);
-	ifcopenshell::geom::brep_element* brep_elem = dynamic_cast<ifcopenshell::geom::brep_element*>($1);
+	ifcopenshell::geom::native_element* brep_elem = dynamic_cast<ifcopenshell::geom::native_element*>($1);
 	if (triangulation_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_ifcopenshell__geom__triangulation_element, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_ifcopenshell__geom__triangulation_element, $owner);
 	} else if (serialized_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_ifcopenshell__geom__serialized_element, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_ifcopenshell__geom__serialized_element, $owner);
 	} else if (brep_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(brep_elem), SWIGTYPE_p_ifcopenshell__geom__brep_element, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(brep_elem), SWIGTYPE_p_ifcopenshell__geom__native_element, $owner);
 	} else {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), SWIGTYPE_p_ifcopenshell__geom__element, SWIG_POINTER_OWN);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), SWIGTYPE_p_ifcopenshell__geom__element, $owner);
 	}
 }
 
-// Iterator results are copies owned by the caller. Release the unique pointer
-// into the most specific Python proxy and transfer deletion to Python.
-%typemap(out) std::unique_ptr<ifcopenshell::geom::element> {
-	ifcopenshell::geom::element* elem = $1.release();
-	ifcopenshell::geom::serialized_element* serialized_elem = dynamic_cast<ifcopenshell::geom::serialized_element*>(elem);
-	ifcopenshell::geom::triangulation_element* triangulation_elem = dynamic_cast<ifcopenshell::geom::triangulation_element*>(elem);
-	ifcopenshell::geom::brep_element* brep_elem = dynamic_cast<ifcopenshell::geom::brep_element*>(elem);
-	if (triangulation_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_ifcopenshell__geom__triangulation_element, SWIG_POINTER_OWN);
-	} else if (serialized_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_ifcopenshell__geom__serialized_element, SWIG_POINTER_OWN);
-	} else if (brep_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(brep_elem), SWIGTYPE_p_ifcopenshell__geom__brep_element, SWIG_POINTER_OWN);
-	} else {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(elem), SWIGTYPE_p_ifcopenshell__geom__element, SWIG_POINTER_OWN);
-	}
-}
-
-%typemap(out) std::unique_ptr<ifcopenshell::geom::brep_element> {
-	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1.release()), SWIGTYPE_p_ifcopenshell__geom__brep_element, SWIG_POINTER_OWN);
-}
-
-%newobject ifcopenshell::geom::brep::item;
-%newobject ifcopenshell::geom::brep::as_compound;
+%newobject ifcopenshell::geom::native::item;
+%newobject ifcopenshell::geom::native::as_compound;
 
 %newobject ifcopenshell::geom::conversion_result_shape::halfspaces;
 %newobject ifcopenshell::geom::conversion_result_shape::box;
@@ -307,6 +267,19 @@ namespace {
 
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/conversion_result.h"
+
+%extend ifcopenshell::geom::conversion_result {
+	ifcopenshell::geom::conversion_result_shape* _shape() const {
+		return $self->shape().get();
+	}
+
+	%pythoncode %{
+		def shape(self):
+			result = self._shape()
+			result._parent = self
+			return result
+	%}
+}
 // The implementation tuple is intentionally opaque to Python. Letting SWIG
 // emit a type token for all setting descriptors exceeds MSVC's token limit.
 %ignore ifcopenshell::geom::settings_container;
@@ -327,11 +300,43 @@ namespace {
 
 GEOMETRY_WITH_BACKREF(ifcopenshell::geom::triangulation_element)
 GEOMETRY_WITH_BACKREF(ifcopenshell::geom::serialized_element)
-GEOMETRY_WITH_BACKREF(ifcopenshell::geom::brep_element)
+GEOMETRY_WITH_BACKREF(ifcopenshell::geom::native_element)
 
 %include "../ifcgeom/element.h"
 %include "../ifcgeom/representation.h"
+%ignore ifcopenshell::geom::iterator::get;
+%ignore ifcopenshell::geom::iterator::get_native;
+%ignore ifcopenshell::geom::iterator::get_object;
+%newobject ifcopenshell::geom::iterator::_get;
+%newobject ifcopenshell::geom::iterator::_get_native;
+%newobject ifcopenshell::geom::iterator::_get_object;
 %include "../ifcgeom/iterator.h"
+
+%extend ifcopenshell::geom::iterator {
+	ifcopenshell::geom::element* _get() {
+		return $self->get().release();
+	}
+
+	ifcopenshell::geom::native_element* _get_native() {
+		return $self->get_native().release();
+	}
+
+	ifcopenshell::geom::element* _get_object(int id) {
+		return $self->get_object(id).release();
+	}
+
+	%pythoncode %{
+		def get(self):
+			return self._get()
+
+		def get_native(self):
+			return self._get_native()
+
+		def get_object(self, id):
+			return self._get_object(id)
+	%}
+}
+
 %include "../ifcgeom/geometry_serializer.h"
 %include "../ifcgeom/taxonomy.h"
 %include "../ifcgeom/function_item_evaluator.h"
@@ -339,7 +344,7 @@ GEOMETRY_WITH_BACKREF(ifcopenshell::geom::brep_element)
 %{
 #include "../serializers/geometry_serializer_plugin.h"
 
-class python_plugin_geometry_serializer : public geometry_serializer {
+class python_plugin_geometry_serializer : public ifcopenshell::geom::geometry_serializer {
 public:
 	python_plugin_geometry_serializer(
 		const std::string& extension,
@@ -347,7 +352,7 @@ public:
 		const std::string& output_temp_filename,
 		ifcopenshell::geom::settings& settings
 	)
-		: geometry_serializer(settings)
+		: ifcopenshell::geom::geometry_serializer(settings)
 	{
 		ifcopenshell::serializers::geometry_serializer_context context{
 			output_filename,
@@ -364,7 +369,7 @@ public:
 		const stream_or_filename& output_temp_filename,
 		ifcopenshell::geom::settings& settings
 	)
-		: geometry_serializer(settings)
+		: ifcopenshell::geom::geometry_serializer(settings)
 	{
 		const auto output_filename_string = output_filename.filename().value_or("");
 		const auto output_temp_filename_string = output_temp_filename.filename().value_or(output_filename_string);
@@ -420,7 +425,7 @@ public:
 		serializer_->write(element);
 	}
 
-	void write(const ifcopenshell::geom::brep_element* element) override {
+	void write(const ifcopenshell::geom::native_element* element) override {
 		serializer_->write(element);
 	}
 
@@ -432,7 +437,7 @@ public:
 		ifcopenshell::file& file,
 		const std::string& guid,
 		const std::string& representation_id,
-		read_type rt = READ_BREP
+		ifcopenshell::geom::geometry_serializer::read_type rt = ifcopenshell::geom::geometry_serializer::READ_BREP
 	) override {
 		return serializer_->read(file, guid, representation_id, rt);
 	}
@@ -442,11 +447,11 @@ public:
 	}
 
 private:
-	std::shared_ptr<geometry_serializer> serializer_;
+	std::shared_ptr<ifcopenshell::geom::geometry_serializer> serializer_;
 };
 %}
 
-%extend geometry_serializer {
+%extend ifcopenshell::geom::geometry_serializer {
 	bool ready() {
 		return $self->ready();
 	}
@@ -676,13 +681,13 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
     PyObject* operator()(ifcopenshell::geom::element* elem) const {
 		ifcopenshell::geom::serialized_element* serialized_elem = dynamic_cast<ifcopenshell::geom::serialized_element*>(elem);
 		ifcopenshell::geom::triangulation_element* triangulation_elem = dynamic_cast<ifcopenshell::geom::triangulation_element*>(elem);
-		ifcopenshell::geom::brep_element* brep_elem = dynamic_cast<ifcopenshell::geom::brep_element*>(elem);
+		ifcopenshell::geom::native_element* brep_elem = dynamic_cast<ifcopenshell::geom::native_element*>(elem);
 		if (triangulation_elem) {
 			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_ifcopenshell__geom__triangulation_element, SWIG_POINTER_OWN);
 		} else if (serialized_elem) {
 			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_ifcopenshell__geom__serialized_element, SWIG_POINTER_OWN);
 		} else if (brep_elem) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(brep_elem), SWIGTYPE_p_ifcopenshell__geom__brep_element, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(brep_elem), SWIGTYPE_p_ifcopenshell__geom__native_element, SWIG_POINTER_OWN);
 		} else {
 			return SWIG_Py_Void();
 		}
@@ -690,13 +695,13 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
     PyObject* operator()(ifcopenshell::geom::representation* representation) const {
 		ifcopenshell::geom::serialization* serialized_representation = dynamic_cast<ifcopenshell::geom::serialization*>(representation);
 		ifcopenshell::geom::triangulation* triangulated_representation = dynamic_cast<ifcopenshell::geom::triangulation*>(representation);
-		ifcopenshell::geom::brep* brep_representation = dynamic_cast<ifcopenshell::geom::brep*>(representation);
+		ifcopenshell::geom::native* brep_representation = dynamic_cast<ifcopenshell::geom::native*>(representation);
 		if (serialized_representation) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_representation), SWIGTYPE_p_ifcopenshell__geom__Representation__serialization, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_representation), SWIGTYPE_p_ifcopenshell__geom__serialization, SWIG_POINTER_OWN);
 		} else if (triangulated_representation) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulated_representation), SWIGTYPE_p_ifcopenshell__geom__Representation__triangulation, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulated_representation), SWIGTYPE_p_ifcopenshell__geom__triangulation, SWIG_POINTER_OWN);
 		} else if (brep_representation) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(brep_representation), SWIGTYPE_p_ifcopenshell__geom__Representation__brep, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(brep_representation), SWIGTYPE_p_ifcopenshell__geom__native, SWIG_POINTER_OWN);
 		} else {
 			return SWIG_Py_Void();
 		}
@@ -722,7 +727,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 // I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 // anyway it does not matter as SWIG generates C code without actual constructors
 %inline %{
-	geometry_serializer* create_geometry_serializer(
+	ifcopenshell::geom::geometry_serializer* create_geometry_serializer(
 		const std::string& extension,
 		const std::string& output_filename,
 		const std::string& output_temp_filename,
@@ -736,7 +741,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 		);
 	}
 
-	geometry_serializer* create_geometry_serializer(
+	ifcopenshell::geom::geometry_serializer* create_geometry_serializer(
 		const std::string& extension,
 		const stream_or_filename& output_filename,
 		const stream_or_filename& output_temp_filename,
@@ -918,7 +923,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 %extend ifcopenshell::geom::serialized_element {
 };
 
-%extend ifcopenshell::geom::brep_element {
+%extend ifcopenshell::geom::native_element {
     double calc_volume_() const {
         double v;
         if ($self->geometry().calculate_volume(v)) {
@@ -983,7 +988,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 		return oss.str();
 	}
 
-	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> helper_fn_create_shape(logger& logger, const std::string& geometry_library, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation = express::base()) {
+	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> helper_fn_create_shape(ifcopenshell::logger& logger, const std::string& geometry_library, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation = express::base()) {
 		ifcopenshell::file* file = instance.file();
 
 		ifcopenshell::geom::converter kernel(ifcopenshell::geom::kernels::construct(file, geometry_library, settings), file, settings, logger);
@@ -997,7 +1002,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 				throw ifcopenshell::exception("No suitable IfcRepresentation found");
 			}
 
-			ifcopenshell::geom::brep_element* brep = kernel.create_brep_for_representation_and_product(selected_representation, instance);
+			ifcopenshell::geom::native_element* brep = kernel.create_brep_for_representation_and_product(selected_representation, instance);
 			if (!brep) {
 				std::ostringstream oss_repr, oss_product;
 				selected_representation.to_string(oss_repr);
@@ -1045,7 +1050,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 						throw ifcopenshell::exception("Failed to process shape. Instance: " + oss.str());
 					}
 
-					ifcopenshell::geom::brep brep(kernel.settings(), instance.declaration().name(), to_locale_invariant_string(instance.id()), shapes);
+					ifcopenshell::geom::native brep(kernel.settings(), instance.declaration().name(), to_locale_invariant_string(instance.id()), shapes);
 					try {
 						if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::SERIALIZED) {
 							return new ifcopenshell::geom::serialization(brep);

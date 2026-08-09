@@ -708,7 +708,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             while True:
                 tree.add_element(iterator.get_native())
                 shape = iterator.get()
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 shapes[shape.id] = {
                     "verts": ifcopenshell.util.shape.get_vertices(shape.geometry),
                     "faces": ifcopenshell.util.shape.get_faces(shape.geometry),

@@ -39,7 +39,7 @@ bool open_cascade_based_serializer::ready() {
 	return succeeded;
 }
 
-void open_cascade_based_serializer::write(const ifcopenshell::geom::brep_element* o) {
+void open_cascade_based_serializer::write(const ifcopenshell::geom::native_element* o) {
 	auto itm = o->geometry().as_compound();
 	TopoDS_Shape compound = ((ifcopenshell::geom::open_cascade_shape*)itm)->shape();
 	writeShape(object_id(o), compound);
