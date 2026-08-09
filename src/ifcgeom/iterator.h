@@ -83,6 +83,12 @@
 namespace ifcopenshell::geom {
 
 	struct IFC_GEOM_API geometry_conversion_result {
+		geometry_conversion_result() = default;
+		geometry_conversion_result(const geometry_conversion_result&) = delete;
+		geometry_conversion_result& operator=(const geometry_conversion_result&) = delete;
+		geometry_conversion_result(geometry_conversion_result&&) noexcept = default;
+		geometry_conversion_result& operator=(geometry_conversion_result&&) noexcept = default;
+
 		int index;
 
 		// For NoParallelMapping==true
@@ -93,8 +99,8 @@ namespace ifcopenshell::geom {
 		express::base representation;
 		std::vector<express::base> products_2;
 
-		std::vector<ifcopenshell::geom::native_element*> breps;
-		std::vector<ifcopenshell::geom::element*> elements;
+		std::vector<std::unique_ptr<ifcopenshell::geom::native_element>> native_elements;
+		std::vector<std::unique_ptr<ifcopenshell::geom::element>> elements;
 
 		bool is_parallel() const {
             return !!representation;
@@ -112,11 +118,11 @@ namespace ifcopenshell::geom {
 		std::vector<geometry_conversion_result> tasks_;
 		std::vector<geometry_conversion_result>::iterator task_iterator_;
 
-		std::list<ifcopenshell::geom::element*> all_processed_elements_;
-		std::list<ifcopenshell::geom::native_element*> all_processed_native_elements_;
+		std::list<std::unique_ptr<ifcopenshell::geom::element>> all_processed_elements_;
+		std::list<std::unique_ptr<ifcopenshell::geom::native_element>> all_processed_native_elements_;
 
-		std::list<ifcopenshell::geom::element*>::iterator task_result_iterator_;
-		std::list<ifcopenshell::geom::native_element*>::iterator native_task_result_iterator_;
+		std::list<std::unique_ptr<ifcopenshell::geom::element>>::iterator task_result_iterator_;
+		std::list<std::unique_ptr<ifcopenshell::geom::native_element>>::iterator native_task_result_iterator_;
 
 		std::mutex element_ready_mutex_;
 		bool task_result_ptr_initialized = false;
@@ -167,7 +173,7 @@ namespace ifcopenshell::geom {
 			ifcopenshell::geom::settings settings,
 			geometry_conversion_result* rep);
 
-		ifcopenshell::geom::element* process_based_on_settings(
+		std::unique_ptr<ifcopenshell::geom::element> process_based_on_settings(
 			ifcopenshell::geom::settings settings,
 			ifcopenshell::geom::native_element* elem,
 			ifcopenshell::logger& logger,
@@ -297,16 +303,15 @@ namespace ifcopenshell::geom {
 		std::unique_ptr<native_element> get_native()
 		{
 			validate_iterator_state();
+			if (settings_.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::NATIVE) {
+				throw std::runtime_error("native output is returned by get(); use get() instead");
+			}
 			std::lock_guard<std::mutex> lock(element_ready_mutex_);
-			auto* result = *native_task_result_iterator_;
+			auto result = std::move(*native_task_result_iterator_);
 			if (!result) {
 				throw std::runtime_error("current native element has already been retrieved");
 			}
-			*native_task_result_iterator_ = nullptr;
-			if (*task_result_iterator_ == result) {
-				*task_result_iterator_ = nullptr;
-			}
-			return std::unique_ptr<native_element>(result);
+			return result;
 		}
 
 		std::unique_ptr<element> get_object(int id);

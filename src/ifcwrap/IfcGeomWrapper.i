@@ -24,6 +24,8 @@
 %ignore boost::hash_value;
 %ignore ifcopenshell::geom::native_element::geometry_pointer;
 %ignore ifcopenshell::geom::triangulation_element::geometry_pointer;
+%ignore ifcopenshell::geom::geometry_conversion_result::native_elements;
+%ignore ifcopenshell::geom::geometry_conversion_result::elements;
 
 // This is only used for RGB colours, hence the size of 3
 %typemap(out) const double* {

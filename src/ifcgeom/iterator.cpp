@@ -51,7 +51,7 @@ bool ifcopenshell::geom::iterator::initialize() {
 				return std::make_pair(prod, ifcopenshell::geom::taxonomy::cast<ifcopenshell::geom::taxonomy::geom_item>(prod_item)->matrix);
 			});
 		}
-		tasks_.push_back(res);
+		tasks_.push_back(std::move(res));
 	}
 
 	if (settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geom::settings::PermissiveShapeReuse>().get()) {
@@ -182,8 +182,16 @@ void ifcopenshell::geom::iterator::process_finished_rep(geometry_conversion_resu
 
 	std::lock_guard<std::mutex> lk(element_ready_mutex_);
 
-	all_processed_elements_.insert(all_processed_elements_.end(), rep->elements.begin(), rep->elements.end());
-	all_processed_native_elements_.insert(all_processed_native_elements_.end(), rep->breps.begin(), rep->breps.end());
+	all_processed_elements_.insert(
+		all_processed_elements_.end(),
+		std::make_move_iterator(rep->elements.begin()),
+		std::make_move_iterator(rep->elements.end()));
+	all_processed_native_elements_.insert(
+		all_processed_native_elements_.end(),
+		std::make_move_iterator(rep->native_elements.begin()),
+		std::make_move_iterator(rep->native_elements.end()));
+	rep->elements.clear();
+	rep->native_elements.clear();
 
 	if (!task_result_ptr_initialized) {
 		task_result_iterator_ = all_processed_elements_.begin();
@@ -382,23 +390,29 @@ void ifcopenshell::geom::iterator::create_element_(ifcopenshell::geom::converter
 
 	kernel_logger.set_product(product);
 
-	ifcopenshell::geom::native_element* brep = static_cast<ifcopenshell::geom::native_element*>(create_processed_element_([kernel, settings, product, place, rep]() {
+	std::unique_ptr<ifcopenshell::geom::native_element> brep(static_cast<ifcopenshell::geom::native_element*>(create_processed_element_([kernel, settings, product, place, rep]() {
 		return kernel->create_brep_for_representation_and_product(rep->item, product, place);
-	}));
+	})));
 
 	if (!brep) {
         kernel_logger.set_product(std::optional<express::base>{});
 		return;
 	}
 
-	auto elem = process_based_on_settings(settings, brep, kernel_logger);
+	auto* brep_for_reuse = brep.get();
+	std::unique_ptr<ifcopenshell::geom::element> elem;
+	if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::NATIVE) {
+		elem = std::move(brep);
+	} else {
+		elem = process_based_on_settings(settings, brep.get(), kernel_logger);
+	}
 	if (!elem) {
         kernel_logger.set_product(std::optional<express::base>{});
 		return;
 	}
 
-	rep->breps = { brep };
-	rep->elements = { elem };
+	rep->native_elements.push_back(std::move(brep));
+	rep->elements.push_back(std::move(elem));
 
 	for (auto it = rep->products.begin() + 1; it != rep->products.end(); ++it) {
 		const auto& p = *it;
@@ -407,14 +421,23 @@ void ifcopenshell::geom::iterator::create_element_(ifcopenshell::geom::converter
 
 		kernel_logger.set_product(product2);
 
-		ifcopenshell::geom::native_element* brep2 = static_cast<ifcopenshell::geom::native_element*>(create_processed_element_([kernel, settings, product2, place2, brep]() {
-			return kernel->create_brep_for_processed_representation(product2, place2, brep);
-		}));
+		std::unique_ptr<ifcopenshell::geom::native_element> brep2(static_cast<ifcopenshell::geom::native_element*>(create_processed_element_([kernel, settings, product2, place2, brep_for_reuse]() {
+			return kernel->create_brep_for_processed_representation(product2, place2, brep_for_reuse);
+		})));
 		if (brep2) {
-			auto elem2 = process_based_on_settings(settings, brep2, kernel_logger, dynamic_cast<ifcopenshell::geom::triangulation_element*>(elem));
+			std::unique_ptr<ifcopenshell::geom::element> elem2;
+			if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::NATIVE) {
+				elem2 = std::move(brep2);
+			} else {
+				elem2 = process_based_on_settings(
+					settings,
+					brep2.get(),
+					kernel_logger,
+					dynamic_cast<ifcopenshell::geom::triangulation_element*>(rep->elements.front().get()));
+			}
 			if (elem2) {
-				rep->breps.push_back(brep2);
-				rep->elements.push_back(elem2);
+				rep->native_elements.push_back(std::move(brep2));
+				rep->elements.push_back(std::move(elem2));
 			}
 		}
 	}
@@ -422,30 +445,28 @@ void ifcopenshell::geom::iterator::create_element_(ifcopenshell::geom::converter
 	kernel_logger.set_product(std::optional<express::base>{});
 }
 
-ifcopenshell::geom::element* ifcopenshell::geom::iterator::process_based_on_settings(ifcopenshell::geom::settings settings, ifcopenshell::geom::native_element* elem, ifcopenshell::logger& logger, ifcopenshell::geom::triangulation_element* previous)
+std::unique_ptr<ifcopenshell::geom::element> ifcopenshell::geom::iterator::process_based_on_settings(ifcopenshell::geom::settings settings, ifcopenshell::geom::native_element* elem, ifcopenshell::logger& logger, ifcopenshell::geom::triangulation_element* previous)
 {
 	if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::SERIALIZED) {
 		try {
-			return new ifcopenshell::geom::serialized_element(*elem);
+			return std::make_unique<ifcopenshell::geom::serialized_element>(*elem);
 		} catch (...) {
 			logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 54, "Getting a serialized element from model failed.");
 			return nullptr;
 		}
 	} else if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::TRIANGULATED) {
-		return create_processed_element_([elem, previous, &logger]() {
-			try {
-				if (!previous) {
-					return new triangulation_element(*elem);
-				} else {
-					return new triangulation_element(*elem, previous->geometry_pointer());
-				}
-			} catch (...) {
-				logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 55, "Getting a triangulation element from model failed.");
+		try {
+			if (!previous) {
+				return std::make_unique<triangulation_element>(*elem);
+			} else {
+				return std::make_unique<triangulation_element>(*elem, previous->geometry_pointer());
 			}
-			return (triangulation_element*)nullptr;
-		});
+		} catch (...) {
+			logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 55, "Getting a triangulation element from model failed.");
+			return nullptr;
+		}
 	} else {
-		return elem;
+		throw std::runtime_error("native iterator output must be moved directly");
 	}
 }
 
@@ -511,14 +532,8 @@ express::base ifcopenshell::geom::iterator::next() {
 
 	{
 		std::lock_guard<std::mutex> lock(element_ready_mutex_);
-		auto* element = *task_result_iterator_;
-		auto* native_element = *native_task_result_iterator_;
-		*task_result_iterator_ = nullptr;
-		*native_task_result_iterator_ = nullptr;
-		if (native_element != element) {
-			delete native_element;
-		}
-		delete element;
+		task_result_iterator_->reset();
+		native_task_result_iterator_->reset();
 	}
 
 	if (num_threads_ != 1) {
@@ -534,7 +549,7 @@ express::base ifcopenshell::geom::iterator::next() {
 		task_result_iterator_++;
 		native_task_result_iterator_++;
 
-		return (*task_result_iterator_)->product();
+		return task_result_iterator_->get()->product();
 	} else {
 		// Increment the iterator over the list of products using the current
 		// shape representation
@@ -552,7 +567,7 @@ express::base ifcopenshell::geom::iterator::next() {
 		task_result_iterator_++;
 		native_task_result_iterator_++;
 
-		return (*task_result_iterator_)->product();
+		return task_result_iterator_->get()->product();
 	}
 }
 
@@ -564,13 +579,9 @@ std::unique_ptr<ifcopenshell::geom::element> ifcopenshell::geom::iterator::get()
 	std::unique_ptr<ifcopenshell::geom::element> ret;
 	{
 		std::lock_guard<std::mutex> lock(element_ready_mutex_);
-		ret.reset(*task_result_iterator_);
+		ret = std::move(*task_result_iterator_);
 		if (!ret) {
 			throw std::runtime_error("current element has already been retrieved");
-		}
-		*task_result_iterator_ = nullptr;
-		if (*native_task_result_iterator_ == ret.get()) {
-			*native_task_result_iterator_ = nullptr;
 		}
 	}
 
@@ -859,20 +870,6 @@ ifcopenshell::geom::iterator::~iterator() {
 	for (auto& k : kernel_pool) {
 		flush_worker_log(k);
 		delete k;
-	}
-
-	if (task_result_ptr_initialized) {
-		std::lock_guard<std::mutex> lock(element_ready_mutex_);
-		while (task_result_iterator_ != all_processed_elements_.end()) {
-			auto* element = *task_result_iterator_;
-			auto* native_element = *native_task_result_iterator_;
-			if (native_element != element) {
-				delete native_element;
-			}
-			delete element;
-			task_result_iterator_++;
-			native_task_result_iterator_++;
-		}
 	}
 
 	delete converter_;

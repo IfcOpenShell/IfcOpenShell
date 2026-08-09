@@ -233,6 +233,22 @@ def test_iterator_get_native_transfers_ownership(num_threads):
     assert element.id == element_id
 
 
+@pytest.mark.parametrize("num_threads", [1, 2])
+def test_iterator_native_output_is_retrieved_with_get(num_threads):
+    settings = ifcopenshell.geom.settings()
+    settings.set("iterator-output", W.NATIVE)
+    iterator = ifcopenshell.geom.iterator(settings, fn, num_threads)
+    assert iterator.initialize()
+
+    with pytest.raises(RuntimeError, match=r"use get\(\) instead"):
+        iterator.get_native()
+
+    element = iterator.get()
+    element_id = element.id
+    iterator.next()
+    assert element.id == element_id
+
+
 def test_logging():
     assert ifcopenshell.logger
     logger = ifcopenshell.logger()
