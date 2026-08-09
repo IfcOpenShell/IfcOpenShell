@@ -816,7 +816,6 @@ opaque_coordinate<4> ifcopenshell::geom::cgal_shape::plane_equation()
 std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::convex_decomposition()
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
-	(void)other;
 	throw std::runtime_error("Not implemented");
 #else
 	std::vector<conversion_result_shape*> result;
@@ -843,7 +842,6 @@ std::vector<conversion_result_shape*> ifcopenshell::geom::cgal_shape::convex_dec
 conversion_result_shape* ifcopenshell::geom::cgal_shape::halfspaces()
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
-	(void)other;
 	throw std::runtime_error("Not implemented");
 #else
 	return new cgal_shape_half_space_decomposition(nef(), convex_tag_);

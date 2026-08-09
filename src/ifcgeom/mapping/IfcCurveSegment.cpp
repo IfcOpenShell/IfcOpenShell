@@ -216,7 +216,7 @@ struct cant_curve_segment_function {
 class curve_segment_evaluator {
   private:
     mapping* mapping_ = nullptr;
-    logger& logger_;    
+    ifcopenshell::logger& logger_;
     IfcSchema::IfcCurveSegment inst_;      // this curve segment instance
     double length_unit_;
     double start_;
