@@ -30,8 +30,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipseProfileDef& inst) {
 		return nullptr;
 	}
 
-	const bool rotated = ry > rx;
-
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL

@@ -44,11 +44,5 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMappedItem& inst) {
 	collection->children.push_back(shapes);
 	collection->matrix = taxonomy::make<taxonomy::matrix4>(res);
 
-	if (shapes != nullptr) {
-		for (auto& c : taxonomy::cast<taxonomy::collection>(shapes)->children) {
-			// @todo previously style was also copied.
-		}
-	}
-
 	return collection;
 }

@@ -222,7 +222,7 @@ namespace {
 }
 
 open_cascade_kernel::curve_creation_visitor_result_type open_cascade_kernel::convert_curve(const taxonomy::ptr curve) {
-	curve_creation_visitor v{ this };
+	curve_creation_visitor v{ this, {} };
 	if (dispatch_curve_creation<curve_creation_visitor, 0>::dispatch(curve, v)) {
 		return v.result;
 	} else {

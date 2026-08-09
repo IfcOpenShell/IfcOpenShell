@@ -28,8 +28,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIShapeProfileDef& inst) {
 #ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
 	const bool doFlangeEdgeRadius = !!inst.FlangeEdgeRadius();
 	const bool hasSlope = !!inst.FlangeSlope();
-#else
-	const bool doFlangeEdgeRadius = false;
 #endif
 
 	const double x1 = inst.OverallWidth() / 2.0f * length_unit_;

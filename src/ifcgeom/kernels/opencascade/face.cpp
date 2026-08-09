@@ -186,6 +186,7 @@ namespace {
 				Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
 				return approx.Curve();
 			}
+			throw std::runtime_error("Unexpected curve evaluation");
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::extrusion::ptr& e) {
@@ -257,7 +258,7 @@ namespace {
 }
 
 Handle(Geom_Surface) open_cascade_kernel::convert_surface(const taxonomy::ptr surface) {
-	surface_creation_visitor v{ this };
+	surface_creation_visitor v{ this, {} };
 	if (dispatch_surface_creation<surface_creation_visitor, 0>::dispatch(surface, v)) {
 		return v.result;
 	} else {
@@ -281,7 +282,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 	}
 
 	const size_t num_bounds = face->children.size();
-	int num_outer_bounds = 0;
+	std::size_t num_outer_bounds = 0;
 
 	for (auto& bound : face->children) {
 		if (bound->external.value_or(false)) {

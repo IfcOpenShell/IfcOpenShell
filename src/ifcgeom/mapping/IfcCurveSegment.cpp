@@ -961,10 +961,6 @@ class curve_segment_evaluator {
                 auto cos_start_angle = cos(start_angle);
                 auto sin_start_angle = sin(start_angle);
 
-                // point on the parent curve
-                auto pcStartX = R * cos_start_angle + pcCenterX;
-                auto pcStartY = R * sin_start_angle + pcCenterY;
-
                 auto pcStartDx = -sign_l * sin_start_angle;
                 auto pcStartDy =  sign_l * cos_start_angle;
 
@@ -1198,8 +1194,7 @@ class curve_segment_evaluator {
                      m.col(3) = Eigen::Vector4d(X, Y, 0.0, 1.0);
                      return m;
                 },
-                [start = start_, lu = length_unit_, coeffX, coeffY, convert_u](double u) -> Eigen::Matrix4d { 
-                     auto x = convert_u(u + start); // find x for u
+                [coeffY](double) -> Eigen::Matrix4d {
                     Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
                     c(3, 0) = coeffY[2]; // this may need a unit conversion (also assume there is only 3 coefficients)
                      return c;

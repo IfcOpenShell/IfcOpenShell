@@ -36,25 +36,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
     // @todo currently only the case is handled where directrix returns a piecewise_function
     if (auto fn = std::dynamic_pointer_cast<taxonomy::function_item>(dir)) {
         function_item_evaluator evaluator(settings_, fn);
-        double start = 0;
-        double end = fn->length();
-#ifdef SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid
-        // IfcDirectrixCurveSweptAreaSolid introduced in 4.3 changed attribute type
-        // from optional IfcParamValue to optional IfcCurveMeasureSelect.
-        // Invocation of mapping on pre-4.3 models can never result in a piecewise_function.
-        if (inst.StartParam() && inst.StartParam().as<IfcSchema::IfcLengthMeasure>()) {
-            double s = inst.StartParam().as<IfcSchema::IfcLengthMeasure>();
-            if (s > start) {
-                start = s;
-            }
-        }
-        if (inst.EndParam() && inst.EndParam().as<IfcSchema::IfcLengthMeasure>()) {
-            double e = inst.EndParam().as<IfcSchema::IfcLengthMeasure>();
-            if (e < end) {
-                end = e;
-            }
-        }
-#endif
         auto evaluation_points = evaluator.evaluation_points();
         for (const auto& dist_along : evaluation_points) {
             auto m4 = evaluator.evaluate(dist_along);
@@ -86,10 +67,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
                 Eigen::Vector3d tangent = m4.col(0).head<3>().normalized();
                 Eigen::Vector3d proj = (ref->components() - tangent * tangent.dot(ref->components()));
                 proj.normalize();
-                auto ref = proj.cross(tangent);
+                auto binormal = proj.cross(tangent);
 
                 m4b.col(0).head<3>() = proj;
-                m4b.col(1).head<3>() = ref;
+                m4b.col(1).head<3>() = binormal;
                 m4b.col(2).head<3>() = tangent;
                 m4b.col(3).head<3>() = pos;
 

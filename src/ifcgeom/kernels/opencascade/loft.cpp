@@ -290,7 +290,6 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
     // potentially incorrect as there is no guarantee that the wires for
     // subsequently placed profiles are traversed from an equivalent start vertex.
 	for (auto it = shps.begin(); it < shps.end() - 1; ++it) {
-        auto ii = std::distance(shps.begin(), it);
 		auto jt = it + 1;
 		std::array<std::vector<TopoDS_Shape>::const_iterator, 2> fa = { it, jt };
 		std::vector<std::array<TopoDS_Wire, 2>> ws;
@@ -335,7 +334,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 			for (size_t i = 0; i < 2; ++i) {
                 NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> ancestors;
 				const auto& wire = wp[i];
-                auto& result = profile_points[i];
+                auto& points = profile_points[i];
 
 				TopExp::MapShapesAndAncestors(
                     wire,
@@ -347,7 +346,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
                 TopExp::Vertices(wire, v0, vn);
 
 				TopoDS_Vertex curr = v0;
-                result.push_back(BRep_Tool::Pnt(curr));
+                points.push_back(BRep_Tool::Pnt(curr));
 
 				while (true) {
                     if (curr.IsSame(vn)) {
@@ -356,8 +355,8 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 
                     const NCollection_List<TopoDS_Shape>& incidentEdges = ancestors.FindFromKey(curr);
 
-                    for (NCollection_List<TopoDS_Shape>::Iterator it(incidentEdges); it.More(); it.Next()) {
-                        const TopoDS_Edge& e = TopoDS::Edge(it.Value());
+                    for (NCollection_List<TopoDS_Shape>::Iterator edge_it(incidentEdges); edge_it.More(); edge_it.Next()) {
+                        const TopoDS_Edge& e = TopoDS::Edge(edge_it.Value());
 						
 						TopoDS_Vertex ev0, ev1;
                         TopExp::Vertices(e, ev0, ev1);
@@ -368,7 +367,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
                         } else {
                             previous = curr;
                             curr = other_on_edge;
-                            result.push_back(BRep_Tool::Pnt(curr));
+                            points.push_back(BRep_Tool::Pnt(curr));
                             break;
 						}
                     }
