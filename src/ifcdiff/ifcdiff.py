@@ -41,7 +41,17 @@ from orderly_set import StableSet
 __version__ = version = "0.0.0"
 
 
-RELATIONSHIP_TYPE = Literal["geometry", "attributes", "type", "property", "container", "aggregate", "classification"]
+RELATIONSHIP_TYPE = Literal[
+    "geometry",
+    "attributes",
+    "type",
+    "property",
+    "container",
+    "aggregate",
+    "classification",
+    "material",
+    "placement",
+]
 
 
 class IfcDiff:
@@ -162,7 +172,7 @@ class IfcDiff:
                     continue
             if should_check_geometry:
                 # Option 1: check everything heuristically using the iterator (seems faster)
-                if ifcopenshell.util.representation.get_representation(new, "Model", "Body", "MODEL_VIEW"):
+                if self.has_body_representation(new):
                     potential_old_changes.append(old)
                     potential_new_changes.append(new)
                 # Option 2: check first using Python, then fallback to iterator (twice as slow)
@@ -190,7 +200,7 @@ class IfcDiff:
                 del new_shapes[global_id]
                 diff = DeepDiff(old_shape, new_shape, math_epsilon=1e-5)
                 if diff:
-                    self.change_register.setdefault(global_id, {}).update({"geometry_changed": True})
+                    self.change_register.setdefault(global_id, {}).update({"geometry_changed": diff})
                     continue
 
             for global_id in new_shapes.keys():
@@ -199,6 +209,25 @@ class IfcDiff:
         print(" - {} item(s) were changed".format(len(self.change_register.keys())))
 
         logging.disable(logging.NOTSET)
+
+    def has_body_representation(self, element: ifcopenshell.entity_instance) -> bool:
+        # Mirrors get_settings()'s body_contexts fallback: some BIM programs
+        # (e.g. the INFRA sample in #7392-style diffs) put Body items directly
+        # under IfcGeometricRepresentationContext without a MODEL_VIEW
+        # subcontext, so a strict get_representation(..., "MODEL_VIEW") match
+        # would silently skip them.
+        representation = getattr(element, "Representation", None)
+        if not representation:
+            return False
+        for r in representation.Representations:
+            if r.RepresentationIdentifier not in ("Body", "Facetation"):
+                continue
+            context = r.ContextOfItems
+            if context.is_a("IfcGeometricRepresentationSubContext"):
+                return True
+            if context.is_a("IfcGeometricRepresentationContext") and context.ContextType == "Model":
+                return True
+        return False
 
     def summarise_shapes(
         self, ifc: ifcopenshell.file, elements: list[ifcopenshell.entity_instance]
@@ -280,33 +309,74 @@ class IfcDiff:
             return contexts[0].Precision or 1e-4
         return 1e-4
 
+    def get_comparable_attributes(self, element: ifcopenshell.entity_instance) -> dict[str, Any]:
+        # "id" is the STEP entity number, which shifts on every re-save. "type"
+        # duplicates is_a(), which is separately reported as class_changed.
+        # OwnerHistory and other entity-valued/list attributes change on every
+        # save and aren't meaningfully diffable by value, so they're excluded.
+        return {
+            k: v
+            for k, v in element.get_info().items()
+            if k not in ("id", "type") and not isinstance(v, (ifcopenshell.entity_instance, tuple))
+        }
+
     def diff_element(self, old, new):
+        changed = False
+
+        if old.is_a() != new.is_a():
+            self.change_register.setdefault(new.GlobalId, {}).update(
+                {"class_changed": {"old_class": old.is_a(), "new_class": new.is_a()}}
+            )
+            changed = True
+
         diff = DeepDiff(
-            [a for a in old if not isinstance(a, (ifcopenshell.entity_instance, tuple))],
-            [a for a in new if not isinstance(a, (ifcopenshell.entity_instance, tuple))],
+            self.get_comparable_attributes(old),
+            self.get_comparable_attributes(new),
             math_epsilon=self.precision,
             ignore_string_type_changes=True,
             ignore_numeric_type_changes=True,
         )
-        if diff and new.GlobalId:
-            self.change_register.setdefault(new.GlobalId, {}).update({"attributes_changed": True})
+        if diff:
+            self.change_register.setdefault(new.GlobalId, {}).update({"attributes_changed": diff})
+            changed = True
+
+        if changed and new.GlobalId:
             return True
 
     def diff_element_relationships(self, old, new):
         if not self.relationships:
             return
+        found = False
         for relationship in self.relationships:
             if relationship == "type":
                 old_type = ifcopenshell.util.element.get_type(old)
                 new_type = ifcopenshell.util.element.get_type(new)
                 if old_type is not None and new_type is not None:
                     if old_type.GlobalId != new_type.GlobalId:
-                        self.change_register.setdefault(new.GlobalId, {}).update({"type_changed": True})
-                        return True
+                        self.change_register.setdefault(new.GlobalId, {}).update(
+                            {
+                                "type_changed": {
+                                    "old_type": old_type.GlobalId,
+                                    "new_type": new_type.GlobalId,
+                                }
+                            }
+                        )
+                        found = True
+                        if self.is_shallow:
+                            return True
                 elif old_type != new_type:
                     # one of the types is None while the other is not None
-                    self.change_register.setdefault(new.GlobalId, {}).update({"type_changed": True})
-                    return True
+                    self.change_register.setdefault(new.GlobalId, {}).update(
+                        {
+                            "type_changed": {
+                                "old_type": old_type.GlobalId if old_type else None,
+                                "new_type": new_type.GlobalId if new_type else None,
+                            }
+                        }
+                    )
+                    found = True
+                    if self.is_shallow:
+                        return True
             elif relationship == "property":
                 old_psets = ifcopenshell.util.element.get_psets(old)
                 new_psets = ifcopenshell.util.element.get_psets(new)
@@ -317,29 +387,91 @@ class IfcDiff:
                         math_epsilon=self.precision,
                         ignore_string_type_changes=True,
                         ignore_numeric_type_changes=True,
-                        exclude_regex_paths=[r".*id$"],
+                        exclude_regex_paths=[r"\['id'\]$"],
                     )
                 except:
                     diff = True
                 if diff and new.GlobalId:
                     self.change_register.setdefault(new.GlobalId, {}).update({"properties_changed": diff})
-                    return True
+                    found = True
+                    if self.is_shallow:
+                        return True
             elif relationship == "container":
-                if ifcopenshell.util.element.get_container(old) != ifcopenshell.util.element.get_container(new):
-                    self.change_register.setdefault(new.GlobalId, {}).update({"container_changed": True})
-                    return True
+                old_container = ifcopenshell.util.element.get_container(old)
+                new_container = ifcopenshell.util.element.get_container(new)
+                # old_container and new_container come from two different
+                # ifcopenshell.file objects, so they are never == even when
+                # unchanged. Compare by GlobalId instead of by identity.
+                old_container_id = old_container.GlobalId if old_container else None
+                new_container_id = new_container.GlobalId if new_container else None
+                if old_container_id != new_container_id:
+                    self.change_register.setdefault(new.GlobalId, {}).update(
+                        {
+                            "container_changed": {
+                                "old_container": old_container_id,
+                                "new_container": new_container_id,
+                            }
+                        }
+                    )
+                    found = True
+                    if self.is_shallow:
+                        return True
             elif relationship == "aggregate":
-                if ifcopenshell.util.element.get_aggregate(old) != ifcopenshell.util.element.get_aggregate(new):
-                    self.change_register.setdefault(new.GlobalId, {}).update({"aggregate_changed": True})
-                    return True
+                old_aggregate = ifcopenshell.util.element.get_aggregate(old)
+                new_aggregate = ifcopenshell.util.element.get_aggregate(new)
+                old_aggregate_id = old_aggregate.GlobalId if old_aggregate else None
+                new_aggregate_id = new_aggregate.GlobalId if new_aggregate else None
+                if old_aggregate_id != new_aggregate_id:
+                    self.change_register.setdefault(new.GlobalId, {}).update(
+                        {
+                            "aggregate_changed": {
+                                "old_aggregate": old_aggregate_id,
+                                "new_aggregate": new_aggregate_id,
+                            }
+                        }
+                    )
+                    found = True
+                    if self.is_shallow:
+                        return True
             elif relationship == "classification":
                 old_id = "ItemReference" if self.old.schema == "IFC2X3" else "Identification"
                 new_id = "ItemReference" if self.new.schema == "IFC2X3" else "Identification"
                 old_refs = [getattr(r, old_id) for r in ifcopenshell.util.classification.get_references(old)]
                 new_refs = [getattr(r, new_id) for r in ifcopenshell.util.classification.get_references(new)]
                 if old_refs != new_refs:
-                    self.change_register.setdefault(new.GlobalId, {}).update({"classification_changed": True})
-                    return True
+                    self.change_register.setdefault(new.GlobalId, {}).update(
+                        {"classification_changed": {"old_references": old_refs, "new_references": new_refs}}
+                    )
+                    found = True
+                    if self.is_shallow:
+                        return True
+            elif relationship == "material":
+                # get_materials() resolves layer sets, profile sets, constituent
+                # sets, set usages, and material lists down to their individual
+                # IfcMaterial entities, so this covers all material relationship
+                # shapes, not just a directly assigned IfcMaterial.
+                old_materials = sorted(m.Name for m in ifcopenshell.util.element.get_materials(old) if m.Name)
+                new_materials = sorted(m.Name for m in ifcopenshell.util.element.get_materials(new) if m.Name)
+                if old_materials != new_materials:
+                    self.change_register.setdefault(new.GlobalId, {}).update(
+                        {"material_changed": {"old_materials": old_materials, "new_materials": new_materials}}
+                    )
+                    found = True
+                    if self.is_shallow:
+                        return True
+            elif relationship == "placement":
+                old_matrix = ifcopenshell.util.placement.get_local_placement(old.ObjectPlacement)
+                new_matrix = ifcopenshell.util.placement.get_local_placement(new.ObjectPlacement)
+                moved = float(np.linalg.norm(old_matrix[:3, 3] - new_matrix[:3, 3]))
+                rotated = not np.allclose(old_matrix[:3, :3], new_matrix[:3, :3], atol=1e-2)
+                if moved > self.precision or rotated:
+                    self.change_register.setdefault(new.GlobalId, {}).update(
+                        {"placement_changed": {"moved": moved, "rotated": rotated}}
+                    )
+                    found = True
+                    if self.is_shallow:
+                        return True
+        return found or None
 
     def diff_element_basic_geometry(self, old, new):
         old_placement = ifcopenshell.util.placement.get_local_placement(old.ObjectPlacement)
@@ -439,7 +571,7 @@ if __name__ == "__main__":
         type=str,
         help=(
             'A list of space-separated relationships, chosen from "attributes", "geometry", '
-            '"type", "property", "container", "aggregate", "classification". '
+            '"type", "property", "container", "aggregate", "classification", "material", "placement". '
             'Defaults to "attributes geometry" when omitted.'
         ),
         default="",
