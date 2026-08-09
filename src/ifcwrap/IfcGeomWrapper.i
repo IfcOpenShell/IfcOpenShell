@@ -68,7 +68,7 @@
 }
 
 // Use RTTI to return the most specialized element proxy. The ownership flag is
-// supplied by the wrapped function, so iterator copies can transfer ownership
+// supplied by the wrapped function, so iterator results can transfer ownership
 // while borrowed serializer results remain non-owning.
 %typemap(out) ifcopenshell::geom::element* {
 	ifcopenshell::geom::serialized_element* serialized_elem = dynamic_cast<ifcopenshell::geom::serialized_element*>($1);

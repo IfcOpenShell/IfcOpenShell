@@ -44,7 +44,7 @@
  *   at least a single representation will process successfully				 *
  *																			  *
  * ifcopenshell::geom::iterator::get()													 *
- *   returns an owned copy of the current ifcopenshell::geom::element				  *
+ *   transfers ownership of the current ifcopenshell::geom::element				  *
  *																			  *
  * ifcopenshell::geom::iterator::next()													*
  *   returns true iff a following entity is available for a successive call to  *
@@ -115,8 +115,8 @@ namespace ifcopenshell::geom {
 		std::list<ifcopenshell::geom::element*> all_processed_elements_;
 		std::list<ifcopenshell::geom::native_element*> all_processed_native_elements_;
 
-		std::list<ifcopenshell::geom::element*>::const_iterator task_result_iterator_;
-		std::list<ifcopenshell::geom::native_element*>::const_iterator native_task_result_iterator_;
+		std::list<ifcopenshell::geom::element*>::iterator task_result_iterator_;
+		std::list<ifcopenshell::geom::native_element*>::iterator native_task_result_iterator_;
 
 		std::mutex element_ready_mutex_;
 		bool task_result_ptr_initialized = false;
@@ -297,7 +297,16 @@ namespace ifcopenshell::geom {
 		std::unique_ptr<native_element> get_native()
 		{
 			validate_iterator_state();
-			return std::make_unique<native_element>(**native_task_result_iterator_);
+			std::lock_guard<std::mutex> lock(element_ready_mutex_);
+			auto* result = *native_task_result_iterator_;
+			if (!result) {
+				throw std::runtime_error("current native element has already been retrieved");
+			}
+			*native_task_result_iterator_ = nullptr;
+			if (*task_result_iterator_ == result) {
+				*task_result_iterator_ = nullptr;
+			}
+			return std::unique_ptr<native_element>(result);
 		}
 
 		std::unique_ptr<element> get_object(int id);

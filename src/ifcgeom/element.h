@@ -79,7 +79,6 @@ namespace ifcopenshell::geom {
 		std::vector<std::shared_ptr<const ifcopenshell::geom::element>> _parent_storage;
 
 		friend class iterator;
-		virtual std::unique_ptr<element> clone() const { return std::make_unique<element>(*this); }
 		void set_parents(std::vector<std::unique_ptr<ifcopenshell::geom::element>>&& newparents) {
 			_parents.clear();
 			_parent_storage.clear();
@@ -177,7 +176,6 @@ namespace ifcopenshell::geom {
 		native_element(const native_element& other) = default;
 	private:
 		native_element& operator=(const native_element& other);
-		std::unique_ptr<element> clone() const override { return std::make_unique<native_element>(*this); }
 	};
 
 	class triangulation_element : public element {
@@ -197,7 +195,6 @@ namespace ifcopenshell::geom {
 		triangulation_element(const triangulation_element& other) = default;
 	private:
 		triangulation_element& operator=(const triangulation_element& other);
-		std::unique_ptr<element> clone() const override { return std::make_unique<triangulation_element>(*this); }
 	};
 
 	class serialized_element : public element {
@@ -212,7 +209,6 @@ namespace ifcopenshell::geom {
 		serialized_element(const serialized_element& other) = default;
 	private:
 		serialized_element& operator=(const serialized_element& other);
-		std::unique_ptr<element> clone() const override { return std::make_unique<serialized_element>(*this); }
 	};
 }
 

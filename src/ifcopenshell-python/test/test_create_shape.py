@@ -203,6 +203,36 @@ def test_iterator():
         assert iterator.initialize()
 
 
+@pytest.mark.parametrize("num_threads", [1, 2])
+def test_iterator_get_transfers_ownership(num_threads):
+    settings = ifcopenshell.geom.settings()
+    iterator = ifcopenshell.geom.iterator(settings, fn, num_threads)
+    assert iterator.initialize()
+
+    element = iterator.get()
+    element_id = element.id
+    with pytest.raises(RuntimeError, match="already been retrieved"):
+        iterator.get()
+
+    iterator.next()
+    assert element.id == element_id
+
+
+@pytest.mark.parametrize("num_threads", [1, 2])
+def test_iterator_get_native_transfers_ownership(num_threads):
+    settings = ifcopenshell.geom.settings()
+    iterator = ifcopenshell.geom.iterator(settings, fn, num_threads)
+    assert iterator.initialize()
+
+    element = iterator.get_native()
+    element_id = element.id
+    with pytest.raises(RuntimeError, match="already been retrieved"):
+        iterator.get_native()
+
+    iterator.next()
+    assert element.id == element_id
+
+
 def test_logging():
     assert ifcopenshell.logger
     logger = ifcopenshell.logger()

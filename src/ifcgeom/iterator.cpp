@@ -509,10 +509,17 @@ express::base ifcopenshell::geom::iterator::next() {
 	using std::chrono::high_resolution_clock;
 	validate_iterator_state();
 
-	if (*native_task_result_iterator_ != *task_result_iterator_) {
-		delete* native_task_result_iterator_;
+	{
+		std::lock_guard<std::mutex> lock(element_ready_mutex_);
+		auto* element = *task_result_iterator_;
+		auto* native_element = *native_task_result_iterator_;
+		*task_result_iterator_ = nullptr;
+		*native_task_result_iterator_ = nullptr;
+		if (native_element != element) {
+			delete native_element;
+		}
+		delete element;
 	}
-	delete* task_result_iterator_;
 
 	if (num_threads_ != 1) {
 		if (!wait_for_element()) {
@@ -523,6 +530,7 @@ express::base ifcopenshell::geom::iterator::next() {
             return express::base{};
 		}
 
+		std::lock_guard<std::mutex> lock(element_ready_mutex_);
 		task_result_iterator_++;
 		native_task_result_iterator_++;
 
@@ -540,6 +548,7 @@ express::base ifcopenshell::geom::iterator::next() {
 			}
 		}
 
+		std::lock_guard<std::mutex> lock(element_ready_mutex_);
 		task_result_iterator_++;
 		native_task_result_iterator_++;
 
@@ -552,7 +561,18 @@ std::unique_ptr<ifcopenshell::geom::element> ifcopenshell::geom::iterator::get()
 {
 	validate_iterator_state();
 
-	auto ret = *task_result_iterator_;
+	std::unique_ptr<ifcopenshell::geom::element> ret;
+	{
+		std::lock_guard<std::mutex> lock(element_ready_mutex_);
+		ret.reset(*task_result_iterator_);
+		if (!ret) {
+			throw std::runtime_error("current element has already been retrieved");
+		}
+		*task_result_iterator_ = nullptr;
+		if (*native_task_result_iterator_ == ret.get()) {
+			*native_task_result_iterator_ = nullptr;
+		}
+	}
 
 	// If we want to organize the element considering their hierarchy
 	if (settings_.get<ifcopenshell::geom::settings::UseElementHierarchy>().get()) {
@@ -603,7 +623,7 @@ std::unique_ptr<ifcopenshell::geom::element> ifcopenshell::geom::iterator::get()
 		}
 	}
 
-	return ret->clone();
+	return ret;
 }
 
 std::unique_ptr<ifcopenshell::geom::element> ifcopenshell::geom::iterator::get_object(int id) {
@@ -842,11 +862,15 @@ ifcopenshell::geom::iterator::~iterator() {
 	}
 
 	if (task_result_ptr_initialized) {
-		while (task_result_iterator_ != --all_processed_elements_.end()) {
-			if (*native_task_result_iterator_ != *task_result_iterator_) {
-				delete* native_task_result_iterator_;
+		std::lock_guard<std::mutex> lock(element_ready_mutex_);
+		while (task_result_iterator_ != all_processed_elements_.end()) {
+			auto* element = *task_result_iterator_;
+			auto* native_element = *native_task_result_iterator_;
+			if (native_element != element) {
+				delete native_element;
 			}
-			delete* task_result_iterator_++;
+			delete element;
+			task_result_iterator_++;
 			native_task_result_iterator_++;
 		}
 	}
