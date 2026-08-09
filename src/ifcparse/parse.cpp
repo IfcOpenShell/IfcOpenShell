@@ -2362,7 +2362,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 if (it == byid_.end()) {
                     logger_.get().error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                 } else {
-                    auto& storage = owner;
+                    auto storage = owner;
                     auto attr_index = p.first.index_;
                     
                     if (storage->template has_attribute_value<express::base>(attr_index)) {
@@ -2406,7 +2406,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 }
             }
 
-            auto& storage = owner;
+            auto storage = owner;
             auto attr_index = p.first.index_;
             
             if (storage->template has_attribute_value<express::base>(attr_index)) {
@@ -2448,7 +2448,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 }
             }
 
-            auto& storage = owner;
+            auto storage = owner;
             auto attr_index = p.first.index_;
             
             if (storage->template has_attribute_value<express::base>(attr_index)) {
