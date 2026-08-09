@@ -323,7 +323,7 @@ static std::vector<int> prioritisedContextIds(ifcopenshell::file* ifc_file) {
             try {
                 auto tv = entity.get("TargetView");
                 if (!tv.isNull()) {
-                    enumeration_reference er = tv;
+                    ifcopenshell::enumeration_reference er = tv;
                     info.target_view_priority =
                         rank(target_view_order, er.value());
                 }
