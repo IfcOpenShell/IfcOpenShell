@@ -286,6 +286,7 @@
 	#include "../ifcgeom/conversion_result.h"
 	#include "../ifcgeom/hybrid_kernel.h"
 	#include "../ifcgeom/geometry_serializer.h"
+	#include "../ifcgeom/kernel_plugin.h"
 
 	#include "../ifcparse/express.h"
 	#include "../ifcparse/file.h"
@@ -324,6 +325,16 @@ std::vector<std::string> get_plugin_search_paths() {
 
 void clear_plugin_search_paths() {
 	ifcopenshell::plugin::clear_search_paths();
+}
+
+bool has_geometry_library(const std::string& geometry_library) {
+	auto& registry = ifcopenshell::geom::kernels::kernel_registry_instance();
+	try {
+		return registry.has(geometry_library) ||
+			ifcopenshell::geom::kernels::load_kernel_plugin(registry, geometry_library);
+	} catch (const std::exception&) {
+		return false;
+	}
 }
 %}
 

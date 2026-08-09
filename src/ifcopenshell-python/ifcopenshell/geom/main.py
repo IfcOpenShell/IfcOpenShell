@@ -170,7 +170,12 @@ SETTING = Literal[
 # It's possible to use any hybrid combination by the format below:
 # "hybrid-library1-library2".
 # List is updated from abstract_kernel.cpp.
-GEOMETRY_LIBRARY = Literal["cgal", "cgal-simple", "opencascade", "hybrid-cgal-simple-opencascade"]
+GEOMETRY_LIBRARY = Literal["cgal", "cgal-simple", "manifold", "opencascade", "hybrid-cgal-simple-opencascade"]
+
+
+def has_geometry_library(geometry_library: str) -> bool:
+    """Return whether a geometry kernel library can be loaded."""
+    return ifcopenshell_wrapper.has_geometry_library(geometry_library)
 
 
 class missing_setting:
