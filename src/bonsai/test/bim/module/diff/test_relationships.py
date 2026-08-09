@@ -26,10 +26,16 @@ other relationship (eg. "property"), the list became non-empty without
 attributes/geometry in it, and ifcdiff's own default never kicked in. This
 silently hid changes such as a cleared PredefinedType or a changed mesh.
 
-This module ``bonsai.bim.module.diff.relationships`` is deliberately
-bpy-free, and this test file loads it directly by path (bypassing the
-bonsai package's ``__init__`` chain, which imports bpy) so the fix can be
-verified without a running Blender instance."""
+The fix keeps the user's selection as-is (ExecuteIfcDiff never mutates
+``diff_relationships``, since Blender forbids ID writes from ``draw()``) and
+instead reports, via ``get_skipped_default_relationships``, which of the
+library's own default relationships are NOT being compared, so "0 changed"
+can no longer be mistaken for "0 checked".
+
+``bonsai.bim.module.diff.relationships`` is deliberately bpy-free, and this
+test file loads it directly by path (bypassing the bonsai package's
+``__init__`` chain, which imports bpy) so the fix can be verified without a
+running Blender instance."""
 
 import importlib.util
 import sys
@@ -69,10 +75,40 @@ def setup_project() -> ifcopenshell.file:
     return ifc_file
 
 
+class TestGetSkippedDefaultRelationships:
+    """Unit tests for the pure function ExecuteIfcDiff uses to decide
+    whether to warn the user. Fails with ImportError/AttributeError before
+    the fix, since neither the module nor the function existed."""
+
+    def test_empty_selection_skips_nothing(self):
+        # An empty list makes ifcdiff.IfcDiff apply its own default
+        # (attributes + geometry), so nothing is silently skipped.
+        get_skipped = _load_bonsai_diff_relationships_module().get_skipped_default_relationships
+        assert get_skipped([]) == []
+
+    def test_unrelated_relationship_skips_both_defaults(self):
+        get_skipped = _load_bonsai_diff_relationships_module().get_skipped_default_relationships
+        assert set(get_skipped(["property"])) == {"attributes", "geometry"}
+
+    def test_selecting_both_defaults_skips_nothing(self):
+        get_skipped = _load_bonsai_diff_relationships_module().get_skipped_default_relationships
+        assert get_skipped(["property", "attributes", "geometry"]) == []
+
+    def test_selecting_one_default_skips_the_other(self):
+        get_skipped = _load_bonsai_diff_relationships_module().get_skipped_default_relationships
+        assert get_skipped(["property", "attributes"]) == ["geometry"]
+
+
 class TestDiffPanelDefaultRelationships:
-    def test_selected_relationship_still_detects_attribute_changes(self):
-        default_relationships = _load_bonsai_diff_relationships_module().DEFAULT_RELATIONSHIPS
-        assert set(default_relationships) == {"attributes", "geometry"}
+    def test_selected_relationship_alone_misses_attribute_changes(self):
+        # Documents *why* the warning matters: exactly what ExecuteIfcDiff
+        # sends to ifcdiff.IfcDiff when a user selects only "property" (its
+        # own selection, unmodified) misses a real attribute change.
+        relationships_module = _load_bonsai_diff_relationships_module()
+        assert relationships_module.get_skipped_default_relationships(["property"]) == [
+            "attributes",
+            "geometry",
+        ]
 
         ifc_file = setup_project()
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
@@ -84,22 +120,17 @@ class TestDiffPanelDefaultRelationships:
         pset = ifcopenshell.api.pset.add_pset(new_file, product=wall_new, name="Pset_WallCommon")
         ifcopenshell.api.pset.edit_pset(new_file, pset=pset, properties={"FireRating": "2HR"})
 
-        # The old, buggy Bonsai operator: "attributes"/"geometry" were not in
-        # RelationshipType, so a user adding a "property" check could only
-        # ever send ["property"] to IfcDiff.
-        old_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["property"])
-        old_diff.diff()
-        old_changes = old_diff.change_register.get(wall.GlobalId, {})
-        assert old_changes.get("properties_changed")
-        assert "attributes_changed" not in old_changes  # the cleared PredefinedType is missed
+        diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["property"])
+        diff.diff()
+        changes = diff.change_register.get(wall.GlobalId, {})
+        assert changes.get("properties_changed")
+        assert "attributes_changed" not in changes  # the cleared PredefinedType is missed
 
-        # The fixed Bonsai operator: the Diff panel pre-populates
-        # diff_relationships with DEFAULT_RELATIONSHIPS, so adding "property"
-        # results in ["attributes", "geometry", "property"].
-        new_diff = ifcdiff.IfcDiff(
-            ifc_file, new_file, relationships=[*default_relationships, "property"], is_shallow=False
-        )
-        new_diff.diff()
-        new_changes = new_diff.change_register.get(wall.GlobalId, {})
-        assert new_changes.get("attributes_changed") is True
-        assert new_changes.get("properties_changed")
+        # Following the warning and adding "attributes"/"geometry" catches it.
+        fixed_relationships = [*relationships_module.DEFAULT_RELATIONSHIPS, "property"]
+        assert relationships_module.get_skipped_default_relationships(fixed_relationships) == []
+        fixed_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=fixed_relationships, is_shallow=False)
+        fixed_diff.diff()
+        fixed_changes = fixed_diff.change_register.get(wall.GlobalId, {})
+        assert fixed_changes.get("attributes_changed") is True
+        assert fixed_changes.get("properties_changed")

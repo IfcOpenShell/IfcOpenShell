@@ -21,7 +21,6 @@ from bpy.types import Panel
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.module.diff.data import DiffData
-from bonsai.bim.module.diff.relationships import DEFAULT_RELATIONSHIPS
 
 
 class BIM_PT_diff(Panel):
@@ -75,15 +74,6 @@ class BIM_PT_diff(Panel):
             row = layout.row(align=True)
             row.prop(props, "new_file")
             row.operator("bim.select_diff_new_file", icon="FILE_FOLDER", text="")
-
-        if not props.diff_relationships:
-            # First time this scene's Diff panel is drawn: pre-select the
-            # same relationships ifcdiff.IfcDiff checks by default, so
-            # picking an extra relationship (eg. "property") only adds to
-            # the check instead of silently replacing it.
-            for relationship in DEFAULT_RELATIONSHIPS:
-                item = props.diff_relationships.add()
-                item.relationship = relationship
 
         row = layout.row(align=True)
         row.prop(props, "diff_relationships")
