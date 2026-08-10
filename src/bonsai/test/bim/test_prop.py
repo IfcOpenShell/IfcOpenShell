@@ -131,6 +131,71 @@ class TestGetAttributeUnitEnumItems(NewFile):
         assert [i[0] for i in items] == ["0"]
 
 
+class TestGetUnitEnumItemsForSpecialType(NewFile):
+    def test_matches_the_attribute_wrapper_output(self):
+        # Regression test for extracting get_unit_enum_items_for_special_type out of
+        # get_attribute_unit_enum_items: the wrapper must still produce identical items for
+        # the plain (no own-unit-fallback-needed) case.
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        length_mm = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[length_mm])
+        ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
+
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcLengthMeasure(2.5))
+        metadata = import_single_property(ifc, element, prop)
+
+        direct_items = bonsai.bim.prop.get_unit_enum_items_for_special_type(metadata.special_type, ifc)
+        wrapper_items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
+        assert direct_items == wrapper_items
+
+    def test_returns_just_default_when_ifc_file_is_none(self):
+        assert bonsai.bim.prop.get_unit_enum_items_for_special_type("LENGTH", None) == [("0", "Default", "")]
+
+
+class TestUnitSymbolWithAreaVolumeDerivedFromLength(NewFile):
+    """Regression test: AREAUNIT/VOLUMEUNIT have no IfcDerivedUnitEnum member, so a project
+    whose area/volume default is an IfcDerivedUnit rather than a literal-UnitType-matching
+    IfcSIUnit/IfcConversionBasedUnit has no literal UnitType to match on.
+    ifcopenshell.util.unit.get_project_unit() used to only match by literal UnitType, so the
+    read-only unit symbol and the edit-mode "Default (<symbol>)" picker entry both silently
+    fell back to no symbol at all in that case.
+    """
+
+    def setup_project_with_derived_area_and_volume(self, ifc):
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
+        area = ifcopenshell.api.unit.add_derived_unit(ifc, "USERDEFINED", "area-ish", {length: 2})
+        volume = ifcopenshell.api.unit.add_derived_unit(ifc, "USERDEFINED", "volume-ish", {length: 3})
+        ifcopenshell.api.unit.assign_unit(ifc, units=[length, area, volume])
+
+    def test_default_picker_entry_shows_the_resolved_symbol(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        self.setup_project_with_derived_area_and_volume(ifc)
+
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcAreaMeasure(5.0))
+        metadata = import_single_property(ifc, element, prop)
+
+        items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
+        assert items[0][1] == "Default (m2)"
+
+    def test_read_only_display_resolves_the_symbol(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        self.setup_project_with_derived_area_and_volume(ifc)
+
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcVolumeMeasure(5.0))
+        metadata = import_single_property(ifc, element, prop)
+
+        assert metadata.unit_symbol == "m3"
+        assert metadata.display_name == "Foo, m3"
+
+
 class TestUpdateAttributeUnitId(NewFile):
     def test_syncs_unit_id_and_converts_float_value_when_unit_id_enum_changes(self):
         ifc = ifcopenshell.file()
@@ -145,11 +210,42 @@ class TestUpdateAttributeUnitId(NewFile):
         metadata = import_single_property(ifc, element, prop)
         assert metadata.unit_id == 0
         assert metadata.float_value == 2500.0
+        assert metadata.unit_symbol == "mm"
+        assert metadata.display_name == "Foo, mm"
 
         metadata.unit_id_enum = str(length_m.id())
 
         assert metadata.unit_id == length_m.id()
         assert metadata.float_value == pytest.approx(2.5)  # converted, not just relabeled
+        # Regression test: unit_symbol/display_name used to be a snapshot taken once at import
+        # time, so picking a different unit converted the value but left the label showing the
+        # old unit's symbol.
+        assert metadata.unit_symbol == "m"
+        assert metadata.display_name == "Foo, m"
+
+
+class TestUnitSymbolReflectsLiveProjectState(NewFile):
+    def test_symbol_updates_after_a_project_default_unit_is_assigned_later(self):
+        # Regression test: unit_symbol used to be a snapshot computed once at import time, so a
+        # property/quantity imported before its measure type had a project default unit assigned
+        # kept showing no symbol even after one was added, unless the panel was closed and
+        # reopened (re-triggering import). It's now computed fresh on every access.
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        # No AREAUNIT assigned yet.
+
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcAreaMeasure(5.0))
+        metadata = import_single_property(ifc, element, prop)
+        assert metadata.unit_symbol == ""
+        assert metadata.display_name == "Foo"
+
+        area = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[area])
+
+        assert metadata.unit_symbol == "m2"
+        assert metadata.display_name == "Foo, m2"
 
 
 class TestImportPsetFromExistingWithAGenericNumericValueAndAnExplicitUnit(NewFile):
