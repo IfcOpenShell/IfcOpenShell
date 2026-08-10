@@ -34,10 +34,10 @@ SCHEMA_ORDER = {
 }
 
 MAIN_SHARED_OBJECT_RE = re.compile(r"^_ifcopenshell_wrapper(?:\.|$)")
-SCHEMA_PLUGIN_RE = re.compile(r"^ifcopenshell\.parse\.schema\.([^.]+)\.so$")
-MAPPING_PLUGIN_RE = re.compile(r"^ifcopenshell\.geometry\.mapping\.([^.]+)\.so$")
-DOCUMENT_PLUGIN_RE = re.compile(r"^ifcopenshell\.document\.[^.]+\.([^.]+)\.so$")
-GEOMETRY_SERIALIZATION_PLUGIN_RE = re.compile(r"^ifcopenshell\.geometry\.serialization\.([^.]+)\.so$")
+SCHEMA_PLUGIN_RE = re.compile(r"^ifcopenshell_parse_schema_(.+)\.so$")
+MAPPING_PLUGIN_RE = re.compile(r"^ifcopenshell_geometry_mapping_(.+)\.so$")
+DOCUMENT_PLUGIN_RE = re.compile(r"^ifcopenshell_document_[a-z0-9]+(?:_(.+))?\.so$")
+GEOMETRY_SERIALIZATION_PLUGIN_RE = re.compile(r"^ifcopenshell_geometry_writer_(.+)\.so$")
 
 
 def schema_key(schema: str) -> tuple[int, str]:
