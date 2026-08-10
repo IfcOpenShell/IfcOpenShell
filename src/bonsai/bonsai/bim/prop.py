@@ -33,6 +33,8 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 
+import ifcopenshell.util.unit
+
 import bonsai.bim
 import bonsai.bim.handler
 import bonsai.tool as tool
@@ -119,6 +121,50 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
         items = [(identifier, name, prop.enum_descriptions[i].name) for i, (identifier, name, _) in enumerate(items)]
 
     return items
+
+
+def get_attribute_unit_enum_items(prop: "Attribute", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    """Items for `Attribute.unit_id_enum`: "(Project Default)" plus every candidate unit
+    matching `prop.special_type`, filtered per-instance since candidates depend on the
+    attribute's own measure type (unlike the globally-shared lists in `bonsai.bim.ui.EnumData`).
+    """
+    ifc_file = tool.Ifc.get()
+    if not ifc_file or not tool.Pset.is_measurable_special_type(prop.special_type):
+        return [(cache_string("0"), cache_string("Default"), "")]
+
+    default_symbol = tool.Pset.get_unit_symbol_for_special_type(prop.special_type, ifc_file)
+    items: list[tuple[str, str, str]] = [
+        (cache_string("0"), cache_string(f"Default ({default_symbol})" if default_symbol else "Default"), "")
+    ]
+    seen_ids = {0}
+    for unit in tool.Pset.get_candidate_units_for_special_type(prop.special_type, ifc_file):
+        name = getattr(unit, "Name", None) or unit.is_a()
+        symbol = ifcopenshell.util.unit.get_unit_symbol(unit)
+        label = f"{name} ({symbol})" if symbol else name
+        items.append((cache_string(str(unit.id())), cache_string(label), ""))
+        seen_ids.add(unit.id())
+
+    # Defensive: real-world files sometimes carry a Unit that doesn't cleanly match our
+    # candidate-matching logic (e.g. a mismatched UnitType). Always keep the attribute's own
+    # current override selectable/representable, however unusual, so setting unit_id_enum to
+    # match an already-seeded unit_id can never raise "enum not found".
+    if prop.unit_id and prop.unit_id not in seen_ids:
+        own_unit = ifc_file.by_id(prop.unit_id)
+        name = getattr(own_unit, "Name", None) or own_unit.is_a()
+        symbol = ifcopenshell.util.unit.get_unit_symbol(own_unit)
+        label = f"{name} ({symbol})" if symbol else name
+        items.append((cache_string(str(prop.unit_id)), cache_string(label), ""))
+
+    return items
+
+
+def update_attribute_unit_id(self: "Attribute", context: bpy.types.Context) -> None:
+    new_unit_id = int(tool.Blender.get_enum_safe(self, "unit_id_enum") or "0")
+    if ifc_file := tool.Ifc.get():
+        # Must run before self.unit_id is overwritten: convert_attribute_unit needs the OLD
+        # unit_id to know what unit the current value is expressed in.
+        tool.Pset.convert_attribute_unit(self, new_unit_id, ifc_file)
+    self.unit_id = new_unit_id
 
 
 def update_schema_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
@@ -314,6 +360,9 @@ class Attribute(PropertyGroup):
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
     unit_symbol: StringProperty(name="Unit Symbol", default="")
+    unit_id: IntProperty(name="Unit Override", default=0)
+    """STEP id of this property/quantity's own Unit override. 0 means "use the project default"."""
+    unit_id_enum: EnumProperty(items=get_attribute_unit_enum_items, name="Unit", update=update_attribute_unit_id)
     use_explorer_ui: BoolProperty()
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
     update: StringProperty(name="Update", description="Custom update function to be executed")
@@ -345,6 +394,8 @@ class Attribute(PropertyGroup):
         value_max: float
         value_max_constraint: bool
         unit_symbol: str
+        unit_id: int
+        unit_id_enum: str
         use_explorer_ui: bool
         metadata: str
         update: str
