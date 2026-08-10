@@ -1788,9 +1788,10 @@ namespace {
 		// product's own geometry.
 		//
 		// A coincident match is only a meaningful "depth-tie" candidate when the matched face is
-		// roughly front/back-facing relative to the camera -- i.e. the kind of face a straight
-		// ray along the view direction can actually cross, which is exactly what both this
-		// plane-coincidence test and the later ray-cast occlusion test are built to reason about.
+		// genuinely FRONT-facing relative to the camera -- the kind of face a viewer looking along
+		// the view direction would actually see, which is exactly what both this plane-coincidence
+		// test and the later ray-cast occlusion test are built to reason about.
+		//
 		// An *edge-on* matched face (normal nearly perpendicular to the view direction -- e.g. the
 		// end-cap/"side" face of a wall in a section or elevation view, which is genuinely
 		// invisible from this camera) isn't that: being "on" such a face's plane says nothing about
@@ -1799,8 +1800,28 @@ namespace {
 		// coplanar, offset objects (confirmed by checking all three known cases directly: the
 		// original, confirmed-correct target edge matches a clearly camera-facing face, normal
 		// ~(0,0.97,0.24); both confirmed-wrong "shifted wall" cases match an edge-on face, normal
-		// ~(±1,0,0)). So an edge-on match is treated as no match at all here, leaving the candidate
-		// edge ineligible for restoration via this mechanism.
+		// ~(±1,0,0)).
+		//
+		// A *back*-facing matched face (normal pointing away from the camera) isn't a meaningful
+		// depth-tie candidate either, for the same reason it's excluded from cross-coplanar
+		// matching itself (find_cross_coplanar_matches()'s own resolve_edge_location_subrange(),
+		// issue #3742 follow-up): two solids meeting face-to-face (a wall's own hidden end-cap
+		// against its neighbour's, an underside resting on whatever's below) always have opposite-
+		// facing normals at the exact point they touch, so at most one side can ever be genuinely
+		// front-facing to a given camera. Confirmed via direct debug instrumentation against a real
+		// building file: a candidate edge touching a neighbour end-to-end (opposite normals) along
+		// its full length was found "coincident" with the neighbour's own back-facing face, and
+		// since every sample point necessarily lands exactly on that shared boundary (never off
+		// it), the ray-cast occlusion test below never gets a chance to detect that the neighbour's
+		// actual solid bulk, just off that exact line, does occlude the surrounding area -- the
+		// whole edge was wrongly restored as a visible outline. Before the cross-coplanar redesign
+		// above, this was masked: the old, facing-agnostic matcher classified such edges
+		// cross-coplanar/mat-style-change outright, and this function already skips those classes
+		// entirely, so they never reached this test at all.
+		//
+		// So both edge-on and back-facing matches are treated as no match here, leaving the
+		// candidate edge ineligible for restoration via this mechanism -- it keeps whatever HLR
+		// itself already computed for it, hidden or not.
 		// Returns the specific foreign face `p` sits on, and its owning product, if any -- not
 		// just whether one exists. Exposing the match (rather than a plain bool) lets
 		// is_restorable_at() below nudge its own occlusion probe toward that face's own interior,
@@ -1822,7 +1843,7 @@ namespace {
 					if (!cross_coplanar::face_normal(face, n)) {
 						continue;
 					}
-					if (std::abs(n.Dot(view_direction.Direction())) < 0.05) {
+					if (n.Dot(view_direction.Direction()) < 0.05) {
 						continue;
 					}
 					TopExp_Explorer vexp(face, TopAbs_VERTEX);
