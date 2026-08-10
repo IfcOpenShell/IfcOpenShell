@@ -95,6 +95,49 @@ class TestGetProjectUnit(test.bootstrap.IFC4):
         assert self.file.units == {"LENGTHUNIT": length2, "AREAUNIT": area}
 
 
+class TestGetCandidateUnits(test.bootstrap.IFC4):
+    def test_returns_only_units_matching_the_unit_type(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        mm = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        m = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        candidates = subject.get_candidate_units(self.file, "LENGTHUNIT")
+        assert set(candidates) == {mm, m}
+        assert area not in candidates
+
+    def test_returns_all_matching_units_not_just_the_assigned_default(self):
+        # Unlike get_project_unit, which only returns the one assigned default.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        mm = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        m = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[mm])
+        assert subject.get_project_unit(self.file, "LENGTHUNIT") == mm
+        assert set(subject.get_candidate_units(self.file, "LENGTHUNIT")) == {mm, m}
+
+    def test_derived_unit_matched_by_literal_unit_type(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        modulus = ifcopenshell.api.unit.add_derived_unit(self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1})
+        assert subject.get_candidate_units(self.file, "MODULUSOFELASTICITYUNIT") == [modulus]
+
+    def test_userdefined_derived_unit_matched_by_dimensional_fallback(self):
+        # No literal UnitType match (USERDEFINED), but dimensionally it's a pressure unit,
+        # and PRESSUREUNIT is one of the core families covered by named_dimensions.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        weird_pressure = ifcopenshell.api.unit.add_derived_unit(
+            self.file, "USERDEFINED", "pressure-ish", {force: 1, area: -1}
+        )
+        assert subject.get_candidate_units(self.file, "PRESSUREUNIT") == [weird_pressure]
+
+    def test_empty_when_nothing_matches(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        assert subject.get_candidate_units(self.file, "MASSUNIT") == []
+
+
 class TestGetPropertyUnit(test.bootstrap.IFC4):
     def test_no_unit(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -300,6 +343,22 @@ class TestGetDerivedUnitScale(test.bootstrap.IFC4):
         time = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="TIMEUNIT", prefix="MILLI")
         weird = ifcopenshell.api.unit.add_derived_unit(self.file, "USERDEFINED", "force per time", {force: 1, time: -1})
         assert subject.get_derived_unit_scale(weird) == pytest.approx(1 / 0.001)
+
+
+class TestGetUnitScale(test.bootstrap.IFC4):
+    def test_dispatches_to_named_unit_scale_for_si_and_conversion_based_units(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        mm = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ft = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="foot")
+        assert subject.get_unit_scale(mm) == subject.get_named_unit_scale(mm)
+        assert subject.get_unit_scale(ft) == subject.get_named_unit_scale(ft)
+
+    def test_dispatches_to_derived_unit_scale_for_derived_units(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        mass = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="MASSUNIT", prefix="KILO")
+        volume = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="VOLUMEUNIT")
+        density = ifcopenshell.api.unit.add_derived_unit(self.file, "MASSDENSITYUNIT", None, {mass: 1, volume: -1})
+        assert subject.get_unit_scale(density) == subject.get_derived_unit_scale(density)
 
 
 class TestGetUnitSymbol(test.bootstrap.IFC4):

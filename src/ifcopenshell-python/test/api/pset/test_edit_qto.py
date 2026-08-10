@@ -18,6 +18,7 @@
 
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import test.bootstrap
 
 
@@ -150,3 +151,87 @@ class TestEditQto(test.bootstrap.IFC4):
         qto = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert qto.Quantities[0].Name == "MyLength"
         assert qto.Quantities[0].LengthValue == 34
+
+    def test_adding_a_new_quantity_with_a_custom_unit(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        custom_unit = self.file.createIfcSIUnit(UnitType="LENGTHUNIT", Prefix="MILLI", Name="METRE")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_qto(
+            self.file, qto=qto, properties={"MyLength": {"NominalValue": 30.0, "Unit": custom_unit}}
+        )
+        qto = element.IsDefinedBy[0].RelatingPropertyDefinition
+        assert qto.Quantities[0].Name == "MyLength"
+        assert qto.Quantities[0].LengthValue == 30.0
+        assert qto.Quantities[0].Unit == custom_unit
+
+    def test_editing_an_existing_quantitys_unit(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        custom_unit = self.file.createIfcSIUnit(UnitType="LENGTHUNIT", Prefix="MILLI", Name="METRE")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"MyLength": 12.0})
+        quantity = qto.Quantities[0]
+        assert quantity.Unit is None
+
+        ifcopenshell.api.pset.edit_qto(
+            self.file, qto=qto, properties={"MyLength": {"NominalValue": 30.0, "Unit": custom_unit}}
+        )
+        assert quantity.Unit == custom_unit
+        assert quantity.LengthValue == 30.0
+
+    def test_explicitly_clearing_a_quantitys_unit_override(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        custom_unit = self.file.createIfcSIUnit(UnitType="LENGTHUNIT", Prefix="MILLI", Name="METRE")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_qto(
+            self.file, qto=qto, properties={"MyLength": {"NominalValue": 30.0, "Unit": custom_unit}}
+        )
+        quantity = qto.Quantities[0]
+        assert quantity.Unit == custom_unit
+
+        ifcopenshell.api.pset.edit_qto(
+            self.file, qto=qto, properties={"MyLength": {"NominalValue": 40.0, "Unit": None}}
+        )
+        assert quantity.Unit is None
+        assert quantity.LengthValue == 40.0
+
+    def test_a_bare_value_does_not_disturb_an_existing_units_override(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        custom_unit = self.file.createIfcSIUnit(UnitType="LENGTHUNIT", Prefix="MILLI", Name="METRE")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_qto(
+            self.file, qto=qto, properties={"MyLength": {"NominalValue": 30.0, "Unit": custom_unit}}
+        )
+        quantity = qto.Quantities[0]
+        assert quantity.Unit == custom_unit
+
+        ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"MyLength": 42.0})
+        assert quantity.Unit == custom_unit
+        assert quantity.LengthValue == 42.0
+
+    def test_complex_quantity_editing_is_unaffected_by_the_unit_wrapper_convention(self):
+        # Regression guard: dict values are already overloaded to mean "this is an
+        # IfcPhysicalComplexQuantity spec" ({"Discrimination": ..., "HasQuantities": ...}).
+        # The new {"Unit": ..., "NominalValue": ...} convention must not be confused with it.
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_qto(
+            self.file,
+            qto=qto,
+            properties={"Layers": {"Discrimination": "layer", "HasQuantities": {"Width": 5.0}}},
+        )
+        qto = element.IsDefinedBy[0].RelatingPropertyDefinition
+        complex_qty = qto.Quantities[0]
+        assert complex_qty.is_a("IfcPhysicalComplexQuantity")
+        assert complex_qty.Name == "Layers"
+        assert complex_qty.Discrimination == "layer"
+        assert complex_qty.HasQuantities[0].Name == "Width"
+        assert complex_qty.HasQuantities[0].LengthValue == 5.0
+
+        # Editing it again (update_existing_property's complex-quantity branch) still works too.
+        ifcopenshell.api.pset.edit_qto(
+            self.file,
+            qto=qto,
+            properties={"Layers": {"Discrimination": "layer2", "HasQuantities": {"Width": 6.0}}},
+        )
+        assert complex_qty.Discrimination == "layer2"
+        assert complex_qty.HasQuantities[0].LengthValue == 6.0

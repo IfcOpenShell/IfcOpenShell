@@ -188,6 +188,36 @@ class TestEditPsetIFC2X3(test.bootstrap.IFC2X3):
         assert unit.Prefix == "GIGA"
         assert unit.Name == "PASCAL"
 
+    def test_explicitly_clearing_a_propertys_unit_override(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        custom_unit = self.file.createIfcSIUnit(UnitType="PRESSUREUNIT", Prefix="GIGA", Name="PASCAL")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset=pset, properties={"MyCustom": {"NominalValue": 30.0, "Unit": custom_unit}}
+        )
+        prop = pset.HasProperties[0]
+        assert prop.Unit == custom_unit
+
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset=pset, properties={"MyCustom": {"NominalValue": 40.0, "Unit": None}}
+        )
+        assert prop.Unit is None
+        assert prop.NominalValue.wrappedValue == 40.0
+
+    def test_a_bare_value_does_not_disturb_an_existing_units_override(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        custom_unit = self.file.createIfcSIUnit(UnitType="PRESSUREUNIT", Prefix="GIGA", Name="PASCAL")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset=pset, properties={"MyCustom": {"NominalValue": 30.0, "Unit": custom_unit}}
+        )
+        prop = pset.HasProperties[0]
+        assert prop.Unit == custom_unit
+
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"MyCustom": 42.0})
+        assert prop.Unit == custom_unit
+        assert prop.NominalValue.wrappedValue == 42.0
+
     def test_editing_properties_of_non_rooted_elements(self):
         element = self.file.createIfcMaterial()
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
