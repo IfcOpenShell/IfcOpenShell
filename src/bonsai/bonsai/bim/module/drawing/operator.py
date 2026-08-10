@@ -8152,6 +8152,20 @@ def _update_blender_curve(
     if not obj or not obj.data or not hasattr(obj.data, "splines"):
         return
 
+    # Parametric dimensions must lie on the annotation object's drawing plane so
+    # they render correctly in section/elevation drawings.  Project every point
+    # by zeroing its annotation-local Z (depth relative to the object origin),
+    # then rebuild world-space coords so both Blender and IFC stay in sync.
+    if ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension"):
+        inv_world_local = obj.matrix_world.inverted()
+        projected = []
+        for pt in resolved_pts_m:
+            local = inv_world_local @ Vector((float(pt[0]), float(pt[1]), float(pt[2])))
+            local.z = 0.0
+            world = obj.matrix_world @ local
+            projected.append((world.x, world.y, world.z))
+        resolved_pts_m = projected
+
     curve_data: bpy.types.Curve = obj.data
     inv_world = obj.matrix_world.inverted()
     n = len(resolved_pts_m)
