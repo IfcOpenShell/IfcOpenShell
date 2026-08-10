@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Literal, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, Literal, Union
 
 from typing_extensions import Self, Unpack
 

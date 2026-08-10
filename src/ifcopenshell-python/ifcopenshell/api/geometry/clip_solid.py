@@ -19,7 +19,8 @@
 from __future__ import annotations
 
 import json
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
