@@ -35,6 +35,9 @@ jobs:
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
       - name: Install Dependencies
         run: |
           brew update
@@ -61,7 +64,7 @@ jobs:
       - name: Unpack Dependencies
         run: |
           cd build
-          python ../nix/cache_dependencies.py unpack
+          uv run ../nix/cache_dependencies.py unpack
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.23
@@ -102,7 +105,7 @@ jobs:
           # INSTALL_RPATH to "@loader_path" on Apple.
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
             BUILD_BONSAIVIEWER=ON QT_DIR="${QT_DIR}" \
-            python3 ./nix/build-all.py -v --diskcleanup --ifcopenshell-shared ${MAC_INTEL} \
+            uv run ./nix/build-all.py -v --diskcleanup --ifcopenshell-shared ${MAC_INTEL} \
             | tee build.log
 
       - name: Upload Build Logs
@@ -119,7 +122,7 @@ jobs:
       - name: Pack Dependencies
         run: |
           cd build
-          python ../nix/cache_dependencies.py pack
+          uv run ../nix/cache_dependencies.py pack
 
       - name: Commit and Push Changes to Build Repository
         run: |
@@ -136,7 +139,7 @@ jobs:
           # packaging/build.py stages the connector binary + connector.json
           # into dist/autodesk/; the .app loop below copies that folder into
           # the bundle. Same on-disk shape as the Linux and Windows builds.
-          python3 src/bonsaiviewer-autodesk/packaging/build.py
+          uv run src/bonsaiviewer-autodesk/packaging/build.py
           autodesk_connector_dir="$PWD/src/bonsaiviewer-autodesk/dist/autodesk"
           test -d "$autodesk_connector_dir"
 
