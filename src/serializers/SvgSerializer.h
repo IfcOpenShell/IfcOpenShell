@@ -936,6 +936,7 @@ namespace {
 				}
 			}
 
+
 			// Same convention as classify_edge_from_faces()'s own front/back/edge-on split
 			// (SvgSerializer.cpp) -- confirmed identical, not just similarly-named:
 			// view_direction_.Direction() (passed in as `view_direction` here) and that
@@ -2057,16 +2058,24 @@ namespace {
 		auto classified_it = classified_items.begin();
 		for (; result_it != result.end() && classified_it != classified_items.end(); ++result_it, ++classified_it) {
 			const IfcUtil::IfcBaseEntity* product = std::get<0>(*classified_it);
-			const std::string& cls = std::get<1>(*classified_it);
-			// Cross-coplanar/mat-style-change classes represent an *intentional* touching
-			// boundary with a foreign product's coincident face -- that's the whole definition
-			// of those classes, so the foreign-face-coincidence test below would trivially match
-			// every one of their edges. Only ordinary single-object classes (outline/sharp/
-			// crease/flush/boundary) are eligible: for those, foreign-face coincidence is
-			// unexpected and is specifically the HLR depth-tie artifact this pass targets.
-			if (cls == cross_coplanar::class_name || cls == mat_style_change::class_name) {
-				continue;
-			}
+			// Cross-coplanar/mat-style-change edges are NOT excluded here (a former version of
+			// this pass skipped them, reasoning that "an intentional touching boundary with a
+			// foreign coincident face" makes point_on_foreign_face()'s coincidence test trivially
+			// true for every one of their edges). That's exactly why they need this pass, not why
+			// they should be exempt from it: the touching boundary these classes are BUILT from is
+			// itself a textbook HLR depth-tie -- two winning, camera-facing faces meeting exactly
+			// at their shared edge, with nothing else nearer -- so HLR can and does mark part of
+			// a genuinely full-length matched edge hidden purely from that same-depth ambiguity
+			// (confirmed via issue #3742 follow-up, NORTH SECTION TILT's "Extrusion L2" cases: a
+			// shared vertical edge classified a clean, full-length cross-coplanar match still lost
+			// its lower portion to HLR, which then reappeared under whatever *other* native class
+			// happened to coincide there instead). `is_restorable_at()`'s real safety net --
+			// requiring BOTH a genuinely coincident foreign face AND `is_genuinely_occluded()`
+			// finding nothing nearer -- already correctly leaves alone any portion that's hidden by
+			// real, non-coincident occlusion (a third closer product), so letting these classes
+			// through costs nothing: `result_it`/`classified_it` stay paired by construction (see
+			// hlr_calc's own class-preserving push_back), so a restored sub-edge lands back in the
+			// SAME cross-coplanar/mat-style-change bucket it came from, never relabelled.
 			const TopoDS_Shape& original_edges = std::get<2>(*classified_it);
 			TopoDS_Shape& visible_edges = std::get<2>(*result_it);
 

@@ -29,6 +29,7 @@
 #include <limits>
 #include <algorithm>
 #include <numeric>
+#include <unordered_set>
 
 #include <gp_Pln.hxx>
 #include <gp_Trsf.hxx>
@@ -2665,7 +2666,24 @@ namespace {
 	// paint-order bug to fix. Only a genuine class *mismatch* (e.g. one side `outline`, the
 	// other `sharp`) indicates one of the two is the wrong edge to be painting on top of the
 	// other; same-class duplicates are left completely untouched.
-	std::unordered_map<quant_edge_key, int, quant_edge_key_hash>
+	// Second element: keys where an `outline` edge shares the exact same quantized endpoints as a
+	// `cross-coplanar` OR Case-A `mat-style-change` edge -- `outline` unconditionally loses that
+	// specific collision (see the cross-coplanar-vs-outline exception in
+	// compute_coincident_edge_overlap_coverage()'s own comment for the full rationale; this is
+	// that same exception's exact-key counterpart, extended to mat-style-change here because the
+	// EXACT-key case is specifically an HLR duplicate-fragment artifact, never Case B's own
+	// deliberate nesting -- Case B's layer-boundary edges are constructed strictly shorter than
+	// (nested inside) the outline edge they share a line with, so they essentially never share
+	// BOTH endpoints exactly; that confirmed regression's own fix lives entirely in the
+	// overlap-coverage function below, untouched by this exact-key exception. Issue #3742
+	// follow-up, NORTH SECTION TILT "Extrusion L2"/"Shifted in space"/"Hole on edge" cases: HLR's
+	// own silhouette computation for a product's plain `outline` bucket and for that same
+	// product's already-verified `cross-coplanar`/`mat-style-change` bucket can each independently
+	// emit a short fragment with IDENTICAL endpoints at a genuine corner, and the plain aggregate
+	// "lowest priority number wins" rule can't express "outline loses to X but still beats
+	// everything else" -- outline's own priority number (0, the global minimum) can never be
+	// "worse than the best" by that comparison alone.
+	std::pair<std::unordered_map<quant_edge_key, int, quant_edge_key_hash>, std::unordered_set<quant_edge_key, quant_edge_key_hash>>
 	compute_coincident_edge_best_priority(
 		const std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>>& hlr_items,
 		double tolerance
@@ -2674,6 +2692,7 @@ namespace {
 		struct edge_ref {
 			const IfcUtil::IfcBaseEntity* product;
 			int priority;
+			std::string cls;
 		};
 		std::unordered_map<quant_edge_key, std::vector<edge_ref>, quant_edge_key_hash> buckets;
 
@@ -2697,32 +2716,51 @@ namespace {
 					project_to_view_plane(BRep_Tool::Pnt(v0)),
 					project_to_view_plane(BRep_Tool::Pnt(v1)),
 					scale);
-				buckets[key].push_back({ product, prio });
+				buckets[key].push_back({ product, prio, cls });
 			}
 		}
 
 		std::unordered_map<quant_edge_key, int, quant_edge_key_hash> best_priority_by_key;
+		std::unordered_set<quant_edge_key, quant_edge_key_hash> outline_loses_exact_key;
 		for (auto& kv : buckets) {
 			bool multi_product = false;
 			bool multi_priority = false;
+			bool has_outline = false;
+			bool has_exception_class = false; // cross-coplanar or mat-style-change
 			int best_prio = kv.second[0].priority;
-			for (size_t i = 1; i < kv.second.size(); ++i) {
+			int best_prio_excluding_outline = kv.second[0].cls == "outline"
+				? std::numeric_limits<int>::max() : kv.second[0].priority;
+			for (size_t i = 0; i < kv.second.size(); ++i) {
 				if (kv.second[i].product != kv.second[0].product) {
 					multi_product = true;
 				}
 				if (kv.second[i].priority != kv.second[0].priority) {
 					multi_priority = true;
 				}
-				best_prio = std::min(best_prio, kv.second[i].priority);
+				if (kv.second[i].cls == "outline") {
+					has_outline = true;
+				} else {
+					best_prio_excluding_outline = std::min(best_prio_excluding_outline, kv.second[i].priority);
+				}
+				if (kv.second[i].cls == cross_coplanar::class_name || kv.second[i].cls == mat_style_change::class_name) {
+					has_exception_class = true;
+				}
+				if (i > 0) {
+					best_prio = std::min(best_prio, kv.second[i].priority);
+				}
 			}
+			bool exception_applies = has_outline && has_exception_class;
 			// Only record a resolution for buckets that genuinely mix both products AND
 			// classes -- same-class duplicates across products (e.g. both cross-coplanar) are
 			// intentional and must be left alone (see the function comment above).
 			if (multi_product && multi_priority) {
-				best_priority_by_key[kv.first] = best_prio;
+				best_priority_by_key[kv.first] = exception_applies ? best_prio_excluding_outline : best_prio;
+			}
+			if (exception_applies) {
+				outline_loses_exact_key.insert(kv.first);
 			}
 		}
-		return best_priority_by_key;
+		return { best_priority_by_key, outline_loses_exact_key };
 	}
 
 	// Angular bucket width for the line-identity prefilter below. Deliberately looser than
@@ -2803,6 +2841,7 @@ namespace {
 		struct entry {
 			const IfcUtil::IfcBaseEntity* product;
 			int priority;
+			std::string cls;
 			cross_coplanar::LineSeg seg;      // true 3D -- used only for `.edge`/real length rescaling
 			cross_coplanar::LineSeg proj_seg; // screen-projected -- see project_to_view_plane()
 		};
@@ -2828,7 +2867,7 @@ namespace {
 				}
 				gp_Vec pv(pp0, pp1);
 				cross_coplanar::LineSeg proj_seg{ pp0, pp1, gp_Dir(pv), pv.Magnitude(), e };
-				entries.push_back({ product, prio, *seg, proj_seg });
+				entries.push_back({ product, prio, cls, *seg, proj_seg });
 			}
 		}
 
@@ -2864,6 +2903,59 @@ namespace {
 				coverage.Bind(e, { { lo, hi } });
 			}
 		};
+
+		// First pass: which `entries` indices are an `outline` edge that genuinely, collinearly
+		// overlaps a `cross-coplanar` edge somewhere in its own bucket -- i.e. confirmed to be
+		// part of a Case-A cross-product match group, not merely an isolated Case-B same-product
+		// nesting (Case B never produces a cross-coplanar collision at all, only mat-style-change,
+		// see the mat_style_change namespace's own comment). Used below to gate the
+		// mat-style-change-vs-outline exception onto exactly the shape this HLR-duplicate-fragment
+		// artifact actually takes (issue #3742 follow-up, "Shifted in space"/"Extrusion L2 diff
+		// mat" cases): the SAME outline edge splitting across adjacent sub-ranges into one
+		// cross-coplanar match and one mat-style-change match, from the same or a neighbouring
+		// product -- without this gate, the exception also fired for genuine Case B nesting in
+		// unrelated products (confirmed as a real regression during development: "Extrusion L2
+		// same mat", which has no cross-coplanar story at all at that edge, picked up spurious
+		// extra mat-style-change/outline duplicates).
+		std::unordered_set<size_t> outline_confirms_case_a;
+		for (auto& kv : buckets) {
+			auto& idxs = kv.second;
+			for (size_t a = 0; a < idxs.size(); ++a) {
+				for (size_t b = a + 1; b < idxs.size(); ++b) {
+					const entry& ei = entries[idxs[a]];
+					const entry& ej = entries[idxs[b]];
+					bool pair_is_cc_outline =
+						(ei.cls == cross_coplanar::class_name && ej.cls == "outline") ||
+						(ej.cls == cross_coplanar::class_name && ei.cls == "outline");
+					if (!pair_is_cc_outline) {
+						continue;
+					}
+					if (std::abs(ei.proj_seg.dir.Dot(ej.proj_seg.dir)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
+						continue;
+					}
+					gp_Vec to_other(ei.proj_seg.p0, ej.proj_seg.p0);
+					double perp_dist = to_other.Crossed(gp_Vec(ei.proj_seg.dir)).Magnitude();
+					if (perp_dist >= tolerance) {
+						continue;
+					}
+					double t0 = gp_Vec(ei.proj_seg.p0, ej.proj_seg.p0).Dot(gp_Vec(ei.proj_seg.dir));
+					double t1 = gp_Vec(ei.proj_seg.p0, ej.proj_seg.p1).Dot(gp_Vec(ei.proj_seg.dir));
+					bool has_overlap_i = (std::min(std::max(t0, t1), ei.proj_seg.length) - std::max(std::min(t0, t1), 0.0)) >= tolerance;
+					double u0 = gp_Vec(ej.proj_seg.p0, ei.proj_seg.p0).Dot(gp_Vec(ej.proj_seg.dir));
+					double u1 = gp_Vec(ej.proj_seg.p0, ei.proj_seg.p1).Dot(gp_Vec(ej.proj_seg.dir));
+					bool has_overlap_j = (std::min(std::max(u0, u1), ej.proj_seg.length) - std::max(std::min(u0, u1), 0.0)) >= tolerance;
+					if (!has_overlap_i && !has_overlap_j) {
+						continue;
+					}
+					if (ei.cls == "outline") {
+						outline_confirms_case_a.insert(idxs[a]);
+					}
+					if (ej.cls == "outline") {
+						outline_confirms_case_a.insert(idxs[b]);
+					}
+				}
+			}
+		}
 
 		for (auto& kv : buckets) {
 			auto& idxs = kv.second;
@@ -2914,10 +3006,64 @@ namespace {
 						continue; // touching at a shared vertex only, not a genuine overlap range
 					}
 
-					if (ei.priority > ej.priority) {
-						if (has_i_overlap) record(ei.seg.edge, lo_i, hi_i); // ei loses
+					// cross-coplanar-vs-outline exception: HLR output edges carry no usable depth
+					// (they're genuinely flattened, Z==0, by the time they reach this pass --
+					// confirmed via direct instrumentation, not just unpopulated), so this dedup can
+					// only ever arbitrate by class priority, never by "which one is actually
+					// nearer". The general "outline always wins" rule has a confirmed cross-product
+					// justification for `mat-style-change` (a case where it wrongly painted over the
+					// true outline of the object actually visible from this camera) -- but no
+					// equivalent case justifies it for `cross-coplanar`, and issue #3742 follow-up
+					// (NORTH SECTION TILT "Extrusion L2" cases) found the opposite: a product's own
+					// interior corner edge (a real, different-Y line, correctly classified `outline`)
+					// coincidentally screen-aligned, under the oblique TILT camera, with either that
+					// SAME product's or its matched NEIGHBOUR's already-verified, full-length
+					// cross-coplanar corner match, silently clipping it in both the same-product and
+					// cross-product form of the collision. A `cross-coplanar` edge is the result of
+					// an explicit, already-verified touching-boundary decision (two genuinely
+					// coincident, camera-facing winning faces, see resolve_edge_location_subrange())
+					// -- strictly more informed than a same-line-in-screen-space-only `outline`
+					// classification, so it wins this collision unconditionally.
+					bool cross_coplanar_vs_outline =
+						(ei.cls == cross_coplanar::class_name && ej.cls == "outline") ||
+						(ej.cls == cross_coplanar::class_name && ei.cls == "outline");
+
+					// mat-style-change-vs-outline exception: unlike cross-coplanar's, this is NOT
+					// unconditional -- Case B's own same-product nesting (a layer-boundary edge
+					// genuinely nested inside part of a much longer outline edge, see
+					// layer_boundary_edges_for_face()'s comment) relies on outline continuing to
+					// win in exactly this function, and the general "outline always wins" rule has
+					// its own confirmed cross-product justification for mat-style-change (a case
+					// where it wrongly painted over the true outline of the object actually visible
+					// from this camera). Gated on `outline_confirms_case_a` (computed above): the
+					// SAME outline entry must ALSO have a confirmed, genuinely-collinear overlap
+					// with a `cross-coplanar` edge somewhere -- the one signal that reliably tells
+					// this HLR-duplicate-fragment artifact (issue #3742 follow-up, "Shifted in
+					// space"/"Extrusion L2 diff mat" cases: the same outline duplicate splitting
+					// into adjacent cross-coplanar- and mat-style-change-matching sub-ranges) apart
+					// from genuine Case B nesting, since Case B never produces a cross-coplanar
+					// collision at all (see mat_style_change namespace's own comment) -- confirmed
+					// necessary during development: an earlier, ungated version of this exception
+					// also fired for "Extrusion L2 same mat"'s own genuine Case B edge, which has no
+					// cross-coplanar story at that location, adding spurious duplicates there.
+					bool mat_style_change_vs_outline_case_a =
+						(ei.cls == mat_style_change::class_name && ej.cls == "outline" && outline_confirms_case_a.count(idxs[b])) ||
+						(ej.cls == mat_style_change::class_name && ei.cls == "outline" && outline_confirms_case_a.count(idxs[a]));
+
+					bool i_wins = cross_coplanar_vs_outline
+						? (ei.cls == cross_coplanar::class_name)
+						: mat_style_change_vs_outline_case_a
+						? (ei.cls == mat_style_change::class_name)
+						: (ei.priority <= ej.priority);
+
+					if (!i_wins) {
+						if (has_i_overlap) {
+							record(ei.seg.edge, lo_i, hi_i); // ei loses
+						}
 					} else {
-						if (has_j_overlap) record(ej.seg.edge, lo_j, hi_j); // ej loses
+						if (has_j_overlap) {
+							record(ej.seg.edge, lo_j, hi_j); // ej loses
+						}
 					}
 				}
 			}
@@ -2930,7 +3076,8 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 	hlr_t& hlr_source = drawing_name.first ? this->storey_hlr.find(drawing_name.first)->second : *hlr;
 	auto hlr_items = hlr_source.build();
 
-	auto coincident_best_priority = compute_coincident_edge_best_priority(hlr_items, svg_cross_coplanar_tolerance_);
+	auto [coincident_best_priority, outline_loses_exact_key] =
+		compute_coincident_edge_best_priority(hlr_items, svg_cross_coplanar_tolerance_);
 	auto coincident_overlap_coverage = compute_coincident_edge_overlap_coverage(hlr_items, svg_cross_coplanar_tolerance_);
 
 	// SVG edge classification (issue #3668): each item's class is already known -- it was
@@ -2976,9 +3123,18 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 						project_to_view_plane(BRep_Tool::Pnt(v0)),
 						project_to_view_plane(BRep_Tool::Pnt(v1)),
 						scale);
-					auto it = coincident_best_priority.find(key);
-					if (it != coincident_best_priority.end() && this_priority > it->second) {
+					// `outline` unconditionally loses an exact-key collision against
+					// `cross-coplanar`/`mat-style-change` (see compute_coincident_edge_best_priority()'s
+					// own comment) -- checked before the generic priority comparison, since outline's
+					// own priority number (0, the global minimum) can never be "worse than the best" by
+					// that comparison alone.
+					if (cls == "outline" && outline_loses_exact_key.count(key)) {
 						keep = false;
+					} else {
+						auto it = coincident_best_priority.find(key);
+						if (it != coincident_best_priority.end() && this_priority > it->second) {
+							keep = false;
+						}
 					}
 				}
 				if (!keep) {
