@@ -498,6 +498,32 @@ def get_project_unit(
                 return unit
 
 
+def get_candidate_units(ifc_file: ifcopenshell.file, unit_type: str) -> list[ifcopenshell.entity_instance]:
+    """Get all units in the file usable as an override for `unit_type`.
+
+    Unlike :func:`get_project_unit`, this returns every matching unit defined
+    in the file (e.g. both an mm and an m IfcSIUnit might be present), not
+    just the one currently assigned as the project default.
+
+    IfcDerivedUnit is matched first by a literal `UnitType` match, then, as a
+    fallback, by dimensional analysis (:func:`identify_unit_dimensions`) --
+    that fallback only helps for the dimension families covered by
+    `named_dimensions` (the core `IfcUnitEnum` types); it won't match e.g.
+    `"MODULUSOFELASTICITYUNIT"` by dimension alone, only by literal `UnitType`.
+
+    :param ifc_file: The IFC file.
+    :param unit_type: The type of unit, taken from the list of IFC unit
+        types, such as "LENGTHUNIT", or an IfcDerivedUnitEnum value such as
+        "MODULUSOFELASTICITYUNIT".
+    :return: All matching IfcNamedUnit / IfcDerivedUnit entities in the file.
+    """
+    candidates = [u for u in ifc_file.by_type("IfcNamedUnit") if getattr(u, "UnitType", None) == unit_type]
+    for unit in ifc_file.by_type("IfcDerivedUnit"):
+        if getattr(unit, "UnitType", None) == unit_type or identify_unit_dimensions(unit) == unit_type:
+            candidates.append(unit)
+    return candidates
+
+
 def get_property_unit(
     prop: ifcopenshell.entity_instance, ifc_file: Union[ifcopenshell.file, None], use_cache: bool = False
 ) -> Union[ifcopenshell.entity_instance, None]:
@@ -803,6 +829,21 @@ def get_derived_unit_scale(unit: ifcopenshell.entity_instance) -> float:
     return scale
 
 
+def get_unit_scale(unit: ifcopenshell.entity_instance) -> float:
+    """Get the scale factor to convert a value in `unit` to SI units.
+
+    Dispatches to :func:`get_derived_unit_scale` for IfcDerivedUnit, or
+    :func:`get_named_unit_scale` otherwise (IfcSIUnit / IfcConversionBasedUnit,
+    including chains).
+
+    :param unit: The unit to get the scale factor for.
+    :returns: The scale factor.
+    """
+    if unit.is_a("IfcDerivedUnit"):
+        return get_derived_unit_scale(unit)
+    return get_named_unit_scale(unit)
+
+
 def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUNIT") -> float:
     """Returns a unit scale factor to convert to and from IFC project units and SI units.
 
@@ -834,10 +875,7 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     for unit in units.Units:
         if getattr(unit, "UnitType", ...) != unit_type:
             continue
-        if unit.is_a("IfcDerivedUnit"):
-            unit_scale *= get_derived_unit_scale(unit)
-        else:
-            unit_scale *= get_named_unit_scale(unit)
+        unit_scale *= get_unit_scale(unit)
     return unit_scale
 
 
