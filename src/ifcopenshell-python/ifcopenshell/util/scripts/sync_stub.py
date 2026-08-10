@@ -120,14 +120,14 @@ def iter_simple_entries(body: "list") -> "list[Entry]":
     property(calc_surface_area_)`) - is left alone entirely by never being
     reported as an Entry at all.
     """
-    consumed: "set[str]" = set()
+    consumed: set[str] = set()
     for node in body:
         if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
             func = node.value.func
             if isinstance(func, ast.Name) and func.id in ("property", "staticmethod"):
                 consumed.update(arg.id for arg in node.value.args if isinstance(arg, ast.Name))
 
-    entries: "list[Entry]" = []
+    entries: list[Entry] = []
     for node in body:
         if isinstance(node, ast.ClassDef):
             bases = [b.id for b in node.bases if isinstance(b, ast.Name) and b.id not in ("_object", "object")]
@@ -255,7 +255,7 @@ def splice_body(
     added_iter = iter(added_ids)
     next_added = next(added_iter, None)
 
-    out: "list[str]" = []
+    out: list[str] = []
 
     def flush_added_up_to(identity: Optional[str]):
         nonlocal next_added
