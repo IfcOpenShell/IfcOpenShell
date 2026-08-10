@@ -68,6 +68,8 @@ select = [
     "I",           # import sorting
     "unused-noqa",
     "rule-codes-in-selectors",
+    "noqa-comments",
+    "rule-codes-in-suppression-comments",
 ]
 ignore = [
     # Conflicts with Blender using annotations for props definitions.

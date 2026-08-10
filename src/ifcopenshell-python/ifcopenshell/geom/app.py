@@ -25,7 +25,7 @@ import time
 import ifcopenshell.ifcopenshell_wrapper as W
 
 try:
-    from OCC.Core import AIS  # noqa: F401
+    from OCC.Core import AIS  # ruff: ignore[unused-import]
 
     USE_OCCT_HANDLE = False
 except ImportError:

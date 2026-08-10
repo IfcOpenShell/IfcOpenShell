@@ -430,7 +430,7 @@ class SverchokData:
     @classmethod
     def has_sverchok(cls) -> bool:
         try:
-            import sverchok  # noqa: F401
+            import sverchok  # ruff: ignore[unused-import]
 
             return True
         except ModuleNotFoundError:

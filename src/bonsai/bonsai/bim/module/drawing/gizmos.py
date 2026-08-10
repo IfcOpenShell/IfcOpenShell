@@ -28,7 +28,7 @@ operators via ``target_set_operator``; drag handles inherit modal state
 from ``GizmoMovable``.
 """
 
-__all__ = [  # noqa: RUF022 (unsorted `__all__`)
+__all__ = [  # ruff: ignore[unsorted-dunder-all]
     "GizmoColor",
     "GizmoAxis",
     "TextAlignment",
