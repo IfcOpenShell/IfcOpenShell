@@ -1,0 +1,87 @@
+# This file was generated with the assistance of an AI coding tool.
+
+name: Publish C++ API documentation
+
+on:
+  push:
+    branches:
+      - v0.9.0
+    paths:
+      - '.github/workflows/publish-cpp-api-docs.yml'
+      - 'docs/cpp-api/**'
+      - 'src/ifcgeom/**'
+      - 'src/ifcparse/**'
+      - 'src/serializers/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-cpp-api-docs
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'IfcOpenShell/IfcOpenShell'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout IfcOpenShell
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.10'
+
+      - name: Install documentation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes doxygen graphviz
+          python -m pip install --requirement docs/cpp-api/requirements.txt
+
+      - name: Build C++ API documentation
+        working-directory: docs/cpp-api
+        run: |
+          export PROJECT_NUMBER="$(git rev-parse --short HEAD)"
+          python -m sphinx -M html . output -W --keep-going
+
+      - name: Checkout documentation repository
+        uses: actions/checkout@v7
+        with:
+          repository: IfcOpenShell/cpp_docs
+          ref: master
+          path: published-docs
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Replace published documentation
+        run: |
+          publish_tree="${RUNNER_TEMP}/published-docs-tree"
+          mkdir -p "${publish_tree}/v0.9.0-latest"
+
+          rsync --archive docs/cpp-api/output/html/ "${publish_tree}/v0.9.0-latest/"
+          touch "${publish_tree}/.nojekyll"
+
+          if [[ -f published-docs/CNAME ]]; then
+            cp published-docs/CNAME "${publish_tree}/CNAME"
+          fi
+
+          rsync --archive --delete --exclude='.git/' "${publish_tree}/" published-docs/
+
+      - name: Commit and push if changed
+        working-directory: published-docs
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          git config user.name 'IfcOpenBot'
+          git config user.email 'IfcOpenBot@users.noreply.github.com'
+
+          git add --all
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Update C++ API docs from ${SOURCE_SHA:0:7}"
+          git push origin master

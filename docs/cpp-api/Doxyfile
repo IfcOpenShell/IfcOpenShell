@@ -1031,7 +1031,8 @@ EXCLUDE_SYMBOLS        = "ifcopenshell::geom::opaque_number::*" \
                          "util::string_buffer::*_item" \
                          util::string_buffer::item \
                          ifcopenshell::geom::layer_filter::wildcards_match \
-                         ifcopenshell::paged_file_impl::Entry \
+                         ifcopenshell::paged_file_impl::entry \
+                         ifcopenshell::token \
                          attribute_value::pointer_type \
                          INCLUDE_PARENT_PARENT_DIR \
                          POSTFIX_SCHEMA_ \
@@ -2376,8 +2377,8 @@ PREDEFINED             = IFC_PARSE_API= \
                          SERIALIZERS_API= \
                          "POSTFIX_SCHEMA(name)=name##_Schema" \
                          "Handle(name):=opencascade::handle<name>" \
-                         Kernel_=Kernel \
-                         SimpleKernel_=SimpleKernel \
+                         kernel_=kernel \
+                         Simplekernel_=Simplekernel \
                          inline=
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
@@ -2387,7 +2388,7 @@ PREDEFINED             = IFC_PARSE_API= \
 # definition found in the source code.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-EXPAND_AS_DEFINED      = Kernel_ \
+EXPAND_AS_DEFINED      = kernel_ \
                          cgal_shape \
                          cgal_kernel \
                          cgal_placement \

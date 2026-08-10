@@ -30,6 +30,7 @@ import sys
 import tempfile
 import traceback
 import types
+import re
 from collections.abc import (
     Callable,
     Generator,
