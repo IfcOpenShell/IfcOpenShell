@@ -49,5 +49,5 @@ include = ["ifcopenshell*"]
 [tool.ruff]
 extend = "../../pyproject.toml"
 lint.extend-select = [
-  "F401",  # unused imports
+  "unused-import",  # unused imports
 ]

@@ -63,21 +63,23 @@ select = [
     #
     "FA",          # future annotations
     "UP",          # pyupgrade
-    "RUF015",      # next() > list_comprehension[0]
-    "RUF022",      # sort __all__
+    "unnecessary-iterable-allocation-for-first-element",
+    "unsorted-dunder-all",
     "I",           # import sorting
     "unused-noqa",
+    "rule-codes-in-selectors",
 ]
 ignore = [
-    "FA100", # Conflicts with Blender using annotations for props definitions.
+    # Conflicts with Blender using annotations for props definitions.
+    "future-rewritable-type-annotation",
     # Maybe will enable later:
-    "UP007", # Union[X,Y] to X | Y
-    "UP045", # Optional to X | None
-    "UP015", # Unnecessary mode argument
-    "UP028", # yield for -> yield from
-    "UP030", # implicit references for positional format fields
-    "UP031", # Replace % with .format
-    "UP032", # Replace .format with f-string
+    "non-pep604-annotation-union", # Union[X,Y] to X | Y
+    "non-pep604-annotation-optional", # Optional to X | None
+    "redundant-open-modes", # Unnecessary mode argument
+    "yield-in-for-loop", # yield for -> yield from
+    "format-literals", # implicit references for positional format fields
+    "printf-string-formatting", # Replace % with .format
+    "f-string", # Replace .format with f-string
 ]
 
 [tool.ty.rules]
