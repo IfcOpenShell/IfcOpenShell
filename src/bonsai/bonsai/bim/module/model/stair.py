@@ -405,7 +405,7 @@ class SetStairTreads(bpy.types.Operator):
     bl_label = "Set Number of Treads"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:  # noqa: ARG002
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
         obj = context.active_object
         if not obj:
             return {"CANCELLED"}
@@ -658,9 +658,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self.tread_count_label_gizmo.alpha = 0.8
         self.tread_count_label_gizmo.target_set_operator("bim.input_stair_treads")
 
-    def _refresh_element_specific(
-        self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"  # noqa: ARG002
-    ) -> None:
+    def _refresh_element_specific(self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties") -> None:
         """Update stair-specific lock and tread count gizmos. Lock positioning is
         handled per-frame in the dimension-positioning hook."""
         self.update_lock_gizmo(props)
@@ -707,7 +705,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             self.update_gizmo_visibility(self.tread_count_label_gizmo, props.is_editing)
 
     def _update_dimension_gizmo_positions(
-        self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"  # noqa: ARG002
+        self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"
     ) -> None:
         """Update dimension gizmo positions based on camera view direction."""
         viewing_from_negative_y, viewing_from_negative_x = self._frame_view_dir

@@ -5660,7 +5660,7 @@ class BaseParametricGizmoGroup:
         """
         return 0.0
 
-    def _update_view_dependent_dimensions(self, context: bpy.types.Context, mw: Matrix, props) -> None:  # noqa: ARG002
+    def _update_view_dependent_dimensions(self, context: bpy.types.Context, mw: Matrix, props) -> None:
         """Update overall_width, overall_height, and lining_offset based on view direction.
 
         This base implementation handles the common pattern for door/window gizmos.
@@ -5837,7 +5837,7 @@ class BaseParametricGizmoGroup:
         self.update_dimension_gizmos(mw, props)
         self._refresh_element_specific(context, mw, props)
 
-    def _refresh_element_specific(self, context: bpy.types.Context, mw: "Matrix", props) -> None:  # noqa: ARG002
+    def _refresh_element_specific(self, context: bpy.types.Context, mw: "Matrix", props) -> None:
         """Override for element-specific refresh logic.
 
         Called from both refresh() (on state change) and draw_prepare() (per frame),
@@ -6344,7 +6344,7 @@ class BaseParametricGizmoGroup:
         """
         return (0.0, 0.0)
 
-    def get_icon_y_offset(self, context: bpy.types.Context, mw: Matrix) -> float:  # noqa: ARG002
+    def get_icon_y_offset(self, context: bpy.types.Context, mw: Matrix) -> float:
         """Get Y offset for icons based on view direction.
 
         Uses get_icon_y_extent() to determine how far to offset icons based on
@@ -6546,9 +6546,7 @@ class BaseParametricGizmoGroup:
 
         self._refresh_element_specific(context, mw, props)
 
-    def _update_dimension_gizmo_positions(
-        self, context: bpy.types.Context, mw: "Matrix", props  # noqa: ARG002
-    ) -> None:
+    def _update_dimension_gizmo_positions(self, context: bpy.types.Context, mw: "Matrix", props) -> None:
         """Update dimension gizmo positions based on view direction.
 
         Override this method in subclasses to implement view-dependent

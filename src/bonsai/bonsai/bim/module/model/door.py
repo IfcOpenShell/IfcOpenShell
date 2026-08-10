@@ -560,7 +560,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         )
         update_door_modifier_representation(obj)
 
-    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         for obj in tool.Blender.get_selected_objects():
             if not tool.Blender.Modifier.is_eligible_for_door_modifier(obj):
                 continue
@@ -638,7 +638,7 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
-    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         for obj in tool.Blender.get_selected_objects():
             self.remove_door_on_object(obj)
         return {"FINISHED"}
@@ -683,7 +683,7 @@ class ToggleDoorSwing(bpy.types.Operator, tool.Ifc.Operator):
             return True
         return False
 
-    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         obj = tool.Blender.get_active_object()
         if not obj:
             return {"CANCELLED"}
@@ -909,9 +909,7 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             setattr(self, f"gizmo_swing_arc_{cfg.name}", main)
             setattr(self, f"gizmo_swing_arc_{cfg.name}_flip", flip)
 
-    def _refresh_element_specific(
-        self, context: bpy.types.Context, mw: Matrix, props: "BIMDoorProperties"  # noqa: ARG002
-    ) -> None:
+    def _refresh_element_specific(self, context: bpy.types.Context, mw: Matrix, props: "BIMDoorProperties") -> None:
         """Update door-specific swing arc gizmos."""
         self.update_swing_gizmos(mw, props)
 

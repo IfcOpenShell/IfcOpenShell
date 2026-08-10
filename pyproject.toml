@@ -66,6 +66,7 @@ select = [
     "RUF015",      # next() > list_comprehension[0]
     "RUF022",      # sort __all__
     "I",           # import sorting
+    "unused-noqa",
 ]
 ignore = [
     "FA100", # Conflicts with Blender using annotations for props definitions.

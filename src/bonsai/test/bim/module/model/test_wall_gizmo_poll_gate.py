@@ -98,7 +98,7 @@ class TestWallGizmoGroupsHideDuringPreview:
                     continue
                 try:
                     result = poll(bpy.context)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     offenders.append((name, f"poll raised: {type(exc).__name__}: {exc}"))
                     continue
                 if result:

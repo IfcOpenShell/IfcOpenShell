@@ -119,7 +119,7 @@ class TestWallGizmoGroupsHideOnArrayChildSelection:
                     for name, cls in groups:
                         try:
                             result = cls.poll(bpy.context)
-                        except Exception as exc:  # noqa: BLE001
+                        except Exception as exc:
                             offenders.append((name, f"poll raised: {type(exc).__name__}: {exc}"))
                             continue
                         if result:
@@ -159,7 +159,7 @@ class TestWallOperatorsRejectArrayChildSelection:
                     for name, cls in ops:
                         try:
                             result = cls.poll(bpy.context)
-                        except Exception as exc:  # noqa: BLE001
+                        except Exception as exc:
                             offenders.append((name, f"poll raised: {type(exc).__name__}: {exc}"))
                             continue
                         if result:

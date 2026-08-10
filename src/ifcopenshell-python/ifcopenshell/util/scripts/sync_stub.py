@@ -81,7 +81,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 sys.path.insert(0, str(Path(__file__).parent))
-from validate_stub import SubnameType, get_function_node_name, get_names_tree  # noqa: E402
+from validate_stub import SubnameType, get_function_node_name, get_names_tree
 
 LICENSE_HEADER_START = "# IfcOpenShell - IFC toolkit and geometry engine"
 
