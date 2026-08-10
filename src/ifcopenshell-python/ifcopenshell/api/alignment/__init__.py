@@ -96,8 +96,8 @@ from .update_key_point_referents import update_key_point_referents
 from .util import *
 
 __all__ = [
-    "add_stationing_referent",
     "add_positioning_referent",
+    "add_stationing_referent",
     "add_vertical_layout",
     "add_zero_length_segment",
     "create",
@@ -125,6 +125,7 @@ __all__ = [
     "get_layout",
     "get_layout_curve",
     "get_layout_segments",
+    "get_mapped_segments",
     "get_parent_alignment",
     "get_stationing_nest",
     "get_vertical_layout",
@@ -137,5 +138,4 @@ __all__ = [
     "update_end_point",
     "update_fallback_position",
     "update_key_point_referents",
-    "get_mapped_segments",
 ]

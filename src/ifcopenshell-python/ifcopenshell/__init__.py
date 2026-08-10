@@ -113,13 +113,13 @@ def optional_logger_args(logger: ifcopenshell_wrapper.logger | None) -> tuple[lo
 # explicitly specify available imported symbols
 # (it's a requirement for a typed library)
 __all__ = [
+    "clear_plugin_search_paths",
     "entity_instance",
     "file",
-    "guid",
     "get_plugin_search_paths",
+    "guid",
     "ifcopenshell_wrapper",
     "rocksdb_lazy_instance",
-    "clear_plugin_search_paths",
     "set_plugin_search_paths",
     "sqlite",
     "sqlite_entity",
