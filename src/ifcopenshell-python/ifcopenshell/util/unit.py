@@ -466,7 +466,16 @@ def cache_units(ifc_file: ifcopenshell.file) -> None:
     """
     ifc_file.units = {}
     if assignment := get_unit_assignment(ifc_file):
-        ifc_file.units = {u.UnitType: u for u in assignment.Units if getattr(u, "UnitType", None)}
+        all_units = assignment.Units or []
+        units = {u.UnitType: u for u in all_units if getattr(u, "UnitType", None)}
+        # As in get_project_unit(): a literal match always wins; an IfcDerivedUnit with no
+        # literal UnitType match is matched dimensionally instead, only to fill a gap.
+        for unit in all_units:
+            if unit.is_a("IfcDerivedUnit"):
+                dimension = identify_unit_dimensions(unit)
+                if dimension and dimension not in units:
+                    units[dimension] = unit
+        ifc_file.units = units
 
 
 def clear_unit_cache(ifc_file: ifcopenshell.file) -> None:
@@ -482,6 +491,10 @@ def get_project_unit(
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Get the default project unit of a particular unit type
 
+    IfcDerivedUnit is matched first by a literal `UnitType` match, then, as a fallback, by
+    dimensional analysis (:func:`identify_unit_dimensions`), mirroring
+    :func:`get_candidate_units`.
+
     :param ifc_file: The IFC file.
     :param unit_type: The type of unit, taken from the list of IFC unit types,
         such as "LENGTHUNIT".
@@ -493,9 +506,13 @@ def get_project_unit(
     if units := ifc_file.units:
         return units.get(unit_type, None)
     if unit_assignment := get_unit_assignment(ifc_file):
+        dimensional_match = None
         for unit in unit_assignment.Units or []:
             if getattr(unit, "UnitType", None) == unit_type:
                 return unit
+            if dimensional_match is None and unit.is_a("IfcDerivedUnit") and identify_unit_dimensions(unit) == unit_type:
+                dimensional_match = unit
+        return dimensional_match
 
 
 def get_candidate_units(ifc_file: ifcopenshell.file, unit_type: str) -> list[ifcopenshell.entity_instance]:
