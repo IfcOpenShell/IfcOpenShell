@@ -386,12 +386,12 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.is_null = value is None
                 metadata.is_optional = True
                 metadata.special_type = cls.get_special_type_for_prop(prop)
-                metadata.unit_symbol = cls.get_unit_symbol_for_prop(prop, tool.Ifc.get())
-                # The prop's OWN Unit override only, not the resolved project-default fallback
-                # get_unit_symbol_for_prop() above already accounted for. Some real-world files
-                # (e.g. certain exporters) set Unit on properties that aren't actually measures --
-                # ignore it there, since we only ever treat Unit as meaningful for measurable
-                # special_types (matching the UI picker's own gating).
+                # The prop's OWN Unit override only -- metadata.unit_symbol is computed fresh from
+                # special_type/unit_id on every access (see Attribute.get_unit_symbol), so it
+                # already accounts for the project-default fallback once unit_id is set below.
+                # Some real-world files (e.g. certain exporters) set Unit on properties that
+                # aren't actually measures -- ignore it there, since we only ever treat Unit as
+                # meaningful for measurable special_types (matching the UI picker's own gating).
                 own_unit = getattr(prop, "Unit", None) if cls.is_measurable_special_type(metadata.special_type) else None
                 metadata.unit_id = own_unit.id() if own_unit else 0
                 metadata.unit_id_enum = str(metadata.unit_id)
@@ -472,7 +472,6 @@ class Pset(bonsai.core.tool.Pset):
         metadata.is_optional = True
         metadata.data_type = cls.get_prop_template_primitive_type(prop_template)
         metadata.special_type = cls.get_special_type_for_prop(prop_template)
-        metadata.unit_symbol = cls.get_unit_symbol_for_special_type(metadata.special_type, tool.Ifc.get())
 
         if metadata.data_type == "string":
             metadata.string_value = "" if metadata.is_null else str(data[prop_template.Name])
@@ -585,7 +584,6 @@ class Pset(bonsai.core.tool.Pset):
         metadata.is_null = value is None
         metadata.is_optional = True
         metadata.special_type = special_type
-        metadata.unit_symbol = cls.get_unit_symbol_for_special_type(special_type, tool.Ifc.get())
         metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
 
     @classmethod
