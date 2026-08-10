@@ -1,6 +1,7 @@
 package:
   name: ifcopenshell
-  version: 0.8.0
+  # Placeholder, replaced by build_pyodide.sh with the actual version from VERSION file.
+  version: 9.9.9
 
 source:
   # meta.yaml is placed as `packages/ifcopenshell/meta.yaml`.

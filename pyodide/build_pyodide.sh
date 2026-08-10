@@ -30,7 +30,7 @@ emcc --version
 mkdir -p packages/ifcopenshell
 VERSION=`cat IfcOpenShell/VERSION`
 cp IfcOpenShell/pyodide/meta.yaml packages/ifcopenshell
-sed -i s/0.8.0/$VERSION/g packages/ifcopenshell/meta.yaml
+sed -i s/9.9.9/$VERSION/g packages/ifcopenshell/meta.yaml
 
 # Use custom build ifcopenshell directory in build-all to make caching simpler
 # Otherwise pyodide build path typically includes package version, so cached cmake configs might break.
