@@ -680,7 +680,6 @@ def build_dependency(
     additional_files: dict[str, str] | None = None,
     no_append_name=False,
     cmake_dir=None,
-    **kwargs,
 ) -> None:
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
@@ -689,7 +688,6 @@ def build_dependency(
 
     :param pre_compile_subs: A sequence of ``(fn, before, after)``
     :param additional_files: Mapping path->url.
-    :param kwargs: Additional ``mode`` related kwargs.
     """
     check_dir = os.path.join(DEPS_DIR, "install", name)
     if os.path.exists(check_dir):
