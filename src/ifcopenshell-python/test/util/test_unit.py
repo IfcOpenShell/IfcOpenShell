@@ -94,6 +94,37 @@ class TestGetProjectUnit(test.bootstrap.IFC4):
         assert subject.get_project_unit(self.file, "LENGTHUNIT", use_cache=True) == length2
         assert self.file.units == {"LENGTHUNIT": length2, "AREAUNIT": area}
 
+    def test_area_and_volume_derived_from_length_are_matched_dimensionally(self):
+        # AREAUNIT/VOLUMEUNIT have no IfcDerivedUnitEnum member, so a project whose area/volume
+        # default is an IfcDerivedUnit has no literal UnitType match for either -- get_project_unit
+        # must still resolve them by dimensional analysis, like get_candidate_units already does.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        area = ifcopenshell.api.unit.add_derived_unit(self.file, "USERDEFINED", "area-ish", {length: 2})
+        volume = ifcopenshell.api.unit.add_derived_unit(self.file, "USERDEFINED", "volume-ish", {length: 3})
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area, volume])
+
+        assert subject.get_project_unit(self.file, "AREAUNIT") == area
+        assert subject.get_project_unit(self.file, "VOLUMEUNIT") == volume
+
+    def test_literal_unit_type_match_takes_priority_over_dimensional(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        literal_area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        derived_area = ifcopenshell.api.unit.add_derived_unit(self.file, "USERDEFINED", "area-ish", {length: 2})
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, literal_area, derived_area])
+
+        assert subject.get_project_unit(self.file, "AREAUNIT") == literal_area
+
+    def test_dimensional_fallback_also_applies_when_using_a_cache(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        area = ifcopenshell.api.unit.add_derived_unit(self.file, "USERDEFINED", "area-ish", {length: 2})
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+
+        assert subject.get_project_unit(self.file, "AREAUNIT", use_cache=True) == area
+        assert self.file.units["AREAUNIT"] == area
+
 
 class TestGetCandidateUnits(test.bootstrap.IFC4):
     def test_returns_only_units_matching_the_unit_type(self):
