@@ -27,7 +27,9 @@ jobs:
       
       - name: Get current version
         id: version
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+        # Strip any trailing prerelease label and number; the dated alpha
+        # suffix is added below.
+        run: echo "version=$(sed -E 's/[[:alpha:]]+[0-9]+$//' VERSION)" >> $GITHUB_OUTPUT
       
       - name: Get current date
         id: date

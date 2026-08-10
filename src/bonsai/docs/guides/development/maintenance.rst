@@ -76,6 +76,10 @@ Release
 Notes:
 
 - Typically all packages are released at once using the same version schema
+- ``VERSION`` uses Python/PEP 440-compatible spelling. For example, an alpha
+  release may be ``0.9.0alpha0`` (canonicalized to ``0.9.0a0``); build scripts
+  derive numeric-only and SemVer forms such as ``0.9.0`` and
+  ``0.9.0-alpha0`` where required.
 - The ``README.md`` badges can serve as a visual reference for what versions have been released
 - Corrective Release (if needed after a standard release):
 

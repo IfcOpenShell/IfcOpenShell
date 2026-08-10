@@ -36,6 +36,14 @@ file(READ "../VERSION" "RELEASE_VERSION_")
 string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
 message(STATUS "Detected version '${RELEASE_VERSION}'")
 
+# CMake's project(VERSION) only accepts numeric components. Keep the complete
+# release identifier for build information, but use its numeric release part
+# for PROJECT_VERSION, SOVERSION, and generated CMake package metadata.
+string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" PROJECT_VERSION_NUMERIC "${RELEASE_VERSION}")
+if(NOT PROJECT_VERSION_NUMERIC)
+    message(FATAL_ERROR "VERSION must start with a numeric major.minor.patch version: '${RELEASE_VERSION}'")
+endif()
+
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 if(POLICY CMP0141) # 3.25+
@@ -55,9 +63,15 @@ endif()
 # Include utility macros and functions
 include(utilities.cmake)
 
-# use extra version to make pre-release using eg semver
+# Use a SemVer-compatible spelling for CPack artifact names. A trailing
+# alphabetic label and number is separated from the numeric version by a
+# hyphen: for example, 0.9.0alpha0 becomes 0.9.0-alpha0.
 if(NOT DEFINED EXTRA_VERSION)
-    set(EXTRA_VERSION "-alpha.3")
+    if(RELEASE_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+([A-Za-z]+)([0-9]+)$")
+        set(EXTRA_VERSION "-${CMAKE_MATCH_1}${CMAKE_MATCH_2}")
+    else()
+        set(EXTRA_VERSION "")
+    endif()
 endif()
 
 option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter from OCCT into IFC." OFF)
@@ -119,7 +133,7 @@ option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(USE_DEBUG_PYTHON "Use debug binaries when building Debug IfcPython on Windows." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, requires git" OFF)
-option(VERSION_OVERRIDE "Override the version defined in buildinfo.cpp with the file VERSION in the repository root" OFF)
+option(VERSION_OVERRIDE "Use VERSION as the branch label when commit information is embedded" OFF)
 
 set(
     PYTHON_MODULE_INSTALL_DIR
@@ -127,15 +141,7 @@ set(
     "Directory to install IfcPython package to. By default package is installed in found Python's site-packages."
 )
 
-if (VERSION_OVERRIDE)
-    file(READ "../VERSION" "RELEASE_VERSION_")
-    string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
-    message(STATUS "Detected version '${RELEASE_VERSION}'")
-else()
-    set(RELEASE_VERSION "0.8.0")
-endif()
-
-project(IfcOpenShell VERSION ${RELEASE_VERSION})
+project(IfcOpenShell VERSION ${PROJECT_VERSION_NUMERIC})
 
 # Make sure CMake modules in this project are found first
 list(PREPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})

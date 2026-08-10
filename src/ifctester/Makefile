@@ -94,11 +94,11 @@ webapp-stage-ifctester-wheel:
 	cp pyproject.toml $(WEBAPP_IFCTESTER_BUILD_DIR)/
 	cp README.md $(WEBAPP_IFCTESTER_BUILD_DIR)/
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
 else
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
 endif
 	cd $(WEBAPP_IFCTESTER_BUILD_DIR) && $(PYTHON) -m venv env --system-site-packages && . env/$(VENV_ACTIVATE) && python -m pip install build && python -m build --wheel --no-isolation
 	mkdir -p $(WEBAPP_GENERATED_DIR)

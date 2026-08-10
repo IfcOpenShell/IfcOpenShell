@@ -1,7 +1,10 @@
 SHELL := sh
 IS_STABLE:=FALSE
 VERSION:=$(shell cat ../../VERSION)
+VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
+VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
 VERSION_DATE:=$(shell date '+%y%m%d')
+VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
 PYVERSION:=py311
 PLATFORM:=linux64
 
@@ -138,19 +141,19 @@ endif
 	cp ../../README.md build/
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/ifcopenshell/__init__.py
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/ifcopenshell/__init__.py
 else
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/ifcopenshell/__init__.py
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/ifcopenshell/__init__.py
 endif
 
 	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
 	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 
 ifeq ($(IS_STABLE), TRUE)
-	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION_PYTHON)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 else
-	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)a$(VERSION_DATE)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION_DAILY)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 endif
 	rm -rf build

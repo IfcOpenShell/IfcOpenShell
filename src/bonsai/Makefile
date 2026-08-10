@@ -42,10 +42,12 @@ endif
 
 IS_STABLE:=FALSE
 VERSION:=$(shell cat ../../VERSION)
-VERSION_MAJOR:=$(shell cat '../../VERSION' | cut -d '.' -f 1)
-VERSION_MINOR:=$(shell cat '../../VERSION' | cut -d '.' -f 2)
-VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
+VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
+VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
+VERSION_SEMVER:=$(shell sed -E 's/([[:alpha:]]+)([0-9]+)$$/-\\1\\2/' ../../VERSION)
 VERSION_DATE:=$(shell date '+%y%m%d')
+VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
+VERSION_SEMVER_DAILY:=$(VERSION_BASE)-alpha$(VERSION_DATE)
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
 LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
@@ -260,14 +262,14 @@ endif
 
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) "s/0.0.0/$(VERSION)/" build/bonsai/blender_manifest.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
+	$(SED) "s/0.0.0/$(VERSION_SEMVER)/" build/bonsai/blender_manifest.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
 else
-	$(SED) "s/0.0.0/$(VERSION)-alpha$(VERSION_DATE)/" build/bonsai/blender_manifest.toml
+	$(SED) "s/0.0.0/$(VERSION_SEMVER_DAILY)/" build/bonsai/blender_manifest.toml
 	$(SED) "s/8888888/$(LAST_COMMIT_HASH)/" build/bonsai/__init__.py
 	$(SED) "s/9999999/$(LAST_COMMIT_DATE)/" build/bonsai/__init__.py
 	$(SED) "s/7777777/$(LAST_GIT_BRANCH)/" build/bonsai/__init__.py
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
 endif
 
 # Blender 5.1+ requires Python 3.13.
@@ -279,9 +281,9 @@ endif
 
 	# Provides bonsai Add-on functionality
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
 else
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
 endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 	cp build/dist/*.whl build/wheels/
@@ -315,9 +317,9 @@ endif
 	rm -rf build/bonsai/libs/
 
 ifeq ($(IS_STABLE), TRUE)
-	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./bonsai
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER)-$(BLENDER_PLATFORM).zip ./bonsai
 else
-	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-alpha$(VERSION_DATE)-$(BLENDER_PLATFORM).zip ./bonsai
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER_DAILY)-$(BLENDER_PLATFORM).zip ./bonsai
 endif
 
 	mv build/bonsai*.zip dist/

@@ -1756,6 +1756,7 @@ class Blender(bonsai.core.tool.Blender):
             repo_path = repo.working_tree_dir
             assert repo_path
             version_ = (Path(repo_path) / "VERSION").read_text().strip()
+            version_ = re.sub(r"[A-Za-z]+\d+$", "", version_)
             commit_date = bonsai.get_last_commit_date()
             assert commit_date
             commit_date = datetime.fromisoformat(commit_date)

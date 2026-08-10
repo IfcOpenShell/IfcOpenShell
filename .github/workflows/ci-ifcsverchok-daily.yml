@@ -32,7 +32,7 @@ jobs:
           python-version: '3.11'
       - name: Get current version
         id: version
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+        run: echo "version=$(sed -E 's/[[:alpha:]]+[0-9]+$//' VERSION)" >> $GITHUB_OUTPUT
       - name: Get current date
         id: date
         run: echo "date=$(date +'%y%m%d')" >> $GITHUB_OUTPUT
