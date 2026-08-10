@@ -70,6 +70,11 @@ select = [
     "rule-codes-in-selectors",
     "noqa-comments",
     "rule-codes-in-suppression-comments",
+    # General util rules.
+    "invalid-rule-code",
+    "redirected-noqa",
+    "invalid-pyproject-toml",
+    "invalid-suppression-comment",
 ]
 ignore = [
     # Conflicts with Blender using annotations for props definitions.
