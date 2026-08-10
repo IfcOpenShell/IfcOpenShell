@@ -437,7 +437,6 @@ if WASM:
     SKIP_TARGETS_FOR_WASM = {
         "rocksdb",
         "opencollada",
-        "swig",
         "pcre",
         "IfcGeom",
         "IfcConvert",
@@ -460,11 +459,7 @@ bison = "bison"
 missing_commands: list[str] = []
 required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz, bison]
 if WASM:
-    # Skip swig build for WASM.
-    required_commands.append("swig")
     required_commands.append("pyodide")
-    required_commands.remove(yacc)
-    required_commands.remove(bison)
 if platform.system() == "Linux" and "BonsaiViewer" in targets:
     required_commands.append("patchelf")
 
@@ -597,18 +592,20 @@ def run_autoconf(dependency_name: str, configure_args: list[str], cwd: str) -> N
     )
 
 
-def run_cmake(arg1, cmake_args: list[str], cmake_dir: str | None = None, cwd: str | None = None):
+def run_cmake(
+    name, cmake_args: list[str], cmake_dir: str | None = None, cwd: str | None = None, native: bool = False
+) -> None:
     if cmake_dir is None:
         P = ".."
     else:
         P = cmake_dir
 
     wasm = []
-    if WASM:
+    if WASM and not native:
         wasm.append("emcmake")
 
     cmake_flags: list[str] = []
-    if not WASM or not WASM_CMAKE_IS_USING_INIT_VARS:
+    if not native and (not WASM or not WASM_CMAKE_IS_USING_INIT_VARS):
         # For WASM we provide flags using just environment variables.
         # If we provide them using cmake vars, it will override emscripten toolchain flags.
         # Unsure if we need this in general even for non-WASM builds.
@@ -624,6 +621,10 @@ def run_cmake(arg1, cmake_args: list[str], cmake_dir: str | None = None, cwd: st
             f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
         )
 
+    if WASM and native:
+        # Override emscripten cmake toolchain coming from environment variable.
+        cmake_flags.append("-DCMAKE_TOOLCHAIN_FILE=")
+
     run(
         [
             *wasm,
@@ -632,7 +633,7 @@ def run_cmake(arg1, cmake_args: list[str], cmake_dir: str | None = None, cwd: st
             *cmake_flags,
             *cmake_args,
             f"-DCMAKE_BUILD_TYPE={BUILD_CFG}",
-            f"-DCMAKE_SHARED_LINKER_FLAGS={os.environ['LDFLAGS']}",
+            *([] if native else [f"-DCMAKE_SHARED_LINKER_FLAGS={os.environ['LDFLAGS']}"]),
         ],
         cwd=cwd,
     )
@@ -680,6 +681,7 @@ def build_dependency(
     additional_files: dict[str, str] | None = None,
     no_append_name=False,
     cmake_dir=None,
+    cmake_native: bool = False,
 ) -> None:
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
@@ -688,6 +690,8 @@ def build_dependency(
 
     :param pre_compile_subs: A sequence of ``(fn, before, after)``
     :param additional_files: Mapping path->url.
+    :param cmake_native: For ``mode="cmake"``, force a native (host) build
+        even when building for WASM. Needed for build-time tools like swig.
     """
     check_dir = os.path.join(DEPS_DIR, "install", name)
     if os.path.exists(check_dir):
@@ -784,7 +788,7 @@ def build_dependency(
         if mode == "autoconf":
             run_autoconf(name, build_tool_args, cwd=extract_build_dir)
         elif mode == "cmake":
-            run_cmake(name, build_tool_args, cwd=extract_build_dir)
+            run_cmake(name, build_tool_args, cwd=extract_build_dir, native=cmake_native)
         else:
             assert_never(mode)
         for fn, before, after in pre_compile_subs:
@@ -1013,6 +1017,7 @@ if "swig" in targets:
         download_name="swig",
         download_tool=download_tool_git,
         revision=f"v{SWIG_VERSION}",
+        cmake_native=WASM,
     )
 
 if USE_OCCT and "occ" in targets:
@@ -1524,7 +1529,10 @@ if "rocksdb" in targets:
     )
 
 if "swig" in targets:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/swig-{SWIG_VERSION}")
+    # `cmake_args_prefix_path` won't work on wasm
+    # because `find_program` in emscripten toolchain don't use `find_root_path`.
+    # As a workaround we provide executable path directly on all platforms.
+    cmake_args.append(f"-DSWIG_EXECUTABLE={DEPS_DIR}/install/swig-{SWIG_VERSION}/bin/swig")
 
 if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])

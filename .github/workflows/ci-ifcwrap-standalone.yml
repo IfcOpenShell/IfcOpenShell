@@ -71,6 +71,7 @@ jobs:
             tk-dev
 
       - name: Build SWIG
+        # IfcOpenShell requires SWIG 4.1+, ubuntu-22.04 ships 4.0.2.
         run: |
           sudo apt-get remove --purge -y swig swig4.0
           git clone https://github.com/swig/swig --branch v4.2.1 --depth 1
