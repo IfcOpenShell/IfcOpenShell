@@ -48,8 +48,8 @@ def test_add_stationing_to_alignment():
 
     alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", start_station=2000.0)
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    referent = referent_nest.RelatedObjects[0]
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    referent = stationing_nest.RelatedObjects[0]
 
     assert referent.PredefinedType == "STATION"
     assert referent.Name == "2+000.000"
@@ -63,10 +63,10 @@ def test_add_stationing_to_alignment():
         file, "4+000.000", alignment, distance_along=1000.0, station=4000.0, incoming_station=3000.0
     )
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    assert len(referent_nest.RelatedObjects) == 2
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    assert len(stationing_nest.RelatedObjects) == 2
 
-    assert second_referent == referent_nest.RelatedObjects[1]
+    assert second_referent == stationing_nest.RelatedObjects[1]
 
     assert second_referent.PredefinedType == "STATION"
     assert second_referent.Name == "4+000.000"

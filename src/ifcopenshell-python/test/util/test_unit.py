@@ -200,6 +200,31 @@ class TestCalculateUnitScale(test.bootstrap.IFC4):
         ifcopenshell.api.unit.assign_unit(self.file, units=[angle])
         assert subject.calculate_unit_scale(self.file, "PLANEANGLEUNIT") == pi / 180 * 0.001
 
+    def test_prefix_is_raised_to_the_length_exponent_for_area_and_volume(self):
+        # A prefixed square/cubic metre is (prefix-metre) squared/cubed:
+        # DECI SQUARE_METRE = dm2 = 1e-2 m2, DECI CUBIC_METRE = dm3 (litre) = 1e-3 m3.
+        # https://github.com/IfcOpenShell/IfcOpenShell/issues/9278
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        area.Prefix = "DECI"
+        volume = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="VOLUMEUNIT")
+        volume.Prefix = "DECI"
+        ifcopenshell.api.unit.assign_unit(self.file, units=[area, volume])
+        assert subject.calculate_unit_scale(self.file, "AREAUNIT") == pytest.approx(0.1**2)
+        assert subject.calculate_unit_scale(self.file, "VOLUMEUNIT") == pytest.approx(0.1**3)
+
+    def test_prefix_stays_linear_for_units_that_are_not_a_pure_power_of_length(self):
+        # For derived and non-length SI units the prefix scales the unit itself:
+        # KILO PASCAL = 1e3 Pa, KILO GRAM = 1e3 g.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        pressure = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="PRESSUREUNIT")
+        pressure.Prefix = "KILO"
+        mass = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="MASSUNIT")
+        mass.Prefix = "KILO"
+        ifcopenshell.api.unit.assign_unit(self.file, units=[pressure, mass])
+        assert subject.calculate_unit_scale(self.file, "PRESSUREUNIT") == pytest.approx(1000)
+        assert subject.calculate_unit_scale(self.file, "MASSUNIT") == pytest.approx(1000)
+
 
 class TestFormatLength(test.bootstrap.IFC4):
     def test_run(self):

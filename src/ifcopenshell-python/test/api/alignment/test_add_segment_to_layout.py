@@ -48,9 +48,9 @@ def test_add_segment_to_layout():
 
     alignment = ifcopenshell.api.alignment.create(file, "")
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
     assert (
-        len(referent_nest.RelatedObjects) == 1
+        len(stationing_nest.RelatedObjects) == 1
     )  # the alignment creates the stationing nest and it has one referent to defined the stationing for the alignment
 
     horizontal_alignment = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
@@ -84,5 +84,8 @@ def test_add_segment_to_layout():
     assert len(horizontal_alignment.IsNestedBy) == 1
     segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(horizontal_alignment)
     assert len(segment_nest.RelatedObjects) == 2
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    assert len(referent_nest.RelatedObjects) == 1  # test this a second time to make sure that it is still true
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    assert len(stationing_nest.RelatedObjects) == 1  # test this a second time to make sure that it is still true
+
+
+test_add_segment_to_layout()

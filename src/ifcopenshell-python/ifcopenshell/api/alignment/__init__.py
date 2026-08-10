@@ -25,7 +25,7 @@ are automatically created and maintained.
 
 Alignments are created with stationing referents. Each layout segment is assigned a position referent that informs about
 the start point of the segment. An example is the point of curvature of a horizontal circular curve. The referent is
-nested to the segment representing the circular arc and is named with a indicator of the position and the station, e.g. "P.C. (145+98.32)"
+nested to the segment representing the circular arc and is named with the alignment name and an indicator of the position and the station, e.g. "MyAlignment 145+98.32 (P.C.)"
 
 This API does not determine alignment parameters based on rules, such as minimum curve radius as a function of design speed or sight distance.
 
@@ -79,7 +79,7 @@ from .get_layout_curve import get_layout_curve
 from .get_layout_segments import get_layout_segments
 from .get_mapped_segments import get_mapped_segments
 from .get_parent_alignment import get_parent_alignment
-from .get_referent_nest import get_referent_nest
+from .get_stationing_nest import get_stationing_nest
 from .get_vertical_layout import get_vertical_layout
 from .has_zero_length_segment import has_zero_length_segment
 from .layout_horizontal_alignment_by_pi_method import (
@@ -89,8 +89,10 @@ from .layout_vertical_alignment_by_pi_method import (
     layout_vertical_alignment_by_pi_method,
 )
 from .name_segments import name_segments
+from .update_alignment_parameter_segment_tags import update_alignment_parameter_segment_tags
 from .update_end_point import update_end_point
 from .update_fallback_position import update_fallback_position
+from .update_key_point_referents import update_key_point_referents
 from .util import *
 
 __all__ = [
@@ -124,14 +126,16 @@ __all__ = [
     "get_layout_curve",
     "get_layout_segments",
     "get_parent_alignment",
-    "get_referent_nest",
+    "get_stationing_nest",
     "get_vertical_layout",
     "has_zero_length_segment",
     "layout_horizontal_alignment_by_pi_method",
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
     "register_referent_name_callback",
+    "update_alignment_parameter_segment_tags",
     "update_end_point",
     "update_fallback_position",
+    "update_key_point_referents",
     "get_mapped_segments",
 ]

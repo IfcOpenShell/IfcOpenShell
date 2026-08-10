@@ -17,23 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-from ifcopenshell import entity_instance
+import ifcopenshell.util.alignment
 
 
-def get_referent_nest(file: ifcopenshell.file, alignment: entity_instance) -> entity_instance:
+def _get_key_point_tag(file: ifcopenshell.file, label: str, station: float) -> str:
     """
-    Searches for the IfcRelNest that contains IfcReferent.
-
-    :param file:
-    :param alignment: The IfcAlignment which hosts IfcReferent
-    :return: Returns the IfcRelNests or None
+    Builds the station-and-label text shared by update_alignment_parameter_segment_tags (used
+    directly as IfcAlignmentParameterSegment.StartTag/EndTag) and update_key_point_referents (used,
+    prefixed with the alignment name, as IfcReferent.Name): "<station> (<label>)", e.g.
+    "145+98.32 (P.O.B.)".
     """
-    if not alignment.is_a("IfcAlignment"):
-        raise TypeError(f"Expected IfcAlignment, instead received {alignment.is_a()}")
-
-    for nest in alignment.IsNestedBy:
-        for related_object in nest.RelatedObjects:
-            if related_object.is_a("IfcReferent"):
-                return nest
-
-    return None
+    return f"{ifcopenshell.util.alignment.station_as_string(file, station)} ({label})"

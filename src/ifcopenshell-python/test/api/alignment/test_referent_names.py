@@ -102,19 +102,50 @@ def callback_alignment():
     yield alignment
 
 
+def _label(name):
+    return name.rsplit("(", 1)[1].rstrip(")")
+
+
 @pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_with_default_names(default_names_alignment):
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, default_names_alignment)
+    file = default_names_alignment.file
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(default_names_alignment)
+    vertical = ifcopenshell.api.alignment.get_vertical_layout(default_names_alignment)
 
-    expected = ["P.O.B", "P.C.", "P.T.", "P.O.E.", "V.P.O.B.", "P.V.C.", "P.V.T.", "V.P.O.E"]
-    for r in referent_nest.RelatedObjects:
-        assert [x in r.Name for x in expected]
+    h_nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
+    v_nest = ifcopenshell.api.alignment.update_key_point_referents(file, vertical)
+
+    expected_h = ["P.O.B.", "P.C.", "P.T.", "P.C.", "P.T.", "P.C.", "P.T.", "P.O.E."]
+    expected_v = [
+        "V.P.O.B.",
+        "P.V.C.",
+        "P.V.T.",
+        "P.V.C.",
+        "P.V.T.",
+        "P.V.C.",
+        "P.V.T.",
+        "P.V.C.",
+        "P.V.T.",
+        "V.P.O.E.",
+    ]
+
+    assert [_label(r.Name) for r in h_nest.RelatedObjects] == expected_h
+    assert [_label(r.Name) for r in v_nest.RelatedObjects] == expected_v
 
 
 @pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_with_callbacks(callback_alignment):
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, callback_alignment)
+    file = callback_alignment.file
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(callback_alignment)
+    vertical = ifcopenshell.api.alignment.get_vertical_layout(callback_alignment)
 
-    expected = ["A", "Q", "Z", "a", "q", "z"]
-    for r in referent_nest.RelatedObjects:
-        assert [x in r.Name for x in expected]
+    h_nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
+    v_nest = ifcopenshell.api.alignment.update_key_point_referents(file, vertical)
+
+    expected_h = ["A", "Q", "Q", "Q", "Q", "Q", "Q", "Z"]
+    expected_v = ["a", "q", "q", "q", "q", "q", "q", "q", "q", "z"]
+
+    assert [_label(r.Name) for r in h_nest.RelatedObjects] == expected_h
+    assert [_label(r.Name) for r in v_nest.RelatedObjects] == expected_v
+
+    ifcopenshell.api.alignment.register_referent_name_callback(None, None, None)  # reset global state

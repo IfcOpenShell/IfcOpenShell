@@ -188,7 +188,16 @@ def _material_to_dict(material: ifcopenshell.entity_instance | None) -> dict[str
 
 
 def info(model: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
-    """Return deep inspection data for an element."""
+    """Inspect a single entity in depth.
+
+    Returns the entity's direct ``attributes`` plus, where present,
+    ``property_sets``, ``element_type``, ``material``, ``container``,
+    ``placement`` and ``geometry_summary``. Keys are omitted when the
+    information is unavailable.
+
+    :param model: The in-memory IFC model.
+    :param element: The entity to inspect.
+    """
     result: dict[str, Any] = {
         "id": element.id(),
         "type": element.is_a(),
