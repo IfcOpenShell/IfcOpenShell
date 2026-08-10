@@ -17,7 +17,7 @@ import ifcopenshell.template
 @pytest.mark.skip(reason="Current file retention is not automatic anymore if a single instance is alive")
 @pytest.mark.parametrize(
     "args",
-    itertools.product((0, 1), (0, 1), (0, 1), (0, 1, 2)),
+    tuple(itertools.product((0, 1), (0, 1), (0, 1), (0, 1, 2))),
 )
 def test_file_gc(args):
     do_run_api, do_delete_ref, file_first, api = args

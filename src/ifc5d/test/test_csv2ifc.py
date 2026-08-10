@@ -65,7 +65,7 @@ class TestCsv2Ifc:
         all_nested_items = [i for item in root_items for i in ifcopenshell.util.cost.get_all_nested_cost_items(item)]
         assert len(all_nested_items + root_items) == len(all_cost_items)
 
-    @pytest.mark.parametrize("csv_filepath", Path(__file__).parent.parent.glob("*.csv"))
+    @pytest.mark.parametrize("csv_filepath", tuple(Path(__file__).parent.parent.glob("*.csv")))
     def test_import_sample_files(self, csv_filepath: Path):
         ifc_file = self.setup_ifc_file()
         ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
