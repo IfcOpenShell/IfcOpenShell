@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import tempfile
 from math import pi
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -29,8 +31,10 @@ import ifcopenshell.api.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit as subject
+import ifcpatch
 import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from ifcpatch.recipes import Ifc2Sql
 
 
 class TestMmToM:
@@ -224,6 +228,34 @@ class TestCalculateUnitScale(test.bootstrap.IFC4):
         ifcopenshell.api.unit.assign_unit(self.file, units=[pressure, mass])
         assert subject.calculate_unit_scale(self.file, "PRESSUREUNIT") == pytest.approx(1000)
         assert subject.calculate_unit_scale(self.file, "MASSUNIT") == pytest.approx(1000)
+
+
+class TestCalculateUnitScaleOnLinkedFile(test.bootstrap.IFC4):
+    def test_run(self):
+        # Regression test: IfcSIUnit.Dimensions is a schema-*derived*
+        # attribute that isn't computed for SQLite-linked files (used for
+        # Bonsai's "linked project" large-model workflow), so it returns None
+        # there instead of an IfcDimensionalExponents entity. calculate_unit_scale()
+        # used to access unit.Dimensions.LengthExponent unconditionally for
+        # every IfcSIUnit, which crashed project loading for any linked file.
+        # See the PR discussion for a standalone reproduction script.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length])
+
+        patcher = Ifc2Sql.Patcher(self.file, sql_type="SQLite")
+        patcher.patch()
+        tmp_file = Path(tempfile.mkstemp(suffix=".ifcsqlite")[1])
+        ifcpatch.write(patcher.get_output(), tmp_file)
+
+        try:
+            linked_file = ifcopenshell.open(str(tmp_file))
+            assert linked_file.by_type("IfcSIUnit")[0].Dimensions is None
+            assert subject.calculate_unit_scale(linked_file, "LENGTHUNIT") == 1.0
+        finally:
+            if isinstance(linked_file, ifcopenshell.sqlite):
+                linked_file.db.close()
+            tmp_file.unlink(missing_ok=True)
 
 
 class TestFormatLength(test.bootstrap.IFC4):

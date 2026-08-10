@@ -729,18 +729,13 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
             # non-length dimensions (PASCAL, NEWTON, GRAM, ...) keep the linear
             # multiplier, as there the prefix scales the derived unit itself.
             # https://github.com/IfcOpenShell/IfcOpenShell/issues/9278
-            dimensions = unit.Dimensions
-            length_exponent = dimensions.LengthExponent
-            if length_exponent > 0 and not any(
-                (
-                    dimensions.MassExponent,
-                    dimensions.TimeExponent,
-                    dimensions.ElectricCurrentExponent,
-                    dimensions.ThermodynamicTemperatureExponent,
-                    dimensions.AmountOfSubstanceExponent,
-                    dimensions.LuminousIntensityExponent,
-                )
-            ):
+            #
+            # Dimensions is looked up from si_dimensions by name rather than via
+            # unit.Dimensions (the schema-derived IfcDimensionalExponents), since
+            # the derived attribute isn't computed for SQLite-linked files and
+            # would return None there.
+            length_exponent, *other_exponents = get_si_dimensions(unit.Name.replace("METER", "METRE"))
+            if length_exponent > 0 and not any(other_exponents):
                 prefix_multiplier **= length_exponent
             unit_scale *= prefix_multiplier
     return unit_scale
