@@ -1,5 +1,8 @@
 #!/usr/bin/python
 # /// script
+# dependencies = [
+#     "typing_extensions",
+# ]
 # ///
 ###############################################################################
 #                                                                             #
@@ -129,6 +132,8 @@ from collections.abc import Generator, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
+
+from typing_extensions import assert_never
 from urllib.request import urlretrieve
 
 logger = logging.getLogger(__name__)
@@ -720,7 +725,7 @@ def build_dependency(
         logger.info(f"\rChecking {name}...   ")
         git_clone_or_pull_repository(download_url, target_dir=os.path.join(build_dir, download_name), revision=revision)
     else:
-        raise ValueError(f"download tool '{download_tool}' is not supported")
+        assert_never(download_tool)
     download_dir = os.path.join(build_dir, download_name)
 
     if os.path.isdir(download_dir):
@@ -783,7 +788,7 @@ def build_dependency(
         elif mode == "cmake":
             run_cmake(name, build_tool_args, cwd=extract_build_dir)
         else:
-            raise ValueError()
+            assert_never(mode)
         for fn, before, after in pre_compile_subs:
             with open(os.path.join(extract_dir, fn), "r") as f:
                 s = f.read()
