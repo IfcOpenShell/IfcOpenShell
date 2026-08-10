@@ -525,7 +525,8 @@ def get_property_unit(
         entity = prop.wrapped_data.declaration().as_entity()
         measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
     elif prop.is_a("IfcPropertySingleValue"):
-        measure_class = prop.NominalValue.is_a()
+        if value := prop.NominalValue:
+            measure_class = value.is_a()
     elif prop.is_a("IfcPropertyEnumeratedValue"):
         if prop.EnumerationReference:
             if unit := prop.EnumerationReference.Unit:
