@@ -29,6 +29,8 @@ emcc --version
 
 mkdir -p packages/ifcopenshell
 VERSION=`cat IfcOpenShell/VERSION`
+# Normalize to the canonical PEP 440 form (e.g. 0.9.0alpha0 -> 0.9.0a0).
+VERSION=`python3 -c "from packaging.version import Version; print(Version('$VERSION'))"`
 cp IfcOpenShell/pyodide/meta.yaml packages/ifcopenshell
 sed -i s/9.9.9/$VERSION/g packages/ifcopenshell/meta.yaml
 
