@@ -204,6 +204,17 @@ class TestCalculateUnitScale(test.bootstrap.IFC4):
         ifcopenshell.api.unit.assign_unit(self.file, units=[angle])
         assert subject.calculate_unit_scale(self.file, "PLANEANGLEUNIT") == pi / 180 * 0.001
 
+    def test_derived_units_are_considered(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT", prefix="MILLI")
+        modulus = ifcopenshell.api.unit.add_derived_unit(self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1})
+        ifcopenshell.api.unit.assign_unit(self.file, units=[modulus])
+        # AREAUNIT is a pure power of length, so its MILLI prefix is raised to
+        # the length exponent (2) per #9278: (1e-3)**2 = 1e-6, inverted by the
+        # derived unit's -1 exponent to give 1e6.
+        assert subject.calculate_unit_scale(self.file, "MODULUSOFELASTICITYUNIT") == pytest.approx(1_000_000.0)
+
     def test_prefix_is_raised_to_the_length_exponent_for_area_and_volume(self):
         # A prefixed square/cubic metre is (prefix-metre) squared/cubed:
         # DECI SQUARE_METRE = dm2 = 1e-2 m2, DECI CUBIC_METRE = dm3 (litre) = 1e-3 m3.
@@ -256,6 +267,65 @@ class TestCalculateUnitScaleOnLinkedFile(test.bootstrap.IFC4):
             if isinstance(linked_file, ifcopenshell.sqlite):
                 linked_file.db.close()
             tmp_file.unlink(missing_ok=True)
+
+
+class TestGetNamedUnitScale(test.bootstrap.IFC4):
+    def test_prefix_is_raised_to_the_length_exponent_for_area_and_volume(self):
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT", prefix="DECI")
+        assert subject.get_named_unit_scale(area) == pytest.approx(0.1**2)
+
+    def test_prefix_stays_linear_for_units_that_are_not_a_pure_power_of_length(self):
+        pressure = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="PRESSUREUNIT", prefix="KILO")
+        assert subject.get_named_unit_scale(pressure) == pytest.approx(1000)
+
+
+class TestGetDerivedUnitScale(test.bootstrap.IFC4):
+    def test_composes_scale_from_elements(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        mass = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="MASSUNIT", prefix="KILO")
+        volume = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="VOLUMEUNIT")
+        density = ifcopenshell.api.unit.add_derived_unit(self.file, "MASSDENSITYUNIT", None, {mass: 1, volume: -1})
+        assert subject.get_derived_unit_scale(density) == 1000.0
+
+    def test_unnamed_derived_unit_still_composes(self):
+        # A made-up "force per unit time" derived unit with no IfcDerivedUnitEnum match.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
+        time = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="TIMEUNIT", prefix="MILLI")
+        weird = ifcopenshell.api.unit.add_derived_unit(self.file, "USERDEFINED", "force per time", {force: 1, time: -1})
+        assert subject.get_derived_unit_scale(weird) == pytest.approx(1 / 0.001)
+
+
+class TestGetUnitSymbol(test.bootstrap.IFC4):
+    def test_derived_unit_composes_a_symbol(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        modulus = ifcopenshell.api.unit.add_derived_unit(self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1})
+        assert subject.get_unit_symbol(modulus) == "N/m2"
+
+    def test_unnamed_derived_unit_still_composes_a_symbol_without_crashing(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
+        time = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="TIMEUNIT")
+        weird = ifcopenshell.api.unit.add_derived_unit(self.file, "USERDEFINED", "force per time", {force: 1, time: -1})
+        assert subject.get_unit_symbol(weird) == "N/s"
+
+
+class TestIdentifyUnitDimensions(test.bootstrap.IFC4):
+    def test_matches_a_named_unit_type_by_dimension(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        modulus = ifcopenshell.api.unit.add_derived_unit(self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1})
+        assert subject.identify_unit_dimensions(modulus) == "PRESSUREUNIT"
+
+    def test_returns_none_for_no_match(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
+        time = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="TIMEUNIT")
+        weird = ifcopenshell.api.unit.add_derived_unit(self.file, "USERDEFINED", "force per time", {force: 1, time: -1})
+        assert subject.identify_unit_dimensions(weird) is None
 
 
 class TestFormatLength(test.bootstrap.IFC4):
