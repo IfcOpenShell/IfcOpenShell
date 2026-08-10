@@ -46,6 +46,6 @@ py-modules = ["bsdd","bsdd_json","type_hints"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.select = [
+lint.extend-select = [
   "F401",  # unused imports
 ]

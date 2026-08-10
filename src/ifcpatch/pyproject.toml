@@ -36,6 +36,6 @@ exclude = ["test*"]
 extend = "../../pyproject.toml"
 
 [tool.ruff.lint]
-select = [
+extend-select = [
     "F401", # unused imports
 ]
