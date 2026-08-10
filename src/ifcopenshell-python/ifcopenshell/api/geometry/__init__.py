@@ -25,10 +25,7 @@ geometry extrusions).
 
 from .. import wrap_usecases
 from .add_axis_representation import add_axis_representation
-from .add_topology_representation import add_topology_representation
 from .add_boolean import add_boolean
-from .clip_solid import clip_solid
-from .clip_solid_bounded import clip_solid_bounded
 from .add_door_representation import add_door_representation
 from .add_footprint_representation import add_footprint_representation
 from .add_mesh_representation import add_mesh_representation
@@ -41,12 +38,15 @@ from .add_profile_representation import add_profile_representation
 # round-tripping through an IFC file. Future add_X_representation work is encouraged
 # to follow the same shape — sibling compute_X_geometry function + thin IFC wrapper.
 from .add_railing_representation import (
-    RailingSupport,
     TERMINAL_TYPE,
+    RailingSupport,
     WallMountedHandrailGeometry,
     add_railing_representation,
     compute_wall_mounted_handrail_geometry,
 )
+from .add_topology_representation import add_topology_representation
+from .clip_solid import clip_solid
+from .clip_solid_bounded import clip_solid_bounded
 
 try:
     from .add_representation import add_representation
@@ -61,12 +61,12 @@ from .assign_representation import assign_representation
 from .connect_element import connect_element
 from .connect_path import connect_path
 from .connect_wall import connect_wall
+from .copy_representation import copy_representation
 from .create_2pt_wall import create_2pt_wall
 from .disconnect_element import disconnect_element
 from .disconnect_path import disconnect_path
 from .edit_object_placement import edit_object_placement
 from .map_representation import map_representation
-from .copy_representation import copy_representation
 from .regenerate_wall_representation import regenerate_wall_representation
 from .remove_boolean import remove_boolean
 from .remove_representation import remove_representation

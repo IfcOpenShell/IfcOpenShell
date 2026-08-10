@@ -22,6 +22,7 @@ import pytest
 import tabulate
 
 import ifcopenshell.validate
+
 from .fixture_generate import FailObj, Result, parse_result
 
 _filepaths = list((Path(__file__).parent / "fixtures/validate").glob("*.ifc"))

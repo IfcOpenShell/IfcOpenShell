@@ -25,9 +25,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, 
 
 import ifcopenshell
 
-from .. import ifcopenshell_wrapper, open
-from .. import entity_instance
-from .. import file
+from .. import entity_instance, file, ifcopenshell_wrapper, open
 from . import has_occ
 
 if TYPE_CHECKING:

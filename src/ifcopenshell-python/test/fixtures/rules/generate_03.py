@@ -1,4 +1,5 @@
 import ifcopenshell
+
 from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 for depth in (-1.0, 0.0, 1.0):

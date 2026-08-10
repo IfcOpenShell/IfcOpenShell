@@ -22,10 +22,9 @@ import logging
 import sys
 from unittest import mock
 
-import pytest
-
 import ifcopenshell
 import ifcopenshell.guid
+import pytest
 
 import ifcpatch
 import test.bootstrap

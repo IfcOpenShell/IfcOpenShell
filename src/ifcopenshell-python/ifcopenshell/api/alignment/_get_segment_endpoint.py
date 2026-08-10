@@ -17,13 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import math
+from typing import Union
+
+import numpy as np
+
 import ifcopenshell.api.alignment
 import ifcopenshell.geom
 from ifcopenshell import entity_instance, ifcopenshell_wrapper
 from ifcopenshell.api.alignment._map_alignment_segment import _map_alignment_segment
-from typing import Union
-import math
-import numpy as np
 
 
 def _get_segment_endpoint(file: ifcopenshell.file, segment: entity_instance) -> Union[np.array, None]:

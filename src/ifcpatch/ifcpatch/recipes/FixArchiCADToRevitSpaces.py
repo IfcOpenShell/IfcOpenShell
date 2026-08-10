@@ -19,12 +19,6 @@
 import logging
 from typing import TypeVar, Union
 
-import numpy as np
-import numpy.typing as npt
-import shapely
-import shapely.ops
-from shapely.geometry.polygon import orient
-
 import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.geom
@@ -33,7 +27,12 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
+import numpy as np
+import numpy.typing as npt
+import shapely
+import shapely.ops
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from shapely.geometry.polygon import orient
 
 import ifcpatch
 

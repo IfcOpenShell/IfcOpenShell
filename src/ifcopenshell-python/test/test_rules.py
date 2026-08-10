@@ -5,6 +5,7 @@ import tabulate
 
 import ifcopenshell.express.rule_executor
 import ifcopenshell.validate
+
 from .fixture_generate import FailObj, Result, parse_result
 
 

@@ -4,13 +4,13 @@ from datetime import date, datetime, timedelta
 from typing import Any, TypedDict, Union
 
 import ifcopenshell
-import ifcopenshell.guid
-import ifcopenshell.util.date
 import ifcopenshell.api.control
 import ifcopenshell.api.owner
 import ifcopenshell.api.pset
 import ifcopenshell.api.resource
 import ifcopenshell.api.sequence
+import ifcopenshell.guid
+import ifcopenshell.util.date
 from typing_extensions import NotRequired
 
 

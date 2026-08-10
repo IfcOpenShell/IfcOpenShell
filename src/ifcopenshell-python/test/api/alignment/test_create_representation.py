@@ -20,6 +20,7 @@
 import math
 
 import pytest
+
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment

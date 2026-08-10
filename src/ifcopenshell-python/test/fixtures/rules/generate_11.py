@@ -1,5 +1,6 @@
 import ifcopenshell
 import ifcopenshell.util.schema
+
 from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 depth = 1.0

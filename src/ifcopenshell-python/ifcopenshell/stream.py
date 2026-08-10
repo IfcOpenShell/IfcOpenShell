@@ -28,8 +28,7 @@ try:
     import ifcopenshell.util.attribute
     import ifcopenshell.util.schema
 
-    from . import ifcopenshell_wrapper
-    from . import file
+    from . import file, ifcopenshell_wrapper
 
     class StreamTransformer(Transformer):
         file: file

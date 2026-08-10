@@ -19,10 +19,9 @@
 
 import ifcopenshell.api.control
 import ifcopenshell.api.cost
-import test.bootstrap
 import ifcopenshell.api.root
-
 import ifcopenshell.util.cost as subject
+import test.bootstrap
 
 
 class TestGetCostItemForProduct(test.bootstrap.IFC4):

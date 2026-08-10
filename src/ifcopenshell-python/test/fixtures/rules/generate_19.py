@@ -1,4 +1,5 @@
 import ifcopenshell
+
 from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 make_nd = lambda d: lambda *c: (c + (0.0,)) if d == 3 else c

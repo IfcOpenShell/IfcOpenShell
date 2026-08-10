@@ -1,4 +1,5 @@
 import ifcopenshell
+
 from ...fixture_generate import fail_if, normalize_header, write_fixture
 
 create_none = lambda f: None

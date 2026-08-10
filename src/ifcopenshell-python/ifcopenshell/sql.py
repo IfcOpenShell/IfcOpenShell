@@ -30,8 +30,7 @@ import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
 
-from . import ifcopenshell_wrapper
-from . import file, entity_instance
+from . import entity_instance, file, ifcopenshell_wrapper
 
 if TYPE_CHECKING:
     import sqlite3

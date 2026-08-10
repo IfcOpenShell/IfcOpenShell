@@ -1,6 +1,7 @@
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.api.root
+
 from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 guid1 = "3pdqyORIn8KBHZAhhtJ72T"

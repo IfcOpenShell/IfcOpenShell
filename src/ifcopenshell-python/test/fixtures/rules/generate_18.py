@@ -1,4 +1,5 @@
 import ifcopenshell
+
 from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 for i, type_decl in enumerate(("IfcLengthMeasure", "IfcPlaneAngleMeasure")):

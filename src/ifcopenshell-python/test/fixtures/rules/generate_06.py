@@ -2,6 +2,7 @@ import itertools
 import time
 
 import ifcopenshell
+
 from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 for pty, ety in itertools.product(("GRILLE", "USERDEFINED"), (None, "Something")):

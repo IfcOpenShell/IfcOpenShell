@@ -62,7 +62,7 @@ import tempfile
 import zipfile
 from collections.abc import Generator, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Optional, Union, Any, overload
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, overload
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
@@ -88,10 +88,12 @@ try:
 except Exception as e:
     raise ImportError("IfcOpenShell not built for '%s' (%s)" % (python_distribution, e)) from e
 
+from . import file as file_module
 from . import guid
 from .ifcopenshell_wrapper import entity_instance, file
-from .file import rocksdb_lazy_instance
 from .sql import sqlite, sqlite_entity
+
+rocksdb_lazy_instance = file_module.rocksdb_lazy_instance
 
 get_log = ifcopenshell_wrapper.get_log
 logger = ifcopenshell_wrapper.logger if hasattr(ifcopenshell_wrapper, "logger") else None

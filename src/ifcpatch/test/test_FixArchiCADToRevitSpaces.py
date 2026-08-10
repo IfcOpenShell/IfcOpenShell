@@ -16,9 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
-import pytest
-
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
@@ -28,6 +25,8 @@ import ifcopenshell.geom
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
+import numpy as np
+import pytest
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 import ifcpatch

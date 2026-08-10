@@ -1,12 +1,11 @@
 import csv
+from pathlib import Path
 
 import pytest
 
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.shape
-
-from pathlib import Path
 
 repo_root = Path(__file__).resolve().parent.parent.parent.parent
 test_files = repo_root / "test" / "input" / "tests"

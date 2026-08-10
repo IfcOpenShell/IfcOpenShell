@@ -22,6 +22,7 @@ import uuid
 from typing import Optional
 
 from ifcopenshell import file
+
 from .guid import compress
 from .ifcopenshell_wrapper import version
 

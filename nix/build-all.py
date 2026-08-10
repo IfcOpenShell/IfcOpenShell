@@ -132,9 +132,9 @@ from collections.abc import Generator, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
+from urllib.request import urlretrieve
 
 from typing_extensions import assert_never
-from urllib.request import urlretrieve
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

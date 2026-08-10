@@ -1,4 +1,5 @@
 import ifcopenshell
+
 from ...fixture_generate import normalize_header, write_fixture
 
 ifc_file = ifcopenshell.file(schema="IFC2X3")

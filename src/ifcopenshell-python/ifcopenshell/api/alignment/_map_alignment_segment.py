@@ -20,7 +20,6 @@ from collections.abc import Sequence
 
 import ifcopenshell
 from ifcopenshell import entity_instance
-
 from ifcopenshell.api.alignment._map_alignment_cant_segment import (
     _map_alignment_cant_segment,
 )
