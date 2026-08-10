@@ -123,6 +123,12 @@ class TestGetPropertyUnit(test.bootstrap.IFC4):
         prop.Unit = length2
         assert subject.get_property_unit(prop, self.file) == length2
 
+    def test_single_value_with_no_nominal_value(self):
+        # NominalValue is optional -- a property may be null. Must not crash.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        prop = self.file.createIfcPropertySingleValue(Name="Foo", NominalValue=None)
+        assert subject.get_property_unit(prop, self.file) is None
+
     def test_enumerated_value(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
@@ -310,6 +316,13 @@ class TestGetUnitSymbol(test.bootstrap.IFC4):
         time = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="TIMEUNIT")
         weird = ifcopenshell.api.unit.add_derived_unit(self.file, "USERDEFINED", "force per time", {force: 1, time: -1})
         assert subject.get_unit_symbol(weird) == "N/s"
+
+    def test_context_dependent_userdefined_unit_is_not_shadowed_by_the_derived_unit_check(self):
+        # IfcContextDependentUnit (e.g. "each", "boxes") is a distinct entity
+        # from IfcDerivedUnit, so the is_a("IfcDerivedUnit") check added for
+        # derived-unit symbol composition must not shadow this fallback.
+        each = ifcopenshell.api.unit.add_context_dependent_unit(self.file, name="EACH")
+        assert subject.get_unit_symbol(each) == "EACH"
 
 
 class TestIdentifyUnitDimensions(test.bootstrap.IFC4):
