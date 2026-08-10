@@ -459,7 +459,7 @@ bison = "bison"
 
 missing_commands: list[str] = []
 required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz, bison]
-if "wasm" in flags:
+if WASM:
     # Skip swig build for WASM.
     required_commands.append("swig")
     required_commands.append("pyodide")
@@ -581,7 +581,7 @@ def run_autoconf(dependency_name: str, configure_args: list[str], cwd: str) -> N
     prefix = os.path.realpath(f"{DEPS_DIR}/install/{dependency_name}")
 
     wasm = []
-    if "wasm" in flags:
+    if WASM:
         wasm.append("emconfigure")
 
     run(
@@ -589,7 +589,7 @@ def run_autoconf(dependency_name: str, configure_args: list[str], cwd: str) -> N
             *wasm,
             "/bin/sh",
             "../configure",
-            *(["--host=wasm32"] if "wasm" in flags and not any(s.startswith("--host") for s in configure_args) else []),
+            *(["--host=wasm32"] if WASM and not any(s.startswith("--host") for s in configure_args) else []),
             *configure_args,
             f"--prefix={prefix}",
         ],
@@ -604,7 +604,7 @@ def run_cmake(arg1, cmake_args: list[str], cmake_dir: str | None = None, cwd: st
         P = cmake_dir
 
     wasm = []
-    if "wasm" in flags:
+    if WASM:
         wasm.append("emcmake")
 
     cmake_flags: list[str] = []
@@ -804,7 +804,7 @@ def build_dependency(
         logger.info(f"\rConfiguring {name}...")
         run([bash, "./bootstrap.sh"], cwd=extract_dir)
         logger.info(f"\rBuilding {name}...   ")
-        run(["./b2", f"-j{IFCOS_NUM_BUILD_PROCS}"] + build_tool_args, cwd=extract_dir, can_fail="wasm" in flags)
+        run(["./b2", f"-j{IFCOS_NUM_BUILD_PROCS}"] + build_tool_args, cwd=extract_dir, can_fail=WASM)
         logger.info(f"\rInstalling {name}... ")
         shutil.copytree(
             os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", f"boost-{BOOST_VERSION}", "boost")
@@ -917,7 +917,7 @@ ADDITIONAL_ARGS_STR = " ".join(ADDITIONAL_ARGS)
 
 CXXFLAGS_MINIMAL = f"{CXXFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
 CFLAGS_MINIMAL = f"{CFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
-if "wasm" in flags:
+if WASM:
     # WASM `SIDE_MODULE_` are absorbed by `emcmake` automatically.
     CXXFLAGS = CXXFLAGS_MINIMAL
     CFLAGS = CFLAGS_MINIMAL
@@ -1031,7 +1031,7 @@ if USE_OCCT and "occ" in targets:
     elif OCCT_VERSION >= "7.7.2":
         occt_args.append("-DBUILD_MODULE_DETools=OFF")
 
-    if "wasm" in flags:
+    if WASM:
         patches.append("./patches/occt/no_em_js.patch")
 
     build_dependency(
@@ -1115,7 +1115,7 @@ if "libxml2" in targets:
         "--without-iconv",
         "--without-lzma",
     ]
-    if "wasm" in flags:
+    if WASM:
         build_tool_args.append("--without-threads")
     build_dependency(
         f"libxml2-{LIBXML2_VERSION}",
@@ -1137,7 +1137,7 @@ if "OpenCOLLADA" in targets:
     # whether shared libs were actually built. We make it follow `USE_SHARED` instead.
     patches.append("./patches/opencollada/config_select_libs_by_use_shared.patch")
 
-    if "wasm" in flags:
+    if WASM:
         # This is necessary for the WASM build, because recent versions of
         # clang don't have the tr1:: namespace anymore. However, it breaks
         # some versions of gcc (9.4.0 at least) due to specializing std::hash
@@ -1228,7 +1228,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
 if "boost" in targets:
     str_concat = lambda prefix: lambda postfix: "" if postfix.strip() == "" else "=".join((prefix, postfix.strip()))
     toolset = []
-    if "wasm" in flags:
+    if WASM:
         toolset.append("toolset=emscripten")
     build_dependency(
         f"boost-{BOOST_VERSION}",
@@ -1256,7 +1256,7 @@ if "boost" in targets:
         # patch="./patches/boost/boostorg_regex_62.patch",
         download_name=f"boost-{BOOST_VERSION}-b2-nodocs.tar.gz",
     )
-    if "wasm" in flags:
+    if WASM:
         # only supported on nix for now
         run(
             ("find", ".", "-name", "*.bc", "-exec", "bash", "-c", "emar q ${1%.bc}.a $1", "bash", "{}", ";"),
@@ -1298,9 +1298,7 @@ if "cgal" in targets:
         name=f"gmp-{GMP_VERSION}",
         mode="autoconf",
         build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, "--with-pic", *gmp_args],
-        pre_compile_subs=(
-            [("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if "wasm" in flags else []
-        ),
+        pre_compile_subs=([("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if WASM else []),
         patch=gmp_patches,
         # Sometimes ftp.gnu.org is very slow, use ftpmirror.gnu.org as a workaround.
         download_url="https://ftpmirror.gnu.org/gnu/gmp/",
@@ -1462,7 +1460,7 @@ def get_cmake_args_prefix_path(additional_paths: Sequence[str] = ()) -> list[str
         return [f"-DCMAKE_PREFIX_PATH={prefix_path}"]
 
 
-if "wasm" in flags:
+if WASM:
     # Boost is built by the build script so should not be found
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
@@ -1640,7 +1638,7 @@ if "IfcOpenShell-Python" in targets:
             if platform.system() != "Darwin":
                 if BUILD_CFG == "Release":
                     for so in glob.glob(os.path.join(module_dir, "*.so")):
-                        if "wasm" in flags:
+                        if WASM:
                             run(["wasm-strip", so, "-k", "dylink.0"])
                         elif os.path.basename(so).startswith("_ifcopenshell_wrapper"):
                             # TODO: This symbol name depends on the Python version?
@@ -1650,7 +1648,7 @@ if "IfcOpenShell-Python" in targets:
 
             return module_dir
 
-    if "wasm" in flags:
+    if WASM:
         compile_python_wrapper(
             run(["pyodide", "config", "get", "python_version"]),
             run(["pyodide", "config", "get", "python_include_dir"]),
