@@ -461,35 +461,6 @@ namespace {
 			return out;
 		}
 
-		// Given an edge and one of its two real adjacent faces (within a single product's own
-		// topology), returns the *other* one -- i.e. "what's beyond this edge, away from
-		// `known_face`" within that same solid. Used to find the face pair (face_i2/face_j2) that
-		// sits just past a matched cross-coplanar boundary edge on each side, so their own
-		// coplanarity can be verified independently of the touching pair (face_i/face_j) that
-		// found the edge in the first place -- see find_cross_coplanar_matches()'s own comment for
-		// why the touching pair alone isn't sufficient. Returns none for a naked/boundary edge or
-		// any non-manifold edge (3+ faces) -- conservative: callers fall back to today's behaviour
-		// (no additional gate) when this can't be resolved, rather than guessing.
-		boost::optional<TopoDS_Face> other_adjacent_face(
-			const TopoDS_Edge& e, const TopoDS_Face& known_face,
-			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map
-		) {
-			if (!edge_face_map.Contains(e)) {
-				return boost::none;
-			}
-			const TopTools_ListOfShape& faces = edge_face_map.FindFromKey(e);
-			if (faces.Extent() != 2) {
-				return boost::none;
-			}
-			for (TopTools_ListIteratorOfListOfShape it(faces); it.More(); it.Next()) {
-				const TopoDS_Face& cand = TopoDS::Face(it.Value());
-				if (!cand.IsSame(known_face)) {
-					return cand;
-				}
-			}
-			return boost::none;
-		}
-
 		// Merge overlapping/touching-within-tolerance 1D intervals -- the same union logic the
 		// Python arrangement approach used all session for 2D projected lines, here applied to
 		// real 3D edge intervals instead.
@@ -661,197 +632,25 @@ namespace {
 		// loop has finished.
 		typedef NCollection_DataMap<TopoDS_Shape, std::vector<std::pair<double, double>>, TopTools_ShapeMapHasher> edge_coverage_map_t;
 
-		// For each edge of `face` with a valid LineSeg, appends its raw covered sub-intervals
-		// (against `other_segs`, the boundary edges of an already-confirmed-coplanar face of a
-		// *different* product) into `coverage` -- accumulation only, no full/partial decision
-		// here (see edge_coverage_map_t above for why that's deferred). This is a direct
-		// edge-to-edge coincidence test -- not a face-area-overlap test (the previous, wrong
-		// v1 approach: two side-by-side, non-overlapping faces sharing a boundary, or a void's
-		// inner wire coincident with a plug's outer wire, both have *zero* area in common by
-		// construction, even though the shared edge is exactly the "duplicate boundary" this
-		// feature exists to find).
-		//
-		// `proj_this`/`material_this`/`style_this` describe `face`'s own product; `proj_other`/
-		// `material_other`/`style_other` describe the neighbour `other_segs` came from. When
-		// either is layered, a raw geometric interval isn't necessarily one material throughout
-		// -- a face that itself spans more than one layer (e.g. a slanted face crossing a layer
-		// boundary) would otherwise have its whole overlap judged by one, possibly
-		// unrepresentative, sample. Instead each raw interval is split at every layer boundary
-		// either side contributes (layer_boundary_ts()), and each resulting sub-range is
-		// independently verified at its own midpoint before being accepted -- a sub-range where
-		// materials genuinely agree (e.g. both Corten) is kept even if a neighbouring sub-range
-		// of the *same* edge disagrees (e.g. Concrete 1 vs Concrete 2), and vice versa. When
-		// neither side is layered this degenerates to exactly the old whole-interval behaviour
-		// (no boundaries found, one pass through the loop below).
-		void accumulate_edge_coverage(
-			const TopoDS_Face& face, const TopoDS_Face& face_other, const std::vector<LineSeg>& other_segs, double tol,
-			const boost::optional<layer_projection>& proj_this, const IfcUtil::IfcBaseInterface* material_this, const IfcUtil::IfcBaseInterface* style_this,
-			const boost::optional<layer_projection>& proj_other, const IfcUtil::IfcBaseInterface* material_other, const IfcUtil::IfcBaseInterface* style_other,
-			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_this,
-			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_other,
-			const std::function<bool(const gp_Pnt&)>& is_occluded,
-			edge_coverage_map_t& coverage
-		) {
-			for (TopExp_Explorer eexp(face, TopAbs_EDGE); eexp.More(); eexp.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
-				auto seg = edge_to_line_seg(e);
-				if (!seg) {
-					continue;
-				}
-				// "Beyond" face on this edge's own (single-object) far side, away from `face`
-				// itself -- see other_adjacent_face()'s own comment for why this, not just
-				// face/face_other, is what needs to stay coplanar for coverage to be valid here.
-				auto face2_this = other_adjacent_face(e, face, edge_face_map_this);
-				gp_Dir n_this2;
-				bool have_n_this2 = face2_this && face_normal(*face2_this, n_this2);
-				std::vector<std::pair<double, double>> covered;
-				for (auto& other : other_segs) {
-					if (std::abs(seg->dir.Dot(other.dir)) <= 1.0 - kCoplanarNormalTolerance) {
-						continue;
-					}
-					gp_Vec to_other(seg->p0, other.p0);
-					double perp_dist = to_other.Crossed(gp_Vec(seg->dir)).Magnitude();
-					if (perp_dist >= tol) {
-						continue;
-					}
-					// Guard against hiding a genuine surface discontinuity: face/face_other
-					// (A1/B1) being coplanar only establishes that *this* touching pair is a
-					// legitimate duplicate boundary -- it says nothing about whether what's beyond
-					// the edge on each side (face2_this/face2_other, i.e. A2/B2) is *also*
-					// consistent. When both are resolvable and fail the same coplanar test A1/B1
-					// already passed, the edge marks a real transition (e.g. two adjacent but
-					// differently-sloped surfaces meeting at their shared boundary), not a
-					// hideable seam -- skip this contribution and let the edge keep whatever
-					// classify_edge_from_faces() independently computes for it. Left unresolved
-					// (naked/non-manifold edge on either side) falls back to today's behaviour.
-					if (have_n_this2) {
-						auto face2_other = other_adjacent_face(other.edge, face_other, edge_face_map_other);
-						gp_Dir n_other2;
-						if (face2_other && face_normal(*face2_other, n_other2)) {
-							if (std::abs(n_this2.Dot(n_other2)) <= 1.0 - kCoplanarNormalTolerance) {
-								continue;
-							}
-						}
-					}
-					double t0 = gp_Vec(seg->p0, other.p0).Dot(gp_Vec(seg->dir));
-					double t1 = gp_Vec(seg->p0, other.p1).Dot(gp_Vec(seg->dir));
-					double lo = std::min(t0, t1), hi = std::max(t0, t1);
-
-					// No fast path for the non-layered (!proj_this && !proj_other) case: that
-					// used to unconditionally accept [lo, hi] without any material/style check,
-					// relying on the caller's coarse product-level gate in
-					// find_cross_coplanar_matches() to have already guaranteed equality before
-					// ever reaching here. That guarantee no longer universally holds -- the gate
-					// is deliberately widened when mat_style_change is enabled, so a confirmed
-					// *mismatch* can now reach this function too (needed for
-					// mat_style_change::accumulate_mismatch_coverage()'s own call using the same
-					// scaffolding). Falling through to the general per-sub-interval logic below
-					// (which degenerates to exactly one whole-[lo,hi] check when neither side is
-					// layered, since layer_boundary_ts() contributes no boundaries) makes the
-					// verification explicit and correct in both cases -- and is a no-op for every
-					// previously-verified pair, since resolve_material_at_point() with proj=none
-					// just returns material_this/material_other directly, the same values the
-					// coarse gate already compared.
-					std::vector<double> boundaries;
-					if (proj_this) {
-						auto bs = layer_boundary_ts(*seg, *proj_this);
-						boundaries.insert(boundaries.end(), bs.begin(), bs.end());
-					}
-					if (proj_other) {
-						auto bs = layer_boundary_ts(*seg, *proj_other);
-						boundaries.insert(boundaries.end(), bs.begin(), bs.end());
-					}
-					std::vector<double> cuts;
-					for (double b : boundaries) {
-						if (b > lo && b < hi) {
-							cuts.push_back(b);
-						}
-					}
-					std::sort(cuts.begin(), cuts.end());
-
-					double cursor = lo;
-					for (size_t i = 0; i <= cuts.size(); ++i) {
-						double piece_end = (i < cuts.size()) ? cuts[i] : hi;
-						if (piece_end <= cursor) {
-							continue;
-						}
-						double t_mid = 0.5 * (cursor + piece_end);
-						gp_Pnt mid = seg->p0.Translated(gp_Vec(seg->dir) * t_mid);
-						const auto* mat_this = resolve_material_at_point(mid, proj_this, material_this);
-						const auto* mat_other = resolve_material_at_point(mid, proj_other, material_other);
-						bool ok;
-						if (mat_this || mat_other) {
-							ok = mat_this && mat_other && mat_this == mat_other;
-						} else {
-							ok = style_this && style_other && style_this == style_other;
-						}
-						// Screen-space occlusion: a wholly separate, unrelated third product
-						// sitting in front of PART of this shared boundary from the current
-						// camera means classifying that part as this pair's relationship would
-						// misrepresent what's actually shown, even though the rest of the same
-						// raw interval may be genuinely unoccluded and should still be accepted.
-						// Split via occlusion_clear_subintervals() (bisection-refined, same
-						// approach restore_coincident_hidden_edges()'s own restorable_intervals()
-						// already uses) rather than a single midpoint test for the whole
-						// [cursor, piece_end] range -- issue #3742 follow-up reports (real
-						// project drawings) confirmed occlusion genuinely varies within a single
-						// raw interval far more often than a lone sample point could ever catch,
-						// wrongly rejecting long genuinely-visible stretches over one small
-						// occluded patch. Tested along the shared boundary line itself,
-						// deliberately NOT offset into this face's own interior -- `is_occluded`
-						// already excludes both products of the matched pair itself (see
-						// find_cross_coplanar_matches()'s `idx_i`/`idx_j` exclusion), so points on
-						// this line unambiguously answer "is a genuine third party in front of
-						// this exact shared location", the same question and the same answer
-						// regardless of which side's face happens to be walked -- this function is
-						// called once per direction for the same matched pair, and both calls
-						// split at the same real occlusion transitions since both probe the same
-						// physical line, so the two sides' sub-edges still land on matching
-						// endpoints for `coincident_edge_class_priority()`'s dedup pass.
-						if (ok) {
-							for (auto& sub : occlusion_clear_subintervals(*seg, cursor, piece_end, is_occluded, tol)) {
-								covered.push_back(sub);
-							}
-						}
-						cursor = piece_end;
-					}
-				}
-				if (covered.empty()) {
-					continue;
-				}
-				auto* existing = coverage.ChangeSeek(e);
-				if (existing) {
-					existing->insert(existing->end(), covered.begin(), covered.end());
-				} else {
-					coverage.Bind(e, covered);
-				}
-			}
-		}
-
 		struct edge_split_result {
 			std::vector<TopoDS_Edge> covered;
 			std::vector<TopoDS_Edge> remainder;
-			// True only when covered/remainder contain newly-constructed TopoDS_Edge objects
-			// (the genuine partial-split path below) -- false when either vector just holds the
-			// original, unmodified `e` (the full-coverage fast path, or the "nothing survived
-			// noise filtering" fallback). Callers need this to know which edges are brand new
-			// geometry that was never part of what build() feeds to the HLR algorithm, and so
-			// must be separately injected into the owning product's items_ shape for HLRBRep_
-			// HLRToShape::VCompound()/OutLineVCompound() to correlate them at all (see the
-			// injection step in find_cross_coplanar_matches()).
+			// True only when covered/remainder contain newly-constructed TopoDS_Edge objects --
+			// false when either vector just holds the original, unmodified `e` (the
+			// full-coverage fast path, or the "nothing survived noise filtering" fallback).
 			bool is_new_geometry = false;
 		};
 
-		// Unions `raw_intervals` (every contribution accumulate_edge_coverage() ever recorded
-		// for `e`) and walks `e`'s own [0, length] range against that union to produce
-		// alternating covered/uncovered sub-ranges -- v3's actual sub-edge split. Full coverage
+		// Generic "split an edge by a set of raw covered sub-intervals" utility -- used by the
+		// post-HLR coincident-duplicate-edge dedup pass in SvgSerializer.cpp
+		// (compute_coincident_edge_overlap_coverage()'s own consumer) to trim the
+		// overlapped-by-a-higher-priority-class portion off an edge, keeping only its genuinely
+		// uncovered remainder. Unions `raw_intervals`, then walks `e`'s own [0, length] range
+		// against that union to produce alternating covered/uncovered sub-ranges. Full coverage
 		// keeps the fast path of moving the *whole*, unmodified edge (avoids introducing a
-		// floating-point seam at an edge's own original endpoints for the common full-duplicate
-		// case, and is byte-identical to pre-v3 behaviour). Only genuine partial coverage
-		// constructs new, trimmed TopoDS_Edge objects (via BRepBuilderAPI_MakeEdge on two
-		// points derived from `seg`'s own p0/dir -- no new geometric machinery). Sub-ranges
-		// shorter than Precision::Confusion() are dropped rather than turned into degenerate
-		// zero-length edges.
+		// floating-point seam at an edge's own original endpoints); only genuine partial coverage
+		// constructs new, trimmed TopoDS_Edge objects. Sub-ranges shorter than the clamped
+		// tolerance are dropped rather than turned into degenerate zero-length edges.
 		edge_split_result split_edge_by_coverage(
 			const TopoDS_Edge& e, const LineSeg& seg,
 			const std::vector<std::pair<double, double>>& raw_intervals, double tol
@@ -866,15 +665,6 @@ namespace {
 				}
 			}
 
-			// Clamp every merged interval to this edge's own [0, length] range -- a raw interval
-			// can extend well past this edge's own endpoint (e.g. a much longer neighbour edge
-			// collinear with a short one), leaving only a razor-thin sliver actually inside
-			// [0, length]. A clamped sub-interval shorter than the matching tolerance itself is
-			// noise (e.g. two edges only touching at a shared corner vertex) -- not a genuine
-			// partial duplicate -- and is dropped rather than fragmenting the edge over it; it's
-			// the *clamped* width that matters here, not the raw interval's own (pre-clamp)
-			// width. If nothing genuinely covered survives, treat the whole edge as untouched,
-			// same as if accumulate_edge_coverage() had never recorded anything for it at all.
 			std::vector<std::pair<double, double>> clamped;
 			for (auto& iv : merged) {
 				double a = std::max(iv.first, 0.0);
@@ -928,58 +718,401 @@ namespace {
 			return result;
 		}
 
-		// Replaces `from` (one of a product's original 5-class buckets) with a new compound:
-		// edges with no entry in `coverage` are kept unchanged; edges that split_edge_by_coverage()
-		// finds fully covered are dropped entirely (as in pre-v3 behaviour -- they're already
-		// committed to one of the original classes by the per-product classification pass that
-		// runs before find_cross_coplanar_matches(), so without this an edge would end up
-		// listed under two classes at once and get drawn twice); partially-covered edges are
-		// *replaced* by their uncovered remainder sub-edge(s) -- same class, only the geometry
-		// shrinks. Every covered sub-edge (whole or trimmed) is also appended to
-		// `cross_coplanar_out`, so the cross-coplanar bucket and this replacement are always
-		// built from exactly the same split decision. Whenever split_edge_by_coverage() reports
-		// genuinely new geometry, every resulting piece (both covered and remainder) is *also*
-		// appended to `new_geometry_out` -- these are edges build() never fed to the HLR
-		// algorithm, so the caller has to inject them into the owning product's items_ shape
-		// before build()'s algo->Add() loop runs, or HLRBRep_HLRToShape::VCompound()/
-		// OutLineVCompound() (which correlate by original-input-edge identity, not by shape
-		// content) will silently return nothing for them. `from`'s edges and `coverage`'s keys
-		// are the same, non-moved, non-transformed original edges (both ultimately sourced from
-		// the same per-product compound_to_hlr, never copied), so plain shape identity (TShape +
-		// Location, via TopTools_ShapeMapHasher) is a safe, exact way to find the overlap.
-		TopoDS_Compound replace_matched_edges(
-			const TopoDS_Shape& from, edge_coverage_map_t& coverage, double tol,
-			BRep_Builder& builder, TopoDS_Compound& cross_coplanar_out, TopoDS_Compound& new_geometry_out
+		// Per-product-own topological edge, collected once per product (not once per accepted
+		// pair) -- issue #3742 follow-up redesign, replacing the old per-product-PAIR loop that
+		// decided "should THIS specific pair match" with a per-EDGE-LOCATION one that decides
+		// "what does the camera actually see here", given every product that happens to share
+		// that exact 3D line. See resolve_edge_location_subrange() below for the actual decision;
+		// this struct and collect_product_edges() are just the up-front bookkeeping it needs.
+		struct ProductEdge {
+			size_t item_idx;
+			const IfcUtil::IfcBaseEntity* product;
+			TopoDS_Edge edge;
+			LineSeg seg;
+			// Whatever the edge-face-map really has (0 for a bare wire edge, 1 for naked/
+			// boundary, 2 for a normal manifold edge, 3+ for non-manifold) -- deliberately not
+			// forced to exactly 2 the way classify_edge_from_faces()'s own single-object scheme
+			// requires, since every one of these is a legitimate candidate face for the
+			// left/right contest below regardless of how many there are.
+			std::vector<TopoDS_Face> adjacent_faces;
+			boost::optional<layer_projection> proj;
+			const IfcUtil::IfcBaseInterface* material;
+			const IfcUtil::IfcBaseInterface* style;
+			Bnd_Box box;
+		};
+
+		// Once per product: build its edge-face-map and record every edge with everything the
+		// new per-location matching pass needs -- replaces the old per-ACCEPTED-PAIR
+		// TopExp::MapShapesAndAncestors calls, which rebuilt the same map for the same product
+		// again for every other product it happened to pass the old bbox/material gates against.
+		// IfcOpeningElement products are skipped entirely, matching the old occlusion-
+		// intersector array's own exclusion (a void's own boundary is never real material and
+		// must never win a side of the contest below, or be forced into a match/mismatch verdict
+		// alongside genuine neighbours) -- made explicit here since that array goes away.
+		std::vector<ProductEdge> collect_product_edges(const product_shape_list_t& items, double tol) {
+			std::vector<ProductEdge> out;
+			size_t idx = 0;
+			for (auto& it : items) {
+				const auto* product = std::get<0>(it);
+				const TopoDS_Shape& shape = std::get<1>(it);
+				const auto* style = std::get<2>(it);
+				const auto* material = std::get<3>(it);
+				const auto& proj = std::get<4>(it);
+				bool is_void = product && product->declaration().is("IfcOpeningElement");
+				if (shape.IsNull() || is_void) {
+					++idx;
+					continue;
+				}
+				TopTools_IndexedDataMapOfShapeListOfShape edge_face_map;
+				TopExp::MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, edge_face_map);
+				for (int i = 1; i <= edge_face_map.Extent(); ++i) {
+					const TopoDS_Edge& e = TopoDS::Edge(edge_face_map.FindKey(i));
+					auto seg = edge_to_line_seg(e);
+					if (!seg) {
+						continue;
+					}
+					ProductEdge pe;
+					pe.item_idx = idx;
+					pe.product = product;
+					pe.edge = e;
+					pe.seg = *seg;
+					pe.proj = proj;
+					pe.material = material;
+					pe.style = style;
+					const TopTools_ListOfShape& faces = edge_face_map.FindFromKey(e);
+					for (TopTools_ListIteratorOfListOfShape fit(faces); fit.More(); fit.Next()) {
+						pe.adjacent_faces.push_back(TopoDS::Face(fit.Value()));
+					}
+					BRepBndLib::AddClose(e, pe.box);
+					pe.box.Enlarge(tol);
+					out.push_back(std::move(pe));
+				}
+				++idx;
+			}
+			return out;
+		}
+
+		// Bbox-gated shortlist of OTHER products' edges near a given edge -- modeled on
+		// restore_coincident_hidden_edges()'s own nearby-item lookup (a plain linear bbox scan,
+		// not worth a real spatial index at this file's own already-accepted precedent). Excludes
+		// every edge belonging to the SAME product as the query (a product's own edges never
+		// compete against each other here -- this is a cross-PRODUCT mechanism, same as the old
+		// per-pair loop's own implicit idx_i != idx_j).
+		std::vector<size_t> nearby_product_edges(
+			const std::vector<ProductEdge>& all, const Bnd_Box& query, size_t exclude_item_idx
 		) {
-			TopoDS_Compound result;
-			builder.MakeCompound(result);
-			for (TopExp_Explorer exp(from, TopAbs_EDGE); exp.More(); exp.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
-				auto* raw = coverage.ChangeSeek(e);
-				if (!raw) {
-					builder.Add(result, e);
+			std::vector<size_t> out;
+			for (size_t i = 0; i < all.size(); ++i) {
+				if (all[i].item_idx == exclude_item_idx) {
 					continue;
 				}
-				auto seg = edge_to_line_seg(e);
-				if (!seg) {
-					// Shouldn't happen -- coverage is only ever populated for edges that already
-					// had a valid LineSeg -- but keep the edge rather than silently drop it.
-					builder.Add(result, e);
+				if (!query.IsOut(all[i].box)) {
+					out.push_back(i);
+				}
+			}
+			return out;
+		}
+
+		// One other product's edge, genuinely collinear with a seed edge, and the portion of the
+		// SEED's own [0, length] parametrization it overlaps (already clamped to it).
+		struct EdgeOverlap {
+			size_t other_idx;
+			double t0, t1;
+		};
+
+		// Generalizes the old accumulate_edge_coverage()'s own direction-parallel +
+		// perpendicular-distance + t-range-projection test from "one specific pre-matched face's
+		// own edges" to "every other product's nearby edges" -- this is what makes the new design
+		// sub-edge-level, exactly like the old one: two collinear edges of different lengths only
+		// ever overlap over their genuinely-shared portion, clamped to the seed's own extent, and
+		// any resulting sliver shorter than `tol` is dropped here (mirroring the old code's own
+		// two-layer clamp-and-drop, see split_edge_by_match_and_mismatch()'s `clamp()` and its
+		// final cut loop) so floating-point edge-endpoint noise never produces a degenerate
+		// zero-length "dot" in the drawing.
+		std::vector<EdgeOverlap> find_collinear_overlaps(
+			const ProductEdge& seed, const std::vector<ProductEdge>& all,
+			const std::vector<size_t>& nearby, double tol
+		) {
+			std::vector<EdgeOverlap> out;
+			for (size_t idx : nearby) {
+				const ProductEdge& other = all[idx];
+				if (std::abs(seed.seg.dir.Dot(other.seg.dir)) <= 1.0 - kCoplanarNormalTolerance) {
 					continue;
 				}
-				auto split = split_edge_by_coverage(e, *seg, *raw, tol);
-				for (auto& c : split.covered) {
-					builder.Add(cross_coplanar_out, c);
-					if (split.is_new_geometry) {
-						builder.Add(new_geometry_out, c);
+				gp_Vec to_other(seed.seg.p0, other.seg.p0);
+				double perp_dist = to_other.Crossed(gp_Vec(seed.seg.dir)).Magnitude();
+				if (perp_dist >= tol) {
+					continue;
+				}
+				double t0 = gp_Vec(seed.seg.p0, other.seg.p0).Dot(gp_Vec(seed.seg.dir));
+				double t1 = gp_Vec(seed.seg.p0, other.seg.p1).Dot(gp_Vec(seed.seg.dir));
+				double lo = std::max(0.0, std::min(t0, t1));
+				double hi = std::min(seed.seg.length, std::max(t0, t1));
+				if (hi - lo < tol) {
+					continue;
+				}
+				out.push_back({ idx, lo, hi });
+			}
+			return out;
+		}
+
+		enum class subrange_verdict { none, match, mismatch };
+
+		struct subrange_result {
+			subrange_verdict verdict = subrange_verdict::none;
+			// Every contributor (by index into the same `all` vector resolve_edge_location_
+			// subrange() was called with, including the seed itself) whose own edge covers this
+			// sub-range, with the sub-range already converted into THAT contributor's own
+			// [0, length] parametrization -- design point: every product sharing this edge
+			// location must agree on one final classification, not just the two winning sides.
+			std::vector<std::pair<size_t, std::pair<double, double>>> contributor_intervals;
+		};
+
+		// The actual per-location decision (issue #3742 follow-up redesign) for one sub-range
+		// [a, b] of `seed`'s own parametrization: given every product with an edge overlapping
+		// this exact sub-range, what does the camera actually see here, and should every one of
+		// them be forced to the same cross-coplanar/mat-style-change verdict (or none at all,
+		// leaving each product's own native classify_edge_from_faces() label standing)?
+		//
+		// 1. Gather every contributor's own adjacent faces into one candidate pool.
+		// 2. Discard any candidate that isn't STRICTLY front-facing -- both clearly back-facing
+		//    and edge-on are excluded (unlike classify_edge_from_faces()'s own single-object
+		//    front/back/edge-on split, which this scheme deliberately does not otherwise reuse
+		//    or affect). This is a per-CANDIDATE filter, not a per-PAIR rejection: a losing
+		//    candidate just doesn't compete, it never vetoes a match some OTHER, still-visible
+		//    candidate on the same side could win instead. A genuine cross-coplanar/mat-style-
+		//    change seam is decided by two SEPARATE products' own genuinely-camera-visible faces
+		//    continuing across it in the SAME direction (e.g. two wall segments' own front
+		//    faces) -- never by whichever internal, opposite-facing faces happen to physically
+		//    touch where the two solids meet (a wall's hidden end-cap against its neighbour's, an
+		//    underside resting on whatever's below). Those are irrelevant to the decision, not
+		//    ambiguity to resolve: since two exactly-opposite-facing faces can never both be
+		//    front-facing to the same camera at once, requiring strict front-facing here already
+		//    removes them from contention without needing any separate "same vs opposite
+		//    normal" case analysis at the filtering stage.
+		// 3. Build a plane through the edge's own 3D line and the camera's view direction --
+		//    viewed from the camera, this plane projects to exactly the edge's own screen-space
+		//    line extended into depth, giving a well-defined, order-independent left/right split
+		//    ("left"/"right" are just the two possible signs of one dot product, not literal
+		//    screen position).
+		// 4. Classify each surviving candidate by which side of that plane it falls on, using a
+		//    point local to THIS specific edge location (local_face_nudge_point(), not the whole-
+		//    face face_interior_point() average) -- necessary because a candidate's own face can
+		//    be much larger than the one small sub-range being resolved (a wall's entire main
+		//    face, evaluated at one small seam near its edge), so a single whole-face point can
+		//    land on the wrong side of a plane that's only meaningful locally.
+		// 5. Per side, the winner is whichever candidate's own normal has the smallest angle to
+		//    that side's own outward-facing plane normal -- no separate depth/occlusion tie-break
+		//    is needed for two same-side candidates this close in orientation: cross_coplanar_
+		//    tolerance_ (the same tolerance used to decide two faces are "the same plane" for
+		//    matching purposes at all) means anything ambiguous enough to need one is also close
+		//    enough to represent the same physical surface for classification purposes -- no real
+		//    building element, even a thin covering, sits that close to something genuinely
+		//    different in depth.
+		// 6. Compare the two winners: not coplanar in the SAME direction -> no verdict (native
+		//    classification stands); same-direction coplanar -> resolve material/style at the
+		//    sub-range's own midpoint into match (same) or mismatch (different, only when
+		//    `allow_mismatch`) or none (unresolved). Opposite-direction is deliberately never
+		//    treated as a match here (see step 2) -- it should already be structurally impossible
+		//    for both winners to have survived step 2 with opposite normals, but the check is
+		//    kept explicit rather than relying on that invariant silently.
+		// 7. On match/mismatch, convert the sub-range into every contributor's own edge
+		//    parametrization (not just the two winners') -- visually only one line can ever
+		//    appear here, so every product sharing this edge location must agree.
+		subrange_result resolve_edge_location_subrange(
+			size_t seed_idx, const std::vector<ProductEdge>& all,
+			const std::vector<EdgeOverlap>& overlaps, double a, double b,
+			const gp_Dir& view_direction, double tol, bool allow_mismatch
+		) {
+			subrange_result result;
+			const ProductEdge& seed = all[seed_idx];
+			double mid_t = 0.5 * (a + b);
+			gp_Pnt mid_point = seed.seg.p0.Translated(gp_Vec(seed.seg.dir) * mid_t);
+
+			std::vector<size_t> contributors = { seed_idx };
+			for (auto& ov : overlaps) {
+				if (mid_t >= ov.t0 - tol && mid_t <= ov.t1 + tol) {
+					contributors.push_back(ov.other_idx);
+				}
+			}
+
+			// Same convention as classify_edge_from_faces()'s own front/back/edge-on split
+			// (SvgSerializer.cpp) -- confirmed identical, not just similarly-named:
+			// view_direction_.Direction() (passed in as `view_direction` here) and that
+			// function's own projection_direction parameter are built from the same gp_Pln in
+			// every drawing-variant branch.
+			//
+			// Unlike classify_edge_from_faces()'s own single-object outline test, THIS filter
+			// requires strictly front-facing -- both clearly back-facing and edge-on candidates
+			// are excluded. This is deliberately scoped to just this per-location cross-product
+			// candidate search (never to a product's own native Stage-0 classification, which
+			// still runs its own, separate front/back/edge-on test and is untouched by this one).
+			// A cross-coplanar/mat-style-change match is decided by the two SAME-DIRECTION,
+			// genuinely camera-visible faces on either side of a seam -- e.g. two continuing wall
+			// segments' own front faces -- never by whichever internal, opposite-facing faces
+			// happen to physically touch where the two solids meet (a wall's hidden end-cap, a
+			// box's buried underside resting on what's below it). Those opposite-facing faces are
+			// irrelevant to this decision, not a source of ambiguity to resolve: excluding them
+			// unconditionally on facing means the "matching normals, both winners genuinely
+			// visible" pair is exactly what survives to be compared, with no separate need to guess
+			// which of an opposite-facing pair is the "real" one. If nothing survives at a given
+			// location, this candidate search simply finds no verdict there and native
+			// classification stands -- correct, since a location with no genuinely front-facing
+			// contributor has nothing for the camera to actually resolve between anyway.
+			constexpr double kBackFaceDotEps = 1.e-4; // == classify_edge_from_faces()'s kOutlineDotEps
+			auto is_front_facing = [&](const gp_Dir& n) {
+				return -view_direction.Dot(n) < -kBackFaceDotEps;
+			};
+
+			gp_Vec plane_normal_vec = gp_Vec(seed.seg.dir.XYZ()).Crossed(gp_Vec(view_direction.XYZ()));
+			if (plane_normal_vec.SquareMagnitude() < 1.e-12) {
+				// Edge exactly parallel to the view direction -- projects to a single point on
+				// screen, not a line; no meaningful "sides" to split candidates into.
+				return result;
+			}
+			gp_Dir plane_normal(plane_normal_vec);
+
+			struct Candidate {
+				gp_Dir normal;
+				size_t contributor;
+				double angle;
+			};
+			// Which way does `face` actually extend, right at `mid_point` on the shared edge --
+			// not a whole-face average (face_interior_point(), used elsewhere in this file), which
+			// for a large face (e.g. a wall's own main face, far bigger than the one small edge
+			// location being resolved here) can sit on the wrong side of a dividing plane that's
+			// only meaningful locally. Step a small distance from the edge, in-plane, perpendicular
+			// to the edge direction -- there are exactly two such directions; BRepClass_
+			// FaceClassifier picks whichever one is genuinely inside the face, the same
+			// in/out test this file already uses per-candidate elsewhere (point_on_foreign_face()
+			// in restore_coincident_hidden_edges()). Cheaper than a real triangulation and gives
+			// the same answer for planar building faces: the correct in-face direction immediately
+			// adjacent to this exact point on the edge, not some other part of the face's boundary.
+			auto local_face_nudge_point = [&](const TopoDS_Face& face, const gp_Dir& face_n) -> gp_Pnt {
+				gp_Vec perp_vec = gp_Vec(face_n.XYZ()).Crossed(gp_Vec(seed.seg.dir.XYZ()));
+				if (perp_vec.SquareMagnitude() < 1.e-12) {
+					return mid_point;
+				}
+				gp_Dir perp(perp_vec);
+				double step = std::max(tol * 50.0, 1.e-3);
+				gp_Pnt candidate_pos = mid_point.Translated(gp_Vec(perp) * step);
+				BRepClass_FaceClassifier classifier(face, candidate_pos, tol);
+				if (classifier.State() == TopAbs_IN || classifier.State() == TopAbs_ON) {
+					return candidate_pos;
+				}
+				return mid_point.Translated(gp_Vec(perp) * -step);
+			};
+			std::vector<Candidate> left, right;
+			for (size_t c : contributors) {
+				for (const TopoDS_Face& face : all[c].adjacent_faces) {
+					gp_Dir n;
+					if (!face_normal(face, n)) {
+						continue;
+					}
+					if (!is_front_facing(n)) {
+						continue;
+					}
+					gp_Pnt nudge = local_face_nudge_point(face, n);
+					double side = gp_Vec(mid_point, nudge).Dot(gp_Vec(plane_normal.XYZ()));
+					if (std::abs(side) < Precision::Confusion()) {
+						// Degenerate: this candidate's own interior sits exactly on the dividing
+						// plane (vanishingly rare -- a face lying exactly in the view/edge plane
+						// itself). Neither side, skip rather than guess.
+						continue;
+					}
+					gp_Dir side_normal = side > 0 ? plane_normal : plane_normal.Reversed();
+					(side > 0 ? left : right).push_back({ n, c, n.Angle(side_normal) });
+				}
+			}
+			if (left.empty() || right.empty()) {
+				return result;
+			}
+			// The two winners must come from DIFFERENT products -- otherwise this just
+			// rediscovers one product's own native corner (e.g. a box's top face meeting its
+			// own side face), which classify_edge_from_faces() already handles correctly on
+			// its own, with no cross-product story here at all. Confirmed necessary against a
+			// real case: two identical boxes stacked directly on each other share an edge where
+			// the LOWER box's own top-face/side-face corner happens to sit at the exact same
+			// location as the genuine cross-product seam (the upper box's own continuing side
+			// face) -- picking the two lowest-angle candidates independently per side can pick
+			// both from the lower box alone (its own native corner has a smaller angle than the
+			// genuine cross-product match here), silently losing the seam this feature exists
+			// to find. Searching all (left, right) pairs for the smallest combined angle among
+			// only those with differing owners fixes this while leaving the common case (where
+			// the independent per-side winners already differ) unchanged.
+			double best_angle_sum = std::numeric_limits<double>::infinity();
+			boost::optional<Candidate> best_left, best_right;
+			for (auto& l : left) {
+				for (auto& r : right) {
+					if (all[l.contributor].product == all[r.contributor].product) {
+						continue;
+					}
+					double sum = l.angle + r.angle;
+					if (sum < best_angle_sum) {
+						best_angle_sum = sum;
+						best_left = l;
+						best_right = r;
 					}
 				}
-				for (auto& r : split.remainder) {
-					builder.Add(result, r);
-					if (split.is_new_geometry) {
-						builder.Add(new_geometry_out, r);
+			}
+			if (!best_left || !best_right) {
+				// Every candidate pair shares an owning product -- no cross-product story at
+				// this location at all, native classification stands.
+				return result;
+			}
+			Candidate win_left = *best_left;
+			Candidate win_right = *best_right;
+
+			// SAME-direction only, not opposite: two solids meeting face-to-face (a wall's own
+			// hidden end-cap against its neighbour's, an underside resting on whatever's below)
+			// always have opposite normals at the exact point they touch -- that pair was already
+			// excluded above by construction (at most one of two exactly-opposite-facing
+			// candidates can ever be front-facing at once), never reaches here, and must not be
+			// treated as coplanar even if it somehow did. A genuine cross-coplanar/mat-style-change
+			// seam is two SEPARATE products' own visible faces continuing across the seam in the
+			// SAME direction (two wall segments' own front faces, both facing the viewer).
+			if (win_left.normal.Dot(win_right.normal) <= 1.0 - kCoplanarNormalTolerance) {
+				return result;
+			}
+
+			const ProductEdge& left_pe = all[win_left.contributor];
+			const ProductEdge& right_pe = all[win_right.contributor];
+			const auto* mat_left = resolve_material_at_point(mid_point, left_pe.proj, left_pe.material);
+			const auto* mat_right = resolve_material_at_point(mid_point, right_pe.proj, right_pe.material);
+			bool both_resolved, equal;
+			if (mat_left || mat_right) {
+				both_resolved = mat_left && mat_right;
+				equal = both_resolved && mat_left == mat_right;
+			} else {
+				both_resolved = left_pe.style && right_pe.style;
+				equal = both_resolved && left_pe.style == right_pe.style;
+			}
+			if (!both_resolved || (!equal && !allow_mismatch)) {
+				return result;
+			}
+			result.verdict = equal ? subrange_verdict::match : subrange_verdict::mismatch;
+
+			for (size_t c : contributors) {
+				double ca, cb;
+				if (c == seed_idx) {
+					ca = a;
+					cb = b;
+				} else {
+					const ProductEdge& pe = all[c];
+					gp_Pnt pa = seed.seg.p0.Translated(gp_Vec(seed.seg.dir) * a);
+					gp_Pnt pb = seed.seg.p0.Translated(gp_Vec(seed.seg.dir) * b);
+					ca = gp_Vec(pe.seg.p0, pa).Dot(gp_Vec(pe.seg.dir));
+					cb = gp_Vec(pe.seg.p0, pb).Dot(gp_Vec(pe.seg.dir));
+					if (ca > cb) {
+						std::swap(ca, cb);
+					}
+					ca = std::max(0.0, ca);
+					cb = std::min(pe.seg.length, cb);
+					if (cb - ca < tol) {
+						continue;
 					}
 				}
+				result.contributor_intervals.push_back({ c, { ca, cb } });
 			}
 			return result;
 		}
@@ -1173,121 +1306,10 @@ namespace {
 	namespace mat_style_change {
 		constexpr const char* const class_name = "mat-style-change";
 
-		// Case A: cross-product mismatch. Exact structural duplicate of
-		// cross_coplanar::accumulate_edge_coverage()'s geometric-coincidence scaffolding
-		// (direction/perpendicular-distance/interval computation, layer-boundary sub-splitting)
-		// -- copied rather than shared so a future change to the match path can never
-		// accidentally affect this one, or vice versa (same reasoning as cross_coplanar's own
-		// "deliberately self-contained" design). The only difference is the final per-sub-range
-		// verdict: accepted here precisely when both sides resolve a material/style identity
-		// AND they differ (a confirmed mismatch) -- a sub-range where one side is simply
-		// unresolved is neither a match nor a confirmed mismatch, and is left alone (preserving
-		// today's "leave as default classification" behaviour for genuinely ambiguous cases).
-		void accumulate_mismatch_coverage(
-			const TopoDS_Face& face, const TopoDS_Face& face_other, const std::vector<cross_coplanar::LineSeg>& other_segs, double tol,
-			const boost::optional<layer_projection>& proj_this, const IfcUtil::IfcBaseInterface* material_this, const IfcUtil::IfcBaseInterface* style_this,
-			const boost::optional<layer_projection>& proj_other, const IfcUtil::IfcBaseInterface* material_other, const IfcUtil::IfcBaseInterface* style_other,
-			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_this,
-			const TopTools_IndexedDataMapOfShapeListOfShape& edge_face_map_other,
-			const std::function<bool(const gp_Pnt&)>& is_occluded,
-			cross_coplanar::edge_coverage_map_t& coverage
-		) {
-			for (TopExp_Explorer eexp(face, TopAbs_EDGE); eexp.More(); eexp.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
-				auto seg = cross_coplanar::edge_to_line_seg(e);
-				if (!seg) {
-					continue;
-				}
-				// See cross_coplanar::accumulate_edge_coverage()'s own comment: A1/B1 (face/
-				// face_other) being coplanar doesn't guarantee what's beyond the edge on each side
-				// (A2/B2) is also consistent.
-				auto face2_this = cross_coplanar::other_adjacent_face(e, face, edge_face_map_this);
-				gp_Dir n_this2;
-				bool have_n_this2 = face2_this && cross_coplanar::face_normal(*face2_this, n_this2);
-				std::vector<std::pair<double, double>> covered;
-				for (auto& other : other_segs) {
-					if (std::abs(seg->dir.Dot(other.dir)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
-						continue;
-					}
-					gp_Vec to_other(seg->p0, other.p0);
-					double perp_dist = to_other.Crossed(gp_Vec(seg->dir)).Magnitude();
-					if (perp_dist >= tol) {
-						continue;
-					}
-					if (have_n_this2) {
-						auto face2_other = cross_coplanar::other_adjacent_face(other.edge, face_other, edge_face_map_other);
-						gp_Dir n_other2;
-						if (face2_other && cross_coplanar::face_normal(*face2_other, n_other2)) {
-							if (std::abs(n_this2.Dot(n_other2)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
-								continue;
-							}
-						}
-					}
-					double t0 = gp_Vec(seg->p0, other.p0).Dot(gp_Vec(seg->dir));
-					double t1 = gp_Vec(seg->p0, other.p1).Dot(gp_Vec(seg->dir));
-					double lo = std::min(t0, t1), hi = std::max(t0, t1);
-
-					std::vector<double> boundaries;
-					if (proj_this) {
-						auto bs = cross_coplanar::layer_boundary_ts(*seg, *proj_this);
-						boundaries.insert(boundaries.end(), bs.begin(), bs.end());
-					}
-					if (proj_other) {
-						auto bs = cross_coplanar::layer_boundary_ts(*seg, *proj_other);
-						boundaries.insert(boundaries.end(), bs.begin(), bs.end());
-					}
-					std::vector<double> cuts;
-					for (double b : boundaries) {
-						if (b > lo && b < hi) {
-							cuts.push_back(b);
-						}
-					}
-					std::sort(cuts.begin(), cuts.end());
-
-					double cursor = lo;
-					for (size_t i = 0; i <= cuts.size(); ++i) {
-						double piece_end = (i < cuts.size()) ? cuts[i] : hi;
-						if (piece_end <= cursor) {
-							continue;
-						}
-						double t_mid = 0.5 * (cursor + piece_end);
-						gp_Pnt mid = seg->p0.Translated(gp_Vec(seg->dir) * t_mid);
-						const auto* mat_this = cross_coplanar::resolve_material_at_point(mid, proj_this, material_this);
-						const auto* mat_other = cross_coplanar::resolve_material_at_point(mid, proj_other, material_other);
-						bool both_resolved, equal;
-						if (mat_this || mat_other) {
-							both_resolved = mat_this && mat_other;
-							equal = both_resolved && mat_this == mat_other;
-						} else {
-							both_resolved = style_this && style_other;
-							equal = both_resolved && style_this == style_other;
-						}
-						// Occlusion, split into clear sub-intervals rather than tested once at
-						// `mid` for the whole range -- see cross_coplanar::accumulate_edge_
-						// coverage()'s own occlusion comment above for the full reasoning
-						// (occlusion_clear_subintervals(), why an unoffset shared-boundary point
-						// is both correct and necessary for both sides of a matched pair to split
-						// at the same points).
-						bool accept = both_resolved && !equal;
-						if (accept) {
-							for (auto& sub : cross_coplanar::occlusion_clear_subintervals(*seg, cursor, piece_end, is_occluded, tol)) {
-								covered.push_back(sub);
-							}
-						}
-						cursor = piece_end;
-					}
-				}
-				if (covered.empty()) {
-					continue;
-				}
-				auto* existing = coverage.ChangeSeek(e);
-				if (existing) {
-					existing->insert(existing->end(), covered.begin(), covered.end());
-				} else {
-					coverage.Bind(e, covered);
-				}
-			}
-		}
+		// Case A (cross-product mismatch) used to be a near-duplicate of cross_coplanar's own
+		// accumulate_edge_coverage() -- both are now folded into one function,
+		// cross_coplanar::resolve_edge_location_subrange(), which produces a match, mismatch, or
+		// no verdict for a given sub-range in a single pass rather than two separate walks.
 
 		// Finds every face, across every OTHER product's raw shape, that's coplanar-coincident
 		// with `face` (same normal-parallel + plane-distance test find_cross_coplanar_matches()
@@ -2411,755 +2433,83 @@ namespace {
 				return;
 			}
 
-			// Per-product accumulated edge coverage (v3: raw intervals, not whole edges -- see
-			// cross_coplanar::edge_coverage_map_t) -- more than one neighbour can each
-			// contribute coverage to the same product's edges, so this has to be fully
-			// accumulated across the whole double loop below before any full/partial/none
-			// split decision is made (the post-loop pass, mirroring how per-product edges were
-			// already deferred to a post-loop pass pre-v3).
+			// Per-product accumulated edge coverage (raw intervals, not whole edges -- see
+			// cross_coplanar::edge_coverage_map_t) -- more than one location can each contribute
+			// coverage to the same product's edges, so this has to be fully accumulated across
+			// every seed edge below before any full/partial/none split decision is made (the
+			// post-loop pass further down).
 			BRep_Builder builder;
 			std::map<const IfcUtil::IfcBaseEntity*, cross_coplanar::edge_coverage_map_t> per_product_coverage;
-			auto get_coverage = [&](const IfcUtil::IfcBaseEntity* product) -> cross_coplanar::edge_coverage_map_t& {
-				return per_product_coverage[product];
-			};
-			// "mat-style-change" case A: a second, independent accumulation of confirmed
-			// material/style *mismatch* sub-ranges, alongside the existing match coverage above.
 			std::map<const IfcUtil::IfcBaseEntity*, cross_coplanar::edge_coverage_map_t> per_product_mismatch_coverage;
-			auto get_mismatch_coverage = [&](const IfcUtil::IfcBaseEntity* product) -> cross_coplanar::edge_coverage_map_t& {
-				return per_product_mismatch_coverage[product];
-			};
 
-			// Screen-space occlusion check: a coplanar-and-touching match between two products is
-			// only meaningful for classification purposes when that touching boundary is actually
-			// what's visible from the current camera. Two products can be genuinely, validly
-			// coplanar-and-touching in 3D (e.g. two same-material stacked storeys) while a wholly
-			// separate, unrelated third product sits directly in front of that boundary from this
-			// specific camera (e.g. an upper storey's own wall covering a lower storey's boundary
-			// with a slab) -- without this check, the classification gets attributed to the hidden
-			// pair's relationship instead of representing the genuinely-visible corner between the
-			// third product and either member of the pair, which is what a user actually sees.
-			//
-			// Reuses the exact ray-cast technique restore_coincident_hidden_edges() already uses
-			// (is_genuinely_occluded(), added in 0078c94872) rather than inventing a new mechanism:
-			// one IntCurvesFace_ShapeIntersector loaded per item up front (the expensive part,
-			// confirmed by that function's own ~30x-slowdown history if rebuilt per-sample), reused
-			// for every candidate point via repeated Perform() calls. This is a second, separate
-			// intersector array from restore_coincident_hidden_edges()'s own later in build() --
-			// real, accepted added cost for this drawing/storey (see project_cross_coplanar_
-			// known_issues.md item 4d for why sharing one array across both passes was ruled out of
-			// scope for this fix), not shared, since this pass runs earlier and independently.
-			std::vector<IntCurvesFace_ShapeIntersector> occlusion_intersectors(items_.size());
-			std::vector<bool> occlusion_intersector_loaded(items_.size(), false);
-			std::vector<const TopoDS_Shape*> occlusion_shapes(items_.size(), nullptr);
-			{
-				size_t idx = 0;
-				for (auto& it : items_) {
-					const auto* item_product = std::get<0>(it);
-					const TopoDS_Shape& shape = std::get<1>(it);
-					occlusion_shapes[idx] = &shape;
-					// IfcOpeningElement (window/door voids, and similar non-physical feature
-					// subtractions) can appear in items_ for other purposes (e.g. reveal-edge
-					// classification) but is never a legitimate solid occluder -- it represents a
-					// hole cut *out of* a wall, not material standing in front of anything.
-					// Confirmed directly against a real building file (issue #3742 follow-up): an
-					// opening's own (uncut) boundary geometry was being ray-cast as if opaque,
-					// producing a spurious few-millimetre-scale "nearer" hit against a genuinely
-					// touching, genuinely visible wall seam and wrongly rejecting the match.
-					bool is_void = item_product && item_product->declaration().is("IfcOpeningElement");
-					if (!shape.IsNull() && !is_void) {
-						occlusion_intersectors[idx].Load(shape, cross_coplanar_tolerance_);
-						occlusion_intersector_loaded[idx] = true;
-					}
-					++idx;
-				}
-			}
-			// Is `p` genuinely ON a foreign face (its plane passing within tolerance, and `p`
-			// itself falling inside that face's own boundary) -- the same coincidence test
-			// restore_coincident_hidden_edges()'s own point_on_foreign_face() already uses to
-			// confirm "a real occluder's footprint edge happens to coincide with this exact
-			// point" before trusting a nudge. Used below to gate is_occluded_for_pair()'s own
-			// nudge: only trust a nudge-discovered hit when the nudge target genuinely sits on a
-			// foreign face that ALSO passes through the original, unnudged boundary point --
-			// otherwise a nudge toward a large face's own (possibly distant) centroid can cross a
-			// small real gap into an unrelated, genuinely separate object and misreport it as
-			// touching (issue #3742 follow-up).
-			auto touches_foreign_face = [&](const gp_Pnt& p, size_t exclude_a, size_t exclude_b) -> bool {
-				for (size_t idx = 0; idx < occlusion_shapes.size(); ++idx) {
-					if (idx == exclude_a || idx == exclude_b || !occlusion_shapes[idx]) {
-						continue;
-					}
-					for (TopExp_Explorer fexp(*occlusion_shapes[idx], TopAbs_FACE); fexp.More(); fexp.Next()) {
-						const TopoDS_Face& face = TopoDS::Face(fexp.Current());
-						gp_Dir n;
-						if (!cross_coplanar::face_normal(face, n)) {
-							continue;
-						}
-						TopExp_Explorer vexp(face, TopAbs_VERTEX);
-						if (!vexp.More()) {
-							continue;
-						}
-						gp_Pnt face_pnt = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
-						double plane_dist = std::abs(gp_Vec(face_pnt, p).Dot(n));
-						if (plane_dist >= cross_coplanar_tolerance_) {
-							continue;
-						}
-						BRepClass_FaceClassifier classifier(face, p, cross_coplanar_tolerance_);
-						if (classifier.State() != TopAbs_OUT) {
-							return true;
-						}
-					}
-				}
-				return false;
-			};
-			// Same "smaller d is nearer the camera" convention as prefiltered_hlr::is_obscured_()
-			// and restore_coincident_hidden_edges()'s own depth() lambda.
-			auto occlusion_depth = [&](const gp_Pnt& p) {
-				return -(p.XYZ() - view_direction_.Location().XYZ()).Dot(view_direction_.Direction().XYZ());
-			};
-			// Is anything nearer to the camera than `p` itself, along a ray parallel to the view
-			// direction? `exclude_a`/`exclude_b` are the two products of the pair currently being
-			// evaluated (their occlusion_intersectors indices) and are always skipped -- unlike
-			// restore_coincident_hidden_edges()'s own is_genuinely_occluded() (where the tested
-			// point and the tested shape are the *same* shape, so a self-hit naturally lands at
-			// essentially the same depth and is harmless), here `p` is one face's own interior
-			// point being tested against a *different* product's full intersector. When that other
-			// product is the pair's own matched neighbour standing directly on/against it (e.g. two
-			// stacked same-footprint storeys meeting at a shared plane), its solid genuinely
-			// extends away from `p` along the view direction -- a real "nearer hit", not a
-			// depth-tie -- and without this exclusion every such touching pair would wrongly read
-			// as self-occluded, rejecting the very relationship being tested.
-			auto is_occluded_by_other = [&](const gp_Pnt& p, size_t exclude_a, size_t exclude_b) -> bool {
-				double depth_p = occlusion_depth(p);
-				gp_Lin ray(p, gp_Dir(view_direction_.Direction()));
-				for (size_t i = 0; i < occlusion_intersectors.size(); ++i) {
-					if (i == exclude_a || i == exclude_b) {
-						continue;
-					}
-					if (!occlusion_intersector_loaded[i]) {
-						continue;
-					}
-					auto& inter = occlusion_intersectors[i];
-					inter.Perform(ray, -1.0e6, 1.0e6);
-					if (!inter.IsDone()) {
-						continue;
-					}
-					for (int j = 1; j <= inter.NbPnt(); ++j) {
-						double dq = occlusion_depth(inter.Pnt(j));
-						if (dq < depth_p - cross_coplanar_tolerance_) {
-							return true;
-						}
-					}
-				}
-				return false;
-			};
+			// Issue #3742 follow-up redesign: replaces the old per-PRODUCT-PAIR double loop
+			// (which asked "should this specific pair match", and needed two separate patches --
+			// a whole-object visibility pre-filter, then a back-facing pair-rejection guard that
+			// itself regressed genuine elevation-view seams -- to approximate "is what's on the
+			// other side of this match actually what the camera sees") with a per-SHARED-EDGE-
+			// LOCATION pass: for every edge, find every other product with a genuinely collinear
+			// edge over some sub-range, and let resolve_edge_location_subrange() decide once,
+			// directly, what the camera actually sees there. See that function's own comment for
+			// the full 7-step reasoning. This needs no whole-object heuristic (a hidden object's
+			// face simply never wins a side's contest) and no pairwise rejection (a losing
+			// candidate just doesn't compete, it never vetoes some other, still-front-facing
+			// candidate on the same side).
+			std::vector<cross_coplanar::ProductEdge> all_edges =
+				cross_coplanar::collect_product_edges(items_, cross_coplanar_tolerance_);
 
-			// Whole-object visibility pre-filter (issue #3742 follow-up, real-file diagnosis): a
-			// product that is itself almost entirely hidden behind OTHER products in this specific
-			// view can still have one localized seam that individually passes is_occluded_by_other
-			// (nothing else happens to stand in front of THAT particular line) even though the
-			// product as a whole contributes essentially nothing to the drawing. Confirmed against
-			// a real building file: a wall (#70370) 95%+ hidden behind a second wall and a slab
-			// still had its one surviving, same-material seam with the visible wall accepted as a
-			// genuine cross-coplanar match, which then wrongly suppressed the plain `outline` corner
-			// between the two genuinely-visible, non-coplanar products (the wall and the slab meet
-			// at a right angle -- they were never coplanar with EACH OTHER at all). The existing
-			// per-point occlusion tests above only ever ask "is this specific shared boundary
-			// blocked" -- they have no notion of "is the object on the other side of this match, as
-			// a whole, visible here at all" -- so a coarse, separate pre-pass is needed.
-			//
-			// A product counts as hidden here only when NONE of its own edges is unoccluded by
-			// every OTHER product (checked via the same is_occluded_by_other used everywhere else
-			// in this pass, self-excluded via exclude_a==exclude_b==idx so a product's own
-			// back-facing/self-occluded edges never count against it -- only OTHER products'
-			// geometry can occlude a point for this purpose).
-			//
-			// NOT "<= 1": `items_`'s own stored shape has already been through this class's own
-			// prefiltering (`setUsePrefiltering`), so by the time this pass runs, a simple,
-			// fully-unoccluded box already has as few as 4 edges total (its own screen silhouette),
-			// not the ~12 a full BRep box would have -- confirmed directly via debug instrumentation
-			// against `test_cross_coplanar_match_must_not_steal_edge_from_occluded_neighbour()`'s
-			// own `LowerWall` (4 total edges, 1 genuinely unoccluded). That one surviving edge is
-			// exactly the meaningful, sizeable portion of the shared boundary that test's own
-			// assertions require to still classify `cross-coplanar` -- an off-by-one here would
-			// have wrongly excluded a real, intended partial match, not just the degenerate
-			// "nothing survives" case this filter exists for. Zero is the only threshold that
-			// can't accidentally suppress a genuinely partially-visible product: it only fires when
-			// literally every one of a product's (already-prefiltered, already-coarse) edges reads
-			// as occluded by something else, matching the precedented "entire group holds only
-			// incorrect paths" real-file cases (see this branch's own known-issues history) rather
-			// than any partial-visibility case, which every existing per-sub-interval mechanism in
-			// this file already handles correctly on its own.
-			//
-			// A grazing-ray nudge (mirroring find_cross_coplanar_matches()'s own is_occluded_for_
-			// pair() / P1-4d, and restore_coincident_hidden_edges()'s own is_genuinely_occluded() /
-			// P1-4f) is needed here: a plain, unnudged is_occluded_by_other() alone was tried first
-			// and found insufficient, traced directly against a real-world project file used for
-			// QA. But a single-best-match nudge (mirroring point_on_foreign_face()'s "the one matching
-			// face" contract, tried first here too) was ALSO insufficient, for a reason specific to
-			// this whole-object gate: a sample point can genuinely sit on more than one OTHER
-			// product's coincident face at once (confirmed directly against the real file -- a
-			// wall's own left-face top edge, at floor level, sits simultaneously on a slab's own
-			// top face -- a huge, distant, but perfectly legitimate coincident match -- AND on the
-			// wall standing on top of it. Taking only the first-found match (by item index, i.e.
-			// arbitrarily) picked the slab's face here, whose centroid sits nowhere near the actual
-			// occluding wall, making the nudge useless even though a *different* candidate's
-			// centroid would have worked. Fixed by trying every genuinely-touching candidate's own
-			// centroid and OR-combining (occluded if ANY nudge finds something nearer) -- the same
-			// "try more than one candidate direction" principle is_occluded_for_pair() already uses
-			// for its own two (known in advance) centroids; this gate just doesn't know its
-			// candidates in advance, so it has to enumerate them.
-			auto touching_foreign_faces = [&](const gp_Pnt& p, size_t exclude_idx) -> std::vector<std::pair<TopoDS_Face, size_t>> {
-				std::vector<std::pair<TopoDS_Face, size_t>> matches;
-				for (size_t i = 0; i < occlusion_shapes.size(); ++i) {
-					if (i == exclude_idx || !occlusion_shapes[i]) {
-						continue;
-					}
-					for (TopExp_Explorer fexp(*occlusion_shapes[i], TopAbs_FACE); fexp.More(); fexp.Next()) {
-						const TopoDS_Face& face = TopoDS::Face(fexp.Current());
-						gp_Dir n;
-						if (!cross_coplanar::face_normal(face, n)) {
-							continue;
-						}
-						TopExp_Explorer vexp(face, TopAbs_VERTEX);
-						if (!vexp.More()) {
-							continue;
-						}
-						gp_Pnt face_pnt = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
-						double plane_dist = std::abs(gp_Vec(face_pnt, p).Dot(n));
-						if (plane_dist >= cross_coplanar_tolerance_) {
-							continue;
-						}
-						BRepClass_FaceClassifier classifier(face, p, cross_coplanar_tolerance_);
-						if (classifier.State() != TopAbs_OUT) {
-							matches.emplace_back(face, i);
-						}
-					}
-				}
-				return matches;
-			};
-			// Returns the item index found genuinely nearer to the camera than `p` (the actual
-			// occluder), or none if nothing is. A renamed, index-returning sibling of
-			// is_occluded_by_other() -- kept separate rather than changing that function's own
-			// bool signature, since it's already used elsewhere in this pass with call sites that
-			// only need the bool.
-			auto find_occluder = [&](const gp_Pnt& p, size_t exclude_a, size_t exclude_b) -> boost::optional<size_t> {
-				double depth_p = occlusion_depth(p);
-				gp_Lin ray(p, gp_Dir(view_direction_.Direction()));
-				for (size_t i = 0; i < occlusion_intersectors.size(); ++i) {
-					if (i == exclude_a || i == exclude_b || !occlusion_intersector_loaded[i]) {
-						continue;
-					}
-					auto& inter = occlusion_intersectors[i];
-					inter.Perform(ray, -1.0e6, 1.0e6);
-					if (!inter.IsDone()) {
-						continue;
-					}
-					for (int j = 1; j <= inter.NbPnt(); ++j) {
-						if (occlusion_depth(inter.Pnt(j)) < depth_p - cross_coplanar_tolerance_) {
-							return i;
-						}
-					}
-				}
-				return boost::none;
-			};
-			// Whole-object visibility alone isn't enough to tell "genuinely swallowed by one
-			// dominant neighbour" (wall #0MmP, entirely subsumed by wall #3_Ty standing on it --
-			// should be excluded) apart from "surrounded by many distinct neighbours" (Slab #2CD3,
-			// touching a different wall along each edge of its own perimeter, which is completely
-			// normal for a slab and must NOT be excluded) -- confirmed directly against a real
-			// building file where BOTH cases independently produced zero visible edges under the
-			// plain per-edge test above, yet only one of them is actually irrelevant to the
-			// drawing. The distinguishing signal is WHO occludes each edge, not just whether it's
-			// occluded: a wholly-subsumed product is blocked by essentially the same one neighbour
-			// everywhere, while a legitimately-present, multiply-connected product like a slab is
-			// blocked by a *different* neighbour on each side. find_occluder_for_visibility() below
-			// mirrors the same plain-then-nudged-candidates logic used elsewhere in this pass but
-			// returns WHICH item satisfied it (the first one found, plain or nudged) instead of
-			// discarding that information -- the per-item occluder set accumulated across every one
-			// of its edges is then used alongside the existing "zero visible edges" rule: only
-			// exclude when that set has at most one distinct member.
-			auto find_occluder_for_visibility = [&](const gp_Pnt& p, size_t self_idx) -> boost::optional<size_t> {
-				// Deliberately does NOT exclude self_idx here, unlike the nudge fallback below --
-				// self-occlusion (this item's own nearer face hiding one of its own farther
-				// edges, e.g. a wall's own front face hiding its own back-face edge) is a real,
-				// common reason a native edge is invisible, not an artifact to suppress. A same-
-				// face self-hit at the sample point itself lands at essentially depth_p and is
-				// harmlessly rejected by find_occluder()'s own tolerance check -- exactly the
-				// reasoning is_genuinely_occluded() already documents for why it never excludes
-				// self either. Confirmed via a real building file (issue #3742 follow-up): two
-				// walls (#14523, #72749) each had exactly one back-face edge that this test
-				// wrongly read as "clear" (and so, wrongly, as genuinely visible) while self-
-				// excluded, because nothing else in the scene stood in front of that specific
-				// edge -- only the wall's own body did.
-				size_t kNoExclusion = items_.size();
-				if (auto occ = find_occluder(p, kNoExclusion, kNoExclusion)) {
-					return occ;
-				}
-				for (auto& foreign : touching_foreign_faces(p, self_idx)) {
-					gp_Pnt centroid = cross_coplanar::face_interior_point(foreign.first);
-					gp_Vec toward(p, centroid);
-					if (toward.SquareMagnitude() < 1.e-12) {
-						continue;
-					}
-					gp_Pnt nudged = p.Translated(toward * 0.05);
-					if (auto occ = find_occluder(nudged, self_idx, foreign.second)) {
-						return occ;
-					}
-				}
-				return boost::none;
-			};
-			// Thresholds below were calibrated against seven real/test products (issue #3742
-			// follow-up), not derived a priori: five real-file walls that each genuinely need
-			// excluding (each has at most 2 native edges any camera ray ever finds clear, out
-			// of ~12 total, and 4-8 distinct other products account for hiding the rest); one
-			// real-file slab that must NOT be excluded despite looking similarly hidden by the
-			// unoccluded-edge count alone (0 of its 24 edges tested clear) -- 18 distinct other
-			// products are responsible, each hiding a different part of its perimeter, the
-			// normal, legitimate situation for a slab touching many walls around its footprint;
-			// and one synthetic-test wall (`test_cross_coplanar_match_must_not_steal_edge_from_
-			// occluded_neighbour`'s own `LowerWall`) that must also NOT be excluded despite
-			// having only 1 unoccluded edge -- but unlike the five real "exclude" cases, only
-			// ONE other product (an unrelated wall stacked on top of it) is responsible, a
-			// completely ordinary partial-overlap, not the "swallowed by several different
-			// neighbours at once" pattern the five exclude-cases share. Distinct-occluder count
-			// is therefore bounded on BOTH sides, not just capped: excluding requires at least 2
-			// genuinely different neighbours (rules out LowerWall's single dominant occluder) and
-			// at most 12 (rules out the slab's 18, with headroom on both sides of the resulting
-			// 2-8 "exclude" band and comfortable distance from both 1 and 18).
-			constexpr int kMaxUnoccludedNativeEdgesForWholeObjectHidden = 2;
-			constexpr size_t kMinDistinctOccludersForWholeObjectHidden = 2;
-			constexpr size_t kMaxDistinctOccludersForWholeObjectHidden = 12;
-			std::vector<bool> item_excluded_from_matching(items_.size(), false);
-			{
-				size_t idx = 0;
-				for (auto& it : items_) {
-					if (occlusion_intersector_loaded[idx]) {
-						const TopoDS_Shape& shape = std::get<1>(it);
-						// TopExp::MapShapesAndAncestors (not a plain TopExp_Explorer) so a
-						// manifold edge shared by two faces is counted once, not twice -- a
-						// double-count would specifically defeat the unoccluded-edge threshold
-						// on a product with only one or two genuinely-visible edges.
-						TopTools_IndexedDataMapOfShapeListOfShape edge_face_map;
-						TopExp::MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, edge_face_map);
-						int unoccluded = 0;
-						std::set<size_t> occluders;
-						// Deliberately no early exit once `unoccluded` crosses its threshold --
-						// confirmed by real-file investigation (issue #3742 follow-up) that
-						// stopping early makes the accumulated `occluders` set depend on
-						// TopExp::MapShapesAndAncestors's own, otherwise-irrelevant edge
-						// enumeration order (whichever edges happen to be visited before the
-						// threshold trips), not on the product's actual, complete set of
-						// neighbours -- silently wrong for two of the five real "exclude" cases
-						// above. Every edge is always evaluated; the modest extra cost is the
-						// same already-accepted trade-off this filter's own top comment makes
-						// (cheaper than, and strictly precedes, the O(products^2) loop below).
-						for (int i = 1; i <= edge_face_map.Extent(); ++i) {
-							const TopoDS_Edge& e = TopoDS::Edge(edge_face_map.FindKey(i));
-							TopoDS_Vertex v0, v1;
-							TopExp::Vertices(e, v0, v1);
-							if (v0.IsNull() || v1.IsNull()) {
-								continue;
-							}
-							// A strict MAJORITY of 11 evenly-spaced interior samples must be clear
-							// for this edge to count as genuinely visible -- not just one sample
-							// (the exact midpoint, or any other single fixed point), which a real-
-							// file trace showed can be unrepresentative of a long edge's real
-							// occlusion (see this pre-filter's own top comment, above). A majority
-							// vote is the coarse equivalent, for a whole-edge go/no-go decision, of
-							// the bisection-refined sub-interval approach occlusion_clear_
-							// subintervals()/restorable_intervals() use elsewhere for a precise
-							// clear/occluded transition -- this filter only needs "is more than
-							// half of this edge's length clear", not the exact boundary. "More than
-							// half" is a natural majority rule, not a new tuned percentage constant.
-							gp_XYZ p0 = BRep_Tool::Pnt(v0).XYZ(), p1 = BRep_Tool::Pnt(v1).XYZ();
-							constexpr int kEdgeVisibilitySampleCount = 11;
-							int clear_samples = 0;
-							for (int s = 1; s <= kEdgeVisibilitySampleCount; ++s) {
-								double t = static_cast<double>(s) / (kEdgeVisibilitySampleCount + 1);
-								gp_Pnt sample(p0 * (1.0 - t) + p1 * t);
-								// Self (`idx`) is deliberately NOT excluded from occluder attribution
-								// here for the same reason is_genuinely_occluded() never excludes it
-								// either: a sample point on one of this item's own farther faces (e.g.
-								// a wall's own back-face edge) can be legitimately hidden by this same
-								// item's own nearer geometry, and a trivial same-face self-hit lands
-								// at essentially the sample's own depth, harmlessly rejected by
-								// find_occluder()'s tolerance check. But self is excluded from the
-								// `occluders` diversity set just below -- self-occlusion says nothing
-								// about how many genuinely *different* neighbours surround this item.
-								if (auto occ = find_occluder_for_visibility(sample, idx)) {
-									if (*occ != idx) {
-										occluders.insert(*occ);
-									}
-								} else {
-									++clear_samples;
-								}
-							}
-							bool edge_visible = clear_samples * 2 > kEdgeVisibilitySampleCount;
-							if (edge_visible) {
-								++unoccluded;
-							}
-						}
-						item_excluded_from_matching[idx] = unoccluded <= kMaxUnoccludedNativeEdgesForWholeObjectHidden
-							&& occluders.size() >= kMinDistinctOccludersForWholeObjectHidden
-							&& occluders.size() <= kMaxDistinctOccludersForWholeObjectHidden;
-					}
-					++idx;
-				}
-			}
-
-			size_t idx_i = 0;
-			for (auto ii = items_.begin(); ii != items_.end(); ++ii, ++idx_i) {
-				if (item_excluded_from_matching[idx_i]) {
-					// Whole-object hidden (see the pre-pass above) -- skip the entire inner loop
-					// for this item, not just one pair, since it must never contribute a match/
-					// mismatch on EITHER side of any pairing.
+			for (size_t seed_idx = 0; seed_idx < all_edges.size(); ++seed_idx) {
+				const auto& seed = all_edges[seed_idx];
+				auto nearby = cross_coplanar::nearby_product_edges(all_edges, seed.box, seed.item_idx);
+				auto overlaps = cross_coplanar::find_collinear_overlaps(seed, all_edges, nearby, cross_coplanar_tolerance_);
+				if (overlaps.empty()) {
 					continue;
 				}
-				size_t idx_j = idx_i + 1;
-				for (auto jj = std::next(ii); jj != items_.end(); ++jj, ++idx_j) {
-					if (item_excluded_from_matching[idx_j]) {
+
+				// Cut the seed's own [0, length] range at every overlap boundary and every
+				// contributing product's own material-layer boundaries (layer_boundary_ts()) --
+				// folding what the old accumulate_edge_coverage()/accumulate_mismatch_coverage()
+				// used to do per PAIR into one pass over the union of every contributor here.
+				std::vector<double> cuts = { 0.0, seed.seg.length };
+				for (auto& ov : overlaps) {
+					cuts.push_back(ov.t0);
+					cuts.push_back(ov.t1);
+				}
+				if (seed.proj) {
+					auto bs = cross_coplanar::layer_boundary_ts(seed.seg, *seed.proj);
+					cuts.insert(cuts.end(), bs.begin(), bs.end());
+				}
+				for (auto& ov : overlaps) {
+					if (all_edges[ov.other_idx].proj) {
+						auto bs = cross_coplanar::layer_boundary_ts(seed.seg, *all_edges[ov.other_idx].proj);
+						cuts.insert(cuts.end(), bs.begin(), bs.end());
+					}
+				}
+				std::sort(cuts.begin(), cuts.end());
+
+				for (size_t i = 0; i + 1 < cuts.size(); ++i) {
+					double a = std::max(0.0, cuts[i]);
+					double b = std::min(seed.seg.length, cuts[i + 1]);
+					if (b - a < cross_coplanar_tolerance_) {
+						// Sliver from floating-point edge-endpoint noise -- same drop-point the
+						// old code always had (see find_collinear_overlaps()'s own comment).
 						continue;
 					}
-					const auto* product_i = std::get<0>(*ii);
-					const TopoDS_Shape& shape_i = std::get<1>(*ii);
-					const auto* style_i = std::get<2>(*ii);
-					const auto* material_i = std::get<3>(*ii);
-					const auto* product_j = std::get<0>(*jj);
-					const TopoDS_Shape& shape_j = std::get<1>(*jj);
-					const auto* style_j = std::get<2>(*jj);
-					const auto* material_j = std::get<3>(*jj);
-					const auto& proj_i = std::get<4>(*ii);
-					const auto& proj_j = std::get<4>(*jj);
-
-					// v2: when either product is layered, the whole-product material/style is
-					// only an approximation (see geometry_data::cross_coplanar_layer_projection)
-					// -- defer the real decision to the per-face-pair resolution below instead
-					// of rejecting the pair outright here. Otherwise (the common, non-layered
-					// case) this is the same product-level gate as before: material takes
-					// priority over style as the "same substance" identity -- if either side
-					// resolved a material, both must be present and equal (style is not
-					// consulted at all in that case, even if it happens to also match: two
-					// products can share a rendering style while being genuinely different
-					// materials). Style is only the comparison when *neither* side has a
-					// resolved material.
-					// "mat-style-change" case A widens this gate (only) for the "both sides
-					// resolved, confirmed different" sub-case -- a pair where one/both sides are
-					// simply unresolved can never yield a valid mismatch verdict either (see
-					// mat_style_change::accumulate_mismatch_coverage()'s own both_resolved check),
-					// so it's still safe, and better for performance, to keep skipping that
-					// sub-case unconditionally. When use_mat_style_change_classification_ is
-					// false, the added `&& !use_mat_style_change_classification_` term collapses
-					// to true, reproducing the original condition exactly -- byte-identical
-					// behaviour to before this feature existed.
-					if (!proj_i && !proj_j) {
-						if (material_i || material_j) {
-							if (!material_i || !material_j) {
-								continue;
-							}
-							if (material_i != material_j && !use_mat_style_change_classification_) {
-								continue;
-							}
-						} else if (!style_i || !style_j) {
-							continue;
-						} else if (style_i != style_j && !use_mat_style_change_classification_) {
-							continue;
-						}
-					}
-
-					Bnd_Box box_i, box_j;
-					BRepBndLib::AddClose(shape_i, box_i);
-					BRepBndLib::AddClose(shape_j, box_j);
-					if (box_i.IsVoid() || box_j.IsVoid()) {
+					auto result = cross_coplanar::resolve_edge_location_subrange(
+						seed_idx, all_edges, overlaps, a, b, view_direction_.Direction(),
+						cross_coplanar_tolerance_, use_mat_style_change_classification_);
+					if (result.verdict == cross_coplanar::subrange_verdict::none) {
 						continue;
 					}
-
-					// Cheap proxy for "these two products are exact full duplicates" (occupy
-					// the identical volume), checked on the *pristine* boxes -- before the
-					// Enlarge() below, which would otherwise inflate box_i by
-					// cross_coplanar_tolerance_ on every side and make an "equal within
-					// tolerance" comparison land exactly on that same tolerance boundary
-					// (fragile at best, never fires at worst). A full duplicate has no
-					// genuine "boundary between two distinct elements" anywhere on it -- every
-					// face of one has a matching face of the other, including whatever's
-					// *beyond* any given edge (A2/B2 below), so the one-hop A2/B2 coplanarity
-					// gate trivially passes everywhere, even at edges that are the shape's true
-					// outer silhouette with nothing beyond them in either direction. This
-					// mirrors, at product scale, the same "zero area in common" premise the
-					// edge-to-edge coincidence test below is built on (see its own comment): a
-					// legitimate seam shares a boundary edge with zero area in common, while a
-					// full duplicate's touching faces coincide in area, not just along an edge
-					// -- the inverse condition. Necessary but not sufficient: this catches exact
-					// full-volume duplication (the reported case) but not a *partial*-volume
-					// overlap (e.g. a small slab landing mid-face on a much bigger one, where
-					// bounding boxes differ but a sub-region genuinely coincides in area) --
-					// deliberately out of scope here; the fully general fix would be a
-					// per-face-pair area-overlap rejection, not worth O(faces^2) booleans for a
-					// one-off exact-duplicate case. If this heuristic ever mismatches (two
-					// genuinely different-shaped products that happen to share a bounding box),
-					// the failure mode is conservative: coverage simply never fires for that
-					// pair, same as if this whole feature were off for it -- never a crash,
-					// never a confidently-wrong edge.
-					{
-						double xmin_i, ymin_i, zmin_i, xmax_i, ymax_i, zmax_i;
-						double xmin_j, ymin_j, zmin_j, xmax_j, ymax_j, zmax_j;
-						box_i.Get(xmin_i, ymin_i, zmin_i, xmax_i, ymax_i, zmax_i);
-						box_j.Get(xmin_j, ymin_j, zmin_j, xmax_j, ymax_j, zmax_j);
-						if (std::abs(xmin_i - xmin_j) < cross_coplanar_tolerance_ &&
-							std::abs(ymin_i - ymin_j) < cross_coplanar_tolerance_ &&
-							std::abs(zmin_i - zmin_j) < cross_coplanar_tolerance_ &&
-							std::abs(xmax_i - xmax_j) < cross_coplanar_tolerance_ &&
-							std::abs(ymax_i - ymax_j) < cross_coplanar_tolerance_ &&
-							std::abs(zmax_i - zmax_j) < cross_coplanar_tolerance_) {
-							continue;
-						}
-					}
-
-					box_i.Enlarge(cross_coplanar_tolerance_);
-					if (box_i.IsOut(box_j)) {
-						continue;
-					}
-
-					// Built once per product pair (not per face pair) for
-					// cross_coplanar::other_adjacent_face()'s A2/B2 lookups below -- gives, for any
-					// edge of shape_i/shape_j, its real adjacent faces within that same product's
-					// own topology.
-					TopTools_IndexedDataMapOfShapeListOfShape edge_face_map_i, edge_face_map_j;
-					TopExp::MapShapesAndAncestors(shape_i, TopAbs_EDGE, TopAbs_FACE, edge_face_map_i);
-					TopExp::MapShapesAndAncestors(shape_j, TopAbs_EDGE, TopAbs_FACE, edge_face_map_j);
-
-					for (TopExp_Explorer fi(shape_i, TopAbs_FACE); fi.More(); fi.Next()) {
-						const TopoDS_Face& face_i = TopoDS::Face(fi.Current());
-						gp_Dir n_i;
-						if (!cross_coplanar::face_normal(face_i, n_i)) {
-							continue;
-						}
-						TopExp_Explorer vexp_i(face_i, TopAbs_VERTEX);
-						if (!vexp_i.More()) {
-							continue;
-						}
-						gp_Pnt sample_i = BRep_Tool::Pnt(TopoDS::Vertex(vexp_i.Current()));
-
-						for (TopExp_Explorer fj(shape_j, TopAbs_FACE); fj.More(); fj.Next()) {
-							const TopoDS_Face& face_j = TopoDS::Face(fj.Current());
-							gp_Dir n_j;
-							if (!cross_coplanar::face_normal(face_j, n_j)) {
-								continue;
-							}
-							// Normal-parallel test. Deliberately abs()'d: accepts both parallel
-							// (n_i == n_j, e.g. two coincident faces on the same side) and
-							// antiparallel (n_i == -n_j, e.g. two products butting end-to-end,
-							// each face's own outward normal pointing at the other) as candidate
-							// coplanar pairs -- distinguishing "same infinite plane" from "same
-							// side of it" is plane_dist's job below, not this test's. (This
-							// tolerance is local to this cross-object pass and not shared with
-							// classify_edge_from_faces()'s single-object 5-class scheme, which
-							// works in degrees via acos() rather than a raw dot-product epsilon
-							// -- despite a same-numbered-literal coincidence, an earlier version
-							// of this comment wrongly implied the two shared a tolerance
-							// convention.)
-							if (std::abs(n_i.Dot(n_j)) <= 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
-								continue;
-							}
-							// Plane-coincidence: perpendicular distance from a point on
-							// face_j to face_i's plane.
-							TopExp_Explorer vexp_j(face_j, TopAbs_VERTEX);
-							if (!vexp_j.More()) {
-								continue;
-							}
-							gp_Pnt sample_j = BRep_Tool::Pnt(TopoDS::Vertex(vexp_j.Current()));
-							double plane_dist = std::abs(gp_Vec(sample_i, sample_j).Dot(n_i));
-							if (plane_dist >= cross_coplanar_tolerance_) {
-								continue;
-							}
-
-							// Back-facing guard (issue #3742 follow-up, real-file diagnosis): a
-							// product standing on another (e.g. a wall on a slab) has its own
-							// UNDERSIDE -- the face resting against/embedded in whatever it stands
-							// on, never visible from any normal architectural viewing angle --
-							// genuinely coplanar and touching with the other product's own top
-							// face. That is a real, valid 3D relationship, but not a screen
-							// boundary either product's own drawing should ever show: confirmed
-							// directly against a real building file (issue #3742 follow-up) that
-							// this is universal (any wall standing on any slab produces it, no
-							// third object needed) and pervasive (45 of 75 products in one real
-							// drawing). Rejects the WHOLE pair here, not just the back-facing
-							// side's own accumulate_*() call below -- gating only one side was
-							// tried and found insufficient: when the wall sits flush with the
-							// slab's own TRUE boundary edge (the common real layout for an
-							// exterior wall on its floor slab), the slab's own top face is
-							// genuinely front-facing and has a real topological edge at that exact
-							// line too, so the other, front-facing side's own call independently
-							// rediscovers the identical false interval, just attributed to the
-							// slab's own edge object instead of the wall's.
-							//
-							// Same convention as classify_edge_from_faces()'s own front/back/
-							// edge-on split (SvgSerializer.cpp) -- confirmed identical, not just
-							// similarly-named: view_direction_.Direction() here and that
-							// function's own projection_direction parameter are built from the
-							// same gp_Pln in every drawing-variant branch (prefiltered_hlr's own
-							// constructor stores view_direction_ from the exact plane
-							// SvgSerializer.cpp passes to it). Edge-on faces are deliberately NOT
-							// rejected here, only clearly back-facing ones: every legitimate
-							// cross-coplanar/mat-style-change match in this file's own test suite
-							// is a vertical touching face viewed edge-on by an axis-aligned plan/
-							// elevation camera (walls side-by-side) -- excluding edge-on too would
-							// reject nearly all of them.
-							constexpr double kCrossCoplanarBackFaceDotEps = 1.e-4; // == classify_edge_from_faces()'s kOutlineDotEps
-							auto is_back_facing = [&](const gp_Dir& n) {
-								return -view_direction_.Direction().Dot(n) > kCrossCoplanarBackFaceDotEps;
-							};
-							if (is_back_facing(n_i) || is_back_facing(n_j)) {
-								continue;
-							}
-
-							// Screen-space occlusion check: face_i and face_j are now confirmed
-							// genuinely coplanar and touching in 3D -- but that alone doesn't mean
-							// every portion of that shared boundary is what's actually visible from
-							// the current camera. Two products can be genuinely, validly coplanar-
-							// and-touching (e.g. two same-material stacked storeys) while a wholly
-							// separate, unrelated third product sits directly in front of PART of
-							// that boundary from this specific camera (e.g. an upper storey's own
-							// wall covering a lower storey's boundary with a slab) -- classifying
-							// that portion as this pair's relationship would misrepresent what's
-							// actually shown. Deliberately NOT checked once here for the whole face
-							// pair (an earlier version of this fix did exactly that, testing each
-							// face's own whole-face interior_point()) -- for a long face (e.g. a
-							// multi-metre wall), a single third-party object partially in front of
-							// one *portion* of the face wrongly rejected coverage for the entire
-							// face, including clearly-visible portions metres away. Instead, this
-							// lambda is threaded into accumulate_edge_coverage()/accumulate_
-							// mismatch_coverage() below and evaluated per accepted sub-interval, at
-							// that interval's own midpoint -- matching the same granularity those
-							// functions already use for material/style resolution. `idx_i`/`idx_j`
-							// are always excluded: they're the two products *of this matched pair
-							// itself*, and one standing directly against/on the other (the touching
-							// relationship being tested) must never count as "occluding" it -- only
-							// a genuinely separate third product should ever cause a sub-interval
-							// to be rejected.
-							//
-							// Tested at up to three points, combined with OR (occluded if ANY finds
-							// a blocker): the boundary midpoint itself, and a small nudge toward
-							// each side's own face-interior point (`centroid_i`/`centroid_j`,
-							// computed once per face pair here, identically for both call
-							// directions below -- unlike an earlier, reverted version of this nudge
-							// that computed it per-side inside accumulate_edge_coverage() itself,
-							// which made the two sides' decisions diverge for the same interval).
-							// The plain-midpoint probe alone can genuinely miss a real occluder
-							// whose own footprint edge happens to align with the tested boundary: a
-							// ray cast at a shallow camera angle drifts laterally before reaching
-							// the occluder's own base height, and can land just outside its
-							// footprint even though the occluder is, in every meaningful sense,
-							// standing on this exact boundary -- confirmed directly against a real
-							// isometric drawing (issue #3742 follow-up) where a wall's own vertical
-							// side, coincident with the base of the wall stacked directly above it,
-							// produced exactly this near-miss (camera-direction-driven drift of
-							// several centimetres past the occluder's own footprint edge). The
-							// small nudge toward each side's own interior moves the probe just
-							// enough off that exact edge to catch it, while staying local enough to
-							// the interval's own position not to reintroduce the whole-face
-							// granularity problem an earlier version of this fix already fixed.
-							//
-							// issue #3742 follow-up: a blind 5%-of-centroid-distance nudge has no
-							// relationship to whether a foreign object's own face genuinely touches
-							// this exact boundary point at all -- for a large face (long centroid
-							// distance) sitting only a few millimetres from an unrelated third
-							// product, 5% can land inside that unrelated object's own solid,
-							// misreporting it as if it were standing on this exact boundary. A fixed
-							// nudge cap can't fix this either: this file's own real gap in the
-							// reported case (~0.015 project units) is smaller than the several-
-							// centimetre drift the original fix above needed to tolerate, so no one
-							// constant is small enough to avoid the former and large enough to still
-							// catch the latter. A first attempt tried measuring the nearest foreign
-							// object's distance along the nudge direction and capping the nudge
-							// below it -- confirmed (via a full before/after render of all 10 primary
-							// fixture drawings) to change literally nothing, because that in-plane
-							// tangential direction is generally NOT the direction the actual
-							// occlusion ray travels in (the camera's own view direction, rarely
-							// contained in the shared face's plane at all), so it almost never
-							// intersects the object the nudge actually goes on to hit.
-							//
-							// The fix instead gates the nudge on `touches_foreign_face()`: only
-							// trust a nudge-discovered occlusion when some foreign face's plane
-							// genuinely passes within tolerance of THIS UNNUDGED boundary point `p`
-							// (the same coincidence test restore_coincident_hidden_edges()'s own
-							// point_on_foreign_face() already uses) -- i.e. a real occluder whose
-							// own footprint edge coincides with this exact boundary, which is
-							// precisely the P1-4d scenario the nudge exists for. When nothing
-							// genuinely touches `p` at all, any hit found only after nudging toward
-							// a face's own (possibly distant) centroid is a separate, non-touching
-							// object -- exactly this regression -- and must not count.
-							gp_Pnt centroid_i = cross_coplanar::face_interior_point(face_i);
-							gp_Pnt centroid_j = cross_coplanar::face_interior_point(face_j);
-							auto is_occluded_for_pair = [&](const gp_Pnt& p) {
-								if (is_occluded_by_other(p, idx_i, idx_j)) {
-									return true;
-								}
-								if (!touches_foreign_face(p, idx_i, idx_j)) {
-									return false;
-								}
-								auto nudge_toward = [&](const gp_Pnt& centroid) -> gp_Pnt {
-									gp_Vec toward(p, centroid);
-									if (toward.SquareMagnitude() < 1.e-12) {
-										return p;
-									}
-									return p.Translated(toward * 0.05);
-								};
-								return is_occluded_by_other(nudge_toward(centroid_i), idx_i, idx_j)
-									|| is_occluded_by_other(nudge_toward(centroid_j), idx_i, idx_j);
-							};
-
-							// Material/style resolution when either product is layered has moved
-							// to a per-*sub-interval* check inside accumulate_edge_coverage()
-							// below -- a face-level (centroid-based) verdict here would wrongly
-							// gate the *whole* face pair on one sample, when a face that itself
-							// spans more than one layer needs each overlapping sub-range judged
-							// on its own actual material (see accumulate_edge_coverage()'s own
-							// comment). The product-level gate above already handled the common,
-							// non-layered case; nothing further to check here before proceeding.
-
-							// Edge-to-edge coincidence, not face-area overlap: two adjacent,
-							// non-overlapping faces (side-by-side slabs, a void's inner wire
-							// against a plug's outer wire) share a boundary edge but have zero
-							// area in common by construction -- BRepAlgoAPI_Common would (and
-							// used to) wrongly reject exactly the cases this feature exists to
-							// find. face_line_segs() walks all wires of a face (including inner
-							// ones), so void/hole boundaries are covered too.
-							auto segs_i = cross_coplanar::face_line_segs(face_i);
-							auto segs_j = cross_coplanar::face_line_segs(face_j);
-							// use_cross_coplanar_classification_ is always true here (guaranteed by
-							// the top-of-function entry gate) -- kept as an explicit, local check
-							// rather than relying purely on that early return, since this whole
-							// block is cross-coplanar's own match-hiding specifically (as opposed
-							// to Case A's mismatch-coverage block just below, which has its own
-							// independent use_mat_style_change_classification_ gate).
-							if (use_cross_coplanar_classification_) {
-								cross_coplanar::accumulate_edge_coverage(
-									face_i, face_j, segs_j, cross_coplanar_tolerance_,
-									proj_i, material_i, style_i, proj_j, material_j, style_j,
-									edge_face_map_i, edge_face_map_j,
-									is_occluded_for_pair,
-									get_coverage(product_i));
-								cross_coplanar::accumulate_edge_coverage(
-									face_j, face_i, segs_i, cross_coplanar_tolerance_,
-									proj_j, material_j, style_j, proj_i, material_i, style_i,
-									edge_face_map_j, edge_face_map_i,
-									is_occluded_for_pair,
-									get_coverage(product_j));
-							}
-							if (use_mat_style_change_classification_) {
-								mat_style_change::accumulate_mismatch_coverage(
-									face_i, face_j, segs_j, cross_coplanar_tolerance_,
-									proj_i, material_i, style_i, proj_j, material_j, style_j,
-									edge_face_map_i, edge_face_map_j,
-									is_occluded_for_pair,
-									get_mismatch_coverage(product_i));
-								mat_style_change::accumulate_mismatch_coverage(
-									face_j, face_i, segs_i, cross_coplanar_tolerance_,
-									proj_j, material_j, style_j, proj_i, material_i, style_i,
-									edge_face_map_j, edge_face_map_i,
-									is_occluded_for_pair,
-									get_mismatch_coverage(product_j));
-							}
+					auto& target = (result.verdict == cross_coplanar::subrange_verdict::match)
+						? per_product_coverage : per_product_mismatch_coverage;
+					for (auto& contribution : result.contributor_intervals) {
+						size_t idx = contribution.first;
+						auto& cov = target[all_edges[idx].product];
+						auto* existing = cov.ChangeSeek(all_edges[idx].edge);
+						if (existing) {
+							existing->push_back(contribution.second);
+						} else {
+							cov.Bind(all_edges[idx].edge, { contribution.second });
 						}
 					}
 				}
@@ -3337,7 +2687,8 @@ namespace {
 				vis.set_product_shape(&items_);
 			}
 			vis.set_classified_shapes(&classified_items_);
-			auto result = boost::apply_visitor(vis, engine_);
+			std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> result =
+				boost::apply_visitor(vis, engine_);
 			return restore_coincident_hidden_edges(std::move(result), classified_items_, items_, cross_coplanar_tolerance_, projector_, view_direction_);
 		}
 	};

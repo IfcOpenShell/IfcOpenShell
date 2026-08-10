@@ -487,50 +487,33 @@ def test_cross_coplanar_match_excludes_whole_object_hidden_neighbour():
     isometric camera. `HiddenWall` and `VisibleWall` share the same material
     and a genuinely coplanar left face (X=6); `HiddenWall` also happens to sit
     exactly in `Slab`'s own top-face plane (Z=0.2) at a touching (not
-    overlapping) footprint. `find_cross_coplanar_matches()`'s whole-object
-    visibility pre-filter (`SvgSerializer.h`) is supposed to exclude
-    `HiddenWall` from matching entirely once it determines the product
-    contributes essentially nothing to this view -- but an earlier version of
-    that filter's own occlusion test, `touching_foreign_face()`, returned only
-    the FIRST coincident face it found by item index. Since `Slab` (created
-    first, lower item index) is ALSO genuinely coincident with `HiddenWall`'s
-    own top edge (both sit in the same Z=0.2 plane), the filter nudged toward
-    `Slab`'s own (huge, distant, irrelevant here) face centroid instead of
-    `VisibleWall`'s -- missing the real, nearby occluder standing directly on
-    top of `HiddenWall`, and wrongly judging `HiddenWall` still "visible".
-    Fixed by trying every genuinely-touching candidate face's own centroid
-    (OR-combined), not just the first found.
+    overlapping) footprint.
 
-    `HiddenWall` and `VisibleWall` share the exact same (X, Y) footprint,
-    stacked directly in Z (`VisibleWall` on top) -- deliberately the same
-    stacking pattern as `test_cross_coplanar_match_stacked_same_footprint_
-    must_not_self_occlude()` above, so this test also confirms the new
-    whole-object filter doesn't reintroduce that already-fixed self-occlusion
-    bug for the *matched* pair itself (`HiddenWall`/`VisibleWall`) while still
-    correctly excluding `HiddenWall` from view because of the *third* object
-    (`Slab`) it also happens to sit in-plane with.
-
-    This exercises the overall whole-object-exclusion mechanism end to end
-    (confirmed red without the pre-filter at all, green with it) but does NOT
-    specifically discriminate the "wrong first candidate" sub-bug on its own --
-    a top-down camera makes VisibleWall's plain (unnudged) occlusion of
-    HiddenWall sufficient by itself, so the nudge/multi-candidate logic never
-    actually gets exercised by this camera choice. An oblique camera is needed
-    to reproduce the real grazing-ray gap that made the wrong-candidate nudge
-    observable in the first place, but changing only the camera (same
-    geometry) exposed a genuinely-visible OTHER edge of HiddenWall instead
-    (an real, correct silhouette-offset effect from viewing two same-footprint,
-    different-Z-height boxes obliquely under parallel projection, not a bug) --
-    several attempts at reshaping the geometry to isolate the specific
-    "grazing ray, ambiguous coincident candidate" scenario cleanly ran out of
-    time without succeeding. Per this suite's own established precedent (see
-    e.g. `test_cross_coplanar_match_partial_occlusion_within_one_raw_interval`'s
-    own note on this), relying on the real-file verification for that specific
-    mechanism instead: traced directly against the same real-world project file,
-    confirmed `touching_foreign_face()` matching the slab's face first (at
-    `p=(6.20001, *, 0)`, `match_idx` pointing at the slab, not wall #70168)
-    before the fix, and confirmed the real file's own wall #70168/slab #82574
-    corner renders plain `outline` after it.
+    Originally fixed by a whole-object visibility pre-filter that tried to
+    exclude `HiddenWall` from matching entirely once it determined the product
+    contributed essentially nothing to this view -- that mechanism needed
+    three rounds of empirical threshold recalibration against real building
+    files and was eventually replaced outright (issue #3742 follow-up
+    redesign) by a per-shared-edge-location mechanism, `find_cross_coplanar_
+    matches()`'s `resolve_edge_location_subrange()`. This test now exercises
+    that replacement instead, and still passes unmodified: at the exact edge
+    location shared by all three products (`HiddenWall`'s own top-left edge,
+    coincident with both `VisibleWall`'s bottom-left edge and `Slab`'s own
+    top-face boundary), the winning candidate pair search requires the two
+    sides to come from DIFFERENT products. `Slab`'s own top face wins one
+    side; whichever of `HiddenWall`/`VisibleWall`'s coincident, same-oriented
+    left faces wins the other side is not coplanar with `Slab`'s top face
+    either way (perpendicular) -- so this location resolves to no verdict at
+    all (native classification stands) regardless of which of the two
+    identical-looking candidates happens to win that side, and `HiddenWall`
+    never gets a chance to independently match `VisibleWall` at this specific
+    location (they're on the *same* side of the dividing plane here, since
+    they share the identical X/Y footprint -- never candidates for opposite
+    sides of the same contest). `HiddenWall`'s other edges are separately,
+    genuinely HLR-hidden by `VisibleWall` standing directly on its identical
+    footprint, the same real occlusion `test_cross_coplanar_match_stacked_
+    same_footprint_must_not_self_occlude()` above relies on for its own
+    legitimate match to still show through.
     """
     ifc_file, body_context, storey = _make_project()
     material = ifcopenshell.api.material.add_material(ifc_file, name="Stone")
@@ -714,12 +697,29 @@ def test_cross_coplanar_match_partial_occlusion_within_one_raw_interval():
     edges = parse_edges(svg)
 
     # Same X/scale/offset convention as test_cross_coplanar_basic_touching_boundary
-    # (shared boundary at world X=2 -> svg x=10000). far_p1/near_p0 are the
-    # bisection-refined occlusion-clear boundaries (not the occluder's own
-    # hand-placed Z=[0.8,1.2] extent) -- captured empirically from this exact
-    # scene, not hand-derived.
-    far_p0, far_p1 = (10000.0, 11000.0), (10000.0, 10200.004577636719)
-    near_p0, near_p1 = (10000.0, 9799.995422363281), (10000.0, 9000.0)
+    # (shared boundary at world X=2 -> svg x=10000).
+    #
+    # Re-captured (issue #3742 follow-up redesign): find_cross_coplanar_matches() no
+    # longer runs its own pre-HLR occlusion estimate at all -- the redesign only ever
+    # reasons about products sharing the matched 3D line, and the Occluder here shares
+    # no edge with it (it merely stands in the screen-space path from a different X/Y
+    # position). The full, unsplit WallA/WallB edge is classified cross-coplanar for
+    # its entire length pre-HLR; the real HLRBRep_HLRToShape pass that runs afterward
+    # -- unchanged, and always the true authority on what's actually visible -- is what
+    # then genuinely hides the occluded middle third. far_p1/near_p0 now land exactly
+    # on the Occluder's own true Z=[0.8, 1.2] footprint (10200.0/9800.0 precisely),
+    # not merely close to it as the old pre-HLR bisection approximation (this test's
+    # previous values, 10200.004577636719/9799.995422363281) only ever managed --
+    # confirmed this is a genuine precision improvement, not drift: the old code's own
+    # docstring for this test already anticipated the occluder's true extent as the
+    # ideal (unreachable, at the time) answer. See the sibling test `test_cross_
+    # coplanar_match_must_not_steal_edge_from_occluded_neighbour`'s own docstring for
+    # the general principle (HLR's real occlusion hides a genuinely-covered region
+    # "regardless of classification either way") -- this test is the direct
+    # confirmation that principle holds even for a mid-interval occluder sharing no
+    # edge with the match at all, not just the boundary-occluder case that test covers.
+    far_p0, far_p1 = (10000.0, 11000.0), (10000.0, 10200.0)
+    near_p0, near_p1 = (10000.0, 9800.0), (10000.0, 9000.0)
     assert has_edge(edges, wall_a.GlobalId, "cross-coplanar", far_p0, far_p1)
     assert has_edge(edges, wall_a.GlobalId, "cross-coplanar", near_p0, near_p1)
     assert has_edge(edges, wall_b.GlobalId, "cross-coplanar", far_p0, far_p1)
