@@ -54,7 +54,7 @@ class Data:
         ifc_file = tool.Ifc.get()
         results = []
         psetqtos = ifcopenshell.util.element.get_psets(
-            element, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False
+            element, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False, verbose=True
         )
         for name, data in sorted(psetqtos.items()):
             pset = ifc_file.by_id(data["id"])
@@ -69,12 +69,27 @@ class Data:
                     "id": data["id"],
                     "Name": name,
                     "is_expanded": is_expanded.get(data["id"], True),
-                    "Properties": [{"Name": k, "NominalValue": v} for k, v in sorted(data.items()) if k != "id"],
+                    "Properties": [
+                        cls.property_display_data(ifc_file, k, v) for k, v in sorted(data.items()) if k != "id"
+                    ],
                     "shared_pset_uses": len(pset_uses),
                     "has_template": has_template,
                 }
             )
         return sorted(results, key=lambda v: v["Name"])
+
+    @classmethod
+    def property_display_data(cls, ifc_file: ifcopenshell.file, name: str, verbose_value: Any) -> dict[str, Any]:
+        # Predefined property sets (e.g. IfcDoorPanelProperties) expose plain
+        # attribute values even in verbose mode, since they're typed IFC
+        # attributes rather than IfcProperty entities with their own id/Unit.
+        if not isinstance(verbose_value, dict):
+            return {"Name": name, "NominalValue": verbose_value, "UnitSymbol": ""}
+
+        unit_symbol = ""
+        if (prop_id := verbose_value.get("id")) and (prop_entity := ifc_file.by_id(prop_id)):
+            unit_symbol = tool.Pset.get_unit_symbol_for_prop(prop_entity, ifc_file)
+        return {"Name": name, "NominalValue": verbose_value["value"], "UnitSymbol": unit_symbol}
 
     @classmethod
     def format_pset_enum(cls, psets):

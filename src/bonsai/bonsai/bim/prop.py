@@ -21,7 +21,6 @@ import os
 from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
 
 import bpy
-import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
@@ -250,44 +249,19 @@ def set_numerical_value(self: "Attribute", value_name: str, new_value: Union[flo
     self[value_name] = new_value
 
 
-def get_length_value(self: "Attribute") -> float:
-    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    return self.float_value * si_conversion
-
-
-def set_length_value(self: "Attribute", value: float) -> None:
-    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    self.float_value = value / si_conversion
-
-
 def get_display_name(self: "Attribute") -> str:
-    DISPLAY_UNIT_TYPES = ("AREA", "VOLUME", "FORCE")
     name = self.name
-    if not self.special_type or self.special_type not in DISPLAY_UNIT_TYPES:
+    if not self.unit_symbol:
         return name
-
-    unit_type = f"{self.special_type}UNIT"
-    project_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit_type)
-    if not project_unit:
-        return name
-
-    unit_symbol = ifcopenshell.util.unit.get_unit_symbol(project_unit)
-    return f"{name}, {unit_symbol}"
+    return f"{name}, {self.unit_symbol}"
 
 
 AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file", "list[string]"]
-AttributeSpecialType = Literal[
-    "",
-    "DATE",
-    "DATETIME",
-    "LENGTH",
-    "AREA",
-    "VOLUME",
-    "FORCE",
-    "LOGICAL",
-    "URI",
-    "DURATION",
-]
+# Either "", "DATE", "DATETIME", "LOGICAL", "URI", "DURATION", or an
+# IfcUnitEnum/IfcDerivedUnitEnum value with the "UNIT" suffix stripped (e.g.
+# "LENGTH", "PRESSURE", "MODULUSOFELASTICITY") as returned by
+# tool.Pset.get_special_type_for_prop().
+AttributeSpecialType = str
 
 
 class Attribute(PropertyGroup):
@@ -318,9 +292,6 @@ class Attribute(PropertyGroup):
         get=lambda self: float(self.get("float_value", 0.0)),
         set=set_float_value,
     )
-    length_value: FloatProperty(
-        name="Value", description=tooltip, get=get_length_value, set=set_length_value, unit="LENGTH"
-    )
     enum_items: StringProperty(name="Value")
     """Json serialized mapping of enum items:
         Typically a dictionary of string identifiers to item names.
@@ -342,6 +313,7 @@ class Attribute(PropertyGroup):
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
+    unit_symbol: StringProperty(name="Unit Symbol", default="")
     use_explorer_ui: BoolProperty()
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
     update: StringProperty(name="Update", description="Custom update function to be executed")
@@ -357,7 +329,6 @@ class Attribute(PropertyGroup):
         bool_value: bool
         int_value: int
         float_value: float
-        length_value: float
         enum_items: str
         enum_items_dynamic: str
         enum_descriptions: bpy.types.bpy_prop_collection_idprop[StrProperty]
@@ -373,6 +344,7 @@ class Attribute(PropertyGroup):
         value_min_constraint: bool
         value_max: float
         value_max_constraint: bool
+        unit_symbol: str
         use_explorer_ui: bool
         metadata: str
         update: str
@@ -430,8 +402,6 @@ class Attribute(PropertyGroup):
         elif data_type == "integer":
             return "int_value"
         elif data_type == "float":
-            if display_only and self.special_type == "LENGTH":
-                return "length_value"
             return "float_value"
         elif data_type == "enum":
             return "enum_value"

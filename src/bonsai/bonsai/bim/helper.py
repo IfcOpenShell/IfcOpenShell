@@ -236,11 +236,9 @@ def import_attribute(
     elif data_type == "integer":
         new.int_value = 0 if new.is_null else int(data[attribute.name()])
     elif data_type == "float":
-        attribute_type = attribute.type_of_attribute()
-        if attribute_type._is("IfcLengthMeasure"):
-            new.special_type = "LENGTH"
-        elif attribute_type._is("IfcForceMeasure"):
-            new.special_type = "FORCE"
+        measure_class = attribute.type_of_attribute().declared_type().name()
+        new.special_type = tool.Pset.get_special_type_for_measure_class(measure_class)
+        new.unit_symbol = tool.Pset.get_unit_symbol_for_special_type(new.special_type, tool.Ifc.get())
         new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
         attribute_type = attribute.type_of_attribute()

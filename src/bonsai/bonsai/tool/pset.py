@@ -26,6 +26,7 @@ import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 
 import bonsai.bim.helper
 import bonsai.bim.schema
@@ -168,42 +169,72 @@ class Pset(bonsai.core.tool.Pset):
             pset_id=0, pset_name=cls.get_pset_name(obj, obj_type), pset_type="PSET", obj=obj, obj_type=obj_type
         )
 
+    # Templates for quantities can specify their kind via TemplateType (e.g.
+    # "Q_LENGTH") instead of PrimaryMeasureType. IfcQuantityCount has no
+    # associated measure/unit, so it is intentionally absent here.
+    QUANTITY_TEMPLATE_TYPE_TO_SPECIAL_TYPE = {
+        "Q_LENGTH": "LENGTH",
+        "Q_AREA": "AREA",
+        "Q_VOLUME": "VOLUME",
+        "Q_WEIGHT": "MASS",
+        "Q_TIME": "TIME",
+    }
+
     @classmethod
-    def get_special_type_for_prop(
-        cls, prop_or_prop_template: ifcopenshell.entity_instance
-    ) -> Literal["LENGTH"] | Literal["AREA"] | Literal["VOLUME"] | Literal["URI"] | Literal[""]:
-        special_type = ""
+    def get_special_type_for_measure_class(cls, measure_class: str) -> str:
+        """Get the ``special_type`` (an IfcUnitEnum value with "UNIT" stripped) for an IFC measure class.
+
+        :param measure_class: An IFC measure class name, e.g. "IfcLengthMeasure".
+        :return: E.g. "LENGTH", or "" if the class has no associated unit type.
+        """
+        if not measure_class.endswith("Measure"):
+            return ""
+        unit_type = ifcopenshell.util.unit.get_measure_unit_type(measure_class)
+        return unit_type[: -len("UNIT")] if unit_type.endswith("UNIT") else ""
+
+    @classmethod
+    def get_special_type_for_prop(cls, prop_or_prop_template: ifcopenshell.entity_instance) -> str:
+        """Classify a property/quantity/template by its measure type.
+
+        :return: An IfcUnitEnum value with the "UNIT" suffix stripped (e.g.
+            "LENGTH", "PRESSURE"), "URI" for IfcURIReference, or "" if the
+            value has no associated unit type.
+        """
         if prop_or_prop_template.is_a("IfcPropertyTemplate"):
             primary_measure_type = prop_or_prop_template.PrimaryMeasureType
-            template_type = prop_or_prop_template.TemplateType
-            if primary_measure_type in ("IfcPositiveLengthMeasure", "IfcLengthMeasure") or template_type == "Q_LENGTH":
-                special_type = "LENGTH"
-            elif primary_measure_type == "IfcAreaMeasure" or template_type == "Q_AREA":
-                special_type = "AREA"
-            elif primary_measure_type == "IfcVolumeMeasure" or template_type == "Q_VOLUME":
-                special_type = "VOLUME"
-            elif primary_measure_type == "IfcURIReference":
-                special_type = "URI"
-        else:
-            if prop_or_prop_template.is_a("IfcPropertySingleValue"):
-                value = prop_or_prop_template.NominalValue
-                if value is not None:
-                    value_type = value.is_a()
-                    if value_type in ("IfcLengthMeasure", "IfcPositiveLengthMeasure"):
-                        special_type = "LENGTH"
-                    elif value_type == "IfcAreaMeasure":
-                        special_type = "AREA"
-                    elif value_type == "IfcVolumeMeasure":
-                        special_type = "VOLUME"
-            elif prop_or_prop_template.is_a("IfcPhysicalSimpleQuantity"):
-                prop_class = prop_or_prop_template.is_a()
-                if prop_class == "IfcQuantityArea":
-                    special_type = "AREA"
-                elif prop_class == "IfcQuantityVolume":
-                    special_type = "VOLUME"
-                elif prop_class == "IfcQuantityLength":
-                    special_type = "LENGTH"
-        return special_type
+            if primary_measure_type == "IfcURIReference":
+                return "URI"
+            if primary_measure_type:
+                return cls.get_special_type_for_measure_class(primary_measure_type)
+            return cls.QUANTITY_TEMPLATE_TYPE_TO_SPECIAL_TYPE.get(prop_or_prop_template.TemplateType, "")
+        elif prop_or_prop_template.is_a("IfcPropertySingleValue"):
+            value = prop_or_prop_template.NominalValue
+            if value is not None:
+                return cls.get_special_type_for_measure_class(value.is_a())
+        elif prop_or_prop_template.is_a("IfcPhysicalSimpleQuantity"):
+            entity = prop_or_prop_template.wrapped_data.declaration().as_entity()
+            measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
+            return cls.get_special_type_for_measure_class(measure_class)
+        return ""
+
+    @classmethod
+    def get_unit_symbol_for_special_type(cls, special_type: str, ifc_file: ifcopenshell.file) -> str:
+        """Get the project's default unit symbol for a `special_type` (see `get_special_type_for_prop`).
+
+        Used where there's no property instance to check for a `Unit` override
+        (e.g. a template, or a native IFC entity attribute, neither of which
+        can carry one).
+        """
+        if not special_type or special_type == "URI":
+            return ""
+        unit = ifcopenshell.util.unit.get_project_unit(ifc_file, f"{special_type}UNIT")
+        return ifcopenshell.util.unit.get_unit_symbol(unit) if unit else ""
+
+    @classmethod
+    def get_unit_symbol_for_prop(cls, prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file) -> str:
+        """Get the unit symbol for an existing property/quantity, respecting its own `Unit` override."""
+        unit = ifcopenshell.util.unit.get_property_unit(prop, ifc_file)
+        return ifcopenshell.util.unit.get_unit_symbol(unit) if unit else ""
 
     @classmethod
     def import_pset_from_existing(
@@ -295,6 +326,7 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.is_null = value is None
                 metadata.is_optional = True
                 metadata.special_type = cls.get_special_type_for_prop(prop)
+                metadata.unit_symbol = cls.get_unit_symbol_for_prop(prop, tool.Ifc.get())
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
                 process_prop_description(metadata)
 
@@ -383,6 +415,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.is_optional = True
         metadata.data_type = cls.get_prop_template_primitive_type(prop_template)
         metadata.special_type = cls.get_special_type_for_prop(prop_template)
+        metadata.unit_symbol = cls.get_unit_symbol_for_special_type(metadata.special_type, tool.Ifc.get())
 
         if metadata.data_type == "string":
             metadata.string_value = "" if metadata.is_null else str(data[prop_template.Name])
@@ -432,6 +465,8 @@ class Pset(bonsai.core.tool.Pset):
                 cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
 
             elif prop_template.TemplateType.startswith("Q_"):
+                if prop_data:
+                    continue  # Existing quantity will be added later by import_pset_from_existing.
                 cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
 
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
@@ -493,6 +528,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.is_null = value is None
         metadata.is_optional = True
         metadata.special_type = special_type
+        metadata.unit_symbol = cls.get_unit_symbol_for_special_type(special_type, tool.Ifc.get())
         metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
 
     @classmethod
