@@ -250,6 +250,67 @@ TEST_CASE("Empty SidecarData round-trips cleanly", "[sidecar]") {
     REQUIRE(loaded->string_table.empty());
 }
 
+// ViewportCore::applyCachedModel seeds ModelGpuData::coordinate_operation_meters
+// straight from these fields, which is what puts a georeferenced model into
+// global coordinates without a host having to push the matrix. That only works
+// if the matrix survives the write/read round-trip in the same storage order it
+// went in — a silent transpose would misplace every georeferenced model rather
+// than fail loudly.
+TEST_CASE("CoordinateOperation + unit scales round-trip through the sidecar", "[sidecar]") {
+    fs::path dir = makeScratchDir("georef");
+    fs::path ifc = dir / "georef.ifc";
+
+    SidecarData sd = buildFixture();
+    sd.has_coordinate_operation = 1;
+    sd.project_length_to_meters = 0.001;   // model authored in millimetres
+    sd.map_unit_to_meters       = 1.0;
+    // Asymmetric on purpose: a transpose would still pass a symmetric matrix.
+    // Translation lives in the last column under column-major storage, i.e.
+    // elements [12], [13], [14].
+    for (int i = 0; i < 16; ++i) sd.coordinate_operation_meters[i] = 0.0;
+    sd.coordinate_operation_meters[0]  =  0.5;   // (0,0)
+    sd.coordinate_operation_meters[1]  =  0.25;  // (1,0)
+    sd.coordinate_operation_meters[5]  =  2.0;   // (1,1)
+    sd.coordinate_operation_meters[10] =  1.0;   // (2,2)
+    sd.coordinate_operation_meters[12] = -2523.02945910871;  // eastings
+    sd.coordinate_operation_meters[13] = -4962.73759029173;  // northings
+    sd.coordinate_operation_meters[14] =  1580.0;            // orthogonal height
+    sd.coordinate_operation_meters[15] =  1.0;
+
+    REQUIRE(writeSidecar(ifc.string(), sd));
+    auto loaded = readSidecar(ifc.string());
+    REQUIRE(loaded.has_value());
+
+    REQUIRE(loaded->has_coordinate_operation == 1);
+    REQUIRE(loaded->project_length_to_meters == 0.001);
+    REQUIRE(loaded->map_unit_to_meters == 1.0);
+    for (int i = 0; i < 16; ++i) {
+        REQUIRE(loaded->coordinate_operation_meters[i] ==
+                sd.coordinate_operation_meters[i]);
+    }
+}
+
+// A model with no IfcMapConversion must come back with the flag clear, so the
+// seeding leaves the identity placeholder alone rather than baking in a
+// half-populated matrix.
+TEST_CASE("Sidecar without a CoordinateOperation reports none", "[sidecar]") {
+    fs::path dir = makeScratchDir("nogeoref");
+    fs::path ifc = dir / "nogeoref.ifc";
+    // buildFixture() populates the georef block, so clear it back to what a
+    // model with no IfcMapConversion bakes: flag down, identity placeholder.
+    SidecarData sd = buildFixture();
+    sd.has_coordinate_operation = 0;
+    for (int i = 0; i < 16; ++i) sd.coordinate_operation_meters[i] = (i % 5 == 0) ? 1.0 : 0.0;
+
+    REQUIRE(writeSidecar(ifc.string(), sd));
+    auto loaded = readSidecar(ifc.string());
+    REQUIRE(loaded.has_value());
+    REQUIRE(loaded->has_coordinate_operation == 0);
+    for (int i = 0; i < 16; ++i) {
+        REQUIRE(loaded->coordinate_operation_meters[i] == ((i % 5 == 0) ? 1.0 : 0.0));
+    }
+}
+
 TEST_CASE("Sidecar path stem maps .ifc / .ifcdb / extensionless to .ifcview", "[sidecar]") {
     // The mapping is internal but observable: writing under one source name
     // must be readable under any other name that maps to the same stem.

@@ -345,6 +345,16 @@ bool ViewportCore::firstGeometryPointWorldM(uint32_t session_model_id,
     return true;
 }
 
+bool ViewportCore::modelGeoref(uint32_t session_model_id, ModelGeoref& out) const {
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end()) return false;
+    const ModelGpuData& m = it->second;
+    out.units                       = m.units;
+    out.coordinate_operation_meters = m.coordinate_operation_meters;
+    out.has_coordinate_operation    = m.has_coordinate_operation;
+    return true;
+}
+
 void ViewportCore::composeInstanceFromPlacement(InstanceInfo& inst,
                                                 const ModelGpuData& m) const {
     if (inst.mesh_id < m.meshes.size()) {
@@ -3120,6 +3130,28 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.streaming_file_path      = metadata.file_path;
     model_gpu_data.geometry_section_offset  = metadata.geometry_section_offset;
 
+    // Seed the CoordinateOperation from the sidecar (v11+) so a model lands in
+    // global coordinates without anyone having to push it. Before this, the
+    // matrix stayed identity unless a host called setModelCoordinateOperation —
+    // which only BonsaiViewer does (modules/viewport/View.cpp), so the web
+    // viewer rendered every model in raw local coordinates and federated models
+    // with differing map conversions came out misaligned.
+    //
+    // Instances are composed further down against model_gpu_data, so this has
+    // to be set before that, not after.
+    //
+    // Desktop is unaffected: ViewportView::applyCoordinateOperation pushes the
+    // same matrix derived from the same computeModelGeoref, and
+    // setModelCoordinateOperation early-returns when the value is unchanged.
+    model_gpu_data.has_coordinate_operation = metadata.meta.has_coordinate_operation != 0;
+    if (model_gpu_data.has_coordinate_operation) {
+        // Sidecar stores column-major, matching Eigen's default storage order.
+        model_gpu_data.coordinate_operation_meters =
+            Eigen::Map<const Eigen::Matrix4d>(metadata.meta.coordinate_operation_meters);
+    }
+    model_gpu_data.units.project_length_to_meters = metadata.meta.project_length_to_meters;
+    model_gpu_data.units.map_unit_to_meters       = metadata.meta.map_unit_to_meters;
+
     // ---- Spatial chunk plan ----------------------------------------------
     // A sidecar carries a baked chunk TOC (v14): each chunk is a contiguous
     // run of meshes, laid out contiguously in the file (see SidecarLayout), so
@@ -3424,6 +3456,23 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         << " meshes=" << inserted_model.mesh_count
         << " instances=" << inserted_model.instance_count
         << " chunks=" << inserted_model.chunks.size();
+
+    // The instance transforms above came straight from the sidecar, where they
+    // were baked with identity federation matrices. Recompose whenever any of
+    // them is now non-identity, or the model renders in the wrong place:
+    //
+    //   - its own CoordinateOperation, seeded above — a georeferenced model
+    //     would otherwise draw at its local coordinates;
+    //   - a federated false origin already in force, which is the normal case
+    //     for the SECOND and later models of a federation.
+    //
+    // Desktop never hit this because BonsaiViewer pushes
+    // setModelCoordinateOperation + setModelTransformation after every load and
+    // each of those recomposes. Nothing does that on web.
+    if (inserted_model.has_coordinate_operation ||
+        !federated_false_origin_meters_.isIdentity()) {
+        recomposeAndUploadModel(session_model_id);
+    }
 
     if (!initial_view_applied_) {
         viewAll();
@@ -3817,7 +3866,8 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
 // here — they stream per chunk through beginWebChunkLoad. `source_label` is a
 // log/identity tag stored as file_path (chunk reads go through the JS source,
 // not this path).
-void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_label) {
+void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_label,
+                                          std::function<void(std::uint32_t)> on_loaded) {
     if (!device_ || !queue_) {
         Log::warn() << "loadSidecarMetadataWeb: wgpu not initialised";
         return;
@@ -3831,7 +3881,8 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
     // Head (v16): [header 12][geom_bytes 8]. The two compressed metadata blocks
     // follow the compressed geometry at SIDECAR_HEAD_BYTES + geom_bytes.
     webReadRangesAsync(source_id, 0, {{0, SIDECAR_HEAD_BYTES}},
-        [this, fsize, source_id, source_label](bool ok, std::vector<std::uint8_t>&& head) {
+        [this, fsize, source_id, source_label, on_loaded = std::move(on_loaded)]
+        (bool ok, std::vector<std::uint8_t>&& head) mutable {
             std::uint64_t geom_bytes = 0;
             if (!ok || !parseSidecarHead(head.data(), head.size(), geom_bytes)) {
                 Log::warn() << "loadSidecarMetadataWeb: bad sidecar head (wrong version?)";
@@ -3844,7 +3895,8 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
             }
             // Geometry metadata block on disk: [comp u64][raw u64][zstd frame].
             webReadRangesAsync(source_id, 0, {{meta_off, 16}},
-                [this, fsize, meta_off, source_id, source_label]
+                [this, fsize, meta_off, source_id, source_label,
+                 on_loaded = std::move(on_loaded)]
                 (bool ok2, std::vector<std::uint8_t>&& h) {
                     if (!ok2 || h.size() < 16) {
                         Log::warn() << "loadSidecarMetadataWeb: short geometry metadata header";
@@ -3861,7 +3913,8 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                     webReadRangesAsync(source_id, 0,
                         {{geometry_metadata_off, geometry_metadata_comp}},
                         [this, geometry_metadata_off, geometry_metadata_comp,
-                         geometry_metadata_raw, source_id, source_label]
+                         geometry_metadata_raw, source_id, source_label,
+                         on_loaded = std::move(on_loaded)]
                         (bool ok3, std::vector<std::uint8_t>&& cz) {
                             if (!ok3) {
                                 Log::warn() << "loadSidecarMetadataWeb: geometry metadata read failed";
@@ -3898,7 +3951,8 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                 geometry_metadata_off + geometry_metadata_comp;
                             webReadRangesAsync(source_id, 0, {{element_metadata_hdr_off, 16}},
                                 [this, sc = std::move(sc), element_metadata_hdr_off,
-                                 source_id, source_label]
+                                 source_id, source_label,
+                                 on_loaded = std::move(on_loaded)]
                                 (bool ok4, std::vector<std::uint8_t>&& dh) mutable {
                                     if (ok4 && dh.size() >= 16) {
                                         std::uint64_t dc = 0, dr = 0;
@@ -3936,6 +3990,10 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                     Log::info() << "ifcviewer-web: loaded sidecar (" << source_label
                                                 << ", id " << session_model_id << ", " << n_meshes << " meshes, "
                                                 << n_instances << " instances)";
+                                    // Last: the model is fully in the scene, so a
+                                    // handler is free to push federation matrices
+                                    // or reframe without racing the setup above.
+                                    if (on_loaded) on_loaded(session_model_id);
                                 });
                         });
                 });

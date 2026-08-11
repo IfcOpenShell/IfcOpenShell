@@ -33,6 +33,7 @@
 
 #include "InstancedGeometry.h"
 #include "BufferPool.h"
+#include "FederationMath.h"   // ModelUnits
 #include "ChunkPlanner.h"  // WGPU_CHUNK_VERTEX_BYTES_LIMIT (shared with bake)
 #include "SidecarCache.h"  // ElementTableRecord (element metadata)
 
@@ -145,6 +146,17 @@ struct ModelGpuData {
 
         std::vector<VisibleDrawGpu> visible_draws_scratch;
         std::vector<uint32_t>       prefix_sums_scratch;
+
+        // What was last handed to the GPU, so an unchanged frame writes
+        // nothing. On Dawn-web every wgpuQueueWriteBuffer is an IPC message to
+        // the GPU process, and the cull re-uploaded all three buffers for every
+        // chunk on every frame — measured at 370-546 writes and up to 1 MB per
+        // frame across this federation, which is ~22,000 messages a second at
+        // 60fps. Comparing here costs a memcmp of the same bytes; sending them
+        // costs a serialised round trip through the wire.
+        std::vector<VisibleDrawGpu> visible_draws_uploaded;
+        std::vector<uint32_t>       prefix_sums_uploaded;
+        uint32_t                    uniform_uploaded[4] = { 0xffffffffu, 0, 0, 0 };
 
         // Transient transparent-half scratch. Populated alongside
         // visible_draws_scratch during cull (the cull loop routes each
@@ -442,6 +454,19 @@ struct ModelGpuData {
     // would actually apply them is deferred.
     Eigen::Matrix4d coordinate_operation_meters = Eigen::Matrix4d::Identity();
     Eigen::Matrix4d model_transformation_meters = Eigen::Matrix4d::Identity();
+
+    // Whether coordinate_operation_meters came from a real IfcCoordinateOperation
+    // (sidecar v11+ has_coordinate_operation) rather than being the identity
+    // placeholder. The false-origin guess needs to tell those apart: identity
+    // because the model is genuinely un-georeferenced is not the same as
+    // identity because nothing has been applied yet.
+    bool has_coordinate_operation = false;
+
+    // Per-model unit scales, carried alongside the matrices because
+    // composeModelTransformation needs them to lift ModelTransformation::a into
+    // metres. Sourced from the sidecar so this works for sidecar-only loads
+    // where there is no ifcopenshell::file to re-read.
+    ModelUnits units;
 };
 
 // Release every wgpu handle in `m` (including per-chunk and per-model pool

@@ -127,6 +127,15 @@ public:
     bool firstGeometryPointWorldM(uint32_t session_model_id,
                                   Eigen::Vector3d& out) const;
 
+    // The model's georef as seeded from its sidecar by applyCachedModel.
+    // Returns false when the model is unknown.
+    //
+    // This is the sidecar-only equivalent of the desktop's
+    // SceneLoader::modelGeoref: composeModelTransformation needs the unit
+    // scales and the CoordinateOperation to lift ModelTransformation::a into
+    // metres, and on web there is no ifcopenshell::file to re-read them from.
+    bool modelGeoref(uint32_t session_model_id, ModelGeoref& out) const;
+
     // The global-id base applyCachedModel added to this model's instance
     // object_ids. Callers that hold the element table separately (the desktop
     // sidecar path) rebase their element records by the same base so registry
@@ -478,7 +487,15 @@ public:
     // (Module.__ifcvSources[source_id] — a picked File or remote URL, already
     // sized by shell.html); each federated model streams from its own source.
     // `source_label` is a log/identity tag.
-    void loadSidecarMetadataWeb(int source_id, std::string source_label);
+    //
+    // `on_loaded` (optional) fires once the model is in the scene, carrying the
+    // session_model_id that was allocated for it. That id is minted inside the
+    // async range-read chain, so a caller holding only a source_id has no other
+    // way to learn it — which is what the federation layer needs in order to
+    // bind per-model state (transform, display name) that JS may have set
+    // against the source_id before the load finished.
+    void loadSidecarMetadataWeb(int source_id, std::string source_label,
+                                std::function<void(std::uint32_t)> on_loaded = {});
 
     // On-demand fetch of the v15 element metadata block (elements + string
     // table) for a web-streamed model — what a UI (object tree / selected-name
