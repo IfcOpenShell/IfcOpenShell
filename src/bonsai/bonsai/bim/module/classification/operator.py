@@ -348,10 +348,7 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         if self.obj_type == "Object":
-            if context.selected_objects:
-                objects = [o.name for o in context.selected_objects]
-            else:
-                objects = [context.active_object.name]
+            objects = [o.name for o in tool.Blender.get_selected_objects()]
         else:
             objects = [self.obj]
         props = tool.Classification.get_classification_props()
