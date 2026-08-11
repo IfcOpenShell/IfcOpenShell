@@ -84,6 +84,8 @@
 #include <BRepBndLib.hxx>
 
 #include <ShapeFix_Edge.hxx>
+#include <ShapeFix_Shape.hxx>
+#include <BRepCheck_Analyzer.hxx>
 
 #include <HLRBRep_PolyHLRToShape.hxx>
 
@@ -1605,10 +1607,10 @@ void SvgSerializer::write(const geometry_data& data) {
 	}
 
 	bool emitted = false;
-	
+
 	for (auto sit = section_heights_used->begin(); sit != section_heights_used->end(); ++sit) {
 		const auto& variant = *sit;
-		
+
 		// Elev + offset
 		double cut_z = std::numeric_limits<double>::infinity();
 		
@@ -1679,7 +1681,6 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			// Exclude annotations, spaces and grids from HLR
 			if (any_in_front && !data.product->declaration().is("IfcAnnotation") && !data.product->declaration().is("IfcSpace") && !data.product->declaration().is("IfcGrid")) {
-				
 				TopoDS_Shape* compound_to_hlr = &compound_to_use;
 				TopoDS_Shape subtracted_shape;
 
@@ -1772,7 +1773,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						}
 
 						try {
-							
+
 							BRepBuilderAPI_MakeFace mf(new Geom_Plane(projection_plane), min_u - 1., max_u + 1., min_v - 1., max_v + 1., Precision::Confusion());
 							auto f = mf.Face();
 							gp_Pnt ref = projection_plane.Position().Location().XYZ() + projection_plane.Position().Direction().XYZ();
@@ -1786,12 +1787,39 @@ void SvgSerializer::write(const geometry_data& data) {
 							// loop over parts to have better luck with co-planar parts
 							TopoDS_Iterator it(compound_to_use);
 							for (; it.More(); it.Next()) {
-								auto part = BRepAlgoAPI_Cut(it.Value(), s).Shape();
+								// A genuinely degenerate/self-intersecting part (confirmed against a
+								// real wall with two overlapping IfcOpeningElement voids, issue:
+								// PROPOSED SECTION crash) can make BRepAlgoAPI_Cut itself crash
+								// outright rather than throw -- BRepCheck_Analyzer/ShapeFix_Shape
+								// first gives OCCT a chance to heal it before the cut ever runs.
+								TopoDS_Shape part_to_cut = it.Value();
+								try {
+									if (!BRepCheck_Analyzer(part_to_cut).IsValid()) {
+										ShapeFix_Shape fixer(part_to_cut);
+										fixer.Perform();
+										part_to_cut = fixer.Shape();
+									}
+								} catch (const Standard_Failure&) {
+									// Leave part_to_cut as the original -- BRepAlgoAPI_Cut below
+									// still has its own IsDone()/IsNull() guards for whatever
+									// this leaves behind.
+								}
+								BRepAlgoAPI_Cut cut_op(part_to_cut, s);
+								if (!cut_op.IsDone()) {
+									continue;
+								}
+								auto part = cut_op.Shape();
+								// BRepAlgoAPI_Cut can also report success (IsDone()) yet still hand
+								// back a null shape for the same kind of degenerate input --
+								// BRep_Builder::Add() below has no defence of its own against that,
+								// so check first rather than let it corrupt/crash.
+								if (part.IsNull()) {
+									continue;
+								}
 								BB.Add(C, part);
 							}
 
 							subtracted_shape = C;
-
 							compound_to_hlr = &subtracted_shape;
 						} catch (...) {
 							logger_.Error("SER", 27, "Failed to cut element for HLR", data.product);
@@ -2219,7 +2247,25 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 			}
 
-			TopoDS_Shape result = BRepAlgoAPI_Section(subshape, pln);
+			// Same defensive healing as the halfspace-cut path above (BRepAlgoAPI_Cut): a
+			// genuinely degenerate/self-intersecting subshape can make BRepAlgoAPI_Section
+			// itself crash outright rather than throw (confirmed against the same real wall
+			// with two overlapping IfcOpeningElement voids, issue: PROPOSED SECTION crash --
+			// this is a second OCCT boolean-adjacent operation the same bad geometry reaches,
+			// not a duplicate fix for the same call).
+			TopoDS_Shape subshape_to_cut = subshape;
+			try {
+				if (!BRepCheck_Analyzer(subshape_to_cut).IsValid()) {
+					ShapeFix_Shape fixer(subshape_to_cut);
+					fixer.Perform();
+					subshape_to_cut = fixer.Shape();
+				}
+			} catch (const Standard_Failure&) {
+				// Leave subshape_to_cut as the original -- worst case we're back to the
+				// original (unguarded) crash risk for this one degenerate subshape, same as
+				// before this fix existed.
+			}
+			TopoDS_Shape result = BRepAlgoAPI_Section(subshape_to_cut, pln);
 
 			if (variant.which() == 2) {
 				gp_Trsf trsf;
