@@ -185,6 +185,7 @@ Scenario: Update representation - updating a layered extrusion
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -213,6 +214,7 @@ Scenario: Update representation - updating a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -416,6 +418,7 @@ Scenario: Override duplicate move - copying a layered extrusion
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -447,6 +450,7 @@ Scenario: Override duplicate move - copying a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
