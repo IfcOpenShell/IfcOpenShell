@@ -678,7 +678,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
         # Identify all potential building elements
         # TODO: don't select everything, use AABB culling in Blender
-        building_elements = (
+        building_elements = list(
             tool.Ifc.get().by_type("IfcWall")
             + tool.Ifc.get().by_type("IfcSlab")
             + tool.Ifc.get().by_type("IfcVirtualElement")

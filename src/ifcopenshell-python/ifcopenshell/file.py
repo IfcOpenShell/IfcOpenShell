@@ -728,7 +728,7 @@ class file_mixin:
             [self.transaction.store_create(e) for e in reversed(added_elements)]
         return result
 
-    def by_type(self, type: str, include_subtypes=True) -> list[ifcopenshell.entity_instance]:
+    def by_type(self, type: str, include_subtypes=True) -> tuple[ifcopenshell.entity_instance, ...]:
         """Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.
 
         If an IFC type class has subclasses, all entities of those subclasses are also returned.
@@ -746,7 +746,7 @@ class file_mixin:
 
     def traverse(
         self, inst: ifcopenshell.entity_instance, max_levels: Optional[int] = None, breadth_first: bool = False
-    ) -> list[ifcopenshell.entity_instance]:
+    ) -> tuple[ifcopenshell.entity_instance, ...]:
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
