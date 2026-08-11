@@ -443,6 +443,11 @@ public:
     // residency is still settling so the render loop keeps ticking.
     void driveStreamingLoads();
 
+    // Start as many queued web chunk loads as the in-flight cap allows. Called
+    // from driveStreamingLoads and, crucially, from each load's completion —
+    // which is what decouples fetching from the render loop.
+    void pumpWebChunkLoads();
+
     // ---- Sidecar / direct load (#84-q) -----------------------------------
     //
     // Apply a parsed sidecar's metadata + planned chunk layout to
@@ -1341,11 +1346,27 @@ private:
     // Web only: number of chunk loads in flight, and the cap. The browser
     // multiplexes all in-flight Range requests over one HTTP/2 connection, so
     // an unbounded count splits the bandwidth N ways and nothing finishes (so
-    // nothing paints) until ~the whole model has downloaded. A small cap lets
-    // the highest-priority chunks finish + paint first, then the next —
+    // nothing paints) until ~the whole model has downloaded. A cap lets the
+    // highest-priority chunks finish + paint first, then the next —
     // progressive streaming. Tune for first-paint vs latency-hiding.
-    static constexpr int kMaxWebInflightChunks = 2;
+    //
+    // Raised from 2 once fetching stopped being frame-driven (see
+    // pumpWebChunkLoads). While a completion could only issue its successor on
+    // the NEXT render, the effective rate was 2 x frames-per-second and the cap
+    // was doing double duty as a pacing mechanism; with the pump it means only
+    // what it says. Six keeps a small multiplexed pipeline full without
+    // splitting bandwidth so far that nothing paints early.
+    static constexpr int kMaxWebInflightChunks = 6;
     int streaming_web_inflight_count_ = 0;
+
+    // Chunks the last driveStreamingLoads wanted but could not start, in
+    // priority order, so a completing load can start the next one immediately
+    // instead of waiting for a frame. Rebuilt every frame — this is a snapshot
+    // of the view's priorities, and every entry is re-checked before it is
+    // issued because the camera may have moved since.
+    struct PendingWebChunk { std::uint32_t session_model_id; std::size_t ci; };
+    std::vector<PendingWebChunk> web_pending_;
+    std::size_t                  web_pending_head_ = 0;
 
     // Settle burst: keep the render loop alive for a few frames after any
     // streaming activity so the cull→load→display latency (the draw + cull
@@ -1358,6 +1379,18 @@ private:
     // Per-frame breakdown counters consumed by the WGPU_STREAM_DEBUG
     // log. All reset at the top of driveStreamingLoads.
     int  streaming_candidates_this_frame_      = 0;
+    // Per-frame wgpuQueueWriteBuffer count and payload from the cull upload.
+    // On Dawn-web every one of these is an IPC message to the GPU process, so
+    // the COUNT matters at least as much as the bytes.
+    // Cumulative decompress + GPU-apply cost for streamed chunks. This runs in
+    // the JS completion callback, OUTSIDE render(), so none of it appears in
+    // the frame timings — which is exactly why a load can take 18s while the
+    // frames only account for 5.
+    double        chunk_apply_ms_total_        = 0.0;
+    std::uint64_t chunk_apply_raw_bytes_       = 0;
+    int           chunk_apply_count_           = 0;
+    int           cull_writes_this_frame_      = 0;
+    std::uint64_t cull_write_bytes_this_frame_ = 0;
     int  streaming_evictions_lru_this_frame_   = 0;
     int  streaming_evictions_pri_this_frame_   = 0;
     int  streaming_drained_this_frame_         = 0;

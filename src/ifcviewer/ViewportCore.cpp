@@ -1772,10 +1772,19 @@ void ViewportCore::initWgpuAsyncWeb(std::function<void(bool)> on_complete) {
 
     auto* ctx = new WebInitCtx{this, std::move(on_complete)};
 
-    // Bare adapter options (no compatibleSurface, no powerPreference).
-    // Setting any field here makes the subsequent device promise
-    // silently never resolve on Dawn-web.
+    // No compatibleSurface — setting THAT makes the device promise silently
+    // never resolve on Dawn-web, which is what this comment used to warn about
+    // for every field.
+    //
+    // powerPreference is safe, and it matters: without it the browser picks its
+    // default adapter, and on a hybrid laptop that is the INTEGRATED GPU. Seen
+    // on a Windows machine with an RTX 500 sitting at 0% while Intel Graphics
+    // did the work — no warning anywhere, because this is hardware rendering,
+    // just on the wrong hardware. Verified in Chrome that all three settings
+    // resolve a device, and that the choice is honoured: default and
+    // high-performance give the discrete card, low-power gives the iGPU.
     WGPURequestAdapterOptions adapter_opts = {};
+    adapter_opts.powerPreference = WGPUPowerPreference_HighPerformance;
 
     WGPURequestAdapterCallbackInfo acb = {};
     acb.mode = WGPUCallbackMode_AllowSpontaneous;
@@ -2458,9 +2467,26 @@ void ViewportCore::driveStreamingLoads() {
               });
 
     int enqueued = 0;
-    for (const Candidate& cand : candidates) {
+    web_pending_.clear();
+    web_pending_head_ = 0;
+    // Everything from `from` onwards that streams over the network, in priority
+    // order, for the completions to drain. Called from BOTH exits of the loop:
+    // the per-frame budget is reached first when nothing is in flight yet, so
+    // queueing only on the in-flight cap left the queue empty exactly when it
+    // was needed most.
+    auto queue_web_tail = [&](std::size_t from) {
+        for (std::size_t k = from; k < candidates.size(); ++k) {
+            const Candidate& rest = candidates[k];
+            if (rest.m->streaming_from_web) {
+                web_pending_.push_back({rest.session_model_id, rest.ci});
+            }
+        }
+    };
+    for (std::size_t cand_idx = 0; cand_idx < candidates.size(); ++cand_idx) {
+        const Candidate& cand = candidates[cand_idx];
         if (enqueued >= MAX_STREAMING_LOADS_PER_FRAME) {
             more_pending = true;
+            queue_web_tail(cand_idx);
             break;
         }
         auto& c = cand.m->chunks[cand.ci];
@@ -2569,7 +2595,16 @@ void ViewportCore::driveStreamingLoads() {
             // progressive, no special first-chunk handling.
             if (streaming_web_inflight_count_ >= kMaxWebInflightChunks) {
                 more_pending = true;
-                break;  // resume next frame as in-flight loads complete
+                // Hand the rest to the pump, in priority order, so completing
+                // loads can start them without waiting for a render. This used
+                // to just break, which made the fetch rate a function of the
+                // frame rate: at 60fps that is fine, but the loop is on-demand
+                // and quiesces, and any frame-rate drop — a heavy cull, an
+                // occluded window, a background tab — throttled DOWNLOADING in
+                // proportion. Measured at ~2 renders/s: 0.83 MB/s with the
+                // network idle 99.6% of the time and 0.1s of decode.
+                queue_web_tail(cand_idx);
+                break;
             }
             c.is_loading = true;
             c.last_visible_frame_idx = streaming_frame_idx_;
@@ -2596,6 +2631,9 @@ void ViewportCore::driveStreamingLoads() {
         }
     }
     loads += enqueued;
+    // Whatever the frame could not start, start now if the cap allows — and
+    // leave the rest queued for the completions to drain.
+    pumpWebChunkLoads();
 
     // Keep the render loop alive while streaming settles. The main draw + cull
     // run *before* this point in render(), so a chunk that becomes resident
@@ -2943,25 +2981,53 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
     return hiz_rejects;
 }
 
+// Same contents? A plain == would need operator== on the POD payloads; these
+// are trivially copyable GPU structs, so the bytes are the whole story.
+template <typename T>
+static bool sameBytes(const std::vector<T>& a, const std::vector<T>& b) {
+    return a.size() == b.size()
+        && (a.empty() || std::memcmp(a.data(), b.data(), a.size() * sizeof(T)) == 0);
+}
+
 void ViewportCore::cullModelCpuUpload(ModelGpuData& m) {
     for (auto& c : m.chunks) {
         if (!c.visible_draws_buffer || !c.prefix_sums_buffer || !c.per_chunk_uniform) continue;
 
         if (c.total_visible_draws == 0) {
-            // Render() will skip this chunk; still zero the uniform so
-            // any accidental dispatch sees 0 work.
+            // Render() will skip this chunk; still zero the uniform so any
+            // accidental dispatch sees 0 work — but only once. A chunk that is
+            // off screen stays off screen for many frames, and re-sending four
+            // zero bytes to say so was most of the per-frame write count.
             const std::uint32_t um[4] = { 0, 0, 0, 0 };
-            wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+            if (std::memcmp(c.uniform_uploaded, um, sizeof(um)) != 0) {
+                ++cull_writes_this_frame_;
+                wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+                std::memcpy(c.uniform_uploaded, um, sizeof(um));
+            }
             continue;
         }
 
-        wgpuQueueWriteBuffer(queue_, c.visible_draws_buffer, 0,
-                             c.visible_draws_scratch.data(),
-                             c.visible_draws_scratch.size()
-                                 * sizeof(ModelGpuData::VisibleDrawGpu));
-        wgpuQueueWriteBuffer(queue_, c.prefix_sums_buffer, 0,
-                             c.prefix_sums_scratch.data(),
-                             c.prefix_sums_scratch.size() * sizeof(std::uint32_t));
+        // Only what actually changed. A static camera recomputes the same
+        // visible set every frame, so without this the identical bytes go over
+        // the wire 60 times a second — which is exactly the load phase, where
+        // nothing is moving and everything is waiting on frames.
+        if (!sameBytes(c.visible_draws_uploaded, c.visible_draws_scratch)) {
+            const std::size_t bytes = c.visible_draws_scratch.size()
+                                    * sizeof(ModelGpuData::VisibleDrawGpu);
+            cull_write_bytes_this_frame_ += bytes;
+            ++cull_writes_this_frame_;
+            wgpuQueueWriteBuffer(queue_, c.visible_draws_buffer, 0,
+                                 c.visible_draws_scratch.data(), bytes);
+            c.visible_draws_uploaded = c.visible_draws_scratch;
+        }
+        if (!sameBytes(c.prefix_sums_uploaded, c.prefix_sums_scratch)) {
+            const std::size_t bytes = c.prefix_sums_scratch.size() * sizeof(std::uint32_t);
+            cull_write_bytes_this_frame_ += bytes;
+            ++cull_writes_this_frame_;
+            wgpuQueueWriteBuffer(queue_, c.prefix_sums_buffer, 0,
+                                 c.prefix_sums_scratch.data(), bytes);
+            c.prefix_sums_uploaded = c.prefix_sums_scratch;
+        }
 
         // per_chunk_uniform layout (vec4<u32> u_model in the shader):
         //   [0] total_visible_draws       (opaque + transparent)
@@ -2974,7 +3040,11 @@ void ViewportCore::cullModelCpuUpload(ModelGpuData& m) {
             c.opaque_visible_vertices,
             c.opaque_visible_draws,
         };
-        wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+        if (std::memcmp(c.uniform_uploaded, um, sizeof(um)) != 0) {
+            ++cull_writes_this_frame_;
+            wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+            std::memcpy(c.uniform_uploaded, um, sizeof(um));
+        }
     }
 }
 
@@ -3606,6 +3676,61 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_on_range_done(int reqId, int ok) {
     webIssueCurrentPlan(reqId);
 }
 
+#endif  // __EMSCRIPTEN__
+
+// Deliberately outside the web-streaming block above, unlike its neighbours:
+// driveStreamingLoads calls this unconditionally and ViewportCore.h declares it
+// unconditionally, so desktop needs a definition to link against. The body
+// guards itself instead, compiling to a no-op off the web — there is nothing to
+// pump when chunk loads are not asynchronous.
+
+// Start queued chunk loads until the in-flight cap is reached. Called at the
+// end of driveStreamingLoads and, more importantly, from every load's
+// completion — so the fetch pipeline refills itself instead of waiting for the
+// next render.
+//
+// The queue is a snapshot of the last frame's priorities and may be stale by
+// the time a completion drains it: the camera can have moved, the chunk can
+// have gone resident by another route, the pool can have filled. So every entry
+// is re-checked against live state here, exactly as driveStreamingLoads checks
+// its own candidates. A stale-but-close priority order beats waiting a frame
+// for a fresh one.
+void ViewportCore::pumpWebChunkLoads() {
+#if defined(__EMSCRIPTEN__)
+    while (streaming_web_inflight_count_ < kMaxWebInflightChunks
+           && web_pending_head_ < web_pending_.size()) {
+        const PendingWebChunk next = web_pending_[web_pending_head_++];
+        auto it = models_gpu_.find(next.session_model_id);
+        if (it == models_gpu_.end()) continue;
+        ModelGpuData& m = it->second;
+        if (m.hidden || next.ci >= m.chunks.size()) continue;
+        auto& c = m.chunks[next.ci];
+        if (c.is_resident || c.is_loading)     continue;
+        if (c.contribution_visible_count == 0) continue;   // no longer worth drawing
+        if (c.blocked_cooldown_until_frame_idx > streaming_frame_idx_) continue;
+
+        // Room, or the prospect of room. Eviction is deliberately NOT attempted
+        // here — it is stamped against the frame index and interleaved with the
+        // cull, so it stays where it can reason about what is visible. If the
+        // pool is full the rest of the queue is dropped and the next frame,
+        // which can evict, decides afresh.
+        const std::uint64_t need = c.vertex_byte_size
+                                 + c.index_count * sizeof(std::uint32_t);
+        if (pool_.largest_free_run_bytes() < need && !pool_.can_grow()) {
+            web_pending_head_ = web_pending_.size();
+            break;
+        }
+
+        c.is_loading = true;
+        c.last_visible_frame_idx = streaming_frame_idx_;
+        ++streaming_web_inflight_count_;
+        beginWebChunkLoad(next.session_model_id, next.ci);
+    }
+#endif
+}
+
+#if defined(__EMSCRIPTEN__)   // resume the web-streaming block
+
 void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t chunk_idx) {
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
@@ -3647,6 +3772,9 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
         auto& cc = mm.chunks[chunk_idx];
         cc.is_loading = false;
 
+        // emscripten_get_now, not Stopwatch: this is web-only code and the
+        // Stopwatch header is included further down the file than here.
+        const double apply_t0 = emscripten_get_now();
         std::vector<std::uint8_t>  vbytes(static_cast<std::size_t>(v_raw));
         std::vector<std::uint32_t> idx(static_cast<std::size_t>(i_raw / sizeof(std::uint32_t)));
         const bool ok = join->v_ok && join->i_ok
@@ -3655,12 +3783,20 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
             && SidecarCompress::decompress(join->iz.data(), join->iz.size(),
                                            reinterpret_cast<std::uint8_t*>(idx.data()),
                                            std::size_t(i_raw));
+        chunk_apply_ms_total_ += emscripten_get_now() - apply_t0;
+        chunk_apply_raw_bytes_ += v_raw + i_raw;
+        ++chunk_apply_count_;
         if (!ok || !applyStreamedChunk(mm, chunk_idx, vbytes, idx)) {
             cc.blocked_cooldown_until_frame_idx = streaming_frame_idx_
                 + (pool_.can_grow() ? kGrowBackoffFrames : kBlockedCooldownFrames);
+            pumpWebChunkLoads();   // this one is parked; get on with the rest
             return;
         }
         host_->requestFrame();
+        // Refill the pipeline now rather than on the next render. After the
+        // apply, so the pool reservation this chunk just released is real
+        // before the next one reserves against it.
+        pumpWebChunkLoads();
     };
 
     webReadRangesAsync(sid, geom, {{v_comp_off, v_comp_size}},
@@ -7163,6 +7299,8 @@ void ViewportCore::render() {
     hiz_reject_count_       = 0;
     Stopwatch cull_timer;
     cull_timer.start();
+    cull_writes_this_frame_ = 0;
+    cull_write_bytes_this_frame_ = 0;
     Eigen::Matrix4f vp_this_frame;
     {
         const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
@@ -7548,6 +7686,13 @@ void ViewportCore::render() {
             << "  sub_draws " << last_sub_draws_
             << "  hiz_rej " << hiz_reject_count_
             << "  cull " << fmtF(last_cull_ms_, 2) << "ms"
+            << " (compute " << fmtF(last_cull_compute_ms_, 2)
+            << " upload " << fmtF(last_cull_upload_ms_, 2) << ")"
+            << "  decode+apply " << fmtF(chunk_apply_ms_total_ / 1000.0, 2) << "s/"
+            << chunk_apply_count_ << "ch ("
+            << fmtF(double(chunk_apply_raw_bytes_) / (1024.0 * 1024.0), 0) << "MB raw)"
+            << "  writes " << cull_writes_this_frame_
+            << " (" << fmtF(double(cull_write_bytes_this_frame_) / 1024.0, 0) << "KB)"
             << "  stream " << fmtF(last_stream_ms_, 2) << "ms"
             << "  chunks " << chunks_resident << "/" << chunks_frustum_vis
             << "/" << chunks_total << " (missing " << chunks_missing << ")"
