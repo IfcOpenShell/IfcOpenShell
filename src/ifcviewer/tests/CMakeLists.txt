@@ -149,6 +149,7 @@ find_package(Eigen3 REQUIRED)
 add_executable(test_federation
     test_federation.cpp
     ${IFCVIEWER_SRC}/Federation.cpp
+    ${IFCVIEWER_SRC}/FederationMath.cpp   # compose helpers, split out for IfcViewerCore
 )
 set_target_properties(test_federation PROPERTIES AUTOMOC ON)
 target_include_directories(test_federation PRIVATE ${IFCVIEWER_SRC})

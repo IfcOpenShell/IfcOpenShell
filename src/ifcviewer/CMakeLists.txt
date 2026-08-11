@@ -143,6 +143,7 @@ set(IFCVIEWER_CORE_SOURCES
     ChunkPlanner.cpp
     InstanceCompose.cpp
     LodBuilder.cpp
+    FederationMath.cpp
     SidecarCache.cpp
     SidecarCompress.cpp
     StreamingLoader.cpp
@@ -200,6 +201,7 @@ set(IFCVIEWER_CORE_HEADERS
     SectionGizmoRenderer.h
     SectionPlane.h
     SelectionState.h
+    FederationMath.h
     SidecarCache.h
     SidecarCompress.h
     StreamingLoader.h
@@ -213,7 +215,19 @@ list(TRANSFORM IFCVIEWER_CORE_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 list(TRANSFORM IFCVIEWER_CORE_HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 add_library(IfcViewerCore STATIC ${IFCVIEWER_CORE_SOURCES} ${IFCVIEWER_CORE_HEADERS})
+
 target_include_directories(IfcViewerCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# FederationMath needs convert() to resolve a federation unit name to metres and
+# x_axis_to_angle_deg() to read grid north off a CoordinateOperation. Both live
+# in src/helpers, whose main library needs IfcParse — helpers_math is the
+# schema-free subset that does not, so it builds under Emscripten too. The web
+# build reaches this via add_subdirectory below; on desktop src/CMakeLists.txt
+# has already defined the target.
+if(NOT TARGET helpers_math)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../helpers helpers_math_build EXCLUDE_FROM_ALL)
+endif()
+target_link_libraries(IfcViewerCore PUBLIC helpers_math)
 target_link_libraries(IfcViewerCore PUBLIC
     Eigen3::Eigen
     wgpu_native
