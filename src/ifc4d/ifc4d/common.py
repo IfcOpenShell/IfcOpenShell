@@ -8,6 +8,7 @@ import ifcopenshell.api.control
 import ifcopenshell.api.owner
 import ifcopenshell.api.pset
 import ifcopenshell.api.resource
+import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.guid
 import ifcopenshell.util.date
@@ -107,7 +108,7 @@ class ScheduleIfcGenerator:
 
     def create_ifc(self) -> None:
         if not self.file:
-            self.file = self.create_boilerplate_ifc()
+            self.create_boilerplate_ifc()
         if not self.work_plan:
             self.work_plan = ifcopenshell.api.sequence.add_work_plan(self.file)
         work_schedule = self.create_work_schedule()
@@ -491,4 +492,5 @@ class ScheduleIfcGenerator:
 
     def create_boilerplate_ifc(self) -> None:
         self.file = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         self.work_plan = self.file.create_entity("IfcWorkPlan")
