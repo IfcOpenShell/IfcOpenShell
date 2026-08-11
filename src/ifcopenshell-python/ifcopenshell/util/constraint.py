@@ -41,7 +41,7 @@ def get_constrained_elements(constraint: ifcopenshell.entity_instance) -> set[if
     """
     Retrieves the elements constrained by a `constraint`.
 
-    :param product: The IFC element.
+    :param constraint: The IfcConstraint.
     :return: Set of elements constrained by a `constrant`.
     """
     elements = set()
@@ -55,7 +55,7 @@ def get_metrics(constraint: ifcopenshell.entity_instance) -> list[ifcopenshell.e
     """
     Retrieves the list of nested constraints for a IfcObjective `constraint`.
 
-    :param product: IfcObjective constraint.
+    :param constraint: IfcObjective constraint.
     :return: List of nested constraints.
     """
 
