@@ -223,6 +223,18 @@ class Pset(bonsai.core.tool.Pset):
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             pset_props = pset.Properties
 
+        # If this Pset's owning element is classified against a bSDD class that defines
+        # this Pset, recognise properties matching bSDD property codes as picklists,
+        # even though the Pset wasn't necessarily created through the bSDD add-property UI.
+        bsdd_allowed_values: dict[str, list[str]] = {}
+        if pset.is_a("IfcPropertySet"):
+            elements = ifcopenshell.util.element.get_elements_by_pset(pset)
+            if elements:
+                try:
+                    bsdd_allowed_values = tool.Bsdd.get_bsdd_pset_property_values(next(iter(elements)), pset.Name)
+                except Exception:
+                    pass
+
         prop_templates: dict[str, ifcopenshell.entity_instance] = {}
         if pset_template:
             prop_templates = {prop.Name: prop for prop in pset_template.HasPropertyTemplates}
@@ -285,6 +297,17 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.special_type = cls.get_special_type_for_prop(prop)
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
                 process_prop_description(metadata)
+
+                if prop.is_a("IfcPropertySingleValue") and (possible_values := bsdd_allowed_values.get(prop.Name)):
+                    str_value = None if value is None else str(value)
+                    if str_value is not None and str_value not in possible_values:
+                        # Preserve a legacy/imported value that doesn't match the current
+                        # bSDD enumeration instead of silently dropping it.
+                        possible_values = [*possible_values, str_value]
+                    metadata.enum_items = json.dumps(possible_values)
+                    metadata.data_type = "enum"
+                    if str_value is not None:
+                        metadata.enum_value = str_value
 
     @classmethod
     def get_prop_template_primitive_type(cls, prop_template: ifcopenshell.entity_instance) -> str:
