@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
 import bpy
@@ -239,21 +240,43 @@ def get_storey_world_z(obj: bpy.types.Object) -> Union[float, None]:
     return matrix[2][3] * unit_scale
 
 
-def get_storey_relative_elevation(self: "BIMObjectGeometryProperties") -> float:
-    obj = self.id_data
+def get_storey_relative_elevation_value(obj: bpy.types.Object) -> Union[float, None]:
+    """Object origin's Z relative to its containing storey (meters), or None if none."""
     storey_z = get_storey_world_z(obj)
     if storey_z is None:
-        return 0.0
+        return None
     return obj.matrix_world.translation.z - storey_z
 
 
-def set_storey_relative_elevation(self: "BIMObjectGeometryProperties", value: float) -> None:
-    obj = self.id_data
+def get_storey_relative_elevation(self: "BIMObjectGeometryProperties") -> float:
+    value = get_storey_relative_elevation_value(self.id_data)
+    return 0.0 if value is None else value
+
+
+def format_rotation(radians: float) -> str:
+    """Angle string (degrees) for the panel's read-only rotation display.
+
+    Shared with the select-similar operator so on-screen values and matching stay in sync.
+    """
+    degrees = round(math.degrees(radians), 2) + 0.0  # + 0.0 normalizes -0.0 -> 0.0
+    return f"{degrees:.2f}°"
+
+
+def _apply_storey_relative_elevation(obj: bpy.types.Object, value: float) -> None:
     storey_z = get_storey_world_z(obj)
     if storey_z is None:
         return
     # Nudge the object's local Z by the difference between the desired and current world Z.
     obj.location.z += (storey_z + value) - obj.matrix_world.translation.z
+
+
+def set_storey_relative_elevation(self: "BIMObjectGeometryProperties", value: float) -> None:
+    # Apply to every selected IFC object, each relative to its own storey, so the field
+    # can bulk-set a common elevation. Objects without a containing storey are skipped.
+    objs = set(bpy.context.selected_objects)
+    objs.add(self.id_data)
+    for obj in objs:
+        _apply_storey_relative_elevation(obj, value)
 
 
 class BIMObjectGeometryProperties(PropertyGroup):

@@ -4284,3 +4284,72 @@ class CreateInstance(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.hotkey(hotkey="S_A")
 
         return {"FINISHED"}
+
+
+class SelectSimilarPlacementValue(bpy.types.Operator):
+    bl_idname = "bim.select_similar_placement_value"
+    bl_label = "Select Objects Sharing This Value"
+    bl_description = (
+        "Select all objects whose placement value matches the active object.\n\n"
+        "Shift+Click to add to the current selection"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    # "X"/"Y"/"Z" (location), "RX"/"RY"/"RZ" (rotation) or "ELEVATION" (from storey).
+    mode: bpy.props.StringProperty(name="Mode", default="ELEVATION", options={"SKIP_SAVE"})
+    extend: bpy.props.BoolProperty(name="Extend Selection", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def invoke(self, context, event):
+        self.extend = event.shift
+        return self.execute(context)
+
+    def execute(self, context):
+        from bonsai.bim.module.geometry.prop import format_rotation, get_storey_relative_elevation_value
+
+        is_rotation = self.mode.startswith("R")
+
+        def value_of(obj: bpy.types.Object) -> Union[float, None]:
+            if not tool.Ifc.get_entity(obj):
+                return None
+            if self.mode == "ELEVATION":
+                return get_storey_relative_elevation_value(obj)
+            index = "XYZ".find(self.mode[-1])
+            if index == -1:
+                return None
+            return obj.rotation_euler[index] if is_rotation else obj.location[index]
+
+        def label_of(value: float) -> str:
+            # Match on the displayed value so selection is what-you-see-is-what-you-get.
+            return format_rotation(value) if is_rotation else tool.Unit.format_distance(value)
+
+        active = context.active_object
+        target = value_of(active)
+        if target is None:
+            self.report({"INFO"}, "Active object has no value for this axis.")
+            return {"CANCELLED"}
+
+        target_label = label_of(target)
+
+        if not self.extend:
+            for obj in list(context.selected_objects):
+                obj.select_set(False)
+
+        count = 0
+        for obj in context.view_layer.objects:
+            value = value_of(obj)
+            if value is None or label_of(value) != target_label:
+                continue
+            try:
+                obj.select_set(True)
+            except RuntimeError:
+                continue  # Not selectable (hidden/excluded collection).
+            count += 1
+
+        active.select_set(True)
+        context.view_layer.objects.active = active
+        self.report({"INFO"}, f"Selected {count} object(s) sharing {target_label}.")
+        return {"FINISHED"}
