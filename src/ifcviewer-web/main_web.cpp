@@ -30,6 +30,7 @@
 
 #include "ViewportCore.h"
 #include "WebViewportHost.h"
+#include "WebFederation.h"
 #include "Log.h"
 
 #include <emscripten/emscripten.h>
@@ -57,6 +58,9 @@ enum class NavKind { None, Orbit, Pan, Select };
 struct AppState {
     WebViewportHost host{ kCanvasSelector };
     ViewportCore    core{ &host };
+    // Federation concepts (unit, false origin, per-model transforms) that the
+    // host page drives via the ifcv_federation_* exports below.
+    WebFederation   federation{ core };
     int             last_w = 0;
     int             last_h = 0;
     // Set true by the init callback once the device + pipelines are up.
@@ -545,7 +549,23 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
 // completion callback. Call clear_scene_c first to replace instead of append.
 extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_source_c(int source_id) {
     if (!g_app || !g_app->ready) return;
-    g_app->core.loadSidecarMetadataWeb(source_id, "source");
+    // Label the model with whatever name the host page set for this source, so
+    // logs identify it rather than saying "source" five times over.
+    std::string label = g_app->federation.modelName(source_id);
+    if (label.empty()) label = "source " + std::to_string(source_id);
+
+    g_app->core.loadSidecarMetadataWeb(source_id, std::move(label),
+        [source_id](std::uint32_t session_model_id) {
+            if (!g_app) return;
+            // Binds source -> session model, applies any transform staged
+            // before the load finished, and guesses the false origin off the
+            // first model. Only then tell JS, so a handler that reacts sees a
+            // fully placed model.
+            g_app->federation.onModelLoaded(source_id, session_model_id);
+            EM_ASM({
+                if (Module.__ifcvOnModelLoaded) Module.__ifcvOnModelLoaded($0, $1);
+            }, source_id, int(session_model_id));
+        });
 }
 
 // Drop all loaded models (used by the host page (web/ifcviewer.js) to replace the embedded sample /
@@ -553,6 +573,9 @@ extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_source_c(int source_id) {
 extern "C" EMSCRIPTEN_KEEPALIVE void clear_scene_c() {
     if (!g_app || !g_app->ready) return;
     g_app->core.resetScene();
+    // Source ids are re-minted from zero by the host page's next registration
+    // pass, so stale per-source transforms would land on the wrong models.
+    g_app->federation.clear();
 }
 
 // Viewport-navigation entry points for the the host page (web/ifcviewer.js) toolbar (buttons that
@@ -690,6 +713,95 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_color_c(const std::uint32_t* ids, 
 }
 extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_clear_colors_c() {
     if (g_app && g_app->ready) g_app->core.clearObjectColors();
+}
+
+// ---- Federation ---------------------------------------------------------
+//
+// The concepts an .ifcfed carries, minus the file format: a federation unit, a
+// false origin, and a per-model transform + display name. A host page that
+// wants to read .ifcfed JSON (or a cloud manifest) parses it in JS and drives
+// these. Models are addressed by the JS source id — the value registered
+// before loading — so a transform can be set before the model has streamed.
+//
+// Angles are degrees, xyz/b/pivot are in the federation unit and `a` is in the
+// model's project or map unit depending on a_frame, matching the desktop
+// authoring model exactly (see FederationMath.h).
+
+// Federation unit, e.g. ("METRE","") or ("foot",""), or ("METRE","MILLI").
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_federation_unit_c(const char* name,
+                                                                const char* prefix) {
+    if (!g_app || !name) return;
+    FederationConfig cfg;
+    cfg.unit_name   = name;
+    cfg.unit_prefix = prefix ? prefix : "";
+    g_app->federation.setConfig(cfg);
+}
+
+// Nominate xyz (federation unit) as the origin, with an optional grid-north
+// heading. Setting this suppresses the automatic first-model guess.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_false_origin_c(double x, double y, double z,
+                                                             double rz_deg) {
+    if (!g_app) return;
+    FederatedFalseOrigin origin;
+    origin.xyz    = Eigen::Vector3d(x, y, z);
+    origin.rz_deg = rz_deg;
+    g_app->federation.setFalseOrigin(origin);
+}
+
+// Reads back the active origin — including one the guess produced — as
+// [x, y, z, rz_deg, explicit]. `explicit` is 1 when a host set it.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_get_false_origin_c(double* out) {
+    if (!g_app || !out) return;
+    const FederatedFalseOrigin& o = g_app->federation.falseOrigin();
+    out[0] = o.xyz.x(); out[1] = o.xyz.y(); out[2] = o.xyz.z();
+    out[3] = o.rz_deg;
+    out[4] = g_app->federation.falseOriginIsExplicit() ? 1.0 : 0.0;
+}
+
+// "Rotate about pivot, then translate so point a lands on point b."
+// a_frame: 0 = ModelLocal (a is pre-CoordinateOperation, project units),
+//          1 = ModelGlobal (a is post-CoordinateOperation, map units).
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_model_transform_c(
+        int source_id, int a_frame,
+        double ax, double ay, double az,
+        double bx, double by, double bz,
+        double rx, double ry, double rz,
+        double px, double py, double pz) {
+    if (!g_app) return;
+    ModelTransformation xf;
+    xf.a_frame  = (a_frame == 0) ? AFrame::ModelLocal : AFrame::ModelGlobal;
+    xf.a        = Eigen::Vector3d(ax, ay, az);
+    xf.b        = Eigen::Vector3d(bx, by, bz);
+    xf.rxyz_deg = Eigen::Vector3d(rx, ry, rz);
+    xf.pivot    = Eigen::Vector3d(px, py, pz);
+    g_app->federation.setModelTransformation(source_id, xf);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_clear_model_transform_c(int source_id) {
+    if (g_app) g_app->federation.clearModelTransformation(source_id);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_model_name_c(int source_id, const char* name) {
+    if (g_app && name) g_app->federation.setModelName(source_id, name);
+}
+
+// The model's CoordinateOperation as baked into its sidecar, so a host can see
+// what georeferencing a model actually carries: out[0] is 1 when the model has
+// one, out[1..16] the 4x4 in metres (column-major), out[17] the project length
+// unit scale and out[18] the map unit scale. Returns 0 when the source has not
+// finished loading.
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_model_georef_c(int source_id, double* out) {
+    if (!g_app || !out) return 0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    if (session_model_id == 0) return 0;
+    ModelGeoref georef;
+    if (!g_app->core.modelGeoref(session_model_id, georef)) return 0;
+    out[0] = georef.has_coordinate_operation ? 1.0 : 0.0;
+    const Eigen::Matrix4d& m = georef.coordinate_operation_meters;
+    for (int i = 0; i < 16; ++i) out[1 + i] = m.data()[i];
+    out[17] = georef.units.project_length_to_meters;
+    out[18] = georef.units.map_unit_to_meters;
+    return 1;
 }
 
 // Every object in the scene, as JSON. Asynchronous: the element tables are
@@ -832,7 +944,12 @@ int main(int /*argc*/, char** /*argv*/) {
         // synchronous MEMFS read; user-picked files go through the
         // Blob.slice byte-range path (load_sidecar_from_blob_c) so large
         // sidecars never enter the wasm heap.
-        if (!g_app->core.loadSidecarFromPath("/sample.ifcview")) {
+        if (const std::uint32_t sample_id = g_app->core.loadSidecarFromPath("/sample.ifcview")) {
+            // Bypasses the source registry, so tell the federation directly —
+            // otherwise the first-model false-origin guess never runs for a
+            // page that only ever shows the sample.
+            g_app->federation.onModelLoadedWithoutSource(sample_id);
+        } else {
             Log::warn() << "ifcviewer-web: sample sidecar load failed";
         }
 

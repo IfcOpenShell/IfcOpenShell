@@ -82,6 +82,7 @@
 
     const selectListeners = [];
     const selectionListeners = [];
+    const modelLoadedListeners = [];
     let api = null;   // built below; the RAF loop only reads it after that
     let live = false;
     let resolveReady;
@@ -225,6 +226,21 @@
       });
       try {
         document.dispatchEvent(new CustomEvent('ifcviewer:selectionchange', { detail: ids }));
+      } catch (_) { /* older browsers */ }
+    };
+
+    // The wasm calls this once a model is fully in the scene, with the source
+    // id it was loaded from and the session model id the core assigned it. By
+    // the time it fires the federation layer has already applied any staged
+    // transform and (for the first model) the false-origin guess, so a handler
+    // sees the model where it will actually sit rather than mid-placement.
+    Module.__ifcvOnModelLoaded = function (sourceId, sessionModelId) {
+      const detail = { sourceId: sourceId | 0, sessionModelId: sessionModelId >>> 0 };
+      modelLoadedListeners.forEach(function (cb) {
+        try { cb(detail); } catch (e) { console.error(e); }
+      });
+      try {
+        document.dispatchEvent(new CustomEvent('ifcviewer:modelloaded', { detail: detail }));
       } catch (_) { /* older browsers */ }
     };
 
@@ -506,13 +522,125 @@
 
       // Add a model to the scene. `replace: true` drops the current scene first;
       // otherwise it appends (a lightweight federation of streamed models).
+      // Returns the source id: the federation handle for this model. It is
+      // valid immediately, before the model has streamed, so a transform or
+      // name can be set against it right away — see setModelTransform.
       addFile: async function (file, o) {
         if (o && o.replace) this.clearScene();
-        Module._load_sidecar_from_source_c(registerFile(file));
+        const sid = registerFile(file);
+        if (o && o.name) this.setModelName(sid, o.name);
+        Module._load_sidecar_from_source_c(sid);
+        return sid;
       },
       addUrl: async function (url, o) {
         if (o && o.replace) this.clearScene();
-        Module._load_sidecar_from_source_c(await registerUrl(url));
+        const sid = await registerUrl(url);
+        if (o && o.name) this.setModelName(sid, o.name);
+        Module._load_sidecar_from_source_c(sid);
+        return sid;
+      },
+
+      // ---- Federation ------------------------------------------------------
+      //
+      // The concepts an .ifcfed file carries, without the file format: a
+      // federation unit, a false origin, and a per-model transform. Parse
+      // .ifcfed (or any manifest) in your own code and drive these.
+      //
+      // Models resolve to global coordinates by default: each one's
+      // IfcCoordinateOperation is baked into its sidecar and applied on load,
+      // so models with different map conversions line up. The first model also
+      // sets a false origin automatically, which keeps the scene near the
+      // origin — necessary because per-instance transforms are float32 and
+      // surveyor coordinates would otherwise quantise to ~0.5 m. Call
+      // setFalseOrigin yourself to override; that suppresses the guess.
+
+      onModelLoaded: function (cb) {
+        modelLoadedListeners.push(cb);
+        return function () {
+          const i = modelLoadedListeners.indexOf(cb);
+          if (i >= 0) modelLoadedListeners.splice(i, 1);
+        };
+      },
+
+      // Federation unit: an IfcSIUnit name with optional SI prefix
+      // ({name:'METRE', prefix:'MILLI'}) or a conversion-based unit
+      // ({name:'foot'}). This is the value space for the false origin and for
+      // a transform's b/pivot.
+      setFederationUnit: function (u) {
+        u = u || {};
+        Module.ccall('ifcv_set_federation_unit_c', null, ['string', 'string'],
+                     [u.name || 'METRE', u.prefix || '']);
+      },
+
+      // Nominate a point as the scene origin, with an optional grid-north
+      // heading in degrees. Setting this turns off the automatic guess.
+      setFalseOrigin: function (o) {
+        o = o || {};
+        const xyz = o.xyz || [0, 0, 0];
+        Module._ifcv_set_false_origin_c(xyz[0], xyz[1], xyz[2], o.rzDeg || 0);
+      },
+
+      // The active origin, including one the automatic guess produced.
+      // `explicit` is true when it was set rather than guessed.
+      getFalseOrigin: function () {
+        const ptr = Module._malloc(5 * 8);
+        try {
+          Module._ifcv_get_false_origin_c(ptr);
+          const d = Module.HEAPF64.subarray(ptr >>> 3, (ptr >>> 3) + 5);
+          return { xyz: [d[0], d[1], d[2]], rzDeg: d[3], explicit: d[4] !== 0 };
+        } finally {
+          Module._free(ptr);
+        }
+      },
+
+      // Place a model: rotate it about `pivot`, then translate so that point
+      // `a` lands on point `b`.
+      //
+      // `aFrame` picks the frame `a` is expressed in: 'global' (default) means
+      // post-CoordinateOperation, in the model's map unit — i.e. real-world
+      // coordinates. 'local' means pre-CoordinateOperation, in the model's own
+      // project unit. b, pivot and the origin are in the federation unit;
+      // rotation is degrees, intrinsic XYZ.
+      //
+      // Safe to call before the model has finished streaming; it is applied
+      // when the load completes, so the model never visibly jumps.
+      setModelTransform: function (sourceId, xf) {
+        xf = xf || {};
+        const a = xf.a || [0, 0, 0], b = xf.b || [0, 0, 0];
+        const r = xf.rotationDeg || [0, 0, 0], p = xf.pivot || [0, 0, 0];
+        Module._ifcv_set_model_transform_c(
+          sourceId | 0, xf.aFrame === 'local' ? 0 : 1,
+          a[0], a[1], a[2], b[0], b[1], b[2],
+          r[0], r[1], r[2], p[0], p[1], p[2]);
+      },
+
+      clearModelTransform: function (sourceId) {
+        Module._ifcv_clear_model_transform_c(sourceId | 0);
+      },
+
+      setModelName: function (sourceId, name) {
+        Module.ccall('ifcv_set_model_name_c', null, ['number', 'string'],
+                     [sourceId | 0, String(name)]);
+      },
+
+      // The georeferencing a model actually carries, read back from its
+      // sidecar: {hasCoordinateOperation, matrix (16, column-major, metres),
+      // projectLengthToMeters, mapUnitToMeters}. Null until the model has
+      // finished loading.
+      getModelGeoref: function (sourceId) {
+        const ptr = Module._malloc(19 * 8);
+        try {
+          if (!Module._ifcv_get_model_georef_c(sourceId | 0, ptr)) return null;
+          const d = Module.HEAPF64.subarray(ptr >>> 3, (ptr >>> 3) + 19);
+          return {
+            hasCoordinateOperation: d[0] !== 0,
+            matrix: Array.from(d.subarray(1, 17)),
+            projectLengthToMeters: d[17],
+            mapUnitToMeters: d[18],
+          };
+        } finally {
+          Module._free(ptr);
+        }
       },
     };
 
