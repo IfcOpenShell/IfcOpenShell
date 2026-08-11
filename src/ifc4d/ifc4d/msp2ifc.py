@@ -16,434 +16,616 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Microsoft Project XML in, an IFC4 work schedule out.
+
+    converter = MSP2Ifc()
+    converter.xml = "programme.xml"
+    converter.output = "programme.ifc"
+    converter.execute()
+
+The parse is MSP-specific; everything from the parsed programme onwards is
+ScheduleIfcGenerator, shared with the P6 and Powerproject importers, so a
+schedule reads the same whichever tool it came out of.
+
+Two things about MS Project need saying, because they are what the shape of
+this module is for.
+
+The first is that MS Project has no work breakdown structure as a thing of its
+own. It has one flat task list and an OutlineLevel column, and a task with
+anything indented under it is a summary — its dates and duration are rolled up
+from its children rather than planned. Those become IfcTasks without an
+IfcTaskTime, the same as a P6 WBS node, and the leaves below them become the
+activities. That is what makes "has this task an IfcTaskTime" a usable test for
+"is this real work" in a file this importer wrote.
+
+The second is that summaries and leaves are interleaved. A P6 WBS node holds
+its child nodes and its activities in separate collections, so their relative
+order is not a question anyone can ask; in MS Project a planner can put a
+summary between two ordinary tasks and expects it to stay there. So the tree is
+walked here in the order the export lists it, rather than through the
+generator's create_tasks, which sorts nodes ahead of activities.
+"""
+
+from __future__ import annotations
+
 import datetime
 import xml.etree.ElementTree as ET
-from datetime import timedelta
 
-import ifcopenshell
-import ifcopenshell.api.control
 import ifcopenshell.api.pset
-import ifcopenshell.api.root
 import ifcopenshell.api.sequence
+import ifcopenshell.guid
 import ifcopenshell.util.date
+
+from .common import ScheduleIfcGenerator
+
+# MS Project counts weekdays from Sunday. IFC counts from Monday, but the
+# generator takes the day by name, so the names are all that is needed here.
+DAY_TYPES = {
+    "1": "Sunday",
+    "2": "Monday",
+    "3": "Tuesday",
+    "4": "Wednesday",
+    "5": "Thursday",
+    "6": "Friday",
+    "7": "Saturday",
+}
+
+# https://learn.microsoft.com/en-us/office-project/xml-data-interchange/type-element-predecessorlink
+SEQUENCE_TYPES = {
+    "0": "FINISH_FINISH",
+    "1": "FINISH_START",
+    "2": "START_FINISH",
+    "3": "START_START",
+}
+
+# A lag is normally a length of time, expressed in tenths of a minute whatever
+# unit the LagFormat says it is displayed in. These two formats are the
+# exception: the lag is a percentage of the predecessor's duration, which is
+# not a duration and cannot be converted into one without the predecessor.
+# https://learn.microsoft.com/en-us/office-project/xml-data-interchange/lagformat-element-predecessorlink
+PERCENT_LAG_FORMATS = {"19", "20"}
+
+TENTHS_OF_A_MINUTE_PER_HOUR = 600
+
+
+class MSPIfcGenerator(ScheduleIfcGenerator):
+    """ScheduleIfcGenerator, with MS Project's flat outline in place of a WBS."""
+
+    udf_pset_name = "MSP_ExtendedAttribute"
+
+    def __init__(self, file, output, settings):
+        super().__init__(file, output, settings)
+        # uid -> the uids indented directly under it, in the order the export
+        # lists them, summaries and leaves together.
+        self.children = settings["children"]
+        self.roots = settings["roots"]
+        self.default_hours_per_day = settings["hours_per_day"]
+
+    def create_tasks(self, work_schedule):
+        for uid in self.roots:
+            self.create_node(uid, None, work_schedule)
+
+    def create_node(self, uid, parent, work_schedule):
+        """One outline row, and everything indented under it."""
+        if uid not in self.wbs:
+            self.create_task_from_activity(self.activities[uid], parent, work_schedule)
+            return
+
+        wbs = self.wbs[uid]
+        wbs["ifc"] = ifcopenshell.api.sequence.add_task(
+            self.file,
+            work_schedule=None if parent else work_schedule,
+            parent_task=parent["ifc"] if parent else None,
+        )
+        ifcopenshell.api.sequence.edit_task(
+            self.file,
+            task=wbs["ifc"],
+            # MS Project's OutlineNumber is already the full dotted path, so
+            # unlike P6's WBS Code it needs no assembling from its ancestors.
+            attributes={"Name": wbs["Name"], "Identification": str(wbs["Code"])},
+        )
+        # A summary task's dates are a roll-up and are dropped, but its custom
+        # fields are not — a planner fills those in on a summary row as readily
+        # as on a leaf, and nothing else in the file carries them.
+        self.create_udf_pset(wbs)
+        for child in self.children.get(uid, []):
+            self.create_node(child, wbs, None)
+
+    def create_task_from_activity(self, activity, wbs, work_schedule):
+        super().create_task_from_activity(activity, wbs, work_schedule)
+        columns = activity.get("OptionalColumns")
+        if columns:
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=activity["ifc"], name="Pset_MSP_Task")
+            ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties=columns)
+
+    def create_rel_sequences(self):
+        """The links, including any that hang off a summary task.
+
+        The generator's own resolves both ends against the activities, which
+        is safe in P6 where a WBS node cannot be one. MS Project lets a planner
+        link a summary, and IFC is content either way — IfcRelSequence relates
+        two IfcProcesses and does not care whether either has a time.
+        """
+        for relationship in self.relationships.values():
+            predecessor = self.task_for(relationship["PredecessorActivity"])
+            successor = self.task_for(relationship["SuccessorActivity"])
+            if predecessor is None or successor is None:
+                continue
+
+            sequence_type = relationship["Type"]
+            rel_sequence = next(
+                (
+                    rel
+                    for rel in successor.IsSuccessorFrom or []
+                    if rel.RelatingProcess == predecessor and rel.SequenceType == sequence_type
+                ),
+                None,
+            )
+            if rel_sequence is None:
+                rel_sequence = self.file.create_entity(
+                    "IfcRelSequence",
+                    GlobalId=ifcopenshell.guid.new(),
+                    RelatingProcess=predecessor,
+                    RelatedProcess=successor,
+                    SequenceType=sequence_type,
+                )
+            if relationship["Lag"]:
+                ifcopenshell.api.sequence.assign_lag_time(
+                    self.file,
+                    rel_sequence=rel_sequence,
+                    lag_value=datetime.timedelta(days=relationship["Lag"] / self.hours_per_day(predecessor)),
+                    duration_type="WORKTIME",
+                )
+
+    def task_for(self, uid):
+        if uid in self.activities:
+            return self.activities[uid]["ifc"]
+        if uid in self.wbs:
+            return self.wbs[uid]["ifc"]
+        return None
+
+    def hours_per_day(self, task):
+        """The working day a lag against this task is counted in."""
+        for rel in task.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkCalendar"):
+                calendar = self.calendars.get(rel.RelatingControl.Identification)
+                if calendar and calendar["HoursPerDay"]:
+                    return float(calendar["HoursPerDay"])
+        return float(self.default_hours_per_day)
 
 
 class MSP2Ifc:
     def __init__(self, optionalColumns: list[str] = []):
         self.xml = None
         self.file = None
+        self.output = None
         self.ns = None
         self.work_plan = None
         self.project = {}
         self.calendars = {}
-        self.tasks = {}
-        self.optionalColumns = optionalColumns
+        self.wbs = {}
+        self.activities = {}
+        self.root_activities = []
+        self.children = {}
+        self.roots = []
+        self.relationships = {}
         self.resources = {}
+        self.extended_attributes = {}
+        self.hours_per_day = 8.0
+        # Extra Task elements to copy onto a Pset_MSP_Task, by tag name. "all"
+        # as the only entry takes every tag the first task carries.
+        self.optionalColumns = optionalColumns
         self.RESOURCE_TYPES_MAPPING = {"1": "LABOR", "0": "MATERIAL", "2": None}
 
     def execute(self):
         self.parse_xml()
-        self.create_ifc()
+        settings = {
+            "work_plan": self.work_plan,
+            "project": self.project,
+            "calendars": self.calendars,
+            "wbs": self.wbs,
+            "root_activities": self.root_activities,
+            "activities": self.activities,
+            "relationships": self.relationships,
+            "resources": self.resources,
+            "children": self.children,
+            "roots": self.roots,
+            "hours_per_day": self.hours_per_day,
+        }
+        MSPIfcGenerator(self.file, self.output, settings).create_ifc()
+
+    # -- parsing ------------------------------------------------------------
 
     def parse_xml(self):
         tree = ET.parse(self.xml)
         project = tree.getroot()
         self.ns = {"pr": project.tag[1:].partition("}")[0]}
-        self.project["Name"] = project.findtext("pr:Name", namespaces=self.ns) or "Unnamed"
-        self.project["CalendarUID"] = project.findtext("pr:CalendarUID", namespaces=self.ns) or None
-        self.project["MinutesPerDay"] = project.findtext("pr:MinutesPerDay", namespaces=self.ns) or None
-        self.outline_level = 0
-        self.outline_parents = {}
-        self.parse_task_xml(project)
+
+        # <Name> is the file the export came from; <Title> is what the planner
+        # called the programme, and is the string a viewer puts in its header.
+        self.project["Name"] = (
+            self.text(project, "Title") or self.text(project, "Name") or "Unnamed"
+        )
+        self.project["CalendarUID"] = self.text(project, "CalendarUID")
+        minutes_per_day = self.text(project, "MinutesPerDay")
+        self.project["MinutesPerDay"] = minutes_per_day
+        if minutes_per_day:
+            self.hours_per_day = int(minutes_per_day) / 60
+
         self.parse_calendar_xml(project)
-        # TODO Doesn't do anything right now
-        # self.parse_resources_xml(project)
+        self.parse_extended_attribute_types(project)
+        self.parse_task_xml(project)
+        self.parse_resources_xml(project)
 
-    def parse_relationship_xml(self, task):
-        relationships = {}
-        id = 0
-        if task.findall("pr:PredecessorLink", self.ns):
-            for relationship in task.findall("pr:PredecessorLink", self.ns):
-                relationships[id] = {
-                    "PredecessorTask": relationship.find("pr:PredecessorUID", self.ns).text,
-                    "Type": relationship.find("pr:Type", self.ns).text,
-                }
-                id += 1
-        return relationships
+    def text(self, element, tag):
+        if element is None:
+            return None
+        return element.findtext(f"pr:{tag}", namespaces=self.ns)
 
-    def parse_task_xml(self, project):
-        if self.project["MinutesPerDay"]:
-            hours_per_day = int(self.project["MinutesPerDay"]) / 60
-        else:
-            hours_per_day = 8
+    def parse_date(self, element, tag):
+        """A date, or None where MS Project means "not set".
 
-        for task in project.find("pr:Tasks", self.ns):
-            task_id = task.find("pr:UID", self.ns).text
-            task_index_level = task.find("pr:OutlineLevel", self.ns).text
-            wbs_id = task.find("pr:WBS", self.ns).text
-            relationships = self.parse_relationship_xml(task)
-            outline_level = int(task.find("pr:OutlineLevel", self.ns).text)
+        Unset dates are usually omitted, but an export may carry "NA" or the
+        1970-ish sentinel instead, and neither is a date anyone wants written
+        into a schedule.
+        """
+        value = self.text(element, tag)
+        if not value or value == "NA":
+            return None
+        try:
+            return datetime.datetime.fromisoformat(value)
+        except ValueError:
+            return None
 
-            if outline_level != 0:
-                parent_task = self.tasks[self.outline_parents[outline_level - 1]]
-                parent_task["subtasks"].append(task_id)
-            self.outline_level = outline_level
-            self.outline_parents[outline_level] = task_id
+    def parse_hours(self, element, tag):
+        """A span MS Project states in tenths of a minute, as hours."""
+        value = self.text(element, tag)
+        if value is None or value == "":
+            return None
+        try:
+            return float(value) / TENTHS_OF_A_MINUTE_PER_HOUR
+        except ValueError:
+            return None
 
-            # Microsoft Project stores durations in terms of hours.
-            duration = ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text)
-            hours = duration.days * 24
-            hours += duration.seconds / 60 / 60
-            # Let's convert it into days, where days is the appropriate hours per day
-            duration = timedelta(days=hours / float(hours_per_day))
+    def parse_duration_hours(self, element, tag):
+        """A Duration element, as a number of hours.
 
-            self.tasks[task_id] = {
-                "Name": task.find("pr:Name", self.ns).text,
-                "OutlineNumber": task.find("pr:OutlineNumber", self.ns).text,
-                "OutlineLevel": outline_level,
-                "Start": datetime.datetime.fromisoformat(task.find("pr:Start", self.ns).text),
-                "Finish": datetime.datetime.fromisoformat(task.find("pr:Finish", self.ns).text),
-                "Duration": duration,
-                "Priority": task.find("pr:Priority", self.ns).text,
-                "CalendarUID": task.find("pr:CalendarUID", self.ns).text,
-                "PredecessorTasks": relationships if relationships else None,
-                "subtasks": [],
-                "ifc": None,
-            }
+        Written as an ISO 8601 duration whose largest unit is the hour, so
+        PT1976H0M0S — 247 eight hour days — rather than anything with days in
+        it. isodate normalises that into days and seconds regardless.
+        """
+        value = self.text(element, tag)
+        if not value:
+            return None
+        try:
+            duration = ifcopenshell.util.date.ifc2datetime(value)
+        except Exception:
+            return None
+        return duration.days * 24 + duration.seconds / 3600
 
-            # retrieve optional columns
-            # If first column = "all" then retrieve all columns
-            if len(self.optionalColumns) and self.optionalColumns[0] == "all":
-                self.optionalColumns = [child.tag.split("}")[1] for child in task]
+    def parse_extended_attribute_types(self, project):
+        """The custom column declarations, FieldID -> the name to file it under.
 
-            for column in self.optionalColumns:
-                if not self.tasks[task_id].get(column):
-                    self.tasks[task_id][column] = (
-                        task.find(f"pr:{column}", self.ns).text if task.find(f"pr:{column}", self.ns) else None
-                    )
+        A planner who renames Text1 to "Zone" gets an Alias; one who does not
+        leaves the export saying Text1, and Text1 is then the only name there
+        is to use.
+        """
+        declarations = project.find("pr:ExtendedAttributes", self.ns)
+        for declaration in declarations.findall("pr:ExtendedAttribute", self.ns) if declarations is not None else []:
+            field_id = self.text(declaration, "FieldID")
+            name = self.text(declaration, "Alias") or self.text(declaration, "FieldName")
+            if field_id and name:
+                self.extended_attributes[field_id] = name
+
+    def parse_extended_attributes(self, task):
+        """This task's custom field values, as {name: (ifc_type, value)}.
+
+        All of them as IfcLabel. The declaration names the field but not its
+        type — the type is encoded in which of MS Project's fixed slots it
+        occupies, Text1 or Number1 or Date1 — and these are short tags either
+        way, so reading them as anything else buys nothing and can only fail.
+
+        The generator files these under the key it calls UDFs, which is P6's
+        word for its own version of the idea. MS Project has no user-defined
+        fields: it has thirty text slots, twenty number slots and so on, which
+        a planner may rename. Only the shared slot is borrowed — the property
+        set they land in is named for what they are in the file they came from.
+        """
+        values = {}
+        for attribute in task.findall("pr:ExtendedAttribute", self.ns):
+            name = self.extended_attributes.get(self.text(attribute, "FieldID"))
+            value = self.text(attribute, "Value")
+            if name and value:
+                values[name] = ("IfcLabel", value)
+        return values
 
     def parse_calendar_xml(self, project):
-        def parse_working_times(day):
-            working_times = []
-            if day.find("pr:WorkingTimes", self.ns):
-                for working_time in day.find("pr:WorkingTimes", self.ns).findall("pr:WorkingTime", self.ns):
-                    if working_time.find("pr:FromTime", self.ns) is None:
-                        continue
-                    working_times.append(
-                        {
-                            "Start": datetime.time.fromisoformat(working_time.find("pr:FromTime", self.ns).text),
-                            "Finish": datetime.time.fromisoformat(working_time.find("pr:ToTime", self.ns).text),
-                        }
-                    )
-            return working_times
-
-        def parse_exception(exception):
-            work_times = parse_working_times(exception)
-            time_period = exception.find("pr:TimePeriod", self.ns)
-            data = {
-                "Name": (
-                    exception.find("pr:Name", self.ns).text if exception.find("pr:Name", self.ns) is not None else None
-                ),
-                "FromDate": (
-                    datetime.datetime.fromisoformat(time_period.find("pr:FromDate", self.ns).text)
-                    if time_period is not None
-                    else None
-                ),
-                "ToDate": (
-                    datetime.datetime.fromisoformat(time_period.find("pr:ToDate", self.ns).text)
-                    if time_period is not None
-                    else None
-                ),
-                "Occurrences": (
-                    int(exception.find("pr:Occurrences", self.ns).text)
-                    if exception.find("pr:Occurrences", self.ns) is not None
-                    else None
-                ),
-                "Month": (
-                    exception.find("pr:Month", self.ns).text
-                    if exception.find("pr:Month", self.ns) is not None
-                    else None
-                ),
-                "MonthDay": (
-                    exception.find("pr:MonthDay", self.ns).text
-                    if exception.find("pr:MonthDay", self.ns) is not None
-                    else None
-                ),
-                "Type": (
-                    exception.find("pr:Type", self.ns).text if exception.find("pr:Type", self.ns) is not None else None
-                ),
-                "WorkingTimes": work_times,
-                "ifc": None,
-            }
-            return data
-
-        for calendar in project.find("pr:Calendars", self.ns).findall("pr:Calendar", self.ns):
-            calendar_id = calendar.find("pr:UID", self.ns).text
-            week_days = []
-            exceptions = []
-            week_days_element = calendar.find("pr:WeekDays", self.ns)
-            week_day_elements = week_days_element.findall("pr:WeekDay", self.ns) if week_days_element else []
-            for week_day in week_day_elements:
-                if week_day.find("pr:WorkingTimes", self.ns):
-                    if week_day.find("pr:DayType", self.ns).text == "0":
-                        data = parse_exception(week_day)
-                        data["Type"] = "2"
-                        exceptions.append(data)
-                    else:
-                        week_days.append(
-                            {
-                                "DayType": week_day.find("pr:DayType", self.ns).text,
-                                "WorkingTimes": parse_working_times(week_day),
-                                "ifc": None,
-                            }
-                        )
-            exceptions_element = calendar.find("pr:Exceptions", self.ns)
-            for exception in exceptions_element.findall("pr:Exception", self.ns) if exceptions_element else []:
-                data = parse_exception(exception)
-                exceptions.append(data)
-
+        calendars = project.find("pr:Calendars", self.ns)
+        for calendar in calendars.findall("pr:Calendar", self.ns) if calendars is not None else []:
+            calendar_id = self.text(calendar, "UID")
             self.calendars[calendar_id] = {
-                "Name": calendar.find("pr:Name", self.ns).text,
-                "StandardWorkWeek": week_days,
-                "HolidayOrExceptions": exceptions,
+                "Name": self.text(calendar, "Name"),
+                "Type": "Base" if self.text(calendar, "IsBaseCalendar") == "1" else "Derived",
+                "HoursPerDay": self.hours_per_day,
+                "BaseCalendarUID": self.text(calendar, "BaseCalendarUID"),
+                "StandardWorkWeek": self.parse_working_week(calendar),
+                "HolidayOrExceptions": self.parse_exceptions(calendar),
+            }
+        self.inherit_base_calendars()
+
+    def parse_working_week(self, calendar):
+        week = []
+        week_days = calendar.find("pr:WeekDays", self.ns)
+        for week_day in week_days.findall("pr:WeekDay", self.ns) if week_days is not None else []:
+            day_of_week = DAY_TYPES.get(self.text(week_day, "DayType"))
+            # DayType 0 is not a day of the week at all, it is a date range
+            # exception filed in the same list. It is read with the exceptions.
+            if day_of_week is None:
+                continue
+            week.append(
+                {
+                    "DayOfWeek": day_of_week,
+                    "WorkTimes": self.parse_working_times(week_day),
+                    "ifc": None,
+                }
+            )
+        return week
+
+    def parse_working_times(self, element):
+        times = []
+        working_times = element.find("pr:WorkingTimes", self.ns)
+        for working_time in working_times.findall("pr:WorkingTime", self.ns) if working_times is not None else []:
+            start = self.text(working_time, "FromTime")
+            finish = self.text(working_time, "ToTime")
+            if not start or not finish:
+                continue
+            times.append(
+                {
+                    "Start": datetime.time.fromisoformat(start),
+                    "Finish": datetime.time.fromisoformat(finish),
+                }
+            )
+        return times
+
+    def parse_exceptions(self, calendar):
+        """Named days that do not follow the working week, keyed year > month.
+
+        MS Project states these twice in the same file: once as an <Exception>,
+        and once as a <WeekDay> of DayType 0 carrying the same period, which is
+        how the format did it before <Exceptions> existed. Reading both would
+        write every holiday into the calendar twice, so the older spelling is
+        read only where the newer one is absent.
+        """
+        exceptions = {}
+        exceptions_element = calendar.find("pr:Exceptions", self.ns)
+        elements = exceptions_element.findall("pr:Exception", self.ns) if exceptions_element is not None else []
+        if not elements:
+            week_days = calendar.find("pr:WeekDays", self.ns)
+            elements = [
+                week_day
+                for week_day in (week_days.findall("pr:WeekDay", self.ns) if week_days is not None else [])
+                if self.text(week_day, "DayType") == "0"
+            ]
+
+        for element in elements:
+            for day in self.exception_dates(element):
+                month = exceptions.setdefault(day.year, {}).setdefault(day.month, {})
+                month.setdefault("FullDay", [])
+                month.setdefault("WorkTime", [])
+                work_times = self.parse_working_times(element)
+                if work_times:
+                    month["WorkTime"].append({"Day": day.day, "WorkTimes": work_times, "ifc": None})
+                else:
+                    month["FullDay"].append(day.day)
+        return exceptions
+
+    def exception_dates(self, element):
+        """The dates one exception actually covers.
+
+        A one-off exception states the period it applies to and is simply that
+        run of days. A recurring one states the period it recurs *within* — a
+        public holiday declared yearly spans a decade — and picking the days
+        out of that needs MS Project's recurrence rules, which its own
+        documentation does not give. The two are told apart by Occurrences: a
+        recurrence has fewer of them than the span has days.
+
+        A recurring exception is skipped rather than guessed at. Guessing wrong
+        marks working days as holidays, and a calendar that is wrong in that
+        direction quietly moves every date computed from it.
+        """
+        period = element.find("pr:TimePeriod", self.ns)
+        start = self.parse_date(period, "FromDate")
+        finish = self.parse_date(period, "ToDate")
+        if start is None:
+            return []
+        if finish is None or finish < start:
+            finish = start
+        days = (finish.date() - start.date()).days + 1
+
+        occurrences = self.text(element, "Occurrences")
+        if occurrences and int(occurrences) < days:
+            print(
+                f"note: skipping recurring calendar exception "
+                f"{self.text(element, 'Name') or start.date()} — {occurrences} occurrences "
+                f"over {days} days, and the recurrence is not readable from the export"
+            )
+            return []
+        return [start.date() + datetime.timedelta(days=offset) for offset in range(days)]
+
+    def inherit_base_calendars(self):
+        """A calendar with no week of its own works its base calendar's week.
+
+        MS Project derives resource and task calendars from a base and stores
+        only the differences. An IfcWorkCalendar has no such notion, so what
+        was inherited is written out in full.
+        """
+        for calendar in self.calendars.values():
+            seen = set()
+            base = calendar
+            while not base["StandardWorkWeek"] and base["BaseCalendarUID"] not in seen:
+                seen.add(base["BaseCalendarUID"])
+                base = self.calendars.get(base["BaseCalendarUID"])
+                if base is None:
+                    break
+                calendar["StandardWorkWeek"] = [dict(day, ifc=None) for day in base["StandardWorkWeek"]]
+                if not calendar["HolidayOrExceptions"]:
+                    calendar["HolidayOrExceptions"] = base["HolidayOrExceptions"]
+
+    def parse_task_xml(self, project):
+        tasks = project.find("pr:Tasks", self.ns)
+        elements = [
+            task
+            for task in (tasks.findall("pr:Task", self.ns) if tasks is not None else [])
+            # A null task is a blank row a planner left in the grid. It has no
+            # name, no dates and no meaning outside MS Project's own display.
+            if self.text(task, "IsNull") != "1"
+        ]
+
+        # MS Project's tree is the OutlineLevel column and nothing else: a task
+        # belongs to the nearest row above it at a shallower level. Levels are
+        # normally 1-based, with 0 used only where the project summary task is
+        # exported, so the root is whatever level the file happens to start at
+        # rather than a number that can be assumed.
+        ancestors = []
+        parents = {}
+        for task in elements:
+            uid = self.text(task, "UID")
+            level = int(self.text(task, "OutlineLevel") or 0)
+            while ancestors and ancestors[-1][1] >= level:
+                ancestors.pop()
+            parent = ancestors[-1][0] if ancestors else None
+            parents[uid] = parent
+            self.children.setdefault(parent, []).append(uid)
+            ancestors.append((uid, level))
+        self.roots = self.children.pop(None, [])
+
+        for task in elements:
+            uid = self.text(task, "UID")
+            if self.children.get(uid):
+                self.add_wbs(task, uid, parents[uid])
+            else:
+                self.add_activity(task, uid, parents[uid])
+
+        self.parse_relationship_xml(elements)
+
+    def add_wbs(self, task, uid, parent):
+        """A summary task: a branch of the outline, with no work of its own.
+
+        Its dates are MS Project's roll-up of its children rather than anything
+        a planner entered, so no IfcTaskTime is written. A reader that wants
+        the span of a branch takes it from the leaves, which is where the
+        planning actually happened.
+        """
+        self.wbs[uid] = {
+            "Name": self.text(task, "Name") or "",
+            "Code": self.text(task, "OutlineNumber") or uid,
+            "ParentObjectId": parent,
+            "SequenceNumber": 0,
+            "UDFs": self.parse_extended_attributes(task),
+            "ifc": None,
+            "rel": None,
+            # Only the leaves directly under this node. The generator's own
+            # create_tasks reads this; MSPIfcGenerator walks self.children
+            # instead, so that summaries keep their place among them.
+            "activities": [child for child in self.children.get(uid, []) if not self.children.get(child)],
+        }
+
+    def add_activity(self, task, uid, parent):
+        start = self.parse_date(task, "Start")
+        finish = self.parse_date(task, "Finish")
+        percent_complete = self.text(task, "PercentComplete")
+        actual_start = self.parse_date(task, "ActualStart")
+        actual_finish = self.parse_date(task, "ActualFinish")
+
+        calendar_id = self.text(task, "CalendarUID")
+        # -1 is MS Project for "no calendar of its own".
+        if calendar_id in (None, "", "-1") or calendar_id not in self.calendars:
+            calendar_id = self.default_calendar_id()
+
+        if parent is None:
+            self.root_activities.append(uid)
+
+        self.activities[uid] = {
+            "Name": self.text(task, "Name") or "",
+            "Identification": self.text(task, "OutlineNumber") or uid,
+            "StartDate": start,
+            "FinishDate": finish,
+            "PlannedDuration": self.parse_duration_hours(task, "Duration"),
+            "Status": self.status(percent_complete, actual_start, actual_finish),
+            "CalendarObjectId": calendar_id,
+            "IsMilestone": self.text(task, "Milestone") == "1" or start == finish,
+            "UDFs": self.parse_extended_attributes(task),
+            "Codes": {},
+            "ActualStartDate": actual_start,
+            "ActualFinishDate": actual_finish,
+            "EarlyStartDate": self.parse_date(task, "EarlyStart"),
+            "EarlyFinishDate": self.parse_date(task, "EarlyFinish"),
+            "LateStartDate": self.parse_date(task, "LateStart"),
+            "LateFinishDate": self.parse_date(task, "LateFinish"),
+            "TotalFloat": self.parse_hours(task, "TotalSlack"),
+            "FreeFloat": self.parse_hours(task, "FreeSlack"),
+            # IfcTaskTime.Completion is a ratio; MS Project states a percentage.
+            "PercentComplete": float(percent_complete) / 100 if percent_complete else None,
+            "ifc": None,
+        }
+
+        if self.optionalColumns:
+            if self.optionalColumns[0] == "all":
+                self.optionalColumns = [child.tag.partition("}")[2] for child in task]
+            self.activities[uid]["OptionalColumns"] = {
+                column: self.text(task, column) for column in self.optionalColumns if self.text(task, column)
             }
 
-    def create_ifc(self):
-        if not self.file:
-            self.create_boilerplate_ifc()
-        if not self.work_plan:
-            self.work_plan = ifcopenshell.api.sequence.add_work_plan(self.file)
-        work_schedule = self.create_work_schedule()
-        self.create_calendars()
-        self.create_tasks(work_schedule)
-        self.create_rel_sequences()
+    def status(self, percent_complete, actual_start, actual_finish):
+        """P6's three words for how far along a task is.
 
-    def create_boilerplate_ifc(self):
-        self.file = ifcopenshell.file(schema="IFC4")
-        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
-        self.work_plan = self.file.create_entity("IfcWorkPlan")
+        MS Project has no status column — it has a percentage and, when the
+        export carries them, the actual dates. The same three words come out
+        either way, so a reader does not have to know which tool the schedule
+        was planned in.
+        """
+        percent = float(percent_complete) if percent_complete else 0
+        if actual_finish is not None or percent >= 100:
+            return "Completed"
+        if actual_start is not None or percent > 0:
+            return "In Progress"
+        return "Not Started"
 
-    def create_tasks(self, work_schedule):
-        for task_id in self.tasks:
-            task = self.tasks[task_id]
-            # Outline Level can be None or 0
-            if not task["OutlineLevel"]:
-                self.create_task(task, work_schedule=work_schedule)
+    def default_calendar_id(self):
+        if self.project["CalendarUID"] in self.calendars:
+            return self.project["CalendarUID"]
+        return next(iter(self.calendars), None)
 
-    def create_work_schedule(self):
-        return ifcopenshell.api.sequence.add_work_schedule(
-            self.file, name=self.project["Name"], work_plan=self.work_plan
-        )
-
-    def create_calendars(self):
-        def has_work_or_exceptions(calendar):
-            return calendar["StandardWorkWeek"] or calendar["HolidayOrExceptions"]
-
-        for calendar in self.calendars.values():
-            if not has_work_or_exceptions(calendar):
-                continue
-            calendar["ifc"] = ifcopenshell.api.sequence.add_work_calendar(self.file, name=calendar["Name"])
-            self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
-            self.process_exceptions(calendar["HolidayOrExceptions"], calendar["ifc"])
-
-    def create_task(self, task, work_schedule=None, parent_task=None):
-        task["ifc"] = ifcopenshell.api.sequence.add_task(
-            self.file,
-            work_schedule=work_schedule if work_schedule else None,
-            parent_task=parent_task["ifc"] if parent_task else None,
-        )
-
-        calendar = None
-        if task["CalendarUID"] != "-1":
-            calendar = self.calendars[task["CalendarUID"]]["ifc"]
-        elif not parent_task and self.project["CalendarUID"]:
-            calendar = self.calendars[self.project["CalendarUID"]]["ifc"]
-
-        if calendar:
-            ifcopenshell.api.control.assign_control(
-                self.file,
-                relating_control=calendar,
-                related_objects=[task["ifc"]],
-            )
-
-        ifcopenshell.api.sequence.edit_task(
-            self.file,
-            task=task["ifc"],
-            attributes={
-                "Name": task["Name"],
-                "Identification": task["OutlineNumber"],
-                "IsMilestone": task["Start"] == task["Finish"],
-            },
-        )
-        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task["ifc"])
-        ifcopenshell.api.sequence.edit_task_time(
-            self.file,
-            task_time=task_time,
-            attributes={
-                "ScheduleStart": task["Start"],
-                "ScheduleFinish": task["Finish"],
-                "DurationType": "WORKTIME" if task["Duration"] else None,
-                "ScheduleDuration": task["Duration"] if task["Duration"] else None,
-            },
-        )
-        for subtask_id in task["subtasks"]:
-            self.create_task(self.tasks[subtask_id], parent_task=task)
-
-        # create pset for optional columns
-        if len(self.optionalColumns):
-            pset = ifcopenshell.api.pset.add_pset(self.file, product=task["ifc"], name="Pset_MSP_Task")
-
-            ifcopenshell.api.pset.edit_pset(
-                self.file,
-                pset=pset,
-                properties={name: str(task[name]) for name in self.optionalColumns if task[name]},
-            )
-
-    def process_working_week(self, week, calendar):
-        day_map = {
-            "1": 7,  # Sunday
-            "2": 1,  # Monday
-            "3": 2,  # Tuesday
-            "4": 3,  # Wednesday
-            "5": 4,  # Thursday
-            "6": 5,  # Friday
-            "7": 6,  # Saturday
-            "0": 0,  # Exception
-        }
-        for day in week:
-            if day["ifc"]:
-                continue
-
-            day["ifc"] = ifcopenshell.api.sequence.add_work_time(
-                self.file, work_calendar=calendar, time_type="WorkingTimes"
-            )
-
-            weekday_component = [day_map[day["DayType"]]]
-            for day2 in week:
-                if day["DayType"] == day2["DayType"]:
+    def parse_relationship_xml(self, elements):
+        for task in elements:
+            successor = self.text(task, "UID")
+            for index, link in enumerate(task.findall("pr:PredecessorLink", self.ns)):
+                predecessor = self.text(link, "PredecessorUID")
+                if predecessor is None:
                     continue
-                if day["WorkingTimes"] == day2["WorkingTimes"]:
-                    weekday_component.append(day_map[day2["DayType"]])
-                    # Don't process the next day, as we can group it
-                    day2["ifc"] = day["ifc"]
+                self.relationships[f"{successor}-{index}"] = {
+                    "PredecessorActivity": predecessor,
+                    "SuccessorActivity": successor,
+                    "Type": SEQUENCE_TYPES.get(self.text(link, "Type"), "FINISH_START"),
+                    "Lag": self.parse_lag(link),
+                }
 
-            work_time_name = "Weekdays: {}".format(", ".join([str(c) for c in sorted(weekday_component)]))
-            ifcopenshell.api.sequence.edit_work_time(
-                self.file,
-                work_time=day["ifc"],
-                attributes={"Name": work_time_name},
-            )
-
-            recurrence = ifcopenshell.api.sequence.assign_recurrence_pattern(
-                self.file, parent=day["ifc"], recurrence_type="WEEKLY"
-            )
-            ifcopenshell.api.sequence.edit_recurrence_pattern(
-                self.file,
-                recurrence_pattern=recurrence,
-                attributes={"WeekdayComponent": weekday_component},
-            )
-            for work_time in day["WorkingTimes"]:
-                ifcopenshell.api.sequence.add_time_period(
-                    self.file,
-                    recurrence_pattern=recurrence,
-                    start_time=work_time["Start"],
-                    end_time=work_time["Finish"],
-                )
-
-    def create_rel_sequences(self):
-        self.sequence_type_map = {
-            "0": "FINISH_FINISH",
-            "1": "FINISH_START",
-            "2": "START_FINISH",
-            "3": "START_START",
-        }
-        for task in self.tasks.values():
-            if not task["PredecessorTasks"]:
-                continue
-            for predecessor in task["PredecessorTasks"].values():
-                rel_sequence = ifcopenshell.api.sequence.assign_sequence(
-                    self.file,
-                    related_process=task["ifc"],
-                    relating_process=self.tasks[predecessor["PredecessorTask"]]["ifc"],
-                )
-                if predecessor["Type"]:
-                    ifcopenshell.api.sequence.edit_sequence(
-                        self.file,
-                        rel_sequence=rel_sequence,
-                        attributes={"SequenceType": self.sequence_type_map[predecessor["Type"]]},
-                    )
+    def parse_lag(self, link):
+        if self.text(link, "LagFormat") in PERCENT_LAG_FORMATS:
+            return 0
+        return self.parse_hours(link, "LinkLag") or 0
 
     def parse_resources_xml(self, project):
-        resources_lst = project.find("pr:Resources", self.ns)
-        resources = resources_lst.findall("pr:Resource", self.ns)
-        for resource in resources:
-            name = resource.find("pr:Name", self.ns)
-            id = resource.find("pr:ID", self.ns).text
-            if name is not None:
-                name = name.text
-            else:
-                name = None
-            self.resources[id] = {
+        resources = project.find("pr:Resources", self.ns)
+        for resource in resources.findall("pr:Resource", self.ns) if resources is not None else []:
+            name = self.text(resource, "Name")
+            if not name:
+                continue
+            self.resources[self.text(resource, "UID")] = {
                 "Name": name,
-                "Code": resource.find("pr:UID", self.ns).text,
+                "Code": self.text(resource, "ID"),
                 "ParentObjectId": None,
-                "Type": self.RESOURCE_TYPES_MAPPING[resource.find("pr:Type", self.ns).text],
+                "Type": self.RESOURCE_TYPES_MAPPING.get(self.text(resource, "Type")),
                 "ifc": None,
                 "rel": None,
             }
-
-    def process_exceptions(self, exceptions, calendar):
-        for exception in exceptions or []:
-            self.process_exception(exception, calendar)
-
-    def process_exception(self, exception, calendar):
-        if exception["ifc"] or not exception["FromDate"]:
-            return
-        exception["ifc"] = ifcopenshell.api.sequence.add_work_time(
-            self.file, work_calendar=calendar, time_type="ExceptionTimes"
-        )
-        ifcopenshell.api.sequence.edit_work_time(
-            self.file,
-            work_time=exception["ifc"],
-            attributes={
-                "Name": exception["Name"],
-                "Start": ifcopenshell.util.date.datetime2ifc(exception["FromDate"], "IfcDate"),
-                "Finish": ifcopenshell.util.date.datetime2ifc(exception["ToDate"], "IfcDate"),
-            },
-        )
-        # BIG assumptions due to missing types enumeration in docs https://learn.microsoft.com/en-us/office-project/xml-data-interchange/exception-element?view=project-client-2016
-        recurrence_type = None
-        if exception["Type"] == "1":
-            recurrence_type = "DAILY"
-            attributes = {
-                "Occurrences": int(exception["Occurrences"]) if exception["Occurrences"] else None,
-            }
-        elif exception["Type"] == "2":
-            recurrence_type = "YEARLY_BY_DAY_OF_MONTH"
-            month_component = [int(exception["Month"]) + 1] if exception["Month"] else None
-            day_component = [int(exception["MonthDay"])] if exception["MonthDay"] else None
-            if month_component is None and (exception["FromDate"].date().day == exception["ToDate"].date().day):
-                month_component = [exception["FromDate"].date().month]
-                day_component = [exception["FromDate"].date().day]
-            attributes = {
-                "MonthComponent": month_component,
-                "DayComponent": day_component,
-                "Occurrences": int(exception["Occurrences"]) if exception["Occurrences"] else None,
-            }
-        else:
-            return
-        recurrence = ifcopenshell.api.sequence.assign_recurrence_pattern(
-            self.file,
-            parent=exception["ifc"],
-            recurrence_type=recurrence_type,
-        )
-        ifcopenshell.api.sequence.edit_recurrence_pattern(
-            self.file, recurrence_pattern=recurrence, attributes=attributes
-        )
-        for work_time in exception["WorkingTimes"] or []:
-            ifcopenshell.api.sequence.add_time_period(
-                self.file,
-                recurrence_pattern=recurrence,
-                start_time=work_time["Start"],
-                end_time=work_time["Finish"],
-            )

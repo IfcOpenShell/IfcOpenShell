@@ -77,6 +77,13 @@ class ScheduleIfcGenerator:
     file: Union[ifcopenshell.file, None]
     calendars: dict[int, Calendar]
 
+    # The property sets an activity's user-defined fields and codes land in.
+    # Named for P6 because that is where the shape came from; an importer for
+    # another tool overrides them rather than filing its own fields under a
+    # name that names the wrong tool.
+    udf_pset_name = "P6_UDF"
+    code_pset_name = "P6_ActivityCodes"
+
     def __init__(self, file: Union[ifcopenshell.file, None], output, settings):
         self.file = file
         self.work_plan = settings["work_plan"]
@@ -305,7 +312,11 @@ class ScheduleIfcGenerator:
                 "Name": activity["Name"],
                 "Identification": str(activity["Identification"]),
                 "Status": activity["Status"],
-                "IsMilestone": activity["StartDate"] == activity["FinishDate"],
+                # A zero-length activity is a milestone, which is all P6 gives
+                # us to go on. A source that says so outright — Microsoft
+                # Project has a Milestone flag — is believed instead, because a
+                # tool can mark a task a milestone without zeroing its duration.
+                "IsMilestone": activity.get("IsMilestone", activity["StartDate"] == activity["FinishDate"]),
                 # A P6 Level of Effort activity has no duration of its own: it
                 # stretches to span whatever it hangs off, and its dates are
                 # derived from its relationships rather than planned. IFC has no
@@ -386,7 +397,7 @@ class ScheduleIfcGenerator:
         udfs = activity.get("UDFs")
         if not udfs:
             return
-        pset = ifcopenshell.api.pset.add_pset(self.file, product=activity["ifc"], name="P6_UDF")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=activity["ifc"], name=self.udf_pset_name)
         ifcopenshell.api.pset.edit_pset(
             self.file,
             pset=pset,
@@ -399,7 +410,7 @@ class ScheduleIfcGenerator:
         codes = activity.get("Codes")
         if not codes:
             return
-        pset = ifcopenshell.api.pset.add_pset(self.file, product=activity["ifc"], name="P6_ActivityCodes")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=activity["ifc"], name=self.code_pset_name)
         ifcopenshell.api.pset.edit_pset(
             self.file,
             pset=pset,
