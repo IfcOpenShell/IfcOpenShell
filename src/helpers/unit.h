@@ -24,6 +24,7 @@
 #define UNIT_H
 
 #include "../ifcparse/express.h"
+#include "unit_convert.h"
 
 #include <optional>
 #include <string>
@@ -32,27 +33,6 @@
 namespace ifcopenshell {
 class file;
 }
-
-// SI prefix multipliers, e.g. "MILLI" -> 1e-3.  Empty key not present;
-// callers should pass an empty prefix string for "no prefix".
-extern const std::unordered_map<std::string, double> SI_PREFIXES;
-
-// SI prefix display symbols, e.g. "MILLI" -> "m".
-extern const std::unordered_map<std::string, std::string> SI_PREFIX_SYMBOLS;
-
-// Conversion-based unit name (lowercase, IFC convention) -> SI base scale.
-// e.g. "foot" -> 0.3048, "square foot" -> 0.09290304.
-extern const std::unordered_map<std::string, double> SI_CONVERSIONS;
-
-// Conversion-based unit name -> IFC unit type, e.g. "foot" -> "LENGTHUNIT".
-extern const std::unordered_map<std::string, std::string> IMPERIAL_TYPES;
-
-// Display symbol per unit name.  Covers IfcSIUnit names ("METRE" -> "m") and
-// IfcConversionBasedUnit names ("foot" -> "ft").
-extern const std::unordered_map<std::string, std::string> UNIT_SYMBOLS;
-
-// Returns the multiplier for an SI prefix.  Empty string returns 1.0.
-double get_prefix_multiplier(const std::string& prefix);
 
 // Returns the SI scale for an IfcNamedUnit such that
 //   value_in_unit * scale == value_in_si_base
@@ -73,15 +53,6 @@ std::optional<express::base> get_project_unit(ifcopenshell::file* ifc_file,
 // to 1.0 when no project unit of the requested type is set.
 double calculate_unit_scale(ifcopenshell::file* ifc_file,
                             const std::string& unit_type = "LENGTHUNIT");
-
-// Convert between two units identified by name + optional SI prefix.
-// SQUARE_/CUBIC_ prefixed SI names get the prefix multiplier squared/cubed
-// (matches python ifcopenshell.util.unit.convert).
-double convert(double value,
-               const std::string& from_prefix,
-               const std::string& from_unit,
-               const std::string& to_prefix,
-               const std::string& to_unit);
 
 // Convert between two IfcNamedUnit entities.  Pulls Name and Prefix off each
 // and delegates to convert().  IfcConversionBasedUnit names that don't appear
