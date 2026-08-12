@@ -901,14 +901,20 @@ namespace {
 		//    be much larger than the one small sub-range being resolved (a wall's entire main
 		//    face, evaluated at one small seam near its edge), so a single whole-face point can
 		//    land on the wrong side of a plane that's only meaningful locally.
-		// 5. Per side, the winner is whichever candidate's own normal has the smallest angle to
-		//    that side's own outward-facing plane normal -- no separate depth/occlusion tie-break
-		//    is needed for two same-side candidates this close in orientation: cross_coplanar_
-		//    tolerance_ (the same tolerance used to decide two faces are "the same plane" for
-		//    matching purposes at all) means anything ambiguous enough to need one is also close
-		//    enough to represent the same physical surface for classification purposes -- no real
-		//    building element, even a thin covering, sits that close to something genuinely
-		//    different in depth.
+		// 5. Per side, the winner is whichever candidate's own normal has the LARGEST angle to
+		//    that side's own outward-facing plane normal (i.e. is closest to anti-parallel with
+		//    it) -- that outward normal is, by construction, perpendicular to the view
+		//    direction, so a face pointing squarely at the camera always sits at exactly 90 deg
+		//    from it regardless of which side it's on; genuine deviation further past 90 deg,
+		//    away from the outward normal, is what marks a face as the dominant, most-directly-
+		//    camera-facing surface on that side, not proximity to the outward normal itself
+		//    (which instead marks a face as nearly edge-on/sideways to the camera). No separate
+		//    depth/occlusion tie-break is needed for two same-side candidates this close in
+		//    orientation: cross_coplanar_tolerance_ (the same tolerance used to decide two faces
+		//    are "the same plane" for matching purposes at all) means anything ambiguous enough
+		//    to need one is also close enough to represent the same physical surface for
+		//    classification purposes -- no real building element, even a thin covering, sits
+		//    that close to something genuinely different in depth.
 		// 6. Compare the two winners: not coplanar in the SAME direction -> no verdict (native
 		//    classification stands); same-direction coplanar -> resolve material/style at the
 		//    sub-range's own midpoint into match (same) or mismatch (different, only when
@@ -916,9 +922,20 @@ namespace {
 		//    treated as a match here (see step 2) -- it should already be structurally impossible
 		//    for both winners to have survived step 2 with opposite normals, but the check is
 		//    kept explicit rather than relying on that invariant silently.
-		// 7. On match/mismatch, convert the sub-range into every contributor's own edge
-		//    parametrization (not just the two winners') -- visually only one line can ever
-		//    appear here, so every product sharing this edge location must agree.
+		// 7. On match/mismatch, convert the sub-range into the two WINNERS' own edge
+		//    parametrization, plus any other contributor that shares one of those two winning
+		//    products (a product can have more than one adjacent face/edge at this location).
+		//    A third (or fourth...) contributor that is neither winner is a bystander at a
+		//    multi-body corner, not a party to the relationship just decided, and does NOT get
+		//    forced to this verdict -- its own native classify_edge_from_faces() label stands,
+		//    as if this location had produced no verdict for it at all. This deliberately
+		//    stops short of the simpler "every contributor sharing this exact 3D line must
+		//    agree" rule: a corner where 3+ solids meet can have more than one genuinely true,
+		//    independent coplanar relationship at once (e.g. two collinear wall segments'
+		//    faces continuing across their shared seam, AND separately a slab's own top face
+		//    happening to be coplanar with one of those walls' end-caps) -- picking the single
+		//    global best-angle-sum pair and broadcasting it to every bystander wrongly drags an
+		//    unrelated third product into a relationship it was never actually part of.
 		subrange_result resolve_edge_location_subrange(
 			size_t seed_idx, const std::vector<ProductEdge>& all,
 			const std::vector<EdgeOverlap>& overlaps, double a, double b,
@@ -935,7 +952,6 @@ namespace {
 					contributors.push_back(ov.other_idx);
 				}
 			}
-
 
 			// Same convention as classify_edge_from_faces()'s own front/back/edge-on split
 			// (SvgSerializer.cpp) -- confirmed identical, not just similarly-named:
@@ -1022,26 +1038,38 @@ namespace {
 						continue;
 					}
 					gp_Dir side_normal = side > 0 ? plane_normal : plane_normal.Reversed();
-					(side > 0 ? left : right).push_back({ n, c, n.Angle(side_normal) });
+					double angle = n.Angle(side_normal);
+					(side > 0 ? left : right).push_back({ n, c, angle });
 				}
 			}
 			if (left.empty() || right.empty()) {
 				return result;
 			}
-			// The two winners must come from DIFFERENT products -- otherwise this just
+			// Per side, `angle` is this candidate's own normal measured against that side's
+			// own correctly-oriented outward plane normal (side_normal, already flipped for
+			// the right side above) -- and the winner is whichever candidate's normal is
+			// FARTHEST from that reference (closest to anti-parallel), not closest to it. A
+			// face lying flat in the dividing plane's own direction sits at exactly 90 deg to
+			// side_normal (side_normal is by construction perpendicular to the view direction,
+			// so a face pointing straight at the camera is always 90 deg away regardless of
+			// which side it's on) -- genuine deviation from that 90 deg baseline, in the
+			// direction of pointing AWAY from side_normal, is what marks a face as the
+			// dominant, most-nearly-continuing surface on that side. Picking the candidate
+			// CLOSEST to side_normal instead (the previous, incorrect reading) rewards a face
+			// that's nearly edge-on/sideways-facing relative to the camera, which is exactly
+			// backwards: confirmed against a real 3-body corner (a slab's own top face
+			// perpendicular to a wall below it) where the wall's own vertical face has a small
+			// angle to side_normal purely because it's more sideways-on, and was winning over
+			// the slab's own face (which points squarely at the camera) even though the wall
+			// has nothing to do with the slab's actual boundary here.
+			//
+			// The two winners must also come from DIFFERENT products -- otherwise this just
 			// rediscovers one product's own native corner (e.g. a box's top face meeting its
 			// own side face), which classify_edge_from_faces() already handles correctly on
-			// its own, with no cross-product story here at all. Confirmed necessary against a
-			// real case: two identical boxes stacked directly on each other share an edge where
-			// the LOWER box's own top-face/side-face corner happens to sit at the exact same
-			// location as the genuine cross-product seam (the upper box's own continuing side
-			// face) -- picking the two lowest-angle candidates independently per side can pick
-			// both from the lower box alone (its own native corner has a smaller angle than the
-			// genuine cross-product match here), silently losing the seam this feature exists
-			// to find. Searching all (left, right) pairs for the smallest combined angle among
-			// only those with differing owners fixes this while leaving the common case (where
-			// the independent per-side winners already differ) unchanged.
-			double best_angle_sum = std::numeric_limits<double>::infinity();
+			// its own, with no cross-product story here at all. Searching all (left, right)
+			// pairs for the LARGEST combined angle among only those with differing owners
+			// keeps that constraint while applying it to the corrected (farthest-wins) metric.
+			double best_angle_sum = -std::numeric_limits<double>::infinity();
 			boost::optional<Candidate> best_left, best_right;
 			for (auto& l : left) {
 				for (auto& r : right) {
@@ -1049,7 +1077,7 @@ namespace {
 						continue;
 					}
 					double sum = l.angle + r.angle;
-					if (sum < best_angle_sum) {
+					if (sum > best_angle_sum) {
 						best_angle_sum = sum;
 						best_left = l;
 						best_right = r;
@@ -1093,7 +1121,26 @@ namespace {
 			}
 			result.verdict = equal ? subrange_verdict::match : subrange_verdict::mismatch;
 
+			// Only the two winning products themselves get this verdict -- a third (or
+			// fourth...) product that merely shares this exact 3D location (e.g. a slab
+			// overhanging the corner where two coplanar wall segments meet) is a bystander,
+			// not a party to the relationship that was just decided. Confirmed necessary
+			// against a real 3-body corner: a slab's own top face and two collinear walls'
+			// own vertical faces all meet at one point, where {wall, wall} and {slab-top,
+			// one wall's own end-cap} both happen to be genuinely coplanar (angle sums tied
+			// to within floating-point noise) -- whichever pair wins the tie is essentially
+			// arbitrary, and stamping its verdict onto the *other*, uninvolved product (the
+			// slab, when the walls win) wrongly turns the slab's own genuinely perpendicular
+			// edge into a cross-coplanar/mat-style-change match. Restricting to the winners'
+			// own products leaves that bystander's contributor_interval simply absent here,
+			// so its native (outline) classification stands, exactly as if this location had
+			// never produced a verdict for it at all.
+			const IfcUtil::IfcBaseEntity* winning_product_left = all[win_left.contributor].product;
+			const IfcUtil::IfcBaseEntity* winning_product_right = all[win_right.contributor].product;
 			for (size_t c : contributors) {
+				if (all[c].product != winning_product_left && all[c].product != winning_product_right) {
+					continue;
+				}
 				double ca, cb;
 				if (c == seed_idx) {
 					ca = a;
