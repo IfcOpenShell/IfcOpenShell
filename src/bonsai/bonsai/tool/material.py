@@ -220,9 +220,14 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def get_material(
-        cls, element: ifcopenshell.entity_instance, should_inherit: bool = False
+        cls,
+        element: ifcopenshell.entity_instance,
+        should_inherit: bool = False,
+        should_skip_usage: bool = False,
     ) -> Union[ifcopenshell.entity_instance, None]:
-        return ifcopenshell.util.element.get_material(element, should_inherit=should_inherit)
+        return ifcopenshell.util.element.get_material(
+            element, should_inherit=should_inherit, should_skip_usage=should_skip_usage
+        )
 
     @classmethod
     def is_a_material_set(cls, material: ifcopenshell.entity_instance) -> bool:

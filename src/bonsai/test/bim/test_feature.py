@@ -1000,6 +1000,7 @@ def i_click_button_and_expect_error_error_msg(button, error_msg):
 
 @given(parsers.parse('I evaluate expression "{expression}"'))
 @when(parsers.parse('I evaluate expression "{expression}"'))
+@then(parsers.parse('I evaluate expression "{expression}"'))
 def i_evaluate_expression(expression):
     expression = replace_variables(expression)
     exec(expression)

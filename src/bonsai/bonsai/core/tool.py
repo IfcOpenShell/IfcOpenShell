@@ -651,7 +651,7 @@ class Material:
     def get_default_material(cls): pass
     def get_elements_by_material(cls, material): pass
     def get_material_attributes(cls): pass
-    def get_material(cls, element, should_inherit: bool = False): pass
+    def get_material(cls, element, should_inherit: bool = False, should_skip_usage: bool = False): pass
     def get_object_ui_active_material(cls): pass
     def get_object_ui_material_type(cls): pass
     def get_style(cls, material): pass
