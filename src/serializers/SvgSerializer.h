@@ -894,13 +894,20 @@ namespace {
 		//     more check before being dropped: if its own local nudge point (see step 4) sits
 		//     nearer the camera than this location's own midpoint, its solid bulk physically
 		//     overhangs the seam -- e.g. a covering's horizontal underside projecting out past
-		//     the wall-to-wall joint beneath it. The camera actually sees that overhang there,
-		//     not whichever pairing the remaining candidates would resolve to, so this vetoes
-		//     any verdict at the location entirely (native classification stands for every
-		//     contributor) rather than letting an unrelated pair settle a seam this candidate's
-		//     own geometry occludes. This does NOT reopen edge-on candidates as match
-		//     participants -- they still never win a side in step 5 -- it only lets them block
-		//     an otherwise-winning pair when their own geometry is demonstrably in the way.
+		//     the wall-to-wall joint beneath it. Recorded, not vetoed immediately: once the two
+		//     winners are chosen (step 5), a recorded overhang only vetoes the location if it
+		//     belongs to NEITHER winning product. An edge-on candidate sharing a winner's own
+		//     product is that winner's own other-side geometry -- a wall's end-cap necessarily
+		//     spans its own thickness, which in a section/elevation view is often exactly the
+		//     camera's depth axis, so its nudge point is almost always "nearer camera" than the
+		//     wall's own far-thickness edge with zero bearing on whether anything occludes this
+		//     seam (confirmed as a real regression via a real building's own wall/slab corner:
+		//     the wall's own end-cap face wrongly vetoed its own genuine mat-style-change match
+		//     with the slab). Only a genuine bystander product's overhang -- no other stake in
+		//     either winner -- represents real, unrelated material actually in front of the seam.
+		//     This does NOT reopen edge-on candidates as match participants -- they still never
+		//     win a side in step 5 -- it only lets a third party block an otherwise-winning pair
+		//     when its own geometry is demonstrably in the way.
 		// 3. Build a plane through the edge's own 3D line and the camera's view direction --
 		//    viewed from the camera, this plane projects to exactly the edge's own screen-space
 		//    line extended into depth, giving a well-defined, order-independent left/right split
@@ -1049,6 +1056,19 @@ namespace {
 				}
 				return mid_point.Translated(gp_Vec(perp) * -step);
 			};
+			// Candidates excluded above for being genuinely edge-on (not clearly back-facing)
+			// whose own local nudge point sits nearer the camera than this location's own
+			// midpoint -- a physical overhang past the seam. Collected here, but not vetoed
+			// immediately: an edge-on candidate belonging to the SAME product as one of the two
+			// eventual winners is just that product's own other-side geometry (e.g. a wall's end
+			// -cap face necessarily spans its own thickness, which in a section/elevation view is
+			// often exactly the camera's own depth axis -- so its "interior" nudge point is
+			// almost always nearer the camera than the wall's own far-thickness edge, with zero
+			// bearing on whether anything actually occludes this seam). Only a candidate whose
+			// product is a genuine bystander to the pairing -- e.g. a covering's underside
+			// overhanging a wall-to-wall joint it has no other part in -- represents real,
+			// unrelated material in front of the seam. Checked once winners are known, below.
+			std::vector<std::pair<const IfcUtil::IfcBaseEntity*, gp_Pnt>> edge_on_overhangs;
 			std::vector<Candidate> left, right;
 			for (size_t c : contributors) {
 				for (const TopoDS_Face& face : all[c].adjacent_faces) {
@@ -1057,23 +1077,10 @@ namespace {
 						continue;
 					}
 					if (!is_front_facing(n)) {
-						// A genuinely edge-on candidate (e.g. a covering's horizontal underside,
-						// viewed in elevation/section) can still physically extend nearer the
-						// camera than this shared edge itself -- an overhang past the seam. When
-						// it does, its own solid bulk is what the camera actually sees here, not
-						// whatever cross-product pairing the surviving candidates would otherwise
-						// resolve to, so veto any verdict at this location entirely (native
-						// classification stands for every contributor, exactly as if nothing had
-						// survived the front-facing filter at all) rather than letting the
-						// remaining candidates settle a seam this candidate's own geometry
-						// occludes. A clearly back-facing candidate is excluded for an unrelated
-						// reason (two solids meeting face-to-face always have opposite normals at
-						// the touch point, irrelevant to depth) and never triggers this -- only
-						// the edge-on band does.
 						if (is_edge_on(n)) {
 							gp_Pnt nudge = local_face_nudge_point(face, n);
 							if (along_view(nudge) > mid_depth + tol) {
-								return result;
+								edge_on_overhangs.push_back({ all[c].product, nudge });
 							}
 						}
 						continue;
@@ -1140,6 +1147,21 @@ namespace {
 			}
 			Candidate win_left = *best_left;
 			Candidate win_right = *best_right;
+
+			// A bystander edge-on overhang (see collection above) vetoes this location's verdict
+			// only if it belongs to neither winning product -- genuinely unrelated material
+			// physically in front of the seam these two winners would otherwise represent, e.g. a
+			// covering's underside overhanging a wall-to-wall joint. An edge-on candidate that IS
+			// one of the two winning products' own other-side geometry (a wall's own end-cap,
+			// necessarily spanning its own thickness) is excluded here rather than treated as an
+			// overhang: it's intrinsic to that winner's own shape, not a third party blocking it.
+			const IfcUtil::IfcBaseEntity* left_product_check = all[win_left.contributor].product;
+			const IfcUtil::IfcBaseEntity* right_product_check = all[win_right.contributor].product;
+			for (auto& overhang : edge_on_overhangs) {
+				if (overhang.first != left_product_check && overhang.first != right_product_check) {
+					return result;
+				}
+			}
 
 			// SAME-direction only, not opposite: two solids meeting face-to-face (a wall's own
 			// hidden end-cap against its neighbour's, an underside resting on whatever's below)

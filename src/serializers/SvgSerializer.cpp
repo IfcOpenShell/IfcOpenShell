@@ -25,6 +25,7 @@
 
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <cstdio>
 #include <limits>
 #include <algorithm>
@@ -3111,9 +3112,37 @@ namespace {
 					// necessary during development: an earlier, ungated version of this exception
 					// also fired for "Extrusion L2 same mat"'s own genuine Case B edge, which has no
 					// cross-coplanar story at that location, adding spurious duplicates there.
+					//
+					// `outline_confirms_case_a` alone is not reliable, though: it depends on a
+					// cross-coplanar SIBLING fragment from the same corner surviving all the way to
+					// this same bucket, which it does not always do (confirmed via a real building
+					// file: a wall's own front corner correctly split into a cross-coplanar piece and
+					// a mat-style-change piece, but HLR hid the cross-coplanar piece while keeping the
+					// mat-style-change one visible -- so outline_confirms_case_a was never set, and
+					// the SAME wall's own unrelated back corner, whose screen projection happens to
+					// coincide with the front corner's exactly because the camera looks straight down
+					// the wall's own thickness axis, wrongly won this collision and erased the
+					// mat-style-change edge entirely). A genuine Case B nesting has near-zero
+					// separation in TRUE (unprojected) 3D between the outline edge and the nested
+					// mat-style-change edge -- they are the same physical face. A coincidental
+					// screen-projection duplicate like the one above does not: the two edges are
+					// genuinely offset from each other along the view direction (here, by the wall's
+					// own thickness). Measuring that real 3D perpendicular distance is a direct,
+					// always-available signal that does not depend on any other fragment surviving
+					// HLR extraction, so it is checked as an alternative to outline_confirms_case_a,
+					// not a replacement for it (Case B's own edges may still be caught by either).
+					bool outline_msc_pair =
+						(ei.cls == mat_style_change::class_name && ej.cls == "outline") ||
+						(ej.cls == mat_style_change::class_name && ei.cls == "outline");
+					bool outline_genuinely_different_depth = false;
+					if (outline_msc_pair && std::abs(ei.seg.dir.Dot(ej.seg.dir)) > 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
+						gp_Vec to_other_3d(ei.seg.p0, ej.seg.p0);
+						double perp_dist_3d = to_other_3d.Crossed(gp_Vec(ei.seg.dir)).Magnitude();
+						outline_genuinely_different_depth = perp_dist_3d >= tolerance;
+					}
 					bool mat_style_change_vs_outline_case_a =
-						(ei.cls == mat_style_change::class_name && ej.cls == "outline" && outline_confirms_case_a.count(idxs[b])) ||
-						(ej.cls == mat_style_change::class_name && ei.cls == "outline" && outline_confirms_case_a.count(idxs[a]));
+						(ei.cls == mat_style_change::class_name && ej.cls == "outline" && (outline_confirms_case_a.count(idxs[b]) || outline_genuinely_different_depth)) ||
+						(ej.cls == mat_style_change::class_name && ei.cls == "outline" && (outline_confirms_case_a.count(idxs[a]) || outline_genuinely_different_depth));
 
 					bool i_wins = cross_coplanar_vs_outline
 						? (ei.cls == cross_coplanar::class_name)
