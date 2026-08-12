@@ -86,7 +86,69 @@ def _test_us_stations():
 
 
 @pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
+def _test_custom_named_conversion_based_unit_stations():
+    """Regression test: station_as_string() must work for an
+    IfcConversionBasedUnit whose Name isn't one of the fixed set
+    ifcopenshell.util.unit.si_conversions recognises (e.g. a project that,
+    reasonably, names its foot-based unit something other than the bare
+    "foot" IfcOpenShell's own add_conversion_based_unit() produces -- for
+    instance to distinguish the US survey foot, 1200/3937 m exactly, from
+    the international foot, 0.3048 m exactly, which differ by ~2 ppm and
+    are NOT interchangeable once a project is tied to a US state plane CRS,
+    virtually all of which are defined in US survey feet).
+
+    Previously, station_as_string() converted via
+    ifcopenshell.util.unit.convert(), which looks up the conversion factor
+    BY NAME in si_conversions -- silently substituting a factor of 1.0
+    (i.e. treating the value as if it were already in the display unit) for
+    any unrecognised name, rather than raising an error. For a project unit
+    like "US survey foot" this inflated every station string by the
+    project-unit<->metre ratio (~3.28x), even though the underlying
+    Pset_Stationing.Station numeric value written by
+    ifcopenshell.api.alignment.create()/update_key_point_referents was
+    correct throughout -- only the display text was wrong.
+    """
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+
+    # Hand-built rather than via add_conversion_based_unit(), since that
+    # API also resolves its conversion factor by name (si_conversions) and
+    # can't produce a custom name paired with a specific factor.
+    si_unit = file.createIfcSIUnit(UnitType="LENGTHUNIT", Name="METRE")
+    value_component = file.create_entity("IfcReal", wrappedValue=1200.0 / 3937.0)  # US survey foot, exact
+    conversion_factor = file.createIfcMeasureWithUnit(value_component, si_unit)
+    exponents = file.createIfcDimensionalExponents(1, 0, 0, 0, 0, 0, 0)
+    length = file.createIfcConversionBasedUnit(exponents, "LENGTHUNIT", "US survey foot", conversion_factor)
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
+
+    # US survey foot and international foot differ by ~2 ppm. At small
+    # station values that's invisible at 2-decimal-place precision, so
+    # these match _test_us_stations()'s "foot" case exactly.
+    s = sta.station_as_string(file, 0.0)
+    assert s == "0+00.00"
+
+    s = sta.station_as_string(file, 100.00)
+    assert s == "1+00.00"
+
+    s = sta.station_as_string(file, -100.00)
+    assert s == "-1+00.00"
+
+    # At a large enough station, ~2 ppm DOES become visible at 2 decimal
+    # places (123456.789 * 2e-6 =~ 0.25) -- this is the real, correct US
+    # survey foot vs. international foot difference, not a bug. Before the
+    # fix, the name-based lookup's silent 1.0 fallback inflated this same
+    # input by ~3.28x to "1234+57.036" -> "4050+82.90"-ish territory, wildly
+    # different from either correct answer -- so this still exercises the
+    # regression, it's just not identical to the "foot" case's value.
+    s = sta.station_as_string(file, 123456.789)
+    assert s == "1234+57.04"
+
+    s = sta.station_as_string(file, -123456.789)
+    assert s == "-1234+57.04"
+
+
 def test_station_as_string():
     _test_si_stations()
     _test_si_stations_millimeter()
     _test_us_stations()
+    _test_custom_named_conversion_based_unit_stations()

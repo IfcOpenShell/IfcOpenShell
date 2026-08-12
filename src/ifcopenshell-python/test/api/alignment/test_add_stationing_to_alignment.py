@@ -52,7 +52,7 @@ def test_add_stationing_to_alignment():
     referent = stationing_nest.RelatedObjects[0]
 
     assert referent.PredefinedType == "STATION"
-    assert referent.Name == "2+000.000"
+    assert referent.Name == "TestAlignment 2+000.000"
     assert ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing")
     assert ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing", prop="Station") == 2000.0
     assert referent.ObjectPlacement != None
