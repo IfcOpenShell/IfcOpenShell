@@ -890,6 +890,17 @@ namespace {
 		//    front-facing to the same camera at once, requiring strict front-facing here already
 		//    removes them from contention without needing any separate "same vs opposite
 		//    normal" case analysis at the filtering stage.
+		// 2a. A discarded candidate that's genuinely edge-on (not clearly back-facing) gets one
+		//     more check before being dropped: if its own local nudge point (see step 4) sits
+		//     nearer the camera than this location's own midpoint, its solid bulk physically
+		//     overhangs the seam -- e.g. a covering's horizontal underside projecting out past
+		//     the wall-to-wall joint beneath it. The camera actually sees that overhang there,
+		//     not whichever pairing the remaining candidates would resolve to, so this vetoes
+		//     any verdict at the location entirely (native classification stands for every
+		//     contributor) rather than letting an unrelated pair settle a seam this candidate's
+		//     own geometry occludes. This does NOT reopen edge-on candidates as match
+		//     participants -- they still never win a side in step 5 -- it only lets them block
+		//     an otherwise-winning pair when their own geometry is demonstrably in the way.
 		// 3. Build a plane through the edge's own 3D line and the camera's view direction --
 		//    viewed from the camera, this plane projects to exactly the edge's own screen-space
 		//    line extended into depth, giving a well-defined, order-independent left/right split
@@ -980,6 +991,25 @@ namespace {
 			auto is_front_facing = [&](const gp_Dir& n) {
 				return -view_direction.Dot(n) < -kBackFaceDotEps;
 			};
+			// An excluded candidate that's genuinely edge-on (normal near-perpendicular to the
+			// view direction) is a different case from a clearly back-facing one, even though
+			// both fail is_front_facing() above. Same 0.05 dot-magnitude threshold
+			// point_on_foreign_face() (restore_coincident_hidden_edges()) already uses to draw
+			// this exact distinction -- kept in step with it rather than introducing a separate
+			// tolerance. Used below only to decide whether a discarded candidate is eligible for
+			// the near-camera-overhang veto; a clearly back-facing candidate never is.
+			constexpr double kEdgeOnDotThreshold = 0.05;
+			auto is_edge_on = [&](const gp_Dir& n) {
+				return std::abs(view_direction.Dot(n)) < kEdgeOnDotThreshold;
+			};
+			// Position along the view direction, used only as a relative "nearer to camera"
+			// comparison between two points (front-facing normals point toward the camera, so a
+			// larger value here is nearer) -- never as an absolute depth, so the arbitrary
+			// (world-origin-relative) offset this carries is fine: only differences are compared.
+			auto along_view = [&](const gp_Pnt& p) {
+				return gp_Vec(p.XYZ()).Dot(gp_Vec(view_direction.XYZ()));
+			};
+			double mid_depth = along_view(mid_point);
 
 			gp_Vec plane_normal_vec = gp_Vec(seed.seg.dir.XYZ()).Crossed(gp_Vec(view_direction.XYZ()));
 			if (plane_normal_vec.SquareMagnitude() < 1.e-12) {
@@ -1027,6 +1057,25 @@ namespace {
 						continue;
 					}
 					if (!is_front_facing(n)) {
+						// A genuinely edge-on candidate (e.g. a covering's horizontal underside,
+						// viewed in elevation/section) can still physically extend nearer the
+						// camera than this shared edge itself -- an overhang past the seam. When
+						// it does, its own solid bulk is what the camera actually sees here, not
+						// whatever cross-product pairing the surviving candidates would otherwise
+						// resolve to, so veto any verdict at this location entirely (native
+						// classification stands for every contributor, exactly as if nothing had
+						// survived the front-facing filter at all) rather than letting the
+						// remaining candidates settle a seam this candidate's own geometry
+						// occludes. A clearly back-facing candidate is excluded for an unrelated
+						// reason (two solids meeting face-to-face always have opposite normals at
+						// the touch point, irrelevant to depth) and never triggers this -- only
+						// the edge-on band does.
+						if (is_edge_on(n)) {
+							gp_Pnt nudge = local_face_nudge_point(face, n);
+							if (along_view(nudge) > mid_depth + tol) {
+								return result;
+							}
+						}
 						continue;
 					}
 					gp_Pnt nudge = local_face_nudge_point(face, n);
@@ -1999,9 +2048,11 @@ namespace {
 				};
 				gp_Pnt foreign_centroid = cross_coplanar::face_interior_point(foreign_face->first);
 				const IfcUtil::IfcBaseEntity* foreign_product = foreign_face->second;
-				bool occluded = is_genuinely_occluded(sample) ||
-					is_genuinely_occluded(nudge_toward(foreign_centroid), foreign_product, product);
-				return !occluded && !point_covered_by_visible(tsample, visible_edges);
+				bool occ1 = is_genuinely_occluded(sample);
+				bool occ2 = is_genuinely_occluded(nudge_toward(foreign_centroid), foreign_product, product);
+				bool occluded = occ1 || occ2;
+				bool covered = point_covered_by_visible(tsample, visible_edges);
+				return !occluded && !covered;
 			};
 
 			// 31 interior samples (32 bins) across (0, length), never at the true endpoints --

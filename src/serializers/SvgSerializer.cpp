@@ -2729,7 +2729,7 @@ namespace {
 	// "lowest priority number wins" rule can't express "outline loses to X but still beats
 	// everything else" -- outline's own priority number (0, the global minimum) can never be
 	// "worse than the best" by that comparison alone.
-	std::pair<std::unordered_map<quant_edge_key, int, quant_edge_key_hash>, std::unordered_set<quant_edge_key, quant_edge_key_hash>>
+	std::pair<std::unordered_map<quant_edge_key, int, quant_edge_key_hash>, std::set<std::pair<quant_edge_key, const IfcUtil::IfcBaseEntity*>>>
 	compute_coincident_edge_best_priority(
 		const std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>>& hlr_items,
 		double tolerance
@@ -2767,7 +2767,7 @@ namespace {
 		}
 
 		std::unordered_map<quant_edge_key, int, quant_edge_key_hash> best_priority_by_key;
-		std::unordered_set<quant_edge_key, quant_edge_key_hash> outline_loses_exact_key;
+		std::set<std::pair<quant_edge_key, const IfcUtil::IfcBaseEntity*>> outline_loses_exact_key;
 		for (auto& kv : buckets) {
 			bool multi_product = false;
 			bool multi_priority = false;
@@ -2776,6 +2776,21 @@ namespace {
 			int best_prio = kv.second[0].priority;
 			int best_prio_excluding_outline = kv.second[0].cls == "outline"
 				? std::numeric_limits<int>::max() : kv.second[0].priority;
+			// Per-product tracking, NOT just the bucket-wide has_outline/has_exception_class
+			// booleans below: the exception this loop resolves is specifically a SINGLE
+			// product's own outline bucket and that SAME product's own cross-coplanar/
+			// mat-style-change bucket independently emitting a coincident fragment (a genuine
+			// HLR-silhouette artifact, see the function comment). A DIFFERENT product's outline
+			// edge landing at this same screen-space key is not that artifact at all -- e.g. a
+			// thin cladding layer's own genuinely-nearer front-face edge, which under an
+			// orthogonal camera projects to the exact same screen line as an unrelated wall's
+			// cross-coplanar match sitting behind it purely because projection drops depth.
+			// That outline is correct and nearer; it must win via the ordinary priority rule
+			// below, not lose unconditionally just because some other product's edge happens to
+			// share this key. Confirmed via a real project file (issue #3742 follow-up): a
+			// covering's own correct, closer `outline` edge was being dropped in favour of an
+			// occluded wall's `cross-coplanar` edge behind it, for exactly this reason.
+			std::set<const IfcUtil::IfcBaseEntity*> outline_products, exception_products;
 			for (size_t i = 0; i < kv.second.size(); ++i) {
 				if (kv.second[i].product != kv.second[0].product) {
 					multi_product = true;
@@ -2785,11 +2800,13 @@ namespace {
 				}
 				if (kv.second[i].cls == "outline") {
 					has_outline = true;
+					outline_products.insert(kv.second[i].product);
 				} else {
 					best_prio_excluding_outline = std::min(best_prio_excluding_outline, kv.second[i].priority);
 				}
 				if (kv.second[i].cls == cross_coplanar::class_name || kv.second[i].cls == mat_style_change::class_name) {
 					has_exception_class = true;
+					exception_products.insert(kv.second[i].product);
 				}
 				if (i > 0) {
 					best_prio = std::min(best_prio, kv.second[i].priority);
@@ -2802,8 +2819,10 @@ namespace {
 			if (multi_product && multi_priority) {
 				best_priority_by_key[kv.first] = exception_applies ? best_prio_excluding_outline : best_prio;
 			}
-			if (exception_applies) {
-				outline_loses_exact_key.insert(kv.first);
+			for (const IfcUtil::IfcBaseEntity* p : outline_products) {
+				if (exception_products.count(p)) {
+					outline_loses_exact_key.insert({ kv.first, p });
+				}
 			}
 		}
 		return { best_priority_by_key, outline_loses_exact_key };
@@ -3169,12 +3188,14 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 						project_to_view_plane(BRep_Tool::Pnt(v0)),
 						project_to_view_plane(BRep_Tool::Pnt(v1)),
 						scale);
-					// `outline` unconditionally loses an exact-key collision against
-					// `cross-coplanar`/`mat-style-change` (see compute_coincident_edge_best_priority()'s
-					// own comment) -- checked before the generic priority comparison, since outline's
-					// own priority number (0, the global minimum) can never be "worse than the best" by
-					// that comparison alone.
-					if (cls == "outline" && outline_loses_exact_key.count(key)) {
+					// `outline` unconditionally loses an exact-key collision against its OWN
+					// product's `cross-coplanar`/`mat-style-change` (see
+					// compute_coincident_edge_best_priority()'s own comment -- product-scoped so a
+					// different product's genuinely nearer outline edge sharing this same
+					// screen-space key never loses to it) -- checked before the generic priority
+					// comparison, since outline's own priority number (0, the global minimum) can
+					// never be "worse than the best" by that comparison alone.
+					if (cls == "outline" && outline_loses_exact_key.count({ key, product })) {
 						keep = false;
 					} else {
 						auto it = coincident_best_priority.find(key);
