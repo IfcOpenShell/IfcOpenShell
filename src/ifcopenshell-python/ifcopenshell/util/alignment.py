@@ -69,21 +69,21 @@ def station_as_string(file: ifcopenshell.file, sta: float):
     Returns a stringized version of a station. Example 100.0 is 1+00.00 as a stationing string.
     If the project units are SI-based, the string is in the format xxx+yyy.zzz
     If the project units are Emperial-based, the string is in the format xx+yy.zz
+
     :param station: the station to be stringized
     :return: stringized station
     """
 
     unit_type = ifcopenshell.util.unit.get_project_unit(file, "LENGTHUNIT")
+    project_unit_to_metres = ifcopenshell.util.unit.calculate_unit_scale(file)
     if unit_type.is_a("IfcConversionBasedUnit"):
-        station = ifcopenshell.util.unit.convert(
-            sta, from_unit=unit_type.Name, from_prefix=None, to_unit="foot", to_prefix=None
-        )
+        # xx+yy.zz display is inherently foot-based, regardless of which foot variant
+        # (international vs. US survey, etc.) the project's own unit actually is.
+        station = sta * project_unit_to_metres / 0.3048
         plus_seperator = 2
         precision = 2
     else:
-        station = ifcopenshell.util.unit.convert(
-            sta, from_unit=unit_type.Name, from_prefix=unit_type.Prefix, to_unit="meter", to_prefix=None
-        )
+        station = sta * project_unit_to_metres
         plus_seperator = 3
         precision = 3
 

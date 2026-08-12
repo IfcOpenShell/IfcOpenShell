@@ -20,6 +20,39 @@
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
+import ifcopenshell.util.element
+
+
+def test_create_stationing_referent_name_includes_alignment_name():
+    """create() creates an initial stationing IfcReferent from start_station
+    (see add_stationing_referent()). Its Name must include the alignment's
+    own name, the same "<alignment name> <station>" convention
+    update_key_point_referents() uses for its own referents -- otherwise
+    this referent is indistinguishable by name alone from the same-named
+    referent of any OTHER alignment in the same file, unlike every other
+    referent in the model."""
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
+    geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
+    ifcopenshell.api.context.add_context(
+        file,
+        context_type="Model",
+        context_identifier="Axis",
+        target_view="MODEL_VIEW",
+        parent=geometric_representation_context,
+    )
+
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", start_station=4900.0)
+
+    referents = [
+        r
+        for r in ifcopenshell.util.element.get_components(alignment)
+        if r.is_a("IfcReferent") and ifcopenshell.util.element.get_pset(r, name="Pset_Stationing", prop="Station") == 4900.0
+    ]
+    assert len(referents) == 1
+    assert referents[0].Name == "TestAlignment 49+00.00"
 
 
 def test_create():
@@ -84,3 +117,4 @@ def test_create():
 
 
 test_create()
+test_create_stationing_referent_name_includes_alignment_name()
