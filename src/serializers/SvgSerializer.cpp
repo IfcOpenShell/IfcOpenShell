@@ -3116,33 +3116,65 @@ namespace {
 					// `outline_confirms_case_a` alone is not reliable, though: it depends on a
 					// cross-coplanar SIBLING fragment from the same corner surviving all the way to
 					// this same bucket, which it does not always do (confirmed via a real building
-					// file: a wall's own front corner correctly split into a cross-coplanar piece and
-					// a mat-style-change piece, but HLR hid the cross-coplanar piece while keeping the
-					// mat-style-change one visible -- so outline_confirms_case_a was never set, and
-					// the SAME wall's own unrelated back corner, whose screen projection happens to
-					// coincide with the front corner's exactly because the camera looks straight down
-					// the wall's own thickness axis, wrongly won this collision and erased the
-					// mat-style-change edge entirely). A genuine Case B nesting has near-zero
-					// separation in TRUE (unprojected) 3D between the outline edge and the nested
-					// mat-style-change edge -- they are the same physical face. A coincidental
-					// screen-projection duplicate like the one above does not: the two edges are
-					// genuinely offset from each other along the view direction (here, by the wall's
-					// own thickness). Measuring that real 3D perpendicular distance is a direct,
-					// always-available signal that does not depend on any other fragment surviving
-					// HLR extraction, so it is checked as an alternative to outline_confirms_case_a,
-					// not a replacement for it (Case B's own edges may still be caught by either).
+					// file: two wall segments meeting end-to-end with different materials produce
+					// ONLY a mat-style-change verdict at their shared corner -- no cross-coplanar
+					// portion at all -- so outline_confirms_case_a can never fire there, and some
+					// OTHER, genuinely unrelated edge of one of those same products -- e.g. its own
+					// parallel corner on the far side of its own thickness -- wrongly won this
+					// collision purely because it happens to share this screen line too).
+					//
+					// A true-3D perpendicular-distance check was tried here first and found
+					// unreliable: `.seg`, despite its own name, is built from `hlr_items` -- edges
+					// HLR has already run through its own projector transform -- and this file's own
+					// cross_coplanar_vs_outline comment above already documents why that is a problem
+					// ("HLR output edges carry no usable depth... confirmed via direct
+					// instrumentation"). Confirmed directly: two genuinely different, 600mm-apart
+					// edges of the same wall reported a `.seg`-based perpendicular distance of
+					// ~1e-6 -- not because they coincide, but because the camera's own view/depth
+					// axis happened to be the axis carrying that real separation, and HLR's transform
+					// discards it before this pass ever sees it.
+					//
+					// The overlap FRACTION each edge covers of the other is self-consistent even
+					// under that flattening, because it never compares absolute position between the
+					// two edges -- only an edge's own overlap sub-range against its own full
+					// (projected) length, both already established as reliable data within this same
+					// function. Genuine Case B nesting is asymmetric by CONSTRUCTION, not just by
+					// coincidence: layer_boundary_edges_for_face() clips a short marking to a small
+					// part of a much longer face outline, so the ratio between the two edges' own
+					// lengths is inherently small (a layer boundary a few hundred mm long, nested in a
+					// multi-metre wall face) -- and since the shorter one can be AT MOST fully
+					// contained in the longer one, the longer edge's own coverage fraction is bounded
+					// by that same small length ratio. Two independently-produced, coincidentally-
+					// same-screen-line edges (this corner-duplicate bug) are close to the SAME length
+					// as each other, not one dwarfing the other by an order of magnitude. Confirmed via
+					// two real corners on the same building: a clean duplicate pair measured length
+					// ratio ~1.0 with both coverage fractions ~1.0, while an otherwise-identical
+					// duplicate pair -- where the outline edge happened to also be partially hidden by
+					// unrelated geometry elsewhere along its own length -- still measured length ratio
+					// 0.8 with one coverage fraction only 0.8, well short of a "both ~1.0" threshold
+					// but nowhere near what genuine Case B nesting would produce (length ratio typically
+					// under 0.1-0.2 for a real layer-boundary marking against its containing face).
+					// Requiring a substantial length ratio alongside substantial (not necessarily
+					// complete) mutual coverage tolerates that kind of incidental partial occlusion
+					// without opening the door to genuine short-nested-in-long Case B pairs.
 					bool outline_msc_pair =
 						(ei.cls == mat_style_change::class_name && ej.cls == "outline") ||
 						(ej.cls == mat_style_change::class_name && ei.cls == "outline");
-					bool outline_genuinely_different_depth = false;
-					if (outline_msc_pair && std::abs(ei.seg.dir.Dot(ej.seg.dir)) > 1.0 - cross_coplanar::kCoplanarNormalTolerance) {
-						gp_Vec to_other_3d(ei.seg.p0, ej.seg.p0);
-						double perp_dist_3d = to_other_3d.Crossed(gp_Vec(ei.seg.dir)).Magnitude();
-						outline_genuinely_different_depth = perp_dist_3d >= tolerance;
+					bool outline_symmetric_full_overlap = false;
+					if (outline_msc_pair) {
+						constexpr double kMinOverlapFraction = 0.5;
+						constexpr double kMinLengthRatio = 0.5;
+						double i_fraction = has_i_overlap ? (hi_i_proj - lo_i_proj) / ei.proj_seg.length : 0.0;
+						double j_fraction = has_j_overlap ? (hi_j_proj - lo_j_proj) / ej.proj_seg.length : 0.0;
+						double shorter_len = std::min(ei.proj_seg.length, ej.proj_seg.length);
+						double longer_len = std::max(ei.proj_seg.length, ej.proj_seg.length);
+						double length_ratio = longer_len > Precision::Confusion() ? shorter_len / longer_len : 0.0;
+						outline_symmetric_full_overlap =
+							i_fraction >= kMinOverlapFraction && j_fraction >= kMinOverlapFraction && length_ratio >= kMinLengthRatio;
 					}
 					bool mat_style_change_vs_outline_case_a =
-						(ei.cls == mat_style_change::class_name && ej.cls == "outline" && (outline_confirms_case_a.count(idxs[b]) || outline_genuinely_different_depth)) ||
-						(ej.cls == mat_style_change::class_name && ei.cls == "outline" && (outline_confirms_case_a.count(idxs[a]) || outline_genuinely_different_depth));
+						(ei.cls == mat_style_change::class_name && ej.cls == "outline" && (outline_confirms_case_a.count(idxs[b]) || outline_symmetric_full_overlap)) ||
+						(ej.cls == mat_style_change::class_name && ei.cls == "outline" && (outline_confirms_case_a.count(idxs[a]) || outline_symmetric_full_overlap));
 
 					bool i_wins = cross_coplanar_vs_outline
 						? (ei.cls == cross_coplanar::class_name)

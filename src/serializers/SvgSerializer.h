@@ -1179,10 +1179,20 @@ namespace {
 			const ProductEdge& right_pe = all[win_right.contributor];
 			const auto* mat_left = resolve_material_at_point(mid_point, left_pe.proj, left_pe.material);
 			const auto* mat_right = resolve_material_at_point(mid_point, right_pe.proj, right_pe.material);
+			// Material comparison wins whenever it can actually be made on BOTH sides -- it's the
+			// more specific, per-point-accurate signal (layer-aware via resolve_material_at_point()).
+			// But "one side has a material, the other doesn't" is not the same as "unresolvable": a
+			// product can legitimately have no material association at all (no
+			// IfcRelAssociatesMaterial, confirmed on a real building's own wall) while still having
+			// a genuine presentation style -- falling back to style comparison in that case, exactly
+			// as already done when NEITHER side has material, correctly still tells two visually
+			// different products apart instead of silently giving up and leaving native
+			// classification (`outline`) standing forever at their shared seam. Only when a side has
+			// neither a resolvable material NOR a style is there genuinely nothing left to compare.
 			bool both_resolved, equal;
-			if (mat_left || mat_right) {
-				both_resolved = mat_left && mat_right;
-				equal = both_resolved && mat_left == mat_right;
+			if (mat_left && mat_right) {
+				both_resolved = true;
+				equal = mat_left == mat_right;
 			} else {
 				both_resolved = left_pe.style && right_pe.style;
 				equal = both_resolved && left_pe.style == right_pe.style;
