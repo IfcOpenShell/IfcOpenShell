@@ -2024,7 +2024,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						if (it == storey_hlr.end()) {
 							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane,
 								svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
-								svg_render_cross_coplanar_edges_, svg_use_mat_style_change_classification_) }).first;
+								svg_use_mat_style_change_classification_) }).first;
 						}
 						it->second.add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance, data.cross_coplanar_material_instance, data.cross_coplanar_layer_projection);
 						for (auto& kv : classified_edge_buckets) {
@@ -3224,6 +3224,21 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 			continue;
 		}
 
+		// "Render Cross-Coplanar" gates final SVG output only, not classification -- the
+		// "cross-coplanar" classified_items_ entry above is always populated (see
+		// find_cross_coplanar_matches()'s own comment, SvgSerializer.h) so that
+		// compute_coincident_edge_best_priority()/compute_coincident_edge_overlap_coverage()
+		// (both already run over the full hlr_items list, above) can always trim a
+		// neighbouring product's own `outline` edge down to exclude this matched sub-range.
+		// Dropping the item only here, after dedup, means that trim survives even when the
+		// matched edges themselves are never drawn -- confirmed as the fix for a real
+		// regression (issue #3742 follow-up): with the old render-gated classification, turning
+		// this flag off reintroduced the exact seam line cross-coplanar classification exists to
+		// suppress, because there was no "cross-coplanar" entry left for dedup to trim against.
+		if (cls == cross_coplanar::class_name && !svg_render_cross_coplanar_edges_) {
+			continue;
+		}
+
 		// Drop any edge whose coincident-duplicate bucket (computed above, in the same
 		// pre-mirror coordinate space) genuinely mixes classes across products AND this edge's
 		// own class is strictly worse than the best one present -- e.g. a `sharp` edge dropped
@@ -3614,7 +3629,7 @@ void SvgSerializer::finalize() {
 			if (use_hlr && pln) {
 				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, *pln,
 					svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
-					svg_render_cross_coplanar_edges_, svg_use_mat_style_change_classification_);
+					svg_use_mat_style_change_classification_);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };

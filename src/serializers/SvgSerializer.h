@@ -2388,7 +2388,6 @@ namespace {
 		bool use_edge_classification_;
 		bool use_cross_coplanar_classification_;
 		double cross_coplanar_tolerance_;
-		bool render_cross_coplanar_edges_;
 		// "mat-style-change" classification: reuses cross_coplanar_tolerance_ for its own
 		// plane-coincidence test (see find_cross_coplanar_matches()'s gate widening). No
 		// separate render flag -- unlike cross-coplanar's covered-duplicate case, a
@@ -2419,7 +2418,7 @@ namespace {
 
 		prefiltered_hlr(Logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction,
 			bool use_edge_classification = false, bool use_cross_coplanar_classification = false, double cross_coplanar_tolerance = 1.e-4,
-			bool render_cross_coplanar_edges = false, bool use_mat_style_change_classification = false)
+			bool use_mat_style_change_classification = false)
 			: logger_(logger)
 			, use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
@@ -2429,7 +2428,6 @@ namespace {
 			, use_edge_classification_(use_edge_classification)
 			, use_cross_coplanar_classification_(use_cross_coplanar_classification)
 			, cross_coplanar_tolerance_(cross_coplanar_tolerance)
-			, render_cross_coplanar_edges_(render_cross_coplanar_edges)
 			, use_mat_style_change_classification_(use_mat_style_change_classification)
 		{
 			if (use_hlr_poly_) {
@@ -2691,9 +2689,19 @@ namespace {
 				// uncovered remainder here, with the covered sub-edge appended to new_edges) --
 				// always against the *union* of every neighbour's contribution to that edge,
 				// accumulated across the whole double loop above. Always applied regardless of
-				// render_cross_coplanar_edges_ (that flag only controls whether new_edges is
-				// *also* re-added below for visibility, not whether a duplicate -- whole or
-				// partial -- is hidden from its original class).
+				// render_cross_coplanar_edges_ -- that flag only controls whether the
+				// "cross-coplanar" class survives all the way to the final SVG write (gated in
+				// draw_hlr(), SvgSerializer.cpp), NOT whether its classified_items_ entry exists.
+				// It must always exist here: compute_coincident_edge_overlap_coverage()'s
+				// cross-coplanar-vs-outline exception (SvgSerializer.cpp) is what trims a
+				// neighbouring product's own independently-HLR-reconstructed `outline` edge down
+				// to exclude this exact matched sub-range, and that pass only has a
+				// "cross-coplanar" hlr_item to compare against if one was actually added here --
+				// confirmed as the root cause of a real regression (issue #3742 follow-up,
+				// "Render Cross-Coplanar" off): with the old render-gated add_classified_edges()
+				// call below, turning the render flag off silently un-trimmed that neighbour's
+				// outline edge back to its full, un-matched length, reintroducing the exact seam
+				// line cross-coplanar classification exists to suppress.
 				TopoDS_Compound new_edges;
 				builder.MakeCompound(new_edges);
 				// "mat-style-change" case A's own equivalent of new_edges -- kept separate so it
@@ -2731,9 +2739,10 @@ namespace {
 						new_edges, mat_style_change_edges, new_geometry);
 				}
 
-				if (render_cross_coplanar_edges_) {
-					add_classified_edges(product, cross_coplanar::class_name, new_edges);
-				}
+				// Unconditional -- see this loop's own comment above for why render_cross_coplanar_edges_
+				// must NOT gate this. The render flag is instead applied in draw_hlr()
+				// (SvgSerializer.cpp), after coincident-edge dedup has already used this entry.
+				add_classified_edges(product, cross_coplanar::class_name, new_edges);
 				if (use_mat_style_change_classification_) {
 					add_classified_edges(product, mat_style_change::class_name, mat_style_change_edges);
 				}
