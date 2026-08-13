@@ -17,6 +17,9 @@ set_target_properties(geometry_serializer PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"
 )
 target_link_libraries(geometry_serializer plugin IfcGeom IfcParse ${OpenCASCADE_LIBRARIES})
+if(NOT WASM_BUILD)
+    target_link_libraries(geometry_serializer geometry_kernel_opencascade)
+endif()
 set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} "geometry_serializer")
 set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} PARENT_SCOPE)
 
