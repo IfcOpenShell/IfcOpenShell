@@ -1819,8 +1819,36 @@ void SvgSerializer::write(const geometry_data& data) {
 								}
 								BB.Add(C, part);
 							}
-
 							subtracted_shape = C;
+
+							// The loop above cuts each of compound_to_use's own top-level parts
+							// (typically individual faces -- see this function's own "loop over
+							// parts to have better luck with co-planar parts" comment above)
+							// independently through BRepAlgoAPI_Cut, one call per part. Even
+							// when compound_to_use came in already fully sewn/manifold (its own
+							// edges shared correctly between neighbouring faces -- confirmed via
+							// direct instrumentation, issue #3742 follow-up item 26), each
+							// per-part boolean cut result is unaware of, and does not preserve
+							// sharing with, any other part's own independently-cut result -- so
+							// edges that were properly 2-face-shared going in can come out of
+							// this loop naked (1-face) again, wrongly falling back to `boundary`
+							// classification downstream. Re-applying the same sewing pass used
+							// before the cut recovers most of that lost sharing.
+							//
+							// Deliberately sew_and_unify_for_linework(), NOT the fuller
+							// heal_for_linework() used pre-cut: subtracted_shape is intentionally
+							// an OPEN compound here (a genuine gap at the cut boundary -- 2D faces
+							// are being clipped, not solids, so there's no "capping" face to close
+							// it). heal_for_linework()'s own validate_shape()/ShapeFix_Shape repair
+							// fallback exists to force a shape closed/"valid", which is the wrong
+							// goal for a shape that's supposed to stay open -- confirmed directly:
+							// using the fuller function here reconstructed the ENTIRE cut-away
+							// portion of a test box, silently undoing the cut completely (a real
+							// regression caught via the user's own manual Blender testing after an
+							// earlier version of this fix landed).
+							if (unify_inputs_) {
+								subtracted_shape = IfcGeom::util::sew_and_unify_for_linework(subtracted_shape, svg_cross_coplanar_tolerance_);
+							}
 							compound_to_hlr = &subtracted_shape;
 						} catch (...) {
 							logger_.Error("SER", 27, "Failed to cut element for HLR", data.product);

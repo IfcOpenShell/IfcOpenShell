@@ -920,7 +920,7 @@ TopoDS_Shape IfcGeom::util::unify(const TopoDS_Shape& s, double tolerance) {
 	return usd.Shape();
 }
 
-TopoDS_Shape IfcGeom::util::heal_for_linework(const TopoDS_Shape& s, double tolerance) {
+TopoDS_Shape IfcGeom::util::sew_and_unify_for_linework(const TopoDS_Shape& s, double tolerance) {
 	// Sewing first: faces that are geometrically coincident/adjacent but were built as
 	// topologically disjoint pieces (the normal outcome of concatenating independently-built
 	// items into one compound) don't share edges yet, so unify()'s ShapeUpgrade_UnifySameDomain
@@ -943,7 +943,11 @@ TopoDS_Shape IfcGeom::util::heal_for_linework(const TopoDS_Shape& s, double tole
 		sewed = s;
 	}
 
-	TopoDS_Shape healed = IfcGeom::util::unify(sewed, tolerance);
+	return IfcGeom::util::unify(sewed, tolerance);
+}
+
+TopoDS_Shape IfcGeom::util::heal_for_linework(const TopoDS_Shape& s, double tolerance) {
+	TopoDS_Shape healed = IfcGeom::util::sew_and_unify_for_linework(s, tolerance);
 
 	if (!IfcGeom::util::validate_shape(healed)) {
 		ShapeFix_Shape sfs(healed);

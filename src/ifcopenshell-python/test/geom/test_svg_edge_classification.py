@@ -195,6 +195,7 @@ def render_svg(
     scale: float = 1.0,
     bounding_rectangle: tuple[float, float] = (20000.0, 20000.0),
     unify_inputs: bool = False,
+    subtraction_settings: str | None = None,
 ) -> str:
     """Drive `SvgSerializer` directly (no Blender), matching the pattern
     `ifcopenshell/draw.py` uses. `camera_dir` is the direction *from the scene
@@ -203,6 +204,15 @@ def render_svg(
     convention` comment and confirmed empirically: a camera at
     `(x, -10, z)` "looking" into the scene along +Y needs `camera_dir=(0,-1,0)`,
     not `(0,1,0)`, to produce any visible geometry at all.
+
+    `subtraction_settings`, when given, is one of `SvgSerializer`'s own
+    `ON_SLABS_AT_FLOORPLANS`/`ON_SLABS_AND_WALLS`/`ALWAYS` names (see
+    `ifcopenshell.ifcopenshell_wrapper`) and is passed straight to
+    `setSubtractionSettings()` -- this suite otherwise never touches it,
+    leaving it at the C++ default (`ON_SLABS_AT_FLOORPLANS`), which is why the
+    real Bonsai pipeline's own unconditional `setSubtractionSettings(ALWAYS)`
+    (`operator.py:1439`) has its own dedicated tests using this parameter
+    rather than every other scenario in this file needing to set it.
     """
     geom_settings = ifcopenshell.geom.settings(ELEMENT_HIERARCHY=True)
     geom_settings.set("dimensionality", W.SURFACES_AND_SOLIDS)
@@ -225,6 +235,8 @@ def render_svg(
     sr.setBoundingRectangle(*bounding_rectangle)
     sr.setScale(scale)
     sr.setUnifyInputs(unify_inputs)
+    if subtraction_settings is not None:
+        sr.setSubtractionSettings(getattr(W, subtraction_settings))
     sr.addDrawing(camera_pos, camera_dir, camera_ref, "Test", True)
 
     it = ifcopenshell.geom.iterator(geom_settings, ifc_file)
@@ -2035,3 +2047,110 @@ def test_unify_inputs_heals_hairline_kink_within_one_product():
     assert has_edge(healed, wall.GlobalId, "outline", tl, tr)
     assert not has_any_edge(healed, wall.GlobalId, kink_bottom, kink_bottom)
     assert not has_any_edge(healed, wall.GlobalId, kink_top, kink_top)
+
+
+def test_section_cut_preserves_native_classification():
+    """Known-issues backlog item 26 (issue #3742 follow-up): a wall straddling
+    a real Bonsai section-cut camera must keep its native edge classification
+    (`outline`/`sharp`/`crease`) after the cut for edges away from the cut
+    itself, not fall back to `boundary`.
+
+    Real Bonsai drawings always call `setSubtractionSettings(ALWAYS)`
+    (`operator.py:1439`, unconditionally, for every `target_view` -- this
+    suite's own `render_svg()` otherwise leaves it at the C++ default
+    `ON_SLABS_AT_FLOORPLANS`, which is why no other scenario in this file
+    caught this). Under `ALWAYS`, any product whose bounding box straddles
+    the camera's own projection plane gets each of its own top-level shape
+    parts individually halfspace-cut (`SvgSerializer.cpp`, "loop over parts
+    to have better luck with co-planar parts").
+
+    Root cause (confirmed via direct debug instrumentation against a real
+    project file): `heal_for_linework()`'s own sewing pass (`unify_inputs=True`,
+    reconnecting a product's own faces into shared topology) already runs,
+    correctly, before this loop -- but the per-part cutting loop then cuts
+    each of the product's own faces SEPARATELY, one `BRepAlgoAPI_Cut` call
+    per part, each unaware of and not preserving sharing with any other
+    part's own independently-cut result. Edges that were genuinely shared
+    between two faces before the cut come out the other side naked (1
+    adjacent face) again, wrongly falling back to
+    `classify_edge_from_faces()`'s naked-edge `boundary` class instead of
+    their true native classification.
+
+    Fix, first attempt (REVERTED): re-apply the FULL `heal_for_linework()`
+    (sewing + `ShapeUpgrade_UnifySameDomain` + a `validate_shape()`/
+    `ShapeFix_Shape` repair fallback) to the cut result too, symmetric with
+    the existing pre-cut call. This did eliminate all `boundary` edges, but
+    was itself a worse bug, caught by the user's own manual Blender testing:
+    `ShapeFix_Shape`'s repair pass -- whose job is to force a shape
+    closed/"valid" -- was reconstructing the ENTIRE cut-away portion of the
+    object, silently undoing the cut completely (confirmed analytically:
+    the rendered wall's own screen-space span matched a full, uncut box to
+    5 significant figures, not a correctly-cut half).
+
+    Fix, actual: re-apply ONLY the sewing + `unify()` portion
+    (`sew_and_unify_for_linework()`, deliberately omitting the
+    `ShapeFix_Shape` repair fallback -- the post-cut shape is intentionally
+    an OPEN compound, since 2D faces are being clipped rather than solids,
+    and forcing it "valid"/closed is the wrong goal). This correctly
+    preserves the cut and recovers native classification for every edge
+    away from the cut boundary -- but, confirmed correct by the user's own
+    manual inspection (not a residual bug), edges running exactly along the
+    cut boundary itself legitimately keep the naked-edge `boundary` class:
+    there is genuinely no capping face there (a halfspace cut of a bare
+    face, not a solid, leaves the cut edge belonging to only one face), so
+    `boundary` is the geometrically correct classification for those two
+    specific edges, not a fallback failure.
+    """
+    ifc_file, body_context, storey = _make_project()
+    # A plain box wall (2m long x 0.3m thick x 2m tall), straddling world
+    # X=0 -- the section-cut camera below sits exactly at X=0, so roughly
+    # half the wall's own length is cut away, half survives.
+    wall = _add_box(ifc_file, body_context, storey, "Wall", (2.0, 0.3, 2.0), (-1.0, -0.15, 0.0))
+
+    def render() -> list[Edge]:
+        svg = render_svg(
+            ifc_file,
+            # The camera sits exactly at the intended cut location (X=0) --
+            # real Bonsai SECTION cameras work the same way, since
+            # `camera_pos` doubles as both the HLR projection reference AND
+            # the halfspace-cut plane's own location. A slight Y component on
+            # `camera_dir` views the wall's long face at a shallow angle
+            # (matching the real-file report: "the wall is angled to the
+            # camera") rather than perfectly edge-on.
+            camera_pos=(0.0, 0.0, 1.0),
+            camera_dir=(-0.9578, 0.2874, 0.0),
+            camera_ref=(0.0, 0.0, 1.0),
+            unify_inputs=True,
+            subtraction_settings="ALWAYS",
+        )
+        return parse_edges(svg)
+
+    edges = render()
+    wall_edges = [e for e in edges if e.guid == wall.GlobalId]
+    assert wall_edges, "expected the cut wall to still render classified edges"
+
+    # The two genuine cut-rim edges (the exposed top and bottom of the cut
+    # cross-section) -- there is no capping face here, so these are correctly
+    # `boundary`, not a bug. Coordinates captured empirically from this exact
+    # scene, same convention as this suite's other geometry-pinning tests.
+    cut_rim_1 = ((9500.0, 9980.626251541069), (11500.0, 9980.626251541069))
+    cut_rim_2 = ((9500.0, 10293.840847473826), (11500.0, 10293.840847473826))
+    assert has_edge(wall_edges, wall.GlobalId, "boundary", *cut_rim_1)
+    assert has_edge(wall_edges, wall.GlobalId, "boundary", *cut_rim_2)
+
+    # The bug under test: every OTHER edge -- away from the cut boundary --
+    # must keep its true native classification, not fall back to `boundary`.
+    # This is the assertion that fails on the unfixed code (all ten of the
+    # wall's own edges wrongly carry `boundary`) and also fails against the
+    # first, reverted fix attempt (which eliminates `boundary` everywhere,
+    # including these two genuinely-correct cut-rim edges, by silently
+    # undoing the cut and reconstructing the missing material instead).
+    non_cut_boundary_edges = [
+        e for e in wall_edges if e.cls == "boundary" and not e.near(*cut_rim_1) and not e.near(*cut_rim_2)
+    ]
+    assert not non_cut_boundary_edges, (
+        f"expected zero boundary-classed edges away from the genuine cut rim "
+        f"(native classification should survive the cut everywhere else), "
+        f"found {len(non_cut_boundary_edges)}: {non_cut_boundary_edges}"
+    )
+    assert any(e.cls in ("outline", "sharp", "crease") for e in wall_edges), wall_edges
