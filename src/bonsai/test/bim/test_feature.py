@@ -36,6 +36,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import numpy as np
 import pytest
 from mathutils import Vector
@@ -1679,6 +1680,111 @@ def the_object_name_has_a_vertex_at_location(name, location):
     finally:
         obj_eval.to_mesh_clear()
     assert is_pass, f"No verts found at {location}: {verts}"
+
+
+def get_model_origin() -> Vector:
+    """Where the model was shifted to, in Blender units.
+
+    Geometry far from the origin is moved next to it so it keeps its precision,
+    and the shift is recorded as the model origin. Which vert of which object it
+    lands on is not something to depend on, so anything measured from it stays
+    put even when that choice changes.
+    """
+    props = bpy.context.scene.BIMGeoreferenceProperties
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(an_ifc_file_exists())
+    return Vector([float(co) for co in props.model_origin.split(",")]) * unit_scale
+
+
+def get_world_verts(obj: bpy.types.Object) -> list[Vector]:
+    mesh = obj.data
+    assert isinstance(mesh, bpy.types.Mesh) and len(mesh.vertices), f"Object {obj.name} has no mesh"
+    return [obj.matrix_world @ v.co for v in mesh.vertices]
+
+
+def assert_vert_at_map_coordinates(obj: bpy.types.Object, vert: Vector, coordinates: str) -> None:
+    # Same conversion as the georeferencing calculator, which works in project
+    # units rather than Blender ones.
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(an_ifc_file_exists())
+    enh = Vector(tool.Georeference.xyz2enh(tuple(co / unit_scale for co in vert)))
+    expected = Vector([float(co) for co in coordinates.split(",")])
+    assert (enh - expected).length < 0.05, f"Vert {vert} is at map coordinates {enh[:]} instead of {coordinates}"
+
+
+@then(
+    parsers.parse(
+        'the object "{name}" is at "{location}" relative to the model origin at map coordinates "{coordinates}"'
+    )
+)
+def the_object_name_is_at_location_relative_to_the_model_origin_at_map_coordinates(name, location, coordinates):
+    """For objects with no geometry to name a vert on.
+
+    The Blender location is only meaningful next to the origin everything was
+    shifted by, since the two move together, but the map coordinates hold still
+    either way.
+    """
+    obj = the_object_name_exists(name)
+    obj_location = obj.location + get_model_origin()
+    assert (
+        obj_location - Vector([float(co) for co in location.split(",")])
+    ).length < 0.05, f"Object is at {obj_location} relative to the model origin instead of {location}"
+    assert_vert_at_map_coordinates(obj, obj.matrix_world.translation, coordinates)
+
+
+@then(parsers.parse('the object "{name}" has a vert at "{location}" at map coordinates "{coordinates}"'))
+def the_object_name_has_a_vert_at_location_at_map_coordinates(name, location, coordinates):
+    """Check where a vert sits in Blender and where it is in the world.
+
+    Both matter: the Blender location is what the user sees, and checking only
+    the map coordinates would pass just as happily if the georeferencing maths
+    or the offsets it reads were wrong, since the same maths produces both.
+    """
+    obj = the_object_name_exists(name)
+    target = Vector([float(co) for co in location.split(",")])
+    verts = get_world_verts(obj)
+    vert = next((v for v in verts if (v - target).length < 0.001), None)
+    assert vert is not None, f"No vert found at {location}: {verts}"
+    assert_vert_at_map_coordinates(obj, vert, coordinates)
+
+
+@then(
+    parsers.parse(
+        'the object "{name}" has a vert at "{location}" relative to the model origin at map coordinates "{coordinates}"'
+    )
+)
+def the_object_name_has_a_vert_at_location_relative_to_the_model_origin_at_map_coordinates(name, location, coordinates):
+    """As above, for when the whole model has been shifted onto the origin.
+
+    Blender locations are then only meaningful relative to that origin, since
+    everything moves together with it.
+    """
+    obj = the_object_name_exists(name)
+    target = Vector([float(co) for co in location.split(",")]) - get_model_origin()
+    verts = get_world_verts(obj)
+    vert = next((v for v in verts if (v - target).length < 0.001), None)
+    assert vert is not None, f"No vert found at {location} relative to the model origin: {verts}"
+    assert_vert_at_map_coordinates(obj, vert, coordinates)
+
+
+@then(parsers.parse('the object "{name}" has its origin on a vertex'))
+def the_object_name_has_its_origin_on_a_vertex(name):
+    """Far away geometry is shifted onto one of its own verts, which keeps the
+    origin on the geometry and the local coordinates small enough to keep their
+    precision. Which vert that is does not matter."""
+    obj = the_object_name_exists(name)
+    mesh = obj.data
+    assert isinstance(mesh, bpy.types.Mesh) and len(mesh.vertices), f"Object {obj.name} has no mesh"
+    nearest = min(v.co.length for v in mesh.vertices)
+    assert nearest < 0.001, f"Object origin is {nearest} away from its nearest vert"
+
+
+@then("the model origin is on an object vertex")
+def the_model_origin_is_on_an_object_vertex():
+    for obj in bpy.data.objects:
+        if not isinstance(obj.data, bpy.types.Mesh):
+            continue
+        if any(v.length < 0.001 for v in get_world_verts(obj)):
+            return
+    assert False, "No object has a vert at the model origin"
 
 
 @then(parsers.parse('the object "{name}" has no scale'))

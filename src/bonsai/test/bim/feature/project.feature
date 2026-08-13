@@ -314,6 +314,12 @@ Scenario: Load project elements - auto offset of cartesian points
     Then the object "IfcBuildingElementProxy/NAME" is at "0,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations - disabled false origin mode
+    # D, G and J have their geometry far from their placement, so each is
+    # shifted onto one of its own verts to keep its precision. Which vert that
+    # is comes from the geometry kernel and has changed before, so these assert
+    # that the origin is on a vert rather than which one, and name verts rather
+    # than origins. In automatic mode the model origin is picked the same way
+    # and everything moves with it, so there they are relative to it.
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/geolocation.ifc', is_advanced=True)"
     When I set "scene.BIMProjectProperties.false_origin_mode" to "DISABLED"
@@ -326,13 +332,19 @@ Scenario: Load project elements - all georeferencing coordinate situations - dis
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "13,4,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "13000,4000,-1000"
+    And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "15000,2000,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" is at "15,6,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "15000,6000,-1000"
+    And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "17000,4000,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" is at "11,3,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "11000,3000,-1000"
+    And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "13000,1000,1000"
     And the object "IfcActuator/K" is at "10,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations - automatic false origin mode
@@ -342,24 +354,27 @@ Scenario: Load project elements - all georeferencing coordinate situations - aut
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.model_origin" is "13000.0,4000.0,-1000.0"
-    And "scene.BIMGeoreferenceProperties.blender_offset_x" is "13000.0"
-    And "scene.BIMGeoreferenceProperties.blender_offset_y" is "4000.0"
-    And "scene.BIMGeoreferenceProperties.blender_offset_z" is "-1000.0"
+    And the model origin is on an object vertex
     And the object "IfcSite/My Site" is at "0,0,0"
     And the object "IfcBuilding/My Building" is at "0,0,0"
     And the object "IfcBuildingStorey/My Storey" is at "0,0,0"
-    And the object "IfcActuator/A" is at "-6,-1,1"
-    And the object "IfcActuator/B" is at "-7,-3,1"
+    And the object "IfcActuator/A" is at "7,3,0" relative to the model origin at map coordinates "7000,3000,0"
+    And the object "IfcActuator/B" is at "6,1,0" relative to the model origin at map coordinates "6000,1000,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "0,0,0"
-    And the object "IfcActuator/E" is at "-7,-1,1"
-    And the object "IfcActuator/F" is at "-10,-1,1"
-    And the object "IfcActuator/G" is at "2,2,0"
-    And the object "IfcActuator/H" is at "-4,-2,1"
-    And the object "IfcActuator/I" is at "-10,-1,1"
-    And the object "IfcActuator/J" is at "-2,-1,0"
-    And the object "IfcActuator/K" is at "-3,-4,1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "13,4,-1" relative to the model origin at map coordinates "13000,4000,-1000"
+    And the object "IfcActuator/D" has a vert at "15,2,1" relative to the model origin at map coordinates "15000,2000,1000"
+    And the object "IfcActuator/E" is at "6,3,0" relative to the model origin at map coordinates "6000,3000,0"
+    And the object "IfcActuator/F" is at "3,3,0" relative to the model origin at map coordinates "3000,3000,0"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "15,6,-1" relative to the model origin at map coordinates "15000,6000,-1000"
+    And the object "IfcActuator/G" has a vert at "17,4,1" relative to the model origin at map coordinates "17000,4000,1000"
+    And the object "IfcActuator/H" is at "9,2,0" relative to the model origin at map coordinates "9000,2000,0"
+    And the object "IfcActuator/I" is at "3,3,0" relative to the model origin at map coordinates "3000,3000,0"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "11,3,-1" relative to the model origin at map coordinates "11000,3000,-1000"
+    And the object "IfcActuator/J" has a vert at "13,1,1" relative to the model origin at map coordinates "13000,1000,1000"
+    And the object "IfcActuator/K" is at "10,0,0" relative to the model origin at map coordinates "10000,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations - manual false origin mode
     Given an empty Blender session
@@ -379,23 +394,20 @@ Scenario: Load project elements - all georeferencing coordinate situations - man
     And the object "IfcActuator/A" is at "-3,3,0"
     And the object "IfcActuator/B" is at "-4,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "3,4,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "3,4,-1" at map coordinates "13000,4000,-1000"
+    And the object "IfcActuator/D" has a vert at "5,2,1" at map coordinates "15000,2000,1000"
     And the object "IfcActuator/E" is at "-4,3,0"
     And the object "IfcActuator/F" is at "-7,3,0"
-    And the object "IfcActuator/G" is at "5,6,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "5,6,-1" at map coordinates "15000,6000,-1000"
+    And the object "IfcActuator/G" has a vert at "7,4,1" at map coordinates "17000,4000,1000"
     And the object "IfcActuator/H" is at "-1,2,0"
     And the object "IfcActuator/I" is at "-7,3,0"
-    And the object "IfcActuator/J" is at "1,3,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "1,3,-1" at map coordinates "11000,3000,-1000"
+    And the object "IfcActuator/J" has a vert at "3,1,1" at map coordinates "13000,1000,1000"
     And the object "IfcActuator/K" is at "0,0,0"
-    And the object "IfcActuator/D" has a cartesian point offset of "31,4,-1"
-    And the object "IfcActuator/G" has a cartesian point offset of "-25,6,-1"
-    And the object "IfcActuator/J" has a cartesian point offset of "11,3,-1"
-    And the object "IfcActuator/D" has a vertex at "3,2,-1"
-    And the object "IfcActuator/D" has a vertex at "5,2,-1"
-    And the object "IfcActuator/G" has a vertex at "5,4,-1"
-    And the object "IfcActuator/G" has a vertex at "7,4,-1"
-    And the object "IfcActuator/J" has a vertex at "1,1,-1"
-    And the object "IfcActuator/J" has a vertex at "3,1,-1"
 
 Scenario: Load project elements - all georeferencing coordinate situations with an offset site - disabled false origin mode
     Given an empty Blender session
@@ -410,13 +422,19 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "5.985,14.71,0"
     And the object "IfcActuator/B" is at "5.5367,12.519,0"
     And the object "IfcActuator/C" is at "0,10,0"
-    And the object "IfcActuator/D" is at "11.522,17.228,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "11.5218,17.2284,-1" at map coordinates "11521.758,17228.35,-1000"
+    And the object "IfcActuator/D" has a vert at "13.9712,15.8141,1" at map coordinates "13971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "5.0191,14.451,0"
     And the object "IfcActuator/F" is at "2.1213,13.674,0"
-    And the object "IfcActuator/G" is at "12.936,19.678,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "12.936,19.6778,-1" at map coordinates "12935.975,19677.841,-1000"
+    And the object "IfcActuator/G" has a vert at "15.3855,18.2636,1" at map coordinates "15385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "8.1757,14.261,0"
     And the object "IfcActuator/I" is at "2.1213,13.674,0"
-    And the object "IfcActuator/J" is at "9.8487,15.745,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "9.8487,15.7448,-1" at map coordinates "9848.726,15744.786,-1000"
+    And the object "IfcActuator/J" has a vert at "12.2982,14.3306,1" at map coordinates "12298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "9.6593,12.588,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations with an offset site - automatic false origin mode
@@ -436,13 +454,19 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "13,4,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "11521.758,17228.35,-1000"
+    And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "13971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" is at "15,6,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "12935.975,19677.841,-1000"
+    And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "15385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" is at "11,3,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "9848.726,15744.786,-1000"
+    And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "12298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "10,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations with an offset site - manual false origin mode
@@ -463,23 +487,20 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "5.985,4.71,0"
     And the object "IfcActuator/B" is at "5.5367,2.519,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "11.522,7.228,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "11.5218,7.2284,-1" at map coordinates "11521.758,17228.35,-1000"
+    And the object "IfcActuator/D" has a vert at "13.9712,5.8141,1" at map coordinates "13971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "5.0191,4.451,0"
     And the object "IfcActuator/F" is at "2.1213,3.674,0"
-    And the object "IfcActuator/G" is at "12.936,9.678,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "12.936,9.6778,-1" at map coordinates "12935.975,19677.841,-1000"
+    And the object "IfcActuator/G" has a vert at "15.3855,8.2636,1" at map coordinates "15385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "8.1757,4.261,0"
     And the object "IfcActuator/I" is at "2.1213,3.674,0"
-    And the object "IfcActuator/J" is at "9.8487,5.745,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "9.8487,5.7448,-1" at map coordinates "9848.726,15744.786,-1000"
+    And the object "IfcActuator/J" has a vert at "12.2982,4.3306,1" at map coordinates "12298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "9.6593,2.588,0"
-    And the object "IfcActuator/D" has a cartesian point offset of "31,4,-1"
-    And the object "IfcActuator/G" has a cartesian point offset of "-25,6,-1"
-    And the object "IfcActuator/J" has a cartesian point offset of "11,3,-1"
-    And the object "IfcActuator/D" has a vertex at "12.039,5.296,-1"
-    And the object "IfcActuator/D" has a vertex at "13.971,5.814,-1"
-    And the object "IfcActuator/G" has a vertex at "13.454,7.746,-1"
-    And the object "IfcActuator/G" has a vertex at "15.385,8.264,-1"
-    And the object "IfcActuator/J" has a vertex at "10.366,3.813,-1"
-    And the object "IfcActuator/J" has a vertex at "12.298,4.331,-1"
 
 Scenario: Load project elements - all georeferencing coordinate situations with an offset site - manual false origin mode - with custom project north
     Given an empty Blender session
@@ -500,13 +521,19 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "13,4,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "11521.758,17228.35,-1000"
+    And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "13971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" is at "15,6,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "12935.975,19677.841,-1000"
+    And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "15385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" is at "11,3,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "9848.726,15744.786,-1000"
+    And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "12298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "10,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations with a map conversion - disabled false origin mode (this should be identical to the situation with no map conversion)
@@ -522,13 +549,19 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "13,4,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "28000,4000,-1000"
+    And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "30000,2000,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" is at "15,6,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "30000,6000,-1000"
+    And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "32000,4000,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" is at "11,3,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "26000,3000,-1000"
+    And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "28000,1000,1000"
     And the object "IfcActuator/K" is at "10,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations with a map conversion - automatic false origin mode (this should affect the Blender eastings and northings, which is now different to the Blender offset XYZ, but is otherwise identical to the non-map conversion variant)
@@ -538,24 +571,27 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.model_origin" is "28000.0,4000.0,-1000.0"
-    And "scene.BIMGeoreferenceProperties.blender_offset_x" is "13000.0"
-    And "scene.BIMGeoreferenceProperties.blender_offset_y" is "4000.0"
-    And "scene.BIMGeoreferenceProperties.blender_offset_z" is "-1000.0"
+    And the model origin is on an object vertex
     And the object "IfcSite/My Site" is at "0,0,0"
     And the object "IfcBuilding/My Building" is at "0,0,0"
     And the object "IfcBuildingStorey/My Storey" is at "0,0,0"
-    And the object "IfcActuator/A" is at "-6,-1,1"
-    And the object "IfcActuator/B" is at "-7,-3,1"
+    And the object "IfcActuator/A" is at "22,3,0" relative to the model origin at map coordinates "22000,3000,0"
+    And the object "IfcActuator/B" is at "21,1,0" relative to the model origin at map coordinates "21000,1000,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "0,0,0"
-    And the object "IfcActuator/E" is at "-7,-1,1"
-    And the object "IfcActuator/F" is at "-10,-1,1"
-    And the object "IfcActuator/G" is at "2,2,0"
-    And the object "IfcActuator/H" is at "-4,-2,1"
-    And the object "IfcActuator/I" is at "-10,-1,1"
-    And the object "IfcActuator/J" is at "-2,-1,0"
-    And the object "IfcActuator/K" is at "-3,-4,1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "28,4,-1" relative to the model origin at map coordinates "28000,4000,-1000"
+    And the object "IfcActuator/D" has a vert at "30,2,1" relative to the model origin at map coordinates "30000,2000,1000"
+    And the object "IfcActuator/E" is at "21,3,0" relative to the model origin at map coordinates "21000,3000,0"
+    And the object "IfcActuator/F" is at "18,3,0" relative to the model origin at map coordinates "18000,3000,0"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "30,6,-1" relative to the model origin at map coordinates "30000,6000,-1000"
+    And the object "IfcActuator/G" has a vert at "32,4,1" relative to the model origin at map coordinates "32000,4000,1000"
+    And the object "IfcActuator/H" is at "24,2,0" relative to the model origin at map coordinates "24000,2000,0"
+    And the object "IfcActuator/I" is at "18,3,0" relative to the model origin at map coordinates "18000,3000,0"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "26,3,-1" relative to the model origin at map coordinates "26000,3000,-1000"
+    And the object "IfcActuator/J" has a vert at "28,1,1" relative to the model origin at map coordinates "28000,1000,1000"
+    And the object "IfcActuator/K" is at "25,0,0" relative to the model origin at map coordinates "25000,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations with a map conversion - manual false origin mode (this should affect the Blender eastings and northings, which is now different to the Blender offset XYZ, but is otherwise identical to the non-map conversion variant)
     Given an empty Blender session
@@ -575,23 +611,20 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "-3,3,0"
     And the object "IfcActuator/B" is at "-4,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "3,4,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "3,4,-1" at map coordinates "28000,4000,-1000"
+    And the object "IfcActuator/D" has a vert at "5,2,1" at map coordinates "30000,2000,1000"
     And the object "IfcActuator/E" is at "-4,3,0"
     And the object "IfcActuator/F" is at "-7,3,0"
-    And the object "IfcActuator/G" is at "5,6,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "5,6,-1" at map coordinates "30000,6000,-1000"
+    And the object "IfcActuator/G" has a vert at "7,4,1" at map coordinates "32000,4000,1000"
     And the object "IfcActuator/H" is at "-1,2,0"
     And the object "IfcActuator/I" is at "-7,3,0"
-    And the object "IfcActuator/J" is at "1,3,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "1,3,-1" at map coordinates "26000,3000,-1000"
+    And the object "IfcActuator/J" has a vert at "3,1,1" at map coordinates "28000,1000,1000"
     And the object "IfcActuator/K" is at "0,0,0"
-    And the object "IfcActuator/D" has a cartesian point offset of "31,4,-1"
-    And the object "IfcActuator/G" has a cartesian point offset of "-25,6,-1"
-    And the object "IfcActuator/J" has a cartesian point offset of "11,3,-1"
-    And the object "IfcActuator/D" has a vertex at "3,2,-1"
-    And the object "IfcActuator/D" has a vertex at "5,2,-1"
-    And the object "IfcActuator/G" has a vertex at "5,4,-1"
-    And the object "IfcActuator/G" has a vertex at "7,4,-1"
-    And the object "IfcActuator/J" has a vertex at "1,1,-1"
-    And the object "IfcActuator/J" has a vertex at "3,1,-1"
 
 Scenario: Load project elements - all georeferencing coordinate situations with map conversion and an offset site - disabled false origin mode
     Given an empty Blender session
@@ -606,13 +639,19 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "5.985,14.71,0"
     And the object "IfcActuator/B" is at "5.5367,12.519,0"
     And the object "IfcActuator/C" is at "0,10,0"
-    And the object "IfcActuator/D" is at "11.522,17.228,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "11.5218,17.2284,-1" at map coordinates "26521.758,17228.35,-1000"
+    And the object "IfcActuator/D" has a vert at "13.9712,15.8141,1" at map coordinates "28971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "5.0191,14.451,0"
     And the object "IfcActuator/F" is at "2.1213,13.674,0"
-    And the object "IfcActuator/G" is at "12.936,19.678,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "12.936,19.6778,-1" at map coordinates "27935.975,19677.841,-1000"
+    And the object "IfcActuator/G" has a vert at "15.3855,18.2636,1" at map coordinates "30385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "8.1757,14.261,0"
     And the object "IfcActuator/I" is at "2.1213,13.674,0"
-    And the object "IfcActuator/J" is at "9.8487,15.745,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "9.8487,15.7448,-1" at map coordinates "24848.726,15744.786,-1000"
+    And the object "IfcActuator/J" has a vert at "12.2982,14.3306,1" at map coordinates "27298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "9.6593,12.588,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations with map conversion and an offset site - automatic false origin mode
@@ -632,13 +671,19 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "13,4,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "26521.758,17228.35,-1000"
+    And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "28971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" is at "15,6,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "27935.975,19677.841,-1000"
+    And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "30385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" is at "11,3,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "24848.726,15744.786,-1000"
+    And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "27298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "10,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations with map conversion and an offset site - manual false origin mode
@@ -659,23 +704,20 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "5.985,4.71,0"
     And the object "IfcActuator/B" is at "5.5367,2.519,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" is at "11.522,7.228,-1"
+    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has a vert at "11.5218,7.2284,-1" at map coordinates "26521.758,17228.35,-1000"
+    And the object "IfcActuator/D" has a vert at "13.9712,5.8141,1" at map coordinates "28971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "5.0191,4.451,0"
     And the object "IfcActuator/F" is at "2.1213,3.674,0"
-    And the object "IfcActuator/G" is at "12.936,9.678,-1"
+    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has a vert at "12.936,9.6778,-1" at map coordinates "27935.975,19677.841,-1000"
+    And the object "IfcActuator/G" has a vert at "15.3855,8.2636,1" at map coordinates "30385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "8.1757,4.261,0"
     And the object "IfcActuator/I" is at "2.1213,3.674,0"
-    And the object "IfcActuator/J" is at "9.8487,5.745,-1"
+    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has a vert at "9.8487,5.7448,-1" at map coordinates "24848.726,15744.786,-1000"
+    And the object "IfcActuator/J" has a vert at "12.2982,4.3306,1" at map coordinates "27298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "9.6593,2.588,0"
-    And the object "IfcActuator/D" has a cartesian point offset of "31,4,-1"
-    And the object "IfcActuator/G" has a cartesian point offset of "-25,6,-1"
-    And the object "IfcActuator/J" has a cartesian point offset of "11,3,-1"
-    And the object "IfcActuator/D" has a vertex at "12.039,5.296,-1"
-    And the object "IfcActuator/D" has a vertex at "13.971,5.814,-1"
-    And the object "IfcActuator/G" has a vertex at "13.454,7.746,-1"
-    And the object "IfcActuator/G" has a vertex at "15.385,8.264,-1"
-    And the object "IfcActuator/J" has a vertex at "10.366,3.813,-1"
-    And the object "IfcActuator/J" has a vertex at "12.298,4.331,-1"
 
 Scenario: Link IFC - from an empty IFC project
     Given an empty IFC project
