@@ -3189,7 +3189,22 @@ namespace {
 						(ei.cls == mat_style_change::class_name && ej.cls == "outline") ||
 						(ej.cls == mat_style_change::class_name && ei.cls == "outline");
 					bool outline_symmetric_full_overlap = false;
-					if (outline_msc_pair) {
+					// Restricted to cross-product pairs (confirmed necessary via direct
+					// instrumentation against a synthetic fixture, issue #3742 follow-up "NORTH
+					// SECTION" report): a SAME product's own outline candidate and its own
+					// mat-style-change candidate can independently be generated for the exact same
+					// full-length edge (same projected endpoints, same length, no nesting at all)
+					// when that edge is genuinely just the product's own outer boundary -- not a
+					// real material-transition marking. Instrumented directly: on a real regression
+					// case, 53 of 55 same-screen-line outline/mat-style-change collisions were
+					// same-product (ei.product == ej.product) with i_fraction/j_fraction/
+					// length_ratio all ~1.0, wrongly letting mat-style-change paint over the
+					// product's own true outline; only 2 were the genuine cross-product "two
+					// products share a corner" case this exception exists for (see the long comment
+					// above -- PROPOSED SECTION 4's own two-wall-segments-meeting-end-to-end
+					// report). Requiring ei.product != ej.product keeps the fix for that
+					// cross-product case while no longer misfiring on a product's own self-duplicate.
+					if (outline_msc_pair && ei.product != ej.product) {
 						constexpr double kMinOverlapFraction = 0.5;
 						constexpr double kMinLengthRatio = 0.5;
 						double i_fraction = has_i_overlap ? (hi_i_proj - lo_i_proj) / ei.proj_seg.length : 0.0;
