@@ -621,6 +621,16 @@ class BIMCameraProperties(PropertyGroup):
         default=False,
         update=get_update_layer_callback("use_mat_style_change_classification", "UseMatStyleChangeClassification"),
     )
+    merge_duplicate_edges: BoolProperty(
+        name="Merge Duplicate Edges",
+        description="Two different elements can each independently draw their own copy of the same "
+        "physical edge (e.g. a shared 'cross-coplanar' boundary) -- both are individually correct, "
+        "but drawing both is visibly wrong once stroke opacity drops below 100%. When enabled, a "
+        "post-processing pass removes/trims same-class duplicate or overlapping strokes after the "
+        "drawing is generated. Only takes effect when Use Edge Classification is also enabled",
+        default=False,
+        update=get_update_layer_callback("merge_duplicate_edges", "MergeDuplicateEdges"),
+    )
     target_view: EnumProperty(
         name="Target View",
         default="PLAN_VIEW",

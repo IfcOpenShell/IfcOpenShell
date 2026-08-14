@@ -1093,6 +1093,7 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.render_cross_coplanar = False
         camera_props.cross_coplanar_tolerance = 0.0001
         camera_props.use_mat_style_change_classification = False
+        camera_props.merge_duplicate_edges = False
         camera.shift_x = 0.0
         camera.shift_y = 0.0
 
@@ -1142,6 +1143,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.cross_coplanar_tolerance = float(pset["CrossCoplanarTolerance"])
             if "UseMatStyleChangeClassification" in pset:
                 camera_props.use_mat_style_change_classification = bool(pset["UseMatStyleChangeClassification"])
+            if "MergeDuplicateEdges" in pset:
+                camera_props.merge_duplicate_edges = bool(pset["MergeDuplicateEdges"])
             if "DPI" in pset:
                 camera_props.dpi = int(pset["DPI"])
             if "LineworkMode" in pset:

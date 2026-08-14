@@ -63,6 +63,7 @@ import bonsai.bim.export_ifc
 import bonsai.bim.handler
 import bonsai.bim.import_ifc
 import bonsai.bim.module.drawing.sheeter as sheeter
+import bonsai.bim.module.drawing.svg_dedup as svg_dedup
 import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.core.drawing as core
 import bonsai.core.geometry
@@ -1129,12 +1130,16 @@ class CreateDrawing(bpy.types.Operator):
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
+            if self.cprops.use_edge_classification and self.cprops.merge_duplicate_edges:
+                self.merge_duplicate_edges(root)
             self.move_elements_to_top(root)
         elif self.cprops.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
+            if self.cprops.use_edge_classification and self.cprops.merge_duplicate_edges:
+                self.merge_duplicate_edges(root)
             self.move_elements_to_top(root)
 
         if self.cprops.fill_mode == "SHAPELY":
@@ -1737,6 +1742,9 @@ class CreateDrawing(bpy.types.Operator):
                 path.attrib["d"] = d
                 g.set("class", " ".join(list(polygon_classes)))
                 group.append(g)
+
+    def merge_duplicate_edges(self, root) -> None:
+        svg_dedup.merge_duplicate_edges(root)
 
     def drawing_to_model_co(self, x: float, y: float) -> Vector:
         camera_xy = np.array((x, -y)) / self.scale / 1000

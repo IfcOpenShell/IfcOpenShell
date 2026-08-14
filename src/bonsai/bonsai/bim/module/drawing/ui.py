@@ -135,6 +135,8 @@ class BIM_PT_camera(Panel):
                     row.prop(props, "cross_coplanar_tolerance")
                 row = self.layout.row()
                 row.prop(props, "use_mat_style_change_classification")
+                row = self.layout.row()
+                row.prop(props, "merge_duplicate_edges")
 
         row = self.layout.row()
         row.prop(props, "width")
