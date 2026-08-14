@@ -18,8 +18,37 @@
 
 """Run this test from src/ifcopenshell-python folder: pytest --durations=0 ifcopenshell/util/test_pset.py"""
 
+import pytest
+
 from ifcopenshell.util import pset
 from ifcopenshell.util.pset import ApplicableEntity
+
+
+class TestPsetTemplateFiles:
+    @pytest.mark.parametrize("schema", ("IFC2X3", "IFC4", "IFC4X3"))
+    def test_property_templates_are_well_formed(self, schema):
+        """Guard against attribute shifts when the bundled Pset_*.ifc files are patched by hand.
+
+        A missing `$` for OwnerHistory silently shifts every following attribute,
+        which makes the property show up with its description as a name and no
+        template type - so it's dropped from the UI. See #5708.
+        """
+        template = pset.get_template(schema)
+        for ifc_file in template.templates:
+            for property_template in ifc_file.by_type("IfcSimplePropertyTemplate"):
+                assert property_template.OwnerHistory is None, property_template
+                assert property_template.Name, property_template
+                template_type = property_template.TemplateType
+                assert template_type and template_type.startswith(("P_", "Q_")), property_template
+
+    @pytest.mark.parametrize("pset_name", ("Pset_RoofCommon", "Pset_RampCommon", "Pset_StairCommon"))
+    def test_load_bearing_is_defined_in_ifc4(self, pset_name):
+        template = pset.get_template("IFC4")
+        pset_template = template.get_by_name(pset_name)
+        assert pset_template is not None
+        properties = {p.Name: p for p in pset_template.HasPropertyTemplates}
+        assert "LoadBearing" in properties
+        assert properties["LoadBearing"].PrimaryMeasureType == "IfcBoolean"
 
 
 class TestPsetQto:
