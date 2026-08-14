@@ -1,5 +1,4 @@
 Checks:          'bugprone-*,cert-*,clang-analyzer-*,readability-*'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
-AnalyzeTemporaryDtors: false
 FormatStyle: none
