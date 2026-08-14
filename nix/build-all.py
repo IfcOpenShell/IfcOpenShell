@@ -224,6 +224,9 @@ def cecho(message, color=NO_COLOR):
 
 # Flags.
 BUILD_EXAMPLES = "build-examples" in flags
+DISK_CLEANUP = "diskcleanup" in flags
+LTO = "lto" in flags
+VERBOSE = "v" in flags
 
 APPLE = platform.system() == "Darwin"
 MAC_CROSS_COMPILE_INTEL = "mac-cross-compile-intel" in flags
@@ -380,7 +383,7 @@ def gather_dependencies(dep: str) -> Generator[str]:
                 yield x
 
 
-if "v" in flags:
+if VERBOSE:
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     ch.setFormatter(formatter)
@@ -816,7 +819,7 @@ def build_dependency(
         )
         logger.info(f"\rInstalled {name}     \n")
 
-    if "diskcleanup" in flags:
+    if DISK_CLEANUP:
         shutil.rmtree(build_dir, ignore_errors=True)
 
 
@@ -943,7 +946,7 @@ else:
         CFLAGS = CFLAGS_MINIMAL
     LDFLAGS = f"{LDFLAGS} {ADDITIONAL_ARGS_STR}"
 
-if "lto" in flags:
+if LTO:
     for f in compiler_flags:
         locals()[f] += f" -flto={IFCOS_NUM_BUILD_PROCS}"
 
@@ -1173,7 +1176,7 @@ if "OpenCOLLADA" in targets:
         revision=OPENCOLLADA_VERSION,
     )
 
-if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flags:
+if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
     OLD_CPP_FLAGS = os.environ["CPPFLAGS"]
     OLD_CXX_FLAGS = os.environ["CXXFLAGS"]
