@@ -42,6 +42,7 @@ Available arguments:
     ``-ifcopenshell-shared`` - build only IfcOpenShell's own libraries as shared
         (dependencies stay static). Redundant if ``-shared`` is also passed.
     ``-diskcleanup`` - clean up build directories after finishing building dependencies
+    ``-build-examples`` - build IfcOpenShell examples
     ``-v`` - enable verbose logs
 
 
@@ -222,6 +223,8 @@ def cecho(message, color=NO_COLOR):
 
 
 # Flags.
+BUILD_EXAMPLES = "build-examples" in flags
+
 APPLE = platform.system() == "Darwin"
 MAC_CROSS_COMPILE_INTEL = "mac-cross-compile-intel" in flags
 assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
@@ -1433,7 +1436,7 @@ os.makedirs(ifcos_build_dir, exist_ok=True)
 
 cmake_args = [
     "-DUSE_MMAP=OFF",
-    "-DBUILD_EXAMPLES=OFF",
+    f"-DBUILD_EXAMPLES={OFF_ON[BUILD_EXAMPLES]}",
     "-DBUILD_SHARED_LIBS=" + OFF_ON[not IFCOPENSHELL_STATIC],
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
