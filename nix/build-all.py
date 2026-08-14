@@ -35,6 +35,7 @@ Example usage:
 Available arguments:
     ``-py-313`` - build for specific Python version
         (building for all supported Python version by default).
+    ``-occt-xxx`` - use a specific OCCT version (e.g. ``-occt-7.8.1``) instead of the default
     ``-wasm`` - compile for wasm
     ``-without-xxx`` - do not build dependency ``xxx`` (e.g. ``--without-swig``)
     ``-mac-cross-compile-intel`` - cross compile for Intel Mac on Apple Silicon host
@@ -43,6 +44,7 @@ Available arguments:
         (dependencies stay static). Redundant if ``-shared`` is also passed.
     ``-diskcleanup`` - clean up build directories after finishing building dependencies
     ``-build-examples`` - build IfcOpenShell examples
+    ``-lto`` - enable link-time optimization (adds ``-flto`` to compiler flags)
     ``-v`` - enable verbose logs
 
 
