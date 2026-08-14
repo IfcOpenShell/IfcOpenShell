@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 set -ex
 
-PYODIDE_VERSION=0.29.3
+PYODIDE_VERSION=0.29.4
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 # Script is assuming that it will be possible to execute it multiple times
