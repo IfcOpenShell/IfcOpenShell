@@ -2,9 +2,7 @@
 set -ex
 
 PYODIDE_VERSION=0.29.3
-PYODIDE_BUILD_VERSION=0.33.0
-PYODIDE_XBUILDENV_ROOT="${HOME}/.cache/.pyodide-xbuildenv-${PYODIDE_BUILD_VERSION}"
-PYODIDE_XBUILDENV="${PYODIDE_XBUILDENV_ROOT}/${PYODIDE_VERSION}"
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 # Script is assuming that it will be possible to execute it multiple times
 # therefore we're clearing venv each time and ignoring existing 'emsdk' folder.
@@ -16,12 +14,14 @@ source .venv/bin/activate
 
 # Install pyodide cross build environment.
 # Instructions: https://pyodide.org/en/stable/development/building-packages.html
-uv pip install "pyodide-build==${PYODIDE_BUILD_VERSION}"
+uv pip install -r "${SCRIPT_DIR}/requirements.txt"
 # `uv run` is required, so xbuildenv would skip using `pip`.
 uv run pyodide xbuildenv install "${PYODIDE_VERSION}"
 uv run pyodide xbuildenv install-emscripten
 
-EMSDK_ROOT="${PYODIDE_XBUILDENV}/emsdk"
+# Cache path includes a hash segment that varies by pyodide-build version,
+# so query it instead of constructing it manually.
+EMSDK_ROOT=$(uv run pyodide config get emsdk_dir)
 [ -f "${EMSDK_ROOT}/emsdk_env.sh" ] && source "${EMSDK_ROOT}/emsdk_env.sh"
 [ -f "${EMSDK_ROOT}/../../emsdk_env.sh" ] && source "${EMSDK_ROOT}/../../emsdk_env.sh"
 which emcc

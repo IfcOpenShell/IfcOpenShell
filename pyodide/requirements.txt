@@ -1,0 +1,1 @@
+pyodide-build==0.39.0
