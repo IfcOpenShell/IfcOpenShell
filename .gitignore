@@ -126,6 +126,9 @@ src/ifcopenshell-python/ifcopenshell/libifcopenshell.plugin.so
 .clangd
 # clangd cache
 .cache
+# Useful for symlinking json compilation database from cmake,
+# allowing clang commands without `-p path/to/build`.
+/compile_commands.json
 
 # Brickschema
 src/bonsai/bonsai/bim/schema/Brick.ttl
