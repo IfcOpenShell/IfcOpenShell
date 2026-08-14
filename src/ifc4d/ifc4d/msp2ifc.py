@@ -243,9 +243,7 @@ class MSP2Ifc:
 
         # <Name> is the file the export came from; <Title> is what the planner
         # called the programme, and is the string a viewer puts in its header.
-        self.project["Name"] = (
-            self.text(project, "Title") or self.text(project, "Name") or "Unnamed"
-        )
+        self.project["Name"] = self.text(project, "Title") or self.text(project, "Name") or "Unnamed"
         self.project["CalendarUID"] = self.text(project, "CalendarUID")
         minutes_per_day = self.text(project, "MinutesPerDay")
         self.project["MinutesPerDay"] = minutes_per_day

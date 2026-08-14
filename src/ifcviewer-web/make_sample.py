@@ -37,8 +37,8 @@ from pathlib import Path
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
-import ifcopenshell.api.georeference
 import ifcopenshell.api.geometry
+import ifcopenshell.api.georeference
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
