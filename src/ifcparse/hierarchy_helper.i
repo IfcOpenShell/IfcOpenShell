@@ -718,7 +718,7 @@ typename Schema::IfcGeometricRepresentationSubContext hierarchy_helper<Schema>::
     return rep_subcontext;
 }
 
-template IFC_SCHEMA_API class hierarchy_helper<IfcSchema>;
+template class IFC_SCHEMA_API hierarchy_helper<IfcSchema>;
 
 template IFC_SCHEMA_API ifcopenshell::hierarchy_detail::surface_style_type<IfcSchema>
 addStyleAssignment<IfcSchema>(hierarchy_helper<IfcSchema>&, double, double, double, double);
