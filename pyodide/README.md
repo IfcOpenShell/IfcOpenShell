@@ -28,8 +28,11 @@ since it's pure cmake without any additional moving parts.
 - clone IfcOpenShell repo next to it to `IfcOpenShell` folder
 - run `python nix/build-all.py -wasm -py-313` in `IfcOpenShell`
     - it will produce Python package in `IfcOpenShell/ifcopenshell`
-- run `pyodide build`
-    - it will produce a wheel in `IfcOpenShell/dist`
+- run `python pyodide/build-all-pack-wheel-local.py`, it will
+    - clean up previous wheels
+    - run `pyodide build`
+    - prepare standalone and modular wheels
+    - produce final wheels in `IfcOpenShell/dist` and `IfcOpenshell/dist-modular`
 - testing:
   - ensure you're in pyodide environment
   - `cd IfcOpenshell/pyodide`
