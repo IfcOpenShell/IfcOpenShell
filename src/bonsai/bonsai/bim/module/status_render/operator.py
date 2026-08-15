@@ -91,6 +91,90 @@ def get_or_create(tree, bl_idname):
     return tree.nodes.new(bl_idname)
 
 
+# --- Blender 5 compositor compatibility ------------------------------------
+# Blender 5.0 reworked the compositor and broke every API this module used:
+#   * the scene's embedded node tree became a standalone CompositorNodeTree ID
+#     (``scene.compositing_node_group``); ``scene.node_tree`` is gone and
+#     ``scene.use_nodes`` is a deprecated no-op,
+#   * the Composite output node was replaced by the node group's output,
+#   * Gamma and MixRGB moved to the unified shader node types.
+# Render Layers, Exposure and Cryptomatte are unchanged. Everything below funnels
+# through these helpers so the graph-building code stays version agnostic.
+
+
+def find_socket(sockets, identifier):
+    """Look a socket up by ``identifier`` -- socket collections key by identifier, and
+    the unified 5.x nodes carry several same-named sockets (one per data type)."""
+    return next(socket for socket in sockets if socket.identifier == identifier)
+
+
+def get_compositor_tree(scene, create=False):
+    """Return the scene's compositor node tree, optionally creating it. None if absent."""
+    if tool.Blender.BLENDER_5:
+        tree = scene.compositing_node_group
+        if tree is None and create:
+            tree = bpy.data.node_groups.new("Compositor Nodes", "CompositorNodeTree")
+            tree[MARKER] = True  # ours -- torn down again in clear_compositor
+            scene.compositing_node_group = tree
+        return tree
+    if create:
+        scene.use_nodes = True
+    return scene.node_tree if scene.use_nodes else None
+
+
+def get_output_socket(tree, create=False):
+    """Return the socket that receives the tree's final image, or None.
+
+    Pre-5.0 that is the Composite node's Image input; from 5.0 it is the first input
+    of the group output node, backed by an interface socket.
+    """
+    if not tool.Blender.BLENDER_5:
+        composite = next((n for n in tree.nodes if n.bl_idname == "CompositorNodeComposite"), None)
+        if composite is None:
+            if not create:
+                return None
+            composite = tree.nodes.new("CompositorNodeComposite")
+        return composite.inputs["Image"]
+    output = next((n for n in tree.nodes if n.bl_idname == "NodeGroupOutput"), None)
+    if output is None:
+        if not create:
+            return None
+        output = tree.nodes.new("NodeGroupOutput")
+    if not any(i.item_type == "SOCKET" and i.in_out == "OUTPUT" for i in tree.interface.items_tree):
+        if not create:
+            return None
+        tree.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
+    return output.inputs[0]  # the trailing "__extend__" virtual socket is always last
+
+
+def add_gamma_node(tree, gamma):
+    """Create a Gamma node and return ``(node, image_in, image_out)``.
+
+    ShaderNodeGamma names its image sockets "Color", so they are addressed positionally.
+    """
+    node = tree.nodes.new("ShaderNodeGamma" if tool.Blender.BLENDER_5 else "CompositorNodeGamma")
+    node.inputs["Gamma"].default_value = gamma
+    return node, node.inputs[0], node.outputs[0]
+
+
+def add_mix_node(tree):
+    """Create a colour Mix node and return ``(node, fac_in, a_in, b_in, result_out)``."""
+    if tool.Blender.BLENDER_5:
+        node = tree.nodes.new("ShaderNodeMix")
+        node.data_type = "RGBA"
+        node.blend_type = "MIX"
+        return (
+            node,
+            find_socket(node.inputs, "Factor_Float"),
+            find_socket(node.inputs, "A_Color"),
+            find_socket(node.inputs, "B_Color"),
+            find_socket(node.outputs, "Result_Color"),
+        )
+    node = tree.nodes.new("CompositorNodeMixRGB")
+    node.blend_type = "MIX"
+    return node, node.inputs[0], node.inputs[1], node.inputs[2], node.outputs[0]
+
+
 # Transparency is a real material effect (so geometry behind shows through), applied
 # before the render and restored after. These hold the swap state between the render
 # handlers. Only one render runs at a time, so module-level state is safe.
@@ -102,7 +186,7 @@ def make_transparent_material(material, amount):
     """Copy a material and mix a Transparent BSDF into its surface by ``amount``."""
     dup = material.copy()
     dup[MARKER] = True
-    dup.use_nodes = True
+    tool.Style.set_use_nodes(dup, True)  # deprecated no-op on Blender 5+, where it is always on
     tree = dup.node_tree
     output = next((n for n in tree.nodes if n.type == "OUTPUT_MATERIAL" and n.is_active_output), None)
     output = output or next((n for n in tree.nodes if n.type == "OUTPUT_MATERIAL"), None)
@@ -182,18 +266,20 @@ def build_color_rule(tree, scene, view_layer, rule, objects, input_socket, x, y)
     exposure.inputs["Exposure"].default_value = rule.exposure
     links.new(input_socket, exposure.inputs["Image"])
 
-    gamma = node("CompositorNodeGamma", (x + 180, y))
+    gamma, gamma_in, gamma_out = add_gamma_node(tree, rule.gamma)
+    gamma[MARKER] = True
+    gamma.location = (x + 180, y)
     gamma.label = f"Gamma: {rule.name}"
-    gamma.inputs["Gamma"].default_value = rule.gamma
-    links.new(exposure.outputs["Image"], gamma.inputs["Image"])
+    links.new(exposure.outputs["Image"], gamma_in)
 
-    mix = node("CompositorNodeMixRGB", (x + 360, y))
+    mix, fac_in, base_in, effect_in, mix_out = add_mix_node(tree)
+    mix[MARKER] = True
+    mix.location = (x + 360, y)
     mix.label = f"Apply: {rule.name}"
-    mix.blend_type = "MIX"
-    links.new(matte, mix.inputs["Fac"])
-    links.new(input_socket, mix.inputs[1])
-    links.new(gamma.outputs["Image"], mix.inputs[2])
-    return mix.outputs["Image"], matte
+    links.new(matte, fac_in)
+    links.new(input_socket, base_in)
+    links.new(gamma_out, effect_in)
+    return mix_out, matte
 
 
 def build_compositor(scene, props):
@@ -203,14 +289,17 @@ def build_compositor(scene, props):
     sync_live_effects so it also shows in the viewport. This only adds the colour
     nodes layered per rule.
     """
-    scene.use_nodes = True
+    tree = get_compositor_tree(scene, create=True)
     # The node tree is only applied to renders when compositing is enabled.
     scene.render.use_compositing = True
-    tree = scene.node_tree
     clear_marked_nodes(tree)
 
     render_layers = get_or_create(tree, "CompositorNodeRLayers")
-    composite = get_or_create(tree, "CompositorNodeComposite")
+    if render_layers.scene is None:
+        # A 5.x compositing group is a standalone ID, so a fresh Render Layers node in
+        # one isn't implicitly bound to the scene we are rendering.
+        render_layers.scene = scene
+    output_socket = get_output_socket(tree, create=True)
     view_layer = scene.view_layers.get(render_layers.layer) or scene.view_layers[0]
 
     current = render_layers.outputs["Image"]
@@ -230,8 +319,8 @@ def build_compositor(scene, props):
             current, _ = build_color_rule(tree, scene, view_layer, rule, objects, current, x, y)
             x += 700
 
-    composite.location = (x, y)
-    tree.links.new(current, composite.inputs["Image"])
+    output_socket.node.location = (x, y)
+    tree.links.new(current, output_socket)
 
 
 def get_camera_override_props(camera):
@@ -366,14 +455,20 @@ def clear_compositor(scene):
 
     Leaves live materials untouched (those are managed by sync_live_effects).
     """
-    if not (scene.use_nodes and scene.node_tree):
+    tree = get_compositor_tree(scene)
+    if tree is None:
         return
-    tree = scene.node_tree
     clear_marked_nodes(tree)
+    if tree.get(MARKER):
+        # A 5.x group we created just for the override -- remove it wholesale rather than
+        # leaving the scene compositing through a passthrough graph it never had.
+        scene.compositing_node_group = None
+        bpy.data.node_groups.remove(tree)
+        return
     rlayers = next((n for n in tree.nodes if n.bl_idname == "CompositorNodeRLayers"), None)
-    composite = next((n for n in tree.nodes if n.bl_idname == "CompositorNodeComposite"), None)
-    if rlayers and composite and not composite.inputs["Image"].links:
-        tree.links.new(rlayers.outputs["Image"], composite.inputs["Image"])
+    output_socket = get_output_socket(tree)
+    if rlayers and output_socket and not output_socket.links:
+        tree.links.new(rlayers.outputs["Image"], output_socket)
 
 
 # --- Handlers --------------------------------------------------------------
