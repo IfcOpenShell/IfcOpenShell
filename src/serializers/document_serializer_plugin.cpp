@@ -23,6 +23,10 @@
 
 #include "../ifcparse/logger.h"
 
+#ifdef __EMSCRIPTEN__
+#include <dlfcn.h>
+#endif
+
 #include <mutex>
 #include <set>
 
@@ -85,6 +89,14 @@ void ifcopenshell::serializers::document_serializer_registry::bind(const documen
 	entry.module_ = module.meta().id.empty() ? plugin::module(document_serializer_plugin_metadata(entry.info_.format, entry.info_.schema_name)) : module;
 
 	entries_[entry.info_.format].push_back(entry);
+}
+
+bool ifcopenshell::serializers::document_serializer_registry::has(const std::string& format) const {
+	return entries_.find(document_serializer_key(format)) != entries_.end();
+}
+
+bool ifcopenshell::serializers::document_serializer_registry::has(const std::string& format, const std::string& schema_name) const {
+	return find_entry_(format, schema_name) != nullptr;
 }
 
 const ifcopenshell::serializers::document_serializer_registry::entry* ifcopenshell::serializers::document_serializer_registry::find_entry_(const std::string& format, const std::string& schema_name) const {
@@ -240,6 +252,25 @@ bool ifcopenshell::serializers::load_document_serializer_plugin(document_seriali
 
 	ifcopenshell::plugin::manager manager;
 	add_document_serializer_search_paths(manager);
+
+#ifdef __EMSCRIPTEN__
+	using emscripten_register_fn = void (*)(document_serializer_registry*);
+	auto emscripten_symbol = std::string("ifcopenshell_emscripten_register_document_serializer_") + format_key;
+	if (!schema_key.empty()) {
+		emscripten_symbol += "_" + boost::to_lower_copy(schema_key);
+	}
+	if (auto* register_ptr = dlsym(RTLD_DEFAULT, emscripten_symbol.c_str())) {
+		union {
+			void* ptr;
+			emscripten_register_fn fn;
+		} register_symbol;
+		register_symbol.ptr = register_ptr;
+		if (register_symbol.fn) {
+			register_symbol.fn(&registry);
+			return registry.find_entry_(format_key, schema_key) != nullptr;
+		}
+	}
+#endif
 
 	for (const auto& path : manager.discover_exact(basename)) {
 		ifcopenshell::plugin::module module;
