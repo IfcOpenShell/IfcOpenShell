@@ -11,6 +11,7 @@ from pathlib import Path
 from .c_backend import render_c_abi
 from .debug import debug_log
 from .pipeline import build_binding_ir
+from .targets.wasm.backend import render_export_list, render_wasm_bindings
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,7 @@ class ProductionSourceSet:
 class GenerationConfig:
     sources: ProductionSourceSet
     c_output_dir: Path
+    wasm_output_dir: Path | None = None
     discovery_include_dirs: tuple[Path, ...] = ()
     discovery_defines: tuple[str, ...] = ()
     discovery_clang_args: tuple[str, ...] = ()
@@ -116,25 +118,45 @@ def generate_all(config: GenerationConfig) -> tuple[Artifact, ...]:
     header = c_artifacts["ifcopenshell_api.h"]
     cpp = c_artifacts["ifcopenshell_api.cpp"]
     internal = c_artifacts["ifcopenshell_api_internal.hpp"]
-    artifacts = (
+    artifacts = [
         Artifact("c-header", c_dir / "ifcopenshell_api.h", header),
         Artifact("c-source", c_dir / "ifcopenshell_api.cpp", cpp),
         Artifact(
             "c-internal-header", c_dir / "ifcopenshell_api_internal.hpp", internal
         ),
-    )
+    ]
+    if config.wasm_output_dir is not None:
+        wasm_dir = config.wasm_output_dir.resolve()
+        debug_log("pipeline.emit.wasm", f"ir={id(ir)} abi={id(metadata)}")
+        javascript, declarations = render_wasm_bindings(metadata)
+        artifacts.extend(
+            (
+                Artifact("wasm-module", wasm_dir / "ifcopenshell_api.mjs", javascript),
+                Artifact(
+                    "wasm-exports",
+                    wasm_dir / "ifcopenshell_exports.txt",
+                    render_export_list(metadata),
+                ),
+                Artifact(
+                    "wasm-declarations",
+                    wasm_dir / "ifcopenshell_api.d.ts",
+                    declarations,
+                ),
+            )
+        )
     for artifact in artifacts:
         changed = write_if_different(artifact.path, artifact.content)
         print(
             f"{artifact.name}:{artifact.path.resolve()}:{'updated' if changed else 'unchanged'}"
         )
-    return artifacts
+    return tuple(artifacts)
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--spec-dir", type=Path, required=True)
     parser.add_argument("--c-output-dir", type=Path, required=True)
+    parser.add_argument("--wasm-output-dir", type=Path)
     parser.add_argument(
         "--discovery-include-dir", type=Path, action="append", default=[]
     )
@@ -149,6 +171,7 @@ def main() -> int:
         GenerationConfig(
             sources=ProductionSourceSet.from_spec_dir(args.spec_dir.resolve()),
             c_output_dir=args.c_output_dir,
+            wasm_output_dir=args.wasm_output_dir,
             discovery_include_dirs=tuple(args.discovery_include_dir),
             discovery_defines=tuple(args.discovery_define),
             discovery_clang_args=tuple(args.discovery_clang_arg),
