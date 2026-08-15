@@ -23,14 +23,303 @@ from typing import Union
 
 import bmesh
 import bpy
+import gpu
 import mathutils
 import numpy as np
 from bpy_extras import view3d_utils
-from mathutils import Vector
+from gpu.types import (
+    GPUBatch,
+    GPUIndexBuf,
+    GPUOffScreen,
+    GPUShaderCreateInfo,
+    GPUStageInterfaceInfo,
+    GPUVertBuf,
+    GPUVertFormat,
+)
+from mathutils import Matrix, Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
 
+_wireframe_batch_cache: dict[int, dict[str, tuple[GPUBatch, int, list]]] = {}
+_wireframe_vert_fmt: GPUVertFormat | None = None
+_triangle_batch_cache: dict[int, tuple[GPUBatch, int, list, list]] = {}
+_triangle_vert_fmt: GPUVertFormat | None = None
+_encoding_shader: gpu.types.GPUShader | None = None
+_offscreen: GPUOffScreen | None = None
+_obj_list: list[bpy.types.Object] = []
+
+_TRI_OBJ_SHIFT = 20
+_TRI_FACE_MASK = (1 << _TRI_OBJ_SHIFT) - 1
+_SNAP_RADIUS_PX = 10  # half-size of the readback region around the cursor
+
+def _create_encoding_shader() -> gpu.types.GPUShader:
+    """Unlit flat-colour shader for encoding primitive IDs as RGBA."""
+    iface = GPUStageInterfaceInfo("iface")
+    iface.flat("FLOAT", "slot_id")
+
+    shader_info = GPUShaderCreateInfo()
+    shader_info.push_constant("MAT4", "MVP")
+    shader_info.push_constant("FLOAT", "slot_base")
+    shader_info.vertex_in(0, "VEC3", "pos")
+    shader_info.vertex_in(1, "FLOAT", "vert_slot")
+    shader_info.vertex_out(iface)
+    shader_info.fragment_out(0, "VEC4", "FragColor")
+
+    shader_info.vertex_source(
+        "void main() {\n"
+        "  slot_id = vert_slot;\n"
+        "  gl_Position = MVP * vec4(pos, 1.0);\n"
+        "}\n"
+    )
+    shader_info.fragment_source(
+        "vec4 encode(float f) {\n"
+        "  ivec4 c;\n"
+        "  int fi = int(f);\n"
+        "  c.r = (fi      ) & 0xFF;\n"
+        "  c.g = (fi >> 8 ) & 0xFF;\n"
+        "  c.b = (fi >> 16) & 0xFF;\n"
+        "  c.a = (fi >> 24) & 0xFF;\n"
+        "  return vec4(c) / 255.0;\n"
+        "}\n"
+        "void main() {\n"
+        "  FragColor = encode(slot_base + slot_id);\n"
+        "}\n"
+    )
+    s = gpu.shader.create_from_info(shader_info)
+    del shader_info, iface
+    return s
+
+def _decode_wireframe_pixel(r: int, g: int, b: int, a: int) -> int:
+    """Decode an RGBA pixel back to an integer slot ID."""
+    return (a << 24) | (b << 16) | (g << 8) | r
+
+
+def _create_vert_format() -> GPUVertFormat:
+    """Attribute 0 = position (vec3), attribute 1 = face index or primitive slot (float)."""
+    fmt = GPUVertFormat()
+    fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
+    fmt.attr_add(id="vert_slot", comp_type="F32", len=1, fetch_mode="FLOAT")
+    return fmt
+
+def _find_closest_wireframe_pixel(buffer_data, cx, cy):
+    """Scan *buffer_data* (list of rows) for the closest non-zero pixel
+    to (cx, cy). Used for points a lines detection.  Returns ``(encoded_value, dx, dy)`` or None."""
+    best_dist = float("inf")
+    best = None
+    for y, row in enumerate(buffer_data):
+        for x, px in enumerate(row):
+            r, g, b, a = px
+            if r == 0 and g == 0 and b == 0 and a == 0:
+                continue
+            val = _decode_wireframe_pixel(r, g, b, a)
+            if val > 0:
+                dx = x - cx
+                dy = y - cy
+                d2 = dx * dx + dy * dy
+                if d2 < best_dist:
+                    best_dist = d2
+                    best = (val, dx, dy)
+    return best
+
+def _get_solid_triangles(obj: bpy.types.Object):
+    """Return ``(tri_list, face_indices)`` for *obj* in **local** space.
+
+    Uses evaluated mesh so that modifiers are respected.
+    The world matrix is applied separately in the shader.
+
+    tri_list : list[tuple[tuple, tuple, tuple]]
+        Each element is three local-space vertex positions.
+    face_indices : list[int]
+        polygon_index for each triangle.
+    """
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    eval_obj = obj.evaluated_get(depsgraph)
+    mesh = eval_obj.to_mesh()
+    if not mesh or not mesh.vertices:
+        if mesh:
+            eval_obj.to_mesh_clear()
+        return [], []
+
+    mesh.calc_loop_triangles()
+
+    tris: list[tuple[tuple, tuple, tuple]] = []
+    face_indices: list[int] = []
+    for tri in mesh.loop_triangles:
+        v0 = mesh.vertices[tri.vertices[0]].co
+        v1 = mesh.vertices[tri.vertices[1]].co
+        v2 = mesh.vertices[tri.vertices[2]].co
+        tris.append((
+            (v0.x, v0.y, v0.z),
+            (v1.x, v1.y, v1.z),
+            (v2.x, v2.y, v2.z),
+        ))
+        face_indices.append(tri.polygon_index)
+
+    eval_obj.to_mesh_clear()
+    return tris, face_indices
+
+
+def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int, list, list] | None:
+    """Build (or fetch from cache) a TRIANGLES batch for *obj*.
+
+    Every face triangle is rendered, with the vertex slot encoding
+    the face_index so the GPU can write it to the framebuffer.
+
+    Returns ``(batch, n_tris, tri_list, face_indices)`` or None
+    when the object has no faces.
+    """
+    global _triangle_vert_fmt, _triangle_batch_cache
+
+    if _triangle_vert_fmt is None:
+        _triangle_vert_fmt = _create_vert_format()
+
+    cache_key = id(obj)
+    if cache_key in _triangle_batch_cache:
+        return _triangle_batch_cache[cache_key]
+
+    tris, face_indices = _get_solid_triangles(obj)
+    n_tris = len(tris)
+    if n_tris == 0:
+        return None
+
+    # Flatten: 3 verts per tri, each carrying the face_index as slot_id
+    coords: list[tuple[float, float, float]] = []
+    slot_ids: list[float] = []
+    for fi, tri in zip(face_indices, tris):
+        for v in tri:
+            coords.append(v)
+            slot_ids.append(float(fi))
+
+    n_verts = len(coords)
+    vbo = GPUVertBuf(len=n_verts, format=_triangle_vert_fmt)
+    vbo.attr_fill(id="pos", data=coords)
+    vbo.attr_fill(id="vert_slot", data=slot_ids)
+
+    ibo = GPUIndexBuf(type="TRIS",
+                      seq=[(i * 3, i * 3 + 1, i * 3 + 2) for i in range(n_tris)])
+    batch = GPUBatch(type="TRIS", buf=vbo, elem=ibo)
+
+    result = (batch, n_tris, tris, face_indices)
+    _triangle_batch_cache[cache_key] = result
+    return result
+
+def _get_boundary_features(obj: bpy.types.Object):
+    """Return ``(all_vert_coords, edge_pairs)`` for *obj*.
+
+    Uses bmesh on the **evaluated** mesh so that modifiers are respected.
+    Gets only edges that are not in a face and vertices that are not on and edge
+
+    all_vert_coords : list[tuple[float, float, float]]
+        Positions of unique vertices from boundary edges plus isolated
+        vertices (vertices with **no** connected edges), in local space.
+    edge_pairs : list[tuple[tuple[float,float,float], tuple[float,float,float]]]
+        Pairs of vertex positions for edges that have **no** linked faces
+        (boundary / wire edges), in local space.
+    """
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    eval_obj = obj.evaluated_get(depsgraph)
+    mesh = eval_obj.to_mesh()
+    if not mesh or not mesh.vertices:
+        if mesh:
+            eval_obj.to_mesh_clear()
+        return [], []
+
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bm.verts.ensure_lookup_table()
+    bm.edges.ensure_lookup_table()
+
+    # Collect unique vertices: isolated vertices + endpoints of boundary edges
+    seen_verts: set[tuple[float, float, float]] = set()
+    all_vert_coords: list[tuple[float, float, float]] = []
+
+    # Vertices that are not connected to any edge
+    for v in bm.verts:
+        if not v.link_edges:
+            coord = (v.co.x, v.co.y, v.co.z)
+            if coord not in seen_verts:
+                seen_verts.add(coord)
+                all_vert_coords.append(coord)
+
+    # Edges that are not part of any face (boundary / wire)
+    edge_pairs: list[tuple[tuple, tuple]] = []
+    for e in bm.edges:
+        if not e.link_faces:
+            v0, v1 = e.verts
+            edge_pairs.append((
+                (v0.co.x, v0.co.y, v0.co.z),
+                (v1.co.x, v1.co.y, v1.co.z),
+            ))
+            # Add unique endpoint vertices
+            for v in (v0, v1):
+                coord = (v.co.x, v.co.y, v.co.z)
+                if coord not in seen_verts:
+                    seen_verts.add(coord)
+                    all_vert_coords.append(coord)
+
+    bm.free()
+    eval_obj.to_mesh_clear()
+    return all_vert_coords, edge_pairs
+
+
+def _ensure_wireframe_batches(obj) -> dict[str, tuple[GPUBatch, int, list]]:
+    """Build (or fetch from cache) POINTS + LINES batches.
+
+    Boundary edges (no faces) and their endpoint vertices plus any
+    isolated vertices (no edges) are included.
+    Returns ``{'POINTS': (batch, count, coords_list),
+    'LINES': (batch, count, edge_pairs_list)}`` or an empty dict when
+    there is nothing snappable.
+    """
+    global _wireframe_vert_fmt, _wireframe_batch_cache
+
+    if _wireframe_vert_fmt is None:
+        _wireframe_vert_fmt = _create_vert_format()
+
+    cache_key = id(obj)  # tied to obj lifecycle for auto-invalidation
+
+    # Cache hit
+    if cache_key in _wireframe_batch_cache:
+        return _wireframe_batch_cache[cache_key]
+
+    all_vert_coords, edge_pairs = _get_boundary_features(obj)
+
+    batches: dict[str, tuple[GPUBatch, int, list]] = {}
+
+    # POINTS batch (all wireframe vertices)
+    n_pts = len(all_vert_coords)
+    if n_pts > 0:
+        vbo = GPUVertBuf(len=n_pts, format=_wireframe_vert_fmt)
+        vbo.attr_fill(id="pos", data=all_vert_coords)
+        vbo.attr_fill(id="vert_slot", data=[float(i) for i in range(n_pts)])
+
+        ibo = GPUIndexBuf(type="POINTS", seq=list(range(n_pts)))
+        batches["POINTS"] = (GPUBatch(type="POINTS", buf=vbo, elem=ibo), n_pts, all_vert_coords)
+
+    # LINES batch (boundary edges)
+    n_lines = len(edge_pairs)
+    if n_lines > 0:
+        coords: list[tuple] = []
+        prim_ids: list[float] = []
+        for e_idx, (c0, c1) in enumerate(edge_pairs):
+            coords.append(c0)
+            coords.append(c1)
+            prim_ids.append(float(e_idx))
+            prim_ids.append(float(e_idx))
+
+        n_line_verts = len(coords)
+        vbo = GPUVertBuf(len=n_line_verts, format=_wireframe_vert_fmt)
+        vbo.attr_fill(id="pos", data=coords)
+        vbo.attr_fill(id="vert_slot", data=prim_ids)
+
+        ibo = GPUIndexBuf(type="LINES",
+                          seq=[(i, i + 1) for i in range(0, n_line_verts, 2)])
+        batches["LINES"] = (GPUBatch(type="LINES", buf=vbo, elem=ibo), n_lines, edge_pairs)
+
+    if batches:
+        _wireframe_batch_cache[cache_key] = batches
+    return batches
 
 class Raycast(bonsai.core.tool.Raycast):
     offset = 10
@@ -345,6 +634,225 @@ class Raycast(bonsai.core.tool.Raycast):
             return location, normal, face_index
         else:
             return None, None, None
+
+    @classmethod
+    def get_gpu_raycast_snaps(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        objs_to_raycast: list[bpy.types.Object],
+        tris: boolean = False,
+    ) -> Any:
+        """GPU-based solid face detection.
+
+        Renders all solid objects' triangles to an offscreen buffer
+        with per-face IDs encoded as colours, then reads the pixel(s)
+        under the cursor to find which faces are hit.
+
+        :return: ``(snaps, closest_obj)`` where *snaps* is a list of
+            snap dicts (same format as the raycast-based version) and
+            *closest_obj* is the single closest object (or None).
+        """
+        global _encoding_shader, _offscreen, _obj_list
+
+        new_objs = []
+        for o in objs_to_raycast:
+            new_objs.append(o.obj)
+        if bpy.app.background:
+            return [], None
+
+        region = context.region
+        rv3d = context.region_data
+        if not region or not rv3d:
+            return [], None
+
+        space = context.space_data
+        xray_mode = (space.shading.type == "SOLID" and space.shading.show_xray) or (
+            space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
+        )
+
+        # Build the object index -> object lookup and collect render ops
+        _obj_list.clear()
+        render_ops: list[tuple[GPUBatch, Matrix, int]] = []
+
+        if tris:
+            for snap_obj in new_objs:
+                if snap_obj.type != "MESH":
+                    continue
+                if not hasattr(snap_obj.data, "polygons"):
+                    continue
+                if len(snap_obj.data.polygons) == 0:
+                    continue
+
+                batch_info = _ensure_triangle_batches(snap_obj)
+                if batch_info is None:
+                    continue
+
+                batch, n_tris, _tris, _face_indices = batch_info
+                obj_index = len(_obj_list)
+                _obj_list.append(snap_obj)
+                slot_base = (obj_index << _TRI_OBJ_SHIFT) + 1
+                render_ops.append((batch, snap_obj.matrix_world.copy(), slot_base))
+        else:
+            slot = 1 # slot 0 = background
+            obj_slots: list[tuple] = []  # [(snap_obj, pts_start, n_pts, lines_start, n_lines), ...]
+
+            for snap_obj in new_objs:
+                batches = _ensure_wireframe_batches(snap_obj)
+                if not batches:
+                    continue
+
+                world_mat = snap_obj.matrix_world.copy()
+                pts_start = 0
+                n_pts = 0
+                lines_start = 0
+                n_lines = 0
+
+                pts_data = batches.get("POINTS")
+                if pts_data is not None:
+                    batch, n_pts, _ = pts_data
+                    pts_start = slot
+                    render_ops.append((batch, world_mat, slot))
+                    slot += n_pts
+
+                lines_data = batches.get("LINES")
+                if lines_data is not None:
+                    batch, n_lines, _ = lines_data
+                    lines_start = slot
+                    render_ops.append((batch, world_mat, slot))
+                    slot += n_lines
+
+                if n_pts > 0 or n_lines > 0:
+                    obj_slots.append((snap_obj, pts_start, n_pts, lines_start, n_lines))
+
+
+        if not render_ops:
+            return [], None
+
+        # Render to offscreen buffer
+
+        if _encoding_shader is None:
+            _encoding_shader = _create_encoding_shader()  # same shader works for TRIS
+
+        w, h = region.width, region.height
+        mx = int(event.mouse_region_x)
+        my = int(event.mouse_region_y)
+
+        # _release_triangle_offscreen()
+        _offscreen = GPUOffScreen(max(w, 1), max(h, 1), format="RGBA8")
+
+        _encoding_shader.bind()
+
+        if xray_mode:
+            gpu.state.depth_mask_set(False)
+            gpu.state.depth_test_set("NONE")
+        else:
+            gpu.state.depth_mask_set(True)
+            gpu.state.depth_test_set("LESS")
+        if not tris:
+            gpu.state.depth_mask_set(False)
+            gpu.state.depth_test_set("NONE")
+            
+        gpu.state.blend_set("NONE")
+        gpu.state.face_culling_set("NONE")
+
+        with _offscreen.bind():
+            fb = gpu.state.active_framebuffer_get()
+            fb.clear(color=(0.0, 0.0, 0.0, 0.0), depth=1.0)
+
+            for batch, world_mat, slot_base in render_ops:
+                mvp = rv3d.perspective_matrix @ world_mat
+                _encoding_shader.uniform_float("MVP", mvp)
+                _encoding_shader.uniform_float("slot_base", float(slot_base))
+                with gpu.matrix.push_pop():
+                    gpu.matrix.load_matrix(Matrix.Identity(4))
+                    batch.draw(_encoding_shader)
+
+            read_size = 2 * _SNAP_RADIUS_PX + 1
+            read_x = max(0, min(mx - _SNAP_RADIUS_PX, w - read_size))
+            read_y = max(0, min(my - _SNAP_RADIUS_PX, h - read_size))
+            buf = fb.read_color(int(read_x), int(read_y),
+                                read_size, read_size, 4, 0, "UBYTE")
+
+        # Restore state
+        gpu.state.depth_mask_set(True)
+        gpu.state.depth_test_set("LESS")
+
+        pixel_data = buf.to_list()
+        if not pixel_data or not pixel_data[0]:
+            return [], None
+
+        if tris:
+            # Decode hits
+            hits: set[tuple[int, int]] = set()
+
+            if xray_mode:
+                for row in pixel_data:
+                    for px in row:
+                        val = _decode_wireframe_pixel(px[0], px[1], px[2], px[3])
+                        if val > 0:
+                            val -= 1
+                            obj_index = int(val) >> _TRI_OBJ_SHIFT
+                            face_index = int(val) & _TRI_FACE_MASK
+                            if obj_index < len(_obj_list):
+                                hits.add((obj_index, face_index))
+            else:
+                centre_x = mx - int(read_x)
+                centre_y = my - int(read_y)
+                if 0 <= centre_y < len(pixel_data) and 0 <= centre_x < len(pixel_data[0]):
+                    px = pixel_data[centre_y][centre_x]
+                    val = _decode_wireframe_pixel(px[0], px[1], px[2], px[3])
+                    if val > 0:
+                        val -= 1
+                        obj_index = int(val) >> _TRI_OBJ_SHIFT
+                        face_index = int(val) & _TRI_FACE_MASK
+                        if obj_index < len(_obj_list):
+                            hits.add((obj_index, face_index))
+
+            if not hits:
+                return []
+            return hits
+
+        else:
+            centre = (mx - int(read_x), my - int(read_y))
+            best = _find_closest_wireframe_pixel(pixel_data, *centre)
+            if best is None:
+                return []
+            return best
+
+
+        # Build snap dicts
+
+        # snaps: list[dict] = []
+        # closest_obj = None
+        # closest_dist = float("inf")
+        # ray_origin, _, _ = cls.get_viewport_ray_data(context, event)
+
+        # for obj_index, face_index in hits:
+        #     obj = _obj_list[obj_index]
+        #     if face_index >= len(obj.data.polygons):
+        #         continue
+        #     face = obj.data.polygons[face_index]
+        #     face_center = obj.matrix_world @ face.center
+
+        #     snap: dict = {
+        #         "point": face_center,
+        #         "type": "Face",
+        #         "group": "Object",
+        #         "object": obj,
+        #         "face_index": face_index,
+        #         "distance": 9,  # High value so it has low priority
+        #     }
+        #     dist = (face_center - ray_origin).length
+        #     if dist < closest_dist:
+        #         closest_dist = dist
+        #         closest_obj = obj
+        #         snap["is_closest_to_camera"] = True
+
+        #     snaps.append(snap)
+
+        # return snaps, closest_obj
+
 
     @classmethod
     def ray_cast_by_proximity_2d(
