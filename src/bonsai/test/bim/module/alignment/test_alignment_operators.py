@@ -610,3 +610,61 @@ class TestImportAlignmentCsv(NewIfc4X3):
         props = get_alignment_props()
         alignment = tool.Ifc.get().by_id(props.active_alignment_id)
         assert align_api.get_vertical_layout(alignment) is not None
+
+
+class TestAddElementAlignment(NewIfc4X3):
+    """Shift-A Add Element route for IfcAlignment (spec intro / 1.1).
+
+    Reinstated from the 0.8 saikei branch in minimal scope: IfcAlignment in
+    the Definition dropdown; creating one bootstraps the horizontal layout,
+    stationing referent, zero-length terminator, and project aggregation â€”
+    landing in the same state as panel creation.
+    """
+
+    def _add_alignment(self, name=""):
+        import bonsai.bim.module.root.data
+
+        bonsai.bim.module.root.data.IfcClassData.load()
+        root_props = tool.Root.get_root_props()
+        root_props.ifc_product = "IfcAlignment"
+        root_props.ifc_class = "IfcAlignment"
+        if name:
+            root_props.name = name
+        return bpy.ops.bim.add_element()
+
+    def test_ifc_alignment_offered_in_products(self):
+        products = tool.Root.get_ifc_products()
+        assert "IfcAlignment" in products
+
+    def test_add_element_bootstraps_horizontal_layout(self):
+        result = self._add_alignment(name="Route 66")
+        assert result == {"FINISHED"}
+
+        ifc_file = tool.Ifc.get()
+        alignments = ifc_file.by_type("IfcAlignment")
+        assert len(alignments) == 1
+        alignment = alignments[0]
+
+        h_layout = align_api.get_horizontal_layout(alignment)
+        assert h_layout is not None
+        assert align_api.has_zero_length_segment(h_layout)
+
+    def test_add_element_alignment_is_aggregated_not_contained(self):
+        self._add_alignment()
+        alignment = tool.Ifc.get().by_type("IfcAlignment")[0]
+        assert alignment.Decomposes
+        assert alignment.Decomposes[0].RelatingObject.is_a("IfcProject")
+        assert not alignment.ContainedInStructure
+
+    def test_add_element_creates_stationing_referent_and_sets_active(self):
+        self._add_alignment(name="Route 66")
+        alignment = tool.Ifc.get().by_type("IfcAlignment")[0]
+
+        nest = align_api.get_stationing_nest(tool.Ifc.get(), alignment)
+        assert nest is not None
+        referent = nest.RelatedObjects[0]
+        assert referent.Name.startswith("Route 66")
+
+        props = get_alignment_props()
+        assert props.active_alignment_id == alignment.id()
+        assert props.active_alignment_name == "Route 66"

@@ -400,51 +400,53 @@ class Alignment:
         Returns:
             The newly created IfcAlignmentHorizontal entity.
         """
+        import ifcopenshell.api.aggregate
         import ifcopenshell.api.alignment as align_api
         import ifcopenshell.api.nest
         import ifcopenshell.util.alignment
         from ifcopenshell.api.alignment._add_zero_length_segment import (
             _add_zero_length_segment,
         )
+        from ifcopenshell.api.alignment._create_geometric_representation import (
+            _create_geometric_representation,
+        )
 
         ifc_file = tool.Ifc.get()
 
+        # Mirrors align_api.create()'s sequence for an alignment entity that
+        # already exists (Add Element creates the bare IfcAlignment first).
+
+        # create() gives the alignment an origin local placement; a bare
+        # Add Element entity may not have one yet.
+        if alignment.ObjectPlacement is None:
+            alignment.ObjectPlacement = ifc_file.createIfcLocalPlacement(
+                PlacementRelTo=None,
+                RelativePlacement=ifc_file.createIfcAxis2Placement2D(
+                    Location=ifc_file.createIfcCartesianPoint(Coordinates=(0.0, 0.0))
+                ),
+            )
+
         # Create and nest the horizontal layout
-        h_layout = ifc_file.createIfcAlignmentHorizontal(
-            GlobalId=ifcopenshell.guid.new()
-        )
-        ifcopenshell.api.nest.assign_object(
-            ifc_file, related_objects=[h_layout], relating_object=alignment
-        )
+        h_layout = ifc_file.createIfcAlignmentHorizontal(GlobalId=ifcopenshell.guid.new())
+        ifcopenshell.api.nest.assign_object(ifc_file, related_objects=[h_layout], relating_object=alignment)
 
         # Create geometric representation (curves) for the alignment
-        align_api._create_geometric_representation(ifc_file, alignment)
+        _create_geometric_representation(ifc_file, alignment)
 
-        # Add stationing referent (required by segment creation API)
+        # Stationing referent (required by the segment-creation API), using
+        # the upstream "<alignment name> <station>" naming convention.
         start_station = 0.0
-        station_name = ifcopenshell.util.alignment.station_as_string(ifc_file, start_station)
-        align_api.add_stationing_referent(
-            ifc_file, alignment, 0.0, start_station, station_name, alignment
-        )
+        station_string = ifcopenshell.util.alignment.station_as_string(ifc_file, start_station)
+        referent_name = f"{alignment.Name or 'Alignment'} {station_string}"
+        align_api.add_stationing_referent(ifc_file, referent_name, alignment, 0.0, start_station)
 
-        # Add zero-length terminal segment
+        # Zero-length terminal segment (semantic + geometric)
         _add_zero_length_segment(ifc_file, h_layout)
 
-        # Add geometric representation to the zero-length segment
-        curve = align_api.get_layout_curve(h_layout)
-        axis_geom_subcontext = align_api.get_axis_subcontext(ifc_file)
-        axis_representation = ifc_file.createIfcShapeRepresentation(
-            ContextOfItems=axis_geom_subcontext,
-            RepresentationIdentifier="Axis",
-            RepresentationType="Segment",
-            Items=(curve.Segments[-1],),
-        )
-        product = ifc_file.createIfcProductDefinitionShape(
-            Representations=(axis_representation,)
-        )
-        zero_length_segment = h_layout.IsNestedBy[0].RelatedObjects[-1]
-        zero_length_segment.ObjectPlacement = alignment.ObjectPlacement
-        zero_length_segment.Representation = product
+        # IFC 4.1.4.1.1 Alignment Aggregation To Project
+        project = next(iter(ifc_file.by_type("IfcProject")), None)
+        if project is not None:
+            ifcopenshell.api.aggregate.assign_object(ifc_file, products=[alignment], relating_object=project)
 
         return h_layout
 
