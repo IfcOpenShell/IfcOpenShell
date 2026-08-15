@@ -7712,7 +7712,18 @@ def _do_insert_anchor(annotation, annotation_obj, insert_after: int, shape_cache
 
     n = len(anchors)
 
-    if insert_after < 0 or insert_after >= n - 1:
+    if insert_after == -2:
+        # Prepend: extrapolate one step before the first anchor.
+        new_idx = 0
+        if n >= 2:
+            pt_a = anchors[0].get("pt") or [0.0, 0.0, 0.0]
+            pt_b = anchors[1].get("pt") or [0.0, 0.0, 0.0]
+            delta = [pt_a[i] - pt_b[i] for i in range(3)]
+            new_pt = [pt_a[i] + delta[i] for i in range(3)]
+        else:
+            pt_a = anchors[0].get("pt") or [0.0, 0.0, 0.0]
+            new_pt = [pt_a[0] - 0.5, pt_a[1], pt_a[2]]
+    elif insert_after < 0 or insert_after >= n - 1:
         # Append: extrapolate one step beyond the last anchor.
         new_idx = n
         if n >= 2:
@@ -8905,8 +8916,9 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
                 # Alt+click on a dot → remove that anchor.
                 bpy.ops.bim.remove_dimension_anchor("EXEC_DEFAULT", anchor_index=self._best_idx)
             elif self._ctrl:
-                # Ctrl+click on a dot or midpoint → insert after that position.
-                bpy.ops.bim.insert_dimension_anchor("INVOKE_DEFAULT", insert_after=self._best_idx)
+                # Ctrl+click on first dot → prepend before it; otherwise insert after.
+                insert_after = -2 if (self._hit_type == "DOT" and self._best_idx == 0) else self._best_idx
+                bpy.ops.bim.insert_dimension_anchor("INVOKE_DEFAULT", insert_after=insert_after)
             elif self._hit_type == "MIDPOINT":
                 # Plain click on a segment midpoint → drive that segment's length.
                 # Which end moves depends on which half of the segment was clicked.
