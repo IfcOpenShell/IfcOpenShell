@@ -162,11 +162,9 @@ static void test_core(void) {
     ifcopenshell_parse_instance_list_t* polyline_point_list = NULL;
     ifcopenshell_parse_instance_list_t* unique_polyline_point_list = NULL;
     ifcopenshell_parse_instance_list_t* inverse_instances = NULL;
-    ifcopenshell_instance_list_t traversed_instances_value = {0};
-    ifcopenshell_instance_list_t traversed_instances_bfs_value = {0};
-    ifcopenshell_instance_list_t instances_by_type = {0};
-    ifcopenshell_instance_list_t instances_by_type_excl_subtypes = {0};
-    ifcopenshell_instance_list_t instances_by_reference = {0};
+    ifcopenshell_parse_instance_list_t* instances_by_type = NULL;
+    ifcopenshell_parse_instance_list_t* instances_by_type_excl_subtypes = NULL;
+    ifcopenshell_parse_instance_list_t* instances_by_reference = NULL;
     ifcopenshell_instance_t* created_integer = NULL;
     ifcopenshell_instance_t* created_boolean = NULL;
     ifcopenshell_instance_t* created_logical = NULL;
@@ -304,11 +302,14 @@ static void test_core(void) {
     expect_true(ifcopenshell_file_by_id(file, 2u, &point_two), ifcopenshell_last_error_message());
     expect_true(point_two != NULL, "Second point instance handle is null");
     expect_true(ifcopenshell_file_by_type(file, "IfcCartesianPoint", &instances_by_type), ifcopenshell_last_error_message());
-    expect_true(instances_by_type.size == 2u, "Unexpected instances-by-type size");
+    expect_true(ifcopenshell_parse_instance_list_size(instances_by_type, &attribute_size), ifcopenshell_last_error_message());
+    expect_true(attribute_size == 2u, "Unexpected instances-by-type size");
     expect_true(ifcopenshell_file_by_type_excl_subtypes(file, "IfcCartesianPoint", &instances_by_type_excl_subtypes), ifcopenshell_last_error_message());
-    expect_true(instances_by_type_excl_subtypes.size == 2u, "Unexpected instances-by-type-excl-subtypes size");
+    expect_true(ifcopenshell_parse_instance_list_size(instances_by_type_excl_subtypes, &attribute_size), ifcopenshell_last_error_message());
+    expect_true(attribute_size == 2u, "Unexpected instances-by-type-excl-subtypes size");
     expect_true(ifcopenshell_file_instances_by_reference(file, 1u, &instances_by_reference), ifcopenshell_last_error_message());
-    expect_true(instances_by_reference.size == 1u, "Unexpected instances-by-reference size");
+    expect_true(ifcopenshell_parse_instance_list_size(instances_by_reference, &attribute_size), ifcopenshell_last_error_message());
+    expect_true(attribute_size == 1u, "Unexpected instances-by-reference size");
 
     expect_true(ifcopenshell_file_by_id(file, 3u, &polyline), ifcopenshell_last_error_message());
     expect_true(polyline != NULL, "Polyline instance handle is null");
@@ -662,13 +663,15 @@ static void test_core(void) {
     expect_true(inner_coord_index_values.items[0].items[2] == 6, "Unexpected third inner coordinate index");
     ifcopenshell_string_destroy(&attribute_type);
 
-    expect_true(ifcopenshell_parse_traverse(polyline, 1, &traversed_instances_value), ifcopenshell_last_error_message());
-    expect_true(traversed_instances_value.size == 3u, "Unexpected traverse result size");
-    traversed = traversed_instances_value.items[1];
+    expect_true(ifcopenshell_parse_traverse(polyline, 1, &traversed_instances), ifcopenshell_last_error_message());
+    expect_true(ifcopenshell_parse_instance_list_size(traversed_instances, &attribute_size), ifcopenshell_last_error_message());
+    expect_true(attribute_size == 3u, "Unexpected traverse result size");
+    expect_true(ifcopenshell_parse_instance_list_get(traversed_instances, 1u, &traversed), ifcopenshell_last_error_message());
     expect_true(traversed != NULL, "Traversed instance handle is null");
 
-    expect_true(ifcopenshell_parse_traverse_breadth_first(polyline, 1, &traversed_instances_bfs_value), ifcopenshell_last_error_message());
-    expect_true(traversed_instances_bfs_value.size == 3u, "Unexpected breadth-first traverse result size");
+    expect_true(ifcopenshell_parse_traverse_breadth_first(polyline, 1, &traversed_instances_bfs), ifcopenshell_last_error_message());
+    expect_true(ifcopenshell_parse_instance_list_size(traversed_instances_bfs, &attribute_size), ifcopenshell_last_error_message());
+    expect_true(attribute_size == 3u, "Unexpected breadth-first traverse result size");
 
     expect_true(ifcopenshell_instance_get_argument(colour, 1u, &argument), ifcopenshell_last_error_message());
     expect_true(argument != NULL, "Attribute value handle is null");
@@ -933,9 +936,9 @@ static void test_core(void) {
     ifcopenshell_parse_attribute_value_destroy(reopened_point_coordinates);
     ifcopenshell_parse_instance_list_destroy(polyline_point_list);
     ifcopenshell_parse_instance_list_destroy(unique_polyline_point_list);
-    ifcopenshell_instance_list_destroy(&instances_by_reference);
-    ifcopenshell_instance_list_destroy(&instances_by_type_excl_subtypes);
-    ifcopenshell_instance_list_destroy(&instances_by_type);
+    ifcopenshell_parse_instance_list_destroy(instances_by_reference);
+    ifcopenshell_parse_instance_list_destroy(instances_by_type_excl_subtypes);
+    ifcopenshell_parse_instance_list_destroy(instances_by_type);
     ifcopenshell_parse_instance_list_destroy(inverse_instances);
     ifcopenshell_instance_destroy(aggregate_item);
     ifcopenshell_instance_destroy(inverse_instance);
@@ -954,8 +957,8 @@ static void test_core(void) {
     ifcopenshell_type_declaration_destroy(positive_integer_type_declaration);
     ifcopenshell_type_declaration_destroy(type_declaration);
     traversed = NULL;
-    ifcopenshell_instance_list_destroy(&traversed_instances_bfs_value);
-    ifcopenshell_instance_list_destroy(&traversed_instances_value);
+    ifcopenshell_parse_instance_list_destroy(traversed_instances_bfs);
+    ifcopenshell_parse_instance_list_destroy(traversed_instances);
     ifcopenshell_parse_instance_list_destroy(traversed_instances_bfs);
     ifcopenshell_parse_instance_list_destroy(traversed_instances);
     ifcopenshell_enumeration_destroy(enumeration);
@@ -1074,10 +1077,10 @@ static void test_surface(void) {
     ifcopenshell_parse_attribute_value_t* role_value = NULL;
     ifcopenshell_parse_attribute_value_t* reopened_coordinates_value = NULL;
     ifcopenshell_instance_list_t inverse_by_decl = {0};
-    ifcopenshell_instance_list_t traverse_list = {0};
-    ifcopenshell_instance_list_t traverse_bfs_list = {0};
-    ifcopenshell_instance_list_t point_instances = {0};
-    ifcopenshell_instance_list_t reopened_point_instances = {0};
+    ifcopenshell_parse_instance_list_t* traverse_list = NULL;
+    ifcopenshell_parse_instance_list_t* traverse_bfs_list = NULL;
+    ifcopenshell_parse_instance_list_t* point_instances = NULL;
+    ifcopenshell_parse_instance_list_t* reopened_point_instances = NULL;
     ifcopenshell_instance_streamer_t* streamer = NULL;
     ifcopenshell_declaration_list_t select_members = {0};
     ifcopenshell_attribute_list_t point_attributes = {0};
@@ -1089,7 +1092,7 @@ static void test_surface(void) {
     ifcopenshell_string_list_t kv_iter = {0};
     ifcopenshell_string_t string_value = {0};
     ifcopenshell_string_t json_value = {0};
-    ifcopenshell_string_t key_value = {0};
+    ifcopenshell_uint8_list_t key_value = {0};
     ifcopenshell_string_t inverse_json = {0};
     ifcopenshell_string_t refs_json = {0};
     ifcopenshell_string_t instance_json = {0};
@@ -1102,6 +1105,7 @@ static void test_surface(void) {
     uint32_t added_point_id = 0;
     uint32_t created_point_id = 0;
     size_t enum_index = 0;
+    size_t list_size = 0;
     int32_t int_value = 0;
     double double_value = 0.0;
     ifcopenshell_double_list_t reopened_coordinates = {0};
@@ -1159,11 +1163,12 @@ static void test_surface(void) {
     expect_fail(ifcopenshell_file_by_guid(file, "does-not-exist", &null_instance));
     expect_ok(ifcopenshell_file_traverse(file, polyline, 1, &traverse_list));
     expect_ok(ifcopenshell_file_traverse_breadth_first(file, polyline, 1, &traverse_bfs_list));
-    expect_true(traverse_list.size == 3u, "Depth-first traverse should return polyline and both points");
+    expect_ok(ifcopenshell_parse_instance_list_size(traverse_list, &list_size));
+    expect_true(list_size == 3u, "Depth-first traverse should return polyline and both points");
     contains_point = false;
     contains_point_two = false;
-    for (size_t idx = 0; idx < traverse_list.size; ++idx) {
-        null_instance = traverse_list.items[idx];
+    for (size_t idx = 0; idx < list_size; ++idx) {
+        expect_ok(ifcopenshell_parse_instance_list_get(traverse_list, idx, &null_instance));
         expect_ok(ifcopenshell_instance_id(null_instance, &uint_value));
         if (uint_value == 1u) {
             contains_point = true;
@@ -1174,7 +1179,8 @@ static void test_surface(void) {
     }
     expect_true(contains_point, "Depth-first traverse should contain the first point");
     expect_true(contains_point_two, "Depth-first traverse should contain the second point");
-    expect_true(traverse_bfs_list.size == 3u, "Breadth-first traverse should return polyline and both points");
+    expect_ok(ifcopenshell_parse_instance_list_size(traverse_bfs_list, &list_size));
+    expect_true(list_size == 3u, "Breadth-first traverse should return polyline and both points");
     expect_ok(ifcopenshell_file_create_timestamp(file, &timestamp));
     expect_true(timestamp.size > 0u, "Timestamp should not be empty");
     ifcopenshell_string_destroy(&timestamp);
@@ -1188,7 +1194,7 @@ static void test_surface(void) {
     expect_true(double_value == 1.0, "Unexpected default unit scale");
     expect_ok(ifcopenshell_file_key_value_store_query(file, "missing", &key_value));
     expect_true(key_value.size == 0u, "Expected empty key-value result");
-    ifcopenshell_string_destroy(&key_value);
+    ifcopenshell_uint8_list_destroy(&key_value);
     expect_ok(ifcopenshell_file_key_value_store_iter(file, "prefix", &kv_iter));
     expect_true(kv_iter.size == 0u, "Expected empty key-value iteration");
 
@@ -1199,8 +1205,10 @@ static void test_surface(void) {
     ));
     expect_ok(ifcopenshell_file_add(file, detached_point, -1, &null_instance));
     expect_ok(ifcopenshell_file_by_type(file, "IfcCartesianPoint", &point_instances));
-    expect_true(point_instances.size == 3u, "add() should add the detached point to the file");
-    ifcopenshell_instance_list_destroy(&point_instances);
+    expect_ok(ifcopenshell_parse_instance_list_size(point_instances, &list_size));
+    expect_true(list_size == 3u, "add() should add the detached point to the file");
+    ifcopenshell_parse_instance_list_destroy(point_instances);
+    point_instances = NULL;
     expect_ok(ifcopenshell_file_create(file, point_decl, -1, &added_point));
     expect_ok(ifcopenshell_instance_set_argument_double_list(
         added_point, 0u, &((ifcopenshell_double_list_t){(double[]){4.0, 5.0, 6.0}, 3u})
@@ -1220,8 +1228,10 @@ static void test_surface(void) {
     expect_ok(ifcopenshell_file_remove(file, created_point));
     expect_ok(ifcopenshell_file_unbatch(file));
     expect_ok(ifcopenshell_file_by_type(file, "IfcCartesianPoint", &point_instances));
-    expect_true(point_instances.size == 4u, "File should contain four points after add/remove");
-    ifcopenshell_instance_list_destroy(&point_instances);
+    expect_ok(ifcopenshell_parse_instance_list_size(point_instances, &list_size));
+    expect_true(list_size == 4u, "File should contain four points after add/remove");
+    ifcopenshell_parse_instance_list_destroy(point_instances);
+    point_instances = NULL;
 
     expect_ok(ifcopenshell_declaration_as_entity(point_decl, &point_entity));
     expect_ok(ifcopenshell_declaration_as_entity(object_def_decl, &object_def_entity));
@@ -1335,7 +1345,8 @@ static void test_surface(void) {
     expect_ok(ifcopenshell_file_write(file, output_path));
     expect_ok(ifcopenshell_parse_open(output_path, true, &opened));
     expect_ok(ifcopenshell_file_by_type(opened, "IfcCartesianPoint", &reopened_point_instances));
-    expect_true(reopened_point_instances.size == 4u, "Reopened file should contain persisted added points");
+    expect_ok(ifcopenshell_parse_instance_list_size(reopened_point_instances, &list_size));
+    expect_true(list_size == 4u, "Reopened file should contain persisted added points");
     expect_ok(ifcopenshell_file_by_id(opened, added_point_id, &null_instance));
     expect_ok(ifcopenshell_instance_get_argument(null_instance, 0u, &reopened_coordinates_value));
     expect_ok(ifcopenshell_parse_attribute_value_as_double_list(reopened_coordinates_value, &reopened_coordinates));
@@ -1381,9 +1392,9 @@ static void test_surface(void) {
     expect_ok(ifcopenshell_parse_schema_by_name("IFC4", &reloaded_schema));
     expect_true(reloaded_schema != NULL, "Schema reload after clear_schemas() failed");
 
-    ifcopenshell_instance_list_destroy(&reopened_point_instances);
-    ifcopenshell_instance_list_destroy(&traverse_bfs_list);
-    ifcopenshell_instance_list_destroy(&traverse_list);
+    ifcopenshell_parse_instance_list_destroy(reopened_point_instances);
+    ifcopenshell_parse_instance_list_destroy(traverse_bfs_list);
+    ifcopenshell_parse_instance_list_destroy(traverse_list);
     ifcopenshell_instance_list_destroy(&inverse_by_decl);
     ifcopenshell_file_destroy(scratch_file);
     unlink(output_path);
@@ -1415,13 +1426,12 @@ static void test_rocksdb(void) {
     ifcopenshell_instance_t* reopened_person = NULL;
     ifcopenshell_instance_t* reopened_added_point = NULL;
     ifcopenshell_parse_instance_list_t* point_instances = NULL;
-    ifcopenshell_instance_list_t point_instances_by_type = {0};
-    ifcopenshell_instance_list_t inverse_instances = {0};
+    ifcopenshell_parse_instance_list_t* inverse_instances = NULL;
     ifcopenshell_parse_attribute_value_t* point_coordinates = NULL;
     ifcopenshell_parse_attribute_value_t* polyline_points = NULL;
     ifcopenshell_parse_attribute_value_t* family_name_argument = NULL;
     ifcopenshell_parse_attribute_value_t* middle_names_argument = NULL;
-    ifcopenshell_string_t schema_key_value = {0};
+    ifcopenshell_uint8_list_t schema_key_value = {0};
     ifcopenshell_string_t schema_name = {0};
     ifcopenshell_string_t family_name = {0};
     ifcopenshell_string_list_t entity_keys = {0};
@@ -1447,7 +1457,7 @@ static void test_rocksdb(void) {
 
     expect_ok(ifcopenshell_file_key_value_store_query(file, "h|file_schema|0", &schema_key_value));
     expect_true(schema_key_value.size > 0u, "RocksDB file should persist schema metadata");
-    ifcopenshell_string_destroy(&schema_key_value);
+    ifcopenshell_uint8_list_destroy(&schema_key_value);
 
     expect_ok(ifcopenshell_file_key_value_store_iter(file, "h|", &entity_keys));
     expect_true(entity_keys.size > 0u, "RocksDB file should contain header keys");
@@ -1473,12 +1483,10 @@ static void test_rocksdb(void) {
         ifcopenshell_double_list_t values = {values_raw, 3u};
         expect_ok(ifcopenshell_instance_set_argument_double_list(point_two, 0u, &values));
     }
-    expect_ok(ifcopenshell_file_by_type(file, "IfcCartesianPoint", &point_instances_by_type));
-    expect_ok(ifcopenshell_parse_instance_list_create_from_handles(&point_instances_by_type, &point_instances));
+    expect_ok(ifcopenshell_file_by_type(file, "IfcCartesianPoint", &point_instances));
     expect_ok(ifcopenshell_instance_set_argument_instance_list(polyline, 0u, point_instances));
     ifcopenshell_parse_instance_list_destroy(point_instances);
     point_instances = NULL;
-    ifcopenshell_instance_list_destroy(&point_instances_by_type);
     expect_ok(ifcopenshell_instance_set_argument_string(person, 1u, "Smith"));
     expect_ok(ifcopenshell_instance_set_argument_string_list(
         person,
@@ -1523,7 +1531,7 @@ static void test_rocksdb(void) {
 
     expect_ok(ifcopenshell_file_key_value_store_query(reopened, "h|file_schema|0", &schema_key_value));
     expect_true(schema_key_value.size > 0u, "Reopened RocksDB file should expose schema metadata");
-    ifcopenshell_string_destroy(&schema_key_value);
+    ifcopenshell_uint8_list_destroy(&schema_key_value);
 
     expect_ok(ifcopenshell_file_key_value_store_iter(reopened, "h|", &entity_keys));
     expect_true(entity_keys.size > 0u, "Reopened RocksDB file should expose header keys");
@@ -1591,11 +1599,12 @@ static void test_rocksdb(void) {
     middle_names_argument = NULL;
 
     expect_ok(ifcopenshell_file_instances_by_reference(reopened, 1, &inverse_instances));
-    expect_true(inverse_instances.size == 1u, "Unexpected reopened inverse count for first point");
-    polyline = inverse_instances.items[0];
+    expect_ok(ifcopenshell_parse_instance_list_size(inverse_instances, &size_value));
+    expect_true(size_value == 1u, "Unexpected reopened inverse count for first point");
+    expect_ok(ifcopenshell_parse_instance_list_get(inverse_instances, 0u, &polyline));
     expect_ok(ifcopenshell_instance_id(polyline, &instance_id));
     expect_true(instance_id == 3u, "Unexpected reopened inverse target for first point");
-    ifcopenshell_instance_list_destroy(&inverse_instances);
+    ifcopenshell_parse_instance_list_destroy(inverse_instances);
 
     ifcopenshell_file_destroy(reopened);
     ifcopenshell_file_destroy(scratch_file);
