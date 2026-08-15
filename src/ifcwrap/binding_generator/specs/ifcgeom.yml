@@ -1,0 +1,612 @@
+# IfcGeom C API Binding Specification
+# This spec defines the C API surface for ifcgeom module.
+schema_version: 1
+module: ifcopenshell
+slice: ifcgeom
+c_prefix: ifcopenshell_geom
+
+public_headers:
+  - ifc_geom_api.h
+  - Iterator.h
+  - IfcGeomElement.h
+  - IfcGeomRepresentation.h
+  - ConversionSettings.h
+  - GeometrySerializer.h
+  - JsonSerializer.h
+  - XmlSerializer.h
+  - RocksDbSerializer.h
+  - Serializer.h
+  - geometry_serializer_plugin.h
+  - taxonomy.h
+  - hybrid_kernel.h
+  - Converter.h
+  - abstract_mapping.h
+  - function_item_evaluator.h
+  - Serialization/Serialization.h
+  - ../svgfill/src/svgfill.h
+
+handle_list_accessors:
+  - list_handle: tree_clash_list
+    receiver: tree
+    list_param: clashes
+    item_handle: tree_clash
+    count_as: clash_count
+    at_as: clash_at
+    out_of_range_message: Clash index out of range
+  - list_handle: tree_ray_intersection_list
+    receiver: tree
+    list_param: intersections
+    item_handle: tree_ray_intersection
+    count_as: ray_intersection_count
+    at_as: ray_intersection_at
+    out_of_range_message: Ray intersection index out of range
+
+discover:
+  include_dir: ../../../ifcgeom
+  class_defaults:
+    include_all: true
+    translation_unit: Iterator.cpp
+  functions:
+    - namespace: ifcopenshell::geometry
+      translation_unit: function_item_evaluator.cpp
+      include_all: false
+      include:
+        - helmert_curve_point
+  constructors:
+    - handle: serializer
+      cpp_class: XmlSerializer
+      translation_unit: ../serializers/XmlSerializer.h
+      expose_as: create_xml_serializer
+      params:
+        - ifcopenshell::file*
+        - const std::string&
+      param_renames:
+        xml_filename: filename
+    - handle: tree
+      cpp_class: IfcGeom::tree
+      translation_unit: kernels/opencascade/boolean_utils.cpp
+      compile_guard: IFOPSH_WITH_OPENCASCADE
+      expose_as: create_tree
+      params: []
+      param_names: []
+    - handle: tree
+      cpp_class: IfcGeom::tree
+      translation_unit: kernels/opencascade/boolean_utils.cpp
+      compile_guard: IFOPSH_WITH_OPENCASCADE
+      expose_as: create_tree_from_file
+      params:
+        - ifcopenshell::file&
+      param_names:
+        - file
+      param_renames:
+        f: file
+    - handle: tree
+      cpp_class: IfcGeom::tree
+      translation_unit: kernels/opencascade/boolean_utils.cpp
+      compile_guard: IFOPSH_WITH_OPENCASCADE
+      expose_as: create_tree_from_file_with_settings
+      params:
+        - ifcopenshell::file&
+        - const ifcopenshell::geometry::Settings&
+      param_names:
+        - file
+        - settings
+      param_renames:
+        f: file
+    - handle: tree
+      cpp_class: IfcGeom::tree
+      translation_unit: kernels/opencascade/boolean_utils.cpp
+      compile_guard: IFOPSH_WITH_OPENCASCADE
+      expose_as: create_tree_from_iterator
+      params:
+        - IfcGeom::Iterator&
+      param_names:
+        - iterator
+      param_renames:
+        it: iterator
+    - handle: serializer
+      cpp_class: JsonSerializer
+      translation_unit: ../serializers/JsonSerializer.h
+      expose_as: create_json_serializer
+      compile_guard: WITH_GLTF
+      compile_guard_message: JSON serializer requires GLTF support (nlohmann_json)
+      params:
+        - ifcopenshell::file*
+        - const std::string&
+      param_names:
+        - file
+        - filename
+    - handle: serializer
+      cpp_class: RocksDbSerializer
+      translation_unit: ../serializers/RocksDbSerializer.cpp
+      expose_as: create_rocksdb_serializer_streaming
+      compile_guard: IFOPSH_WITH_ROCKSDB
+      params:
+        - const std::string&
+        - const std::string&
+      param_names:
+        - input_filename
+        - rocksdb_filename
+    - handle: buffer
+      cpp_class: stream_or_filename
+      translation_unit: GeometrySerializer.h
+      expose_as: create_buffer
+      params: []
+    - handle: buffer
+      cpp_class: stream_or_filename
+      translation_unit: GeometrySerializer.h
+      expose_as: create_buffer_from_filename
+      params:
+        - const std::string&
+      param_renames:
+        fn: filename
+    - handle: settings
+      cpp_class: ifcopenshell::geometry::Settings
+      translation_unit: Iterator.cpp
+      expose_as: create_settings
+    - handle: serializer_settings
+      cpp_class: ifcopenshell::geometry::SerializerSettings
+      translation_unit: GeometrySerializer.h
+      expose_as: create_serializer_settings
+  classes:
+    - handle: triangulation
+      translation_unit: IfcGeomRepresentation.cpp
+      exclude:
+        - addFace
+        - addEdge
+        - addNormal
+        - addVertex
+        - box_project_uvs
+        - empty
+        - registerEdgeCount
+        - registerEdge
+        - resetWelds
+        - uvs_ref
+      method_sizes:
+        verts: verts_buffer_size
+        faces: faces_buffer_size
+        normals: normals_buffer_size
+        edges: edges_buffer_size
+        material_ids: material_ids_buffer_size
+        item_ids: item_ids_buffer_size
+        edges_item_ids: edges_item_ids_buffer_size
+        uvs: uvs_buffer_size
+        materials: material_count
+      method_at_accessors:
+        - method: materials
+          expose_as: material_at
+          item_handle: taxonomy_style
+          out_of_range_message: Material index out of bounds
+          exception: std::runtime_error
+
+    - handle: iterator
+      exclude:
+        - filters
+        - process_finished_rep
+        - process_concurrently
+        - set_cache
+      rename:
+        getLog: get_log
+
+    - handle: brep_representation
+      translation_unit: IfcGeomRepresentation.cpp
+      include_inherited_methods: true
+
+    - handle: element
+      exclude:
+        - SetParents
+
+    - handle: brep_element
+      exclude:
+        - geometry_pointer
+
+    - handle: triangulation_element
+      exclude:
+        - geometry_pointer
+
+    - handle: serialized_element
+
+    - handle: conversion_result_shape
+      translation_unit: ConversionResult.cpp
+      exclude:
+        - Triangulate
+        - Serialize
+        - area
+        - add
+        - bounding_box
+        - box
+        - concat
+        - convex_decomposition
+        - edges
+        - facets
+        - halfspaces
+        - intersect
+        - length
+        - map
+        - moved
+        - plane_equation
+        - position
+        - solid
+        - subtract
+        - volume
+        - vertices
+        - wrap_in_compound
+        - axis
+
+    - handle: function_item_evaluator
+      translation_unit: function_item_evaluator.cpp
+      include_all: false
+      overloads:
+        - cpp_name: evaluation_points
+          expose_as: evaluation_points
+          params: []
+        - cpp_name: evaluation_points
+          expose_as: evaluation_points_range
+          params:
+            - double
+            - double
+            - unsigned int
+        - cpp_name: evaluate
+          expose_as: evaluate
+          params: []
+        - cpp_name: evaluate
+          expose_as: evaluate_range
+          params:
+            - double
+            - double
+            - unsigned int
+      type_overrides:
+        "evaluation_points(double, double, unsigned int)":
+          params:
+            nsteps:
+              kind: int32
+        "evaluate(double, double, unsigned int)":
+          params:
+            nsteps:
+              kind: int32
+
+    - handle: serialization
+      translation_unit: IfcGeomRepresentation.cpp
+
+    - handle: geometry_serializer
+      translation_unit: ../serializers/WavefrontObjSerializer.cpp
+      include_inherited_methods: true
+      exclude:
+        - geometry_settings
+        - object_id
+        - settings
+        - write
+      rename:
+        isTesselated: is_tesselated
+        setUnitNameAndMagnitude: set_unit_name_and_magnitude
+        writeHeader: write_header
+        setFile: set_file
+      overloads:
+        - cpp_name: geometry_settings
+          expose_as: geometry_settings
+          params: []
+        - cpp_name: settings
+          expose_as: settings
+          params: []
+        - cpp_name: write
+          expose_as: write_triangulation_element
+          params:
+            - "const IfcGeom::TriangulationElement *"
+        - cpp_name: write
+          expose_as: write_brep_element
+          params:
+            - "const IfcGeom::BRepElement *"
+
+    - handle: taxonomy_circle
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_line
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      discover_as_item: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_plane
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_ellipse
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      rename:
+        radius: radius1
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_style
+      discover_fields: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+        - clone_
+        - calc_hash
+        - reverse
+        - kind
+        - get_color
+        - print
+
+    - handle: taxonomy_sphere
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_torus
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_cylinder
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_extrusion
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_offset_curve
+      include_all: false
+      discover_fields: true
+      discover_as_item: true
+
+    - handle: taxonomy_revolve
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_bspline_curve
+      include_all: false
+      discover_fields: true
+      discover_as_item: true
+      exclude:
+        - control_points
+      discover_children:
+        cpp_field: control_points
+
+    - handle: taxonomy_sweep_along_curve
+      include_all: false
+      discover_fields: true
+      include_inherited_fields: true
+      discover_has_fields: true
+      exclude:
+        - instance
+        - orientation
+        - surface_style
+
+    - handle: taxonomy_face
+      include_all: false
+      discover_fields: true
+      discover_as_item: true
+      extra_fields:
+        matrix: "matrix4::ptr"
+      discover_children: true
+
+    - handle: taxonomy_loft
+      include_all: false
+      discover_fields: true
+      discover_has_fields: true
+      field_setters:
+        - axis
+      discover_children:
+        add_as: add_item
+        add_cast_cpp_type: "ifcopenshell::geometry::taxonomy::geom_item"
+
+    - handle: taxonomy_loop
+      include_all: false
+      discover_children: true
+
+    - handle: taxonomy_shell
+      include_all: false
+      discover_children: true
+
+    - handle: taxonomy_solid
+      include_all: false
+      extra_fields:
+        matrix: "matrix4::ptr"
+      discover_children: true
+
+    - handle: taxonomy_collection
+      include_all: false
+      discover_children:
+        add_as: add_item
+        add_cast_cpp_type: "ifcopenshell::geometry::taxonomy::geom_item"
+
+    - handle: taxonomy_boolean_result
+      include_all: false
+      discover_fields: true
+      discover_children:
+        add_as: add_item
+        add_cast_cpp_type: "ifcopenshell::geometry::taxonomy::geom_item"
+
+    - handle: taxonomy_bspline_surface
+      include_all: false
+      discover_as_item: true
+      array_pair_fields:
+        - degree
+        - multiplicities
+        - knots
+
+    - handle: opaque_number
+      translation_unit: ConversionResult.cpp
+      exclude:
+        - clone
+        - clone_
+
+    - handle: serializer
+      translation_unit: GeometrySerializer.h
+      rename:
+        writeHeader: write_header
+        setFile: set_file
+
+    - handle: settings
+      include_inherited_methods: true
+      exclude:
+        - define_options
+        - set
+        - get
+      variant_accessors:
+        get_method: get
+        set_method: set
+        variant_type: "ifcopenshell::geometry::Settings::value_variant_t"
+        types:
+          bool: "bool"
+          int:
+            cpp_type: "int"
+            getter_types:
+              - "int"
+              - "ifcopenshell::geometry::settings::IteratorOutputOptions"
+              - "ifcopenshell::geometry::settings::FunctionStepMethod"
+              - "ifcopenshell::geometry::settings::OutputDimensionalityTypes"
+              - "ifcopenshell::geometry::settings::TriangulationMethod"
+          double: "double"
+          string: "std::string"
+          int_set: "std::set<int>"
+          string_set: "std::set<std::string>"
+          double_list: "std::vector<double>"
+
+    - handle: serializer_settings
+      translation_unit: ../serializers/WavefrontObjSerializer.cpp
+      include_inherited_methods: true
+      exclude:
+        - define_options
+        - set
+        - get
+      variant_accessors:
+        get_method: get
+        set_method: set
+        variant_type: "ifcopenshell::geometry::SerializerSettings::value_variant_t"
+        types:
+          bool: "bool"
+          int: "int"
+          double: "double"
+          string: "std::string"
+          int_set: "std::set<int>"
+
+    - handle: buffer
+      translation_unit: ../serializers/WavefrontObjSerializer.cpp
+      exclude:
+        - filename
+
+    - handle: taxonomy_item
+      exclude:
+        - clone_
+        - reverse
+        - calc_hash
+        - print
+
+    - handle: tree
+      translation_unit: kernels/opencascade/boolean_utils.cpp
+      compile_guard: IFOPSH_WITH_OPENCASCADE
+      exclude:
+        - add_element
+        - add_file
+        - enable_face_styles
+        - select_ray
+      overloads:
+        - cpp_name: enable_face_styles
+          expose_as: enable_face_styles
+          params: []
+        - cpp_name: enable_face_styles
+          expose_as: set_enable_face_styles
+          params: [bool]
+        - cpp_name: add_file
+          expose_as: add_file
+          params: ["ifcopenshell::file &", "const ifcopenshell::geometry::Settings &"]
+        - cpp_name: add_file
+          expose_as: add_iterator
+          params: ["IfcGeom::Iterator &"]
+      method_sizes:
+        styles: style_count
+      method_at_accessors:
+        - method: styles
+          expose_as: style_at
+          item_handle: taxonomy_style
+          out_of_range_message: Style index out of range
+          exception: std::out_of_range
+
+    - handle: tree_clash
+      translation_unit: kernels/opencascade/boolean_utils.cpp
+      compile_guard: IFOPSH_WITH_OPENCASCADE
+      include_all: false
+      discover_fields: true
+      rename:
+        clash_type: type
+
+    - handle: tree_ray_intersection
+      translation_unit: kernels/opencascade/boolean_utils.cpp
+      compile_guard: IFOPSH_WITH_OPENCASCADE
+      include_all: false
+      discover_fields: true
+      exclude:
+        - instance
+
+    - handle: taxonomy_point3
+      include_all: false
+      ccomponents_accessor:
+        expose_as: get_data
+
+    - handle: taxonomy_direction3
+      include_all: false
+      ccomponents_accessor:
+        expose_as: get_data
+
+    - handle: taxonomy_matrix4
+      include_all: false
+      ccomponents_accessor:
+        expose_as: get_data
+
+    - handle: taxonomy_colour
+      include_all: false
+      ccomponents_accessor:
+        expose_as: get_data
+
+    - handle: transformation
+      include_all: false
+      ccomponents_accessor:
+        expose_as: matrix
+        access_via: "data()->ccomponents"
