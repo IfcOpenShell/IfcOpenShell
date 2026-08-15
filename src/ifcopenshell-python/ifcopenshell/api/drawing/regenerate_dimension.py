@@ -119,6 +119,34 @@ def regenerate_dimension(
                                 base[2] + t * normal[2])
                 anchors[i]["pt"] = list(resolved[i])
 
+    # ForceParallelToFace: project vertices 1…n onto the line through
+    # pt[0] in the direction cross(face_normal, camera_dir), so the polyline
+    # runs parallel to the face (perpendicular to the face normal).
+    if pset_data.get("ForceParallelToFace") and len(resolved) >= 2 and resolved[0] is not None:
+        face_normal = _get_anchor_face_normal_world(file, anchors[0], placement_override)
+        if face_normal and camera_dir:
+            fn, cd = face_normal, camera_dir
+            tang = (
+                fn[1] * cd[2] - fn[2] * cd[1],
+                fn[2] * cd[0] - fn[0] * cd[2],
+                fn[0] * cd[1] - fn[1] * cd[0],
+            )
+            mag = math.sqrt(tang[0] ** 2 + tang[1] ** 2 + tang[2] ** 2)
+            if mag > 1e-12:
+                tang = (tang[0] / mag, tang[1] / mag, tang[2] / mag)
+                base = resolved[0]
+                for i in range(1, len(resolved)):
+                    if resolved[i] is None:
+                        continue
+                    pt = resolved[i]
+                    t = ((pt[0] - base[0]) * tang[0]
+                         + (pt[1] - base[1]) * tang[1]
+                         + (pt[2] - base[2]) * tang[2])
+                    resolved[i] = (base[0] + t * tang[0],
+                                   base[1] + t * tang[1],
+                                   base[2] + t * tang[2])
+                    anchors[i]["pt"] = list(resolved[i])
+
     pset_entity_id = pset_data.get("id")
     if pset_entity_id:
         pset_entity = file.by_id(pset_entity_id)

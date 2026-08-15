@@ -5714,6 +5714,8 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         self._force_perpendicular = False
         self._anchor0_normal = None   # (nx, ny, nz) world-space face normal of anchor[0]
         self._anchor0_pt = None       # (x, y, z) world-space position of anchor[0]
+        self._force_parallel = False
+        self._anchor0_parallel_dir = None  # (tx, ty, tz) cross(face_normal, camera_dir)
         self._snap_mode = "FACE"
         self._ifc_snap_candidate = None
         self._draw_handler = None
@@ -5800,16 +5802,20 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 pt = polyline_data[0].polyline_points[-1]
                 self._anchors.append(drawing_api.make_world_anchor([float(pt.x), float(pt.y), float(pt.z)]))
 
-            # After anchor[0] is set, extract its face normal for the perp constraint.
-            if self._force_perpendicular and len(self._anchors) == 1:
-                self._update_perp_constraint()
+            # After anchor[0] is set, extract its face normal for the perp/parallel constraints.
+            if len(self._anchors) == 1:
+                if self._force_perpendicular:
+                    self._update_perp_constraint()
+                if self._force_parallel:
+                    self._update_parallel_constraint()
         elif count_after < count_before and self._anchors:
             # BACKSPACE removed a point.
             self._anchors.pop()
-            # Reset constraint if we backspaced past anchor[0].
+            # Reset constraints if we backspaced past anchor[0].
             if len(self._anchors) == 0:
                 self._anchor0_normal = None
                 self._anchor0_pt = None
+                self._anchor0_parallel_dir = None
 
     # ------------------------------------------------------------------
     # Perpendicular-to-face constraint helpers
@@ -5895,6 +5901,53 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         n = self._anchor0_normal
         t = (p.x - base[0]) * n[0] + (p.y - base[1]) * n[1] + (p.z - base[2]) * n[2]
         constrained = Vector((base[0] + t * n[0], base[1] + t * n[1], base[2] + t * n[2]))
+        snap["point"] = constrained
+
+    # ------------------------------------------------------------------
+    # Parallel-to-face constraint helpers
+
+    def _update_parallel_constraint(self) -> None:
+        """Compute the tangent direction (cross of face normal × camera forward) for anchor[0]."""
+        import math
+        from mathutils import Vector
+        # Reuse _update_perp_constraint to obtain the face normal first.
+        if not self._anchor0_normal:
+            self._update_perp_constraint()
+        if not self._anchor0_normal:
+            return
+        cam = bpy.context.scene.camera
+        if not cam:
+            return
+        cam_fwd = cam.matrix_world.to_3x3() @ Vector((0.0, 0.0, -1.0))
+        cam_fwd.normalize()
+        n = self._anchor0_normal
+        cd = (cam_fwd.x, cam_fwd.y, cam_fwd.z)
+        tang = (
+            n[1] * cd[2] - n[2] * cd[1],
+            n[2] * cd[0] - n[0] * cd[2],
+            n[0] * cd[1] - n[1] * cd[0],
+        )
+        mag = math.sqrt(tang[0] ** 2 + tang[1] ** 2 + tang[2] ** 2)
+        if mag < 1e-12:
+            return
+        self._anchor0_parallel_dir = (tang[0] / mag, tang[1] / mag, tang[2] / mag)
+
+    def _apply_parallel_constraint(self) -> None:
+        """Project the current snap point onto the tangent line (parallel to face) when active."""
+        if not self._force_parallel or not self._anchor0_parallel_dir or not self._anchor0_pt:
+            return
+        if not self._anchors:
+            return
+        if not self.snapping_points:
+            return
+        snap = self.snapping_points[0]
+        if not snap or not snap.get("point"):
+            return
+        p = snap["point"]
+        base = self._anchor0_pt
+        t = self._anchor0_parallel_dir
+        proj = (p.x - base[0]) * t[0] + (p.y - base[1]) * t[1] + (p.z - base[2]) * t[2]
+        constrained = Vector((base[0] + proj * t[0], base[1] + proj * t[1], base[2] + proj * t[2]))
         snap["point"] = constrained
 
     # ------------------------------------------------------------------
@@ -6375,6 +6428,8 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         pset_props = {"Anchors": json.dumps(anchors)}
         if self._force_perpendicular:
             pset_props["ForcePerpendicularToFace"] = True
+        if self._force_parallel:
+            pset_props["ForceParallelToFace"] = True
         ifcopenshell.api.run("pset.edit_pset", file, pset=pset_entity, properties=pset_props)
 
         # Always regenerate from anchor data so the curve reflects the true IFC
@@ -6431,6 +6486,7 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         self.choose_axis(event)
         self.handle_snap_selection(context, event)
         self._apply_perp_constraint()
+        self._apply_parallel_constraint()
 
         # TAB: cycle snap mode when not in keyboard-input mode.
         # Consume both PRESS and RELEASE so the RELEASE never reaches
@@ -6513,7 +6569,9 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
 
     def _invoke(self, context, event):
         super().invoke(context, event)
-        self._force_perpendicular = tool.Drawing.get_annotation_props().force_perpendicular_to_face
+        props = tool.Drawing.get_annotation_props()
+        self._force_perpendicular = props.force_perpendicular_to_face
+        self._force_parallel = props.force_parallel_to_face and not self._force_perpendicular
         _snap_draw_data.clear()
         self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(
             _draw_snap_indicator_global, (), "WINDOW", "POST_VIEW"

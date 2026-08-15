@@ -313,6 +313,8 @@ class AnnotationToolUI:
         if object_type in _DIMENSION_TYPES:
             row = cls.layout.row(align=True)
             row.prop(cls.props, "force_perpendicular_to_face")
+            row = cls.layout.row(align=True)
+            row.prop(cls.props, "force_parallel_to_face")
 
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             row = cls.layout.row(align=True)
