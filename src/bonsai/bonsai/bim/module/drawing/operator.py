@@ -353,10 +353,6 @@ class CreateDrawing(bpy.types.Operator):
 
     drawing_name: str
     is_manifold_cache: dict[str, bool]
-    drawings_to_print: list[int]
-    original_drawing_id: Union[int, None]
-    drawing_queue_index: int
-    _print_timer: Any
 
     @classmethod
     def poll(cls, context):
@@ -390,149 +386,112 @@ class CreateDrawing(bpy.types.Operator):
         assert context.scene and context.scene.camera
 
         active_drawing_id = tool.Blender.get_ifc_definition_id(context.scene.camera)
-        self.original_drawing_id = None
+        original_drawing_id = None
         if self.print_all:
-            self.original_drawing_id = active_drawing_id
-            self.drawings_to_print = [
-                d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing
-            ]
+            original_drawing_id = active_drawing_id
+            drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
         else:
-            self.drawings_to_print = [active_drawing_id]
+            drawings_to_print = [active_drawing_id]
 
-        if self.print_all and len(self.drawings_to_print) > 1 and not bpy.app.background:
-            # One drawing per modal timer tick, see #8603. A plain
-            # bpy.app.timers callback runs after this operator has already
-            # finished, and self.report() then fails (ReferenceError), so
-            # this stays modal to keep the operator alive across ticks.
-            # Modal timers don't fire in --background mode either way.
-            self.drawing_queue_index = 0
-            wm = context.window_manager
-            self._print_timer = wm.event_timer_add(0.0, window=context.window)
-            wm.modal_handler_add(self)
-            return {"RUNNING_MODAL"}
+        for drawing_i, drawing_id in enumerate(drawings_to_print):
+            self.drawing_index = drawing_i
+            if self.print_all:
+                bpy.ops.bim.activate_drawing(drawing=drawing_id, should_view_from_camera=False)
+                original_cache_setting = self.props.should_use_underlay_cache
+                self.props.should_use_underlay_cache = False
 
-        for drawing_i, drawing_id in enumerate(self.drawings_to_print):
-            if not self._generate_drawing(context, drawing_i, drawing_id):
-                return {"FINISHED"}
-        self._finish_print(len(self.drawings_to_print))
-        return {"FINISHED"}
+                # Force Blender to process all pending operations
+                for area in context.screen.areas:
+                    area.tag_redraw()
 
-    def modal(self, context, event):
-        if event.type != "TIMER":
-            return {"PASS_THROUGH"}
-        drawing_i = self.drawing_queue_index
-        drawing_id = self.drawings_to_print[drawing_i]
-        self.drawing_queue_index += 1
-        ok = self._generate_drawing(context, drawing_i, drawing_id)
-        if ok and self.drawing_queue_index < len(self.drawings_to_print):
-            return {"RUNNING_MODAL"}
-        context.window_manager.event_timer_remove(self._print_timer)
-        if ok:
-            self._finish_print(len(self.drawings_to_print))
-        return {"FINISHED"}
+                # Process events to let Blender finish internal cleanup
+                bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
+            self.camera = context.scene.camera
+            assert (camera_element := tool.Ifc.get_entity(self.camera))
+            self.camera_element = camera_element
+            self.camera_document = tool.Drawing.get_drawing_document(self.camera_element)
+            self.file = tool.Ifc.get()
 
-    def _finish_print(self, drawing_count: int) -> None:
-        if not self.open_viewer:
-            self.report({"INFO"}, f"{drawing_count} drawings created...")
-        if self.print_all:
-            assert self.original_drawing_id is not None
-            bpy.ops.bim.activate_drawing(drawing=self.original_drawing_id, should_view_from_camera=False)
-
-    def _generate_drawing(self, context: bpy.types.Context, drawing_i: int, drawing_id: int) -> bool:
-        """Generate a single drawing. Returns False if generation was aborted early."""
-        self.drawing_index = drawing_i
-        if self.print_all:
-            bpy.ops.bim.activate_drawing(drawing=drawing_id, should_view_from_camera=False)
-            original_cache_setting = self.props.should_use_underlay_cache
-            self.props.should_use_underlay_cache = False
-
-            # Force Blender to process all pending operations
-            for area in context.screen.areas:
-                area.tag_redraw()
-
-            # Process events to let Blender finish internal cleanup
-            bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
-        self.camera = context.scene.camera
-        assert (camera_element := tool.Ifc.get_entity(self.camera))
-        self.camera_element = camera_element
-        self.camera_document = tool.Drawing.get_drawing_document(self.camera_element)
-        self.file = tool.Ifc.get()
-
-        with profile("Drawing generation process"):
-            with profile("Initialize drawing generation process"):
-                self.cprops = tool.Drawing.get_camera_props(self.camera)
-                self.drawing = self.file.by_id(drawing_id)
-                self.drawing_name = self.drawing.Name
-                self.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
-                self.get_scale(context)
-                if self.cprops.update_representation(self.camera.matrix_world):
-                    bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
-                    # Reassign props as data is recreated during the update.
+            with profile("Drawing generation process"):
+                with profile("Initialize drawing generation process"):
                     self.cprops = tool.Drawing.get_camera_props(self.camera)
+                    self.drawing = self.file.by_id(drawing_id)
+                    self.drawing_name = self.drawing.Name
+                    self.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
+                    self.get_scale(context)
+                    if self.cprops.update_representation(self.camera.matrix_world):
+                        bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
+                        # Reassign props as data is recreated during the update.
+                        self.cprops = tool.Drawing.get_camera_props(self.camera)
 
-                camera_dims = self.get_camera_dimensions()
-                self.svg_writer = svgwriter.SvgWriter(
-                    camera_width=camera_dims[0],
-                    camera_height=camera_dims[1],
-                    camera=self.camera,
-                    camera_projection=(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))),
-                    scale=self.scale,
-                    human_scale=self.human_scale,
-                )
-                self.svg_writer.setup_drawing_resource_paths(self.camera_element)
+                    camera_dims = self.get_camera_dimensions()
+                    self.svg_writer = svgwriter.SvgWriter(
+                        camera_width=camera_dims[0],
+                        camera_height=camera_dims[1],
+                        camera=self.camera,
+                        camera_projection=(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))),
+                        scale=self.scale,
+                        human_scale=self.human_scale,
+                    )
+                    self.svg_writer.setup_drawing_resource_paths(self.camera_element)
 
-            underlay_svg = None
-            linework_svg = None
-            annotation_svg = None
+                underlay_svg = None
+                linework_svg = None
+                annotation_svg = None
 
-            with profile("Generate underlay"):
-                if ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
-                    drawing_style = self.cprops.get_active_drawing_style()
-                    if not drawing_style:
-                        self.report(
-                            {"ERROR"},
-                            f"Failed to create drawing '{self.drawing.Name}' - drawing has underlay but there's no active drawing underlay style.",
-                        )
-                        return False
+                with profile("Generate underlay"):
+                    if ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
+                        drawing_style = self.cprops.get_active_drawing_style()
+                        if not drawing_style:
+                            self.report(
+                                {"ERROR"},
+                                f"Failed to create drawing '{self.drawing.Name}' - drawing has underlay but there's no active drawing underlay style.",
+                            )
+                            return {"FINISHED"}
 
-                    # Clear any local camera setup and force viewport to use scene camera
-                    for area in context.screen.areas:
-                        if area.type == "VIEW_3D":
-                            for space in area.spaces:
-                                if space.type == "VIEW_3D":
-                                    # Clear local camera to ensure we use scene.camera
-                                    space.use_local_camera = False
-                                    space.camera = context.scene.camera
-                                    space.region_3d.view_perspective = "CAMERA"
-                                    print(f"Set viewport camera to: {context.scene.camera.name}")
-                                    break
+                        # Clear any local camera setup and force viewport to use scene camera
+                        for area in context.screen.areas:
+                            if area.type == "VIEW_3D":
+                                for space in area.spaces:
+                                    if space.type == "VIEW_3D":
+                                        # Clear local camera to ensure we use scene.camera
+                                        space.use_local_camera = False
+                                        space.camera = context.scene.camera
+                                        space.region_3d.view_perspective = "CAMERA"
+                                        print(f"Set viewport camera to: {context.scene.camera.name}")
+                                        break
 
-                    # Force complete scene update
-                    context.view_layer.update()
-                    context.evaluated_depsgraph_get()
+                        # Force complete scene update
+                        context.view_layer.update()
+                        context.evaluated_depsgraph_get()
 
-                    underlay_svg = self.generate_underlay(context)
+                        underlay_svg = self.generate_underlay(context)
 
-            with profile("Generate linework"):
-                if tool.Drawing.is_camera_orthographic():
-                    if self.cprops.linework_mode == "OPENCASCADE":
-                        linework_svg = self.generate_linework(context)
+                with profile("Generate linework"):
+                    if tool.Drawing.is_camera_orthographic():
+                        if self.cprops.linework_mode == "OPENCASCADE":
+                            linework_svg = self.generate_linework(context)
+                        elif self.cprops.linework_mode == "FREESTYLE":
+                            linework_svg = self.generate_freestyle_linework(context)
                     elif self.cprops.linework_mode == "FREESTYLE":
                         linework_svg = self.generate_freestyle_linework(context)
-                elif self.cprops.linework_mode == "FREESTYLE":
-                    linework_svg = self.generate_freestyle_linework(context)
 
-            with profile("Generate annotation"):
-                if tool.Drawing.is_camera_orthographic():
-                    annotation_svg = self.generate_annotation(context)
+                with profile("Generate annotation"):
+                    if tool.Drawing.is_camera_orthographic():
+                        annotation_svg = self.generate_annotation(context)
 
-            with profile("Combine SVG layers"):
-                svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
+                with profile("Combine SVG layers"):
+                    svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
-        if self.open_viewer:
-            drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(self.drawing))
-            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, drawing_uri)
-        return True
+            if self.open_viewer:
+                drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(self.drawing))
+                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, drawing_uri)
+        if not self.open_viewer:
+            self.report({"INFO"}, f"{len(drawings_to_print)} drawings created...")
+        if self.print_all:
+            assert original_drawing_id is not None
+            bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
+        return {"FINISHED"}
 
     def get_camera_dimensions(self) -> tuple[float, float]:
         assert bpy.context.scene
