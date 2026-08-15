@@ -50,6 +50,18 @@ static void expect_fail(int ok) {
     ifcopenshell_clear_error();
 }
 
+static ifcopenshell_instance_list_t instance_list_value(ifcopenshell_parse_instance_list_t* source) {
+    ifcopenshell_instance_list_t result = {0};
+
+    expect_ok(ifcopenshell_parse_instance_list_size(source, &result.size));
+    result.items = calloc(result.size, sizeof(*result.items));
+    expect_true(result.items != NULL || result.size == 0u, "Could not allocate instance list");
+    for (size_t i = 0; i < result.size; ++i) {
+        expect_ok(ifcopenshell_parse_instance_list_get(source, i, &result.items[i]));
+    }
+    return result;
+}
+
 static int string_list_contains(const ifcopenshell_string_list_t* values, const char* expected) {
     size_t i;
     for (i = 0; i < values->size; ++i) {
@@ -2317,6 +2329,8 @@ static void test_tree_clash_and_ray_apis(void) {
     ifcopenshell_geom_tree_t* tree = NULL;
     ifcopenshell_parse_instance_list_t* list_a = NULL;
     ifcopenshell_parse_instance_list_t* list_b = NULL;
+    ifcopenshell_instance_list_t list_a_value = {0};
+    ifcopenshell_instance_list_t list_b_value = {0};
     ifcopenshell_parse_instance_list_t* selected = NULL;
     ifcopenshell_geom_tree_clash_list_t* clashes = NULL;
     ifcopenshell_geom_tree_clash_t* clash = NULL;
@@ -2362,7 +2376,9 @@ static void test_tree_clash_and_ray_apis(void) {
     ifcopenshell_parse_instance_list_destroy(selected);
     selected = NULL;
 
-    expect_ok(ifcopenshell_geom_tree_clash_collision_many(tree, list_a, list_b, false, &clashes));
+    list_a_value = instance_list_value(list_a);
+    list_b_value = instance_list_value(list_b);
+    expect_ok(ifcopenshell_geom_tree_clash_collision_many(tree, &list_a_value, &list_b_value, false, &clashes));
     expect_ok(ifcopenshell_geom_tree_clash_count(tree, clashes, &count));
     if (count > 0) {
         expect_ok(ifcopenshell_geom_tree_clash_at(tree, clashes, 0, &clash));
@@ -2405,6 +2421,8 @@ static void test_tree_clash_and_ray_apis(void) {
 
     ifcopenshell_parse_instance_list_destroy(list_b);
     ifcopenshell_parse_instance_list_destroy(list_a);
+    ifcopenshell_instance_list_destroy(&list_b_value);
+    ifcopenshell_instance_list_destroy(&list_a_value);
     ifcopenshell_geom_tree_destroy(tree);
     ifcopenshell_geom_settings_destroy(settings);
     ifcopenshell_file_destroy(file);
@@ -2424,16 +2442,21 @@ static void test_create_shape(void) {
     }
 
     /* Get IfcProduct instances */
-    ifcopenshell_instance_list_t products = {0};
+    ifcopenshell_parse_instance_list_t* products = NULL;
+    size_t product_count = 0;
     ok = ifcopenshell_file_by_type(file, "IfcProduct", &products);
-    if (!ok || products.size == 0) {
+    if (ok) {
+        ok = ifcopenshell_parse_instance_list_size(products, &product_count);
+    }
+    if (!ok || product_count == 0) {
         printf("  SKIP: No IfcProduct instances found\n");
-        ifcopenshell_instance_list_destroy(&products);
+        ifcopenshell_parse_instance_list_destroy(products);
         ifcopenshell_file_destroy(file);
         return;
     }
 
-    ifcopenshell_instance_t* product = products.items[0];
+    ifcopenshell_instance_t* product = NULL;
+    expect_ok(ifcopenshell_parse_instance_list_get(products, 0u, &product));
 
     /* Create settings */
     ifcopenshell_geom_settings_t* settings = NULL;
@@ -2470,7 +2493,7 @@ static void test_create_shape(void) {
     }
 
     ifcopenshell_geom_settings_destroy(settings);
-    ifcopenshell_instance_list_destroy(&products);
+    ifcopenshell_parse_instance_list_destroy(products);
     ifcopenshell_file_destroy(file);
 
     printf("  create_shape API: PASS\n");
@@ -2487,16 +2510,21 @@ static void test_map_shape(void) {
     }
 
     /* Get an IfcProduct */
-    ifcopenshell_instance_list_t products = {0};
+    ifcopenshell_parse_instance_list_t* products = NULL;
+    size_t product_count = 0;
     ok = ifcopenshell_file_by_type(file, "IfcProduct", &products);
-    if (!ok || products.size == 0) {
+    if (ok) {
+        ok = ifcopenshell_parse_instance_list_size(products, &product_count);
+    }
+    if (!ok || product_count == 0) {
         printf("  SKIP: No products\n");
-        ifcopenshell_instance_list_destroy(&products);
+        ifcopenshell_parse_instance_list_destroy(products);
         ifcopenshell_file_destroy(file);
         return;
     }
 
-    ifcopenshell_instance_t* product = products.items[0];
+    ifcopenshell_instance_t* product = NULL;
+    expect_ok(ifcopenshell_parse_instance_list_get(products, 0u, &product));
 
     ifcopenshell_geom_settings_t* settings = NULL;
     ifcopenshell_geom_create_settings(&settings);
@@ -2513,7 +2541,7 @@ static void test_map_shape(void) {
     }
 
     ifcopenshell_geom_settings_destroy(settings);
-    ifcopenshell_instance_list_destroy(&products);
+    ifcopenshell_parse_instance_list_destroy(products);
     ifcopenshell_file_destroy(file);
 
     printf("  map_shape API: PASS\n");
@@ -3217,13 +3245,18 @@ static void test_tree_advanced_apis(void) {
 
     /* Test clash_intersection_many and clash_clearance_many
        We need instance lists - get them by iterating the file for IfcProduct instances */
-    ifcopenshell_instance_list_t product_handles = {0};
     ifcopenshell_parse_instance_list_t* products = NULL;
-    ok = ifcopenshell_file_by_type(file, "IfcProduct", &product_handles);
-    if (ok && product_handles.size > 0 && ifcopenshell_parse_instance_list_create_from_handles(&product_handles, &products)) {
+    ifcopenshell_instance_list_t product_values = {0};
+    size_t product_count = 0;
+    ok = ifcopenshell_file_by_type(file, "IfcProduct", &products);
+    if (ok) {
+        ok = ifcopenshell_parse_instance_list_size(products, &product_count);
+    }
+    if (ok && product_count > 0) {
+        product_values = instance_list_value(products);
         ifcopenshell_geom_tree_clash_list_t* clashes = NULL;
 
-        ok = ifcopenshell_geom_tree_clash_intersection_many(tree, products, products, 0.0, false, &clashes);
+        ok = ifcopenshell_geom_tree_clash_intersection_many(tree, &product_values, &product_values, 0.0, false, &clashes);
         if (ok && clashes) {
             size_t clash_count = 0;
             ifcopenshell_geom_tree_clash_count(tree, clashes, &clash_count);
@@ -3249,7 +3282,7 @@ static void test_tree_advanced_apis(void) {
         }
 
         ifcopenshell_geom_tree_clash_list_t* clearance_clashes = NULL;
-        ok = ifcopenshell_geom_tree_clash_clearance_many(tree, products, products, 1.0, false, &clearance_clashes);
+        ok = ifcopenshell_geom_tree_clash_clearance_many(tree, &product_values, &product_values, 1.0, false, &clearance_clashes);
         if (ok && clearance_clashes) {
             size_t cc = 0;
             ifcopenshell_geom_tree_clash_count(tree, clearance_clashes, &cc);
@@ -3261,10 +3294,10 @@ static void test_tree_advanced_apis(void) {
         }
 
         ifcopenshell_parse_instance_list_destroy(products);
-        ifcopenshell_instance_list_destroy(&product_handles);
+        ifcopenshell_instance_list_destroy(&product_values);
     } else {
         printf("  SKIP: No IfcProduct instances for clash tests\n");
-        ifcopenshell_instance_list_destroy(&product_handles);
+        ifcopenshell_parse_instance_list_destroy(products);
         ifcopenshell_clear_error();
     }
 
