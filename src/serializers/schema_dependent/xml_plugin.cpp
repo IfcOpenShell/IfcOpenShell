@@ -61,3 +61,15 @@ void register_plugin(document_serializer_registry& registry, const plugin::modul
 BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
 BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
 BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::register_plugin, ifcopenshell_register_document_serializer_plugin_v1)
+
+#ifdef __EMSCRIPTEN__
+#define CAT(a, b) a##b
+#define EXPAND_AND_CAT(a, b) CAT(a, b)
+#define emscripten_register_document_serializer_plugin EXPAND_AND_CAT(ifcopenshell_emscripten_register_document_serializer_, IFCOPENSHELL_WASM_PLUGIN_ID)
+
+extern "C" void emscripten_register_document_serializer_plugin(ifcopenshell::serializers::document_serializer_registry* registry) {
+	ifcopenshell::serializers::xml_document_serializer_plugin::register_plugin(
+		*registry,
+		ifcopenshell::plugin::module::builtin(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_metadata()));
+}
+#endif
