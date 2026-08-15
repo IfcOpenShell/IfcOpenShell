@@ -1,0 +1,172 @@
+schema_version: 1
+module: ifcopenshell
+slice: ifcparse
+c_prefix: ifcopenshell_parse
+
+public_headers:
+  - ifc_parse_api.h
+  - parse.h
+  - exception.h
+  - logger.h
+  - si_prefix.h
+  - utils.h
+  - schemas/Header_section_schema.h
+  - spf_header.h
+  - file.h
+  - file_open_status.h
+  - express.h
+  - instance_data.h
+  - schema.h
+
+discover:
+  include_dir: ../../../ifcparse
+  class_defaults:
+    include_all: true
+    translation_unit: schema.cpp
+  function_defaults:
+    include_all: true
+  classes:
+    - handle: file
+      translation_unit: file.cpp
+      exclude:
+        - header
+        - begin
+        - end
+        - get_inverse
+        - get_unit
+        - good
+        - internal_guid_map
+        - instances_by_type
+        - instances_by_type_excl_subtypes
+        - register_inverse
+        - types_begin
+        - types_end
+        - unregister_inverse
+      rename:
+        add_entity: add
+        addEntities: add_entities
+        add_type_ref: add_type_ref
+        get_inverse_indices: get_inverse_indices_by_id
+        instance_by_id: by_id
+        instance_by_guid: by_guid
+        get_total_inverses: get_total_inverses_by_id
+        remove_type_ref: remove_type_ref
+        remove_entity: remove
+      overloads:
+        - cpp_name: create
+          expose_as: create
+          params:
+            - const ifcopenshell::declaration *
+            - int
+        - cpp_name: get_inverse
+          expose_as: get_inverses_by_declaration
+          params:
+            - int
+            - const ifcopenshell::declaration *
+            - int
+        - cpp_name: instances_by_type
+          expose_as: by_type
+          params:
+            - const std::string &
+        - cpp_name: instances_by_type_excl_subtypes
+          expose_as: by_type_excl_subtypes
+          params:
+            - const std::string &
+    - handle: instance
+      translation_unit: parse.cpp
+      exclude:
+        - data
+        - set_attribute_value
+        - to_string
+        - unset_attribute_value
+      rename:
+        get_attribute_value: get_argument
+    - handle: schema
+      exclude:
+        - declaration_by_name
+        - instantiate
+      overloads:
+        - cpp_name: declaration_by_name
+          expose_as: declaration_by_name
+          params:
+            - const std::string &
+        - cpp_name: declaration_by_name
+          expose_as: declaration_by_index
+          params:
+            - size_t
+    - handle: declaration
+      exclude:
+        - is
+      overloads:
+        - cpp_name: is
+          expose_as: is_a
+          params:
+            - const std::string &
+    - handle: type_declaration
+    - handle: select_type
+    - handle: enumeration
+    - handle: parameter_type
+      include_all: false
+      include:
+        - as_aggregation_type
+        - as_named_type
+        - as_simple_type
+    - handle: named_type
+      exclude:
+        - is
+      overloads:
+        - cpp_name: is
+          expose_as: is_a
+          params:
+            - const std::string &
+    - handle: simple_type
+    - handle: aggregation_type
+      exclude:
+        - type_of_aggregation
+    - handle: header
+      translation_unit: spf_header.cpp
+      exclude:
+        - owner_file
+        - file_description
+        - file_name
+        - file_schema
+        - write
+      overloads:
+        - cpp_name: owner_file
+          expose_as: file
+          params: []
+        - cpp_name: file_description
+          expose_as: file_description
+          params: []
+        - cpp_name: file_name
+          expose_as: file_name
+          params: []
+        - cpp_name: file_schema
+          expose_as: file_schema
+          params: []
+    - handle: file_description
+      translation_unit: schemas/Header_section_schema.cpp
+    - handle: file_name
+      translation_unit: schemas/Header_section_schema.cpp
+    - handle: file_schema
+      translation_unit: schemas/Header_section_schema.cpp
+    - handle: entity
+      exclude:
+        - attribute_index
+      overloads:
+        - cpp_name: attribute_index
+          expose_as: attribute_index
+          params:
+            - const std::string &
+    - handle: attribute
+    - handle: inverse_attribute
+      exclude:
+        - type_of_aggregation
+    - handle: instance_streamer
+      translation_unit: file.cpp
+      include_all: false
+      include:
+        - bypassed_instances
+        - has_semicolon
+        - push_page
+        - semicolon_count
