@@ -61,9 +61,9 @@ BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::plugin_metadata, ifcopenshell_plugi
 BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::register_plugin, ifcopenshell_register_schema_plugin_v1)
 
 #ifdef __EMSCRIPTEN__
-extern "C" void emscripten_register_schema_plugin(ifcopenshell::schema_registry* registry) {
+extern "C" void emscripten_register_schema_plugin() {
 	ifcopenshell::schema_plugin::register_plugin(
-		*registry,
+		ifcopenshell::schema_registry_instance(),
 		ifcopenshell::plugin::module::builtin(ifcopenshell::schema_plugin::plugin_metadata()));
 }
 #endif

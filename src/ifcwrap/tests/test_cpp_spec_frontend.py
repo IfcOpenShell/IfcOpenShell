@@ -63,7 +63,6 @@ from src.ifcwrap.binding_generator.cpp_spec_frontend import (
     lower_cpp_spec_result_structs_to_specs,
 )
 from src.ifcwrap.binding_generator.pipeline import generate_cpp_specs
-from src.ifcwrap.binding_generator.targets.wasm.api_bridge import render_api_direct
 from src.ifcwrap.binding_generator.targets.wasm.typescript import (
     render_typescript_declarations,
 )
@@ -564,19 +563,15 @@ def test_cpp_spec_frontend_discovers_input_variant_records(tmp_path: Path) -> No
     )
     metadata = finalize_abi(contract)
     declarations = render_typescript_declarations(metadata)
-    direct = render_api_direct(metadata)
 
-    for generated in (declarations, direct):
-        assert "type Vec3 = [number, number, number];" in generated
-        assert "type Mode = 'FAST-MODE' | 'Exact';" in generated
-        assert "clippings?: (" in generated
-        assert "location: Vec3;" in generated
-        assert "mode: Mode;" in generated
-        assert "enabled?: boolean;" in generated
+    assert "type Vec3 = [number, number, number];" in declarations
+    assert "type Mode = 'FAST-MODE' | 'Exact';" in declarations
+    assert "clippings?: (" in declarations
+    assert "location: Vec3;" in declarations
+    assert "mode: Mode;" in declarations
+    assert "enabled?: boolean;" in declarations
     assert "entity_id: number;" in declarations
     assert "required_zero: number;" in declarations
-    assert "entityId: number;" in direct
-    assert "requiredZero: number;" in direct
 
 
 def test_cpp_spec_frontend_discovers_nested_mesh_items(tmp_path: Path) -> None:

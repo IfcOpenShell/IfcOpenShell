@@ -25,6 +25,10 @@
 #include <mutex>
 #include <set>
 
+#ifdef __EMSCRIPTEN__
+#include <dlfcn.h>
+#endif
+
 #include "schemas/Header_section_schema.h"
 
 namespace ifcopenshell {
@@ -125,6 +129,23 @@ namespace {
 
 		const auto expected_key = schema_key(schema_name);
 		const auto basename = std::string(schema_plugin_prefix) + boost::to_lower_copy(schema_name);
+
+#ifdef __EMSCRIPTEN__
+		using emscripten_register_fn = void (*)();
+		const auto emscripten_symbol =
+			std::string("ifcopenshell_emscripten_register_schema_") + boost::to_lower_copy(schema_name);
+		if (auto* register_ptr = dlsym(RTLD_DEFAULT, emscripten_symbol.c_str())) {
+			union {
+				void* ptr;
+				emscripten_register_fn fn;
+			} register_symbol;
+			register_symbol.ptr = register_ptr;
+			if (register_symbol.fn) {
+				register_symbol.fn();
+				return true;
+			}
+		}
+#endif
 
 		for (const auto& path : manager.discover_exact(basename)) {
 			auto module = manager.load(path);

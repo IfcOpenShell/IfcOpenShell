@@ -78,7 +78,6 @@ option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter fr
 option(WASM_BUILD "Build a WebAssembly binary." OFF)
 
 if(WASM_BUILD)
-    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
     set(CMAKE_SHARED_LIBRARY_SUFFIX ".wasm")
     set(BUILD_SHARED_LIBS OFF)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fwasm-exceptions>)
@@ -166,6 +165,12 @@ set(
 )
 
 project(IfcOpenShell VERSION ${PROJECT_VERSION_NUMERIC})
+
+include(CTest)
+
+if(WASM_BUILD)
+    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
+endif()
 
 # Make sure CMake modules in this project are found first
 list(PREPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
