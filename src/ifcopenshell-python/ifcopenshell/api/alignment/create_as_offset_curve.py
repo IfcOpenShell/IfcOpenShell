@@ -20,6 +20,8 @@ from collections.abc import Sequence
 
 import ifcopenshell
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.alignment
+import ifcopenshell.util.alignment
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._create_offset_curve_representation import (
     _create_offset_curve_representation,
@@ -49,6 +51,10 @@ def create_as_offset_curve(
     )
 
     _create_offset_curve_representation(file, alignment, offsets)
+
+    # establish the alignment's stationing scheme, same as create() does for start_station
+    referent_name = ifcopenshell.util.alignment.station_as_string(file, start_station)
+    ifcopenshell.api.alignment.add_stationing_referent(file, referent_name, alignment, 0.0, start_station)
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]
