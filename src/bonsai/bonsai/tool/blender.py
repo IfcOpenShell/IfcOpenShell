@@ -2363,21 +2363,17 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def sync_render_visibility(cls):
-        # Doing bpy.ops.object.hide_render_clear_all() or
-        # bpy.ops.object.isolate_type_render() is extremely slow.
-        # Hopefully this doesn't crash on Windows, it doesn't crash on Linux.
-        should_hides = [0 if obj.visible_get() else 1 for obj in bpy.data.objects]
-        should_hides = np.fromiter(should_hides, dtype=np.uint8, count=len(should_hides))
-        bpy.data.objects.foreach_set("hide_render", should_hides)
-        return  # Otherwise...
-        # for obj in bpy.data.objects:
-        #     if not obj.data:
-        #         continue
-        #     # For speed, check equality prior to change to prevent needless updates
-        #     if (is_visible := obj.visible_get()) and obj.hide_render is True:
-        #         obj.hide_render = False
-        #     elif not is_visible and obj.hide_render is False:
-        #         obj.hide_render = True
+        # Do NOT use bpy.data.objects.foreach_set("hide_render", ...) here. It writes the
+        # DNA directly and skips the RNA update, so nothing tags the depsgraph and the
+        # *evaluated* visibility stays a render behind - drawing underlays then render the
+        # previously active drawing's objects with the current drawing's camera. See #8603.
+        # bpy.ops.object.hide_render_clear_all() / isolate_type_render() are also out, they
+        # are extremely slow. Assigning through RNA tags each object correctly, and the
+        # equality check keeps it cheap by only writing objects that actually change.
+        for obj in bpy.data.objects:
+            should_hide = not obj.visible_get()
+            if obj.hide_render != should_hide:
+                obj.hide_render = should_hide
 
     @classmethod
     def hide_objects(cls, objs):
