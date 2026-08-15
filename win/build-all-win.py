@@ -53,6 +53,16 @@ QT_DEPLOYMENT_DLLS = {
     "vulkan-1.dll",
 }
 QT_CONF = "[Paths]\nPrefix = .\n"
+# Runtime plugins are canonically prefixed with 'ifcopenshell_' (see
+# decorated_basename() in src/plugin/plugin.cpp and the OUTPUT_NAME properties of
+# the plugin targets, e.g. 'ifcopenshell_parse_schema_ifc${schema}'), while the
+# core shared libraries keep the dotted 'ifcopenshell.' names. Match both so the
+# load-by-name plugins are not silently dropped from the archives.
+IFC_RUNTIME_PLUGIN_PREFIXES = ("ifcopenshell.", "ifcopenshell_")
+# Per-schema geometry writers ship with the Python package only, not next to the
+# executables. 'ifcopenshell.geometry.writer.' covers the core library, the
+# underscore form covers the per-schema plugins.
+IFC_GEOMETRY_WRITER_PREFIXES = ("ifcopenshell.geometry.writer.", "ifcopenshell_geometry_writer_")
 
 
 def run(command: list[str]) -> None:
@@ -153,6 +163,19 @@ def trace_runtime_dependencies(roots: set[Path], candidates: set[Path]) -> set[P
     return resolved
 
 
+def is_geometry_writer(file: Path) -> bool:
+    return file.name.startswith(IFC_GEOMETRY_WRITER_PREFIXES)
+
+
+def collect_ifc_runtime_plugins(dlls: set[Path], dependencies: set[Path]) -> set[Path]:
+    """IfcOpenShell plugins are loaded by name at runtime, so dumpbin cannot discover them."""
+    return {
+        d
+        for d in (dlls - dependencies)
+        if d.name.startswith(IFC_RUNTIME_PLUGIN_PREFIXES) and not is_geometry_writer(d)
+    }
+
+
 def is_qt_deployment_dll(file: Path) -> bool:
     name = file.name.lower()
     return name.startswith("qt") or name.startswith("d3dcompiler_") or name in QT_DEPLOYMENT_DLLS
@@ -223,11 +246,7 @@ def archive_executables() -> None:
     exes = {file for file in bin_files if file.suffix.lower() == ".exe"}
     dlls = {file for file in bin_files if file.suffix.lower() == ".dll"}
     dependencies = trace_runtime_dependencies(exes, dlls)
-    ifc_runtime_plugins = {
-        d
-        for d in (set(dlls) - dependencies)
-        if d.name.startswith("ifcopenshell.") and not d.name.startswith("ifcopenshell.geometry.writer.")
-    }
+    ifc_runtime_plugins = collect_ifc_runtime_plugins(dlls, dependencies)
     qt_deployment_files = collect_qt_deployment_files(install_dir)
 
     for file in sorted(exes):
@@ -267,12 +286,8 @@ def archive_python_package(python_version: str, python_path: Path) -> None:
     exes = {file for file in bin_files if file.suffix.lower() == ".exe"}
     dlls = {file for file in bin_files if file.suffix.lower() == ".dll"}
     dependencies = trace_runtime_dependencies(exes, dlls)
-    ifc_runtime_plugins = {
-        d
-        for d in (set(dlls) - dependencies)
-        if d.name.startswith("ifcopenshell.") and not d.name.startswith("ifcopenshell.geometry.writer.")
-    }
-    geometry_writing = {f for f in bin_files if f.name.startswith("ifcopenshell.geometry.writer.")}
+    ifc_runtime_plugins = collect_ifc_runtime_plugins(dlls, dependencies)
+    geometry_writing = {f for f in bin_files if is_geometry_writer(f)}
 
     python_version_major_minor = "".join(python_version.split(".")[:2])
     site_packages = python_path / "Lib" / "site-packages"
