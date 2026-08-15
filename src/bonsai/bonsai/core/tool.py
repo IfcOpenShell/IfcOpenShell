@@ -1279,3 +1279,32 @@ class Wall:
 @interface
 class Web:
     pass
+
+
+# ############################################################################ #
+
+# Saikei Civil - horizontal infrastructure modules.
+
+
+@interface
+class Alignment:
+    # Alignment creation
+    def create_alignment(cls, name, start_station=0.0): pass
+    # Horizontal PI edit mode
+    def back_calculate_pis_from_alignment(cls, alignment): pass
+    def clear_layout_segments(cls, h_layout): pass
+    def collect_pis_from_empties(cls, alignment_id): pass
+    def create_objects_for_layout_segments(cls, h_layout, layout_obj): pass
+    def create_pi_edit_empties(cls, alignment, pis): pass
+    def get_horizontal_layout(cls, alignment): pass
+    def layout_by_pi_method(cls, h_layout, hpoints, radii): pass
+    def layout_has_real_segments(cls, h_layout): pass
+    def remove_layout_segment_objects(cls, h_layout): pass
+    def remove_pi_edit_empties(cls, alignment_id): pass
+    # Stationing
+    def format_station(cls, station): pass
+    # CSV import
+    def create_alignment_from_csv(cls, filepath): pass
+    def create_hierarchy_for_alignment(cls, alignment): pass
+    def get_child_alignments(cls, alignment): pass
+    def create_objects_for_referents(cls, alignment): pass
