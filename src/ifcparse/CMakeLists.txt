@@ -71,9 +71,11 @@ if(WITH_ROCKSDB)
     endif()
 endif()
 
-if (NOT WASM_BUILD)
-    set(plugin_when_not_wasm plugin)
+if(WASM_BUILD)
+    ifcopenshell_wasm_define_main_import_target(IfcParse)
 endif()
+
+ifcopenshell_wasm_plugin_dependency(plugin_when_not_wasm)
 
 foreach(schema ${SCHEMA_VERSIONS})
     set(SCHEMA_PLUGIN_TARGET parse_schema_ifc${schema})
@@ -93,14 +95,28 @@ foreach(schema ${SCHEMA_VERSIONS})
         BOOST_DLL_USE_STD_FS
         IfcSchema=Ifc${schema}
     )
-    target_link_libraries(${SCHEMA_PLUGIN_TARGET} PRIVATE ${plugin_when_not_wasm} IfcParse)
     set_target_properties(${SCHEMA_PLUGIN_TARGET} PROPERTIES
         OUTPUT_NAME "ifcopenshell_parse_schema_ifc${schema}"
     )
     ifcopenshell_plugin_target(${SCHEMA_PLUGIN_TARGET})
-
     if(WASM_BUILD)
-        target_link_options(${SCHEMA_PLUGIN_TARGET} PRIVATE "SHELL:-s SIDE_MODULE=1" "-O1")
+        ifcopenshell_wasm_configure_plugin_target(
+            ${SCHEMA_PLUGIN_TARGET}
+            KIND schema
+            ID "ifc${schema}"
+            SYMBOL_ID "ifc${schema}"
+            EXPORT_SYMBOL "ifcopenshell_emscripten_register_schema_ifc${schema}"
+        )
+        ifcopenshell_wasm_plugin_link_options(${SCHEMA_PLUGIN_TARGET} ifcopenshell_register_schema_plugin_v1 EXPORT_DYNAMIC)
+        ifcopenshell_wasm_plugin_target_link(${SCHEMA_PLUGIN_TARGET}
+            MAIN_TARGETS IfcParse
+            PRIVATE ${plugin_when_not_wasm}
+        )
+    else()
+        ifcopenshell_wasm_plugin_target_link(${SCHEMA_PLUGIN_TARGET}
+            MAIN_TARGETS IfcParse
+            PRIVATE ${plugin_when_not_wasm}
+        )
     endif()
 
     list(APPEND schema_libraries ${SCHEMA_PLUGIN_TARGET})
