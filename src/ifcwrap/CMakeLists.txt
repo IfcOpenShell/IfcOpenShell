@@ -73,12 +73,40 @@ endif()
 include(GNUInstallDirs)
 
 if(BUILD_IFCAPI)
-    set(IFCOPENSHELL_BINDINGS_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/binding_generator/generated")
+    if(WASM_BUILD AND NOT IFCAPI_REGENERATE_BINDINGS)
+        set(IFCAPI_REGENERATE_BINDINGS ON CACHE BOOL "Regenerate the low-level bindings during the build." FORCE)
+    endif()
+
+    if(WASM_BUILD)
+        set(IFCOPENSHELL_BINDINGS_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    else()
+        set(IFCOPENSHELL_BINDINGS_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/binding_generator/generated")
+    endif()
     set(IFCOPENSHELL_BINDING_SPEC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/binding_generator/specs")
     set(IFCOPENSHELL_BINDING_SPEC_MACROS "${IFCOPENSHELL_BINDING_SPEC_DIR}/cpp/spec_macros.h")
     set(UNIFIED_CAPI_HEADER "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}/ifcopenshell_api.h")
     set(UNIFIED_CAPI_CPP "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}/ifcopenshell_api.cpp")
     set(UNIFIED_CAPI_INTERNAL_HEADER "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}/ifcopenshell_api_internal.hpp")
+    set(IFCOPENSHELL_BINDING_BYPRODUCTS
+        "${UNIFIED_CAPI_HEADER}"
+        "${UNIFIED_CAPI_CPP}"
+        "${UNIFIED_CAPI_INTERNAL_HEADER}"
+    )
+    set(IFCOPENSHELL_BINDING_TARGET_ARGS)
+    if(WASM_BUILD)
+        set(IFCOPENSHELL_WASM_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/wasm")
+        set(IFCOPENSHELL_WASM_API_MJS "${IFCOPENSHELL_WASM_OUTPUT_DIR}/ifcopenshell_api.mjs")
+        set(IFCOPENSHELL_WASM_EXPORTS "${IFCOPENSHELL_WASM_OUTPUT_DIR}/ifcopenshell_exports.txt")
+        set(IFCOPENSHELL_WASM_D_TS "${IFCOPENSHELL_WASM_OUTPUT_DIR}/ifcopenshell_api.d.ts")
+        list(APPEND IFCOPENSHELL_BINDING_BYPRODUCTS
+            "${IFCOPENSHELL_WASM_API_MJS}"
+            "${IFCOPENSHELL_WASM_EXPORTS}"
+            "${IFCOPENSHELL_WASM_D_TS}"
+        )
+        list(APPEND IFCOPENSHELL_BINDING_TARGET_ARGS
+            --wasm-output-dir "${IFCOPENSHELL_WASM_OUTPUT_DIR}"
+        )
+    endif()
     set(IFCOPENSHELL_BINDING_SPEC_DEPENDS
         "${IFCOPENSHELL_BINDING_SPEC_DIR}/ifcparse.yml"
         "${IFCOPENSHELL_BINDING_SPEC_DIR}/ifcgeom.yml"
@@ -204,14 +232,12 @@ if(BUILD_IFCAPI)
         set(IFCOPENSHELL_BINDINGS_CODEGEN_STAMP "${CMAKE_CURRENT_BINARY_DIR}/ifcopenshell_bindings_codegen.stamp")
         add_custom_command(
             OUTPUT "${IFCOPENSHELL_BINDINGS_CODEGEN_STAMP}"
-            BYPRODUCTS
-                "${UNIFIED_CAPI_HEADER}"
-                "${UNIFIED_CAPI_CPP}"
-                "${UNIFIED_CAPI_INTERNAL_HEADER}"
+            BYPRODUCTS ${IFCOPENSHELL_BINDING_BYPRODUCTS}
             COMMAND
                 ${Python_EXECUTABLE} -m src.ifcwrap.binding_generator.generate
                 --spec-dir "${IFCOPENSHELL_BINDING_SPEC_DIR}"
                 --c-output-dir "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}"
+                ${IFCOPENSHELL_BINDING_TARGET_ARGS}
                 ${IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS}
                 ${IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS}
             COMMAND ${CMAKE_COMMAND} -E touch "${IFCOPENSHELL_BINDINGS_CODEGEN_STAMP}"
@@ -228,11 +254,15 @@ if(BUILD_IFCAPI)
     endif()
 
     if((EXISTS "${UNIFIED_CAPI_HEADER}" AND EXISTS "${UNIFIED_CAPI_CPP}") OR IFCAPI_REGENERATE_BINDINGS)
-        add_library(ifcopenshell_capi SHARED "${UNIFIED_CAPI_HEADER}" "${UNIFIED_CAPI_CPP}")
+        if(WASM_BUILD)
+            add_library(ifcopenshell_capi STATIC "${UNIFIED_CAPI_HEADER}" "${UNIFIED_CAPI_CPP}")
+        else()
+            add_library(ifcopenshell_capi SHARED "${UNIFIED_CAPI_HEADER}" "${UNIFIED_CAPI_CPP}")
+        endif()
         if(TARGET ifcopenshell_bindings_codegen)
             add_dependencies(ifcopenshell_capi ifcopenshell_bindings_codegen)
         endif()
-        if(schema_libraries OR kernel_libraries OR mapping_libraries)
+        if((schema_libraries OR kernel_libraries OR mapping_libraries) AND NOT WASM_BUILD)
             add_dependencies(ifcopenshell_capi ${schema_libraries} ${kernel_libraries} ${mapping_libraries})
         endif()
         target_link_libraries(ifcopenshell_capi PRIVATE IfcParse)
@@ -242,24 +272,26 @@ if(BUILD_IFCAPI)
         endif()
         if(TARGET IfcGeom)
             target_link_libraries(ifcopenshell_capi PRIVATE IfcGeom)
-            target_link_libraries(ifcopenshell_capi PRIVATE ${OpenCASCADE_LIBRARIES})
+            if(NOT WASM_BUILD)
+                target_link_libraries(ifcopenshell_capi PRIVATE ${OpenCASCADE_LIBRARIES})
+            endif()
         endif()
-        if(TARGET Serializers)
+        if(TARGET Serializers AND NOT WASM_BUILD)
             target_link_libraries(ifcopenshell_capi PRIVATE Serializers)
         endif()
-        if(TARGET geometry_serializer)
+        if(TARGET geometry_serializer AND NOT WASM_BUILD)
             target_link_libraries(ifcopenshell_capi PRIVATE geometry_serializer)
         endif()
-        if(geometry_serializer_libraries)
+        if(geometry_serializer_libraries AND NOT WASM_BUILD)
             target_link_libraries(ifcopenshell_capi PRIVATE ${geometry_serializer_libraries})
         endif()
-        if(document_serializer_libraries)
+        if(document_serializer_libraries AND NOT WASM_BUILD)
             target_link_libraries(ifcopenshell_capi PRIVATE ${document_serializer_libraries})
         endif()
-        if(TARGET svgfill)
+        if(TARGET svgfill AND NOT WASM_BUILD)
             target_link_libraries(ifcopenshell_capi PRIVATE svgfill)
         endif()
-        if(TARGET IFCOPENSHELL_CGAL)
+        if(TARGET IFCOPENSHELL_CGAL AND NOT WASM_BUILD)
             target_link_libraries(ifcopenshell_capi PRIVATE IFCOPENSHELL_CGAL)
         endif()
         target_include_directories(
@@ -279,7 +311,7 @@ if(BUILD_IFCAPI)
         )
 
         # Smoke tests - separate executables for each test scope
-        if(BUILD_IFCGEOM)
+        if(BUILD_IFCGEOM AND NOT WASM_BUILD)
             add_executable(ifcopenshell_capi_smoke "${CMAKE_CURRENT_SOURCE_DIR}/tests/ifcgeom_c_api_smoke.c")
             target_link_libraries(ifcopenshell_capi_smoke PRIVATE ifcopenshell_capi)
             if(TARGET geometry_serializer)
@@ -291,13 +323,19 @@ if(BUILD_IFCAPI)
             endif()
         endif()
 
-        add_executable(ifcparse_capi_smoke "${CMAKE_CURRENT_SOURCE_DIR}/tests/ifcparse_c_api_smoke.c")
-        target_link_libraries(ifcparse_capi_smoke PRIVATE ifcopenshell_capi)
-        if(TARGET geometry_serializer)
-            target_link_libraries(ifcparse_capi_smoke PRIVATE geometry_serializer)
+        if(NOT WASM_BUILD)
+            add_executable(ifcparse_capi_smoke "${CMAKE_CURRENT_SOURCE_DIR}/tests/ifcparse_c_api_smoke.c")
+            target_link_libraries(ifcparse_capi_smoke PRIVATE ifcopenshell_capi)
+            if(TARGET geometry_serializer)
+                target_link_libraries(ifcparse_capi_smoke PRIVATE geometry_serializer)
+            endif()
+            target_include_directories(ifcparse_capi_smoke PRIVATE "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}")
+            target_compile_definitions(ifcparse_capi_smoke PRIVATE $<$<BOOL:${WITH_ROCKSDB}>:IFOPSH_WITH_ROCKSDB>)
         endif()
-        target_include_directories(ifcparse_capi_smoke PRIVATE "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}")
-        target_compile_definitions(ifcparse_capi_smoke PRIVATE $<$<BOOL:${WITH_ROCKSDB}>:IFOPSH_WITH_ROCKSDB>)
+
+        if(WASM_BUILD)
+            include(wasm.cmake)
+        endif()
     else()
         message(FATAL_ERROR
             "BUILD_IFCAPI requires generated bindings at ${UNIFIED_CAPI_HEADER}; "
