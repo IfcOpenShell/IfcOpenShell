@@ -1588,8 +1588,10 @@ class SvgWriter:
         end = (offset + v1.xy * Vector((1, -1))) * self.svg_scale
         mid = ((end - start) / 2) + start
         vector = end - start
+        sheet_dimension = vector.length
+        if sheet_dimension < 1e-6:
+            return
         perpendicular = Vector((vector.y, -vector.x)).normalized()
-        sheet_dimension = (end - start).length
 
         # if annotation can't fit offset text to the right of marker
         if distance_override is not None:
@@ -1597,6 +1599,13 @@ class SvgWriter:
         else:
             text_position = mid if sheet_dimension > 5 else (end + (3 * vector.normalized()))
         angle = math.degrees(vector.angle_signed(Vector((1, 0))))
+        # Keep text readable regardless of draw direction: if the dimension runs
+        # right-to-left the raw angle is near ±180° which renders text upside-down.
+        # Flip both angle and perpendicular so text always reads left-to-right and
+        # stays on the same side of the dimension line.
+        if abs(angle) > 90:
+            angle += 180
+            perpendicular = -perpendicular
 
         line = self.svg.line(start=start, end=end, class_=" ".join(classes))
         self.svg.add(line)

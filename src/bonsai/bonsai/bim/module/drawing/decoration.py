@@ -740,6 +740,10 @@ class DimensionDecorator(BaseDecorator):
             text_dir = p1 - p0
             if text_dir.length < 1:
                 continue
+            # Normalize so text always reads left-to-right (or bottom-to-top for
+            # vertical dims) regardless of which end was drawn first.
+            if text_dir.x < 0 or (abs(text_dir.x) < 1e-6 and text_dir.y < 0):
+                text_dir = -text_dir
             perpendicular = Vector((-text_dir.y, text_dir.x)).normalized()
             text_offset = perpendicular * text_offset_value
 
@@ -748,7 +752,7 @@ class DimensionDecorator(BaseDecorator):
                 "multiline": True,
                 "text_dir": text_dir,
             }
-            base_pos = p1 if is_ordinate else p0 + text_dir * 0.5
+            base_pos = p1 if is_ordinate else (p0 + p1) / 2
 
             if not show_description_only:
                 segment_length = (v1 - v0).length
