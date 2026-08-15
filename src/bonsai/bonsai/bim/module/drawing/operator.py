@@ -2705,18 +2705,12 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         assert camera
 
         # Update SECTION annotation endpoints for this drawing
-        print(f"[SECTION] ActivateDrawing: camera={camera.name}, drawing id={self.drawing}")
         drawing_element = tool.Ifc.get().by_id(self.drawing)
-        drawing_camera_element = tool.Ifc.get_entity(camera)
-        print(f"[SECTION] drawing_element={drawing_element}, camera_element={drawing_camera_element}")
         group = tool.Drawing.get_drawing_group(drawing_element)
-        print(f"[SECTION] group={group}")
         if group:
             for annotation in tool.Drawing.get_group_elements(group) or []:
-                print(f"[SECTION] group member: {annotation.is_a()} id={annotation.id()}")
                 if annotation.is_a("IfcAnnotation") and ifcopenshell.util.element.get_predefined_type(annotation) == "SECTION":
                     ann_obj = tool.Ifc.get_object(annotation)
-                    print(f"[SECTION] found SECTION annotation obj={ann_obj}")
                     if ann_obj:
                         tool.Drawing.update_section_endpoints(ann_obj, camera)
         camera_props = tool.Drawing.get_camera_props(camera)
@@ -8870,11 +8864,8 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
                         best_move_end = 0 if t < 0.5 else 1
 
         if best_obj is None:
-            print(f"[ClickDim] no hit → clear _activated={ClickNearestDimensionAnchor._activated}")
             ClickNearestDimensionAnchor._activated.clear()
             return {"PASS_THROUGH"}
-
-        print(f"[ClickDim] hit={best_hit_type} obj={best_obj.name!r} ctrl={event.ctrl} alt={event.alt} _activated={ClickNearestDimensionAnchor._activated}")
 
         # For midpoint hits (drive-dimension): require a prior interaction with this
         # dimension before opening the dialog.  First click explicitly selects it
@@ -8882,13 +8873,11 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
         if best_hit_type == "MIDPOINT" and not event.ctrl:
             if best_obj.name not in ClickNearestDimensionAnchor._activated:
                 ClickNearestDimensionAnchor._activated.add(best_obj.name)
-                print(f"[ClickDim] first click → select {best_obj.name!r}")
                 for o in list(context.selected_objects):
                     o.select_set(False)
                 best_obj.select_set(True)
                 context.view_layer.objects.active = best_obj
                 return {"FINISHED"}
-            print(f"[ClickDim] MIDPOINT dispatch → drive_dimension_length")
 
         # Any successful non-first-click interaction marks this dimension as activated.
         ClickNearestDimensionAnchor._activated.add(best_obj.name)

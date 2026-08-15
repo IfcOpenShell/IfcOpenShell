@@ -77,7 +77,6 @@ if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import Drawing as DrawingProperties
 
 
-print("[SECTION] tool/drawing.py module loaded")
 
 
 class Drawing(bonsai.core.tool.Drawing):
@@ -2962,38 +2961,29 @@ class Drawing(bonsai.core.tool.Drawing):
         """Return world-space positions for section endpoints placed at the camera border + border_offset_mm (paper mm)."""
         diagram_scale = cls.get_diagram_scale(camera)
         if not diagram_scale:
-            print("[SECTION] get_section_border_positions: no diagram_scale, returning original")
             return v0_world, v1_world
         scale = cls.get_scale_ratio(diagram_scale["Scale"])
         model_offset = (border_offset_mm / 1000.0) / scale
-        print(f"[SECTION] scale={scale}, border_offset_mm={border_offset_mm}, model_offset={model_offset:.4f}m")
 
         width, height = cls.get_camera_dimensions(camera)
         half_w, half_h = width / 2, height / 2
-        print(f"[SECTION] camera dims: width={width:.3f}, height={height:.3f}, half_w={half_w:.3f}, half_h={half_h:.3f}")
 
         cam_inv = camera.matrix_world.inverted()
         v0_local = cam_inv @ v0_world
         v1_local = cam_inv @ v1_world
-        print(f"[SECTION] v0_local={v0_local}, v1_local={v1_local}")
 
         origin = Vector(((v0_local.x + v1_local.x) / 2, (v0_local.y + v1_local.y) / 2))
         dir_xy = Vector((v1_local.x - v0_local.x, v1_local.y - v0_local.y))
         if dir_xy.length < 1e-6:
-            print("[SECTION] get_section_border_positions: degenerate edge, returning original")
             return v0_world, v1_world
         dir_xy = dir_xy.normalized()
         z = v0_local.z
-        print(f"[SECTION] origin={origin}, dir_xy={dir_xy}, z={z:.4f}")
 
         t_values = cls._section_ray_rect_intersections(origin, dir_xy, half_w, half_h)
-        print(f"[SECTION] ray-rect t_values={t_values}")
         pos_ts = sorted(t for t in t_values if t >= 0)
         neg_ts = sorted((t for t in t_values if t < 0), reverse=True)
-        print(f"[SECTION] pos_ts={pos_ts}, neg_ts={neg_ts}")
 
         if not pos_ts or not neg_ts:
-            print("[SECTION] get_section_border_positions: no valid border intersections, returning original")
             return v0_world, v1_world
 
         t_end = pos_ts[0]
@@ -3013,44 +3003,34 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def update_section_endpoints(cls, obj: bpy.types.Object, camera: bpy.types.Object) -> None:
         """Move section line endpoints to camera border + BorderOffset, skipping any manually moved vertex."""
-        print(f"[SECTION] update_section_endpoints called: obj={obj.name}, camera={camera.name}")
         element = tool.Ifc.get_entity(obj)
         if not element:
-            print("[SECTION] SKIP: no IFC element on obj")
             return
         if not obj.data or not hasattr(obj.data, "edges") or not obj.data.edges:
-            print("[SECTION] SKIP: obj has no mesh edges")
             return
 
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Section") or {}
         border_offset = float(pset_data.get("BorderOffset", 8.0))
-        print(f"[SECTION] pset_data={pset_data}, border_offset={border_offset}")
         if border_offset <= 0:
-            print("[SECTION] SKIP: BorderOffset <= 0")
             return
 
         auto_v0 = cls._parse_vector3(pset_data.get("AutoStartPosition") or "")
         auto_v1 = cls._parse_vector3(pset_data.get("AutoEndPosition") or "")
-        print(f"[SECTION] stored auto_v0={auto_v0}, auto_v1={auto_v1}")
 
         edge = obj.data.edges[0]
         v0 = obj.data.vertices[edge.vertices[0]]
         v1 = obj.data.vertices[edge.vertices[1]]
         v0_world = obj.matrix_world @ v0.co
         v1_world = obj.matrix_world @ v1.co
-        print(f"[SECTION] current v0_world={v0_world}, v1_world={v1_world}")
 
         # A vertex is "auto" if it has never been auto-positioned, or still sits at the stored auto position.
         v0_is_auto = auto_v0 is None or (v0_world - auto_v0).length < 1e-4
         v1_is_auto = auto_v1 is None or (v1_world - auto_v1).length < 1e-4
-        print(f"[SECTION] v0_is_auto={v0_is_auto}, v1_is_auto={v1_is_auto}")
 
         if not v0_is_auto and not v1_is_auto:
-            print("[SECTION] SKIP: both vertices are manually overridden")
             return
 
         new_v0_world, new_v1_world = cls.get_section_border_positions(camera, v0_world, v1_world, border_offset)
-        print(f"[SECTION] new_v0_world={new_v0_world}, new_v1_world={new_v1_world}")
 
         if v0_is_auto:
             v0.co = obj.matrix_world.inverted() @ new_v0_world
@@ -3076,7 +3056,6 @@ class Drawing(bonsai.core.tool.Drawing):
             },
         )
         bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
-        print(f"[SECTION] done. stored auto_v0={cls._format_vector3(stored_v0)}, auto_v1={cls._format_vector3(stored_v1)}")
 
     @staticmethod
     def _parse_vector3(s: str) -> Optional[Vector]:
