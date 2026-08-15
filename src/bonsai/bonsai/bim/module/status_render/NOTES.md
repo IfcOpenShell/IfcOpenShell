@@ -22,6 +22,34 @@ Exposure/gamma stay in the compositor because that's the faithful colour-managem
 tonemap. They are render-only: the viewport compositor can't read render passes
 (Cryptomatte), so per-object masking isn't available there.
 
+## Blender version compatibility (4.x vs 5.x)
+
+Blender 5.0 reworked the compositor and broke every API the first version of this
+module used. All of it is funnelled through helpers in `operator.py` (`get_compositor_tree`,
+`get_output_socket`, `add_gamma_node`, `add_mix_node`, `find_socket`) so the
+graph-building code reads the same on both:
+
+| | ≤ 4.5 | ≥ 5.0 |
+|---|---|---|
+| Node tree | `scene.node_tree` (embedded), enabled via `scene.use_nodes` | `scene.compositing_node_group` — a standalone `CompositorNodeTree` ID in `bpy.data.node_groups`. `scene.node_tree` is **gone**; `scene.use_nodes` is a deprecated no-op that no longer creates a tree |
+| Final output | `CompositorNodeComposite` | node **removed** — use `NodeGroupOutput` plus `tree.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")` |
+| Gamma | `CompositorNodeGamma` (image socket "Image") | `ShaderNodeGamma` (image socket "Color") — addressed positionally |
+| Mix | `CompositorNodeMixRGB` | `ShaderNodeMix` with `data_type = "RGBA"`; sockets picked by identifier (`Factor_Float`, `A_Color`, `B_Color`, `Result_Color`) since several share a display name |
+| Render Layers / Exposure / Cryptomatte | unchanged | unchanged |
+
+Two 5.x-only wrinkles, both handled in `build_compositor`/`clear_compositor`:
+
+- A compositing group is a standalone ID, so a Render Layers node created inside one
+  is not implicitly bound to the scene being rendered — `render_layers.scene` is set
+  when it comes back `None`.
+- If no group existed, we create one and tag it with `MARKER`; `clear_compositor`
+  deletes it and resets `scene.compositing_node_group` to `None`, so a scene that
+  never composited doesn't end up permanently compositing through a passthrough graph.
+
+Verified end-to-end (Cryptomatte-masked exposure and gamma both applied to the matched
+object and not the background, everything torn down afterwards) on 4.5.7 and 5.2.0 —
+identical rendered pixel values.
+
 ## Why Cryptomatte (not the Object Index pass)
 
 EEVEE Next always renders the Object Index pass as 0 (Blender bug #121690).
