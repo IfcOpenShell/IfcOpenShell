@@ -391,6 +391,10 @@ class Snap(bonsai.core.tool.Snap):
 
         # Objects
         objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
+        obj_face_gpu_raycast = tool.Raycast.get_gpu_raycast_snaps(context, event, objs_to_raycast, tris=True)
+        obj_wireframe_gpu_raycast = tool.Raycast.get_gpu_raycast_snaps(context, event, objs_to_raycast)
+        print("FACES", obj_face_gpu_raycast)
+        print("WIREFRAME", obj_wireframe_gpu_raycast)
         closest_snaps = tool.Raycast.ray_cast_and_get_closest_to_camera_snaps(context, event, objs_to_raycast)
         detected_snaps.extend(closest_snaps)
 
