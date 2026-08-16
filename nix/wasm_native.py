@@ -11,16 +11,16 @@ and dependency build recipes live in `nix/deps.py`. Pinned source versions
 and patches live in `nix/sources.lock.json`.
 
 Usage:
-    python nix/wasm_native.py <command> [--profile <name>]
+    python nix/wasm_native.py <command>
 
 Commands:
     doctor              Check system prerequisites
     bootstrap-toolchain Install pinned emsdk
     fetch               Download + hash-verify all sources
-    build-deps          Build dependencies for a profile
+    build-deps          Build dependencies
     configure           Run emcmake cmake configure for IfcOpenShell
     build               Build IfcOpenShell WASM target
-    test                Run profile-aware tests
+    test                Verify artifacts and plugins
     package             Write clean dist directory
     clean               Clean build artifacts
     all                 Full pipeline (default for CI)
@@ -57,159 +57,50 @@ logger = logging.getLogger("wasm-native")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Profiles (inline — replaces tools/wasm_native/profiles.json)
+# Full native build configuration
 # ──────────────────────────────────────────────────────────────────────────────
 
-PROFILES: dict[str, dict[str, Any]] = {
-    "minimal": {
-        "description": "Passthrough kernel only (current working state)",
-        "dependencies": ["boost", "eigen", "nlohmann_json"],
-        "cmake_flags": {
-            "WITH_OPENCASCADE": "OFF",
-            "WITH_CGAL": "OFF",
-            "WITH_MANIFOLD": "OFF",
-            "GLTF_SUPPORT": "OFF",
-        },
-        "plugins": {
-            "schema": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "kernel": ["passthrough"],
-            "tree": [],
-            "mapping": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "document": [
-                "xml.ifc2x3",
-                "xml.ifc4",
-                "xml.ifc4x3_add2",
-            ],
-            "geometry_serializer": ["ttl", "obj"],
-        },
-    },
-    "manifold": {
-        "description": "Manifold geometry kernel",
-        "dependencies": ["boost", "eigen", "nlohmann_json", "manifold"],
-        "cmake_flags": {
-            "WITH_OPENCASCADE": "OFF",
-            "WITH_CGAL": "OFF",
-            "WITH_MANIFOLD": "ON",
-            "GLTF_SUPPORT": "OFF",
-        },
-        "plugins": {
-            "schema": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "kernel": ["passthrough", "manifold"],
-            "tree": [],
-            "mapping": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "document": [
-                "xml.ifc2x3",
-                "xml.ifc4",
-                "xml.ifc4x3_add2",
-            ],
-            "geometry_serializer": ["ttl", "obj"],
-        },
-    },
-    "cgal": {
-        "description": "CGAL geometry kernel with GMP/MPFR",
-        "dependencies": ["boost", "eigen", "nlohmann_json", "gmp", "mpfr", "cgal"],
-        "cmake_flags": {
-            "WITH_OPENCASCADE": "OFF",
-            "WITH_CGAL": "ON",
-            "WITH_MANIFOLD": "OFF",
-            "CGAL_WITH_GMPXX": "Off",
-            "GLTF_SUPPORT": "OFF",
-        },
-        "plugins": {
-            "schema": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "kernel": ["passthrough", "cgal", "cgalsimple"],
-            "tree": [],
-            "mapping": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "document": [
-                "xml.ifc2x3",
-                "xml.ifc4",
-                "xml.ifc4x3_add2",
-            ],
-            "geometry_serializer": ["ttl", "obj"],
-        },
-    },
-    "occt": {
-        "description": "OpenCASCADE geometry kernel",
-        "dependencies": ["boost", "eigen", "nlohmann_json", "occt"],
-        "cmake_flags": {
-            "WITH_OPENCASCADE": "ON",
-            "WITH_CGAL": "OFF",
-            "WITH_MANIFOLD": "OFF",
-            "GLTF_SUPPORT": "OFF",
-        },
-        "plugins": {
-            "schema": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "kernel": ["passthrough", "opencascade"],
-            "tree": ["opencascade.brep", "opencascade.trianglebvh"],
-            "mapping": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "document": [
-                "xml.ifc2x3",
-                "xml.ifc4",
-                "xml.ifc4x3_add2",
-            ],
-            "geometry_serializer": ["ttl", "obj", "stp", "igs", "svg"],
-        },
-    },
-    "full": {
-        "description": "All three geometry kernels",
-        "dependencies": [
-            "boost",
-            "eigen",
-            "nlohmann_json",
-            "occt",
-            "gmp",
-            "mpfr",
-            "cgal",
-            "manifold",
-        ],
-        "cmake_flags": {
-            "WITH_OPENCASCADE": "ON",
-            "WITH_CGAL": "ON",
-            "WITH_MANIFOLD": "ON",
-            "CGAL_WITH_GMPXX": "Off",
-            "GLTF_SUPPORT": "ON",
-        },
-        "plugins": {
-            "schema": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "kernel": [
-                "passthrough",
-                "opencascade",
-                "cgal",
-                "cgalsimple",
-                "manifold",
-            ],
-            "tree": ["opencascade.brep", "opencascade.trianglebvh"],
-            "mapping": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-            "document": [
-                "xml.ifc2x3",
-                "json.ifc2x3",
-                "xml.ifc4",
-                "json.ifc4",
-                "xml.ifc4x3_add2",
-                "json.ifc4x3_add2",
-            ],
-            "geometry_serializer": [
-                "ttl",
-                "obj",
-                "glb",
-                "stp",
-                "igs",
-                "svg",
-            ],
-        },
-    },
+DEPENDENCIES = (
+    "boost",
+    "eigen",
+    "nlohmann_json",
+    "occt",
+    "gmp",
+    "mpfr",
+    "cgal",
+    "manifold",
+)
+
+CMAKE_FLAGS = {
+    "WITH_OPENCASCADE": "ON",
+    "WITH_CGAL": "ON",
+    "WITH_MANIFOLD": "ON",
+    "CGAL_WITH_GMPXX": "Off",
+    "GLTF_SUPPORT": "ON",
 }
 
+EXPECTED_PLUGINS = {
+    "schema": ["ifc2x3", "ifc4", "ifc4x3_add2"],
+    "kernel": [
+        "passthrough",
+        "opencascade",
+        "cgal",
+        "cgalsimple",
+        "manifold",
+    ],
+    "tree": ["opencascade.brep", "opencascade.trianglebvh"],
+    "mapping": ["ifc2x3", "ifc4", "ifc4x3_add2"],
+    "document": [
+        "xml.ifc2x3",
+        "json.ifc2x3",
+        "xml.ifc4",
+        "json.ifc4",
+        "xml.ifc4x3_add2",
+        "json.ifc4x3_add2",
+    ],
+    "geometry_serializer": ["ttl", "obj", "glb", "stp", "igs", "svg"],
+}
 
-def get_profile(name: str) -> dict[str, Any]:
-    """Get a specific profile by name, raising if not found."""
-    if name not in PROFILES:
-        available = ", ".join(sorted(PROFILES.keys()))
-        raise ValueError(f"Unknown profile '{name}'. Available: {available}")
-    return PROFILES[name]
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 # Path helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -230,16 +121,16 @@ def build_subdir() -> Path:
     return BUILD_ROOT / "build"
 
 
-def prefix_dir(profile: str) -> Path:
-    return BUILD_ROOT / "prefix" / profile
+def prefix_dir() -> Path:
+    return BUILD_ROOT / "prefix"
 
 
-def ifcopenshell_build_dir(profile: str) -> Path:
-    return BUILD_ROOT / "ifcopenshell" / profile
+def ifcopenshell_build_dir() -> Path:
+    return BUILD_ROOT / "ifcopenshell"
 
 
-def dist_dir(profile: str) -> Path:
-    return BUILD_ROOT / "dist" / profile
+def dist_dir() -> Path:
+    return BUILD_ROOT / "dist"
 
 
 def _resolved_toolchain_dir() -> Path:
@@ -336,12 +227,10 @@ def cmd_bootstrap_toolchain(args: argparse.Namespace) -> int:
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
-    """Download + hash-verify all sources for the selected profile."""
+    """Download and hash-verify all sources."""
     lock = core.load_lockfile()
-    profile = get_profile(args.profile)
-    dep_list = profile["dependencies"]
 
-    results = core.fetch_sources(lock, dep_list, downloads_dir())
+    results = core.fetch_sources(lock, DEPENDENCIES, downloads_dir())
 
     print("\nFetch Results:")
     print("=" * 40)
@@ -352,10 +241,8 @@ def cmd_fetch(args: argparse.Namespace) -> int:
 
 
 def cmd_build_deps(args: argparse.Namespace) -> int:
-    """Build dependencies for a profile."""
+    """Build dependencies."""
     lock = core.load_lockfile()
-    profile = get_profile(args.profile)
-    dep_list = profile["dependencies"]
 
     # Ensure emsdk is available
     try:
@@ -368,7 +255,8 @@ def cmd_build_deps(args: argparse.Namespace) -> int:
     # land inside build/wasm-native.
     deps.set_build_root(BUILD_ROOT)
 
-    for dep_name in dep_list:
+    install_prefix = prefix_dir()
+    for dep_name in DEPENDENCIES:
         if dep_name not in lock:
             raise KeyError(f"Dependency '{dep_name}' is missing from the lockfile")
 
@@ -379,46 +267,43 @@ def cmd_build_deps(args: argparse.Namespace) -> int:
         core.fetch_sources(lock, [dep_name], downloads_dir())
         src = core.extract_source(dep_name, lock, src_dir(), downloads_dir())
 
-        profile_prefix = prefix_dir(args.profile)
-
         if dep_name == "boost":
-            deps.build_boost(src, profile_prefix / "boost", env)
+            deps.build_boost(src, install_prefix / "boost", env)
         elif dep_name == "eigen":
-            deps.build_eigen(src, profile_prefix / "eigen", env)
+            deps.build_eigen(src, install_prefix / "eigen", env)
         elif dep_name == "nlohmann_json":
-            deps.build_json(src, profile_prefix / "nlohmann_json", env)
+            deps.build_json(src, install_prefix / "nlohmann_json", env)
         elif dep_name == "gmp":
-            deps.build_gmp(src, profile_prefix / "gmp", env)
+            deps.build_gmp(src, install_prefix / "gmp", env)
         elif dep_name == "mpfr":
-            gmp_prefix = profile_prefix / "gmp"
-            deps.build_mpfr(src, profile_prefix / "mpfr", gmp_prefix, env)
+            gmp_prefix = install_prefix / "gmp"
+            deps.build_mpfr(src, install_prefix / "mpfr", gmp_prefix, env)
         elif dep_name == "cgal":
-            gmp_prefix = profile_prefix / "gmp"
-            mpfr_prefix = profile_prefix / "mpfr"
-            boost_prefix = profile_prefix / "boost"
+            gmp_prefix = install_prefix / "gmp"
+            mpfr_prefix = install_prefix / "mpfr"
+            boost_prefix = install_prefix / "boost"
             deps.build_cgal(
                 src,
-                profile_prefix / "cgal",
+                install_prefix / "cgal",
                 gmp_prefix,
                 mpfr_prefix,
                 env,
                 boost_prefix=boost_prefix,
             )
         elif dep_name == "occt":
-            deps.build_occt(src, profile_prefix / "occt", env)
+            deps.build_occt(src, install_prefix / "occt", env)
         elif dep_name == "manifold":
-            deps.build_manifold(src, profile_prefix / "manifold", env)
+            deps.build_manifold(src, install_prefix / "manifold", env)
         else:
             raise ValueError(f"No build recipe for dependency '{dep_name}'")
 
-    logger.info("All dependencies built for profile '%s'.", args.profile)
+    logger.info("All dependencies built.")
     return 0
 
 
-def generate_cmake_flags(profile: str) -> list[str]:
+def generate_cmake_flags() -> list[str]:
     """Generate CMake flags for IfcOpenShell WASM build."""
-    p = get_profile(profile)
-    pf = prefix_dir(profile)
+    install_prefix = prefix_dir()
 
     # Base flags
     flags = [
@@ -436,14 +321,12 @@ def generate_cmake_flags(profile: str) -> list[str]:
         f"-DPYTHON_EXECUTABLE={sys.executable}",
     ]
 
-    # Profile-specific kernel flags
-    for key, value in p["cmake_flags"].items():
+    for key, value in CMAKE_FLAGS.items():
         flags.append(f"-D{key}={value}")
 
-    # Build CMAKE_FIND_ROOT_PATH from profile prefix
     prefix_paths = []
-    for dep_name in p["dependencies"]:
-        dep_prefix = pf / dep_name
+    for dep_name in DEPENDENCIES:
+        dep_prefix = install_prefix / dep_name
         if dep_prefix.exists():
             prefix_paths.append(str(dep_prefix))
 
@@ -456,8 +339,8 @@ def generate_cmake_flags(profile: str) -> list[str]:
         flags.append("-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER")
 
     # OCCT WASM dir
-    occt_prefix = pf / "occt"
-    if occt_prefix.exists() and p["cmake_flags"].get("WITH_OPENCASCADE") == "ON":
+    occt_prefix = install_prefix / "occt"
+    if occt_prefix.exists():
         flags.append(f"-DOPENCASCADE_WASM_DIR={occt_prefix}")
 
     return flags
@@ -465,8 +348,7 @@ def generate_cmake_flags(profile: str) -> list[str]:
 
 def cmd_configure(args: argparse.Namespace) -> int:
     """Run emcmake cmake configure for IfcOpenShell."""
-    profile = args.profile
-    build_dir = ifcopenshell_build_dir(profile)
+    build_dir = ifcopenshell_build_dir()
     build_dir.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -475,10 +357,10 @@ def cmd_configure(args: argparse.Namespace) -> int:
         logger.error("%s", e)
         return 1
 
-    cmake_flags = generate_cmake_flags(profile)
+    cmake_flags = generate_cmake_flags()
     cmake_cmd = ["emcmake", "cmake", str(CMAKE_DIR)] + cmake_flags
 
-    logger.info("Configuring IfcOpenShell for profile '%s'...", profile)
+    logger.info("Configuring IfcOpenShell...")
     core.run(cmake_cmd, cwd=build_dir, env=env)
 
     logger.info("Configuration complete. Build directory: %s", build_dir)
@@ -487,8 +369,7 @@ def cmd_configure(args: argparse.Namespace) -> int:
 
 def cmd_build(args: argparse.Namespace) -> int:
     """Build IfcOpenShell WASM target."""
-    profile = args.profile
-    build_dir = ifcopenshell_build_dir(profile)
+    build_dir = ifcopenshell_build_dir()
 
     if not (build_dir / "CMakeCache.txt").exists():
         logger.error("Build not configured. Run 'configure' first.")
@@ -501,7 +382,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         return 1
 
     nproc = core.build_jobs()
-    logger.info("Building IfcOpenShell WASM (profile=%s, jobs=%d)...", profile, nproc)
+    logger.info("Building IfcOpenShell WASM (jobs=%d)...", nproc)
     core.run(
         [
             "cmake",
@@ -530,21 +411,14 @@ _PLUGIN_KINDS = {
 }
 
 
-def _manifest_plugin_ids(manifest: dict[str, Any]) -> dict[str, list[str]]:
-    return {kind: list(entries) for kind, entries in manifest.items()}
-
-
-def _profile_manifest_errors(
-    profile: dict[str, Any], manifest: dict[str, Any]
-) -> list[str]:
-    expectations = profile["plugins"]
+def _manifest_errors(manifest: dict[str, Any]) -> list[str]:
     errors = []
     unexpected_kinds = set(manifest) - _PLUGIN_KINDS
     for kind in sorted(unexpected_kinds):
         errors.append(f"Unexpected plugin kind: {kind}")
 
     for kind in sorted(_PLUGIN_KINDS):
-        expected = set(expectations[kind])
+        expected = set(EXPECTED_PLUGINS[kind])
         actual = set(manifest.get(kind, {}))
         for plugin_id in sorted(expected - actual):
             errors.append(f"Missing {kind} plugin: {plugin_id}")
@@ -565,10 +439,8 @@ def _manifest_plugin_paths(manifest: dict[str, Any]) -> list[Path]:
 
 
 def cmd_test(args: argparse.Namespace) -> int:
-    """Run profile-aware tests."""
-    profile_name = args.profile
-    profile = get_profile(profile_name)
-    build_dir = ifcopenshell_build_dir(profile_name)
+    """Verify artifacts and plugins."""
+    build_dir = ifcopenshell_build_dir()
 
     wasm_dir = build_dir / "ifcwrap" / "wasm"
     plugins_json = wasm_dir / "ifcopenshell_plugins.json"
@@ -580,7 +452,7 @@ def cmd_test(args: argparse.Namespace) -> int:
     with open(plugins_json) as f:
         manifest = json.load(f)
 
-    errors = _profile_manifest_errors(profile, manifest)
+    errors = _manifest_errors(manifest)
 
     if errors:
         logger.error("Test failures:")
@@ -624,16 +496,15 @@ def cmd_test(args: argparse.Namespace) -> int:
             logger.error("  - %s", e)
         return 1
 
-    logger.info("All tests passed for profile '%s'.", profile_name)
+    logger.info("All tests passed.")
     return 0
 
 
 def cmd_package(args: argparse.Namespace) -> int:
     """Write clean dist directory."""
-    profile = args.profile
-    build_dir = ifcopenshell_build_dir(profile)
+    build_dir = ifcopenshell_build_dir()
     wasm_dir = build_dir / "ifcwrap" / "wasm"
-    out = dist_dir(profile)
+    out = dist_dir()
     artifacts = [
         "ifcopenshell_wasm.wasm",
         "ifcopenshell_wasm.mjs",
@@ -649,9 +520,9 @@ def cmd_package(args: argparse.Namespace) -> int:
     if not missing:
         with open(wasm_dir / "ifcopenshell_plugins.json") as f:
             manifest = json.load(f)
-        manifest_errors = _profile_manifest_errors(get_profile(profile), manifest)
+        manifest_errors = _manifest_errors(manifest)
         if manifest_errors:
-            raise ValueError("Profile manifest mismatch: " + "; ".join(manifest_errors))
+            raise ValueError("Plugin manifest mismatch: " + "; ".join(manifest_errors))
         plugin_paths = _manifest_plugin_paths(manifest)
         missing.extend(
             str(path) for path in plugin_paths if not (wasm_dir / path).is_file()
@@ -675,15 +546,6 @@ def cmd_package(args: argparse.Namespace) -> int:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(wasm_dir / path, destination)
     logger.info("Copied: %d manifest plugin(s)", len(plugin_paths))
-
-    metadata = {
-        "profile": profile,
-        "description": get_profile(profile)["description"],
-        "plugins": _manifest_plugin_ids(manifest),
-    }
-    (out / "ifcopenshell_profile.json").write_text(
-        json.dumps(metadata, indent=2) + "\n", encoding="utf-8"
-    )
 
     logger.info("Package written to %s", out)
     return 0
@@ -737,12 +599,6 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--profile",
-        "-p",
-        default="minimal",
-        help="Build profile name (default: minimal)",
-    )
-    parser.add_argument(
         "--force",
         "-f",
         action="store_true",
@@ -760,10 +616,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("doctor", help="Check system prerequisites")
     sub.add_parser("bootstrap-toolchain", help="Install pinned emsdk")
     sub.add_parser("fetch", help="Download + hash-verify all sources")
-    sub.add_parser("build-deps", help="Build dependencies for a profile")
+    sub.add_parser("build-deps", help="Build dependencies")
     sub.add_parser("configure", help="Run emcmake cmake configure")
     sub.add_parser("build", help="Build IfcOpenShell WASM target")
-    sub.add_parser("test", help="Run profile-aware tests")
+    sub.add_parser("test", help="Verify artifacts and plugins")
     sub.add_parser("package", help="Write clean dist directory")
     sub.add_parser("clean", help="Clean build artifacts")
     sub.add_parser("all", help="Full pipeline (default for CI)")

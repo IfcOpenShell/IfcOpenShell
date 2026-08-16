@@ -25,11 +25,6 @@ export function wasmArtifactsPresent(root = WASM_ROOT) {
   return REQUIRED_FILES.every((name) => existsSync(join(root, name)));
 }
 
-/** Return true when the manifest includes the full-profile OCCT kernel. */
-export function isFullProfile(manifest) {
-  return manifest?.kernel?.opencascade !== undefined;
-}
-
 /** Read and parse `ifcopenshell_plugins.json` from the packaged assets. */
 export function loadManifest(root = WASM_ROOT) {
   const manifestPath = join(root, 'ifcopenshell_plugins.json');

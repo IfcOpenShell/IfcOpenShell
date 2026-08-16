@@ -6,7 +6,7 @@ Unit tests for the consolidated WASM build system under `nix/`.
 Covers:
 - Lockfile parsing and validation (`nix.core`, `nix/sources.lock.json`)
 - SHA-256 hash verification (`nix.core.sha256_file`)
-- Profile resolution (`nix.wasm_native.PROFILES` / `get_profile`)
+- Full build configuration (`nix.wasm_native`)
 - CMake flag generation (`nix.wasm_native.generate_cmake_flags`)
 - Cross-file patch and dependency references
 - CLI dispatch (`nix.wasm_native.main`)
@@ -148,49 +148,24 @@ class TestBuildJobs(unittest.TestCase):
                 core.build_jobs()
 
 
-class TestProfileResolution(unittest.TestCase):
-    """Test profile loading and resolution from wasm_native."""
-
-    def test_get_profile_valid(self):
-        """Test getting a valid profile."""
-        profile = wasm_native.get_profile("minimal")
-        self.assertIsInstance(profile, dict)
-        self.assertIn("dependencies", profile)
-        self.assertIn("cmake_flags", profile)
-        self.assertIn("plugins", profile)
-
-    def test_get_profile_invalid(self):
-        """Test getting an invalid profile raises error."""
-        with self.assertRaises(ValueError) as ctx:
-            wasm_native.get_profile("nonexistent")
-        self.assertIn("nonexistent", str(ctx.exception))
-
-    def test_profile_dependencies_subset_of_lockfile(self):
-        """All profile dependencies must exist in lockfile."""
+class TestBuildConfiguration(unittest.TestCase):
+    def test_dependencies_exist_in_lockfile(self):
         lock = core.load_lockfile()
-        for name, profile in wasm_native.PROFILES.items():
-            for dep in profile["dependencies"]:
-                self.assertIn(
-                    dep,
-                    lock,
-                    f"Profile '{name}' references dependency '{dep}' not in lockfile",
-                )
+        for dependency in wasm_native.DEPENDENCIES:
+            self.assertIn(dependency, lock)
 
-    def test_profile_manifests_cover_every_plugin_kind(self):
-        for name, profile in wasm_native.PROFILES.items():
-            with self.subTest(profile=name):
-                self.assertEqual(set(profile["plugins"]), wasm_native._PLUGIN_KINDS)
+    def test_manifest_expectations_cover_every_plugin_kind(self):
+        self.assertEqual(set(wasm_native.EXPECTED_PLUGINS), wasm_native._PLUGIN_KINDS)
 
     def test_manifest_contract_rejects_unexpected_plugins(self):
-        profile = wasm_native.get_profile("minimal")
         manifest = {
-            kind: {plugin_id: {} for plugin_id in profile["plugins"][kind]}
+            kind: {plugin_id: {} for plugin_id in wasm_native.EXPECTED_PLUGINS[kind]}
             for kind in wasm_native._PLUGIN_KINDS
         }
-        manifest["kernel"]["opencascade"] = {}
+        manifest["kernel"]["unexpected"] = {}
         self.assertEqual(
-            wasm_native._profile_manifest_errors(profile, manifest),
-            ["Unexpected kernel plugin: opencascade"],
+            wasm_native._manifest_errors(manifest),
+            ["Unexpected kernel plugin: unexpected"],
         )
 
 
@@ -201,7 +176,7 @@ class TestCMakeFlagGeneration(unittest.TestCase):
         """Test base CMake flags are present."""
         with patch("nix.wasm_native.prefix_dir") as mock_prefix:
             mock_prefix.return_value = Path("unused-prefix")
-            flags = wasm_native.generate_cmake_flags("minimal")
+            flags = wasm_native.generate_cmake_flags()
 
         flag_str = " ".join(flags)
         for expected in (
@@ -220,22 +195,20 @@ class TestCMakeFlagGeneration(unittest.TestCase):
             self.assertIn(expected, flag_str)
         self.assertIn(f"-DPYTHON_EXECUTABLE={sys.executable}", flags)
 
-    def test_generate_cmake_flags_include_each_profile_contract(self):
+    def test_generate_cmake_flags_include_full_contract(self):
         with patch("nix.wasm_native.prefix_dir") as mock_prefix:
             mock_prefix.return_value = Path("unused-prefix")
-            for profile_name, profile in wasm_native.PROFILES.items():
-                flags = wasm_native.generate_cmake_flags(profile_name)
-                with self.subTest(profile=profile_name):
-                    for name, value in profile["cmake_flags"].items():
-                        self.assertIn(f"-D{name}={value}", flags)
+            flags = wasm_native.generate_cmake_flags()
+        for name, value in wasm_native.CMAKE_FLAGS.items():
+            self.assertIn(f"-D{name}={value}", flags)
 
     def test_dependency_roots_use_cross_compile_find_modes(self):
         with tempfile.TemporaryDirectory(prefix="wasm prefix ") as directory:
             prefix = Path(directory)
-            for dependency in wasm_native.get_profile("minimal")["dependencies"]:
+            for dependency in wasm_native.DEPENDENCIES:
                 (prefix / dependency).mkdir()
             with patch("nix.wasm_native.prefix_dir", return_value=prefix):
-                flags = wasm_native.generate_cmake_flags("minimal")
+                flags = wasm_native.generate_cmake_flags()
 
         root_flag = next(
             flag for flag in flags if flag.startswith("-DCMAKE_FIND_ROOT_PATH=")
@@ -316,24 +289,23 @@ class TestPackageCommand(unittest.TestCase):
                 patch("nix.wasm_native.dist_dir", return_value=output),
             ):
                 with self.assertRaisesRegex(FileNotFoundError, "incomplete WASM build"):
-                    wasm_native.cmd_package(SimpleNamespace(profile="minimal"))
+                    wasm_native.cmd_package(SimpleNamespace())
             self.assertEqual(marker.read_text(), "existing")
 
-    def test_package_is_profile_scoped_and_copies_only_manifest_plugins(self):
+    def test_package_copies_only_manifest_plugins(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             build = root / "build"
             wasm = build / "ifcwrap" / "wasm"
             plugins = wasm / "plugins"
             plugins.mkdir(parents=True)
-            profile = wasm_native.get_profile("minimal")
             manifest = {
                 kind: {
                     plugin_id: {"wasm": f"plugins/{kind}.{plugin_id}.wasm"}
-                    for plugin_id in profile["plugins"][kind]
+                    for plugin_id in wasm_native.EXPECTED_PLUGINS[kind]
                 }
                 for kind in wasm_native._PLUGIN_KINDS
-                if profile["plugins"][kind]
+                if wasm_native.EXPECTED_PLUGINS[kind]
             }
             for entries in manifest.values():
                 for entry in entries.values():
@@ -353,13 +325,11 @@ class TestPackageCommand(unittest.TestCase):
                 patch("nix.wasm_native.ifcopenshell_build_dir", return_value=build),
                 patch.object(wasm_native, "BUILD_ROOT", root),
             ):
-                wasm_native.cmd_package(SimpleNamespace(profile="minimal"))
+                wasm_native.cmd_package(SimpleNamespace())
 
-            output = root / "dist" / "minimal"
+            output = root / "dist"
             self.assertTrue((output / "ifcopenshell_wasm.node.mjs").is_file())
             self.assertFalse((output / "plugins" / "stale.wasm").exists())
-            metadata = json.loads((output / "ifcopenshell_profile.json").read_text())
-            self.assertEqual(metadata["profile"], "minimal")
 
 
 class TestRunUtility(unittest.TestCase):

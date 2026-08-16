@@ -42,10 +42,10 @@ Geometry iteration helpers are exported from `@ifcopenshell-js/web/geom`, serial
 Build and stage WASM before compiling or testing:
 
 ```bash
-python nix/wasm_native.py --profile minimal build
-python nix/wasm_native.py --profile minimal package
+python nix/wasm_native.py build
+python nix/wasm_native.py package
 cd packages/ifcopenshell-wasm
-IFCOPENSHELL_WASM_DIR=/path/to/dist/minimal npm run stage
+IFCOPENSHELL_WASM_DIR=/path/to/dist npm run stage
 cd ../ifcopenshell-js
 npm run build
 npm test
