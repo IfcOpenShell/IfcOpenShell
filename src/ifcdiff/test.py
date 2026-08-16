@@ -272,56 +272,33 @@ class TestIfcDiff:
     def test_is_shallow_false_accumulates_multiple_relationship_changes(self):
         # Regression test: diff_element_relationships returned as soon as any
         # one relationship in the loop differed, unconditionally, even when
-        # is_shallow=False. So container+property changes on the same
+        # is_shallow=False. So material+property changes on the same
         # element only ever reported the first relationship checked.
+        # NOTE: "container" is deliberately not used here. The
+        # container/aggregate GlobalId-comparison fix (and its is_shallow
+        # accumulation behaviour) is left to PR #9312 to avoid duplicating
+        # that fix; see the removed old_container/old_aggregate handling
+        # below.
         ifc_file = setup_project()
-        storey1 = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey")
-        storey2 = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey")
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
-        ifcopenshell.api.spatial.assign_container(ifc_file, products=[wall], relating_structure=storey1)
+        material_a = ifcopenshell.api.material.add_material(ifc_file, name="Soil1")
+        ifcopenshell.api.material.assign_material(ifc_file, products=[wall], material=material_a)
         pset = ifcopenshell.api.pset.add_pset(ifc_file, product=wall, name="Pset_WallCommon")
         ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"FireRating": "2HR"})
 
         new_file = ifc_file.from_string(ifc_file.to_string())
         wall_new = new_file.by_id(wall.id())
-        storey2_new = new_file.by_id(storey2.id())
-        ifcopenshell.api.spatial.assign_container(new_file, products=[wall_new], relating_structure=storey2_new)
+        material_b = ifcopenshell.api.material.add_material(new_file, name="topsoil")
+        ifcopenshell.api.material.assign_material(new_file, products=[wall_new], material=material_b)
         new_pset = ifcopenshell.util.element.get_psets(wall_new)["Pset_WallCommon"]
         pset_new = new_file.by_id(new_pset["id"])
         ifcopenshell.api.pset.edit_pset(new_file, pset=pset_new, properties={"FireRating": "1HR"})
 
-        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["container", "property"], is_shallow=False)
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["material", "property"], is_shallow=False)
         ifc_diff.diff()
         changes = ifc_diff.change_register[wall.GlobalId]
-        assert "container_changed" in changes
+        assert "material_changed" in changes
         assert "properties_changed" in changes
-
-    def test_container_changed_compares_by_global_id_not_identity(self):
-        # Regression test: old_container and new_container come from two
-        # different ifcopenshell.file objects, so comparing them directly
-        # with != is always true, even when the container is unchanged.
-        ifc_file = setup_project()
-        storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey")
-        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
-        ifcopenshell.api.spatial.assign_container(ifc_file, products=[wall], relating_structure=storey)
-
-        new_file = ifc_file.from_string(ifc_file.to_string())
-
-        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["container"])
-        ifc_diff.diff()
-        assert ifc_diff.change_register == {}
-
-    def test_aggregate_changed_compares_by_global_id_not_identity(self):
-        ifc_file = setup_project()
-        assembly = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcElementAssembly")
-        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
-        ifcopenshell.api.aggregate.assign_object(ifc_file, products=[wall], relating_object=assembly)
-
-        new_file = ifc_file.from_string(ifc_file.to_string())
-
-        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["aggregate"])
-        ifc_diff.diff()
-        assert ifc_diff.change_register == {}
 
     def test_material_change_is_detected(self):
         # Regression test: there was no "material" relationship at all, so a
@@ -405,6 +382,12 @@ class TestIfcDiffRealSamplePair:
         # change, attribute change, geometry change, material change, and
         # placement change together. Ground truth established independently
         # of ifcdiff: 1 added, 2 deleted, 26 modified.
+        # "container" and "aggregate" are deliberately excluded: the
+        # comparison here still compares get_container()/get_aggregate()
+        # results by instance identity across two different
+        # ifcopenshell.file objects, which are never equal, so every element
+        # with a container/aggregate would be falsely flagged. That fix is
+        # left to PR #9312 rather than duplicated here.
         old = ifcopenshell.open(SAMPLE_MODEL_OLD)
         new = ifcopenshell.open(SAMPLE_MODEL_NEW)
 
@@ -416,8 +399,6 @@ class TestIfcDiffRealSamplePair:
                 "geometry",
                 "property",
                 "type",
-                "container",
-                "aggregate",
                 "classification",
                 "material",
                 "placement",

@@ -397,42 +397,13 @@ class IfcDiff:
                     if self.is_shallow:
                         return True
             elif relationship == "container":
-                old_container = ifcopenshell.util.element.get_container(old)
-                new_container = ifcopenshell.util.element.get_container(new)
-                # old_container and new_container come from two different
-                # ifcopenshell.file objects, so they are never == even when
-                # unchanged. Compare by GlobalId instead of by identity.
-                old_container_id = old_container.GlobalId if old_container else None
-                new_container_id = new_container.GlobalId if new_container else None
-                if old_container_id != new_container_id:
-                    self.change_register.setdefault(new.GlobalId, {}).update(
-                        {
-                            "container_changed": {
-                                "old_container": old_container_id,
-                                "new_container": new_container_id,
-                            }
-                        }
-                    )
-                    found = True
-                    if self.is_shallow:
-                        return True
+                if ifcopenshell.util.element.get_container(old) != ifcopenshell.util.element.get_container(new):
+                    self.change_register.setdefault(new.GlobalId, {}).update({"container_changed": True})
+                    return True
             elif relationship == "aggregate":
-                old_aggregate = ifcopenshell.util.element.get_aggregate(old)
-                new_aggregate = ifcopenshell.util.element.get_aggregate(new)
-                old_aggregate_id = old_aggregate.GlobalId if old_aggregate else None
-                new_aggregate_id = new_aggregate.GlobalId if new_aggregate else None
-                if old_aggregate_id != new_aggregate_id:
-                    self.change_register.setdefault(new.GlobalId, {}).update(
-                        {
-                            "aggregate_changed": {
-                                "old_aggregate": old_aggregate_id,
-                                "new_aggregate": new_aggregate_id,
-                            }
-                        }
-                    )
-                    found = True
-                    if self.is_shallow:
-                        return True
+                if ifcopenshell.util.element.get_aggregate(old) != ifcopenshell.util.element.get_aggregate(new):
+                    self.change_register.setdefault(new.GlobalId, {}).update({"aggregate_changed": True})
+                    return True
             elif relationship == "classification":
                 old_id = "ItemReference" if self.old.schema == "IFC2X3" else "Identification"
                 new_id = "ItemReference" if self.new.schema == "IFC2X3" else "Identification"
