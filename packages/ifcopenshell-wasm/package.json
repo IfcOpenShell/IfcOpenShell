@@ -28,7 +28,6 @@
     "index.d.ts",
     "wasm/ifcopenshell_api.d.ts",
     "wasm/ifcopenshell_api.mjs",
-    "wasm/ifcopenshell_profile.json",
     "wasm/ifcopenshell_plugins.json",
     "wasm/ifcopenshell_wasm.mjs",
     "wasm/ifcopenshell_wasm.node.mjs",

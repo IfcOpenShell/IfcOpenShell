@@ -19,10 +19,6 @@ export function wasmArtifactsPresent() {
   return false;
 }
 
-export function isFullProfile(manifest) {
-  return manifest?.kernel?.opencascade !== undefined;
-}
-
 export function loadManifest() {
   nodeOnly('loadManifest()');
 }
