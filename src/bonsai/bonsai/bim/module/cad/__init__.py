@@ -30,6 +30,8 @@ classes = (
     operator.CadFillet,
     operator.CadMitre,
     operator.CadOffset,
+    operator.CadSelect,
+    operator.CadSelectBox,
     operator.CadTrimExtend,
     prop.BIMCadProperties,
     workspace.CadHotkey,
@@ -41,6 +43,10 @@ def register():
         bpy.utils.register_tool(workspace.CadTool, after={"builtin.transform"}, separator=True, group=False)
     bpy.types.Scene.BIMCadProperties = bpy.props.PointerProperty(type=prop.BIMCadProperties)
 
+    # Clicks remembered for joining describe geometry that an undo rolls back.
+    bpy.app.handlers.undo_post.append(operator.clear_clicked_ends)
+    bpy.app.handlers.redo_post.append(operator.clear_clicked_ends)
+
     workspace.load_custom_icons()
 
 
@@ -48,5 +54,9 @@ def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.CadTool)
     del bpy.types.Scene.BIMCadProperties
+
+    for handlers in (bpy.app.handlers.undo_post, bpy.app.handlers.redo_post):
+        if operator.clear_clicked_ends in handlers:
+            handlers.remove(operator.clear_clicked_ends)
 
     workspace.unload_custom_icons()

@@ -753,31 +753,40 @@ class Blender(bonsai.core.tool.Blender):
                             pass
 
     @classmethod
-    def get_native_selection_keymap(cls) -> tuple:
-        """Blender's default click + box selection keymap (used when Cross Select is off)."""
+    def get_native_selection_keymap(
+        cls, select_operator: str = "view3d.select", box_select_operator: str = "view3d.select_box"
+    ) -> tuple:
+        """Blender's default click + box selection keymap (used when Cross Select is off).
+
+        :param select_operator: Operator to use for click selection. Tools that need
+            to know where the user clicked can pass a wrapper around ``view3d.select``.
+        :param box_select_operator: Operator to use for drag selection. A click that
+            drags even slightly comes here instead of ``select_operator``, so a tool
+            that wraps one usually needs to wrap both.
+        """
         # Data from blender_default.py (GPL v2): the items of km_3d_view_tool_select_box()
         # and km_3d_view_tool_select(select_mouse="LEFTMOUSE"). See git history for the
         # console snippet to regenerate these if Blender's defaults ever change.
         return (
-            ("view3d.select_box", {"type": "LEFTMOUSE", "value": "CLICK_DRAG"}, None),
+            (box_select_operator, {"type": "LEFTMOUSE", "value": "CLICK_DRAG"}, None),
             (
-                "view3d.select_box",
+                box_select_operator,
                 {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "shift": True},
                 {"properties": [("mode", "ADD")]},
             ),
             (
-                "view3d.select_box",
+                box_select_operator,
                 {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "ctrl": True},
                 {"properties": [("mode", "SUB")]},
             ),
             (
-                "view3d.select_box",
+                box_select_operator,
                 {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "shift": True, "ctrl": True},
                 {"properties": [("mode", "AND")]},
             ),
-            ("view3d.select", {"type": "LEFTMOUSE", "value": "PRESS"}, {"properties": [("deselect_all", True)]}),
+            (select_operator, {"type": "LEFTMOUSE", "value": "PRESS"}, {"properties": [("deselect_all", True)]}),
             (
-                "view3d.select",
+                select_operator,
                 {"type": "LEFTMOUSE", "value": "PRESS", "shift": True},
                 {"properties": [("toggle", True)]},
             ),
@@ -813,20 +822,40 @@ class Blender(bonsai.core.tool.Blender):
             return True
 
     @classmethod
-    def get_default_selection_keypmap(cls) -> tuple:
+    def get_default_selection_keypmap(
+        cls, select_operator: str = "view3d.select", box_select_operator: str = "view3d.select_box"
+    ) -> tuple:
         """Selection keymap shared by every Bonsai tool.
 
         Returns the Cross Select keymap when the add-on preference is enabled, otherwise
         Blender's native selection keymap. ``bl_keymap`` is evaluated once when the tool
         classes are imported, so toggling the preference re-applies the keymap live via
         :meth:`apply_cross_select_preference`.
+
+        :param select_operator: Operator to use for click selection. Tools that need
+            to know where the user clicked can pass a wrapper around ``view3d.select``.
+        :param box_select_operator: Operator to use for drag selection.
         """
-        return cls.get_cross_select_keymap() if cls.is_cross_select_enabled() else cls.get_native_selection_keymap()
+        if cls.is_cross_select_enabled():
+            return cls.get_cross_select_keymap()
+        return cls.get_native_selection_keymap(select_operator, box_select_operator)
 
     # Length of the selection block in bl_keymap, keyed by the operator idname of its
     # first entry.  Used to locate and replace the selection block during a rebuild
     # while preserving any pre-selection or post-selection entries the tool declares.
-    _SELECTION_PREFIX_LENGTHS = {"bim.cross_select": 4, "view3d.select_box": 6}
+    # bim.cad_select_box is the CAD tool's wrapper - see bim_select_operators below.
+    _SELECTION_PREFIX_LENGTHS = {"bim.cross_select": 4, "view3d.select_box": 6, "bim.cad_select_box": 6}
+
+    @classmethod
+    def get_tool_select_operators(cls, tool_cls) -> tuple[str, str]:
+        """The (click, drag) selection operators a tool wants in its keymap.
+
+        A tool declares ``bim_select_operators`` when it needs to know more about a
+        click than plain selection reports - the CAD tool records which end of an
+        edge was clicked so Join can keep that side. Everything else gets Blender's
+        native pair.
+        """
+        return getattr(tool_cls, "bim_select_operators", ("view3d.select", "view3d.select_box"))
 
     @classmethod
     def _iter_selection_tools(cls):
@@ -876,10 +905,10 @@ class Blender(bonsai.core.tool.Blender):
         """
         if bpy.app.background:
             return
-        selection_keymap = tuple(cls.get_default_selection_keypmap())
         tools = list(cls._iter_selection_tools())
         if not tools:
             return
+        selection_keymap = tuple(cls.get_default_selection_keypmap(*cls.get_tool_select_operators(tools[0][0])))
 
         desired_op = selection_keymap[0][0] if selection_keymap else None
         current = tuple(tools[0][0].bl_keymap)
@@ -900,7 +929,10 @@ class Blender(bonsai.core.tool.Blender):
                 pass
         for tool_cls, after, separator, group in tools:
             pre, post = pre_post[tool_cls]
-            tool_cls.bl_keymap = pre + selection_keymap + post
+            # Rebuilt per tool, so a tool that wraps selection keeps its wrappers
+            # instead of being handed the generic pair.
+            tool_keymap = tuple(cls.get_default_selection_keypmap(*cls.get_tool_select_operators(tool_cls)))
+            tool_cls.bl_keymap = pre + tool_keymap + post
             bpy.utils.register_tool(tool_cls, after=after, separator=separator, group=group)
 
     KEY_MODIFIERS = {

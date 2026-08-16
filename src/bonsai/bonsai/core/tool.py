@@ -93,7 +93,7 @@ class Blender:
     def create_ifc_object(cls, ifc_class: str, name: Optional[str] = None, data=None): pass
     def get_active_object(cls): pass
     def get_bmesh_for_mesh(cls, mesh, clean=False): pass
-    def get_default_selection_keypmap(cls): pass
+    def get_default_selection_keypmap(cls, select_operator: str = "view3d.select", box_select_operator: str = "view3d.select_box"): pass
     def get_name(cls, ifc_class, name): pass
     def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
     def get_object_bounding_box(cls, obj): pass
