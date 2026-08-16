@@ -2045,12 +2045,15 @@ namespace {
 			// test rather than approximating it.
 			auto is_restorable_at = [&](double t) -> bool {
 				gp_Pnt sample = p0.Translated(gp_Vec(dir) * t);
-				gp_Pnt tsample = sample;
-				projector.Transform(tsample);
 				auto foreign_face = point_on_foreign_face(sample, product, shortlist);
 				if (!foreign_face) {
 					return false;
 				}
+				// Only transformed once we know we need it (below, for point_covered_by_visible())
+				// -- the common non-restorable-candidate path (no coincident foreign face at all)
+				// returns above without paying for it.
+				gp_Pnt tsample = sample;
+				projector.Transform(tsample);
 				// Same robustness nudge as find_cross_coplanar_matches()'s own occlusion check
 				// (issue #3742 follow-up) -- tested at `sample` itself, OR a small (5%) nudge
 				// toward the matched foreign face's own interior, so a ray that grazes past the
