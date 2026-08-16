@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import gc
 import hashlib
 import os
 import shutil
@@ -208,7 +209,13 @@ class IfcStore:
                     # No point to trying again the same operation.
                     return
 
-                os.remove(IfcStore.cache_path)
+                # Force GC to release any dangling HDF5 C-level file handle (Windows).
+                gc.collect()
+                try:
+                    os.remove(IfcStore.cache_path)
+                except PermissionError as e:
+                    print(f"Could not delete locked cache file '{cache_path.name}': {str(e)}. Skipping cache.")
+                    return
                 try:
                     IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
                         IfcStore.cache_path, cache_settings, serializer_settings
