@@ -390,30 +390,40 @@ class Snap(bonsai.core.tool.Snap):
                     detected_snaps.append(point)
 
         # Objects
-        objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
-        obj_face_gpu_raycast = tool.Raycast.get_gpu_solid_snaps(context, event, objs_to_raycast)
-        obj_wireframe_gpu_raycast = tool.Raycast.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
-        print("FACES", obj_face_gpu_raycast)
-        print("WIREFRAME", obj_wireframe_gpu_raycast)
-        closest_snaps = tool.Raycast.ray_cast_and_get_closest_to_camera_snaps(context, event, objs_to_raycast)
-        detected_snaps.extend(closest_snaps)
-
         xray_mode = (space.shading.type == "SOLID" and space.shading.show_xray) or (
             space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
         )
+        objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
+        snap_faces, closest_obj = tool.Raycast.get_gpu_solid_snaps(context, event, objs_to_raycast)
+        wireframe_snaps, _ = tool.Raycast.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
 
-        for snap_obj in objs_to_raycast:
-            for snap in closest_snaps:
-                if snap_obj == snap["object"]:
-                    if not xray_mode:
-                        # If it is a solid object that is closest to camera it ignores all the rest
-                        if (
-                            "is_closest_to_camera" in snap
-                            and snap["is_closest_to_camera"]
-                            and snap["group"] == "Object"
-                        ):
-                            closest_snap = [snap]  # discards objects that aren't the closest
-                            detected_snaps = closest_snap
+        if not xray_mode:
+            for snap in snap_faces:
+                if snap["object"] == closest_obj:
+                    detected_snaps.append(snap)
+                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]])
+                    for point in snap_points:
+                        point["group"] = "Object"
+                        detected_snaps.append(point)
+
+                    # Get wireframe snaps that are not occluded by face snap
+                    ray_origin = tool.Raycast.get_viewport_ray_data(context, event)[0]
+                    occl_dist = (snap["point"] - ray_origin).length + 1e-4
+                    visible_wireframe_snaps = [
+                        w for w in wireframe_snaps
+                        if (w["point"] - ray_origin).length <= occl_dist
+                    ]
+                    detected_snaps.extend(visible_wireframe_snaps)
+                    continue
+        else:
+            # Doesn't include face snaps, only their edges and vertices
+            for snap in snap_faces:
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]])
+                for point in snap_points:
+                    point["group"] = "Object"
+                    detected_snaps.append(point)
+                
+            detected_snaps.extend(wireframe_snaps)
 
         # snap to cut geometry (e.g. in plan view)
         if CutDecorator.installed:

@@ -750,6 +750,11 @@ class Raycast(bonsai.core.tool.Raycast):
         gpu.state.blend_set("NONE")
         gpu.state.face_culling_set("NONE")
 
+        read_size = 2 * _SNAP_RADIUS_PX + 1
+        read_x = max(0, min(mx - _SNAP_RADIUS_PX, w - read_size))
+        read_y = max(0, min(my - _SNAP_RADIUS_PX, h - read_size))
+
+        buffers_list = []
         with _offscreen.bind():
             fb = gpu.state.active_framebuffer_get()
             fb.clear(color=(0.0, 0.0, 0.0, 0.0), depth=1.0)
@@ -762,35 +767,44 @@ class Raycast(bonsai.core.tool.Raycast):
                     gpu.matrix.load_matrix(Matrix.Identity(4))
                     batch.draw(_encoding_shader)
 
-            read_size = 2 * _SNAP_RADIUS_PX + 1
-            read_x = max(0, min(mx - _SNAP_RADIUS_PX, w - read_size))
-            read_y = max(0, min(my - _SNAP_RADIUS_PX, h - read_size))
-            buf = fb.read_color(int(read_x), int(read_y),
+                buf = fb.read_color(int(read_x), int(read_y),
                                 read_size, read_size, 4, 0, "UBYTE")
+                if xray_mode: # gets all buffers
+                    buffers_list.append(buf)
+            last_buf = buf # gets only the closest buffer
 
         # Restore state
         gpu.state.depth_mask_set(True)
         gpu.state.depth_test_set("LESS")
 
-        pixel_data = buf.to_list()
-        if not pixel_data or not pixel_data[0]:
-            return [], None
 
         if tris:
             # Decode hits
-            hits: set[tuple[int, int]] = set()
+            hits: set[int] = set()
 
             if xray_mode:
-                for row in pixel_data:
-                    for px in row:
+                vals_read: set[int] = set()
+                for buf in buffers_list:
+                    pixel_data = buf.to_list()
+                    if not pixel_data or not pixel_data[0]:
+                        return [], None
+                    centre_x = mx - int(read_x)
+                    centre_y = my - int(read_y)
+                    if 0 <= centre_y < len(pixel_data) and 0 <= centre_x < len(pixel_data[0]):
+                        px = pixel_data[centre_y][centre_x]
                         val = _decode_wireframe_pixel(px[0], px[1], px[2], px[3])
+                        if val in vals_read: # avoid getting all the tris from the same object
+                            continue
+                        vals_read.add(val)
                         if val > 0:
                             val -= 1
                             obj_index = int(val) >> _TRI_OBJ_SHIFT
-                            face_index = int(val) & _TRI_FACE_MASK
                             if obj_index < len(_obj_list):
-                                hits.add((obj_index, face_index))
+                                hits.add(obj_index)
             else:
+                pixel_data = last_buf.to_list()
+                if not pixel_data or not pixel_data[0]:
+                    return [], None
                 centre_x = mx - int(read_x)
                 centre_y = my - int(read_y)
                 if 0 <= centre_y < len(pixel_data) and 0 <= centre_x < len(pixel_data[0]):
@@ -799,42 +813,43 @@ class Raycast(bonsai.core.tool.Raycast):
                     if val > 0:
                         val -= 1
                         obj_index = int(val) >> _TRI_OBJ_SHIFT
-                        face_index = int(val) & _TRI_FACE_MASK
                         if obj_index < len(_obj_list):
-                            hits.add((obj_index, face_index))
+                            hits.add(obj_index)
 
             if not hits:
-                return []
+                return [], None
 
             snaps: list[dict] = []
             closest_obj = None
             closest_dist = float("inf")
             ray_origin, _, _ = cls.get_viewport_ray_data(context, event)
-
-            objs_to_raycast = []
-            for obj_index, face_index in hits:
+            for obj_index in hits:
                 obj = _obj_list[obj_index]
-                objs_to_raycast.append(obj)
-            hit_obj, hit, face_index = cls.cast_rays_and_get_best_object(context, event, objs_to_raycast)
+                hit_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, obj)
+                if hit:
+                    snap: dict = {
+                        "point": hit,
+                        "type": "Face",
+                        "group": "Object",
+                        "object": hit_obj,
+                        "face_index": face_index,
+                        "distance": 9,  # High value so it has low priority
+                    }
+                    dist = (hit - ray_origin).length
+                    if dist < closest_dist:
+                        closest_dist = dist
+                        closest_obj = obj
 
-            snap: dict = {
-                "point": hit,
-                "type": "Face",
-                "group": "Object",
-                "object": obj,
-                "face_index": face_index,
-                "distance": 9,  # High value so it has low priority
-            }
-
-            snaps.append(snap)
+                    snaps.append(snap)
 
             return snaps, closest_obj
 
         else:
             centre = (mx - int(read_x), my - int(read_y))
+            pixel_data = last_buf.to_list()
             best = _find_closest_wireframe_pixel(pixel_data, *centre)
             if best is None:
-                return []
+                return [], None
             encoded, dx, dy = best
 
             # Decode and build snap dicts
@@ -931,7 +946,7 @@ class Raycast(bonsai.core.tool.Raycast):
                                         })
                     break
 
-            return snaps
+            return snaps, None
 
     @classmethod
     def get_gpu_solid_snaps(cls, context, event, objs_to_raycast):
