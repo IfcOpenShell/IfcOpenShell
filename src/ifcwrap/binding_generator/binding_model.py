@@ -15,7 +15,6 @@ class TypeSpec:
     nullable: bool = False
     cpp_type: str | None = None
     sequence_depth: int = 0
-    semantic: str | None = None
     alias: str | None = None
     fixed_lengths: tuple[int | None, ...] = ()
     enum_values: tuple[str, ...] = ()

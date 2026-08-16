@@ -231,7 +231,6 @@ class BindingIR:
     result_structs: dict[str, ResultStructSpec]
     calls: tuple[CallIR, ...]
     option_structs: dict[str, OptionStructSpec] = field(default_factory=dict)
-    depends_on_common: str | None = None
     abi: BindingABI | None = None
 
     def __post_init__(self) -> None:
@@ -379,7 +378,6 @@ def lower_binding_spec(spec: SourceBindingSpec) -> BindingIR:
         result_structs=getattr(spec, "result_structs", {}),
         option_structs=getattr(spec, "option_structs", {}),
         calls=tuple(lower_call(call) for call in (*spec.functions, *spec.methods)),
-        depends_on_common=getattr(spec, "depends_on_common", None),
     )
     result = finalize_binding_ir(semantic_ir)
     debug_log(

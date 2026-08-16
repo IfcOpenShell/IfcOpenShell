@@ -19,18 +19,6 @@ from .cpp_spec_frontend import (
     lower_cpp_spec_handles_to_specs,
     lower_cpp_spec_result_structs_to_specs,
 )
-from .source_inventory import (
-    SourceCallableInventory,
-    SourceClassInventory,
-    SourceClassRequest,
-    SourceInventory,
-    SourceInventoryRequest,
-    SourceNamespaceInventory,
-    SourceNamespaceRequest,
-    SourceParamInventory,
-    SourceTypeInventory,
-    discover_source_inventory,
-)
 
 __all__ = [
     "CompilationConfig",
@@ -39,15 +27,6 @@ __all__ = [
     "CppSpecResultStruct",
     "DiscoveryDiagnostic",
     "DiscoveryEnvironment",
-    "SourceCallableInventory",
-    "SourceClassInventory",
-    "SourceClassRequest",
-    "SourceInventory",
-    "SourceInventoryRequest",
-    "SourceNamespaceInventory",
-    "SourceNamespaceRequest",
-    "SourceParamInventory",
-    "SourceTypeInventory",
     "discover_cpp_spec_contract_headers",
     "discover_cpp_spec_functions",
     "discover_cpp_spec_handles",
@@ -56,7 +35,6 @@ __all__ = [
     "discover_namespace_functions_with_synthetic_source",
     "discover_public_fields",
     "discover_public_methods",
-    "discover_source_inventory",
     "load_authored_spec",
     "load_merged_specs",
     "lower_cpp_spec_functions_to_calls",
