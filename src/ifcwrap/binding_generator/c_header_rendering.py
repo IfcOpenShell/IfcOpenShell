@@ -13,8 +13,8 @@ from .abi_ir import (
     _variant_c_type,
     _variant_list_c_type,
 )
-from .authored_spec import HandleSpec
 from .binding_ir import BindingIR
+from .binding_model import HandleSpec
 from .c_sequence_helpers import (
     _handle_list_c_type,
     _handle_list_list_c_type,

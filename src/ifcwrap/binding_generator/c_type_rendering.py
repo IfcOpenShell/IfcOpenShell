@@ -8,9 +8,8 @@ from .abi_ir import (
     _optional_struct_c_type,
     _variant_c_type,
 )
-from .authored_spec import ParamSpec, TypeSpec
 from .binding_ir import BindingIR, CallIR
-from .binding_model import OptionStructSpec
+from .binding_model import OptionStructSpec, ParamSpec, TypeSpec
 
 
 def _ordered_result_structs(spec: BindingIR) -> tuple[object, ...]:

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .authored_spec import HandleSpec, TypeSpec
 from .binding_ir import BindingIR
+from .binding_model import HandleSpec, TypeSpec
 from .c_type_rendering import _normalize_cpp_type, _qualify_handle_cpp_fragment
 
 

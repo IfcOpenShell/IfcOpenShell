@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from .abi_ir import BindingABI
 
-from .authored_spec import AuthoredBindingSpec, MergedBindingSpec
 from .binding_model import (
     CallSpec,
     HandleSpec,
@@ -21,6 +20,7 @@ from .binding_model import (
     TypeSpec,
 )
 from .debug import debug_log
+from .discovery_policy import MergedBindingSpec
 from .policy_ir import (
     ArrayElementFieldPolicyOp,
     AsItemCastPolicyOp,
@@ -48,7 +48,7 @@ from .policy_ir import (
     VariantSetPolicyOp,
 )
 
-SourceBindingSpec = Union[AuthoredBindingSpec, MergedBindingSpec]
+SourceBindingSpec = MergedBindingSpec
 
 
 @dataclass(frozen=True)

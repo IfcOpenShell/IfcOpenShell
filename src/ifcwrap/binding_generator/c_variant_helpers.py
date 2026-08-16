@@ -12,8 +12,8 @@ from .abi_ir import (
     _variant_c_type,
     _variant_destroy_name,
 )
-from .authored_spec import TypeSpec
 from .binding_ir import BindingIR
+from .binding_model import TypeSpec
 
 
 def _variant_return_types(spec: BindingIR) -> tuple[TypeSpec, ...]:

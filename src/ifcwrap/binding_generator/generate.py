@@ -16,7 +16,6 @@ from .targets.wasm.backend import render_export_list, render_wasm_bindings
 
 @dataclass(frozen=True)
 class ProductionSourceSet:
-    policy_specs: tuple[Path, ...]
     cpp_specs: tuple[Path, ...]
     cpp_namespaces: tuple[str, ...]
     function_prefixes: tuple[str, ...]
@@ -25,7 +24,6 @@ class ProductionSourceSet:
     @classmethod
     def from_spec_dir(cls, spec_dir: Path) -> ProductionSourceSet:
         return cls(
-            policy_specs=(spec_dir / "ifcparse.yml", spec_dir / "ifcgeom.yml"),
             cpp_specs=(
                 spec_dir / "cpp" / "ifcparse.hpp",
                 spec_dir / "cpp" / "ifcgeom.hpp",
@@ -91,7 +89,6 @@ def write_if_different(path: Path, content: str) -> bool:
 def generate_all(config: GenerationConfig) -> tuple[Artifact, ...]:
     debug_log("pipeline.discovery.start", "full IfcOpenShell source set")
     ir = build_binding_ir(
-        config.sources.policy_specs,
         module="ifcopenshell",
         c_prefix="ifcopenshell",
         discovery_include_dirs=config.discovery_include_dirs,
