@@ -1994,11 +1994,32 @@ void SvgSerializer::write(const geometry_data& data) {
 					// faces)? classify_edge_from_faces()'s back-facing "seen through an
 					// opening" reinterpretation only makes sense when this is true -- see its
 					// own comment for the real-world bug this was found from.
+					//
+					// Known-issues item 45: the halfspace-cut loop above (subtraction_settings_
+					// == ALWAYS, what every real Bonsai drawing actually uses) deliberately
+					// leaves a genuine naked edge along the cut seam of any product it cuts --
+					// there is intentionally no capping face there (a halfspace cut of a bare
+					// face, not a solid; see this function's own "no capping face" comment
+					// further up). That seam lies exactly on projection_plane (the cut plane
+					// and the drawing's own projection plane are the same plane -- see the
+					// should_cut block above), so it's distinguishable from a genuine
+					// architectural opening -- which would only coincide with that plane by an
+					// implausible coincidence -- and must not be counted here, or every
+					// section-cut product wrongly re-enables the flip purely from being cut,
+					// not from actually having an opening.
 					bool product_has_naked_edge = false;
 					for (int i = 1; i <= edge_face_map.Extent(); ++i) {
 						if (edge_face_map.FindFromIndex(i).Extent() != 2) {
-							product_has_naked_edge = true;
-							break;
+							const TopoDS_Edge& naked_edge = TopoDS::Edge(edge_face_map.FindKey(i));
+							TopoDS_Vertex nv0, nv1;
+							TopExp::Vertices(naked_edge, nv0, nv1);
+							const bool on_cut_plane =
+								infront_or_behind(projection_plane, BRep_Tool::Pnt(nv0)) == 0 &&
+								infront_or_behind(projection_plane, BRep_Tool::Pnt(nv1)) == 0;
+							if (!on_cut_plane) {
+								product_has_naked_edge = true;
+								break;
+							}
 						}
 					}
 

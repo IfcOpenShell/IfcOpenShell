@@ -166,6 +166,69 @@ def _add_arbitrary_profile_slab(
     return product
 
 
+def _build_thin_frame_window(
+    ifc_file: ifcopenshell.file,
+    body_context: ifcopenshell.entity_instance,
+    storey: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
+    """An `IfcWindow` built from 8 separate, genuinely thin (10-40mm deep)
+    `IfcExtrudedAreaSolid` frame members with notched, non-convex profiles --
+    thinness plus non-convexity together are what let HLR legitimately keep
+    some back-facing convex corners visible, unlike a single chunky solid
+    (see `test_back_facing_convex_edge_on_closed_solid_stays_sharp`'s own
+    docstring for why a minimal L-shaped extrusion doesn't reproduce this).
+    Profile points, depths, local positions, and the world placement matrix
+    (a real window's own resolved `get_local_placement()`, GUID
+    `2NvX7VpZfB48hD$vRvyHVz`) are copied verbatim from real geometry, in the
+    project's own millimetre units -- not a real project *file* (no `.ifc`
+    is read here or committed anywhere), just its bare numeric geometry.
+    World-space bounding box (computed from this same data): X in roughly
+    [4.915, 6.555] metres, Y in [-2.784, -1.143], Z in [0.36, 1.48].
+    """
+    items_data = [
+        dict(points=[(1200.0, 1080.0), (1200.0, 0.0), (0.0, 0.0), (0.0, 1080.0), (25.0, 1080.0), (25.0, 25.0), (1175.0, 25.0), (1175.0, 1080.0)], position=(0.0, 90.0, 0.0), depth=9.99999523162842),
+        dict(points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 1080.0), (0.0, 1080.0)], position=(0.0, 50.0, 0.0), depth=40.0000038146973),
+        dict(points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 1055.0), (0.0, 1055.0)], position=(25.0, 90.0, 25.0), depth=34.9999961853027),
+        dict(points=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 1020.0), (34.9999961853027, 1020.0)], position=(25.0, 102.5, 25.0), depth=10.0),
+        dict(points=[(0.0, 0.0), (0.0, 320.000061035156), (1200.0, 320.000061035156), (1200.0, 0.0), (1175.0, 0.0), (1175.0, 295.000061035156), (25.0, 295.000061035156), (25.0, 0.0)], position=(0.0, 90.0, 1080.0), depth=9.99999523162842),
+        dict(points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 320.000061035156), (0.0, 320.000061035156)], position=(0.0, 50.0, 1080.0), depth=40.0000038146973),
+        dict(points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 295.000061035156), (0.0, 295.000061035156)], position=(25.0, 90.0, 1080.0), depth=34.9999961853027),
+        dict(points=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 260.000061035156), (34.9999961853027, 260.000061035156)], position=(25.0, 102.5, 1080.0), depth=10.0),
+    ]
+    # Resolved world-space placement (get_local_placement(), collapsing the
+    # real product's multi-level placement chain -- and its identity
+    # mapped-item transform -- into one matrix): a 45-degree plan rotation
+    # plus translation, in the project's own millimetre units.
+    world_matrix = np.array([
+        [0.7071067812, -0.7071067812, 0.0, 5742.3152923584],
+        [0.7071067812, 0.7071067812, 0.0, -2819.2496299744],
+        [0.0, 0.0, 1.0, 400.0000059605],
+        [0.0, 0.0, 0.0, 1.0],
+    ])
+
+    window = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWindow", name="Window")
+    ifcopenshell.api.spatial.assign_container(ifc_file, relating_structure=storey, products=[window])
+    solids = []
+    for item in items_data:
+        point_list = ifc_file.createIfcCartesianPointList2D(item["points"])
+        poly_curve = ifc_file.createIfcIndexedPolyCurve(point_list, None, None)
+        profile = ifc_file.createIfcArbitraryClosedProfileDef("AREA", None, poly_curve)
+        position = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint(item["position"]),
+            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+        direction = ifc_file.createIfcDirection((0.0, 0.0, -1.0))
+        solids.append(ifc_file.createIfcExtrudedAreaSolid(profile, position, direction, item["depth"]))
+    shape_rep = ifc_file.createIfcShapeRepresentation(body_context, "Body", "SweptSolid", solids)
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=window, representation=shape_rep)
+    # world_matrix's numbers are already in the project's own millimetre
+    # units, not SI metres -- is_si=False so edit_object_placement doesn't
+    # apply its default metre-to-project-unit conversion.
+    ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=window, matrix=world_matrix, is_si=False)
+    return window
+
+
 @dataclass(frozen=True)
 class Edge:
     guid: str
@@ -1554,48 +1617,7 @@ def test_back_facing_convex_edge_on_closed_solid_stays_sharp():
     """
     ifc_file, body_context, storey = _make_project()
     ifcopenshell.api.unit.assign_unit(ifc_file, length={"is_metric": True, "raw": "MILLIMETERS"})
-
-    items_data = [
-        dict(points=[(1200.0, 1080.0), (1200.0, 0.0), (0.0, 0.0), (0.0, 1080.0), (25.0, 1080.0), (25.0, 25.0), (1175.0, 25.0), (1175.0, 1080.0)], position=(0.0, 90.0, 0.0), depth=9.99999523162842),
-        dict(points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 1080.0), (0.0, 1080.0)], position=(0.0, 50.0, 0.0), depth=40.0000038146973),
-        dict(points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 1055.0), (0.0, 1055.0)], position=(25.0, 90.0, 25.0), depth=34.9999961853027),
-        dict(points=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 1020.0), (34.9999961853027, 1020.0)], position=(25.0, 102.5, 25.0), depth=10.0),
-        dict(points=[(0.0, 0.0), (0.0, 320.000061035156), (1200.0, 320.000061035156), (1200.0, 0.0), (1175.0, 0.0), (1175.0, 295.000061035156), (25.0, 295.000061035156), (25.0, 0.0)], position=(0.0, 90.0, 1080.0), depth=9.99999523162842),
-        dict(points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 320.000061035156), (0.0, 320.000061035156)], position=(0.0, 50.0, 1080.0), depth=40.0000038146973),
-        dict(points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 295.000061035156), (0.0, 295.000061035156)], position=(25.0, 90.0, 1080.0), depth=34.9999961853027),
-        dict(points=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 260.000061035156), (34.9999961853027, 260.000061035156)], position=(25.0, 102.5, 1080.0), depth=10.0),
-    ]
-    # Resolved world-space placement (get_local_placement(), collapsing the
-    # real product's multi-level placement chain -- and its identity
-    # mapped-item transform -- into one matrix): a 45-degree plan rotation
-    # plus translation, in the project's own millimetre units.
-    world_matrix = np.array([
-        [0.7071067812, -0.7071067812, 0.0, 5742.3152923584],
-        [0.7071067812, 0.7071067812, 0.0, -2819.2496299744],
-        [0.0, 0.0, 1.0, 400.0000059605],
-        [0.0, 0.0, 0.0, 1.0],
-    ])
-
-    window = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWindow", name="Window")
-    ifcopenshell.api.spatial.assign_container(ifc_file, relating_structure=storey, products=[window])
-    solids = []
-    for item in items_data:
-        point_list = ifc_file.createIfcCartesianPointList2D(item["points"])
-        poly_curve = ifc_file.createIfcIndexedPolyCurve(point_list, None, None)
-        profile = ifc_file.createIfcArbitraryClosedProfileDef("AREA", None, poly_curve)
-        position = ifc_file.createIfcAxis2Placement3D(
-            ifc_file.createIfcCartesianPoint(item["position"]),
-            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
-            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
-        )
-        direction = ifc_file.createIfcDirection((0.0, 0.0, -1.0))
-        solids.append(ifc_file.createIfcExtrudedAreaSolid(profile, position, direction, item["depth"]))
-    shape_rep = ifc_file.createIfcShapeRepresentation(body_context, "Body", "SweptSolid", solids)
-    ifcopenshell.api.geometry.assign_representation(ifc_file, product=window, representation=shape_rep)
-    # world_matrix's numbers are already in the project's own millimetre
-    # units, not SI metres -- is_si=False so edit_object_placement doesn't
-    # apply its default metre-to-project-unit conversion.
-    ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=window, matrix=world_matrix, is_si=False)
+    window = _build_thin_frame_window(ifc_file, body_context, storey)
 
     # Camera matches the real window's own EAST ELEVATION drawing (extracted
     # via bpy camera.matrix_world against this exact synthetic geometry).
@@ -1612,6 +1634,84 @@ def test_back_facing_convex_edge_on_closed_solid_stays_sharp():
     assert not any(e.cls == "crease" for e in window_edges), window_edges
     target_p0, target_p1 = (10028.284271247461, 9439.9999980926514), (10028.284271247461, 9480.0000019073486)
     assert has_edge(edges, window.GlobalId, "sharp", target_p0, target_p1)
+
+
+def test_back_facing_convex_edge_stays_sharp_when_product_is_section_cut():
+    """Known-issues backlog item 45 (issue #3742 follow-up): the halfspace-cut
+    loop (`SvgSerializer.cpp`, `subtraction_settings_ == ALWAYS` -- what every
+    real Bonsai drawing actually uses, `operator.py:1444`) leaves a genuine,
+    intentional naked edge along the cut seam of every product it cuts
+    (`test_section_cut_preserves_native_classification`'s own "no capping
+    face at a halfspace cut" finding). `product_has_naked_edge`
+    (`SvgSerializer.cpp:1997`) can't tell that seam apart from a real
+    architectural opening, so it comes back `true` for essentially every
+    section-cut product -- silently re-enabling
+    `classify_edge_from_faces()`'s `back0 && back1` "seen through an
+    opening" flip (the same flip `test_back_facing_convex_edge_on_closed_
+    solid_stays_sharp` above already proves must NOT fire on this exact
+    closed, opening-free window) purely because the product got cut for this
+    drawing, not because it has an opening.
+
+    Reuses that same test's proven-to-actually-survive-HLR window geometry
+    (thinness + non-convex profiles are what let a back-facing convex corner
+    stay visible at all instead of being occluded by the product's own
+    bulk), just with the camera moved from clear of the window (world
+    X=16m) to inside its own world-space X-extent (~4.9m-6.6m, see this
+    file's own git history for the bounding-box derivation) so the same
+    scene now also straddles the halfspace-cut plane -- exactly the
+    `should_subtract`/`any_in_front && any_behind` condition every real
+    section/elevation Bonsai drawing exercises for any product that
+    straddles the cut plane.
+
+    Asserts against specific pinned edges, not a blanket "zero crease"
+    invariant: cutting into this real window geometry at this exact camera
+    position also newly exposes one genuine, pre-existing concave fold near
+    its head member (previously hidden behind material the cut removes,
+    confirmed via direct instrumentation: `back0=back1=true` natively,
+    `product_has_naked_edge=false`, no flip involved) -- moving the cut
+    plane elsewhere within the window's own depth still exposes it, so it's
+    a real feature of this geometry, not a symptom of the bug under test.
+    The four coordinates below are the ones directly caused by the bug
+    (captured from the unfixed build's own actual output, all `crease` there
+    purely because `product_has_naked_edge` was wrongly `true` from the cut
+    seam); the fifth (`genuine_crease_p0/p1`) is the control -- proving the
+    fix doesn't overcorrect into suppressing a real crease along with the
+    spurious ones.
+    """
+    ifc_file, body_context, storey = _make_project()
+    ifcopenshell.api.unit.assign_unit(ifc_file, length={"is_metric": True, "raw": "MILLIMETERS"})
+    window = _build_thin_frame_window(ifc_file, body_context, storey)
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(5.7, -2.799999952316284, 0.8999999761581421),
+        camera_dir=(1.0, 0.0, 0.0),
+        camera_ref=(0.0, 1.0, 0.0),
+        unify_inputs=True,
+        subtraction_settings="ALWAYS",
+    )
+    edges = parse_edges(svg)
+
+    window_edges = [e for e in edges if e.guid == window.GlobalId]
+    assert window_edges, "expected the section-cut window to still produce some visible edges"
+
+    previously_wrongly_flipped = [
+        ((8617.677693371521, 10055.00001001358), (8617.677693371521, 10070.00001001358)),
+        ((8589.39342212406, 10080.000006198883), (8589.39342212406, 10110.000013828278)),
+        ((8051.992311580656, 9025.000006198883), (8051.992311580656, 9030.000013828278)),
+        ((8089.115414895551, 8990.00001001358), (8089.115414895551, 9000.00001001358)),
+    ]
+    for p0, p1 in previously_wrongly_flipped:
+        assert has_edge(edges, window.GlobalId, "sharp", p0, p1), (
+            f"edge {p0}-{p1} was wrongly flipped to crease by the cut seam's own "
+            f"genuine-but-unrelated naked edge on unfixed code; expected sharp, got: {window_edges}"
+        )
+
+    genuine_crease_p0, genuine_crease_p1 = (8626.516525438954, 10045.00001001358), (8626.516525438954, 10055.00001001358)
+    assert has_edge(edges, window.GlobalId, "crease", genuine_crease_p0, genuine_crease_p1), (
+        "control assertion failed: this genuine, pre-existing concave fold should "
+        f"still read crease regardless of the fix, got: {window_edges}"
+    )
 
 
 def test_back_facing_fold_seen_through_genuine_opening_still_flips():
