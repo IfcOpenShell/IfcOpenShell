@@ -1441,24 +1441,27 @@ namespace {
 		// no verdict for a given sub-range in a single pass rather than two separate walks.
 
 		// Finds every face, across every OTHER product's raw shape, that's coplanar-coincident
-		// with `face` (same normal-parallel + plane-distance test find_cross_coplanar_matches()
-		// uses for its own cross-product face matching -- reused here rather than
-		// reimplemented, since it's the same underlying geometric question: "is this face a
-		// genuine touching boundary with some other product's face"). Used by
-		// layer_boundary_edges_for_face() below to keep Case B's own internal layer-boundary
-		// line off any portion of a face that's actually a matched touching boundary -- that
-		// portion's material story belongs to cross_coplanar/Case A (which compares the two
-		// products' own materials where they touch), not to this product's own internal
-		// layering, even though both can be computed from the exact same face.
+		// with `face` -- the same underlying geometric question cross_coplanar's own per-edge-
+		// location matching answers (normal-parallel + plane-distance), asked here at whole-face
+		// granularity instead. Its own independent implementation, not shared code: the
+		// cross_coplanar::resolve_edge_location_subrange() redesign folded that test into its
+		// per-location candidate search rather than leaving it as a standalone reusable function,
+		// so this is a deliberate, separate copy, not a stale claim of reuse -- a future change to
+		// cross_coplanar's own coplanarity tolerance/heuristic does NOT automatically apply here.
+		// Used by layer_boundary_edges_for_face() below to keep Case B's own internal
+		// layer-boundary line off any portion of a face that's actually a matched touching
+		// boundary -- that portion's material story belongs to cross_coplanar/Case A (which
+		// compares the two products' own materials where they touch), not to this product's own
+		// internal layering, even though both can be computed from the exact same face.
 		//
 		// Deliberately independent of use_cross_coplanar_classification_/
 		// use_mat_style_change_classification_'s own gating and of
 		// find_cross_coplanar_matches() entirely -- Case B must keep working (and keep NOT
 		// over-firing) even when cross-coplanar classification is off, per the matrix pinned by
 		// the P1-1 fix (see ConversionSettings.h's SvgUseMatStyleChangeClassification
-		// description). A cheap per-face bounding-box prefilter (mirroring
-		// find_cross_coplanar_matches()'s own per-product-pair one) keeps this from scaling
-		// against every face of every other product unconditionally.
+		// description). A cheap per-face bounding-box prefilter, independent of
+		// find_cross_coplanar_matches()'s own edge-level one, keeps this from scaling against
+		// every face of every other product unconditionally.
 		std::vector<TopoDS_Face> find_coplanar_coincident_faces(
 			const TopoDS_Face& face,
 			const std::vector<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>& other_products,
