@@ -843,7 +843,19 @@ class Blender(bonsai.core.tool.Blender):
     # Length of the selection block in bl_keymap, keyed by the operator idname of its
     # first entry.  Used to locate and replace the selection block during a rebuild
     # while preserving any pre-selection or post-selection entries the tool declares.
-    _SELECTION_PREFIX_LENGTHS = {"bim.cross_select": 4, "view3d.select_box": 6}
+    # bim.cad_select_box is the CAD tool's wrapper - see bim_select_operators below.
+    _SELECTION_PREFIX_LENGTHS = {"bim.cross_select": 4, "view3d.select_box": 6, "bim.cad_select_box": 6}
+
+    @classmethod
+    def get_tool_select_operators(cls, tool_cls) -> tuple[str, str]:
+        """The (click, drag) selection operators a tool wants in its keymap.
+
+        A tool declares ``bim_select_operators`` when it needs to know more about a
+        click than plain selection reports - the CAD tool records which end of an
+        edge was clicked so Join can keep that side. Everything else gets Blender's
+        native pair.
+        """
+        return getattr(tool_cls, "bim_select_operators", ("view3d.select", "view3d.select_box"))
 
     @classmethod
     def _iter_selection_tools(cls):
@@ -893,10 +905,10 @@ class Blender(bonsai.core.tool.Blender):
         """
         if bpy.app.background:
             return
-        selection_keymap = tuple(cls.get_default_selection_keypmap())
         tools = list(cls._iter_selection_tools())
         if not tools:
             return
+        selection_keymap = tuple(cls.get_default_selection_keypmap(*cls.get_tool_select_operators(tools[0][0])))
 
         desired_op = selection_keymap[0][0] if selection_keymap else None
         current = tuple(tools[0][0].bl_keymap)
@@ -917,7 +929,10 @@ class Blender(bonsai.core.tool.Blender):
                 pass
         for tool_cls, after, separator, group in tools:
             pre, post = pre_post[tool_cls]
-            tool_cls.bl_keymap = pre + selection_keymap + post
+            # Rebuilt per tool, so a tool that wraps selection keeps its wrappers
+            # instead of being handed the generic pair.
+            tool_keymap = tuple(cls.get_default_selection_keypmap(*cls.get_tool_select_operators(tool_cls)))
+            tool_cls.bl_keymap = pre + tool_keymap + post
             bpy.utils.register_tool(tool_cls, after=after, separator=separator, group=group)
 
     KEY_MODIFIERS = {

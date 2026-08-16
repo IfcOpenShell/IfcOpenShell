@@ -57,13 +57,17 @@ class CadTool(WorkSpaceTool):
     bl_description = "Gives you CAD authoring related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cad")
     bl_widget = None
-    # bim.cad_select records where each click lands so that Join and Extend can
-    # keep the end of the edge the user clicked on. bim.cad_select_box covers the
-    # same ground for a click that drags slightly, which Blender routes to box
-    # select instead - otherwise those selections arrive with no click recorded.
-    bl_keymap = tool.Blender.get_default_selection_keypmap(
-        select_operator="bim.cad_select", box_select_operator="bim.cad_select_box"
-    ) + (
+    # bim.cad_select records where each click lands so that Join and Extend can keep
+    # the end of the edge the user clicked on. bim.cad_select_box covers the same
+    # ground for a click that drags slightly, which Blender routes to box select
+    # instead - otherwise those selections arrive with no click recorded.
+    #
+    # Read back by tool.Blender.get_tool_select_operators, so that rebuilding the
+    # keymap for the Cross Select preference keeps these rather than substituting
+    # the generic pair. With Cross Select on, bim.cross_select handles the click and
+    # records it itself, and these are not used.
+    bim_select_operators = ("bim.cad_select", "bim.cad_select_box")
+    bl_keymap = tool.Blender.get_default_selection_keypmap(*bim_select_operators) + (
         ("bim.cad_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.cad_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),

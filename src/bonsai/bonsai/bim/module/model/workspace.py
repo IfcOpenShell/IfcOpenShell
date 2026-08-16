@@ -1929,6 +1929,23 @@ class CrossSelect(bpy.types.Operator):
             )
         except Exception:
             pass
+        self._record_cad_click(context, event)
+
+    @staticmethod
+    def _record_cad_click(context, event) -> None:
+        """Tell the CAD tools where this click landed.
+
+        When Cross Select is on it owns every LEFTMOUSE press, so bim.cad_select is
+        not in any keymap and the CAD tool would otherwise see no clicks at all -
+        leaving Join unable to tell which end of an edge was picked. Only clicks are
+        reported; a drag is a box select and picks no particular end.
+        """
+        from bonsai.bim.module.cad.operator import record_clicked_end
+
+        region = context.region
+        rv3d = context.region_data
+        if region and region.type == "WINDOW" and rv3d:
+            record_clicked_end(context, region, rv3d, (event.mouse_region_x, event.mouse_region_y))
 
 
 custom_icon_previews = None
