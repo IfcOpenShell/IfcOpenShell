@@ -86,9 +86,7 @@ def _render_cpp(ir: BindingIR, header_name: str) -> str:
         _render_handle_list_list_destroy_impl(handle) for handle in handle_list_types
     )
     variant_destroy_impls = _render_variant_destroy_impls(ir)
-    common_type_impls = (
-        "" if ir.depends_on_common else _render_common_type_impls(sequence_kinds)
-    )
+    common_type_impls = _render_common_type_impls(sequence_kinds)
     sequence_helpers = _render_sequence_helpers(sequence_kinds)
     runtime_support = _render_cpp_support_runtime()
     internal_header_name = header_name.removesuffix(".h") + "_internal.hpp"

@@ -151,10 +151,6 @@ def _render_result_struct_field_assignments(
             else:
                 assignment = _wrap_handle_expr(field_type, field_expr, spec)
             assignments.append(f"{indent}{target_field} = {assignment};")
-        elif field_type.kind == "opaque_ptr":
-            assignments.append(
-                f"{indent}{target_field} = static_cast<void*>({field_expr});"
-            )
         elif field_type.kind == "struct":
             if field_type.struct is None:
                 raise ValueError(
@@ -341,8 +337,6 @@ def _render_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
                 f"        }}"
             )
         return f"*out_result = {_wrap_handle_expr(type_spec, expr, spec)};"
-    if kind == "opaque_ptr":
-        return f"*out_result = static_cast<void*>({expr});"
     if kind == "struct":
         if type_spec.struct is None:
             raise ValueError(f"{call.c_name} struct return is missing struct name")
@@ -439,8 +433,6 @@ def _render_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
                     assignment = f"{_handle_list_list_helper_name(spec.handles[alt.handle])}({alt_expr})"
                 else:
                     assignment = _wrap_handle_expr(alt, alt_expr, spec)
-            elif alt.kind == "opaque_ptr":
-                assignment = f"static_cast<void*>({alt_expr})"
             else:
                 raise ValueError(f"Unsupported variant alternative kind: {alt.kind}")
             prefix = "if" if index == 0 else "else if"
@@ -692,22 +684,11 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
             f"    {auto_kw} {param.name}_cpp = {value_expr};"
         )
     if kind == "opaque_ptr":
-        cpp_type = type_spec.cpp_type
         if type_spec.nullable:
-            if _is_optional_cpp_type(type_spec):
-                inner_type = _extract_optional_inner_type(type_spec.cpp_type)
-                if inner_type is None:
-                    raise ValueError(
-                        f'Opaque pointer parameter "{param.name}" has invalid optional cpp_type'
-                    )
-                return (
-                    f"    std::optional<{inner_type}> {param.name}_cpp;\n"
-                    f"    if ({param.name} != nullptr) {{ {param.name}_cpp = static_cast<{inner_type}>({param.name}); }}"
-                )
-            return f"    auto {param.name}_cpp = static_cast<{cpp_type}>({param.name});"
+            return f"    auto {param.name}_cpp = static_cast<{type_spec.cpp_type}>({param.name});"
         return (
             f"{_null_check(param.name, 'Parameter')}\n"
-            f"    auto {param.name}_cpp = static_cast<{cpp_type}>({param.name});"
+            f"    auto {param.name}_cpp = static_cast<{type_spec.cpp_type}>({param.name});"
         )
     if kind == "option":
         if type_spec.sequence_depth == 1:
@@ -1011,12 +992,6 @@ def _option_field_cpp_expr(type_spec: TypeSpec, source: str, spec: BindingIR) ->
         if handle.ptr_type == "shared_ptr":
             return f"{source}->ptr"
         return f"{source}->ptr"
-    if type_spec.kind == "opaque_ptr":
-        cpp_type = _normalize_cpp_type(type_spec.cpp_type)
-        if cpp_type.startswith("std::optional<") and cpp_type.endswith(">"):
-            inner_type = cpp_type[len("std::optional<") : -1]
-            return f"static_cast<{inner_type}>({source})"
-        return f"static_cast<{type_spec.cpp_type}>({source})"
     raise ValueError(f"Unsupported option field kind: {type_spec.kind}")
 
 

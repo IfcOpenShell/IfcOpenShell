@@ -18,8 +18,6 @@ from .targets.wasm.backend import render_export_list, render_wasm_bindings
 class ProductionSourceSet:
     policy_specs: tuple[Path, ...]
     cpp_specs: tuple[Path, ...]
-    macro_header: Path
-    binding_headers: tuple[Path, ...]
     cpp_namespaces: tuple[str, ...]
     function_prefixes: tuple[str, ...]
     handle_prefixes: tuple[str, ...]
@@ -32,8 +30,6 @@ class ProductionSourceSet:
                 spec_dir / "cpp" / "ifcparse.hpp",
                 spec_dir / "cpp" / "ifcgeom.hpp",
             ),
-            macro_header=spec_dir / "cpp" / "spec_macros.h",
-            binding_headers=(),
             cpp_namespaces=(
                 "ifcparse::bindings",
                 "ifcgeom::bindings",

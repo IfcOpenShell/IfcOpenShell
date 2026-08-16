@@ -34,7 +34,6 @@ class COptionFieldIR:
     name: str
     type: TypeSpec
     c_type: str
-    semantic: str | None = None
     doc: str | None = None
     presence_field: str | None = None
     has_default: bool = False
@@ -55,7 +54,6 @@ class CParamIR:
     type_kind: str
     nullable: bool = False
     has_default: bool = False
-    semantic: str | None = None
     type: TypeSpec | None = None
 
 
@@ -445,8 +443,6 @@ def _out_c_type(type_spec: TypeSpec, ir: BindingIR) -> str:
         if type_spec.sequence_depth == 2:
             return f"{_handle_list_list_c_type(handle)}*"
         return f"{handle.c_type}**"
-    if type_spec.kind == "opaque_ptr":
-        return "void**"
     if type_spec.kind == "struct":
         if type_spec.struct is None:
             raise ValueError("struct type is missing struct name")
@@ -487,8 +483,6 @@ def _field_c_type(type_spec: TypeSpec, ir: BindingIR) -> str:
         if type_spec.struct is None:
             raise ValueError("option type is missing struct name")
         return f"const {ir.option_structs[type_spec.struct].c_type}*"
-    if type_spec.kind == "opaque_ptr":
-        return "void*"
     if type_spec.kind == "variant":
         return _variant_c_type(type_spec, ir)
     raise ValueError(f"Unsupported result struct field kind: {type_spec.kind}")
@@ -714,7 +708,6 @@ def _finalize_function(call: CallIR, ir: BindingIR) -> CFunctionIR:
                 type_kind=param.type.kind,
                 nullable=param.type.nullable,
                 has_default=param.has_default,
-                semantic=param.type.semantic,
                 type=param.type,
             )
         )
@@ -810,7 +803,6 @@ def finalize_abi(ir: BindingIR) -> BindingABI:
                         field.name,
                         field.type,
                         _option_field_c_type(field.type, ir),
-                        field.type.semantic,
                         field.doc,
                         f"has_{field.name}" if field.type.nullable else None,
                         field.has_default,
