@@ -832,6 +832,13 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
         elif snap_prop.snap_type == "Face":
             draw_circle_2d(coords, decorator_color_object_active, padding)
             return
+        elif snap_prop.snap_type == "Circle Center":
+            p1 = (coords[0] - padding, coords[1])
+            p2 = (coords[0] + padding, coords[1])
+            p3 = (coords[0], coords[1] - padding)
+            p4 = (coords[0], coords[1] + padding)
+            verts = [p1, p2, p3, p4]
+            edges = [[0, 1], [2, 3]]
         else:
             return
 

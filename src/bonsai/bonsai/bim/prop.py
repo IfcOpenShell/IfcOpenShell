@@ -834,6 +834,7 @@ class BIMSnapProperties(PropertyGroup):
     edge_center: BoolProperty(name="Edge Center", default=True)
     edge_intersection: BoolProperty(name="Edge Intersection", default=True)
     face: BoolProperty(name="Face", default=True)
+    circle_center: BoolProperty(name="Circle Center", default=True)
 
     if TYPE_CHECKING:
         vertex: bool
@@ -841,3 +842,4 @@ class BIMSnapProperties(PropertyGroup):
         edge_center: bool
         edge_intersection: bool
         face: bool
+        circle_center: bool

@@ -2064,6 +2064,7 @@ class BIM_PT_snappping(Panel):
         col.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
         col.prop(prop, "edge_intersection", toggle=True, icon="SNAP_GRID")
         col.prop(prop, "face", toggle=True, icon="SNAP_FACE")
+        col.prop(prop, "circle_center", toggle=True, icon="MESH_CIRCLE")
         groups = tool.Snap.get_snap_groups()
         row = layout.row(align=True)
         row.label(text="Bonsai Target Selection")
