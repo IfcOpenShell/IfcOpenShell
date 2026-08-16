@@ -57,7 +57,13 @@ class CadTool(WorkSpaceTool):
     bl_description = "Gives you CAD authoring related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cad")
     bl_widget = None
-    bl_keymap = tool.Blender.get_default_selection_keypmap() + (
+    # bim.cad_select records where each click lands so that Join and Extend can
+    # keep the end of the edge the user clicked on. bim.cad_select_box covers the
+    # same ground for a click that drags slightly, which Blender routes to box
+    # select instead - otherwise those selections arrive with no click recorded.
+    bl_keymap = tool.Blender.get_default_selection_keypmap(
+        select_operator="bim.cad_select", box_select_operator="bim.cad_select_box"
+    ) + (
         ("bim.cad_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.cad_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
