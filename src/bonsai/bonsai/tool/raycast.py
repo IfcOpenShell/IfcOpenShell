@@ -636,7 +636,7 @@ class Raycast(bonsai.core.tool.Raycast):
             return None, None, None
 
     @classmethod
-    def get_gpu_raycast_snaps(
+    def get_gpu_detection_snaps(
         cls,
         context: bpy.types.Context,
         event: bpy.types.Event,
@@ -811,47 +811,142 @@ class Raycast(bonsai.core.tool.Raycast):
 
             if not hits:
                 return []
-            return hits
+
+            snaps: list[dict] = []
+            closest_obj = None
+            closest_dist = float("inf")
+            ray_origin, _, _ = cls.get_viewport_ray_data(context, event)
+
+            objs_to_raycast = []
+            for obj_index, face_index in hits:
+                obj = _obj_list[obj_index]
+                objs_to_raycast.append(obj)
+            hit_obj, hit, face_index = cls.cast_rays_and_get_best_object(context, event, objs_to_raycast)
+
+            snap: dict = {
+                "point": hit,
+                "type": "Face",
+                "group": "Object",
+                "object": obj,
+                "face_index": face_index,
+                "distance": 9,  # High value so it has low priority
+            }
+
+            snaps.append(snap)
+
+            return snaps, closest_obj
 
         else:
             centre = (mx - int(read_x), my - int(read_y))
             best = _find_closest_wireframe_pixel(pixel_data, *centre)
             if best is None:
                 return []
-            return best
+            encoded, dx, dy = best
 
+            # Decode and build snap dicts
 
-        # Build snap dicts
+            snaps: list[dict] = []
+            snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
 
-        # snaps: list[dict] = []
-        # closest_obj = None
-        # closest_dist = float("inf")
-        # ray_origin, _, _ = cls.get_viewport_ray_data(context, event)
+            # Compute view ray for 3D proximity calculations
+            _, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+            try:
+                loc = tool.Cad.region_2d_to_location_3d_np(region, rv3d, (mx, my), ray_direction)
+            except Exception:
+                loc = ray_target
 
-        # for obj_index, face_index in hits:
-        #     obj = _obj_list[obj_index]
-        #     if face_index >= len(obj.data.polygons):
-        #         continue
-        #     face = obj.data.polygons[face_index]
-        #     face_center = obj.matrix_world @ face.center
+            for snap_obj, pts_start, n_pts, lines_start, n_lines in obj_slots:
+                if n_pts > 0 and pts_start <= encoded < pts_start + n_pts:
+                    vi = encoded - pts_start
+                    batches = _wireframe_batch_cache.get(id(snap_obj))
+                    if batches:
+                        pts_data = batches.get("POINTS")
+                        if pts_data:
+                            _, _, coords = pts_data
+                            if vi < len(coords):
+                                local_pos = Vector(coords[vi])
+                                world_pos = snap_obj.matrix_world @ local_pos
+                                # Compute proper 3D distance from vertex to view ray
+                                proj = tool.Cad.point_on_edge(world_pos, (ray_target, loc))
+                                distance = (world_pos - proj).length
+                                snaps.append({
+                                    "object": snap_obj,
+                                    "type": "Vertex",
+                                    "point": world_pos,
+                                    "distance": distance,
+                                    "group": "Wireframe",
+                                })
+                    break
 
-        #     snap: dict = {
-        #         "point": face_center,
-        #         "type": "Face",
-        #         "group": "Object",
-        #         "object": obj,
-        #         "face_index": face_index,
-        #         "distance": 9,  # High value so it has low priority
-        #     }
-        #     dist = (face_center - ray_origin).length
-        #     if dist < closest_dist:
-        #         closest_dist = dist
-        #         closest_obj = obj
-        #         snap["is_closest_to_camera"] = True
+                if n_lines > 0 and lines_start <= encoded < lines_start + n_lines:
+                    ei = encoded - lines_start
+                    batches = _wireframe_batch_cache.get(id(snap_obj))
+                    if batches:
+                        lines_data = batches.get("LINES")
+                        if lines_data:
+                            _, _, edge_pairs = lines_data
+                            if ei < len(edge_pairs):
+                                c0, c1 = edge_pairs[ei]
+                                mw = snap_obj.matrix_world
+                                v0 = mw @ Vector(c0)
+                                v1 = mw @ Vector(c1)
 
-        #     snaps.append(snap)
+                                # Compute closest point on edge to view ray
+                                intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (v0, v1))
+                                if intersection[0] is not None and tool.Cad.is_point_on_edge(intersection[1], (v0, v1)):
+                                    edge_point = intersection[1].copy()
+                                    distance = (intersection[1] - intersection[0]).length
+                                else:
+                                    # Fallback to midpoint if lines are parallel
+                                    edge_point = (v0 + v1) / 2
+                                    proj = tool.Cad.point_on_edge(edge_point, (ray_target, loc))
+                                    distance = (edge_point - proj).length
 
-        # return snaps, closest_obj
+                                snaps.append({
+                                    "object": snap_obj,
+                                    "type": "Edge",
+                                    "point": edge_point,
+                                    "edge_verts": (v0, v1),
+                                    "distance": distance,
+                                    "group": "Wireframe",
+                                })
+
+                                # Edge Center snap (midpoint)
+                                mid = (v0 + v1) / 2
+                                mid_proj = tool.Cad.point_on_edge(mid, (ray_target, loc))
+                                mid_dist = (mid - mid_proj).length
+                                snaps.append({
+                                    "object": snap_obj,
+                                    "type": "Edge Center",
+                                    "point": mid,
+                                    "distance": mid_dist,
+                                    "group": "Wireframe",
+                                })
+
+                                # Also include vertex snaps for edge endpoints
+                                for vtx in (v0, v1):
+                                    proj = tool.Cad.point_on_edge(vtx, (ray_target, loc))
+                                    vtx_dist = (vtx - proj).length
+                                    if vtx_dist < snap_threshold:
+                                        snaps.append({
+                                            "object": snap_obj,
+                                            "type": "Vertex",
+                                            "point": vtx,
+                                            "distance": vtx_dist,
+                                            "group": "Wireframe",
+                                        })
+                    break
+
+            return snaps
+
+    @classmethod
+    def get_gpu_solid_snaps(cls, context, event, objs_to_raycast):
+        return cls.get_gpu_detection_snaps(context, event, objs_to_raycast, tris=True)
+        
+
+    @classmethod
+    def get_gpu_wireframe_snaps(cls, context, event, objs_to_raycast):
+        return cls.get_gpu_detection_snaps(context, event, objs_to_raycast)
 
 
     @classmethod
