@@ -1819,6 +1819,14 @@ void SvgSerializer::write(const geometry_data& data) {
 								TopoDS_Shape part_to_cut = repair_if_invalid(it.Value());
 								BRepAlgoAPI_Cut cut_op(part_to_cut, s);
 								if (!cut_op.IsDone()) {
+									// Dropping this part rather than falling back to its uncut
+									// original is deliberate, not an oversight -- a prior attempt
+									// at recovering more here (using heal_for_linework()'s fuller
+									// repair fallback for the same kind of failure, further below)
+									// silently reconstructed an entire cut-away opening on a real
+									// test box, confirmed as a real regression. Logged rather than
+									// silent, unlike before, so a missing part is at least visible.
+									logger_.Warning("SER", 34, "Halfspace cut failed for one part of a compound, dropping that part", data.product);
 									continue;
 								}
 								auto part = cut_op.Shape();
@@ -1827,6 +1835,7 @@ void SvgSerializer::write(const geometry_data& data) {
 								// BRep_Builder::Add() below has no defence of its own against that,
 								// so check first rather than let it corrupt/crash.
 								if (part.IsNull()) {
+									logger_.Warning("SER", 34, "Halfspace cut produced a null shape for one part of a compound, dropping that part", data.product);
 									continue;
 								}
 								BB.Add(C, part);
