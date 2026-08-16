@@ -559,16 +559,100 @@ class Cad:
         return bm
 
     @classmethod
-    def perform_t(cls, bm, pt, target, edge, pts, vertex_indices):
-        cl_vert = cls.closest_idx(pt, bm.edges[edge.index])
+    def get_chain_between(cls, edge_a, edge_b, start=None, goal=None) -> list:
+        """
+        > edge_a, edge_b:   bmesh edges
+        > start:            vertex of `edge_a` to walk from, or both of them
+        > goal:             vertex of `edge_b` to walk to, or either of them
+        < returns:          the edges of the shortest path linking them, excluding
+                            themselves, or an empty list if they aren't linked
+
+        Joining two edges of a chain leaves whatever sat between them stranded -
+        dragged along by the moved vertices instead of removed. These are the
+        edges that have to go for the join to produce a clean corner.
+
+        On a closed loop there are two routes between any pair of edges, and they
+        can be the same length, so `start` and `goal` pin down which one is meant:
+        the route hanging off the ends the join is about to discard.
+        """
+        goal = {goal} if goal is not None else set(edge_b.verts)
+        starts = [start] if start is not None else list(edge_a.verts)
+        # How each vertex was reached: {vertex: (edge walked, previous vertex)}.
+        came_from = {vert: None for vert in starts}
+        frontier = list(starts)
+
+        while frontier:
+            next_frontier = []
+            for vert in frontier:
+                if vert in goal:
+                    path = []
+                    while came_from[vert] is not None:
+                        edge, vert = came_from[vert]
+                        path.append(edge)
+                    return path
+                for edge in vert.link_edges:
+                    if edge is edge_a or edge is edge_b:
+                        continue
+                    other = edge.other_vert(vert)
+                    if other is None or other in came_from:
+                        continue
+                    came_from[other] = (edge, vert)
+                    next_frontier.append(other)
+            frontier = next_frontier
+        return []
+
+    @classmethod
+    def vert_idx_to_move(cls, pt, e, clicked_percents=None):
+        """
+        > pt:                 vector, the intersection point the edge is joined at
+        > e:                  bmesh edge
+        > clicked_percents:   optional {bmesh edge: percent} of where along each
+                              edge the user clicked, measured from its lower-numbered
+                              vertex. Keyed by the edge itself, not by vertex indices,
+                              because removing the chain between the two edges
+                              renumbers vertices while leaving the edges intact.
+        < returns:            index of the vertex of `e` that should be moved to `pt`
+
+        By default the vertex closest to `pt` is moved, which always keeps the
+        longest side of the edge. When `pt` falls inside the edge both sides are
+        equally valid, so the side the user clicked on is kept instead.
+
+        The intersection is what divides the edge into the two sides on offer, so
+        that - not the edge's midpoint - is what a click has to be compared
+        against. Keeping the nearer endpoint instead splits the edge in the wrong
+        place, and picks the wrong side for any click between the two.
+        """
+        v1, v2 = e.verts
+        low, high = (v1, v2) if v1.index < v2.index else (v2, v1)
+        percent = cls.edge_percent(pt, (low.co, high.co))
+
+        clicked = clicked_percents.get(e) if clicked_percents else None
+        if clicked is None:
+            return cls.closest_idx(pt, e)
+
+        # Only meaningful when pt splits the edge - if pt is off the end then
+        # the edge has to be extended and there is only one vertex to move.
+        if not cls.is_point_on_edge(pt, (v1.co, v2.co)):
+            return cls.closest_idx(pt, e)
+
+        keep, move = (low, high) if clicked < percent else (high, low)
+
+        # Never collapse the edge to nothing if pt sits on the vertex we'd keep.
+        if (keep.co - pt).length < VTX_PRECISION:
+            return cls.closest_idx(pt, e)
+        return move.index
+
+    @classmethod
+    def perform_t(cls, bm, pt, target, edge, pts, vertex_indices, clicked_percents=None):
+        cl_vert = cls.vert_idx_to_move(pt, bm.edges[edge.index], clicked_percents)
         bm.verts[cl_vert].co = pt
         bm.edges.index_update()
         return bm
 
     @classmethod
-    def perform_v(cls, bm, pt, target, edge, pts, vertex_indices):
-        bm = cls.perform_t(bm, pt, target, edge, pts, vertex_indices)
-        bm = cls.perform_t(bm, pt, edge, target, pts, vertex_indices)
+    def perform_v(cls, bm, pt, target, edge, pts, vertex_indices, clicked_percents=None):
+        bm = cls.perform_t(bm, pt, target, edge, pts, vertex_indices, clicked_percents)
+        bm = cls.perform_t(bm, pt, edge, target, pts, vertex_indices, clicked_percents)
         return bm
 
     @classmethod
@@ -576,7 +660,7 @@ class Cad:
         return [edges[0], edges[1]] if bm.select_history.active == edges[0] else [edges[1], edges[0]]
 
     @classmethod
-    def do_vtx_if_appropriate(cls, bm, edges, mode):
+    def do_vtx_if_appropriate(cls, bm, edges, mode, clicked_percents=None):
         vertex_indices = cls.get_vert_indices_from_bmedges(edges)
 
         # test 1, are there shared vers? if so return non-viable
@@ -597,9 +681,9 @@ class Cad:
         edges = cls.prioritise_active_edge(bm, edges)
         # point must lie on an edge or the virtual extension of an edge
         if mode == "T":
-            bm = cls.perform_t(bm, point, edges[0], edges[1], (p1, p2, p3, p4), vertex_indices)
+            bm = cls.perform_t(bm, point, edges[0], edges[1], (p1, p2, p3, p4), vertex_indices, clicked_percents)
         elif mode == "V":
-            bm = cls.perform_v(bm, point, edges[0], edges[1], (p1, p2, p3, p4), vertex_indices)
+            bm = cls.perform_v(bm, point, edges[0], edges[1], (p1, p2, p3, p4), vertex_indices, clicked_percents)
         return bm
 
     @classmethod
