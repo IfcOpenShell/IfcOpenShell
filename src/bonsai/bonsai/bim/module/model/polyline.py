@@ -462,7 +462,6 @@ class PolylineOperator:
         self.tool_state.axis_method = None
         self.tool_state.plane_method = None
         self.tool_state.mode = "Mouse"
-        tool.Raycast.clear_snap_objs()
         self.visible_objs = tool.Raycast.get_visible_objects(context)
         for obj in self.visible_objs:
             if bbox_2d := tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj):
