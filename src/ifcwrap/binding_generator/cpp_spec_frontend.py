@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from .authored_spec import _infer_param_type, _infer_return_type
 from .binding_model import (
     CallSpec,
     HandleSpec,
@@ -20,9 +19,11 @@ from .binding_model import (
 from .clang_discovery import (
     DiscoveredCppType,
     DiscoveredFunction,
+    DiscoveredMethod,
     DiscoveryEnvironment,
     discover_namespace_functions,
     discover_public_fields,
+    discover_public_methods,
 )
 from .contract_discovery import (
     _clean_doc_comment,
@@ -33,7 +34,34 @@ from .contract_discovery import (
     _strip_comments,
     discover_marked_functions_in_headers,
 )
-from .policy_ir import DirectFunctionPolicyOp, SpecMethodFunctionPolicyOp
+from .debug import debug_log
+from .discovery_policy import (
+    CcomponentsAccessorSpec,
+    DiscoveryChildrenSpec,
+    DiscoveryClassSpec,
+    DiscoveryConstructorSpec,
+    DiscoveryOverloadSpec,
+    DiscoverySpec,
+    HandleListAccessorsSpec,
+    MethodAtAccessorSpec,
+    VariantAccessorsSpec,
+    VariantAccessorTypeSpec,
+    _cpp_type_names_match,
+    _direct_method_policy_operation,
+    _discover_constructor_calls,
+    _discover_method_calls,
+    _handle_list_accessor_calls,
+    _infer_method_signature,
+    _infer_param_type,
+    _infer_return_type,
+    _normalize_cpp_type,
+    _select_overload,
+)
+from .policy_ir import (
+    BoolOutParamPolicyOp,
+    DirectFunctionPolicyOp,
+    SpecMethodFunctionPolicyOp,
+)
 from .semantic_types import (
     OptionalSemanticType,
     RecordSemanticType,
@@ -76,6 +104,88 @@ class CppSpecResultStruct:
     cpp_type: str
     c_type: str
     fields: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True)
+class CppSpecMethod:
+    handle: str
+    cpp_name: str
+    expose_as: str
+    params: tuple[str, ...]
+
+
+@dataclass
+class _CppClassPolicy:
+    handle: str
+    translation_unit: str
+    discover_fields: bool = False
+    include_inherited_fields: bool = False
+    exclude: list[str] = field(default_factory=list)
+    rename: dict[str, str] = field(default_factory=dict)
+    discover_has_fields: bool = False
+    discover_as_item: bool = False
+    extra_fields: dict[str, str] = field(default_factory=dict)
+    field_setters: list[str] = field(default_factory=list)
+    method_sizes: dict[str, str] = field(default_factory=dict)
+    method_at_accessors: list[MethodAtAccessorSpec] = field(default_factory=list)
+    discover_children: DiscoveryChildrenSpec | None = None
+    array_pair_fields: dict[str, str | None] = field(default_factory=dict)
+    ccomponents_accessor: CcomponentsAccessorSpec | None = None
+    variant_accessors: VariantAccessorsSpec | None = None
+    compile_guard: str | None = None
+
+    def freeze(self) -> DiscoveryClassSpec:
+        return DiscoveryClassSpec(
+            handle=self.handle,
+            translation_unit=self.translation_unit,
+            exclude=tuple(self.exclude),
+            rename=self.rename,
+            discover_fields=self.discover_fields,
+            include_inherited_fields=self.include_inherited_fields,
+            discover_has_fields=self.discover_has_fields,
+            discover_children=self.discover_children,
+            discover_as_item=self.discover_as_item,
+            extra_fields=self.extra_fields,
+            field_setters=tuple(self.field_setters),
+            method_sizes=self.method_sizes,
+            method_at_accessors=tuple(self.method_at_accessors),
+            array_pair_fields=self.array_pair_fields,
+            ccomponents_accessor=self.ccomponents_accessor,
+            variant_accessors=self.variant_accessors,
+            compile_guard=self.compile_guard,
+        )
+
+
+@dataclass
+class _CppConstructorPolicy:
+    handle: str
+    cpp_class: str
+    translation_unit: str
+    expose_as: str
+    params: list[str] | None
+    param_names: list[str] = field(default_factory=list)
+    param_renames: dict[str, str] = field(default_factory=dict)
+    compile_guard: str | None = None
+    compile_guard_message: str | None = None
+
+    def freeze(self) -> DiscoveryConstructorSpec:
+        return DiscoveryConstructorSpec(
+            handle=self.handle,
+            cpp_class=self.cpp_class,
+            translation_unit=self.translation_unit,
+            expose_as=self.expose_as,
+            params=tuple(self.params) if self.params is not None else None,
+            param_names=tuple(self.param_names),
+            param_renames=self.param_renames,
+            compile_guard=self.compile_guard,
+            compile_guard_message=self.compile_guard_message,
+        )
+
+
+@dataclass(frozen=True)
+class CppSpecPolicy:
+    discovery: DiscoverySpec | None
+    list_accessors: tuple[tuple[str, HandleListAccessorsSpec], ...]
 
 
 def _option_struct_name(cpp_type: object) -> tuple[str, str] | None:
@@ -269,6 +379,516 @@ def discover_cpp_spec_handles(
             )
         )
     return tuple(handles)
+
+
+def discover_cpp_spec_methods(
+    translation_unit: Path,
+    *,
+    marker: str = "IFCAPI_DISCOVER_METHOD",
+) -> tuple[CppSpecMethod, ...]:
+    """Read the explicitly selected native methods from a C++ binding spec."""
+    text = translation_unit.read_text(encoding="utf-8")
+    methods: list[CppSpecMethod] = []
+    seen: set[tuple[str, str, tuple[str, ...]]] = set()
+    for raw_args, _ in _find_macro_invocations(text, marker):
+        args = _split_macro_args(raw_args)
+        if len(args) < 3:
+            msg = f"{marker} expects handle, C++ name, exposed name, and optional parameter types"
+            raise ValueError(msg)
+        method = CppSpecMethod(
+            handle=args[0],
+            cpp_name=args[1],
+            expose_as=args[2],
+            params=args[3:],
+        )
+        key = (method.handle, method.expose_as, method.params)
+        if key in seen:
+            msg = (
+                f"C++ spec method '{method.handle}.{method.expose_as}' "
+                "is declared more than once"
+            )
+            raise ValueError(msg)
+        seen.add(key)
+        methods.append(method)
+    return tuple(methods)
+
+
+def discover_cpp_spec_selected_functions(
+    environment: DiscoveryEnvironment,
+    translation_unit: Path,
+    *,
+    marker: str = "IFCAPI_DISCOVER_FUNCTION",
+) -> tuple[CppSpecFunction, ...]:
+    """Discover explicitly selected functions outside the spec namespace."""
+    text = translation_unit.read_text(encoding="utf-8")
+    selections: list[tuple[str, str]] = []
+    names_by_namespace: dict[str, set[str]] = {}
+    seen: set[tuple[str, str]] = set()
+    for raw_args, _ in _find_macro_invocations(text, marker):
+        args = _split_macro_args(raw_args)
+        if len(args) != 2:
+            msg = f"{marker} expects a C++ namespace and function name"
+            raise ValueError(msg)
+        namespace, name = args
+        key = (namespace, name)
+        if key in seen:
+            msg = f"C++ spec function '{namespace}::{name}' is declared more than once"
+            raise ValueError(msg)
+        seen.add(key)
+        selections.append(key)
+        names_by_namespace.setdefault(namespace, set()).add(name)
+
+    discovered_namespaces = {
+        namespace: discover_namespace_functions(
+            environment,
+            translation_unit,
+            namespace,
+            selected_names=frozenset(names),
+        )
+        for namespace, names in names_by_namespace.items()
+    }
+    functions: list[CppSpecFunction] = []
+    for namespace, name in selections:
+        discovered = discovered_namespaces[namespace]
+        overloads = discovered.get(name, ())
+        if len(overloads) != 1:
+            msg = (
+                f"C++ spec function '{namespace}::{name}' has {len(overloads)} "
+                "overloads; selected functions must be unique"
+            )
+            raise ValueError(msg)
+        functions.append(
+            CppSpecFunction(
+                name=name,
+                namespace=namespace,
+                discovered=overloads[0],
+                return_annotations=frozenset(),
+                param_annotations={},
+                param_defaults={},
+            )
+        )
+    return tuple(functions)
+
+
+def _cpp_policy_type_matches(discovered_type: str, requested_type: str) -> bool:
+    discovered_type = _normalize_cpp_type(discovered_type)
+    requested_type = _normalize_cpp_type(requested_type)
+    unqualified_discovered = re.sub(
+        r"\b(?:[A-Za-z_]\w*::)+", "", discovered_type
+    ).replace(" ", "")
+    unqualified_requested = re.sub(
+        r"\b(?:[A-Za-z_]\w*::)+", "", requested_type
+    ).replace(" ", "")
+    if unqualified_discovered == unqualified_requested:
+        return True
+    discovered_suffix = "".join(char for char in discovered_type if char in "*&")
+    requested_suffix = "".join(char for char in requested_type if char in "*&")
+    if discovered_suffix != requested_suffix:
+        return False
+    discovered_base = discovered_type.replace("*", "").replace("&", "")
+    requested_base = requested_type.replace("*", "").replace("&", "")
+    return _cpp_type_names_match(discovered_base, requested_base)
+
+
+def lower_cpp_spec_methods_to_calls(
+    environment: DiscoveryEnvironment,
+    translation_unit: Path,
+    methods: tuple[CppSpecMethod, ...],
+    handles: dict[str, HandleSpec],
+) -> tuple[CallSpec, ...]:
+    """Discover selected native methods with Clang and lower their signatures."""
+    method_cache: dict[str, dict[str, tuple[DiscoveredMethod, ...]]] = {}
+    selected_names = {
+        handle: frozenset(
+            method.cpp_name for method in methods if method.handle == handle
+        )
+        for handle in {method.handle for method in methods}
+    }
+    calls: list[CallSpec] = []
+    for method in methods:
+        handle = handles.get(method.handle)
+        if handle is None:
+            msg = f"C++ spec method refers to unknown handle '{method.handle}'"
+            raise ValueError(msg)
+        discovered_by_name = method_cache.get(method.handle)
+        if discovered_by_name is None:
+            discovered_by_name = discover_public_methods(
+                environment,
+                translation_unit,
+                handle.cpp_type,
+                include_inherited=True,
+                selected_names=selected_names[method.handle],
+            )
+            method_cache[method.handle] = discovered_by_name
+        overloads = discovered_by_name.get(method.cpp_name)
+        if overloads is None:
+            msg = (
+                f"Unable to discover method '{method.cpp_name}' "
+                f"for handle '{method.handle}'"
+            )
+            raise ValueError(msg)
+        requested_params = tuple(
+            param.removeprefix("IFCAPI_INT32(").removesuffix(")")
+            if param.startswith("IFCAPI_INT32(")
+            else param
+            for param in method.params
+        )
+        overload_policy = DiscoveryOverloadSpec(
+            cpp_name=method.cpp_name,
+            expose_as=method.expose_as,
+            params=requested_params,
+        )
+        try:
+            selected = _select_overload(overloads, overload_policy)
+        except ValueError:
+            candidates = tuple(
+                overload
+                for overload in overloads
+                if len(overload.params) == len(requested_params)
+                and all(
+                    any(
+                        candidate and _cpp_policy_type_matches(candidate, requested)
+                        for candidate in (
+                            param.cpp_type,
+                            param.cpp_type_ref.normalized_spelling,
+                            param.cpp_type_ref.normalized_desugared_spelling,
+                            param.cpp_type_ref.canonical_spelling,
+                        )
+                    )
+                    for param, requested in zip(
+                        overload.params, requested_params, strict=True
+                    )
+                )
+            )
+            if len(candidates) != 1:
+                raise
+            selected = candidates[0]
+        returns, params = _infer_method_signature(
+            selected,
+            handles=handles,
+        )
+        policy_operation = _direct_method_policy_operation(selected, handles)
+        if len(params) == len(method.params):
+            params = tuple(
+                replace(param, type=replace(param.type, kind="int32"))
+                if requested.startswith("IFCAPI_INT32(")
+                else param
+                for param, requested in zip(params, method.params, strict=True)
+            )
+        elif params or not isinstance(policy_operation, BoolOutParamPolicyOp):
+            msg = f"Unable to apply parameter policy for '{method.handle}.{method.cpp_name}'"
+            raise ValueError(msg)
+        calls.append(
+            CallSpec(
+                expose_as=method.expose_as,
+                c_name=_receiver_c_name(handle, method.expose_as),
+                receiver=method.handle,
+                returns=returns,
+                params=params,
+                policy_operation=policy_operation,
+            )
+        )
+    return tuple(calls)
+
+
+def _policy_value(value: str) -> str | None:
+    value = _strip_string_literal(value)
+    return None if value == "_" else value
+
+
+def discover_cpp_spec_policy(
+    translation_unit: Path,
+    handles: dict[str, HandleSpec],
+    *,
+    marker: str = "IFCAPI_DISCOVER_POLICY",
+) -> CppSpecPolicy:
+    """Read structured policy that cannot be inferred from C++ declarations."""
+    text = translation_unit.read_text(encoding="utf-8")
+    classes: dict[str, _CppClassPolicy] = {}
+    list_accessors: list[tuple[str, HandleListAccessorsSpec]] = []
+
+    def class_policy(handle: str) -> _CppClassPolicy:
+        if handle not in handles:
+            msg = f"{marker} refers to unknown handle '{handle}'"
+            raise ValueError(msg)
+        return classes.setdefault(
+            handle,
+            _CppClassPolicy(
+                handle=handle,
+                translation_unit=translation_unit.name,
+            ),
+        )
+
+    for raw_args, _ in _find_macro_invocations(text, marker):
+        args = _split_macro_args(raw_args)
+        if len(args) < 2:
+            msg = f"{marker} expects a handle, operation, and operation arguments"
+            raise ValueError(msg)
+        handle, operation, *values = args
+        if operation == "list_accessor":
+            if len(values) != 6:
+                msg = (
+                    f"{marker} list_accessor expects receiver, list parameter, "
+                    "item handle, count name, at name, and message"
+                )
+                raise ValueError(msg)
+            if handle not in handles:
+                msg = f"{marker} refers to unknown list handle '{handle}'"
+                raise ValueError(msg)
+            receiver, list_param, item_handle, count_as, at_as, message = values
+            list_accessors.append(
+                (
+                    handle,
+                    HandleListAccessorsSpec(
+                        receiver=receiver,
+                        list_param=list_param,
+                        item_handle=item_handle,
+                        count_as=count_as,
+                        at_as=at_as,
+                        out_of_range_message=_strip_string_literal(message),
+                    ),
+                )
+            )
+            continue
+        policy = class_policy(handle)
+        if operation == "fields":
+            if any(value != "inherited" for value in values):
+                msg = f"{marker} fields only accepts the optional 'inherited' flag"
+                raise ValueError(msg)
+            policy.discover_fields = True
+            policy.include_inherited_fields = "inherited" in values
+        elif operation == "exclude":
+            policy.exclude.extend(values)
+        elif operation == "rename":
+            if len(values) != 2:
+                msg = f"{marker} rename expects source and exposed names"
+                raise ValueError(msg)
+            policy.rename[values[0]] = values[1]
+        elif operation == "has_fields":
+            if values:
+                msg = f"{marker} has_fields does not accept arguments"
+                raise ValueError(msg)
+            policy.discover_has_fields = True
+        elif operation == "as_item":
+            if values:
+                msg = f"{marker} as_item does not accept arguments"
+                raise ValueError(msg)
+            policy.discover_as_item = True
+        elif operation == "extra_field":
+            if len(values) != 2:
+                msg = f"{marker} extra_field expects name and C++ type"
+                raise ValueError(msg)
+            policy.extra_fields[values[0]] = values[1]
+        elif operation == "field_setter":
+            policy.field_setters.extend(values)
+        elif operation == "method_size":
+            if len(values) != 2:
+                msg = f"{marker} method_size expects method and exposed names"
+                raise ValueError(msg)
+            policy.method_sizes[values[0]] = values[1]
+        elif operation == "method_at":
+            if len(values) not in {5, 6}:
+                msg = (
+                    f"{marker} method_at expects method, exposed name, item handle, "
+                    "message, exception, and optional ownership"
+                )
+                raise ValueError(msg)
+            exception_type = values[4]
+            if exception_type not in {"std::out_of_range", "std::runtime_error"}:
+                msg = f"{marker} method_at received unsupported exception '{exception_type}'"
+                raise ValueError(msg)
+            ownership = values[5] if len(values) == 6 else None
+            if ownership not in {None, "owned", "borrowed", "static"}:
+                msg = f"{marker} method_at received unsupported ownership '{ownership}'"
+                raise ValueError(msg)
+            policy.method_at_accessors.append(
+                MethodAtAccessorSpec(
+                    method_name=values[0],
+                    expose_as=values[1],
+                    item_handle=values[2],
+                    ownership=ownership,
+                    out_of_range_message=_strip_string_literal(values[3]),
+                    exception_type=exception_type,
+                )
+            )
+        elif operation == "children":
+            names = [*values, "_", "_", "_", "_", "_"][:6]
+            policy.discover_children = DiscoveryChildrenSpec(
+                cpp_field=_policy_value(names[0]) or "children",
+                element_handle=_policy_value(names[1]),
+                count_as=_policy_value(names[2]),
+                at_as=_policy_value(names[3]),
+                add_as=_policy_value(names[4]),
+                add_cast_cpp_type=_policy_value(names[5]),
+            )
+        elif operation == "array_pair":
+            policy.array_pair_fields.update((value, None) for value in values)
+        elif operation == "ccomponents":
+            if not 1 <= len(values) <= 3:
+                msg = (
+                    f"{marker} ccomponents expects an exposed name and optional "
+                    "access path and dimensions"
+                )
+                raise ValueError(msg)
+            access_via = (
+                _strip_string_literal(access)
+                if len(values) > 1 and (access := _policy_value(values[1]))
+                else "ccomponents"
+            )
+            dimensions = (
+                int(value)
+                if len(values) > 2 and (value := _policy_value(values[2]))
+                else None
+            )
+            policy.ccomponents_accessor = CcomponentsAccessorSpec(
+                expose_as=values[0],
+                dimensions=dimensions,
+                access_via=access_via,
+            )
+        elif operation == "compile_guard":
+            if len(values) != 1:
+                msg = f"{marker} compile_guard expects one macro name"
+                raise ValueError(msg)
+            policy.compile_guard = values[0]
+        elif operation == "variant":
+            if len(values) < 5:
+                msg = (
+                    f"{marker} variant expects get method, set method, variant "
+                    "type, suffix, and C++ type"
+                )
+                raise ValueError(msg)
+            get_method, set_method, variant_type, suffix, cpp_type, *getter_types = (
+                values
+            )
+            if policy.variant_accessors is None:
+                policy.variant_accessors = VariantAccessorsSpec(
+                    get_method=get_method,
+                    set_method=set_method,
+                    variant_type=variant_type,
+                    types={},
+                )
+            variant = policy.variant_accessors
+            if (
+                variant.get_method != get_method
+                or variant.set_method != set_method
+                or variant.variant_type != variant_type
+            ):
+                msg = f"{marker} variant entries for '{handle}' disagree"
+                raise ValueError(msg)
+            variant.types[suffix] = VariantAccessorTypeSpec(
+                cpp_type=cpp_type,
+                getter_types=tuple(getter_types) or (cpp_type,),
+            )
+        else:
+            msg = f"Unknown {marker} operation '{operation}'"
+            raise ValueError(msg)
+
+    constructors: dict[str, _CppConstructorPolicy] = {}
+    constructor_marker = "IFCAPI_DISCOVER_CONSTRUCTOR"
+    for raw_args, _ in _find_macro_invocations(text, constructor_marker):
+        args = _split_macro_args(raw_args)
+        if len(args) != 6:
+            msg = (
+                f"{constructor_marker} expects handle, class, exposed name, "
+                "mode, guard, and message"
+            )
+            raise ValueError(msg)
+        handle, cpp_class, expose_as, mode, guard, message = args
+        if handle not in handles:
+            msg = f"{constructor_marker} refers to unknown handle '{handle}'"
+            raise ValueError(msg)
+        if expose_as in constructors:
+            msg = f"Constructor '{expose_as}' is declared more than once"
+            raise ValueError(msg)
+        if mode not in {"auto", "explicit"}:
+            msg = f"{constructor_marker} mode must be 'auto' or 'explicit'"
+            raise ValueError(msg)
+        constructors[expose_as] = _CppConstructorPolicy(
+            handle=handle,
+            cpp_class=cpp_class,
+            translation_unit=translation_unit.name,
+            expose_as=expose_as,
+            params=[] if mode == "explicit" else None,
+            compile_guard=_policy_value(guard),
+            compile_guard_message=_policy_value(message),
+        )
+
+    param_marker = "IFCAPI_CONSTRUCTOR_PARAM"
+    for raw_args, _ in _find_macro_invocations(text, param_marker):
+        args = _split_macro_args(raw_args)
+        if len(args) != 4:
+            msg = (
+                f"{param_marker} expects exposed name, source name, public name, "
+                "and C++ type"
+            )
+            raise ValueError(msg)
+        expose_as, source_name, public_name, cpp_type = args
+        constructor = constructors.get(expose_as)
+        if constructor is None:
+            msg = f"{param_marker} refers to unknown constructor '{expose_as}'"
+            raise ValueError(msg)
+        if constructor.params is None:
+            msg = f"{param_marker} cannot extend auto constructor '{expose_as}'"
+            raise ValueError(msg)
+        constructor.params.append(cpp_type)
+        constructor.param_names.append(public_name)
+        if source_name != public_name:
+            constructor.param_renames[source_name] = public_name
+
+    discovery = (
+        DiscoverySpec(
+            include_dir=Path("."),
+            classes=tuple(policy.freeze() for policy in classes.values()),
+            constructors=tuple(
+                constructor.freeze() for constructor in constructors.values()
+            ),
+        )
+        if classes or constructors
+        else None
+    )
+    return CppSpecPolicy(
+        discovery=discovery,
+        list_accessors=tuple(list_accessors),
+    )
+
+
+def lower_cpp_spec_policy_to_calls(
+    environment: DiscoveryEnvironment,
+    translation_unit: Path,
+    policy: CppSpecPolicy,
+    handles: dict[str, HandleSpec],
+    c_prefix: str,
+) -> tuple[CallSpec, ...]:
+    calls: list[CallSpec] = []
+    if policy.discovery is not None:
+        constructor_calls, constructor_diagnostics = _discover_constructor_calls(
+            translation_unit,
+            policy.discovery,
+            handles,
+            c_prefix,
+            environment,
+        )
+        method_calls, method_diagnostics = _discover_method_calls(
+            translation_unit,
+            policy.discovery,
+            handles,
+            environment,
+        )
+        calls.extend((*constructor_calls, *method_calls))
+        for diagnostic in (*constructor_diagnostics, *method_diagnostics):
+            debug_log(
+                "spec.discovery.diagnostic",
+                f"{diagnostic.owner}.{diagnostic.member}: {diagnostic.message}",
+            )
+    for handle, accessors in policy.list_accessors:
+        calls.extend(
+            _handle_list_accessor_calls(
+                list_handle_name=handle,
+                accessors=accessors,
+                handles=handles,
+            )
+        )
+    return tuple(calls)
 
 
 def discover_cpp_spec_result_structs(
@@ -592,7 +1212,7 @@ def lower_cpp_spec_functions_to_calls(
     option_structs: dict[str, OptionStructSpec] | None = None,
     c_prefix: str | None = None,
 ) -> tuple[CallSpec, ...]:
-    """Lower discovered C++ spec functions to the existing authored call model."""
+    """Lower discovered C++ spec functions to the binding call model."""
     result_structs = result_structs or {}
     option_structs = option_structs or {}
     calls: list[CallSpec] = []

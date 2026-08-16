@@ -108,8 +108,6 @@ if(BUILD_IFCAPI)
         )
     endif()
     set(IFCOPENSHELL_BINDING_SPEC_DEPENDS
-        "${IFCOPENSHELL_BINDING_SPEC_DIR}/ifcparse.yml"
-        "${IFCOPENSHELL_BINDING_SPEC_DIR}/ifcgeom.yml"
         "${IFCOPENSHELL_BINDING_SPEC_DIR}/cpp/ifcparse.hpp"
         "${IFCOPENSHELL_BINDING_SPEC_DIR}/cpp/ifcgeom.hpp"
         "${IFCOPENSHELL_BINDING_SPEC_MACROS}"
@@ -123,7 +121,7 @@ if(BUILD_IFCAPI)
         message(STATUS "Using Python interpreter for binding generation: ${Python_EXECUTABLE}")
 
         execute_process(
-            COMMAND ${Python_EXECUTABLE} -c "import clang.cindex; import yaml"
+            COMMAND ${Python_EXECUTABLE} -c "import clang.cindex"
             RESULT_VARIABLE IFCOPENSHELL_BINDGEN_PYTHON_DEPS_STATUS
             OUTPUT_QUIET
             ERROR_QUIET
@@ -132,7 +130,7 @@ if(BUILD_IFCAPI)
             message(
                 FATAL_ERROR
                 "IFCAPI_REGENERATE_BINDINGS enabled, but the selected Python interpreter does not provide "
-                "the Clang Python bindings and PyYAML. Install the generator dependencies or disable "
+                "the Clang Python bindings. Install the generator dependency or disable "
                 "IFCAPI_REGENERATE_BINDINGS."
             )
         endif()

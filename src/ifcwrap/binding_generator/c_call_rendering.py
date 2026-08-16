@@ -11,7 +11,6 @@ from .abi_ir import (
     _snake_name,
     _variant_c_type,
 )
-from .authored_spec import ParamSpec, TypeSpec, _extract_optional_inner_type
 from .binding_ir import (
     ArrayElementFieldOp,
     BindingIR,
@@ -39,6 +38,7 @@ from .binding_ir import (
     VariantGetOp,
     VariantSetOp,
 )
+from .binding_model import ParamSpec, TypeSpec
 from .c_handle_rendering import _wrap_handle_expr
 from .c_sequence_helpers import (
     _handle_list_c_type,
@@ -53,6 +53,7 @@ from .c_type_rendering import (
     _normalize_cpp_type,
     _qualify_handle_cpp_fragment,
 )
+from .discovery_policy import _extract_optional_inner_type
 
 
 def _set_element_cpp_type(cpp_type: str | None) -> str | None:

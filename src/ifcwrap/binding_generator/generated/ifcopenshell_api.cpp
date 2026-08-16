@@ -1740,21 +1740,6 @@ void ifcopenshell_string_destroy(ifcopenshell_string_t* value) {
     value->owner = nullptr;
 }
 
-void ifcopenshell_double_list_destroy(ifcopenshell_double_list_t* value) {
-    if (value == nullptr) {
-        return;
-    }
-    if (value->owner == nullptr) {
-        value->items = nullptr;
-        value->size = 0;
-        return;
-    }
-
-    ifcopenshell_buffer_owner_destroy(&value->owner);
-    value->items = nullptr;
-    value->size = 0;
-}
-
 void ifcopenshell_string_list_destroy(ifcopenshell_string_list_t* value) {
     if (value == nullptr) {
         return;
@@ -1771,6 +1756,21 @@ void ifcopenshell_string_list_destroy(ifcopenshell_string_list_t* value) {
 }
 
 void ifcopenshell_int32_list_destroy(ifcopenshell_int32_list_t* value) {
+    if (value == nullptr) {
+        return;
+    }
+    if (value->owner == nullptr) {
+        value->items = nullptr;
+        value->size = 0;
+        return;
+    }
+
+    ifcopenshell_buffer_owner_destroy(&value->owner);
+    value->items = nullptr;
+    value->size = 0;
+}
+
+void ifcopenshell_double_list_destroy(ifcopenshell_double_list_t* value) {
     if (value == nullptr) {
         return;
     }
@@ -1881,22 +1881,6 @@ void ifcopenshell_double_list_list_destroy(ifcopenshell_double_list_list_t* valu
     value->size = 0;
 }
 
-static ifcopenshell_double_list_t make_double_list(std::vector<double> values) {
-    auto owner = std::make_unique<capi_value_owner<std::vector<double>>>(std::move(values));
-    auto& stored = owner->value;
-    auto* items = stored.empty() ? nullptr : stored.data();
-    const auto size = stored.size();
-    return ifcopenshell_double_list_t{items, size, owner.release()};
-}
-
-static std::vector<double> to_cpp_double_list(const ifcopenshell_double_list_t* value) {
-    validate_list_items("double_list", value->items, value->size);
-    if (value->size == 0) {
-        return {};
-    }
-    return std::vector<double>(value->items, value->items + value->size);
-}
-
 static ifcopenshell_string_list_t make_string_list(std::vector<std::string> values) {
     struct owner_type final : capi_buffer_owner {
         explicit owner_type(std::vector<std::string> source) : values(std::move(source)) {
@@ -1942,6 +1926,22 @@ static std::vector<int> to_cpp_int32_list(const ifcopenshell_int32_list_t* value
         return {};
     }
     return std::vector<int>(value->items, value->items + value->size);
+}
+
+static ifcopenshell_double_list_t make_double_list(std::vector<double> values) {
+    auto owner = std::make_unique<capi_value_owner<std::vector<double>>>(std::move(values));
+    auto& stored = owner->value;
+    auto* items = stored.empty() ? nullptr : stored.data();
+    const auto size = stored.size();
+    return ifcopenshell_double_list_t{items, size, owner.release()};
+}
+
+static std::vector<double> to_cpp_double_list(const ifcopenshell_double_list_t* value) {
+    validate_list_items("double_list", value->items, value->size);
+    if (value->size == 0) {
+        return {};
+    }
+    return std::vector<double>(value->items, value->items + value->size);
 }
 
 static ifcopenshell_bool_list_t make_bool_list(std::vector<bool> values) {
@@ -3207,25 +3207,6 @@ bool ifcopenshell_geom_create_serializer_settings(ifcopenshell_geom_serializer_s
     if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
         auto result_value = std::unique_ptr<ifcopenshell::geometry::SerializerSettings>(new ifcopenshell::geometry::SerializerSettings());
         *out_result = new ifcopenshell_geom_serializer_settings_t{result_value.release(), true};
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_helmert_curve_point(double A0, double A1, double A2, double s, ifcopenshell_double_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    auto A0_cpp = static_cast<double>(A0);
-    auto A1_cpp = static_cast<double>(A1);
-    auto A2_cpp = static_cast<double>(A2);
-    auto s_cpp = static_cast<double>(s);
-        *out_result = make_double_list(ifcopenshell::geometry::helmert_curve_point(A0_cpp, A1_cpp, A2_cpp, s_cpp));
         if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
             return false;
         }
@@ -4787,6 +4768,25 @@ bool ifcopenshell_geom_taxonomy_function_item_start(ifcopenshell_geom_taxonomy_i
     if (item_cpp == nullptr || item_cpp->ptr == nullptr) { throw std::runtime_error("Handle parameter \"item_cpp\" is invalid"); }
     const auto& item_cpp_cpp = item_cpp->ptr;
         *out_result = static_cast<double>(ifcgeom::bindings::taxonomy_function_item_start(item_cpp_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_helmert_curve_point(double A0, double A1, double A2, double s, ifcopenshell_double_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    auto A0_cpp = static_cast<double>(A0);
+    auto A1_cpp = static_cast<double>(A1);
+    auto A2_cpp = static_cast<double>(A2);
+    auto s_cpp = static_cast<double>(s);
+        *out_result = make_double_list(ifcopenshell::geometry::helmert_curve_point(A0_cpp, A1_cpp, A2_cpp, s_cpp));
         if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
             return false;
         }
@@ -7490,178 +7490,6 @@ bool ifcopenshell_geom_triangulation_verts(ifcopenshell_geom_triangulation_t* se
     }
 }
 
-bool ifcopenshell_geom_triangulation_verts_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->verts().size();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_triangulation_faces_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->faces().size();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_triangulation_normals_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->normals().size();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_triangulation_edges_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->edges().size();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_triangulation_material_ids_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->material_ids().size();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_triangulation_item_ids_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->item_ids().size();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_triangulation_edges_item_ids_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->edges_item_ids().size();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_triangulation_uvs_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->uvs().size();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_triangulation_material_count(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->materials().size();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_triangulation_material_at(ifcopenshell_geom_triangulation_t* self, size_t index, ifcopenshell_geom_taxonomy_style_t** out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        const auto& items = self_cpp->materials();
-        if (index >= items.size()) { throw std::runtime_error("Material index out of bounds"); }
-        *out_result = new ifcopenshell_geom_taxonomy_style_t{items[index]};
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
 bool ifcopenshell_geom_iterator_bounds_max(ifcopenshell_geom_iterator_t* self, ifcopenshell_geom_taxonomy_point3_t** out_result) {
     try {
         ifcopenshell_clear_error();
@@ -7982,50 +7810,6 @@ bool ifcopenshell_geom_brep_representation_calculate_projected_surface_area(ifco
     }
 }
 
-bool ifcopenshell_geom_brep_representation_calculate_surface_area(ifcopenshell_geom_brep_representation_t* self, double* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        double result_value{};
-        if (self_cpp->calculate_surface_area(result_value)) {
-            *out_result = static_cast<double>(result_value);
-        } else {
-            *out_result = std::numeric_limits<double>::quiet_NaN();
-        }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_brep_representation_calculate_volume(ifcopenshell_geom_brep_representation_t* self, double* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        double result_value{};
-        if (self_cpp->calculate_volume(result_value)) {
-            *out_result = static_cast<double>(result_value);
-        } else {
-            *out_result = std::numeric_limits<double>::quiet_NaN();
-        }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
 bool ifcopenshell_geom_brep_representation_entity(ifcopenshell_geom_brep_representation_t* self, ifcopenshell_string_t* out_result) {
     try {
         ifcopenshell_clear_error();
@@ -8108,6 +7892,50 @@ bool ifcopenshell_geom_brep_representation_settings(ifcopenshell_geom_brep_repre
     if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
     auto* self_cpp = self->ptr;
         *out_result = new ifcopenshell_geom_settings_t{const_cast<ifcopenshell::geometry::Settings*>(&(self_cpp->settings())), false};
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_brep_representation_calculate_surface_area(ifcopenshell_geom_brep_representation_t* self, double* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        double result_value{};
+        if (self_cpp->calculate_surface_area(result_value)) {
+            *out_result = static_cast<double>(result_value);
+        } else {
+            *out_result = std::numeric_limits<double>::quiet_NaN();
+        }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_brep_representation_calculate_volume(ifcopenshell_geom_brep_representation_t* self, double* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        double result_value{};
+        if (self_cpp->calculate_volume(result_value)) {
+            *out_result = static_cast<double>(result_value);
+        } else {
+            *out_result = std::numeric_limits<double>::quiet_NaN();
+        }
         if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
             return false;
         }
@@ -8833,6 +8661,1215 @@ bool ifcopenshell_geom_geometry_serializer_write_header(ifcopenshell_geom_geomet
     }
 }
 
+bool ifcopenshell_geom_taxonomy_style_has_specularity(ifcopenshell_geom_taxonomy_style_t* self, bool* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr.get();
+        *out_result = self_cpp->has_specularity();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_taxonomy_style_has_transparency(ifcopenshell_geom_taxonomy_style_t* self, bool* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr.get();
+        *out_result = self_cpp->has_transparency();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_opaque_number_to_double(ifcopenshell_geom_opaque_number_t* self, double* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = static_cast<double>(self_cpp->to_double());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_opaque_number_to_string(ifcopenshell_geom_opaque_number_t* self, ifcopenshell_string_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = make_string(self_cpp->to_string());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_finalize(ifcopenshell_geom_serializer_t* self) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        self_cpp->finalize();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_is_streaming(ifcopenshell_geom_serializer_t* self, bool* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->is_streaming();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_ready(ifcopenshell_geom_serializer_t* self, bool* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->ready();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_set_file(ifcopenshell_geom_serializer_t* self, ifcopenshell_file_t* arg_0) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (arg_0 == nullptr || arg_0->ptr == nullptr) { throw std::runtime_error("Handle parameter \"arg_0\" is invalid"); }
+    auto arg_0_cpp = arg_0->ptr;
+        self_cpp->setFile(arg_0_cpp);
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_write_header(ifcopenshell_geom_serializer_t* self) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        self_cpp->writeHeader();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_get_type(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_string_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        *out_result = make_string(self_cpp->get_type(name_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_setting_names(ifcopenshell_geom_settings_t* self, ifcopenshell_string_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = make_string_list(self_cpp->setting_names());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_get_type(ifcopenshell_geom_serializer_settings_t* self, const char* name, ifcopenshell_string_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        *out_result = make_string(self_cpp->get_type(name_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_setting_names(ifcopenshell_geom_serializer_settings_t* self, ifcopenshell_string_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = make_string_list(self_cpp->setting_names());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_buffer_get_value(ifcopenshell_geom_buffer_t* self, ifcopenshell_string_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = make_string(self_cpp->get_value());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_buffer_is_ready(ifcopenshell_geom_buffer_t* self, bool* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->is_ready();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_taxonomy_item_hash(ifcopenshell_geom_taxonomy_item_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr.get();
+        *out_result = static_cast<size_t>(self_cpp->hash());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_taxonomy_item_identity(ifcopenshell_geom_taxonomy_item_t* self, uint32_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr.get();
+        *out_result = static_cast<uint32_t>(self_cpp->identity());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_taxonomy_item_kind(ifcopenshell_geom_taxonomy_item_t* self, int32_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr.get();
+        *out_result = static_cast<int32_t>(self_cpp->kind());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_enable_face_styles(ifcopenshell_geom_tree_t* self, bool* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->enable_face_styles();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_set_enable_face_styles(ifcopenshell_geom_tree_t* self, bool enable) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    auto enable_cpp = static_cast<bool>(enable);
+        self_cpp->enable_face_styles(enable_cpp);
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_add_file(ifcopenshell_geom_tree_t* self, ifcopenshell_file_t* file, ifcopenshell_geom_settings_t* settings) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (file == nullptr || file->ptr == nullptr) { throw std::runtime_error("Handle parameter \"file\" is invalid"); }
+    auto& file_cpp = *file->ptr;
+    if (settings == nullptr || settings->ptr == nullptr) { throw std::runtime_error("Handle parameter \"settings\" is invalid"); }
+    auto& settings_cpp = *settings->ptr;
+        self_cpp->add_file(file_cpp, settings_cpp);
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_add_iterator(ifcopenshell_geom_tree_t* self, ifcopenshell_geom_iterator_t* iterator) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (iterator == nullptr || iterator->ptr == nullptr) { throw std::runtime_error("Handle parameter \"iterator\" is invalid"); }
+    auto& iterator_cpp = *iterator->ptr;
+        self_cpp->add_file(iterator_cpp);
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_clash_clearance_many(ifcopenshell_geom_tree_t* self, const ifcopenshell_instance_list_t* set_a, const ifcopenshell_instance_list_t* set_b, double clearance, bool check_all, ifcopenshell_geom_tree_clash_list_t** out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (set_a == nullptr) { throw std::runtime_error("Parameter \"set_a\" must not be null"); }
+    auto set_a_cpp = to_cpp_instance_list(set_a);
+    if (set_b == nullptr) { throw std::runtime_error("Parameter \"set_b\" must not be null"); }
+    auto set_b_cpp = to_cpp_instance_list(set_b);
+    auto clearance_cpp = static_cast<double>(clearance);
+    auto check_all_cpp = static_cast<bool>(check_all);
+        *out_result = new ifcopenshell_geom_tree_clash_list_t{new std::vector<IfcGeom::clash>(self_cpp->clash_clearance_many(set_a_cpp, set_b_cpp, clearance_cpp, check_all_cpp)), true};
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_clash_collision_many(ifcopenshell_geom_tree_t* self, const ifcopenshell_instance_list_t* set_a, const ifcopenshell_instance_list_t* set_b, bool allow_touching, ifcopenshell_geom_tree_clash_list_t** out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (set_a == nullptr) { throw std::runtime_error("Parameter \"set_a\" must not be null"); }
+    auto set_a_cpp = to_cpp_instance_list(set_a);
+    if (set_b == nullptr) { throw std::runtime_error("Parameter \"set_b\" must not be null"); }
+    auto set_b_cpp = to_cpp_instance_list(set_b);
+    auto allow_touching_cpp = static_cast<bool>(allow_touching);
+        *out_result = new ifcopenshell_geom_tree_clash_list_t{new std::vector<IfcGeom::clash>(self_cpp->clash_collision_many(set_a_cpp, set_b_cpp, allow_touching_cpp)), true};
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_clash_intersection_many(ifcopenshell_geom_tree_t* self, const ifcopenshell_instance_list_t* set_a, const ifcopenshell_instance_list_t* set_b, double tolerance, bool check_all, ifcopenshell_geom_tree_clash_list_t** out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (set_a == nullptr) { throw std::runtime_error("Parameter \"set_a\" must not be null"); }
+    auto set_a_cpp = to_cpp_instance_list(set_a);
+    if (set_b == nullptr) { throw std::runtime_error("Parameter \"set_b\" must not be null"); }
+    auto set_b_cpp = to_cpp_instance_list(set_b);
+    auto tolerance_cpp = static_cast<double>(tolerance);
+    auto check_all_cpp = static_cast<bool>(check_all);
+        *out_result = new ifcopenshell_geom_tree_clash_list_t{new std::vector<IfcGeom::clash>(self_cpp->clash_intersection_many(set_a_cpp, set_b_cpp, tolerance_cpp, check_all_cpp)), true};
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_distances(ifcopenshell_geom_tree_t* self, ifcopenshell_double_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = make_double_list(self_cpp->distances());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_is_manifold(ifcopenshell_geom_tree_t* self, const ifcopenshell_int32_list_t* faces, bool* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (faces == nullptr) { throw std::runtime_error("Parameter \"faces\" must not be null"); }
+    auto faces_cpp = to_cpp_int32_list(faces);
+        *out_result = self_cpp->is_manifold(faces_cpp);
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_protrusion_distances(ifcopenshell_geom_tree_t* self, ifcopenshell_double_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = make_double_list(self_cpp->protrusion_distances());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_styles(ifcopenshell_geom_tree_t* self, ifcopenshell_geom_taxonomy_style_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = make_geom_taxonomy_style_list(self_cpp->styles());
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_tree_uint8_to_b64(ifcopenshell_geom_tree_t* self, const ifcopenshell_uint8_list_t* uuids_array, ifcopenshell_string_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (uuids_array == nullptr) { throw std::runtime_error("Parameter \"uuids_array\" must not be null"); }
+    auto uuids_array_cpp = to_cpp_uint8_list(uuids_array);
+        *out_result = make_string(self_cpp->uint8_to_b64(uuids_array_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_get_bool(ifcopenshell_geom_settings_t* self, const char* name, bool* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<bool>(&val)) { *out_result = *p; matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_set_bool(ifcopenshell_geom_settings_t* self, const char* name, bool value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_get_int(ifcopenshell_geom_settings_t* self, const char* name, int32_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<int>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
+        if (auto* p = std::get_if<ifcopenshell::geometry::settings::IteratorOutputOptions>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
+        if (auto* p = std::get_if<ifcopenshell::geometry::settings::FunctionStepMethod>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
+        if (auto* p = std::get_if<ifcopenshell::geometry::settings::OutputDimensionalityTypes>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
+        if (auto* p = std::get_if<ifcopenshell::geometry::settings::TriangulationMethod>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_set_int(ifcopenshell_geom_settings_t* self, const char* name, int32_t value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(int(value)));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_get_double(ifcopenshell_geom_settings_t* self, const char* name, double* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<double>(&val)) { *out_result = static_cast<double>(*p); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_set_double(ifcopenshell_geom_settings_t* self, const char* name, double value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_get_string(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_string_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<std::string>(&val)) { *out_result = make_string(*p); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_set_string(ifcopenshell_geom_settings_t* self, const char* name, const char* value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
+    std::string value_cpp(value);
+        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_get_int_set(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_int32_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<std::set<int>>(&val)) { *out_result = make_int32_list(([&]() { auto tmp = *p; return std::vector(tmp.begin(), tmp.end()); })()); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_set_int_set(ifcopenshell_geom_settings_t* self, const char* name, const ifcopenshell_int32_list_t* value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
+    auto value_vec = to_cpp_int32_list(value);
+    std::set<int> value_cpp(value_vec.begin(), value_vec.end());
+        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_get_string_set(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_string_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<std::set<std::string>>(&val)) { *out_result = make_string_list(([&]() { auto tmp = *p; return std::vector(tmp.begin(), tmp.end()); })()); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_set_string_set(ifcopenshell_geom_settings_t* self, const char* name, const ifcopenshell_string_list_t* value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
+    auto value_vec = to_cpp_string_list(value);
+    std::set<std::string> value_cpp(value_vec.begin(), value_vec.end());
+        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_get_double_list(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_double_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<std::vector<double>>(&val)) { *out_result = make_double_list(*p); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_settings_set_double_list(ifcopenshell_geom_settings_t* self, const char* name, const ifcopenshell_double_list_t* value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
+    auto value_cpp = to_cpp_double_list(value);
+        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_get_bool(ifcopenshell_geom_serializer_settings_t* self, const char* name, bool* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<bool>(&val)) { *out_result = *p; matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_set_bool(ifcopenshell_geom_serializer_settings_t* self, const char* name, bool value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(value));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_get_int(ifcopenshell_geom_serializer_settings_t* self, const char* name, int32_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<int>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_set_int(ifcopenshell_geom_serializer_settings_t* self, const char* name, int32_t value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(int(value)));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_get_double(ifcopenshell_geom_serializer_settings_t* self, const char* name, double* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<double>(&val)) { *out_result = static_cast<double>(*p); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_set_double(ifcopenshell_geom_serializer_settings_t* self, const char* name, double value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(value));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_get_string(ifcopenshell_geom_serializer_settings_t* self, const char* name, ifcopenshell_string_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<std::string>(&val)) { *out_result = make_string(*p); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_set_string(ifcopenshell_geom_serializer_settings_t* self, const char* name, const char* value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
+    std::string value_cpp(value);
+        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(value_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_get_int_set(ifcopenshell_geom_serializer_settings_t* self, const char* name, ifcopenshell_int32_list_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+        auto val = self_cpp->get(name_cpp);
+        bool matched = false;
+        if (auto* p = std::get_if<std::set<int>>(&val)) { *out_result = make_int32_list(([&]() { auto tmp = *p; return std::vector(tmp.begin(), tmp.end()); })()); matched = true; }
+        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_serializer_settings_set_int_set(ifcopenshell_geom_serializer_settings_t* self, const char* name, const ifcopenshell_int32_list_t* value) {
+    try {
+        ifcopenshell_clear_error();
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
+    std::string name_cpp(name);
+    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
+    auto value_vec = to_cpp_int32_list(value);
+    std::set<int> value_cpp(value_vec.begin(), value_vec.end());
+        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(value_cpp));
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_verts_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->verts().size();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_faces_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->faces().size();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_normals_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->normals().size();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_edges_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->edges().size();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_material_ids_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->material_ids().size();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_item_ids_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->item_ids().size();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_edges_item_ids_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->edges_item_ids().size();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_uvs_buffer_size(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->uvs().size();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_material_count(ifcopenshell_geom_triangulation_t* self, size_t* out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        *out_result = self_cpp->materials().size();
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
+bool ifcopenshell_geom_triangulation_material_at(ifcopenshell_geom_triangulation_t* self, size_t index, ifcopenshell_geom_taxonomy_style_t** out_result) {
+    try {
+        ifcopenshell_clear_error();
+    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
+    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
+    auto* self_cpp = self->ptr;
+        const auto& items = self_cpp->materials();
+        if (index >= items.size()) { throw std::runtime_error("Material index out of bounds"); }
+        *out_result = new ifcopenshell_geom_taxonomy_style_t{items[index]};
+        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
+            return false;
+        }
+        return true;
+    } catch (...) {
+        ifcopenshell::capi::set_error_from_current_exception();
+        return false;
+    }
+}
+
 bool ifcopenshell_geom_taxonomy_circle_matrix(ifcopenshell_geom_taxonomy_circle_t* self, ifcopenshell_geom_taxonomy_matrix4_t** out_result) {
     try {
         ifcopenshell_clear_error();
@@ -8968,40 +10005,6 @@ bool ifcopenshell_geom_taxonomy_ellipse_radius2(ifcopenshell_geom_taxonomy_ellip
     if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
     auto* self_cpp = self->ptr.get();
         *out_result = static_cast<double>(self_cpp->radius2);
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_taxonomy_style_has_specularity(ifcopenshell_geom_taxonomy_style_t* self, bool* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
-        *out_result = self_cpp->has_specularity();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_taxonomy_style_has_transparency(ifcopenshell_geom_taxonomy_style_t* self, bool* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
-        *out_result = self_cpp->has_transparency();
         if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
             return false;
         }
@@ -10389,1009 +11392,6 @@ bool ifcopenshell_geom_taxonomy_bspline_surface_as_item(ifcopenshell_geom_taxono
         } else {
             *out_result = new ifcopenshell_geom_taxonomy_item_t{std::move(result_value)};
         }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_opaque_number_to_double(ifcopenshell_geom_opaque_number_t* self, double* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = static_cast<double>(self_cpp->to_double());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_opaque_number_to_string(ifcopenshell_geom_opaque_number_t* self, ifcopenshell_string_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = make_string(self_cpp->to_string());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_finalize(ifcopenshell_geom_serializer_t* self) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        self_cpp->finalize();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_is_streaming(ifcopenshell_geom_serializer_t* self, bool* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->is_streaming();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_ready(ifcopenshell_geom_serializer_t* self, bool* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->ready();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_set_file(ifcopenshell_geom_serializer_t* self, ifcopenshell_file_t* arg_0) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (arg_0 == nullptr || arg_0->ptr == nullptr) { throw std::runtime_error("Handle parameter \"arg_0\" is invalid"); }
-    auto arg_0_cpp = arg_0->ptr;
-        self_cpp->setFile(arg_0_cpp);
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_write_header(ifcopenshell_geom_serializer_t* self) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        self_cpp->writeHeader();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_get_type(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_string_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        *out_result = make_string(self_cpp->get_type(name_cpp));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_setting_names(ifcopenshell_geom_settings_t* self, ifcopenshell_string_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = make_string_list(self_cpp->setting_names());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_get_bool(ifcopenshell_geom_settings_t* self, const char* name, bool* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<bool>(&val)) { *out_result = *p; matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_set_bool(ifcopenshell_geom_settings_t* self, const char* name, bool value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_get_int(ifcopenshell_geom_settings_t* self, const char* name, int32_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<int>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
-        if (auto* p = std::get_if<ifcopenshell::geometry::settings::IteratorOutputOptions>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
-        if (auto* p = std::get_if<ifcopenshell::geometry::settings::FunctionStepMethod>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
-        if (auto* p = std::get_if<ifcopenshell::geometry::settings::OutputDimensionalityTypes>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
-        if (auto* p = std::get_if<ifcopenshell::geometry::settings::TriangulationMethod>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_set_int(ifcopenshell_geom_settings_t* self, const char* name, int32_t value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(int(value)));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_get_double(ifcopenshell_geom_settings_t* self, const char* name, double* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<double>(&val)) { *out_result = static_cast<double>(*p); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_set_double(ifcopenshell_geom_settings_t* self, const char* name, double value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_get_string(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_string_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<std::string>(&val)) { *out_result = make_string(*p); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_set_string(ifcopenshell_geom_settings_t* self, const char* name, const char* value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
-    std::string value_cpp(value);
-        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value_cpp));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_get_int_set(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_int32_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<std::set<int>>(&val)) { *out_result = make_int32_list(([&]() { auto tmp = *p; return std::vector(tmp.begin(), tmp.end()); })()); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_set_int_set(ifcopenshell_geom_settings_t* self, const char* name, const ifcopenshell_int32_list_t* value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
-    auto value_vec = to_cpp_int32_list(value);
-    std::set<int> value_cpp(value_vec.begin(), value_vec.end());
-        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value_cpp));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_get_string_set(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_string_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<std::set<std::string>>(&val)) { *out_result = make_string_list(([&]() { auto tmp = *p; return std::vector(tmp.begin(), tmp.end()); })()); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_set_string_set(ifcopenshell_geom_settings_t* self, const char* name, const ifcopenshell_string_list_t* value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
-    auto value_vec = to_cpp_string_list(value);
-    std::set<std::string> value_cpp(value_vec.begin(), value_vec.end());
-        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value_cpp));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_get_double_list(ifcopenshell_geom_settings_t* self, const char* name, ifcopenshell_double_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<std::vector<double>>(&val)) { *out_result = make_double_list(*p); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_settings_set_double_list(ifcopenshell_geom_settings_t* self, const char* name, const ifcopenshell_double_list_t* value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
-    auto value_cpp = to_cpp_double_list(value);
-        self_cpp->set(name_cpp, ifcopenshell::geometry::Settings::value_variant_t(value_cpp));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_get_type(ifcopenshell_geom_serializer_settings_t* self, const char* name, ifcopenshell_string_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        *out_result = make_string(self_cpp->get_type(name_cpp));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_setting_names(ifcopenshell_geom_serializer_settings_t* self, ifcopenshell_string_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = make_string_list(self_cpp->setting_names());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_get_bool(ifcopenshell_geom_serializer_settings_t* self, const char* name, bool* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<bool>(&val)) { *out_result = *p; matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_set_bool(ifcopenshell_geom_serializer_settings_t* self, const char* name, bool value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(value));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_get_int(ifcopenshell_geom_serializer_settings_t* self, const char* name, int32_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<int>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_set_int(ifcopenshell_geom_serializer_settings_t* self, const char* name, int32_t value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(int(value)));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_get_double(ifcopenshell_geom_serializer_settings_t* self, const char* name, double* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<double>(&val)) { *out_result = static_cast<double>(*p); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_set_double(ifcopenshell_geom_serializer_settings_t* self, const char* name, double value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(value));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_get_string(ifcopenshell_geom_serializer_settings_t* self, const char* name, ifcopenshell_string_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<std::string>(&val)) { *out_result = make_string(*p); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_set_string(ifcopenshell_geom_serializer_settings_t* self, const char* name, const char* value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
-    std::string value_cpp(value);
-        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(value_cpp));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_get_int_set(ifcopenshell_geom_serializer_settings_t* self, const char* name, ifcopenshell_int32_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-        auto val = self_cpp->get(name_cpp);
-        bool matched = false;
-        if (auto* p = std::get_if<std::set<int>>(&val)) { *out_result = make_int32_list(([&]() { auto tmp = *p; return std::vector(tmp.begin(), tmp.end()); })()); matched = true; }
-        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_serializer_settings_set_int_set(ifcopenshell_geom_serializer_settings_t* self, const char* name, const ifcopenshell_int32_list_t* value) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (name == nullptr) { throw std::runtime_error("Parameter \"name\" must not be null"); }
-    std::string name_cpp(name);
-    if (value == nullptr) { throw std::runtime_error("Parameter \"value\" must not be null"); }
-    auto value_vec = to_cpp_int32_list(value);
-    std::set<int> value_cpp(value_vec.begin(), value_vec.end());
-        self_cpp->set(name_cpp, ifcopenshell::geometry::SerializerSettings::value_variant_t(value_cpp));
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_buffer_get_value(ifcopenshell_geom_buffer_t* self, ifcopenshell_string_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = make_string(self_cpp->get_value());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_buffer_is_ready(ifcopenshell_geom_buffer_t* self, bool* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->is_ready();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_taxonomy_item_hash(ifcopenshell_geom_taxonomy_item_t* self, size_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
-        *out_result = static_cast<size_t>(self_cpp->hash());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_taxonomy_item_identity(ifcopenshell_geom_taxonomy_item_t* self, uint32_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
-        *out_result = static_cast<uint32_t>(self_cpp->identity());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_taxonomy_item_kind(ifcopenshell_geom_taxonomy_item_t* self, int32_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
-        *out_result = static_cast<int32_t>(self_cpp->kind());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_enable_face_styles(ifcopenshell_geom_tree_t* self, bool* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = self_cpp->enable_face_styles();
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_set_enable_face_styles(ifcopenshell_geom_tree_t* self, bool enable) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    auto enable_cpp = static_cast<bool>(enable);
-        self_cpp->enable_face_styles(enable_cpp);
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_add_file(ifcopenshell_geom_tree_t* self, ifcopenshell_file_t* file, ifcopenshell_geom_settings_t* settings) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (file == nullptr || file->ptr == nullptr) { throw std::runtime_error("Handle parameter \"file\" is invalid"); }
-    auto& file_cpp = *file->ptr;
-    if (settings == nullptr || settings->ptr == nullptr) { throw std::runtime_error("Handle parameter \"settings\" is invalid"); }
-    auto& settings_cpp = *settings->ptr;
-        self_cpp->add_file(file_cpp, settings_cpp);
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_add_iterator(ifcopenshell_geom_tree_t* self, ifcopenshell_geom_iterator_t* iterator) {
-    try {
-        ifcopenshell_clear_error();
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (iterator == nullptr || iterator->ptr == nullptr) { throw std::runtime_error("Handle parameter \"iterator\" is invalid"); }
-    auto& iterator_cpp = *iterator->ptr;
-        self_cpp->add_file(iterator_cpp);
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_clash_clearance_many(ifcopenshell_geom_tree_t* self, const ifcopenshell_instance_list_t* set_a, const ifcopenshell_instance_list_t* set_b, double clearance, bool check_all, ifcopenshell_geom_tree_clash_list_t** out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (set_a == nullptr) { throw std::runtime_error("Parameter \"set_a\" must not be null"); }
-    auto set_a_cpp = to_cpp_instance_list(set_a);
-    if (set_b == nullptr) { throw std::runtime_error("Parameter \"set_b\" must not be null"); }
-    auto set_b_cpp = to_cpp_instance_list(set_b);
-    auto clearance_cpp = static_cast<double>(clearance);
-    auto check_all_cpp = static_cast<bool>(check_all);
-        *out_result = new ifcopenshell_geom_tree_clash_list_t{new std::vector<IfcGeom::clash>(self_cpp->clash_clearance_many(set_a_cpp, set_b_cpp, clearance_cpp, check_all_cpp)), true};
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_clash_collision_many(ifcopenshell_geom_tree_t* self, const ifcopenshell_instance_list_t* set_a, const ifcopenshell_instance_list_t* set_b, bool allow_touching, ifcopenshell_geom_tree_clash_list_t** out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (set_a == nullptr) { throw std::runtime_error("Parameter \"set_a\" must not be null"); }
-    auto set_a_cpp = to_cpp_instance_list(set_a);
-    if (set_b == nullptr) { throw std::runtime_error("Parameter \"set_b\" must not be null"); }
-    auto set_b_cpp = to_cpp_instance_list(set_b);
-    auto allow_touching_cpp = static_cast<bool>(allow_touching);
-        *out_result = new ifcopenshell_geom_tree_clash_list_t{new std::vector<IfcGeom::clash>(self_cpp->clash_collision_many(set_a_cpp, set_b_cpp, allow_touching_cpp)), true};
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_clash_intersection_many(ifcopenshell_geom_tree_t* self, const ifcopenshell_instance_list_t* set_a, const ifcopenshell_instance_list_t* set_b, double tolerance, bool check_all, ifcopenshell_geom_tree_clash_list_t** out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (set_a == nullptr) { throw std::runtime_error("Parameter \"set_a\" must not be null"); }
-    auto set_a_cpp = to_cpp_instance_list(set_a);
-    if (set_b == nullptr) { throw std::runtime_error("Parameter \"set_b\" must not be null"); }
-    auto set_b_cpp = to_cpp_instance_list(set_b);
-    auto tolerance_cpp = static_cast<double>(tolerance);
-    auto check_all_cpp = static_cast<bool>(check_all);
-        *out_result = new ifcopenshell_geom_tree_clash_list_t{new std::vector<IfcGeom::clash>(self_cpp->clash_intersection_many(set_a_cpp, set_b_cpp, tolerance_cpp, check_all_cpp)), true};
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_distances(ifcopenshell_geom_tree_t* self, ifcopenshell_double_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = make_double_list(self_cpp->distances());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_is_manifold(ifcopenshell_geom_tree_t* self, const ifcopenshell_int32_list_t* faces, bool* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (faces == nullptr) { throw std::runtime_error("Parameter \"faces\" must not be null"); }
-    auto faces_cpp = to_cpp_int32_list(faces);
-        *out_result = self_cpp->is_manifold(faces_cpp);
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_protrusion_distances(ifcopenshell_geom_tree_t* self, ifcopenshell_double_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = make_double_list(self_cpp->protrusion_distances());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_styles(ifcopenshell_geom_tree_t* self, ifcopenshell_geom_taxonomy_style_list_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-        *out_result = make_geom_taxonomy_style_list(self_cpp->styles());
-        if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
-            return false;
-        }
-        return true;
-    } catch (...) {
-        ifcopenshell::capi::set_error_from_current_exception();
-        return false;
-    }
-}
-
-bool ifcopenshell_geom_tree_uint8_to_b64(ifcopenshell_geom_tree_t* self, const ifcopenshell_uint8_list_t* uuids_array, ifcopenshell_string_t* out_result) {
-    try {
-        ifcopenshell_clear_error();
-    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
-    if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr;
-    if (uuids_array == nullptr) { throw std::runtime_error("Parameter \"uuids_array\" must not be null"); }
-    auto uuids_array_cpp = to_cpp_uint8_list(uuids_array);
-        *out_result = make_string(self_cpp->uint8_to_b64(uuids_array_cpp));
         if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
             return false;
         }

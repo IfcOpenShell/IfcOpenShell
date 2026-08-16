@@ -1,4 +1,3 @@
-from .authored_spec import DiscoveryDiagnostic, load_authored_spec, load_merged_specs
 from .clang_discovery import (
     CompilationConfig,
     DiscoveryEnvironment,
@@ -19,6 +18,7 @@ from .cpp_spec_frontend import (
     lower_cpp_spec_handles_to_specs,
     lower_cpp_spec_result_structs_to_specs,
 )
+from .discovery_policy import DiscoveryDiagnostic
 
 __all__ = [
     "CompilationConfig",
@@ -35,8 +35,6 @@ __all__ = [
     "discover_namespace_functions_with_synthetic_source",
     "discover_public_fields",
     "discover_public_methods",
-    "load_authored_spec",
-    "load_merged_specs",
     "lower_cpp_spec_functions_to_calls",
     "lower_cpp_spec_handles_to_specs",
     "lower_cpp_spec_result_structs_to_specs",
