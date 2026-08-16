@@ -1184,20 +1184,32 @@ namespace {
 			// simple planar quad where none can genuinely be reflex, tested as reflex. Rather than
 			// track down which OCCT face-construction path produces this (side faces of prisms
 			// built from a swept profile boundary can end up with either winding relative to their
-			// topological Orientation flag), self-correct here: sum the signed turning across the
-			// *entire* wire once, and if the aggregate is negative (wire runs clockwise as seen
-			// from f_normal), use the reversed normal for every reflex test on this wire instead.
-			// This makes the reflex test internally consistent regardless of whichever winding
-			// convention this particular face's boundary happens to have -- a real, convex quad
-			// then correctly reports zero reflex vertices no matter which way its wire winds.
-			double winding = 0.0;
+			// topological Orientation flag), self-correct here: determine the wire's own true
+			// winding sense once, and if it runs clockwise as seen from f_normal, use the reversed
+			// normal for every reflex test on this wire instead. This makes the reflex test
+			// internally consistent regardless of whichever winding convention this particular
+			// face's boundary happens to have -- a real, convex quad then correctly reports zero
+			// reflex vertices no matter which way its wire winds.
+			//
+			// Known-issues item 46: an earlier version of this self-correction summed
+			// cross(edge_in, edge_out)&middot;n directly, which is proportional to
+			// sin(turn_angle)*|edge_in|*|edge_out| -- length-weighted, not a true turning-number
+			// invariant. For a simple (non-self-intersecting) polygon, the *unweighted* sum of
+			// signed turning angles -- equivalently the sign of the shoelace/signed-area formula
+			// below -- is a reliable winding-sense invariant regardless of edge length or how many
+			// reflex vertices the wire has; the length-weighted sum has no such guarantee and can
+			// land on the wrong sign for a wire with several reflex corners of uneven edge length
+			// (crenellated parapets, star/gear-shaped profiles). The signed-area form needs no
+			// trigonometry and no division, just the same per-vertex cross-product sum already
+			// being computed, replacing the "current vertex" pairing with the polygon's own
+			// vertex-pair (shoelace) term.
+			double signed_area2 = 0.0;
 			for (int k = 0; k < n; ++k) {
-				const gp_Pnt pprev = BRep_Tool::Pnt(verts[(k - 1 + n) % n]);
 				const gp_Pnt pcur = BRep_Tool::Pnt(verts[k]);
 				const gp_Pnt pnext = BRep_Tool::Pnt(verts[(k + 1) % n]);
-				winding += gp_Vec(pprev, pcur).Crossed(gp_Vec(pcur, pnext)).Dot(gp_Vec(f_normal.XYZ()));
+				signed_area2 += gp_Vec(pcur.XYZ()).Crossed(gp_Vec(pnext.XYZ())).Dot(gp_Vec(f_normal.XYZ()));
 			}
-			const gp_Dir effective_normal = (winding < 0.0) ? f_normal.Reversed() : f_normal;
+			const gp_Dir effective_normal = (signed_area2 < 0.0) ? f_normal.Reversed() : f_normal;
 
 			const TopoDS_Vertex& a = verts[i];
 			const TopoDS_Vertex& b = verts[(i + 1) % n];
