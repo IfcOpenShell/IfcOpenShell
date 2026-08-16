@@ -44,7 +44,6 @@ export type NodePluginLoader = (url: string) => Promise<Uint8Array>;
 
 export function getWasmRoot(): string;
 export function wasmArtifactsPresent(root?: string): boolean;
-export function isFullProfile(manifest: PluginManifest): boolean;
 export function loadManifest(root?: string): PluginManifest;
 export function createNodePluginLoader(): NodePluginLoader;
 export function resolveWasmAssets(root?: string): Promise<ResolvedWasmAssets>;

@@ -10,8 +10,8 @@ const DEST = join(PACKAGE_ROOT, 'wasm');
 
 const DEFAULT_SOURCES = [
   process.env.IFCOPENSHELL_WASM_DIR,
-  resolve(REPO_ROOT, 'build', 'wasm-native', 'ifcopenshell', 'full', 'ifcwrap', 'wasm'),
-  resolve(REPO_ROOT, 'build', 'wasm-native', 'dist', 'full'),
+  resolve(REPO_ROOT, 'build', 'wasm-native', 'ifcopenshell', 'ifcwrap', 'wasm'),
+  resolve(REPO_ROOT, 'build', 'wasm-native', 'dist'),
   resolve(REPO_ROOT, 'build-wasm', 'ifcwrap', 'wasm'),
 ].filter(Boolean);
 
@@ -38,11 +38,6 @@ function copyRequiredArtifacts(source) {
   for (const name of REQUIRED) {
     cpSync(join(source, name), join(DEST, name));
   }
-  const profileMetadata = join(source, 'ifcopenshell_profile.json');
-  if (existsSync(profileMetadata)) {
-    cpSync(profileMetadata, join(DEST, 'ifcopenshell_profile.json'));
-  }
-
   const manifest = JSON.parse(readFileSync(join(source, 'ifcopenshell_plugins.json'), 'utf8'));
   for (const entries of Object.values(manifest)) {
     for (const entry of Object.values(entries)) {
@@ -112,7 +107,7 @@ const source = resolveSource();
 if (!source) {
   console.error(
     'No WASM build output found. Build the WASM target first, then rerun stage:\n' +
-      '  python nix/wasm_native.py --profile full build\n' +
+      '  python nix/wasm_native.py build\n' +
       'Or set IFCOPENSHELL_WASM_DIR to an existing ifcwrap/wasm directory.',
   );
   process.exit(1);
