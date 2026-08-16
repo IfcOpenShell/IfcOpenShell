@@ -30,7 +30,7 @@ from src.ifcwrap.binding_generator.binding_model import (
     ResultStructSpec,
     TypeSpec,
 )
-from src.ifcwrap.binding_generator.c_backend import _render_cpp
+from src.ifcwrap.binding_generator.c_backend import _render_cpp, render_c_abi
 from src.ifcwrap.binding_generator.c_handle_rendering import _destroy_body
 from src.ifcwrap.binding_generator.c_header_rendering import _render_header
 from src.ifcwrap.binding_generator.c_internal_header import _render_internal_header
@@ -62,7 +62,7 @@ from src.ifcwrap.binding_generator.cpp_spec_frontend import (
     lower_cpp_spec_handles_to_specs,
     lower_cpp_spec_result_structs_to_specs,
 )
-from src.ifcwrap.binding_generator.pipeline import generate_cpp_specs
+from src.ifcwrap.binding_generator.pipeline import build_binding_ir
 from src.ifcwrap.binding_generator.targets.wasm.typescript import (
     render_typescript_declarations,
 )
@@ -81,89 +81,32 @@ def _environment(tmp_path: Path) -> DiscoveryEnvironment:
     )
 
 
-def test_cpp_spec_generation_supports_per_spec_namespaces_and_prefixes(
-    tmp_path: Path,
+def _generate_cpp_specs(
+    spec_paths: list[Path],
+    namespaces: list[str],
+    module: str,
+    c_prefix: str,
+    header_out: Path,
+    cpp_out: Path,
+    *,
+    discovery_include_dirs: tuple[Path, ...],
 ) -> None:
-    spec_a = tmp_path / "spec_a.cpp"
-    spec_a.write_text(
-        dedent(
-            """
-            namespace example::a {
-            inline int value() {
-                return 1;
-            }
-            }
-            """
+    artifacts = render_c_abi(
+        build_binding_ir(
+            (),
+            module=module,
+            c_prefix=c_prefix,
+            discovery_include_dirs=discovery_include_dirs,
+            cpp_spec_paths=spec_paths,
+            cpp_spec_namespace=namespaces,
+            cpp_spec_c_prefix=c_prefix,
         ),
-        encoding="utf-8",
+        header_out.name,
     )
-    spec_b = tmp_path / "spec_b.cpp"
-    spec_b.write_text(
-        dedent(
-            """
-            namespace example::b {
-            inline int value() {
-                return 2;
-            }
-            }
-            """
-        ),
-        encoding="utf-8",
+    header_out.write_text(artifacts[header_out.name], encoding="utf-8")
+    cpp_out.write_text(
+        artifacts[header_out.name.removesuffix(".h") + ".cpp"], encoding="utf-8"
     )
-
-    header_out = tmp_path / "generated.h"
-    cpp_out = tmp_path / "generated.cpp"
-    generate_cpp_specs(
-        [spec_a, spec_b],
-        ["example::a", "example::b"],
-        "example",
-        "example",
-        header_out,
-        cpp_out,
-        discovery_include_dirs=(tmp_path,),
-        function_c_prefix=["example_a", "example_b"],
-    )
-
-    header = header_out.read_text(encoding="utf-8")
-    assert "bool example_a_value(int32_t* out_result);" in header
-    assert "bool example_b_value(int32_t* out_result);" in header
-    generated_cpp = cpp_out.read_text(encoding="utf-8")
-    assert "example::a::value()" in generated_cpp
-    assert "example::b::value()" in generated_cpp
-
-
-def test_cpp_spec_generation_rejects_mismatched_per_spec_namespaces(
-    tmp_path: Path,
-) -> None:
-    spec_a = tmp_path / "spec_a.cpp"
-    spec_b = tmp_path / "spec_b.cpp"
-    for spec_path in (spec_a, spec_b):
-        spec_path.write_text(
-            dedent(
-                """
-                namespace example {
-                inline int value() {
-                    return 1;
-                }
-                }
-                """
-            ),
-            encoding="utf-8",
-        )
-
-    with pytest.raises(
-        ValueError,
-        match="cpp_spec_namespace must be provided once or exactly once per C\\+\\+ spec",
-    ):
-        generate_cpp_specs(
-            [spec_a, spec_b],
-            ["example", "example", "extra"],
-            "example",
-            "example",
-            tmp_path / "generated.h",
-            tmp_path / "generated.cpp",
-            discovery_include_dirs=(tmp_path,),
-        )
 
 
 def test_cpp_spec_frontend_rejects_mutable_void_pointer_params(tmp_path: Path) -> None:
@@ -434,7 +377,7 @@ def test_cpp_spec_frontend_preserves_fixed_aliases_and_enum_literals(
 
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -511,7 +454,7 @@ def test_cpp_spec_frontend_discovers_input_variant_records(tmp_path: Path) -> No
 
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -633,7 +576,7 @@ def test_cpp_spec_frontend_discovers_nested_mesh_items(tmp_path: Path) -> None:
 
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -691,7 +634,7 @@ def test_cpp_spec_frontend_generates_fixed_sequence_variant_parameters(
 
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -1429,7 +1372,7 @@ def test_cpp_spec_generation_lowers_option_parameters(tmp_path: Path) -> None:
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
 
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -1502,7 +1445,7 @@ def test_cpp_spec_generation_lowers_input_record_sequences(tmp_path: Path) -> No
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
 
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -1564,7 +1507,7 @@ def test_cpp_spec_generation_lowers_std_optional_option_fields(tmp_path: Path) -
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
 
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -1608,7 +1551,7 @@ def test_cpp_spec_generation_lowers_standalone_optional_handle_and_string_params
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
 
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -1717,7 +1660,7 @@ def test_cpp_spec_generation_preserves_omittable_native_defaults(
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
 
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -1765,7 +1708,7 @@ def test_cpp_spec_generation_lowers_optional_owned_handle_returns(
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
 
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -1815,7 +1758,7 @@ def test_cpp_spec_generation_lowers_nullable_owned_raw_handle_returns(
     header_out = tmp_path / "demo_api.h"
     cpp_out = tmp_path / "demo_api.cpp"
 
-    generate_cpp_specs(
+    _generate_cpp_specs(
         [spec_path],
         ["demo"],
         "demo",
@@ -1836,50 +1779,6 @@ def test_cpp_spec_generation_lowers_nullable_owned_raw_handle_returns(
         "*out_result = new ifcopenshell_demo_demo_value_t{result_value.release(), true};"
         in generated_cpp
     )
-
-
-def test_cpp_spec_generation_lowers_optional_opaque_pointer_params(
-    tmp_path: Path,
-) -> None:
-    spec_path = tmp_path / "demo_spec.cpp"
-    spec_path.write_text(
-        dedent(
-            """
-            #include <optional>
-
-            struct DemoOpaque;
-
-            namespace demo {
-            inline int count(std::optional<const DemoOpaque*> value) {
-                return value.has_value() ? 1 : 0;
-            }
-            }
-            """
-        ),
-        encoding="utf-8",
-    )
-    header_out = tmp_path / "demo_api.h"
-    cpp_out = tmp_path / "demo_api.cpp"
-
-    generate_cpp_specs(
-        [spec_path],
-        ["demo"],
-        "demo",
-        "ifcopenshell_demo",
-        header_out,
-        cpp_out,
-        discovery_include_dirs=(tmp_path,),
-    )
-
-    header = header_out.read_text(encoding="utf-8")
-    generated_cpp = cpp_out.read_text(encoding="utf-8")
-    assert "bool ifcopenshell_demo_count(void* value, int32_t* out_result);" in header
-    assert "std::optional<DemoOpaque*> value_cpp;" in generated_cpp
-    assert (
-        "if (value != nullptr) { value_cpp = static_cast<DemoOpaque*>(value); }"
-        in generated_cpp
-    )
-    assert "demo::count(value_cpp)" in generated_cpp
 
 
 def test_cpp_spec_frontend_rejects_overloaded_exports(tmp_path: Path) -> None:

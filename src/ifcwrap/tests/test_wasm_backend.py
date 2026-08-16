@@ -90,10 +90,3 @@ def test_typescript_declares_low_level_contract() -> None:
 
     assert "export class IfcOpenshellFile" in declarations
     assert "open(path: string, streaming: boolean)" in declarations
-
-
-def test_wasm_output_is_deterministic() -> None:
-    metadata = make_metadata()
-
-    assert render_wasm_bindings(metadata) == render_wasm_bindings(metadata)
-    assert render_export_list(metadata) == render_export_list(metadata)

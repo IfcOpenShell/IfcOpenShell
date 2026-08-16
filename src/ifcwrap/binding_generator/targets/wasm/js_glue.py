@@ -173,7 +173,7 @@ def _out_allocation(function: CFunctionIR, metadata: BindingABI) -> str | None:
     returns = function.returns
     if returns.kind == "void":
         return None
-    if returns.kind == "handle" or returns.kind == "opaque_ptr":
+    if returns.kind == "handle":
         return "POINTER_SIZE"
     if returns.sequence_depth > 0:
         return str(_struct_layout(_sequence_value_type(returns, metadata), metadata)[0])
