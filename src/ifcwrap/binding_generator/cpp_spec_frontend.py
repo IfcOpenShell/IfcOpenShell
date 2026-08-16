@@ -566,7 +566,6 @@ def _apply_type_annotations(
         nullable=type_spec.nullable,
         cpp_type=type_spec.cpp_type,
         sequence_depth=type_spec.sequence_depth,
-        semantic=type_spec.semantic,
     )
 
 

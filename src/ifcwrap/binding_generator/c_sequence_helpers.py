@@ -541,14 +541,6 @@ def _used_scalar_sequence_kinds(spec: BindingIR) -> tuple[str, ...]:
     )
 
 
-def _sequence_param_type(kind: str) -> str:
-    return f"const {_sequence_c_type(kind)}*"
-
-
-def _sequence_out_type(kind: str) -> str:
-    return f"{_sequence_c_type(kind)}*"
-
-
 def _sequence_make_helper(kind: str) -> str:
     return _sequence_make_name(kind)
 

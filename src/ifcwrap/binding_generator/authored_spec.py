@@ -96,7 +96,7 @@ _ALLOWED_TYPE_KINDS = {
     "handle_list",
     "handle_list_list",
     "instance_list",
-    "opaque_ptr",  # Raw pointer to an external type (passed through as void*)
+    "opaque_ptr",  # Raw pointer passed through the C ABI as void*.
     "struct",
     "variant",
 }
@@ -262,31 +262,6 @@ class DiscoveryOverloadSpec:
 
 
 @dataclass(frozen=True)
-class ImportedHandle:
-    """A handle imported from another slice."""
-
-    slice: str
-    handle: str
-
-
-@dataclass(frozen=True)
-class HandleFamilySpec:
-    namespace: str
-    prefix: str
-    c_prefix: str
-    destructor: str
-    ptr_type: str
-    types: tuple[str, ...]
-    validate_against: HandleFamilyValidationSpec | None = None
-
-
-@dataclass(frozen=True)
-class HandleFamilyValidationSpec:
-    header: str
-    marker_macro: str
-
-
-@dataclass(frozen=True)
 class AuthoredBindingSpec:
     schema_version: int
     module: str
@@ -295,8 +270,6 @@ class AuthoredBindingSpec:
     public_headers: tuple[str, ...]
     handles: dict[str, HandleSpec]
     result_structs: dict[str, ResultStructSpec]
-    imports: tuple[ImportedHandle, ...]  # Handles imported from other slices
-    depends_on_common: str | None  # If set, skip emitting common type implementations
     discovery: DiscoverySpec | None
     functions: tuple[CallSpec, ...]
     methods: tuple[CallSpec, ...]
@@ -371,12 +344,6 @@ def _sequence_kind_parts(kind: str) -> tuple[str, int] | None:
 
 def _is_sequence_kind(kind: str) -> bool:
     return _sequence_kind_parts(kind) is not None
-
-
-def _scalar_sequence_kind(family: str, depth: int) -> str | None:
-    if family not in _SCALAR_SEQUENCE_FAMILIES or depth <= 0:
-        return None
-    return f"{family}{'_list' * depth}"
 
 
 def _scalar_sequence_depth(kind: str) -> int | None:
@@ -464,7 +431,6 @@ def _parse_type(
     if kind == "opaque_ptr" and cpp_type is None:
         msg = f"{context}.cpp_type is required for kind=opaque_ptr"
         raise ValueError(msg)
-
     normalized_kind = (
         "handle" if handle_sequence_depth is not None else _normalized_scalar_kind(kind)
     )
@@ -678,65 +644,6 @@ def _validate_handle_storage(
         raise ValueError(msg)
 
 
-def _parse_handle_family(
-    raw: Any, *, context: str, default_c_prefix: str
-) -> HandleFamilySpec:
-    mapping = _expect_mapping(raw, context)
-    namespace = _expect_str(mapping.get("namespace"), f"{context}.namespace")
-    prefix = _expect_str(mapping.get("prefix"), f"{context}.prefix")
-    c_prefix = _expect_str(
-        mapping.get("c_prefix", f"{default_c_prefix}_{prefix}"), f"{context}.c_prefix"
-    )
-    destructor = _expect_str(mapping.get("destructor"), f"{context}.destructor")
-    _validate_destructor(destructor, context=f"{context}.destructor")
-    ptr_type = _parse_ptr_type(
-        mapping.get("ptr_type", "raw"), context=f"{context}.ptr_type"
-    )
-    _validate_handle_storage(ptr_type, destructor, None, context=context)
-    types = tuple(
-        _expect_str(type_name, f"{context}.types[{type_index}]")
-        for type_index, type_name in enumerate(
-            _expect_list(mapping.get("types", []), f"{context}.types")
-        )
-    )
-    if not types:
-        msg = f"{context}.types must not be empty"
-        raise ValueError(msg)
-    validate_raw = mapping.get("validate_against")
-    validate_against: HandleFamilyValidationSpec | None = None
-    if validate_raw is not None:
-        validate_context = f"{context}.validate_against"
-        validate_mapping = _expect_mapping(validate_raw, validate_context)
-        validate_against = HandleFamilyValidationSpec(
-            header=_expect_str(
-                validate_mapping.get("header"), f"{validate_context}.header"
-            ),
-            marker_macro=_expect_str(
-                validate_mapping.get("marker_macro", "DECLARE_PTR"),
-                f"{validate_context}.marker_macro",
-            ),
-        )
-    return HandleFamilySpec(
-        namespace=namespace,
-        prefix=prefix,
-        c_prefix=c_prefix,
-        destructor=destructor,
-        ptr_type=ptr_type,
-        types=types,
-        validate_against=validate_against,
-    )
-
-
-def _handle_from_family(family: HandleFamilySpec, type_name: str) -> HandleSpec:
-    return HandleSpec(
-        name=f"{family.prefix}_{type_name}",
-        cpp_type=f"{family.namespace}::{type_name}",
-        c_type=f"{family.c_prefix}_{type_name}_t",
-        destructor=family.destructor,
-        ptr_type=family.ptr_type,
-    )
-
-
 def _parse_handle_list_accessors(
     raw: Any, *, context: str, known_handles: set[str]
 ) -> HandleListAccessorsSpec | None:
@@ -812,85 +719,6 @@ def _handle_list_accessor_calls(
             at_call, c_name=_make_c_name(receiver, at_call.expose_as)
         ),
     )
-
-
-def _strip_cpp_comments(text: str) -> str:
-    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
-    return re.sub(r"//.*", "", text)
-
-
-def _source_marked_ptr_family_types(text: str, marker_macro: str) -> frozenset[str]:
-    stripped = _strip_cpp_comments(text)
-    names: set[str] = set()
-    marker_re = re.compile(
-        rf"\b{re.escape(marker_macro)}\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)"
-    )
-    for line in stripped.splitlines():
-        if line.lstrip().startswith("#"):
-            continue
-        names.update(marker_re.findall(line))
-
-    record_re = re.compile(
-        r"\b(?:struct|class)\s+(?:[A-Z_][A-Z0-9_]*\s+)*(?P<name>[A-Za-z_][A-Za-z0-9_]*)[^{;]*\{(?P<body>.*?)^\s*\};",
-        re.DOTALL | re.MULTILINE,
-    )
-    for match in record_re.finditer(stripped):
-        type_name = match.group("name")
-        body = match.group("body")
-        escaped = re.escape(type_name)
-        alias_patterns = (
-            rf"\btypedef\s+(?:std|boost)::shared_ptr\s*<\s*(?:const\s+)?(?:[A-Za-z_][A-Za-z0-9_:]*::)?{escaped}\s*>\s+ptr\s*;",
-            rf"\busing\s+ptr\s*=\s*(?:std|boost)::shared_ptr\s*<\s*(?:const\s+)?(?:[A-Za-z_][A-Za-z0-9_:]*::)?{escaped}\s*>\s*;",
-        )
-        if any(re.search(pattern, body) for pattern in alias_patterns):
-            names.add(type_name)
-    return frozenset(names)
-
-
-def _resolve_family_validation_header(
-    spec_path: Path,
-    include_dir: Path | None,
-    header: str,
-) -> Path:
-    header_path = Path(header)
-    if header_path.is_absolute():
-        return header_path
-    candidates: list[Path] = []
-    if include_dir is not None:
-        candidates.append((spec_path.parent / include_dir / header_path).resolve())
-    candidates.append((spec_path.parent / header_path).resolve())
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return candidates[0]
-
-
-def _validate_handle_family_against_source(
-    family: HandleFamilySpec,
-    *,
-    spec_path: Path,
-    include_dir: Path | None,
-    context: str,
-) -> None:
-    validation = family.validate_against
-    if validation is None:
-        return
-    header_path = _resolve_family_validation_header(
-        spec_path, include_dir, validation.header
-    )
-    if not header_path.exists():
-        msg = f"{context}.validate_against.header '{validation.header}' does not exist at '{header_path}'"
-        raise ValueError(msg)
-    marked_types = _source_marked_ptr_family_types(
-        header_path.read_text(encoding="utf-8"), validation.marker_macro
-    )
-    missing = sorted(set(family.types) - marked_types)
-    if missing:
-        msg = (
-            f"{context}.types contains types not marked with {validation.marker_macro}(...) "
-            f"or ptr shared_ptr aliases in '{validation.header}': {missing}"
-        )
-        raise ValueError(msg)
 
 
 def _parse_call(
@@ -1854,28 +1682,6 @@ def _cpp_type_variants(cpp_type: str | DiscoveredCppType) -> tuple[str, ...]:
     return tuple(variants)
 
 
-def _cpp_type_primary(cpp_type: str | DiscoveredCppType) -> str:
-    variants = _cpp_type_variants(cpp_type)
-    return variants[0] if variants else ""
-
-
-def _base_cpp_type(cpp_type: str | DiscoveredCppType) -> str:
-    if isinstance(cpp_type, DiscoveredCppType):
-        return cpp_type.base_name
-    return _normalize_cpp_type(cpp_type).removesuffix("&").removesuffix("*").strip()
-
-
-def _cpp_type_bases(cpp_type: str | DiscoveredCppType) -> set[str]:
-    if isinstance(cpp_type, DiscoveredCppType):
-        bases = {_base_cpp_type(cpp_type)}
-        if cpp_type.normalized_spelling:
-            bases.add(_base_cpp_type(cpp_type.normalized_spelling))
-        if cpp_type.normalized_desugared_spelling:
-            bases.add(_base_cpp_type(cpp_type.normalized_desugared_spelling))
-        return {base for base in bases if base}
-    return {_base_cpp_type(cpp_type)}
-
-
 def _cpp_type_debug(cpp_type: str | DiscoveredCppType) -> str:
     if isinstance(cpp_type, DiscoveredCppType):
         if cpp_type.desugared_spelling and _normalize_cpp_type(
@@ -2035,36 +1841,6 @@ def _type_spec_from_result_struct_semantic(
     return None
 
 
-def _type_spec_from_opaque_pointer_semantic(
-    semantic: RecordSemanticType, *, nullable: bool
-) -> TypeSpec | None:
-    if semantic.pointer_wrapper is None and _normalize_cpp_type(
-        semantic.cpp_type
-    ).endswith("*"):
-        normalized = _normalize_cpp_type(semantic.cpp_type).removesuffix("*").strip()
-        role = _OPAQUE_POINTER_SEMANTIC_ROLES.get(normalized)
-        return TypeSpec(
-            kind="opaque_ptr",
-            cpp_type=semantic.cpp_type,
-            nullable=nullable,
-            semantic=role,
-        )
-    return None
-
-
-_OPAQUE_POINTER_SEMANTIC_ROLES: dict[str, str] = {
-    "ifcopenshell_pset_props_t": "property_map",
-}
-
-
-def _sequence_scalar_kind(
-    semantic: ScalarSemanticType | StringSemanticType,
-) -> str | None:
-    if isinstance(semantic, StringSemanticType):
-        return _scalar_sequence_kind("string", 1)
-    return _scalar_sequence_kind(semantic.family, 1)
-
-
 def _sequence_leaf_kind(semantic: ScalarSemanticType | StringSemanticType) -> str:
     if isinstance(semantic, StringSemanticType):
         return "string"
@@ -2194,7 +1970,6 @@ def _infer_type(
             nullable=True,
             cpp_type=_cpp_type_storage(cpp_type),
             sequence_depth=inner.sequence_depth,
-            semantic=inner.semantic,
             alias=inner.alias,
             fixed_lengths=inner.fixed_lengths,
             enum_values=inner.enum_values,
@@ -2244,13 +2019,6 @@ def _infer_type(
         )
         if record_spec is not None:
             return record_spec
-        opaque_spec = _type_spec_from_opaque_pointer_semantic(
-            semantic,
-            nullable=nullable_pointers
-            and _normalize_cpp_type(semantic.cpp_type).endswith("*"),
-        )
-        if opaque_spec is not None:
-            return opaque_spec
     if isinstance(semantic, SequenceSemanticType):
         for handle_name, handle in handles.items():
             if _cpp_type_names_match(handle.cpp_type, semantic.cpp_type):
@@ -2294,7 +2062,6 @@ def _infer_type(
             nullable=nullable_pointers
             and _normalize_cpp_type(semantic.cpp_type).endswith("*"),
         )
-
     msg = f"Unsupported discovered type '{_cpp_type_debug(cpp_type)}'"
     raise ValueError(msg)
 
@@ -2471,9 +2238,6 @@ def _merge_type_override(inferred: TypeSpec, override: TypeSpec | None) -> TypeS
         sequence_depth=override.sequence_depth
         if override.sequence_depth != 0
         else inferred.sequence_depth,
-        semantic=override.semantic
-        if override.semantic is not None
-        else inferred.semantic,
     )
 
 
@@ -4817,43 +4581,10 @@ def load_authored_spec(
             _expect_list(root.get("public_headers", []), "public_headers")
         )
     )
-    discovery_include_dir: Path | None = None
-    if root.get("discover") is not None:
-        discovery_mapping = _expect_mapping(root.get("discover"), "discover")
-        if discovery_mapping.get("include_dir") is not None:
-            discovery_include_dir = Path(
-                _expect_str(
-                    discovery_mapping.get("include_dir"), "discover.include_dir"
-                )
-            )
-
     handles: dict[str, HandleSpec] = {}
     # Start with existing handles if provided
     if existing_handles:
         handles.update(existing_handles)
-
-    raw_handle_families = _expect_list(
-        root.get("handle_families", []), "handle_families"
-    )
-    for family_index, raw_family in enumerate(raw_handle_families):
-        family_context = f"handle_families[{family_index}]"
-        family = _parse_handle_family(
-            raw_family, context=family_context, default_c_prefix=c_prefix
-        )
-        _validate_handle_family_against_source(
-            family,
-            spec_path=path,
-            include_dir=discovery_include_dir,
-            context=family_context,
-        )
-        for type_name in family.types:
-            handle = _handle_from_family(family, type_name)
-            if handle.name in handles:
-                msg = (
-                    f"{family_context}.types contains duplicate handle '{handle.name}'"
-                )
-                raise ValueError(msg)
-            handles[handle.name] = handle
 
     raw_handles = _expect_list(root.get("handles", []), "handles")
     raw_handle_mappings: list[tuple[str, dict[str, Any], str]] = []
@@ -4886,24 +4617,7 @@ def load_authored_spec(
         handles[handle.name] = handle
         raw_handle_mappings.append((handle.name, mapping, context))
 
-    # Parse imports section
-    raw_imports = _expect_list(root.get("imports", []), "imports")
-    imports: list[ImportedHandle] = []
-    for index, item in enumerate(raw_imports):
-        context = f"imports[{index}]"
-        mapping = _expect_mapping(item, context)
-        slice_name_import = _expect_str(mapping.get("slice"), f"{context}.slice")
-        imported_handles = _expect_list(
-            mapping.get("handles", []), f"{context}.handles"
-        )
-        for handle_index, handle_name in enumerate(imported_handles):
-            handle_name = _expect_str(handle_name, f"{context}.handles[{handle_index}]")
-            imports.append(ImportedHandle(slice=slice_name_import, handle=handle_name))
-
-    # Imported handles are added to known_handles for type resolution
     known_handles = set(handles)
-    for imp in imports:
-        known_handles.add(imp.handle)
     result_structs = _parse_result_structs(
         root.get("result_structs", []),
         context="result_structs",
@@ -5025,11 +4739,6 @@ def load_authored_spec(
             constructor_diagnostics + method_diagnostics + function_diagnostics
         )
 
-    depends_on_common = root.get("depends_on_common")
-    if depends_on_common is not None and not isinstance(depends_on_common, str):
-        msg = "depends_on_common must be a string"
-        raise ValueError(msg)
-
     spec = AuthoredBindingSpec(
         schema_version=schema_version,
         module=module,
@@ -5038,8 +4747,6 @@ def load_authored_spec(
         public_headers=public_headers,
         handles=handles,
         result_structs=result_structs,
-        imports=tuple(imports),
-        depends_on_common=depends_on_common,
         discovery=discovery,
         functions=discovered_constructors + discovered_functions + authored_functions,
         methods=discovered_methods + accessor_methods + authored_methods,

@@ -166,8 +166,6 @@ set(
 
 project(IfcOpenShell VERSION ${PROJECT_VERSION_NUMERIC})
 
-include(CTest)
-
 if(WASM_BUILD)
     set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
 endif()
@@ -285,7 +283,9 @@ endif()
 
 if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     if(WASM_BUILD)
-        set(OPENCASCADE_WASM_DIR "" CACHE PATH "Path to WASM-compiled OpenCASCADE installation prefix")
+        if(NOT DEFINED OPENCASCADE_WASM_DIR)
+            set(OPENCASCADE_WASM_DIR "" CACHE PATH "Path to WASM-compiled OpenCASCADE installation prefix")
+        endif()
         if(OPENCASCADE_WASM_DIR)
             list(PREPEND CMAKE_PREFIX_PATH "${OPENCASCADE_WASM_DIR}")
         endif()
@@ -293,6 +293,7 @@ if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
     # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OpenCASCADE_LIBRARIES used by kernel generic cmake file
     set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
+    # Set legacy OCC_INCLUDE_DIR from OpenCASCADE config variable
     if(NOT OCC_INCLUDE_DIR AND OpenCASCADE_INCLUDE_DIR)
         set(OCC_INCLUDE_DIR "${OpenCASCADE_INCLUDE_DIR}")
     endif()
@@ -659,7 +660,7 @@ elseif(BUILD_IFCOPENSHELL_GEOMETRY_TESTS)
     message(FATAL_ERROR "BUILD_IFCOPENSHELL_GEOMETRY_TESTS requires BUILD_IFCGEOM=ON.")
 endif(BUILD_IFCGEOM)
 
-if(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_BONSAIVIEWER OR BUILD_IFCAPI)
+if(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_BONSAIVIEWER OR (BUILD_IFCAPI AND BUILD_IFCGEOM))
     add_subdirectory(../src/serializers serializers)
 endif()
 

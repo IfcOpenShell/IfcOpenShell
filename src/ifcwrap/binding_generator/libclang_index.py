@@ -153,14 +153,6 @@ def _qualified_name(cursor, kinds) -> str:
     return "::".join(reversed(names))
 
 
-def _relative_type_spelling(spelling: str, current_scope: str) -> str:
-    scope = current_scope
-    while scope:
-        spelling = re.sub(rf"(?<![\w:]){re.escape(scope)}::", "", spelling)
-        scope = scope.rsplit("::", 1)[0] if "::" in scope else ""
-    return spelling
-
-
 def _template_argument_count(spelling: str) -> int | None:
     start = spelling.find("<")
     if start == -1 or not spelling.rstrip().endswith(">"):
