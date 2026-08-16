@@ -37,10 +37,6 @@ import pytest
 
 import ifcdiff
 
-SAMPLE_MODEL_DIR = "/Users/petruc/dev/sample models/012"
-SAMPLE_MODEL_OLD = os.path.join(SAMPLE_MODEL_DIR, "PCERT_PRA-bSI-L-INFRA-3E-ARL_version1.ifc")
-SAMPLE_MODEL_NEW = os.path.join(SAMPLE_MODEL_DIR, "PCERT_PRA-bSI-L-INFRA-3E-ARL_version2.ifc")
-
 
 def setup_project() -> ifcopenshell.file:
     ifc_file = ifcopenshell.file(schema="IFC4")
@@ -371,69 +367,25 @@ class TestIfcDiff:
         assert changed["moved"] == pytest.approx(1000.0)
         assert changed["rotated"] is False
 
+    def test_geometry_change_detected_without_model_view_subcontext(self):
+        # Regression test: some BIM programs place Body items directly under
+        # the top-level IfcGeometricRepresentationContext instead of a
+        # MODEL_VIEW subcontext. The old strict get_representation(...,
+        # "MODEL_VIEW") lookup silently skipped such elements, so their
+        # geometry was never queued for comparison at all.
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+        model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        representation = ifcopenshell.api.geometry.add_slab_representation(ifc_file, body_context, depth=0.2)
+        # simulate the BIM program's non-conformant output: no subcontext
+        representation.ContextOfItems = model_context
+        ifcopenshell.api.geometry.assign_representation(ifc_file, wall, representation)
 
-class TestIfcDiffRealSamplePair:
-    @pytest.mark.skipif(
-        not os.path.exists(SAMPLE_MODEL_OLD) or not os.path.exists(SAMPLE_MODEL_NEW),
-        reason="Real sample IFC pair not available on this machine",
-    )
-    def test_real_sample_pair_ground_truth(self):
-        # Regression test using a real revision pair that exercises class
-        # change, attribute change, geometry change, material change, and
-        # placement change together. Ground truth established independently
-        # of ifcdiff: 1 added, 2 deleted, 26 modified.
-        # "container" and "aggregate" are deliberately excluded: the
-        # comparison here still compares get_container()/get_aggregate()
-        # results by instance identity across two different
-        # ifcopenshell.file objects, which are never equal, so every element
-        # with a container/aggregate would be falsely flagged. That fix is
-        # left to PR #9312 rather than duplicated here.
-        old = ifcopenshell.open(SAMPLE_MODEL_OLD)
-        new = ifcopenshell.open(SAMPLE_MODEL_NEW)
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        extrusion = new_file.by_type("IfcExtrudedAreaSolid")[0]
+        extrusion.Depth = 500.0
 
-        ifc_diff = ifcdiff.IfcDiff(
-            old,
-            new,
-            relationships=[
-                "attributes",
-                "geometry",
-                "property",
-                "type",
-                "classification",
-                "material",
-                "placement",
-            ],
-            is_shallow=False,
-        )
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["geometry"])
         ifc_diff.diff()
-
-        assert len(ifc_diff.added_elements) == 1
-        assert len(ifc_diff.deleted_elements) == 2
-        assert len(ifc_diff.change_register) == 26
-
-        reclassified = {
-            "3pUQsWUqb8deDoLZ6CIIET",
-            "0zGSqxrLf0ngxWk8EXkozt",
-            "0yVWtUza9BkBPidcrOmhrJ",
-            "3pzBWeief4XhSr5Lnykkbq",
-        }
-        for global_id in reclassified:
-            assert ifc_diff.change_register[global_id]["class_changed"] == {
-                "old_class": "IfcBuildingElementProxy",
-                "new_class": "IfcGeographicElement",
-            }
-
-        # the one reclassified element that also has genuinely changed
-        # geometry (316 to 200 vertices, i.e. 948 to 600 flat floats)
-        geometry_change = ifc_diff.change_register["3pzBWeief4XhSr5Lnykkbq"]["geometry_changed"]
-        assert geometry_change["values_changed"]["root['total_verts']"]["old_value"] == 948
-        assert geometry_change["values_changed"]["root['total_verts']"]["new_value"] == 600
-
-        for global_id in ("2eGMeS8JXEqPOIXktx3T6F", "3$Tc0Y2BH1KhfYOdLzGw$7"):
-            material_change = ifc_diff.change_register[global_id]["material_changed"]
-            assert material_change["old_materials"] == ["Soil1"]
-            assert material_change["new_materials"] == ["topsoil"]
-
-        placement_change = ifc_diff.change_register["23sFQGRy90RxVbRHD9iSE2"]["placement_changed"]
-        assert placement_change["moved"] == pytest.approx(40000.0, abs=1.0)
-        assert placement_change["rotated"] is True
+        assert ifc_diff.change_register[wall.GlobalId]["geometry_changed"]
