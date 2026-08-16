@@ -1471,6 +1471,31 @@ namespace {
 	}
 }
 
+namespace {
+	// Gives OCCT a chance to heal a genuinely degenerate/self-intersecting shape before it's
+	// handed to a boolean op (BRepAlgoAPI_Cut/BRepAlgoAPI_Section) that would otherwise crash
+	// outright rather than throw (confirmed against a real wall with two overlapping
+	// IfcOpeningElement voids, issue: PROPOSED SECTION crash). Shared by both call sites below --
+	// was previously duplicated near-identically at each.
+	TopoDS_Shape repair_if_invalid(const TopoDS_Shape& s) {
+		TopoDS_Shape result = s;
+		try {
+			if (!BRepCheck_Analyzer(result).IsValid()) {
+				ShapeFix_Shape fixer(result);
+				fixer.Perform();
+				result = fixer.Shape();
+			}
+		} catch (const Standard_Failure&) {
+			// Leave result as the original -- worst case we're back to the original
+			// (unguarded) crash risk for this one degenerate shape, same as before this fix
+			// existed. The caller's own boolean-op guards (IsDone()/IsNull() checks) handle
+			// whatever this leaves behind.
+			result = s;
+		}
+		return result;
+	}
+}
+
 void SvgSerializer::write(const geometry_data& data) {
 	std::vector<section_data> section_heights_storage;
 	const std::vector<section_data>* section_heights_used = &section_heights_storage;
@@ -1787,23 +1812,11 @@ void SvgSerializer::write(const geometry_data& data) {
 							// loop over parts to have better luck with co-planar parts
 							TopoDS_Iterator it(compound_to_use);
 							for (; it.More(); it.Next()) {
-								// A genuinely degenerate/self-intersecting part (confirmed against a
-								// real wall with two overlapping IfcOpeningElement voids, issue:
-								// PROPOSED SECTION crash) can make BRepAlgoAPI_Cut itself crash
-								// outright rather than throw -- BRepCheck_Analyzer/ShapeFix_Shape
-								// first gives OCCT a chance to heal it before the cut ever runs.
-								TopoDS_Shape part_to_cut = it.Value();
-								try {
-									if (!BRepCheck_Analyzer(part_to_cut).IsValid()) {
-										ShapeFix_Shape fixer(part_to_cut);
-										fixer.Perform();
-										part_to_cut = fixer.Shape();
-									}
-								} catch (const Standard_Failure&) {
-									// Leave part_to_cut as the original -- BRepAlgoAPI_Cut below
-									// still has its own IsDone()/IsNull() guards for whatever
-									// this leaves behind.
-								}
+								// A genuinely degenerate/self-intersecting part can make
+								// BRepAlgoAPI_Cut itself crash outright rather than throw --
+								// repair_if_invalid() first gives OCCT a chance to heal it before
+								// the cut ever runs (see its own comment).
+								TopoDS_Shape part_to_cut = repair_if_invalid(it.Value());
 								BRepAlgoAPI_Cut cut_op(part_to_cut, s);
 								if (!cut_op.IsDone()) {
 									continue;
@@ -2277,22 +2290,9 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			// Same defensive healing as the halfspace-cut path above (BRepAlgoAPI_Cut): a
 			// genuinely degenerate/self-intersecting subshape can make BRepAlgoAPI_Section
-			// itself crash outright rather than throw (confirmed against the same real wall
-			// with two overlapping IfcOpeningElement voids, issue: PROPOSED SECTION crash --
-			// this is a second OCCT boolean-adjacent operation the same bad geometry reaches,
-			// not a duplicate fix for the same call).
-			TopoDS_Shape subshape_to_cut = subshape;
-			try {
-				if (!BRepCheck_Analyzer(subshape_to_cut).IsValid()) {
-					ShapeFix_Shape fixer(subshape_to_cut);
-					fixer.Perform();
-					subshape_to_cut = fixer.Shape();
-				}
-			} catch (const Standard_Failure&) {
-				// Leave subshape_to_cut as the original -- worst case we're back to the
-				// original (unguarded) crash risk for this one degenerate subshape, same as
-				// before this fix existed.
-			}
+			// itself crash outright rather than throw -- this is a second OCCT boolean-adjacent
+			// operation the same bad geometry reaches, not a duplicate fix for the same call.
+			TopoDS_Shape subshape_to_cut = repair_if_invalid(subshape);
 			TopoDS_Shape result = BRepAlgoAPI_Section(subshape_to_cut, pln);
 
 			if (variant.which() == 2) {
