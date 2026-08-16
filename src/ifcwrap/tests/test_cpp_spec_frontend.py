@@ -56,13 +56,16 @@ from src.ifcwrap.binding_generator.contract_discovery import (
 from src.ifcwrap.binding_generator.cpp_spec_frontend import (
     discover_cpp_spec_functions,
     discover_cpp_spec_handles,
+    discover_cpp_spec_methods,
     discover_cpp_spec_option_structs,
     discover_cpp_spec_result_structs,
     lower_cpp_spec_functions_to_calls,
     lower_cpp_spec_handles_to_specs,
+    lower_cpp_spec_methods_to_calls,
     lower_cpp_spec_result_structs_to_specs,
 )
 from src.ifcwrap.binding_generator.pipeline import build_binding_ir
+from src.ifcwrap.binding_generator.policy_ir import BoolOutParamPolicyOp
 from src.ifcwrap.binding_generator.targets.wasm.typescript import (
     render_typescript_declarations,
 )
@@ -93,7 +96,6 @@ def _generate_cpp_specs(
 ) -> None:
     artifacts = render_c_abi(
         build_binding_ir(
-            (),
             module=module,
             c_prefix=c_prefix,
             discovery_include_dirs=discovery_include_dirs,
@@ -134,6 +136,49 @@ def test_cpp_spec_frontend_rejects_mutable_void_pointer_params(tmp_path: Path) -
         ValueError, match="Unsupported discovered parameter type 'void \\*'"
     ):
         lower_cpp_spec_functions_to_calls(functions, {})
+
+
+def test_cpp_spec_frontend_discovers_selected_native_method(tmp_path: Path) -> None:
+    spec_path = tmp_path / "demo_spec.hpp"
+    spec_path.write_text(
+        dedent(
+            """
+            #define IFCAPI_HANDLE(...)
+            #define IFCAPI_DISCOVER_METHOD(...)
+
+            namespace library {
+            struct item {
+                int value(const char*) const;
+                int value(int) const;
+                double measure() const;
+                bool measure(double&) const;
+            };
+            }
+
+            IFCAPI_HANDLE(item, library::item, none)
+            IFCAPI_DISCOVER_METHOD(item, value, value_by_name, const char*)
+            IFCAPI_DISCOVER_METHOD(item, measure, measure, double&)
+            """
+        ),
+        encoding="utf-8",
+    )
+    handles = lower_cpp_spec_handles_to_specs(
+        discover_cpp_spec_handles(spec_path, c_prefix="ifcopenshell")
+    )
+
+    calls = lower_cpp_spec_methods_to_calls(
+        _environment(tmp_path),
+        spec_path,
+        discover_cpp_spec_methods(spec_path),
+        handles,
+    )
+
+    assert len(calls) == 2
+    assert calls[0].c_name == "ifcopenshell_item_value_by_name"
+    assert calls[0].params[0].type.kind == "string"
+    assert calls[1].returns.kind == "double"
+    assert calls[1].params == ()
+    assert isinstance(calls[1].policy_operation, BoolOutParamPolicyOp)
 
 
 def test_contract_discovery_preserves_source_docs(tmp_path: Path) -> None:

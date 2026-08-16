@@ -4,11 +4,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from .authored_spec import (
-    MergedBindingSpec,
-    load_authored_spec,
-    load_merged_specs,
-)
 from .binding_ir import BindingIR, lower_binding_spec
 from .binding_model import HandleSpec
 from .clang_discovery import CompilationConfig, DiscoveryEnvironment
@@ -16,12 +11,18 @@ from .cpp_spec_frontend import (
     discover_cpp_spec_contract_headers,
     discover_cpp_spec_functions,
     discover_cpp_spec_handles,
+    discover_cpp_spec_methods,
     discover_cpp_spec_option_structs,
+    discover_cpp_spec_policy,
     discover_cpp_spec_result_structs,
+    discover_cpp_spec_selected_functions,
     lower_cpp_spec_functions_to_calls,
     lower_cpp_spec_handles_to_specs,
+    lower_cpp_spec_methods_to_calls,
+    lower_cpp_spec_policy_to_calls,
     lower_cpp_spec_result_structs_to_specs,
 )
+from .discovery_policy import MergedBindingSpec
 
 
 @dataclass(frozen=True)
@@ -128,6 +129,8 @@ def _merge_cpp_specs(
     methods = list(base.methods)
     existing_c_names = {call.c_name for call in (*base.functions, *base.methods)}
     public_headers = list(base.public_headers)
+    selected_calls = []
+    adapter_calls = []
     for config in configs:
         public_header = _cpp_spec_public_header(config.path, discovery_include_dirs)
         if public_header not in public_headers:
@@ -158,6 +161,10 @@ def _merge_cpp_specs(
                 config.path, discovery_include_dirs
             ),
         )
+        functions += discover_cpp_spec_selected_functions(
+            environment,
+            config.path,
+        )
         for struct_name, struct in discover_cpp_spec_option_structs(
             environment,
             config.path,
@@ -170,26 +177,45 @@ def _merge_cpp_specs(
                 msg = f"C++ spec option struct '{struct_name}' is declared with conflicting metadata"
                 raise ValueError(msg)
             option_structs[struct_name] = struct
-        for call in lower_cpp_spec_functions_to_calls(
-            functions,
-            handles,
-            result_structs,
-            option_structs,
-            c_prefix=config.c_prefix,
-        ):
-            if call.c_name in existing_c_names:
-                calls = [
-                    existing for existing in calls if existing.c_name != call.c_name
-                ]
-                methods = [
-                    existing for existing in methods if existing.c_name != call.c_name
-                ]
-            else:
-                existing_c_names.add(call.c_name)
-            if call.receiver is None:
-                calls.append(call)
-            else:
-                methods.append(call)
+        selected_calls.extend(
+            lower_cpp_spec_methods_to_calls(
+                environment,
+                config.path,
+                discover_cpp_spec_methods(config.path),
+                handles,
+            )
+        )
+        selected_calls.extend(
+            lower_cpp_spec_policy_to_calls(
+                environment,
+                config.path,
+                discover_cpp_spec_policy(config.path, handles),
+                handles,
+                config.c_prefix or base.c_prefix,
+            )
+        )
+        adapter_calls.extend(
+            lower_cpp_spec_functions_to_calls(
+                functions,
+                handles,
+                result_structs,
+                option_structs,
+                c_prefix=config.c_prefix,
+            )
+        )
+
+    for call in (*selected_calls, *adapter_calls):
+        if call.c_name in existing_c_names:
+            calls = [existing for existing in calls if existing.c_name != call.c_name]
+            methods = [
+                existing for existing in methods if existing.c_name != call.c_name
+            ]
+        else:
+            existing_c_names.add(call.c_name)
+        if call.receiver is None:
+            calls.append(call)
+        else:
+            methods.append(call)
 
     return MergedBindingSpec(
         module=base.module,
@@ -200,12 +226,10 @@ def _merge_cpp_specs(
         option_structs=option_structs,
         functions=tuple(calls),
         methods=tuple(methods),
-        discovery_diagnostics=base.discovery_diagnostics,
     )
 
 
 def build_binding_ir(
-    spec_paths: Sequence[Path],
     *,
     module: str = "ifcopenshell",
     c_prefix: str = "ifcopenshell",
@@ -217,18 +241,9 @@ def build_binding_ir(
     cpp_spec_c_prefix: str | Sequence[str] | None = None,
     cpp_spec_handle_c_prefix: str | Sequence[str] | None = None,
 ) -> BindingIR:
-    if not spec_paths and not cpp_spec_paths:
-        msg = "At least one policy or C++ spec path is required"
+    if not cpp_spec_paths:
+        msg = "At least one C++ spec path is required"
         raise ValueError(msg)
-    if len(spec_paths) == 1 and not cpp_spec_paths:
-        return lower_binding_spec(
-            load_authored_spec(
-                spec_paths[0],
-                discovery_include_dirs=discovery_include_dirs,
-                discovery_defines=discovery_defines,
-                discovery_clang_args=discovery_clang_args,
-            )
-        )
 
     cpp_spec_configs = (
         _cpp_spec_configs(
@@ -252,26 +267,15 @@ def build_binding_ir(
                 msg = f"C++ spec handle '{handle_name}' is declared with conflicting metadata"
                 raise ValueError(msg)
             cpp_spec_handles[handle_name] = handle
-    if spec_paths:
-        merged_spec = load_merged_specs(
-            list(spec_paths),
-            module,
-            c_prefix,
-            discovery_include_dirs=discovery_include_dirs,
-            discovery_defines=discovery_defines,
-            discovery_clang_args=discovery_clang_args,
-            existing_handles=cpp_spec_handles,
-        )
-    else:
-        merged_spec = MergedBindingSpec(
-            module=module,
-            c_prefix=c_prefix,
-            public_headers=(),
-            handles={},
-            result_structs={},
-            functions=(),
-            methods=(),
-        )
+    merged_spec = MergedBindingSpec(
+        module=module,
+        c_prefix=c_prefix,
+        public_headers=(),
+        handles=cpp_spec_handles,
+        result_structs={},
+        functions=(),
+        methods=(),
+    )
     if cpp_spec_configs:
         merged_spec = _merge_cpp_specs(
             merged_spec,

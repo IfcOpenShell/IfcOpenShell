@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from textwrap import dedent
-
 import pytest
 
 from src.ifcwrap.binding_generator.abi_ir import finalize_abi
-from src.ifcwrap.binding_generator.authored_spec import load_authored_spec
 from src.ifcwrap.binding_generator.binding_ir import (
     BindingIR,
     CallIR,
@@ -16,6 +12,7 @@ from src.ifcwrap.binding_generator.binding_ir import (
     lower_binding_spec,
 )
 from src.ifcwrap.binding_generator.binding_model import (
+    CallSpec,
     HandleSpec,
     OptionStructFieldSpec,
     OptionStructSpec,
@@ -24,77 +21,90 @@ from src.ifcwrap.binding_generator.binding_model import (
     ResultStructSpec,
     TypeSpec,
 )
+from src.ifcwrap.binding_generator.discovery_policy import MergedBindingSpec
+from src.ifcwrap.binding_generator.policy_ir import (
+    ConstructorPolicyOp,
+    DirectFunctionPolicyOp,
+    DirectMethodPolicyOp,
+)
 
 
-def test_finalized_abi_derives_layouts_and_signatures(tmp_path: Path) -> None:
-    spec_path = tmp_path / "demo.yml"
-    spec_path.write_text(
-        dedent(
-            """
-            schema_version: 1
-            module: demo
-            slice: demo
-            c_prefix: ifcopenshell_demo
-            public_headers:
-              - demo.h
-            handles:
-              - name: file
-                cpp_type: Demo::File
-                c_type: ifcopenshell_demo_file_t
-                destructor: delete
-              - name: item
-                cpp_type: Demo::Item
-                c_type: ifcopenshell_demo_item_t
-                destructor: delete
-            functions:
-              - expose_as: create_file
-                handle: file
-                params:
-                  - name: schema
-                    type:
-                      kind: string
-              - expose_as: schema_names
-                cpp_name: schema_names
-                returns:
-                  kind: string_list
-                params: []
-            methods:
-              - receiver: file
-                expose_as: by_type
-                cpp_name: by_type
-                returns:
-                  kind: handle_list
-                  handle: item
-                  ownership: owned
-                params:
-                  - name: type_name
-                    type:
-                      kind: string
-              - receiver: item
-                expose_as: set_values
-                cpp_name: set_values
-                returns:
-                  kind: void
-                params:
-                  - name: values
-                    type:
-                      kind: double_list
-              - receiver: item
-                expose_as: set_counts
-                cpp_name: set_counts
-                returns:
-                  kind: void
-                params:
-                  - name: values
-                    type:
-                      kind: int64_list
-            """
-        ).strip()
-        + "\n",
-        encoding="utf-8",
+def test_finalized_abi_derives_layouts_and_signatures() -> None:
+    handles = {
+        name: HandleSpec(
+            name=name,
+            cpp_type=f"Demo::{name.title()}",
+            c_type=f"ifcopenshell_demo_{name}_t",
+            destructor="delete",
+        )
+        for name in ("file", "item")
+    }
+    functions = (
+        CallSpec(
+            expose_as="create_file",
+            c_name="ifcopenshell_demo_create_file",
+            receiver=None,
+            returns=TypeSpec(kind="handle", handle="file", ownership="owned"),
+            params=(ParamSpec("schema", TypeSpec(kind="string")),),
+            policy_operation=ConstructorPolicyOp(),
+        ),
+        CallSpec(
+            expose_as="schema_names",
+            c_name="ifcopenshell_demo_schema_names",
+            receiver=None,
+            returns=TypeSpec(kind="string", sequence_depth=1),
+            params=(),
+            policy_operation=DirectFunctionPolicyOp("schema_names"),
+        ),
     )
-
-    metadata = finalize_abi(lower_binding_spec(load_authored_spec(spec_path)))
+    methods = tuple(
+        CallSpec(
+            expose_as=name,
+            c_name=f"ifcopenshell_demo_{receiver}_{name}",
+            receiver=receiver,
+            returns=returns,
+            params=(ParamSpec(param_name, param_type),),
+            policy_operation=DirectMethodPolicyOp(name),
+        )
+        for receiver, name, returns, param_name, param_type in (
+            (
+                "file",
+                "by_type",
+                TypeSpec(
+                    kind="handle", handle="item", ownership="owned", sequence_depth=1
+                ),
+                "type_name",
+                TypeSpec(kind="string"),
+            ),
+            (
+                "item",
+                "set_values",
+                TypeSpec(kind="void"),
+                "values",
+                TypeSpec(kind="double", sequence_depth=1),
+            ),
+            (
+                "item",
+                "set_counts",
+                TypeSpec(kind="void"),
+                "values",
+                TypeSpec(kind="int64", sequence_depth=1),
+            ),
+        )
+    )
+    metadata = finalize_abi(
+        lower_binding_spec(
+            MergedBindingSpec(
+                module="demo",
+                c_prefix="ifcopenshell_demo",
+                public_headers=("demo.h",),
+                handles=handles,
+                result_structs={},
+                functions=functions,
+                methods=methods,
+            )
+        )
+    )
 
     assert metadata.error_functions == {
         "clear_error": "ifcopenshell_demo_clear_error",

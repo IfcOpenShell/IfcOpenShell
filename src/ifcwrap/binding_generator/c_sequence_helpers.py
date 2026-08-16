@@ -16,8 +16,8 @@ from .abi_ir import (
     _snake_name,
     _type_spec_sequence_kind,
 )
-from .authored_spec import HandleSpec, TypeSpec
 from .binding_ir import BindingIR
+from .binding_model import HandleSpec, TypeSpec
 
 _SEQUENCE_LEAF_CPP_TYPE: dict[str, str] = {
     "string": "std::string",
