@@ -261,7 +261,7 @@ def _nearest_ray_hits(
     """Nearest hit per origin; select_ray returns all hits including duplicates."""
     hits = []
     for origin in origins:
-        results = sorted(tree.select_ray(origin, ray_dir, length=1e4), key=lambda h: h.distance)
+        results = sorted(tree.select_ray(origin, ray_dir, 1e4), key=lambda h: h.distance)
         if results:
             hits.append(results[0])
     return hits
