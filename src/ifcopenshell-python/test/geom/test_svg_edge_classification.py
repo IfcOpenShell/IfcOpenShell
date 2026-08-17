@@ -1,3 +1,5 @@
+# This file was generated with the assistance of an AI coding tool.
+
 """Regression tests for the SVG serializer's edge classification (issue #3742):
 cross-coplanar / mat-style-change classification, the coincident-edge paint-order
 dedup pass, and restore_coincident_hidden_edges()'s HLR depth-tie restoration.
@@ -186,25 +188,87 @@ def _build_thin_frame_window(
     [4.915, 6.555] metres, Y in [-2.784, -1.143], Z in [0.36, 1.48].
     """
     items_data = [
-        dict(points=[(1200.0, 1080.0), (1200.0, 0.0), (0.0, 0.0), (0.0, 1080.0), (25.0, 1080.0), (25.0, 25.0), (1175.0, 25.0), (1175.0, 1080.0)], position=(0.0, 90.0, 0.0), depth=9.99999523162842),
-        dict(points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 1080.0), (0.0, 1080.0)], position=(0.0, 50.0, 0.0), depth=40.0000038146973),
-        dict(points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 1055.0), (0.0, 1055.0)], position=(25.0, 90.0, 25.0), depth=34.9999961853027),
-        dict(points=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 1020.0), (34.9999961853027, 1020.0)], position=(25.0, 102.5, 25.0), depth=10.0),
-        dict(points=[(0.0, 0.0), (0.0, 320.000061035156), (1200.0, 320.000061035156), (1200.0, 0.0), (1175.0, 0.0), (1175.0, 295.000061035156), (25.0, 295.000061035156), (25.0, 0.0)], position=(0.0, 90.0, 1080.0), depth=9.99999523162842),
-        dict(points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 320.000061035156), (0.0, 320.000061035156)], position=(0.0, 50.0, 1080.0), depth=40.0000038146973),
-        dict(points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 295.000061035156), (0.0, 295.000061035156)], position=(25.0, 90.0, 1080.0), depth=34.9999961853027),
-        dict(points=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 260.000061035156), (34.9999961853027, 260.000061035156)], position=(25.0, 102.5, 1080.0), depth=10.0),
+        dict(
+            points=[
+                (1200.0, 1080.0),
+                (1200.0, 0.0),
+                (0.0, 0.0),
+                (0.0, 1080.0),
+                (25.0, 1080.0),
+                (25.0, 25.0),
+                (1175.0, 25.0),
+                (1175.0, 1080.0),
+            ],
+            position=(0.0, 90.0, 0.0),
+            depth=9.99999523162842,
+        ),
+        dict(
+            points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 1080.0), (0.0, 1080.0)],
+            position=(0.0, 50.0, 0.0),
+            depth=40.0000038146973,
+        ),
+        dict(
+            points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 1055.0), (0.0, 1055.0)],
+            position=(25.0, 90.0, 25.0),
+            depth=34.9999961853027,
+        ),
+        dict(
+            points=[
+                (34.9999961853027, 34.9999961853027),
+                (1115.0, 34.9999961853027),
+                (1115.0, 1020.0),
+                (34.9999961853027, 1020.0),
+            ],
+            position=(25.0, 102.5, 25.0),
+            depth=10.0,
+        ),
+        dict(
+            points=[
+                (0.0, 0.0),
+                (0.0, 320.000061035156),
+                (1200.0, 320.000061035156),
+                (1200.0, 0.0),
+                (1175.0, 0.0),
+                (1175.0, 295.000061035156),
+                (25.0, 295.000061035156),
+                (25.0, 0.0),
+            ],
+            position=(0.0, 90.0, 1080.0),
+            depth=9.99999523162842,
+        ),
+        dict(
+            points=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 320.000061035156), (0.0, 320.000061035156)],
+            position=(0.0, 50.0, 1080.0),
+            depth=40.0000038146973,
+        ),
+        dict(
+            points=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 295.000061035156), (0.0, 295.000061035156)],
+            position=(25.0, 90.0, 1080.0),
+            depth=34.9999961853027,
+        ),
+        dict(
+            points=[
+                (34.9999961853027, 34.9999961853027),
+                (1115.0, 34.9999961853027),
+                (1115.0, 260.000061035156),
+                (34.9999961853027, 260.000061035156),
+            ],
+            position=(25.0, 102.5, 1080.0),
+            depth=10.0,
+        ),
     ]
     # Resolved world-space placement (get_local_placement(), collapsing the
     # real product's multi-level placement chain -- and its identity
     # mapped-item transform -- into one matrix): a 45-degree plan rotation
     # plus translation, in the project's own millimetre units.
-    world_matrix = np.array([
-        [0.7071067812, -0.7071067812, 0.0, 5742.3152923584],
-        [0.7071067812, 0.7071067812, 0.0, -2819.2496299744],
-        [0.0, 0.0, 1.0, 400.0000059605],
-        [0.0, 0.0, 0.0, 1.0],
-    ])
+    world_matrix = np.array(
+        [
+            [0.7071067812, -0.7071067812, 0.0, 5742.3152923584],
+            [0.7071067812, 0.7071067812, 0.0, -2819.2496299744],
+            [0.0, 0.0, 1.0, 400.0000059605],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
 
     window = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWindow", name="Window")
     ifcopenshell.api.spatial.assign_container(ifc_file, relating_structure=storey, products=[window])
@@ -361,12 +425,8 @@ def test_cross_coplanar_basic_touching_boundary():
     """
     ifc_file, body_context, storey = _make_project()
     material = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
-    wall_a = _add_box(
-        ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=material
-    )
-    wall_b = _add_box(
-        ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=material
-    )
+    wall_a = _add_box(ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=material)
+    wall_b = _add_box(ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=material)
 
     svg = render_svg(
         ifc_file,
@@ -755,12 +815,8 @@ def test_cross_coplanar_match_partial_occlusion_within_one_raw_interval():
     """
     ifc_file, body_context, storey = _make_project()
     material = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
-    wall_a = _add_box(
-        ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=material
-    )
-    wall_b = _add_box(
-        ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=material
-    )
+    wall_a = _add_box(ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=material)
+    wall_b = _add_box(ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=material)
     _add_box(ifc_file, body_context, storey, "Occluder", (0.4, 0.3, 0.4), (1.8, -0.5, 0.8))
 
     svg = render_svg(
@@ -817,12 +873,8 @@ def test_mat_style_change_case_a_material_mismatch():
     ifc_file, body_context, storey = _make_project()
     concrete = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
     timber = ifcopenshell.api.material.add_material(ifc_file, name="Timber")
-    wall_a = _add_box(
-        ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=concrete
-    )
-    wall_b = _add_box(
-        ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=timber
-    )
+    wall_a = _add_box(ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=concrete)
+    wall_b = _add_box(ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=timber)
 
     svg = render_svg(
         ifc_file,
@@ -861,12 +913,8 @@ def test_mat_style_change_case_a_requires_cross_coplanar_too():
     ifc_file, body_context, storey = _make_project()
     concrete = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
     timber = ifcopenshell.api.material.add_material(ifc_file, name="Timber")
-    wall_a = _add_box(
-        ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=concrete
-    )
-    wall_b = _add_box(
-        ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=timber
-    )
+    wall_a = _add_box(ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=concrete)
+    wall_b = _add_box(ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=timber)
 
     svg = render_svg(
         ifc_file,
@@ -992,7 +1040,9 @@ def test_cluster_a_exact_match_dedup_outline_beats_sharp():
     site = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSite", name="Site")
     building = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuilding", name="Building")
     storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Storey")
-    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=ifc_file.by_type("IfcProject")[0], products=[site])
+    ifcopenshell.api.aggregate.assign_object(
+        ifc_file, relating_object=ifc_file.by_type("IfcProject")[0], products=[site]
+    )
     ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=site, products=[building])
     ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=building, products=[storey])
 
@@ -1006,7 +1056,10 @@ def test_cluster_a_exact_match_dedup_outline_beats_sharp():
     axis = (0.0, 0.0, 1.0)
 
     wall_a = _add_arbitrary_profile_slab(
-        ifc_file, body_context, storey, "WallA",
+        ifc_file,
+        body_context,
+        storey,
+        "WallA",
         points_2d=profile,
         depth=depth,
         location=(-34.15430311768699, 0.3383361692894788, 11.32700152284517),
@@ -1015,7 +1068,10 @@ def test_cluster_a_exact_match_dedup_outline_beats_sharp():
         ifc_class="IfcWall",
     )
     wall_b = _add_arbitrary_profile_slab(
-        ifc_file, body_context, storey, "WallB",
+        ifc_file,
+        body_context,
+        storey,
+        "WallB",
         points_2d=profile,
         depth=depth,
         location=(-35.74319711820347, -0.06958368060782825, 11.32700152284517),
@@ -1086,7 +1142,9 @@ def test_cluster_b_depth_tie_restoration():
     site = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSite", name="Site")
     building = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuilding", name="Building")
     storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Storey")
-    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=ifc_file.by_type("IfcProject")[0], products=[site])
+    ifcopenshell.api.aggregate.assign_object(
+        ifc_file, relating_object=ifc_file.by_type("IfcProject")[0], products=[site]
+    )
     ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=site, products=[building])
     ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=building, products=[storey])
 
@@ -1096,7 +1154,10 @@ def test_cluster_b_depth_tie_restoration():
     ref_direction = (1.0, 0.0, 0.0)
 
     slab_a = _add_arbitrary_profile_slab(
-        ifc_file, body_context, storey, "SlabA",
+        ifc_file,
+        body_context,
+        storey,
+        "SlabA",
         points_2d=[
             (-4.08607816696167, 2.661661148071289),
             (-4.08607816696167, 1.2422367334365845),
@@ -1110,7 +1171,10 @@ def test_cluster_b_depth_tie_restoration():
         ref_direction=ref_direction,
     )
     _add_arbitrary_profile_slab(
-        ifc_file, body_context, storey, "SlabB",
+        ifc_file,
+        body_context,
+        storey,
+        "SlabB",
         points_2d=[
             (4.086053371429443, -1.0950984687951859e-05),
             (2.086031198501587, -1.0950984687951859e-05),
@@ -1214,7 +1278,9 @@ def test_restore_coincident_hidden_edges_partial_occlusion():
     site = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSite", name="Site")
     building = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuilding", name="Building")
     storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Storey")
-    ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=ifc_file.by_type("IfcProject")[0], products=[site])
+    ifcopenshell.api.aggregate.assign_object(
+        ifc_file, relating_object=ifc_file.by_type("IfcProject")[0], products=[site]
+    )
     ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=site, products=[building])
     ifcopenshell.api.aggregate.assign_object(ifc_file, relating_object=building, products=[storey])
 
@@ -1222,7 +1288,10 @@ def test_restore_coincident_hidden_edges_partial_occlusion():
     axis = (0.0, -0.24259928227576613, 0.9701265836164285)
     ref_direction = (1.0, 0.0, 0.0)
     slab_a = _add_arbitrary_profile_slab(
-        ifc_file, body_context, storey, "SlabA",
+        ifc_file,
+        body_context,
+        storey,
+        "SlabA",
         points_2d=[
             (-4.08607816696167, 2.661661148071289),
             (-4.08607816696167, 1.2422367334365845),
@@ -1236,7 +1305,10 @@ def test_restore_coincident_hidden_edges_partial_occlusion():
         ref_direction=ref_direction,
     )
     _add_arbitrary_profile_slab(
-        ifc_file, body_context, storey, "SlabB",
+        ifc_file,
+        body_context,
+        storey,
+        "SlabB",
         points_2d=[
             (4.086053371429443, -1.0950984687951859e-05),
             (2.086031198501587, -1.0950984687951859e-05),
@@ -1256,7 +1328,10 @@ def test_restore_coincident_hidden_edges_partial_occlusion():
     # the target edge's world-space extent, leaving both outer thirds
     # genuinely unoccluded and still depth-tied.
     _add_arbitrary_profile_slab(
-        ifc_file, body_context, storey, "Occluder",
+        ifc_file,
+        body_context,
+        storey,
+        "Occluder",
         points_2d=[(0.0, 0.0), (0.7, 0.0), (0.7, 0.3), (0.0, 0.3), (0.0, 0.0)],
         depth=0.3,
         location=(-48.34, 4.0, 14.8),
@@ -1708,7 +1783,10 @@ def test_back_facing_convex_edge_stays_sharp_when_product_is_section_cut():
             f"genuine-but-unrelated naked edge on unfixed code; expected sharp, got: {window_edges}"
         )
 
-    genuine_crease_p0, genuine_crease_p1 = (8626.516525438954, 10045.00001001358), (8626.516525438954, 10055.00001001358)
+    genuine_crease_p0, genuine_crease_p1 = (8626.516525438954, 10045.00001001358), (
+        8626.516525438954,
+        10055.00001001358,
+    )
     assert has_edge(edges, window.GlobalId, "crease", genuine_crease_p0, genuine_crease_p1), (
         "control assertion failed: this genuine, pre-existing concave fold should "
         f"still read crease regardless of the fix, got: {window_edges}"
@@ -1771,7 +1849,9 @@ def test_back_facing_fold_seen_through_genuine_opening_still_flips():
     )
     edges = parse_edges(svg)
 
-    assert any(e.cls == "boundary" for e in edges if e.guid == open_box.GlobalId), "expected a naked-edge rim around the missing top face"
+    assert any(
+        e.cls == "boundary" for e in edges if e.guid == open_box.GlobalId
+    ), "expected a naked-edge rim around the missing top face"
     target_p0, target_p1 = (10000.0, 9183.5034190722745), (10000.0, 10000.0)
     assert has_edge(edges, open_box.GlobalId, "sharp", target_p0, target_p1)
 
@@ -1837,32 +1917,132 @@ def test_hole_rim_edge_stays_sharp_not_crease():
     # outer/inner profile loop points) via ifcopenshell.open() + direct attribute access --
     # see this test's own docstring for why the earlier reconstruction above got this wrong.
     items_data = [
-        dict(position=(0.0, 90.0, 0.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=9.99999523162842, direction=(0.0, 0.0, -1.0),
-             outer=[(1200.0, 1080.0), (1200.0, 0.0), (0.0, 0.0), (0.0, 1080.0), (25.0, 1080.0), (25.0, 25.0), (1175.0, 25.0), (1175.0, 1080.0)], inner=[]),
-        dict(position=(0.0, 50.0, 0.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=40.0000038146973, direction=(0.0, 0.0, -1.0),
-             outer=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 1080.0), (0.0, 1080.0)], inner=[[(50.0, 50.0), (1150.0, 50.0), (1150.0, 1055.0), (50.0, 1055.0)]]),
-        dict(position=(25.0, 90.0, 25.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=34.9999961853027, direction=(0.0, 0.0, -1.0),
-             outer=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 1055.0), (0.0, 1055.0)], inner=[[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 1020.0), (34.9999961853027, 1020.0)]]),
-        dict(position=(25.0, 102.5, 25.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=10.0, direction=(0.0, 0.0, -1.0),
-             outer=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 1020.0), (34.9999961853027, 1020.0)], inner=[]),
-        dict(position=(0.0, 90.0, 1080.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=9.99999523162842, direction=(0.0, 0.0, -1.0),
-             outer=[(0.0, 0.0), (0.0, 320.000061035156), (1200.0, 320.000061035156), (1200.0, 0.0), (1175.0, 0.0), (1175.0, 295.000061035156), (25.0, 295.000061035156), (25.0, 0.0)], inner=[]),
-        dict(position=(0.0, 50.0, 1080.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=40.0000038146973, direction=(0.0, 0.0, -1.0),
-             outer=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 320.000061035156), (0.0, 320.000061035156)], inner=[[(50.0, 25.0), (1150.0, 25.0), (1150.0, 270.000061035156), (50.0, 270.000061035156)]]),
-        dict(position=(25.0, 90.0, 1080.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=34.9999961853027, direction=(0.0, 0.0, -1.0),
-             outer=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 295.000061035156), (0.0, 295.000061035156)], inner=[[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 260.000061035156), (34.9999961853027, 260.000061035156)]]),
-        dict(position=(25.0, 102.5, 1080.0), axis=(0.0, -1.0, 0.0), ref=(1.0, 0.0, 0.0), depth=10.0, direction=(0.0, 0.0, -1.0),
-             outer=[(34.9999961853027, 34.9999961853027), (1115.0, 34.9999961853027), (1115.0, 260.000061035156), (34.9999961853027, 260.000061035156)], inner=[]),
+        dict(
+            position=(0.0, 90.0, 0.0),
+            axis=(0.0, -1.0, 0.0),
+            ref=(1.0, 0.0, 0.0),
+            depth=9.99999523162842,
+            direction=(0.0, 0.0, -1.0),
+            outer=[
+                (1200.0, 1080.0),
+                (1200.0, 0.0),
+                (0.0, 0.0),
+                (0.0, 1080.0),
+                (25.0, 1080.0),
+                (25.0, 25.0),
+                (1175.0, 25.0),
+                (1175.0, 1080.0),
+            ],
+            inner=[],
+        ),
+        dict(
+            position=(0.0, 50.0, 0.0),
+            axis=(0.0, -1.0, 0.0),
+            ref=(1.0, 0.0, 0.0),
+            depth=40.0000038146973,
+            direction=(0.0, 0.0, -1.0),
+            outer=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 1080.0), (0.0, 1080.0)],
+            inner=[[(50.0, 50.0), (1150.0, 50.0), (1150.0, 1055.0), (50.0, 1055.0)]],
+        ),
+        dict(
+            position=(25.0, 90.0, 25.0),
+            axis=(0.0, -1.0, 0.0),
+            ref=(1.0, 0.0, 0.0),
+            depth=34.9999961853027,
+            direction=(0.0, 0.0, -1.0),
+            outer=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 1055.0), (0.0, 1055.0)],
+            inner=[
+                [
+                    (34.9999961853027, 34.9999961853027),
+                    (1115.0, 34.9999961853027),
+                    (1115.0, 1020.0),
+                    (34.9999961853027, 1020.0),
+                ]
+            ],
+        ),
+        dict(
+            position=(25.0, 102.5, 25.0),
+            axis=(0.0, -1.0, 0.0),
+            ref=(1.0, 0.0, 0.0),
+            depth=10.0,
+            direction=(0.0, 0.0, -1.0),
+            outer=[
+                (34.9999961853027, 34.9999961853027),
+                (1115.0, 34.9999961853027),
+                (1115.0, 1020.0),
+                (34.9999961853027, 1020.0),
+            ],
+            inner=[],
+        ),
+        dict(
+            position=(0.0, 90.0, 1080.0),
+            axis=(0.0, -1.0, 0.0),
+            ref=(1.0, 0.0, 0.0),
+            depth=9.99999523162842,
+            direction=(0.0, 0.0, -1.0),
+            outer=[
+                (0.0, 0.0),
+                (0.0, 320.000061035156),
+                (1200.0, 320.000061035156),
+                (1200.0, 0.0),
+                (1175.0, 0.0),
+                (1175.0, 295.000061035156),
+                (25.0, 295.000061035156),
+                (25.0, 0.0),
+            ],
+            inner=[],
+        ),
+        dict(
+            position=(0.0, 50.0, 1080.0),
+            axis=(0.0, -1.0, 0.0),
+            ref=(1.0, 0.0, 0.0),
+            depth=40.0000038146973,
+            direction=(0.0, 0.0, -1.0),
+            outer=[(0.0, 0.0), (1200.0, 0.0), (1200.0, 320.000061035156), (0.0, 320.000061035156)],
+            inner=[[(50.0, 25.0), (1150.0, 25.0), (1150.0, 270.000061035156), (50.0, 270.000061035156)]],
+        ),
+        dict(
+            position=(25.0, 90.0, 1080.0),
+            axis=(0.0, -1.0, 0.0),
+            ref=(1.0, 0.0, 0.0),
+            depth=34.9999961853027,
+            direction=(0.0, 0.0, -1.0),
+            outer=[(0.0, 0.0), (1150.0, 0.0), (1150.0, 295.000061035156), (0.0, 295.000061035156)],
+            inner=[
+                [
+                    (34.9999961853027, 34.9999961853027),
+                    (1115.0, 34.9999961853027),
+                    (1115.0, 260.000061035156),
+                    (34.9999961853027, 260.000061035156),
+                ]
+            ],
+        ),
+        dict(
+            position=(25.0, 102.5, 1080.0),
+            axis=(0.0, -1.0, 0.0),
+            ref=(1.0, 0.0, 0.0),
+            depth=10.0,
+            direction=(0.0, 0.0, -1.0),
+            outer=[
+                (34.9999961853027, 34.9999961853027),
+                (1115.0, 34.9999961853027),
+                (1115.0, 260.000061035156),
+                (34.9999961853027, 260.000061035156),
+            ],
+            inner=[],
+        ),
     ]
     # Resolved world-space placement (get_local_placement()), same recipe as the earlier
     # reconstruction above -- this part was already correct, only the per-item axis/ref and
     # inner-loop points needed fixing.
-    world_matrix = np.array([
-        [0.7071067812, -0.7071067812, 0.0, 5742.3152923584],
-        [0.7071067812, 0.7071067812, 0.0, -2819.2496299744],
-        [0.0, 0.0, 1.0, 400.0000059605],
-        [0.0, 0.0, 0.0, 1.0],
-    ])
+    world_matrix = np.array(
+        [
+            [0.7071067812, -0.7071067812, 0.0, 5742.3152923584],
+            [0.7071067812, 0.7071067812, 0.0, -2819.2496299744],
+            [0.0, 0.0, 1.0, 400.0000059605],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
 
     window = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWindow", name="Window")
     ifcopenshell.api.spatial.assign_container(ifc_file, relating_structure=storey, products=[window])
@@ -1941,12 +2121,16 @@ def _add_layered_wall(
     wall = _add_box(ifc_file, body_context, storey, name, size, translation)
     concrete = ifcopenshell.api.material.add_material(ifc_file, name=f"Concrete{tag}")
     insulation = ifcopenshell.api.material.add_material(ifc_file, name=f"Insulation{tag}")
-    layer_set = ifcopenshell.api.material.add_material_set(ifc_file, name=f"WallBuildUp{tag}", set_type="IfcMaterialLayerSet")
+    layer_set = ifcopenshell.api.material.add_material_set(
+        ifc_file, name=f"WallBuildUp{tag}", set_type="IfcMaterialLayerSet"
+    )
     layer1 = ifcopenshell.api.material.add_layer(ifc_file, layer_set=layer_set, material=concrete)
     ifcopenshell.api.material.edit_layer(ifc_file, layer=layer1, attributes={"LayerThickness": 0.15})
     layer2 = ifcopenshell.api.material.add_layer(ifc_file, layer_set=layer_set, material=insulation)
     ifcopenshell.api.material.edit_layer(ifc_file, layer=layer2, attributes={"LayerThickness": 0.05})
-    ifcopenshell.api.material.assign_material(ifc_file, products=[wall], type="IfcMaterialLayerSetUsage", material=layer_set)
+    ifcopenshell.api.material.assign_material(
+        ifc_file, products=[wall], type="IfcMaterialLayerSetUsage", material=layer_set
+    )
     return wall
 
 
@@ -2106,7 +2290,10 @@ def test_unify_inputs_heals_hairline_kink_within_one_product():
     kink = 5e-5  # 0.05mm inward bump on an otherwise-straight 2m edge
     points_2d = [(0.0, 0.0), (1.0, kink), (2.0, 0.0), (2.0, 0.2), (0.0, 0.2), (0.0, 0.0)]
     wall = _add_arbitrary_profile_slab(
-        ifc_file, body_context, storey, "Wall",
+        ifc_file,
+        body_context,
+        storey,
+        "Wall",
         points_2d=points_2d,
         depth=2.0,
         location=(0.0, 0.0, 0.0),
