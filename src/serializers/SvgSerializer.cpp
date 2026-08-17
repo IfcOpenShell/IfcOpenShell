@@ -3019,8 +3019,17 @@ namespace {
 				}
 				gp_Pnt pp0 = project_to_view_plane(seg->p0);
 				gp_Pnt pp1 = project_to_view_plane(seg->p1);
-				if (pp0.Distance(pp1) < Precision::Confusion()) {
-					continue; // edge-on to the camera -- projects to a point, no screen-space line to dedup
+				// Known-issues item 49: floored at `tolerance` (this pass's own matching
+				// precision), not just Precision::Confusion() (~1e-7) -- a long 3D edge viewed
+				// at a grazing-but-not-quite-edge-on angle can produce a projected length
+				// between those two scales, small enough that real_scale_i/real_scale_j below
+				// (= seg.length / proj_seg.length) amplifies ordinary screen-space noise into a
+				// wildly incorrect real-3D clip range. Below `tolerance`, the two projected
+				// endpoints are already indistinguishable at this pass's own resolution, so
+				// there is no reliable screen-space line to rescale from regardless -- same
+				// conservative fallback (exact-key-only matching) as the curved-edge case above.
+				if (pp0.Distance(pp1) < tolerance) {
+					continue; // edge-on to the camera -- projects to (near-)a point, no reliable screen-space line to dedup
 				}
 				gp_Vec pv(pp0, pp1);
 				cross_coplanar::LineSeg proj_seg{ pp0, pp1, gp_Dir(pv), pv.Magnitude(), e };
