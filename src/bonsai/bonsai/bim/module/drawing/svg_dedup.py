@@ -79,9 +79,18 @@ def merge_duplicate_edges(root, tolerance: float = 1e-3) -> None:
     original, untrimmed extent) -- so this iterates to a fixed point rather
     than doing a single pass, capped defensively since real drawings converge
     within one or two passes in practice.
+
+    Known-issues item 55: passes a "dirty" set of (class, cut-or-projection)
+    bucket keys from each pass into the next, so later passes only re-parse
+    and re-cluster buckets that actually changed -- a bucket's own trimming
+    can only ever reveal a new overlap within that SAME bucket (buckets are
+    entirely disjoint by class/group), never in a different one, so an
+    unchanged bucket is guaranteed identical on every later pass regardless.
     """
+    dirty_keys = None  # None means "examine every bucket" -- only true on pass 1.
     for _ in range(MAX_PASSES):
-        if not _run_one_pass(root, tolerance):
+        dirty_keys = _run_one_pass(root, tolerance, dirty_keys)
+        if not dirty_keys:
             return
 
 
@@ -108,27 +117,34 @@ def _cut_or_projection(path: "etree._Element") -> Optional[str]:
     return None
 
 
-def _run_one_pass(root, tolerance: float) -> bool:
-    """Runs one full class-grouped cluster/trim pass. Returns whether it
-    changed anything, so the caller can iterate to a fixed point."""
+def _run_one_pass(
+    root, tolerance: float, only_keys: Optional[set[tuple[str, Optional[str]]]] = None
+) -> set[tuple[str, Optional[str]]]:
+    """Runs one class-grouped cluster/trim pass, restricted to `only_keys`'s
+    (class, cut-or-projection) buckets when given (`None` = every bucket).
+    Returns the set of bucket keys that actually changed, so the caller can
+    restrict the next pass to just those (known-issues item 55)."""
     paths_by_class: dict[tuple[str, Optional[str]], list[tuple[etree._Element, Segment]]] = {}
     for path in root.findall(f".//{SVG_NS}g[@{IFC_NS}guid]/{SVG_NS}path"):
         cls = path.get("class")
         d = path.get("d")
         if not cls or not d:
             continue
-        seg = _edge_path_d_to_segment(d)
-        if seg is None or _length(seg) < tolerance:
-            continue
         # Known-issues item 52: scoped to (class, cut-or-projection) rather than
         # class alone, so a "cut"-side and "projection"-side copy of what looks
         # like the same edge never cluster together and risk the wrong one
         # surviving -- see _cut_or_projection()'s own comment.
-        paths_by_class.setdefault((cls, _cut_or_projection(path)), []).append((path, seg))
+        key = (cls, _cut_or_projection(path))
+        if only_keys is not None and key not in only_keys:
+            continue
+        seg = _edge_path_d_to_segment(d)
+        if seg is None or _length(seg) < tolerance:
+            continue
+        paths_by_class.setdefault(key, []).append((path, seg))
 
-    changed = False
+    changed_keys: set[tuple[str, Optional[str]]] = set()
 
-    for entries in paths_by_class.values():
+    for key, entries in paths_by_class.items():
         n = len(entries)
         if n < 2:
             continue
@@ -156,9 +172,9 @@ def _run_one_pass(root, tolerance: float) -> bool:
             if len(members) < 2:
                 continue
             _resolve_cluster([entries[i] for i in members], tolerance)
-            changed = True
+            changed_keys.add(key)
 
-    return changed
+    return changed_keys
 
 
 def _resolve_cluster(members: list[tuple["etree._Element", Segment]], tolerance: float) -> None:
