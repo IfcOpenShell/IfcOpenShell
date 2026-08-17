@@ -599,6 +599,30 @@ namespace {
 		return boost::none;
 	}
 
+	// Walks `product`'s own HasAssociations inverse to find the single IfcRelAssociatesMaterial,
+	// shared by get_single_material_association() and resolve_layer_projection() (known-issues
+	// item 32) -- both need exactly this same lookup before branching on what kind of material
+	// construct it resolved to. Returns the resolved RelatingMaterial (nullptr if none/multiple)
+	// and how many IfcRelAssociatesMaterial relationships were found -- both callers require
+	// exactly one, but check that themselves since what "not exactly one" means differs slightly
+	// (get_single_material_association() just gives up; resolve_layer_projection() additionally
+	// requires an IfcMaterialLayerSetUsage specifically).
+	std::pair<IfcUtil::IfcBaseEntity*, size_t> single_material_association(IfcUtil::IfcBaseEntity* product) {
+		auto rels = product->get_inverse("HasAssociations");
+		IfcUtil::IfcBaseEntity* relating_material = nullptr;
+		size_t n_material_rels = 0;
+		for (auto& ref : *rels) {
+			if (ref->declaration().is("IfcRelAssociatesMaterial")) {
+				n_material_rels++;
+				auto arg = ((IfcUtil::IfcBaseEntity*) ref)->get("RelatingMaterial");
+				if (!arg.isNull()) {
+					relating_material = ((IfcUtil::IfcBaseClass*) arg)->as<IfcUtil::IfcBaseEntity>();
+				}
+			}
+		}
+		return { relating_material, n_material_rels };
+	}
+
 	// Resolves the material genuinely associated with `product`, for the cross-coplanar
 	// "same substance" comparison (issue #3742) -- schema-agnostic like get_curve_style_name()
 	// above (walking get_inverse()/get() generically), since this file has no access to
@@ -613,18 +637,7 @@ namespace {
 	// rather than guessing -- material only takes priority over style when it *is* resolved, so
 	// an unresolved product just falls back to the existing style comparison, a safe default.
 	IfcUtil::IfcBaseEntity* get_single_material_association(IfcUtil::IfcBaseEntity* product) {
-		auto rels = product->get_inverse("HasAssociations");
-		IfcUtil::IfcBaseEntity* relating_material = nullptr;
-		size_t n_material_rels = 0;
-		for (auto& ref : *rels) {
-			if (ref->declaration().is("IfcRelAssociatesMaterial")) {
-				n_material_rels++;
-				auto arg = ((IfcUtil::IfcBaseEntity*) ref)->get("RelatingMaterial");
-				if (!arg.isNull()) {
-					relating_material = ((IfcUtil::IfcBaseClass*) arg)->as<IfcUtil::IfcBaseEntity>();
-				}
-			}
-		}
+		auto [relating_material, n_material_rels] = single_material_association(product);
 		if (n_material_rels != 1 || !relating_material) {
 			return nullptr;
 		}
@@ -676,18 +689,7 @@ namespace {
 	// association() alone is correct for those) or where LayerSetDirection is missing, or
 	// where the shape's measured extent along that axis is degenerate.
 	boost::optional<layer_projection> resolve_layer_projection(IfcUtil::IfcBaseEntity* product, const TopoDS_Shape& compound_local, const gp_Trsf& trsf) {
-		auto rels = product->get_inverse("HasAssociations");
-		IfcUtil::IfcBaseEntity* relating_material = nullptr;
-		size_t n_material_rels = 0;
-		for (auto& ref : *rels) {
-			if (ref->declaration().is("IfcRelAssociatesMaterial")) {
-				n_material_rels++;
-				auto arg = ((IfcUtil::IfcBaseEntity*) ref)->get("RelatingMaterial");
-				if (!arg.isNull()) {
-					relating_material = ((IfcUtil::IfcBaseClass*) arg)->as<IfcUtil::IfcBaseEntity>();
-				}
-			}
-		}
+		auto [relating_material, n_material_rels] = single_material_association(product);
 		if (n_material_rels != 1 || !relating_material || !relating_material->declaration().is("IfcMaterialLayerSetUsage")) {
 			return boost::none;
 		}
