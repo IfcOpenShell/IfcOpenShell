@@ -6,12 +6,6 @@ version = "0.0.0"
 
 [tool.black]
 line-length = 120
-include = '''
-    src/.*.pyi?$
-    |nix/.*.pyi?$
-    |pyodide/.*.pyi?$
-    |.github/.*.pyi?$
-'''
 extend-exclude = '''
     src/ifcopenshell-python/ifcopenshell/express/rules/*
     |src/ifcopenshell-python/ifcopenshell/express/express_parser.py
@@ -20,6 +14,15 @@ extend-exclude = '''
     |src/ifc2ca/templates/*
     |src/svgfill
     |src/exterior-shell-extractor
+    |choco/bonsai/tools/enable_blenderbim_addon.py
+    |choco/bonsai/tools/disable_blenderbim_addon.py
+    |docs/conf.py
+    |docs/generate_docs.py
+    |aws/lambda/example_handler/__init__.py
+    |conda/update_version_init.py
+    |test/bpy.py
+    |test/tests.py
+    |test/run.py
 '''
 
 [tool.pyright]
