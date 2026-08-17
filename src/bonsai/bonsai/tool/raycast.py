@@ -653,7 +653,7 @@ class Raycast(bonsai.core.tool.Raycast):
             snap dicts (same format as the raycast-based version) and
             *closest_obj* is the single closest object (or None).
         """
-        global _encoding_shader, _offscreen, _obj_list
+        global _encoding_shader, _offscreen, _offscreen_change, _obj_list
 
         if bpy.app.background:
             return [], None
@@ -735,8 +735,11 @@ class Raycast(bonsai.core.tool.Raycast):
         mx = int(event.mouse_region_x)
         my = int(event.mouse_region_y)
 
-        # _release_triangle_offscreen()
-        _offscreen = GPUOffScreen(max(w, 1), max(h, 1), format="RGBA8")
+        # Only update offscreen when view changes
+        offscreen_change = (region.as_pointer(), w, h)
+        if _offscreen is None or _offscreen_change != offscreen_change:
+            _offscreen = GPUOffScreen(max(w, 1), max(h, 1), format="RGBA8")
+            _offscreen_change = offscreen_change
 
         _encoding_shader.bind()
 
@@ -757,7 +760,16 @@ class Raycast(bonsai.core.tool.Raycast):
         read_x = max(0, min(mx - _SNAP_RADIUS_PX, w - read_size))
         read_y = max(0, min(my - _SNAP_RADIUS_PX, h - read_size))
 
+        # For solid objects in xray_mode, when only need one pixel to detect tha face
+        # So we change the read size for optimization
+        read_per_object = xray_mode and tris
+        if read_per_object:
+            read_size = 1
+            read_x = max(0, min(mx, w - 1))
+            read_y = max(0, min(my, h - 1))
+
         buffers_list = []
+        last_buf = None
         with _offscreen.bind():
             fb = gpu.state.active_framebuffer_get()
             fb.clear(color=(0.0, 0.0, 0.0, 0.0), depth=1.0)
@@ -770,11 +782,13 @@ class Raycast(bonsai.core.tool.Raycast):
                     gpu.matrix.load_matrix(Matrix.Identity(4))
                     batch.draw(_encoding_shader)
 
-                buf = fb.read_color(int(read_x), int(read_y),
-                                read_size, read_size, 4, 0, "UBYTE")
-                if xray_mode: # gets all buffers
+                if read_per_object: # gets all buffers
+                    buf = fb.read_color(int(read_x), int(read_y),
+                                    read_size, read_size, 4, 0, "UBYTE")
                     buffers_list.append(buf)
-            last_buf = buf # gets only the closest buffer
+            if not read_per_object:
+                last_buf = fb.read_color(int(read_x), int(read_y),
+                                read_size, read_size, 4, 0, "UBYTE")
 
         # Restore state
         gpu.state.depth_mask_set(True)
@@ -787,23 +801,25 @@ class Raycast(bonsai.core.tool.Raycast):
 
             if xray_mode:
                 vals_read: set[int] = set()
+                # Each buffer is a single pixel read back right under the
+                # cursor. When the cursor is outside the region there is
+                # nothing to snap to, matching the previous bounds check.
+                if not (0 <= mx < w and 0 <= my < h):
+                    return [], None
                 for buf in buffers_list:
                     pixel_data = buf.to_list()
                     if not pixel_data or not pixel_data[0]:
                         return [], None
-                    centre_x = mx - int(read_x)
-                    centre_y = my - int(read_y)
-                    if 0 <= centre_y < len(pixel_data) and 0 <= centre_x < len(pixel_data[0]):
-                        px = pixel_data[centre_y][centre_x]
-                        val = _decode_wireframe_pixel(px[0], px[1], px[2], px[3])
-                        if val in vals_read: # avoid getting all the tris from the same object
-                            continue
-                        vals_read.add(val)
-                        if val > 0:
-                            val -= 1
-                            obj_index = int(val) >> _TRI_OBJ_SHIFT
-                            if obj_index < len(_obj_list):
-                                hits.add(obj_index)
+                    px = pixel_data[0][0]
+                    val = _decode_wireframe_pixel(px[0], px[1], px[2], px[3])
+                    if val in vals_read: # avoid getting all the tris from the same object
+                        continue
+                    vals_read.add(val)
+                    if val > 0:
+                        val -= 1
+                        obj_index = int(val) >> _TRI_OBJ_SHIFT
+                        if obj_index < len(_obj_list):
+                            hits.add(obj_index)
             else:
                 pixel_data = last_buf.to_list()
                 if not pixel_data or not pixel_data[0]:
