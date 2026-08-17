@@ -51,10 +51,12 @@ def test_create_stationing_referent_name_includes_alignment_name():
     referents = [
         r
         for r in ifcopenshell.util.element.get_components(alignment)
-        if r.is_a("IfcReferent") and ifcopenshell.util.element.get_pset(r, name="Pset_Stationing", prop="Station") == 4900.0
+        if r.is_a("IfcReferent")
+        and ifcopenshell.util.element.get_pset(r, name="Pset_Stationing", prop="Station") == 4900.0
     ]
     assert len(referents) == 1
     assert referents[0].Name == "TestAlignment 49+00.00"
+
 
 try:
     ifcopenshell.file(schema="IFC4")

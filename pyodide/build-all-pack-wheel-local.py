@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Intended to be run after nix/build-all.py has finished the wasm build."""
+
 import shutil
 import subprocess
 from pathlib import Path

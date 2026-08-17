@@ -25,7 +25,8 @@ import os
 import re
 import sqlite3
 import sys
-from typing import Iterable, Iterator, Literal, Optional, TypedDict, Union
+from collections.abc import Iterable, Iterator
+from typing import Literal, Optional, TypedDict, Union
 
 import ifcopenshell
 import ifcopenshell.util.element
@@ -1035,7 +1036,9 @@ class Sqlite(Reporter):
 
         total_checks_pass = 0
         for requirement in specification.requirements:
-            total_checks_pass += self.write_requirement(db, specification, specification_id, requirement, requirement_id)
+            total_checks_pass += self.write_requirement(
+                db, specification, specification_id, requirement, requirement_id
+            )
             requirement_id += 1
 
         total_applicable = len(specification.applicable_entities)
@@ -1072,10 +1075,7 @@ class Sqlite(Reporter):
         """Write a requirement and its failures. Returns the number of passing checks."""
         db.executemany(
             "INSERT INTO failure VALUES (?, ?, ?)",
-            (
-                (requirement_id, f["element"].id(), self.get_reason_id(f["reason"]))
-                for f in requirement.failures
-            ),
+            ((requirement_id, f["element"].id(), self.get_reason_id(f["reason"])) for f in requirement.failures),
         )
         label, value = get_requirement_label_value(requirement)
         metadata = requirement.asdict("requirement")

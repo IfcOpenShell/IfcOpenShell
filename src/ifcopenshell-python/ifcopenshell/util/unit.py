@@ -963,7 +963,10 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
 
     unit_assignment = get_unit_assignment(file_patched)
     # UnitType not available on IfcMonetaryUnit
-    unit_assignment.Units = [new_length, *(u for u in unit_assignment.Units if getattr(u, 'UnitType', None) != new_length.UnitType)]
+    unit_assignment.Units = [
+        new_length,
+        *(u for u in unit_assignment.Units if getattr(u, "UnitType", None) != new_length.UnitType),
+    ]
     if not file_patched.get_total_inverses(old_length):
         ifcopenshell.util.element.remove_deep2(file_patched, old_length)
 
