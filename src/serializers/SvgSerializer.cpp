@@ -1377,7 +1377,16 @@ namespace {
 		bool have_outer_decisive = false;
 
 		// Prefer candidates from an outer wire outright; only fall back to inner-wire candidates
-		// (still useful for genuine notches, just not for holes) if no outer-wire one exists.
+		// (still useful for genuine notches, just not for holes) if no outer-wire one exists, OR
+		// (known-issues item 50) if the winning outer candidate's own |dot| is itself
+		// near-coplanar/ambiguous. Deliberately NOT a plain "largest |dot| wins" tie-break between
+		// outer and inner candidates: for a genuine hole (the case 7c74a1a56f fixed), the cap
+		// face's own inner (hole-rim) wire gives an always-WRONG-sign dot that can *also* have the
+		// larger magnitude (confirmed in that commit's own real-file case) -- a magnitude race
+		// would pick that wrong-but-larger inner candidate right back whenever the wall's own
+		// (correct) outer candidate happens to be weak too. Only fall back when the outer signal
+		// is itself genuinely ambiguous (near-zero relative to the edge's own scale), which is a
+		// narrower, closer-to-the-actual-notch-case condition than "outer lost a magnitude race."
 		for (const SignCandidate& c : candidates) {
 			if (c.is_outer) {
 				if (!have_outer_decisive || std::abs(c.dot) > std::abs(decisive_dot)) {
@@ -1387,12 +1396,25 @@ namespace {
 				}
 			}
 		}
-		if (!have_outer_decisive) {
+		const double kNearCoplanarRelativeEps = 1.e-2 * edge_p0.Distance(edge_p1);
+		if (!have_outer_decisive || std::abs(decisive_dot) < kNearCoplanarRelativeEps) {
+			bool have_inner_decisive = false;
+			double inner_decisive_dot = 0.0;
 			for (const SignCandidate& c : candidates) {
-				if (!have_decisive_vertex || std::abs(c.dot) > std::abs(decisive_dot)) {
-					decisive_dot = c.dot;
-					have_decisive_vertex = true;
+				if (!c.is_outer) {
+					if (!have_inner_decisive || std::abs(c.dot) > std::abs(inner_decisive_dot)) {
+						inner_decisive_dot = c.dot;
+						have_inner_decisive = true;
+					}
 				}
+			}
+			// Only actually switch to the inner candidate if it's more decisive than whatever
+			// ambiguous outer signal we already have -- an ambiguous inner candidate is no
+			// improvement over an ambiguous outer one, and a genuinely absent outer candidate
+			// (have_outer_decisive false) has nothing to lose by trying inner regardless.
+			if (have_inner_decisive && (!have_outer_decisive || std::abs(inner_decisive_dot) > std::abs(decisive_dot))) {
+				decisive_dot = inner_decisive_dot;
+				have_decisive_vertex = true;
 			}
 		}
 
