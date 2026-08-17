@@ -989,7 +989,13 @@ namespace {
 					}
 					gp_Pnt nudge = local_face_nudge_point(face, n);
 					double side = gp_Vec(mid_point, nudge).Dot(gp_Vec(plane_normal.XYZ()));
-					if (std::abs(side) < Precision::Confusion()) {
+					// Known-issues item 35: uses `tol` (this function's own matching precision,
+					// svg-cross-coplanar-tolerance, default 1e-4) instead of Precision::Confusion()
+					// (OCCT's fixed ~1e-7, ~1000x smaller) -- every other degenerate/matching check
+					// in this same function already uses `tol`; this was the one outlier, with no
+					// documented reason to be ~1000x stricter. A/B-verified against real project
+					// files (see known-issues backlog item 35) before committing.
+					if (std::abs(side) < tol) {
 						// Degenerate: this candidate's own interior sits exactly on the dividing
 						// plane (vanishingly rare -- a face lying exactly in the view/edge plane
 						// itself). Neither side, skip rather than guess.
