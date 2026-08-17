@@ -130,7 +130,8 @@ if(BUILD_IFCAPI)
             message(
                 FATAL_ERROR
                 "IFCAPI_REGENERATE_BINDINGS enabled, but the selected Python interpreter does not provide "
-                "the Clang Python bindings. Install the generator dependency or disable "
+                "the Clang Python bindings. From the repository root, install them "
+                "with '${Python_EXECUTABLE} -m pip install -e \".[bindgen]\"' or disable "
                 "IFCAPI_REGENERATE_BINDINGS."
             )
         endif()
