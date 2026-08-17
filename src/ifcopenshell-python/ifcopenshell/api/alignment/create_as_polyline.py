@@ -47,6 +47,7 @@ def _create_layout(file: ifcopenshell.file, alignment: entity_instance, points: 
 
     start_dist_along = 0.0
     gradient = None
+    dir = None
     for p1, p2 in zip(points, points[1:]):
         x1, y1, z1 = p1.Coordinates
         x2, y2, z2 = p2.Coordinates
@@ -86,6 +87,7 @@ def _create_layout(file: ifcopenshell.file, alignment: entity_instance, points: 
         start_dist_along += length
 
     # zero length segment
+    assert dir is not None
     hsegment = file.createIfcAlignmentSegment(
         ifcopenshell.guid.new(),
         DesignParameters=file.createIfcAlignmentHorizontalSegment(
