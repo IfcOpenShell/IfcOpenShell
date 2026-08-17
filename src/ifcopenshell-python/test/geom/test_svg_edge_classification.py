@@ -701,9 +701,10 @@ def test_cross_coplanar_wall_base_on_slab_must_not_false_match():
 
 
 def test_cross_coplanar_match_partial_occlusion_within_one_raw_interval():
-    """`accumulate_edge_coverage()` (`SvgSerializer.h`) accepts or rejects an
-    entire raw matched interval from a SINGLE occlusion test at its own
-    midpoint (`SvgSerializer.h` ~line 681: `t_mid = 0.5 * (cursor +
+    """The original `accumulate_edge_coverage()` (`SvgSerializer.h`, since
+    superseded -- this docstring documents the bug at the time it was found)
+    accepted or rejected an entire raw matched interval from a SINGLE
+    occlusion test at its own midpoint (`t_mid = 0.5 * (cursor +
     piece_end)`, tested once via `is_occluded(mid)`) -- there is no
     sub-splitting based on where occlusion actually starts/stops within that
     interval, unlike `restore_coincident_hidden_edges()`'s own

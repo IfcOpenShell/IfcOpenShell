@@ -424,8 +424,9 @@ namespace {
 		// curve parametrization (u0, u1), never adjusted for e.Orientation(). v3's coverage
 		// accumulation and sub-edge reconstruction store/retrieve per-edge t-values across two
 		// different topological contexts for "the same" edge (once via a face's own boundary
-		// traversal in accumulate_edge_coverage(), later via a flat classified-edges compound in
-		// replace_matched_edges()) -- the same edge can carry different relative orientation in
+		// traversal in the old accumulate_edge_coverage(), later via a flat classified-edges
+		// compound in the old replace_matched_edges(), both since superseded) -- the same edge
+		// can carry different relative orientation in
 		// each (e.g. a shared edge between two faces of one product, or the separate
 		// single-object classification pass picking a different owning face than this one's own
 		// traversal does). An orientation-dependent swap here would make a t-value computed in
@@ -475,105 +476,6 @@ namespace {
 				}
 			}
 			return merged;
-		}
-
-		// Splits [t_lo, t_hi] (a raw matched interval, in `seg`'s own parametrization) into
-		// occlusion-CLEAR sub-intervals, instead of the single-midpoint whole-interval verdict
-		// `accumulate_edge_coverage()`/`mat_style_change::accumulate_mismatch_coverage()` used to
-		// rely on. Mirrors `restore_coincident_hidden_edges()`'s own `restorable_intervals()`/
-		// `refine_transition()` (added in P1-4e for exactly this shape of problem there): a coarse
-		// interior sample grid, then a 12-iteration bisection refine at each transition between a
-		// clear sample and an occluded neighbour. Confirmed via issue #3742 follow-up reports
-		// (real project drawings, `coplanar join.ifc`'s own PLAN_VIEW/ORTHOGRAPHIC-X): a single
-		// raw interval's occlusion genuinely varies along its own length far more often than the
-		// old single-midpoint test could ever notice -- a large sub-edge whose one sample point
-		// happened to land in a small, genuinely-occluded patch was rejected in its ENTIRETY,
-		// including portions many times longer than the patch itself that were never actually
-		// occluded at all.
-		std::vector<std::pair<double, double>> occlusion_clear_subintervals(
-			const LineSeg& seg, double t_lo, double t_hi,
-			const std::function<bool(const gp_Pnt&)>& is_occluded, double tol
-		) {
-			double length = t_hi - t_lo;
-			auto is_clear_at = [&](double t) -> bool {
-				gp_Pnt p = seg.p0.Translated(gp_Vec(seg.dir) * t);
-				return !is_occluded(p);
-			};
-			if (length <= tol) {
-				// Degenerate/near-zero interval: same single-point behaviour as before.
-				return is_clear_at(0.5 * (t_lo + t_hi))
-					? std::vector<std::pair<double, double>>{ { t_lo, t_hi } }
-					: std::vector<std::pair<double, double>>{};
-			}
-
-			// 31 interior samples (32 bins), same count/rationale as restorable_intervals()'s own
-			// coarse grid -- comfortably resolves multiple distinct occluders along one interval.
-			constexpr int kSampleCount = 31;
-			std::vector<double> ts(kSampleCount);
-			std::vector<bool> clear(kSampleCount);
-			for (int i = 0; i < kSampleCount; ++i) {
-				double t = t_lo + length * static_cast<double>(i + 1) / static_cast<double>(kSampleCount + 1);
-				ts[i] = t;
-				clear[i] = is_clear_at(t);
-			}
-
-			auto refine_transition = [&](double t_clear, double t_occluded) -> double {
-				for (int iter = 0; iter < 12; ++iter) {
-					double mid = 0.5 * (t_clear + t_occluded);
-					if (is_clear_at(mid)) {
-						t_clear = mid;
-					} else {
-						t_occluded = mid;
-					}
-				}
-				return 0.5 * (t_clear + t_occluded);
-			};
-
-			std::vector<std::pair<double, double>> raw;
-			for (int i = 0; i < kSampleCount; ++i) {
-				if (!clear[i]) {
-					continue;
-				}
-				double lo;
-				if (i == 0) {
-					lo = t_lo;
-				} else if (clear[i - 1]) {
-					lo = 0.5 * (ts[i - 1] + ts[i]);
-				} else {
-					lo = refine_transition(ts[i], ts[i - 1]);
-				}
-				double hi;
-				if (i == kSampleCount - 1) {
-					hi = t_hi;
-				} else if (clear[i + 1]) {
-					hi = 0.5 * (ts[i] + ts[i + 1]);
-				} else {
-					hi = refine_transition(ts[i], ts[i + 1]);
-				}
-				raw.emplace_back(lo, hi);
-			}
-			auto merged = ivs_union(raw, tol);
-
-			// Sliver guard, mirroring restorable_intervals()'s own: clamp to [t_lo, t_hi] and drop
-			// anything narrower than tolerance, plus require a sub-interval that doesn't touch a
-			// true endpoint to be corroborated by >= 2 consecutive clear samples (a lone isolated
-			// clear sample surrounded by occluded ones is more likely borderline/noisy than a
-			// genuine narrow clear stretch).
-			double bin_width = length / static_cast<double>(kSampleCount + 1);
-			std::vector<std::pair<double, double>> filtered;
-			for (auto& iv : merged) {
-				double lo = std::max(t_lo, iv.first);
-				double hi = std::min(t_hi, iv.second);
-				if (hi - lo < tol) {
-					continue;
-				}
-				bool touches_endpoint = (lo - t_lo) <= tol || (t_hi - hi) <= tol;
-				if (!touches_endpoint && (hi - lo) < 2.0 * bin_width - tol) {
-					continue;
-				}
-				filtered.emplace_back(lo, hi);
-			}
-			return filtered;
 		}
 
 		// Resolves the material at a specific 3D point for a (possibly layered) product: a
@@ -1254,15 +1156,17 @@ namespace {
 		};
 
 		// Combined match+mismatch split for a single edge, against its own raw interval
-		// contributions from BOTH accumulate_edge_coverage() (match_intervals) and
-		// mat_style_change::accumulate_mismatch_coverage() (mismatch_intervals) at once --
+		// contributions from BOTH the match side (originally accumulate_edge_coverage(), since
+		// superseded) and the mismatch side (originally mat_style_change::
+		// accumulate_mismatch_coverage(), likewise superseded) at once --
 		// deliberately NOT implemented as two independent split_edge_by_coverage() calls chained
 		// together (call, then call again on the first call's *output*): whenever the first call
 		// performs a genuine partial split, it constructs brand-new TopoDS_Edge objects (via
 		// make_subedge/BRepBuilderAPI_MakeEdge) that do not share shape identity with the
 		// original edge -- so a second lookup keyed by the *original* edge's identity (which is
-		// what mismatch_coverage's keys are, since accumulate_mismatch_coverage() walked the
-		// pre-split face) would silently find nothing for the new remainder pieces, leaving them
+		// what mismatch_coverage's keys were, back when the now-superseded
+		// accumulate_mismatch_coverage() walked the pre-split face) would silently find nothing for
+		// the new remainder pieces, leaving them
 		// stuck in their original class forever. Splitting once, against the union of both
 		// interval sets' boundaries, and classifying each resulting sub-range against whichever
 		// (if either) original list it falls in, avoids the identity mismatch entirely.
@@ -1542,8 +1446,9 @@ namespace {
 		// faces already known to be coplanar-coincident with `face` -- their own outline
 		// crossings are unioned into the same cut-point set as `face`'s own outline (same
 		// "union boundaries from every relevant source, then classify each resulting piece
-		// independently" shape as accumulate_mismatch_coverage()'s own boundaries/cuts, just
-		// applied to outline crossings instead of layer-boundary offsets), and any resulting
+		// independently" shape as the old (since superseded) accumulate_mismatch_coverage()'s own
+		// boundaries/cuts, just applied to outline crossings instead of layer-boundary offsets),
+		// and any resulting
 		// piece whose midpoint lands on one of them is dropped -- that's a genuine touching
 		// boundary, cross_coplanar/Case A's territory, not an intra-product detail of this face
 		// alone. A face with no foreign match at all (the common case: most faces have no
@@ -2024,8 +1929,8 @@ namespace {
 		// only PARTLY a genuine depth-tie (the rest genuinely occluded by an unrelated nearer
 		// object) gets partially restored instead of wrongly restored/dropped in full. Same
 		// "accumulate raw intervals -> union -> split" shape as cross_coplanar's own
-		// accumulate_edge_coverage()/split_edge_by_coverage(), reusing cross_coplanar::ivs_union()
-		// directly rather than re-deriving interval-merge logic.
+		// split_edge_by_coverage() (and the old, since-superseded accumulate_edge_coverage()),
+		// reusing cross_coplanar::ivs_union() directly rather than re-deriving interval-merge logic.
 		auto restorable_intervals = [&](const gp_Pnt& p0, const gp_Pnt& p1, const IfcUtil::IfcBaseEntity* product, const TopoDS_Shape& visible_edges) -> std::vector<std::pair<double, double>> {
 			gp_Vec vec(p0, p1);
 			double length = vec.Magnitude();
