@@ -85,10 +85,33 @@ def merge_duplicate_edges(root, tolerance: float = 1e-3) -> None:
             return
 
 
+def _cut_or_projection(path: "etree._Element") -> Optional[str]:
+    """Which of the two `<g>` group kinds `merge_linework_and_add_metadata()`
+    labels a product's own linework with (known-issues item 52) `path`'s
+    parent belongs to, if either. `operator.py`'s SHAPELY fill-boundary scan
+    only ever looks at `"projection"`-classed groups, so a duplicate pair
+    spanning one product's `"cut"` copy and another's `"projection"` copy of
+    the same boundary edge must never let the cut-side copy (kept as
+    survivor purely because it happens to be longer) delete the
+    projection-side copy that scan actually depends on. Returns `None` for
+    anything not carrying either label -- such paths keep clustering
+    together as before, this distinction only matters between the two.
+    """
+    parent = path.getparent()
+    if parent is None:
+        return None
+    classes = parent.get("class", "").split()
+    if "cut" in classes:
+        return "cut"
+    if "projection" in classes:
+        return "projection"
+    return None
+
+
 def _run_one_pass(root, tolerance: float) -> bool:
     """Runs one full class-grouped cluster/trim pass. Returns whether it
     changed anything, so the caller can iterate to a fixed point."""
-    paths_by_class: dict[str, list[tuple[etree._Element, Segment]]] = {}
+    paths_by_class: dict[tuple[str, Optional[str]], list[tuple[etree._Element, Segment]]] = {}
     for path in root.findall(f".//{SVG_NS}g[@{IFC_NS}guid]/{SVG_NS}path"):
         cls = path.get("class")
         d = path.get("d")
@@ -97,7 +120,11 @@ def _run_one_pass(root, tolerance: float) -> bool:
         seg = _edge_path_d_to_segment(d)
         if seg is None or _length(seg) < tolerance:
             continue
-        paths_by_class.setdefault(cls, []).append((path, seg))
+        # Known-issues item 52: scoped to (class, cut-or-projection) rather than
+        # class alone, so a "cut"-side and "projection"-side copy of what looks
+        # like the same edge never cluster together and risk the wrong one
+        # surviving -- see _cut_or_projection()'s own comment.
+        paths_by_class.setdefault((cls, _cut_or_projection(path)), []).append((path, seg))
 
     changed = False
 

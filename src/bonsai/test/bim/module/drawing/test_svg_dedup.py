@@ -175,3 +175,52 @@ def test_unclassified_and_closed_polygon_paths_are_ignored():
 
     remaining = _paths_by_guid(root)
     assert remaining["A"] == [("M0,0 L10,0 L10,10 Z", None)]
+
+
+def test_cut_and_projection_duplicates_are_never_cross_merged():
+    # Known-issues item 52: operator.py's SHAPELY fill-boundary scan only ever
+    # looks at "projection"-classed groups (matches merge_linework_and_add_
+    # metadata()'s own real convention: the guid-<g> itself carries a "cut" or
+    # "projection" token alongside its other classes). A's own copy is longer
+    # (so, pre-fix, it would win as _resolve_cluster()'s survivor purely by
+    # length and delete B's shorter "projection" copy) -- but A is "cut" and B
+    # is "projection", so they must never cluster together at all: both must
+    # survive fully intact.
+    root = _build_root(
+        {
+            "A": [("M0,0 L10,0", "outline")],
+            "B": [("M0,0 L8,0", "outline")],
+        }
+    )
+    a_group = root.find(f".//{{{SVG_NS}}}g[@{{{IFC_NS}}}guid='A']")
+    b_group = root.find(f".//{{{SVG_NS}}}g[@{{{IFC_NS}}}guid='B']")
+    a_group.set("class", "IfcWall cut")
+    b_group.set("class", "IfcWall projection")
+
+    merge_duplicate_edges(root)
+
+    remaining = _paths_by_guid(root)
+    assert remaining["A"] == [("M0,0 L10,0", "outline")]
+    assert remaining["B"] == [("M0,0 L8,0", "outline")]
+
+
+def test_same_group_kind_duplicates_still_merge_across_products():
+    # Companion to the test above: two "projection"-classed products with a
+    # genuine duplicate must still dedup exactly as before -- item 52's fix
+    # only scopes clustering apart across cut/projection, not within one kind.
+    root = _build_root(
+        {
+            "A": [("M0,0 L10,0", "outline")],
+            "B": [("M0,0 L10,0", "outline")],
+        }
+    )
+    a_group = root.find(f".//{{{SVG_NS}}}g[@{{{IFC_NS}}}guid='A']")
+    b_group = root.find(f".//{{{SVG_NS}}}g[@{{{IFC_NS}}}guid='B']")
+    a_group.set("class", "IfcWall projection")
+    b_group.set("class", "IfcSlab projection")
+
+    merge_duplicate_edges(root)
+
+    remaining = _paths_by_guid(root)
+    total_paths = sum(len(v) for v in remaining.values())
+    assert total_paths == 1
