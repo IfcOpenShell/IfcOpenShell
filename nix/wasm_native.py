@@ -14,7 +14,6 @@ Usage:
     python nix/wasm_native.py <command>
 
 Commands:
-    doctor              Check system prerequisites
     bootstrap-toolchain Install pinned emsdk
     fetch               Download + hash-verify all sources
     build-deps          Build dependencies
@@ -160,55 +159,6 @@ def emsdk_binaries() -> dict[str, str]:
 # ──────────────────────────────────────────────────────────────────────────────
 # Subcommands
 # ──────────────────────────────────────────────────────────────────────────────
-
-
-def cmd_doctor(args: argparse.Namespace) -> int:
-    """Check system prerequisites."""
-    checks = {
-        "cmake": "cmake --version",
-        "git": "git --version",
-        "python3": f"{sys.executable} --version",
-        "make": "make --version",
-        "patch": "patch --version",
-        "tar": "tar --version",
-        "unzip": "unzip -v",
-    }
-
-    results = {}
-    all_ok = True
-    for name, cmd in checks.items():
-        try:
-            result = subprocess.run(
-                cmd.split(),
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            version = (
-                result.stdout.strip().split("\n")[0]
-                if result.returncode == 0
-                else "FAILED"
-            )
-            results[name] = (result.returncode == 0, version)
-            if result.returncode != 0:
-                all_ok = False
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            results[name] = (False, "NOT FOUND")
-            all_ok = False
-
-    print("System Prerequisites Check:")
-    print("=" * 60)
-    for name, (ok, version) in results.items():
-        status = "✓" if ok else "✗"
-        print(f"  {status} {name:12s} {version}")
-
-    print()
-    if all_ok:
-        print("All prerequisites satisfied.")
-        return 0
-    else:
-        print("Some prerequisites are missing. Install them before proceeding.")
-        return 1
 
 
 def cmd_bootstrap_toolchain(args: argparse.Namespace) -> int:
@@ -565,7 +515,6 @@ def cmd_clean(args: argparse.Namespace) -> int:
 def cmd_all(args: argparse.Namespace) -> int:
     """Full pipeline (default for CI)."""
     steps = [
-        ("doctor", cmd_doctor),
         ("bootstrap-toolchain", cmd_bootstrap_toolchain),
         ("fetch", cmd_fetch),
         ("build-deps", cmd_build_deps),
@@ -613,7 +562,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = parser.add_subparsers(dest="command", help="Available commands")
 
-    sub.add_parser("doctor", help="Check system prerequisites")
     sub.add_parser("bootstrap-toolchain", help="Install pinned emsdk")
     sub.add_parser("fetch", help="Download + hash-verify all sources")
     sub.add_parser("build-deps", help="Build dependencies")
@@ -640,7 +588,6 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
 
     commands = {
-        "doctor": cmd_doctor,
         "bootstrap-toolchain": cmd_bootstrap_toolchain,
         "fetch": cmd_fetch,
         "build-deps": cmd_build_deps,
