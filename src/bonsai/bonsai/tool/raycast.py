@@ -695,6 +695,10 @@ class Raycast(bonsai.core.tool.Raycast):
             obj_slots: list[tuple] = []  # [(snap_obj, pts_start, n_pts, lines_start, n_lines), ...]
 
             for snap_obj in objs_to_raycast:
+                # avoids creating batches for solid objects
+                if (hasattr(snap_obj.data, "polygons") and len(snap_obj.data.polygons) > 0):
+                    continue
+
                 batches = _ensure_wireframe_batches(snap_obj)
                 if not batches:
                     continue
@@ -728,18 +732,15 @@ class Raycast(bonsai.core.tool.Raycast):
 
         # Render to offscreen buffer
 
-        if _encoding_shader is None:
-            _encoding_shader = _create_encoding_shader()  # same shader works for TRIS
-
         w, h = region.width, region.height
         mx = int(event.mouse_region_x)
         my = int(event.mouse_region_y)
 
-        # Only update offscreen when view changes
-        offscreen_change = (region.as_pointer(), w, h)
-        if _offscreen is None or _offscreen_change != offscreen_change:
+        if _encoding_shader is None:
+            _encoding_shader = _create_encoding_shader()  # same shader works for TRIS
+
+        if _offscreen is None:
             _offscreen = GPUOffScreen(max(w, 1), max(h, 1), format="RGBA8")
-            _offscreen_change = offscreen_change
 
         _encoding_shader.bind()
 
@@ -1201,7 +1202,7 @@ class Raycast(bonsai.core.tool.Raycast):
         for obj, bbox_2d in objs_2d_bbox:
             if bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
-                    if tool.Raycast.object_is_visible_in_clipping_plane(obj):
+                    if tool.Raycast.object_is_visible_in_clipping_plane(obj): # TODO Make this work only if clipping plane is active
                         objs_to_raycast.append(obj)
 
         return objs_to_raycast
