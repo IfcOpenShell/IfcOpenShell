@@ -216,6 +216,9 @@ def _get_boundary_features(obj: bpy.types.Object):
         Pairs of vertex positions for edges that have **no** linked faces
         (boundary / wire edges), in local space.
     """
+    if obj.type == "EMPTY":
+        return [(0.0, 0.0, 0.0)], []
+
     depsgraph = bpy.context.evaluated_depsgraph_get()
     eval_obj = obj.evaluated_get(depsgraph)
     mesh = eval_obj.to_mesh()
