@@ -23,17 +23,29 @@ import bonsai.bim.helper
 from bonsai.bim.module.search.data import SearchData
 
 
-def get_applied_drawing_style(camera):
-    """The shading style currently applied to the drawing (EPset_Drawing.CurrentShadingStyle),
-    which is what actually drives the render type -- not whichever style is selected in the list."""
+def get_render_drawing_style(camera):
+    """The drawing style the underlay render will actually use.
+
+    ``CreateDrawing.generate_underlay`` branches on
+    ``BIMCameraProperties.get_active_drawing_style()`` -- the row highlighted in the
+    Drawing Styles list for this camera -- so that, and not the pset's
+    ``CurrentShadingStyle``, decides whether the compositor runs.
+
+    The two drift apart in practice: ``CurrentShadingStyle`` is only rewritten by
+    ``bim.activate_drawing_style``, and ``bim.reload_drawing_styles`` leaves the index
+    pointing at whatever it pointed at before (often index 0) when it can't find that
+    style name in the drawing's shading_styles.json. Gating on the pset then reads
+    "Blender Default" while the render is really using style 0.
+    """
+    return tool.Drawing.get_camera_props(camera).get_active_drawing_style()
+
+
+def get_current_shading_style_name(camera):
+    """EPset_Drawing.CurrentShadingStyle -- what the Drawing Styles panel displays."""
     drawing = tool.Ifc.get_entity(camera)
     if not drawing:
         return None
-    name = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "CurrentShadingStyle")
-    if not name:
-        return None
-    dprops = tool.Drawing.get_document_props()
-    return next((style for style in dprops.drawing_styles if style.name == name), None)
+    return ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "CurrentShadingStyle")
 
 
 class BIM_UL_render_override_rules(bpy.types.UIList):
@@ -61,16 +73,30 @@ class BIM_PT_status_render(bpy.types.Panel):
         props = camera.data.BIMRenderOverrideProperties
 
         # The override needs the compositor, which only runs for Default-render drawings
-        # (and F12). Gate on the *applied* shading style (CurrentShadingStyle), since that
-        # is what drives the render -- not whichever style is highlighted in the list.
-        applied_style = get_applied_drawing_style(camera)
-        blocked = applied_style is not None and applied_style.render_type != "DEFAULT"
+        # (and F12). Gate on exactly what the underlay render branches on -- the camera's
+        # highlighted drawing style -- so the panel can never disagree with the render.
+        render_style = get_render_drawing_style(camera)
+        blocked = render_style is None or render_style.render_type != "DEFAULT"
 
         if blocked:
             col = layout.column(align=True)
-            col.label(text="Current Shading Style is not 'Default'", icon="ERROR")
-            col.label(text="render type, so the compositor is bypassed.")
-            col.label(text="Apply a Default-render shading style.")
+            if render_style is None:
+                col.label(text="No drawing style resolved for this camera,", icon="ERROR")
+                col.label(text="so the underlay cannot render at all.")
+                col.label(text="Press Reload Drawing Styles in Drawing Styles.")
+            else:
+                col.label(text=f"Style '{render_style.name}' has render type", icon="ERROR")
+                col.label(text=f"'{render_style.render_type.title()}', so the compositor")
+                col.label(text="is bypassed. Use a Default-render style.")
+                # CurrentShadingStyle is what the Drawing Styles panel shows, and it goes
+                # stale whenever reload can't find its name in shading_styles.json -- the
+                # render keeps using the highlighted row. Call the mismatch out here,
+                # otherwise the two panels appear to contradict each other.
+                current = get_current_shading_style_name(camera)
+                if current and current != render_style.name:
+                    col.separator()
+                    col.label(text=f"(EPset_Drawing says '{current}', but that", icon="INFO")
+                    col.label(text="is not the style being rendered.)")
 
         header = layout.column()
         header.enabled = not blocked
