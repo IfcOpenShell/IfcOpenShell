@@ -224,3 +224,29 @@ def test_same_group_kind_duplicates_still_merge_across_products():
     remaining = _paths_by_guid(root)
     total_paths = sum(len(v) for v in remaining.values())
     assert total_paths == 1
+
+
+def test_multi_piece_remainder_siblings_are_namespaced():
+    # Known-issues item 53: _set_or_split_edge_path()'s multi-piece remainder
+    # branch must create namespaced sibling <path> elements -- an
+    # etree.Element("path") (no SVG namespace) is invisible to this module's
+    # own root.findall(f".//{SVG_NS}g[...]/{SVG_NS}path") queries, silently
+    # defeating both the fixed-point loop's convergence and the SHAPELY
+    # boundary scan. Calls _set_or_split_edge_path() directly with a
+    # 3-piece remainder rather than going through the public
+    # merge_duplicate_edges() entry point: a separate investigation already
+    # proved a 2+-piece remainder is mathematically unreachable via that
+    # entry point's own _resolve_cluster() length-descending processing
+    # order, so this is a genuine landmine for a future caller/reordering,
+    # not something the current pipeline can trigger end-to-end today.
+    root = _build_root({"A": [("M0,0 L10,0", "outline")]})
+    path = root.find(f".//{{{SVG_NS}}}g[@{{{IFC_NS}}}guid='A']/{{{SVG_NS}}}path")
+
+    svg_dedup._set_or_split_edge_path(
+        path, origin=(0.0, 0.0), direction=(1.0, 0.0), remainder_intervals=[(0.0, 2.0), (4.0, 6.0), (8.0, 10.0)]
+    )
+
+    paths = root.findall(f".//{{{SVG_NS}}}g[@{{{IFC_NS}}}guid]/{{{SVG_NS}}}path")
+    assert len(paths) == 3, f"expected 3 sibling pieces, found {len(paths)}: {[etree.tostring(p) for p in paths]}"
+    for p in paths:
+        assert p.tag == f"{{{SVG_NS}}}path", f"found an unnamespaced <path> sibling: {etree.tostring(p)}"

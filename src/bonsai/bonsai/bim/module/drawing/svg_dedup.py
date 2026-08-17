@@ -318,7 +318,12 @@ def _set_or_split_edge_path(
     index = list(parent).index(path)
     for offset, (lo, hi) in enumerate(rest, start=1):
         p0, p1 = point_at(lo), point_at(hi)
-        sibling = etree.Element("path")
+        # Known-issues item 53: namespaced, matching every other <path> this pipeline
+        # writes/reads (e.g. this module's own root.findall(f".//{SVG_NS}g[...]/{SVG_NS}path")
+        # above) -- an unnamespaced element is invisible to that same query on the same
+        # in-memory tree, defeating both this loop's own fixed-point convergence and the
+        # SHAPELY boundary scan (item 52) if either ever walks past a sibling created here.
+        sibling = etree.Element(f"{SVG_NS}path")
         sibling.set("class", path.get("class"))
         sibling.set("d", f"M{p0[0]},{p0[1]} L{p1[0]},{p1[1]}")
         parent.insert(index + offset, sibling)
