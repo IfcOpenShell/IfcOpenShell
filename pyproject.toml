@@ -10,6 +10,7 @@ include = '''
     src/.*.pyi?$
     |nix/.*.pyi?$
     |pyodide/.*.pyi?$
+    |.github/.*.pyi?$
 '''
 extend-exclude = '''
     src/ifcopenshell-python/ifcopenshell/express/rules/*
@@ -180,6 +181,8 @@ dev-setup.sequence = [
 dev-setup.help = "Install repo packages in editable mode"
 
 ruff = "ruff check"
+
+check-whitespace = "uv run .github/scripts/check-whitespace.py"
 
 black = "black ."
 
