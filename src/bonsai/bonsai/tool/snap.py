@@ -415,6 +415,10 @@ class Snap(bonsai.core.tool.Snap):
                     ]
                     detected_snaps.extend(visible_wireframe_snaps)
                     continue
+
+            if not snap_faces:
+                detected_snaps.extend(wireframe_snaps)
+                
         else:
             # Doesn't include face snaps, only their edges and vertices
             for snap in snap_faces:
