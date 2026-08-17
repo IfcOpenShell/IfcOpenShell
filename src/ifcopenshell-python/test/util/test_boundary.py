@@ -367,7 +367,7 @@ class TestAutoGenerateBoundaries(test.bootstrap.IFC4):
             (440, {1122: 1, 3140: 1, 3214: 1, 3493: 1, 3605: 1, 3640: 1, 3669: 1, 3719: 1}),
             (628, {3140: 1, 3838: 1, 3927: 1, 3980: 2, 4033: 1, 4086: 1, 4139: 1, 4199: 1}),
         ]:
-            copy = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+            copy = ifcopenshell.file.from_string(ifc_file.to_string())
             new_space = copy.by_id(space_id)
             result = subject.auto_generate_boundaries(
                 copy, new_space, shapes=shapes, boundary_class="IfcRelSpaceBoundary2ndLevel"
@@ -398,7 +398,7 @@ class TestAutoGenerateBoundaries(test.bootstrap.IFC4):
             pytest.skip("IfcRelSpaceBoundary_TestFiles submodule is not checked out")
         ifc_file = ifcopenshell.open(ifc_path)
         shapes = _build_shapes_dict_from_iterator(ifc_file)
-        copy = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+        copy = ifcopenshell.file.from_string(ifc_file.to_string())
         result = subject.auto_generate_boundaries(
             copy, copy.by_id(251), shapes=shapes, boundary_class="IfcRelSpaceBoundary"
         )
@@ -421,7 +421,7 @@ class TestAutoGenerateBoundaries(test.bootstrap.IFC4):
         ifc_file = ifcopenshell.open(ifc_path)
         shapes = _build_shapes_dict_from_iterator(ifc_file)
         for space_id, expected_total in [(1692, 8), (4356, 8), (4380, 13), (6185, 1)]:
-            copy = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+            copy = ifcopenshell.file.from_string(ifc_file.to_string())
             result = subject.auto_generate_boundaries(
                 copy, copy.by_id(space_id), shapes=shapes, boundary_class="IfcRelSpaceBoundary2ndLevel"
             )
@@ -433,7 +433,7 @@ class TestAutoGenerateBoundaries(test.bootstrap.IFC4):
             pytest.skip("IfcRelSpaceBoundary_TestFiles submodule is not checked out")
         ifc_file = ifcopenshell.open(ifc_path)
         shapes = _build_shapes_dict_from_iterator(ifc_file)
-        copy = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+        copy = ifcopenshell.file.from_string(ifc_file.to_string())
         result = subject.auto_generate_boundaries(
             copy, copy.by_id(1573), shapes=shapes, boundary_class="IfcRelSpaceBoundary2ndLevel"
         )
