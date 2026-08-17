@@ -1744,7 +1744,12 @@ class CreateDrawing(bpy.types.Operator):
                 group.append(g)
 
     def merge_duplicate_edges(self, root) -> None:
-        svg_dedup.merge_duplicate_edges(root)
+        # Known-issues item 54: threaded through rather than relying on svg_dedup's own
+        # hardcoded default, so loosening the C++-side cross_coplanar_tolerance (a model-space,
+        # metres tolerance) has the matching effect here too. * self.scale * 1000 is this same
+        # class's own established model-to-drawing-unit conversion (see drawing_to_model_co()'s
+        # inverse of it just below), not a new convention.
+        svg_dedup.merge_duplicate_edges(root, tolerance=self.cprops.cross_coplanar_tolerance * self.scale * 1000)
 
     def drawing_to_model_co(self, x: float, y: float) -> Vector:
         camera_xy = np.array((x, -y)) / self.scale / 1000
