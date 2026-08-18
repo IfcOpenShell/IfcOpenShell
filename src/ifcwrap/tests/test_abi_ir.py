@@ -1,5 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
-
 from __future__ import annotations
 
 import pytest
@@ -117,12 +115,14 @@ def test_finalized_abi_derives_layouts_and_signatures() -> None:
         ("RUNTIME", 1),
         ("VALUE", 2),
         ("TYPE", 3),
+        ("CANCELLED", 4),
     ]
     assert [(entry.name, entry.value) for entry in metadata.error_catalog.codes] == [
         ("NONE", 0),
         ("UNSPECIFIED", 1),
         ("INVALID_ARGUMENT", 2),
         ("DOMAIN_ERROR", 3),
+        ("OPERATION_CANCELLED", 4),
     ]
     assert metadata.handles["file"].layout == "ptr_owned"
     assert metadata.handles["file"].fields[0].c_type == "void*"
@@ -139,10 +139,7 @@ def test_finalized_abi_derives_layouts_and_signatures() -> None:
         metadata.value_types["demo_item_list"].fields[0].c_type
         == "ifcopenshell_demo_item_t**"
     )
-    assert (
-        metadata.value_types["demo_item_list_list"].fields[0].c_type
-        == "ifcopenshell_demo_item_list_t*"
-    )
+    assert "demo_item_list_list" not in metadata.value_types
 
     create = metadata.functions["ifcopenshell_demo_create_file"]
     assert create.restype == "bool"

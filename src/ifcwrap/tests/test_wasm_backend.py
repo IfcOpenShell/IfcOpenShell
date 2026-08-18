@@ -1,4 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from __future__ import annotations
@@ -83,6 +82,9 @@ def test_wasm_glue_wraps_handles() -> None:
         in javascript
     )
     assert "loadAsync" not in javascript
+    assert "IfcOpenShellErrorKind.CANCELLED" in javascript
+    assert "IfcOpenShellErrorCode.OPERATION_CANCELLED" in javascript
+    assert "Cyclic WASM plugin dependency" in javascript
 
 
 def test_typescript_declares_low_level_contract() -> None:
@@ -90,3 +92,5 @@ def test_typescript_declares_low_level_contract() -> None:
 
     assert "export class IfcOpenshellFile" in declarations
     assert "open(path: string, streaming: boolean)" in declarations
+    assert "CANCELLED: 4" in declarations
+    assert "OPERATION_CANCELLED: 4" in declarations
