@@ -84,80 +84,6 @@ private:
 	std::map<std::string, entry> entries_;
 };
 
-SERIALIZERS_API geometry_serializer_registry& geometry_serializer_registry_instance();
-
-class SERIALIZERS_API PluginGeometrySerializer : public GeometrySerializer {
-public:
-	PluginGeometrySerializer(
-		const std::string& extension,
-		const std::string& output_filename,
-		const std::string& output_temp_filename,
-		ifcopenshell::geometry::Settings& geometry_settings,
-		const ifcopenshell::geometry::SerializerSettings& serializer_settings
-	)
-		: GeometrySerializer(geometry_settings, serializer_settings)
-	{
-		geometry_serializer_context context{
-			output_filename,
-			output_temp_filename.empty() ? output_filename : output_temp_filename,
-			geometry_settings,
-			serializer_settings
-		};
-		initialize_(extension, context);
-	}
-
-	PluginGeometrySerializer(
-		const std::string& extension,
-		const stream_or_filename& output_filename,
-		const stream_or_filename& output_temp_filename,
-		ifcopenshell::geometry::Settings& geometry_settings,
-		const ifcopenshell::geometry::SerializerSettings& serializer_settings
-	)
-		: GeometrySerializer(geometry_settings, serializer_settings)
-	{
-		const auto output_filename_string = output_filename.filename().value_or("");
-		const auto output_temp_filename_string = output_temp_filename.filename().value_or(output_filename_string);
-		geometry_serializer_context context{
-			output_filename_string,
-			output_temp_filename_string,
-			geometry_settings,
-			serializer_settings,
-			&output_filename,
-			&output_temp_filename
-		};
-		initialize_(extension, context);
-	}
-
-	bool ready() override { return serializer_->ready(); }
-	bool is_streaming() const override { return serializer_->is_streaming(); }
-	bool isTesselated() const override { return serializer_->isTesselated(); }
-	void writeHeader() override { serializer_->writeHeader(); }
-	void finalize() override { serializer_->finalize(); }
-	void setFile(ifcopenshell::file* file) override { serializer_->setFile(file); }
-	void setUnitNameAndMagnitude(const std::string& name, float magnitude) override { serializer_->setUnitNameAndMagnitude(name, magnitude); }
-	void write(const IfcGeom::TriangulationElement* element) override { serializer_->write(element); }
-	void write(const IfcGeom::BRepElement* element) override { serializer_->write(element); }
-
-	IfcGeom::Element* read(
-		ifcopenshell::file& file,
-		const std::string& guid,
-		const std::string& representation_id,
-		GeometrySerializer::read_type type
-	) override {
-		return serializer_->read(file, guid, representation_id, type);
-	}
-
-private:
-	void initialize_(const std::string& extension, geometry_serializer_context& context) {
-		auto& registry = geometry_serializer_registry_instance();
-		registry.configure(extension, context);
-		geometry_settings_ = context.geometry_settings;
-		serializer_ = registry.create(extension, context);
-	}
-
-	boost::shared_ptr<GeometrySerializer> serializer_;
-};
-
 typedef void register_geometry_serializer_plugin_fn(geometry_serializer_registry&, const ifcopenshell::plugin::module&);
 
 SERIALIZERS_API const char* geometry_serializer_plugin_registration_symbol();
@@ -165,6 +91,7 @@ SERIALIZERS_API ifcopenshell::plugin::metadata geometry_serializer_plugin_metada
 SERIALIZERS_API std::filesystem::path geometry_serializer_plugin_directory();
 SERIALIZERS_API void load_geometry_serializer_plugins(geometry_serializer_registry& registry);
 SERIALIZERS_API bool load_geometry_serializer_plugin(geometry_serializer_registry& registry, const std::string& extension);
+SERIALIZERS_API geometry_serializer_registry& geometry_serializer_registry_instance();
 
 }
 }

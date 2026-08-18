@@ -55,20 +55,20 @@ inline const ifcopenshell::file* unwrap_file(const {file_handle_type}* h) {{
     return h ? h->ptr : nullptr;
 }}
 
-inline express::Base* unwrap_instance({instance_handle_type}* h) {{
+inline express::base* unwrap_instance({instance_handle_type}* h) {{
     return h ? &h->value : nullptr;
 }}
 
-inline const express::Base* unwrap_instance(const {instance_handle_type}* h) {{
+inline const express::base* unwrap_instance(const {instance_handle_type}* h) {{
     return h ? &h->value : nullptr;
 }}
 
-inline {instance_handle_type}* wrap_instance(const express::Base& value) {{
+inline {instance_handle_type}* wrap_instance(const express::base& value) {{
     if (!value) return nullptr;
     return new {instance_handle_type}{{value}};
 }}
 
-inline {instance_handle_type}* wrap_instance(const express::Base* value) {{
+inline {instance_handle_type}* wrap_instance(const express::base* value) {{
     return value ? wrap_instance(*value) : nullptr;
 }}
 

@@ -7,7 +7,7 @@ from .abi_ir import (
     _variant_c_type,
 )
 from .binding_ir import BindingIR, CallIR
-from .binding_model import OptionStructSpec, ParamSpec, TypeSpec
+from .binding_model import OptionStructSpec, TypeSpec
 
 
 def _ordered_result_structs(spec: BindingIR) -> tuple[object, ...]:

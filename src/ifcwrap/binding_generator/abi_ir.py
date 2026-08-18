@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field as dataclass_field
 from types import MappingProxyType
 
 from .binding_ir import BindingIR, CallIR
@@ -123,7 +123,7 @@ class BindingABI:
     functions: dict[str, CFunctionIR]
     error_functions: dict[str, str]
     error_catalog: ErrorCatalogIR = ERROR_CATALOG
-    option_structs: dict[str, COptionIR] = field(default_factory=dict)
+    option_structs: dict[str, COptionIR] = dataclass_field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "handles", MappingProxyType(dict(self.handles)))

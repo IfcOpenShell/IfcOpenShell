@@ -367,7 +367,7 @@ def _render_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
             lines.extend(
                 [
                     f"    {local_result}.has_value = static_cast<bool>(result_value);",
-                    f"    if (result_value) {{",
+                    "    if (result_value) {",
                 ]
             )
             value_expr_prefix = "(*result_value)"
@@ -387,7 +387,7 @@ def _render_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
             )
         )
         if type_spec.nullable:
-            lines.append(f"    }}")
+            lines.append("    }")
         lines.extend(
             [
                 f"    *out_result = {local_result};",
@@ -1158,8 +1158,8 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
                     zero_val = "0" if call.returns.kind == "uint32_t" else "false"
                     prelude_lines.append(f"    if ({empty_check}) {{")
                     prelude_lines.append(f"        *out_result = {zero_val};")
-                    prelude_lines.append(f"        return true;")
-                    prelude_lines.append(f"    }}")
+                    prelude_lines.append("        return true;")
+                    prelude_lines.append("    }")
                 else:
                     prelude_lines.append(
                         f'    if ({empty_check}) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
@@ -1237,7 +1237,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
     elif isinstance(op, ChildrenAddOp):
         if op.cast_cpp_type:
             body_line = (
-                f"auto cast_item = ifcopenshell::geometry::taxonomy::dcast<{op.cast_cpp_type}>(item_cpp);\n"
+                f"auto cast_item = ifcopenshell::geom::taxonomy::dcast<{op.cast_cpp_type}>(item_cpp);\n"
                 f'        if (!cast_item) {{ throw std::runtime_error("Invalid item type"); }}\n'
                 f"        self_cpp->{op.field_name}.push_back(cast_item);"
             )
