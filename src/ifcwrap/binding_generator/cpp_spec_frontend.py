@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field as dataclass_field, replace
 from pathlib import Path
 
 from .binding_model import (
@@ -118,16 +118,16 @@ class _CppClassPolicy:
     translation_unit: str
     discover_fields: bool = False
     include_inherited_fields: bool = False
-    exclude: list[str] = field(default_factory=list)
-    rename: dict[str, str] = field(default_factory=dict)
+    exclude: list[str] = dataclass_field(default_factory=list)
+    rename: dict[str, str] = dataclass_field(default_factory=dict)
     discover_has_fields: bool = False
     discover_as_item: bool = False
-    extra_fields: dict[str, str] = field(default_factory=dict)
-    field_setters: list[str] = field(default_factory=list)
-    method_sizes: dict[str, str] = field(default_factory=dict)
-    method_at_accessors: list[MethodAtAccessorSpec] = field(default_factory=list)
+    extra_fields: dict[str, str] = dataclass_field(default_factory=dict)
+    field_setters: list[str] = dataclass_field(default_factory=list)
+    method_sizes: dict[str, str] = dataclass_field(default_factory=dict)
+    method_at_accessors: list[MethodAtAccessorSpec] = dataclass_field(default_factory=list)
     discover_children: DiscoveryChildrenSpec | None = None
-    array_pair_fields: dict[str, str | None] = field(default_factory=dict)
+    array_pair_fields: dict[str, str | None] = dataclass_field(default_factory=dict)
     ccomponents_accessor: CcomponentsAccessorSpec | None = None
     variant_accessors: VariantAccessorsSpec | None = None
     compile_guard: str | None = None
@@ -161,8 +161,8 @@ class _CppConstructorPolicy:
     translation_unit: str
     expose_as: str
     params: list[str] | None
-    param_names: list[str] = field(default_factory=list)
-    param_renames: dict[str, str] = field(default_factory=dict)
+    param_names: list[str] = dataclass_field(default_factory=list)
+    param_renames: dict[str, str] = dataclass_field(default_factory=dict)
     compile_guard: str | None = None
     compile_guard_message: str | None = None
 
