@@ -43,7 +43,6 @@ def make_metadata() -> BindingABI:
         c_prefix="ifcopenshell",
         handles={"file": file_handle},
         value_types={},
-        option_structs={},
         functions={
             open_function.c_name: open_function,
         },

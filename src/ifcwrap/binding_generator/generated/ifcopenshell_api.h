@@ -240,13 +240,6 @@ typedef struct ifcopenshell_instance_list_list_t {
 
 
 
-
-
-
-
-
-
-
 typedef enum {
     IFCOPENSHELL_ERROR_NONE = 0,
     IFCOPENSHELL_ERROR_RUNTIME = 1,

@@ -76,9 +76,6 @@ def _public_module_member(
         return "geom", _camel_name(function.c_name.removeprefix("ifcopenshell_geom_"))
     if c_prefix == "ifcopenshell" and function.c_name.startswith("ifcopenshell_"):
         rest = function.c_name.removeprefix("ifcopenshell_")
-        public_module = function.public_module
-        if public_module and rest.startswith(f"{public_module}_"):
-            return public_module, _camel_name(rest.removeprefix(f"{public_module}_"))
         module, sep, member = rest.partition("_")
         if sep and module and member:
             return module, _camel_name(member)

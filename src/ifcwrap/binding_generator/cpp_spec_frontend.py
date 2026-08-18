@@ -7,15 +7,12 @@ from pathlib import Path
 from .binding_model import (
     CallSpec,
     HandleSpec,
-    OptionStructFieldSpec,
-    OptionStructSpec,
     ParamSpec,
     ResultStructFieldSpec,
     ResultStructSpec,
     TypeSpec,
 )
 from .clang_discovery import (
-    DiscoveredCppType,
     DiscoveredFunction,
     DiscoveredMethod,
     DiscoveryEnvironment,
@@ -30,7 +27,6 @@ from .contract_discovery import (
     _param_name,
     _split_params,
     _strip_comments,
-    discover_marked_functions_in_headers,
 )
 from .debug import debug_log
 from .discovery_policy import (
@@ -60,17 +56,6 @@ from .policy_ir import (
     DirectFunctionPolicyOp,
     SpecMethodFunctionPolicyOp,
 )
-from .semantic_types import (
-    OptionalSemanticType,
-    RecordSemanticType,
-    SequenceSemanticType,
-    VariantSemanticType,
-    analyze_cpp_type,
-    semantic_leaf_type,
-    semantic_sequence_alias,
-    semantic_sequence_depth,
-    semantic_sequence_lengths,
-)
 
 
 @dataclass(frozen=True)
@@ -83,7 +68,6 @@ class CppSpecFunction:
     param_defaults: dict[str, bool]
     receiver: str | None = None
     doc: str | None = None
-    public_module: str | None = None
 
 
 @dataclass(frozen=True)
@@ -184,61 +168,6 @@ class _CppConstructorPolicy:
 class CppSpecPolicy:
     discovery: DiscoverySpec | None
     list_accessors: tuple[tuple[str, HandleListAccessorsSpec], ...]
-
-
-def _option_struct_name(cpp_type: object) -> tuple[str, str] | None:
-    semantic = analyze_cpp_type(cpp_type)
-    if isinstance(semantic, OptionalSemanticType) and isinstance(
-        semantic.element, RecordSemanticType
-    ):
-        qualified = semantic.element.base_name
-        simple = qualified.rsplit("::", 1)[-1]
-        return (simple, qualified) if simple.endswith("Options") else None
-    spelling = (
-        getattr(cpp_type, "normalized_spelling", None)
-        or getattr(cpp_type, "spelling", None)
-        or str(cpp_type)
-    )
-    normalized = " ".join(spelling.replace(" &", "&").replace(" *", "*").split())
-    while normalized.startswith("const "):
-        normalized = normalized[len("const ") :].strip()
-    normalized = normalized.rstrip("&*").strip()
-    simple = normalized.rsplit("::", 1)[-1]
-    if not simple.endswith("Options"):
-        return None
-    qualified = (
-        getattr(cpp_type, "canonical_spelling", None)
-        or getattr(cpp_type, "normalized_desugared_spelling", None)
-        or normalized
-    )
-    qualified = " ".join(qualified.replace(" &", "&").replace(" *", "*").split())
-    while qualified.startswith("const "):
-        qualified = qualified[len("const ") :].strip()
-    qualified = qualified.rstrip("&*").strip()
-    return simple, qualified
-
-
-def _option_sequence_struct_name(cpp_type: object) -> tuple[str, str] | None:
-    spelling = (
-        getattr(cpp_type, "normalized_spelling", None)
-        or getattr(cpp_type, "spelling", None)
-        or str(cpp_type)
-    )
-    semantic = analyze_cpp_type(spelling)
-    if not isinstance(semantic, SequenceSemanticType):
-        return None
-    leaf = semantic_leaf_type(semantic)
-    if not isinstance(leaf, RecordSemanticType):
-        return None
-    simple = leaf.base_name.rsplit("::", 1)[-1]
-    if not simple.endswith("Options"):
-        return None
-    return simple, leaf.base_name
-
-
-def _option_c_type(name: str, c_prefix: str | None) -> str:
-    snake = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
-    return f"{c_prefix}_{snake}_t" if c_prefix else f"ifcopenshell_{snake}_t"
 
 
 def _split_macro_args(args: str) -> tuple[str, ...]:
@@ -959,7 +888,6 @@ CppSpecSignature = tuple[
     str | None,
     str | None,
     str | None,
-    str | None,
 ]
 
 
@@ -1026,46 +954,15 @@ def _discover_spec_signatures(
                 None,
                 first_param_type,
                 _clean_doc_comment(match.group("doc")),
-                None,
             )
         )
     return {name: tuple(entries) for name, entries in signatures.items()}
-
-
-def discover_cpp_spec_contract_headers(
-    translation_unit: Path,
-    include_dirs: tuple[Path, ...],
-) -> tuple[Path, ...]:
-    text = _strip_comments(translation_unit.read_text(encoding="utf-8"))
-    headers: list[Path] = []
-    seen: set[Path] = set()
-    for match in re.finditer(
-        r'^\s*#\s*include\s+"(?P<header>[^"]+)"', text, re.MULTILINE
-    ):
-        header = match.group("header")
-        candidates = (
-            translation_unit.parent / header,
-            *(include_dir / header for include_dir in include_dirs),
-        )
-        for candidate in candidates:
-            if not candidate.exists():
-                continue
-            resolved = candidate.resolve()
-            if resolved in seen:
-                break
-            if discover_marked_functions_in_headers([resolved]):
-                headers.append(resolved)
-                seen.add(resolved)
-            break
-    return tuple(headers)
 
 
 def discover_cpp_spec_functions(
     environment: DiscoveryEnvironment,
     translation_unit: Path,
     namespace: str,
-    *,
-    contract_headers: tuple[Path, ...] = (),
 ) -> tuple[CppSpecFunction, ...]:
     discovered = discover_namespace_functions(
         environment,
@@ -1074,29 +971,12 @@ def discover_cpp_spec_functions(
     )
 
     spec_sigs = _discover_spec_signatures(translation_unit, set(discovered.keys()))
-
-    combined = dict(spec_sigs)
-    for function in discover_marked_functions_in_headers(contract_headers):
-        if function.name in combined:
-            msg = f"C++ spec export '{function.name}' is declared more than once; exported spec functions must be unique"
-            raise ValueError(msg)
-        combined[function.name] = (
-            (
-                function.return_annotations,
-                function.param_annotations,
-                function.param_defaults,
-                None,
-                None,
-                function.doc,
-                function.header.stem,
-            ),
-        )
-    if not combined:
+    if not spec_sigs:
         msg = f"No exported functions were found in C++ spec '{translation_unit}'"
         raise ValueError(msg)
 
     result: list[CppSpecFunction] = []
-    for name in sorted(combined):
+    for name in sorted(spec_sigs):
         overloads = discovered.get(name, ())
         if not overloads:
             msg = f"C++ spec export '{name}' was found in spec but not discovered by Clang"
@@ -1108,8 +988,7 @@ def discover_cpp_spec_functions(
             receiver,
             first_param_type,
             doc,
-            public_module,
-        ) in combined[name]:
+        ) in spec_sigs[name]:
             selected_overloads = overloads
             if len(overloads) != 1 and first_param_type is not None:
                 selected_overloads = tuple(
@@ -1132,7 +1011,6 @@ def discover_cpp_spec_functions(
                     param_defaults=param_defaults,
                     receiver=receiver,
                     doc=doc,
-                    public_module=public_module,
                 )
             )
     return tuple(result)
@@ -1207,12 +1085,10 @@ def lower_cpp_spec_functions_to_calls(
     functions: tuple[CppSpecFunction, ...],
     handles: dict[str, HandleSpec],
     result_structs: dict[str, ResultStructSpec] | None = None,
-    option_structs: dict[str, OptionStructSpec] | None = None,
     c_prefix: str | None = None,
 ) -> tuple[CallSpec, ...]:
     """Lower discovered C++ spec functions to the binding call model."""
     result_structs = result_structs or {}
-    option_structs = option_structs or {}
     calls: list[CallSpec] = []
     for function in functions:
         discovered = function.discovered
@@ -1352,36 +1228,11 @@ def lower_cpp_spec_functions_to_calls(
         params = []
         for param in discovered_params:
             param_ann = function.param_annotations.get(param.name, frozenset())
-            option_name = _option_struct_name(param.cpp_type_ref)
-            if option_name is not None and option_name[0] in option_structs:
-                option = option_structs[option_name[0]]
-                nullable = isinstance(
-                    analyze_cpp_type(param.cpp_type_ref), OptionalSemanticType
-                )
-                param_type = TypeSpec(
-                    kind="option",
-                    struct=option.name,
-                    nullable=nullable,
-                    cpp_type=param.cpp_type_ref.normalized_spelling
-                    or param.cpp_type_ref.spelling,
-                )
-            elif (
-                sequence_option := _option_sequence_struct_name(param.cpp_type_ref)
-            ) is not None and sequence_option[0] in option_structs:
-                option = option_structs[sequence_option[0]]
-                param_type = TypeSpec(
-                    kind="option",
-                    struct=option.name,
-                    cpp_type=param.cpp_type_ref.normalized_spelling
-                    or param.cpp_type_ref.spelling,
-                    sequence_depth=1,
-                )
-            else:
-                param_type = _apply_param_annotations(
-                    _infer_param_type(param.cpp_type_ref, handles),
-                    param_ann,
-                    handles,
-                )
+            param_type = _apply_param_annotations(
+                _infer_param_type(param.cpp_type_ref, handles),
+                param_ann,
+                handles,
+            )
             if param_type.kind == "handle" and "IFCAPI_HANDLE_PARAM" not in param_ann:
                 cpp_type_raw = (
                     param.cpp_type_ref.normalized_spelling
@@ -1439,7 +1290,6 @@ def lower_cpp_spec_functions_to_calls(
                     else DirectFunctionPolicyOp(cpp_name=cpp_name)
                 ),
                 doc=function.doc,
-                public_module=function.public_module,
             )
         )
     return tuple(calls)
@@ -1503,172 +1353,3 @@ def lower_cpp_spec_result_structs_to_specs(
             fields=fields,
         )
     return result
-
-
-def discover_cpp_spec_option_structs(
-    environment: DiscoveryEnvironment,
-    translation_unit: Path,
-    functions: tuple[CppSpecFunction, ...],
-    handles: dict[str, HandleSpec],
-    result_structs: dict[str, ResultStructSpec] | None = None,
-    *,
-    c_prefix: str | None = None,
-) -> dict[str, OptionStructSpec]:
-    """Discover semantic input option structs from C++ spec function parameters.
-
-    A parameter whose canonical type name ends in `Options` is treated as a
-    source-authored options object. The public fields of that struct become the
-    binding contract for high-level generated language facades. Lowering to the
-    C ABI is intentionally separate so the C-compatible surface can remain
-    explicit and stable.
-    """
-    result_structs = result_structs or {}
-    option_structs: dict[str, OptionStructSpec] = {}
-    pending: list[tuple[str, str]] = []
-    for function in functions:
-        for param in function.discovered.params:
-            option_name = _option_struct_name(
-                param.cpp_type_ref
-            ) or _option_sequence_struct_name(param.cpp_type_ref)
-            if option_name is None:
-                continue
-            simple_name, cpp_type = option_name
-            if "::" not in cpp_type and function.namespace:
-                cpp_type = f"{function.namespace}::{cpp_type}"
-            if simple_name in option_structs:
-                continue
-            option_structs[simple_name] = OptionStructSpec(
-                name=simple_name,
-                cpp_type=cpp_type,
-                c_type=_option_c_type(simple_name, c_prefix),
-                fields=(),
-            )
-            pending.append((simple_name, cpp_type))
-
-    def record_ref(semantic: object) -> tuple[str, str] | None:
-        if not isinstance(semantic, RecordSemanticType):
-            return None
-        normalized_cpp_type = " ".join(semantic.cpp_type.replace(" *", "*").split())
-        if normalized_cpp_type.rstrip("&").endswith("*"):
-            return None
-        qualified = semantic.base_name
-        simple = qualified.rsplit("::", 1)[-1]
-        if any(
-            _canonical_cpp_type(handle.cpp_type) == _canonical_cpp_type(qualified)
-            for handle in handles.values()
-        ):
-            return None
-        if any(
-            _canonical_cpp_type(struct.cpp_type) == _canonical_cpp_type(qualified)
-            for struct in result_structs.values()
-        ):
-            return None
-        return simple, qualified
-
-    def referenced_records(semantic: object) -> tuple[tuple[str, str], ...]:
-        if isinstance(semantic, OptionalSemanticType):
-            return referenced_records(semantic.element)
-        if isinstance(semantic, SequenceSemanticType):
-            return referenced_records(semantic.element)
-        if isinstance(semantic, VariantSemanticType):
-            return tuple(
-                item
-                for alternative in semantic.alternatives
-                for item in referenced_records(alternative)
-            )
-        ref = record_ref(semantic)
-        return (ref,) if ref is not None else ()
-
-    def infer_input_type(cpp_type: object) -> TypeSpec:
-        semantic = analyze_cpp_type(cpp_type)
-        if isinstance(semantic, OptionalSemanticType):
-            inner_cpp_type = (
-                cpp_type.template_args[0]
-                if isinstance(cpp_type, DiscoveredCppType) and cpp_type.template_args
-                else semantic.element.cpp_type
-            )
-            inner = infer_input_type(inner_cpp_type)
-            return TypeSpec(
-                **{
-                    **inner.__dict__,
-                    "nullable": True,
-                    "cpp_type": getattr(cpp_type, "storage_spelling", None)
-                    or semantic.cpp_type,
-                }
-            )
-        if isinstance(semantic, VariantSemanticType):
-            return TypeSpec(
-                kind="variant",
-                variants=tuple(
-                    infer_input_type(alternative.cpp_type)
-                    for alternative in semantic.alternatives
-                ),
-                ownership="copy",
-                cpp_type=getattr(cpp_type, "storage_spelling", None)
-                or semantic.cpp_type,
-            )
-        if isinstance(semantic, SequenceSemanticType):
-            leaf = semantic_leaf_type(semantic)
-            leaf_type = infer_input_type(leaf.cpp_type)
-            if leaf_type.kind in {"option", "variant"}:
-                return TypeSpec(
-                    **{
-                        **leaf_type.__dict__,
-                        "cpp_type": getattr(cpp_type, "storage_spelling", None)
-                        or semantic.cpp_type,
-                        "sequence_depth": semantic_sequence_depth(semantic),
-                        "alias": semantic_sequence_alias(semantic),
-                        "fixed_lengths": semantic_sequence_lengths(semantic),
-                    }
-                )
-        ref = record_ref(semantic)
-        if ref is not None and ref[0] in option_structs:
-            return TypeSpec(
-                kind="option",
-                struct=ref[0],
-                cpp_type=getattr(cpp_type, "storage_spelling", None)
-                or semantic.cpp_type,
-            )
-        return _infer_param_type(cpp_type, handles)
-
-    processed: set[str] = set()
-    while pending:
-        simple_name, cpp_type = pending.pop(0)
-        if simple_name in processed:
-            continue
-        discovered_fields = discover_public_fields(
-            environment, translation_unit, cpp_type
-        ).values()
-        discovered_fields = tuple(discovered_fields)
-        for field in discovered_fields:
-            for child_name, child_cpp_type in referenced_records(
-                analyze_cpp_type(field.cpp_type_ref)
-            ):
-                if child_name not in option_structs:
-                    option_structs[child_name] = OptionStructSpec(
-                        name=child_name,
-                        cpp_type=child_cpp_type,
-                        c_type=_option_c_type(child_name, c_prefix),
-                        fields=(),
-                    )
-                    pending.append((child_name, child_cpp_type))
-        option_structs[simple_name] = OptionStructSpec(
-            name=simple_name,
-            cpp_type=cpp_type,
-            c_type=option_structs[simple_name].c_type,
-            fields=tuple(
-                OptionStructFieldSpec(
-                    name=field.cpp_name,
-                    type=infer_input_type(field.cpp_type_ref),
-                    cpp_field=field.cpp_name,
-                    doc=field.doc,
-                    has_default=(
-                        field.cpp_type_ref.template_name == "std::optional"
-                        and field.has_initializer
-                    ),
-                )
-                for field in discovered_fields
-            ),
-        )
-        processed.add(simple_name)
-    return option_structs

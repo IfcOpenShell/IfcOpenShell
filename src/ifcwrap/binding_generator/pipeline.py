@@ -8,11 +8,9 @@ from .binding_ir import BindingIR, lower_binding_spec
 from .binding_model import HandleSpec
 from .clang_discovery import CompilationConfig, DiscoveryEnvironment
 from .cpp_spec_frontend import (
-    discover_cpp_spec_contract_headers,
     discover_cpp_spec_functions,
     discover_cpp_spec_handles,
     discover_cpp_spec_methods,
-    discover_cpp_spec_option_structs,
     discover_cpp_spec_policy,
     discover_cpp_spec_result_structs,
     discover_cpp_spec_selected_functions,
@@ -124,7 +122,6 @@ def _merge_cpp_specs(
     )
     handles = dict(base.handles)
     result_structs = dict(base.result_structs)
-    option_structs = dict(getattr(base, "option_structs", {}))
     calls = list(base.functions)
     methods = list(base.methods)
     existing_c_names = {call.c_name for call in (*base.functions, *base.methods)}
@@ -157,26 +154,11 @@ def _merge_cpp_specs(
             environment,
             config.path,
             config.namespace,
-            contract_headers=discover_cpp_spec_contract_headers(
-                config.path, discovery_include_dirs
-            ),
         )
         functions += discover_cpp_spec_selected_functions(
             environment,
             config.path,
         )
-        for struct_name, struct in discover_cpp_spec_option_structs(
-            environment,
-            config.path,
-            functions,
-            handles,
-            result_structs,
-            c_prefix=config.c_prefix,
-        ).items():
-            if struct_name in option_structs and option_structs[struct_name] != struct:
-                msg = f"C++ spec option struct '{struct_name}' is declared with conflicting metadata"
-                raise ValueError(msg)
-            option_structs[struct_name] = struct
         selected_calls.extend(
             lower_cpp_spec_methods_to_calls(
                 environment,
@@ -199,7 +181,6 @@ def _merge_cpp_specs(
                 functions,
                 handles,
                 result_structs,
-                option_structs,
                 c_prefix=config.c_prefix,
             )
         )
@@ -223,7 +204,6 @@ def _merge_cpp_specs(
         public_headers=tuple(public_headers),
         handles=handles,
         result_structs=result_structs,
-        option_structs=option_structs,
         functions=tuple(calls),
         methods=tuple(methods),
     )

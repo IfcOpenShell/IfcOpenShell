@@ -7,7 +7,7 @@ from .abi_ir import (
     _variant_c_type,
 )
 from .binding_ir import BindingIR, CallIR
-from .binding_model import OptionStructSpec, TypeSpec
+from .binding_model import TypeSpec
 
 
 def _ordered_result_structs(spec: BindingIR) -> tuple[object, ...]:
@@ -88,18 +88,6 @@ def _render_variant_decl(type_spec: TypeSpec, spec: BindingIR) -> str:
         f"    {field.c_type} {field.name};" for field in finalized.fields
     )
     return f"typedef struct {c_type} {{\n{fields}\n}} {c_type};"
-
-
-def _render_option_struct_decl(struct: OptionStructSpec, spec: BindingIR) -> str:
-    if spec.abi is None:
-        raise ValueError("C emission requires a finalized BindingIR")
-    lines: list[str] = []
-    for field in spec.abi.option_structs[struct.name].fields:
-        lines.append(f"    {field.c_type} {field.name};")
-        if field.presence_field is not None:
-            lines.append(f"    bool {field.presence_field};")
-    fields = "\n".join(lines)
-    return f"typedef struct {struct.c_type} {{\n{fields}\n}} {struct.c_type};"
 
 
 def _render_call_decl(call: CallIR, spec: BindingIR) -> str:

@@ -3,7 +3,6 @@ from __future__ import annotations
 from .abi_ir import (
     ErrorCatalogEntryIR,
     _handle_destroy_name,
-    _option_list_c_type,
     _result_record_list_c_type,
     _result_record_list_destroy_name,
     _used_result_record_lists,
@@ -26,7 +25,6 @@ from .c_sequence_helpers import (
 from .c_type_rendering import (
     _ordered_result_structs,
     _render_call_decl,
-    _render_option_struct_decl,
     _render_optional_result_struct_decl,
     _render_result_struct_decl,
     _render_variant_decl,
@@ -103,42 +101,6 @@ def _render_header(spec: BindingIR) -> str:
         for variant in _used_variant_types(spec)
         if variant.sequence_depth == 1
     )
-    option_struct_forwards = "\n".join(
-        f"typedef struct {spec.option_structs[name].c_type} {spec.option_structs[name].c_type};"
-        for name in sorted(spec.option_structs)
-    )
-    option_list_names = {
-        param.type.struct
-        for call in spec.calls
-        for param in call.params
-        if param.type.kind == "option"
-        and param.type.struct is not None
-        and param.type.sequence_depth == 1
-    } | {
-        field.type.struct
-        for option in spec.option_structs.values()
-        for field in option.fields
-        if field.type.kind == "option"
-        and field.type.struct is not None
-        and field.type.sequence_depth == 1
-    }
-    option_list_forwards = "\n".join(
-        f"typedef struct {_option_list_c_type(spec.option_structs[name])} "
-        f"{_option_list_c_type(spec.option_structs[name])};"
-        for name in sorted(option_list_names)
-    )
-    option_struct_decls = "\n\n".join(
-        _render_option_struct_decl(struct, spec)
-        for struct in spec.option_structs.values()
-    )
-    option_list_decls = "\n\n".join(
-        f"typedef struct {_option_list_c_type(option)} {{\n"
-        f"    {option.c_type}* items;\n"
-        f"    size_t size;\n"
-        f"}} {_option_list_c_type(option)};"
-        for option in spec.option_structs.values()
-        if option.name in option_list_names
-    )
     destroy_decls = "\n".join(
         _render_handle_destroy_decl(handle) for handle in spec.handles.values()
     )
@@ -193,15 +155,8 @@ extern "C" {{
 {handle_list_forwards}
 {handle_list_list_forwards}
 
-{option_struct_forwards}
-{option_list_forwards}
-
 {variant_decls}
 {variant_list_decls}
-
-{option_struct_decls}
-
-{option_list_decls}
 
 {result_struct_decls}
 
