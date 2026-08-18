@@ -41,10 +41,7 @@ export type {
   MatrixPoint3,
   OperationProgress,
 } from './geom/index.js';
-export {
-  SerializerSettings,
-  exportToBuffer,
-} from './serializers/index.js';
+export { exportToBuffer } from './serializers/index.js';
 export type {
   ExportOptions,
   ExportResult,
