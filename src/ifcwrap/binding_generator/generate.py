@@ -11,7 +11,7 @@ from pathlib import Path
 from .c_backend import render_c_abi
 from .debug import debug_log
 from .pipeline import build_binding_ir
-from .targets.wasm.backend import render_export_list, render_wasm_bindings
+from .targets.wasm.backend import render_wasm_bindings
 
 
 @dataclass(frozen=True)
@@ -125,11 +125,6 @@ def generate_all(config: GenerationConfig) -> tuple[Artifact, ...]:
         artifacts.extend(
             (
                 Artifact("wasm-module", wasm_dir / "ifcopenshell_api.mjs", javascript),
-                Artifact(
-                    "wasm-exports",
-                    wasm_dir / "ifcopenshell_exports.txt",
-                    render_export_list(metadata),
-                ),
                 Artifact(
                     "wasm-declarations",
                     wasm_dir / "ifcopenshell_api.d.ts",

@@ -48,7 +48,6 @@ function(ifcopenshell_configure_wasm_main TARGET ENVIRONMENT OUTPUT_NAME)
             "SHELL:-sEXPORT_NAME=initIfcOpenShellWasmModule"
             "SHELL:-sENVIRONMENT=${ENVIRONMENT}"
             "SHELL:--js-library=${IFCOPENSHELL_WASM_MATH_IMPORTS_JS}"
-            "SHELL:-sEXPORTED_FUNCTIONS=@${IFCOPENSHELL_WASM_EXPORTS}"
             "SHELL:-sEXPORTED_RUNTIME_METHODS=[\"stringToUTF8\",\"UTF8ToString\",\"lengthBytesUTF8\",\"getValue\",\"setValue\",\"HEAP32\",\"HEAPU32\",\"loadDynamicLibrary\",\"FS\"]"
             "SHELL:-sALLOW_MEMORY_GROWTH=1"
             "SHELL:-sMAXIMUM_MEMORY=4294967296"
