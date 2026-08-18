@@ -43,6 +43,11 @@
 #include <utility>
 #include <vector>
 
+/*
+ * Opaque C handles exposed by this spec. Each entry gives the binding name,
+ * C++ type, and destruction policy. Optional arguments select value or shared
+ * pointer storage and define how an empty value is detected.
+ */
 IFCAPI_HANDLE(iterator, ifcopenshell::geom::iterator, delete)
 IFCAPI_HANDLE(settings, ifcopenshell::geom::settings, delete)
 IFCAPI_HANDLE(geometry_serializer, ifcopenshell::geom::geometry_serializer, delete)
@@ -95,7 +100,11 @@ IFCAPI_HANDLE(taxonomy_sweep_along_curve, ifcopenshell::geom::taxonomy::sweep_al
 IFCAPI_HANDLE(taxonomy_node, ifcopenshell::geom::taxonomy::node, shared_ptr, shared_ptr)
 IFCAPI_HANDLE(taxonomy_boolean_result, ifcopenshell::geom::taxonomy::boolean_result, shared_ptr, shared_ptr)
 
-// Native methods included in the stable C ABI.
+/*
+ * Existing C++ methods included in the C ABI. Entries identify the receiver
+ * handle, C++ method, exported name, and exact parameter types when needed to
+ * select an overload. Clang supplies the remaining type information.
+ */
 IFCAPI_DISCOVER_METHOD(triangulation, edges, edges)
 IFCAPI_DISCOVER_METHOD(triangulation, edges_item_ids, edges_item_ids)
 IFCAPI_DISCOVER_METHOD(triangulation, faces, faces)
@@ -200,7 +209,11 @@ IFCAPI_DISCOVER_METHOD(tree, protrusion_distances, protrusion_distances)
 IFCAPI_DISCOVER_METHOD(tree, styles, styles)
 IFCAPI_DISCOVER_METHOD(tree, uint8_to_b64, uint8_to_b64, const std::vector<unsigned char>&)
 
-// Structured relationships that are not encoded by C++ types.
+/*
+ * Binding policy that cannot be inferred from C++ signatures: constructor
+ * selection and parameter names, field selection and renaming, collection
+ * accessors, ownership details, and compile guards.
+ */
 IFCAPI_DISCOVER_CONSTRUCTOR(tree, ifcopenshell::geom::tree, create_tree, explicit, IFOPSH_WITH_OPENCASCADE, _)
 IFCAPI_DISCOVER_CONSTRUCTOR(tree, ifcopenshell::geom::tree, create_tree_from_file, explicit, IFOPSH_WITH_OPENCASCADE, _)
 IFCAPI_CONSTRUCTOR_PARAM(create_tree_from_file, f, file, ifcopenshell::file&)
@@ -297,6 +310,7 @@ IFCAPI_DISCOVER_POLICY(taxonomy_matrix4, ccomponents, get_data, "ccomponents", _
 IFCAPI_DISCOVER_POLICY(taxonomy_colour, ccomponents, get_data, "ccomponents", _)
 IFCAPI_DISCOVER_POLICY(transformation, ccomponents, matrix, "data()->ccomponents", _)
 
+// Free functions outside the spec namespace that are selected for the C ABI.
 IFCAPI_DISCOVER_FUNCTION(ifcopenshell::geom, helmert_curve_point)
 
 namespace ifcgeom::bindings {
