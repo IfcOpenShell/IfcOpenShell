@@ -2,7 +2,6 @@ if(NOT WASM_BUILD)
     return()
 endif()
 
-# This file was generated with the assistance of an AI coding tool.
 
 set(IFCOPENSHELL_WASM_PLUGINS_DIR "${IFCOPENSHELL_WASM_OUTPUT_DIR}/plugins")
 set(IFCOPENSHELL_WASM_PLUGINS_JSON "${IFCOPENSHELL_WASM_OUTPUT_DIR}/ifcopenshell_plugins.json")

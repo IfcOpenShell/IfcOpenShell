@@ -1,5 +1,3 @@
-// This file was generated with the assistance of an AI coding tool.
-
 addToLibrary({
   acos: 'Math.acos',
   acosh: 'Math.acosh',
