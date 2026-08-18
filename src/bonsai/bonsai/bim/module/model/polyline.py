@@ -355,6 +355,34 @@ class PolylineOperator:
                 tool.Polyline.remove_last_polyline_point()
                 tool.Blender.update_viewport()
 
+    def get_polyline_points(self) -> Union[bpy.types.bpy_prop_collection, list]:
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        return polyline_data[0].polyline_points if polyline_data else []
+
+    def set_rectangle_mode(self, value: bool) -> None:
+        """Rectangle mode is stored in the scene so that it is kept between tool invocations."""
+        self.tool_state.rectangle_mode = value
+        tool.Model.get_polyline_props().rectangle_mode = value
+
+    def handle_rectangle_mode(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
+        """Toggle between drawing a free form polyline and drawing a rectangle from two opposite corners."""
+        if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type == "R" and not event.shift:
+            self.set_rectangle_mode(not self.tool_state.rectangle_mode)
+            # The points already inserted don't describe a rectangle, so the shape starts over.
+            tool.Polyline.clear_polyline()
+            PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+            tool.Blender.update_viewport()
+
+    def handle_rectangle_preview(
+        self, context: bpy.types.Context, event: bpy.types.Event, should_round: bool = False
+    ) -> None:
+        """Update the provisional rectangle corners based on the first corner and the current point."""
+        if should_round and self.snapping_points[0]["type"] not in {"Plane", "Axis"}:
+            should_round = False
+        tool.Polyline.update_rectangle_polyline(self.input_ui, self.tool_state, should_round=should_round)
+        tool.Blender.update_viewport()
+
     def handle_snap_selection(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if not self.tool_state.is_input_on and event.value == "PRESS" and event.type == "M":
             self.snapping_points = tool.Snap.modify_snapping_point_selection(

@@ -405,9 +405,80 @@ def test_draw_polyline_wall(window, x, y):
     yield "FINISHED"
 
 
+def test_draw_rectangle_slab(window, x, y):
+    yield from preset_event_simulate(window, "ESC", "TAP", x, y)
+    area, region = get_area_and_region(window)
+
+    for obj in tool.Blender.get_selected_objects():
+        obj.select_set(False)
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        props = tool.Model.get_model_props()
+        ifc = tool.Ifc.get()
+        relating_type = ifc.by_type("IfcSlabType")[0]
+        props.ifc_class = "IfcSlabType"
+        props.relating_type_id = str(relating_type.id())
+
+        spatial_props = tool.Spatial.get_spatial_props()
+        spatial_props.default_container = ifc.by_type("IfcBuildingStorey")[0].id()
+
+        bpy.ops.bim.draw_polyline_slab("INVOKE_DEFAULT")
+
+    for _ in range(4):
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+
+    # Rectangle mode replaces the free form polyline by two opposite corners
+    yield from preset_event_simulate(window, "R", "TAP", x, y)
+    assert_msg = "Rectangle mode should be enabled"
+    assert tool.Model.get_polyline_props().rectangle_mode is True
+    _assert_pass(assert_msg)
+
+    yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
+
+    offset_x, offset_y = 300, 200
+    for _ in range(4):
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset_x, y + offset_y)
+
+    polyline_points = tool.Model.get_polyline_props().insertion_polyline[0].polyline_points
+    assert_msg = f"Rectangle preview should have 4 corners and be closed, got {len(polyline_points)} points"
+    assert len(polyline_points) == 5
+    _assert_pass(assert_msg)
+
+    # Picking the second corner is enough to create the slab
+    yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x + offset_x, y + offset_y)
+
+    obj = bpy.context.selected_objects[0]
+    element = tool.Ifc.get_entity(obj)
+    assert_msg = "Created object should be IfcSlab"
+    assert element.is_a() == "IfcSlab"
+    _assert_pass(assert_msg)
+
+    corners = []
+    for vert in obj.data.vertices:
+        co = obj.matrix_world @ vert.co
+        corner = (round(co.x, 3), round(co.y, 3))
+        if corner not in corners:
+            corners.append(corner)
+    assert_msg = f"Slab footprint should have 4 corners, got {corners}"
+    assert len(corners) == 4
+    _assert_pass(assert_msg)
+
+    xs = {corner[0] for corner in corners}
+    ys = {corner[1] for corner in corners}
+    assert_msg = f"Slab footprint should be a rectangle, got {corners}"
+    assert len(xs) == 2 and len(ys) == 2
+    _assert_pass(assert_msg)
+
+    yield "FINISHED"
+
+
 def run_tests():
     module_name = os.getenv("MODULE", "snap")
-    if module_name == "wall":
+    if module_name == "slab":
+        filepath = f"./test/files/wall.ifc"
+        bpy.ops.bim.load_project(filepath=filepath)
+        window = _get_valid_window()
+        test_queue = [lambda w=window: test_draw_rectangle_slab(w, 960, 540)]
+    elif module_name == "wall":
         filepath = f"./test/files/wall.ifc"
         bpy.ops.bim.load_project(filepath=filepath)
         window = _get_valid_window()
