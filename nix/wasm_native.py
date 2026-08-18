@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# This file was generated with the assistance of an AI coding tool.
 """
 Native WASM bootstrap build system for IfcOpenShell.
 
@@ -30,7 +29,6 @@ import json
 import logging
 import os
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -50,9 +48,30 @@ REPO_ROOT = SCRIPT_DIR.parent
 BUILD_ROOT = Path(
     os.environ.get("WASM_NATIVE_BUILD_ROOT", REPO_ROOT / "build" / "wasm-native")
 )
+BUILD_MARKER = ".ifcopenshell-wasm-build"
 CMAKE_DIR = REPO_ROOT / "cmake"
 
 logger = logging.getLogger("wasm-native")
+
+
+def _mark_build_root() -> None:
+    root = BUILD_ROOT.resolve()
+    if root == REPO_ROOT or root in REPO_ROOT.parents:
+        raise ValueError(f"Refusing to use unsafe WASM build root: {root}")
+    marker = root / BUILD_MARKER
+    if root.is_dir() and not marker.exists() and any(root.iterdir()):
+        raise ValueError(f"Refusing to use non-empty unmarked WASM build root: {root}")
+    root.mkdir(parents=True, exist_ok=True)
+    marker.touch(exist_ok=True)
+
+
+def _validated_clean_root() -> Path:
+    root = BUILD_ROOT.resolve()
+    if root == REPO_ROOT or root in REPO_ROOT.parents:
+        raise ValueError(f"Refusing to clean unsafe WASM build root: {root}")
+    if not (root / BUILD_MARKER).is_file():
+        raise ValueError(f"Refusing to clean unmarked WASM build root: {root}")
+    return root
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -149,11 +168,6 @@ def emsdk_env() -> dict[str, str]:
     Respects WASM_NATIVE_TOOLCHAIN env var to use an externally managed emsdk.
     """
     return core.emsdk_env(_resolved_toolchain_dir())
-
-
-def emsdk_binaries() -> dict[str, str]:
-    """Return paths to key emsdk binaries."""
-    return core.emsdk_binaries(_resolved_toolchain_dir())
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -259,12 +273,10 @@ def generate_cmake_flags() -> list[str]:
     flags = [
         "-DWASM_BUILD=ON",
         "-DBUILD_IFCAPI=ON",
-        "-DBUILD_IFCGEOM=ON",
         "-DBUILD_IFCPYTHON=OFF",
         "-DBUILD_CONVERT=OFF",
         "-DBUILD_GEOMSERVER=OFF",
         "-DBUILD_EXAMPLES=OFF",
-        "-DBUILD_SHARED_LIBS=OFF",
         "-DCOLLADA_SUPPORT=OFF",
         "-DBoost_NO_BOOST_CMAKE=On",
         "-DCMAKE_BUILD_TYPE=MinSizeRel",
@@ -504,8 +516,9 @@ def cmd_package(args: argparse.Namespace) -> int:
 def cmd_clean(args: argparse.Namespace) -> int:
     """Clean build artifacts."""
     if BUILD_ROOT.exists():
-        logger.info("Removing %s", BUILD_ROOT)
-        shutil.rmtree(BUILD_ROOT)
+        root = _validated_clean_root()
+        logger.info("Removing %s", root)
+        shutil.rmtree(root)
         logger.info("Clean complete.")
     else:
         logger.info("Nothing to clean.")
@@ -606,6 +619,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     if args.command not in commands:
         parser.print_help()
         return 1
+
+    if args.command != "clean":
+        _mark_build_root()
 
     return commands[args.command](args)
 

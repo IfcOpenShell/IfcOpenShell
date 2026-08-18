@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# This file was generated with the assistance of an AI coding tool.
 """Shared utilities for WASM dependency building.
 
 Used by both:
