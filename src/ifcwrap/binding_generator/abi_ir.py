@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field as dataclass_field
+from dataclasses import dataclass
 from types import MappingProxyType
 
 from .binding_ir import BindingIR, CallIR
@@ -30,23 +30,6 @@ class CTypeIR:
 
 
 @dataclass(frozen=True)
-class COptionFieldIR:
-    name: str
-    type: TypeSpec
-    c_type: str
-    doc: str | None = None
-    presence_field: str | None = None
-    has_default: bool = False
-
-
-@dataclass(frozen=True)
-class COptionIR:
-    name: str
-    c_type: str
-    fields: tuple[COptionFieldIR, ...]
-
-
-@dataclass(frozen=True)
 class CParamIR:
     name: str
     c_type: str
@@ -66,7 +49,6 @@ class CFunctionIR:
     returns: TypeSpec
     receiver: str | None
     doc: str | None = None
-    public_module: str | None = None
 
 
 @dataclass(frozen=True)
@@ -123,7 +105,6 @@ class BindingABI:
     functions: dict[str, CFunctionIR]
     error_functions: dict[str, str]
     error_catalog: ErrorCatalogIR = ERROR_CATALOG
-    option_structs: dict[str, COptionIR] = dataclass_field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "handles", MappingProxyType(dict(self.handles)))
@@ -133,9 +114,6 @@ class BindingABI:
         object.__setattr__(self, "functions", MappingProxyType(dict(self.functions)))
         object.__setattr__(
             self, "error_functions", MappingProxyType(dict(self.error_functions))
-        )
-        object.__setattr__(
-            self, "option_structs", MappingProxyType(dict(self.option_structs))
         )
 
 
@@ -214,10 +192,6 @@ def _handle_list_list_c_type(handle: HandleSpec) -> str:
     return f"{handle.c_type.removesuffix('_t')}_list_list_t"
 
 
-def _option_list_c_type(option: object) -> str:
-    return f"{option.c_type.removesuffix('_t')}_list_t"
-
-
 def _variant_list_c_type(type_spec: TypeSpec, ir: BindingIR) -> str:
     return f"{_variant_c_type(type_spec, ir).removesuffix('_t')}_list_t"
 
@@ -257,7 +231,6 @@ def _result_record_list_make_name(struct: object) -> str:
 def _type_spec_sequence_kind(type_spec: TypeSpec) -> str | None:
     if type_spec.sequence_depth <= 0 or type_spec.kind in {
         "handle",
-        "option",
         "struct",
         "variant",
     }:
@@ -290,9 +263,6 @@ def _used_scalar_sequence_kinds(ir: BindingIR) -> tuple[str, ...]:
     for struct in ir.result_structs.values():
         for field in struct.fields:
             add_type(field.type)
-    for struct in ir.option_structs.values():
-        for field in struct.fields:
-            add_type(field.type)
     return tuple(ordered)
 
 
@@ -313,9 +283,6 @@ def _used_handle_sequence_depths(ir: BindingIR) -> dict[str, set[int]]:
         for param in call.params:
             add(param.type)
     for struct in ir.result_structs.values():
-        for field in struct.fields:
-            add(field.type)
-    for struct in ir.option_structs.values():
         for field in struct.fields:
             add(field.type)
     return depths
@@ -374,23 +341,11 @@ def _param_c_type(type_spec: TypeSpec, ir: BindingIR) -> str:
         if type_spec.struct is None:
             raise ValueError("struct type is missing struct name")
         return ir.result_structs[type_spec.struct].c_type
-    if type_spec.kind == "option":
-        if type_spec.struct is None:
-            raise ValueError("option type is missing option struct name")
-        if type_spec.sequence_depth == 1:
-            return f"const {_option_list_c_type(ir.option_structs[type_spec.struct])}*"
-        return f"const {ir.option_structs[type_spec.struct].c_type}*"
     if type_spec.kind == "variant":
         if type_spec.sequence_depth == 1:
             return f"const {_variant_list_c_type(type_spec, ir)}*"
         return f"const {_variant_c_type(type_spec, ir)}*"
     raise ValueError(f"Unsupported parameter kind: {type_spec.kind}")
-
-
-def _option_field_c_type(type_spec: TypeSpec, ir: BindingIR) -> str:
-    if type_spec.kind in _SCALAR_PARAM_TYPES and type_spec.sequence_depth == 0:
-        return _SCALAR_PARAM_TYPES[type_spec.kind]
-    return _param_c_type(type_spec, ir)
 
 
 def _variant_alt_name(type_spec: TypeSpec, ir: BindingIR) -> str:
@@ -404,8 +359,6 @@ def _variant_alt_name(type_spec: TypeSpec, ir: BindingIR) -> str:
     if type_spec.kind == "handle" and type_spec.handle is not None:
         return type_spec.handle
     if type_spec.kind == "struct" and type_spec.struct is not None:
-        return type_spec.struct
-    if type_spec.kind == "option" and type_spec.struct is not None:
         return type_spec.struct
     return type_spec.kind
 
@@ -481,10 +434,6 @@ def _field_c_type(type_spec: TypeSpec, ir: BindingIR) -> str:
         if type_spec.sequence_depth == 1:
             return _result_record_list_c_type(ir.result_structs[type_spec.struct])
         return ir.result_structs[type_spec.struct].c_type
-    if type_spec.kind == "option":
-        if type_spec.struct is None:
-            raise ValueError("option type is missing struct name")
-        return f"const {ir.option_structs[type_spec.struct].c_type}*"
     if type_spec.kind == "variant":
         return _variant_c_type(type_spec, ir)
     raise ValueError(f"Unsupported result struct field kind: {type_spec.kind}")
@@ -592,33 +541,6 @@ def _finalize_value_types(ir: BindingIR) -> dict[str, CTypeIR]:
             destroy_function=_value_destroy_name(struct.c_type),
             element_type=struct.cpp_type,
         )
-    for option in ir.option_structs.values():
-        used = any(
-            param.type.kind == "option"
-            and param.type.struct == option.name
-            and param.type.sequence_depth == 1
-            for call in ir.calls
-            for param in call.params
-        ) or any(
-            field.type.kind == "option"
-            and field.type.struct == option.name
-            and field.type.sequence_depth == 1
-            for parent in ir.option_structs.values()
-            for field in parent.fields
-        )
-        if used:
-            list_type = _option_list_c_type(option)
-            result[_snake_name(list_type)] = CTypeIR(
-                c_type=list_type,
-                kind="input_record_sequence",
-                fields=(
-                    CFieldIR("items", f"{option.c_type}*"),
-                    CFieldIR("size", "size_t"),
-                ),
-                destroy_function=None,
-                element_type=option.c_type,
-                sequence_depth=1,
-            )
     for call in ir.calls:
         returns = call.returns
         if returns.kind == "struct" and returns.nullable and returns.struct is not None:
@@ -682,9 +604,6 @@ def _used_variant_types(ir: BindingIR) -> tuple[TypeSpec, ...]:
         visit(call.returns)
         for param in call.params:
             visit(param.type)
-    for option in ir.option_structs.values():
-        for field in option.fields:
-            visit(field.type)
     for struct in ir.result_structs.values():
         for field in struct.fields:
             visit(field.type)
@@ -734,7 +653,6 @@ def _finalize_function(call: CallIR, ir: BindingIR) -> CFunctionIR:
         returns=call.returns,
         receiver=call.receiver,
         doc=call.doc,
-        public_module=call.public_module,
     )
 
 
@@ -749,11 +667,6 @@ def _validate_type_reference(type_spec: TypeSpec, ir: BindingIR, context: str) -
             raise ValueError(f"{context}: result struct type is missing its name")
         if type_spec.struct not in ir.result_structs:
             raise ValueError(f"{context}: unknown result struct '{type_spec.struct}'")
-    elif type_spec.kind == "option":
-        if type_spec.struct is None:
-            raise ValueError(f"{context}: option type is missing its struct name")
-        if type_spec.struct not in ir.option_structs:
-            raise ValueError(f"{context}: unknown option struct '{type_spec.struct}'")
     elif type_spec.kind == "variant":
         if not type_spec.variants:
             raise ValueError(f"{context}: variant has no alternatives")
@@ -779,11 +692,6 @@ def _validate_semantic_references(ir: BindingIR) -> None:
             _validate_type_reference(
                 field.type, ir, f"result struct {struct.name} field '{field.name}'"
             )
-    for option in ir.option_structs.values():
-        for field in option.fields:
-            _validate_type_reference(
-                field.type, ir, f"option struct {option.name} field '{field.name}'"
-            )
 
 
 def finalize_abi(ir: BindingIR) -> BindingABI:
@@ -799,24 +707,6 @@ def finalize_abi(ir: BindingIR) -> BindingABI:
         c_prefix=ir.c_prefix,
         handles=_finalize_handles(ir),
         value_types=_finalize_value_types(ir),
-        option_structs={
-            name: COptionIR(
-                name=option.name,
-                c_type=option.c_type,
-                fields=tuple(
-                    COptionFieldIR(
-                        field.name,
-                        field.type,
-                        _option_field_c_type(field.type, ir),
-                        field.doc,
-                        f"has_{field.name}" if field.type.nullable else None,
-                        field.has_default,
-                    )
-                    for field in option.fields
-                ),
-            )
-            for name, option in ir.option_structs.items()
-        },
         functions=functions,
         error_functions={
             "clear_error": f"{ir.c_prefix}_clear_error",
