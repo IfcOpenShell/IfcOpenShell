@@ -1,5 +1,4 @@
-
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { createInstance, describeOrSkip } from '../_helper.js';
 import { GeomSettings, IfcOpenShellError, type IfcOpenShell } from '../../src/index.js';
 
@@ -8,10 +7,6 @@ describeOrSkip('GeomSettings', () => {
 
   beforeAll(async () => {
     shell = await createInstance();
-  });
-
-  afterAll(async () => {
-    await shell.dispose();
   });
 
   it('lists setting names', async () => {

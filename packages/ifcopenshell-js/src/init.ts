@@ -1,4 +1,3 @@
-
 import {
   IfcOpenShellError,
   IfcOpenShellErrorCode,
@@ -22,9 +21,6 @@ export interface IfcOpenShell {
   readonly fs: EmscriptenFS | null;
   loadPlugin(kind: PluginKind, id: string): Promise<void>;
   loadedPlugins(): string[];
-  dispose(): void;
-  [Symbol.dispose](): void;
-  [Symbol.asyncDispose](): Promise<void>;
 }
 
 export {
@@ -38,8 +34,8 @@ export {
 /**
  * Initialize the packaged or explicitly configured WASM runtime.
  *
- * The returned object owns the native runtime and should be disposed when it
- * is no longer needed. Plugins are loaded lazily through {@link IfcOpenShell.loadPlugin}.
+ * Plugins are loaded lazily through {@link IfcOpenShell.loadPlugin}. Native
+ * handles returned by the API must be disposed by their owners.
  *
  * @param options Asset locations and optional plugin-loader overrides.
  * @returns An initialized, frozen runtime facade.
@@ -78,25 +74,11 @@ export async function init(options: InitOptions = {}): Promise<IfcOpenShell> {
     throw new IfcOpenShellError('Failed to instantiate IfcOpenShell WASM', error);
   }
 
-  let disposed = false;
-  const dispose = () => {
-    if (disposed) return;
-    disposed = true;
-    if ('destroy' in raw && typeof (raw as { destroy?: unknown }).destroy === 'function') {
-      (raw as { destroy(): void }).destroy();
-    }
-  };
-
   const shell: IfcOpenShell = {
     raw,
     fs,
     loadPlugin: (kind, id) => loadPlugin(raw, kind, id),
     loadedPlugins: () => raw.loadedPlugins(),
-    dispose,
-    [Symbol.dispose]: dispose,
-    async [Symbol.asyncDispose]() {
-      dispose();
-    },
   };
   return Object.freeze(shell);
 }
