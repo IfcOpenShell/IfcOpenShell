@@ -1707,6 +1707,37 @@ namespace {
 			}
 		}
 
+		// Cheap bbox-vs-line pre-filter for is_genuinely_occluded()'s own ray-cast below: unlike
+		// nearby_foreign_items() (which stays tight around a candidate edge's own two endpoints,
+		// correct for a LOCAL coincidence test), an occlusion ray extends the full
+		// [-1.0e6, 1.0e6] range along view_direction that is_genuinely_occluded() actually
+		// Perform()s against -- so the shortlist box has to be built from that same extended
+		// segment, not just `p` itself, or it would wrongly exclude a real foreign occluder that
+		// sits far from `p` along the view axis but still on the same ray (confirmed the wrong
+		// approach previously: an earlier attempt reused nearby_foreign_items()'s own local box
+		// for this and was reverted after it under-restored real depth-ties -- see item 41's
+		// notes). Still a plain AABB-vs-AABB test, so for an oblique (e.g. isometric) view this
+		// degenerates back toward "most items pass" -- correct, just less of a speedup there than
+		// for axis-aligned plans/elevations/sections, where it prunes hard.
+		gp_Vec ray_dir_vec(view_direction.Direction());
+		auto nearby_along_ray = [&](const gp_Pnt& p) -> std::vector<size_t> {
+			Bnd_Box ray_box;
+			ray_box.Add(p);
+			ray_box.Add(p.Translated(ray_dir_vec * 1.0e6));
+			ray_box.Add(p.Translated(ray_dir_vec * -1.0e6));
+			ray_box.Enlarge(tolerance);
+			std::vector<size_t> nearby;
+			for (size_t idx = 0; idx < item_boxes.size(); ++idx) {
+				if (!intersector_loaded[idx] || item_boxes[idx].IsVoid()) {
+					continue;
+				}
+				if (!ray_box.IsOut(item_boxes[idx])) {
+					nearby.push_back(idx);
+				}
+			}
+			return nearby;
+		};
+
 		// Casts a ray through `p`, parallel to the view direction, against every product's solid
 		// (including the point's own product -- see above), and checks whether anything is
 		// genuinely nearer to the camera than `p` itself at that same screen position. Only the
@@ -1719,10 +1750,7 @@ namespace {
 		auto is_genuinely_occluded = [&](const gp_Pnt& p, const IfcUtil::IfcBaseEntity* exclude_a = nullptr, const IfcUtil::IfcBaseEntity* exclude_b = nullptr) -> bool {
 			double depth_p = depth(p);
 			gp_Lin ray(p, gp_Dir(view_direction.Direction()));
-			for (size_t i = 0; i < intersectors.size(); ++i) {
-				if (!intersector_loaded[i]) {
-					continue;
-				}
+			for (size_t i : nearby_along_ray(p)) {
 				if ((exclude_a && item_products[i] == exclude_a) || (exclude_b && item_products[i] == exclude_b)) {
 					continue;
 				}
@@ -1865,16 +1893,20 @@ namespace {
 		// So both edge-on and back-facing matches are treated as no match here, leaving the
 		// candidate edge ineligible for restoration via this mechanism -- it keeps whatever HLR
 		// itself already computed for it, hidden or not.
-		// Returns the specific foreign face `p` sits on, and its owning product, if any -- not
-		// just whether one exists. Exposing the match (rather than a plain bool) lets
-		// is_restorable_at() below nudge its own occlusion probe toward that face's own interior,
-		// the same robustness technique find_cross_coplanar_matches()'s occlusion check uses (see
-		// is_genuinely_occluded()'s own comment on why a plain, unoffset ray-cast can miss a
-		// genuine occluder whose own footprint edge happens to align with the tested point) --
-		// and the owning product is needed too, so that nudged probe can exclude it (see
-		// is_restorable_at()'s own comment on why the nudge needs an exclusion the unnudged probe
-		// doesn't).
-		auto point_on_foreign_face = [&](const gp_Pnt& p, const IfcUtil::IfcBaseEntity* self_product, const std::vector<size_t>& candidate_indices) -> boost::optional<std::pair<TopoDS_Face, const IfcUtil::IfcBaseEntity*>> {
+		// Known-issues item 51 (efficiency): a candidate edge's own shortlist of foreign faces
+		// (normal, front-facing-ness, and reference point) is entirely independent of the sample
+		// point `p` -- only the plane-distance/in-face test below actually depends on `p`. Without
+		// this, point_on_foreign_face() re-walked every candidate item's own TopExp_Explorer and
+		// recomputed cross_coplanar::face_normal() from scratch on every one of up to ~43 sample
+		// calls per candidate edge (31 coarse samples + up to 12 bisection refinements) -- the same
+		// "expensive-thing-rebuilt-in-the-sample-loop" shape this file's own comments already
+		// documented as a confirmed 30x slowdown once, elsewhere. collect_foreign_face_candidates()
+		// does this shortlist-to-candidate-faces walk ONCE per candidate edge (called once per
+		// restorable_intervals() invocation, before its sampling loop starts); point_on_foreign_face()
+		// itself now only does the genuinely per-sample work.
+		struct ForeignFaceCandidate { TopoDS_Face face; gp_Dir normal; gp_Pnt ref_pnt; const IfcUtil::IfcBaseEntity* owner; };
+		auto collect_foreign_face_candidates = [&](const IfcUtil::IfcBaseEntity* self_product, const std::vector<size_t>& candidate_indices) -> std::vector<ForeignFaceCandidate> {
+			std::vector<ForeignFaceCandidate> candidates;
 			for (size_t idx : candidate_indices) {
 				if (item_products[idx] == self_product) {
 					continue;
@@ -1894,14 +1926,30 @@ namespace {
 						continue;
 					}
 					gp_Pnt face_pnt = BRep_Tool::Pnt(TopoDS::Vertex(vexp.Current()));
-					double plane_dist = std::abs(gp_Vec(face_pnt, p).Dot(n));
-					if (plane_dist >= tolerance) {
-						continue;
-					}
-					BRepClass_FaceClassifier classifier(face, p, tolerance);
-					if (classifier.State() != TopAbs_OUT) {
-						return std::make_pair(face, item_products[idx]);
-					}
+					candidates.push_back({ face, n, face_pnt, item_products[idx] });
+				}
+			}
+			return candidates;
+		};
+
+		// Returns the specific foreign face `p` sits on, and its owning product, if any -- not
+		// just whether one exists. Exposing the match (rather than a plain bool) lets
+		// is_restorable_at() below nudge its own occlusion probe toward that face's own interior,
+		// the same robustness technique find_cross_coplanar_matches()'s occlusion check uses (see
+		// is_genuinely_occluded()'s own comment on why a plain, unoffset ray-cast can miss a
+		// genuine occluder whose own footprint edge happens to align with the tested point) --
+		// and the owning product is needed too, so that nudged probe can exclude it (see
+		// is_restorable_at()'s own comment on why the nudge needs an exclusion the unnudged probe
+		// doesn't).
+		auto point_on_foreign_face = [&](const gp_Pnt& p, const std::vector<ForeignFaceCandidate>& candidates) -> boost::optional<std::pair<TopoDS_Face, const IfcUtil::IfcBaseEntity*>> {
+			for (const ForeignFaceCandidate& c : candidates) {
+				double plane_dist = std::abs(gp_Vec(c.ref_pnt, p).Dot(c.normal));
+				if (plane_dist >= tolerance) {
+					continue;
+				}
+				BRepClass_FaceClassifier classifier(c.face, p, tolerance);
+				if (classifier.State() != TopAbs_OUT) {
+					return std::make_pair(c.face, c.owner);
 				}
 			}
 			return boost::none;
@@ -1949,6 +1997,9 @@ namespace {
 			if (shortlist.empty()) {
 				return {};
 			}
+			// Precomputed once per candidate edge, not once per sample -- see
+			// collect_foreign_face_candidates()'s own comment (known-issues item 51).
+			std::vector<ForeignFaceCandidate> foreign_face_candidates = collect_foreign_face_candidates(product, shortlist);
 
 			// Single-point restorability test, reused both for the coarse sample grid below and
 			// for refining a transition's exact location via bisection (see the refine lambda
@@ -1956,7 +2007,7 @@ namespace {
 			// test rather than approximating it.
 			auto is_restorable_at = [&](double t) -> bool {
 				gp_Pnt sample = p0.Translated(gp_Vec(dir) * t);
-				auto foreign_face = point_on_foreign_face(sample, product, shortlist);
+				auto foreign_face = point_on_foreign_face(sample, foreign_face_candidates);
 				if (!foreign_face) {
 					return false;
 				}
