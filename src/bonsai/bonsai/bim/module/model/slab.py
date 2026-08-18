@@ -952,37 +952,9 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         self.handle_snap_selection(context, event)
 
-        # Once the first corner is picked, the rectangle is fully defined by the current point,
-        # so picking the second corner also finishes the slab.
-        if self.tool_state.rectangle_mode and len(self.get_polyline_points()) > 0:
-            self.handle_rectangle_preview(context, event, should_round=not self.tool_state.is_input_on)
-
-            confirm_types = {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
-            if not self.tool_state.is_input_on:
-                confirm_types.add("LEFTMOUSE")
-
-            if event.value == "RELEASE" and event.type in confirm_types:
-                if self.tool_state.is_input_on:
-                    if not self.recalculate_inputs(context):
-                        return {"RUNNING_MODAL"}
-                    self.handle_rectangle_preview(context, event)
-                if not tool.Polyline.is_rectangle_valid():
-                    self.report({"WARNING"}, "Cannot create a rectangle with a zero length side.")
-                    return {"RUNNING_MODAL"}
-                return self.finish(context)
-
-            self.handle_keyboard_input(context, event)
-
-            if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Polyline.clear_polyline()
-                tool.Blender.update_viewport()
-
-            cancel = self.handle_cancelation(context, event)
-            if cancel is not None:
-                ProductDecorator.uninstall()
-                return cancel
-
-            return {"RUNNING_MODAL"}
+        rectangle = self.handle_rectangle_drawing(context, event)
+        if rectangle is not None:
+            return rectangle
 
         if (
             not self.tool_state.is_input_on

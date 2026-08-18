@@ -101,6 +101,19 @@ class TestGetRectangleCorners(NewFile):
         corners = subject.get_rectangle_corners(Vector((0, 0, 0)), Vector((3.13, 4.79, 0)), round_factor=0.25)
         assert [tuple(c) for c in corners] == [(0, 0, 0), (3.25, 0, 0), (3.25, 4.75, 0), (0, 4.75, 0)]
 
+    def test_it_builds_the_rectangle_on_the_plane_used_by_the_tool(self):
+        corners = subject.get_rectangle_corners(Vector((0, 0, 0)), Vector((3, 0, 2)), plane_method="XZ")
+        assert [tuple(c) for c in corners] == [(0, 0, 0), (3, 0, 0), (3, 0, 2), (0, 0, 2)]
+
+        corners = subject.get_rectangle_corners(Vector((0, 0, 0)), Vector((0, 3, 2)), plane_method="YZ")
+        assert [tuple(c) for c in corners] == [(0, 0, 0), (0, 3, 0), (0, 3, 2), (0, 0, 2)]
+
+    def test_it_stays_planar_when_the_corners_are_not_on_the_same_plane(self):
+        # The profile tool can pick points anywhere in space, the rectangle is kept on the
+        # plane of the first corner.
+        corners = subject.get_rectangle_corners(Vector((0, 0, 5)), Vector((3, 4, 9)), plane_method="XY")
+        assert [tuple(c) for c in corners] == [(0, 0, 5), (3, 0, 5), (3, 4, 5), (0, 4, 5)]
+
 
 class TestUpdateRectanglePolyline(NewFile):
     def create_polyline(self, first_corner, opposite_corner):

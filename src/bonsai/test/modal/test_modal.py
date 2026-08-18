@@ -411,6 +411,8 @@ def test_draw_rectangle_slab(window, x, y):
 
     for obj in tool.Blender.get_selected_objects():
         obj.select_set(False)
+    # Rectangle mode is kept between invocations, the operator seeds itself from the scene
+    tool.Model.get_polyline_props().rectangle_mode = False
     with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
         props = tool.Model.get_model_props()
         ifc = tool.Ifc.get()
@@ -471,9 +473,102 @@ def test_draw_rectangle_slab(window, x, y):
     yield "FINISHED"
 
 
+def test_draw_rectangle_walls(window, x, y):
+    yield from preset_event_simulate(window, "ESC", "TAP", x, y)
+    area, region = get_area_and_region(window)
+
+    for obj in tool.Blender.get_selected_objects():
+        obj.select_set(False)
+    # Rectangle mode is kept between invocations, the operator seeds itself from the scene
+    tool.Model.get_polyline_props().rectangle_mode = False
+    ifc = tool.Ifc.get()
+    walls_before = len(ifc.by_type("IfcWall"))
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        props = tool.Model.get_model_props()
+        relating_type = ifc.by_type("IfcWallType")[0]
+        props.ifc_class = "IfcWallType"
+        props.relating_type_id = str(relating_type.id())
+
+        bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
+
+    for _ in range(4):
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+
+    yield from preset_event_simulate(window, "R", "TAP", x, y)
+    yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
+
+    offset_x, offset_y = 300, 200
+    for _ in range(4):
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset_x, y + offset_y)
+    yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x + offset_x, y + offset_y)
+
+    walls = ifc.by_type("IfcWall")[walls_before:]
+    assert_msg = f"A rectangle should create 4 walls, got {len(walls)}"
+    assert len(walls) == 4, assert_msg
+    _assert_pass(assert_msg)
+
+    origins = [tuple(round(v, 3) for v in tool.Ifc.get_object(wall).matrix_world.translation[:2]) for wall in walls]
+    assert_msg = f"The 4 walls should start at the 4 corners of a rectangle, got {origins}"
+    assert len({origin[0] for origin in origins}) == 2 and len({origin[1] for origin in origins}) == 2, assert_msg
+    _assert_pass(assert_msg)
+
+    yield "FINISHED"
+
+
+def test_draw_rectangle_profiles(window, x, y):
+    yield from preset_event_simulate(window, "ESC", "TAP", x, y)
+    area, region = get_area_and_region(window)
+
+    for obj in tool.Blender.get_selected_objects():
+        obj.select_set(False)
+    # Rectangle mode is kept between invocations, the operator seeds itself from the scene
+    tool.Model.get_polyline_props().rectangle_mode = False
+    ifc = tool.Ifc.get()
+    beams_before = len(ifc.by_type("IfcBeam"))
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        props = tool.Model.get_model_props()
+        relating_type = ifc.by_type("IfcBeamType")[0]
+        props.ifc_class = "IfcBeamType"
+        props.relating_type_id = str(relating_type.id())
+
+        bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
+
+    for _ in range(4):
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+
+    yield from preset_event_simulate(window, "R", "TAP", x, y)
+    yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
+
+    offset_x, offset_y = 300, 200
+    for _ in range(4):
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset_x, y + offset_y)
+    yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x + offset_x, y + offset_y)
+
+    beams = ifc.by_type("IfcBeam")[beams_before:]
+    assert_msg = f"A rectangle should create 4 beams, got {len(beams)}"
+    assert len(beams) == 4
+    _assert_pass(assert_msg)
+
+    elevations = {round(tool.Ifc.get_object(beam).matrix_world.translation.z, 3) for beam in beams}
+    assert_msg = f"The 4 beams should be on the same plane, got {elevations}"
+    assert len(elevations) == 1
+    _assert_pass(assert_msg)
+
+    yield "FINISHED"
+
+
 def run_tests():
     module_name = os.getenv("MODULE", "snap")
-    if module_name == "slab":
+    if module_name == "rectangle":
+        filepath = f"./test/files/wall.ifc"
+        bpy.ops.bim.load_project(filepath=filepath)
+        window = _get_valid_window()
+        test_queue = [
+            lambda w=window: test_draw_rectangle_slab(w, 960, 540),
+            lambda w=window: test_draw_rectangle_walls(w, 960, 540),
+            lambda w=window: test_draw_rectangle_profiles(w, 960, 540),
+        ]
+    elif module_name == "slab":
         filepath = f"./test/files/wall.ifc"
         bpy.ops.bim.load_project(filepath=filepath)
         window = _get_valid_window()
