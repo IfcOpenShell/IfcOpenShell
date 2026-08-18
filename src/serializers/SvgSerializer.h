@@ -82,6 +82,9 @@
 #include <iterator>
 #include <algorithm>
 #include <functional>
+#include <thread>
+#include <mutex>
+#include <atomic>
 #include <IntCurvesFace_ShapeIntersector.hxx>
 
 typedef std::pair<const IfcUtil::IfcBaseEntity*, std::string> drawing_key;
@@ -1666,6 +1669,14 @@ namespace {
 		// rebuilt from scratch each time (this once caused a ~30x slowdown on a real building).
 		std::vector<IntCurvesFace_ShapeIntersector> intersectors(items.size());
 		std::vector<bool> intersector_loaded(items.size(), false);
+		// One mutex per intersector, guarding its Perform() call together with the NbPnt()/Pnt()
+		// reads of that same call's results (see is_genuinely_occluded() below) -- the outer loop
+		// further down runs across worker threads, and IntCurvesFace_ShapeIntersector::Perform()
+		// is not safe to call concurrently on a shared instance (it writes into private,
+		// non-atomic result state that NbPnt()/Pnt() then read). Per-item granularity only blocks
+		// two threads that want the SAME foreign item's intersector at the same instant, unlike a
+		// single mutex over the whole vector, which would serialize every occlusion check.
+		std::vector<std::mutex> intersector_mutexes(items.size());
 		// Cheap per-item bounding boxes plus (product, shape) pointers, built once up front
 		// alongside the (expensive) intersectors -- lets restorable_intervals() below reject
 		// foreign items that can't possibly matter for a given candidate edge via a
@@ -1755,6 +1766,7 @@ namespace {
 					continue;
 				}
 				auto& inter = intersectors[i];
+				std::lock_guard<std::mutex> lock(intersector_mutexes[i]);
 				inter.Perform(ray, -1.0e6, 1.0e6);
 				if (!inter.IsDone()) {
 					continue;
@@ -2152,9 +2164,28 @@ namespace {
 			return filtered;
 		};
 
-		auto result_it = result.begin();
-		auto classified_it = classified_items.begin();
-		for (; result_it != result.end() && classified_it != classified_items.end(); ++result_it, ++classified_it) {
+		// Each (product, class) bucket below is processed independently -- it reads only its own
+		// pair of list nodes and writes only its own `visible_edges` slot, never another bucket's
+		// -- so the buckets are farmed out across worker threads via a shared atomic work index
+		// (not a static chunk split: bucket cost varies hugely with candidate-edge count, so a
+		// dynamic "pull the next index" scheme balances load far better than splitting the list
+		// into N contiguous, equally-sized ranges). `std::list` iterators stay valid across threads
+		// here since no insertion/erasure happens anywhere in this function -- only the payload of
+		// each already-selected node is mutated, each by exactly one thread.
+		using result_iter_t = decltype(result.begin());
+		using classified_iter_t = decltype(classified_items.begin());
+		std::vector<std::pair<result_iter_t, classified_iter_t>> work_items;
+		{
+			auto result_it = result.begin();
+			auto classified_it = classified_items.begin();
+			for (; result_it != result.end() && classified_it != classified_items.end(); ++result_it, ++classified_it) {
+				work_items.emplace_back(result_it, classified_it);
+			}
+		}
+
+		auto process_work_item = [&](const std::pair<result_iter_t, classified_iter_t>& work_item) {
+			auto result_it = work_item.first;
+			auto classified_it = work_item.second;
 			const IfcUtil::IfcBaseEntity* product = std::get<0>(*classified_it);
 			// Cross-coplanar/mat-style-change edges are NOT excluded here (a former version of
 			// this pass skipped them, reasoning that "an intentional touching boundary with a
@@ -2242,6 +2273,37 @@ namespace {
 					builder.Add(c, e);
 				}
 				visible_edges = c;
+			}
+		};
+
+		// Below this bucket count, thread spawn/join overhead isn't clearly amortized by the work
+		// available -- run the existing sequential path unchanged rather than paying for threads
+		// that would mostly sit idle. This threshold is a starting point, not yet tuned against
+		// real profiling data (see the "reintroduce a temporary timing wrapper" step of this
+		// feature's verification plan) -- revisit if measurement shows it's off.
+		unsigned int hw = std::thread::hardware_concurrency();
+		if (hw == 0) {
+			hw = 1;
+		}
+		if (work_items.size() < 2 * static_cast<size_t>(hw)) {
+			for (auto& work_item : work_items) {
+				process_work_item(work_item);
+			}
+		} else {
+			std::atomic<size_t> next_idx{ 0 };
+			size_t num_threads = std::min<size_t>(hw, work_items.size());
+			std::vector<std::thread> workers;
+			workers.reserve(num_threads);
+			for (size_t t = 0; t < num_threads; ++t) {
+				workers.emplace_back([&]() {
+					size_t idx;
+					while ((idx = next_idx.fetch_add(1, std::memory_order_relaxed)) < work_items.size()) {
+						process_work_item(work_items[idx]);
+					}
+				});
+			}
+			for (auto& worker : workers) {
+				worker.join();
 			}
 		}
 		return result;
