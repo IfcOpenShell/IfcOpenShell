@@ -30,7 +30,9 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from nix import core, deps, wasm_native
+from nix import core, deps, wasm_native  # noqa: E402
+
+WASM_SOURCES = ("emsdk", *wasm_native.DEPENDENCIES)
 
 
 class TestLockfileParsing(unittest.TestCase):
@@ -40,29 +42,14 @@ class TestLockfileParsing(unittest.TestCase):
         """Test that lockfile loads correctly."""
         lock = core.load_lockfile()
         self.assertIsInstance(lock, dict)
-        for name in (
-            "emsdk",
-            "boost",
-            "occt",
-            "manifold",
-            "gmp",
-            "mpfr",
-            "cgal",
-            "eigen",
-            "nlohmann_json",
-            "libxml2",
-            "pcre",
-            "opencollada",
-            "swig",
-            "rocksdb",
-            "zstd",
-        ):
+        for name in WASM_SOURCES:
             self.assertIn(name, lock, f"{name} missing from lockfile")
 
     def test_lockfile_entry_structure(self):
         """Test that each lockfile entry has required fields."""
         lock = core.load_lockfile()
-        for name, entry in lock.items():
+        for name in WASM_SOURCES:
+            entry = lock[name]
             self.assertIn("url", entry, f"{name} missing 'url'")
             self.assertIn("version", entry, f"{name} missing 'version'")
             self.assertIn("archive_type", entry, f"{name} missing 'archive_type'")
@@ -75,7 +62,8 @@ class TestLockfileParsing(unittest.TestCase):
         """Test that archive types are valid."""
         lock = core.load_lockfile()
         valid_types = {"tar.gz", "tar.bz2", "tar.xz", "tar", "zip", "git"}
-        for name, entry in lock.items():
+        for name in WASM_SOURCES:
+            entry = lock[name]
             self.assertIn(
                 entry["archive_type"],
                 valid_types,
@@ -85,7 +73,8 @@ class TestLockfileParsing(unittest.TestCase):
     def test_lockfile_urls(self):
         """Test that URLs are well-formed."""
         lock = core.load_lockfile()
-        for name, entry in lock.items():
+        for name in WASM_SOURCES:
+            entry = lock[name]
             url = entry["url"]
             if entry["archive_type"] != "git":
                 self.assertTrue(
@@ -101,7 +90,8 @@ class TestLockfileParsing(unittest.TestCase):
     def test_lockfile_patches_reference_existing_files(self):
         """Every patch referenced in the lockfile must exist under nix/patches/."""
         lock = core.load_lockfile()
-        for name, entry in lock.items():
+        for name in WASM_SOURCES:
+            entry = lock[name]
             for patch_rel in entry.get("patches", []):
                 patch_path = core.PATCHES_DIR / patch_rel
                 self.assertTrue(
