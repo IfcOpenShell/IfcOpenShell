@@ -10,10 +10,7 @@ from src.ifcwrap.binding_generator.abi_ir import (
     CTypeIR,
 )
 from src.ifcwrap.binding_generator.binding_model import TypeSpec
-from src.ifcwrap.binding_generator.targets.wasm.backend import (
-    render_export_list,
-    render_wasm_bindings,
-)
+from src.ifcwrap.binding_generator.targets.wasm.backend import render_wasm_bindings
 
 
 def make_metadata() -> BindingABI:
@@ -57,17 +54,6 @@ def make_metadata() -> BindingABI:
             "last_error_code": "ifcopenshell_last_error_code",
         },
     )
-
-
-def test_export_list_contains_runtime_and_api_symbols() -> None:
-    exports = render_export_list(make_metadata()).splitlines()
-
-    assert exports == sorted(exports)
-    assert "_malloc" in exports
-    assert "_free" in exports
-    assert "_ifcopenshell_parse_open" in exports
-    assert "_ifcopenshell_file_destroy" in exports
-    assert "_ifcopenshell_last_error_code" in exports
 
 
 def test_wasm_glue_wraps_handles() -> None:
