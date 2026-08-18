@@ -12,10 +12,10 @@ from .abi_ir import (
     _sequence_kind_parts,
     _sequence_prev_kind,
     _snake_name,
-    _type_spec_sequence_kind,
+    _type_spec_sequence_kind,  # noqa: F401 - re-exported for call rendering
 )
 from .binding_ir import BindingIR
-from .binding_model import HandleSpec, TypeSpec
+from .binding_model import HandleSpec
 
 _SEQUENCE_LEAF_CPP_TYPE: dict[str, str] = {
     "string": "std::string",

@@ -14,8 +14,6 @@ from ...binding_model import TypeSpec
 from .._shared import (
     _INTERNAL_C_FUNCTIONS,
     _buffer_size_function,
-    _camel_name,
-    _method_name,
     _public_module_members,
     _public_name,
     _public_params,

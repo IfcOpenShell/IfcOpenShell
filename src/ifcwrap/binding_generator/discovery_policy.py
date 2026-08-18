@@ -19,6 +19,7 @@ from .clang_discovery import (
     DiscoveredField,
     DiscoveredFunction,
     DiscoveredMethod,
+    DiscoveredParam,
     DiscoveryEnvironment,
     discover_base_types,
     discover_public_constructors,
@@ -779,9 +780,13 @@ def _make_c_name(handle: HandleSpec, expose_as: str) -> str:
 
 def _simple_type_spec(kind_str: str) -> TypeSpec:
     """Create a TypeSpec from a simple kind string (e.g. 'int32', 'double_list')."""
-    parts = _sequence_kind_parts(kind_str)
-    if parts is not None:
-        return TypeSpec(kind=parts[0], ownership="copy", sequence_depth=parts[1])
+    match = re.fullmatch(r"([a-z0-9]+)((?:_list)+)", kind_str)
+    if match is not None and match.group(1) in _SCALAR_SEQUENCE_FAMILIES:
+        return TypeSpec(
+            kind=match.group(1),
+            ownership="copy",
+            sequence_depth=match.group(2).count("_list"),
+        )
     return TypeSpec(kind=kind_str)
 
 

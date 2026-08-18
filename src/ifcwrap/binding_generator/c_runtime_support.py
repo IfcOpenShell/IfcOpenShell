@@ -1,3 +1,5 @@
+# ruff: noqa: F541
+
 from __future__ import annotations
 
 
@@ -125,12 +127,12 @@ bool g_log_stream_initialized = false;
 
 void ensure_log_stream_initialized() {{
     if (!g_log_stream_initialized) {{
-        logger::set_output(nullptr, &ifcopenshell_log_stream);
+        ifcopenshell::logger::root().set_output(nullptr, &ifcopenshell_log_stream);
         g_log_stream_initialized = true;
     }}
 }}
 
-ifcopenshell::argument_type helper_fn_attribute_type(const express::Base* inst, unsigned index) {{
+ifcopenshell::argument_type helper_fn_attribute_type(const express::base* inst, unsigned index) {{
     const ifcopenshell::parameter_type* parameter_type = nullptr;
     if (inst->declaration().as_entity()) {{
         parameter_type = inst->declaration().as_entity()->attribute_by_index(index)->type_of_attribute();
@@ -193,7 +195,7 @@ std::string json_quote(const std::string& value) {{
     return std::string(1, '"') + json_escape_string(value) + '"';
 }}
 
-std::string instance_to_info_json_string(const express::Base& instance, bool include_identifier);
+std::string instance_to_info_json_string(const express::base& instance, bool include_identifier);
 
 template <typename T>
 std::string value_to_json_string(const T& value, bool include_identifier);
@@ -213,7 +215,7 @@ std::string vector_to_json_string(const std::vector<T>& values, bool include_ide
 }}
 
 std::string reference_or_simple_type_to_json_string(const ifcopenshell::reference_or_simple_type& value, bool include_identifier) {{
-    if (auto* instance = std::get_if<express::Base>(&value)) {{
+    if (auto* instance = std::get_if<express::base>(&value)) {{
         return *instance ? instance_to_info_json_string(*instance, include_identifier) : "null";
     }}
     auto reference = std::get<ifcopenshell::instance_reference>(value);
@@ -243,30 +245,30 @@ std::string value_to_json_string(const T& value, bool include_identifier) {{
         std::ostringstream out;
         out << value;
         return out.str();
-    }} else if constexpr (std::is_same_v<T, enumeration_reference>) {{
+    }} else if constexpr (std::is_same_v<T, ifcopenshell::enumeration_reference>) {{
         return json_quote(std::string(value.value()));
     }} else if constexpr (std::is_same_v<T, ifcopenshell::reference_or_simple_type>) {{
         return reference_or_simple_type_to_json_string(value, include_identifier);
-    }} else if constexpr (std::is_same_v<T, express::Base>) {{
+    }} else if constexpr (std::is_same_v<T, express::base>) {{
         return value ? instance_to_info_json_string(value, include_identifier) : "null";
     }} else if constexpr (
-        std::is_same_v<T, empty_aggregate_t> ||
-        std::is_same_v<T, empty_aggregate_of_aggregate_t> ||
-        std::is_same_v<T, blank> ||
-        std::is_same_v<T, derived>) {{
+        std::is_same_v<T, ifcopenshell::empty_aggregate> ||
+        std::is_same_v<T, ifcopenshell::empty_aggregate_of_aggregate> ||
+        std::is_same_v<T, ifcopenshell::blank> ||
+        std::is_same_v<T, ifcopenshell::derived>) {{
         return "null";
     }} else {{
         throw std::runtime_error("Unsupported IFC value type in JSON serialization");
     }}
 }}
 
-std::string attribute_value_to_json_string(const attribute_value& value, bool include_identifier) {{
+std::string attribute_value_to_json_string(const ifcopenshell::attribute_value& value, bool include_identifier) {{
     return value.apply_visitor([include_identifier](const auto& inner) -> std::string {{
         return value_to_json_string(inner, include_identifier);
     }});
 }}
 
-std::string instance_to_info_json_string(const express::Base& instance, bool include_identifier) {{
+std::string instance_to_info_json_string(const express::base& instance, bool include_identifier) {{
     if (!instance) {{
         return "null";
     }}
@@ -335,7 +337,7 @@ std::string unresolved_references_to_json_string(
     return out.str();
 }}
 
-std::string inverses_to_json_string(const ifcopenshell::impl::in_memory_file_storage::entities_by_ref_t& inverses) {{
+std::string inverses_to_json_string(const ifcopenshell::impl::in_memory_file_storage::entities_by_ref& inverses) {{
     std::ostringstream out;
     out << "[";
     bool first = true;
@@ -418,11 +420,11 @@ ifcopenshell_string_t make_static_string(const char* value) {{
 }}
 
 template <typename T>
-void set_instance_argument(express::Base* instance, size_t index, const T& value) {{
+void set_instance_argument(express::base* instance, size_t index, const T& value) {{
     instance->set_attribute_value(index, value);
 }}
 
-void set_instance_argument(express::Base* instance, size_t index, express::Base* value) {{
+void set_instance_argument(express::base* instance, size_t index, express::base* value) {{
     if (value == nullptr) {{
         instance->unset_attribute_value(index);
     }} else {{
@@ -430,7 +432,7 @@ void set_instance_argument(express::Base* instance, size_t index, express::Base*
     }}
 }}
 
-void set_instance_argument(express::Base* instance, size_t index, std::vector<express::Base>* value) {{
+void set_instance_argument(express::base* instance, size_t index, std::vector<express::base>* value) {{
     if (value == nullptr) {{
         instance->unset_attribute_value(index);
     }} else {{
@@ -438,17 +440,17 @@ void set_instance_argument(express::Base* instance, size_t index, std::vector<ex
     }}
 }}
 
-void unset_instance_argument(express::Base* instance, size_t index) {{
+void unset_instance_argument(express::base* instance, size_t index) {{
     instance->unset_attribute_value(index);
 }}
 
-void set_instance_attribute_from_attribute_value(express::Base* instance, size_t index, const attribute_value& value) {{
+void set_instance_attribute_from_attribute_value(express::base* instance, size_t index, const ifcopenshell::attribute_value& value) {{
     value.apply_visitor([&](const auto& inner) -> void {{
         using T = std::decay_t<decltype(inner)>;
-        if constexpr (std::is_same_v<T, derived>) {{
+        if constexpr (std::is_same_v<T, ifcopenshell::derived>) {{
             throw std::runtime_error("Cannot assign a derived attribute sentinel.");
-        }} else if constexpr (std::is_same_v<T, empty_aggregate_t> ||
-                              std::is_same_v<T, empty_aggregate_of_aggregate_t>) {{
+        }} else if constexpr (std::is_same_v<T, ifcopenshell::empty_aggregate> ||
+                              std::is_same_v<T, ifcopenshell::empty_aggregate_of_aggregate>) {{
             // Empty-aggregate sentinels arise when reading absent aggregate
             // values; assigning them is equivalent to unsetting the attribute.
             unset_instance_argument(instance, index);
@@ -486,31 +488,31 @@ std::string get_log() {{
 }}
 
 void turn_on_detailed_logging() {{
-    logger::set_output(&std::cout, &std::cout);
-    logger::verbosity(logger::LOG_DEBUG);
+    ifcopenshell::logger::root().set_output(&std::cout, &std::cout);
+    ifcopenshell::logger::root().verbosity(ifcopenshell::logger::LOG_DEBUG);
 }}
 
 void turn_off_detailed_logging() {{
     ensure_log_stream_initialized();
-    logger::set_output(nullptr, &ifcopenshell_log_stream);
-    logger::verbosity(logger::LOG_WARNING);
+    ifcopenshell::logger::root().set_output(nullptr, &ifcopenshell_log_stream);
+    ifcopenshell::logger::root().verbosity(ifcopenshell::logger::LOG_WARNING);
 }}
 
 void set_log_format_json() {{
     ensure_log_stream_initialized();
     ifcopenshell_log_stream.str("");
     ifcopenshell_log_stream.clear();
-    logger::output_format(logger::FMT_JSON);
+    ifcopenshell::logger::root().output_format(ifcopenshell::logger::FMT_JSON);
 }}
 
 void set_log_format_text() {{
     ensure_log_stream_initialized();
     ifcopenshell_log_stream.str("");
     ifcopenshell_log_stream.clear();
-    logger::output_format(logger::FMT_PLAIN);
+    ifcopenshell::logger::root().output_format(ifcopenshell::logger::FMT_PLAIN);
 }}
 
-std::string get_info_json(const express::Base& instance, bool include_identifier) {{
+std::string get_info_json(const express::base& instance, bool include_identifier) {{
     return instance_to_info_json_string(instance, include_identifier);
 }}
 
@@ -526,67 +528,72 @@ std::string streamer_read_instance_json(ifcopenshell::instance_streamer<>* strea
     return instance_stream_read_instance_json(streamer);
 }}
 
-void unset_instance_argument_value(express::Base& instance, size_t index) {{
+void unset_instance_argument_value(express::base& instance, size_t index) {{
     instance.set_attribute_value(index, blank{{}});
 }}
 
-void unset_instance_argument(express::Base& instance, size_t index) {{
+void unset_instance_argument(express::base& instance, size_t index) {{
     instance.set_attribute_value(index, blank{{}});
 }}
 
-ifcopenshell::argument_type instance_attribute_type(const express::Base& instance, unsigned index) {{
+ifcopenshell::argument_type instance_attribute_type(const express::base& instance, unsigned index) {{
     return ::helper_fn_attribute_type(&instance, index);
 }}
 
-void set_instance_attribute_from_attribute_value(express::Base& instance, size_t index, const attribute_value& value) {{
+void set_instance_attribute_from_attribute_value(express::base& instance, size_t index, const ifcopenshell::attribute_value& value) {{
     ::set_instance_attribute_from_attribute_value(&instance, index, value);
 }}
 
-void set_instance_argument_bool(express::Base& instance, size_t index, bool value) {{
+void set_instance_argument_bool(express::base& instance, size_t index, bool value) {{
     set_instance_argument(&instance, index, value);
 }}
 
-void set_instance_argument_int32(express::Base& instance, size_t index, int value) {{
+void set_instance_argument_int32(express::base& instance, size_t index, int value) {{
+    set_instance_argument(&instance, index, static_cast<int64_t>(value));
+}}
+
+void set_instance_argument_double(express::base& instance, size_t index, double value) {{
     set_instance_argument(&instance, index, value);
 }}
 
-void set_instance_argument_double(express::Base& instance, size_t index, double value) {{
+void set_instance_argument_string(express::base& instance, size_t index, const std::string& value) {{
     set_instance_argument(&instance, index, value);
 }}
 
-void set_instance_argument_string(express::Base& instance, size_t index, const std::string& value) {{
+void set_instance_argument_instance(express::base& instance, size_t index, express::base* value) {{
     set_instance_argument(&instance, index, value);
 }}
 
-void set_instance_argument_instance(express::Base& instance, size_t index, express::Base* value) {{
+void set_instance_argument_instance_list(express::base& instance, size_t index, std::vector<express::base>* value) {{
     set_instance_argument(&instance, index, value);
 }}
 
-void set_instance_argument_instance_list(express::Base& instance, size_t index, std::vector<express::Base>* value) {{
+void set_instance_argument_int32_list(express::base& instance, size_t index, const std::vector<int>& value) {{
+    set_instance_argument(&instance, index, std::vector<int64_t>(value.begin(), value.end()));
+}}
+
+void set_instance_argument_double_list(express::base& instance, size_t index, const std::vector<double>& value) {{
     set_instance_argument(&instance, index, value);
 }}
 
-void set_instance_argument_int32_list(express::Base& instance, size_t index, const std::vector<int>& value) {{
+void set_instance_argument_string_list(express::base& instance, size_t index, const std::vector<std::string>& value) {{
     set_instance_argument(&instance, index, value);
 }}
 
-void set_instance_argument_double_list(express::Base& instance, size_t index, const std::vector<double>& value) {{
+void set_instance_argument_int32_list_list(express::base& instance, size_t index, const std::vector<std::vector<int>>& value) {{
+    std::vector<std::vector<int64_t>> converted;
+    converted.reserve(value.size());
+    for (const auto& row : value) {{
+        converted.emplace_back(row.begin(), row.end());
+    }}
+    set_instance_argument(&instance, index, converted);
+}}
+
+void set_instance_argument_double_list_list(express::base& instance, size_t index, const std::vector<std::vector<double>>& value) {{
     set_instance_argument(&instance, index, value);
 }}
 
-void set_instance_argument_string_list(express::Base& instance, size_t index, const std::vector<std::string>& value) {{
-    set_instance_argument(&instance, index, value);
-}}
-
-void set_instance_argument_int32_list_list(express::Base& instance, size_t index, const std::vector<std::vector<int>>& value) {{
-    set_instance_argument(&instance, index, value);
-}}
-
-void set_instance_argument_double_list_list(express::Base& instance, size_t index, const std::vector<std::vector<double>>& value) {{
-    set_instance_argument(&instance, index, value);
-}}
-
-void set_instance_argument_logical(express::Base& instance, size_t index, int value) {{
+void set_instance_argument_logical(express::base& instance, size_t index, int value) {{
     ifcopenshell::argument_type arg_type = helper_fn_attribute_type(&instance, static_cast<unsigned>(index));
     if (arg_type != ifcopenshell::Argument_LOGICAL) {{
         throw ifcopenshell::exception("Attribute not set");
@@ -605,7 +612,7 @@ void set_instance_argument_logical(express::Base& instance, size_t index, int va
 }}
 
 void set_instance_argument_aggregate_of_aggregate_of_entity_instance(
-    express::Base& instance,
+    express::base& instance,
     size_t index,
     const std::vector<std::vector<int>>& value
 ) {{
@@ -616,9 +623,9 @@ void set_instance_argument_aggregate_of_aggregate_of_entity_instance(
     if (instance.file() == nullptr) {{
         throw ifcopenshell::exception("Instance is not attached to a file.");
     }}
-    std::vector<std::vector<express::Base>> aggregate;
+    std::vector<std::vector<express::base>> aggregate;
     for (const auto& group : value) {{
-        std::vector<express::Base> instances;
+        std::vector<express::base> instances;
         instances.reserve(group.size());
         for (int identifier : group) {{
             auto resolved = instance.file()->instance_by_id(identifier);
@@ -633,15 +640,15 @@ void set_instance_argument_aggregate_of_aggregate_of_entity_instance(
 }}
 
 void set_instance_argument_enumeration(
-    express::Base& instance,
+    express::base& instance,
     size_t index,
     const ifcopenshell::enumeration_type* enumeration,
     size_t enumeration_index
 ) {{
-    set_instance_argument(&instance, index, enumeration_reference(enumeration, enumeration_index));
+    set_instance_argument(&instance, index, ifcopenshell::enumeration_reference(enumeration, enumeration_index));
 }}
 
-bool set_instance_argument_enumeration_by_name(express::Base& instance, size_t index, const std::string& value) {{
+bool set_instance_argument_enumeration_by_name(express::base& instance, size_t index, const std::string& value) {{
     auto* entity_decl = instance.declaration().as_entity();
     if (entity_decl == nullptr) {{
         return false;
@@ -675,7 +682,7 @@ bool set_instance_argument_enumeration_by_name(express::Base& instance, size_t i
     if (it == items.end()) {{
         throw ifcopenshell::exception("'" + value + "' is not a valid value for enumeration " + enumeration->name());
     }}
-    set_instance_argument(&instance, index, enumeration_reference(enumeration, static_cast<size_t>(std::distance(items.begin(), it))));
+    set_instance_argument(&instance, index, ifcopenshell::enumeration_reference(enumeration, static_cast<size_t>(std::distance(items.begin(), it))));
     return true;
 }}
 

@@ -13,13 +13,10 @@ from ...abi_ir import (
 from ...binding_model import TypeSpec
 from .._shared import (
     _INTERNAL_C_FUNCTIONS,
-    _camel_name,
-    _method_name,
     _public_module_members,
     _public_name,
     _public_params,
     _sequence_leaf_type,
-    _snake_name,
     _type_name,
     _typed_buffer_element,
 )
