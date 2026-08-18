@@ -1,5 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
-
 from __future__ import annotations
 
 from .abi_ir import (
@@ -152,7 +150,8 @@ def _render_sequence_make_impl(kind: str) -> str:
     c_type = _sequence_c_type(kind)
     if depth == 1:
         if leaf == "string":
-            return f"""static {c_type} {_sequence_make_name(kind)}({cpp_type} values) {{
+            return f"""template <typename = void>
+static {c_type} {_sequence_make_name(kind)}({cpp_type} values) {{
     struct owner_type final : capi_buffer_owner {{
         explicit owner_type({cpp_type} source) : values(std::move(source)) {{
             items.reserve(values.size());
@@ -169,7 +168,8 @@ def _render_sequence_make_impl(kind: str) -> str:
     return {c_type}{{items, size, owner.release()}};
 }}"""
         if leaf == "bool":
-            return f"""static {c_type} {_sequence_make_name(kind)}({cpp_type} values) {{
+            return f"""template <typename = void>
+static {c_type} {_sequence_make_name(kind)}({cpp_type} values) {{
     auto owner = std::make_unique<capi_array_owner<bool>>(values.size());
     for (size_t i = 0; i < values.size(); ++i) {{
         owner->values[i] = values[i];
@@ -183,7 +183,8 @@ def _render_sequence_make_impl(kind: str) -> str:
             if leaf in {"int32", "uint32"}
             else "stored.data()"
         )
-        return f"""static {c_type} {_sequence_make_name(kind)}({cpp_type} values) {{
+        return f"""template <typename = void>
+static {c_type} {_sequence_make_name(kind)}({cpp_type} values) {{
     auto owner = std::make_unique<capi_value_owner<{cpp_type}>>(std::move(values));
     auto& stored = owner->value;
     auto* items = stored.empty() ? nullptr : {cast};
@@ -192,7 +193,8 @@ def _render_sequence_make_impl(kind: str) -> str:
 }}"""
     prev_kind = _sequence_prev_kind(kind)
     items_type = _sequence_items_c_type(kind)
-    return f"""static {c_type} {_sequence_make_name(kind)}({cpp_type} values) {{
+    return f"""template <typename = void>
+static {c_type} {_sequence_make_name(kind)}({cpp_type} values) {{
     auto owner = std::make_unique<capi_value_owner<std::vector<{items_type}>>>(std::vector<{items_type}>{{}});
     auto& items = owner->value;
     items.reserve(values.size());
@@ -246,12 +248,14 @@ def _render_sequence_to_cpp_impl(kind: str) -> str:
                 "    }\n"
                 f"    return {cpp_type}(value->items, value->items + value->size);"
             )
-        return f"""static {cpp_type} {_sequence_to_cpp_name(kind)}(const {c_type}* value) {{
+        return f"""template <typename = void>
+static {cpp_type} {_sequence_to_cpp_name(kind)}(const {c_type}* value) {{
     validate_list_items("{kind}", value->items, value->size);
 {body}
 }}"""
     prev_kind = _sequence_prev_kind(kind)
-    return f"""static {cpp_type} {_sequence_to_cpp_name(kind)}(const {c_type}* value) {{
+    return f"""template <typename = void>
+static {cpp_type} {_sequence_to_cpp_name(kind)}(const {c_type}* value) {{
     validate_list_items("{kind}", value->items, value->size);
     {cpp_type} result;
     result.reserve(value->size);
@@ -300,6 +304,7 @@ static {list_c} {helper_name}(const std::vector<Value>& values) {{
     return {list_c}{{items, values.size()}};
 }}
 
+template <typename = void>
 static std::vector<{handle.cpp_type}> to_cpp_{snake}(const {list_c}* values) {{
     validate_list_items("{snake}", values->items, values->size);
     std::vector<{handle.cpp_type}> result;
@@ -314,7 +319,8 @@ static std::vector<{handle.cpp_type}> to_cpp_{snake}(const {list_c}* values) {{
     return result;
 }}"""
     if handle.ptr_type == "shared_ptr":
-        return f"""static {list_c} {helper_name}(const std::vector<std::shared_ptr<{handle.cpp_type}>>& values) {{
+        return f"""template <typename Item>
+static {list_c} {helper_name}(const std::vector<std::shared_ptr<Item>>& values) {{
     auto** items = values.empty() ? nullptr : new {handle.c_type}*[values.size()];
     size_t initialized = 0;
     try {{
@@ -330,6 +336,7 @@ static std::vector<{handle.cpp_type}> to_cpp_{snake}(const {list_c}* values) {{
     return {list_c}{{items, values.size()}};
 }}
 
+template <typename = void>
 static std::vector<std::shared_ptr<{handle.cpp_type}>> to_cpp_{snake}(const {list_c}* values) {{
     validate_list_items("{snake}", values->items, values->size);
     std::vector<std::shared_ptr<{handle.cpp_type}>> result;
@@ -343,23 +350,8 @@ static std::vector<std::shared_ptr<{handle.cpp_type}>> to_cpp_{snake}(const {lis
     }}
     return result;
 }}"""
-    return f"""static {list_c} {helper_name}(const std::vector<{handle.cpp_type}*>& values) {{
-    auto** items = values.empty() ? nullptr : new {handle.c_type}*[values.size()];
-    size_t initialized = 0;
-    try {{
-        for (size_t i = 0; i < values.size(); ++i) {{
-            items[i] = new {handle.c_type}{{values[i], false}};
-            ++initialized;
-        }}
-    }} catch (...) {{
-        for (size_t j = 0; j < initialized; ++j) {{ delete items[j]; }}
-        delete[] items;
-        throw;
-    }}
-    return {list_c}{{items, values.size()}};
-}}
-
-static {list_c} {helper_name}(const std::vector<const {handle.cpp_type}*>& values) {{
+    return f"""template <typename Item>
+static {list_c} {helper_name}(const std::vector<Item*>& values) {{
     auto** items = values.empty() ? nullptr : new {handle.c_type}*[values.size()];
     size_t initialized = 0;
     try {{
@@ -375,7 +367,8 @@ static {list_c} {helper_name}(const std::vector<const {handle.cpp_type}*>& value
     return {list_c}{{items, values.size()}};
 }}
 
-static {list_c} {helper_name}(std::vector<std::unique_ptr<{handle.cpp_type}>> values) {{
+template <typename Item>
+static {list_c} {helper_name}(std::vector<std::unique_ptr<Item>> values) {{
     auto** items = values.empty() ? nullptr : new {handle.c_type}*[values.size()];
     size_t initialized = 0;
     try {{
@@ -391,6 +384,7 @@ static {list_c} {helper_name}(std::vector<std::unique_ptr<{handle.cpp_type}>> va
     return {list_c}{{items, values.size()}};
 }}
 
+template <typename = void>
 static std::vector<const {handle.cpp_type}*> to_cpp_{snake}(const {list_c}* values) {{
     validate_list_items("{snake}", values->items, values->size);
     std::vector<const {handle.cpp_type}*> result;
@@ -415,7 +409,8 @@ def _render_handle_list_list_helpers(handle: HandleSpec) -> str:
     row_snake = _snake_name(list_c)
     if handle.ptr_type == "value":
         value_vector = f"std::vector<std::vector<{handle.cpp_type}>>"
-        return f"""static {list_list_c} {helper_name}(const {value_vector}& values) {{
+        return f"""template <typename = void>
+static {list_list_c} {helper_name}(const {value_vector}& values) {{
     auto* items = values.empty() ? nullptr : new {list_c}[values.size()];
     for (size_t i = 0; i < values.size(); ++i) {{
         items[i] = {row_helper_name}(values[i]);
@@ -423,6 +418,7 @@ def _render_handle_list_list_helpers(handle: HandleSpec) -> str:
     return {list_list_c}{{items, values.size()}};
 }}
 
+template <typename = void>
 static {value_vector} to_cpp_{snake}(const {list_list_c}* values) {{
     validate_list_items("{snake}", values->items, values->size);
     {value_vector} result;
@@ -433,8 +429,8 @@ static {value_vector} to_cpp_{snake}(const {list_list_c}* values) {{
     return result;
 }}"""
     if handle.ptr_type == "shared_ptr":
-        shared_vector = f"std::vector<std::vector<std::shared_ptr<{handle.cpp_type}>>>"
-        return f"""static {list_list_c} {helper_name}(const {shared_vector}& values) {{
+        return f"""template <typename Item>
+static {list_list_c} {helper_name}(const std::vector<std::vector<std::shared_ptr<Item>>>& values) {{
     auto* items = values.empty() ? nullptr : new {list_c}[values.size()];
     for (size_t i = 0; i < values.size(); ++i) {{
         items[i] = {row_helper_name}(values[i]);
@@ -442,6 +438,7 @@ static {value_vector} to_cpp_{snake}(const {list_list_c}* values) {{
     return {list_list_c}{{items, values.size()}};
 }}
 
+template <typename = void>
 static std::vector<std::vector<std::shared_ptr<{handle.cpp_type}>>> to_cpp_{snake}(const {list_list_c}* values) {{
     validate_list_items("{snake}", values->items, values->size);
     std::vector<std::vector<std::shared_ptr<{handle.cpp_type}>>> result;
@@ -451,7 +448,8 @@ static std::vector<std::vector<std::shared_ptr<{handle.cpp_type}>>> to_cpp_{snak
     }}
     return result;
 }}"""
-    return f"""static {list_list_c} {helper_name}(const std::vector<std::vector<{handle.cpp_type}*>>& values) {{
+    return f"""template <typename Item>
+static {list_list_c} {helper_name}(const std::vector<std::vector<Item*>>& values) {{
     auto* items = values.empty() ? nullptr : new {list_c}[values.size()];
     for (size_t i = 0; i < values.size(); ++i) {{
         items[i] = {row_helper_name}(values[i]);
@@ -459,14 +457,7 @@ static std::vector<std::vector<std::shared_ptr<{handle.cpp_type}>>> to_cpp_{snak
     return {list_list_c}{{items, values.size()}};
 }}
 
-static {list_list_c} {helper_name}(const std::vector<std::vector<const {handle.cpp_type}*>>& values) {{
-    auto* items = values.empty() ? nullptr : new {list_c}[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {{
-        items[i] = {row_helper_name}(values[i]);
-    }}
-    return {list_list_c}{{items, values.size()}};
-}}
-
+template <typename = void>
 static std::vector<std::vector<const {handle.cpp_type}*>> to_cpp_{snake}(const {list_list_c}* values) {{
     validate_list_items("{snake}", values->items, values->size);
     std::vector<std::vector<const {handle.cpp_type}*>> result;
@@ -530,6 +521,21 @@ def _used_handle_list_handles(spec: BindingIR) -> tuple[HandleSpec, ...]:
         if value.kind == "handle_sequence"
         and value.sequence_depth == 1
         and value.element_type in handles_by_c_type
+    )
+
+
+def _used_handle_list_list_handles(spec: BindingIR) -> tuple[HandleSpec, ...]:
+    if spec.abi is None:
+        raise ValueError("C emission requires a finalized BindingIR")
+    handles_by_list_type = {
+        _handle_list_c_type(handle): handle for handle in spec.handles.values()
+    }
+    return tuple(
+        handles_by_list_type[value.element_type]
+        for value in spec.abi.value_types.values()
+        if value.kind == "handle_sequence"
+        and value.sequence_depth == 2
+        and value.element_type in handles_by_list_type
     )
 
 

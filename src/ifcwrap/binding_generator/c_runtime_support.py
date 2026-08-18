@@ -1,5 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
-
 from __future__ import annotations
 
 
@@ -232,6 +230,15 @@ std::string value_to_json_string(const T& value, bool include_identifier) {{
         return value ? json_quote(value) : "null";
     }} else if constexpr (std::is_same_v<T, bool>) {{
         return value ? "true" : "false";
+    }} else if constexpr (std::is_same_v<T, boost::logic::tribool>) {{
+        if (boost::logic::indeterminate(value)) {{
+            return json_quote("UNKNOWN");
+        }}
+        return value ? "true" : "false";
+    }} else if constexpr (std::is_same_v<T, boost::dynamic_bitset<>>) {{
+        std::string bits;
+        boost::to_string(value, bits);
+        return json_quote(bits);
     }} else if constexpr (std::is_integral_v<T> || std::is_floating_point_v<T>) {{
         std::ostringstream out;
         out << value;
@@ -249,7 +256,7 @@ std::string value_to_json_string(const T& value, bool include_identifier) {{
         std::is_same_v<T, derived>) {{
         return "null";
     }} else {{
-        return json_quote("<unsupported>");
+        throw std::runtime_error("Unsupported IFC value type in JSON serialization");
     }}
 }}
 
@@ -350,7 +357,7 @@ std::string inverses_to_json_string(const ifcopenshell::impl::in_memory_file_sto
     return out.str();
 }}
 
-std::string instance_stream_read_instance_json(ifcopenshell::instance_streamer<>* streamer, bool type_as_declaration_instance) {{
+std::string instance_stream_read_instance_json(ifcopenshell::instance_streamer<>* streamer) {{
     if (!(*streamer)) {{
         return "null";
     }}
@@ -371,11 +378,7 @@ std::string instance_stream_read_instance_json(ifcopenshell::instance_streamer<>
     }};
 
     emit_field("id", std::to_string(std::get<0>(*inst)));
-    if (type_as_declaration_instance) {{
-        emit_field("type", json_quote(std::get<1>(*inst)->name()));
-    }} else {{
-        emit_field("type", json_quote(std::get<1>(*inst)->name()));
-    }}
+    emit_field("type", json_quote(std::get<1>(*inst)->name()));
 
     const auto* declaration = std::get<1>(*inst);
     const auto& data = std::get<2>(*inst);
@@ -507,7 +510,7 @@ void set_log_format_text() {{
     logger::output_format(logger::FMT_PLAIN);
 }}
 
-std::string get_info_cpp(const express::Base& instance, bool include_identifier) {{
+std::string get_info_json(const express::Base& instance, bool include_identifier) {{
     return instance_to_info_json_string(instance, include_identifier);
 }}
 
@@ -519,8 +522,8 @@ std::string streamer_inverses(ifcopenshell::instance_streamer<>* streamer) {{
     return inverses_to_json_string(streamer->inverses());
 }}
 
-std::string streamer_read_instance_json(ifcopenshell::instance_streamer<>* streamer, bool type_as_declaration_instance) {{
-    return instance_stream_read_instance_json(streamer, type_as_declaration_instance);
+std::string streamer_read_instance_json(ifcopenshell::instance_streamer<>* streamer) {{
+    return instance_stream_read_instance_json(streamer);
 }}
 
 void unset_instance_argument_value(express::Base& instance, size_t index) {{

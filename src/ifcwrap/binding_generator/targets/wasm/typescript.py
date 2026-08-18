@@ -1,5 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
-
 from __future__ import annotations
 
 import re
@@ -479,7 +477,6 @@ def render_typescript_declarations(
     nested_module_interfaces = _render_nested_module_interfaces(metadata)
     module_interface = _render_module_interface(metadata, module_members)
     sections = [
-        "// This file was generated with the assistance of an AI coding tool.",
         "",
         "declare module 'ifcopenshell-api' {",
         "  export type IfcOpenshellRawValue = null | boolean | number | bigint | string | object | IfcOpenshellRawValue[];",
