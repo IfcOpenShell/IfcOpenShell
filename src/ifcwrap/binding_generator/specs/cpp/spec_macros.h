@@ -3,10 +3,15 @@
 #ifndef IFCWRAP_BINDING_GENERATOR_SPEC_MACROS_H
 #define IFCWRAP_BINDING_GENERATOR_SPEC_MACROS_H
 
+/*
+ * Source markers read by binding_generator/cpp_spec_frontend.py. They expand to
+ * ordinary C++ (usually nothing); the generator reads their arguments before
+ * Clang supplies the selected declarations and types.
+ */
 #define IFCAPI_OWNED
 #define IFCAPI_COPY
 #define IFCAPI_STATIC
-#define IFCAPI_HANDLE(cpp_type, destructor, ...)
+#define IFCAPI_HANDLE(name, cpp_type, destructor, ...)
 #define IFCAPI_DISCOVER_METHOD(handle, cpp_name, expose_as, ...)
 #define IFCAPI_DISCOVER_FUNCTION(cpp_namespace, name)
 #define IFCAPI_DISCOVER_CONSTRUCTOR(handle, cpp_class, expose_as, mode, guard, message)
