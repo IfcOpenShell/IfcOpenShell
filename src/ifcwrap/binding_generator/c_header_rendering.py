@@ -1,5 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
-
 from __future__ import annotations
 
 from .abi_ir import (
@@ -22,6 +20,7 @@ from .c_sequence_helpers import (
     _render_handle_list_destroy_decl,
     _render_handle_list_list_destroy_decl,
     _used_handle_list_handles,
+    _used_handle_list_list_handles,
     _used_scalar_sequence_kinds,
 )
 from .c_type_rendering import (
@@ -61,6 +60,7 @@ def _render_header(spec: BindingIR) -> str:
         for handle in spec.handles.values()
     )
     handle_list_types = _used_handle_list_handles(spec)
+    handle_list_list_types = _used_handle_list_list_handles(spec)
     handle_list_forwards = "\n".join(
         f"typedef struct {_handle_list_c_type(handle)} {{\n"
         f"    {handle.c_type}** items;\n"
@@ -73,7 +73,7 @@ def _render_header(spec: BindingIR) -> str:
         f"    {_handle_list_c_type(handle)}* items;\n"
         f"    size_t size;\n"
         f"}} {_handle_list_list_c_type(handle)};"
-        for handle in handle_list_types
+        for handle in handle_list_list_types
     )
     result_record_lists = {
         struct.name: struct for struct in _used_result_record_lists(spec)
@@ -146,7 +146,8 @@ def _render_header(spec: BindingIR) -> str:
         _render_handle_list_destroy_decl(handle) for handle in handle_list_types
     )
     handle_list_list_destroy_decls = "\n".join(
-        _render_handle_list_list_destroy_decl(handle) for handle in handle_list_types
+        _render_handle_list_list_destroy_decl(handle)
+        for handle in handle_list_list_types
     )
     variant_destroy_decls = _render_variant_destroy_decls(spec)
     result_struct_destroy_decls = _render_result_struct_destroy_decls(spec.abi)

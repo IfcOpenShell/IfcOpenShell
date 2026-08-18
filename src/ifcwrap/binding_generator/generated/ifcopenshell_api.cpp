@@ -246,6 +246,15 @@ std::string value_to_json_string(const T& value, bool include_identifier) {
         return value ? json_quote(value) : "null";
     } else if constexpr (std::is_same_v<T, bool>) {
         return value ? "true" : "false";
+    } else if constexpr (std::is_same_v<T, boost::logic::tribool>) {
+        if (boost::logic::indeterminate(value)) {
+            return json_quote("UNKNOWN");
+        }
+        return value ? "true" : "false";
+    } else if constexpr (std::is_same_v<T, boost::dynamic_bitset<>>) {
+        std::string bits;
+        boost::to_string(value, bits);
+        return json_quote(bits);
     } else if constexpr (std::is_integral_v<T> || std::is_floating_point_v<T>) {
         std::ostringstream out;
         out << value;
@@ -263,7 +272,7 @@ std::string value_to_json_string(const T& value, bool include_identifier) {
         std::is_same_v<T, derived>) {
         return "null";
     } else {
-        return json_quote("<unsupported>");
+        throw std::runtime_error("Unsupported IFC value type in JSON serialization");
     }
 }
 
@@ -364,7 +373,7 @@ std::string inverses_to_json_string(const ifcopenshell::impl::in_memory_file_sto
     return out.str();
 }
 
-std::string instance_stream_read_instance_json(ifcopenshell::instance_streamer<>* streamer, bool type_as_declaration_instance) {
+std::string instance_stream_read_instance_json(ifcopenshell::instance_streamer<>* streamer) {
     if (!(*streamer)) {
         return "null";
     }
@@ -385,11 +394,7 @@ std::string instance_stream_read_instance_json(ifcopenshell::instance_streamer<>
     };
 
     emit_field("id", std::to_string(std::get<0>(*inst)));
-    if (type_as_declaration_instance) {
-        emit_field("type", json_quote(std::get<1>(*inst)->name()));
-    } else {
-        emit_field("type", json_quote(std::get<1>(*inst)->name()));
-    }
+    emit_field("type", json_quote(std::get<1>(*inst)->name()));
 
     const auto* declaration = std::get<1>(*inst);
     const auto& data = std::get<2>(*inst);
@@ -521,7 +526,7 @@ void set_log_format_text() {
     logger::output_format(logger::FMT_PLAIN);
 }
 
-std::string get_info_cpp(const express::Base& instance, bool include_identifier) {
+std::string get_info_json(const express::Base& instance, bool include_identifier) {
     return instance_to_info_json_string(instance, include_identifier);
 }
 
@@ -533,8 +538,8 @@ std::string streamer_inverses(ifcopenshell::instance_streamer<>* streamer) {
     return inverses_to_json_string(streamer->inverses());
 }
 
-std::string streamer_read_instance_json(ifcopenshell::instance_streamer<>* streamer, bool type_as_declaration_instance) {
-    return instance_stream_read_instance_json(streamer, type_as_declaration_instance);
+std::string streamer_read_instance_json(ifcopenshell::instance_streamer<>* streamer) {
+    return instance_stream_read_instance_json(streamer);
 }
 
 void unset_instance_argument_value(express::Base& instance, size_t index) {
@@ -710,6 +715,7 @@ static ifcopenshell_instance_list_t make_instance_list(const std::vector<Value>&
     return ifcopenshell_instance_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<express::Base> to_cpp_instance_list(const ifcopenshell_instance_list_t* values) {
     validate_list_items("instance_list", values->items, values->size);
     std::vector<express::Base> result;
@@ -724,23 +730,8 @@ static std::vector<express::Base> to_cpp_instance_list(const ifcopenshell_instan
     return result;
 }
 
-static ifcopenshell_geom_svgfill_polygon_list_t make_geom_svgfill_polygon_list(const std::vector<svgfill::polygon_2*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_geom_svgfill_polygon_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_geom_svgfill_polygon_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_geom_svgfill_polygon_list_t{items, values.size()};
-}
-
-static ifcopenshell_geom_svgfill_polygon_list_t make_geom_svgfill_polygon_list(const std::vector<const svgfill::polygon_2*>& values) {
+template <typename Item>
+static ifcopenshell_geom_svgfill_polygon_list_t make_geom_svgfill_polygon_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_geom_svgfill_polygon_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -756,7 +747,8 @@ static ifcopenshell_geom_svgfill_polygon_list_t make_geom_svgfill_polygon_list(c
     return ifcopenshell_geom_svgfill_polygon_list_t{items, values.size()};
 }
 
-static ifcopenshell_geom_svgfill_polygon_list_t make_geom_svgfill_polygon_list(std::vector<std::unique_ptr<svgfill::polygon_2>> values) {
+template <typename Item>
+static ifcopenshell_geom_svgfill_polygon_list_t make_geom_svgfill_polygon_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_geom_svgfill_polygon_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -772,6 +764,7 @@ static ifcopenshell_geom_svgfill_polygon_list_t make_geom_svgfill_polygon_list(s
     return ifcopenshell_geom_svgfill_polygon_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const svgfill::polygon_2*> to_cpp_geom_svgfill_polygon_list(const ifcopenshell_geom_svgfill_polygon_list_t* values) {
     validate_list_items("geom_svgfill_polygon_list", values->items, values->size);
     std::vector<const svgfill::polygon_2*> result;
@@ -786,23 +779,8 @@ static std::vector<const svgfill::polygon_2*> to_cpp_geom_svgfill_polygon_list(c
     return result;
 }
 
-static ifcopenshell_geom_conversion_result_shape_list_t make_geom_conversion_result_shape_list(const std::vector<IfcGeom::ConversionResultShape*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_geom_conversion_result_shape_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_geom_conversion_result_shape_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_geom_conversion_result_shape_list_t{items, values.size()};
-}
-
-static ifcopenshell_geom_conversion_result_shape_list_t make_geom_conversion_result_shape_list(const std::vector<const IfcGeom::ConversionResultShape*>& values) {
+template <typename Item>
+static ifcopenshell_geom_conversion_result_shape_list_t make_geom_conversion_result_shape_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_geom_conversion_result_shape_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -818,7 +796,8 @@ static ifcopenshell_geom_conversion_result_shape_list_t make_geom_conversion_res
     return ifcopenshell_geom_conversion_result_shape_list_t{items, values.size()};
 }
 
-static ifcopenshell_geom_conversion_result_shape_list_t make_geom_conversion_result_shape_list(std::vector<std::unique_ptr<IfcGeom::ConversionResultShape>> values) {
+template <typename Item>
+static ifcopenshell_geom_conversion_result_shape_list_t make_geom_conversion_result_shape_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_geom_conversion_result_shape_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -834,6 +813,7 @@ static ifcopenshell_geom_conversion_result_shape_list_t make_geom_conversion_res
     return ifcopenshell_geom_conversion_result_shape_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const IfcGeom::ConversionResultShape*> to_cpp_geom_conversion_result_shape_list(const ifcopenshell_geom_conversion_result_shape_list_t* values) {
     validate_list_items("geom_conversion_result_shape_list", values->items, values->size);
     std::vector<const IfcGeom::ConversionResultShape*> result;
@@ -848,23 +828,8 @@ static std::vector<const IfcGeom::ConversionResultShape*> to_cpp_geom_conversion
     return result;
 }
 
-static ifcopenshell_declaration_list_t make_declaration_list(const std::vector<ifcopenshell::declaration*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_declaration_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_declaration_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_declaration_list_t{items, values.size()};
-}
-
-static ifcopenshell_declaration_list_t make_declaration_list(const std::vector<const ifcopenshell::declaration*>& values) {
+template <typename Item>
+static ifcopenshell_declaration_list_t make_declaration_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_declaration_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -880,7 +845,8 @@ static ifcopenshell_declaration_list_t make_declaration_list(const std::vector<c
     return ifcopenshell_declaration_list_t{items, values.size()};
 }
 
-static ifcopenshell_declaration_list_t make_declaration_list(std::vector<std::unique_ptr<ifcopenshell::declaration>> values) {
+template <typename Item>
+static ifcopenshell_declaration_list_t make_declaration_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_declaration_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -896,6 +862,7 @@ static ifcopenshell_declaration_list_t make_declaration_list(std::vector<std::un
     return ifcopenshell_declaration_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const ifcopenshell::declaration*> to_cpp_declaration_list(const ifcopenshell_declaration_list_t* values) {
     validate_list_items("declaration_list", values->items, values->size);
     std::vector<const ifcopenshell::declaration*> result;
@@ -910,23 +877,8 @@ static std::vector<const ifcopenshell::declaration*> to_cpp_declaration_list(con
     return result;
 }
 
-static ifcopenshell_entity_list_t make_entity_list(const std::vector<ifcopenshell::entity*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_entity_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_entity_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_entity_list_t{items, values.size()};
-}
-
-static ifcopenshell_entity_list_t make_entity_list(const std::vector<const ifcopenshell::entity*>& values) {
+template <typename Item>
+static ifcopenshell_entity_list_t make_entity_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_entity_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -942,7 +894,8 @@ static ifcopenshell_entity_list_t make_entity_list(const std::vector<const ifcop
     return ifcopenshell_entity_list_t{items, values.size()};
 }
 
-static ifcopenshell_entity_list_t make_entity_list(std::vector<std::unique_ptr<ifcopenshell::entity>> values) {
+template <typename Item>
+static ifcopenshell_entity_list_t make_entity_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_entity_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -958,6 +911,7 @@ static ifcopenshell_entity_list_t make_entity_list(std::vector<std::unique_ptr<i
     return ifcopenshell_entity_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const ifcopenshell::entity*> to_cpp_entity_list(const ifcopenshell_entity_list_t* values) {
     validate_list_items("entity_list", values->items, values->size);
     std::vector<const ifcopenshell::entity*> result;
@@ -972,23 +926,8 @@ static std::vector<const ifcopenshell::entity*> to_cpp_entity_list(const ifcopen
     return result;
 }
 
-static ifcopenshell_enumeration_list_t make_enumeration_list(const std::vector<ifcopenshell::enumeration_type*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_enumeration_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_enumeration_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_enumeration_list_t{items, values.size()};
-}
-
-static ifcopenshell_enumeration_list_t make_enumeration_list(const std::vector<const ifcopenshell::enumeration_type*>& values) {
+template <typename Item>
+static ifcopenshell_enumeration_list_t make_enumeration_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_enumeration_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1004,7 +943,8 @@ static ifcopenshell_enumeration_list_t make_enumeration_list(const std::vector<c
     return ifcopenshell_enumeration_list_t{items, values.size()};
 }
 
-static ifcopenshell_enumeration_list_t make_enumeration_list(std::vector<std::unique_ptr<ifcopenshell::enumeration_type>> values) {
+template <typename Item>
+static ifcopenshell_enumeration_list_t make_enumeration_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_enumeration_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1020,6 +960,7 @@ static ifcopenshell_enumeration_list_t make_enumeration_list(std::vector<std::un
     return ifcopenshell_enumeration_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const ifcopenshell::enumeration_type*> to_cpp_enumeration_list(const ifcopenshell_enumeration_list_t* values) {
     validate_list_items("enumeration_list", values->items, values->size);
     std::vector<const ifcopenshell::enumeration_type*> result;
@@ -1034,23 +975,8 @@ static std::vector<const ifcopenshell::enumeration_type*> to_cpp_enumeration_lis
     return result;
 }
 
-static ifcopenshell_select_type_list_t make_select_type_list(const std::vector<ifcopenshell::select_type*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_select_type_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_select_type_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_select_type_list_t{items, values.size()};
-}
-
-static ifcopenshell_select_type_list_t make_select_type_list(const std::vector<const ifcopenshell::select_type*>& values) {
+template <typename Item>
+static ifcopenshell_select_type_list_t make_select_type_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_select_type_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1066,7 +992,8 @@ static ifcopenshell_select_type_list_t make_select_type_list(const std::vector<c
     return ifcopenshell_select_type_list_t{items, values.size()};
 }
 
-static ifcopenshell_select_type_list_t make_select_type_list(std::vector<std::unique_ptr<ifcopenshell::select_type>> values) {
+template <typename Item>
+static ifcopenshell_select_type_list_t make_select_type_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_select_type_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1082,6 +1009,7 @@ static ifcopenshell_select_type_list_t make_select_type_list(std::vector<std::un
     return ifcopenshell_select_type_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const ifcopenshell::select_type*> to_cpp_select_type_list(const ifcopenshell_select_type_list_t* values) {
     validate_list_items("select_type_list", values->items, values->size);
     std::vector<const ifcopenshell::select_type*> result;
@@ -1096,23 +1024,8 @@ static std::vector<const ifcopenshell::select_type*> to_cpp_select_type_list(con
     return result;
 }
 
-static ifcopenshell_type_declaration_list_t make_type_declaration_list(const std::vector<ifcopenshell::type_declaration*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_type_declaration_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_type_declaration_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_type_declaration_list_t{items, values.size()};
-}
-
-static ifcopenshell_type_declaration_list_t make_type_declaration_list(const std::vector<const ifcopenshell::type_declaration*>& values) {
+template <typename Item>
+static ifcopenshell_type_declaration_list_t make_type_declaration_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_type_declaration_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1128,7 +1041,8 @@ static ifcopenshell_type_declaration_list_t make_type_declaration_list(const std
     return ifcopenshell_type_declaration_list_t{items, values.size()};
 }
 
-static ifcopenshell_type_declaration_list_t make_type_declaration_list(std::vector<std::unique_ptr<ifcopenshell::type_declaration>> values) {
+template <typename Item>
+static ifcopenshell_type_declaration_list_t make_type_declaration_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_type_declaration_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1144,6 +1058,7 @@ static ifcopenshell_type_declaration_list_t make_type_declaration_list(std::vect
     return ifcopenshell_type_declaration_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const ifcopenshell::type_declaration*> to_cpp_type_declaration_list(const ifcopenshell_type_declaration_list_t* values) {
     validate_list_items("type_declaration_list", values->items, values->size);
     std::vector<const ifcopenshell::type_declaration*> result;
@@ -1158,23 +1073,8 @@ static std::vector<const ifcopenshell::type_declaration*> to_cpp_type_declaratio
     return result;
 }
 
-static ifcopenshell_attribute_list_t make_attribute_list(const std::vector<ifcopenshell::attribute*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_attribute_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_attribute_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_attribute_list_t{items, values.size()};
-}
-
-static ifcopenshell_attribute_list_t make_attribute_list(const std::vector<const ifcopenshell::attribute*>& values) {
+template <typename Item>
+static ifcopenshell_attribute_list_t make_attribute_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_attribute_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1190,7 +1090,8 @@ static ifcopenshell_attribute_list_t make_attribute_list(const std::vector<const
     return ifcopenshell_attribute_list_t{items, values.size()};
 }
 
-static ifcopenshell_attribute_list_t make_attribute_list(std::vector<std::unique_ptr<ifcopenshell::attribute>> values) {
+template <typename Item>
+static ifcopenshell_attribute_list_t make_attribute_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_attribute_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1206,6 +1107,7 @@ static ifcopenshell_attribute_list_t make_attribute_list(std::vector<std::unique
     return ifcopenshell_attribute_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const ifcopenshell::attribute*> to_cpp_attribute_list(const ifcopenshell_attribute_list_t* values) {
     validate_list_items("attribute_list", values->items, values->size);
     std::vector<const ifcopenshell::attribute*> result;
@@ -1220,23 +1122,8 @@ static std::vector<const ifcopenshell::attribute*> to_cpp_attribute_list(const i
     return result;
 }
 
-static ifcopenshell_inverse_attribute_list_t make_inverse_attribute_list(const std::vector<ifcopenshell::inverse_attribute*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_inverse_attribute_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_inverse_attribute_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_inverse_attribute_list_t{items, values.size()};
-}
-
-static ifcopenshell_inverse_attribute_list_t make_inverse_attribute_list(const std::vector<const ifcopenshell::inverse_attribute*>& values) {
+template <typename Item>
+static ifcopenshell_inverse_attribute_list_t make_inverse_attribute_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_inverse_attribute_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1252,7 +1139,8 @@ static ifcopenshell_inverse_attribute_list_t make_inverse_attribute_list(const s
     return ifcopenshell_inverse_attribute_list_t{items, values.size()};
 }
 
-static ifcopenshell_inverse_attribute_list_t make_inverse_attribute_list(std::vector<std::unique_ptr<ifcopenshell::inverse_attribute>> values) {
+template <typename Item>
+static ifcopenshell_inverse_attribute_list_t make_inverse_attribute_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_inverse_attribute_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1268,6 +1156,7 @@ static ifcopenshell_inverse_attribute_list_t make_inverse_attribute_list(std::ve
     return ifcopenshell_inverse_attribute_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const ifcopenshell::inverse_attribute*> to_cpp_inverse_attribute_list(const ifcopenshell_inverse_attribute_list_t* values) {
     validate_list_items("inverse_attribute_list", values->items, values->size);
     std::vector<const ifcopenshell::inverse_attribute*> result;
@@ -1282,7 +1171,8 @@ static std::vector<const ifcopenshell::inverse_attribute*> to_cpp_inverse_attrib
     return result;
 }
 
-static ifcopenshell_geom_taxonomy_style_list_t make_geom_taxonomy_style_list(const std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::style>>& values) {
+template <typename Item>
+static ifcopenshell_geom_taxonomy_style_list_t make_geom_taxonomy_style_list(const std::vector<std::shared_ptr<Item>>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_geom_taxonomy_style_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1298,6 +1188,7 @@ static ifcopenshell_geom_taxonomy_style_list_t make_geom_taxonomy_style_list(con
     return ifcopenshell_geom_taxonomy_style_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::style>> to_cpp_geom_taxonomy_style_list(const ifcopenshell_geom_taxonomy_style_list_t* values) {
     validate_list_items("geom_taxonomy_style_list", values->items, values->size);
     std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::style>> result;
@@ -1312,7 +1203,8 @@ static std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::style>> to_
     return result;
 }
 
-static ifcopenshell_geom_taxonomy_item_list_t make_geom_taxonomy_item_list(const std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::item>>& values) {
+template <typename Item>
+static ifcopenshell_geom_taxonomy_item_list_t make_geom_taxonomy_item_list(const std::vector<std::shared_ptr<Item>>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_geom_taxonomy_item_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1328,6 +1220,7 @@ static ifcopenshell_geom_taxonomy_item_list_t make_geom_taxonomy_item_list(const
     return ifcopenshell_geom_taxonomy_item_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::item>> to_cpp_geom_taxonomy_item_list(const ifcopenshell_geom_taxonomy_item_list_t* values) {
     validate_list_items("geom_taxonomy_item_list", values->items, values->size);
     std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::item>> result;
@@ -1342,23 +1235,8 @@ static std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::item>> to_c
     return result;
 }
 
-static ifcopenshell_geom_element_list_t make_geom_element_list(const std::vector<IfcGeom::Element*>& values) {
-    auto** items = values.empty() ? nullptr : new ifcopenshell_geom_element_t*[values.size()];
-    size_t initialized = 0;
-    try {
-        for (size_t i = 0; i < values.size(); ++i) {
-            items[i] = new ifcopenshell_geom_element_t{values[i], false};
-            ++initialized;
-        }
-    } catch (...) {
-        for (size_t j = 0; j < initialized; ++j) { delete items[j]; }
-        delete[] items;
-        throw;
-    }
-    return ifcopenshell_geom_element_list_t{items, values.size()};
-}
-
-static ifcopenshell_geom_element_list_t make_geom_element_list(const std::vector<const IfcGeom::Element*>& values) {
+template <typename Item>
+static ifcopenshell_geom_element_list_t make_geom_element_list(const std::vector<Item*>& values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_geom_element_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1374,7 +1252,8 @@ static ifcopenshell_geom_element_list_t make_geom_element_list(const std::vector
     return ifcopenshell_geom_element_list_t{items, values.size()};
 }
 
-static ifcopenshell_geom_element_list_t make_geom_element_list(std::vector<std::unique_ptr<IfcGeom::Element>> values) {
+template <typename Item>
+static ifcopenshell_geom_element_list_t make_geom_element_list(std::vector<std::unique_ptr<Item>> values) {
     auto** items = values.empty() ? nullptr : new ifcopenshell_geom_element_t*[values.size()];
     size_t initialized = 0;
     try {
@@ -1390,6 +1269,7 @@ static ifcopenshell_geom_element_list_t make_geom_element_list(std::vector<std::
     return ifcopenshell_geom_element_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<const IfcGeom::Element*> to_cpp_geom_element_list(const ifcopenshell_geom_element_list_t* values) {
     validate_list_items("geom_element_list", values->items, values->size);
     std::vector<const IfcGeom::Element*> result;
@@ -1403,6 +1283,7 @@ static std::vector<const IfcGeom::Element*> to_cpp_geom_element_list(const ifcop
     }
     return result;
 }
+template <typename = void>
 static ifcopenshell_instance_list_list_t make_instance_list_list(const std::vector<std::vector<express::Base>>& values) {
     auto* items = values.empty() ? nullptr : new ifcopenshell_instance_list_t[values.size()];
     for (size_t i = 0; i < values.size(); ++i) {
@@ -1411,308 +1292,13 @@ static ifcopenshell_instance_list_list_t make_instance_list_list(const std::vect
     return ifcopenshell_instance_list_list_t{items, values.size()};
 }
 
+template <typename = void>
 static std::vector<std::vector<express::Base>> to_cpp_instance_list_list(const ifcopenshell_instance_list_list_t* values) {
     validate_list_items("instance_list_list", values->items, values->size);
     std::vector<std::vector<express::Base>> result;
     result.reserve(values->size);
     for (size_t i = 0; i < values->size; ++i) {
         result.push_back(to_cpp_instance_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_geom_svgfill_polygon_list_list_t make_geom_svgfill_polygon_list_list(const std::vector<std::vector<svgfill::polygon_2*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_geom_svgfill_polygon_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_geom_svgfill_polygon_list(values[i]);
-    }
-    return ifcopenshell_geom_svgfill_polygon_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_geom_svgfill_polygon_list_list_t make_geom_svgfill_polygon_list_list(const std::vector<std::vector<const svgfill::polygon_2*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_geom_svgfill_polygon_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_geom_svgfill_polygon_list(values[i]);
-    }
-    return ifcopenshell_geom_svgfill_polygon_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const svgfill::polygon_2*>> to_cpp_geom_svgfill_polygon_list_list(const ifcopenshell_geom_svgfill_polygon_list_list_t* values) {
-    validate_list_items("geom_svgfill_polygon_list_list", values->items, values->size);
-    std::vector<std::vector<const svgfill::polygon_2*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_geom_svgfill_polygon_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_geom_conversion_result_shape_list_list_t make_geom_conversion_result_shape_list_list(const std::vector<std::vector<IfcGeom::ConversionResultShape*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_geom_conversion_result_shape_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_geom_conversion_result_shape_list(values[i]);
-    }
-    return ifcopenshell_geom_conversion_result_shape_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_geom_conversion_result_shape_list_list_t make_geom_conversion_result_shape_list_list(const std::vector<std::vector<const IfcGeom::ConversionResultShape*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_geom_conversion_result_shape_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_geom_conversion_result_shape_list(values[i]);
-    }
-    return ifcopenshell_geom_conversion_result_shape_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const IfcGeom::ConversionResultShape*>> to_cpp_geom_conversion_result_shape_list_list(const ifcopenshell_geom_conversion_result_shape_list_list_t* values) {
-    validate_list_items("geom_conversion_result_shape_list_list", values->items, values->size);
-    std::vector<std::vector<const IfcGeom::ConversionResultShape*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_geom_conversion_result_shape_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_declaration_list_list_t make_declaration_list_list(const std::vector<std::vector<ifcopenshell::declaration*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_declaration_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_declaration_list(values[i]);
-    }
-    return ifcopenshell_declaration_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_declaration_list_list_t make_declaration_list_list(const std::vector<std::vector<const ifcopenshell::declaration*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_declaration_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_declaration_list(values[i]);
-    }
-    return ifcopenshell_declaration_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const ifcopenshell::declaration*>> to_cpp_declaration_list_list(const ifcopenshell_declaration_list_list_t* values) {
-    validate_list_items("declaration_list_list", values->items, values->size);
-    std::vector<std::vector<const ifcopenshell::declaration*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_declaration_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_entity_list_list_t make_entity_list_list(const std::vector<std::vector<ifcopenshell::entity*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_entity_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_entity_list(values[i]);
-    }
-    return ifcopenshell_entity_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_entity_list_list_t make_entity_list_list(const std::vector<std::vector<const ifcopenshell::entity*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_entity_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_entity_list(values[i]);
-    }
-    return ifcopenshell_entity_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const ifcopenshell::entity*>> to_cpp_entity_list_list(const ifcopenshell_entity_list_list_t* values) {
-    validate_list_items("entity_list_list", values->items, values->size);
-    std::vector<std::vector<const ifcopenshell::entity*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_entity_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_enumeration_list_list_t make_enumeration_list_list(const std::vector<std::vector<ifcopenshell::enumeration_type*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_enumeration_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_enumeration_list(values[i]);
-    }
-    return ifcopenshell_enumeration_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_enumeration_list_list_t make_enumeration_list_list(const std::vector<std::vector<const ifcopenshell::enumeration_type*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_enumeration_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_enumeration_list(values[i]);
-    }
-    return ifcopenshell_enumeration_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const ifcopenshell::enumeration_type*>> to_cpp_enumeration_list_list(const ifcopenshell_enumeration_list_list_t* values) {
-    validate_list_items("enumeration_list_list", values->items, values->size);
-    std::vector<std::vector<const ifcopenshell::enumeration_type*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_enumeration_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_select_type_list_list_t make_select_type_list_list(const std::vector<std::vector<ifcopenshell::select_type*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_select_type_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_select_type_list(values[i]);
-    }
-    return ifcopenshell_select_type_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_select_type_list_list_t make_select_type_list_list(const std::vector<std::vector<const ifcopenshell::select_type*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_select_type_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_select_type_list(values[i]);
-    }
-    return ifcopenshell_select_type_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const ifcopenshell::select_type*>> to_cpp_select_type_list_list(const ifcopenshell_select_type_list_list_t* values) {
-    validate_list_items("select_type_list_list", values->items, values->size);
-    std::vector<std::vector<const ifcopenshell::select_type*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_select_type_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_type_declaration_list_list_t make_type_declaration_list_list(const std::vector<std::vector<ifcopenshell::type_declaration*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_type_declaration_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_type_declaration_list(values[i]);
-    }
-    return ifcopenshell_type_declaration_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_type_declaration_list_list_t make_type_declaration_list_list(const std::vector<std::vector<const ifcopenshell::type_declaration*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_type_declaration_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_type_declaration_list(values[i]);
-    }
-    return ifcopenshell_type_declaration_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const ifcopenshell::type_declaration*>> to_cpp_type_declaration_list_list(const ifcopenshell_type_declaration_list_list_t* values) {
-    validate_list_items("type_declaration_list_list", values->items, values->size);
-    std::vector<std::vector<const ifcopenshell::type_declaration*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_type_declaration_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_attribute_list_list_t make_attribute_list_list(const std::vector<std::vector<ifcopenshell::attribute*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_attribute_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_attribute_list(values[i]);
-    }
-    return ifcopenshell_attribute_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_attribute_list_list_t make_attribute_list_list(const std::vector<std::vector<const ifcopenshell::attribute*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_attribute_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_attribute_list(values[i]);
-    }
-    return ifcopenshell_attribute_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const ifcopenshell::attribute*>> to_cpp_attribute_list_list(const ifcopenshell_attribute_list_list_t* values) {
-    validate_list_items("attribute_list_list", values->items, values->size);
-    std::vector<std::vector<const ifcopenshell::attribute*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_attribute_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_inverse_attribute_list_list_t make_inverse_attribute_list_list(const std::vector<std::vector<ifcopenshell::inverse_attribute*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_inverse_attribute_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_inverse_attribute_list(values[i]);
-    }
-    return ifcopenshell_inverse_attribute_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_inverse_attribute_list_list_t make_inverse_attribute_list_list(const std::vector<std::vector<const ifcopenshell::inverse_attribute*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_inverse_attribute_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_inverse_attribute_list(values[i]);
-    }
-    return ifcopenshell_inverse_attribute_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const ifcopenshell::inverse_attribute*>> to_cpp_inverse_attribute_list_list(const ifcopenshell_inverse_attribute_list_list_t* values) {
-    validate_list_items("inverse_attribute_list_list", values->items, values->size);
-    std::vector<std::vector<const ifcopenshell::inverse_attribute*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_inverse_attribute_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_geom_taxonomy_style_list_list_t make_geom_taxonomy_style_list_list(const std::vector<std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::style>>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_geom_taxonomy_style_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_geom_taxonomy_style_list(values[i]);
-    }
-    return ifcopenshell_geom_taxonomy_style_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::style>>> to_cpp_geom_taxonomy_style_list_list(const ifcopenshell_geom_taxonomy_style_list_list_t* values) {
-    validate_list_items("geom_taxonomy_style_list_list", values->items, values->size);
-    std::vector<std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::style>>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_geom_taxonomy_style_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_geom_taxonomy_item_list_list_t make_geom_taxonomy_item_list_list(const std::vector<std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::item>>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_geom_taxonomy_item_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_geom_taxonomy_item_list(values[i]);
-    }
-    return ifcopenshell_geom_taxonomy_item_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::item>>> to_cpp_geom_taxonomy_item_list_list(const ifcopenshell_geom_taxonomy_item_list_list_t* values) {
-    validate_list_items("geom_taxonomy_item_list_list", values->items, values->size);
-    std::vector<std::vector<std::shared_ptr<ifcopenshell::geometry::taxonomy::item>>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_geom_taxonomy_item_list(&values->items[i]));
-    }
-    return result;
-}
-
-static ifcopenshell_geom_element_list_list_t make_geom_element_list_list(const std::vector<std::vector<IfcGeom::Element*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_geom_element_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_geom_element_list(values[i]);
-    }
-    return ifcopenshell_geom_element_list_list_t{items, values.size()};
-}
-
-static ifcopenshell_geom_element_list_list_t make_geom_element_list_list(const std::vector<std::vector<const IfcGeom::Element*>>& values) {
-    auto* items = values.empty() ? nullptr : new ifcopenshell_geom_element_list_t[values.size()];
-    for (size_t i = 0; i < values.size(); ++i) {
-        items[i] = make_geom_element_list(values[i]);
-    }
-    return ifcopenshell_geom_element_list_list_t{items, values.size()};
-}
-
-static std::vector<std::vector<const IfcGeom::Element*>> to_cpp_geom_element_list_list(const ifcopenshell_geom_element_list_list_t* values) {
-    validate_list_items("geom_element_list_list", values->items, values->size);
-    std::vector<std::vector<const IfcGeom::Element*>> result;
-    result.reserve(values->size);
-    for (size_t i = 0; i < values->size; ++i) {
-        result.push_back(to_cpp_geom_element_list(&values->items[i]));
     }
     return result;
 }
@@ -1881,6 +1467,7 @@ void ifcopenshell_double_list_list_destroy(ifcopenshell_double_list_list_t* valu
     value->size = 0;
 }
 
+template <typename = void>
 static ifcopenshell_string_list_t make_string_list(std::vector<std::string> values) {
     struct owner_type final : capi_buffer_owner {
         explicit owner_type(std::vector<std::string> source) : values(std::move(source)) {
@@ -1898,6 +1485,7 @@ static ifcopenshell_string_list_t make_string_list(std::vector<std::string> valu
     return ifcopenshell_string_list_t{items, size, owner.release()};
 }
 
+template <typename = void>
 static std::vector<std::string> to_cpp_string_list(const ifcopenshell_string_list_t* value) {
     validate_list_items("string_list", value->items, value->size);
     std::vector<std::string> result;
@@ -1912,6 +1500,7 @@ static std::vector<std::string> to_cpp_string_list(const ifcopenshell_string_lis
     return result;
 }
 
+template <typename = void>
 static ifcopenshell_int32_list_t make_int32_list(std::vector<int> values) {
     auto owner = std::make_unique<capi_value_owner<std::vector<int>>>(std::move(values));
     auto& stored = owner->value;
@@ -1920,6 +1509,7 @@ static ifcopenshell_int32_list_t make_int32_list(std::vector<int> values) {
     return ifcopenshell_int32_list_t{items, size, owner.release()};
 }
 
+template <typename = void>
 static std::vector<int> to_cpp_int32_list(const ifcopenshell_int32_list_t* value) {
     validate_list_items("int32_list", value->items, value->size);
     if (value->size == 0) {
@@ -1928,6 +1518,7 @@ static std::vector<int> to_cpp_int32_list(const ifcopenshell_int32_list_t* value
     return std::vector<int>(value->items, value->items + value->size);
 }
 
+template <typename = void>
 static ifcopenshell_double_list_t make_double_list(std::vector<double> values) {
     auto owner = std::make_unique<capi_value_owner<std::vector<double>>>(std::move(values));
     auto& stored = owner->value;
@@ -1936,6 +1527,7 @@ static ifcopenshell_double_list_t make_double_list(std::vector<double> values) {
     return ifcopenshell_double_list_t{items, size, owner.release()};
 }
 
+template <typename = void>
 static std::vector<double> to_cpp_double_list(const ifcopenshell_double_list_t* value) {
     validate_list_items("double_list", value->items, value->size);
     if (value->size == 0) {
@@ -1944,6 +1536,7 @@ static std::vector<double> to_cpp_double_list(const ifcopenshell_double_list_t* 
     return std::vector<double>(value->items, value->items + value->size);
 }
 
+template <typename = void>
 static ifcopenshell_bool_list_t make_bool_list(std::vector<bool> values) {
     auto owner = std::make_unique<capi_array_owner<bool>>(values.size());
     for (size_t i = 0; i < values.size(); ++i) {
@@ -1954,6 +1547,7 @@ static ifcopenshell_bool_list_t make_bool_list(std::vector<bool> values) {
     return ifcopenshell_bool_list_t{items, size, owner.release()};
 }
 
+template <typename = void>
 static std::vector<bool> to_cpp_bool_list(const ifcopenshell_bool_list_t* value) {
     validate_list_items("bool_list", value->items, value->size);
     std::vector<bool> result;
@@ -1964,6 +1558,7 @@ static std::vector<bool> to_cpp_bool_list(const ifcopenshell_bool_list_t* value)
     return result;
 }
 
+template <typename = void>
 static ifcopenshell_uint32_list_t make_uint32_list(std::vector<unsigned int> values) {
     auto owner = std::make_unique<capi_value_owner<std::vector<unsigned int>>>(std::move(values));
     auto& stored = owner->value;
@@ -1972,6 +1567,7 @@ static ifcopenshell_uint32_list_t make_uint32_list(std::vector<unsigned int> val
     return ifcopenshell_uint32_list_t{items, size, owner.release()};
 }
 
+template <typename = void>
 static std::vector<unsigned int> to_cpp_uint32_list(const ifcopenshell_uint32_list_t* value) {
     validate_list_items("uint32_list", value->items, value->size);
     if (value->size == 0) {
@@ -1980,6 +1576,7 @@ static std::vector<unsigned int> to_cpp_uint32_list(const ifcopenshell_uint32_li
     return std::vector<unsigned int>(value->items, value->items + value->size);
 }
 
+template <typename = void>
 static ifcopenshell_int32_list_list_t make_int32_list_list(std::vector<std::vector<int>> values) {
     auto owner = std::make_unique<capi_value_owner<std::vector<ifcopenshell_int32_list_t>>>(std::vector<ifcopenshell_int32_list_t>{});
     auto& items = owner->value;
@@ -1999,6 +1596,7 @@ static ifcopenshell_int32_list_list_t make_int32_list_list(std::vector<std::vect
     return ifcopenshell_int32_list_list_t{data, size, owner.release()};
 }
 
+template <typename = void>
 static std::vector<std::vector<int>> to_cpp_int32_list_list(const ifcopenshell_int32_list_list_t* value) {
     validate_list_items("int32_list_list", value->items, value->size);
     std::vector<std::vector<int>> result;
@@ -2009,6 +1607,7 @@ static std::vector<std::vector<int>> to_cpp_int32_list_list(const ifcopenshell_i
     return result;
 }
 
+template <typename = void>
 static ifcopenshell_int32_list_list_list_t make_int32_list_list_list(std::vector<std::vector<std::vector<int>>> values) {
     auto owner = std::make_unique<capi_value_owner<std::vector<ifcopenshell_int32_list_list_t>>>(std::vector<ifcopenshell_int32_list_list_t>{});
     auto& items = owner->value;
@@ -2028,6 +1627,7 @@ static ifcopenshell_int32_list_list_list_t make_int32_list_list_list(std::vector
     return ifcopenshell_int32_list_list_list_t{data, size, owner.release()};
 }
 
+template <typename = void>
 static std::vector<std::vector<std::vector<int>>> to_cpp_int32_list_list_list(const ifcopenshell_int32_list_list_list_t* value) {
     validate_list_items("int32_list_list_list", value->items, value->size);
     std::vector<std::vector<std::vector<int>>> result;
@@ -2038,6 +1638,7 @@ static std::vector<std::vector<std::vector<int>>> to_cpp_int32_list_list_list(co
     return result;
 }
 
+template <typename = void>
 static ifcopenshell_uint8_list_t make_uint8_list(std::vector<uint8_t> values) {
     auto owner = std::make_unique<capi_value_owner<std::vector<uint8_t>>>(std::move(values));
     auto& stored = owner->value;
@@ -2046,6 +1647,7 @@ static ifcopenshell_uint8_list_t make_uint8_list(std::vector<uint8_t> values) {
     return ifcopenshell_uint8_list_t{items, size, owner.release()};
 }
 
+template <typename = void>
 static std::vector<uint8_t> to_cpp_uint8_list(const ifcopenshell_uint8_list_t* value) {
     validate_list_items("uint8_list", value->items, value->size);
     if (value->size == 0) {
@@ -2054,6 +1656,7 @@ static std::vector<uint8_t> to_cpp_uint8_list(const ifcopenshell_uint8_list_t* v
     return std::vector<uint8_t>(value->items, value->items + value->size);
 }
 
+template <typename = void>
 static ifcopenshell_double_list_list_t make_double_list_list(std::vector<std::vector<double>> values) {
     auto owner = std::make_unique<capi_value_owner<std::vector<ifcopenshell_double_list_t>>>(std::vector<ifcopenshell_double_list_t>{});
     auto& items = owner->value;
@@ -2073,6 +1676,7 @@ static ifcopenshell_double_list_list_t make_double_list_list(std::vector<std::ve
     return ifcopenshell_double_list_list_t{data, size, owner.release()};
 }
 
+template <typename = void>
 static std::vector<std::vector<double>> to_cpp_double_list_list(const ifcopenshell_double_list_list_t* value) {
     validate_list_items("double_list_list", value->items, value->size);
     std::vector<std::vector<double>> result;
@@ -2849,150 +2453,6 @@ void ifcopenshell_instance_list_list_destroy(ifcopenshell_instance_list_list_t* 
     value->size = 0;
 }
 
-void ifcopenshell_geom_svgfill_polygon_list_list_destroy(ifcopenshell_geom_svgfill_polygon_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_geom_svgfill_polygon_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_geom_conversion_result_shape_list_list_destroy(ifcopenshell_geom_conversion_result_shape_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_geom_conversion_result_shape_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_declaration_list_list_destroy(ifcopenshell_declaration_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_declaration_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_entity_list_list_destroy(ifcopenshell_entity_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_entity_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_enumeration_list_list_destroy(ifcopenshell_enumeration_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_enumeration_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_select_type_list_list_destroy(ifcopenshell_select_type_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_select_type_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_type_declaration_list_list_destroy(ifcopenshell_type_declaration_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_type_declaration_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_attribute_list_list_destroy(ifcopenshell_attribute_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_attribute_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_inverse_attribute_list_list_destroy(ifcopenshell_inverse_attribute_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_inverse_attribute_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_geom_taxonomy_style_list_list_destroy(ifcopenshell_geom_taxonomy_style_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_geom_taxonomy_style_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_geom_taxonomy_item_list_list_destroy(ifcopenshell_geom_taxonomy_item_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_geom_taxonomy_item_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
-void ifcopenshell_geom_element_list_list_destroy(ifcopenshell_geom_element_list_list_t* value) {
-    if (value == nullptr || value->items == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < value->size; ++i) {
-        ifcopenshell_geom_element_list_destroy(&value->items[i]);
-    }
-    delete[] value->items;
-    value->items = nullptr;
-    value->size = 0;
-}
-
 
 
 bool ifcopenshell_geom_create_xml_serializer(ifcopenshell_file_t* file, const char* filename, ifcopenshell_geom_serializer_t** out_result) {
@@ -3329,14 +2789,14 @@ bool ifcopenshell_parse_get_feature(const char* name, bool* out_result) {
     }
 }
 
-bool ifcopenshell_parse_get_info_cpp(ifcopenshell_instance_t* instance, bool include_identifier, ifcopenshell_string_t* out_result) {
+bool ifcopenshell_parse_get_info_json(ifcopenshell_instance_t* instance, bool include_identifier, ifcopenshell_string_t* out_result) {
     try {
         ifcopenshell_clear_error();
     if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
     if (instance == nullptr) { throw std::runtime_error("Handle parameter \"instance\" must not be null"); }
     const auto& instance_cpp = instance->value;
     auto include_identifier_cpp = static_cast<bool>(include_identifier);
-        *out_result = make_string(ifcparse::bindings::get_info_cpp(instance_cpp, include_identifier_cpp));
+        *out_result = make_string(ifcparse::bindings::get_info_json(instance_cpp, include_identifier_cpp));
         if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
             return false;
         }
@@ -9928,7 +9388,6 @@ bool ifcopenshell_geom_taxonomy_line_as_item(ifcopenshell_geom_taxonomy_line_t* 
         ifcopenshell_clear_error();
     if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
     if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
         auto result_value = std::static_pointer_cast<ifcopenshell::geometry::taxonomy::item>(self->ptr);
         if (!result_value) {
             *out_result = nullptr;
@@ -10385,7 +9844,6 @@ bool ifcopenshell_geom_taxonomy_offset_curve_as_item(ifcopenshell_geom_taxonomy_
         ifcopenshell_clear_error();
     if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
     if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
         auto result_value = std::static_pointer_cast<ifcopenshell::geometry::taxonomy::item>(self->ptr);
         if (!result_value) {
             *out_result = nullptr;
@@ -10635,7 +10093,6 @@ bool ifcopenshell_geom_taxonomy_bspline_curve_as_item(ifcopenshell_geom_taxonomy
         ifcopenshell_clear_error();
     if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
     if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
         auto result_value = std::static_pointer_cast<ifcopenshell::geometry::taxonomy::item>(self->ptr);
         if (!result_value) {
             *out_result = nullptr;
@@ -10903,7 +10360,6 @@ bool ifcopenshell_geom_taxonomy_face_as_item(ifcopenshell_geom_taxonomy_face_t* 
         ifcopenshell_clear_error();
     if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
     if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
         auto result_value = std::static_pointer_cast<ifcopenshell::geometry::taxonomy::item>(self->ptr);
         if (!result_value) {
             *out_result = nullptr;
@@ -11385,7 +10841,6 @@ bool ifcopenshell_geom_taxonomy_bspline_surface_as_item(ifcopenshell_geom_taxono
         ifcopenshell_clear_error();
     if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
     if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
-    auto* self_cpp = self->ptr.get();
         auto result_value = std::static_pointer_cast<ifcopenshell::geometry::taxonomy::item>(self->ptr);
         if (!result_value) {
             *out_result = nullptr;
@@ -12886,14 +12341,13 @@ bool ifcopenshell_aggregation_type_kind(ifcopenshell_aggregation_type_t* self, i
     }
 }
 
-bool ifcopenshell_instance_streamer_read_instance_py(ifcopenshell_instance_streamer_t* self, bool type_as_declaration_instance, ifcopenshell_string_t* out_result) {
+bool ifcopenshell_instance_streamer_read_instance_json(ifcopenshell_instance_streamer_t* self, ifcopenshell_string_t* out_result) {
     try {
         ifcopenshell_clear_error();
     if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }
     if (self == nullptr || self->ptr == nullptr) { throw std::runtime_error("Receiver handle is invalid"); }
     auto* self_cpp = self->ptr;
-    auto type_as_declaration_instance_cpp = static_cast<bool>(type_as_declaration_instance);
-        *out_result = make_string(ifcparse::bindings::read_instance_py(self_cpp, type_as_declaration_instance_cpp));
+        *out_result = make_string(ifcparse::bindings::read_instance_json(self_cpp));
         if (ifcopenshell_last_error_kind() != IFCOPENSHELL_ERROR_NONE) {
             return false;
         }
