@@ -1,4 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
 #
 # Generate the WASM plugin manifest from entries passed via IFCOPENSHELL_WASM_PLUGIN_ENTRIES.
 # Plugin artifacts are copied to IFCOPENSHELL_WASM_PLUGINS_DIR by per-target POST_BUILD

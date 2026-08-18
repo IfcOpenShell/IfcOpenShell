@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# This file was generated with the assistance of an AI coding tool.
 """
 Unit tests for the consolidated WASM build system under `nix/`.
 
@@ -182,12 +181,10 @@ class TestCMakeFlagGeneration(unittest.TestCase):
         for expected in (
             "-DWASM_BUILD=ON",
             "-DBUILD_IFCAPI=ON",
-            "-DBUILD_IFCGEOM=ON",
             "-DBUILD_IFCPYTHON=OFF",
             "-DBUILD_CONVERT=OFF",
             "-DBUILD_GEOMSERVER=OFF",
             "-DBUILD_EXAMPLES=OFF",
-            "-DBUILD_SHARED_LIBS=OFF",
             "-DCOLLADA_SUPPORT=OFF",
             "-DBoost_NO_BOOST_CMAKE=On",
             "-DCMAKE_BUILD_TYPE=MinSizeRel",

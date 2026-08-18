@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# This file was generated with the assistance of an AI coding tool.
 """Shared dependency build recipes for WASM targets.
 
 Used by both:

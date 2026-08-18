@@ -227,6 +227,17 @@ if(BUILD_IFCAPI)
         )
         list(FILTER IFCOPENSHELL_BINDGEN_SOURCES EXCLUDE REGEX "/generated/")
         list(FILTER IFCOPENSHELL_BINDGEN_SOURCES EXCLUDE REGEX "/wrappergen/")
+        file(
+            GLOB_RECURSE IFCOPENSHELL_BINDGEN_HEADERS
+            CONFIGURE_DEPENDS
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcparse/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcparse/*.i"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/*.i"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../plugin/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../serializers/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../svgfill/*.h"
+        )
 
         set(IFCOPENSHELL_BINDINGS_CODEGEN_STAMP "${CMAKE_CURRENT_BINARY_DIR}/ifcopenshell_bindings_codegen.stamp")
         add_custom_command(
@@ -243,6 +254,7 @@ if(BUILD_IFCAPI)
             DEPENDS
                 ${IFCOPENSHELL_BINDING_SPEC_DEPENDS}
                 ${IFCOPENSHELL_BINDGEN_SOURCES}
+                ${IFCOPENSHELL_BINDGEN_HEADERS}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../.."
             VERBATIM
         )
@@ -308,9 +320,15 @@ if(BUILD_IFCAPI)
         set_target_properties(ifcopenshell_capi PROPERTIES
             POSITION_INDEPENDENT_CODE ON
         )
+        if(WIN32 AND NOT WASM_BUILD)
+            set_target_properties(ifcopenshell_capi PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        endif()
 
         if(WASM_BUILD)
             include(wasm.cmake)
+        else()
+            install(TARGETS ifcopenshell_capi)
+            install(FILES "${UNIFIED_CAPI_HEADER}" DESTINATION "${INCLUDEDIR}/ifcopenshell")
         endif()
     else()
         message(FATAL_ERROR

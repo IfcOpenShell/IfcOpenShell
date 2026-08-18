@@ -1,4 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
 """IfcOpenShell WASM build utilities package.
 
 Shared modules:
