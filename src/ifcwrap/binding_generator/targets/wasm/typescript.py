@@ -43,16 +43,6 @@ def _interface_name(name: str) -> str:
 def _ts_type_from_c_type(c_type: str, metadata: BindingABI) -> str:
     normalized = " ".join(c_type.replace(" *", "*").split())
     normalized_base = normalized.removeprefix("const ").removesuffix("*").strip()
-    option = next(
-        (
-            option
-            for option in metadata.option_structs.values()
-            if normalized in {f"{option.c_type}*", f"const {option.c_type}*"}
-        ),
-        None,
-    )
-    if option is not None:
-        return _interface_name(option.c_type)
     handle_name = next(
         (
             name
@@ -92,7 +82,6 @@ def _ts_type_from_c_type(c_type: str, metadata: BindingABI) -> str:
             in {
                 "sequence",
                 "handle_sequence",
-                "input_record_sequence",
                 "result_record_sequence",
             }
         ),
@@ -104,20 +93,6 @@ def _ts_type_from_c_type(c_type: str, metadata: BindingABI) -> str:
 
 
 def _sequence_ts_type(struct: CTypeIR, metadata: BindingABI) -> str:
-    if struct.kind == "input_record_sequence":
-        option = next(
-            (
-                item
-                for item in metadata.option_structs.values()
-                if item.c_type == struct.element_type
-            ),
-            None,
-        )
-        return (
-            f"{_interface_name(option.c_type)}[]"
-            if option is not None
-            else "IfcOpenshellRawValue[]"
-        )
     if struct.kind == "handle_sequence":
         item = next(
             (
@@ -222,9 +197,6 @@ def _ts_type(type_spec: TypeSpec, metadata: BindingABI) -> str:
     elif type_spec.kind == "struct" and type_spec.struct is not None:
         struct = metadata.value_types[type_spec.struct]
         result = _interface_name(struct.c_type)
-    elif type_spec.kind == "option" and type_spec.struct is not None:
-        option = metadata.option_structs[type_spec.struct]
-        result = _interface_name(option.c_type)
     elif type_spec.kind == "variant":
         result = " | ".join(
             _ts_type(alt, metadata).removesuffix(" | null")
@@ -248,9 +220,6 @@ def _iter_type_specs(metadata: BindingABI) -> Iterable[TypeSpec]:
         for param in function.params:
             if param.type is not None:
                 yield from walk(param.type)
-    for option in metadata.option_structs.values():
-        for field in option.fields:
-            yield from walk(field.type)
 
 
 def _render_semantic_aliases(metadata: BindingABI, *, indent: str = "") -> str:
@@ -288,22 +257,6 @@ def _render_struct_interfaces(metadata: BindingABI) -> str:
         )
         chunks.append(
             f"  export interface {_interface_name(struct.c_type)} {{\n{fields}\n  }}"
-        )
-    return "\n\n".join(chunks)
-
-
-def _render_option_struct_interfaces(metadata: BindingABI) -> str:
-    chunks: list[str] = []
-    for option in sorted(
-        metadata.option_structs.values(), key=lambda item: item.c_type
-    ):
-        fields = "\n".join(
-            f"    {field.name}{'?' if field.type.nullable or field.has_default else ''}: "
-            f"{_ts_type(field.type, metadata).removesuffix(' | null')};"
-            for field in option.fields
-        )
-        chunks.append(
-            f"  export interface {_interface_name(option.c_type)} {{\n{fields}\n  }}"
         )
     return "\n\n".join(chunks)
 
@@ -467,7 +420,6 @@ def render_typescript_declarations(
 ) -> str:
     del handles
     struct_interfaces = _render_struct_interfaces(metadata)
-    option_struct_interfaces = _render_option_struct_interfaces(metadata)
     semantic_aliases = _render_semantic_aliases(metadata, indent="  ")
     handle_classes = _render_handle_classes(metadata)
     module_members = _collect_module_members(metadata)
@@ -505,8 +457,6 @@ def render_typescript_declarations(
         sections.extend([struct_interfaces, ""])
     if semantic_aliases:
         sections.extend([semantic_aliases, ""])
-    if option_struct_interfaces:
-        sections.extend([option_struct_interfaces, ""])
     if handle_classes:
         sections.extend([handle_classes, ""])
     if nested_module_interfaces:

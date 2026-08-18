@@ -5,7 +5,6 @@ import json
 from ...abi_ir import (
     BindingABI,
     CFunctionIR,
-    COptionIR,
     CParamIR,
     CTypeIR,
     ErrorCatalogEntryIR,
@@ -61,20 +60,6 @@ def _value_type_by_c_type(c_type: str, metadata: BindingABI) -> CTypeIR | None:
     )
 
 
-def _option_type_by_c_type(c_type: str, metadata: BindingABI) -> COptionIR | None:
-    normalized = (
-        _normalize_c_type(c_type).removeprefix("const ").removesuffix("*").strip()
-    )
-    return next(
-        (
-            option
-            for option in metadata.option_structs.values()
-            if option.c_type == normalized
-        ),
-        None,
-    )
-
-
 def _enum_value_map(type_spec: TypeSpec) -> dict[str, int] | None:
     if not type_spec.enum_values:
         return None
@@ -121,9 +106,6 @@ def _type_layout(c_type: str, metadata: BindingABI) -> tuple[int, int]:
     struct = _value_type_by_c_type(normalized, metadata)
     if struct is not None:
         return _struct_layout(struct, metadata)
-    option = _option_type_by_c_type(normalized, metadata)
-    if option is not None:
-        return _struct_layout(option, metadata)
     return _POINTER_SIZE, _POINTER_SIZE
 
 
@@ -293,12 +275,6 @@ def _js_arg_expr(
 ) -> tuple[str, str | None, str | None]:
     name = param.name
     enum_input = _enum_input_expr(name, param.type) if param.type is not None else name
-    option = _option_type_by_c_type(param.c_type, metadata)
-    if option is not None:
-        ptr_name = f"_{name}Ptr"
-        alloc = f"    var {ptr_name} = _allocInputOption(module, {name}, {json.dumps(option.c_type)});"
-        cleanup = f"    if ({ptr_name}) _freeInputOption(module, {ptr_name}, {json.dumps(option.c_type)});"
-        return ptr_name, alloc, cleanup
     if param.nullable and param.type_kind in {
         "bool",
         "int32",
@@ -344,7 +320,6 @@ def _js_arg_expr(
         in {
             "sequence",
             "handle_sequence",
-            "input_record_sequence",
             "input_variant_sequence",
         }
         and sequence.sequence_depth >= 1
@@ -822,37 +797,6 @@ def _render_value_type_metadata(metadata: BindingABI) -> str:
     return json.dumps(payload, indent=4, sort_keys=True)
 
 
-def _render_option_type_metadata(metadata: BindingABI) -> str:
-    payload = {}
-    for option in sorted(
-        metadata.option_structs.values(), key=lambda item: item.c_type
-    ):
-        fields = []
-        option_fields = []
-        for field in option.fields:
-            field_payload = {
-                "name": field.name,
-                "cType": field.c_type,
-                "typeKind": field.type.kind,
-                "sequenceDepth": field.type.sequence_depth,
-                "nullable": field.type.nullable,
-            }
-            if enum_values := _enum_value_map(field.type):
-                field_payload["enumValues"] = enum_values
-            fields.append({"name": field.name, "cType": field.c_type})
-            option_fields.append(field_payload)
-            if field.type.nullable:
-                fields.append({"name": f"has_{field.name}", "cType": "bool"})
-                field_payload["hasField"] = f"has_{field.name}"
-        payload[option.c_type] = {
-            "cType": option.c_type,
-            "kind": "option",
-            "fields": fields,
-            "optionFields": option_fields,
-        }
-    return json.dumps(payload, indent=4, sort_keys=True)
-
-
 def _render_error_object(name: str, entries: tuple[ErrorCatalogEntryIR, ...]) -> str:
     values = "\n".join(f"    {entry.name}: {entry.value}," for entry in entries)
     return f"export const {name} = Object.freeze({{\n{values}\n}});"
@@ -872,7 +816,6 @@ def render_js_glue(
     handle_switch = _render_handle_wrapper_switch(metadata)
     factory = _render_module_factory(metadata)
     value_types = _render_value_type_metadata(metadata)
-    option_types = _render_option_type_metadata(metadata)
     error_kinds = _render_error_object(
         "IfcOpenShellErrorKind", metadata.error_catalog.kinds
     )
@@ -928,7 +871,6 @@ def render_js_glue(
             "",
             "const POINTER_SIZE = 4;",
             f"const _VALUE_TYPES = {value_types};",
-            f"const _OPTION_TYPES = {option_types};",
             "const _STRUCT_LAYOUT_CACHE = new Map();",
             "",
             "function _normalizeCType(cType) {",
@@ -995,8 +937,7 @@ def render_js_glue(
             "        case 'int64_t': return { size: 8, align: 8, getter: 'i64' };",
             "        default: {",
             "            const valueType = _VALUE_TYPES[normalized];",
-            "            const optionType = _OPTION_TYPES[normalized];",
-            "            const structType = valueType || optionType;",
+            "            const structType = _VALUE_TYPES[normalized];",
             "            if (!structType) return { size: POINTER_SIZE, align: POINTER_SIZE, getter: '*' };",
             "            const layout = _getStructLayout(structType);",
             "            return { size: layout.size, align: layout.align, getter: 'struct', valueType: structType };",
@@ -1204,15 +1145,6 @@ def render_js_glue(
             "    return _VALUE_TYPES[normalized] || null;",
             "}",
             "",
-            "function _optionTypeForCType(cType) {",
-            "    const normalized = _pointedCType(cType);",
-            "    return _OPTION_TYPES[normalized] || null;",
-            "}",
-            "",
-            "function _hasOwnValue(value, name) {",
-            "    return Object.prototype.hasOwnProperty.call(value, name) && value[name] != null;",
-            "}",
-            "",
             "function _allocInputStringList(module, value) {",
             "    if (!Array.isArray(value)) throw new Error('Expected a string array.');",
             "    const listMetadata = _VALUE_TYPES['ifcopenshell_string_list_t'];",
@@ -1313,7 +1245,7 @@ def render_js_glue(
             "function _allocInputSequence(module, value, cType) {",
             "    if (!Array.isArray(value)) throw new Error(`Expected an array for ${cType}.`);",
             "    const metadata = _valueTypeForCType(cType);",
-            "    if (!metadata || !['sequence', 'input_record_sequence', 'input_variant_sequence'].includes(metadata.kind)) {",
+            "    if (!metadata || !['sequence', 'input_variant_sequence'].includes(metadata.kind)) {",
             "        throw new Error(`Sequence marshalling for ${cType} is not implemented.`);",
             "    }",
             "    const layout = _getStructLayout(metadata);",
@@ -1331,9 +1263,9 @@ def render_js_glue(
             "function _writeInputSequence(module, structPtr, value, metadata) {",
             "    if (!Array.isArray(value)) throw new Error(`Expected an array for ${metadata.cType}.`);",
             "    const elementType = _normalizeCType(metadata.elementType || '');",
-            "    const elementMetadata = _valueTypeForCType(elementType) || _optionTypeForCType(elementType);",
+            "    const elementMetadata = _valueTypeForCType(elementType);",
             "    const scalarElement = ['bool', 'ifcopenshell_logical_t', 'int32_t', 'uint32_t', 'size_t', 'double', 'int64_t', 'uint8_t'].includes(elementType);",
-            "    if (!scalarElement && (!elementMetadata || !['sequence', 'option', 'variant'].includes(elementMetadata.kind))) {",
+            "    if (!scalarElement && (!elementMetadata || !['sequence', 'variant'].includes(elementMetadata.kind))) {",
             "        throw new Error(`Sequence marshalling for ${metadata.cType} is not implemented.`);",
             "    }",
             "    const layout = _getStructLayout(metadata);",
@@ -1346,7 +1278,6 @@ def render_js_glue(
             "        for (let index = 0; index < value.length; index += 1) {",
             "            const itemPtr = itemsPtr + index * elementInfo.size;",
             "            if (scalarElement) _setValue(module, itemPtr, elementType, value[index]);",
-            "            else if (elementMetadata.kind === 'option') _writeInputOption(module, itemPtr, value[index], elementMetadata);",
             "            else if (elementMetadata.kind === 'variant') _writeInputVariant(module, itemPtr, value[index], elementMetadata);",
             "            else _writeInputSequence(module, itemPtr, value[index], elementMetadata);",
             "        }",
@@ -1355,8 +1286,7 @@ def render_js_glue(
             "    } catch (error) {",
             "        if (!scalarElement && itemsPtr) {",
             "            for (let index = 0; index < value.length; index += 1) {",
-            "                if (elementMetadata.kind === 'option') _freeInputOptionFields(module, itemsPtr + index * elementInfo.size, elementMetadata);",
-            "                else if (elementMetadata.kind === 'variant') _freeInputVariantFields(module, itemsPtr + index * elementInfo.size, elementMetadata);",
+            "                if (elementMetadata.kind === 'variant') _freeInputVariantFields(module, itemsPtr + index * elementInfo.size, elementMetadata);",
             "                else _freeInputSequenceItems(module, itemsPtr + index * elementInfo.size, elementMetadata);",
             "            }",
             "        }",
@@ -1382,12 +1312,11 @@ def render_js_glue(
             "    const itemsPtr = module.getValue(ptr + itemsField.offset, '*');",
             "    const count = module.getValue(ptr + sizeField.offset, 'i32');",
             "    const elementType = _normalizeCType(metadata.elementType || '');",
-            "    const elementMetadata = _valueTypeForCType(elementType) || _optionTypeForCType(elementType);",
-            "    if (itemsPtr && elementMetadata && ['sequence', 'option', 'variant'].includes(elementMetadata.kind)) {",
+            "    const elementMetadata = _valueTypeForCType(elementType);",
+            "    if (itemsPtr && elementMetadata && ['sequence', 'variant'].includes(elementMetadata.kind)) {",
             "        const elementLayout = _getStructLayout(elementMetadata);",
             "        for (let index = 0; index < count; index += 1) {",
-            "            if (elementMetadata.kind === 'option') _freeInputOptionFields(module, itemsPtr + index * elementLayout.size, elementMetadata);",
-            "            else if (elementMetadata.kind === 'variant') _freeInputVariantFields(module, itemsPtr + index * elementLayout.size, elementMetadata);",
+            "            if (elementMetadata.kind === 'variant') _freeInputVariantFields(module, itemsPtr + index * elementLayout.size, elementMetadata);",
             "            else _freeInputSequenceItems(module, itemsPtr + index * elementLayout.size, elementMetadata);",
             "        }",
             "    }",
@@ -1409,72 +1338,6 @@ def render_js_glue(
             "    }",
             "}",
             "",
-            "function _allocInputOption(module, value, cType) {",
-            "    if (value == null || typeof value !== 'object') throw new TypeError(`Expected an options object for ${cType}.`);",
-            "    const metadata = _optionTypeForCType(cType);",
-            "    if (!metadata) throw new Error(`Unknown options type ${cType}.`);",
-            "    const layout = _getStructLayout(metadata);",
-            "    const ptr = module._malloc(layout.size);",
-            "    _zeroMemory(module, ptr, layout.size);",
-            "    try {",
-            "        _writeInputOption(module, ptr, value, metadata);",
-            "        return ptr;",
-            "    } catch (error) {",
-            "        _freeInputOption(module, ptr, cType);",
-            "        throw error;",
-            "    }",
-            "}",
-            "",
-            "function _writeInputOption(module, ptr, value, metadata) {",
-            "        if (value == null || typeof value !== 'object') throw new TypeError(`Expected an options object for ${metadata.cType}.`);",
-            "        const layout = _getStructLayout(metadata);",
-            "        for (const optionField of metadata.optionFields) {",
-            "            const field = layout.fields.find((candidate) => candidate.name === optionField.name);",
-            "            const hasField = optionField.hasField ? layout.fields.find((candidate) => candidate.name === optionField.hasField) : null;",
-            "            const hasValue = _hasOwnValue(value, optionField.name);",
-            "            if (hasField) module.setValue(ptr + hasField.offset, hasValue ? 1 : 0, 'i8');",
-            "            if (!hasValue) {",
-            "                if (!optionField.nullable) throw new TypeError(`Missing required options field ${optionField.name}.`);",
-            "                continue;",
-            "            }",
-            "            _writeInputOptionField(module, ptr + field.offset, optionField, value[optionField.name]);",
-            "        }",
-            "}",
-            "",
-            "function _writeInputOptionField(module, ptr, field, value) {",
-            "    if (field.enumValues) value = field.sequenceDepth > 0",
-            "        ? _mapEnumInput(value, field.enumValues, field.sequenceDepth, field.name)",
-            "        : _enumInputValue(value, field.enumValues, field.name);",
-            "    if (field.sequenceDepth > 0) {",
-            "        const sequencePtr = field.typeKind === 'string'",
-            "            ? _allocInputStringList(module, value)",
-            "            : _allocInputSequence(module, value, field.cType);",
-            "        module.setValue(ptr, sequencePtr, '*');",
-            "        return;",
-            "    }",
-            "    if (field.typeKind === 'string') {",
-            "        module.setValue(ptr, _allocString(module, value), '*');",
-            "        return;",
-            "    }",
-            "    if (field.typeKind === 'handle') {",
-            "        module.setValue(ptr, value == null ? 0 : value.ptr, '*');",
-            "        return;",
-            "    }",
-            "    if (field.typeKind === 'option') {",
-            "        module.setValue(ptr, _allocInputOption(module, value, field.cType), '*');",
-            "        return;",
-            "    }",
-            "    if (field.typeKind === 'variant') {",
-            "        module.setValue(ptr, _allocInputVariant(module, value, field.cType), '*');",
-            "        return;",
-            "    }",
-            "    if (field.typeKind === 'bool' || field.typeKind === 'logical') {",
-            "        _setValue(module, ptr, field.cType, value ? 1 : 0);",
-            "        return;",
-            "    }",
-            "    _setValue(module, ptr, field.cType, value);",
-            "}",
-            "",
             "function _allocInputVariant(module, value, cType) {",
             "    const metadata = _valueTypeForCType(cType);",
             "    if (!metadata || metadata.kind !== 'variant') throw new Error(`Unknown input variant type ${cType}.`);",
@@ -1493,13 +1356,11 @@ def render_js_glue(
             "    if (!Number.isInteger(kind) || !kindField || !valueField) throw new TypeError(`Invalid variant alternative for ${metadata.cType}.`);",
             "    module.setValue(ptr + kindField.offset, kind, 'i32');",
             "    const sequence = _valueTypeForCType(valueField.cType);",
-            "    if (sequence && ['sequence', 'input_record_sequence', 'input_variant_sequence'].includes(sequence.kind)) {",
+            "    if (sequence && ['sequence', 'input_variant_sequence'].includes(sequence.kind)) {",
             "        _writeInputSequence(module, ptr + valueField.offset, value[`value_${kind}`], sequence);",
             "        return;",
             "    }",
-            "    const option = _optionTypeForCType(valueField.cType);",
-            "    if (!option) throw new Error(`Input variant alternative ${kind} is not an options record.`);",
-            "    module.setValue(ptr + valueField.offset, _allocInputOption(module, value[`value_${kind}`], option.cType), '*');",
+            "    throw new Error(`Input variant alternative ${kind} is not a sequence.`);",
             "}",
             "",
             "function _freeInputVariant(module, ptr, cType) {",
@@ -1515,42 +1376,9 @@ def render_js_glue(
             "    const kind = kindField ? module.getValue(ptr + kindField.offset, 'i32') : -1;",
             "    const valueField = layout.fields.find((field) => field.name === `value_${kind}`);",
             "    const sequence = valueField ? _valueTypeForCType(valueField.cType) : null;",
-            "    if (valueField && sequence && ['sequence', 'input_record_sequence', 'input_variant_sequence'].includes(sequence.kind)) {",
+            "    if (valueField && sequence && ['sequence', 'input_variant_sequence'].includes(sequence.kind)) {",
             "        _freeInputSequenceItems(module, ptr + valueField.offset, sequence);",
             "        return;",
-            "    }",
-            "    const option = valueField ? _optionTypeForCType(valueField.cType) : null;",
-            "    const optionPtr = valueField ? module.getValue(ptr + valueField.offset, '*') : 0;",
-            "    if (option && optionPtr) _freeInputOption(module, optionPtr, option.cType);",
-            "}",
-            "",
-            "function _freeInputOption(module, ptr, cType) {",
-            "    if (!ptr) return;",
-            "    const metadata = _optionTypeForCType(cType);",
-            "    if (!metadata) {",
-            "        module._free(ptr);",
-            "        return;",
-            "    }",
-            "    _freeInputOptionFields(module, ptr, metadata);",
-            "    module._free(ptr);",
-            "}",
-            "",
-            "function _freeInputOptionFields(module, ptr, metadata) {",
-            "    const layout = _getStructLayout(metadata);",
-            "    for (const optionField of metadata.optionFields) {",
-            "        const field = layout.fields.find((candidate) => candidate.name === optionField.name);",
-            "        const fieldPtr = module.getValue(ptr + field.offset, '*');",
-            "        if (!fieldPtr) continue;",
-            "        if (optionField.sequenceDepth > 0) {",
-            "            if (optionField.typeKind === 'string') _freeInputStringList(module, fieldPtr);",
-            "            else _freeInputSequence(module, fieldPtr, optionField.cType);",
-            "        } else if (optionField.typeKind === 'string') {",
-            "            module._free(fieldPtr);",
-            "        } else if (optionField.typeKind === 'option') {",
-            "            _freeInputOption(module, fieldPtr, optionField.cType);",
-            "        } else if (optionField.typeKind === 'variant') {",
-            "            _freeInputVariant(module, fieldPtr, optionField.cType);",
-            "        }",
             "    }",
             "}",
             "",

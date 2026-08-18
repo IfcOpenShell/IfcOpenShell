@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from .binding_model import (
     CallSpec,
     DiscoveryDiagnostic,
     HandleSpec,
-    OptionStructSpec,
     ParamSpec,
     ResultStructSpec,
     TypeSpec,
@@ -196,7 +195,6 @@ class MergedBindingSpec:
     result_structs: dict[str, ResultStructSpec]
     functions: tuple[CallSpec, ...]  # All functions from all modules
     methods: tuple[CallSpec, ...]  # All methods from all modules
-    option_structs: dict[str, OptionStructSpec] = field(default_factory=dict)
 
 
 def _handle_list_accessor_calls(
