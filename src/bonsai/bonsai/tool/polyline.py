@@ -588,30 +588,41 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def get_rectangle_corners(
-        cls, first_corner: Vector, opposite_corner: Vector, round_factor: Optional[float] = None
+        cls,
+        first_corner: Vector,
+        opposite_corner: Vector,
+        round_factor: Optional[float] = None,
+        plane_method: Literal["XY", "XZ", "YZ", None] = None,
     ) -> list[Vector]:
         """Get the 4 corners of a rectangle defined by two opposite corners.
 
-        The rectangle is aligned to the custom transform orientation, when there is one.
+        The rectangle lies on the plane currently being used by the tool, defaulting to a
+        plane parallel to XY, and is aligned to the custom transform orientation, when there
+        is one. The corner that is not being defined by the mouse is always taken from the
+        first corner, so that the result is planar even when the two corners are not.
         When a round factor is provided, the sides of the rectangle are rounded to it, instead
         of rounding the diagonal that goes from the first corner to the opposite one.
         """
+        # Axes that are spanned by the rectangle. The remaining one is fixed.
+        axes = {"XY": (0, 1), "XZ": (0, 2), "YZ": (1, 2)}.get(plane_method or "XY")
+        assert axes
+
         matrix = Matrix()
         if custom_orientation := bpy.context.scene.transform_orientation_slots[0].custom_orientation:
             matrix = custom_orientation.matrix.to_4x4()
         matrix_i = matrix.inverted()
         p1 = matrix_i @ first_corner
-        p3 = matrix_i @ opposite_corner
+        opposite_corner = matrix_i @ opposite_corner
+
+        sides = [opposite_corner[axis] - p1[axis] for axis in axes]
         if round_factor:
-            p3 = Vector(
-                (
-                    p1.x + round((p3.x - p1.x) / round_factor) * round_factor,
-                    p1.y + round((p3.y - p1.y) / round_factor) * round_factor,
-                    p3.z,
-                )
-            )
-        p2 = Vector((p3.x, p1.y, p1.z))
-        p4 = Vector((p1.x, p3.y, p3.z))
+            sides = [round(side / round_factor) * round_factor for side in sides]
+
+        p2, p3, p4 = p1.copy(), p1.copy(), p1.copy()
+        p2[axes[0]] += sides[0]
+        p3[axes[0]] += sides[0]
+        p3[axes[1]] += sides[1]
+        p4[axes[1]] += sides[1]
         return [matrix @ p for p in (p1, p2, p3, p4)]
 
     @classmethod
@@ -633,7 +644,10 @@ class Polyline(bonsai.core.tool.Polyline):
         round_factor = tool.Snap.get_increment_snap_value(bpy.context) if should_round else None
         first_corner = Vector((polyline_points[0].x, polyline_points[0].y, polyline_points[0].z))
         corners = cls.get_rectangle_corners(
-            first_corner, cls.get_polyline_point_coords(input_ui, tool_state), round_factor
+            first_corner,
+            cls.get_polyline_point_coords(input_ui, tool_state),
+            round_factor,
+            tool_state.plane_method,
         )
 
         while len(polyline_points) > 1:
