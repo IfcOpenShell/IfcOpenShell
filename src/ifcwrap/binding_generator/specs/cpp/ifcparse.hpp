@@ -26,6 +26,11 @@
 #include <type_traits>
 #include <vector>
 
+/*
+ * Opaque C handles exposed by this spec. Each entry gives the binding name,
+ * C++ type, and destruction policy. Optional arguments select value or shared
+ * pointer storage and define how an empty value is detected.
+ */
 IFCAPI_HANDLE(file, ifcopenshell::file, delete)
 IFCAPI_HANDLE(instance_streamer, ifcopenshell::instance_streamer<>, delete)
 IFCAPI_HANDLE(instance, express::base, none, value, "!static_cast<bool>({value})")
@@ -48,7 +53,11 @@ IFCAPI_HANDLE(inverse_attribute, ifcopenshell::inverse_attribute, none)
 IFCAPI_HANDLE(attribute_value, ifcopenshell::attribute_value, none, value) struct ifcopenshell_parse_attribute_value_t;
 IFCAPI_HANDLE(instance_list, std::vector<express::base>, none, value) struct ifcopenshell_parse_instance_list_t;
 
-// Native methods included in the stable C ABI.
+/*
+ * Existing C++ methods included in the C ABI. Entries identify the receiver
+ * handle, C++ method, exported name, and exact parameter types when needed to
+ * select an overload. Clang supplies the remaining type information.
+ */
 IFCAPI_DISCOVER_METHOD(file, create, create, const ifcopenshell::declaration*, int)
 IFCAPI_DISCOVER_METHOD(file, instances_by_type, by_type, const std::string&)
 IFCAPI_DISCOVER_METHOD(file, instances_by_type_excl_subtypes, by_type_excl_subtypes, const std::string&)
