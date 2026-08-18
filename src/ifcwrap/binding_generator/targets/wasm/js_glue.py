@@ -1,5 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
-
 from __future__ import annotations
 
 import json
@@ -717,8 +715,11 @@ def _render_module_factory(metadata: BindingABI) -> str:
         "        }\n"
         "    }\n"
         "\n"
-        "    async function loadPlugin(kind, id) {\n"
+        "    async function loadPlugin(kind, id, dependencyPath = []) {\n"
         "        const key = pluginKey(kind, id);\n"
+        "        if (dependencyPath.includes(key)) {\n"
+        "            throw new Error(`Cyclic WASM plugin dependency: ${[...dependencyPath, key].join(' -> ')}`);\n"
+        "        }\n"
         "        if (loadedPlugins.has(key)) return;\n"
         "        if (loadingPlugins.has(key)) {\n"
         "            return loadingPlugins.get(key);\n"
@@ -729,7 +730,7 @@ def _render_module_factory(metadata: BindingABI) -> str:
         "                if (separator <= 0 || separator === dependency.length - 1) {\n"
         "                    throw new Error(`Invalid WASM plugin dependency ${dependency} for ${key}`);\n"
         "                }\n"
-        "                await loadPlugin(dependency.slice(0, separator), dependency.slice(separator + 1));\n"
+        "                await loadPlugin(dependency.slice(0, separator), dependency.slice(separator + 1), [...dependencyPath, key]);\n"
         "            }\n"
         "            if (kind === 'schema') {\n"
         "                const entry = pluginEntry('schema', id);\n"
@@ -882,7 +883,6 @@ def render_js_glue(
     )
     return "\n".join(
         [
-            "// This file was generated with the assistance of an AI coding tool.",
             "",
             "const _IFCOPENSHELL_ERROR_BRAND = Symbol.for('org.ifcopenshell.error');",
             "",

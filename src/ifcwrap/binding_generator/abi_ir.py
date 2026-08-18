@@ -98,6 +98,7 @@ ERROR_CATALOG = ErrorCatalogIR(
             ("RUNTIME", 1),
             ("VALUE", 2),
             ("TYPE", 3),
+            ("CANCELLED", 4),
         )
     ),
     codes=tuple(
@@ -107,6 +108,7 @@ ERROR_CATALOG = ErrorCatalogIR(
             ("UNSPECIFIED", 1),
             ("INVALID_ARGUMENT", 2),
             ("DOMAIN_ERROR", 3),
+            ("OPERATION_CANCELLED", 4),
         )
     ),
 )
@@ -294,9 +296,8 @@ def _used_scalar_sequence_kinds(ir: BindingIR) -> tuple[str, ...]:
     return tuple(ordered)
 
 
-def _used_handle_list_handles(ir: BindingIR) -> tuple[HandleSpec, ...]:
-    seen: set[str] = set()
-    handles: list[HandleSpec] = []
+def _used_handle_sequence_depths(ir: BindingIR) -> dict[str, set[int]]:
+    depths: dict[str, set[int]] = {}
 
     def add(type_spec: TypeSpec) -> None:
         if (
@@ -305,10 +306,7 @@ def _used_handle_list_handles(ir: BindingIR) -> tuple[HandleSpec, ...]:
             or type_spec.handle is None
         ):
             return
-        if type_spec.handle in seen:
-            return
-        seen.add(type_spec.handle)
-        handles.append(ir.handles[type_spec.handle])
+        depths.setdefault(type_spec.handle, set()).add(type_spec.sequence_depth)
 
     for call in ir.calls:
         add(call.returns)
@@ -320,7 +318,11 @@ def _used_handle_list_handles(ir: BindingIR) -> tuple[HandleSpec, ...]:
     for struct in ir.option_structs.values():
         for field in struct.fields:
             add(field.type)
-    return tuple(handles)
+    return depths
+
+
+def _used_handle_list_handles(ir: BindingIR) -> tuple[HandleSpec, ...]:
+    return tuple(ir.handles[name] for name in _used_handle_sequence_depths(ir))
 
 
 def _used_result_record_lists(ir: BindingIR) -> tuple[object, ...]:
@@ -538,7 +540,9 @@ def _finalize_value_types(ir: BindingIR) -> dict[str, CTypeIR]:
             element_type=_sequence_items_c_type(kind),
             sequence_depth=(_sequence_kind_parts(kind) or ("", 0))[1],
         )
-    for handle in _used_handle_list_handles(ir):
+    handle_sequence_depths = _used_handle_sequence_depths(ir)
+    for handle_name, depths in handle_sequence_depths.items():
+        handle = ir.handles[handle_name]
         list_type = _handle_list_c_type(handle)
         result[_snake_name(list_type)] = CTypeIR(
             c_type=list_type,
@@ -551,18 +555,19 @@ def _finalize_value_types(ir: BindingIR) -> dict[str, CTypeIR]:
             element_type=handle.c_type,
             sequence_depth=1,
         )
-        list_list_type = _handle_list_list_c_type(handle)
-        result[_snake_name(list_list_type)] = CTypeIR(
-            c_type=list_list_type,
-            kind="handle_sequence",
-            fields=(
-                CFieldIR("items", f"{list_type}*"),
-                CFieldIR("size", "size_t"),
-            ),
-            destroy_function=_handle_list_list_destroy_name(handle),
-            element_type=list_type,
-            sequence_depth=2,
-        )
+        if 2 in depths:
+            list_list_type = _handle_list_list_c_type(handle)
+            result[_snake_name(list_list_type)] = CTypeIR(
+                c_type=list_list_type,
+                kind="handle_sequence",
+                fields=(
+                    CFieldIR("items", f"{list_type}*"),
+                    CFieldIR("size", "size_t"),
+                ),
+                destroy_function=_handle_list_list_destroy_name(handle),
+                element_type=list_type,
+                sequence_depth=2,
+            )
     for struct in _used_result_record_lists(ir):
         list_type = _result_record_list_c_type(struct)
         result[_snake_name(list_type)] = CTypeIR(

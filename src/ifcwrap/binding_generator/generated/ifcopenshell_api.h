@@ -233,54 +233,6 @@ typedef struct ifcopenshell_instance_list_list_t {
     ifcopenshell_instance_list_t* items;
     size_t size;
 } ifcopenshell_instance_list_list_t;
-typedef struct ifcopenshell_geom_svgfill_polygon_list_list_t {
-    ifcopenshell_geom_svgfill_polygon_list_t* items;
-    size_t size;
-} ifcopenshell_geom_svgfill_polygon_list_list_t;
-typedef struct ifcopenshell_geom_conversion_result_shape_list_list_t {
-    ifcopenshell_geom_conversion_result_shape_list_t* items;
-    size_t size;
-} ifcopenshell_geom_conversion_result_shape_list_list_t;
-typedef struct ifcopenshell_declaration_list_list_t {
-    ifcopenshell_declaration_list_t* items;
-    size_t size;
-} ifcopenshell_declaration_list_list_t;
-typedef struct ifcopenshell_entity_list_list_t {
-    ifcopenshell_entity_list_t* items;
-    size_t size;
-} ifcopenshell_entity_list_list_t;
-typedef struct ifcopenshell_enumeration_list_list_t {
-    ifcopenshell_enumeration_list_t* items;
-    size_t size;
-} ifcopenshell_enumeration_list_list_t;
-typedef struct ifcopenshell_select_type_list_list_t {
-    ifcopenshell_select_type_list_t* items;
-    size_t size;
-} ifcopenshell_select_type_list_list_t;
-typedef struct ifcopenshell_type_declaration_list_list_t {
-    ifcopenshell_type_declaration_list_t* items;
-    size_t size;
-} ifcopenshell_type_declaration_list_list_t;
-typedef struct ifcopenshell_attribute_list_list_t {
-    ifcopenshell_attribute_list_t* items;
-    size_t size;
-} ifcopenshell_attribute_list_list_t;
-typedef struct ifcopenshell_inverse_attribute_list_list_t {
-    ifcopenshell_inverse_attribute_list_t* items;
-    size_t size;
-} ifcopenshell_inverse_attribute_list_list_t;
-typedef struct ifcopenshell_geom_taxonomy_style_list_list_t {
-    ifcopenshell_geom_taxonomy_style_list_t* items;
-    size_t size;
-} ifcopenshell_geom_taxonomy_style_list_list_t;
-typedef struct ifcopenshell_geom_taxonomy_item_list_list_t {
-    ifcopenshell_geom_taxonomy_item_list_t* items;
-    size_t size;
-} ifcopenshell_geom_taxonomy_item_list_list_t;
-typedef struct ifcopenshell_geom_element_list_list_t {
-    ifcopenshell_geom_element_list_t* items;
-    size_t size;
-} ifcopenshell_geom_element_list_list_t;
 
 
 
@@ -300,14 +252,16 @@ typedef enum {
     IFCOPENSHELL_ERROR_NONE = 0,
     IFCOPENSHELL_ERROR_RUNTIME = 1,
     IFCOPENSHELL_ERROR_VALUE = 2,
-    IFCOPENSHELL_ERROR_TYPE = 3
+    IFCOPENSHELL_ERROR_TYPE = 3,
+    IFCOPENSHELL_ERROR_CANCELLED = 4
 } ifcopenshell_error_kind_t;
 
 typedef enum {
     IFCOPENSHELL_ERROR_CODE_NONE = 0,
     IFCOPENSHELL_ERROR_CODE_UNSPECIFIED = 1,
     IFCOPENSHELL_ERROR_CODE_INVALID_ARGUMENT = 2,
-    IFCOPENSHELL_ERROR_CODE_DOMAIN_ERROR = 3
+    IFCOPENSHELL_ERROR_CODE_DOMAIN_ERROR = 3,
+    IFCOPENSHELL_ERROR_CODE_OPERATION_CANCELLED = 4
 } ifcopenshell_error_code_t;
 
 /*
@@ -409,18 +363,6 @@ void ifcopenshell_geom_taxonomy_style_list_destroy(ifcopenshell_geom_taxonomy_st
 void ifcopenshell_geom_taxonomy_item_list_destroy(ifcopenshell_geom_taxonomy_item_list_t* value);
 void ifcopenshell_geom_element_list_destroy(ifcopenshell_geom_element_list_t* value);
 void ifcopenshell_instance_list_list_destroy(ifcopenshell_instance_list_list_t* value);
-void ifcopenshell_geom_svgfill_polygon_list_list_destroy(ifcopenshell_geom_svgfill_polygon_list_list_t* value);
-void ifcopenshell_geom_conversion_result_shape_list_list_destroy(ifcopenshell_geom_conversion_result_shape_list_list_t* value);
-void ifcopenshell_declaration_list_list_destroy(ifcopenshell_declaration_list_list_t* value);
-void ifcopenshell_entity_list_list_destroy(ifcopenshell_entity_list_list_t* value);
-void ifcopenshell_enumeration_list_list_destroy(ifcopenshell_enumeration_list_list_t* value);
-void ifcopenshell_select_type_list_list_destroy(ifcopenshell_select_type_list_list_t* value);
-void ifcopenshell_type_declaration_list_list_destroy(ifcopenshell_type_declaration_list_list_t* value);
-void ifcopenshell_attribute_list_list_destroy(ifcopenshell_attribute_list_list_t* value);
-void ifcopenshell_inverse_attribute_list_list_destroy(ifcopenshell_inverse_attribute_list_list_t* value);
-void ifcopenshell_geom_taxonomy_style_list_list_destroy(ifcopenshell_geom_taxonomy_style_list_list_t* value);
-void ifcopenshell_geom_taxonomy_item_list_list_destroy(ifcopenshell_geom_taxonomy_item_list_list_t* value);
-void ifcopenshell_geom_element_list_list_destroy(ifcopenshell_geom_element_list_list_t* value);
 
 
 
@@ -443,7 +385,7 @@ bool ifcopenshell_parse_escape_xml(const char* text);
 bool ifcopenshell_parse_from_parameter_type(ifcopenshell_parameter_type_t* parameter_type, int32_t* out_result);
 bool ifcopenshell_parse_general_token_ptr(size_t start, const char* token, int32_t* out_result);
 bool ifcopenshell_parse_get_feature(const char* name, bool* out_result);
-bool ifcopenshell_parse_get_info_cpp(ifcopenshell_instance_t* instance, bool include_identifier, ifcopenshell_string_t* out_result);
+bool ifcopenshell_parse_get_info_json(ifcopenshell_instance_t* instance, bool include_identifier, ifcopenshell_string_t* out_result);
 bool ifcopenshell_parse_get_log(ifcopenshell_string_t* out_result);
 bool ifcopenshell_parse_get_plugin_search_paths(ifcopenshell_string_list_t* out_result);
 bool ifcopenshell_parse_get_si_equivalent(ifcopenshell_instance_t* named_unit, double* out_result);
@@ -949,7 +891,7 @@ bool ifcopenshell_file_key_value_store_query(ifcopenshell_file_t* self, const ch
 bool ifcopenshell_parameter_type_kind(ifcopenshell_parameter_type_t* self, ifcopenshell_string_t* out_result);
 bool ifcopenshell_simple_type_kind(ifcopenshell_simple_type_t* self, ifcopenshell_string_t* out_result);
 bool ifcopenshell_aggregation_type_kind(ifcopenshell_aggregation_type_t* self, ifcopenshell_string_t* out_result);
-bool ifcopenshell_instance_streamer_read_instance_py(ifcopenshell_instance_streamer_t* self, bool type_as_declaration_instance, ifcopenshell_string_t* out_result);
+bool ifcopenshell_instance_streamer_read_instance_json(ifcopenshell_instance_streamer_t* self, ifcopenshell_string_t* out_result);
 bool ifcopenshell_instance_streamer_references(ifcopenshell_instance_streamer_t* self, ifcopenshell_string_t* out_result);
 bool ifcopenshell_file_schema_name(ifcopenshell_file_t* self, ifcopenshell_string_t* out_result);
 bool ifcopenshell_select_type_select_list_names(ifcopenshell_select_type_t* self, ifcopenshell_string_list_t* out_result);

@@ -1,4 +1,3 @@
-// This file was generated with the assistance of an AI coding tool.
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #ifndef IFCWRAP_BINDING_GENERATOR_IFCPARSE_SPEC_HPP
@@ -189,10 +188,10 @@ void turn_on_detailed_logging();
 void turn_off_detailed_logging();
 void set_log_format_json();
 void set_log_format_text();
-std::string get_info_cpp(const express::Base& instance, bool include_identifier);
+std::string get_info_json(const express::Base& instance, bool include_identifier);
 std::string streamer_references(ifcopenshell::instance_streamer<>* streamer);
 std::string streamer_inverses(ifcopenshell::instance_streamer<>* streamer);
-std::string streamer_read_instance_json(ifcopenshell::instance_streamer<>* streamer, bool type_as_declaration_instance);
+std::string streamer_read_instance_json(ifcopenshell::instance_streamer<>* streamer);
 void unset_instance_argument_value(express::Base& instance, size_t index);
 void set_instance_argument_bool(express::Base& instance, size_t index, bool value);
 void set_instance_argument_int32(express::Base& instance, size_t index, int value);
@@ -445,8 +444,8 @@ inline void set_log_format_text() {
     ifcopenshell::capi::set_log_format_text();
 }
 
-inline std::string get_info_cpp(const express::Base& instance, bool include_identifier) {
-    return ifcopenshell::capi::get_info_cpp(instance, include_identifier);
+inline std::string get_info_json(const express::Base& instance, bool include_identifier) {
+    return ifcopenshell::capi::get_info_json(instance, include_identifier);
 }
 
 inline void write(ifcopenshell::file& self, const std::string& path) {
@@ -627,11 +626,8 @@ inline std::string inverses(ifcopenshell::instance_streamer<>* self) {
     return ifcopenshell::capi::streamer_inverses(self);
 }
 
-inline std::string read_instance_py(
-    ifcopenshell::instance_streamer<>* self,
-    bool type_as_declaration_instance
-) {
-    return ifcopenshell::capi::streamer_read_instance_json(self, type_as_declaration_instance);
+inline std::string read_instance_json(ifcopenshell::instance_streamer<>* self) {
+    return ifcopenshell::capi::streamer_read_instance_json(self);
 }
 
 inline std::size_t file_pointer(const express::Base& self) {

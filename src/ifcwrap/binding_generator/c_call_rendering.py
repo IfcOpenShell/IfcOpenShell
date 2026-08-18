@@ -1,5 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
-
 from __future__ import annotations
 
 import json
@@ -1121,6 +1119,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
     )
 
     prelude_lines = []
+    needs_receiver_value = not isinstance(call.operation, StaticCastOp)
     if call.returns.kind != "void":
         prelude_lines.append(
             '    if (out_result == nullptr) { throw std::runtime_error("out_result must not be null"); }'
@@ -1132,12 +1131,14 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
             prelude_lines.append(
                 f'    if ({receiver_name} == nullptr) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
             )
-            prelude_lines.append(f"    auto* self_cpp = &{receiver_name}->value;")
+            if needs_receiver_value:
+                prelude_lines.append(f"    auto* self_cpp = &{receiver_name}->value;")
         elif receiver_handle.name == "attribute_value":
             prelude_lines.append(
                 f'    if ({receiver_name} == nullptr) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
             )
-            prelude_lines.append(f"    auto& self_cpp = {receiver_name}->value;")
+            if needs_receiver_value:
+                prelude_lines.append(f"    auto& self_cpp = {receiver_name}->value;")
         elif receiver_handle.ptr_type == "value":
             prelude_lines.append(
                 f'    if ({receiver_name} == nullptr) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
@@ -1163,18 +1164,23 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
                     prelude_lines.append(
                         f'    if ({empty_check}) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
                     )
-            prelude_lines.append(f"    auto* self_cpp = &{receiver_name}->value;")
+            if needs_receiver_value:
+                prelude_lines.append(f"    auto* self_cpp = &{receiver_name}->value;")
         elif receiver_handle.ptr_type == "shared_ptr":
             # For shared_ptr handles, check that the shared_ptr is not null and use .get()
             prelude_lines.append(
                 f'    if ({receiver_name} == nullptr || {receiver_name}->ptr == nullptr) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
             )
-            prelude_lines.append(f"    auto* self_cpp = {receiver_name}->ptr.get();")
+            if needs_receiver_value:
+                prelude_lines.append(
+                    f"    auto* self_cpp = {receiver_name}->ptr.get();"
+                )
         else:
             prelude_lines.append(
                 f'    if ({receiver_name} == nullptr || {receiver_name}->ptr == nullptr) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
             )
-            prelude_lines.append(f"    auto* self_cpp = {receiver_name}->ptr;")
+            if needs_receiver_value:
+                prelude_lines.append(f"    auto* self_cpp = {receiver_name}->ptr;")
     for param in call.params:
         block = _render_param_prelude(param, spec)
         if block:

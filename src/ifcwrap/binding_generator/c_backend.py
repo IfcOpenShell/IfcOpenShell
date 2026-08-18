@@ -18,6 +18,7 @@ from .c_sequence_helpers import (
     _render_sequence_helpers,
     _snake_name,
     _used_handle_list_handles,
+    _used_handle_list_list_handles,
     _used_scalar_sequence_kinds,
 )
 from .c_value_rendering import _render_result_struct_destroy_impls
@@ -72,18 +73,20 @@ def _render_cpp(ir: BindingIR, header_name: str) -> str:
     call_impls = "\n\n".join(rendered_calls)
     destroy_impls_block = "\n\n".join(destroy_impls)
     handle_list_types = _used_handle_list_handles(ir)
+    handle_list_list_types = _used_handle_list_list_handles(ir)
     sequence_kinds = _used_scalar_sequence_kinds(ir)
     handle_list_helpers = "\n\n".join(
         _render_handle_list_helpers(handle) for handle in handle_list_types
     )
     handle_list_list_helpers = "\n\n".join(
-        _render_handle_list_list_helpers(handle) for handle in handle_list_types
+        _render_handle_list_list_helpers(handle) for handle in handle_list_list_types
     )
     handle_list_destroy_impls = "\n\n".join(
         _render_handle_list_destroy_impl(handle) for handle in handle_list_types
     )
     handle_list_list_destroy_impls = "\n\n".join(
-        _render_handle_list_list_destroy_impl(handle) for handle in handle_list_types
+        _render_handle_list_list_destroy_impl(handle)
+        for handle in handle_list_list_types
     )
     variant_destroy_impls = _render_variant_destroy_impls(ir)
     common_type_impls = _render_common_type_impls(sequence_kinds)
