@@ -1325,6 +1325,10 @@ class OverrideDuplicateMove(bpy.types.Operator):
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
 
+        if any(e.is_a("IfcAnnotation") for e in old_to_new):
+            import bonsai.bim.module.drawing.handler as _drawing_handler
+            _drawing_handler.invalidate_dim_index()
+
         return old_to_new
 
 

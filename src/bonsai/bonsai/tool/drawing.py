@@ -77,6 +77,8 @@ if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import Drawing as DrawingProperties
 
 
+
+
 class Drawing(bonsai.core.tool.Drawing):
     ANNOTATION_DATA_TYPE = Literal["empty", "curve", "mesh"]
     PERSPECTIVE_CAMERA_SHIFT_PROPERTIES = ("PerspectiveShiftX", "PerspectiveShiftY")
@@ -209,6 +211,17 @@ class Drawing(bonsai.core.tool.Drawing):
             co_end = co1 + vec * scaled_length
             obj = annotation.Annotator.add_line_to_annotation(obj, co_end, co1)
             obj.matrix_world = obj.matrix_world @ Matrix.Rotation(math.radians(-90), 4, "Z")
+        elif object_type == "SECTION_LEVEL":
+            co1, _, co3, _ = annotation.Annotator.get_placeholder_coords()
+            # co3 - co1 is the camera X direction (horizontal in a section view).
+            vec = co3 - co1
+            if vec.length == 0:
+                vec = Vector((1, 0, 0))
+            else:
+                vec = vec.normalized()
+            scaled_length = 0.023 * scale
+            co_end = co1 + vec * scaled_length
+            obj = annotation.Annotator.add_line_to_annotation(obj, co_end, co1)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
 
@@ -1632,7 +1645,14 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_auto_annotation(cls, element: ifcopenshell.entity_instance):
-        return element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
+        if not (element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")):
+            return False
+        if ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsManualDrawingReference"):
+            return False
+        ptype = ifcopenshell.util.element.get_predefined_type(element)
+        if ptype in ("SECTION_LEVEL", "PLAN_LEVEL") and ifcopenshell.util.element.get_pset(element, "BBIM_Dimension"):
+            return False
+        return True
 
     @classmethod
     def get_drawing_reference_annotation(
@@ -1963,6 +1983,95 @@ class Drawing(bonsai.core.tool.Drawing):
             )
             element.Name = elevation.Name or "Unnamed"
             return element
+
+    @classmethod
+    def create_manual_elevation_reference(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        cursor_location = bpy.context.scene.cursor.location.copy()
+        obj = bpy.data.objects.new("Unnamed", None)
+        obj.empty_display_size = 0.1
+        obj.matrix_world = Matrix.Translation(cursor_location) @ Matrix.Rotation(math.radians(90), 4, "X")
+        element = cls.run_root_assign_class(
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="ELEVATION", should_add_representation=False
+        )
+        element.Name = "Unnamed"
+        return element
+
+    @classmethod
+    def create_manual_section_reference(
+        cls, drawing: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
+        cursor_location = bpy.context.scene.cursor.location.copy()
+        mesh = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new("Unnamed", mesh)
+        obj.matrix_world = Matrix.Translation(cursor_location)
+        element = cls.run_root_assign_class(
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="SECTION", should_add_representation=False
+        )
+        element.Name = "Unnamed"
+        builder = ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        p1 = cursor_location + Vector((-0.5, 0, 0))
+        p2 = cursor_location + Vector((0.5, 0, 0))
+        points = [p1 / unit_scale, p2 / unit_scale]
+        representation = builder.get_representation(context, [builder.polyline(points)])
+        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+        return element
+
+    @classmethod
+    def set_manual_drawing_reference(cls, element: ifcopenshell.entity_instance) -> None:
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"IsManualDrawingReference": True})
+
+    @classmethod
+    def is_manual_drawing_reference(cls, element: ifcopenshell.entity_instance) -> bool:
+        return bool(ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsManualDrawingReference"))
+
+    @classmethod
+    def is_document_reference(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Return True if this annotation links to an external document (not a Bonsai drawing camera)."""
+        return bool(ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsDocumentReference"))
+
+    @classmethod
+    def set_document_reference_flag(cls, element: ifcopenshell.entity_instance) -> None:
+        """Mark this annotation as pointing to an external document reference."""
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"IsDocumentReference": True})
+
+    @classmethod
+    def get_annotation_reference_doc(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Return the IfcDocumentInformation linked to a document-reference annotation."""
+        for rel in element.HasAssociations:
+            if rel.is_a("IfcRelAssociatesDocument"):
+                doc = rel.RelatingDocument
+                if doc.is_a("IfcDocumentInformation"):
+                    return doc
+        return None
+
+    @classmethod
+    def set_annotation_reference_doc(
+        cls,
+        element: ifcopenshell.entity_instance,
+        document: Union[ifcopenshell.entity_instance, None],
+    ) -> None:
+        """Associate (or clear) an IfcDocumentInformation on a document-reference annotation."""
+        ifc_file = tool.Ifc.get()
+        # Remove existing document associations on this annotation.
+        for rel in list(element.HasAssociations):
+            if rel.is_a("IfcRelAssociatesDocument"):
+                ifcopenshell.api.document.unassign_document(
+                    ifc_file, products=[element], document=rel.RelatingDocument
+                )
+        if document:
+            ifcopenshell.api.document.assign_document(ifc_file, products=[element], document=document)
 
     @classmethod
     def regenerate_elevation_reference_annotation(
@@ -2809,6 +2918,156 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_scale_ratio(cls, scale: str) -> float:
         numerator, denominator = scale.split("/")
         return float(numerator) / float(denominator)
+
+    @classmethod
+    def get_camera_dimensions(cls, camera: bpy.types.Object) -> tuple[float, float]:
+        render = bpy.context.scene.render
+        assert isinstance(camera.data, bpy.types.Camera)
+        if render.resolution_x > render.resolution_y:
+            width = camera.data.ortho_scale
+            height = width / render.resolution_x * render.resolution_y
+        else:
+            height = camera.data.ortho_scale
+            width = height / render.resolution_y * render.resolution_x
+        return width, height
+
+    @staticmethod
+    def _section_ray_rect_intersections(
+        origin: Vector, direction: Vector, half_w: float, half_h: float
+    ) -> list[float]:
+        """Return t values where the ray origin+t*direction intersects the ±half_w/±half_h rectangle."""
+        results: list[float] = []
+        eps = 1e-6
+        if abs(direction.x) > eps:
+            for x_bound in (-half_w, half_w):
+                t = (x_bound - origin.x) / direction.x
+                if abs(origin.y + t * direction.y) <= half_h + eps:
+                    results.append(t)
+        if abs(direction.y) > eps:
+            for y_bound in (-half_h, half_h):
+                t = (y_bound - origin.y) / direction.y
+                if abs(origin.x + t * direction.x) <= half_w + eps:
+                    results.append(t)
+        return results
+
+    @classmethod
+    def get_section_border_positions(
+        cls,
+        camera: bpy.types.Object,
+        v0_world: Vector,
+        v1_world: Vector,
+        border_offset_mm: float,
+    ) -> tuple[Vector, Vector]:
+        """Return world-space positions for section endpoints placed at the camera border + border_offset_mm (paper mm)."""
+        diagram_scale = cls.get_diagram_scale(camera)
+        if not diagram_scale:
+            return v0_world, v1_world
+        scale = cls.get_scale_ratio(diagram_scale["Scale"])
+        model_offset = (border_offset_mm / 1000.0) / scale
+
+        width, height = cls.get_camera_dimensions(camera)
+        half_w, half_h = width / 2, height / 2
+
+        cam_inv = camera.matrix_world.inverted()
+        v0_local = cam_inv @ v0_world
+        v1_local = cam_inv @ v1_world
+
+        origin = Vector(((v0_local.x + v1_local.x) / 2, (v0_local.y + v1_local.y) / 2))
+        dir_xy = Vector((v1_local.x - v0_local.x, v1_local.y - v0_local.y))
+        if dir_xy.length < 1e-6:
+            return v0_world, v1_world
+        dir_xy = dir_xy.normalized()
+        z = v0_local.z
+
+        t_values = cls._section_ray_rect_intersections(origin, dir_xy, half_w, half_h)
+        pos_ts = sorted(t for t in t_values if t >= 0)
+        neg_ts = sorted((t for t in t_values if t < 0), reverse=True)
+
+        if not pos_ts or not neg_ts:
+            return v0_world, v1_world
+
+        t_end = pos_ts[0]
+        t_start = neg_ts[0]
+        new_v0_local = Vector((
+            origin.x + (t_start + model_offset) * dir_xy.x,
+            origin.y + (t_start + model_offset) * dir_xy.y,
+            z,
+        ))
+        new_v1_local = Vector((
+            origin.x + (t_end - model_offset) * dir_xy.x,
+            origin.y + (t_end - model_offset) * dir_xy.y,
+            z,
+        ))
+        return camera.matrix_world @ new_v0_local, camera.matrix_world @ new_v1_local
+
+    @classmethod
+    def update_section_endpoints(cls, obj: bpy.types.Object, camera: bpy.types.Object) -> None:
+        """Move section line endpoints to camera border + BorderOffset, skipping any manually moved vertex."""
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        if not obj.data or not hasattr(obj.data, "edges") or not obj.data.edges:
+            return
+
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Section") or {}
+        border_offset = float(pset_data.get("BorderOffset", 8.0))
+        if border_offset <= 0:
+            return
+
+        auto_v0 = cls._parse_vector3(pset_data.get("AutoStartPosition") or "")
+        auto_v1 = cls._parse_vector3(pset_data.get("AutoEndPosition") or "")
+
+        edge = obj.data.edges[0]
+        v0 = obj.data.vertices[edge.vertices[0]]
+        v1 = obj.data.vertices[edge.vertices[1]]
+        v0_world = obj.matrix_world @ v0.co
+        v1_world = obj.matrix_world @ v1.co
+
+        # A vertex is "auto" if it has never been auto-positioned, or still sits at the stored auto position.
+        v0_is_auto = auto_v0 is None or (v0_world - auto_v0).length < 1e-4
+        v1_is_auto = auto_v1 is None or (v1_world - auto_v1).length < 1e-4
+
+        if not v0_is_auto and not v1_is_auto:
+            return
+
+        new_v0_world, new_v1_world = cls.get_section_border_positions(camera, v0_world, v1_world, border_offset)
+
+        if v0_is_auto:
+            v0.co = obj.matrix_world.inverted() @ new_v0_world
+        if v1_is_auto:
+            v1.co = obj.matrix_world.inverted() @ new_v1_world
+        obj.data.update()
+
+        stored_v0 = new_v0_world if v0_is_auto else v0_world
+        stored_v1 = new_v1_world if v1_is_auto else v1_world
+
+        pset_id = pset_data.get("id")
+        if pset_id:
+            pset_entity = tool.Ifc.get().by_id(pset_id)
+        else:
+            pset_entity = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Section")
+        ifcopenshell.api.pset.edit_pset(
+            tool.Ifc.get(),
+            pset=pset_entity,
+            properties={
+                "BorderOffset": border_offset,
+                "AutoStartPosition": cls._format_vector3(stored_v0),
+                "AutoEndPosition": cls._format_vector3(stored_v1),
+            },
+        )
+        bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
+
+    @staticmethod
+    def _parse_vector3(s: str) -> Optional[Vector]:
+        try:
+            x, y, z = map(float, s.split(","))
+            return Vector((x, y, z))
+        except Exception:
+            return None
+
+    @staticmethod
+    def _format_vector3(v: Vector) -> str:
+        return f"{v.x:.6f},{v.y:.6f},{v.z:.6f}"
 
     @classmethod
     def get_diagram_scale(cls, camera: Union[bpy.types.Object, bpy.types.Camera]) -> dict[str, str]:

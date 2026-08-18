@@ -32,6 +32,7 @@ classes = (
     operator.ActivateModel,
     operator.AddAnnotation,
     operator.AddAnnotationType,
+    operator.AddElevationAnnotation,
     operator.AddDrawing,
     operator.AddDrawingStyle,
     operator.AddDrawingToSheet,
@@ -111,6 +112,16 @@ classes = (
     operator.ToggleDrawingCategorySelection,
     operator.OpenDocumentationWebUi,
     operator.FilterSelectedObjectsIfIntersectedByCamera,
+    operator.DrawParametricDimension,
+    operator.SetDimensionAnchor,
+    operator.RegenerateDimensions,
+    operator.DriveDimensionLength,
+    operator.RemoveDimensionAnchor,
+    operator.InsertDimensionAnchor,
+    operator.ClickNearestDimensionAnchor,
+    operator.MakeDimensionParametric,
+    operator.BakeParametricDimension,
+    operator.DebugDimensionClicks,
     prop.Variable,
     prop.Drawing,
     prop.Document,
@@ -172,9 +183,17 @@ classes = (
     gizmos.UglyDotGizmo,
     gizmos.ExtrusionGuidesGizmo,
     gizmos.ExtrusionWidget,
+    gizmos.GizmoAnchorHandle,
+    gizmos.GizmoDriveDimLabel,
+    gizmos.DimensionAnchorWidget,
+    gizmos.DimensionLinePositionWidget,
+    gizmos.DimensionDriveLabelWidget,
     workspace.LaunchAnnotationTypeManager,
     workspace.Hotkey,
 )
+
+
+_keymaps = []
 
 
 def menu_func(self, context):
@@ -196,8 +215,20 @@ def register():
     bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.depsgraph_update_pre.append(handler.depsgraph_update_pre_handler)
+    bpy.app.handlers.depsgraph_update_post.append(handler.depsgraph_update_post_handler)
     bpy.types.VIEW3D_MT_image_add.append(ui.add_object_button)
     bpy.types.VIEW3D_MT_object_context_menu.append(menu_func)
+
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        km = kc.keymaps.new(name="3D View", space_type="VIEW_3D")
+        kmi = km.keymap_items.new("bim.click_nearest_dimension_anchor", "LEFTMOUSE", "PRESS")
+        _keymaps.append((km, kmi))
+        kmi_alt = km.keymap_items.new("bim.click_nearest_dimension_anchor", "LEFTMOUSE", "PRESS", alt=True)
+        _keymaps.append((km, kmi_alt))
+        kmi_ctrl = km.keymap_items.new("bim.click_nearest_dimension_anchor", "LEFTMOUSE", "PRESS", ctrl=True)
+        _keymaps.append((km, kmi_ctrl))
 
 
 def unregister():
@@ -211,5 +242,10 @@ def unregister():
     del bpy.types.TextCurve.BIMTextProperties
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.depsgraph_update_pre.remove(handler.depsgraph_update_pre_handler)
+    bpy.app.handlers.depsgraph_update_post.remove(handler.depsgraph_update_post_handler)
+
+    for km, kmi in _keymaps:
+        km.keymap_items.remove(kmi)
+    _keymaps.clear()
     bpy.types.VIEW3D_MT_image_add.remove(ui.add_object_button)
     bpy.types.VIEW3D_MT_object_context_menu.remove(menu_func)

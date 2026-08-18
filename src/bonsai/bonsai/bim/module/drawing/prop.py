@@ -95,6 +95,14 @@ def update_diagram_scale(self: "BIMCameraProperties", context: bpy.types.Context
     ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=diagram_scale)
     self.update_camera_resolution()
 
+    group = tool.Drawing.get_drawing_group(element)
+    if group:
+        for annotation in tool.Drawing.get_group_elements(group) or []:
+            if annotation.is_a("IfcAnnotation") and ifcopenshell.util.element.get_predefined_type(annotation) == "SECTION":
+                ann_obj = tool.Ifc.get_object(annotation)
+                if ann_obj:
+                    tool.Drawing.update_section_endpoints(ann_obj, camera)
+
 
 def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     if not self.update_props:
@@ -1038,6 +1046,276 @@ def update_sheet_data(self, context):
     SheetsData.is_loaded = False
 
 
+# Guard against re-entrant calls when one constraint callback clears the other property.
+_face_constraint_updating = False
+
+
+def _update_force_perpendicular(self, context):
+    """Apply ForcePerpendicularToFace to all selected dimension annotations and regenerate them."""
+    global _face_constraint_updating
+    if _face_constraint_updating:
+        return
+    _face_constraint_updating = True
+    try:
+        import json
+        import numpy as np
+        import ifcopenshell.util.element
+        import ifcopenshell.api.pset
+        import ifcopenshell.api.drawing as drawing_api
+        import bonsai.tool as tool
+
+        file = tool.Ifc.get()
+        if not file:
+            return
+
+        new_value = self.force_perpendicular_to_face
+        if new_value and self.force_parallel_to_face:
+            self.force_parallel_to_face = False
+        _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE"))
+
+        targets = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcAnnotation"):
+                continue
+            if ifcopenshell.util.element.get_predefined_type(element) not in _DIM_TYPES:
+                continue
+            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+            if not pset_data:
+                continue
+            targets.append((obj, element, pset_data))
+
+        if not targets:
+            return
+
+        from bonsai.bim.module.drawing.operator import _update_blender_curve
+
+        for obj, element, pset_data in targets:
+            pset_entity = file.by_id(pset_data["id"])
+            pset_props = {"ForcePerpendicularToFace": new_value}
+            if new_value:
+                pset_props["ForceParallelToFace"] = False
+            ifcopenshell.api.pset.edit_pset(file, pset=pset_entity, properties=pset_props)
+
+            anchors = json.loads(pset_data.get("Anchors") or "[]")
+            placement_override = {}
+            for a in anchors:
+                guid = a.get("guid")
+                if not guid:
+                    continue
+                try:
+                    elem = file.by_guid(guid)
+                    elem_obj = tool.Ifc.get_object(elem)
+                    if elem_obj:
+                        placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+                except Exception:
+                    pass
+
+            resolved_pts = drawing_api.regenerate_dimension(file, element, placement_override=placement_override)
+            if resolved_pts:
+                _update_blender_curve(element, resolved_pts)
+    finally:
+        _face_constraint_updating = False
+
+
+def _update_force_parallel(self, context):
+    """Apply ForceParallelToFace to all selected dimension annotations and regenerate them."""
+    global _face_constraint_updating
+    if _face_constraint_updating:
+        return
+    _face_constraint_updating = True
+    try:
+        import json
+        import numpy as np
+        import ifcopenshell.util.element
+        import ifcopenshell.api.pset
+        import ifcopenshell.api.drawing as drawing_api
+        import bonsai.tool as tool
+        from mathutils import Vector
+
+        file = tool.Ifc.get()
+        if not file:
+            return
+
+        new_value = self.force_parallel_to_face
+        if new_value and self.force_perpendicular_to_face:
+            self.force_perpendicular_to_face = False
+        _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE"))
+
+        targets = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcAnnotation"):
+                continue
+            if ifcopenshell.util.element.get_predefined_type(element) not in _DIM_TYPES:
+                continue
+            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+            if not pset_data:
+                continue
+            targets.append((obj, element, pset_data))
+
+        if not targets:
+            return
+
+        cam = context.scene.camera
+        cam_dir_tuple = None
+        if cam:
+            cd = cam.matrix_world.to_3x3() @ Vector((0, 0, -1))
+            cd.normalize()
+            cam_dir_tuple = (cd.x, cd.y, cd.z)
+
+        from bonsai.bim.module.drawing.operator import _update_blender_curve
+
+        for obj, element, pset_data in targets:
+            pset_entity = file.by_id(pset_data["id"])
+            pset_props = {"ForceParallelToFace": new_value}
+            if new_value:
+                pset_props["ForcePerpendicularToFace"] = False
+            ifcopenshell.api.pset.edit_pset(file, pset=pset_entity, properties=pset_props)
+
+            anchors = json.loads(pset_data.get("Anchors") or "[]")
+            placement_override = {}
+            for a in anchors:
+                guid = a.get("guid")
+                if not guid:
+                    continue
+                try:
+                    elem = file.by_guid(guid)
+                    elem_obj = tool.Ifc.get_object(elem)
+                    if elem_obj:
+                        placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+                except Exception:
+                    pass
+
+            resolved_pts = drawing_api.regenerate_dimension(
+                file, element, placement_override=placement_override, camera_dir=cam_dir_tuple
+            )
+            if resolved_pts:
+                _update_blender_curve(element, resolved_pts)
+    finally:
+        _face_constraint_updating = False
+
+
+def _get_line_position(self) -> float:
+    """Return LinePosition from the active annotation's BBIM_Dimension pset.
+
+    Falls back to the natural anchor projection when LinePosition has not been
+    explicitly set, so the field always shows a meaningful value.
+    """
+    import math
+    import json
+    try:
+        import bpy as _bpy
+        import ifcopenshell.util.element as _ue
+        import bonsai.tool as _tool
+        obj = getattr(_bpy.context, "active_object", None)
+        if obj:
+            element = _tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcAnnotation"):
+                pset = _ue.get_pset(element, "BBIM_Dimension")
+                if pset:
+                    stored = pset.get("LinePosition")
+                    if stored is not None:
+                        return float(stored)
+                    raw = pset.get("Anchors")
+                    if raw:
+                        anchors = json.loads(raw)
+                        if len(anchors) >= 2 and anchors[0].get("pt") and anchors[1].get("pt"):
+                            a, b = anchors[0]["pt"], anchors[1]["pt"]
+                            dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+                            m = math.sqrt(dx * dx + dy * dy + dz * dz)
+                            if m > 1e-10:
+                                ddx, ddy, ddz = dx / m, dy / m, dz / m
+                                cam = _bpy.context.scene.camera
+                                cam_is_plan = True
+                                cvx, cvy, cvz = 0.0, 0.0, 1.0
+                                if cam:
+                                    from mathutils import Vector as _Vec
+                                    cv = (cam.matrix_world.to_3x3() @ _Vec((0, 0, -1))).normalized()
+                                    cvx, cvy, cvz = cv.x, cv.y, cv.z
+                                    cam_is_plan = abs(cvz) > 0.7
+                                if cam_is_plan:
+                                    # cross(world_Z, dim_dir)
+                                    ox, oy, oz = -ddy, ddx, 0.0
+                                else:
+                                    # cross(cam_dir, dim_dir)
+                                    ox = cvy * ddz - cvz * ddy
+                                    oy = cvz * ddx - cvx * ddz
+                                    oz = cvx * ddy - cvy * ddx
+                                om = math.sqrt(ox * ox + oy * oy + oz * oz)
+                                if om > 1e-6:
+                                    od = (ox / om, oy / om, oz / om)
+                                    pt = anchors[0]["pt"]
+                                    return float(pt[0] * od[0] + pt[1] * od[1] + pt[2] * od[2])
+    except Exception:
+        pass
+    return 0.0
+
+
+def _set_line_position(self, value: float) -> None:
+    """Write LinePosition to all selected dimension annotations and regenerate."""
+    import json
+    import numpy as np
+    import ifcopenshell.util.element
+    import ifcopenshell.api.pset
+    import ifcopenshell.api.drawing as drawing_api
+    import bonsai.tool as tool
+
+    file = tool.Ifc.get()
+    if not file:
+        return
+
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE"))
+
+    targets = []
+    import bpy as _bpy
+    for obj in getattr(_bpy.context, "selected_objects", []):
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            continue
+        if ifcopenshell.util.element.get_predefined_type(element) not in _DIM_TYPES:
+            continue
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        if not pset_data:
+            continue
+        targets.append((obj, element, pset_data))
+
+    if not targets:
+        return
+
+    from bonsai.bim.module.drawing.operator import _update_blender_curve
+
+    cam = _bpy.context.scene.camera
+    cam_dir_tuple = None
+    if cam:
+        from mathutils import Vector as _Vec
+        cam_dir_tuple = tuple((cam.matrix_world.to_3x3() @ _Vec((0, 0, -1))).normalized())
+
+    for obj, element, pset_data in targets:
+        pset_entity = file.by_id(pset_data["id"])
+        ifcopenshell.api.pset.edit_pset(file, pset=pset_entity, properties={"LinePosition": value})
+
+        anchors = json.loads(pset_data.get("Anchors") or "[]")
+        placement_override = {}
+        for a in anchors:
+            guid = a.get("guid")
+            if not guid:
+                continue
+            try:
+                elem = file.by_guid(guid)
+                elem_obj = tool.Ifc.get_object(elem)
+                if elem_obj:
+                    placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+            except Exception:
+                pass
+
+        resolved_pts = drawing_api.regenerate_dimension(
+            file, element, placement_override=placement_override, camera_dir=cam_dir_tuple
+        )
+        if resolved_pts:
+            _update_blender_curve(element, resolved_pts)
+
+
 class BIMAnnotationProperties(PropertyGroup):
     object_type: bpy.props.EnumProperty(
         name="Annotation Object Type", items=annotation_classes, default="TEXT", update=update_annotation_object_type
@@ -1051,6 +1329,25 @@ class BIMAnnotationProperties(PropertyGroup):
     )
     is_adding_type: bpy.props.BoolProperty(default=False)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
+    force_perpendicular_to_face: bpy.props.BoolProperty(
+        name="Force ⊥ to Face",
+        description="Constrain dimension vertices to the face normal of the first anchor. When dimensions are selected, toggling this updates them all.",
+        default=False,
+        update=_update_force_perpendicular,
+    )
+    force_parallel_to_face: bpy.props.BoolProperty(
+        name="Force ∥ to Face",
+        description="Constrain dimension vertices to run parallel to the face of the first anchor (along the face, perpendicular to its normal). When dimensions are selected, toggling this updates them all.",
+        default=False,
+        update=_update_force_parallel,
+    )
+    line_position: bpy.props.FloatProperty(
+        name="Line Position",
+        description="Absolute world position of the dimension line along the horizontal axis perpendicular to the dimension. The line is held at this fixed global coordinate even when the measured geometry moves. Updates all selected dimensions.",
+        unit="LENGTH",
+        get=_get_line_position,
+        set=_set_line_position,
+    )
     tag_rotation_mode: bpy.props.EnumProperty(
         name="Tag Rotation Mode",
         description="How to orient the tag relative to the tagged object",
