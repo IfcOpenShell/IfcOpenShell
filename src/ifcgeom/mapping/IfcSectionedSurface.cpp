@@ -64,9 +64,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 		longitudes.push_back(*pbde->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>(true) * length_unit_);
 
         Eigen::Vector3d po(
-            pbde->OffsetLateral().get_value_or(0.),
+            pbde->OffsetLateral().get_value_or(0.) * length_unit_,
             // @todo I don't understand whether vertical is an offset relative to the tangent plane or to the global XY plane
-            pbde->OffsetVertical().get_value_or(0.),
+            pbde->OffsetVertical().get_value_or(0.) * length_unit_,
             0.);
 
         profile_offsets.push_back(po);
