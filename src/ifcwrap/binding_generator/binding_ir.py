@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Union
 
@@ -12,7 +12,6 @@ from .binding_model import (
     CallSpec,
     HandleSpec,
     ImplementationSpec,
-    OptionStructSpec,
     ParamSpec,
     ResultStructSpec,
     TypeSpec,
@@ -217,7 +216,6 @@ class CallIR:
     params: tuple[ParamSpec, ...]
     operation: OperationIR
     doc: str | None = None
-    public_module: str | None = None
 
 
 @dataclass(frozen=True)
@@ -228,16 +226,12 @@ class BindingIR:
     handles: dict[str, HandleSpec]
     result_structs: dict[str, ResultStructSpec]
     calls: tuple[CallIR, ...]
-    option_structs: dict[str, OptionStructSpec] = field(default_factory=dict)
     abi: BindingABI | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "handles", MappingProxyType(dict(self.handles)))
         object.__setattr__(
             self, "result_structs", MappingProxyType(dict(self.result_structs))
-        )
-        object.__setattr__(
-            self, "option_structs", MappingProxyType(dict(self.option_structs))
         )
 
     @property
@@ -359,7 +353,6 @@ def lower_call(call: CallSpec) -> CallIR:
         params=call.params,
         operation=operation,
         doc=call.doc,
-        public_module=call.public_module,
     )
 
 
@@ -374,7 +367,6 @@ def lower_binding_spec(spec: SourceBindingSpec) -> BindingIR:
         public_headers=spec.public_headers,
         handles=spec.handles,
         result_structs=getattr(spec, "result_structs", {}),
-        option_structs=getattr(spec, "option_structs", {}),
         calls=tuple(lower_call(call) for call in (*spec.functions, *spec.methods)),
     )
     result = finalize_binding_ir(semantic_ir)

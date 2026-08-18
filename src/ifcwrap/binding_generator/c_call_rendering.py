@@ -535,7 +535,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
             f"    {variant_cpp_type} {param.name}_cpp;",
         ]
         lines.extend(
-            _render_complex_option_field_assignment(
+            _render_variant_assignment(
                 type_spec, param.name, f"{param.name}_cpp", spec, "    "
             )
         )
@@ -689,238 +689,29 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
             f"{_null_check(param.name, 'Parameter')}\n"
             f"    auto {param.name}_cpp = static_cast<{type_spec.cpp_type}>({param.name});"
         )
-    if kind == "option":
-        if type_spec.sequence_depth == 1:
-            if type_spec.struct is None:
-                raise ValueError(
-                    f'Option sequence parameter "{param.name}" is missing option struct name'
-                )
-            option = spec.option_structs[type_spec.struct]
-            lines = [
-                _null_check(param.name, "Parameter"),
-                f"    std::vector<{option.cpp_type}> {param.name}_cpp;",
-                f"    {param.name}_cpp.reserve({param.name}->size);",
-                f"    for (size_t i = 0; i < {param.name}->size; ++i) {{",
-                f"        const auto* item = &{param.name}->items[i];",
-                f"        {option.cpp_type} value{{}};",
-            ]
-            lines.extend(
-                _render_option_value_assignments(
-                    option, "item", "value", spec, "        "
-                )
-            )
-            lines.extend(
-                [f"        {param.name}_cpp.push_back(std::move(value));", "    }"]
-            )
-            return "\n".join(lines)
-        return _render_option_param_prelude(param, spec)
     return ""
 
 
-def _render_option_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
-    if param.type.struct is None:
-        raise ValueError(
-            f'Option parameter "{param.name}" is missing option struct name'
-        )
-    option = spec.option_structs[param.type.struct]
-    if param.type.nullable:
-        value_name = f"{param.name}_value"
-        lines = [
-            f"    std::optional<{option.cpp_type}> {param.name}_cpp;",
-            f"    if ({param.name} != nullptr) {{",
-            f"        {option.cpp_type} {value_name}{{}};",
-        ]
-        lines.extend(
-            _render_option_value_assignments(
-                option, param.name, value_name, spec, "        "
-            )
-        )
-        lines.extend(
-            [
-                f"        {param.name}_cpp = std::move({value_name});",
-                "    }",
-            ]
-        )
-        return "\n".join(line for line in lines if line)
-    lines = [
-        _null_check(param.name, "Options parameter"),
-        f"    {option.cpp_type} {param.name}_cpp{{}};",
-    ]
-    lines.extend(
-        _render_option_value_assignments(
-            option, param.name, f"{param.name}_cpp", spec, "    "
-        )
-    )
-    return "\n".join(line for line in lines if line)
-
-
-def _render_option_value_assignments(
-    option: object, source_value: str, target_value: str, spec: BindingIR, indent: str
-) -> list[str]:
-    lines: list[str] = []
-    for field in option.fields:
-        source = f"{source_value}->{field.name}"
-        target = f"{target_value}.{field.cpp_field or field.name}"
-        if field.type.nullable:
-            lines.append(f"{indent}if ({source_value}->has_{field.name}) {{")
-            field_check = _render_option_required_field_check(
-                source_value, field, indent=indent + "    "
-            )
-            if field_check:
-                lines.append(field_check)
-            lines.extend(
-                _render_complex_option_field_assignment(
-                    field.type, source, target, spec, indent + "    "
-                )
-                or [
-                    f"{indent}    {target} = {_option_field_cpp_expr(field.type, source, spec)};"
-                ]
-            )
-            lines.append(f"{indent}}}")
-        else:
-            lines.append(
-                _render_option_required_field_check(source_value, field, indent=indent)
-            )
-            lines.extend(
-                _render_complex_option_field_assignment(
-                    field.type, source, target, spec, indent
-                )
-                or [
-                    f"{indent}{target} = {_option_field_cpp_expr(field.type, source, spec)};"
-                ]
-            )
-    return [line for line in lines if line]
-
-
-def _render_complex_option_field_assignment(
+def _render_variant_assignment(
     type_spec: TypeSpec,
     source: str,
     target: str,
     spec: BindingIR,
     indent: str,
 ) -> list[str]:
-    suffix = (
-        "".join(
-            character if character.isalnum() else "_" for character in target
-        ).strip("_")
-        or "value"
-    )
-    values_name = f"nested_values_{suffix}"
-    value_name = f"nested_value_{suffix}"
-    item_name = f"item_{suffix}"
-    index_name = f"i_{suffix}"
-    if type_spec.kind == "variant" and type_spec.sequence_depth == 1:
-        alternative_types = [alternative.cpp_type for alternative in type_spec.variants]
-        if any(cpp_type is None for cpp_type in alternative_types):
-            raise ValueError("Input variant alternative is missing its C++ type")
-        variant_cpp_type = f"std::variant<{', '.join(alternative_types)}>"
-        scalar_variant = TypeSpec(
-            **{
-                **type_spec.__dict__,
-                "nullable": False,
-                "sequence_depth": 0,
-                "fixed_lengths": (),
-            }
-        )
-        lines = [
-            f"{indent}std::vector<{variant_cpp_type}> {values_name};",
-            f"{indent}{values_name}.reserve({source}->size);",
-            f"{indent}for (size_t {index_name} = 0; {index_name} < {source}->size; ++{index_name}) {{",
-            f"{indent}    const auto* {item_name} = &{source}->items[{index_name}];",
-            f"{indent}    {variant_cpp_type} {value_name};",
-        ]
-        lines.extend(
-            _render_complex_option_field_assignment(
-                scalar_variant,
-                item_name,
-                value_name,
-                spec,
-                indent + "    ",
-            )
-        )
-        lines.extend(
-            [
-                f"{indent}    {values_name}.push_back(std::move({value_name}));",
-                f"{indent}}}",
-                f"{indent}{target} = std::move({values_name});",
-            ]
-        )
-        return lines
-    if (
-        type_spec.kind == "option"
-        and type_spec.struct is not None
-        and type_spec.sequence_depth == 1
-    ):
-        option = spec.option_structs[type_spec.struct]
-        lines = [
-            f"{indent}std::vector<{option.cpp_type}> {values_name};",
-            f"{indent}{values_name}.reserve({source}->size);",
-            f"{indent}for (size_t {index_name} = 0; {index_name} < {source}->size; ++{index_name}) {{",
-            f"{indent}    const auto* {item_name} = &{source}->items[{index_name}];",
-            f"{indent}    {option.cpp_type} {value_name}{{}};",
-        ]
-        lines.extend(
-            _render_option_value_assignments(
-                option, item_name, value_name, spec, indent + "    "
-            )
-        )
-        lines.extend(
-            [
-                f"{indent}    {values_name}.push_back(std::move({value_name}));",
-                f"{indent}}}",
-                f"{indent}{target} = std::move({values_name});",
-            ]
-        )
-        return lines
-    if type_spec.kind == "option" and type_spec.struct is not None:
-        option = spec.option_structs[type_spec.struct]
-        lines = [f"{indent}{option.cpp_type} {value_name}{{}};"]
-        lines.extend(
-            _render_option_value_assignments(option, source, value_name, spec, indent)
-        )
-        lines.append(f"{indent}{target} = std::move({value_name});")
-        return lines
     if type_spec.kind != "variant":
-        return []
+        raise ValueError("Expected an input variant")
     lines = [f"{indent}switch ({source}->kind) {{"]
     for index, alternative in enumerate(type_spec.variants):
         alt_source = f"{source}->value_{index}"
         sequence_kind = _type_spec_sequence_kind(alternative)
-        if sequence_kind is not None:
-            lines.extend(
-                [
-                    f"{indent}case {index}:",
-                    f"{indent}    {target} = {_option_field_cpp_expr(alternative, f'&{alt_source}', spec)};",
-                    f"{indent}    break;",
-                ]
-            )
-            continue
-        if alternative.kind != "option" or alternative.struct is None:
-            raise ValueError(
-                "Input variant alternatives must be semantic input records or sequences"
-            )
-        option = spec.option_structs[alternative.struct]
+        if sequence_kind is None:
+            raise ValueError("Input variant alternatives must be sequences")
         lines.extend(
             [
-                f"{indent}case {index}: {{",
-                f'{indent}    if ({alt_source} == nullptr) {{ throw std::runtime_error("Variant alternative must not be null"); }}',
-                f"{indent}    {option.cpp_type} alternative_value{{}};",
-            ]
-        )
-        lines.extend(
-            _render_option_value_assignments(
-                option,
-                alt_source,
-                "alternative_value",
-                spec,
-                indent + "    ",
-            )
-        )
-        lines.extend(
-            [
-                f"{indent}    {target} = std::move(alternative_value);",
+                f"{indent}case {index}:",
+                f"{indent}    {target} = {_fixed_sequence_cpp_expr(alternative, f'{_sequence_to_cpp_helper(sequence_kind)}(&{alt_source})')};",
                 f"{indent}    break;",
-                f"{indent}}}",
             ]
         )
     lines.extend(
@@ -931,67 +722,6 @@ def _render_complex_option_field_assignment(
         ]
     )
     return lines
-
-
-def _render_option_required_field_check(
-    option_param: str, field: object, *, indent: str = "    "
-) -> str:
-    if _type_spec_sequence_kind(field.type) is not None:
-        return (
-            f"{indent}if ({option_param}->{field.name} == nullptr) "
-            f'{{ throw std::runtime_error("Options field \\"{field.name}\\" must not be null"); }}'
-        )
-    if field.type.kind == "string":
-        return (
-            f"{indent}if ({option_param}->{field.name} == nullptr) "
-            f'{{ throw std::runtime_error("Options field \\"{field.name}\\" must not be null"); }}'
-        )
-    if field.type.kind == "handle" and field.type.sequence_depth == 0:
-        return (
-            f"{indent}if ({option_param}->{field.name} == nullptr) "
-            f'{{ throw std::runtime_error("Options field \\"{field.name}\\" must not be null"); }}'
-        )
-    if field.type.kind in {"option", "variant"}:
-        return (
-            f"{indent}if ({option_param}->{field.name} == nullptr) "
-            f'{{ throw std::runtime_error("Options field \\"{field.name}\\" must not be null"); }}'
-        )
-    return ""
-
-
-def _option_field_cpp_expr(type_spec: TypeSpec, source: str, spec: BindingIR) -> str:
-    sequence_kind = _type_spec_sequence_kind(type_spec)
-    if sequence_kind is not None:
-        return _fixed_sequence_cpp_expr(
-            type_spec, f"{_sequence_to_cpp_helper(sequence_kind)}({source})"
-        )
-    if type_spec.kind == "string":
-        return f"std::string({source})"
-    if type_spec.kind in _SCALAR_PARAM_TYPES:
-        if type_spec.enum_values and type_spec.cpp_type is not None:
-            cpp_type = _normalize_cpp_type(type_spec.cpp_type)
-            if cpp_type.startswith("std::optional<") and cpp_type.endswith(">"):
-                cpp_type = cpp_type[len("std::optional<") : -1]
-            return f"static_cast<{cpp_type}>({source})"
-        if type_spec.cpp_type is not None and not _is_optional_cpp_type(type_spec):
-            return f"static_cast<{type_spec.cpp_type}>({source})"
-        return source
-    if type_spec.kind == "handle":
-        if type_spec.sequence_depth == 1:
-            handle = spec.handles[type_spec.handle]
-            helper_name = f"to_cpp_{_snake_name(_handle_list_c_type(handle))}"
-            return f"{helper_name}({source})"
-        if type_spec.sequence_depth == 2:
-            handle = spec.handles[type_spec.handle]
-            helper_name = f"to_cpp_{_snake_name(_handle_list_list_c_type(handle))}"
-            return f"{helper_name}({source})"
-        handle = spec.handles[type_spec.handle]
-        if handle.ptr_type == "value":
-            return f"{source}->value"
-        if handle.ptr_type == "shared_ptr":
-            return f"{source}->ptr"
-        return f"{source}->ptr"
-    raise ValueError(f"Unsupported option field kind: {type_spec.kind}")
 
 
 def _uses_cpp_arg_name(type_spec: TypeSpec) -> bool:
@@ -1007,8 +737,6 @@ def _uses_cpp_arg_name(type_spec: TypeSpec) -> bool:
     if type_spec.kind == "handle":
         return True
     if type_spec.kind == "opaque_ptr":
-        return True
-    if type_spec.kind == "option":
         return True
     return False
 

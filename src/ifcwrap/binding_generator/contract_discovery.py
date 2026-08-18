@@ -1,18 +1,6 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
-from pathlib import Path
-
-
-@dataclass(frozen=True)
-class MarkedFunction:
-    header: Path
-    name: str
-    return_annotations: frozenset[str]
-    param_annotations: dict[str, frozenset[str]]
-    param_defaults: dict[str, bool]
-    doc: str | None = None
 
 
 _COMMENT_RE = re.compile(r"//.*?$|/\*.*?\*/", re.MULTILINE | re.DOTALL)
@@ -103,24 +91,6 @@ def _has_default(param: str) -> bool:
     return False
 
 
-def _parse_param_annotations(params: str) -> dict[str, frozenset[str]]:
-    parsed: dict[str, frozenset[str]] = {}
-    for param in _split_params(params):
-        annotations, rest = _leading_annotations(param)
-        if not annotations:
-            continue
-        parsed[_param_name(rest)] = annotations
-    return parsed
-
-
-def _parse_param_defaults(params: str) -> dict[str, bool]:
-    return {
-        _param_name(param): True
-        for param in _split_params(params)
-        if _has_default(param)
-    }
-
-
 def _clean_doc_comment(raw: str | None) -> str | None:
     if raw is None:
         return None
@@ -144,61 +114,3 @@ def _clean_doc_comment(raw: str | None) -> str | None:
         lines.pop()
     doc = "\n".join(lines).strip()
     return doc or None
-
-
-def _adjacent_doc_before(text: str, position: int) -> str | None:
-    docs: list[str] = []
-    cursor = position
-    while True:
-        while cursor > 0 and text[cursor - 1].isspace():
-            cursor -= 1
-        if cursor >= 2 and text[cursor - 2 : cursor] == "*/":
-            start = text.rfind("/*", 0, cursor - 2)
-            if start < 0:
-                break
-            raw = text[start:cursor]
-            if raw.startswith(("/**", "/*!")):
-                docs.insert(0, raw)
-                cursor = start
-                continue
-            break
-        line_start = text.rfind("\n", 0, cursor) + 1
-        line = text[line_start:cursor].strip()
-        if line.startswith(("///", "//!")):
-            docs.insert(0, text[line_start:cursor])
-            cursor = line_start
-            continue
-        break
-    return _clean_doc_comment("\n".join(docs)) if docs else None
-
-
-def discover_marked_functions_in_headers(
-    headers: list[Path] | tuple[Path, ...],
-    *,
-    marker: str = "IFCAPI_BINDING",
-) -> tuple[MarkedFunction, ...]:
-    """Discover function declarations annotated with a binding contract marker."""
-    marker_re = re.escape(marker)
-    declaration_re = re.compile(
-        rf"(?P<marker>\b{marker_re})\s+"
-        r"(?P<return_decl>[\w:<>~,\s*&]+?)\s+"
-        r"(?P<name>[A-Za-z_]\w*)\s*\("
-        r"(?P<params>[^;{{}}]*)\)\s*;",
-        re.DOTALL,
-    )
-    discovered: list[MarkedFunction] = []
-    for header in headers:
-        text = header.read_text(encoding="utf-8")
-        for match in declaration_re.finditer(text):
-            return_annotations, _ = _leading_annotations(match.group("return_decl"))
-            discovered.append(
-                MarkedFunction(
-                    header=header,
-                    name=match.group("name"),
-                    return_annotations=return_annotations,
-                    param_annotations=_parse_param_annotations(match.group("params")),
-                    param_defaults=_parse_param_defaults(match.group("params")),
-                    doc=_adjacent_doc_before(text, match.start("marker")),
-                )
-            )
-    return tuple(discovered)

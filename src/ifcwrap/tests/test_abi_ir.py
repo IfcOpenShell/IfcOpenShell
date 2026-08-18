@@ -12,8 +12,6 @@ from src.ifcwrap.binding_generator.binding_ir import (
 from src.ifcwrap.binding_generator.binding_model import (
     CallSpec,
     HandleSpec,
-    OptionStructFieldSpec,
-    OptionStructSpec,
     ParamSpec,
     ResultStructFieldSpec,
     ResultStructSpec,
@@ -175,62 +173,7 @@ def test_finalized_abi_derives_layouts_and_signatures() -> None:
     ]
 
 
-def test_finalized_abi_includes_sequences_used_only_by_option_structs() -> None:
-    metadata = finalize_abi(
-        BindingIR(
-            module="demo",
-            c_prefix="ifcopenshell_demo",
-            public_headers=(),
-            handles={
-                "item": HandleSpec(
-                    name="item",
-                    cpp_type="Demo::Item",
-                    c_type="ifcopenshell_demo_item_t",
-                    destructor="delete",
-                ),
-            },
-            result_structs={},
-            calls=(
-                CallIR(
-                    expose_as="add_mesh",
-                    c_name="ifcopenshell_demo_add_mesh",
-                    receiver=None,
-                    returns=TypeSpec(kind="void"),
-                    params=(
-                        ParamSpec(
-                            "options", TypeSpec(kind="option", struct="AddMeshOptions")
-                        ),
-                    ),
-                    operation=DirectCallOp(cpp_name="Demo::add_mesh"),
-                ),
-            ),
-            option_structs={
-                "AddMeshOptions": OptionStructSpec(
-                    name="AddMeshOptions",
-                    cpp_type="Demo::AddMeshOptions",
-                    c_type="ifcopenshell_demo_add_mesh_options_t",
-                    fields=(
-                        OptionStructFieldSpec(
-                            "faces", TypeSpec(kind="int32", sequence_depth=4)
-                        ),
-                        OptionStructFieldSpec(
-                            "grouped_items",
-                            TypeSpec(kind="handle", handle="item", sequence_depth=2),
-                        ),
-                    ),
-                ),
-            },
-        )
-    )
-
-    assert "int32_list" in metadata.value_types
-    assert "int32_list_list_list_list" in metadata.value_types
-    assert metadata.value_types["int32_list_list_list_list"].sequence_depth == 4
-    assert "demo_item_list" in metadata.value_types
-    assert "demo_item_list_list" in metadata.value_types
-
-
-def test_finalized_abi_preserves_option_and_result_field_docs() -> None:
+def test_finalized_abi_preserves_result_field_docs() -> None:
     metadata = finalize_abi(
         BindingIR(
             module="demo",
@@ -253,32 +196,8 @@ def test_finalized_abi_preserves_option_and_result_field_docs() -> None:
                 )
             },
             calls=(),
-            option_structs={
-                "DemoOptions": OptionStructSpec(
-                    name="DemoOptions",
-                    cpp_type="Demo::Options",
-                    c_type="ifcopenshell_demo_options_t",
-                    fields=(
-                        OptionStructFieldSpec(
-                            "enabled",
-                            TypeSpec(kind="bool", nullable=True),
-                            doc="Whether the feature is enabled.\n\nOptional in the input.",
-                        ),
-                        OptionStructFieldSpec("undocumented", TypeSpec(kind="string")),
-                    ),
-                )
-            },
         )
     )
-
-    option_fields = {
-        field.name: field for field in metadata.option_structs["DemoOptions"].fields
-    }
-    assert (
-        option_fields["enabled"].doc
-        == "Whether the feature is enabled.\n\nOptional in the input."
-    )
-    assert option_fields["undocumented"].doc is None
 
     result_fields = {
         field.name: field for field in metadata.value_types["DemoResult"].fields

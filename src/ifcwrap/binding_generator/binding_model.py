@@ -54,23 +54,6 @@ class ResultStructSpec:
 
 
 @dataclass(frozen=True)
-class OptionStructFieldSpec:
-    name: str
-    type: TypeSpec
-    cpp_field: str | None = None
-    doc: str | None = None
-    has_default: bool = False
-
-
-@dataclass(frozen=True)
-class OptionStructSpec:
-    name: str
-    cpp_type: str
-    c_type: str
-    fields: tuple[OptionStructFieldSpec, ...]
-
-
-@dataclass(frozen=True)
 class ImplementationSpec:
     kind: str
     body: str
@@ -85,7 +68,6 @@ class CallSpec:
     params: tuple[ParamSpec, ...]
     policy_operation: object
     doc: str | None = None
-    public_module: str | None = None
 
 
 @dataclass(frozen=True)
