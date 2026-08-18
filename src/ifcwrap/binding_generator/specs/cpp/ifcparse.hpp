@@ -28,7 +28,7 @@
 
 IFCAPI_HANDLE(file, ifcopenshell::file, delete)
 IFCAPI_HANDLE(instance_streamer, ifcopenshell::instance_streamer<>, delete)
-IFCAPI_HANDLE(instance, express::Base, none, value, "!static_cast<bool>({value})")
+IFCAPI_HANDLE(instance, express::base, none, value, "!static_cast<bool>({value})")
 IFCAPI_HANDLE(header, ifcopenshell::spf_header, none)
 IFCAPI_HANDLE(file_description, Header_section_schema::file_description, none, value, "!static_cast<bool>({value})")
 IFCAPI_HANDLE(file_name, Header_section_schema::file_name, none, value, "!static_cast<bool>({value})")
@@ -45,19 +45,18 @@ IFCAPI_HANDLE(aggregation_type, ifcopenshell::aggregation_type, none)
 IFCAPI_HANDLE(entity, ifcopenshell::entity, none)
 IFCAPI_HANDLE(attribute, ifcopenshell::attribute, none)
 IFCAPI_HANDLE(inverse_attribute, ifcopenshell::inverse_attribute, none)
-IFCAPI_HANDLE(attribute_value, attribute_value, none, value) struct ifcopenshell_parse_attribute_value_t;
-IFCAPI_HANDLE(instance_list, std::vector<express::Base>, none, value) struct ifcopenshell_parse_instance_list_t;
+IFCAPI_HANDLE(attribute_value, ifcopenshell::attribute_value, none, value) struct ifcopenshell_parse_attribute_value_t;
+IFCAPI_HANDLE(instance_list, std::vector<express::base>, none, value) struct ifcopenshell_parse_instance_list_t;
 
 // Native methods included in the stable C ABI.
 IFCAPI_DISCOVER_METHOD(file, create, create, const ifcopenshell::declaration*, int)
-IFCAPI_DISCOVER_METHOD(file, get_inverse, get_inverses_by_declaration, int, const ifcopenshell::declaration*, int)
 IFCAPI_DISCOVER_METHOD(file, instances_by_type, by_type, const std::string&)
 IFCAPI_DISCOVER_METHOD(file, instances_by_type_excl_subtypes, by_type_excl_subtypes, const std::string&)
-IFCAPI_DISCOVER_METHOD(file, add_entity, add, const express::Base&, int)
-IFCAPI_DISCOVER_METHOD(file, add_type_ref, add_type_ref, const express::Base&)
+IFCAPI_DISCOVER_METHOD(file, add_entity, add, const express::base&, int)
+IFCAPI_DISCOVER_METHOD(file, add_type_ref, add_type_ref, const express::base&)
 IFCAPI_DISCOVER_METHOD(file, batch, batch)
 IFCAPI_DISCOVER_METHOD(file, build_inverses, build_inverses)
-IFCAPI_DISCOVER_METHOD(file, build_inverses_, build_inverses_, const express::Base&)
+IFCAPI_DISCOVER_METHOD(file, build_inverses_, build_inverses_, const express::base&)
 IFCAPI_DISCOVER_METHOD(file, bypass_type, bypass_type, const std::string&)
 IFCAPI_DISCOVER_METHOD(file, create_timestamp, create_timestamp)
 IFCAPI_DISCOVER_METHOD(file, fresh_id, fresh_id)
@@ -69,14 +68,14 @@ IFCAPI_DISCOVER_METHOD(file, initialize, initialize, const std::string&, ifcopen
 IFCAPI_DISCOVER_METHOD(file, instance_by_guid, by_guid, const std::string&)
 IFCAPI_DISCOVER_METHOD(file, instance_by_id, by_id, int)
 IFCAPI_DISCOVER_METHOD(file, instances_by_reference, instances_by_reference, int)
-IFCAPI_DISCOVER_METHOD(file, process_deletion_inverse, process_deletion_inverse, const express::Base&)
+IFCAPI_DISCOVER_METHOD(file, process_deletion_inverse, process_deletion_inverse, const express::base&)
 IFCAPI_DISCOVER_METHOD(file, recalculate_id_counter, recalculate_id_counter)
-IFCAPI_DISCOVER_METHOD(file, remove_entity, remove, const express::Base&)
-IFCAPI_DISCOVER_METHOD(file, remove_type_ref, remove_type_ref, const express::Base&)
+IFCAPI_DISCOVER_METHOD(file, remove_entity, remove, const express::base&)
+IFCAPI_DISCOVER_METHOD(file, remove_type_ref, remove_type_ref, const express::base&)
 IFCAPI_DISCOVER_METHOD(file, reset_identity_cache, reset_identity_cache)
 IFCAPI_DISCOVER_METHOD(file, schema, schema)
-IFCAPI_DISCOVER_METHOD(file, traverse, traverse, const express::Base&, int)
-IFCAPI_DISCOVER_METHOD(file, traverse_breadth_first, traverse_breadth_first, const express::Base&, int)
+IFCAPI_DISCOVER_METHOD(file, traverse, traverse, const express::base&, int)
+IFCAPI_DISCOVER_METHOD(file, traverse_breadth_first, traverse_breadth_first, const express::base&, int)
 IFCAPI_DISCOVER_METHOD(file, unbatch, unbatch)
 IFCAPI_DISCOVER_METHOD(instance, declaration, declaration)
 IFCAPI_DISCOVER_METHOD(instance, file, file)
@@ -188,50 +187,59 @@ void turn_on_detailed_logging();
 void turn_off_detailed_logging();
 void set_log_format_json();
 void set_log_format_text();
-std::string get_info_json(const express::Base& instance, bool include_identifier);
+std::string get_info_json(const express::base& instance, bool include_identifier);
 std::string streamer_references(ifcopenshell::instance_streamer<>* streamer);
 std::string streamer_inverses(ifcopenshell::instance_streamer<>* streamer);
 std::string streamer_read_instance_json(ifcopenshell::instance_streamer<>* streamer);
-void unset_instance_argument_value(express::Base& instance, size_t index);
-void set_instance_argument_bool(express::Base& instance, size_t index, bool value);
-void set_instance_argument_int32(express::Base& instance, size_t index, int value);
-void set_instance_argument_double(express::Base& instance, size_t index, double value);
-void set_instance_argument_string(express::Base& instance, size_t index, const std::string& value);
-void set_instance_argument_instance(express::Base& instance, size_t index, express::Base* value);
-void set_instance_argument_instance_list(express::Base& instance, size_t index, std::vector<express::Base>* value);
-void set_instance_argument_int32_list(express::Base& instance, size_t index, const std::vector<int>& value);
-void set_instance_argument_double_list(express::Base& instance, size_t index, const std::vector<double>& value);
-void set_instance_argument_string_list(express::Base& instance, size_t index, const std::vector<std::string>& value);
-void set_instance_argument_int32_list_list(express::Base& instance, size_t index, const std::vector<std::vector<int>>& value);
-void set_instance_argument_double_list_list(express::Base& instance, size_t index, const std::vector<std::vector<double>>& value);
-void set_instance_argument_logical(express::Base& instance, size_t index, int value);
+void unset_instance_argument_value(express::base& instance, size_t index);
+void set_instance_argument_bool(express::base& instance, size_t index, bool value);
+void set_instance_argument_int32(express::base& instance, size_t index, int value);
+void set_instance_argument_double(express::base& instance, size_t index, double value);
+void set_instance_argument_string(express::base& instance, size_t index, const std::string& value);
+void set_instance_argument_instance(express::base& instance, size_t index, express::base* value);
+void set_instance_argument_instance_list(express::base& instance, size_t index, std::vector<express::base>* value);
+void set_instance_argument_int32_list(express::base& instance, size_t index, const std::vector<int>& value);
+void set_instance_argument_double_list(express::base& instance, size_t index, const std::vector<double>& value);
+void set_instance_argument_string_list(express::base& instance, size_t index, const std::vector<std::string>& value);
+void set_instance_argument_int32_list_list(express::base& instance, size_t index, const std::vector<std::vector<int>>& value);
+void set_instance_argument_double_list_list(express::base& instance, size_t index, const std::vector<std::vector<double>>& value);
+void set_instance_argument_logical(express::base& instance, size_t index, int value);
 void set_instance_argument_aggregate_of_aggregate_of_entity_instance(
-    express::Base& instance,
+    express::base& instance,
     size_t index,
     const std::vector<std::vector<int>>& value
 );
 void set_instance_argument_enumeration(
-    express::Base& instance,
+    express::base& instance,
     size_t index,
     const ifcopenshell::enumeration_type* enumeration,
     size_t enumeration_index
 );
-bool set_instance_argument_enumeration_by_name(express::Base& instance, size_t index, const std::string& value);
-void set_instance_attribute_from_attribute_value(express::Base& instance, size_t index, const attribute_value& value);
-void unset_instance_argument(express::Base& instance, size_t index);
-ifcopenshell::argument_type instance_attribute_type(const express::Base& instance, unsigned index);
+bool set_instance_argument_enumeration_by_name(express::base& instance, size_t index, const std::string& value);
+void set_instance_attribute_from_attribute_value(express::base& instance, size_t index, const ifcopenshell::attribute_value& value);
+void unset_instance_argument(express::base& instance, size_t index);
+ifcopenshell::argument_type instance_attribute_type(const express::base& instance, unsigned index);
 
 } // namespace ifcopenshell::capi
 
 namespace ifcparse::bindings {
 
-inline std::vector<express::Base> to_base_vector(const std::vector<express::Entity>& entities) {
-    std::vector<express::Base> result;
+inline std::vector<express::base> to_base_vector(const std::vector<express::entity>& entities) {
+    std::vector<express::base> result;
     result.reserve(entities.size());
     for (const auto& entity : entities) {
         result.push_back(entity);
     }
     return result;
+}
+
+inline std::vector<express::base> get_inverses_by_declaration(
+    ifcopenshell::file& self,
+    int instance_id,
+    const ifcopenshell::declaration* declaration,
+    int attribute_index
+) {
+    return to_base_vector(self.get_inverse(instance_id, declaration, attribute_index));
 }
 
 inline std::string argument_type_to_string(int type) {
@@ -259,7 +267,7 @@ inline int make_aggregate(int element_type) {
 }
 
 inline void register_schema(ifcopenshell::schema_definition* schema) {
-    ifcopenshell::register_schema(schema);
+    ifcopenshell::register_schema(*schema);
 }
 
 inline void sanitate_material_name(std::string material_name) {
@@ -294,11 +302,11 @@ inline double si_prefix_to_value(const std::string& prefix) {
     return ifcopenshell::si_prefix_to_value(prefix);
 }
 
-inline std::vector<express::Base> traverse(const express::Base& instance, int max_depth) {
+inline std::vector<express::base> traverse(const express::base& instance, int max_depth) {
     return ifcopenshell::traverse(instance, max_depth);
 }
 
-inline std::vector<express::Base> traverse_breadth_first(const express::Base& instance, int max_depth) {
+inline std::vector<express::base> traverse_breadth_first(const express::base& instance, int max_depth) {
     return ifcopenshell::traverse_breadth_first(instance, max_depth);
 }
 
@@ -384,18 +392,18 @@ inline IFCAPI_STATIC const char* version() {
     return IFCOPENSHELL_VERSION;
 }
 
-inline double get_si_equivalent(const express::Base& named_unit) {
+inline double get_si_equivalent(const express::base& named_unit) {
     if (!named_unit.declaration().is("IfcNamedUnit")) {
         throw ifcopenshell::exception("Instance is not an IfcNamedUnit.");
     }
     double scale = 1.0;
-    express::Base si_unit;
+    express::base si_unit;
     if (named_unit.declaration().is("IfcConversionBasedUnit")) {
-        auto factor = static_cast<express::Base>(named_unit.get_attribute_value(
+        auto factor = static_cast<express::base>(named_unit.get_attribute_value(
             named_unit.declaration().as_entity()->attribute_index("ConversionFactor")));
-        auto value_component = static_cast<express::Base>(factor.get_attribute_value(
+        auto value_component = static_cast<express::base>(factor.get_attribute_value(
             factor.declaration().as_entity()->attribute_index("ValueComponent")));
-        auto unit_component = static_cast<express::Base>(factor.get_attribute_value(
+        auto unit_component = static_cast<express::base>(factor.get_attribute_value(
             factor.declaration().as_entity()->attribute_index("UnitComponent")));
         scale = static_cast<double>(value_component.get_attribute_value(0));
         if (unit_component.declaration().is("IfcSIUnit")) {
@@ -405,7 +413,7 @@ inline double get_si_equivalent(const express::Base& named_unit) {
         si_unit = named_unit;
     }
     if (si_unit) {
-        attribute_value prefix = si_unit.get_attribute_value(
+        ifcopenshell::attribute_value prefix = si_unit.get_attribute_value(
             si_unit.declaration().as_entity()->attribute_index("Prefix"));
         if (!prefix.isNull()) {
             scale *= ifcopenshell::si_prefix_to_value(static_cast<std::string>(prefix));
@@ -444,7 +452,7 @@ inline void set_log_format_text() {
     ifcopenshell::capi::set_log_format_text();
 }
 
-inline std::string get_info_json(const express::Base& instance, bool include_identifier) {
+inline std::string get_info_json(const express::base& instance, bool include_identifier) {
     return ifcopenshell::capi::get_info_json(instance, include_identifier);
 }
 
@@ -468,7 +476,7 @@ inline int storage_mode(ifcopenshell::file& self) {
     }, self.storage_);
 }
 
-inline express::Base create_entity_by_name(ifcopenshell::file& self, const std::string& type_name) {
+inline express::base create_entity_by_name(ifcopenshell::file& self, const std::string& type_name) {
     const auto* schema = self.schema();
     const auto* decl = schema->declaration_by_name(type_name);
     if (!decl || (!decl->as_entity() && !decl->as_type_declaration() && !decl->as_enumeration_type())) {
@@ -481,7 +489,7 @@ inline express::Base create_entity_by_name(ifcopenshell::file& self, const std::
     return entity;
 }
 
-inline express::Base create_entity_by_name_with_id(
+inline express::base create_entity_by_name_with_id(
     ifcopenshell::file& self,
     const std::string& type_name,
     std::uint32_t id
@@ -498,9 +506,9 @@ inline express::Base create_entity_by_name_with_id(
     return entity;
 }
 
-inline express::Base add_entity(
+inline express::base add_entity(
     ifcopenshell::file& self,
-    const express::Base& instance,
+    const express::base& instance,
     std::uint32_t id
 ) {
     auto added = self.add_entity(instance, id == 0 ? -1 : static_cast<int>(id));
@@ -517,8 +525,8 @@ inline std::string schema_name(ifcopenshell::file& self) {
     return self.schema()->name();
 }
 
-inline int get_total_inverses(ifcopenshell::file& self, const express::Base& instance) {
-    auto entity = instance.as<express::Entity>();
+inline int get_total_inverses(ifcopenshell::file& self, const express::base& instance) {
+    auto entity = instance.as<express::entity>();
     if (entity) {
         return self.get_total_inverses(entity.id());
     }
@@ -554,8 +562,8 @@ inline std::size_t file_pointer(ifcopenshell::file& self) {
     return reinterpret_cast<std::size_t>(&self);
 }
 
-inline std::vector<int> get_inverse_indices(ifcopenshell::file& self, const express::Base& instance) {
-    auto entity = instance.as<express::Entity>();
+inline std::vector<int> get_inverse_indices(ifcopenshell::file& self, const express::base& instance) {
+    auto entity = instance.as<express::entity>();
     if (entity) {
         return self.get_inverse_indices_by_id(entity.id());
     }
@@ -588,6 +596,7 @@ inline std::vector<uint8_t> key_value_store_query(ifcopenshell::file& self, cons
     }
     return std::vector<uint8_t>(value.begin(), value.end());
 #else
+    (void)key;
     return std::vector<uint8_t>();
 #endif
 }
@@ -610,6 +619,8 @@ inline std::vector<std::string> key_value_store_iter(ifcopenshell::file& self, c
     for (iterator->Seek(prefix); iterator->Valid() && iterator->key().starts_with(prefix_slice); iterator->Next()) {
         values.push_back(iterator->key().ToString());
     }
+#else
+    (void)prefix;
 #endif
     return values;
 }
@@ -630,11 +641,11 @@ inline std::string read_instance_json(ifcopenshell::instance_streamer<>* self) {
     return ifcopenshell::capi::streamer_read_instance_json(self);
 }
 
-inline std::size_t file_pointer(const express::Base& self) {
+inline std::size_t file_pointer(const express::base& self) {
     return reinterpret_cast<std::size_t>(self.file());
 }
 
-inline unsigned int get_argument_index(const express::Base& self, const std::string& name) {
+inline unsigned int get_argument_index(const express::base& self, const std::string& name) {
     if (self.declaration().as_entity()) {
         const auto index = self.declaration().as_entity()->attribute_index(name);
         if (index >= 0) {
@@ -646,7 +657,7 @@ inline unsigned int get_argument_index(const express::Base& self, const std::str
     throw ifcopenshell::exception("Attribute '" + name + "' not found on entity named " + self.declaration().name());
 }
 
-inline std::string get_argument_name(const express::Base& self, unsigned int index) {
+inline std::string get_argument_name(const express::base& self, unsigned int index) {
     if (self.declaration().as_entity()) {
         return self.declaration().as_entity()->attribute_by_index(index)->name();
     }
@@ -656,7 +667,7 @@ inline std::string get_argument_name(const express::Base& self, unsigned int ind
     throw ifcopenshell::exception(std::to_string(index) + " out of bounds on " + self.declaration().name());
 }
 
-inline int get_attribute_category(const express::Base& self, const std::string& name) {
+inline int get_attribute_category(const express::base& self, const std::string& name) {
     if (!self.declaration().as_entity()) {
         return name == "wrappedValue" ? 1 : 0;
     }
@@ -673,40 +684,40 @@ inline int get_attribute_category(const express::Base& self, const std::string& 
     return 0;
 }
 
-inline void unset_argument(express::Base& self, std::size_t index) {
+inline void unset_argument(express::base& self, std::size_t index) {
     ifcopenshell::capi::unset_instance_argument_value(self, index);
 }
 
-inline void set_argument_bool(express::Base& self, std::size_t index, bool value) {
+inline void set_argument_bool(express::base& self, std::size_t index, bool value) {
     ifcopenshell::capi::set_instance_argument_bool(self, index, value);
 }
 
-inline void set_argument_int32(express::Base& self, std::size_t index, int value) {
+inline void set_argument_int32(express::base& self, std::size_t index, int value) {
     ifcopenshell::capi::set_instance_argument_int32(self, index, value);
 }
 
-inline void set_argument_double(express::Base& self, std::size_t index, double value) {
+inline void set_argument_double(express::base& self, std::size_t index, double value) {
     ifcopenshell::capi::set_instance_argument_double(self, index, value);
 }
 
-inline void set_argument_string(express::Base& self, std::size_t index, const std::string& value) {
+inline void set_argument_string(express::base& self, std::size_t index, const std::string& value) {
     ifcopenshell::capi::set_instance_argument_string(self, index, value);
 }
 
-inline void set_argument_instance(express::Base& self, std::size_t index, express::Base* value) {
+inline void set_argument_instance(express::base& self, std::size_t index, express::base* value) {
     ifcopenshell::capi::set_instance_argument_instance(self, index, value);
 }
 
 inline void set_argument_instance_list(
-    express::Base& self,
+    express::base& self,
     std::size_t index,
-    std::vector<express::Base>* value
+    std::vector<express::base>* value
 ) {
     ifcopenshell::capi::set_instance_argument_instance_list(self, index, value);
 }
 
 inline void set_argument_int32_list(
-    express::Base& self,
+    express::base& self,
     std::size_t index,
     const std::vector<int>& value
 ) {
@@ -714,7 +725,7 @@ inline void set_argument_int32_list(
 }
 
 inline void set_argument_double_list(
-    express::Base& self,
+    express::base& self,
     std::size_t index,
     const std::vector<double>& value
 ) {
@@ -722,7 +733,7 @@ inline void set_argument_double_list(
 }
 
 inline void set_argument_string_list(
-    express::Base& self,
+    express::base& self,
     std::size_t index,
     const std::vector<std::string>& value
 ) {
@@ -730,7 +741,7 @@ inline void set_argument_string_list(
 }
 
 inline void set_argument_int32_list_list(
-    express::Base& self,
+    express::base& self,
     std::size_t index,
     const std::vector<std::vector<int>>& value
 ) {
@@ -738,19 +749,19 @@ inline void set_argument_int32_list_list(
 }
 
 inline void set_argument_double_list_list(
-    express::Base& self,
+    express::base& self,
     std::size_t index,
     const std::vector<std::vector<double>>& value
 ) {
     ifcopenshell::capi::set_instance_argument_double_list_list(self, index, value);
 }
 
-inline void set_argument_logical(express::Base& self, std::size_t index, int value) {
+inline void set_argument_logical(express::base& self, std::size_t index, int value) {
     ifcopenshell::capi::set_instance_argument_logical(self, index, value);
 }
 
 inline void set_argument_as_aggregate_of_aggregate_of_entity_instance(
-    express::Base& self,
+    express::base& self,
     std::size_t index,
     const std::vector<std::vector<int>>& value
 ) {
@@ -758,7 +769,7 @@ inline void set_argument_as_aggregate_of_aggregate_of_entity_instance(
 }
 
 inline void set_argument_enumeration(
-    express::Base& self,
+    express::base& self,
     std::size_t index,
     const ifcopenshell::enumeration_type* enumeration,
     std::size_t enumeration_index
@@ -767,17 +778,17 @@ inline void set_argument_enumeration(
 }
 
 inline bool set_argument_enumeration_by_name(
-    express::Base& self,
+    express::base& self,
     std::size_t index,
     const std::string& value
 ) {
     return ifcopenshell::capi::set_instance_argument_enumeration_by_name(self, index, value);
 }
 
-inline std::vector<express::Base> instance_list_create_from_handles(
-    const std::vector<express::Base>& instances
+inline std::vector<express::base> instance_list_create_from_handles(
+    const std::vector<express::base>& instances
 ) {
-    std::vector<express::Base> agg;
+    std::vector<express::base> agg;
     agg.reserve(instances.size());
     for (const auto& inst : instances) {
         if (inst) {
@@ -787,11 +798,11 @@ inline std::vector<express::Base> instance_list_create_from_handles(
     return agg;
 }
 
-inline std::vector<express::Base> get_inverse(
+inline std::vector<express::base> get_inverse(
     ifcopenshell::file* self,
-    express::Base* instance
+    express::base* instance
 ) {
-    auto entity = instance->as<express::Entity>();
+    auto entity = instance->as<express::entity>();
     if (entity) {
         return to_base_vector(self->get_inverse(entity.id(), 0, -1));
     }
@@ -802,22 +813,22 @@ inline ifcopenshell::spf_header* header(ifcopenshell::file* self) {
     return &self->header();
 }
 
-inline std::optional<express::Base> header_file_description(ifcopenshell::file* self) {
+inline std::optional<express::base> header_file_description(ifcopenshell::file* self) {
     return self->header().file_description();
 }
 
-inline std::optional<express::Base> header_file_name(ifcopenshell::file* self) {
+inline std::optional<express::base> header_file_name(ifcopenshell::file* self) {
     return self->header().file_name();
 }
 
-inline std::optional<express::Base> header_file_schema(ifcopenshell::file* self) {
+inline std::optional<express::base> header_file_schema(ifcopenshell::file* self) {
     return self->header().file_schema();
 }
 
 inline void set_attribute_value(
-    express::Base& self,
+    express::base& self,
     const std::string& name,
-    attribute_value& value
+    ifcopenshell::attribute_value& value
 ) {
     if (!self.declaration().as_entity()) {
         if (name != "wrappedValue") {
@@ -833,7 +844,7 @@ inline void set_attribute_value(
     ifcopenshell::capi::set_instance_attribute_from_attribute_value(self, static_cast<size_t>(index), value);
 }
 
-inline void unset_attribute_value(express::Base& self, const std::string& name) {
+inline void unset_attribute_value(express::base& self, const std::string& name) {
     if (!self.declaration().as_entity()) {
         if (name != "wrappedValue") {
             throw ifcopenshell::exception(name + " not found on " + self.declaration().name());
@@ -848,41 +859,41 @@ inline void unset_attribute_value(express::Base& self, const std::string& name) 
     ifcopenshell::capi::unset_instance_argument(self, static_cast<size_t>(index));
 }
 
-inline std::vector<express::Base> get_inverse(
-    express::Base& self,
+inline std::vector<express::base> get_inverse(
+    express::base& self,
     const std::string& name
 ) {
     if (self.declaration().as_entity()) {
-        return to_base_vector(self.as<express::Entity>().get_inverse(name));
+        return to_base_vector(self.as<express::entity>().get_inverse(name));
     }
     throw ifcopenshell::exception(name + " not found on " + self.declaration().name());
 }
 
-inline attribute_value get_attribute_value(
-    express::Base& self,
+inline ifcopenshell::attribute_value get_attribute_value(
+    express::base& self,
     std::size_t index
 ) {
     return self.get_attribute_value(index);
 }
 
-inline attribute_value get_argument_by_name(
-    express::Base& self,
+inline ifcopenshell::attribute_value get_argument_by_name(
+    express::base& self,
     const std::string& name
 ) {
     return self.get_attribute_value(get_argument_index(self, name));
 }
 
-inline IFCAPI_STATIC const char* get_argument_type(express::Base& self, unsigned int index) {
+inline IFCAPI_STATIC const char* get_argument_type(express::base& self, unsigned int index) {
     return ifcopenshell::argument_type_to_string(ifcopenshell::capi::instance_attribute_type(self, index));
 }
 
-inline std::string to_string(express::Base& self, bool valid_spf) {
+inline std::string to_string(express::base& self, bool valid_spf) {
     std::ostringstream oss;
     self.to_string(oss, valid_spf);
     return oss.str();
 }
 
-inline std::string class_name(express::Base& self, bool with_schema) {
+inline std::string class_name(express::base& self, bool with_schema) {
     auto name = self.declaration().name();
     if (with_schema) {
         name = self.declaration().schema()->name() + "." + name;
@@ -890,11 +901,11 @@ inline std::string class_name(express::Base& self, bool with_schema) {
     return name;
 }
 
-inline bool is_a(express::Base& self, const std::string& declaration_name) {
+inline bool is_a(express::base& self, const std::string& declaration_name) {
     return self.declaration().is(declaration_name);
 }
 
-inline std::vector<std::string> get_attribute_names(express::Base& self) {
+inline std::vector<std::string> get_attribute_names(express::base& self) {
     if (!self.declaration().as_entity()) {
         return std::vector<std::string>(1, "wrappedValue");
     }
@@ -907,7 +918,7 @@ inline std::vector<std::string> get_attribute_names(express::Base& self) {
     return names;
 }
 
-inline std::vector<std::string> get_inverse_attribute_names(express::Base& self) {
+inline std::vector<std::string> get_inverse_attribute_names(express::base& self) {
     if (!self.declaration().as_entity()) {
         return std::vector<std::string>();
     }
@@ -920,38 +931,38 @@ inline std::vector<std::string> get_inverse_attribute_names(express::Base& self)
     return names;
 }
 
-inline std::vector<express::Base> get_inverse_attribute_by_name(
-    express::Base& self,
+inline std::vector<express::base> get_inverse_attribute_by_name(
+    express::base& self,
     const std::string& name
 ) {
-    auto entity = self.as<express::Entity>();
+    auto entity = self.as<express::entity>();
     if (entity) {
         return to_base_vector(entity.get_inverse(name));
     }
     throw ifcopenshell::exception("Only entities with ids are supported for inverse attributes.");
 }
 
-inline bool is_null(attribute_value& self) {
+inline bool is_null(ifcopenshell::attribute_value& self) {
     return self.isNull();
 }
 
-inline IFCAPI_STATIC const char* type(attribute_value& self) {
+inline IFCAPI_STATIC const char* type(ifcopenshell::attribute_value& self) {
     return ifcopenshell::argument_type_to_string(self.type());
 }
 
-inline std::size_t size(attribute_value& self) {
+inline std::size_t size(ifcopenshell::attribute_value& self) {
     return self.size();
 }
 
-inline int as_int32(attribute_value& self) {
+inline int as_int32(ifcopenshell::attribute_value& self) {
     return static_cast<int>(self);
 }
 
-inline bool as_bool(attribute_value& self) {
+inline bool as_bool(ifcopenshell::attribute_value& self) {
     return static_cast<bool>(self);
 }
 
-inline int as_logical(attribute_value& self) {
+inline int as_logical(ifcopenshell::attribute_value& self) {
     const boost::logic::tribool value = self;
     if (boost::logic::indeterminate(value)) {
         return -1;
@@ -959,27 +970,34 @@ inline int as_logical(attribute_value& self) {
     return value ? 1 : 0;
 }
 
-inline double as_double(attribute_value& self) {
+inline double as_double(ifcopenshell::attribute_value& self) {
     return static_cast<double>(self);
 }
 
-inline std::vector<int> as_int32_list(attribute_value& self) {
-    return static_cast<std::vector<int>>(self);
+inline std::vector<int> as_int32_list(ifcopenshell::attribute_value& self) {
+    const auto values = static_cast<std::vector<int64_t>>(self);
+    return std::vector<int>(values.begin(), values.end());
 }
 
-inline std::vector<double> as_double_list(attribute_value& self) {
+inline std::vector<double> as_double_list(ifcopenshell::attribute_value& self) {
     return static_cast<std::vector<double>>(self);
 }
 
-inline std::vector<std::vector<int>> as_int32_list_list(attribute_value& self) {
-    return static_cast<std::vector<std::vector<int>>>(self);
+inline std::vector<std::vector<int>> as_int32_list_list(ifcopenshell::attribute_value& self) {
+    const auto values = static_cast<std::vector<std::vector<int64_t>>>(self);
+    std::vector<std::vector<int>> result;
+    result.reserve(values.size());
+    for (const auto& row : values) {
+        result.emplace_back(row.begin(), row.end());
+    }
+    return result;
 }
 
-inline std::vector<std::vector<int>> as_instance_id_list_list(attribute_value& self) {
+inline std::vector<std::vector<int>> as_instance_id_list_list(ifcopenshell::attribute_value& self) {
     if (self.isNull() || self.type() != ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
         throw ifcopenshell::exception("Attribute is not an aggregate of aggregate of entity instance");
     }
-    auto aggregate = static_cast<std::vector<std::vector<express::Base>>>(self);
+    auto aggregate = static_cast<std::vector<std::vector<express::base>>>(self);
     std::vector<std::vector<int>> result;
     result.reserve(aggregate.size());
     for (const auto& group : aggregate) {
@@ -996,38 +1014,39 @@ inline std::vector<std::vector<int>> as_instance_id_list_list(attribute_value& s
     return result;
 }
 
-inline std::vector<std::vector<double>> as_double_list_list(attribute_value& self) {
+inline std::vector<std::vector<double>> as_double_list_list(ifcopenshell::attribute_value& self) {
     return static_cast<std::vector<std::vector<double>>>(self);
 }
 
-inline std::vector<std::string> as_string_list(attribute_value& self) {
+inline std::vector<std::string> as_string_list(ifcopenshell::attribute_value& self) {
     return static_cast<std::vector<std::string>>(self);
 }
 
-inline std::string as_string(attribute_value& self) {
+inline std::string as_string(ifcopenshell::attribute_value& self) {
     return static_cast<std::string>(self);
 }
 
-inline std::optional<express::Base> as_instance(attribute_value& self) {
-    return static_cast<express::Base>(self);
+inline std::optional<express::base> as_instance(ifcopenshell::attribute_value& self) {
+    return static_cast<express::base>(self);
 }
 
-inline std::vector<express::Base> as_instance_list(
-    attribute_value& self
+inline std::vector<express::base> as_instance_list(
+    ifcopenshell::attribute_value& self
 ) {
-    return static_cast<std::vector<express::Base>>(self);
+    return static_cast<std::vector<express::base>>(self);
 }
 
-inline std::string as_enumeration_value(attribute_value& self) {
-    return std::string(static_cast<enumeration_reference>(self).value());
+inline std::string as_enumeration_value(ifcopenshell::attribute_value& self) {
+    return std::string(static_cast<ifcopenshell::enumeration_reference>(self).value());
 }
 
-inline std::size_t as_enumeration_index(attribute_value& self) {
-    return static_cast<enumeration_reference>(self).index();
+inline std::size_t as_enumeration_index(ifcopenshell::attribute_value& self) {
+    return static_cast<ifcopenshell::enumeration_reference>(self).index();
 }
 
-inline std::optional<ifcopenshell::enumeration_type*> as_enumeration_type(attribute_value& self) {
-    return const_cast<ifcopenshell::enumeration_type*>(static_cast<enumeration_reference>(self).enumeration());
+inline std::optional<ifcopenshell::enumeration_type*> as_enumeration_type(ifcopenshell::attribute_value& self) {
+    return const_cast<ifcopenshell::enumeration_type*>(
+        static_cast<ifcopenshell::enumeration_reference>(self).enumeration());
 }
 
 inline std::string write(ifcopenshell::spf_header* self) {
@@ -1057,6 +1076,7 @@ inline std::vector<std::string> argument_types(ifcopenshell::type_declaration* s
 }
 
 inline std::vector<std::string> argument_types(ifcopenshell::enumeration_type* self) {
+    (void)self;
     return std::vector<std::string>{ifcopenshell::argument_type_to_string(ifcopenshell::Argument_STRING)};
 }
 
@@ -1163,12 +1183,12 @@ inline IFCAPI_STATIC const char* kind(ifcopenshell::aggregation_type* self) {
     throw std::runtime_error("Unknown aggregation type.");
 }
 
-inline std::size_t size(std::vector<express::Base>& self) {
+inline std::size_t size(std::vector<express::base>& self) {
     return self.size();
 }
 
-inline std::optional<express::Base> get(
-    std::vector<express::Base>& self,
+inline std::optional<express::base> get(
+    std::vector<express::base>& self,
     std::size_t index
 ) {
     if (index >= self.size()) {
