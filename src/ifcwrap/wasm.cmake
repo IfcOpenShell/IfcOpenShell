@@ -23,8 +23,8 @@ function(ifcopenshell_configure_wasm_main TARGET ENVIRONMENT OUTPUT_NAME)
     target_link_libraries(
         ${TARGET}
         PRIVATE
-            ifcopenshell_capi
             "-Wl,--whole-archive"
+            ifcopenshell_capi
             IfcParse
             "-Wl,--no-whole-archive"
             plugin
@@ -46,6 +46,7 @@ function(ifcopenshell_configure_wasm_main TARGET ENVIRONMENT OUTPUT_NAME)
             "SHELL:-sMODULARIZE=1"
             "SHELL:-sEXPORT_ES6=1"
             "SHELL:-sEXPORT_NAME=initIfcOpenShellWasmModule"
+            "SHELL:-sEXPORT_ALL=1"
             "SHELL:-sENVIRONMENT=${ENVIRONMENT}"
             "SHELL:--js-library=${IFCOPENSHELL_WASM_MATH_IMPORTS_JS}"
             "SHELL:-sEXPORTED_RUNTIME_METHODS=[\"stringToUTF8\",\"UTF8ToString\",\"lengthBytesUTF8\",\"getValue\",\"setValue\",\"HEAP32\",\"HEAPU32\",\"loadDynamicLibrary\",\"FS\"]"
