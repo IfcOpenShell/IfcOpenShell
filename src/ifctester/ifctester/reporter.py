@@ -19,11 +19,13 @@
 from __future__ import annotations
 
 import datetime
+import json
 import math
 import os
 import re
+import sqlite3
 import sys
-from typing import Literal, Optional, TypedDict, Union
+from typing import Iterable, Iterator, Literal, Optional, TypedDict, Union
 
 import ifcopenshell
 import ifcopenshell.util.element
@@ -144,6 +146,70 @@ ResultsEntity = TypedDict(
         "tag": Union[str, None],
     },
 )
+
+
+def get_requirement_label_value(requirement: Facet) -> tuple[Optional[str], str]:
+    """Derive a human readable label and value for a requirement facet.
+
+    Facet attributes may hold a `Restriction` rather than a plain string, so
+    both are coerced to text. Only `PartOf.relation` may legitimately be None.
+    """
+    facet_type = type(requirement).__name__
+    value = ""
+    if facet_type == "Entity":
+        if requirement.predefinedType:
+            label = "IFC Class / Predefined Type"
+            value = f"{requirement.name}.{requirement.predefinedType}"
+        else:
+            label = "IFC Class"
+            value = requirement.name
+    elif facet_type == "Attribute":
+        label = requirement.name
+        if requirement.value:
+            value = requirement.value
+    elif facet_type == "Classification":
+        if requirement.system and requirement.value:
+            label = "System / Reference"
+            value = f"{requirement.system} / {requirement.value}"
+        elif requirement.system:
+            label = "System"
+            value = requirement.system
+        elif requirement.value:
+            label = "Reference"
+            value = requirement.value
+        else:
+            assert False, requirement
+    elif facet_type == "PartOf":
+        label = requirement.relation
+        if requirement.predefinedType:
+            value = f"{requirement.name}.{requirement.predefinedType}"
+        else:
+            value = requirement.name
+    elif facet_type == "Property":
+        label = f"{requirement.propertySet}.{requirement.baseName}"
+        if requirement.value:
+            value = requirement.value
+    elif facet_type == "Material":
+        label = "Name / Category"
+        if requirement.value:
+            value = requirement.value
+    else:
+        assert False, facet_type
+    return None if label is None else str(label), str(value)
+
+
+def get_cardinality(specification: Specification) -> str:
+    if specification.minOccurs == 1 and specification.maxOccurs == "unbounded":
+        return "required"
+    elif specification.minOccurs == 0 and specification.maxOccurs == "unbounded":
+        return "optional"
+    elif specification.minOccurs == 0 and specification.maxOccurs == 0:
+        return "prohibited"
+    elif specification.minOccurs >= 1:
+        # Any minimum occurrence >= 1 means the specification is required
+        return "required"
+    # minOccurs == 0 with any other maxOccurs value means optional
+    return "optional"
 
 
 class Console(Reporter):
@@ -321,46 +387,7 @@ class Json(Reporter):
             total_checks += total_applicable
             total_checks_pass += total_pass
             facet_type = type(requirement).__name__
-            value = ""
-            if facet_type == "Entity":
-                if requirement.predefinedType:
-                    label = "IFC Class / Predefined Type"
-                    value = f"{requirement.name}.{requirement.predefinedType}"
-                else:
-                    label = "IFC Class"
-                    value = requirement.name
-            elif facet_type == "Attribute":
-                label = requirement.name
-                if requirement.value:
-                    value = requirement.value
-            elif facet_type == "Classification":
-                if requirement.system and requirement.value:
-                    label = "System / Reference"
-                    value = f"{requirement.system} / {requirement.value}"
-                elif requirement.system:
-                    label = "System"
-                    value = requirement.system
-                elif requirement.value:
-                    label = "Reference"
-                    value = requirement.value
-                else:
-                    assert False, requirement
-            elif facet_type == "PartOf":
-                label = requirement.relation
-                if requirement.predefinedType:
-                    value = f"{requirement.name}.{requirement.predefinedType}"
-                else:
-                    value = requirement.name
-            elif facet_type == "Property":
-                label = f"{requirement.propertySet}.{requirement.baseName}"
-                if requirement.value:
-                    value = requirement.value
-            elif facet_type == "Material":
-                label = "Name / Category"
-                if requirement.value:
-                    value = requirement.value
-            else:
-                assert False, facet_type
+            label, value = get_requirement_label_value(requirement)
             requirements.append(
                 ResultsRequirement(
                     facet_type=facet_type,
@@ -383,18 +410,7 @@ class Json(Reporter):
         )
         percent_checks_pass = math.floor((total_checks_pass / total_checks) * 100) if total_checks else "N/A"
 
-        if specification.minOccurs == 1 and specification.maxOccurs == "unbounded":
-            cardinality = "required"
-        elif specification.minOccurs == 0 and specification.maxOccurs == "unbounded":
-            cardinality = "optional"
-        elif specification.minOccurs == 0 and specification.maxOccurs == 0:
-            cardinality = "prohibited"
-        elif specification.minOccurs >= 1:
-            # Any minimum occurrence >= 1 means the specification is required
-            cardinality = "required"
-        else:
-            # minOccurs == 0 with any other maxOccurs value means optional
-            cardinality = "optional"
+        cardinality = get_cardinality(specification)
 
         return ResultsSpecification(
             name=specification.name,
@@ -473,13 +489,9 @@ class Json(Reporter):
         ]
 
     def to_string(self) -> str:
-        import json
-
         return json.dumps(self.results, default=self.encode)
 
     def to_file(self, filepath: str) -> None:
-        import json
-
         with open(filepath, "w", encoding="utf-8") as outfile:
             return json.dump(self.results, outfile, ensure_ascii=False, default=self.encode)
 
@@ -870,3 +882,296 @@ class Bcf(Json):
                     if element.is_a("IfcElement"):
                         topic.add_viewpoint(element)
         bcfxml.save_project(filepath)
+
+
+class Sqlite(Reporter):
+    """Stores audit results in a normalised SQLite database.
+
+    Where `Json` repeats every entity's attributes once per specification and
+    once more per requirement, entities are stored once in the `entity` table
+    and referenced by ID everywhere else. Only failures are stored: a passing
+    check is any applicable entity without a failure row, which the `passed`
+    view derives on demand.
+
+    This keeps reports for large models orders of magnitude smaller, and lets
+    consumers page through results with a query instead of parsing an entire
+    document. Note that `report` is a no-op: rows are written during `to_file`
+    so that no intermediate result tree is ever built.
+    """
+
+    SCHEMA_VERSION = 1
+
+    SCHEMA = """
+        CREATE TABLE meta (
+            key TEXT PRIMARY KEY,
+            value TEXT  -- All values are stored as text
+        );
+
+        CREATE TABLE entity (
+            id INTEGER PRIMARY KEY,  -- The IFC STEP ID
+            global_id TEXT,
+            class TEXT,
+            predefined_type TEXT,
+            name TEXT,
+            description TEXT,
+            tag TEXT,
+            type_id INTEGER REFERENCES entity(id)
+        );
+
+        CREATE TABLE specification (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            description TEXT,
+            instructions TEXT,
+            cardinality TEXT,
+            applicability TEXT,  -- One human readable clause per line
+            status INTEGER,  -- 1 pass, 0 fail, NULL untested
+            is_ifc_version INTEGER,
+            is_skipped INTEGER,
+            total_applicable INTEGER,
+            total_applicable_pass INTEGER,
+            total_checks INTEGER,
+            total_checks_pass INTEGER
+        );
+
+        CREATE TABLE requirement (
+            id INTEGER PRIMARY KEY,
+            specification_id INTEGER REFERENCES specification(id),
+            facet_type TEXT,
+            label TEXT,
+            value TEXT,
+            description TEXT,
+            instructions TEXT,
+            metadata TEXT,  -- The facet as JSON
+            status INTEGER,
+            total_applicable INTEGER,
+            total_pass INTEGER,
+            total_fail INTEGER
+        );
+
+        -- Failure reasons are interned, as the same reason typically applies
+        -- to thousands of entities.
+        CREATE TABLE reason (
+            id INTEGER PRIMARY KEY,
+            text TEXT
+        );
+
+        CREATE TABLE applicability (
+            specification_id INTEGER REFERENCES specification(id),
+            entity_id INTEGER REFERENCES entity(id)
+        );
+
+        CREATE TABLE failure (
+            requirement_id INTEGER REFERENCES requirement(id),
+            entity_id INTEGER REFERENCES entity(id),
+            reason_id INTEGER REFERENCES reason(id)
+        );
+
+        -- Passes are derived, not stored: an applicable entity with no failure.
+        CREATE VIEW passed AS
+        SELECT r.id AS requirement_id, a.entity_id AS entity_id
+        FROM requirement r
+        JOIN applicability a ON a.specification_id = r.specification_id
+        LEFT JOIN failure f ON f.requirement_id = r.id AND f.entity_id = a.entity_id
+        WHERE f.entity_id IS NULL;
+    """
+
+    # Created after the bulk inserts, as maintaining them during is slower.
+    INDEXES = """
+        CREATE INDEX idx_requirement_specification ON requirement(specification_id);
+        CREATE INDEX idx_applicability_specification ON applicability(specification_id);
+        CREATE INDEX idx_applicability_entity ON applicability(entity_id);
+        CREATE INDEX idx_failure_requirement ON failure(requirement_id);
+        CREATE INDEX idx_failure_entity ON failure(entity_id);
+    """
+
+    def __init__(self, ids: Ids):
+        super().__init__(ids)
+        self.reasons: dict[str, int] = {}
+        self.entity_ids: set[int] = set()
+
+    def report(self) -> None:
+        """Results are written directly to the database in `to_file`, so that
+        no intermediate result tree is materialised in memory."""
+
+    def to_string(self) -> str:
+        raise NotImplementedError("The Sqlite reporter writes a database, so an output filepath is required")
+
+    def to_file(self, filepath: str) -> None:
+        self.reasons.clear()
+        self.entity_ids.clear()
+
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+        db = sqlite3.connect(filepath)
+        try:
+            db.executescript(self.SCHEMA)
+            requirement_id = 0
+            for specification_id, specification in enumerate(self.ids.specifications):
+                requirement_id = self.write_specification(db, specification, specification_id, requirement_id)
+                # Commit per specification so that the journal stays bounded.
+                db.commit()
+            db.executemany("INSERT INTO reason VALUES (?, ?)", ((i, text) for text, i in self.reasons.items()))
+            self.write_meta(db)
+            db.executescript(self.INDEXES)
+            db.commit()
+            db.execute("VACUUM")
+        finally:
+            db.close()
+
+    def write_specification(
+        self, db: sqlite3.Connection, specification: Specification, specification_id: int, requirement_id: int
+    ) -> int:
+        """Write a specification and its requirements. Returns the next free requirement ID."""
+        db.executemany(
+            "INSERT INTO entity VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            self.iter_entity_rows(specification.applicable_entities),
+        )
+        db.executemany(
+            "INSERT INTO applicability VALUES (?, ?)",
+            ((specification_id, e.id()) for e in specification.applicable_entities),
+        )
+
+        total_checks_pass = 0
+        for requirement in specification.requirements:
+            total_checks_pass += self.write_requirement(db, specification, specification_id, requirement, requirement_id)
+            requirement_id += 1
+
+        total_applicable = len(specification.applicable_entities)
+        total_checks = total_applicable * len(specification.requirements)
+        cardinality = get_cardinality(specification)
+        db.execute(
+            "INSERT INTO specification VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                specification_id,
+                specification.name,
+                specification.description,
+                specification.instructions,
+                cardinality,
+                "\n".join(a.to_string("applicability") for a in specification.applicability),
+                specification.status,
+                specification.is_ifc_version,
+                cardinality == "optional" and total_checks == 0,
+                total_applicable,
+                total_applicable - len(specification.failed_entities),
+                total_checks,
+                total_checks_pass,
+            ),
+        )
+        return requirement_id
+
+    def write_requirement(
+        self,
+        db: sqlite3.Connection,
+        specification: Specification,
+        specification_id: int,
+        requirement: Facet,
+        requirement_id: int,
+    ) -> int:
+        """Write a requirement and its failures. Returns the number of passing checks."""
+        db.executemany(
+            "INSERT INTO failure VALUES (?, ?, ?)",
+            (
+                (requirement_id, f["element"].id(), self.get_reason_id(f["reason"]))
+                for f in requirement.failures
+            ),
+        )
+        label, value = get_requirement_label_value(requirement)
+        metadata = requirement.asdict("requirement")
+        total_applicable = len(specification.applicable_entities)
+        total_fail = len(requirement.failures)
+        total_pass = total_applicable - total_fail
+        db.execute(
+            "INSERT INTO requirement VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                requirement_id,
+                specification_id,
+                type(requirement).__name__,
+                label,
+                value,
+                requirement.to_string("requirement", specification, requirement),
+                metadata.get("@instructions"),
+                json.dumps(metadata, default=str),
+                requirement.status,
+                total_applicable,
+                total_pass,
+                total_fail,
+            ),
+        )
+        return total_pass
+
+    def write_meta(self, db: sqlite3.Connection) -> None:
+        (
+            total_specifications,
+            total_specifications_pass,
+            total_requirements,
+            total_requirements_pass,
+            total_checks,
+            total_checks_pass,
+        ) = db.execute(
+            """
+            SELECT
+                (SELECT count(*) FROM specification),
+                (SELECT count(*) FROM specification WHERE status = 1),
+                (SELECT count(*) FROM requirement),
+                (SELECT count(*) FROM requirement WHERE status = 1),
+                (SELECT coalesce(sum(total_checks), 0) FROM specification),
+                (SELECT coalesce(sum(total_checks_pass), 0) FROM specification)
+            """
+        ).fetchone()
+        db.executemany(
+            "INSERT INTO meta VALUES (?, ?)",
+            (
+                ("format", "ifctester"),
+                ("schema_version", str(self.SCHEMA_VERSION)),
+                ("title", self.ids.info.get("title", "Untitled IDS")),
+                ("date", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                ("filepath", self.ids.filepath),
+                ("filename", self.ids.filename),
+                ("status", str(int(total_specifications_pass == total_specifications))),
+                ("total_specifications", str(total_specifications)),
+                ("total_specifications_pass", str(total_specifications_pass)),
+                ("total_specifications_fail", str(total_specifications - total_specifications_pass)),
+                ("total_requirements", str(total_requirements)),
+                ("total_requirements_pass", str(total_requirements_pass)),
+                ("total_requirements_fail", str(total_requirements - total_requirements_pass)),
+                ("total_checks", str(total_checks)),
+                ("total_checks_pass", str(total_checks_pass)),
+                ("total_checks_fail", str(total_checks - total_checks_pass)),
+            ),
+        )
+
+    def iter_entity_rows(self, elements: Iterable[ifcopenshell.entity_instance]) -> Iterator[tuple]:
+        """Yield rows for elements not yet written, and for the types they occur as."""
+        for element in elements:
+            element_id = element.id()
+            if element_id in self.entity_ids:
+                continue
+            self.entity_ids.add(element_id)
+            element_type = ifcopenshell.util.element.get_type(element)
+            type_id = None
+            if element_type is not None:
+                type_id = element_type.id()
+                if type_id not in self.entity_ids:
+                    self.entity_ids.add(type_id)
+                    yield self.get_entity_row(element_type, None)
+            yield self.get_entity_row(element, type_id)
+
+    def get_entity_row(self, element: ifcopenshell.entity_instance, type_id: Optional[int]) -> tuple:
+        return (
+            element.id(),
+            getattr(element, "GlobalId", None),
+            element.is_a(),
+            ifcopenshell.util.element.get_predefined_type(element),
+            getattr(element, "Name", None),
+            getattr(element, "Description", None),
+            getattr(element, "Tag", None),
+            type_id,
+        )
+
+    def get_reason_id(self, reason: str) -> int:
+        reason_id = self.reasons.get(reason)
+        if reason_id is None:
+            reason_id = self.reasons[reason] = len(self.reasons)
+        return reason_id
