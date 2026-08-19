@@ -194,13 +194,6 @@ class IFC_PARSE_API declared_type : public base {
     using base::base;
 };
 
-// Compatibility aliases for checked-in generated schema sources. New generated
-// sources use the snake_case names directly.
-using Base = base;
-using Entity = entity;
-using Select = select;
-using DeclaredType = declared_type;
-
 } // namespace express
 
 namespace std {
