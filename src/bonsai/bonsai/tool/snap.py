@@ -401,7 +401,9 @@ class Snap(bonsai.core.tool.Snap):
             for snap in snap_faces:
                 if snap["object"] == closest_obj:
                     detected_snaps.append(snap)
-                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]])
+                    snap_points = tool.Raycast.ray_cast_by_proximity(
+                        context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]]
+                    )
                     for point in snap_points:
                         point["group"] = "Object"
                         detected_snaps.append(point)
@@ -410,23 +412,24 @@ class Snap(bonsai.core.tool.Snap):
                     ray_origin = tool.Raycast.get_viewport_ray_data(context, event)[0]
                     occl_dist = (snap["point"] - ray_origin).length + 1e-4
                     visible_wireframe_snaps = [
-                        w for w in wireframe_snaps
-                        if (w["point"] - ray_origin).length <= occl_dist
+                        w for w in wireframe_snaps if (w["point"] - ray_origin).length <= occl_dist
                     ]
                     detected_snaps.extend(visible_wireframe_snaps)
                     continue
 
             if not snap_faces:
                 detected_snaps.extend(wireframe_snaps)
-                
+
         else:
             # Doesn't include face snaps, only their edges and vertices
             for snap in snap_faces:
-                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]])
+                snap_points = tool.Raycast.ray_cast_by_proximity(
+                    context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]]
+                )
                 for point in snap_points:
                     point["group"] = "Object"
                     detected_snaps.append(point)
-                
+
             detected_snaps.extend(wireframe_snaps)
 
         # snap to cut geometry (e.g. in plan view)
