@@ -41,6 +41,15 @@ class Mapping:
         "binary": "boost::dynamic_bitset<>",
     }
 
+    cpp_to_argument_types = {
+        "boolean": "BOOL",
+        "logical": "LOGICAL",
+        "integer": "INT",
+        "real": "DOUBLE",
+        "number": "DOUBLE",
+        "string": "STRING",
+    }
+
     supported_argument_types = set(
         [
             "INT",
@@ -139,8 +148,8 @@ class Mapping:
                 if ty == "UNKNOWN":
                     return "UNKNOWN"
                 return "AGGREGATE_OF_" + ty
-            elif str(type) in self.express_to_cpp_typemapping:
-                return self.express_to_cpp_typemapping.get(str(type), type).split("::")[-1].upper()
+            elif (ty := self.cpp_to_argument_types.get(str(type))) is not None:
+                return ty
             elif self.schema.is_type(type):
                 return _make_argument_type(self.schema.types[type].type)
             else:
