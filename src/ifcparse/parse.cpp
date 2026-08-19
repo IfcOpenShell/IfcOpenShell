@@ -3534,14 +3534,14 @@ template void IFC_PARSE_API express::base::set_attribute_value<std::vector<std::
 
 namespace express {
 template <typename T>
-T Entity::get_value(const std::string& name) const {
+T entity::get_value(const std::string& name) const {
     auto attr = get(name);
     T v = attr;
     return v;
 }
 
 template <typename T>
-T Entity::get_value(const std::string& name, const T& default_value) const {
+T entity::get_value(const std::string& name, const T& default_value) const {
     auto attr = get(name);
     if (attr.isNull()) {
         return default_value;
