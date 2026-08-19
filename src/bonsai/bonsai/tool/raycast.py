@@ -50,6 +50,7 @@ _obj_list: list[bpy.types.Object] = []
 
 _SNAP_RADIUS_PX = 10  # half-size of the readback region around the cursor
 
+
 def _create_encoding_shader() -> gpu.types.GPUShader:
     """Unlit flat-colour shader for encoding primitive IDs as RGBA."""
     iface = GPUStageInterfaceInfo("iface")
@@ -64,10 +65,7 @@ def _create_encoding_shader() -> gpu.types.GPUShader:
     shader_info.fragment_out(0, "VEC4", "FragColor")
 
     shader_info.vertex_source(
-        "void main() {\n"
-        "  slot_id = vert_slot;\n"
-        "  gl_Position = MVP * vec4(pos, 1.0);\n"
-        "}\n"
+        "void main() {\n" "  slot_id = vert_slot;\n" "  gl_Position = MVP * vec4(pos, 1.0);\n" "}\n"
     )
     shader_info.fragment_source(
         "vec4 encode(float f) {\n"
@@ -87,6 +85,7 @@ def _create_encoding_shader() -> gpu.types.GPUShader:
     del shader_info, iface
     return s
 
+
 def _decode_wireframe_pixel(r: int, g: int, b: int, a: int) -> int:
     """Decode an RGBA pixel back to an integer slot ID."""
     return (a << 24) | (b << 16) | (g << 8) | r
@@ -98,6 +97,7 @@ def _create_vert_format() -> GPUVertFormat:
     fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
     fmt.attr_add(id="vert_slot", comp_type="F32", len=1, fetch_mode="FLOAT")
     return fmt
+
 
 def _find_closest_wireframe_pixel(buffer_data, cx, cy):
     """Scan *buffer_data* (list of rows) for the closest non-zero pixel
@@ -118,6 +118,7 @@ def _find_closest_wireframe_pixel(buffer_data, cx, cy):
                     best_dist = d2
                     best = (val, dx, dy)
     return best
+
 
 def _get_solid_triangles(obj: bpy.types.Object):
     """Return the list of triangles for *obj* in **local** space.
@@ -140,11 +141,13 @@ def _get_solid_triangles(obj: bpy.types.Object):
         v0 = mesh.vertices[tri.vertices[0]].co
         v1 = mesh.vertices[tri.vertices[1]].co
         v2 = mesh.vertices[tri.vertices[2]].co
-        tris.append((
-            (v0.x, v0.y, v0.z),
-            (v1.x, v1.y, v1.z),
-            (v2.x, v2.y, v2.z),
-        ))
+        tris.append(
+            (
+                (v0.x, v0.y, v0.z),
+                (v1.x, v1.y, v1.z),
+                (v2.x, v2.y, v2.z),
+            )
+        )
 
     eval_obj.to_mesh_clear()
     return tris
@@ -185,13 +188,13 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int] | No
     vbo.attr_fill(id="pos", data=coords)
     vbo.attr_fill(id="vert_slot", data=slot_ids)
 
-    ibo = GPUIndexBuf(type="TRIS",
-                      seq=[(i * 3, i * 3 + 1, i * 3 + 2) for i in range(n_tris)])
+    ibo = GPUIndexBuf(type="TRIS", seq=[(i * 3, i * 3 + 1, i * 3 + 2) for i in range(n_tris)])
     batch = GPUBatch(type="TRIS", buf=vbo, elem=ibo)
 
     result = (batch, n_tris)
     _triangle_batch_cache[cache_key] = result
     return result
+
 
 def _get_boundary_features(obj: bpy.types.Object):
     """Return ``(all_vert_coords, edge_pairs)`` for *obj*.
@@ -239,10 +242,12 @@ def _get_boundary_features(obj: bpy.types.Object):
     for e in bm.edges:
         if not e.link_faces:
             v0, v1 = e.verts
-            edge_pairs.append((
-                (v0.co.x, v0.co.y, v0.co.z),
-                (v1.co.x, v1.co.y, v1.co.z),
-            ))
+            edge_pairs.append(
+                (
+                    (v0.co.x, v0.co.y, v0.co.z),
+                    (v1.co.x, v1.co.y, v1.co.z),
+                )
+            )
             # Add unique endpoint vertices
             for v in (v0, v1):
                 coord = (v.co.x, v.co.y, v.co.z)
@@ -305,13 +310,13 @@ def _ensure_wireframe_batches(obj) -> dict[str, tuple[GPUBatch, int, list]]:
         vbo.attr_fill(id="pos", data=coords)
         vbo.attr_fill(id="vert_slot", data=prim_ids)
 
-        ibo = GPUIndexBuf(type="LINES",
-                          seq=[(i, i + 1) for i in range(0, n_line_verts, 2)])
+        ibo = GPUIndexBuf(type="LINES", seq=[(i, i + 1) for i in range(0, n_line_verts, 2)])
         batches["LINES"] = (GPUBatch(type="LINES", buf=vbo, elem=ibo), n_lines, edge_pairs)
 
     if batches:
         _wireframe_batch_cache[cache_key] = batches
     return batches
+
 
 class Raycast(bonsai.core.tool.Raycast):
     offset = 10
@@ -326,6 +331,7 @@ class Raycast(bonsai.core.tool.Raycast):
         (0, -offset),
         (offset, -offset),
     )
+
     @classmethod
     def get_visible_objects(cls, context: bpy.types.Context):
         depsgraph = context.evaluated_depsgraph_get()
@@ -631,8 +637,8 @@ class Raycast(bonsai.core.tool.Raycast):
         context: bpy.types.Context,
         event: bpy.types.Event,
         objs_to_raycast: list[bpy.types.Object],
-        tris: boolean = False,
-    ) -> Any:
+        tris: bool = False,
+    ) -> tuple[list[dict], bpy.types.Object | None]:
         """GPU-based solid face detection.
 
         Renders all solid objects' triangles to an offscreen buffer
@@ -643,7 +649,7 @@ class Raycast(bonsai.core.tool.Raycast):
             snap dicts (same format as the raycast-based version) and
             *closest_obj* is the single closest object (or None).
         """
-        global _encoding_shader, _offscreen, _offscreen_change, _obj_list
+        global _encoding_shader, _offscreen, _obj_list
 
         if bpy.app.background:
             return [], None
@@ -661,6 +667,7 @@ class Raycast(bonsai.core.tool.Raycast):
         # Build the object index -> object lookup and collect render ops
         _obj_list.clear()
         render_ops: list[tuple[GPUBatch, Matrix, int]] = []
+        obj_slots: list[tuple] = []  # [(snap_obj, pts_start, n_pts, lines_start, n_lines), ...]
 
         if tris:
             for snap_obj in objs_to_raycast:
@@ -681,12 +688,11 @@ class Raycast(bonsai.core.tool.Raycast):
                 slot_base = obj_index + 1  # slot 0 = background
                 render_ops.append((batch, snap_obj.matrix_world.copy(), slot_base))
         else:
-            slot = 1 # slot 0 = background
-            obj_slots: list[tuple] = []  # [(snap_obj, pts_start, n_pts, lines_start, n_lines), ...]
+            slot = 1  # slot 0 = background
 
             for snap_obj in objs_to_raycast:
                 # avoids creating batches for solid objects
-                if (hasattr(snap_obj.data, "polygons") and len(snap_obj.data.polygons) > 0):
+                if hasattr(snap_obj.data, "polygons") and len(snap_obj.data.polygons) > 0:
                     continue
 
                 batches = _ensure_wireframe_batches(snap_obj)
@@ -716,7 +722,6 @@ class Raycast(bonsai.core.tool.Raycast):
                 if n_pts > 0 or n_lines > 0:
                     obj_slots.append((snap_obj, pts_start, n_pts, lines_start, n_lines))
 
-
         if not render_ops:
             return [], None
 
@@ -743,7 +748,7 @@ class Raycast(bonsai.core.tool.Raycast):
         if not tris:
             gpu.state.depth_mask_set(False)
             gpu.state.depth_test_set("NONE")
-            
+
         gpu.state.blend_set("NONE")
         gpu.state.face_culling_set("NONE")
 
@@ -773,18 +778,15 @@ class Raycast(bonsai.core.tool.Raycast):
                     gpu.matrix.load_matrix(Matrix.Identity(4))
                     batch.draw(_encoding_shader)
 
-                if read_per_object: # gets all buffers
-                    buf = fb.read_color(int(read_x), int(read_y),
-                                    read_size, read_size, 4, 0, "UBYTE")
+                if read_per_object:  # gets all buffers
+                    buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
                     buffers_list.append(buf)
             if not read_per_object:
-                last_buf = fb.read_color(int(read_x), int(read_y),
-                                read_size, read_size, 4, 0, "UBYTE")
+                last_buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
 
         # Restore state
         gpu.state.depth_mask_set(True)
         gpu.state.depth_test_set("LESS")
-
 
         if tris:
             # Decode hits
@@ -803,7 +805,7 @@ class Raycast(bonsai.core.tool.Raycast):
                         return [], None
                     px = pixel_data[0][0]
                     val = _decode_wireframe_pixel(px[0], px[1], px[2], px[3])
-                    if val in vals_read: # avoid getting all the tris from the same object
+                    if val in vals_read:  # avoid getting all the tris from the same object
                         continue
                     vals_read.add(val)
                     if val > 0:
@@ -886,13 +888,15 @@ class Raycast(bonsai.core.tool.Raycast):
                                 # Compute proper 3D distance from vertex to view ray
                                 proj = tool.Cad.point_on_edge(world_pos, (ray_target, loc))
                                 distance = (world_pos - proj).length
-                                snaps.append({
-                                    "object": snap_obj,
-                                    "type": "Vertex",
-                                    "point": world_pos,
-                                    "distance": distance,
-                                    "group": "Wireframe",
-                                })
+                                snaps.append(
+                                    {
+                                        "object": snap_obj,
+                                        "type": "Vertex",
+                                        "point": world_pos,
+                                        "distance": distance,
+                                        "group": "Wireframe",
+                                    }
+                                )
                     break
 
                 if n_lines > 0 and lines_start <= encoded < lines_start + n_lines:
@@ -919,39 +923,45 @@ class Raycast(bonsai.core.tool.Raycast):
                                     proj = tool.Cad.point_on_edge(edge_point, (ray_target, loc))
                                     distance = (edge_point - proj).length
 
-                                snaps.append({
-                                    "object": snap_obj,
-                                    "type": "Edge",
-                                    "point": edge_point,
-                                    "edge_verts": (v0, v1),
-                                    "distance": distance,
-                                    "group": "Wireframe",
-                                })
+                                snaps.append(
+                                    {
+                                        "object": snap_obj,
+                                        "type": "Edge",
+                                        "point": edge_point,
+                                        "edge_verts": (v0, v1),
+                                        "distance": distance,
+                                        "group": "Wireframe",
+                                    }
+                                )
 
                                 # Edge Center snap (midpoint)
                                 mid = (v0 + v1) / 2
                                 mid_proj = tool.Cad.point_on_edge(mid, (ray_target, loc))
                                 mid_dist = (mid - mid_proj).length
-                                snaps.append({
-                                    "object": snap_obj,
-                                    "type": "Edge Center",
-                                    "point": mid,
-                                    "distance": mid_dist,
-                                    "group": "Wireframe",
-                                })
+                                snaps.append(
+                                    {
+                                        "object": snap_obj,
+                                        "type": "Edge Center",
+                                        "point": mid,
+                                        "distance": mid_dist,
+                                        "group": "Wireframe",
+                                    }
+                                )
 
                                 # Also include vertex snaps for edge endpoints
                                 for vtx in (v0, v1):
                                     proj = tool.Cad.point_on_edge(vtx, (ray_target, loc))
                                     vtx_dist = (vtx - proj).length
                                     if vtx_dist < snap_threshold:
-                                        snaps.append({
-                                            "object": snap_obj,
-                                            "type": "Vertex",
-                                            "point": vtx,
-                                            "distance": vtx_dist,
-                                            "group": "Wireframe",
-                                        })
+                                        snaps.append(
+                                            {
+                                                "object": snap_obj,
+                                                "type": "Vertex",
+                                                "point": vtx,
+                                                "distance": vtx_dist,
+                                                "group": "Wireframe",
+                                            }
+                                        )
                     break
 
             return snaps, None
@@ -959,12 +969,10 @@ class Raycast(bonsai.core.tool.Raycast):
     @classmethod
     def get_gpu_solid_snaps(cls, context, event, objs_to_raycast):
         return cls.get_gpu_detection_snaps(context, event, objs_to_raycast, tris=True)
-        
 
     @classmethod
     def get_gpu_wireframe_snaps(cls, context, event, objs_to_raycast):
         return cls.get_gpu_detection_snaps(context, event, objs_to_raycast)
-
 
     @classmethod
     def ray_cast_by_proximity(
@@ -1190,7 +1198,9 @@ class Raycast(bonsai.core.tool.Raycast):
         for obj, bbox_2d in objs_2d_bbox:
             if bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
-                    if tool.Raycast.object_is_visible_in_clipping_plane(obj): # TODO Make this work only if clipping plane is active
+                    if tool.Raycast.object_is_visible_in_clipping_plane(
+                        obj
+                    ):  # TODO Make this work only if clipping plane is active
                         objs_to_raycast.append(obj)
 
         return objs_to_raycast
