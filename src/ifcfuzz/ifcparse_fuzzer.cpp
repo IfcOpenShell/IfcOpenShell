@@ -48,7 +48,7 @@ bool is_regular_file(const char* path) {
 extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv) {
     for (int i = 1; i < *argc; ++i) {
         if (is_regular_file((*argv)[i])) {
-            logger::root().set_output(&std::cerr, &std::cerr);
+            ifcopenshell::logger::root().set_output(&std::cerr, &std::cerr);
             break;
         }
     }
