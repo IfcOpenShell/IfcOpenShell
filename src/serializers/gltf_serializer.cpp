@@ -508,7 +508,7 @@ void gltf_serializer::finalize() {
 }
 
 namespace {
-	void normalize(std::array<double, 3>& v) {
+	[[maybe_unused]] void normalize(std::array<double, 3>& v) {
 		auto l = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 
 		v[0] /= l;
@@ -516,13 +516,13 @@ namespace {
 		v[2] /= l;
 	}
 
-	void cross(const std::array<double, 3>& v1, const std::array<double, 3>& v2, std::array<double, 3>& result) {
+	[[maybe_unused]] void cross(const std::array<double, 3>& v1, const std::array<double, 3>& v2, std::array<double, 3>& result) {
 		result[0] = v1[1] * v2[2] - v1[2] * v2[1];
 		result[1] = v1[2] * v2[0] - v1[0] * v2[2];
 		result[2] = v1[0] * v2[1] - v1[1] * v2[0];
 	}
 
-	void proj_log(void* data, int, const char* c) {
+	[[maybe_unused]] void proj_log(void* data, int, const char* c) {
 		auto logger = static_cast<ifcopenshell::logger*>(data);
 		if (logger) {
 			logger->error("SER", 1, "PROJ: " + std::string(c));
@@ -627,6 +627,14 @@ void gltf_serializer::setFile(ifcopenshell::file& f) {
 		}
 	}
 
+	setup_georeferencing(crs_epsg, eastings_northings_elevation, crs_x_axis);
+}
+
+void gltf_serializer::setup_georeferencing(
+	[[maybe_unused]] const std::optional<std::string>& crs_epsg,
+	[[maybe_unused]] const std::optional<std::array<double, 3>>& eastings_northings_elevation,
+	[[maybe_unused]] std::optional<std::array<double, 3>> crs_x_axis)
+{
 #ifdef WITH_PROJ
 
 	if (crs_epsg) {
