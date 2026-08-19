@@ -136,8 +136,16 @@ def register():
         kmi.properties.should_save_as = False
         addon_keymaps.append((km, kmi))
 
+        km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="VIEW_3D")
+        kmi = km.keymap_items.new("bim.explore_hotkey", "M", "PRESS", shift=True)
+        kmi.properties.hotkey = "S_M"
+        addon_keymaps.append((km, kmi))
+
+    bpy.types.VIEW3D_HT_tool_header.append(workspace.draw_measure_tool_header)
+
 
 def unregister():
+    bpy.types.VIEW3D_HT_tool_header.remove(workspace.draw_measure_tool_header)
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.ExploreTool)
     tool.Autosave.cancel_timer()
