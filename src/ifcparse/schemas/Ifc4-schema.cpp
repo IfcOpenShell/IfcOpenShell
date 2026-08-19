@@ -19,7 +19,7 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from IFC4.exp. Do not make modifications        *
+ * This file has been generated from IFC4_ADD2_TC1.exp. Do not make modifications*
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/

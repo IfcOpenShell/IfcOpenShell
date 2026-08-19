@@ -19,7 +19,7 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from IFC4x3_RC2.exp. Do not make modifications  *
+ * This file has been generated from IFC4x3_RC4.exp. Do not make modifications  *
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
