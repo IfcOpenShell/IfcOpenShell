@@ -19,9 +19,14 @@
 
 from __future__ import annotations
 import sys
-import nodes
-import templates
-import schema
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import nodes, schema, templates
+else:
+    import nodes
+    import schema
+    import templates
 
 
 class Mapping:
@@ -117,8 +122,8 @@ class Mapping:
         else:
             return "Type::%s" % type
 
-    def make_argument_type(self, attr):
-        def _make_argument_type(type):
+    def make_argument_type(self, attr: nodes.Node | str) -> str:
+        def _make_argument_type(type: nodes.Node | str) -> str:
             if isinstance(type, nodes.SimpleType):
                 type = type.type
             if self.schema.is_entity(type) or isinstance(type, nodes.SelectType):
@@ -253,10 +258,10 @@ class Mapping:
         derived = set(self.derived_in_supertype(t))
         attrs = enumerate(self.arguments(t))
 
-        def include(attr):
+        def include(attr: nodes.Node) -> bool:
             not_derived = include_derived or (attr.name not in derived)
             supported = self.make_argument_type(attr) != "ifcopenshell::Argument_UNKNOWN"
-            return not_derived and supported
+            return bool(not_derived and supported)
 
         return [
             {
