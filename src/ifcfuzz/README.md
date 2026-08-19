@@ -27,7 +27,7 @@ cmake ../cmake \
   -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -g -O1 -fno-omit-frame-pointer" \
   -DBUILD_FUZZERS=ON -DMINIMAL_BUILD=ON \
   -DBUILD_IFCGEOM=OFF -DBUILD_CONVERT=OFF -DWITH_OPENCASCADE=OFF \
-  -DBUILD_ONLY_COMMON_SCHEMAS=ON
+  -DSCHEMA_VERSIONS="2x3;4;4x3_add2"
 cmake --build . --target ifcparse_fuzzer -- -j$(nproc)
 ```
 
