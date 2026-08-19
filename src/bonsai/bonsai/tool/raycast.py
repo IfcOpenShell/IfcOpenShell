@@ -42,14 +42,12 @@ import bonsai.tool as tool
 
 _wireframe_batch_cache: dict[int, dict[str, tuple[GPUBatch, int, list]]] = {}
 _wireframe_vert_fmt: GPUVertFormat | None = None
-_triangle_batch_cache: dict[int, tuple[GPUBatch, int, list, list]] = {}
+_triangle_batch_cache: dict[int, tuple[GPUBatch, int]] = {}
 _triangle_vert_fmt: GPUVertFormat | None = None
 _encoding_shader: gpu.types.GPUShader | None = None
 _offscreen: GPUOffScreen | None = None
 _obj_list: list[bpy.types.Object] = []
 
-_TRI_OBJ_SHIFT = 20
-_TRI_FACE_MASK = (1 << _TRI_OBJ_SHIFT) - 1
 _SNAP_RADIUS_PX = 10  # half-size of the readback region around the cursor
 
 def _create_encoding_shader() -> gpu.types.GPUShader:
@@ -95,7 +93,7 @@ def _decode_wireframe_pixel(r: int, g: int, b: int, a: int) -> int:
 
 
 def _create_vert_format() -> GPUVertFormat:
-    """Attribute 0 = position (vec3), attribute 1 = face index or primitive slot (float)."""
+    """Attribute 0 = position (vec3), attribute 1 = primitive slot (float); solid faces use 0."""
     fmt = GPUVertFormat()
     fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
     fmt.attr_add(id="vert_slot", comp_type="F32", len=1, fetch_mode="FLOAT")
@@ -122,15 +120,10 @@ def _find_closest_wireframe_pixel(buffer_data, cx, cy):
     return best
 
 def _get_solid_triangles(obj: bpy.types.Object):
-    """Return ``(tri_list, face_indices)`` for *obj* in **local** space.
+    """Return the list of triangles for *obj* in **local** space.
 
     Uses evaluated mesh so that modifiers are respected.
     The world matrix is applied separately in the shader.
-
-    tri_list : list[tuple[tuple, tuple, tuple]]
-        Each element is three local-space vertex positions.
-    face_indices : list[int]
-        polygon_index for each triangle.
     """
     depsgraph = bpy.context.evaluated_depsgraph_get()
     eval_obj = obj.evaluated_get(depsgraph)
@@ -143,7 +136,6 @@ def _get_solid_triangles(obj: bpy.types.Object):
     mesh.calc_loop_triangles()
 
     tris: list[tuple[tuple, tuple, tuple]] = []
-    face_indices: list[int] = []
     for tri in mesh.loop_triangles:
         v0 = mesh.vertices[tri.vertices[0]].co
         v1 = mesh.vertices[tri.vertices[1]].co
@@ -153,20 +145,18 @@ def _get_solid_triangles(obj: bpy.types.Object):
             (v1.x, v1.y, v1.z),
             (v2.x, v2.y, v2.z),
         ))
-        face_indices.append(tri.polygon_index)
 
     eval_obj.to_mesh_clear()
-    return tris, face_indices
+    return tris
 
 
-def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int, list, list] | None:
+def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int] | None:
     """Build (or fetch from cache) a TRIANGLES batch for *obj*.
 
-    Every face triangle is rendered, with the vertex slot encoding
-    the face_index so the GPU can write it to the framebuffer.
+    Every face triangle is rendered with a zeroed vertex slot since the
+    GPU only encodes the object index; the face is found later via ray_cast.
 
-    Returns ``(batch, n_tris, tri_list, face_indices)`` or None
-    when the object has no faces.
+    Returns ``(batch, n_tris)`` or None when the object has no faces.
     """
     global _triangle_vert_fmt, _triangle_batch_cache
 
@@ -177,18 +167,18 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int, list
     if cache_key in _triangle_batch_cache:
         return _triangle_batch_cache[cache_key]
 
-    tris, face_indices = _get_solid_triangles(obj)
+    tris = _get_solid_triangles(obj)
     n_tris = len(tris)
     if n_tris == 0:
         return None
 
-    # Flatten: 3 verts per tri, each carrying the face_index as slot_id
+    # Flatten: 3 verts per tri; the slot is unused for solid faces
     coords: list[tuple[float, float, float]] = []
     slot_ids: list[float] = []
-    for fi, tri in zip(face_indices, tris):
+    for tri in tris:
         for v in tri:
             coords.append(v)
-            slot_ids.append(float(fi))
+            slot_ids.append(0.0)
 
     n_verts = len(coords)
     vbo = GPUVertBuf(len=n_verts, format=_triangle_vert_fmt)
@@ -199,7 +189,7 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int, list
                       seq=[(i * 3, i * 3 + 1, i * 3 + 2) for i in range(n_tris)])
     batch = GPUBatch(type="TRIS", buf=vbo, elem=ibo)
 
-    result = (batch, n_tris, tris, face_indices)
+    result = (batch, n_tris)
     _triangle_batch_cache[cache_key] = result
     return result
 
@@ -685,10 +675,10 @@ class Raycast(bonsai.core.tool.Raycast):
                 if batch_info is None:
                     continue
 
-                batch, n_tris, _tris, _face_indices = batch_info
+                batch, _ = batch_info
                 obj_index = len(_obj_list)
                 _obj_list.append(snap_obj)
-                slot_base = (obj_index << _TRI_OBJ_SHIFT) + 1
+                slot_base = obj_index + 1  # slot 0 = background
                 render_ops.append((batch, snap_obj.matrix_world.copy(), slot_base))
         else:
             slot = 1 # slot 0 = background
@@ -817,8 +807,7 @@ class Raycast(bonsai.core.tool.Raycast):
                         continue
                     vals_read.add(val)
                     if val > 0:
-                        val -= 1
-                        obj_index = int(val) >> _TRI_OBJ_SHIFT
+                        obj_index = val - 1
                         if obj_index < len(_obj_list):
                             hits.add(obj_index)
             else:
@@ -831,8 +820,7 @@ class Raycast(bonsai.core.tool.Raycast):
                     px = pixel_data[centre_y][centre_x]
                     val = _decode_wireframe_pixel(px[0], px[1], px[2], px[3])
                     if val > 0:
-                        val -= 1
-                        obj_index = int(val) >> _TRI_OBJ_SHIFT
+                        obj_index = val - 1
                         if obj_index < len(_obj_list):
                             hits.add(obj_index)
 
