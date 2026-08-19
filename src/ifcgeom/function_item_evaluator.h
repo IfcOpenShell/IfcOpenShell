@@ -13,8 +13,8 @@ IFC_GEOM_API std::vector<double> helmert_curve_point(double A0, double A1, doubl
 /// This is intended to be used from python side. Polylines are mapped to a loop, but when
 /// representing an alignment they need to be a function_item so the can be evaluated by function_item_evaluator.
 /// On the C++ side, the dcast operator take care of this, but dcast is not accessible on the python side.
-/// @param loop 
-/// @return 
+/// @param loop
+/// @return
 inline taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop::ptr loop) {
     return ifcopenshell::geom::taxonomy::dcast<taxonomy::function_item>(loop);
 }

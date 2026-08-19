@@ -510,20 +510,20 @@ namespace ifcopenshell::geom {
 		virtual void triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const = 0;
 		ifcopenshell::geom::triangulation* triangulate(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root()) const;
 		virtual void serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string&) const = 0;
-				
+
 		virtual int surface_genus() const = 0;
 		virtual bool is_manifold() const = 0;
-		
+
 		virtual int num_vertices() const = 0;
 		virtual int num_edges() const = 0;
 		virtual int num_faces() const = 0;
-			
+
 		// @todo choose one prototype
 		virtual double bounding_box(void*&) const = 0;
 		// @todo this must be something with a virtual dtor so that we can delete it.
 		virtual std::pair<opaque_coordinate<3>, opaque_coordinate<3>> bounding_box() const = 0;
 		virtual void set_box(void* b) = 0;
-		
+
 		virtual opaque_number length() = 0;
 		virtual opaque_number area() = 0;
 		virtual opaque_number volume() = 0;
@@ -550,11 +550,11 @@ namespace ifcopenshell::geom {
 		virtual std::size_t map(opaque_coordinate<4>& from, opaque_coordinate<4>& to) = 0;
 		virtual std::size_t map(const std::vector<opaque_coordinate<4>>& from, const std::vector<opaque_coordinate<4>>& to) = 0;
 		virtual conversion_result_shape* moved(ifcopenshell::geom::taxonomy::matrix4::ptr) const = 0;
-		
+
 		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geom::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const = 0;
 
 		virtual ~conversion_result_shape() {}
-		
+
 	};
 
 	class IFC_GEOM_API conversion_result {

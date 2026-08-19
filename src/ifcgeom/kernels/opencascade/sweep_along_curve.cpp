@@ -126,7 +126,7 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
             }
         }
     }
-	
+
 	// Build the wire from curve, which is the directrix offset toward the origin
 	// when applied_temporary_offset is set. Using scs->curve here left the wire
 	// far from the origin yet still translated the result back by +mean, which
@@ -155,11 +155,11 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 	} else {
 		return false;
 	}
-	
+
 	Handle(Geom_Surface) surface;
 	if (scs->surface) {
 		surface = convert_surface(scs->surface);
-	}	
+	}
 
 	gp_Trsf directrix;
 	TopoDS_Wire wire = std::get<TopoDS_Wire>(w);

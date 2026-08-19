@@ -293,7 +293,7 @@
 	#include "../ifcparse/file.h"
 	#include "../ifcparse/schema.h"
 	#include "../ifcparse/utils.h"
-	
+
 	#include "../ifcgeom/conversion_settings.h"
 	#include "../ifcgeom/conversion_result.h"
 

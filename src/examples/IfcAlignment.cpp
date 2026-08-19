@@ -70,7 +70,7 @@ Schema::IfcProject setup_project(hierarchy_helper<Schema>& file) {
             dimensions.setThermodynamicTemperatureExponent(0);
             dimensions.setAmountOfSubstanceExponent(0);
             dimensions.setLuminousIntensityExponent(0);
-            
+
             auto conversion_factor = file.create<Schema::IfcMeasureWithUnit>();
             auto length = file.create<Schema::IfcLengthMeasure>();
             length.set_attribute_value(0, 304.80);
@@ -82,7 +82,7 @@ Schema::IfcProject setup_project(hierarchy_helper<Schema>& file) {
             conversion_based_unit.setUnitType(Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT);
             conversion_based_unit.setName("FEET");
             conversion_based_unit.setConversionFactor(conversion_factor);
-            
+
             units.erase(std::remove(units.begin(), units.end(), unit)); // remove the millimeter unit
             units.push_back(conversion_based_unit); // add the feet unit
             units_in_context.setUnits(units);  // update the UnitsInContext
@@ -386,7 +386,7 @@ int main() {
     nests_horizontal_segments.setName("Nests horizontal alignment segments with horizontal alignment");
     nests_horizontal_segments.setRelatingObject(horizontal_alignment);
     nests_horizontal_segments.setRelatedObjects(horizontal_segments);
-    
+
     //
     // Create plan view footprint model representation for the horizontal alignment
     //
@@ -403,7 +403,7 @@ int main() {
     footprint_shape_representation.setRepresentationType("Curve2D");
     // the composite curve is a representation item
     footprint_shape_representation.setItems({composite_curve});
-    
+
     //
     // Define vertical profile segments
     //
@@ -539,7 +539,7 @@ int main() {
     nests_alignment_layouts.setName("Nest horizontal and vertical alignment layouts with the alignment");
     nests_alignment_layouts.setRelatingObject(alignment);
     nests_alignment_layouts.setRelatedObjects({horizontal_alignment, vertical_profile});
-    
+
     // Define the relationship with the project
 
     // IFC 4.1.4.1.1 "Every IfcAlignment must be related to IfcProject using the IfcRelAggregates relationship"
@@ -550,7 +550,7 @@ int main() {
     aggregate_alignments_with_project.setName("Alignments in project");
     aggregate_alignments_with_project.setRelatingObject(project);
     aggregate_alignments_with_project.setRelatedObjects({alignment});
-    
+
     // Define the spatial structure of the alignment with respect to the site
 
     // IFC 4.1.5.1 alignment is referenced in spatial structure of an IfcSpatialElement. In this case IfcSite is the highest level IfcSpatialElement

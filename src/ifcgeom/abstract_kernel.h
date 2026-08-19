@@ -37,7 +37,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance = AL
 	return fabs(a - b) < tolerance;
 }
 
-namespace ifcopenshell { 
+namespace ifcopenshell {
 
 #if defined(_MSC_VER)
 #pragma warning(push)
@@ -70,7 +70,7 @@ namespace ifcopenshell {
 	public:
 		bool propagate_exceptions = false;
 		bool partial_success_is_success = true;
-			
+
 		abstract_kernel(const std::string& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root())
 			: geometry_library_(geometry_library)
 			, settings_(settings)

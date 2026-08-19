@@ -33,7 +33,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcUShapeProfileDef& inst) {
 	const double d1 = inst.WebThickness() * length_unit_;
 	const double d2 = inst.FlangeThickness() * length_unit_;
 	const double slope = inst.FlangeSlope().value_or(0.) * angle_unit_;
-	
+
 	double dy1 = 0.0f;
 	double dy2 = 0.0f;
 	double f1 = 0.0f;

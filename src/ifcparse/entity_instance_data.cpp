@@ -64,7 +64,7 @@ namespace {
                 !std::is_same_v<std::remove_cv_t<T>, express::base>)
             {
                 std::string str;
-                array_.db_ptr->db->Get(rocksdb::ReadOptions{}, 
+                array_.db_ptr->db->Get(rocksdb::ReadOptions{},
                     (is_header ? "h|" : (entity_or_type->as_entity() ? "i|" : "t|")) +
                     (is_header ? entity_or_type->name() : std::to_string(instance_name_)) + "|" +
                     std::to_string(index_), &str);
@@ -132,7 +132,7 @@ namespace {
             }
             return (size_t) str[0] - 'A';
         }
-#endif 
+#endif
         throw std::logic_error("RocksDB storage is unavailable");
     }
 }
@@ -347,7 +347,7 @@ bool ::impl::serialize(std::string& val, const std::vector<std::vector<express::
 {
     std::ostringstream oss;
 	oss.put(type_encoder::encode_type<std::vector<std::vector<express::base>>>());
-    
+
     auto write_size = [&oss](size_t sz) {
         std::string size_str;
         size_str.resize(sizeof(size_t));
@@ -477,7 +477,7 @@ bool ::impl::deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, con
 		size_t inner_size;
 		memcpy(&inner_size, ptr, sizeof(size_t));
 		ptr += sizeof(size_t);
-        
+
         if (ptr + inner_size * (sizeof(size_t) + 1) > val.data() + val.size()) {
 			return false;
 		}
@@ -533,7 +533,7 @@ void rocks_db_attribute_storage::set(void* storage, const ifcopenshell::declarat
     rdb_storage->db->Put(
         rdb_storage->wopts,
         (is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +
-        (is_header ? decl->name() : std::to_string(identity)) + "|" + 
+        (is_header ? decl->name() : std::to_string(identity)) + "|" +
         std::to_string(index), v);
 }
 

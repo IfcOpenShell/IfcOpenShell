@@ -392,7 +392,7 @@ void svg_serializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std
 				std::swap(p1, p2);
 			}
 
-			
+
 
 			if (first) {
 				if (first_wire) {
@@ -599,7 +599,7 @@ namespace {
 		/*
 		// in v0.8 apparently we don't get a solid/shell anymore because
 		// we no longer use PrimAPI, but rather resolve the box to an
-		// explicit shell with 6 faces in the mapping, which - depending 
+		// explicit shell with 6 faces in the mapping, which - depending
 		// on settings - may remain solely a compound of 6.
 
 		TopExp_Explorer exp(compound, TopAbs_SHELL);
@@ -736,9 +736,9 @@ void svg_serializer::write(const ifcopenshell::geom::native_element* brep_obj) {
 		if (file) {
 			auto item = this->file->instance_by_id(x.ItemId());
 			curve_style_name = get_curve_style_name(item);
-		}		
-		
-		if (curve_style_name && 
+		}
+
+		if (curve_style_name &&
 			(boost::starts_with(*curve_style_name, "LINE_") ||
 			 boost::starts_with(*curve_style_name, "DASH_")))
 		{
@@ -775,7 +775,7 @@ void svg_serializer::write(const ifcopenshell::geom::native_element* brep_obj) {
 	} else if (elevation_ref_guid_) {
 		is_elevation = *elevation_ref_guid_ == brep_obj->guid();
 	}
-	
+
 	BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
 	make_transform_global.Build();
 	// (When determinant < 0, copy is implied and the input is not mutated.)
@@ -1153,7 +1153,7 @@ void svg_serializer::write(const geometry_data& data) {
 #endif
 
 	// SVG has a coordinate system with the origin in the *upper*-left corner
-	// therefore we mirror the shape along the XZ-plane.	
+	// therefore we mirror the shape along the XZ-plane.
 	gp_Trsf trsf_mirror;
 	if (!mirror_y_) {
 		trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
@@ -1253,17 +1253,17 @@ void svg_serializer::write(const geometry_data& data) {
 					B.Add(annotation, BRepBuilderAPI_MakeEdge(p2, center).Edge());
 				}
 			}
-		}		
+		}
 	}
 
 	bool emitted = false;
-	
+
 	for (auto sit = section_heights_used->begin(); sit != section_heights_used->end(); ++sit) {
 		const auto& variant = *sit;
-		
+
 		// Elev + offset
 		double cut_z = std::numeric_limits<double>::infinity();
-		
+
 		// Elev .. Elev(next)
 		std::pair<double, double> range;
 
@@ -1331,7 +1331,7 @@ void svg_serializer::write(const geometry_data& data) {
 
 			// Exclude annotations, spaces and grids from HLR
 			if (any_in_front && !data.product.declaration().is("IfcAnnotation") && !data.product.declaration().is("IfcSpace") && !data.product.declaration().is("IfcGrid")) {
-				
+
 				TopoDS_Shape* compound_to_hlr = &compound_to_use;
 				TopoDS_Shape subtracted_shape;
 
@@ -1350,7 +1350,7 @@ void svg_serializer::write(const geometry_data& data) {
 					bool should_cut = false;
 					TopExp_Explorer exp(compound_to_use, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
-						
+
 						const TopoDS_Face& face = TopoDS::Face(exp.Current());
 						BRepGProp_Face prop(face);
 						gp_Pnt _;
@@ -1424,7 +1424,7 @@ void svg_serializer::write(const geometry_data& data) {
 						}
 
 						try {
-							
+
 							BRepBuilderAPI_MakeFace mf(new Geom_Plane(projection_plane), min_u - 1., max_u + 1., min_v - 1., max_v + 1., Precision::Confusion());
 							auto f = mf.Face();
 							gp_Pnt ref = projection_plane.Position().Location().XYZ() + projection_plane.Position().Direction().XYZ();
@@ -1466,12 +1466,12 @@ void svg_serializer::write(const geometry_data& data) {
 							TopExp::Vertices(edge, v0, v1);
 							auto pnt0 = BRep_Tool::Pnt(v0);
 							auto pnt1 = BRep_Tool::Pnt(v1);
-							
+
 							// Exclude edges that have both vertices behind plane;
 							if (infront_or_behind(projection_plane, pnt0) != -1 && infront_or_behind(projection_plane, pnt1) != -1) {
 								continue;
 							}
-							
+
 							double u0, u1;
 							auto crv = BRep_Tool::Curve(edge, u0, u1);
 							gp_Pnt _;
@@ -1487,7 +1487,7 @@ void svg_serializer::write(const geometry_data& data) {
 							}
 
 							auto faces = map.FindFromIndex(i);
-							
+
 							// Add non-manifold edges
 							bool add = faces.Extent() != 2;
 
@@ -1524,12 +1524,12 @@ void svg_serializer::write(const geometry_data& data) {
 									// Profile edges are adges where the sign of the
 									// dot product Vdir . Fnormal flips sign.
 									add = std::signbit(dot0) != std::signbit(dot1);
-								}								
+								}
 							}
 
 							if (add) {
 								BB.Add(profile_edges, edge);
-							}							
+							}
 						}
 					}
 				}
@@ -1657,7 +1657,7 @@ void svg_serializer::write(const geometry_data& data) {
 		}
 
 		auto svg_name = data.svg_name;
-		
+
 		path_object* po_ = nullptr;
 		auto po = [this, &po_, &pln, &storey, &drawing_name, &svg_name]() {
 			if (po_ == nullptr) {
@@ -1812,7 +1812,7 @@ void svg_serializer::write(const geometry_data& data) {
 						path.add("</text>");
 						po()->second.push_back(path);
 					}
-					
+
 				} else if (object_type == "Symbol") {
 
 					TopExp_Explorer exp(subshape_to_use, TopAbs_WIRE, TopAbs_FACE);
@@ -1820,7 +1820,7 @@ void svg_serializer::write(const geometry_data& data) {
 						const auto& W = TopoDS::Wire(exp.Current());
 						write(*po(), W, *dash_it);
 					}
-					
+
 				}
 
 				// We're finished processing IfcAnnotation instances
@@ -1882,7 +1882,7 @@ void svg_serializer::write(const geometry_data& data) {
 			BB.MakeCompound(wires_compound);
 
 			for (int i = 1; i <= wires->Length(); ++i) {
-				
+
 				// @nb not const, because in case of storey annotations we might
 				// generate a new wire with fixed length
 
@@ -1905,19 +1905,19 @@ void svg_serializer::write(const geometry_data& data) {
 					}
 
 				}
-				
+
 				if (file && data.product.declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && ifcopenshell::geom::util::count(wire, TopAbs_EDGE) == 1) {
-					
+
 					std::string elev_str;
 
 					const double lu = file->get_unit("LENGTHUNIT").second;
                     auto a = data.product.as<express::entity>().get("Elevation");
 					if (!a.isNull()) {
 						double elev = a;
-						
+
 						// @nb we don't actually factor in the length unit.
 						// elev *= lu;
-						
+
 						if (almost(1.) == lu) {
 							// m
 							elev_str = boost::str(boost::format("%.3f") % elev);
@@ -2027,7 +2027,7 @@ void svg_serializer::write(const geometry_data& data) {
 					);
 
 					if (d > furthest_points_distance) {
-						
+
 						// Sample some points on the line and assure it's inside.
 						bool all_inside = true;
 						for (int n = 5; n < 95; ++n) {
@@ -2132,7 +2132,7 @@ std::array<std::array<double, 3>, 3> svg_serializer::resize() {
 
 		double sc, cx, cy;
 		if (offset_2d_ && scale_) {
-			// offset_2d is the offset in plane u,v coordinates as we want to keep the 
+			// offset_2d is the offset in plane u,v coordinates as we want to keep the
 			// plane coordinates used for HLR close to the model origin.
 			sc = (*scale_) * 1000;
 			cx = offset_2d_->first;
@@ -2351,7 +2351,7 @@ void svg_serializer::addTextAnnotations(const drawing_key& k) {
 							po = &start_path(meta.pln_3d, k.first, svg_name);
 						} else {
 							po = &start_path(meta.pln_3d, k.second, svg_name);
-						}							
+						}
 
 						std::optional<double> font_size;
 						std::vector<std::string> tokens;
@@ -2366,7 +2366,7 @@ void svg_serializer::addTextAnnotations(const drawing_key& k) {
 						// @todo column or row?
 						double z_rotation = gp::DX().Transformed(trsf).AngleWithRef(
 							meta.pln_3d.Position().XDirection(),
-							meta.pln_3d.Position().Direction()									
+							meta.pln_3d.Position().Direction()
 						);
 						z_rotation *= 180. / M_PI;
 
@@ -2496,7 +2496,7 @@ void svg_serializer::finalize() {
 	}
 
 	resetScale();
-	
+
 	if (deferred_section_data_ && deferred_section_data_->size() && element_buffer_.size()) {
 
 		// Draw door arcs only on floor plans.
@@ -2526,7 +2526,7 @@ void svg_serializer::finalize() {
 			if (use_hlr) {
 				const auto& section = boost::get<vertical_section>(sd);
 				const auto& ax = section.plane.Position();
-				
+
 				draw_hlr(ax, { express::base{}, drawing_name });
 			}
 
@@ -2622,7 +2622,7 @@ void svg_serializer::finalize() {
 		}
 		svg_file.stream << "        </g>\n";
 	}
-	
+
 	if (previous) {
 		svg_file.stream << "    </g>\n";
 	}
@@ -2640,12 +2640,12 @@ void svg_serializer::doWriteHeader() {
 		svg_file.stream << " xmlns:ifc=\"http://www.ifcopenshell.org/ns\"";
 	}
 	if (scale_ && size_) {
-		svg_file.stream << 
+		svg_file.stream <<
 			" width=\"" << size_->first << "mm\""
 			" height=\"" << size_->second << "mm\"" <<
 			" viewBox=\"0 0 " << size_->first << " " << size_->second << "\"";
 	}
-		
+
 	svg_file.stream << ">\n"
 		"    <defs>\n"
 		"        <marker id=\"arrowend\" markerWidth=\"10\" markerHeight=\"7\" refX=\"10\" refY=\"3.5\" orient=\"auto\">\n"
@@ -2883,7 +2883,7 @@ namespace {
 	template <typename T>
 	std::string array_to_string(const T& v) {
 		return "[" + std::accumulate(
-			v.begin() + 1, v.end(), 
+			v.begin() + 1, v.end(),
 			array_to_string(v.front()),
 			[](const std::string& accum, decltype(*v.cbegin())& item) {
 				return accum + "," + array_to_string(item);

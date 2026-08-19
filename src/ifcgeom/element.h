@@ -53,7 +53,7 @@ namespace ifcopenshell::geom {
 			}
         }
 		const ifcopenshell::geom::taxonomy::matrix4::ptr& data() const {
-            if (matrix_orig_units_) {            
+            if (matrix_orig_units_) {
 				return matrix_orig_units_;
             }
 			if (matrix_) {
@@ -131,7 +131,7 @@ namespace ifcopenshell::geom {
             const std::string& guid, const std::string& context, const ifcopenshell::geom::taxonomy::matrix4::ptr& trsf, const express::entity& product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
-		{ 
+		{
 			std::ostringstream oss;
 
 			if (type == "IfcProject") {

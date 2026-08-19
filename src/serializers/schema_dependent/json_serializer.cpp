@@ -345,7 +345,7 @@ void POSTFIX_SCHEMA(json_serializer)::finalize() {
                 jprop["unit"] = std::distance(units.begin(), std::find(units.begin(), units.end(), unit));
             }
         }
-        
+
         return jprop;
     };
 
@@ -358,7 +358,7 @@ void POSTFIX_SCHEMA(json_serializer)::finalize() {
             "value": 12.5,
             "valueType": "ElementQuantity",
             "unit": 3
-          }       
+          }
           */
         if (auto qto = qto_.as<IfcSchema::IfcPhysicalQuantity>()) {
             jprop["name"] = qto.Name();

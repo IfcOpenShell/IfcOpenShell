@@ -84,7 +84,7 @@ CGAL::Polyhedron_3<kernel_> ifcopenshell::geom::utils::create_polyhedron(std::li
 		//    fresult.close();
 		return CGAL::Polyhedron_3<kernel_>();
 	}
-	
+
 	//  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
 
 	return polyhedron;
@@ -223,7 +223,7 @@ bool cgal_kernel::convert(const taxonomy::shell::ptr l, cgal_polyhedron& shape) 
 			} else {
 				logger().message(ifcopenshell::logger::LOG_ERROR, "Failed to convert face:", f->instance);
                 return false;
-            }			
+            }
 		}
 
 		//    std::cout << "Face in ConnectedFaceSet: " << std::endl;
@@ -673,9 +673,9 @@ namespace {
 
 namespace {
 	void face_to_poly_with_holes(const cgal_face& face, CGAL::Polygon_with_holes_2<kernel_>& pwh, CGAL::Aff_transformation_3<kernel_>& place) {
-		// static 
+		// static
 		kernel_::Vector_3 Z(0, 0, 1);
-		// static 
+		// static
 		kernel_::Vector_3 X(1, 0, 0);
 
 		auto refz = newell(face.outer);
@@ -912,7 +912,7 @@ bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::b
 #else
 	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<kernel_>> second_operand_collector;
 	size_t second_operand_collector_size = 0;
-	
+
 	std::list<std::pair<express::base, std::list<cgal_polyhedron>>> operands;
 
 	std::list<express::base> second_operand_instances;
@@ -1483,7 +1483,7 @@ bool cgal_kernel::preprocess_boolean_operand(const express::base& log_reference,
 		for (auto& nef : first_operands_nef) {
 			// @todo eliminate this copy (= to remove const)
 			auto nef_copy = nef;
-			auto tree = build_halfspace_tree_decomposed(nef_copy, planes_fixed);  
+			auto tree = build_halfspace_tree_decomposed(nef_copy, planes_fixed);
 		}
 		{
 			// @nb we snap internally as well...
@@ -1551,7 +1551,7 @@ bool cgal_kernel::preprocess_boolean_operand(const express::base& log_reference,
 		}
 	}
 
-	
+
 
 	/*
 	{
@@ -2026,7 +2026,7 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vect
 				if (!convert(face, fs) || fs.size() != 1) {
 					return false;
 				}
-				
+
 				auto& w = fs.front().outer;
 				CGAL::Polygon_2<kernel_> ps;
 				for (auto& wire_point : w) {
@@ -2037,7 +2037,7 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vect
 					continue;
 				}
 
-				// static 
+				// static
 				auto z = taxonomy::make<taxonomy::direction3>(0, 0, 1);
 				cgal_polyhedron poly;
 				process_extrusion(fs.front(), z, 200, poly);

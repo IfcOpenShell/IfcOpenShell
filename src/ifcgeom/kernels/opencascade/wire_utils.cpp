@@ -381,7 +381,7 @@ namespace {
 bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List<TopoDS_Shape>& wires, const wire_tolerance_settings& settings) {
 	double eps = get_wire_intersection_tolerance(settings, wire);
 	double eps_real = settings.precision;
-	
+
 	if (!wire.Closed()) {
 		wires.Append(wire);
 		return false;
@@ -576,7 +576,7 @@ void ifcopenshell::geom::util::select_largest(const NCollection_List<TopoDS_Shap
 		BRepBndLib::AddClose(it.Value(), bb);
 		double xyz_min[3], xyz_max[3];
 		bb.Get(xyz_min[0], xyz_min[1], xyz_min[2], xyz_max[0], xyz_max[1], xyz_max[2]);
-		
+
 		// @todo hard coded precision.
 		// @todo this is a really strange measure for wire size. Why not use newell's
 		// method to project to plane and then calculate size of the 2d bbox?

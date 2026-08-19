@@ -51,7 +51,7 @@ express::base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t
             return express::base(it->second);
         }
     }
-    
+
     std::string v;
 
     rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, (r == entityinstance_ref ? "i|" : "t|") + std::to_string(number) + "|_", &v);
@@ -377,7 +377,7 @@ express::base ifcopenshell::impl::in_memory_file_storage::create(const ifcopensh
     } else {
         tbyid_.insert({data->identity(), data});
     }
- 
+
     express::base inst(data);
     add_type_ref(inst);
 
@@ -414,4 +414,3 @@ express::base ifcopenshell::file::create(const ifcopenshell::declaration* decl, 
         }
     }, storage_);
 }
-

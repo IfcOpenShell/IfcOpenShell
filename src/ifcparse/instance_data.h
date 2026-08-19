@@ -301,7 +301,7 @@ namespace impl {
     bool serialize(std::string& buffer, const boost::logic::tribool& value);
 
     bool serialize(std::string& buffer, const boost::dynamic_bitset<>& value);
-    
+
     bool serialize(std::string& buffer, const express::base& value);
 
     bool serialize(std::string& buffer, const ifcopenshell::enumeration_reference& value);

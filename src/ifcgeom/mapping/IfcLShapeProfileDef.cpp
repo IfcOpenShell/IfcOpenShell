@@ -32,7 +32,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef& inst) {
 	const double x = inst.Width().value_or(inst.Depth()) / 2.0f * length_unit_;
 	const double d = inst.Thickness() * length_unit_;
 	const double slope = inst.LegSlope().value_or(0.) * angle_unit_;
-	
+
 	double f1 = 0.0f;
 	double f2 = 0.0f;
 	if (doFillet) {

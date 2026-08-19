@@ -43,11 +43,11 @@
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
 					Py_INCREF(Py_None);
-					return static_cast<PyObject*>(Py_None); 
+					return static_cast<PyObject*>(Py_None);
 				}
             } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                 Py_INCREF(Py_None);
-				return static_cast<PyObject*>(Py_None); 
+				return static_cast<PyObject*>(Py_None);
             } else {
 				return pythonize(v);
 			}

@@ -119,7 +119,7 @@ class IFC_PARSE_API base {
 
     void set_attribute_value(size_t attribute_index, const express::base& value);
     void set_attribute_value(const std::string& attribute_name, const express::base& value);
-    
+
     void unset_attribute_value(size_t attribute_index);
 
     ifcopenshell::attribute_value get_attribute_value(size_t attribute_index) const;
@@ -152,7 +152,7 @@ class IFC_PARSE_API base {
             } else {
                 return T{};
             }
-        }     
+        }
     }
 
     ifcopenshell::file* file() const;

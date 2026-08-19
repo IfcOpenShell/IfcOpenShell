@@ -105,7 +105,7 @@ public:
 	{
 		total_ = std::accumulate(estimates_.begin(), estimates_.end(), 0.f);
 		(*this)(0.);
-	}	
+	}
 
 	void finished() {
 		++phase_;

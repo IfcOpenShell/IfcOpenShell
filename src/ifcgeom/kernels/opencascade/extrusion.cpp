@@ -35,7 +35,7 @@ bool open_cascade_kernel::convert(const taxonomy::extrusion::ptr extrusion, Topo
 
 	if (face.ShapeType() == TopAbs_COMPOUND) {
 
-		// For compounds (most likely the result of a IfcCompositeProfileDef) 
+		// For compounds (most likely the result of a IfcCompositeProfileDef)
 		// create a compound solid shape.
 
 		TopExp_Explorer exp(face, TopAbs_FACE);

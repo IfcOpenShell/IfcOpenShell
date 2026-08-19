@@ -20,7 +20,7 @@
 /********************************************************************************
  *                                                                              *
  * This file provides functions for loading an IFC file into memory and access  *
- * its entities either by ID, by an IfcSchema::Type or by reference             * 
+ * its entities either by ID, by an IfcSchema::Type or by reference             *
  *                                                                              *
  ********************************************************************************/
 
@@ -53,7 +53,7 @@ class IFC_PARSE_API spf_lexer {
   private:
     character_decoder<Reader>* decoder_;
     ifcopenshell::logger& logger_;
-    
+
     size_t skip_whitespace() const;
     size_t skip_comment() const;
 
@@ -61,7 +61,7 @@ class IFC_PARSE_API spf_lexer {
     mutable size_t pool_index = 0;
 
   public:
-    
+
     spf_lexer(const spf_lexer&) = delete;
     spf_lexer& operator=(const spf_lexer&) = delete;
 

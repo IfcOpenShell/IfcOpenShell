@@ -27,7 +27,7 @@ namespace ifcopenshell { namespace geom {
 		ifcopenshell::geom::kernels::abstract_kernel* kernel() { return &*kernel_; }
 
 		converter(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root());
-		
+
 		~converter();
 
 		ifcopenshell::geom::abstract_mapping* mapping() const { return mapping_; }

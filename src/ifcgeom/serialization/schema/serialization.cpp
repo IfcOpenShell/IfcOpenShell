@@ -162,7 +162,7 @@ int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>&
         el.setSemiAxis1(ellipse->MajorRadius());
         el.setSemiAxis2(ellipse->MinorRadius());
         curve = el;
-		        
+
 		return 1;
 	}
 #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
@@ -461,11 +461,11 @@ int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Edge& e, IfcSchema::IfcEd
         IfcSchema::IfcEdge edge2 = f.create<IfcSchema::IfcEdge>();
         edge2.setEdgeStart(vertex1);
         edge2.setEdgeEnd(vertex2);
-		
+
 		auto ori = f.create<IfcSchema::IfcOrientedEdge>();
 		ori.setEdgeElement(edge2);
         ori.setOrientation(true);
-		
+
 		edge = ori;
 		return 1;
 	} else {

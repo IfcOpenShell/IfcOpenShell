@@ -184,7 +184,7 @@ std::string taxonomy_item_repr(ifcopenshell::geom::taxonomy::item::ptr i) {
 	if (!result.empty() && result.back() == '\n') {
 		result.pop_back();
 	}
-	return result;  
+	return result;
 }
 %}
 
@@ -849,7 +849,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
         polyhedral_faces_without_holes = property(polyhedral_faces_without_holes)
         polyhedral_faces_with_holes = property(polyhedral_faces_with_holes)
         def get_faces(self):
-            if self.faces_tri: 
+            if self.faces_tri:
                 return self.faces_tri
             elif self.polyhedral_faces_without_holes:
                 return self.polyhedral_faces_without_holes
@@ -1310,7 +1310,7 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 		auto cgs = dynamic_cast<ifcopenshell::geom::cgal_shape*>($self);
 		if (cgs) {
 			write_to_obj(cgs->nef(), result, std::numeric_limits<size_t>::max());
-		}		
+		}
 		return result.str();
 	}
 
@@ -1318,7 +1318,7 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 		auto cgs = dynamic_cast<ifcopenshell::geom::cgal_shape*>($self);
 		if (cgs) {
 			cgs->convex_tag() = b;
-		}		
+		}
 	}
 
 	std::string serialize() {
@@ -1368,7 +1368,7 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 			return r;
 		} else {
 			throw std::runtime_error("Failed to read SVG");
-		}	
+		}
 	}
 
 	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons, ifcopenshell::logger* logger = nullptr) {

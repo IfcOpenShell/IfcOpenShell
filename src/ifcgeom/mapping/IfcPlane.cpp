@@ -24,5 +24,5 @@ using namespace ifcopenshell::geom;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPlane& inst) {
 	auto p = taxonomy::make<taxonomy::plane>();
 	p->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
-	return p;	
+	return p;
 }

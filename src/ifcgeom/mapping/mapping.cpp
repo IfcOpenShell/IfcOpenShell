@@ -69,7 +69,7 @@ std::vector<IfcSchema::IfcProduct> mapping::products_represented_by(const IfcSch
         auto invs = prodrep.file()->get_inverse(prodrep.id(), &IfcSchema::IfcProduct::Class(), -1);
         for (auto& inv : invs) {
             products.push_back(inv.as<IfcSchema::IfcProduct>());
-        }        
+        }
     }
 
     if (only_direct) {
@@ -169,7 +169,7 @@ bool mapping::reuse_ok_(const std::vector<IfcSchema::IfcProduct>& products) {
 
 std::vector<express::base> mapping::find_openings(const express::base& inst) {
     std::vector<express::base> openings;
-    
+
     if (auto rep = inst.as<IfcSchema::IfcRepresentation>()) {
         // @todo this is essentially only for hybrid kernel trying to guess
         // when not to use a simple kernel.
@@ -246,11 +246,11 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
     int task_index = 0;
 
     std::set<IfcSchema::IfcProduct> products_seen;
-    
+
     for (auto representation : representations) {
         IfcSchema::IfcRepresentationMap rmap;
         std::vector<IfcSchema::IfcProduct> ifcproducts = filter_products(products_represented_by(representation, rmap, false), filters);
-        
+
         if (ifcproducts.empty()) {
             continue;
         }
@@ -838,7 +838,7 @@ express::base mapping::get_decomposing_entity(const express::base& inst, bool in
         for (auto it = parents.begin(); it != parents.end(); ++it) {
             IfcSchema::IfcRelDecomposes decompose = (*it).as<IfcSchema::IfcRelDecomposes>();
             express::base ifc_objectdef;
-                                                                                                                
+
             ifc_objectdef = get_RelatingObject(decompose);
 
             if (!ifc_objectdef || product == ifc_objectdef) continue;
@@ -871,7 +871,7 @@ void mapping::initialize_units_() {
     length_unit_ = 1.;
     angle_unit_ = -1.;
     length_unit_name_ = "METER";
-    
+
 #ifdef SCHEMA_HAS_IfcContext
     auto projects = file_->instances_by_type<IfcSchema::IfcContext>();
 #else
@@ -1133,7 +1133,7 @@ bool mapping::get_layerset_information(const express::base& p, layerset_informat
         std::vector<IfcSchema::IfcExtrudedAreaSolid> extrusions;
         for (auto& r : resources) {
             if (auto ex = r.as<IfcSchema::IfcExtrudedAreaSolid>()) {
-                extrusions.push_back(ex);   
+                extrusions.push_back(ex);
             }
         }
 
@@ -1209,7 +1209,7 @@ bool mapping::get_layerset_information(const express::base& p, layerset_informat
 
     }
 
-    
+
 
     return true;
 }

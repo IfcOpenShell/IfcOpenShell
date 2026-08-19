@@ -235,7 +235,7 @@ CREATE_VECTOR_TYPEMAP_IN(express::base, ENTITY INSTANCE, entity instance)
 		if (ascii) {
 			$1 = strcmp(PyBytes_AS_STRING(ascii), "UNKNOWN") == 0;
 			Py_DECREF(ascii);
-		}	
+		}
 	}
 }
 
@@ -274,20 +274,20 @@ CREATE_OPTIONAL_TYPEMAP_IN(std::string, string, str)
 		if (!PySequence_Check(aggregate)) return false;
 		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
 			PyObject* element = PySequence_GetItem(aggregate, i);
-			
+
 			bool b = true;
 			void* argp1 = nullptr;
 			auto res1 = SWIG_ConvertPtr(element, &argp1, type_obj, 0);
 			if (!SWIG_IsOK(res1)) {
 				b = false;
 			}
-			
+
 			Py_DECREF(element);
 			if (!b) {
 				return false;
 			}
 		}
-		return true;		
+		return true;
 	}
 
 	template <typename T>

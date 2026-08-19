@@ -37,11 +37,11 @@ namespace {
 // TODO: Make this a member of xml_serializer?
 std::map<std::string, std::string> POSTFIX_SCHEMA(argument_name_map);
 
-// Format an IFC attribute and maybe returns as string. Only literal scalar 
+// Format an IFC attribute and maybe returns as string. Only literal scalar
 // values are converted. Things like entity instances and lists are omitted.
 std::optional<std::string> format_attribute(ifcopenshell::geom::abstract_mapping* mapping, ifcopenshell::attribute_value argument, ifcopenshell::argument_type argument_type, const std::string& argument_name) {
 	std::optional<std::string> value;
-	
+
 	// Hard-code lat-lon as it represents an array
 	// of integers best emitted as a single decimal
 	if (argument_name == "IfcSite.RefLatitude" ||
@@ -109,7 +109,7 @@ std::optional<std::string> format_attribute(ifcopenshell::geom::abstract_mapping
             } else if (auto placement = e.as<IfcSchema::IfcLocalPlacement>()) {
 				auto item = mapping->map(e);
 				auto matrix = ifcopenshell::geom::taxonomy::cast< ifcopenshell::geom::taxonomy::matrix4>(item);
-				
+
 				std::stringstream stream;
 				for (int i = 0; i < 4; ++i) {
 					for (int j = 0; j < 4; ++j) {
@@ -139,7 +139,7 @@ ptree* format_entity_instance(ifcopenshell::logger& log, ifcopenshell::geom::abs
 		} catch (const std::exception&) {
 		    log.error("SER", 9, "Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
 		    break;
-		}		
+		}
 		auto argument = instance.get_attribute_value(i);
 		if (argument.isNull()) continue;
 
@@ -185,7 +185,7 @@ std::string qualify_unrooted_instance(const express::base& inst) {
     return inst.declaration().name() + "_" + std::to_string(inst.id());
 }
 
-// A function to be called recursively. Template specialization is used 
+// A function to be called recursively. Template specialization is used
 // to descend into decomposition, containment and property relationships.
 template <typename A>
 ptree* descend(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* mapping, A instance, ptree& tree, express::base parent = express::base()) {
@@ -212,14 +212,14 @@ auto get_related(ifcopenshell::logger& log, T t, F f, G g) {
             } else if constexpr (std::is_base_of_v<express::select, decltype(vs)>) {
                 if (auto vv = vs.concrete().template as<V>()) {
                     acc.push_back(vv);
-                }                
+                }
             } else {
                 for (auto& v : vs) {
                     if (auto vv = v.template as<V>()) {
 						acc.push_back(vv);
                     }
                 }
-            }            
+            }
 		} catch (ifcopenshell::exception& e) {
 			log.error(e);
 		}
@@ -249,12 +249,12 @@ ptree* descend(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* 
 			descend(log, mapping, f, child, product);
 		}
 	}
-	
+
 	if (auto structure = product.as<IfcSchema::IfcSpatialStructureElement>()) {
 		auto elements = get_related
 			<IfcSchema::IfcSpatialStructureElement, IfcSchema::IfcRelContainedInSpatialStructure, IfcSchema::IfcObjectDefinition>
 			(log, structure, &IfcSchema::IfcSpatialStructureElement::ContainsElements, &IfcSchema::IfcRelContainedInSpatialStructure::RelatedElements);
-	
+
 		for (auto& el : elements) {
 			descend(log, mapping, el, child, product);
 		}
@@ -342,7 +342,7 @@ ptree* descend(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* 
             node.put("<xmlattr>.xlink:href", "#" + p.first);
             format_entity_instance(log, mapping, p.second, node, child, true);
         }
-		
+
 		auto associations = product.HasAssociations();
 		for (auto& rel : associations) {
             if (auto relmat = rel.as<IfcSchema::IfcRelAssociatesMaterial>()) {
@@ -652,7 +652,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 	auto pschedules = file->instances_by_type<IfcSchema::IfcWorkSchedule>();
     for (auto& schedule : pschedules) {
 		ptree* nschedule = format_entity_instance(log, mapping_, schedule, pwork_schedules);
-		
+
 		if(nschedule) {
 			auto controls = schedule.Controls();
 			for(auto& control : controls) {
@@ -691,13 +691,13 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 		}
 	}
 	work.add_child("plans", pwork_plans);
-	
+
 	// Write all work calendars and values as XML nodes.
 #ifdef SCHEMA_HAS_IfcWorkCalendar
 	auto pcalendars = file->instances_by_type<IfcSchema::IfcWorkCalendar>();
     for (auto& calendar : pcalendars) {
 		ptree* ncalendar = format_entity_instance(log, mapping_, calendar, calendars);
-		
+
 		if (ncalendar) {
             auto working_times = calendar.WorkingTimes().value_or(std::vector<IfcSchema::IfcWorkTime>{});
             for (auto& working_time : working_times)
@@ -707,7 +707,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 		}
 	}
 #endif
-	
+
 	auto pconnections = file->instances_by_type<IfcSchema::IfcRelConnectsElements>();
     for (auto& connection : pconnections) {
 		ptree* nconnection = format_entity_instance(log, mapping_, connection, connections);
@@ -717,7 +717,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 
 		format_entity_instance(log, mapping_, connection.RelatedElement(), nrelatedElement, true);
 		format_entity_instance(log, mapping_, connection.RelatingElement(), nrelatingElement, true);
-		
+
 		nconnection->add_child("RelatedElement",  nrelatedElement);
 		nconnection->add_child("RelatingElement", nrelatingElement);
 	}
@@ -726,7 +726,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 	auto type_objects = file->instances_by_type<IfcSchema::IfcTypeObject>();
     for (auto& type_object : type_objects) {
 		ptree* node = descend(log, mapping_, type_object, types);
-		
+
 		if (node && type_object.HasPropertySets()) {
 			auto property_sets = *type_object.HasPropertySets();
 			for (auto& pset : property_sets) {
@@ -774,11 +774,11 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 			ptree node;
 			node.put("<xmlattr>.id", qualify_unrooted_instance(mat));
             // @todo this does not handle IfcMaterialProfileSetUsage and IfcMaterialConstituentSet
-            if (mat.concrete().as<IfcSchema::IfcMaterialLayerSetUsage>() || mat.concrete().as<IfcSchema::IfcMaterialLayerSet>()) {				
+            if (mat.concrete().as<IfcSchema::IfcMaterialLayerSetUsage>() || mat.concrete().as<IfcSchema::IfcMaterialLayerSet>()) {
 				IfcSchema::IfcMaterialLayerSet layerset = mat.concrete().as<IfcSchema::IfcMaterialLayerSet>();
 				if (!layerset) {
 					layerset = mat.concrete().as<IfcSchema::IfcMaterialLayerSetUsage>().ForLayerSet();
-				}				
+				}
 				if (layerset.LayerSetName()) {
 					node.put("<xmlattr>.LayerSetName", *layerset.LayerSetName());
 				}
@@ -821,7 +821,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 #else
 	boost::property_tree::xml_writer_settings<char> settings('\t', 1);
 #endif
-	
+
 	std::ofstream f(ifcopenshell::path::from_utf8(xml_filename).c_str());
 	boost::property_tree::write_xml(f, root, settings);
 }

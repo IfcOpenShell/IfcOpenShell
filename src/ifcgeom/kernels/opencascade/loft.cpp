@@ -163,7 +163,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 			return false;
 		}
 	}
-	
+
 	NCollection_List<TopoDS_Shape> faces;
 	TopoDS_Compound comp;
 	BRep_Builder BB;
@@ -330,7 +330,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
             std::array<std::vector<std::vector<std::set<std::string>>>::const_iterator, 2> tag_pairs = {
                 all_tags.begin() + std::distance(shps.begin(), it),
                 all_tags.begin() + std::distance(shps.begin(), jt)};
-            
+
 			for (size_t i = 0; i < 2; ++i) {
                 NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> ancestors;
 				const auto& wire = wp[i];
@@ -357,7 +357,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 
                     for (NCollection_List<TopoDS_Shape>::Iterator edge_it(incidentEdges); edge_it.More(); edge_it.Next()) {
                         const TopoDS_Edge& e = TopoDS::Edge(edge_it.Value());
-						
+
 						TopoDS_Vertex ev0, ev1;
                         TopExp::Vertices(e, ev0, ev1);
 
@@ -405,11 +405,11 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
                     ++d;
                 } else {
                     throw std::runtime_error("Unable to construct surface");
-				}				
+				}
 			}
 
             continue;
-        }		
+        }
 
 		for (auto& wp : ws) {
 			BRepTools_WireExplorer a(wp[0]);

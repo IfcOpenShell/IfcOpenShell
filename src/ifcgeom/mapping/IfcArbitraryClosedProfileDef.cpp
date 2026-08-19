@@ -45,7 +45,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcArbitraryClosedProfileDef& i
 				}
 			}
 		}
-		
+
 		return face;
 	} else {
 		return nullptr;

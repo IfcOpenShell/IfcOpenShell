@@ -84,7 +84,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_openings(const express::ba
 		// opening_trsf = relative;
 
 		std::vector<ifcopenshell::geom::conversion_result> opening_shapes;
-		
+
 		// @todo
 		abstract_kernel::convert(op.first, opening_shapes);
 
@@ -309,13 +309,13 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 
 // IfcSchema::IfcRelVoidsElement::list::ptr ifcopenshell::geom::Kernel::find_openings(IfcSchema::IfcProduct* product) {
 // 	std::vector<IfcSchema::IfcRelVoidsElement*> rs;
-// 
+//
 // 	if (product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
 // 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 // 		auto rels = element->HasOpenings();
 // 		rs.insert(rs.end(), rels->begin(), rels->end());
 // 	}
-// 
+//
 // 	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
 // 	IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
 // 	for (;;) {
@@ -327,10 +327,10 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			auto rels = element->HasOpenings();
 // 			rs.insert(rs.end(), rels->begin(), rels->end());
 // 		}
-// 
+//
 // 		obdef = rel_obdef;
 // 	}
-// 
+//
 // 	// Filter openings in Reference view, solely marked as Reference.
 // 	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
 // 	std::for_each(rs.begin(), rs.end(), [&openings](IfcSchema::IfcRelVoidsElement* rel) {
@@ -341,17 +341,17 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 	});
-// 
+//
 // 	return openings;
 // }
-// 
+//
 // const IfcSchema::IfcMaterial* ifcopenshell::geom::Kernel::get_single_material_association(const IfcSchema::IfcProduct* product) {
 // 	IfcSchema::IfcMaterial* single_material = 0;
 // 	IfcSchema::IfcRelAssociatesMaterial::list::ptr associated_materials = product->HasAssociations()->as<IfcSchema::IfcRelAssociatesMaterial>();
 // 	if (associated_materials->size() == 1) {
 // 		IfcSchema::IfcMaterialSelect* associated_material = (*associated_materials->begin())->RelatingMaterial();
 // 		single_material = associated_material->as<IfcSchema::IfcMaterial>();
-// 
+//
 // 		// NB: IfcMaterialLayerSets are also considered, regardless of --enable-layerset-slicing. Picking
 // 		// the first material (in accordance with other viewers) when layerset-slicing is disabled.
 // 		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
@@ -366,21 +366,21 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	}
 // 	return single_material;
 // }
-// 
+//
 // ifcopenshell::geom::native_element* ifcopenshell::geom::Kernel::create_brep_for_representation_and_product(
 // 	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
 // {
 // 	std::stringstream representation_id_builder;
-// 
+//
 // 	representation_id_builder << representation->data().id();
-// 
+//
 // 	ifcopenshell::geom::native* shape;
 // 	std::vector<ifcopenshell::geom::conversion_result> shapes, shapes2;
-// 
+//
 // 	if (!convert_shapes(representation, shapes)) {
 // 		return 0;
 // 	}
-// 
+//
 // 	if (settings.get(IteratorSettings::APPLY_LAYERSETS)) {
 // 		TopoDS_Shape merge;
 // 		if (util::flatten_shape_list(shapes, merge, false, getValue(GV_PRECISION))) {
@@ -390,7 +390,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 				std::vector< std::vector<Handle_Geom_Surface> > folded_layers;
 // 				std::vector<std::shared_ptr<const SurfaceStyle>> styles;
 // 				if (convert_layerset(product, layers, styles, thickness)) {
-// 
+//
 // 					IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
 // 					for (IfcSchema::IfcRelAssociates::list::it it = associations->begin(); it != associations->end(); ++it) {
 // 						IfcSchema::IfcRelAssociatesMaterial* associates_material = (**it).as<IfcSchema::IfcRelAssociatesMaterial>();
@@ -400,7 +400,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 							break;
 // 						}
 // 					}
-// 
+//
 // 					if (styles.size() > 1) {
 // 						// If there's only a single layer there is no need to manipulate geometries.
 // 						bool success = true;
@@ -415,7 +415,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 								success = true;
 // 							}
 // 						}
-// 
+//
 // 						if (!success) {
 // 							ifcopenshell::logger::root().error("Failed processing layerset");
 // 						}
@@ -424,9 +424,9 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	bool material_style_applied = false;
-// 
+//
 // 	const IfcSchema::IfcMaterial* single_material = get_single_material_association(product);
 // 	if (single_material) {
 // 		auto s = get_style(single_material);
@@ -448,11 +448,11 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			ifcopenshell::logger::root().warning("No material and surface styles for:", product);
 // 		}
 // 	}
-// 
+//
 // 	if (material_style_applied) {
 // 		representation_id_builder << "-material-" << single_material->data().id();
 // 	}
-// 
+//
 // 	if (settings.force_space_transparency() >= 0. && product->declaration().is("IfcSpace")) {
 // 		for (auto& s : shapes) {
 // 			if (s.hasStyle()) {
@@ -464,7 +464,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	int parent_id = -1;
 // 	try {
 // 		express::entity* parent_object = get_decomposing_entity(product);
@@ -474,10 +474,10 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	} catch (const std::exception& e) {
 // 		ifcopenshell::logger::root().error(e);
 // 	}
-// 
+//
 // 	const std::string name = product->Name().value_or("");
 // 	const std::string guid = product->GlobalId();
-// 
+//
 // 	gp_Trsf trsf;
 // 	try {
 // 		if (product->ObjectPlacement()) {
@@ -488,20 +488,20 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	} catch (...) {
 // 		ifcopenshell::logger::root().error("Failed to construct placement");
 // 	}
-// 
+//
 // 	// Does the IfcElement have any IfcOpenings?
 // 	// Note that openings for IfcOpeningElements are not processed
 // 	IfcSchema::IfcRelVoidsElement::list::ptr openings = find_openings(product);
-// 
+//
 // 	const std::string product_type = product->declaration().name();
 // 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
-// 
+//
 // 	if (!settings.get(ifcopenshell::geom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
 // 		representation_id_builder << "-openings";
 // 		for (IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++it) {
 // 			representation_id_builder << "-" << (*it)->data().id();
 // 		}
-// 
+//
 // 		std::vector<ifcopenshell::geom::conversion_result> opened_shapes;
 // 		bool caught_error = false;
 // 		try {
@@ -512,11 +512,11 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		} catch (...) {
 // 			ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "error processing openings for:", product);
 // 		}
-// 
+//
 // 		if (caught_error && opened_shapes.size() < shapes.size()) {
 // 			opened_shapes = shapes;
 // 		}
-// 
+//
 // 		if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 // 			for (std::vector<ifcopenshell::geom::conversion_result>::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++it) {
 // 				it->prepend(trsf);
@@ -535,14 +535,14 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	} else {
 // 		shape = new ifcopenshell::geom::native(element_settings, representation_id_builder.str(), shapes);
 // 	}
-// 
+//
 // 	std::string context_string = "";
 // 	if (representation->RepresentationIdentifier()) {
 // 		context_string = *representation->RepresentationIdentifier();
 // 	} else if (representation->ContextOfItems()->ContextType()) {
 // 		context_string = *representation->ContextOfItems()->ContextType();
 // 	}
-// 
+//
 // 	auto elem = new native_element(
 // 		product->data().id(),
 // 		parent_id,
@@ -554,7 +554,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		std::shared_ptr<ifcopenshell::geom::native>(shape),
 // 		product
 // 	);
-// 
+//
 // 	if (settings.get(IteratorSettings::VALIDATE_QUANTITIES)) {
 // 		auto rels = product->IsDefinedBy();
 // 		for (auto& rel : *rels) {
@@ -623,10 +623,10 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	return elem;
 // }
-// 
+//
 // IfcSchema::IfcRepresentation* ifcopenshell::geom::Kernel::representation_mapped_to(const IfcSchema::IfcRepresentation* representation) {
 // 	IfcSchema::IfcRepresentation* representation_mapped_to = 0;
 // 	try {
@@ -651,36 +651,36 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	}
 // 	return representation_mapped_to;
 // }
-// 
+//
 // IfcSchema::IfcProduct::list::ptr ifcopenshell::geom::Kernel::products_represented_by(const IfcSchema::IfcRepresentation* representation) {
 // 	IfcSchema::IfcProduct::list::ptr products(new IfcSchema::IfcProduct::list);
-// 
+//
 // 	IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
-// 
+//
 // 	for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
 // 		// http://buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcrepresentationresource/lexical/ifcproductrepresentation.htm
 // 		// IFC2x Edition 3 NOTE  Users should not instantiate the entity IfcProductRepresentation from IFC2x Edition 3 onwards.
 // 		// It will be changed into an ABSTRACT supertype in future releases of IFC.
-// 
+//
 // 		// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
 // 		// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
 // 		products->push((*it)->data().get_inverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>());
 // 	}
-// 
+//
 // 	IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
-// 
+//
 // 	if (products->size() && maps->size()) {
 // 		ifcopenshell::logger::root().warning("Representation used by IfcRepresentationMap and IfcProductDefinitionShape", representation);
 // 	}
-// 
+//
 // 	if (prodreps->size() > 1) {
 // 		ifcopenshell::logger::root().warning("Multiple IfcProductDefinitionShapes for representation", representation);
 // 	}
-// 
+//
 // 	if (maps->size() > 1) {
 // 		ifcopenshell::logger::root().warning("Multiple IfcRepresentationMaps for representation", representation);
 // 	}
-// 
+//
 // 	if (maps->size() == 1) {
 // 		IfcSchema::IfcRepresentationMap* map = *maps->begin();
 // 		if (is_identity_transform(map->MappingOrigin())) {
@@ -688,11 +688,11 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
 // 				IfcSchema::IfcMappedptr item = *it;
 // 				if (item->StyledByItem()->size() != 0) continue;
-// 
+//
 // 				if (!is_identity_transform(item->MappingTarget())) {
 // 					continue;
 // 				}
-// 
+//
 // 				IfcSchema::IfcRepresentation::list::ptr reps = item->data().get_inverse((&IfcSchema::IfcRepresentation::Class()), -1)->as<IfcSchema::IfcRepresentation>();
 // 				for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
 // 					IfcSchema::IfcRepresentation* rep = *jt;
@@ -706,10 +706,10 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	return products;
 // }
-// 
+//
 // ifcopenshell::geom::native_element* ifcopenshell::geom::Kernel::create_brep_for_processed_representation(
 // 	const IteratorSettings& /*settings*/, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product,
 // 	ifcopenshell::geom::native_element* brep)
@@ -723,10 +723,10 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	} catch (const std::exception& e) {
 // 		ifcopenshell::logger::root().error(e);
 // 	}
-// 
+//
 // 	const std::string name = product->Name().value_or("");
 // 	const std::string guid = product->GlobalId();
-// 
+//
 // 	gp_Trsf trsf;
 // 	try {
 // 		if (product->ObjectPlacement()) {
@@ -737,16 +737,16 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	} catch (...) {
 // 		ifcopenshell::logger::root().error("Failed to construct placement");
 // 	}
-// 
+//
 // 	std::string context_string = "";
 // 	if (representation->RepresentationIdentifier()) {
 // 		context_string = *representation->RepresentationIdentifier();
 // 	} else if (representation->ContextOfItems()->ContextType()) {
 // 		context_string = *representation->ContextOfItems()->ContextType();
 // 	}
-// 
+//
 // 	const std::string product_type = product->declaration().name();
-// 
+//
 // 	return new native_element(
 // 		product->data().id(),
 // 		parent_id,
@@ -759,24 +759,24 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		product
 // 	);
 // }
-// 
+//
 // bool ifcopenshell::geom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std::vector<Handle_Geom_Surface>& surfaces, std::vector<std::shared_ptr<const SurfaceStyle>>& styles, std::vector<double>& thicknesses) {
-// 
+//
 // }
-// 
+//
 // bool ifcopenshell::geom::Kernel::find_wall_end_points(const IfcSchema::IfcWall* wall, gp_Pnt& start, gp_Pnt& end) {
 // 	IfcSchema::IfcRepresentation* axis_representation = find_representation(wall, "Axis");
 // 	if (!axis_representation) {
 // 		return false;
 // 	}
-// 
+//
 // 	std::vector<conversion_result> items;
 // 	{
 // 		Kernel temp = *this;
 // 		temp.setValue(GV_DIMENSIONALITY, -1.);
 // 		temp.convert_shapes(axis_representation, items);
 // 	}
-// 
+//
 // 	TopoDS_Vertex a, b;
 // 	for (std::vector<conversion_result>::const_iterator it = items.begin(); it != items.end(); ++it) {
 // 		TopExp_Explorer exp(it->shape(), TopAbs_VERTEX);
@@ -787,36 +787,36 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	if (a.IsNull() || b.IsNull()) {
 // 		return false;
 // 	}
-// 
+//
 // 	start = BRep_Tool::Pnt(a);
 // 	end = BRep_Tool::Pnt(b);
-// 
+//
 // 	return true;
 // }
-// 
+//
 // bool ifcopenshell::geom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const std::vector<conversion_result>& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<double>& thicknesses, std::vector< std::vector<Handle_Geom_Surface> >& result) {
 // 	/*
 // 	 * @todo isn't it easier to do this based on the non-folded surfaces of
 // 	 * the connected walls and fold both pairs of layersets simultaneously?
 // 	*/
-// 
+//
 // 	bool folds_made = false;
-// 
+//
 // 	IfcSchema::IfcRelConnectsPathElements::list::ptr connections(new IfcSchema::IfcRelConnectsPathElements::list);
 // 	connections->push(wall->ConnectedFrom()->as<IfcSchema::IfcRelConnectsPathElements>());
 // 	connections->push(wall->ConnectedTo()->as<IfcSchema::IfcRelConnectsPathElements>());
-// 
+//
 // 	typedef std::vector<Handle_Geom_Surface> surfaces_t;
 // 	typedef std::pair<Handle_Geom_Surface, Handle_Geom_Curve> curve_on_surface;
 // 	typedef std::vector<curve_on_surface> curves_on_surfaces_t;
 // 	typedef std::vector< std::pair< std::pair<IfcSchema::IfcConnectionTypeEnum::Value, IfcSchema::IfcConnectionTypeEnum::Value>, const IfcSchema::IfcProduct*> > endpoint_connections_t;
 // 	typedef std::vector< std::vector<Handle_Geom_Surface> > result_t;
 // 	endpoint_connections_t endpoint_connections;
-// 
+//
 // 	// Find the semantic connections to other wall elements when they are not connected 'AT_PATH' because
 // 	// in that latter case no folds need to be made.
 // 	for (IfcSchema::IfcRelConnectsPathElements::list::it it = connections->begin(); it != connections->end(); ++it) {
@@ -838,18 +838,18 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	if (endpoint_connections.size() == 0) {
 // 		return false;
 // 	}
-// 
+//
 // 	// Count how many connections are made AT_START and AT_END respectively
 // 	int connection_type_count[2] = { 0,0 };
 // 	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
 // 		const int idx = it->first.first == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART;
 // 		connection_type_count[idx] ++;
 // 	}
-// 
+//
 // 	gp_Trsf local;
 // 	if (wall->ObjectPlacement()) {
 // 		if (!convert(wall->ObjectPlacement(), local)) {
@@ -857,7 +857,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		}
 // 	}
 // 	local.Invert();
-// 
+//
 // 	{
 // 		// Copy the unfolded surfaces
 // 		result.resize(surfaces.size());
@@ -867,25 +867,25 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			result_it->push_back(*input_it);
 // 		}
 // 	}
-// 
+//
 // 	const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0.);
-// 
+//
 // 	gp_Pnt own_axis_start, own_axis_end;
 // 	find_wall_end_points(wall, own_axis_start, own_axis_end);
-// 
+//
 // 	// Sometimes duplicate IfcRelConnectsPathElements exist. These are detected
 // 	// and the counts of connections are decremented accordingly.
 // 	for (int idx = 0; idx < 2; ++idx) {
 // 		if (connection_type_count[idx] <= 1) {
 // 			continue;
 // 		}
-// 
+//
 // 		/*
 // 		IfcSchema::IfcConnectionTypeEnum::Value connection_type = idx == 1
 // 			? IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
 // 			: IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATEND;
 // 		*/
-// 
+//
 // 		std::set<const IfcSchema::IfcProduct*> others;
 // 		endpoint_connections_t::iterator it = endpoint_connections.begin();
 // 		while (it != endpoint_connections.end()) {
@@ -899,38 +899,38 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	// Check whether the end points are of the wall are really ~1 LayerThickness away from each other
 // 	/*
 // 	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
 // 		IfcSchema::IfcConnectionTypeEnum::Value own_type = it->first.first;
 // 		IfcSchema::IfcConnectionTypeEnum::Value other_type = it->first.second;
-// 
+//
 // 		gp_Pnt other_axis_start, other_axis_end;
 // 		find_wall_end_points(it->second->as<IfcSchema::IfcWall>(), other_axis_start, other_axis_end);
-// 
+//
 // 		gp_Trsf other;
 // 		if (!convert(it->second->ObjectPlacement(), other)) {
 // 			continue;
 // 		}
-// 
+//
 // 		other.Transforms(other_axis_start.ChangeCoord());
 // 		local.Transforms(other_axis_start.ChangeCoord());
 // 		other.Transforms(other_axis_end.ChangeCoord());
 // 		local.Transforms(other_axis_end.ChangeCoord());
-// 
+//
 // 		const gp_Pnt& a = own_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
 // 			? own_axis_start
 // 			: own_axis_end;
-// 
+//
 // 		const gp_Pnt& b = other_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
 // 			? other_axis_start
 // 			: other_axis_end;
-// 
+//
 // 		const double d = a.Distance(b);
 // 	}
 // 	*/
-// 
+//
 // 	const double length_required = endpoint_connections.size() * total_thickness;
 // 	// @todo this is not precisely the distance in case of curved walls. Also, it's safer
 // 	// to first reproject the body onto the axis to get the precise curve parametrization
@@ -940,20 +940,20 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		ifcopenshell::logger::root().warning("The wall axis is not long enough to accommodate the fold points");
 // 		return false;
 // 	}
-// 
+//
 // 	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
 // 		IfcSchema::IfcConnectionTypeEnum::Value connection_type = it->first.first;
-// 
+//
 // 		// If more than one wall connects to this start/end -point assume layers do not need to be folded
 // 		const int idx = connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART;
 // 		if (connection_type_count[idx] > 1) continue;
-// 
+//
 // 		// Pick the corresponding point from the axis
 // 		const gp_Pnt& own_end_point = connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATEND
 // 			? own_axis_end
 // 			: own_axis_start;
 // 		const IfcSchema::IfcProduct* other_wall = it->second;
-// 
+//
 // 		gp_Trsf other;
 // 		if (other_wall->ObjectPlacement()) {
 // 			if (!convert(other_wall->ObjectPlacement(), other)) {
@@ -961,32 +961,32 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 				continue;
 // 			}
 // 		}
-// 
+//
 // 		IfcSchema::IfcRepresentation* axis_representation = find_representation(other_wall, "Axis");
-// 
+//
 // 		if (!axis_representation) {
 // 			ifcopenshell::logger::root().warning("Joined wall has no axis representation", other_wall);
 // 			continue;
 // 		}
-// 
+//
 // 		std::vector<conversion_result> axis_items;
 // 		{
 // 			Kernel temp = *this;
 // 			temp.setValue(GV_DIMENSIONALITY, -1.);
 // 			temp.convert_shapes(axis_representation, axis_items);
 // 		}
-// 
+//
 // 		TopoDS_Shape axis_shape;
 // 		util::flatten_shape_list(axis_items, axis_shape, false, getValue(GV_PRECISION));
-// 
+//
 // 		// local and other are IfcLocalPlacements and therefore have a unit
 // 		// scale factor that can be applied by means of TopoDS_Shape::Move()
 // 		axis_shape.Move(other);
 // 		axis_shape.Move(local);
-// 
+//
 // 		TopoDS_Shape body_shape;
 // 		util::flatten_shape_list(items, body_shape, false, getValue(GV_PRECISION));
-// 
+//
 // 		// Create a single paremetric range over a single curve
 // 		// that represents the entire 1d domain of the other wall
 // 		// Sometimes there are multiple edges in the Axis shape
@@ -998,19 +998,19 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			if (!exp.More()) {
 // 				return false;
 // 			}
-// 
+//
 // 			TopoDS_Edge axis_edge = TopoDS::Edge(exp.Current());
 // 			other_axis_curve = BRep_Tool::Curve(axis_edge, axis_u1, axis_u2);
-// 
+//
 // 			gp_Pnt other_a_1, other_a_2;
 // 			other_axis_curve->D0(axis_u1, other_a_1);
 // 			other_axis_curve->D0(axis_u2, other_a_2);
-// 
+//
 // 			if (axis_u2 < axis_u1) {
 // 				std::swap(axis_u1, axis_u2);
 // 			}
 // 			exp.Next();
-// 
+//
 // 			for (; exp.More(); exp.Next()) {
 // 				TopoDS_Edge axis_edge2 = TopoDS::Edge(exp.Current());
 // 				TopExp_Explorer exp2(axis_edge2, TopAbs_VERTEX);
@@ -1025,22 +1025,22 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 				}
 // 			}
 // 		}
-// 
+//
 // 		double layer_offset = 0;
-// 
+//
 // 		std::vector<double>::const_iterator thickness = thicknesses.begin();
 // 		result_t::iterator result_vector = result.begin() + 1;
-// 
+//
 // 		// nb The first layer is never folded, because it corresponds
 // 		// to one of the longitudinal faces of the wall. Hence the +1
 // 		for (surfaces_t::const_iterator jt = surfaces.begin() + 1; jt != surfaces.end() - 1; ++jt, ++result_vector) {
 // 			layer_offset += *thickness++;
-// 
+//
 // 			bool found_intersection = false, parallel = false;
 // 			std::optional<gp_Pnt> point_outside_param_range;
-// 
+//
 // 			const Handle_Geom_Surface& surface = *jt;
-// 
+//
 // 			// Find the intersection point between the layerset surface
 // 			// and the other axis curve. If it's within the parametric
 // 			// range of the other wall it means the walls are connected
@@ -1048,16 +1048,16 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			GeomAPI_IntCS intersections(other_axis_curve, surface);
 // 			if (intersections.IsDone() && intersections.NbPoints() == 1) {
 // 				const gp_Pnt& p = intersections.Point(1);
-// 
+//
 // 				double u, v, w;
 // 				intersections.Parameters(1, u, v, w);
-// 
+//
 // 				gp_Pnt Pc, Ps;
 // 				gp_Vec Vc, Vs1, Vs2;
 // 				other_axis_curve->D1(w, Pc, Vc);
 // 				surface->D1(u, v, Ps, Vs1, Vs2);
 // 				Vs1.Cross(Vs2);
-// 
+//
 // 				if (Vs1.IsNormal(Vc, 1.e-5)) {
 // 					ifcopenshell::logger::root().warning("Connected walls are parallel");
 // 					parallel = true;
@@ -1069,9 +1069,9 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 					break;
 // 				}
 // 			}
-// 
+//
 // 			if (!parallel && !found_intersection && point_outside_param_range) {
-// 
+//
 // 				/*
 // 				Is there a bug in Open Cascade related to the intersection
 // 				of offset surfaces constructed from linear extrusions?
@@ -1083,13 +1083,13 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 				Handle_Geom_Surface yz2 = new Geom_OffsetSurface(yz, 1.);
 // 				intersect(xy, yz2);
 // 				*/
-// 
+//
 // 				Handle_Geom_Surface plane = new Geom_Plane(*point_outside_param_range, gp::DZ());
-// 
+//
 // 				// vertical edges at wall end point face.
 // 				curves_on_surfaces_t layer_ends;
 // 				util::intersect(surface, body_shape, layer_ends);
-// 
+//
 // 				Handle_Geom_Curve layer_body_intersection;
 // 				Handle_Geom_Surface body_surface;
 // 				double mind = std::numeric_limits<double>::infinity();
@@ -1111,9 +1111,9 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 						if (d < total_thickness * 3 && d < mind) {
 // 							GeomAdaptor_Curve GAC(other_axis_curve);
 // 							GeomAdaptor_Surface GAS(kt->first);
-// 
+//
 // 							Extrema_ExtCS x(GAC, GAS, getValue(GV_PRECISION), getValue(GV_PRECISION));
-// 
+//
 // 							if (x.IsParallel()) {
 // 								body_surface = kt->first;
 // 								layer_body_intersection = kt->second;
@@ -1122,16 +1122,16 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 						}
 // 					}
 // 				}
-// 
+//
 // 				if (body_surface.IsNull()) {
 // 					continue;
 // 				}
-// 
+//
 // 				// Intersect vertical edge with ground plane for point.
 // 				GeomAPI_IntCS intersection2(layer_body_intersection, plane);
 // 				if (intersection2.IsDone() && intersection2.NbPoints() == 1) {
 // 					const gp_Pnt& layer_end_point = intersection2.Point(1);
-// 
+//
 // 					// Intersect layerset surface with ground plane
 // 					GeomAPI_IntSS intersection3(surface, plane, 1.e-7);
 // 					if (intersection3.IsDone() && intersection3.NbLines() == 1) {
@@ -1140,14 +1140,14 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 						ShapeAnalysis_Curve sac;
 // 						gp_Pnt layer_end_point_projected; double layer_end_point_param;
 // 						sac.Project(layer_line, layer_end_point, 1e-3, layer_end_point_projected, layer_end_point_param, false);
-// 
+//
 // 						// Move point inwards by distance from other layerset
 // 						GCPnts_AbscissaPoint dst(layer_line_adaptor, layer_offset, layer_end_point_param);
 // 						if (dst.IsDone()) {
 // 							// Convert parameter to point
 // 							gp_Pnt layer_fold_point;
 // 							layer_line->D0(dst.Parameter(), layer_fold_point);
-// 
+//
 // 							GeomAPI_IntSS intersection4(body_surface, plane, 1.e-7);
 // 							if (intersection4.IsDone() && intersection4.NbLines() == 1) {
 // 								Handle_Geom_Curve body_trim_curve = intersection4.Line(1);
@@ -1155,7 +1155,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 								gp_Pnt layer_fold_point_projected; double layer_fold_point_param;
 // 								sac2.Project(body_trim_curve, layer_fold_point, 1.e-7, layer_fold_point_projected, layer_fold_point_param, false);
 // 								Handle_Geom_Curve fold_curve = new Geom_OffsetCurve(body_trim_curve->Reversed(), layer_fold_point_projected.Distance(layer_fold_point), gp::DZ());
-// 
+//
 // 								Handle_Geom_Surface fold_surface = new Geom_SurfaceOfLinearExtrusion(fold_curve, gp::DZ());
 // 								result_vector->push_back(fold_surface);
 // 								folds_made = true;
@@ -1163,15 +1163,15 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 						}
 // 					}
 // 				}
-// 
+//
 // 			}
-// 
+//
 // 		}
 // 	}
-// 
+//
 // 	return folds_made;
 // }
-// 
+//
 // IfcSchema::IfcRepresentation* ifcopenshell::geom::Kernel::find_representation(const IfcSchema::IfcProduct* product, const std::string& identifier) {
 // 	if (!product->Representation()) return 0;
 // 	IfcSchema::IfcProductRepresentation* prod_rep = product->Representation();
@@ -1183,12 +1183,12 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	}
 // 	return 0;
 // }
-// 
+//
 // const IfcSchema::IfcRepresentationptr ifcopenshell::geom::Kernel::find_item_carrying_style(const IfcSchema::IfcRepresentationptr item) {
 // 	if (item->StyledByItem()->size()) {
 // 		return item;
 // 	}
-// 
+//
 // 	while (item->declaration().is(IfcSchema::IfcBooleanResult::Class())) {
 // 		// All instantiations of IfcBooleanOperand (type of FirstOperand) are subtypes of
 // 		// IfcGeometricRepresentationItem
@@ -1197,24 +1197,24 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			return item;
 // 		}
 // 	}
-// 
+//
 // 	// TODO: Ideally this would be done for other entities (such as IfcCsgSolid) as well.
 // 	// But neither are these very prevalent, nor does the current IfcOpenShell style
 // 	// mechanism enable to conveniently style subshapes, which would be necessary for
 // 	// distinctly styled union operands.
-// 
+//
 // 	return item;
 // }
-// 
+//
 // bool ifcopenshell::geom::Kernel::is_identity_transform(ifcopenshell::IfcBaseInterface* l) {
 // 	IfcSchema::IfcAxis2Placement2D* ax2d;
 // 	IfcSchema::IfcAxis2Placement3D* ax3d;
-// 
+//
 // 	IfcSchema::IfcCartesianTransformationOperator2D* op2d;
 // 	IfcSchema::IfcCartesianTransformationOperator3D* op3d;
 // 	IfcSchema::IfcCartesianTransformationOperator2DnonUniform* op2dnonu;
 // 	IfcSchema::IfcCartesianTransformationOperator3DnonUniform* op3dnonu;
-// 
+//
 // 	if ((op2dnonu = l->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>()) != 0) {
 // 		gp_GTrsf2d gtrsf2d;
 // 		convert(op2dnonu, gtrsf2d);
@@ -1243,18 +1243,18 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		throw ifcopenshell::exception("Invalid valuation for IfcAxis2Placement / IfcCartesianTransformationOperator");
 // 	}
 // }
-// 
+//
 // void ifcopenshell::geom::Kernel::set_conversion_placement_rel_to_type(const ifcopenshell::declaration* type) {
 // 	placement_rel_to_type_ = type;
 // }
-// 
+//
 // void ifcopenshell::geom::Kernel::set_conversion_placement_rel_to_instance(const express::entity* instance) {
 // 	placement_rel_to_instance_ = instance;
 // }
-// 
-// 
+//
+//
 // namespace {
-// 
+//
 // 	bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
 // 		if (colour != 0) {
 // 			rgb[0] = colour->Red();
@@ -1263,7 +1263,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		}
 // 		return colour != 0;
 // 	}
-// 
+//
 // 	bool process_colour(IfcSchema::IfcNormalisedRatioMeasure* factor, double* rgb) {
 // 		if (factor != 0) {
 // 			const double f = *factor;
@@ -1271,7 +1271,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		}
 // 		return factor != 0;
 // 	}
-// 
+//
 // 	bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, double* rgb) {
 // 		if (colour_or_factor == 0) {
 // 			return false;
@@ -1283,11 +1283,11 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 			return false;
 // 		}
 // 	}
-// 
+//
 // }
-// 
+//
 // #define Kernel POSTFIX_SCHEMA(Kernel)
-// 
+//
 // std::shared_ptr<const ifcopenshell::geom::SurfaceStyle> ifcopenshell::geom::Kernel::internalize_surface_style(const std::pair<express::base, express::base>& shading_styles) {
 // 	if (shading_styles.second == 0) {
 // 		return 0;
@@ -1297,22 +1297,22 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	if (it != style_cache.end()) {
 // 		return it->second;
 // 	}
-// 
-// 
+//
+//
 // 	IfcSchema::IfcSurfaceStyle* style = shading_styles.first->as<IfcSchema::IfcSurfaceStyle>();
 // 	IfcSchema::IfcSurfaceStyleShading* shading = shading_styles.second->as<IfcSchema::IfcSurfaceStyleShading>();
-// 
+//
 // 	std::shared_ptr<SurfaceStyle> surface_style_ptr;
-// 
+//
 // 	if (style->Name()) {
 // 		surface_style_ptr.reset(new SurfaceStyle(surface_style_id, *style->Name()));
 // 	} else {
 // 		surface_style_ptr.reset(new SurfaceStyle(surface_style_id));
 // 	}
-// 
+//
 // 	std::shared_ptr<const SurfaceStyle> surface_style_ptr_const = std::const_pointer_cast<const SurfaceStyle>(surface_style_ptr);
 // 	SurfaceStyle& surface_style = *surface_style_ptr;
-// 
+//
 // 	double rgb[3];
 // 	if (process_colour(shading->SurfaceColour(), rgb)) {
 // 		surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
@@ -1353,11 +1353,11 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	}
 // 	return style_cache[surface_style_id] = surface_style_ptr_const;
 // }
-// 
+//
 // std::shared_ptr<const ifcopenshell::geom::SurfaceStyle> ifcopenshell::geom::Kernel::get_style(const IfcSchema::IfcRepresentationptr item) {
 // 	return internalize_surface_style(get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item));
 // }
-// 
+//
 // std::shared_ptr<const ifcopenshell::geom::SurfaceStyle> ifcopenshell::geom::Kernel::get_style(const IfcSchema::IfcMaterial* material) {
 // 	IfcSchema::IfcMaterialDefinitionRepresentation::list::ptr defs = material->HasRepresentation();
 // 	for (IfcSchema::IfcMaterialDefinitionRepresentation::list::it jt = defs->begin(); jt != defs->end(); ++jt) {
@@ -1376,14 +1376,14 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 	auto material_style = std::make_shared<ifcopenshell::geom::SurfaceStyle>(material->data().id(), material->Name());
 // 	return style_cache[material->data().id()] = material_style;
 // }
-// 
+//
 // void ifcopenshell::geom::Kernel::apply_layerset(std::vector<ifcopenshell::geom::conversion_result>& r, const ifcopenshell::geom::layerset_information& info) {
 // 	convert(info.layers);
-// 
+//
 // 	if (info.layers.empty()) {
 // 		return;
 // 	}
-// 
+//
 // 	if (axis_curve->DynamicType() == STANDARD_TYPE(Geom_Line)) {
 // 		Handle_Geom_Line axis_line = Handle_Geom_Line::DownCast(axis_curve);
 // 		// @todo note that this creates an offset into the wrong order, the cross product arguments should be
@@ -1397,7 +1397,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 // 		ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "Unsupported underlying curve of Axis representation:", product);
 // 		return false;
 // 	}
-// 
+//
 // 	std::vector<ifcopenshell::geom::conversion_result> r2;
 // 	if (ifcopenshell::geom::util::apply_layerset(r, const std::vector<ifcopenshell::geom::taxonomy::style>&, std::vector<conversion_result>& r2, double tol)) {
 // 		std::swap(r, r2)

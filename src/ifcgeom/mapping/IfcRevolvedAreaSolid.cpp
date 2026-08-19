@@ -27,7 +27,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid& inst) {
 	const double ang = inst.Angle() * angle_unit_;
 
 	taxonomy::cast<taxonomy::face>(map(inst.SweptArea()));
-	
+
 	std::optional<double> angle;
 
 	taxonomy::matrix4::ptr matrix;

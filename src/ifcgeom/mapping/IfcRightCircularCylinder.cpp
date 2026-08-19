@@ -32,7 +32,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRightCircularCylinder&) {
 	BRepPrimAPI_MakeCylinder builder(r, h);
 	gp_Trsf trsf;
 	ifcopenshell::geom::Kernel::convert(inst.Position(),trsf);
-	
+
 	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
 

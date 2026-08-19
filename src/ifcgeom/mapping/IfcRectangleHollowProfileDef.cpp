@@ -33,7 +33,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangleHollowProfileDef& i
 
 	const double r1 = fr1 ? (*inst.OuterFilletRadius()) * length_unit_ : 0.;
 	const double r2 = fr2 ? (*inst.InnerFilletRadius()) * length_unit_ : 0.;
-	
+
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x < tol || y < tol) {

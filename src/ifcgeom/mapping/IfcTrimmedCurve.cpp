@@ -29,21 +29,21 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 	auto basis_curve = inst.BasisCurve();
 	bool isConic = basis_curve.declaration().is(IfcSchema::IfcConic::Class());
 	double parameterFactor = isConic ? angle_unit_ : length_unit_;
-	
+
 	auto tc = taxonomy::make<taxonomy::edge>();
 	tc->basis = map(inst.BasisCurve());
-	
+
 	bool trim_cartesian = inst.MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
 	auto trims1 = inst.Trim1();
 	auto trims2 = inst.Trim2();
-	
+
 	// reversed orientation handling happens in geometry kernel
 	unsigned sense_agreement = 0;
 	double flts[2];
 	taxonomy::point3::ptr pnts[2];
 	bool has_flts[2] = {false,false};
 	bool has_pnts[2] = {false,false};
-	
+
 	tc->curve_sense = inst.SenseAgreement();
 
 	for (auto it = trims1.begin(); it != trims1.end(); it ++) {

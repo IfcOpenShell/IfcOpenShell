@@ -443,7 +443,7 @@ private:
 		if (!$self->declaration().as_entity()) {
 			return name == "wrappedValue" ? 1 : 0;
 		}
-		
+
 		{
 		const std::vector<const ifcopenshell::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
 		std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
@@ -496,12 +496,12 @@ private:
 		if (!$self->declaration().as_entity()) {
 			return std::vector<std::string>(1, "wrappedValue");
 		}
-		
+
 		const std::vector<const ifcopenshell::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
-		
+
 		std::vector<std::string> attr_names;
-		attr_names.reserve(attrs.size());		
-		
+		attr_names.reserve(attrs.size());
+
 		std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
@@ -516,10 +516,10 @@ private:
 		}
 
 		const std::vector<const ifcopenshell::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
-		
+
 		std::vector<std::string> attr_names;
-		attr_names.reserve(attrs.size());		
-		
+		attr_names.reserve(attrs.size());
+
 		std::vector<const ifcopenshell::inverse_attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
@@ -527,7 +527,7 @@ private:
 
 		return attr_names;
 	}
-	
+
 	bool is_a(const std::string& s) {
 		return self->declaration().is(s);
 	}
@@ -901,7 +901,7 @@ private:
 						bits.push_back(boost::dynamic_bitset<>(v));
 					} else {
 						throw ifcopenshell::exception("String not a valid binary representation");
-					}			
+					}
 				}
 				self->set_attribute_value(i, bits);
 				return;
@@ -1181,7 +1181,7 @@ from .entity_instance import entity_instance_mixin
 %{
 	PyObject* get_info_cpp(const express::base& v, bool recursive, bool include_identifier);
 
-	// @todo refactor this to remove duplication with the typemap. 
+	// @todo refactor this to remove duplication with the typemap.
 	// except this is calls the above function in case of instances.
 	PyObject* convert_cpp_attribute_to_python(const express::base& instance, size_t attribute_index, bool recursive, bool include_identifier) {
 		return instance.get_attribute_value(attribute_index).apply_visitor([recursive, include_identifier](const auto& v){
@@ -1193,7 +1193,7 @@ from .entity_instance import entity_instance_mixin
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
 					Py_INCREF(Py_None);
-					return static_cast<PyObject*>(Py_None); 
+					return static_cast<PyObject*>(Py_None);
 				}
 			} else if constexpr (std::is_same_v<u, express::base>) {
 				if (recursive) {
@@ -1230,7 +1230,7 @@ from .entity_instance import entity_instance_mixin
 				}
             } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                 Py_INCREF(Py_None);
-				return static_cast<PyObject*>(Py_None); 
+				return static_cast<PyObject*>(Py_None);
             } else if constexpr (is_std_vector_v<u>) {
 				// only for non-entity-instance vectors
 				return pythonize_vector(v);
@@ -1418,7 +1418,7 @@ from .entity_instance import entity_instance_mixin
 				std::visit([&](const auto& v) -> void {
                     PyObject* attribute_val_py = nullptr;
 					using t = std::decay_t<decltype(v)>;
-					
+
 					if constexpr (std::is_same_v<t, ifcopenshell::reference_or_simple_type>) {
 						if (auto* inst = std::get_if<express::base>(&v)) {
 							// So this never happens?

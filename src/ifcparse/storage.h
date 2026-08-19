@@ -180,7 +180,7 @@ namespace ifcopenshell {
 
         token(size_t start_position, char operator_character)
             : start_pos(start_position), type(Token_OPERATOR), value_char(operator_character) {}
-        
+
         token(size_t start_position, token_type token_kind, char character_value)
             : start_pos(start_position), type(token_kind), value_char(character_value) {}
 

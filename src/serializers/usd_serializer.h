@@ -63,7 +63,7 @@ namespace usd_utils {
 		for (std::size_t i = 0; i < vec.size(); ++i)
 			array[i] = vec[i];
 		return array;
-  	}	
+  	}
 }
 
 class SERIALIZERS_API usd_serializer : public ifcopenshell::geom::write_only_geometry_serializer {

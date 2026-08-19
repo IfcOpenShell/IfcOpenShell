@@ -31,7 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 #else
 	std::vector<IfcSchema::IfcCompositeCurveSegment> segments = inst.Segments();
 #endif
-	
+
 	for (auto& segment : segments) {
 		if (segment.as<IfcSchema::IfcCompositeCurveSegment>() && segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve().as<IfcSchema::IfcLine>()) {
 			logger_.notice("GEO", 238, "Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);

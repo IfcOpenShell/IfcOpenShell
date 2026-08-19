@@ -66,4 +66,3 @@ const char* open_cascade_based_serializer::getSymbolForUnitMagnitude(float mag) 
 }
 
 #endif
-

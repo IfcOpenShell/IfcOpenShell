@@ -39,7 +39,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface& inst) {
     }
 
 
-	{	
+	{
 	auto css = inst.CrossSections();
 	auto csps = inst.CrossSectionPositions();
 	std::vector<taxonomy::geom_item::ptr> faces;
@@ -48,7 +48,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface& inst) {
 	// reference frame along a certain curve location (b) the longitude.
 
 	// The longitudes determine the range of the sweep and the offsets are interpolated in between
-	// sweep segments. 
+	// sweep segments.
 	std::vector<Eigen::Vector3d> profile_offsets;
 	std::vector<std::optional<Eigen::Matrix3d>> profile_rotations;
 	std::vector<double> longitudes;

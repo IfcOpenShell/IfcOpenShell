@@ -1085,7 +1085,7 @@ void ifcopenshell::impl::rocks_db_file_storage::register_inverse(unsigned id_fro
     uint32_t v = id_from;
     s.resize(sizeof(uint32_t));
     memcpy(s.data(), &v, sizeof(uint32_t));
-    
+
     auto key = "v|" + to_string_fixed_width(inst_id, 10) + "|" + to_string_fixed_width(from_entity->index_in_schema(), 4) + "|" + to_string_fixed_width(attribute_index, 2);
 
     db->Merge(wopts, key, s);
@@ -1143,7 +1143,7 @@ void ifcopenshell::impl::rocks_db_file_storage::add_type_ref(const express::base
 
         // no merges yet, because the python client doesn't support them
         db->Merge(wopts, "t|" + std::to_string(new_entity.declaration().index_in_schema()), s);
-        
+
         /*{
             std::string current;
             // @todo this uses the same key-namespace as typedecl instances, not a direct conflict, but also not very clear
@@ -1151,7 +1151,7 @@ void ifcopenshell::impl::rocks_db_file_storage::add_type_ref(const express::base
             db->Get(rocksdb::ReadOptions{}, key, &current);
             auto new_val = current + s;
             db->Put(wopts, key, new_val);
-        }*/ 
+        }*/
     }
 
     // not only mapping also register type
@@ -1639,7 +1639,7 @@ express::base::set_attribute_value(size_t i, const T& t) {
         register_inverse_visitor visitor(*file(), *this);
         apply_individual_instance_visitor(new_attribute, (int)i).apply(visitor);
     }
-    
+
     // Register new attribute guid in guid map
     if (i == 0 && (file()->ifcroot_type() != nullptr) && this->declaration().is(*file()->ifcroot_type())) {
         try {
@@ -1800,7 +1800,7 @@ file::file(void* data, int length, ifcopenshell::logger& log)
     , max_id_(0)
 {
 	file_reader<pushed_sequential_impl> s(std::string((char*)data, length), caller_fed_tag{});
-    
+
     storage_.emplace<1>(this, logger_.get());
     header_.reset(new spf_header(this, &logger_.get()));
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
@@ -2372,7 +2372,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 } else {
                     auto storage = owner;
                     auto attr_index = p.first.index_;
-                    
+
                     if (storage->template has_attribute_value<express::base>(attr_index)) {
                         express::base inst = storage->get_attribute_value(attr_index);
                         if (inst && !inst.declaration().as_entity()) {
@@ -2416,7 +2416,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
 
             auto storage = owner;
             auto attr_index = p.first.index_;
-            
+
             if (storage->template has_attribute_value<express::base>(attr_index)) {
                 express::base inst = storage->get_attribute_value(attr_index);
                 if (inst && !inst.declaration().as_entity()) {
@@ -2458,7 +2458,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
 
             auto storage = owner;
             auto attr_index = p.first.index_;
-            
+
             if (storage->template has_attribute_value<express::base>(attr_index)) {
                 express::base inst = storage->get_attribute_value(attr_index);
                 if (inst && !inst.declaration().as_entity()) {
@@ -2648,7 +2648,7 @@ express::base file::add_entity(const express::base& entity, int id) {
             }
         });
     }
-        
+
     // In case an entity is added that contains geometry, the unit
     // information needs to be accounted for for IfcLengthMeasures.
     double conversion_factor = calculate_unit_factors ? std::numeric_limits<double>::quiet_NaN() : 1.0;
@@ -2702,7 +2702,7 @@ express::base file::add_entity(const express::base& entity, int id) {
                     new_instances.back().push_back(eit->second);
                 }
             }
-                
+
             new_entity.set_attribute_value(i, new_instances);
         } else if ((potentially_length_measure_decl != nullptr) && potentially_length_measure_decl->is(*schema()->declaration_by_name("IfcLengthMeasure"))) {
             if (boost::math::isnan(conversion_factor)) {
@@ -3172,7 +3172,7 @@ std::vector<int> file::get_inverse_indices_by_id(int instance_id) {
 
 std::vector<express::entity> file::get_inverse(int instance_id, const ifcopenshell::declaration* type, int attribute_index) {
     std::vector<express::entity> return_value;
-    
+
     if (type == nullptr && attribute_index == -1) {
         // @todo this is silly.
         auto r = instances_by_reference(instance_id);
@@ -3181,7 +3181,7 @@ std::vector<express::entity> file::get_inverse(int instance_id, const ifcopenshe
         }
         return return_value;
     }
-    
+
     std::visit([&return_value, this, attribute_index, instance_id, type](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
@@ -3431,7 +3431,7 @@ ifcopenshell::file* express::base::file() const {
 instance_data::instance_data(const instance_data& data)
     : storage_(data.size())
 {
-    
+
 }
 */
 
@@ -3470,7 +3470,7 @@ bool ifcopenshell::impl::rocks_db_file_storage::read_schema(const ifcopenshell::
         return true;
     }
 #endif
-    return false;    
+    return false;
 }
 
     /*

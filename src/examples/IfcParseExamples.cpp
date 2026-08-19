@@ -30,7 +30,7 @@
 #include INCLUDE_SCHEMA(ifcparse/schemas, IfcSchema)
 #include INCLUDE_SCHEMA_DEFINITIONS(ifcparse/schemas, IfcSchema)
 
-#ifdef _MSC_VER 
+#ifdef _MSC_VER
 #define strcasecmp _stricmp
 #endif
 
@@ -151,7 +151,7 @@ void process_pset(element_properties& props, const T& inst) {
 
 template <typename Schema>
 void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefinition& inst) {
-	// Extracts the property definitions for an IFC instance. 
+	// Extracts the property definitions for an IFC instance.
 	if (auto tyob = inst.template as<typename Schema::IfcTypeObject>()) {
 		if (tyob.HasPropertySets()) {
 			auto defs = *tyob.HasPropertySets();

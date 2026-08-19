@@ -82,7 +82,7 @@
 				return false;
 			}
 		}
-		return true;		
+		return true;
 	}
 
 	bool check_aggregate_of_aggregate_of_type(PyObject* aggregate, void* type_obj) {
@@ -273,8 +273,8 @@
 	// PyObject* pythonize(const ifcopenshell::geom::conversion_result_shape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__geom__conversion_result_shape, 0); }
 	// NB: This cannot be temporary as a Python object is constructed from a pointer to the address of this object
 	// PyObject* pythonize(const ifcopenshell::geom::Material& t)     { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_ifcopenshell__geom__Material, 0);           }
-	
-	PyObject* pythonize(const boost::dynamic_bitset<>& t) { 
+
+	PyObject* pythonize(const boost::dynamic_bitset<>& t) {
 		std::string bitstring;
 		boost::to_string(t, bitstring);
 		return pythonize(bitstring);

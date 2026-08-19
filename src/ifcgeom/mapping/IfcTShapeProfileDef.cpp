@@ -43,7 +43,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef& inst) {
 		logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 296, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
-	
+
 	double dy1 = 0.0f;
 	double dy2 = 0.0f;
 	double dx1 = 0.0f;

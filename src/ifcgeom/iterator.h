@@ -128,7 +128,7 @@ namespace ifcopenshell::geom {
 		bool task_result_ptr_initialized = false;
 		bool task_result_ptr_exhausted = false;
 		size_t async_elements_returned_ = 0;
-		
+
 		ifcopenshell::geom::settings settings_;
 		ifcopenshell::file* ifc_file;
 		std::vector<ifcopenshell::geom::filter_function> filters_;
@@ -138,7 +138,7 @@ namespace ifcopenshell::geom {
 
 		// When single-threaded
 		ifcopenshell::geom::converter* converter_;
-		
+
 		// When multi-threaded
 		std::vector<ifcopenshell::geom::converter*> kernel_pool;
 		std::vector<std::unique_ptr<ifcopenshell::logger>> worker_loggers_;

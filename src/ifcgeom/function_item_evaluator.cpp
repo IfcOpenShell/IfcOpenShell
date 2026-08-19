@@ -135,7 +135,7 @@ struct cant_fn_evaluator : public fn_evaluator {
         auto g = gradient_evaluator_.evaluate(u);
         auto c = cant_evaluator_.evaluate(u);
 
-        
+
         // curvature is stored in row 3 - capture it and remove it from the xy and uz matrices
         // so the matrix operations (ie multiplication) works correctly
         auto gradient_curvature = g.row(3);

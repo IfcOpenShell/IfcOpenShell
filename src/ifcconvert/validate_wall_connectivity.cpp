@@ -22,7 +22,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 	settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
 	settings.get<ifcopenshell::geom::settings::OutputDimensionality>().value = ifcopenshell::geom::settings::CURVES;
-	
+
 	ifcopenshell::geom::converter c(ifcopenshell::geom::kernels::construct(&f, "cgal", settings, logger), &f, settings, logger);
 
 	auto rels = f.instances_by_type("IfcRelConnectsPathElements");
@@ -54,7 +54,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 			if (!a_is_relating) {
 				std::swap(a_type, b_type);
 			}
-		}		
+		}
 
 #if 0
 		auto a_poly = ifcopenshell::geom::utils::create_polyhedron(a.handle()->second);
@@ -123,7 +123,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 				} else {
 					auto p0 = boost::get<taxonomy::point3::ptr>(first_vertex);
 					auto p1 = boost::get<taxonomy::point3::ptr>(last_vertex);
-					
+
 					auto v0 = taxonomy::cast<taxonomy::geom_item>(item)->matrix->ccomponents() * p0->ccomponents().homogeneous();
 					auto v1 = taxonomy::cast<taxonomy::geom_item>(item)->matrix->ccomponents() * p1->ccomponents().homogeneous();
 
@@ -142,7 +142,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 
 					auto pit = std::minmax_element(parameters.begin(), parameters.end());
 					return std::make_pair(len, std::make_pair(CGAL::to_double(*pit.first), CGAL::to_double(*pit.second)));
-				}				
+				}
 			}
 			const auto& nan = std::numeric_limits<double>::quiet_NaN();
 			return std::make_pair(nan, std::make_pair(nan, nan));

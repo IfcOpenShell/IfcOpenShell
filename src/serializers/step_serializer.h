@@ -32,7 +32,7 @@
 class step_serializer : public open_cascade_based_serializer
 {
 private:
-	STEPControl_Writer writer;	
+	STEPControl_Writer writer;
 public:
 	explicit step_serializer(const std::string& out_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr)
 		: open_cascade_based_serializer(out_filename, settings, logger)

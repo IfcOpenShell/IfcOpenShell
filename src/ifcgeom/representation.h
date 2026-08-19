@@ -108,7 +108,7 @@ namespace ifcopenshell::geom {
 			std::vector<int> faces_;
 			std::vector<std::vector<int>> polyhedral_faces_without_holes_;
 			std::vector<std::vector<std::vector<int>>> polyhedral_faces_with_holes_;
-			
+
 			std::vector<int> edges_;
 			std::vector<double> normals_;
 			std::vector<double> uvs_;

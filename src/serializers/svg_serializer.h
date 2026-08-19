@@ -328,7 +328,7 @@ namespace {
 				if (!fclass) {
 					fclass = new BRepTopAdaptor_FClass2d(face, 1.e-5);
 				}
-				// @todo unify with the 2d boolean algo 
+				// @todo unify with the 2d boolean algo
 				gp_Pnt2d bottomright(topright.X(), bottomleft.Y());
 				gp_Pnt2d topleft(bottomleft.X(), topright.Y());
 				std::array<gp_Pnt2d const*, 4> loop{ {
@@ -450,7 +450,7 @@ namespace {
 
 			return false;
 		}
-		
+
 		void add(const TopoDS_Shape& s, express::base product) {
 			if (!use_prefiltering_) {
 				items_.insert(items_.end(), {product, s});
@@ -499,7 +499,7 @@ namespace {
 					for (; exp.More(); exp.Next()) {
 						const auto& face = TopoDS::Face(exp.Current());
 						if (BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
-							
+
 							// find large faces orthogonal to view dir
 							BRepGProp_Face prop(face);
 							prop.Normal(0., 0., P, V);
@@ -541,7 +541,7 @@ namespace {
 			if (use_prefiltering_) {
 				logger_.notice("SER", 35, "Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
 			}
-			
+
 			hlr_calc vis(projector_);
 			if (segment_projection_) {
 				vis.set_product_shape(&items_);
@@ -571,10 +571,10 @@ protected:
 	std::optional<std::pair<double, double>> size_, offset_2d_;
 	std::optional<std::string> space_name_transform_;
 
-#if OCC_VERSION_HEX >= 0x70300	
+#if OCC_VERSION_HEX >= 0x70300
 	std::optional<Bnd_OBB> view_box_3d_;
 #endif
-	
+
 
 	bool with_section_heights_from_storey_, print_space_names_, print_space_areas_;
 	storey_height_display_types storey_height_display_;
@@ -608,7 +608,7 @@ protected:
 	size_t xcoords_begin, ycoords_begin, radii_begin;
 
 	std::optional<std::string> section_ref_, elevation_ref_, elevation_ref_guid_;
-	
+
 	std::list<geometry_data> element_buffer_;
 
 	hlr_engine* hlr;
@@ -699,12 +699,12 @@ public:
 	std::array<std::array<double, 3>, 3> resize();
 	void resetScale();
 
-	void setSectionRef(const std::optional<std::string>& s) { 
-		section_ref_ = s; 
+	void setSectionRef(const std::optional<std::string>& s) {
+		section_ref_ = s;
 	}
 
 	void setElevationRef(const std::optional<std::string>& s) {
-		elevation_ref_ = s; 
+		elevation_ref_ = s;
 		elevation_ref_guid_ = std::nullopt;
 	}
 

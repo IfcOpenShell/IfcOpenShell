@@ -428,7 +428,7 @@ public:
     express::base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
 
     void batch() {
-        batch_mode_ = true; 
+        batch_mode_ = true;
     }
     void unbatch();
 

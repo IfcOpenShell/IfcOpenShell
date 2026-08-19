@@ -76,12 +76,12 @@ int main() {
 	// By adding a building, a hierarchy has been automatically created that consists of the following
 	// structure: IfcProject > IfcSite > IfcBuilding
 
-	// Lateron changing the name of the IfcProject can be done by obtaining a reference to the 
+	// Lateron changing the name of the IfcProject can be done by obtaining a reference to the
 	// project, which has been created automatically.
 	file.getSingle<IfcSchema::IfcProject>().setName("IfcAdvancedHouse"s);
 
 	// To demonstrate the ability to serialize arbitrary opencascade solids a building envelope is
-	// constructed by applying boolean operations. Naturally, in IFC, building elements should be 
+	// constructed by applying boolean operations. Naturally, in IFC, building elements should be
 	// modeled separately, with rich parametric and relational semantics. Creating geometry in this
 	// way does not preserve any history and is merely a demonstration of technical capabilities.
 	TopoDS_Shape outer =   BRepPrimAPI_MakeBox(gp_Pnt(-5000., -180., -2000.), gp_Pnt(5000., 5180., 3000.)).Shape();
@@ -102,7 +102,7 @@ int main() {
 	// to the IFC4 model and with `advanced` set to `true` which introduces IfcAdvancedFace. It would
 	// return `0` otherwise.
 	auto building_shape = ifcopenshell::geom::serialise(file, building_shell, false).as<IfcSchema::IfcProductDefinitionShape>();
-	
+
 	file.add_entity(building_shape);
 	auto building_representations = building_shape.Representations();
 	building_representations.front().setContextOfItems(file.getRepresentationContext("model"));
@@ -122,7 +122,7 @@ int main() {
         ground_representation = ifcopenshell::geom::tesselate(file, shape, 100.);
 	}
 	file.getSingle<IfcSchema::IfcSite>().setRepresentation(ground_representation.as<IfcSchema::IfcProductDefinitionShape>());
-	
+
 	auto ground_reps = file.getSingle<IfcSchema::IfcSite>().Representation().Representations();
 	for (auto& rep : ground_reps) {
 		rep.setContextOfItems(file.getRepresentationContext("Model"));
@@ -175,10 +175,10 @@ void createGroundShape(TopoDS_Shape& shape) {
 	cv.SetValue(4, 4, gp_Pnt( 10000,  10000, -8130));
 	TColStd_Array1OfReal knots(0, 1);
 	knots(0) = 0;
-	knots(1) = 1;		
+	knots(1) = 1;
 	TColStd_Array1OfInteger mult(0, 1);
 	mult(0) = 5;
-	mult(1) = 5;	
+	mult(1) = 5;
 	Handle(Geom_BSplineSurface) surf = new Geom_BSplineSurface(cv, knots, knots, mult, mult, 4, 4);
 #if OCC_VERSION_HEX < 0x60502
 	shape = BRepBuilderAPI_MakeFace(surf);

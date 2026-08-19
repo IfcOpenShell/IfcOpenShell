@@ -74,7 +74,7 @@ namespace ifcopenshell {
 			class IFC_GEOMLIBRARY_API cgal_kernel : public abstract_kernel {
 			private:
 #ifndef IFOPSH_SIMPLE_KERNEL
-				enum boolean_operand_preprocess { 
+				enum boolean_operand_preprocess {
 					PP_MINKOWSKY_DILATE,
 					PP_SNAP_POINTS_TO_FIRST_OPERAND,
 					PP_SNAP_PLANES_TO_FIRST_OPERAND,

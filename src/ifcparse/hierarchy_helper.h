@@ -103,7 +103,7 @@ class IFC_SCHEMA_API hierarchy_helper : public ifcopenshell::file {
         auto t = create<T>();
         t.set_attribute_value(0, std::vector<double>{x, y});
         return t;
-    }    
+    }
 
     template <typename T, typename U>
     T addValue(U value) {

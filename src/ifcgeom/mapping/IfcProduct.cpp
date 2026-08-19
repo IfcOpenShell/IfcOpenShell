@@ -44,7 +44,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct& inst) {
 	}
 
 	if (openings->size() && !settings_.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && use_body) {
-		
+
 		Eigen::Matrix4d ci;
 		if (c->matrix.components_) {
 			ci = c->matrix.components_->inverse();
@@ -69,7 +69,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct& inst) {
 			c->children = { child };
 		} else {
 			delete c;
-			return nullptr;			
+			return nullptr;
 		}
 	}
 

@@ -87,7 +87,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOpenCrossProfileDef& inst) {
         auto r = taxonomy::loop::ptr((taxonomy::loop*)mapped->clone_());
         r->closed = false;
         return r;
-    }*/ 
+    }*/
 
     mapped->closed = false;
     mapped->tags = tags;

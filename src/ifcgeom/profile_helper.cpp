@@ -7,8 +7,8 @@ taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, do
 	const auto child_count = static_cast<int>(loop->children.size());
 	for (int b = 0; b < child_count; ++b) {
 		int c = (b + child_count - 1) % child_count;
-		pps[b] = { 
-			std::get<taxonomy::point3::ptr>(loop->children[c]->start)->ccomponents(), 
+		pps[b] = {
+			std::get<taxonomy::point3::ptr>(loop->children[c]->start)->ccomponents(),
 			radius, loop->children[c], loop->children[b]
 		};
 	}
@@ -227,7 +227,7 @@ std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>
 			if (equal) {
                 // do not remove the first or last point to
                 // maintain connectivity with other wires
-                
+
 				/*
 				// Only removing direct equality so does not impact connectivity
                 if ((closed && j == 0) || (!closed && j == (n - 1))) {

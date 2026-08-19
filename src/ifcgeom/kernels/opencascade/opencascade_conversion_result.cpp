@@ -75,7 +75,7 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 
 	// A 3x3 matrix to rotate the vertex normals
 	std::optional<gp_Mat> rotation_matrix;
-	
+
 	if (place.components_) {
 		const auto& m = *place.components_;
 		rotation_matrix.emplace(
@@ -84,7 +84,7 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 			m(2, 0), m(2, 1), m(2, 2)
 		);
 	}
-	
+
 	// When welding vertices, vertex coords will be shared among faces so we need to per-shape set
 	// to keep track of which edges were already emitted.
 	std::set<std::pair<int, int>> emitted_edges;
@@ -119,9 +119,9 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 	for (exp.Init(shape_, TopAbs_FACE); exp.More(); exp.Next(), ++num_faces) {
 		TopoDS_Face face = TopoDS::Face(exp.Current());
 
-		size_t num_bounds = 0; 
+		size_t num_bounds = 0;
 		for (TopoDS_Iterator it(face); it.More(); it.Next(), ++num_bounds) {}
-		
+
 		const bool is_planar = BRep_Tool::Surface(face) && BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane);
 		const bool has_inner_bounds = num_bounds > 1;
 
@@ -314,7 +314,7 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 				} else {
 					p = tessellater.Value(i).XYZ();
 				}
-				
+
 				auto p_local = p;
 				taxonomy_transform(place.components_, p);
 
@@ -582,7 +582,7 @@ conversion_result_shape* ifcopenshell::geom::open_cascade_shape::concat(conversi
 {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
-	
+
 	auto& left = shape_;
 	auto& right = ((ifcopenshell::geom::open_cascade_shape*)other)->shape_;
 
@@ -594,7 +594,7 @@ conversion_result_shape* ifcopenshell::geom::open_cascade_shape::concat(conversi
 		builder.MakeCompound(compound);
 		builder.Add(compound, left);
 	}
-	
+
 	builder.Add(compound, right);
 
 	return new open_cascade_shape(std::move(compound));

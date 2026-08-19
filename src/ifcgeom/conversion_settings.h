@@ -498,7 +498,7 @@ namespace ifcopenshell {
 				static constexpr const char* const description = "Slight variation of --model-offset where large offsets are applied by negating existing large offsets to retain maximum precision. Requires --no-parallel-mapping.";
 			};
 		}
-		
+
 		namespace impl {
 			template <typename T>
 			struct readable_name {

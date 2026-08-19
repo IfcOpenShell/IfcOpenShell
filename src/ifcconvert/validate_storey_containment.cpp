@@ -41,7 +41,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 				elem_to_storey[*it] = storey;
 			}
 		}
-	});	
+	});
 
 	auto storeys = f.instances_by_type("IfcBuildingStorey");
 	std::vector<const ifcopenshell::IfcBaseClass*> storeys_sorted(storeys->begin(), storeys->end());
@@ -98,7 +98,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 		std::wcout << "---" << std::endl;
 	}
 	*/
-	
+
 	if (!context_iterator.initialize()) {
 		return;
 	}

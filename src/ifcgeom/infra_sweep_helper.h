@@ -9,7 +9,7 @@
 namespace ifcopenshell {
 
 	namespace geom {
-		
+
 		struct IFC_GEOM_API cross_section {
 			double dist_along;
 			taxonomy::geom_item::ptr section_geometry;

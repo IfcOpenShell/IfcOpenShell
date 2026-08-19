@@ -114,10 +114,10 @@ namespace {
 		mesh_type build() const {
 			mesh_type mesh;
 			mesh.numProp = 3;
-			
+
 			std::vector<size_t> vertex_use_count(vertices.size(), 0);
             std::vector<Eigen::Vector3d> vertex_normals(vertices.size(), Eigen::Vector3d::Zero());
-            
+
 			for (size_t i = 0; i < tri_verts.size(); i += 3) {
                 for (size_t j = 0; j < 3; ++j) {
                     vertex_use_count[tri_verts[i + j]]++;
@@ -1242,13 +1242,13 @@ namespace {
 	}
 
 	std::optional<part> part_from_halfspace_solid(halfspace_build_state& state, const taxonomy::solid::ptr& solid, const taxonomy::face::ptr& face,const manifold::Box& reference_box, double precision, double dilation) {
-		
+
         auto plane = taxonomy::cast<taxonomy::plane>(face->basis);
 
 		// @todo verify order
         const auto transform = matrix_or_identity(solid->matrix) * matrix_or_identity(plane->matrix);
         const auto extrusion_dir = matrix_or_identity(solid->matrix).col(2).head<3>().eval();
-        
+
 		Eigen::Vector3d x = transform.col(0).head<3>();
         Eigen::Vector3d y = transform.col(1).head<3>();
         Eigen::Vector3d normal = transform.col(2).head<3>();
@@ -1281,7 +1281,7 @@ namespace {
 			const auto delta = corner - origin;
 			const auto u = delta.dot(x);
 			const auto v = delta.dot(y);
-			
+
 			u_min = std::min(u_min, u);
 			u_max = std::max(u_max, u);
 			v_min = std::min(v_min, v);

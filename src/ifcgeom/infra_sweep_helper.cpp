@@ -78,7 +78,7 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			while (dist_along > *(profile_index + 1)) {
 				profile_index++;
 				if (profile_index == longitudes.end()) {
-					// @todo handle this? 
+					// @todo handle this?
 				}
 			}
 
@@ -158,7 +158,7 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 						}
 						interpolated->matrix->components() = lerp(m4a, m4b, relative_dist_along);
 					}
-					
+
 					auto interpolated_offset = lerp(offset_a, offset_b, relative_dist_along);
                     if (rotation_a == rotation_b && rotation_a) {
                         // @todo we don't support an overridden rotation on only one of the placements
@@ -215,7 +215,7 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
                             std::vector<taxonomy::point3::ptr> points;
                             std::vector<std::set<std::string>> tags;
                             std::vector<std::string>::const_iterator tag_it;
-                            
+
 							if (!loop->closed.value_or(false)) {
                                 points = {std::get<taxonomy::point3::ptr>(loop->children[0]->start)};
                                 if (input_tags) {
@@ -352,7 +352,7 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
                                 for (auto& x : tags_for_this_point_on_subsequent_profile) {
 									points.push_back(taxonomy::make<taxonomy::point3>(p3));
                                     common_tags_vec.push_back(x);
-                                }     
+                                }
                             }
                         } else {
                             for (auto tmp__ : boost::combine(w1_points, w2_points)) {

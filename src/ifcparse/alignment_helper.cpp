@@ -193,11 +193,11 @@ std::tuple<std::vector<Ifc4x3_add2::IfcObjectDefinition>, std::vector<Ifc4x3_add
     design_parameters.setEndRadiusOfCurvature(0);
     design_parameters.setSegmentLength(0.0);
     design_parameters.setPredefinedType(Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_LINE);
-    
+
     alignment_segment = file.create<Ifc4x3_add2::IfcAlignmentSegment>();
     alignment_segment.setGlobalId(ifcopenshell::global_id());
     alignment_segment.setDesignParameters(design_parameters);
-    
+
     horizontal_segments.push_back(alignment_segment);
     if (include_geometry) {
         auto segment = mapAlignmentHorizontalSegment(file, design_parameters).first;
@@ -238,7 +238,7 @@ Ifc4x3_add2::IfcAlignment addHorizontalAlignment(hierarchy_helper<Ifc4x3_add2>& 
     //
     Ifc4x3_add2::IfcLocalPlacement placement;
     Ifc4x3_add2::IfcProductDefinitionShape product_definition_shape;
-    if (include_geometry) { 
+    if (include_geometry) {
        // create the footprint representation
        auto axis_model_representation_subcontext = file.getRepresentationSubContext("Axis", "Model");
        auto footprint_shape_representation = file.create<Ifc4x3_add2::IfcShapeRepresentation>();
@@ -246,7 +246,7 @@ Ifc4x3_add2::IfcAlignment addHorizontalAlignment(hierarchy_helper<Ifc4x3_add2>& 
        footprint_shape_representation.setRepresentationIdentifier("FootPrint");
        footprint_shape_representation.setRepresentationType("Curve2D");
        footprint_shape_representation.setItems(std::vector<Ifc4x3_add2::IfcRepresentationItem>{composite_curve});
-       
+
        placement = file.addLocalPlacement();
        // the alignment has a plan view footprint representation
        // create the alignment product definition
@@ -263,7 +263,7 @@ Ifc4x3_add2::IfcAlignment addHorizontalAlignment(hierarchy_helper<Ifc4x3_add2>& 
     alignment.setGlobalId(ifcopenshell::global_id());
     alignment.setName(alignment_name);
     alignment.setObjectPlacement(placement);
-    alignment.setRepresentation(product_definition_shape);    
+    alignment.setRepresentation(product_definition_shape);
 
     return alignment;
 }
@@ -429,13 +429,13 @@ Ifc4x3_add2::IfcAlignment addAlignment(hierarchy_helper<Ifc4x3_add2>& file, cons
     auto vertical_profile = file.create<Ifc4x3_add2::IfcAlignmentVertical>();
     vertical_profile.setGlobalId(ifcopenshell::global_id());
     vertical_profile.setName(alignment_name + "- Vertical");
-    
+
     auto nests_vertical_segments = file.create<Ifc4x3_add2::IfcRelNests>();
     nests_vertical_segments.setGlobalId(ifcopenshell::global_id());
     nests_vertical_segments.setName("Nests vertical alignment segments with vertical alignment");
     nests_vertical_segments.setRelatingObject(vertical_profile);
     nests_vertical_segments.setRelatedObjects(vertical_segments);
-    
+
     Ifc4x3_add2::IfcLocalPlacement placement;
     Ifc4x3_add2::IfcProductDefinitionShape product_definition_shape;
     if (include_geometry) {
@@ -475,7 +475,7 @@ Ifc4x3_add2::IfcAlignment addAlignment(hierarchy_helper<Ifc4x3_add2>& file, cons
     alignment.setName(alignment_name);
     alignment.setObjectPlacement(placement);
     alignment.setRepresentation(product_definition_shape);
-    
+
     // Nest the IfcAlignmentHorizontal and IfcAlignmentVertical with the IfcAlignment to complete the business logic
     // 4.1.4.4.1 Alignments nest horizontal and vertical layouts
     // https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Object_Composition/Nesting/Alignment_Layouts/content.html
@@ -856,7 +856,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
     } else {
         logger.error(std::string("unexpected AlignmentVerticalSegmentType encountered"));
     }
-    
+
     return result;
 }
 

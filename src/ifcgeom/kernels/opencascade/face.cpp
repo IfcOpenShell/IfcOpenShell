@@ -247,7 +247,7 @@ namespace {
 
 			auto crv = get_curve(e->basis);
 			result = Handle(Geom_Surface)(new Geom_SurfaceOfRevolution(
-				crv, ax	
+				crv, ax
 			));
 
 			result->Transform(tr);

@@ -624,7 +624,7 @@ std::unique_ptr<ifcopenshell::geom::element> ifcopenshell::geom::iterator::get()
 						hasParent = false;
 					}
                 }
-				
+
 				// Add the previously found parent to the vector
 				hasParent = hasParent && parent_object->parent_id() != -1;
 			}
@@ -688,13 +688,13 @@ express::base ifcopenshell::geom::iterator::create() {
 }
 
 ifcopenshell::geom::taxonomy::direction3::ptr ifcopenshell::geom::iterator::remove_offset_() {
-	
+
 	using namespace ifcopenshell::geom::taxonomy;
-	
+
 	if (!settings_.get<ifcopenshell::geom::settings::MaxOffset>().has()) {
 		return nullptr;
 	}
-	
+
 	if (!settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get()) {
 		throw std::runtime_error("remove_offset() can only be called with defer-processing-first-element and no-parallel-mapping settings");
 	}

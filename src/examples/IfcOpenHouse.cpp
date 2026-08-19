@@ -55,7 +55,7 @@
 
 using namespace std::string_literals;
 
-// Some convenience typedefs and definitions. 
+// Some convenience typedefs and definitions.
 typedef ifcopenshell::global_id guid;
 typedef std::pair<double, double> XY;
 #ifdef SCHEMA_HAS_IfcPresentationStyleAssignment
@@ -295,9 +295,9 @@ int main() {
     west_void.setOwnerHistory(file.getSingle<IfcSchema::IfcOwnerHistory>());
     west_void.setRelatingBuildingElement(west_wall);
     west_void.setRelatedOpeningElement(west_opening_copy);
-	
-	// Up until now we have only used simple extrusions for the creation of the geometry. For the 
-	// ground mesh of the IfcSite we will use a Nurbs surface created in Open Cascade. The surface 
+
+	// Up until now we have only used simple extrusions for the creation of the geometry. For the
+	// ground mesh of the IfcSite we will use a Nurbs surface created in Open Cascade. The surface
 	// will be tessellated using the deflection specified.
 	TopoDS_Shape shape;
 	createGroundShape(shape);
@@ -325,7 +325,7 @@ int main() {
     site_prop.setOwnerHistory(file.getSingle<IfcSchema::IfcOwnerHistory>());
     site_prop.setRelatedObjects({file.getSingle<IfcSchema::IfcSite>()});
     site_prop.setRelatingPropertyDefinition(pset);
-	
+
 	auto ground_reps = file.getSingle<IfcSchema::IfcSite>().Representation().Representations();
     for (auto& rep : ground_reps) {
         rep.setContextOfItems(file.getRepresentationContext("Model"));
@@ -334,11 +334,11 @@ int main() {
 	setSurfaceColour(file,ground_representation, 0.15, 0.25, 0.05);
 
 	// According to the Ifc2x3 schema an IfcWallStandardCase needs to have an IfcMaterialLayerSet
-	// assigned. Note that this material definition is independent of the surface styles we have 
-	// been assigning to the walls already. The surface styles determine the colour in the 
+	// assigned. Note that this material definition is independent of the surface styles we have
+	// been assigning to the walls already. The surface styles determine the colour in the
 	// '3D viewport' of most applications.
 	// Some BIM authoring applications, such as Autodesk Revit, ignore the geometrical representation
-	// by and large and construct native walls using the layer thickness and reference line offset 
+	// by and large and construct native walls using the layer thickness and reference line offset
 	// provided here.
     auto material = file.create<IfcSchema::IfcMaterial>();
     material.setName("Brick");
@@ -422,7 +422,7 @@ int main() {
 #endif
 
     door.setRepresentation(file.addBox(80, 80, 2120, IfcSchema::IfcAxis2Placement2D{}, file.addPlacement3d(460, 0, 0)));
-    
+
     auto door_representations = door.Representation().Representations();
     IfcSchema::IfcShapeRepresentation door_body;
 	for (auto& rep : door_representations) {
@@ -465,9 +465,9 @@ int main() {
 #endif
 
 	// Surface styles are assigned to representation items, hence there is no real limitation to
-	// assign different colours within the same representation. However, some viewers have 
-	// difficulties rendering products with representation items with different surface styles. 
-	// Therefore we will construct the window as a decomposition of beams and a plate, in which 
+	// assign different colours within the same representation. However, some viewers have
+	// difficulties rendering products with representation items with different surface styles.
+	// Therefore we will construct the window as a decomposition of beams and a plate, in which
 	// only the plate will have a transparent material assigned.
 
 	// The window frame will consists of four separate beams.
@@ -476,7 +476,7 @@ int main() {
 	// match the bounding box of the representation. Furthermore, the window placement needs
 	// to align with the lowerleft corner of the constituent parts.
     std::vector<IfcSchema::IfcShapeRepresentation> frame_representations;
-	
+
 	auto horizontal_bar = file.addEmptyRepresentation();
 	auto vertical_bar = file.addEmptyRepresentation();
 	file.addBox(horizontal_bar, 1860, 90, 90);
@@ -498,7 +498,7 @@ int main() {
 		// Because of the duplication the iterator is incremented twice
 	}
 
-	// This window will be placed at five locations within the building. A list of placements is 
+	// This window will be placed at five locations within the building. A list of placements is
 	// created and is iterated over to create all window instances.
     std::vector<IfcSchema::IfcLocalPlacement> window_placements;
 	window_placements.push_back(file.addLocalPlacement(storey_placement, 2*-1770-430-930,   -45, 400));
@@ -506,7 +506,7 @@ int main() {
 	window_placements.push_back(file.addLocalPlacement(storey_placement,        -430-930,   -45, 400));
 	window_placements.push_back(file.addLocalPlacement(storey_placement,        3000-930,   -45, 400));
 	window_placements.push_back(file.addLocalPlacement(storey_placement, -4855+45, 885-930, 400, 0, 0, 1, 0, 1, 0));
-	
+
 	for (auto& place : window_placements) {
 
 		// Create the window at the current location
@@ -520,7 +520,7 @@ int main() {
         window.setPredefinedType(IfcSchema::IfcWindowTypeEnum::IfcWindowType_WINDOW);
         window.setPartitioningType(IfcSchema::IfcWindowTypePartitioningEnum::IfcWindowTypePartitioning_SINGLE_PANEL);
 #endif
-        file.addBuildingProduct(window);		
+        file.addBuildingProduct(window);
 
 		// Initialize a list of parts for the window to be composed of
         std::vector<IfcSchema::IfcObjectDefinition> window_parts;
@@ -532,7 +532,7 @@ int main() {
 		frame_placements.push_back(file.addLocalPlacement(storey_placement,  930, 45, 1510));
 		frame_placements.push_back(file.addLocalPlacement(storey_placement, -885+930, 45,  90));
 		frame_placements.push_back(file.addLocalPlacement(storey_placement,  885+930, 45,  90));
-		
+
 		// Now iterate over the placements and representations of the beam and add them to list of parts
         std::vector<IfcSchema::IfcLocalPlacement>::const_iterator frame_placement;
         std::vector<IfcSchema::IfcShapeRepresentation>::const_iterator frame_representation;
@@ -565,7 +565,7 @@ int main() {
         window_parts.push_back(glass_part);
 		file.relatePlacements(window, glass_part);
 		setSurfaceColour(file, glass_part.Representation(), 0.6, 0.7, 0.75, 0.1);
-		
+
 		// Now create a decomposition relation between the window and the parts. Most viewers and authoring
 		// tools will consider the window a single entity that can be selected as a whole.
         {
@@ -612,10 +612,10 @@ void createGroundShape(TopoDS_Shape& shape) {
 	cv.SetValue(4, 4, gp_Pnt( 10000,  10000, -8130));
 	TColStd_Array1OfReal knots(0, 1);
 	knots(0) = 0;
-	knots(1) = 1;		
+	knots(1) = 1;
 	TColStd_Array1OfInteger mult(0, 1);
 	mult(0) = 5;
-	mult(1) = 5;	
+	mult(1) = 5;
 	Handle(Geom_BSplineSurface) surf = new Geom_BSplineSurface(cv, knots, knots, mult, mult, 4, 4);
 #if OCC_VERSION_HEX < 0x60502
 	shape = BRepBuilderAPI_MakeFace(surf);

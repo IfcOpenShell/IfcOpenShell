@@ -106,7 +106,7 @@ std::string format_json(const double& d) {
 template <>
 std::string format_json(const gp_Dir& d) {
 	std::stringstream ss;
-	ss << std::setprecision(std::numeric_limits<double>::digits10) 
+	ss << std::setprecision(std::numeric_limits<double>::digits10)
 		<< "[" << d.X() << "," << d.Y() << "," << d.Z() << "]";
 	return ss.str();
 }
@@ -311,7 +311,7 @@ protected:
 			m(3,0),	m(3,1),	m(3,2),	m(3,3)
 		};
 		swrite(s, std::string((char*)matrix_array, 16 * sizeof(double)));
-		
+
 		// The first bit of the string is always the instance name of the representation.
 		const std::string& representation_id = geom->geometry().id();
 		const int integer_representation_id = atoi(representation_id.c_str());
@@ -326,13 +326,13 @@ protected:
 			indices.reserve(faces.size());
 			for (std::vector<int>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
 				indices.push_back(*it);
-			} 
+			}
 			swrite_array<int32_t>(s, indices);
 
 			if (append_line_data) {
 				std::vector<int32_t> lines;
 				std::set<int32_t> faces_set (indices.begin(), indices.end());
-				
+
 				const std::vector<int>& edges = geom->geometry().edges();
 				for ( std::vector<int>::const_iterator it = edges.begin(); it != edges.end(); ) {
 					const int32_t i1 = *(it++);
@@ -349,7 +349,7 @@ protected:
 				swrite_array<int32_t>(s, lines);
 			}
 		}
-		{ 
+		{
 			// We remove the blanks here from the material array. I.e. materials without a diffuse color
 			std::vector<boost::optional<std::array<float, 4> > > diffuse_color_array;
 			for (auto it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
@@ -369,7 +369,7 @@ protected:
 
 			std::map<int, int> orig_to_condensed_index_map;
 			std::vector<float> diffuse_color_array_condensed;
-			
+
 			int new_index = 0;
 			for (size_t orig = 0; orig < diffuse_color_array.size(); ++orig) {
 				auto& material = diffuse_color_array[orig];
@@ -470,13 +470,13 @@ private:
 	const ifcopenshell::geom::native_element* elem_;
 public:
 	QuantityWriter_v0(const ifcopenshell::geom::native_element* elem) :
-		elem_(elem) 
+		elem_(elem)
 	{
 		put_json(TOTAL_SURFACE_AREA, 0.);
 		put_json(TOTAL_SHAPE_VOLUME, 0.);
 		if (elem_->type() == "IfcSpace") {
 			put_json(WALKABLE_SURFACE_AREA, 0.);
-		}	
+		}
 	}
 };
 
@@ -548,7 +548,7 @@ public:
 };
 
 int main () {
-	// Redirect stdout to this stream, so that involuntary 
+	// Redirect stdout to this stream, so that involuntary
 	// writes to stdout do not interfere with our protocol.
 	std::ostringstream oss;
 	stdout_redir = oss.rdbuf();
@@ -672,7 +672,7 @@ int main () {
 			}
 		}
 		default:
-			exit_code = 1; 
+			exit_code = 1;
 			break;
 		}
 		break;

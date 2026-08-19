@@ -58,7 +58,7 @@ double ifcopenshell::geom::util::min_edge_length(const TopoDS_Shape & a) {
 	TopExp_Explorer exp(a, TopAbs_EDGE);
 	for (; exp.More(); exp.Next()) {
 		const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
-		
+
 		TopoDS_Vertex v0, v1;
 		TopExp::Vertices(e, v0, v1);
 		if (!v0.IsNull() && !v1.IsNull() && v0.IsSame(v1)) {

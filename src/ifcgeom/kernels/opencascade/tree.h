@@ -201,12 +201,12 @@ namespace ifcopenshell::geom {
                     box.corners[1][1] = static_cast<float>(max_point[1] + 1e-5);
                     box.corners[1][2] = static_cast<float>(max_point[2] + 1e-5);
                     /*
-                    std::cout << "Ray " 
+                    std::cout << "Ray "
                         << v_ray.origin[0] << " "
                         << v_ray.origin[1] << " "
                         << v_ray.origin[2] << " "
                         << std::endl;
-                    std::cout << "Box " 
+                    std::cout << "Box "
                         << min_point[0] << " "
                         << min_point[1] << " "
                         << min_point[2] << " "
@@ -864,7 +864,7 @@ namespace ifcopenshell::geom {
 						if (dss.Value() <= extend) {
 							distances_.push_back(dss.Value());
 							protrusion_distances_.push_back(max_distance_inside(B, A));
-						}						
+						}
 						return dss.Value() <= extend;
 					}
 				} else {
@@ -925,8 +925,8 @@ namespace ifcopenshell::geom {
 				// Gap is assumed to be positive throughout the codebase,
 				// but at least for IsOut() in the selector a negative
 				// Gap should work as well.
-				b.SetGap(b.GetGap() + extend); 
-				
+				b.SetGap(b.GetGap() + extend);
+
 				return select_box(b, completely_within);
 			}
 
@@ -956,7 +956,7 @@ namespace ifcopenshell::geom {
 						double gap = B.GetGap();
 						gp_Pnt p1(x1 - gap, y1 - gap, z1 - gap);
 						gp_Pnt p2(x2 + gap, y2 + gap, z2 + gap);
-						
+
 						if (!b.IsOut(p1) && !b.IsOut(p2)) {
 							ts_filtered.push_back(*it);
 						}
@@ -1389,7 +1389,7 @@ namespace ifcopenshell::geom {
 					if (extend > 0.0) {
 						BRepExtrema_DistShapeShape dss(v, B);
 						if (dss.Perform() && dss.NbSolution() >= 1 && dss.Value() <= extend) {
-							distances_.push_back(dss.Value());							
+							distances_.push_back(dss.Value());
 							protrusion_distances_.push_back(max_distance_inside(B, v));
 
 							ts_filtered.push_back(*it);
@@ -1416,9 +1416,9 @@ namespace ifcopenshell::geom {
 			spatial_tree tree_;
 			shape_map shapes_;
             std::map<T, Bnd_Box> aabbs_;
-            std::map<T, Bnd_OBB> obbs_; 
-            std::map<T, double> max_protrusions_; 
-            std::map<T, opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>> bvhs_; 
+            std::map<T, Bnd_OBB> obbs_;
+            std::map<T, double> max_protrusions_;
+            std::map<T, opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>> bvhs_;
             std::unordered_map<T, bool> is_manifold_;
             std::unordered_map<T, std::vector<std::array<int, 3>>> tris_;
             std::unordered_map<T, std::vector<gp_Pnt>> verts_;
@@ -1433,7 +1433,7 @@ namespace ifcopenshell::geom {
             std::map<std::string, std::vector<int>> local_faces_;
             std::map<std::string, std::vector<ifcopenshell::geom::taxonomy::style::ptr>> local_materials_;
             std::map<std::string, std::vector<int>> local_material_ids_;
-			
+
 			bool enable_face_styles_ = false;
 
 			class selector : public spatial_tree::Selector
@@ -1480,7 +1480,7 @@ namespace ifcopenshell::geom {
 
 		opencascade_tree(ifcopenshell::geom::iterator& it) {
 			add_file(it);
-		}		
+		}
 
 		void add_file(ifcopenshell::file& f, ifcopenshell::geom::settings settings) {
 			ifcopenshell::geom::settings settings_ = settings;
@@ -1509,7 +1509,7 @@ namespace ifcopenshell::geom {
             result.reserve(flat_list.size());
 
             for (size_t i = 0; i < flat_list.size(); i += 3) {
-                vin << 
+                vin <<
                     flat_list[i],
                     flat_list[i + 1],
                     flat_list[i + 2];
@@ -1576,7 +1576,7 @@ namespace ifcopenshell::geom {
                     vs_transformed.push_back(p.Transformed(tr));
                     aabb.Add(vs_transformed.back());
                 }
-            
+
                 std::unordered_map<std::tuple<int, int, int>, std::vector<size_t>, boost::hash<std::tuple<int, int, int>>> quantized_normal_counts;
 
                 std::vector<double> tri_areas;
@@ -1631,7 +1631,7 @@ namespace ifcopenshell::geom {
 
                 gp_Ax3 ax3;
                 gp_Trsf trsf2;
-                
+
                 for (size_t attempt = 0; attempt < 2; ++attempt) {
 
                     if (candidates.empty() || attempt == 1) {
@@ -1673,7 +1673,7 @@ namespace ifcopenshell::geom {
                 obb.SetZComponent(ax3.Direction(), halfsize.Z());
                 obb.SetCenter(cent.Transformed(trsf2.Inverted()));
             }
-            
+
             const auto& t = elem->product();
             const auto& matrix = elem->transformation().data();
             const std::vector<double>& elem_verts_local = elem->geometry().verts();
@@ -1744,7 +1744,7 @@ namespace ifcopenshell::geom {
             obbs_[t] = obb;
             max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) * 2;
         }
-        
+
 		void add_element(ifcopenshell::geom::native_element* elem) {
 			if (!elem) {
 				return;
@@ -1753,7 +1753,7 @@ namespace ifcopenshell::geom {
 			auto compound_generic = (ifcopenshell::geom::open_cascade_shape*)elem->geometry().as_compound();
 			TopoDS_Shape compound(std::move(compound_generic->shape()));
             delete compound_generic;
-			
+
 			const auto& m = elem->transformation().data()->ccomponents();
 			gp_Trsf tr;
 			tr.SetValues(
