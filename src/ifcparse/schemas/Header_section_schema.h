@@ -20,9 +20,9 @@ class spf_header;
 
 struct Header_section_schema {
 
-IFC_PARSE_API static const ifcopenshell::schema_definition& get_schema();
+IFC_SCHEMA_API static const ifcopenshell::schema_definition& get_schema();
 
-IFC_PARSE_API static void clear_schema();
+IFC_SCHEMA_API static void clear_schema();
 
 static const char* const Identifier;
 
@@ -30,7 +30,7 @@ static const char* const Identifier;
 class file_description; class file_name; class file_schema; class schema_name; class time_stamp_text; 
 
 
-class IFC_PARSE_API schema_name : public express::DeclaredType {
+class IFC_SCHEMA_API schema_name : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -39,7 +39,7 @@ public:
     operator std::string() const;
 };
 
-class IFC_PARSE_API time_stamp_text : public express::DeclaredType {
+class IFC_SCHEMA_API time_stamp_text : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -50,7 +50,7 @@ public:
 
 
 
-class IFC_PARSE_API file_description : public express::Entity {
+class IFC_SCHEMA_API file_description : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -63,7 +63,7 @@ public:
     file_description initialize(std::vector< std::string > /*[1:?]*/ v1_description, std::string v2_implementation_level);
 };
 
-class IFC_PARSE_API file_name : public express::Entity {
+class IFC_SCHEMA_API file_name : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -86,7 +86,7 @@ public:
     file_name initialize(std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization);
 };
 
-class IFC_PARSE_API file_schema : public express::Entity {
+class IFC_SCHEMA_API file_schema : public express::Entity {
 public:
     using express::Entity::Entity;
 
