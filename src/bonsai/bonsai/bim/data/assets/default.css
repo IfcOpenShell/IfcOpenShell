@@ -32,6 +32,8 @@ path.boundary { stroke: black; stroke-width: 0.3; stroke-opacity: 0.9; }
 path.crease { stroke: black; stroke-width: 0.25; stroke-opacity: 0.85; }
 path.sharp { stroke: black; stroke-width: 0.18; stroke-opacity: 0.7; }
 path.flush { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; }
+path.cross-coplanar { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; stroke-dasharray: 1, 2; }
+path.mat-style-change { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; stroke-dasharray: 1, 1.5; }
 
 /* Debug CSS for troubleshooting edge classification */
 /*
@@ -40,6 +42,8 @@ path.boundary { stroke: orange; stroke-width: 0.3; stroke-opacity: 0.9; }
 path.crease { stroke: green; stroke-width: 0.25; stroke-opacity: 0.85; }
 path.sharp { stroke: red; stroke-width: 0.18; stroke-opacity: 0.7; }
 path.flush { stroke: blue; stroke-width: 0.1; stroke-opacity: 0.4; }
+path.cross-coplanar { stroke: cyan; stroke-width: 0.1; stroke-opacity: 1.0; }
+path.mat-style-change { stroke: fuchsia; stroke-width: 0.1; stroke-opacity: 1.0; }
 */
 
 .surface {fill: white; stroke-width: 0.1;}
