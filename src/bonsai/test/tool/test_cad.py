@@ -92,6 +92,48 @@ class TestClosestPoints(NewFile):
         assert subject.closest_points(edge1, edge2)[0] == (edge1[0], edge2[0])
 
 
+class TestIntersectEdgesV2(NewFile):
+    """Pins the closest-points results across the shapes the snap and wall-junction
+    call sites rely on, so the hot path can be optimised without changing them."""
+
+    def test_skew_lines_return_the_closest_point_on_each(self):
+        c1, c2 = subject.intersect_edges_v2((V(0, 0, 0), V(1, 0, 0)), (V(0.5, -1, 0.3), V(0.5, 1, 0.7)))
+        assert c1 is not None and c2 is not None
+        for got, want in zip(c1, V(0.5, 0, 0)):
+            assert abs(got - want) < 1e-9
+        for got, want in zip(c2, V(0.5, -0.09615385, 0.48076923)):
+            assert abs(got - want) < 1e-6
+
+    def test_crossing_lines_meet_at_the_intersection(self):
+        c1, c2 = subject.intersect_edges_v2((V(-1, 0, 0), V(1, 0, 0)), (V(0, -1, 0), V(0, 1, 0)))
+        assert c1 is not None
+        for got in c1 - c2:
+            assert abs(got) < 1e-9
+        for got, want in zip(c1, V(0, 0, 0)):
+            assert abs(got - want) < 1e-9
+
+    def test_parallel_lines_have_no_solution(self):
+        assert subject.intersect_edges_v2((V(0, 0, 0), V(1, 0, 0)), (V(0, 1, 0), V(1, 1, 0))) == (None, None)
+
+    def test_collinear_lines_have_no_solution(self):
+        assert subject.intersect_edges_v2((V(0, 0, 0), V(1, 0, 0)), (V(2, 0, 0), V(3, 0, 0))) == (None, None)
+
+    def test_2d_input_returns_2d_vectors(self):
+        c1, c2 = subject.intersect_edges_v2(
+            (Vector((-1.0, 0.0)), Vector((1.0, 0.0))), (Vector((0.0, -1.0)), Vector((0.0, 1.0)))
+        )
+        assert len(c1) == 2 and len(c2) == 2
+        for got, want in zip(c1, Vector((0.0, 0.0))):
+            assert abs(got - want) < 1e-9
+
+    def test_unnormalised_directions_do_not_change_the_result(self):
+        """Directions are normalised internally, so segment length must not matter."""
+        short = subject.intersect_edges_v2((V(0, 0, 0), V(1, 0, 0)), (V(0.5, -1, 0.3), V(0.5, 1, 0.7)))
+        long = subject.intersect_edges_v2((V(0, 0, 0), V(7, 0, 0)), (V(0.5, -1, 0.3), V(0.5, 1, 0.7)))
+        for got, want in zip(short[0], long[0]):
+            assert abs(got - want) < 1e-9
+
+
 class TestObbWorldClipPlanes(NewFile):
     def test_unit_box_at_origin_returns_axis_aligned_planes(self):
         planes = subject.obb_world_clip_planes(
