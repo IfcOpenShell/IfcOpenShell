@@ -438,7 +438,19 @@ def remove_drawing(
 
     group = drawing_tool.get_drawing_group(drawing)
     if group:
-        drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
+        # Annotations shared with other drawings must survive this removal - only
+        # detach them from this drawing. group.remove_group drops this group's
+        # membership rel, so a shared annotation stays on its other drawings.
+        to_delete = [
+            e
+            for e in drawing_tool.get_group_elements(group)
+            if not (
+                e.is_a("IfcAnnotation")
+                and e.ObjectType != "DRAWING"
+                and len(drawing_tool.get_annotation_drawings(e)) > 1
+            )
+        ]
+        drawing_tool.delete_drawing_elements(to_delete)
         ifc.run("group.remove_group", group=group)
 
     drawing_tool.import_drawings()
