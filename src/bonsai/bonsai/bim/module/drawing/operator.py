@@ -1425,7 +1425,6 @@ class CreateDrawing(bpy.types.Operator):
             self.svg_settings.set(
                 "svg-use-face-intersection-classification", self.cprops.use_face_intersection_classification
             )
-            self.svg_settings.set("svg-render-face-intersection-edges", self.cprops.render_face_intersection)
             self.svg_settings.set("svg-face-intersection-tolerance", self.cprops.face_intersection_tolerance)
         except Exception:
             # Backwards compatibility with older ifcopenshell builds that don't expose these keys.

@@ -321,7 +321,6 @@ def render_svg(
     use_mat_style_change: bool = False,
     render_cross_coplanar: bool = False,
     use_face_intersection: bool = False,
-    render_face_intersection: bool = False,
     scale: float = 1.0,
     bounding_rectangle: tuple[float, float] = (20000.0, 20000.0),
     unify_inputs: bool = False,
@@ -353,7 +352,6 @@ def render_svg(
     geom_settings.set("svg-use-mat-style-change-classification", use_mat_style_change)
     geom_settings.set("svg-render-cross-coplanar-edges", render_cross_coplanar)
     geom_settings.set("svg-use-face-intersection-classification", use_face_intersection)
-    geom_settings.set("svg-render-face-intersection-edges", render_face_intersection)
 
     buffer = ifcopenshell.geom.serializers.buffer()
     serializer_settings = ifcopenshell.geom.serializer_settings()
@@ -2509,7 +2507,6 @@ def test_face_intersection_rod_through_wall():
             camera_pos=(2.0, -5.0, 1.0),
             camera_dir=(0.0, -1.0, 0.0),
             use_face_intersection=True,
-            render_face_intersection=True,
         )
         return parse_edges(svg)
 
@@ -2554,7 +2551,6 @@ def test_face_intersection_excludes_coplanar_pair():
         use_cross_coplanar=True,
         render_cross_coplanar=True,
         use_face_intersection=True,
-        render_face_intersection=True,
     )
     edges = parse_edges(svg)
 

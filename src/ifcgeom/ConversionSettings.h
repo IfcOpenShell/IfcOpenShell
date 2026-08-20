@@ -431,15 +431,19 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
+			// Unlike cross-coplanar/mat-style-change, this pass has no "dissolve/trim a neighbouring
+			// outline edge" interaction for a separate render flag to preserve when classification
+			// runs but rendering doesn't (there is nothing else in the drawing for a face-intersection
+			// edge's mere presence to affect -- it never wins a coincident-duplicate-edge priority
+			// contest, see coincident_edge_class_priority() in SvgSerializer.cpp, since it's left
+			// unranked/lowest-priority there). A classification-on/render-off state would therefore
+			// just pay this pass' real per-face-pair BRepAlgoAPI_Section cost for zero visible effect
+			// -- so, mirroring svg-use-mat-style-change-classification's own single-boolean precedent
+			// (same reasoning: no separate render flag), this one setting both enables the match pass
+			// AND controls whether its edges are emitted.
 			struct SvgUseFaceIntersectionClassification : public SettingBase<SvgUseFaceIntersectionClassification, bool> {
 				static constexpr const char* const name = "svg-use-face-intersection-classification";
-				static constexpr const char* const description = "SVG edge classification (issue #3742 follow-on): additionally classify a projection edge as 'face-intersection' when it is a newly-constructed edge marking where a planar face of one product genuinely crosses a (non-parallel) planar face of a different product in 3D -- e.g. a diagonal brace passing through a wall -- as opposed to 'cross-coplanar', which handles coincident/parallel faces. Computed via BRepAlgoAPI_Section trimmed to both faces' real boundaries. Only takes effect when svg-use-edge-classification is also enabled, since it shares that system's classification buckets.";
-				static constexpr bool defaultvalue = true;
-			};
-
-			struct SvgRenderFaceIntersectionEdges : public SettingBase<SvgRenderFaceIntersectionEdges, bool> {
-				static constexpr const char* const name = "svg-render-face-intersection-edges";
-				static constexpr const char* const description = "SVG edge classification (issue #3742 follow-on): whether to emit 'face-intersection' projection edges. Defaults to false -- classification runs by default so the class exists and can participate correctly if ever needed, but rendering stays opt-in until real-fixture timing data justifies flipping it on by default, since this pass' per-face-pair cost is higher than cross-coplanar's collinearity check. Only relevant when svg-use-face-intersection-classification is enabled.";
+				static constexpr const char* const description = "SVG edge classification (issue #3742 follow-on): classify AND emit a projection edge as 'face-intersection' when it is a newly-constructed edge marking where a planar face of one product genuinely crosses a (non-parallel) planar face of a different product in 3D -- e.g. a diagonal brace passing through a wall -- as opposed to 'cross-coplanar', which handles coincident/parallel faces. Computed via BRepAlgoAPI_Section trimmed to both faces' real boundaries. Unlike cross-coplanar/mat-style-change, there is no separate render toggle: this pass has no outline-trimming side effect for a render-off state to preserve, so one setting controls both. Only takes effect when svg-use-edge-classification is also enabled, since it shares that system's classification buckets.";
 				static constexpr bool defaultvalue = false;
 			};
 
@@ -731,7 +735,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, SvgUseCrossCoplanarClassification, SvgRenderCrossCoplanarEdges, SvgCrossCoplanarTolerance, SvgUseMatStyleChangeClassification, SvgUseFaceIntersectionClassification, SvgRenderFaceIntersectionEdges, SvgFaceIntersectionTolerance, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, SvgUseCrossCoplanarClassification, SvgRenderCrossCoplanarEdges, SvgCrossCoplanarTolerance, SvgUseMatStyleChangeClassification, SvgUseFaceIntersectionClassification, SvgFaceIntersectionTolerance, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }

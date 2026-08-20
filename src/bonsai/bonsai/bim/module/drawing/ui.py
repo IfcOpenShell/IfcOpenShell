@@ -109,40 +109,11 @@ class BIM_PT_camera(Panel):
         row = self.layout.row()
         row.prop(props, "generate_material_layers")
         row = self.layout.row()
-        row.prop(props, "join_coplanar_surfaces")
         if props.linework_mode == "OPENCASCADE":
             row = self.layout.row()
             row.prop(props, "fill_mode")
             row = self.layout.row()
             row.prop(props, "cut_mode")
-
-            row = self.layout.row()
-            row.prop(props, "use_edge_classification")
-            if props.use_edge_classification:
-                row = self.layout.row()
-                row.prop(props, "render_creases")
-                row.prop(props, "valley_angle_min_degrees")
-                row = self.layout.row()
-                row.prop(props, "render_sharp")
-                row.prop(props, "ridge_angle_min_degrees")
-                row = self.layout.row()
-                row.prop(props, "render_flush")
-                row = self.layout.row()
-                row.prop(props, "use_cross_coplanar_classification")
-                if props.use_cross_coplanar_classification:
-                    row = self.layout.row()
-                    row.prop(props, "render_cross_coplanar")
-                    row.prop(props, "cross_coplanar_tolerance")
-                row = self.layout.row()
-                row.prop(props, "use_mat_style_change_classification")
-                row = self.layout.row()
-                row.prop(props, "use_face_intersection_classification")
-                if props.use_face_intersection_classification:
-                    row = self.layout.row()
-                    row.prop(props, "render_face_intersection")
-                    row.prop(props, "face_intersection_tolerance")
-                row = self.layout.row()
-                row.prop(props, "merge_duplicate_edges")
 
         row = self.layout.row()
         row.prop(props, "width")
@@ -182,6 +153,83 @@ class BIM_PT_camera(Panel):
         if props.has_underlay:
             row = self.layout.row()
             row.prop(props, "dpi")
+
+
+class BIM_PT_edge_classification(Panel):
+    bl_label = "Edge Classification"
+    bl_idname = "BIM_PT_edge_classification"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_camera"
+
+    @classmethod
+    def poll(cls, context):
+        assert context.scene and (camera := context.scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
+        active = props.linework_mode == "OPENCASCADE"
+        return bool((camera) and tool.Ifc.get_entity(camera) and active)
+
+    def draw_header(self, context):
+        assert context.scene and (camera := context.scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
+        self.layout.prop(props, "use_edge_classification", text="")
+
+    def draw(self, context):
+        assert context.scene and (camera := context.scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
+
+        col = self.layout.column()
+        col.enabled = props.use_edge_classification
+
+        row = col.row()
+        row.label(text="Enable additional features:")
+
+        row = col.row()
+        row.label(text="", icon="BLANK1")
+        row.prop(props, "use_cross_coplanar_classification", text="Cross-Coplanar")
+        row.prop(props, "use_mat_style_change_classification", text="Material/Style")
+
+        row = col.row()
+        row.label(text="", icon="BLANK1")
+        row.prop(props, "use_face_intersection_classification", text="Face Intersections")
+
+        row = col.row()
+        row.label(text="Render out:")
+
+        row = col.row()
+        row.label(text="", icon="BLANK1")
+        row.prop(props, "render_creases", text="Creases")
+        row.prop(props, "valley_angle_min_degrees", text="Angle")
+
+        row = col.row()
+        row.label(text="", icon="BLANK1")
+        row.prop(props, "render_sharp", text="Sharp")
+        row.prop(props, "ridge_angle_min_degrees", text="Angle")
+
+        row = col.row()
+        row.label(text="", icon="BLANK1")
+        row.prop(props, "render_flush", text="Flush")
+
+        row = col.row()
+        row.enabled = props.use_cross_coplanar_classification
+        row.label(text="", icon="BLANK1")
+        row.prop(props, "render_cross_coplanar", text="Cross-Coplanar")
+        row.prop(props, "cross_coplanar_tolerance", text="Tolerance")
+
+        row = col.row()
+        row.label(text="", icon="BLANK1")
+        row.enabled = props.use_face_intersection_classification
+        row.label(text="      Face Intersection")
+        row.prop(props, "face_intersection_tolerance", text="Tolerance")
+
+        row = col.row()
+        row.label(text="Post Process:")
+
+        row = col.row()
+        row.label(text="", icon="BLANK1")
+        row.prop(props, "merge_duplicate_edges")
 
 
 class BIM_PT_element_filters(Panel):

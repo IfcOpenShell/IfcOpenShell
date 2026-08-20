@@ -623,19 +623,14 @@ class BIMCameraProperties(PropertyGroup):
     )
     use_face_intersection_classification: BoolProperty(
         name="Use Face-Intersection Classification",
-        description="Additionally classify a projection edge as 'face-intersection' where a planar "
+        description="Classify and render a projection edge as 'face-intersection' where a planar "
         "face of one element genuinely crosses a (non-parallel) planar face of a different element "
         "in 3D -- e.g. a diagonal brace passing through a wall -- as opposed to a coincident/parallel "
-        "'cross-coplanar' boundary. Only takes effect when Use Edge Classification is also enabled",
-        default=True,
-        update=get_update_layer_callback("use_face_intersection_classification", "UseFaceIntersectionClassification"),
-    )
-    render_face_intersection: BoolProperty(
-        name="Render Face-Intersection",
-        description="Render 'face-intersection' projection edges (genuine face-face crossings "
-        "between two different elements). Omitted by default",
+        "'cross-coplanar' boundary. Unlike Cross-Coplanar/Material-Style-Change, there is no separate "
+        "render toggle: this classification has no other edges to trim, so one setting controls both. "
+        "Only takes effect when Use Edge Classification is also enabled",
         default=False,
-        update=get_update_layer_callback("render_face_intersection", "RenderFaceIntersectionEdges"),
+        update=get_update_layer_callback("use_face_intersection_classification", "UseFaceIntersectionClassification"),
     )
     face_intersection_tolerance: FloatProperty(
         name="Face-Intersection Tolerance",

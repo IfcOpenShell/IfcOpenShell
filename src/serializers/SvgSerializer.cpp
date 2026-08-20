@@ -117,7 +117,6 @@ bool SvgSerializer::ready() {
 	svg_cross_coplanar_tolerance_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgCrossCoplanarTolerance>().get();
 	svg_use_mat_style_change_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseMatStyleChangeClassification>().get();
 	svg_use_face_intersection_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseFaceIntersectionClassification>().get();
-	svg_render_face_intersection_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderFaceIntersectionEdges>().get();
 	svg_face_intersection_tolerance_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgFaceIntersectionTolerance>().get();
 	return true;
 }
@@ -3357,15 +3356,6 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 		// this flag off reintroduced the exact seam line cross-coplanar classification exists to
 		// suppress, because there was no "cross-coplanar" entry left for dedup to trim against.
 		if (cls == cross_coplanar::class_name && !svg_render_cross_coplanar_edges_) {
-			continue;
-		}
-
-		// "Render Face-Intersection" gates final SVG output only, not classification -- same
-		// rationale as cross-coplanar's own render gate immediately above, though face-intersection
-		// currently has no analogous outline-trimming interaction to preserve (it's left unranked
-		// in coincident_edge_class_priority(), see that function's own comment); classification
-		// still runs unconditionally so the class exists to participate correctly if ever needed.
-		if (cls == intersection::class_name && !svg_render_face_intersection_edges_) {
 			continue;
 		}
 

@@ -2571,9 +2571,11 @@ namespace {
 
 		// Cross-object "face-intersection" edge classification (issue #3742 follow-on): see
 		// the intersection namespace's own top comment and find_face_intersection_matches()
-		// below. No separate render flag threaded through here -- like cross-coplanar,
-		// "render" only gates final SVG output (SvgSerializer::draw_hlr()), never whether
-		// classification itself runs, so it stays a SvgSerializer-level-only member.
+		// below. Unlike cross-coplanar/mat-style-change, this single boolean also controls
+		// whether the resulting edges are emitted -- there is no separate render flag, since
+		// this pass has no outline-trimming interaction for a classification-on/render-off
+		// state to preserve (see SvgUseFaceIntersectionClassification's own comment in
+		// ConversionSettings.h).
 		bool use_face_intersection_classification_;
 		double face_intersection_tolerance_;
 
@@ -3207,9 +3209,10 @@ protected:
 	// lining) is applied per-item in write(const geometry_data&).
 	bool svg_use_mat_style_change_classification_;
 	// Cross-object "face-intersection" edge classification (issue #3742 follow-on): see the
-	// intersection namespace/find_face_intersection_matches() in SvgSerializer.h.
+	// intersection namespace/find_face_intersection_matches() in SvgSerializer.h. Single boolean,
+	// no separate render flag -- see SvgUseFaceIntersectionClassification's own comment in
+	// ConversionSettings.h for why that differs from cross-coplanar/mat-style-change.
 	bool svg_use_face_intersection_classification_;
-	bool svg_render_face_intersection_edges_;
 	double svg_face_intersection_tolerance_;
 
 	IfcParse::IfcFile* file;
