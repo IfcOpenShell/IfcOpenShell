@@ -355,6 +355,7 @@ def duplicate_drawing(
     geometry: type[tool.Geometry],
     drawing: ifcopenshell.entity_instance,
     should_duplicate_annotations: bool = False,
+    share_annotations: bool = False,
 ) -> ifcopenshell.entity_instance:
     drawing_name = drawing_tool.ensure_unique_drawing_name(drawing_tool.get_name(drawing))
     new_drawing = ifc.run("root.copy_class", product=drawing)
@@ -367,16 +368,33 @@ def duplicate_drawing(
     ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=new_group, products=[new_drawing])
     if should_duplicate_annotations:
-        new_annotations: list[ifcopenshell.entity_instance] = []
-        annotation_objs = [ifc.get_object(a) for a in drawing_tool.get_group_elements(group) if a != drawing]
-        old_to_new, _ = geometry.duplicate_ifc_objects(annotation_objs)
-        for new_elements in old_to_new.values():
-            # Remove the Blender object, since we haven't actually activated the duplicated drawing
-            for new_element in new_elements:
-                blender.remove_object(ifc.get_object(new_element))
-            new_annotations.extend(new_elements)
-        ifc.run("group.unassign_group", group=group, products=new_annotations)
-        ifc.run("group.assign_group", group=new_group, products=new_annotations)
+        source_annotations = [a for a in drawing_tool.get_group_elements(group) if a != drawing]
+        if share_annotations:
+            # Preserve existing sharing: an annotation that already appears on more
+            # than one drawing stays shared with the duplicate (the same entity is
+            # added to the new drawing's group, so edits keep propagating). Annotations
+            # unique to this drawing - and auto-generated tags - are duplicated as usual.
+            to_share = [
+                a
+                for a in source_annotations
+                if not drawing_tool.is_auto_annotation(a) and len(drawing_tool.get_annotation_drawings(a)) > 1
+            ]
+            to_duplicate = [a for a in source_annotations if a not in to_share]
+            if to_share:
+                ifc.run("group.assign_group", group=new_group, products=to_share)
+        else:
+            to_duplicate = source_annotations
+        if to_duplicate:
+            new_annotations: list[ifcopenshell.entity_instance] = []
+            annotation_objs = [ifc.get_object(a) for a in to_duplicate]
+            old_to_new, _ = geometry.duplicate_ifc_objects(annotation_objs)
+            for new_elements in old_to_new.values():
+                # Remove the Blender object, since we haven't actually activated the duplicated drawing
+                for new_element in new_elements:
+                    blender.remove_object(ifc.get_object(new_element))
+                new_annotations.extend(new_elements)
+            ifc.run("group.unassign_group", group=group, products=new_annotations)
+            ifc.run("group.assign_group", group=new_group, products=new_annotations)
 
     old_reference = drawing_tool.get_drawing_document(new_drawing)
     ifc.run("document.unassign_document", products=[new_drawing], document=old_reference)
@@ -420,7 +438,19 @@ def remove_drawing(
 
     group = drawing_tool.get_drawing_group(drawing)
     if group:
-        drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
+        # Annotations shared with other drawings must survive this removal - only
+        # detach them from this drawing. group.remove_group drops this group's
+        # membership rel, so a shared annotation stays on its other drawings.
+        to_delete = [
+            e
+            for e in drawing_tool.get_group_elements(group)
+            if not (
+                e.is_a("IfcAnnotation")
+                and e.ObjectType != "DRAWING"
+                and len(drawing_tool.get_annotation_drawings(e)) > 1
+            )
+        ]
+        drawing_tool.delete_drawing_elements(to_delete)
         ifc.run("group.remove_group", group=group)
 
     drawing_tool.import_drawings()
@@ -501,6 +531,55 @@ def add_annotation(
     if not relating_type_rep and object_type != "IMAGE" and enable_editing:
         drawing_tool.enable_editing(obj)
     return obj
+
+
+def add_annotation_to_drawing(
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    drawing_tool: type[tool.Drawing],
+    element: ifcopenshell.entity_instance,
+    drawing: ifcopenshell.entity_instance,
+) -> bool:
+    """Assign a manual annotation to an additional drawing so it renders on it too.
+
+    Auto-generated annotations (grid/section/elevation tags, etc.) are tied to a
+    single drawing's regeneration cycle and cannot be shared - they are skipped.
+    Returns True if the annotation was assigned, False if it was skipped/already there.
+    """
+    if drawing_tool.is_auto_annotation(element):
+        return False
+    group = drawing_tool.get_drawing_group(drawing)
+    if not group or drawing in drawing_tool.get_annotation_drawings(element):
+        return False
+    ifc.run("group.assign_group", group=group, products=[element])
+    # Relink the Blender object so it becomes visible in the newly-assigned
+    # drawing's collection as well.
+    if obj := ifc.get_object(element):
+        collector.assign(obj)
+    return True
+
+
+def remove_annotation_from_drawing(
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    drawing_tool: type[tool.Drawing],
+    element: ifcopenshell.entity_instance,
+    drawing: ifcopenshell.entity_instance,
+) -> bool:
+    """Remove a manual annotation from a drawing's group.
+
+    An annotation must always belong to at least one drawing, so removal from its
+    last remaining drawing is refused. Returns True if removed, False otherwise.
+    """
+    if len(drawing_tool.get_annotation_drawings(element)) <= 1:
+        return False
+    group = drawing_tool.get_drawing_group(drawing)
+    if not group:
+        return False
+    ifc.run("group.unassign_group", group=group, products=[element])
+    if obj := ifc.get_object(element):
+        collector.assign(obj)
+    return True
 
 
 def assign_manual_drawing_reference(

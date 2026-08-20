@@ -564,6 +564,52 @@ class BIM_PT_product_assignments(Panel):
 
 
 
+class BIM_PT_annotation_drawings(Panel):
+    bl_label = "Drawings"
+    bl_idname = "BIM_PT_annotation_drawings"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_order = 2
+    bl_parent_id = "BIM_PT_tab_object_metadata"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get() or not context.active_object:
+            return False
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element or not element.is_a("IfcAnnotation") or element.ObjectType == "DRAWING":
+            return False
+        # Manual drawing-reference tags point at a single target drawing via a
+        # different mechanism, so multi-drawing sharing doesn't apply to them.
+        return not tool.Drawing.is_manual_drawing_reference(element)
+
+    def draw(self, context):
+        if not ProductAssignmentsData.is_loaded:
+            ProductAssignmentsData.load()
+
+        assert self.layout
+
+        if ProductAssignmentsData.data["is_auto_annotation"]:
+            self.layout.label(text="Auto-generated annotation (single drawing).", icon="INFO")
+            return
+
+        row = self.layout.row(align=True)
+        row.label(text="Shown on drawings:", icon="IMAGE_DATA")
+        row.operator("bim.select_shared_annotations", icon="RESTRICT_SELECT_OFF", text="")
+        row.operator("bim.add_annotation_to_drawing", icon="ADD", text="")
+
+        drawings = ProductAssignmentsData.data["annotation_drawings"]
+        allow_remove = len(drawings) > 1
+        for drawing_id, drawing_name in drawings:
+            row = self.layout.row(align=True)
+            row.label(text=drawing_name, icon="OUTLINER_OB_CAMERA")
+            sub = row.column()
+            sub.enabled = allow_remove
+            op = sub.operator("bim.remove_annotation_from_drawing", icon="X", text="")
+            op.drawing_id = drawing_id
+
+
 def get_category_icon(category_name):
     """Get appropriate icon for each category"""
     icons = {
