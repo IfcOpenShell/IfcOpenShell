@@ -55,6 +55,28 @@ BISECT_TOLERANCE = 1.0e-4
 WELD_EPSILON = 1.0e-6
 
 
+# On 3-float operands np.cross/norm/dot spend more time in NumPy's dispatch
+# (normalize_axis_tuple, moveaxis) than on the arithmetic. intersect_edges_v2
+# runs thousands of times per mouse move, so it uses these instead. Results are
+# identical float64 — don't fold them back into the NumPy calls.
+def _cross3(a, b):
+    return np.array(
+        (
+            a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0],
+        )
+    )
+
+
+def _norm3(v) -> float:
+    return (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) ** 0.5
+
+
+def _dot3(a, b) -> float:
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+
 class Cad:
     @classmethod
     def get_cad_props(cls) -> BIMCadProperties:
@@ -517,19 +539,19 @@ class Cad:
         # Directions
         d1 = p1_end - p1
         d2 = p2_end - p2
-        d1 /= np.linalg.norm(d1) or 1  # equivalent of Vector.normalized() or Vector / Vector.length
-        d2 /= np.linalg.norm(d2) or 1
+        d1 /= _norm3(d1) or 1  # equivalent of Vector.normalized() or Vector / Vector.length
+        d2 /= _norm3(d2) or 1
 
-        n = np.cross(d1, d2)
+        n = _cross3(d1, d2)
 
         # if n is zero, lines are parallel
-        if abs(np.linalg.norm(n)) < 1e-6:
+        if abs(_norm3(n)) < 1e-6:
             return None, None
 
-        n2 = np.cross(d2, n)
-        c1 = p1 + (np.dot((p2 - p1), n2) / (np.dot(d1, n2))) * d1
-        n1 = np.cross(d1, n)
-        c2 = p2 + (np.dot((p1 - p2), n1) / (np.dot(d2, n1))) * d2
+        n2 = _cross3(d2, n)
+        c1 = p1 + (_dot3((p2 - p1), n2) / (_dot3(d1, n2))) * d1
+        n1 = _cross3(d1, n)
+        c2 = p2 + (_dot3((p1 - p2), n1) / (_dot3(d2, n1))) * d2
 
         if is_2d:
             return Vector(c1[:2].copy()), Vector(c2[:2].copy())
