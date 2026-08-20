@@ -596,6 +596,7 @@ class BIM_PT_annotation_drawings(Panel):
 
         row = self.layout.row(align=True)
         row.label(text="Shown on drawings:", icon="IMAGE_DATA")
+        row.operator("bim.select_shared_annotations", icon="RESTRICT_SELECT_OFF", text="")
         row.operator("bim.add_annotation_to_drawing", icon="ADD", text="")
 
         drawings = ProductAssignmentsData.data["annotation_drawings"]

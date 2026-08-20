@@ -2022,6 +2022,37 @@ class RemoveAnnotationFromDrawing(bpy.types.Operator, tool.Ifc.Operator):
                 area.tag_redraw()
 
 
+class SelectSharedAnnotations(bpy.types.Operator):
+    bl_idname = "bim.select_shared_annotations"
+    bl_label = "Select Shared Annotations"
+    bl_description = "Select every visible annotation that is shared across more than one drawing"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get() is not None
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action="DESELECT")
+        selected = 0
+        active = None
+        for obj in context.view_layer.objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcAnnotation") or element.ObjectType == "DRAWING":
+                continue
+            if len(tool.Drawing.get_annotation_drawings(element)) <= 1:
+                continue
+            if not obj.visible_get():
+                continue
+            obj.select_set(True)
+            active = active or obj
+            selected += 1
+        if active:
+            context.view_layer.objects.active = active
+        self.report({"INFO"}, f"Selected {selected} shared annotation(s).")
+        return {"FINISHED"}
+
+
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"

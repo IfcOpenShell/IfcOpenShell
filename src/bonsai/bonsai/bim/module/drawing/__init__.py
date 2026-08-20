@@ -106,6 +106,7 @@ classes = (
     operator.SelectAllDrawings,
     operator.SelectAllSheets,
     operator.SelectAssignedProduct,
+    operator.SelectSharedAnnotations,
     operator.SelectSimilarTextLiteralValue,
     operator.ToggleTargetView,
     operator.OpenDocumentationWebUi,
