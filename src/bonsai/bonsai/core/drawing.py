@@ -370,12 +370,16 @@ def duplicate_drawing(
     if should_duplicate_annotations:
         source_annotations = [a for a in drawing_tool.get_group_elements(group) if a != drawing]
         if share_annotations:
-            # Share manual annotations with the new drawing (multi-group membership):
-            # the same entity now belongs to both drawings' groups, so edits propagate.
-            # Auto-generated tags (grid/section/storey) can't be shared - they are
-            # regenerated per drawing - so they are still duplicated.
-            to_share = [a for a in source_annotations if not drawing_tool.is_auto_annotation(a)]
-            to_duplicate = [a for a in source_annotations if drawing_tool.is_auto_annotation(a)]
+            # Preserve existing sharing: an annotation that already appears on more
+            # than one drawing stays shared with the duplicate (the same entity is
+            # added to the new drawing's group, so edits keep propagating). Annotations
+            # unique to this drawing - and auto-generated tags - are duplicated as usual.
+            to_share = [
+                a
+                for a in source_annotations
+                if not drawing_tool.is_auto_annotation(a) and len(drawing_tool.get_annotation_drawings(a)) > 1
+            ]
+            to_duplicate = [a for a in source_annotations if a not in to_share]
             if to_share:
                 ifc.run("group.assign_group", group=new_group, products=to_share)
         else:

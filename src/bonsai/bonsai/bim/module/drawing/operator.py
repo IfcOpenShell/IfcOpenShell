@@ -203,10 +203,11 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
     drawing: bpy.props.IntProperty()
     should_duplicate_annotations: bpy.props.BoolProperty(name="Should Duplicate Annotations", default=False)
     share_annotations: bpy.props.BoolProperty(
-        name="Share Annotations",
+        name="Keep Shared Annotations Shared",
         description=(
-            "Assign the same annotations to the new drawing (shared - editing one updates both) "
-            "instead of creating independent copies. Auto-generated tags are always copied"
+            "Annotations already shared across multiple drawings stay shared with the new drawing "
+            "(editing one updates both) instead of being copied. Annotations unique to this drawing "
+            "are still duplicated"
         ),
         default=False,
     )
