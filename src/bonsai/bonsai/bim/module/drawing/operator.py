@@ -202,6 +202,14 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     drawing: bpy.props.IntProperty()
     should_duplicate_annotations: bpy.props.BoolProperty(name="Should Duplicate Annotations", default=False)
+    share_annotations: bpy.props.BoolProperty(
+        name="Share Annotations",
+        description=(
+            "Assign the same annotations to the new drawing (shared - editing one updates both) "
+            "instead of creating independent copies. Auto-generated tags are always copied"
+        ),
+        default=False,
+    )
 
     @classmethod
     def poll(cls, context):
@@ -216,8 +224,11 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
 
     def draw(self, context):
         assert self.layout
-        row = self.layout
-        row.prop(self, "should_duplicate_annotations")
+        layout = self.layout
+        layout.prop(self, "should_duplicate_annotations")
+        row = layout.row()
+        row.enabled = self.should_duplicate_annotations
+        row.prop(self, "share_annotations")
 
     def _execute(self, context):
         props = tool.Drawing.get_document_props()
@@ -228,6 +239,7 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry,
             drawing=tool.Ifc.get().by_id(self.drawing),
             should_duplicate_annotations=self.should_duplicate_annotations,
+            share_annotations=self.share_annotations,
         )
 
 

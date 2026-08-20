@@ -355,6 +355,7 @@ def duplicate_drawing(
     geometry: type[tool.Geometry],
     drawing: ifcopenshell.entity_instance,
     should_duplicate_annotations: bool = False,
+    share_annotations: bool = False,
 ) -> ifcopenshell.entity_instance:
     drawing_name = drawing_tool.ensure_unique_drawing_name(drawing_tool.get_name(drawing))
     new_drawing = ifc.run("root.copy_class", product=drawing)
@@ -367,16 +368,29 @@ def duplicate_drawing(
     ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=new_group, products=[new_drawing])
     if should_duplicate_annotations:
-        new_annotations: list[ifcopenshell.entity_instance] = []
-        annotation_objs = [ifc.get_object(a) for a in drawing_tool.get_group_elements(group) if a != drawing]
-        old_to_new, _ = geometry.duplicate_ifc_objects(annotation_objs)
-        for new_elements in old_to_new.values():
-            # Remove the Blender object, since we haven't actually activated the duplicated drawing
-            for new_element in new_elements:
-                blender.remove_object(ifc.get_object(new_element))
-            new_annotations.extend(new_elements)
-        ifc.run("group.unassign_group", group=group, products=new_annotations)
-        ifc.run("group.assign_group", group=new_group, products=new_annotations)
+        source_annotations = [a for a in drawing_tool.get_group_elements(group) if a != drawing]
+        if share_annotations:
+            # Share manual annotations with the new drawing (multi-group membership):
+            # the same entity now belongs to both drawings' groups, so edits propagate.
+            # Auto-generated tags (grid/section/storey) can't be shared - they are
+            # regenerated per drawing - so they are still duplicated.
+            to_share = [a for a in source_annotations if not drawing_tool.is_auto_annotation(a)]
+            to_duplicate = [a for a in source_annotations if drawing_tool.is_auto_annotation(a)]
+            if to_share:
+                ifc.run("group.assign_group", group=new_group, products=to_share)
+        else:
+            to_duplicate = source_annotations
+        if to_duplicate:
+            new_annotations: list[ifcopenshell.entity_instance] = []
+            annotation_objs = [ifc.get_object(a) for a in to_duplicate]
+            old_to_new, _ = geometry.duplicate_ifc_objects(annotation_objs)
+            for new_elements in old_to_new.values():
+                # Remove the Blender object, since we haven't actually activated the duplicated drawing
+                for new_element in new_elements:
+                    blender.remove_object(ifc.get_object(new_element))
+                new_annotations.extend(new_elements)
+            ifc.run("group.unassign_group", group=group, products=new_annotations)
+            ifc.run("group.assign_group", group=new_group, products=new_annotations)
 
     old_reference = drawing_tool.get_drawing_document(new_drawing)
     ifc.run("document.unassign_document", products=[new_drawing], document=old_reference)
