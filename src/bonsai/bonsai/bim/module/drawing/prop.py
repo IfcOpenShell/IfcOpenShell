@@ -621,6 +621,30 @@ class BIMCameraProperties(PropertyGroup):
         default=False,
         update=get_update_layer_callback("use_mat_style_change_classification", "UseMatStyleChangeClassification"),
     )
+    use_face_intersection_classification: BoolProperty(
+        name="Use Face-Intersection Classification",
+        description="Additionally classify a projection edge as 'face-intersection' where a planar "
+        "face of one element genuinely crosses a (non-parallel) planar face of a different element "
+        "in 3D -- e.g. a diagonal brace passing through a wall -- as opposed to a coincident/parallel "
+        "'cross-coplanar' boundary. Only takes effect when Use Edge Classification is also enabled",
+        default=True,
+        update=get_update_layer_callback("use_face_intersection_classification", "UseFaceIntersectionClassification"),
+    )
+    render_face_intersection: BoolProperty(
+        name="Render Face-Intersection",
+        description="Render 'face-intersection' projection edges (genuine face-face crossings "
+        "between two different elements). Omitted by default",
+        default=False,
+        update=get_update_layer_callback("render_face_intersection", "RenderFaceIntersectionEdges"),
+    )
+    face_intersection_tolerance: FloatProperty(
+        name="Face-Intersection Tolerance",
+        description="Distance tolerance, in project length units, used when deciding whether two "
+        "different elements' faces genuinely cross for 'face-intersection' classification",
+        default=0.0001,
+        min=0.0,
+        update=get_update_layer_callback("face_intersection_tolerance", "FaceIntersectionTolerance"),
+    )
     merge_duplicate_edges: BoolProperty(
         name="Merge Duplicate Edges",
         description="Two different elements can each independently draw their own copy of the same "

@@ -1093,6 +1093,9 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.render_cross_coplanar = False
         camera_props.cross_coplanar_tolerance = 0.0001
         camera_props.use_mat_style_change_classification = False
+        camera_props.use_face_intersection_classification = True
+        camera_props.render_face_intersection = False
+        camera_props.face_intersection_tolerance = 0.0001
         camera_props.merge_duplicate_edges = False
         camera.shift_x = 0.0
         camera.shift_y = 0.0
@@ -1143,6 +1146,12 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.cross_coplanar_tolerance = float(pset["CrossCoplanarTolerance"])
             if "UseMatStyleChangeClassification" in pset:
                 camera_props.use_mat_style_change_classification = bool(pset["UseMatStyleChangeClassification"])
+            if "UseFaceIntersectionClassification" in pset:
+                camera_props.use_face_intersection_classification = bool(pset["UseFaceIntersectionClassification"])
+            if "RenderFaceIntersectionEdges" in pset:
+                camera_props.render_face_intersection = bool(pset["RenderFaceIntersectionEdges"])
+            if "FaceIntersectionTolerance" in pset:
+                camera_props.face_intersection_tolerance = float(pset["FaceIntersectionTolerance"])
             if "MergeDuplicateEdges" in pset:
                 camera_props.merge_duplicate_edges = bool(pset["MergeDuplicateEdges"])
             if "DPI" in pset:

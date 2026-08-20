@@ -35,6 +35,7 @@ directly rather than assumed:
   considered, regardless of how their geometry is arranged.
 """
 
+import math
 import xml.dom.minidom
 from dataclasses import dataclass
 
@@ -319,6 +320,8 @@ def render_svg(
     use_cross_coplanar: bool = False,
     use_mat_style_change: bool = False,
     render_cross_coplanar: bool = False,
+    use_face_intersection: bool = False,
+    render_face_intersection: bool = False,
     scale: float = 1.0,
     bounding_rectangle: tuple[float, float] = (20000.0, 20000.0),
     unify_inputs: bool = False,
@@ -349,6 +352,8 @@ def render_svg(
     geom_settings.set("svg-use-cross-coplanar-classification", use_cross_coplanar)
     geom_settings.set("svg-use-mat-style-change-classification", use_mat_style_change)
     geom_settings.set("svg-render-cross-coplanar-edges", render_cross_coplanar)
+    geom_settings.set("svg-use-face-intersection-classification", use_face_intersection)
+    geom_settings.set("svg-render-face-intersection-edges", render_face_intersection)
 
     buffer = ifcopenshell.geom.serializers.buffer()
     serializer_settings = ifcopenshell.geom.serializer_settings()
@@ -2442,3 +2447,120 @@ def test_section_cut_preserves_native_classification():
         f"found {len(non_cut_boundary_edges)}: {non_cut_boundary_edges}"
     )
     assert any(e.cls in ("outline", "sharp", "crease") for e in wall_edges), wall_edges
+
+
+def test_face_intersection_rod_through_wall():
+    """New feature (issue #3742 follow-on): a member that genuinely crosses a
+    wall in 3D -- non-parallel, non-coplanar planar faces, e.g. a beam or
+    brace passing through a wall -- must be classified 'face-intersection'
+    (`find_face_intersection_matches()`, `SvgSerializer.h`), distinct from
+    'cross-coplanar' (which only handles coincident/parallel faces).
+
+    Two non-obvious requirements this test discovered the hard way, both
+    confirmed by direct debug instrumentation of `find_face_intersection_
+    matches()`/`draw_hlr()` rather than assumed:
+
+    - `add()`'s own front-facing-only prefiltering (`SvgSerializer.h`, "keep
+      only front-facing") strips a face from `items_` entirely -- before
+      `find_face_intersection_matches()` ever runs -- when its normal is
+      (near-)perpendicular to the camera's view direction. A `Rod` whose own
+      piercing axis exactly matches the camera's view axis has ALL of its
+      lateral (crossing) faces edge-on to that camera, so none of them
+      survive to be tested at all. `Rod` is therefore extruded along a
+      diagonal direction (45 degrees off the camera's Y-axis, tilted about
+      world X) so its relevant lateral face picks up a real camera-facing
+      normal component.
+    - A `Rod` positioned flush against `Wall`'s own front face (no
+      protrusion towards the camera) makes `Rod`'s own end-cap boundary
+      edges land exactly on the same 3D line as the face-intersection
+      crossing segment there -- a genuine duplicate, not a bug, correctly
+      discarded by the existing collinear-overlap dedup pass
+      (`compute_coincident_edge_overlap_coverage()`, `SvgSerializer.cpp`),
+      since 'face-intersection' is deliberately left unranked (lowest
+      priority) in `coincident_edge_class_priority()`. `Rod` therefore
+      protrudes well past `Wall` on BOTH sides, keeping the crossing planes
+      strictly interior to `Rod`'s own length and away from its end caps.
+    """
+    ifc_file, body_context, storey = _make_project()
+    wall = _add_box(ifc_file, body_context, storey, "Wall", (4.0, 0.4, 2.0), (0.0, 0.0, 0.0), ifc_class="IfcWall")
+    # x_axis=(1,0,0) keeps local X along world X (Rod's 0.2m width); z_axis is
+    # tilted 45 degrees off world Y (Rod's 2.0m length, its own local-Z
+    # extrusion) so its lateral face survives add()'s front-facing prefilter
+    # (see this test's own docstring) while still genuinely piercing Wall's
+    # Y-thickness partway along its length -- Wall's Y=0/Y=0.4 planes fall at
+    # local Z roughly in [0.7, 1.27], comfortably clear of either end cap.
+    c = math.cos(math.radians(45))
+    s = math.sin(math.radians(45))
+    rod = _add_box(
+        ifc_file,
+        body_context,
+        storey,
+        "Rod",
+        (0.2, 0.2, 2.0),
+        (1.9, -0.5, 0.3),
+        ifc_class="IfcMember",
+        x_axis=(1.0, 0.0, 0.0),
+        z_axis=(0.0, c, s),
+    )
+
+    def render() -> list[Edge]:
+        svg = render_svg(
+            ifc_file,
+            camera_pos=(2.0, -5.0, 1.0),
+            camera_dir=(0.0, -1.0, 0.0),
+            use_face_intersection=True,
+            render_face_intersection=True,
+        )
+        return parse_edges(svg)
+
+    edges = render()
+    face_intersection_edges = [e for e in edges if e.cls == "face-intersection"]
+    assert face_intersection_edges, "expected at least one 'face-intersection' edge where Rod crosses Wall"
+
+    # Attribution: every 'face-intersection' edge from this Rod/Wall pair must
+    # be owned by exactly one of the two products (the lexicographically lower
+    # GlobalId), never both -- confirms find_face_intersection_matches()'s own
+    # doubled-line tie-break, not just that classification ran at all.
+    owner_guids = {e.guid for e in face_intersection_edges}
+    assert owner_guids == {min(wall.GlobalId, rod.GlobalId)}, (
+        f"expected every face-intersection edge attributed to the single lexicographically-lower "
+        f"GlobalId product, got owners {owner_guids}"
+    )
+
+    # No 'face-intersection' edge should appear on the OTHER product -- the
+    # same doubled-line check from the other direction.
+    other_guid = wall.GlobalId if owner_guids == {rod.GlobalId} else rod.GlobalId
+    assert not any(e.guid == other_guid and e.cls == "face-intersection" for e in edges)
+
+
+def test_face_intersection_excludes_coplanar_pair():
+    """Control/negative case: a coincident, PARALLEL touching boundary between
+    two flush walls (the same scenario as
+    test_cross_coplanar_basic_touching_boundary) must never be classified
+    'face-intersection' -- that stays cross-coplanar's job. Confirms the
+    near-parallel/antiparallel normal rejection in
+    find_face_intersection_matches() (SvgSerializer.h) correctly excludes it,
+    even with both classifications enabled simultaneously.
+    """
+    ifc_file, body_context, storey = _make_project()
+    material = ifcopenshell.api.material.add_material(ifc_file, name="Concrete")
+    wall_a = _add_box(ifc_file, body_context, storey, "WallA", (2.0, 0.2, 2.0), (0.0, 0.0, 0.0), material=material)
+    wall_b = _add_box(ifc_file, body_context, storey, "WallB", (2.0, 0.2, 2.0), (2.0, 0.0, 0.0), material=material)
+
+    svg = render_svg(
+        ifc_file,
+        camera_pos=(2.0, -5.0, 1.0),
+        camera_dir=(0.0, -1.0, 0.0),
+        use_cross_coplanar=True,
+        render_cross_coplanar=True,
+        use_face_intersection=True,
+        render_face_intersection=True,
+    )
+    edges = parse_edges(svg)
+
+    assert not any(e.cls == "face-intersection" for e in edges)
+    # Control: the genuine cross-coplanar match must still be found -- confirms
+    # this isn't vacuously passing because nothing at all was classified.
+    shared_p0, shared_p1 = (10000.0, 9000.0), (10000.0, 11000.0)
+    assert has_edge(edges, wall_a.GlobalId, "cross-coplanar", shared_p0, shared_p1)
+    assert has_edge(edges, wall_b.GlobalId, "cross-coplanar", shared_p0, shared_p1)

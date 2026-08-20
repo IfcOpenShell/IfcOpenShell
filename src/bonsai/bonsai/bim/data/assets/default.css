@@ -34,6 +34,7 @@ path.sharp { stroke: black; stroke-width: 0.18; stroke-opacity: 0.7; }
 path.flush { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; }
 path.cross-coplanar { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; stroke-dasharray: 1, 2; }
 path.mat-style-change { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; stroke-dasharray: 1, 1.5; }
+path.face-intersection { stroke: black; stroke-width: 0.1; stroke-opacity: 0.4; stroke-dasharray: 0.4, 0.6; }
 
 /* Debug CSS for troubleshooting edge classification */
 /*
@@ -44,6 +45,7 @@ path.sharp { stroke: red; stroke-width: 0.18; stroke-opacity: 0.7; }
 path.flush { stroke: blue; stroke-width: 0.1; stroke-opacity: 0.4; }
 path.cross-coplanar { stroke: cyan; stroke-width: 0.1; stroke-opacity: 1.0; }
 path.mat-style-change { stroke: fuchsia; stroke-width: 0.1; stroke-opacity: 1.0; }
+path.face-intersection { stroke: yellow; stroke-width: 0.1; stroke-opacity: 1.0; }
 */
 
 .surface {fill: white; stroke-width: 0.1;}

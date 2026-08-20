@@ -116,6 +116,9 @@ bool SvgSerializer::ready() {
 	svg_render_cross_coplanar_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderCrossCoplanarEdges>().get();
 	svg_cross_coplanar_tolerance_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgCrossCoplanarTolerance>().get();
 	svg_use_mat_style_change_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseMatStyleChangeClassification>().get();
+	svg_use_face_intersection_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseFaceIntersectionClassification>().get();
+	svg_render_face_intersection_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderFaceIntersectionEdges>().get();
+	svg_face_intersection_tolerance_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgFaceIntersectionTolerance>().get();
 	return true;
 }
 
@@ -2130,7 +2133,8 @@ void SvgSerializer::write(const geometry_data& data) {
 						if (it == storey_hlr.end()) {
 							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane,
 								svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
-								svg_use_mat_style_change_classification_) }).first;
+								svg_use_mat_style_change_classification_, svg_use_face_intersection_classification_,
+								svg_face_intersection_tolerance_) }).first;
 						}
 						it->second.add(*compound_to_hlr, data.product, data.cross_coplanar_style_instance, data.cross_coplanar_material_instance, data.cross_coplanar_layer_projection);
 						for (auto& kv : classified_edge_buckets) {
@@ -3356,6 +3360,15 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 			continue;
 		}
 
+		// "Render Face-Intersection" gates final SVG output only, not classification -- same
+		// rationale as cross-coplanar's own render gate immediately above, though face-intersection
+		// currently has no analogous outline-trimming interaction to preserve (it's left unranked
+		// in coincident_edge_class_priority(), see that function's own comment); classification
+		// still runs unconditionally so the class exists to participate correctly if ever needed.
+		if (cls == intersection::class_name && !svg_render_face_intersection_edges_) {
+			continue;
+		}
+
 		// Drop any edge whose coincident-duplicate bucket (computed above, in the same
 		// pre-mirror coordinate space) genuinely mixes classes across products AND this edge's
 		// own class is strictly worse than the best one present -- e.g. a `sharp` edge dropped
@@ -3746,7 +3759,8 @@ void SvgSerializer::finalize() {
 			if (use_hlr && pln) {
 				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, *pln,
 					svg_use_edge_classification_, svg_use_cross_coplanar_classification_, svg_cross_coplanar_tolerance_,
-					svg_use_mat_style_change_classification_);
+					svg_use_mat_style_change_classification_, svg_use_face_intersection_classification_,
+					svg_face_intersection_tolerance_);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };

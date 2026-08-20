@@ -431,6 +431,24 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
+			struct SvgUseFaceIntersectionClassification : public SettingBase<SvgUseFaceIntersectionClassification, bool> {
+				static constexpr const char* const name = "svg-use-face-intersection-classification";
+				static constexpr const char* const description = "SVG edge classification (issue #3742 follow-on): additionally classify a projection edge as 'face-intersection' when it is a newly-constructed edge marking where a planar face of one product genuinely crosses a (non-parallel) planar face of a different product in 3D -- e.g. a diagonal brace passing through a wall -- as opposed to 'cross-coplanar', which handles coincident/parallel faces. Computed via BRepAlgoAPI_Section trimmed to both faces' real boundaries. Only takes effect when svg-use-edge-classification is also enabled, since it shares that system's classification buckets.";
+				static constexpr bool defaultvalue = true;
+			};
+
+			struct SvgRenderFaceIntersectionEdges : public SettingBase<SvgRenderFaceIntersectionEdges, bool> {
+				static constexpr const char* const name = "svg-render-face-intersection-edges";
+				static constexpr const char* const description = "SVG edge classification (issue #3742 follow-on): whether to emit 'face-intersection' projection edges. Defaults to false -- classification runs by default so the class exists and can participate correctly if ever needed, but rendering stays opt-in until real-fixture timing data justifies flipping it on by default, since this pass' per-face-pair cost is higher than cross-coplanar's collinearity check. Only relevant when svg-use-face-intersection-classification is enabled.";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct SvgFaceIntersectionTolerance : public SettingBase<SvgFaceIntersectionTolerance, double> {
+				static constexpr const char* const name = "svg-face-intersection-tolerance";
+				static constexpr const char* const description = "SVG edge classification (issue #3742 follow-on): distance tolerance, in project length units, used for the bounding-box pre-filter, the near-parallel face-normal rejection (faces this close to parallel are cross-coplanar's job, not this pass'), and the minimum surviving intersection-segment length for 'face-intersection' classification. Defaults to 1e-4 (0.1mm for a project in metres), the same order of magnitude as svg-cross-coplanar-tolerance.";
+				static constexpr double defaultvalue = 1.e-4;
+			};
+
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
 				static constexpr const char* const name = "keep-bounding-boxes";
 				static constexpr const char* const description =
@@ -713,7 +731,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, SvgUseCrossCoplanarClassification, SvgRenderCrossCoplanarEdges, SvgCrossCoplanarTolerance, SvgUseMatStyleChangeClassification, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, SvgUseCrossCoplanarClassification, SvgRenderCrossCoplanarEdges, SvgCrossCoplanarTolerance, SvgUseMatStyleChangeClassification, SvgUseFaceIntersectionClassification, SvgRenderFaceIntersectionEdges, SvgFaceIntersectionTolerance, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }

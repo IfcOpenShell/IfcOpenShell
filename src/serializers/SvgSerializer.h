@@ -55,6 +55,7 @@
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+#include <BRepAlgoAPI_Section.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <Precision.hxx>
 #include <gp_Vec.hxx>
@@ -1620,6 +1621,148 @@ namespace {
 		}
 	}
 
+	// Cross-object "face-intersection" edge classification (issue #3742 follow-on). Detects pairs
+	// of PLANAR faces belonging to DIFFERENT IFC products that genuinely cross each other in 3D
+	// (not parallel/coincident -- that's cross_coplanar's job), computes the trimmed intersection
+	// line via BRepAlgoAPI_Section(faceA, faceB), and injects it as a new "face-intersection" SVG
+	// edge category through the same classification -> HLR -> SVG-render pipeline cross_coplanar
+	// already uses. Deliberately self-contained, NOT built by extending cross_coplanar's own
+	// interval-algebra machinery (purpose-built for collinear-edge coincidence between PARALLEL
+	// faces, and doesn't generalize to non-parallel pairs) and NOT calling into cross_coplanar's
+	// own primitives -- following this file's existing isolation principle (see the comment above
+	// cross_coplanar, .h:358-365): a change to one classification pass must not be able to
+	// accidentally affect a sibling one. A handful of small primitives (face_normal(), the
+	// coplanar-normal tolerance) are therefore deliberately duplicated here rather than reused.
+	//
+	// The class name added here ("face-intersection") must stay in sync with any future shared
+	// enum the same way cross_coplanar's own top comment already documents -- there is currently
+	// no such enum (classified_items_ is keyed by plain std::string).
+	namespace intersection {
+		constexpr const char* const class_name = "face-intersection";
+
+		// Duplicated from cross_coplanar::kCoplanarNormalTolerance -- see this namespace's own
+		// top comment for why. Used here to reject near-parallel/antiparallel face pairs, which
+		// are cross_coplanar's job, not this pass'.
+		constexpr double kCoplanarNormalTolerance = 3.8e-5;
+
+		// Duplicated from cross_coplanar::face_normal() -- see this namespace's own top comment.
+		bool face_normal(const TopoDS_Face& f, gp_Dir& out) {
+			auto s = BRep_Tool::Surface(f);
+			if (s->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+				return false;
+			}
+			auto p = Handle(Geom_Plane)::DownCast(s);
+			gp_Dir d = p->Axis().Direction();
+			if (f.Orientation() == TopAbs_REVERSED) {
+				d.Reverse();
+			}
+			out = d;
+			return true;
+		}
+
+		// One product's own planar face, collected once per product -- the face-level equivalent
+		// of cross_coplanar::ProductEdge/collect_product_edges().
+		struct ProductFace {
+			size_t item_idx;
+			const IfcUtil::IfcBaseEntity* product;
+			TopoDS_Face face;
+			gp_Dir normal;
+			Bnd_Box box;
+		};
+
+		// Once per product: collect every planar face of its shape. IfcOpeningElement products are
+		// skipped entirely, matching cross_coplanar::collect_product_edges()'s own exclusion -- a
+		// void's own boundary is never real material and must never contribute a genuine crossing.
+		std::vector<ProductFace> collect_product_faces(const product_shape_list_t& items, double tol) {
+			std::vector<ProductFace> out;
+			size_t idx = 0;
+			for (auto& it : items) {
+				const auto* product = std::get<0>(it);
+				const TopoDS_Shape& shape = std::get<1>(it);
+				bool is_void = product && product->declaration().is("IfcOpeningElement");
+				if (shape.IsNull() || is_void) {
+					++idx;
+					continue;
+				}
+				for (TopExp_Explorer fexp(shape, TopAbs_FACE); fexp.More(); fexp.Next()) {
+					const TopoDS_Face& f = TopoDS::Face(fexp.Current());
+					gp_Dir n;
+					if (!face_normal(f, n)) {
+						continue;
+					}
+					ProductFace pf;
+					pf.item_idx = idx;
+					pf.product = product;
+					pf.face = f;
+					pf.normal = n;
+					BRepBndLib::AddClose(f, pf.box);
+					pf.box.Enlarge(tol);
+					out.push_back(std::move(pf));
+				}
+				++idx;
+			}
+			return out;
+		}
+
+		// Bbox-gated shortlist of OTHER products' faces near a given face -- same linear-scan
+		// pattern as cross_coplanar::nearby_product_edges(), face-level. Excludes every face
+		// belonging to the SAME item_idx as the query (cross-product only, per this feature's v1
+		// scope -- see the design plan's own "Scope (v1)" section).
+		std::vector<size_t> nearby_product_faces(
+			const std::vector<ProductFace>& all, const Bnd_Box& query, size_t exclude_item_idx
+		) {
+			std::vector<size_t> out;
+			for (size_t i = 0; i < all.size(); ++i) {
+				if (all[i].item_idx == exclude_item_idx) {
+					continue;
+				}
+				if (!query.IsOut(all[i].box)) {
+					out.push_back(i);
+				}
+			}
+			return out;
+		}
+
+		// The per-pair geometric test: section two genuinely non-parallel planar faces via
+		// BRepAlgoAPI_Section, which trims the result to both input faces' real boundaries (unlike
+		// IntTools_FaceFace's untrimmed underlying-surface curves -- rejected during design; see
+		// the design plan's own research). SetNonDestructive(true) is mandatory regardless of
+		// threading: candidate faces are legitimately reused across multiple pairs (face A tested
+		// against B, C, D, ...), and BRepAlgoAPI_Section can otherwise mutate shared input-shape
+		// data in place. Returns one freshly-constructed TopoDS_Edge per surviving result segment
+		// (mirroring cross_coplanar::split_edge_by_coverage()'s own make_subedge() construction,
+		// .h:586) -- segments shorter than `tol` are dropped.
+		std::vector<TopoDS_Edge> section_faces(const TopoDS_Face& a, const TopoDS_Face& b, double tol) {
+			std::vector<TopoDS_Edge> out;
+			BRepAlgoAPI_Section section(a, b, Standard_False);
+			section.SetNonDestructive(true);
+			section.Build();
+			if (!section.IsDone()) {
+				return out;
+			}
+			const TopoDS_Shape& result = section.Shape();
+			for (TopExp_Explorer eexp(result, TopAbs_EDGE); eexp.More(); eexp.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(eexp.Current());
+				TopoDS_Vertex v0, v1;
+				TopExp::Vertices(e, v0, v1);
+				if (v0.IsNull() || v1.IsNull()) {
+					continue;
+				}
+				gp_Pnt p0 = BRep_Tool::Pnt(v0);
+				gp_Pnt p1 = BRep_Tool::Pnt(v1);
+				if (p0.Distance(p1) < tol) {
+					continue;
+				}
+				BRepBuilderAPI_MakeEdge mk(p0, p1);
+				if (!mk.IsDone()) {
+					continue;
+				}
+				out.push_back(mk.Edge());
+			}
+			return out;
+		}
+	}
+
 	// Restores classified edges that HLR marked hidden purely because they lie exactly
 	// coincident with a DIFFERENT product's own planar face -- a genuine touching boundary
 	// between two solids (e.g. one object resting on another's sloped surface), not real
@@ -2426,6 +2569,14 @@ namespace {
 		// and then discard it.
 		bool use_mat_style_change_classification_;
 
+		// Cross-object "face-intersection" edge classification (issue #3742 follow-on): see
+		// the intersection namespace's own top comment and find_face_intersection_matches()
+		// below. No separate render flag threaded through here -- like cross-coplanar,
+		// "render" only gates final SVG output (SvgSerializer::draw_hlr()), never whether
+		// classification itself runs, so it stays a SvgSerializer-level-only member.
+		bool use_face_intersection_classification_;
+		double face_intersection_tolerance_;
+
 		std::multimap<double, face_info> large_ortho_faces_;
 		product_shape_list_t items_;
 		// SVG edge classification (issue #3668): see add_classified_edges().
@@ -2448,7 +2599,8 @@ namespace {
 
 		prefiltered_hlr(Logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction,
 			bool use_edge_classification = false, bool use_cross_coplanar_classification = false, double cross_coplanar_tolerance = 1.e-4,
-			bool use_mat_style_change_classification = false)
+			bool use_mat_style_change_classification = false, bool use_face_intersection_classification = false,
+			double face_intersection_tolerance = 1.e-4)
 			: logger_(logger)
 			, use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
@@ -2459,6 +2611,8 @@ namespace {
 			, use_cross_coplanar_classification_(use_cross_coplanar_classification)
 			, cross_coplanar_tolerance_(cross_coplanar_tolerance)
 			, use_mat_style_change_classification_(use_mat_style_change_classification)
+			, use_face_intersection_classification_(use_face_intersection_classification)
+			, face_intersection_tolerance_(face_intersection_tolerance)
 		{
 			if (use_hlr_poly_) {
 				engine_ = new HLRBRep_PolyAlgo;
@@ -2865,9 +3019,113 @@ namespace {
 			}
 		}
 
+		// Cross-object "face-intersection" edge classification (issue #3742 follow-on): see the
+		// intersection namespace's own top comment (above restore_coincident_hidden_edges()) for
+		// the full design. Runs once, over every item added to this drawing/storey so far, exactly
+		// like find_cross_coplanar_matches() above -- and gated the same way (early-return unless
+		// both use_edge_classification_ and use_face_intersection_classification_ are set), so this
+		// pass is fully inert unless explicitly enabled twice over, matching its own
+		// ConversionSettings description.
+		void find_face_intersection_matches() {
+			if (!use_edge_classification_ || !use_face_intersection_classification_) {
+				return;
+			}
+
+			BRep_Builder builder;
+			// One accumulated compound of brand-new synthetic edges per OWNING product (see the
+			// attribution comment below for how the owner is picked) -- this pass' equivalent of
+			// find_cross_coplanar_matches()'s new_edges/new_geometry compounds, just keyed by
+			// product up front since (unlike cross-coplanar) there's no existing edge to replace,
+			// only new geometry to add.
+			std::map<const IfcUtil::IfcBaseEntity*, TopoDS_Compound> per_product_new_edges;
+
+			std::vector<intersection::ProductFace> all_faces =
+				intersection::collect_product_faces(items_, face_intersection_tolerance_);
+
+			for (size_t seed_idx = 0; seed_idx < all_faces.size(); ++seed_idx) {
+				const auto& seed = all_faces[seed_idx];
+				auto nearby = intersection::nearby_product_faces(all_faces, seed.box, seed.item_idx);
+				for (size_t other_idx : nearby) {
+					const auto& other = all_faces[other_idx];
+					// nearby_product_faces() already excludes same-item_idx pairs (cross-product
+					// only, per v1 scope), but both directions of every cross-product pair are
+					// still visited once from each side (seed=A/other=B and seed=B/other=A) -- only
+					// process a pair once, when the seed's own item_idx is the lower of the two, so
+					// each pair pays BRepAlgoAPI_Section's cost exactly once.
+					if (seed.item_idx >= other.item_idx) {
+						continue;
+					}
+					// Parallel/antiparallel face pairs are cross_coplanar's job, not this pass'.
+					if (std::abs(seed.normal.Dot(other.normal)) > 1.0 - intersection::kCoplanarNormalTolerance) {
+						continue;
+					}
+					// Not expected in practice (every real IFC product entity added via add() has a
+					// GlobalId), but items_ can in principle carry a null product (e.g. some
+					// annotation-only geometry) -- guard defensively rather than dereference a null
+					// pointer below.
+					if (!seed.product || !other.product) {
+						continue;
+					}
+					auto segments = intersection::section_faces(seed.face, other.face, face_intersection_tolerance_);
+					if (segments.empty()) {
+						continue;
+					}
+
+					// Attribution (avoiding a doubled-line bug): a genuine crossing between product
+					// A and product B must be emitted exactly once, not once per side, or it paints
+					// as two coincident, undeduped lines -- coincident_edge_class_priority()
+					// (SvgSerializer.cpp) doesn't collapse same-class/same-priority duplicates from
+					// two different products (correct/intended for cross-coplanar, where that's the
+					// point), and svg_dedup.py's tolerant merge is opt-in/off by default. Resolved
+					// by a deterministic tie-break: attribute the segment to whichever product has
+					// the lexicographically lower IFC GlobalId, mirroring the GlobalId-string
+					// accessor pattern already used elsewhere in this file (SvgSerializer.cpp's
+					// idElement()/nameElement()).
+					std::string seed_guid = static_cast<std::string>(seed.product->get("GlobalId"));
+					std::string other_guid = static_cast<std::string>(other.product->get("GlobalId"));
+					const IfcUtil::IfcBaseEntity* owner = (seed_guid <= other_guid) ? seed.product : other.product;
+
+					auto bucket_it = per_product_new_edges.find(owner);
+					if (bucket_it == per_product_new_edges.end()) {
+						TopoDS_Compound c;
+						builder.MakeCompound(c);
+						bucket_it = per_product_new_edges.emplace(owner, c).first;
+					}
+					for (auto& e : segments) {
+						builder.Add(bucket_it->second, e);
+					}
+				}
+			}
+
+			for (auto& kv : per_product_new_edges) {
+				const IfcUtil::IfcBaseEntity* product = kv.first;
+				TopoDS_Compound& new_edges = kv.second;
+				if (!TopExp_Explorer(new_edges, TopAbs_EDGE).More()) {
+					continue;
+				}
+				add_classified_edges(product, intersection::class_name, new_edges);
+
+				// These are brand new edges, never part of what this product's shape already gave
+				// the HLR algorithm, so -- same injection-before-HLR requirement as
+				// find_cross_coplanar_matches()'s own new_geometry merge-back -- they have to land
+				// in items_ before build()'s own algo->Add() loop runs.
+				for (auto& item : items_) {
+					if (std::get<0>(item) != product) {
+						continue;
+					}
+					TopoDS_Compound merged;
+					builder.MakeCompound(merged);
+					builder.Add(merged, std::get<1>(item));
+					builder.Add(merged, new_edges);
+					std::get<1>(item) = merged;
+				}
+			}
+		}
+
 		std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> build() {
 			find_cross_coplanar_matches();
 			generate_mat_style_change_case_b_edges();
+			find_face_intersection_matches();
 
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
@@ -2948,6 +3206,11 @@ protected:
 	// prefiltered_hlr the same way as cross-coplanar above; case B (intra-product layer-boundary
 	// lining) is applied per-item in write(const geometry_data&).
 	bool svg_use_mat_style_change_classification_;
+	// Cross-object "face-intersection" edge classification (issue #3742 follow-on): see the
+	// intersection namespace/find_face_intersection_matches() in SvgSerializer.h.
+	bool svg_use_face_intersection_classification_;
+	bool svg_render_face_intersection_edges_;
+	double svg_face_intersection_tolerance_;
 
 	IfcParse::IfcFile* file;
 	const IfcUtil::IfcBaseEntity* storey_;
