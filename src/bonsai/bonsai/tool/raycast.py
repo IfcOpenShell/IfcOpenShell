@@ -1027,10 +1027,13 @@ class Raycast(bonsai.core.tool.Raycast):
             # Measure polylines
             bm = custom_bmesh
 
+        # Was copied once per vertex and twice per edge; it cannot change here.
+        matrix_world = obj.matrix_world.copy() if obj else None
+
         for vertex in bm.verts:
             v = vertex.co
-            if obj:
-                v = obj.matrix_world.copy() @ v
+            if matrix_world is not None:
+                v = matrix_world @ v
             intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
             distance = (v - intersection).length
             if distance < snap_threshold:
@@ -1045,9 +1048,9 @@ class Raycast(bonsai.core.tool.Raycast):
         for edge in bm.edges:
             v1 = edge.verts[0].co
             v2 = edge.verts[1].co
-            if obj:
-                v1 = obj.matrix_world.copy() @ v1
-                v2 = obj.matrix_world.copy() @ v2
+            if matrix_world is not None:
+                v1 = matrix_world @ v1
+                v2 = matrix_world @ v2
             division_point = (v1 + v2) / 2  # TODO Make it work for different divisions
 
             intersection = tool.Cad.point_on_edge(division_point, (ray_target, loc))
