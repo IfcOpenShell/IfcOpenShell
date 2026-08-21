@@ -101,7 +101,12 @@ int main() {
 	// IfcFacetedBRep. If it would not be a polyhedron, serialise() can only be successful when linked
 	// to the IFC4 model and with `advanced` set to `true` which introduces IfcAdvancedFace. It would
 	// return `0` otherwise.
-	auto building_shape = ifcopenshell::geom::serialise(file, building_shell, false).as<IfcSchema::IfcProductDefinitionShape>();
+	auto building_shape_result = ifcopenshell::geom::serialise(file, building_shell, false);
+	if (!building_shape_result) {
+		std::cerr << "Failed to serialize building shell." << std::endl;
+		return 1;
+	}
+	auto building_shape = building_shape_result.as<IfcSchema::IfcProductDefinitionShape>();
 
 	file.add_entity(building_shape);
 	auto building_representations = building_shape.Representations();
