@@ -80,7 +80,7 @@ jobs:
           set -o pipefail
           CXXFLAGS="-O3" CFLAGS="-O3" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON \
             uv run --with aqtinstall ./nix/build-all.py \
-            -v --diskcleanup --ifcopenshell-shared 2>&1 \
+            -v --diskcleanup --ifcopenshell-shared --opencascade-shared 2>&1 \
             | tee build.log
 
       - name: Upload Build Logs
@@ -147,6 +147,22 @@ jobs:
               done
           }
 
+          # Copy the shared OCCT from the dependency prefix to the provided `$1`.
+          # OCCT is built shared (`--opencascade-shared`) so that the opencascade kernel
+          # and tree plug-ins share a single OCCT instance: `open_cascade_shape` objects
+          # are created by the kernel plug-in and then have their `TopoDS_Shape` moved out
+          # and freed by a tree plug-in. A private static OCCT per plug-in gives each its
+          # own Standard_Type registry and allocator, which silently corrupts those shapes.
+          # These libs live under `install/occt-*` rather than `install/ifcopenshell`,
+          # so `stage_runtime_payload` does not pick them up on its own.
+          stage_occt_runtime_payload() {
+              dest="$1"
+              for occt_lib_dir in "$(dirname "$install_root")"/occt-*/lib "$(dirname "$install_root")"/occt-*/lib64; do
+                  [ -d "$occt_lib_dir" ] || continue
+                  find "$occt_lib_dir" -maxdepth 1 \( -type f -o -type l \) -name "libTK*.so*" -exec cp -P {} "$dest/" \;
+              done
+          }
+
           # Copy all libs from `install/ifcopenshell` to the provided `$1`.
           # Set `$2` to `0` to skip including geometry writers.
           stage_runtime_payload() {
@@ -163,7 +179,14 @@ jobs:
                       find "$runtime_dir" \( -type f -o -type l \) \( -name "*.so" -o -name "*.so.*" -o -name "*.dylib" -o -name "*.dll" \)
                   done
               )
+              stage_occt_runtime_payload "$dest"
               ensure_soname_links "$dest"
+              # The core libs ship with dead build-machine RPATHs and the plug-ins have
+              # none; today they resolve only because the Python wrapper ($ORIGIN) pulls
+              # them in by SONAME before any plug-in is dlopen'd. Shared OCCT has no such
+              # first loader -- it is reached through the plug-ins -- so give every staged
+              # library an $ORIGIN of its own.
+              find "$dest" -maxdepth 1 -type f -name "*.so*" -exec patchelf --set-rpath '$ORIGIN' {} \;
           }
 
           # Copy all libs from `QT_DIR` to the provided `$2`.
