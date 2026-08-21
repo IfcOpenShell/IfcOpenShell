@@ -61,6 +61,8 @@ Used environment variables:
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
     - ``BUILD_BONSAIVIEWER`` - enable building BonsaiViewer, `off` by default.
     - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
+    - ``PYTHON_USER_SITE`` - install the Python wrapper into the user's site-packages directory
+    instead of the interpreter's prefix, `off` by default.
 
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
@@ -153,6 +155,7 @@ ADD_COMMIT_SHA = is_on_off(os.getenv("ADD_COMMIT_SHA"), default=False)
 IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
 BUILD_BONSAIVIEWER = is_on_off(os.getenv("BUILD_BONSAIVIEWER"), default=False)
 USE_OCCT = is_on_off(os.getenv("USE_OCCT"), default=True)
+PYTHON_USER_SITE = is_on_off(os.getenv("PYTHON_USER_SITE"), default=False)
 
 PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
 JSON_VERSION = "3.11.3"
@@ -1540,7 +1543,7 @@ if "qt6" in targets:
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
-if os.environ.get("NO_CLEAN", "").lower() not in {"1", "on", "true"}:
+if not is_on_off(os.getenv("NO_CLEAN"), default=False):
     if os.path.exists(IFCOS_DIR):
         shutil.rmtree(IFCOS_DIR)
 os.makedirs(IFCOS_DIR, exist_ok=True)
@@ -1733,8 +1736,7 @@ if "IfcOpenShell-Python" in targets:
                     *([f"-DPYTHON_MODULE_INSTALL_DIR={REPO_PATH}"] * WASM),
                     f"-DPYTHON_INCLUDE_DIR={python_include}",
                     f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
-                    "-DUSERSPACE_PYTHON_PREFIX="
-                    + ["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
+                    "-DUSERSPACE_PYTHON_PREFIX=" + OFF_ON[PYTHON_USER_SITE],
                 ],
                 cmake_dir=CMAKE_DIR,
                 cwd=ifcos_build_dir,
