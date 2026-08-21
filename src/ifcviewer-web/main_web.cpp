@@ -253,6 +253,10 @@ EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
         app->nav_drag_px = 0.0f;
         app->down_x      = e->targetX;  // canvas-relative CSS px
         app->down_y      = e->targetY;
+        // Show the pivot triad for the duration of an orbit / pan drag, so
+        // it's visible what the camera turns around (matches the desktop).
+        if (kind == NavKind::Orbit || kind == NavKind::Pan)
+            app->core.setPivotIndicatorVisible(true);
     }
     return EM_TRUE;
 }
@@ -297,6 +301,10 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
     const NavKind kind       = app->nav_kind;
     app->nav_active = false;
     app->nav_kind   = NavKind::None;
+    // Drag is over — hide the pivot indicator without afterglow. Only for the
+    // gesture that raised it; a stray mouseup must not cut a wheel afterglow.
+    if (was_active && (kind == NavKind::Orbit || kind == NavKind::Pan))
+        app->core.setPivotIndicatorVisible(false);
 
     // End a section-gizmo drag (took over the press; no pick/orbit on release).
     if (app->section_dragging) {
@@ -373,6 +381,9 @@ EM_BOOL onWheel(int, const EmscriptenWheelEvent* e, void* user) {
     // In fly mode the wheel tunes move speed (Blender convention), not zoom.
     if (app->fly_mode) { app->core.flyAdjustSpeed(-float(dy) / 100.0f); return EM_TRUE; }
     app->core.dollyBy(-float(dy) / 100.0f);
+    // Pivot afterglow on wheel — visible for 600 ms so the user can see what
+    // they're zooming around without holding a drag.
+    app->core.setPivotIndicatorVisible(true, 600);
     return EM_TRUE;  // consume so the page doesn't scroll
 }
 

@@ -139,6 +139,7 @@ endif()
 #
 # Keep this list explicit (no glob) — the boundary is the whole point.
 set(IFCVIEWER_CORE_SOURCES
+    AxisIndicatorRenderer.cpp
     BufferPool.cpp
     ChunkPlanner.cpp
     InstanceCompose.cpp
@@ -187,6 +188,7 @@ if(EMSCRIPTEN)
     # below which would mangle these absolute paths; added via target_sources.
 endif()
 set(IFCVIEWER_CORE_HEADERS
+    AxisIndicatorRenderer.h
     BufferPool.h
     CameraMath.h
     ChunkPlanner.h

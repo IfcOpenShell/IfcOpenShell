@@ -12,8 +12,10 @@
      eats pointer events so the drag keeps reaching the canvas. */
   #marquee { position: fixed; display: none; z-index: 50; pointer-events: none;
     border: 1px solid #4a9eff; background: rgba(74, 158, 255, 0.15); }
-  /* Log overlay sits bottom-left and never eats pointer events. */
-  #status { position: fixed; bottom: 8px; left: 12px;
+  /* Log overlay sits bottom-left and never eats pointer events. Kept clear
+     of the corner axis gizmo, which the viewport draws in the bottom-left
+     110 CSS px (plus a 10 px margin). */
+  #status { position: fixed; bottom: 8px; left: 132px;
     max-width: min(60vw, 680px); max-height: 28vh; overflow-y: auto;
     font-size: 11px;
     font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;

@@ -21,7 +21,6 @@
 #define WGPUVIEWPORTWINDOW_H
 
 #include <QWindow>
-#include <QTimer>
 
 #include <string>
 #include <unordered_set>
@@ -306,12 +305,9 @@ private:
     bool  buildHizPipeline();
     bool  buildEdgePipeline();
     void  encodeEdgePass(WGPUCommandEncoder enc, WGPUTextureView surface_view);
-    // Show/hide the pivot indicator. hide_after_ms > 0 starts the
-    // single-shot auto-hide timer used by the wheel-zoom afterglow;
-    // drag callers pass 0 and toggle manually on press/release. The
-    // actual gizmo rendering lives in OverlayRenderer — this just
-    // manages the UI-side visibility timer.
-    void  setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
+    // setPivotIndicatorVisible moved to ViewportCore — the indicator is drawn
+    // by the shared AxisIndicatorRenderer now, so its visibility (afterglow
+    // included) lives next to the drawing for desktop + web alike.
     // releaseEdgeResources / buildPickPipeline / ensurePickAttachments /
     // releasePickResources moved to ViewportCore (#84-s, #84-t).
 
@@ -670,15 +666,10 @@ private:
     WGPUBindGroup&      edge_bind_group_;
     bool&               edges_enabled_;
 
-    // Pivot visibility state — the gizmo itself lives in overlays_.
-    // The timer auto-hides the pivot after a wheel-zoom afterglow.
-    bool                pivot_indicator_visible_    = false;
-    QTimer*             pivot_indicator_hide_timer_ = nullptr;
-
-    // All viewport overlays (axis indicator, section gizmos, marquee
-    // rect) — pipelines + shaders + buffers + encoders. The viewport
-    // builds a OverlayFrame each frame and asks the renderer to
-    // encode each overlay; see OverlayRenderer.h.
+    // The Qt-coupled viewport overlays (marquee rect, measure lines /
+    // points / labels, highlight triangles) — pipelines + shaders +
+    // buffers + encoders. The viewport builds a OverlayFrame each frame
+    // and asks the renderer to encode each overlay; see OverlayRenderer.h.
     OverlayRenderer overlays_;
 
     // Active measurement tool. setToolMode() / setSelection mutations

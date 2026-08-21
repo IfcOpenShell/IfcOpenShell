@@ -47,6 +47,7 @@
 #include <utility>
 #include <vector>
 
+#include "AxisIndicatorRenderer.h"
 #include "BufferPool.h"
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
@@ -55,6 +56,7 @@
 #include "SectionPlane.h"
 #include "SelectionState.h"
 #include "SidecarCache.h"
+#include "Stopwatch.h"
 #include "StreamingLoader.h"
 #include "StreamingThread.h"
 #include "ViewportHost.h"
@@ -281,9 +283,9 @@ public:
     //
     // Pixel-delta camera moves, shared by every host (Qt desktop + web).
     // Hosts translate raw pointer/wheel events into these calls and own
-    // their own UI concerns (drag promotion, pivot indicator, cursor
-    // capture); the orbit math lives here so it can't drift between
-    // platforms. Each schedules a frame via the host.
+    // their own UI concerns (drag promotion, cursor capture); the orbit
+    // math lives here so it can't drift between platforms. Each schedules
+    // a frame via the host.
     //
     // orbitBy:  drag-right yaws the world right (yaw -= dx), drag-down
     //           tilts the camera up (pitch += dy). 0.4 deg/px matches GL.
@@ -295,6 +297,18 @@ public:
     void orbitBy(float dx_px, float dy_px);
     void panBy(float dx_px, float dy_px, int viewport_height_px);
     void dollyBy(float notches);
+
+    // ---- Pivot indicator ----------------------------------------------------
+    //
+    // The RGB triad drawn at the orbit target while the user navigates, so it's
+    // obvious what the camera is turning around. Hosts gate it: (true) when an
+    // orbit / pan drag starts, (false) when it ends. `hide_after_ms` > 0 arms an
+    // afterglow instead — the wheel path uses it so a zoom without a held drag
+    // still shows the pivot for a moment. State lives here (not in the host) so
+    // desktop and web behave identically; render() consults it each frame and
+    // keeps requesting frames until an armed afterglow expires.
+    void setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
+    bool pivotIndicatorVisible() const;
 
     // ---- First-person / fly navigation --------------------------------------
     //
@@ -1092,6 +1106,14 @@ private:
     // Lifted out of the Qt-coupled OverlayRenderer so one identical gizmo draws
     // everywhere; the desktop's OverlayRenderer no longer draws it.
     SectionGizmoRenderer section_gizmo_;
+    // Corner axis gizmo + orbit pivot indicator, likewise shared by desktop +
+    // web. Same lift out of the Qt-coupled OverlayRenderer.
+    AxisIndicatorRenderer axis_indicator_;
+    bool                  pivot_indicator_visible_ = false;
+    // Only running while an afterglow is armed; a drag-held indicator leaves it
+    // invalid so the triad stays up until the host clears it.
+    Stopwatch             pivot_indicator_timer_;
+    int                   pivot_indicator_hide_ms_ = 0;
 
     // HiZ occlusion-cull pipeline group. Downsamples MSAA depth into a
     // mip pyramid; consumed by next-frame cull.

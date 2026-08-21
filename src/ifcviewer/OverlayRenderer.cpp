@@ -19,15 +19,12 @@
 
 #include "OverlayRenderer.h"
 
-#include "CameraMath.h"
-
 #include <QFont>
 #include <QFontMetrics>
 #include <QImage>
 #include <QPainter>
 #include <QSet>
 #include <QStringList>
-#include <QtMath>
 
 #include <algorithm>
 #include <array>
@@ -47,44 +44,6 @@ WGPUStringView svFromCStr(const char* s) {
     v.data   = s;
     v.length = std::strlen(s);
     return v;
-}
-
-// Populate `attribs[5]` with the standard thick-line vertex layout:
-//   loc 0: start (vec3 @ 0)   loc 1: end   (vec3 @ 12)
-//   loc 2: col   (vec3 @ 24)  loc 3: t     (f32  @ 36)
-//   loc 4: side  (f32  @ 40)
-// Returns a WGPUVertexBufferLayout aliasing the caller-owned `attribs`.
-WGPUVertexBufferLayout thickLineVertexLayout(WGPUVertexAttribute attribs[5]) {
-    attribs[0].format = WGPUVertexFormat_Float32x3; attribs[0].offset = 0;  attribs[0].shaderLocation = 0;
-    attribs[1].format = WGPUVertexFormat_Float32x3; attribs[1].offset = 12; attribs[1].shaderLocation = 1;
-    attribs[2].format = WGPUVertexFormat_Float32x3; attribs[2].offset = 24; attribs[2].shaderLocation = 2;
-    attribs[3].format = WGPUVertexFormat_Float32;   attribs[3].offset = 36; attribs[3].shaderLocation = 3;
-    attribs[4].format = WGPUVertexFormat_Float32;   attribs[4].offset = 40; attribs[4].shaderLocation = 4;
-    WGPUVertexBufferLayout vbl = {};
-    vbl.arrayStride    = 44;
-    vbl.stepMode       = WGPUVertexStepMode_Vertex;
-    vbl.attributeCount = 5;
-    vbl.attributes     = attribs;
-    return vbl;
-}
-
-// Pack the axis uniform's 256-byte slot. Layout matches WGSL AxisUniforms:
-// mat4 + vec3 + f32 + f32 + f32 + vec2 = 96 B used, padded to 256.
-void packAxisUniform(uint8_t* dst,
-                     const Eigen::Matrix4f& mvp, const Eigen::Vector3f& origin,
-                     float arm, float alpha, float line_width_px,
-                     float viewport_w, float viewport_h) {
-    std::memset(dst, 0, 256);
-    std::memcpy(dst, mvp.data(), 16 * sizeof(float));
-    float ox = origin.x(), oy = origin.y(), oz = origin.z();
-    std::memcpy(dst + 64, &ox, sizeof(float));
-    std::memcpy(dst + 68, &oy, sizeof(float));
-    std::memcpy(dst + 72, &oz, sizeof(float));
-    std::memcpy(dst + 76, &arm,           sizeof(float));
-    std::memcpy(dst + 80, &alpha,         sizeof(float));
-    std::memcpy(dst + 84, &line_width_px, sizeof(float));
-    std::memcpy(dst + 88, &viewport_w,    sizeof(float));
-    std::memcpy(dst + 92, &viewport_h,    sizeof(float));
 }
 
 }  // namespace
@@ -123,35 +82,6 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let aa = fwidth(in.side_t);
     let coverage = 1.0 - smoothstep(1.0 - aa, 1.0, d);
     return vec4<f32>(in.color.xyz, in.color.w * coverage);
-}
-)WGSL";
-
-static const std::string AXIS_WGSL = std::string(THICK_LINE_HELPERS_WGSL) + R"WGSL(
-struct AxisUniforms {
-    mvp:           mat4x4<f32>,
-    origin:        vec3<f32>,
-    arm:           f32,
-    alpha:         f32,
-    line_width_px: f32,
-    viewport_size: vec2<f32>,
-};
-
-@group(0) @binding(0) var<uniform> u: AxisUniforms;
-
-@vertex
-fn vs_main(@location(0) start: vec3<f32>,
-           @location(1) end:   vec3<f32>,
-           @location(2) col:   vec3<f32>,
-           @location(3) t:     f32,
-           @location(4) side:  f32) -> VsOut {
-    let p_start = u.mvp * vec4<f32>(u.origin + start * u.arm, 1.0);
-    let p_end   = u.mvp * vec4<f32>(u.origin + end   * u.arm, 1.0);
-    var out: VsOut;
-    out.clip_pos = thick_line_clip(p_start, p_end, t, side,
-                                    u.viewport_size, u.line_width_px);
-    out.color  = vec4<f32>(col, u.alpha);
-    out.side_t = side;
-    return out;
 }
 )WGSL";
 
@@ -383,7 +313,6 @@ bool OverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
     queue_          = queue;
     surface_format_ = surface_format;
     sample_count_   = sample_count;
-    if (!buildAxisIndicator())     return false;
     // Section-plane gizmos moved to the shared SectionGizmoRenderer (ViewportCore).
     if (!buildMarquee())           return false;
     if (!buildOverlayLines())      return false;
@@ -394,17 +323,6 @@ bool OverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
 }
 
 void OverlayRenderer::destroy() {
-    // Axis indicator
-    if (axis_bind_group_)         { wgpuBindGroupRelease(axis_bind_group_);              axis_bind_group_ = nullptr; }
-    if (axis_pivot_pipeline_)     { wgpuRenderPipelineRelease(axis_pivot_pipeline_);     axis_pivot_pipeline_ = nullptr; }
-    if (axis_pivot_xray_pipeline_){ wgpuRenderPipelineRelease(axis_pivot_xray_pipeline_); axis_pivot_xray_pipeline_ = nullptr; }
-    if (axis_corner_pipeline_)    { wgpuRenderPipelineRelease(axis_corner_pipeline_);    axis_corner_pipeline_ = nullptr; }
-    if (axis_shader_module_)      { wgpuShaderModuleRelease(axis_shader_module_);        axis_shader_module_ = nullptr; }
-    if (axis_pipeline_layout_)    { wgpuPipelineLayoutRelease(axis_pipeline_layout_);    axis_pipeline_layout_ = nullptr; }
-    if (axis_bgl_)                { wgpuBindGroupLayoutRelease(axis_bgl_);               axis_bgl_ = nullptr; }
-    if (axis_uniform_buffer_)     { wgpuBufferRelease(axis_uniform_buffer_);             axis_uniform_buffer_ = nullptr; }
-    if (axis_vertex_buffer_)      { wgpuBufferRelease(axis_vertex_buffer_);              axis_vertex_buffer_ = nullptr; }
-
     // Section visualizer
 
     // Marquee
@@ -464,288 +382,6 @@ void OverlayRenderer::destroy() {
     label_vertex_capacity_ = 0;
     labels_.clear();
     hud_text_.clear();
-}
-
-// -----------------------------------------------------------------------------
-// Axis indicator
-// -----------------------------------------------------------------------------
-
-bool OverlayRenderer::buildAxisIndicator() {
-    // Bonsai decorator palette (src/bonsai/bonsai/bim/ui.py:593+):
-    //   decorator_color_error    = (1.000, 0.200, 0.322) — red    → +X
-    //   decorator_color_selected = (0.545, 0.863, 0.000) — green  → +Y
-    //   decorator_color_special  = (0.157, 0.565, 1.000) — blue   → +Z
-    // Same palette is reused for the section gizmo + marquee so all overlay
-    // colours come from one canonical source.
-    static const float axis_verts[] = {
-        //  start         end           color (RGB — Bonsai decorators)  t    side
-        // ---- +X red ----
-         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  0.f,  -1.f,
-         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  0.f,  +1.f,
-         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  1.f,  -1.f,
-         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  1.f,  -1.f,
-         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  0.f,  +1.f,
-         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  1.f,  +1.f,
-        // ---- +Y green ----
-         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  0.f,  -1.f,
-         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  0.f,  +1.f,
-         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  1.f,  -1.f,
-         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  1.f,  -1.f,
-         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  0.f,  +1.f,
-         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  1.f,  +1.f,
-        // ---- +Z blue ----
-         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  0.f,  -1.f,
-         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  0.f,  +1.f,
-         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  1.f,  -1.f,
-         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  1.f,  -1.f,
-         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  0.f,  +1.f,
-         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  1.f,  +1.f,
-    };
-    {
-        WGPUBufferDescriptor bdesc = {};
-        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
-        bdesc.size  = sizeof(axis_verts);
-        bdesc.label = svFromCStr("ifcviewer-wgpu.axis_vbo");
-        axis_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
-        wgpuQueueWriteBuffer(queue_, axis_vertex_buffer_, 0, axis_verts, sizeof(axis_verts));
-    }
-    {
-        WGPUBufferDescriptor bdesc = {};
-        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
-        bdesc.size  = 3u * kAxisUniformSlotSize;
-        bdesc.label = svFromCStr("ifcviewer-wgpu.axis_uniforms");
-        axis_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
-    }
-    {
-        WGPUBindGroupLayoutEntry entry = {};
-        entry.binding    = 0;
-        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
-        entry.buffer.type             = WGPUBufferBindingType_Uniform;
-        entry.buffer.hasDynamicOffset = 1;
-        entry.buffer.minBindingSize   = 96;
-        WGPUBindGroupLayoutDescriptor bgl_desc = {};
-        bgl_desc.entryCount = 1;
-        bgl_desc.entries    = &entry;
-        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.axis_bgl");
-        axis_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
-    }
-    {
-        WGPUPipelineLayoutDescriptor pl_desc = {};
-        pl_desc.bindGroupLayoutCount = 1;
-        pl_desc.bindGroupLayouts     = &axis_bgl_;
-        pl_desc.label                = svFromCStr("ifcviewer-wgpu.axis_pipeline_layout");
-        axis_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
-    }
-    {
-        WGPUBindGroupEntry entry = {};
-        entry.binding = 0;
-        entry.buffer  = axis_uniform_buffer_;
-        entry.offset  = 0;
-        entry.size    = kAxisUniformSlotSize;
-        WGPUBindGroupDescriptor bg_desc = {};
-        bg_desc.layout     = axis_bgl_;
-        bg_desc.entryCount = 1;
-        bg_desc.entries    = &entry;
-        bg_desc.label      = svFromCStr("ifcviewer-wgpu.axis_bind_group");
-        axis_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
-    }
-    {
-        WGPUShaderSourceWGSL wgsl_src = {};
-        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
-        wgsl_src.code        = svFromCStr(AXIS_WGSL.c_str());
-        WGPUShaderModuleDescriptor sm_desc = {};
-        sm_desc.nextInChain = &wgsl_src.chain;
-        sm_desc.label       = svFromCStr("ifcviewer-wgpu.axis_wgsl");
-        axis_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
-    }
-
-    WGPUVertexAttribute attribs[5] = {};
-    WGPUVertexBufferLayout vbl = thickLineVertexLayout(attribs);
-
-    WGPUBlendState blend = {};
-    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
-    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
-    blend.color.operation = WGPUBlendOperation_Add;
-    blend.alpha.srcFactor = WGPUBlendFactor_One;
-    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
-    blend.alpha.operation = WGPUBlendOperation_Add;
-
-    auto build_pivot = [&](WGPUCompareFunction cmp, const char* label,
-                           WGPURenderPipeline& out) {
-        WGPUColorTargetState ct = {};
-        ct.format    = surface_format_;
-        ct.blend     = &blend;
-        ct.writeMask = WGPUColorWriteMask_All;
-
-        WGPUFragmentState frag = {};
-        frag.module      = axis_shader_module_;
-        frag.entryPoint  = svFromCStr("fs_main");
-        frag.targetCount = 1;
-        frag.targets     = &ct;
-
-        WGPUDepthStencilState depth = {};
-        depth.format               = WGPUTextureFormat_Depth32Float;
-        depth.depthWriteEnabled    = WGPUOptionalBool_False;
-        depth.depthCompare         = cmp;
-        depth.stencilFront.compare = WGPUCompareFunction_Always;
-        depth.stencilBack.compare  = WGPUCompareFunction_Always;
-
-        WGPURenderPipelineDescriptor rp_desc = {};
-        rp_desc.layout              = axis_pipeline_layout_;
-        rp_desc.label               = svFromCStr(label);
-        rp_desc.vertex.module       = axis_shader_module_;
-        rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
-        rp_desc.vertex.bufferCount  = 1;
-        rp_desc.vertex.buffers      = &vbl;
-        rp_desc.fragment            = &frag;
-        rp_desc.depthStencil        = &depth;
-        rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
-        rp_desc.primitive.cullMode  = WGPUCullMode_None;
-        rp_desc.multisample.count   = uint32_t(sample_count_);
-        rp_desc.multisample.mask    = 0xFFFFFFFFu;
-        out = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
-    };
-    build_pivot(WGPUCompareFunction_LessEqual,
-                "ifcviewer-wgpu.axis_pivot_pipeline",
-                axis_pivot_pipeline_);
-    build_pivot(WGPUCompareFunction_GreaterEqual,
-                "ifcviewer-wgpu.axis_pivot_xray_pipeline",
-                axis_pivot_xray_pipeline_);
-
-    // Corner: resolved surface, no depth, sampleCount=1.
-    {
-        WGPUColorTargetState ct = {};
-        ct.format    = surface_format_;
-        ct.blend     = &blend;
-        ct.writeMask = WGPUColorWriteMask_All;
-
-        WGPUFragmentState frag = {};
-        frag.module      = axis_shader_module_;
-        frag.entryPoint  = svFromCStr("fs_main");
-        frag.targetCount = 1;
-        frag.targets     = &ct;
-
-        WGPURenderPipelineDescriptor rp_desc = {};
-        rp_desc.layout              = axis_pipeline_layout_;
-        rp_desc.label               = svFromCStr("ifcviewer-wgpu.axis_corner_pipeline");
-        rp_desc.vertex.module       = axis_shader_module_;
-        rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
-        rp_desc.vertex.bufferCount  = 1;
-        rp_desc.vertex.buffers      = &vbl;
-        rp_desc.fragment            = &frag;
-        rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
-        rp_desc.primitive.cullMode  = WGPUCullMode_None;
-        rp_desc.multisample.count   = 1;
-        rp_desc.multisample.mask    = 0xFFFFFFFFu;
-        axis_corner_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
-    }
-
-    return axis_pivot_pipeline_ && axis_pivot_xray_pipeline_
-        && axis_corner_pipeline_;
-}
-
-void OverlayRenderer::encodePivot(WGPURenderPassEncoder pass,
-                                      const OverlayFrame& f,
-                                      bool visible) {
-    if (!visible || !axis_pivot_pipeline_ || !axis_pivot_xray_pipeline_) return;
-    if (f.viewport_h_px <= 0) return;
-
-    // Arm length = 30 logical px projected into world at the pivot's distance.
-    const float fovy_rad        = qDegreesToRadians(f.camera_fov_y_deg);
-    const float world_per_pixel = f.camera_distance * std::tan(fovy_rad * 0.5f)
-                                  * 2.0f / float(f.viewport_h_px);
-    const float arm_pixels = 30.0f * float(f.device_pixel_ratio);
-    const float arm_world  = arm_pixels * world_per_pixel;
-
-    const float dpr     = float(f.device_pixel_ratio);
-    const float line_w  = 2.5f * dpr;
-    const float vw      = float(f.viewport_w_px);
-    const float vh      = float(f.viewport_h_px);
-
-    uint8_t slot_visible[256];
-    uint8_t slot_xray[256];
-    packAxisUniform(slot_visible, f.view_proj, f.camera_target, arm_world,
-                    1.00f, line_w, vw, vh);
-    packAxisUniform(slot_xray,    f.view_proj, f.camera_target, arm_world,
-                    0.30f, line_w, vw, vh);
-    const uint32_t visible_off = 1u * kAxisUniformSlotSize;
-    const uint32_t xray_off    = 2u * kAxisUniformSlotSize;
-    wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, visible_off,
-                         slot_visible, sizeof(slot_visible));
-    wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, xray_off,
-                         slot_xray, sizeof(slot_xray));
-
-    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, axis_vertex_buffer_, 0,
-                                         WGPU_WHOLE_SIZE);
-    wgpuRenderPassEncoderSetPipeline(pass, axis_pivot_xray_pipeline_);
-    wgpuRenderPassEncoderSetBindGroup(pass, 0, axis_bind_group_, 1, &xray_off);
-    wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
-    wgpuRenderPassEncoderSetPipeline(pass, axis_pivot_pipeline_);
-    wgpuRenderPassEncoderSetBindGroup(pass, 0, axis_bind_group_, 1, &visible_off);
-    wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
-}
-
-void OverlayRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
-                                           WGPUTextureView surface_view,
-                                           const OverlayFrame& f) {
-    if (!axis_corner_pipeline_ || !surface_view) return;
-    const int dpr = std::max(1, f.device_pixel_ratio);
-    const uint32_t gizmo_size = uint32_t(110 * dpr);
-    const uint32_t margin     = uint32_t(10 * dpr);
-    if (gizmo_size == 0 || f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
-    // Bottom-left in WebGPU framebuffer space (y down).
-    const uint32_t fb_h = uint32_t(f.viewport_h_px);
-    if (gizmo_size + margin > fb_h) return;
-    const uint32_t y = fb_h - margin - gizmo_size;
-
-    // Independent ortho projection from the camera's direction. Near the
-    // poles the up axis collapses against the look direction, so swap to
-    // Y-up there — mirrors buildViewProj's identical fix on the viewport.
-    const float yaw_rad   = qDegreesToRadians(f.camera_yaw_deg);
-    const float pitch_rad = qDegreesToRadians(f.camera_pitch_deg);
-    const Eigen::Vector3f eye_dir(std::cos(pitch_rad) * std::cos(yaw_rad),
-                            std::cos(pitch_rad) * std::sin(yaw_rad),
-                            std::sin(pitch_rad));
-    const Eigen::Vector3f world_up = (std::abs(f.camera_pitch_deg) >= 89.0f)
-                                 ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
-                                 : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
-    const Eigen::Matrix4f gv = lookAtRH(eye_dir * 3.0f, Eigen::Vector3f::Zero(), world_up);
-    const Eigen::Matrix4f gp = orthoGL(-1.4f, 1.4f, -1.4f, 1.4f, 0.1f, 10.0f);
-    Eigen::Matrix4f z_remap = Eigen::Matrix4f::Identity();
-    z_remap(2, 2) = 0.5f;
-    z_remap(2, 3) = 0.5f;
-    const Eigen::Matrix4f mvp = z_remap * gp * gv;
-
-    uint8_t slot[256];
-    const float line_w = 2.5f * float(dpr);
-    packAxisUniform(slot, mvp, Eigen::Vector3f(0, 0, 0), 1.0f, 1.0f, line_w,
-                    float(gizmo_size), float(gizmo_size));
-    const uint32_t slot_offset = 0u;
-    wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, slot_offset, slot, sizeof(slot));
-
-    WGPURenderPassColorAttachment color = {};
-    color.view       = surface_view;
-    color.loadOp     = WGPULoadOp_Load;
-    color.storeOp    = WGPUStoreOp_Store;
-    color.clearValue = { 0.0, 0.0, 0.0, 1.0 };
-    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
-
-    WGPURenderPassDescriptor pass_desc = {};
-    pass_desc.colorAttachmentCount = 1;
-    pass_desc.colorAttachments     = &color;
-    pass_desc.label                = svFromCStr("ifcviewer-wgpu.corner_axis_pass");
-
-    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
-    wgpuRenderPassEncoderSetViewport(pass, float(margin), float(y),
-                                     float(gizmo_size), float(gizmo_size),
-                                     0.0f, 1.0f);
-    wgpuRenderPassEncoderSetPipeline(pass, axis_corner_pipeline_);
-    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, axis_vertex_buffer_, 0,
-                                         WGPU_WHOLE_SIZE);
-    wgpuRenderPassEncoderSetBindGroup(pass, 0, axis_bind_group_, 1, &slot_offset);
-    wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
-    wgpuRenderPassEncoderEnd(pass);
-    wgpuRenderPassEncoderRelease(pass);
 }
 
 // -----------------------------------------------------------------------------

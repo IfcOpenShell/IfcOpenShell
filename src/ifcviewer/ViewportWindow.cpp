@@ -435,14 +435,14 @@ void ViewportWindow::onFrameStats(const FrameStats& stats) {
 
 void ViewportWindow::encodeOverlaysInMainPass(WGPURenderPassEncoder pass,
                                               const OverlayFrame& frame) {
-    // Section gizmos, highlight triangles, pivot, overlay lines / points
-    // — drawn inside the MSAA pass so depth-test correctly hides them
-    // behind closer geometry. (Corner axis / marquee / labels run on the
-    // resolved surface; see encodeOverlaysPostMain.)
-    // NB: section-plane gizmos now draw from ViewportCore::render via the shared
-    // SectionGizmoRenderer (desktop + web), so they are NOT drawn here.
+    // Highlight triangles + overlay lines / points — drawn inside the MSAA
+    // pass so depth-test correctly hides them behind closer geometry.
+    // (Marquee / labels run on the resolved surface; see
+    // encodeOverlaysPostMain.)
+    // NB: section-plane gizmos and the pivot indicator now draw from
+    // ViewportCore::render via their shared renderers (desktop + web), so
+    // they are NOT drawn here.
     overlays_.encodeHighlightTriangles(pass, frame);
-    overlays_.encodePivot(pass, frame, pivot_indicator_visible_);
     overlays_.encodeOverlayLines(pass, frame);
     overlays_.encodeOverlayPoints(pass, frame);
 }
@@ -450,7 +450,8 @@ void ViewportWindow::encodeOverlaysInMainPass(WGPURenderPassEncoder pass,
 void ViewportWindow::encodeOverlaysPostMain(WGPUCommandEncoder enc,
                                             WGPUTextureView surface_view,
                                             const OverlayFrame& frame) {
-    overlays_.encodeCornerAxis(enc, surface_view, frame);
+    // NB: the corner axis gizmo draws from ViewportCore::render (shared
+    // AxisIndicatorRenderer), just before this hook.
     overlays_.encodeMarquee(enc, surface_view, frame,
                             box_select_start_pos_,
                             box_select_current_pos_,
@@ -907,25 +908,8 @@ bool ViewportWindow::initWgpu() {
 
 // encodeEdgePass moved to ViewportCore (#84-s).
 
-// -----------------------------------------------------------------------------
-void ViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
-    if (!pivot_indicator_hide_timer_) {
-        pivot_indicator_hide_timer_ = new QTimer(this);
-        pivot_indicator_hide_timer_->setSingleShot(true);
-        QObject::connect(pivot_indicator_hide_timer_, &QTimer::timeout, this,
-                         [this]() {
-                             pivot_indicator_visible_ = false;
-                             requestUpdate();
-                         });
-    }
-    pivot_indicator_visible_ = visible;
-    if (visible && hide_after_ms > 0) {
-        pivot_indicator_hide_timer_->start(hide_after_ms);
-    } else {
-        pivot_indicator_hide_timer_->stop();
-    }
-    requestUpdate();
-}
+// setPivotIndicatorVisible moved to ViewportCore (drawn by the shared
+// AxisIndicatorRenderer, so the visibility gate lives there too).
 // releaseEdgeResources moved to ViewportCore (#84-s).
 
 // -----------------------------------------------------------------------------
@@ -1585,11 +1569,11 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
     if (event->button() == orbit_button_
         && (mods & Qt::KeyboardModifierMask) == orbit_mods_) {
         nav_drag_kind_ = NavDrag::Orbit;
-        setPivotIndicatorVisible(true);  // hidden again on release
+        core_.setPivotIndicatorVisible(true);  // hidden again on release
     } else if (event->button() == pan_button_
             && (mods & Qt::KeyboardModifierMask) == pan_mods_) {
         nav_drag_kind_ = NavDrag::Pan;
-        setPivotIndicatorVisible(true);
+        core_.setPivotIndicatorVisible(true);
     } else if (event->button() == select_button_
             && !section_tool_active_
             && tool_mode_ != ToolMode::Area
@@ -1683,7 +1667,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 }
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
-                setPivotIndicatorVisible(false);
+                core_.setPivotIndicatorVisible(false);
                 return;
             }
 
@@ -1700,7 +1684,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 emit surfacePickedInTool(px, py, int(event->modifiers()));
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
-                setPivotIndicatorVisible(false);
+                core_.setPivotIndicatorVisible(false);
                 return;
             }
 
@@ -1715,7 +1699,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 emit surfacePickedInTool(px, py, int(event->modifiers()));
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
-                setPivotIndicatorVisible(false);
+                core_.setPivotIndicatorVisible(false);
                 return;
             }
 
@@ -1800,7 +1784,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
         nav_active_button_ = Qt::NoButton;
         nav_drag_kind_     = NavDrag::Inactive;
         // Drag is over — hide the pivot indicator without afterglow.
-        setPivotIndicatorVisible(false);
+        core_.setPivotIndicatorVisible(false);
     }
 }
 
@@ -2050,7 +2034,7 @@ void ViewportWindow::wheelEvent(QWheelEvent* event) {
     core_.dollyBy(notches);
     // Pivot afterglow on wheel — visible for 600 ms so the user can see
     // what they're zooming around without holding a drag.
-    setPivotIndicatorVisible(true, 600);
+    core_.setPivotIndicatorVisible(true, 600);
 }
 
 void ViewportWindow::shutdown() {

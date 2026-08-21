@@ -576,6 +576,21 @@ void ViewportCore::dollyBy(float notches) {
     host_->requestFrame();
 }
 
+void ViewportCore::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
+    pivot_indicator_visible_ = visible;
+    pivot_indicator_hide_ms_ = hide_after_ms;
+    if (visible && hide_after_ms > 0) pivot_indicator_timer_.start();
+    else                              pivot_indicator_timer_.invalidate();
+    host_->requestFrame();
+}
+
+bool ViewportCore::pivotIndicatorVisible() const {
+    if (!pivot_indicator_visible_) return false;
+    // No armed afterglow means a drag is holding it up.
+    if (!pivot_indicator_timer_.isValid()) return true;
+    return pivot_indicator_timer_.elapsed() < pivot_indicator_hide_ms_;
+}
+
 void ViewportCore::flyMove(bool fwd, bool back, bool right, bool left,
                            bool up, bool down, bool boost, float dt_seconds) {
     if (dt_seconds <= 0.0f) return;
@@ -1297,6 +1312,10 @@ bool ViewportCore::buildPipelines() {
     // Section-plane gizmo (shared desktop + web). Optional — a failure just
     // means no gizmo, not a dead viewport.
     section_gizmo_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+
+    // Corner axis gizmo + orbit pivot indicator (shared desktop + web).
+    // Also optional: a failure costs the indicator, not the viewport.
+    axis_indicator_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
     return true;
 }
 
@@ -1913,6 +1932,7 @@ void ViewportCore::shutdown() {
     if (main_pipeline_no_cull_)      { wgpuRenderPipelineRelease(main_pipeline_no_cull_);     main_pipeline_no_cull_ = nullptr; }
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     section_gizmo_.destroy();
+    axis_indicator_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
     if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
@@ -7606,8 +7626,15 @@ void ViewportCore::render() {
     section_gizmo_.encode(pass, vp_this_frame, section_planes_,
                           viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
 
-    // Remaining in-pass overlays (highlight triangles, pivot, overlay
-    // lines/points). QtViewportHost forwards to overlays_.X(); web host no-ops.
+    // Orbit pivot indicator — same shared-renderer story. Drawn while the host
+    // has it gated on (drag) or an afterglow is still running; in the latter
+    // case keep frames coming so the one that clears it actually lands.
+    const bool pivot_visible = pivotIndicatorVisible();
+    axis_indicator_.encodePivot(pass, overlay_frame, pivot_visible);
+    if (pivot_visible && pivot_indicator_timer_.isValid()) host_->requestFrame();
+
+    // Remaining in-pass overlays (highlight triangles, overlay lines/points).
+    // QtViewportHost forwards to overlays_.X(); the web host no-ops.
     host_->encodeOverlaysInMainPass(pass, overlay_frame);
 
     wgpuRenderPassEncoderEnd(pass);
@@ -7626,8 +7653,12 @@ void ViewportCore::render() {
     int hiz_submitted_slot = -1;
     if (hiz_enabled_) hiz_submitted_slot = encodeHizResolve(enc);
 
-    // Post-main overlays (corner axis, marquee, labels) on the resolved
-    // surface. QtViewportHost forwards to overlays_.X().
+    // Corner axis gizmo on the resolved surface — shared renderer, ahead of the
+    // host's own post-main overlays so marquee / labels still stack on top.
+    axis_indicator_.encodeCornerAxis(enc, view, overlay_frame);
+
+    // Remaining post-main overlays (marquee, labels) on the resolved surface.
+    // QtViewportHost forwards to overlays_.X(); the web host no-ops.
     host_->encodeOverlaysPostMain(enc, view, overlay_frame);
 
     // Optional capture: encode copy on the same command buffer.
