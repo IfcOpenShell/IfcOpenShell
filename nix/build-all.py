@@ -32,20 +32,7 @@ Example usage:
     python build-all.py IfcParse IfcOpenShell-Python
 
 
-Available arguments:
-    ``-py-313`` - build for specific Python version
-        (building for all supported Python version by default).
-    ``-occt-xxx`` - use a specific OCCT version (e.g. ``-occt-7.8.1``) instead of the default
-    ``-wasm`` - compile for wasm
-    ``-without-xxx`` - do not build dependency ``xxx`` (e.g. ``--without-swig``)
-    ``-mac-cross-compile-intel`` - cross compile for Intel Mac on Apple Silicon host
-    ``-shared`` - build shared libraries. By default will build static.
-    ``-ifcopenshell-shared`` - build only IfcOpenShell's own libraries as shared
-        (dependencies stay static). Redundant if ``-shared`` is also passed.
-    ``-diskcleanup`` - clean up build directories after finishing building dependencies
-    ``-build-examples`` - build IfcOpenShell examples
-    ``-lto`` - enable link-time optimization (adds ``-flto`` to compiler flags)
-    ``-v`` - enable verbose logs
+Run with --help to see available arguments.
 
 
 Used environment variables:
@@ -118,6 +105,9 @@ Used environment variables:
 
 """
 
+from __future__ import annotations
+
+import argparse
 import glob
 import logging
 import multiprocessing
@@ -129,12 +119,13 @@ import subprocess as sp
 import sys
 import sysconfig
 import tarfile
+import textwrap
 import threading
 import time
 from collections.abc import Generator, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, NamedTuple
 from urllib.request import urlretrieve
 
 from typing_extensions import assert_never
@@ -202,10 +193,134 @@ strip = "strip"
 xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
 brew = "brew"
 
-explicit_targets = [s for s in sys.argv[1:] if not s.startswith("-")]
+
+class Args(NamedTuple):
+    explicit_targets: list[str]
+    build_examples: bool
+    diskcleanup: bool
+    lto: bool
+    verbose: bool
+    shared: bool
+    ifcopenshell_shared: bool
+    mac_cross_compile_intel: bool
+    wasm: bool
+
+
+class DynamicArgs(NamedTuple):
+    without: set[str]
+    py_versions: set[str]
+    occt_version: str | None
+
+    @classmethod
+    def from_unknown_flags(cls, unknown_flags: list[str], arg_parser: argparse.ArgumentParser) -> DynamicArgs:
+        flags = set(s.lstrip("-") for s in unknown_flags if s.startswith("-"))
+
+        without: set[str] = set()
+        py_versions: set[str] = set()
+        occt_versions: set[str] = set()
+        leftover: set[str] = set()
+
+        for f in flags:
+            if f.startswith("without-"):
+                without.add(f.removeprefix("without-").lower())
+            elif f.startswith("py-"):
+                py_versions.add(f.removeprefix("py-"))
+            elif f.startswith("occt-"):
+                occt_versions.add(f.removeprefix("occt-"))
+            else:
+                leftover.add(f)
+
+        if leftover:
+            arg_parser.error(f"unrecognized arguments: {', '.join('-' + f for f in sorted(leftover))}")
+        if len(occt_versions) > 1:
+            arg_parser.error(f"more than one OCCT version provided: {', '.join(sorted(occt_versions))}")
+
+        occt_version = next(iter(occt_versions), None)
+        return cls(without=without, py_versions=py_versions, occt_version=occt_version)
+
+
+def parse_args() -> tuple[Args, DynamicArgs]:
+    arg_parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=textwrap.dedent("""\
+            Additional dynamic -flags (not declared above):
+                -py-313               build for specific Python version
+                                      (building for all supported Python versions by default)
+                -occt-xxx             use a specific OCCT version (e.g. -occt-7.8.1) instead of the default
+                -without-xxx          do not build dependency `xxx` (e.g. --without-swig)"""),
+    )
+    arg_parser.add_argument("explicit_targets", nargs="*", help="Targets provided by CLI.")
+    arg_parser.add_argument(
+        "--build-examples",
+        action="store_true",
+        default=False,
+        help="Build IfcOpenShell examples.",
+    )
+    arg_parser.add_argument(
+        "-diskcleanup",
+        "--diskcleanup",
+        action="store_true",
+        default=False,
+        help="Clean up build directories after finishing building dependencies.",
+    )
+    arg_parser.add_argument(
+        "-lto",
+        "--lto",
+        action="store_true",
+        default=False,
+        help="Enable link-time optimization (adds -flto to compiler flags).",
+    )
+    arg_parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=False,
+        help="Enable verbose logs.",
+    )
+    arg_parser.add_argument(
+        "-shared",
+        "--shared",
+        action="store_true",
+        default=False,
+        help="Build shared libraries. By default will build static.",
+    )
+    arg_parser.add_argument(
+        "-ifcopenshell-shared",
+        "--ifcopenshell-shared",
+        action="store_true",
+        default=False,
+        help="Build only IfcOpenShell's own libraries as shared (dependencies stay static). "
+        "Redundant if -shared is also passed.",
+    )
+    arg_parser.add_argument(
+        "-mac-cross-compile-intel",
+        "--mac-cross-compile-intel",
+        action="store_true",
+        default=False,
+        help="Cross compile for Intel Mac on Apple Silicon host.",
+    )
+    arg_parser.add_argument("-wasm", "--wasm", action="store_true", default=False, help="Compile for wasm.")
+    namespace, unknown_flags = arg_parser.parse_known_args()
+    args = Args(
+        explicit_targets=namespace.explicit_targets,
+        build_examples=namespace.build_examples,
+        diskcleanup=namespace.diskcleanup,
+        lto=namespace.lto,
+        verbose=namespace.verbose,
+        shared=namespace.shared,
+        ifcopenshell_shared=namespace.ifcopenshell_shared,
+        mac_cross_compile_intel=namespace.mac_cross_compile_intel,
+        wasm=namespace.wasm,
+    )
+
+    dynamic_args = DynamicArgs.from_unknown_flags(unknown_flags, arg_parser)
+    return args, dynamic_args
+
+
+ARGS, DYNAMIC_ARGS = parse_args()
+
+explicit_targets: set[str] = set(ARGS.explicit_targets)
 """Targets provided by CLI."""
-flags = set(s.lstrip("-") for s in sys.argv[1:] if s.startswith("-"))
-"""CLI flags."""
 
 # Helper function for coloured printing
 
@@ -224,17 +339,11 @@ def cecho(message, color=NO_COLOR):
     logger.info(f"{color}{message}\033[0m")
 
 
-# Flags.
-BUILD_EXAMPLES = "build-examples" in flags
-DISK_CLEANUP = "diskcleanup" in flags
-LTO = "lto" in flags
-VERBOSE = "v" in flags
-
 APPLE = platform.system() == "Darwin"
-MAC_CROSS_COMPILE_INTEL = "mac-cross-compile-intel" in flags
+MAC_CROSS_COMPILE_INTEL = ARGS.mac_cross_compile_intel
 assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
 
-WASM = "wasm" in flags
+WASM = ARGS.wasm
 """Build WASM outside pyodide build environment."""
 WASM_CMAKE_IS_USING_INIT_VARS = False
 if WASM:
@@ -380,12 +489,12 @@ dependency_tree: dict[str, tuple[str, ...]] = {
 def gather_dependencies(dep: str) -> Generator[str]:
     yield dep
     for d in dependency_tree[dep]:
-        if f"without-{d.lower()}" not in flags:
+        if d.lower() not in DYNAMIC_ARGS.without:
             for x in gather_dependencies(d):
                 yield x
 
 
-if VERBOSE:
+if ARGS.verbose:
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     ch.setFormatter(formatter)
@@ -406,9 +515,9 @@ else:
     MAC_CROSS_COMPILE_INTEL_AUTOCONF_HOST_ARGS = []
 
 OFF_ON = ["OFF", "ON"]
-BUILD_STATIC = "shared" not in flags
+BUILD_STATIC = not ARGS.shared
 """Whether dependencies are built static."""
-IFCOPENSHELL_STATIC = BUILD_STATIC and "ifcopenshell-shared" not in flags
+IFCOPENSHELL_STATIC = BUILD_STATIC and not ARGS.ifcopenshell_shared
 """Whether IfcOpenShell's own libraries are built static."""
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
@@ -417,18 +526,18 @@ LINK_TYPE_UCFIRST = LINK_TYPE.capitalize()
 LIBRARY_EXT = "a" if BUILD_STATIC else "so"
 PIC = "-fPIC" if BUILD_STATIC else ""
 
-if any(f.startswith("py-") for f in flags):
-    PYTHON_VERSIONS = [pyv for pyv in PYTHON_VERSIONS if f"py-{''.join(pyv.split('.')[:2])}" in flags]
+if DYNAMIC_ARGS.py_versions:
+    PYTHON_VERSIONS = [pyv for pyv in PYTHON_VERSIONS if "".join(pyv.split(".")[:2]) in DYNAMIC_ARGS.py_versions]
 
-if any(f.startswith("occt-") for f in flags):
-    OCCT_VERSION = next(f.split("-", 1)[1] for f in flags if f.startswith("occt-"))
+if DYNAMIC_ARGS.occt_version is not None:
+    OCCT_VERSION = DYNAMIC_ARGS.occt_version
 
 if explicit_targets:
     targets = {dep for target in explicit_targets for dep in gather_dependencies(target)}
 else:
     targets = set(dependency_tree.keys())
 
-targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
+targets = set(t for t in targets if t.lower() not in DYNAMIC_ARGS.without)
 if not explicit_targets and not BUILD_BONSAIVIEWER:
     targets.difference_update({"BonsaiViewer", "qt6"})
 if BUILD_BONSAIVIEWER:
@@ -821,7 +930,7 @@ def build_dependency(
         )
         logger.info(f"\rInstalled {name}     \n")
 
-    if DISK_CLEANUP:
+    if ARGS.diskcleanup:
         shutil.rmtree(build_dir, ignore_errors=True)
 
 
@@ -948,7 +1057,7 @@ else:
         CFLAGS = CFLAGS_MINIMAL
     LDFLAGS = f"{LDFLAGS} {ADDITIONAL_ARGS_STR}"
 
-if LTO:
+if ARGS.lto:
     for f in compiler_flags:
         locals()[f] += f" -flto={IFCOS_NUM_BUILD_PROCS}"
 
@@ -1441,7 +1550,7 @@ os.makedirs(ifcos_build_dir, exist_ok=True)
 
 cmake_args = [
     "-DUSE_MMAP=OFF",
-    f"-DBUILD_EXAMPLES={OFF_ON[BUILD_EXAMPLES]}",
+    f"-DBUILD_EXAMPLES={OFF_ON[ARGS.build_examples]}",
     "-DBUILD_SHARED_LIBS=" + OFF_ON[not IFCOPENSHELL_STATIC],
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
