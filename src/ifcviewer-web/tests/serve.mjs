@@ -31,6 +31,12 @@ http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://localhost:${PORT}`);
     let p = decodeURIComponent(url.pathname);
+    // ?delay=<ms> stalls every response for this URL, HEAD and Range alike.
+    // Load order across federated models is decided by whichever model's
+    // async read chain finishes first, so a test that wants a specific
+    // interleaving has to be able to make one source slower than another.
+    const delay = Number(url.searchParams.get('delay') || 0);
+    if (delay > 0) await new Promise((r) => setTimeout(r, delay));
     if (p === '/') p = '/IfcViewerWeb.html';
     const inRoot = path.join(ROOT, p);
     const inSrc  = path.join(SRC, p);

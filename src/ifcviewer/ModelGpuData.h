@@ -319,7 +319,9 @@ struct ModelGpuData {
     // (Module.__ifcvSources[id] = a picked File or a remote URL) this model's
     // chunk + element metadata reads pull from. Lets several federated models stream
     // from different files at once, mirroring the desktop per-model path.
-    int         web_source_id = 0;
+    // -1 when the model came from somewhere else (a path read on desktop, the
+    // embedded sample) — source id 0 is a real source, so it can't mean "none".
+    int         web_source_id = -1;
 
     // v15 element metadata (web, on-demand). The IFC element metadata
     // (elements + string_table — names/GUIDs, for UI/picking, never

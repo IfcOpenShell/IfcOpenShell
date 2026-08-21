@@ -359,7 +359,7 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
                 if (id != 0) {
                     app->core.logSelectedObjectGuidWeb(id);
                 } else if (!add && !remove) {
-                    EM_ASM({ if (Module.__ifcvOnSelect) Module.__ifcvOnSelect(0, '', -1); });
+                    EM_ASM({ if (Module.__ifcvOnSelect) Module.__ifcvOnSelect(0, '', -1, -1); });
                 }
                 app->host.requestFrame();
             });
@@ -835,6 +835,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_request_objects_c(int token) {
             first = false;
             json += "{\"objectId\":" + std::to_string(e.object_id)
                   + ",\"model\":"    + std::to_string(e.model_index)
+                  + ",\"sourceId\":" + std::to_string(e.source_id)
                   + ",\"guid\":"     + jsonString(e.guid)
                   + ",\"name\":"     + jsonString(e.name)
                   + ",\"type\":"     + jsonString(e.type) + '}';

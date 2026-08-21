@@ -544,8 +544,10 @@ public:
 
     // Per-model progress for a federation loading UI. count() is how many
     // models have metadata (are in the scene); progress(idx,…) gives the
-    // idx-th model's resident/total chunks, ordered by session_model_id (= load order)
-    // so each model keeps a stable UI slot as it streams.
+    // idx-th model's resident/total chunks, ordered by session_model_id — which
+    // is minted when a load is REQUESTED, so this is the order the host asked
+    // for its models, not the order their reads finished. Each model keeps a
+    // stable UI slot as it streams.
     int  streamingModelCount() const;
     void streamingModelProgress(int idx, int& resident_chunks,
                                 int& total_chunks) const;
@@ -556,11 +558,17 @@ public:
     int modelLoadIndex(std::uint32_t session_model_id) const;
 
     // One row of the element table: the IFC identity behind a rendered
-    // object_id. `model_index` is the load-order slot (modelLoadIndex), so a
-    // host UI can attribute an object to the file it came from.
+    // object_id, plus which model it came from, said two ways.
+    //
+    // `model_index` is the load-order slot (modelLoadIndex) — a POSITION, so it
+    // shifts if an earlier model fails to load. `source_id` is the JS byte-source
+    // the model was added from (-1 when it came from somewhere else), which the
+    // host minted itself and which never moves. Prefer the latter for
+    // attributing an object to a file; the index is for UI slots.
     struct ElementRef {
         std::uint32_t object_id   = 0;
         int           model_index = -1;
+        int           source_id   = -1;
         std::string   guid;
         std::string   name;
         std::string   type;
@@ -1044,9 +1052,10 @@ public:
 private:
     bool createPool();
 
-    // The scene's models in load order (ascending session_model_id). Every
-    // per-model API indexes against this, so a model keeps a stable UI slot
-    // instead of hopping with unordered_map iteration order.
+    // The scene's models in load order (ascending session_model_id, minted at
+    // request time — see loadSidecarMetadataWeb). Every per-model API indexes
+    // against this, so a model keeps a stable UI slot instead of hopping with
+    // unordered_map iteration order.
     std::vector<std::uint32_t> modelIdsInLoadOrder() const;
 
 public:

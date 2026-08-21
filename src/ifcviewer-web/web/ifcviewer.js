@@ -11,7 +11,7 @@
 //     await viewer.addFile(file, { replace: true });
 //     await viewer.addUrl('/model.ifcview');    // appends (federation)
 //
-//     const objects = await viewer.getObjects();  // [{objectId, guid, name, type, model}]
+//     const objects = await viewer.getObjects();  // [{objectId, guid, name, type, model, sourceId}]
 //     viewer.setSelection(['3vB2YO$MX4xv5uCqZZG05x']);
 //     viewer.setColor(objects.filter(o => o.type === 'IfcWall'), '#ff8800');
 //     viewer.setCamera({ yaw: 45, pitch: 30 });
@@ -20,6 +20,14 @@
 //
 // The canvas element MUST have id="viewer-canvas" — the wasm side hard-codes
 // that selector for its WebGPU surface and input handlers.
+//
+// Model identity. addFile/addUrl return a source id: the handle for that model,
+// minted the moment it is registered and stable for the session. Objects come
+// back tagged with both their `sourceId` and a `model` index (the model's slot
+// in load order). Map an object to the file it came from through the source id
+// — the index is a POSITION, so it shifts down if an earlier model fails to
+// load, and a host keying its own list off it then attributes objects to the
+// wrong file.
 //
 // Object identity. Everything the scripting API takes or returns is keyed by
 // `objectId`: a u32 the renderer assigns, unique across the federation but only
@@ -197,15 +205,17 @@
     // a remote URL (HTTP Range). load_sidecar_from_source_c(sid) streams one.
     Module.__ifcvSources = Module.__ifcvSources || [];
 
-    // The wasm calls this on every single-object pick; (0, '', -1) means the
+    // The wasm calls this on every single-object pick; (0, '', -1, -1) means the
     // selection was cleared. modelIndex is the picked object's model in load
-    // order (matches the modelProgress index), or -1. A marquee box-select does
-    // NOT fire this (it has no single object) — use onSelectionChange for that.
-    Module.__ifcvOnSelect = function (objectId, guid, modelIndex) {
+    // order (matches the modelProgress index) and sourceId the source it was
+    // added from, either null when unknown. A marquee box-select does NOT fire
+    // this (it has no single object) — use onSelectionChange for that.
+    Module.__ifcvOnSelect = function (objectId, guid, modelIndex, sourceId) {
       const detail = {
         objectId: objectId >>> 0,
         guid: guid || null,
         modelIndex: (typeof modelIndex === 'number' && modelIndex >= 0) ? modelIndex : null,
+        sourceId: (typeof sourceId === 'number' && sourceId >= 0) ? sourceId : null,
       };
       selectListeners.forEach(function (cb) {
         try { cb(detail); } catch (e) { console.error(e); }
@@ -279,8 +289,8 @@
 
       // ---- Events ----------------------------------------------------------
 
-      // Single-object picks (click). Fires with {objectId, guid, modelIndex}.
-      // Returns an unsubscribe function.
+      // Single-object picks (click). Fires with
+      // {objectId, guid, modelIndex, sourceId}. Returns an unsubscribe function.
       onSelect: function (cb) {
         selectListeners.push(cb);
         return function () {
@@ -421,11 +431,14 @@
 
       // ---- Objects ---------------------------------------------------------
 
-      // Every object in the scene: [{objectId, guid, name, type, model}], where
-      // `model` is the index into the load-ordered model list (same index as
-      // modelProgress). Asynchronous — the element tables are fetched lazily per
-      // model so first paint never waits on them. Resolving this is also what
-      // lets every other call accept GlobalIds; the result is cached for that.
+      // Every object in the scene:
+      // [{objectId, guid, name, type, model, sourceId}], where `model` is the
+      // index into the load-ordered model list (same index as modelProgress)
+      // and `sourceId` the source the model was added from — see the model
+      // identity note at the top of the file. Asynchronous — the element tables
+      // are fetched lazily per model so first paint never waits on them.
+      // Resolving this is also what lets every other call accept GlobalIds; the
+      // result is cached for that.
       getObjects: function () {
         const token = ++objectsToken;
         return new Promise(function (resolve) {

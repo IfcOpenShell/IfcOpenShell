@@ -3898,10 +3898,24 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
         return;
     }
 
+    // Mint the session model id HERE, synchronously, rather than at the end of
+    // the read chain below. Session ids are what orders the scene's models —
+    // modelIdsInLoadOrder sorts by them, and every per-model slot a host sees
+    // (modelProgress's index, ElementRef::model_index) is a rank in that order.
+    // Minting on completion made that rank the order the models' network reads
+    // happened to finish in, so with several federated models in flight the
+    // slots came out shuffled against the order the host added them and a pick
+    // was attributed to the wrong file. Requesting order is the order the host
+    // asked for, which is the order it can reason about. A load that fails
+    // partway simply abandons its id — the ranks compact over whatever models
+    // made it into the scene, exactly as before.
+    const std::uint32_t session_model_id = next_session_model_id_++;
+
     // Head (v16): [header 12][geom_bytes 8]. The two compressed metadata blocks
     // follow the compressed geometry at SIDECAR_HEAD_BYTES + geom_bytes.
     webReadRangesAsync(source_id, 0, {{0, SIDECAR_HEAD_BYTES}},
-        [this, fsize, source_id, source_label, on_loaded = std::move(on_loaded)]
+        [this, fsize, source_id, source_label, session_model_id,
+         on_loaded = std::move(on_loaded)]
         (bool ok, std::vector<std::uint8_t>&& head) mutable {
             std::uint64_t geom_bytes = 0;
             if (!ok || !parseSidecarHead(head.data(), head.size(), geom_bytes)) {
@@ -3915,7 +3929,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
             }
             // Geometry metadata block on disk: [comp u64][raw u64][zstd frame].
             webReadRangesAsync(source_id, 0, {{meta_off, 16}},
-                [this, fsize, meta_off, source_id, source_label,
+                [this, fsize, meta_off, source_id, source_label, session_model_id,
                  on_loaded = std::move(on_loaded)]
                 (bool ok2, std::vector<std::uint8_t>&& h) {
                     if (!ok2 || h.size() < 16) {
@@ -3934,7 +3948,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                         {{geometry_metadata_off, geometry_metadata_comp}},
                         [this, geometry_metadata_off, geometry_metadata_comp,
                          geometry_metadata_raw, source_id, source_label,
-                         on_loaded = std::move(on_loaded)]
+                         session_model_id, on_loaded = std::move(on_loaded)]
                         (bool ok3, std::vector<std::uint8_t>&& cz) {
                             if (!ok3) {
                                 Log::warn() << "loadSidecarMetadataWeb: geometry metadata read failed";
@@ -3971,7 +3985,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                 geometry_metadata_off + geometry_metadata_comp;
                             webReadRangesAsync(source_id, 0, {{element_metadata_hdr_off, 16}},
                                 [this, sc = std::move(sc), element_metadata_hdr_off,
-                                 source_id, source_label,
+                                 source_id, source_label, session_model_id,
                                  on_loaded = std::move(on_loaded)]
                                 (bool ok4, std::vector<std::uint8_t>&& dh) mutable {
                                     if (ok4 && dh.size() >= 16) {
@@ -3989,7 +4003,6 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
 
                                     const std::size_t n_meshes    = sc.meta.meshes.size();
                                     const std::size_t n_instances = sc.meta.instances.size();
-                                    const std::uint32_t session_model_id = next_session_model_id_++;
                                     applyCachedModel(session_model_id, std::move(sc));
                                     // Mark web-streamed + set the source IMMEDIATELY — the
                                     // model now has non-resident chunks and the RAF loop's
@@ -4091,11 +4104,14 @@ void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
         }
         Log::info() << "pick: object " << object_id << " GUID " << e.guid;
         // Surface the selection to JS so host pages can react (e.g. show the
-        // GUID + model). Fires Module.__ifcvOnSelect(object_id, guid, modelIndex);
-        // model_index is the load-order slot, matching the JS model list.
+        // GUID + model). Fires
+        // Module.__ifcvOnSelect(object_id, guid, modelIndex, sourceId).
+        // modelIndex is the load-order slot; sourceId is the byte-source the
+        // host added the model from, which is the one that cannot shift.
         EM_ASM({
-            if (Module.__ifcvOnSelect) Module.__ifcvOnSelect($0, UTF8ToString($1), $2);
-        }, object_id, e.guid.c_str(), e.model_index);
+            if (Module.__ifcvOnSelect)
+                Module.__ifcvOnSelect($0, UTF8ToString($1), $2, $3);
+        }, object_id, e.guid.c_str(), e.model_index, e.source_id);
     });
 }
 #endif  // __EMSCRIPTEN__
@@ -4157,6 +4173,7 @@ ViewportCore::ElementRef makeElementRef(const ModelGpuData& m, int model_index,
     ViewportCore::ElementRef ref;
     ref.object_id   = e.object_id;
     ref.model_index = model_index;
+    ref.source_id   = m.web_source_id;
     ref.guid        = str(e.guid_offset, e.guid_length);
     ref.name        = str(e.name_offset, e.name_length);
     ref.type        = str(e.type_offset, e.type_length);
