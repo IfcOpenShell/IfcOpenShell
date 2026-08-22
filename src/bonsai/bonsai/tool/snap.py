@@ -401,12 +401,15 @@ class Snap(bonsai.core.tool.Snap):
             for snap in snap_faces:
                 if snap["object"] == closest_obj:
                     detected_snaps.append(snap)
-                    snap_points = tool.Raycast.ray_cast_by_proximity(
-                        context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]]
-                    )
-                    for point in snap_points:
-                        point["group"] = "Object"
-                        detected_snaps.append(point)
+                    # Tris from cut geometry are irregular, so we don't want to use them
+                    # to create edges and vertices snaps. They are handled by wireframe snaps
+                    if not snap["is_cut"]:
+                        snap_points = tool.Raycast.ray_cast_by_proximity(
+                            context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]]
+                        )
+                        for point in snap_points:
+                            point["group"] = "Object"
+                            detected_snaps.append(point)
 
                     # Get wireframe snaps that are not occluded by face snap
                     ray_origin = tool.Raycast.get_viewport_ray_data(context, event)[0]
@@ -432,54 +435,7 @@ class Snap(bonsai.core.tool.Snap):
 
             detected_snaps.extend(wireframe_snaps)
 
-        # snap to cut geometry (e.g. in plan view)
-        if CutDecorator.installed:
-            cut_snaps = []
-
-            model_props = tool.Model.get_model_props()
-
-            for obj in [o for o in context.visible_objects if o.type == "MESH"]:
-                if not (element := tool.Ifc.get_entity(obj)):
-                    continue
-
-                if model_props.show_cut_decorator and element.id() in DecoratorData.cut_cache:
-                    verts, edges = DecoratorData.cut_cache[element.id()]
-                    if not verts or not edges:
-                        continue
-
-                    bm = bmesh.new()
-                    bverts = [bm.verts.new(pos) for pos in verts]
-                    for edge in edges:
-                        bm.edges.new([bverts[vi] for vi in edge])
-
-                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, None, None, bm)
-                    if snap_points:
-                        for p in snap_points:
-                            p["group"] = "Object"
-                            p["object"] = obj
-                            cut_snaps.append(p)
-
-                if model_props.show_cut_decorator_fill and element.id() in DecoratorData.fill_cache:
-                    bm = bmesh.new()
-                    for color, verts_and_tris in DecoratorData.fill_cache[element.id()].items():
-                        for verts, tris in verts_and_tris:
-                            bverts = [bm.verts.new(pos) for pos in verts]
-                            for tri in tris:
-                                verts = [bverts[vi] for vi in tri]
-                                if not bm.faces.get(verts):
-                                    bm.faces.new(verts)
-
-                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, None, None, bm)
-                    if snap_points:
-                        for p in snap_points:
-                            p["group"] = "Object"
-                            p["object"] = obj
-                            cut_snaps.append(p)
-
-            if len(cut_snaps) > 0:
-                detected_snaps = cut_snaps
-
-        # Axis and Plane
+ # Axis and Plane
         if tool.Ifc.get():
             elevation = tool.Root.get_default_container_elevation()
         else:
