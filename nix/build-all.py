@@ -42,6 +42,13 @@ Available arguments:
     ``-shared`` - build shared libraries. By default will build static.
     ``-ifcopenshell-shared`` - build only IfcOpenShell's own libraries as shared
         (dependencies stay static). Redundant if ``-shared`` is also passed.
+    ``-opencascade-shared`` - build OCCT as shared libraries (other dependencies stay
+        static). Redundant if ``-shared`` is also passed. Required whenever more than one
+        plug-in uses OCCT: `open_cascade_shape` instances are created by the opencascade
+        kernel plug-in and consumed by the opencascade tree plug-ins, which move a
+        `TopoDS_Shape` out of them and free them. A private static OCCT per plug-in gives
+        each one its own `Standard_Type` registry and allocator, so those shapes are read
+        and released by a different OCCT instance than the one that made them.
     ``-diskcleanup`` - clean up build directories after finishing building dependencies
     ``-build-examples`` - build IfcOpenShell examples
     ``-lto`` - enable link-time optimization (adds ``-flto`` to compiler flags)
@@ -410,6 +417,8 @@ BUILD_STATIC = "shared" not in flags
 """Whether dependencies are built static."""
 IFCOPENSHELL_STATIC = BUILD_STATIC and "ifcopenshell-shared" not in flags
 """Whether IfcOpenShell's own libraries are built static."""
+OCCT_STATIC = BUILD_STATIC and "opencascade-shared" not in flags
+"""Whether OCCT is built static. See ``-opencascade-shared``."""
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
 LINK_TYPE = "static" if BUILD_STATIC else "shared"
@@ -422,6 +431,32 @@ if any(f.startswith("py-") for f in flags):
 
 if any(f.startswith("occt-") for f in flags):
     OCCT_VERSION = next(f.split("-", 1)[1] for f in flags if f.startswith("occt-"))
+
+# Static and shared OCCT installs are not interchangeable, so they must not share
+# a directory: `build_dependency` skips a dependency whose install dir already
+# exists, and cache_dependencies.py keys its tarballs purely on that directory
+# name. Without the suffix a cached static OCCT silently satisfies a shared build
+# (and vice versa) and the requested link type is never applied.
+OCCT_DIR_NAME = f"occt-{OCCT_VERSION}" + ("" if OCCT_STATIC else "-shared")
+
+if not OCCT_STATIC:
+    # A shared OCCT has to be resolvable at run time by everything this script
+    # executes out of the install tree -- most visibly the post-build
+    # `import ifcopenshell` sanity check, which otherwise dies with
+    # "libTKernel.so.7.8: cannot open shared object file". Nothing points there:
+    # IfcOpenShell's libraries get INSTALL_RPATH=$ORIGIN (see SET_INSTALL_SELF_RPATH
+    # in cmake/utilities.cmake) and OCCT lives in its own dependency prefix.
+    #
+    # This is a build-time concern only. The shipped packages do not rely on it:
+    # the workflows stage libTK*.so* next to the payload and patchelf an $ORIGIN
+    # RUNPATH onto every staged library.
+    _occt_lib_dirs = [
+        os.path.join(DEPS_DIR, "install", OCCT_DIR_NAME, libdir)
+        for libdir in ("lib", "lib64")
+    ]
+    os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
+        [*_occt_lib_dirs, os.environ.get("LD_LIBRARY_PATH", "")]
+    ).rstrip(os.pathsep)
 
 if explicit_targets:
     targets = {dep for target in explicit_targets for dep in gather_dependencies(target)}
@@ -1045,12 +1080,34 @@ if USE_OCCT and "occ" in targets:
     if WASM:
         patches.append("./patches/occt/no_em_js.patch")
 
+    if not OCCT_STATIC:
+        # BUILD_STATIC drives three things at once: the dependency link type,
+        # -fvisibility=hidden, and BUILD_SHARED_LIBS. Building only OCCT shared
+        # means overriding all three for it, not just the link type.
+        #
+        # Visibility matters most. OCCT's Standard_EXPORT expands to nothing on
+        # Unix (Standard_Macro.hxx), so it relies on default visibility to export
+        # its API. Built shared under -fvisibility=hidden it exports almost
+        # nothing and its libraries fail to resolve against each other -- e.g.
+        # libTKMath.so cannot find NCollection_BaseAllocator::CommonBaseAllocator
+        # in libTKernel.so. Static archives are immune, which is why this only
+        # appears once OCCT goes shared. CXXFLAGS_MINIMAL is the pre-visibility
+        # flag set, so this restores default visibility without dropping -O3/-fPIC.
+        #
+        # These come after the generic flags in the cmake command line, and the
+        # last -D for a given variable wins.
+        occt_args.append(f"-DCMAKE_CXX_FLAGS={CXXFLAGS_MINIMAL}")
+        occt_args.append(f"-DCMAKE_C_FLAGS={CFLAGS_MINIMAL}")
+        # Suppresses the generic -DBUILD_SHARED_LIBS=OFF that BUILD_STATIC would
+        # otherwise add, which contradicts BUILD_LIBRARY_TYPE=Shared.
+        occt_args.append("-DBUILD_SHARED_LIBS=ON")
+
     build_dependency(
-        name=f"occt-{OCCT_VERSION}",
+        name=OCCT_DIR_NAME,
         mode="cmake",
         build_tool_args=[
-            f"-DINSTALL_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}",
-            f"-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}",
+            f"-DINSTALL_DIR={DEPS_DIR}/install/{OCCT_DIR_NAME}",
+            f"-DBUILD_LIBRARY_TYPE={'Static' if OCCT_STATIC else 'Shared'}",
             f"-DBUILD_MODULE_Draw=0",
             f"-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             # Disable xlib explicitly, as it tries to use it on Desktop Ubuntu, adding unnecessary dependency.
@@ -1487,7 +1544,7 @@ if "cgal" in targets:
     cmake_args.append(f"-DCGAL_WITH_GMPXX=Off")
 
 if "occ" in targets and USE_OCCT:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/occt-{OCCT_VERSION}")
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/{OCCT_DIR_NAME}")
 
 elif "occ" in targets:
     # We don't support find_package for OCE.
