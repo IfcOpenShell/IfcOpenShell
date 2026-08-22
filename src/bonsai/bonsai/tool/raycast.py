@@ -1071,6 +1071,17 @@ class Raycast(bonsai.core.tool.Raycast):
         return cls.get_gpu_detection_snaps(context, event, objs_to_raycast)
 
     @classmethod
+    def clear_cache(cls):
+        global _wireframe_batch_cache, _wireframe_vert_fmt, _triangle_batch_cache, _triangle_vert_fmt, _encoding_shader, _offscreen, _obj_list
+        _wireframe_batch_cache = {}
+        _wireframe_vert_fmt= None
+        _triangle_batch_cache= {}
+        _triangle_vert_fmt= None
+        _encoding_shader= None
+        _offscreen= None
+        _obj_list= []
+        
+    @classmethod
     def ray_cast_by_proximity(
         cls,
         context: bpy.types.Context,
