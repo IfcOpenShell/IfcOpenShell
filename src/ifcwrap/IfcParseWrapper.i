@@ -962,6 +962,12 @@ private:
 };
 
 %include "../ifcparse/ifc_parse_api.h"
+
+namespace ifcopenshell {
+std::string encode_spf_string(const std::string& value);
+std::string decode_spf_string(const std::string& value);
+}
+
 %include "../ifcparse/spf_header.h"
 
 %pythoncode %{

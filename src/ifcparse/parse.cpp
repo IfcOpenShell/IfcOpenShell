@@ -550,6 +550,26 @@ std::string token::to_string() {
     return result;
 }
 
+std::string ifcopenshell::encode_spf_string(const std::string& value) {
+    return character_encoder(value);
+}
+
+std::string ifcopenshell::decode_spf_string(const std::string& value) {
+    std::string wrapped;
+    auto value_p = &value;
+    if (!value.empty() && value.front() != '\'') {
+        wrapped = "'" + value + "'";
+        value_p = &wrapped;
+    }
+    file_reader<full_buffer_impl> reader(*value_p, caller_fed_tag{});
+    spf_lexer<file_reader<full_buffer_impl>> lexer(&reader);
+    token decoded = lexer.next();
+    if (!decoded.is_string()) {
+        throw exception("Expected an SPF string");
+    }
+    return decoded.as_string();
+}
+
 namespace {
 
 template<typename Variant, typename T>

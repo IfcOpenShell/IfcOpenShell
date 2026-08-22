@@ -47,6 +47,10 @@ extern IFC_PARSE_API const char *IFCOPENSHELL_VERSION;
 
 namespace ifcopenshell {
 
+IFC_PARSE_API std::string encode_spf_string(const std::string& value);
+
+IFC_PARSE_API std::string decode_spf_string(const std::string& value);
+
 /// A stream of tokens to be read from a file_reader.
 template <typename Reader>
 class IFC_PARSE_API spf_lexer {

@@ -95,6 +95,8 @@ from .sql import sqlite, sqlite_entity
 
 rocksdb_lazy_instance = file_module.rocksdb_lazy_instance
 
+decode_spf_string = ifcopenshell_wrapper.decode_spf_string
+encode_spf_string = ifcopenshell_wrapper.encode_spf_string
 get_log = ifcopenshell_wrapper.get_log
 logger = ifcopenshell_wrapper.logger if hasattr(ifcopenshell_wrapper, "logger") else None
 if hasattr(ifcopenshell_wrapper, "logger_or_root"):
@@ -114,6 +116,8 @@ def optional_logger_args(logger: ifcopenshell_wrapper.logger | None) -> tuple[lo
 # (it's a requirement for a typed library)
 __all__ = [
     "clear_plugin_search_paths",
+    "decode_spf_string",
+    "encode_spf_string",
     "entity_instance",
     "file",
     "get_plugin_search_paths",

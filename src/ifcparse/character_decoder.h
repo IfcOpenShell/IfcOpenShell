@@ -67,10 +67,6 @@ class IFC_PARSE_API character_decoder {
     std::string get(size_t& offset);
 };
 
-} // namespace ifcopenshell
-
-namespace ifcopenshell {
-
 class IFC_PARSE_API character_encoder {
   private:
     std::u32string str_;
@@ -80,6 +76,6 @@ class IFC_PARSE_API character_encoder {
     operator std::string();
 };
 
-} // namespace IfcWrite
+} // namespace ifcopenshell
 
 #endif
