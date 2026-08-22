@@ -39,6 +39,9 @@ from mathutils import Matrix, Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import DecoratorData
+from bonsai.bim.module.drawing.decoration import CutDecorator
+
 
 _wireframe_batch_cache: dict[int, dict[str, tuple[GPUBatch, int, list]]] = {}
 _wireframe_vert_fmt: GPUVertFormat | None = None
@@ -152,16 +155,47 @@ def _get_solid_triangles(obj: bpy.types.Object):
     eval_obj.to_mesh_clear()
     return tris
 
+def _get_cut_object_solid_triangles(obj: bpy.types.Object) -> list[tuple[tuple, tuple, tuple]]:
+    """
+    Gets all the triangles from cut decorator fill, in local space
+
+    Returns
+    tris_co : list[tuple[tuple, tuple, tuple]]
+        list of all triangle vertices
+    """
+    model_props = tool.Model.get_model_props()
+    if not (element := tool.Ifc.get_entity(obj)):
+        return {}, {}
+    if model_props.show_cut_decorator_fill and element.id() in DecoratorData.fill_cache:
+        tris_co: list[tuple[tuple, tuple, tuple]] = []
+        for color, verts_and_tris in DecoratorData.fill_cache[element.id()].items():
+            for verts, tris in verts_and_tris:
+                verts = [tuple(obj.matrix_world.inverted() @ Vector(v)) for v in verts]  # local space
+                for tri in tris:
+                    new_verts = [verts[vi] for vi in tri]
+                    tris_co.append(tuple(new_verts))
+
+    return tris_co
+
 
 def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int] | None:
     """Build (or fetch from cache) a TRIANGLES batch for *obj*.
 
-    Every face triangle is rendered with a zeroed vertex slot since the
+    When in drawing view, creates the triangles from cut decorator fill.
+    In model view, creates the triangles from object face..
+    Every triangle is rendered with a zeroed vertex slot since the
     GPU only encodes the object index; the face is found later via ray_cast.
 
-    Returns ``(batch, n_tris)`` or None when the object has no faces.
+    Returns
+    batch : GPUBatch | None when the object has no faces.
+        All triangles batch from the object
+    is_cut_face : bool
+        This is used later in snap. Indicates if bash comes from cut geometry. Tris from cut geometry are irregular, so we don't want to use them to create edges and vertices snaps. They are handled by wireframe snaps
     """
+
     global _triangle_vert_fmt, _triangle_batch_cache
+
+    is_cut_face = False
 
     if _triangle_vert_fmt is None:
         _triangle_vert_fmt = _create_vert_format()
@@ -170,10 +204,22 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int] | No
     if cache_key in _triangle_batch_cache:
         return _triangle_batch_cache[cache_key]
 
-    tris = _get_solid_triangles(obj)
+    tris = []
+    if CutDecorator.installed:
+        print(obj)
+        tris = _get_cut_object_solid_triangles(obj)
+        print(tris)
+        if tris:
+            is_cut_face = True
+        if not tris and (hasattr(obj.data, "polygons") and len(obj.data.polygons) > 0):
+            tris = _get_solid_triangles(obj)
+            is_cut_face = False
+
+    else:
+        tris = _get_solid_triangles(obj)
     n_tris = len(tris)
     if n_tris == 0:
-        return None
+        return None, is_cut_face
 
     # Flatten: 3 verts per tri; the slot is unused for solid faces
     coords: list[tuple[float, float, float]] = []
@@ -191,24 +237,24 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int] | No
     ibo = GPUIndexBuf(type="TRIS", seq=[(i * 3, i * 3 + 1, i * 3 + 2) for i in range(n_tris)])
     batch = GPUBatch(type="TRIS", buf=vbo, elem=ibo)
 
-    result = (batch, n_tris)
-    _triangle_batch_cache[cache_key] = result
-    return result
+    _triangle_batch_cache[cache_key] = (batch, is_cut_face)
+    return batch, is_cut_face
 
 
 def _get_boundary_features(obj: bpy.types.Object):
-    """Return ``(all_vert_coords, edge_pairs)`` for *obj*.
-
+    """
     Uses bmesh on the **evaluated** mesh so that modifiers are respected.
     Gets only edges that are not in a face and vertices that are not on and edge
 
-    all_vert_coords : list[tuple[float, float, float]]
+    Returns
+    verts : list[tuple[float, float, float]]
         Positions of unique vertices from boundary edges plus isolated
         vertices (vertices with **no** connected edges), in local space.
     edge_pairs : list[tuple[tuple[float,float,float], tuple[float,float,float]]]
         Pairs of vertex positions for edges that have **no** linked faces
         (boundary / wire edges), in local space.
     """
+
     if obj.type == "EMPTY":
         return [(0.0, 0.0, 0.0)], []
 
@@ -227,7 +273,7 @@ def _get_boundary_features(obj: bpy.types.Object):
 
     # Collect unique vertices: isolated vertices + endpoints of boundary edges
     seen_verts: set[tuple[float, float, float]] = set()
-    all_vert_coords: list[tuple[float, float, float]] = []
+    verts: list[tuple[float, float, float]] = []
 
     # Vertices that are not connected to any edge
     for v in bm.verts:
@@ -235,7 +281,7 @@ def _get_boundary_features(obj: bpy.types.Object):
             coord = (v.co.x, v.co.y, v.co.z)
             if coord not in seen_verts:
                 seen_verts.add(coord)
-                all_vert_coords.append(coord)
+                verts.append(coord)
 
     # Edges that are not part of any face (boundary / wire)
     edge_pairs: list[tuple[tuple, tuple]] = []
@@ -253,22 +299,51 @@ def _get_boundary_features(obj: bpy.types.Object):
                 coord = (v.co.x, v.co.y, v.co.z)
                 if coord not in seen_verts:
                     seen_verts.add(coord)
-                    all_vert_coords.append(coord)
+                    verts.append(coord)
 
     bm.free()
     eval_obj.to_mesh_clear()
-    return all_vert_coords, edge_pairs
+    return verts, edge_pairs
+
+def _get_cut_objects_features(
+    obj: bpy.types.Object,
+) -> (list[tuple[float, float, float]], list[tuple[tuple[float, float, float], tuple[float, float, float]]]):
+    """Return ``(all_vert_coords, edge_pairs)`` for *obj*.
+
+    Gets vertices and edges from the cut decorator
+
+    Returns
+    verts : list[tuple[float, float, float]]
+        Positions of unique vertices from cut decorator, in local space.
+    edge_pairs : list[tuple[tuple[float,float,float], tuple[float,float,float]]]
+        Pairs of vertex positions for edges from cut decorator, in local space.
+    """
+    model_props = tool.Model.get_model_props()
+    if not (element := tool.Ifc.get_entity(obj)):
+        return {}, {}
+    if model_props.show_cut_decorator and element.id() in DecoratorData.cut_cache and (hasattr(obj.data, "polygons") and len(obj.data.polygons) > 0):
+        verts, edges = DecoratorData.cut_cache[element.id()]
+        if not verts or not edges:
+            return {}, {}
+        verts = [tuple(obj.matrix_world.inverted() @ Vector(v)) for v in verts]  # local space
+        edge_pairs = [(verts[v0], verts[v1]) for v0, v1 in edges]
+
+        return verts, edge_pairs
+    else:
+        return {}, {}
 
 
-def _ensure_wireframe_batches(obj) -> dict[str, tuple[GPUBatch, int, list]]:
+def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch, int, list]]:
     """Build (or fetch from cache) POINTS + LINES batches.
 
-    Boundary edges (no faces) and their endpoint vertices plus any
+    When in drawing view, gets edges and vertices from the cut decorator.
+    In model view, gets boundary edges (no faces) and their endpoint vertices plus any
     isolated vertices (no edges) are included.
     Returns ``{'POINTS': (batch, count, coords_list),
     'LINES': (batch, count, edge_pairs_list)}`` or an empty dict when
     there is nothing snappable.
     """
+
     global _wireframe_vert_fmt, _wireframe_batch_cache
 
     if _wireframe_vert_fmt is None:
@@ -280,7 +355,25 @@ def _ensure_wireframe_batches(obj) -> dict[str, tuple[GPUBatch, int, list]]:
     if cache_key in _wireframe_batch_cache:
         return _wireframe_batch_cache[cache_key]
 
-    all_vert_coords, edge_pairs = _get_boundary_features(obj)
+    if CutDecorator.installed:
+        all_vert_coords, edge_pairs = [], []
+        v, e = _get_cut_objects_features(obj)
+        print(e)
+        if v and e:
+            all_vert_coords, edge_pairs = v, e
+
+        if hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0:
+            v, e = _get_boundary_features(obj)
+            all_vert_coords.extend(v)
+            edge_pairs.extend(e)
+    else:
+        # avoids creating batches for solid objects
+        if hasattr(obj.data, "polygons") and len(obj.data.polygons) > 0:
+            return {}
+
+        all_vert_coords, edge_pairs = _get_boundary_features(obj)
+
+
 
     batches: dict[str, tuple[GPUBatch, int, list]] = {}
 
@@ -344,12 +437,12 @@ def _get_tris_render_ops(objs_to_raycast):
         if len(snap_obj.data.polygons) == 0:
             continue
 
-        batch, cut = _ensure_triangle_batches(snap_obj)
+        batch, is_cut_face = _ensure_triangle_batches(snap_obj)
         if batch is None:
             continue
 
         obj_index = len(_obj_list)
-        _obj_list.append(snap_obj)
+        _obj_list.append((snap_obj, is_cut_face))
         slot_base = obj_index + 1  # slot 0 = background
         render_ops.append((batch, snap_obj.matrix_world.copy(), slot_base))
     return render_ops
@@ -423,8 +516,9 @@ def _create_tris_snaps(context, event, mouse_read_rect, buffers_list, last_buf, 
     closest_dist = float("inf")
     ray_origin, _, _ = tool.Raycast.get_viewport_ray_data(context, event)
     for obj_index in hits:
-        obj = _obj_list[obj_index]
+        obj, is_cut_face = _obj_list[obj_index]
         hit_obj, hit, face_index = tool.Raycast.cast_rays_to_single_object(context, event, obj)
+        print("IS_CUT", obj, is_cut_face)
         if hit:
             snap: dict = {
                 "point": hit,
@@ -432,7 +526,7 @@ def _create_tris_snaps(context, event, mouse_read_rect, buffers_list, last_buf, 
                 "group": "Object",
                 "object": hit_obj,
                 "face_index": face_index,
-                # "is_cut": cut, # Used later in snap
+                "is_cut": is_cut_face, # Used later in snap
                 "distance": 9,  # High value so it has low priority
             }
             dist = (hit - ray_origin).length
@@ -467,10 +561,6 @@ def _get_wireframe_render_ops(objs_to_raycast):
     slot = 1  # slot 0 = background
 
     for snap_obj in objs_to_raycast:
-        # avoids creating batches for solid objects
-        if hasattr(snap_obj.data, "polygons") and len(snap_obj.data.polygons) > 0:
-            continue
-
         batches = _ensure_wireframe_batches(snap_obj)
         if not batches:
             continue
