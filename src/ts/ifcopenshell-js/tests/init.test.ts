@@ -20,14 +20,6 @@ describe('init', () => {
     await expect(shell.loadPlugin('schema', 'definitely-not-a-schema')).rejects.toBeInstanceOf(IfcOpenShellError);
   });
 
-  it('wraps default asset-resolution failures with the public error type', async () => {
-    await expect(init({ wasmRoot: '/definitely-missing-ifcopenshell-wasm-root' })).rejects.toMatchObject({
-      name: 'IfcOpenShellError',
-      message: 'Failed to resolve packaged WASM assets',
-      cause: expect.any(Error),
-    });
-  });
-
   it('creates typed cancellation errors', () => {
     const error = abortError();
     expect(error).toMatchObject({

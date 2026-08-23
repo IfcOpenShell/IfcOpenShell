@@ -17,5 +17,5 @@ export const wasmAvailable = wasmDir !== null
 export const describeOrSkip = wasmAvailable ? describe : describe.skip;
 
 export async function createInstance(): Promise<IfcOpenShell> {
-  return init({ wasmRoot: wasmDir! });
+  return init();
 }

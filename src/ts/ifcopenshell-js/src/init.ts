@@ -46,7 +46,7 @@ export async function init(options: InitOptions = {}): Promise<IfcOpenShell> {
     assets = options.wasmAssets;
   } else {
     try {
-      assets = await resolveRuntime(options.wasmRoot);
+      assets = await resolveRuntime();
     } catch (error) {
       throw new IfcOpenShellError('Failed to resolve packaged WASM assets', error);
     }
@@ -83,9 +83,9 @@ export async function init(options: InitOptions = {}): Promise<IfcOpenShell> {
   return Object.freeze(shell);
 }
 
-async function resolveRuntime(wasmRoot?: string): Promise<WasmAssets> {
+async function resolveRuntime(): Promise<WasmAssets> {
   const wasm = await import('@ifcopenshell-js/wasm');
-  return await wasm.resolveWasmAssets(wasmRoot) as WasmAssets;
+  return await wasm.resolveWasmAssets() as WasmAssets;
 }
 
 async function resolveApiFactory(assets: WasmAssets): Promise<IfcOpenshellApiFactory> {
@@ -117,7 +117,7 @@ function validateAssets(assets: WasmAssets | undefined): asserts assets is WasmA
     throw new IfcOpenShellError('wasmAssets.pluginBaseUrl must point to the plugin directory');
   }
   if (!assets.manifest || typeof assets.manifest !== 'object') {
-    throw new IfcOpenShellError('wasmAssets.manifest must contain ifcopenshell_plugins.json');
+    throw new IfcOpenShellError('wasmAssets.manifest must be a plugin manifest object');
   }
   if (
     typeof assets.createIfcOpenshellModule !== 'function' &&
