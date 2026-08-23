@@ -21,27 +21,36 @@
 
 #include <algorithm>
 
-void GpuBudget::configure(std::uint64_t device_free_bytes,
-                          std::uint64_t reserve_bytes,
-                          std::uint64_t hard_cap_bytes) {
-    bounded_ = false;
-    budget_  = 0;
-    if (device_free_bytes > 0) {
-        bounded_ = true;
-        budget_  = device_free_bytes > reserve_bytes
-                 ? device_free_bytes - reserve_bytes
-                 : 0;
-    }
-    if (hard_cap_bytes > 0) {
-        budget_  = bounded_ ? std::min(budget_, hard_cap_bytes) : hard_cap_bytes;
-        bounded_ = true;
-    }
-    if (bounded_) budget_ = std::max(budget_, kMinCacheBudgetBytes);
+void GpuBudget::bound(std::uint64_t budget) {
+    if (hard_cap_ > 0) budget = std::min(budget, hard_cap_);
+    bounded_ = true;
+    budget_  = std::max(budget, kMinCacheBudgetBytes);
+}
+
+void GpuBudget::setHardCap(std::uint64_t hard_cap_bytes) {
+    hard_cap_ = hard_cap_bytes;
+    if (hard_cap_ > 0) bound(bounded_ ? budget_ : hard_cap_);
+}
+
+void GpuBudget::update(std::uint64_t device_free_bytes,
+                       std::uint64_t cache_capacity_bytes) {
+    if (device_free_bytes == 0) return;
+    const std::uint64_t available = cache_capacity_bytes + device_free_bytes;
+    const std::uint64_t margin    = margin_bytes();
+    bound(available > margin ? available - margin : 0);
 }
 
 bool GpuBudget::onPressure(std::uint64_t cache_capacity_bytes,
-                           std::uint64_t bytes_needed) {
+                           std::uint64_t bytes_needed,
+                           std::uint64_t device_free_bytes) {
     ++pressure_events_;
+    // The driver refused bytes_needed while reporting device_free_bytes
+    // free, so at least (free - needed) of what it reports is not really
+    // available. Remember that so update() stops short of it next time.
+    if (device_free_bytes > bytes_needed) {
+        learned_margin_ = std::max(learned_margin_,
+                                   device_free_bytes - bytes_needed + kPressureSlackBytes);
+    }
     // What the cache may keep once the failed allocation and its slack
     // have been carved out of what it holds right now. The pool's actual
     // capacity, not the previous budget, is the honest baseline: the
@@ -54,7 +63,6 @@ bool GpuBudget::onPressure(std::uint64_t cache_capacity_bytes,
                                : 0;
     const std::uint64_t lowered = std::max(target, kMinCacheBudgetBytes);
     if (bounded_ && lowered >= budget_) return false;
-    bounded_ = true;
-    budget_  = lowered;
+    bound(lowered);
     return true;
 }

@@ -50,6 +50,7 @@
 #include "AxisIndicatorRenderer.h"
 #include "BufferPool.h"
 #include "GpuBudget.h"
+#include "GpuMemory.h"
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
@@ -1075,13 +1076,22 @@ private:
     // observed and answered by shrinking the geometry cache, instead of
     // surfacing as an invalid resource that aborts in wgpuQueueSubmit.
 
-    // Reserve to hold back from the cache for the required tier: the
-    // per-pixel attachments at the largest plausible surface plus margin.
-    static std::uint64_t requiredTierReserveBytes();
     // Bytes every per-pixel attachment set costs (MSAA colour + depth,
-    // selection mask trio, pick MRT + depth) — used to size both the
-    // reserve and the pressure carve-out when an attachment set fails.
+    // selection mask trio, pick MRT + depth) — sizes the pressure
+    // carve-out when an attachment set fails.
     static std::uint64_t attachmentBytesPerPixel();
+
+    // Desktop: the driver's view of the adapter wgpu picked (GpuMemory.h);
+    // `valid` false on web or an unsupported driver.
+    ifcviewer::GpuMemoryInfo queryDeviceMemory() const;
+    // Desktop, at most once a second from render(): refresh the device
+    // figures for FrameStats and re-derive the live cache budget from
+    // them, shrinking the pool when the device has less to give than the
+    // pool holds (another process took memory).
+    void pollDeviceMemory();
+    // Push budget_ to the pool: the growth ceiling, and a shrink when the
+    // pool is over it by at least a sub-buffer.
+    void applyBudgetToPool();
 
     // A required allocation of `bytes` (`what` names it for the log)
     // failed. Lowers the budget, evicts and releases cache sub-buffers
@@ -1120,6 +1130,10 @@ private:
     void releaseRenderAttachments();
 
     GpuBudget budget_;
+    // Adapter ids, read once at init, for matching the driver's memory
+    // report to the card wgpu is actually using.
+    std::uint32_t adapter_vendor_id_ = 0;
+    std::uint32_t adapter_device_id_ = 0;
     // Latched false by ensureRenderAttachments when the device could not
     // fit the attachments; re-evaluated on the next configureSurface.
     bool      render_attachments_ok_ = true;
@@ -1557,9 +1571,10 @@ private:
     std::uint32_t last_visible_objects_   = 0;
     std::uint32_t last_visible_triangles_ = 0;
     std::uint32_t last_sub_draws_         = 0;
-    // Device-wide VRAM readout for FrameStats. The driver query is too
-    // slow for per-frame use, so it is re-polled at most once a second
-    // and the last answer is repeated in between.
+    // Device-wide VRAM readout for FrameStats and the live cache budget
+    // (pollDeviceMemory). The driver query is too slow for per-frame use,
+    // so it is re-polled at most once a second and the last answer is
+    // repeated in between.
     std::uint64_t device_vram_used_bytes_  = 0;
     std::uint64_t device_vram_total_bytes_ = 0;
     Stopwatch     device_vram_poll_timer_;

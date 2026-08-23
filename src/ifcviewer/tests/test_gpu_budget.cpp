@@ -18,10 +18,12 @@
  ********************************************************************************/
 
 // GpuBudget decides how much device memory the streamed-geometry cache may
-// hold. It is pure policy: a number derived from what the platform can
-// tell us (desktop: driver free-memory report; web: nothing but a heap
-// ceiling) and lowered by pressure events when a required allocation fails
-// anyway. These pin down the arithmetic and the floor behaviour.
+// hold. It is pure policy: a live number derived from what the platform
+// can tell us (desktop: the driver's free-memory report; web: nothing but
+// a heap ceiling), lowered by pressure events when a required allocation
+// fails anyway, and learning from those how much reported-free memory the
+// driver will not actually grant. These pin down the arithmetic, the floor
+// and the learning.
 
 #include "GpuBudget.h"
 
@@ -31,48 +33,62 @@ namespace {
 constexpr std::uint64_t MB = 1024ull * 1024;
 }
 
-TEST_CASE("unknown device memory and no cap leaves the cache unbounded", "[gpu_budget]") {
+TEST_CASE("nothing known leaves the cache unbounded", "[gpu_budget]") {
     GpuBudget b;
-    b.configure(0, 512 * MB, 0);
+    REQUIRE_FALSE(b.bounded());
+    b.update(0, 512 * MB);  // query could not answer: still unbounded
     REQUIRE_FALSE(b.bounded());
 }
 
-TEST_CASE("desktop budget is free memory minus the required-tier reserve", "[gpu_budget]") {
+TEST_CASE("a device report bounds the cache at held + free - margin", "[gpu_budget]") {
     GpuBudget b;
-    b.configure(2800 * MB, 800 * MB, 0);
+    b.update(2800 * MB, 0);
     REQUIRE(b.bounded());
-    REQUIRE(b.cache_budget_bytes() == 2000 * MB);
+    REQUIRE(b.cache_budget_bytes() == 2800 * MB - GpuBudget::kFixedMarginBytes);
+
+    // The pool now holds 1000 MB and the driver reports 1800 MB free: the
+    // cache's own bytes count as available to it.
+    b.update(1800 * MB, 1000 * MB);
+    REQUIRE(b.cache_budget_bytes() == 2800 * MB - GpuBudget::kFixedMarginBytes);
+
+    // Another process took 1000 MB: the budget follows the device down.
+    b.update(800 * MB, 1000 * MB);
+    REQUIRE(b.cache_budget_bytes() == 1800 * MB - GpuBudget::kFixedMarginBytes);
+    // ...and back up when it is released.
+    b.update(1800 * MB, 1000 * MB);
+    REQUIRE(b.cache_budget_bytes() == 2800 * MB - GpuBudget::kFixedMarginBytes);
 }
 
-TEST_CASE("a reserve larger than free memory floors the budget, not zero", "[gpu_budget]") {
+TEST_CASE("less than the margin available floors the budget, not zero", "[gpu_budget]") {
     GpuBudget b;
-    b.configure(300 * MB, 800 * MB, 0);
+    b.update(100 * MB, 0);
     REQUIRE(b.bounded());
     REQUIRE(b.cache_budget_bytes() == GpuBudget::kMinCacheBudgetBytes);
 }
 
 TEST_CASE("a hard cap bounds the cache on its own (web) and clamps a device-derived budget", "[gpu_budget]") {
     GpuBudget web;
-    web.configure(0, 0, 3072 * MB);
+    web.setHardCap(3072 * MB);
     REQUIRE(web.bounded());
     REQUIRE(web.cache_budget_bytes() == 3072 * MB);
 
     GpuBudget both;
-    both.configure(8000 * MB, 800 * MB, 3072 * MB);
+    both.setHardCap(3072 * MB);
+    both.update(8000 * MB, 0);
     REQUIRE(both.cache_budget_bytes() == 3072 * MB);
 
     GpuBudget small_device;
-    small_device.configure(2800 * MB, 800 * MB, 3072 * MB);
-    REQUIRE(small_device.cache_budget_bytes() == 2000 * MB);
+    small_device.setHardCap(3072 * MB);
+    small_device.update(2800 * MB, 0);
+    REQUIRE(small_device.cache_budget_bytes() == 2800 * MB - GpuBudget::kFixedMarginBytes);
 }
 
 TEST_CASE("pressure lowers the budget below what the cache currently holds", "[gpu_budget]") {
     GpuBudget b;
-    b.configure(0, 0, 0);
     REQUIRE_FALSE(b.bounded());
 
     // The pool grew to 2048 MB unbounded; a 120 MB attachment set then failed.
-    REQUIRE(b.onPressure(2048 * MB, 120 * MB));
+    REQUIRE(b.onPressure(2048 * MB, 120 * MB, 0));
     REQUIRE(b.bounded());
     REQUIRE(b.cache_budget_bytes()
             == 2048 * MB - 120 * MB - GpuBudget::kPressureSlackBytes);
@@ -80,33 +96,57 @@ TEST_CASE("pressure lowers the budget below what the cache currently holds", "[g
 }
 
 TEST_CASE("pressure is measured against actual capacity, not the previous budget", "[gpu_budget]") {
-    // Budget said 2000 MB but the driver only ever granted 1024 MB; a
+    // Budget said ~2500 MB but the driver only ever granted 1024 MB; a
     // failure must carve out of the 1024, else nothing would be released.
     GpuBudget b;
-    b.configure(2800 * MB, 800 * MB, 0);
-    REQUIRE(b.onPressure(1024 * MB, 100 * MB));
+    b.update(2800 * MB, 0);
+    REQUIRE(b.onPressure(1024 * MB, 100 * MB, 0));
     REQUIRE(b.cache_budget_bytes()
             == 1024 * MB - 100 * MB - GpuBudget::kPressureSlackBytes);
 }
 
 TEST_CASE("pressure never raises the budget", "[gpu_budget]") {
     GpuBudget b;
-    b.configure(0, 0, 500 * MB);
-    // Pool is at 256 MB (below budget) and a tiny allocation fails:
-    // capacity - carve is 224 MB-ish, which IS lower, so it lowers.
-    REQUIRE(b.onPressure(256 * MB, 0));
+    b.setHardCap(500 * MB);
+    REQUIRE(b.onPressure(256 * MB, 0, 0));
     REQUIRE(b.cache_budget_bytes() == 256 * MB - GpuBudget::kPressureSlackBytes);
     // A later event whose arithmetic lands above the current budget is a no-op.
-    REQUIRE_FALSE(b.onPressure(4096 * MB, 0));
+    REQUIRE_FALSE(b.onPressure(4096 * MB, 0, 0));
     REQUIRE(b.cache_budget_bytes() == 256 * MB - GpuBudget::kPressureSlackBytes);
 }
 
 TEST_CASE("pressure bottoms out at the floor and then reports exhaustion", "[gpu_budget]") {
     GpuBudget b;
-    b.configure(0, 0, 0);
-    REQUIRE(b.onPressure(100 * MB, 90 * MB));
+    REQUIRE(b.onPressure(100 * MB, 90 * MB, 0));
     REQUIRE(b.cache_budget_bytes() == GpuBudget::kMinCacheBudgetBytes);
     // Already at the floor: nothing more to give.
-    REQUIRE_FALSE(b.onPressure(64 * MB, 90 * MB));
+    REQUIRE_FALSE(b.onPressure(64 * MB, 90 * MB, 0));
     REQUIRE(b.pressure_events() == 2);
+}
+
+TEST_CASE("a refusal with memory still reported free teaches the margin", "[gpu_budget]") {
+    GpuBudget b;
+    b.update(2800 * MB, 0);
+    REQUIRE(b.margin_bytes() == GpuBudget::kFixedMarginBytes);
+
+    // 59 MB refused with 221 MB "free" (the measured crash): at least
+    // 162 MB of what the driver reports is not usable.
+    REQUIRE(b.onPressure(2048 * MB, 59 * MB, 221 * MB));
+    REQUIRE(b.margin_bytes()
+            == GpuBudget::kFixedMarginBytes + 162 * MB + GpuBudget::kPressureSlackBytes);
+
+    // The next live report stops short by the learned amount, so the pool
+    // does not grow straight back into the same refusal.
+    b.update(221 * MB, 2048 * MB);
+    REQUIRE(b.cache_budget_bytes() == 2048 * MB + 221 * MB - b.margin_bytes());
+
+    // Learning only ever grows; a later refusal with less phantom free
+    // memory does not shrink it.
+    b.onPressure(1500 * MB, 59 * MB, 100 * MB);
+    REQUIRE(b.margin_bytes()
+            == GpuBudget::kFixedMarginBytes + 162 * MB + GpuBudget::kPressureSlackBytes);
+    // A refusal that needed more than was reported free teaches nothing.
+    b.onPressure(1500 * MB, 500 * MB, 100 * MB);
+    REQUIRE(b.margin_bytes()
+            == GpuBudget::kFixedMarginBytes + 162 * MB + GpuBudget::kPressureSlackBytes);
 }

@@ -29,7 +29,6 @@
 
 #include "CameraMath.h"
 #include "GpuAllocScope.h"
-#include "GpuMemory.h"
 #include "InstanceCompose.h"
 #include "Log.h"
 
@@ -1606,8 +1605,6 @@ bool ViewportCore::createPool() {
     // required tier (attachments, model metadata, staging) will need,
     // because those are allocated later and the frame cannot be drawn
     // without them; see GpuBudget.h for the model.
-    std::uint64_t device_free = 0;
-    std::uint64_t hard_cap    = 0;
 #if defined(__EMSCRIPTEN__)
     // No memory query on web. Cap total pool capacity below the wasm heap
     // ceiling: a growth that would push the heap past MAXIMUM_MEMORY is a
@@ -1616,18 +1613,17 @@ bool ViewportCore::createPool() {
     // transient decompression buffers, and wgpu overhead. Big federations
     // then keep a bounded, highest-priority resident set instead of
     // aborting. Device exhaustion below that is learnt through pressure.
-    hard_cap = 3072ull * 1024 * 1024;  // 3 GB (heap ceiling 4 GB)
+    budget_.setHardCap(3072ull * 1024 * 1024);  // 3 GB (heap ceiling 4 GB)
 #else
     {
         WGPUAdapterInfo adapter_info = WGPU_ADAPTER_INFO_INIT;
         wgpuAdapterGetInfo(adapter_, &adapter_info);
-        const ifcviewer::GpuMemoryInfo mem =
-            ifcviewer::queryGpuMemory(adapter_info.vendorID, adapter_info.deviceID);
+        adapter_vendor_id_ = adapter_info.vendorID;
+        adapter_device_id_ = adapter_info.deviceID;
         wgpuAdapterInfoFreeMembers(adapter_info);
-        if (mem.valid) device_free = mem.free_bytes();
     }
+    pollDeviceMemory();
 #endif
-    budget_.configure(device_free, requiredTierReserveBytes(), hard_cap);
     pool_.setMaxTotalCapacity(budget_.bounded() ? budget_.cache_budget_bytes() : 0);
 
     Log::info() << "wgpu: pool per-sub-buffer capacity = "
@@ -1637,17 +1633,57 @@ bool ViewportCore::createPool() {
     if (budget_.bounded()) {
         Log::info() << "wgpu: geometry cache budget = "
                     << (budget_.cache_budget_bytes() / (1024 * 1024)) << " MB"
-                    << (device_free > 0
-                        ? " (device free " + std::to_string(device_free / (1024 * 1024))
-                          + " MB - reserve "
-                          + std::to_string(requiredTierReserveBytes() / (1024 * 1024))
-                          + " MB)"
+                    << (device_vram_total_bytes_ > 0
+                        ? " (device free "
+                          + std::to_string((device_vram_total_bytes_ - device_vram_used_bytes_)
+                                           / (1024 * 1024))
+                          + " MB - margin "
+                          + std::to_string(budget_.margin_bytes() / (1024 * 1024))
+                          + " MB; tracks the driver's report)"
                         : " (fixed cap)");
     } else {
         Log::info() << "wgpu: geometry cache budget unknown (no device memory "
                        "query); bounded on first memory-pressure event";
     }
     return true;
+}
+
+ifcviewer::GpuMemoryInfo ViewportCore::queryDeviceMemory() const {
+#if defined(__EMSCRIPTEN__)
+    return {};
+#else
+    return ifcviewer::queryGpuMemory(adapter_vendor_id_, adapter_device_id_);
+#endif
+}
+
+void ViewportCore::pollDeviceMemory() {
+    if (device_vram_poll_timer_.isValid()
+        && device_vram_poll_timer_.elapsed() < 1000) return;
+    device_vram_poll_timer_.start();
+    const ifcviewer::GpuMemoryInfo mem = queryDeviceMemory();
+    if (!mem.valid) return;
+    device_vram_used_bytes_  = mem.used_bytes;
+    device_vram_total_bytes_ = mem.total_bytes;
+    budget_.update(mem.free_bytes(), pool_.total_capacity_bytes());
+    applyBudgetToPool();
+}
+
+void ViewportCore::applyBudgetToPool() {
+    if (!budget_.bounded()) return;
+    const std::uint64_t budget = budget_.cache_budget_bytes();
+    pool_.setMaxTotalCapacity(budget);
+    // Whole sub-buffers are the release granularity, so only act once the
+    // excess is worth one; below that the fixed margin covers it.
+    const std::uint64_t capacity = pool_.total_capacity_bytes();
+    if (capacity < budget + BufferPool::MIN_SUB_BUFFER_BYTES) return;
+    const std::uint64_t released = pool_.shrinkToCapacity(
+        budget, [this](int sub_idx) { evictChunksInSubBuffer(sub_idx); });
+    if (released > 0) {
+        const double mb = 1.0 / (1024.0 * 1024.0);
+        Log::info() << "[wgpu] device has less to give: geometry cache budget now "
+                    << double(budget) * mb << " MB, released "
+                    << double(released) * mb << " MB";
+    }
 }
 
 std::uint64_t ViewportCore::attachmentBytesPerPixel() {
@@ -1662,19 +1698,11 @@ std::uint64_t ViewportCore::attachmentBytesPerPixel() {
          + 4 + 8 + 16 + 4;   // pick: R32Uint id, RGBA16F normal, RGBA32F position, depth32
 }
 
-std::uint64_t ViewportCore::requiredTierReserveBytes() {
-    // Attachments at a 4K surface — a user can maximise onto a larger
-    // monitor after load, and the cache must already have left room —
-    // plus a fixed margin for per-model metadata buffers, readback
-    // staging, and the driver's own bookkeeping.
-    constexpr std::uint64_t kMaxPlausiblePixels = 3840ull * 2160;
-    constexpr std::uint64_t kFixedMargin        = 256ull * 1024 * 1024;
-    return attachmentBytesPerPixel() * kMaxPlausiblePixels + kFixedMargin;
-}
-
 bool ViewportCore::onRequiredAllocationFailed(const char* what, std::uint64_t bytes) {
     const std::uint64_t capacity_before = pool_.total_capacity_bytes();
-    const bool lowered = budget_.onPressure(capacity_before, bytes);
+    const ifcviewer::GpuMemoryInfo mem = queryDeviceMemory();
+    const bool lowered = budget_.onPressure(capacity_before, bytes,
+                                            mem.valid ? mem.free_bytes() : 0);
     const double mb = 1.0 / (1024.0 * 1024.0);
     if (!lowered) {
         Log::warn() << "[wgpu] out of memory allocating " << what << " ("
@@ -7951,21 +7979,7 @@ void ViewportCore::render() {
         stats.vram_used_bytes     = pool_.total_used_bytes();
         stats.vram_capacity_bytes = pool_.total_capacity_bytes();
         stats.vram_budget_bytes   = budget_.bounded() ? budget_.cache_budget_bytes() : 0;
-#if !defined(__EMSCRIPTEN__)
-        if (!device_vram_poll_timer_.isValid()
-            || device_vram_poll_timer_.elapsed() >= 1000) {
-            device_vram_poll_timer_.start();
-            WGPUAdapterInfo adapter_info = WGPU_ADAPTER_INFO_INIT;
-            wgpuAdapterGetInfo(adapter_, &adapter_info);
-            const ifcviewer::GpuMemoryInfo mem =
-                ifcviewer::queryGpuMemory(adapter_info.vendorID, adapter_info.deviceID);
-            wgpuAdapterInfoFreeMembers(adapter_info);
-            if (mem.valid) {
-                device_vram_used_bytes_  = mem.used_bytes;
-                device_vram_total_bytes_ = mem.total_bytes;
-            }
-        }
-#endif
+        pollDeviceMemory();
         stats.device_vram_used_bytes  = device_vram_used_bytes_;
         stats.device_vram_total_bytes = device_vram_total_bytes_;
         host_->onFrameStats(stats);
