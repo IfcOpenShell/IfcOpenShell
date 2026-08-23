@@ -28,6 +28,7 @@
 #endif
 
 #include "CameraMath.h"
+#include "GpuMemory.h"
 #include "InstanceCompose.h"
 #include "Log.h"
 
@@ -7735,6 +7736,25 @@ void ViewportCore::render() {
         }
         stats.gl_draw_calls      = draw_calls;
         stats.indirect_sub_draws = last_sub_draws_;
+        stats.vram_used_bytes     = pool_.total_used_bytes();
+        stats.vram_capacity_bytes = pool_.total_capacity_bytes();
+#if !defined(__EMSCRIPTEN__)
+        if (!device_vram_poll_timer_.isValid()
+            || device_vram_poll_timer_.elapsed() >= 1000) {
+            device_vram_poll_timer_.start();
+            WGPUAdapterInfo adapter_info = WGPU_ADAPTER_INFO_INIT;
+            wgpuAdapterGetInfo(adapter_, &adapter_info);
+            const ifcviewer::GpuMemoryInfo mem =
+                ifcviewer::queryGpuMemory(adapter_info.vendorID, adapter_info.deviceID);
+            wgpuAdapterInfoFreeMembers(adapter_info);
+            if (mem.valid) {
+                device_vram_used_bytes_  = mem.used_bytes;
+                device_vram_total_bytes_ = mem.total_bytes;
+            }
+        }
+#endif
+        stats.device_vram_used_bytes  = device_vram_used_bytes_;
+        stats.device_vram_total_bytes = device_vram_total_bytes_;
         host_->onFrameStats(stats);
     }
 

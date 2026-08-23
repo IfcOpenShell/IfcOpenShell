@@ -38,6 +38,16 @@ struct FrameStats {
     std::uint32_t unique_meshes;
     std::uint32_t gl_draw_calls;        // wgpu draw-call count; name kept for bonsai parity
     std::uint32_t indirect_sub_draws;   // sub-draws packed into the chunk-indirect lists
+    // Chunk geometry pool occupancy (see BufferPool). wgpu exposes no
+    // adapter-wide VRAM query, so this is the viewer's own allocation,
+    // not the device total.
+    std::uint64_t vram_used_bytes;
+    std::uint64_t vram_capacity_bytes;
+    // Whole-device VRAM from the driver (NVML / sysfs, see GpuMemory.h).
+    // Desktop only; zero on web or when no backend could answer, so
+    // consumers must treat 0 as "unknown" rather than as empty.
+    std::uint64_t device_vram_used_bytes;
+    std::uint64_t device_vram_total_bytes;
 };
 
 #endif  // IFCVIEWER_FRAMESTATS_H

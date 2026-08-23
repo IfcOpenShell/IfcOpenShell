@@ -555,15 +555,25 @@ void MainWindow::setupLoader() {
     connect(viewport_widget_->viewport(), &ViewportWindow::frameStatsUpdated, this,
             [this](const ViewportWindow::FrameStats& stats) {
         if (!status_perf_label_->isVisible()) return;
-        status_perf_label_->setText(
-            QString("%1 fps | %2 ms | %3/%4 obj | %5/%6 tri | %7 draws")
+        const double mb = 1.0 / (1024.0 * 1024.0);
+        QString text =
+            QString("%1 fps | %2 ms | %3/%4 obj | %5/%6 tri | %7 draws | VRAM %8/%9 MB")
                 .arg(stats.fps, 0, 'f', 1)
                 .arg(stats.frame_time_ms, 0, 'f', 1)
                 .arg(stats.visible_objects)
                 .arg(stats.total_objects)
                 .arg(stats.visible_triangles)
                 .arg(stats.total_triangles)
-                .arg(stats.gl_draw_calls));
+                .arg(stats.gl_draw_calls)
+                .arg(double(stats.vram_used_bytes) * mb, 0, 'f', 0)
+                .arg(double(stats.vram_capacity_bytes) * mb, 0, 'f', 0);
+        // Device total is only known when a driver backend answered.
+        if (stats.device_vram_total_bytes > 0) {
+            text += QString(" | Device %1/%2 MB")
+                .arg(double(stats.device_vram_used_bytes) * mb, 0, 'f', 0)
+                .arg(double(stats.device_vram_total_bytes) * mb, 0, 'f', 0);
+        }
+        status_perf_label_->setText(text);
     });
     connect(viewport_widget_->viewport(), &ViewportWindow::objectPicked,
             this, [this](uint32_t object_id) {

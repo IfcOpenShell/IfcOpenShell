@@ -1485,6 +1485,12 @@ private:
     std::uint32_t last_visible_objects_   = 0;
     std::uint32_t last_visible_triangles_ = 0;
     std::uint32_t last_sub_draws_         = 0;
+    // Device-wide VRAM readout for FrameStats. The driver query is too
+    // slow for per-frame use, so it is re-polled at most once a second
+    // and the last answer is repeated in between.
+    std::uint64_t device_vram_used_bytes_  = 0;
+    std::uint64_t device_vram_total_bytes_ = 0;
+    Stopwatch     device_vram_poll_timer_;
     double last_cull_ms_                  = 0.0;
     double last_cull_compute_ms_          = 0.0;
     double last_cull_upload_ms_           = 0.0;
