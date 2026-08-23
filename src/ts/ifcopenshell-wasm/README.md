@@ -8,7 +8,7 @@ This package does not commit multi-megabyte WASM artifacts. Stage them from a lo
 
 ```bash
 python nix/wasm_native.py build
-cd packages/ifcopenshell-wasm && npm run stage
+cd src/ts/ifcopenshell-wasm && npm run stage
 
 # Or point at an existing build directory
 IFCOPENSHELL_WASM_DIR=/path/to/ifcwrap/wasm npm run stage
