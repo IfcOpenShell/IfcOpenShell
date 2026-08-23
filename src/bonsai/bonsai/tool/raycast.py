@@ -169,8 +169,8 @@ def _get_cut_object_solid_triangles(obj: bpy.types.Object) -> list[tuple[tuple, 
     model_props = tool.Model.get_model_props()
     if not (element := tool.Ifc.get_entity(obj)):
         return []
+    tris_co: list[tuple[tuple, tuple, tuple]] = []
     if model_props.show_cut_decorator_fill and element.id() in DecoratorData.fill_cache:
-        tris_co: list[tuple[tuple, tuple, tuple]] = []
         for color, verts_and_tris in DecoratorData.fill_cache[element.id()].items():
             for verts, tris in verts_and_tris:
                 verts = [tuple(obj.matrix_world.inverted() @ Vector(v)) for v in verts]  # local space
