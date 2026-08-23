@@ -29,7 +29,7 @@ export function wasmArtifactsPresent(root = WASM_ROOT) {
 export function loadManifest(root = WASM_ROOT) {
   const manifestPath = join(root, 'ifcopenshell_plugins.json');
   if (!existsSync(manifestPath)) {
-    throw new Error(`WASM plugin manifest not found at ${manifestPath}. The published @ifcopenshell-js/wasm package should include it; in a source checkout, run "npm run stage" in packages/ifcopenshell-wasm after building WASM.`);
+    throw new Error(`IfcOpenShell WASM plugin manifest not found: ${manifestPath}`);
   }
   return JSON.parse(readFileSync(manifestPath, 'utf8'));
 }
@@ -52,10 +52,7 @@ export function createNodePluginLoader() {
  */
 export async function resolveWasmAssets(root = WASM_ROOT) {
   if (!wasmArtifactsPresent(root)) {
-    throw new Error(
-      `IfcOpenShell WASM artifacts are missing under ${root}. ` +
-        'The published @ifcopenshell-js/wasm package should include them; in a source checkout, run "npm run stage" in packages/ifcopenshell-wasm after building WASM.',
-    );
+    throw new Error(`IfcOpenShell WASM artifacts are missing from ${root}`);
   }
 
   const manifest = loadManifest(root);
