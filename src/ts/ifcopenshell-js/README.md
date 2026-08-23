@@ -44,7 +44,7 @@ Build and stage WASM before compiling or testing:
 ```bash
 python nix/wasm_native.py build
 python nix/wasm_native.py package
-cd packages/ifcopenshell-wasm
+cd src/ts/ifcopenshell-wasm
 IFCOPENSHELL_WASM_DIR=/path/to/dist npm run stage
 cd ../ifcopenshell-js
 npm run build

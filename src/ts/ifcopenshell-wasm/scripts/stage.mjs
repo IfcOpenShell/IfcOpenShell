@@ -5,7 +5,7 @@ import { transform } from 'esbuild';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(__dirname, '..');
-const REPO_ROOT = resolve(PACKAGE_ROOT, '..', '..');
+const REPO_ROOT = resolve(PACKAGE_ROOT, '..', '..', '..');
 const DEST = join(PACKAGE_ROOT, 'wasm');
 
 const DEFAULT_SOURCES = [
