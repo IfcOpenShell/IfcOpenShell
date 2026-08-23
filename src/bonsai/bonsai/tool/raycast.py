@@ -49,7 +49,7 @@ _triangle_batch_cache: dict[int, tuple[GPUBatch, int]] = {}
 _triangle_vert_fmt: GPUVertFormat | None = None
 _encoding_shader: gpu.types.GPUShader | None = None
 _offscreen: GPUOffScreen | None = None
-_obj_list: list[bpy.types.Object] = []
+_obj_list: list[[bpy.types.Object, bool]] = []
 
 _SNAP_RADIUS_PX = 10  # half-size of the readback region around the cursor
 
@@ -123,11 +123,14 @@ def _find_closest_wireframe_pixel(buffer_data, cx, cy):
     return best
 
 
-def _get_solid_triangles(obj: bpy.types.Object):
+def _get_solid_triangles(obj: bpy.types.Object) -> list[tuple[tuple, tuple, tuple]]:
     """Return the list of triangles for *obj* in **local** space.
 
     Uses evaluated mesh so that modifiers are respected.
     The world matrix is applied separately in the shader.
+
+    Returns
+        tris: list[tuple[tuple, tuple, tuple]] = []
     """
     depsgraph = bpy.context.evaluated_depsgraph_get()
     eval_obj = obj.evaluated_get(depsgraph)
@@ -135,7 +138,7 @@ def _get_solid_triangles(obj: bpy.types.Object):
     if not mesh or not mesh.vertices:
         if mesh:
             eval_obj.to_mesh_clear()
-        return [], []
+        return []
 
     mesh.calc_loop_triangles()
 
@@ -165,7 +168,7 @@ def _get_cut_object_solid_triangles(obj: bpy.types.Object) -> list[tuple[tuple, 
     """
     model_props = tool.Model.get_model_props()
     if not (element := tool.Ifc.get_entity(obj)):
-        return {}, {}
+        return []
     if model_props.show_cut_decorator_fill and element.id() in DecoratorData.fill_cache:
         tris_co: list[tuple[tuple, tuple, tuple]] = []
         for color, verts_and_tris in DecoratorData.fill_cache[element.id()].items():
@@ -178,7 +181,7 @@ def _get_cut_object_solid_triangles(obj: bpy.types.Object) -> list[tuple[tuple, 
     return tris_co
 
 
-def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int] | None:
+def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch | None, bool]:
     """Build (or fetch from cache) a TRIANGLES batch for *obj*.
 
     When in drawing view, creates the triangles from cut decorator fill.
@@ -206,9 +209,7 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int] | No
 
     tris = []
     if CutDecorator.installed:
-        print(obj)
         tris = _get_cut_object_solid_triangles(obj)
-        print(tris)
         if tris:
             is_cut_face = True
         if not tris and (hasattr(obj.data, "polygons") and len(obj.data.polygons) > 0):
@@ -241,7 +242,7 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch, int] | No
     return batch, is_cut_face
 
 
-def _get_boundary_features(obj: bpy.types.Object):
+def _get_boundary_features(obj: bpy.types.Object) -> tuple[list[tuple[float, float, float]], list[tuple[tuple, tuple]]]:
     """
     Uses bmesh on the **evaluated** mesh so that modifiers are respected.
     Gets only edges that are not in a face and vertices that are not on and edge
@@ -305,7 +306,7 @@ def _get_boundary_features(obj: bpy.types.Object):
     eval_obj.to_mesh_clear()
     return verts, edge_pairs
 
-def _get_cut_objects_features(
+def _get_cut_object_features(
     obj: bpy.types.Object,
 ) -> (list[tuple[float, float, float]], list[tuple[tuple[float, float, float], tuple[float, float, float]]]):
     """Return ``(all_vert_coords, edge_pairs)`` for *obj*.
@@ -320,7 +321,7 @@ def _get_cut_objects_features(
     """
     model_props = tool.Model.get_model_props()
     if not (element := tool.Ifc.get_entity(obj)):
-        return {}, {}
+        return [], []
     if model_props.show_cut_decorator and element.id() in DecoratorData.cut_cache and (hasattr(obj.data, "polygons") and len(obj.data.polygons) > 0):
         verts, edges = DecoratorData.cut_cache[element.id()]
         if not verts or not edges:
@@ -330,7 +331,7 @@ def _get_cut_objects_features(
 
         return verts, edge_pairs
     else:
-        return {}, {}
+        return [], []
 
 
 def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch, int, list]]:
@@ -349,7 +350,7 @@ def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch
     if _wireframe_vert_fmt is None:
         _wireframe_vert_fmt = _create_vert_format()
 
-    cache_key = id(obj)  # tied to obj lifecycle for auto-invalidation
+    cache_key = id(obj)
 
     # Cache hit
     if cache_key in _wireframe_batch_cache:
@@ -357,8 +358,7 @@ def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch
 
     if CutDecorator.installed:
         all_vert_coords, edge_pairs = [], []
-        v, e = _get_cut_objects_features(obj)
-        print(e)
+        v, e = _get_cut_object_features(obj)
         if v and e:
             all_vert_coords, edge_pairs = v, e
 
@@ -410,7 +410,7 @@ def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch
         _wireframe_batch_cache[cache_key] = batches
     return batches
 
-def _get_tris_render_ops(objs_to_raycast):
+def _get_tris_render_ops(objs_to_raycast: list[bpy.types.Object]) -> list[tuple[GPUBatch, Matrix, int]]:
     """Build render ops for solid (triangle) objects to raycast.
 
     Each mesh contributes a single TRIANGLES batch and a slot base that 
@@ -447,7 +447,7 @@ def _get_tris_render_ops(objs_to_raycast):
         render_ops.append((batch, snap_obj.matrix_world.copy(), slot_base))
     return render_ops
     
-def _create_tris_snaps(context, event, mouse_read_rect, buffers_list, last_buf, xray_mode):
+def _create_tris_snaps(context: bpy.types.Context, event: bpy.types.Event, mouse_read_rect, buffers_list, last_buf, xray_mode) -> tuple[list[dict], bpy.types.Object | None]:
     """Decode the triangle readback buffer(s) into face snaps.
  
     In xray mode each object is read back as a single pixel under the 
@@ -518,7 +518,6 @@ def _create_tris_snaps(context, event, mouse_read_rect, buffers_list, last_buf, 
     for obj_index in hits:
         obj, is_cut_face = _obj_list[obj_index]
         hit_obj, hit, face_index = tool.Raycast.cast_rays_to_single_object(context, event, obj)
-        print("IS_CUT", obj, is_cut_face)
         if hit:
             snap: dict = {
                 "point": hit,
@@ -538,7 +537,7 @@ def _create_tris_snaps(context, event, mouse_read_rect, buffers_list, last_buf, 
 
     return snaps, closest_obj
     
-def _get_wireframe_render_ops(objs_to_raycast):
+def _get_wireframe_render_ops(objs_to_raycast: list[bpy.types.Objects]) -> tuple[list[tuple[GPUBatch, Matrix, int]], list[tuple]]:
     """Build render ops for wireframe (non-solid) objects.
 
     Boundary points and lines of each object are assigned sequential slot 
@@ -590,7 +589,7 @@ def _get_wireframe_render_ops(objs_to_raycast):
 
     return render_ops, obj_slots
 
-def _create_wireframe_snaps(context, event, mouse_read_rect, obj_slots, last_buf):
+def _create_wireframe_snaps(context: bpy.types.Context, event: bpy.types.Event, mouse_read_rect, obj_slots, last_buf) -> tuple[list[dict], None]:
     """Decode the wireframe readback buffer into vertex/edge snaps. 
 
     Finds the closest non-zero pixel to the cursor, maps its encoded slot ID
