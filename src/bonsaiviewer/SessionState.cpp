@@ -199,6 +199,10 @@ void SessionState::notifyModelGeometryReady(uint32_t session_model_id) {
     emit modelGeometryReady(session_model_id);
 }
 
+void SessionState::notifyModelLoadStateChanged(const QString& model_id) {
+    emit modelLoadStateChanged(model_id);
+}
+
 void SessionState::notifyProjectOpened(const QString& path) {
     emit projectOpened(path);
 }

@@ -26,6 +26,7 @@
 #include <QObject>
 
 class Federation;
+class ViewportWindow;
 namespace bonsaiviewer { class SessionState; }
 
 namespace bonsaiviewer::modules::models {
@@ -45,16 +46,25 @@ QList<GroupOption> validMoveTargets(const Federation& federation,
 // coarse session signals (project open/reset, theme change) — those are the
 // "rebuild from scratch" cases the model itself doesn't subscribe to.
 // Granular Federation events are handled inside the model.
+//
+// Also the bridge for the one thing the tree shows that is not Federation
+// state: each model's GPU residency (memory column, unloaded styling). The
+// viewport owns that state, so this view polls it once a second — the
+// numbers move continuously while geometry streams — and pushes it in.
 class ModelsPanelView : public QObject {
     Q_OBJECT
 public:
     explicit ModelsPanelView(ModelsPanel* widget,
                              bonsaiviewer::SessionState* session_state,
+                             ViewportWindow* viewport,
                              QObject* parent = nullptr);
 
 private:
+    void refreshResidency();
+
     ModelsPanel* widget_ = nullptr;
     bonsaiviewer::SessionState* session_state_ = nullptr;
+    ViewportWindow* viewport_ = nullptr;
     FederationItemModel* model_ = nullptr;
 };
 

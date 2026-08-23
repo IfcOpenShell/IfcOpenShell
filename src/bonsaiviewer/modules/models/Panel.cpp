@@ -28,6 +28,7 @@
 #include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
 #include "../../../ifcviewer/Federation.h"
+#include "../../../ifcviewer/ViewportWindow.h"
 
 #include <QDataStream>
 #include <QDrag>
@@ -79,6 +80,7 @@ QStringList selectedModelIdsAt(QTreeView* tree, const QModelIndex& clicked_index
 }
 
 constexpr int kVisibilityColumnWidth = 28;
+constexpr int kMemoryColumnWidth     = 72;  // "1234 MB" / "unloaded"
 
 // QTreeView subclass that handles drag-and-drop. Drop logic dispatches
 // through commands (not directly into the model) so notifications + status
@@ -250,7 +252,7 @@ ModelsPanel::ModelsPanel(bonsaiviewer::SessionState* session_state,
 
     connect(tree_, &QTreeView::clicked, this, [this](const QModelIndex& index) {
         if (!index.isValid()) return;
-        if (index.column() == 1) {
+        if (index.column() == VisibilityColumn) {
             commands::toggleVisibility(*session_state_, kindOf(index), idOf(index));
             return;
         }
@@ -380,6 +382,24 @@ ModelsPanel::ModelsPanel(bonsaiviewer::SessionState* session_state,
                 commands::saveModelAsToCloud(*session_state_, *this, id);
             });
 
+            // GPU residency. Unload keeps the model in the federation (and
+            // its visibility) but frees everything it holds on the GPU — the
+            // lever when the scene does not fit in VRAM. Load brings it back.
+            menu.addSeparator();
+            const uint32_t session_model_id = session_state_->sessionModelIdForModelId(id);
+            const bool unloaded = session_model_id != 0 && viewport_->isModelUnloaded(session_model_id);
+            QAction* residency = menu.addAction(
+                components::icons::makeSvgIcon(":/icons/cube.svg"),
+                unloaded ? "Load Model" : "Unload Model");
+            residency->setEnabled(session_model_id != 0);
+            residency->setToolTip(unloaded
+                ? "Allocate GPU memory for this model again and stream its geometry back in."
+                : "Free this model's GPU memory while keeping it in the federation.");
+            connect(residency, &QAction::triggered, this, [this, id, unloaded]() {
+                if (unloaded) commands::loadModel(*session_state_, *viewport_, id);
+                else          commands::unloadModel(*session_state_, *viewport_, id);
+            });
+
             menu.addSeparator();
             QAction* remove = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/minus-square.svg"), "Remove Model");
@@ -409,14 +429,16 @@ void ModelsPanel::setModel(FederationItemModel* model) {
 }
 
 void ModelsPanel::applyColumnLayout() {
-    // Column 0 (name) stretches to fill; column 1 (visibility icon) is fixed.
+    // The name stretches to fill; memory and visibility are fixed.
     QHeaderView* header = tree_->header();
-    if (header->count() < 2) return;
+    if (header->count() < ColumnCount) return;
     header->setStretchLastSection(false);
     header->setMinimumSectionSize(kVisibilityColumnWidth);
-    header->setSectionResizeMode(0, QHeaderView::Stretch);
-    header->setSectionResizeMode(1, QHeaderView::Fixed);
-    header->resizeSection(1, kVisibilityColumnWidth);
+    header->setSectionResizeMode(NameColumn, QHeaderView::Stretch);
+    header->setSectionResizeMode(MemoryColumn, QHeaderView::Fixed);
+    header->resizeSection(MemoryColumn, kMemoryColumnWidth);
+    header->setSectionResizeMode(VisibilityColumn, QHeaderView::Fixed);
+    header->resizeSection(VisibilityColumn, kVisibilityColumnWidth);
 }
 
 } // namespace bonsaiviewer::modules::models

@@ -109,6 +109,39 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
 
 // ---- Scene mutators -------------------------------------------------------
 
+namespace {
+
+// The GPU-side records the shaders read, built from the CPU mirrors.
+std::vector<MeshGpu> meshGpuRecords(const std::vector<MeshInfo>& meshes) {
+    std::vector<MeshGpu> gpu;
+    gpu.reserve(meshes.size());
+    for (const auto& mesh_info : meshes) {
+        MeshGpu rec = {};
+        for (int a = 0; a < 3; ++a) {
+            rec.aabb_min[a] = mesh_info.local_aabb_min[a];
+            rec.aabb_max[a] = mesh_info.local_aabb_max[a];
+        }
+        gpu.push_back(rec);
+    }
+    return gpu;
+}
+
+std::vector<InstanceGpu> instanceGpuRecords(const std::vector<InstanceInfo>& instances) {
+    std::vector<InstanceGpu> gpu(instances.size());
+    for (size_t i = 0; i < instances.size(); ++i) {
+        const InstanceInfo& inst = instances[i];
+        InstanceGpu& dst = gpu[i];
+        std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
+        dst.object_id            = inst.object_id;
+        dst.color_override_rgba8 = inst.color_override_rgba8;
+        dst.mesh_id              = inst.mesh_id;
+        dst._pad1                = 0;
+    }
+    return gpu;
+}
+
+}  // namespace
+
 void ViewportCore::removeModel(uint32_t session_model_id) {
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
@@ -140,6 +173,46 @@ void ViewportCore::showModel(uint32_t session_model_id) {
     if (it == models_gpu_.end() || !it->second.hidden) return;
     it->second.hidden = false;
     host_->requestFrame();
+}
+
+void ViewportCore::unloadModel(uint32_t session_model_id) {
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end() || it->second.unloaded) return;
+    ModelGpuData& m = it->second;
+    for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) unloadChunk(m, ci);
+    releaseModelBuffers(m);
+    m.unloaded = true;
+    host_->requestFrame();
+}
+
+bool ViewportCore::loadModel(uint32_t session_model_id) {
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end()) return false;
+    ModelGpuData& m = it->second;
+    if (!m.unloaded) return true;
+    // Chunks stream back in on demand once the model is drawable again;
+    // only the model's own buffers have to be recreated here.
+    if (!createModelBuffers(session_model_id, m,
+                            meshGpuRecords(m.meshes), instanceGpuRecords(m.instances))) {
+        Log::warn() << "[wgpu] model " << session_model_id
+                    << " not reloaded: the device cannot fit its metadata buffers";
+        return false;
+    }
+    m.unloaded = false;
+    host_->requestFrame();
+    return true;
+}
+
+bool ViewportCore::isModelUnloaded(uint32_t session_model_id) const {
+    auto it = models_gpu_.find(session_model_id);
+    return it != models_gpu_.end() && it->second.unloaded;
+}
+
+std::uint64_t ViewportCore::modelVramBytes(uint32_t session_model_id) const {
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end()) return 0;
+    const ModelGpuData& m = it->second;
+    return m.vram_bytes_vbo + m.vram_bytes_ebo + m.vram_bytes_ssbo;
 }
 
 void ViewportCore::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
@@ -264,17 +337,7 @@ float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
 
 void ViewportCore::uploadInstanceRecords(ModelGpuData& m) {
     if (!wgpu_initialized_ || m.instances.empty() || m.instance_storage == nullptr) return;
-
-    std::vector<InstanceGpu> gpu(m.instances.size());
-    for (size_t i = 0; i < m.instances.size(); ++i) {
-        const InstanceInfo& inst = m.instances[i];
-        InstanceGpu& dst = gpu[i];
-        std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
-        dst.object_id            = inst.object_id;
-        dst.color_override_rgba8 = inst.color_override_rgba8;
-        dst.mesh_id              = inst.mesh_id;
-        dst._pad1                = 0;
-    }
+    const std::vector<InstanceGpu> gpu = instanceGpuRecords(m.instances);
     wgpuQueueWriteBuffer(queue_, m.instance_storage, 0,
                          gpu.data(), gpu.size() * sizeof(InstanceGpu));
 }
@@ -284,8 +347,11 @@ void ViewportCore::recomposeAndUploadModel(uint32_t session_model_id) {
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     ModelGpuData& m = it->second;
-    if (m.instances.empty() || m.instance_storage == nullptr) return;
+    if (m.instances.empty()) return;
 
+    // The CPU mirrors are recomposed even while the model is unloaded (no
+    // instance_storage): cull and loadModel read them, and the upload
+    // below is skipped on its own.
     for (auto& inst : m.instances) composeInstanceFromPlacement(inst, m);
     uploadInstanceRecords(m);
 
@@ -2451,7 +2517,7 @@ void ViewportCore::driveStreamingLoads() {
     // last ~30 frames.
     constexpr float HISTORY_ALPHA = 1.0f / 30.0f;
     for (auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (auto& c : m.chunks) {
             if (c.is_resident && c.frustum_visible_count > 0) {
                 c.last_visible_frame_idx = streaming_frame_idx_;
@@ -2656,7 +2722,7 @@ void ViewportCore::driveStreamingLoads() {
     std::vector<Candidate> candidates;
     candidates.reserve(64);
     for (auto& [session_model_id, m] : models_gpu_) {
-        if (m.streaming_file_path.empty() || m.hidden) continue;
+        if (m.streaming_file_path.empty() || !m.drawable()) continue;
         for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
             auto& c = m.chunks[ci];
             if (c.is_resident)                       continue;
@@ -2872,7 +2938,7 @@ void ViewportCore::driveStreamingLoads() {
     const bool growth_may_land = pool_.growth_pending() || pool_.can_grow();
     bool visible_pending = false;
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.streaming_file_path.empty() || m.hidden) continue;
+        if (m.streaming_file_path.empty() || !m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (c.is_resident) continue;
             if (c.is_loading) { visible_pending = true; break; }
@@ -3557,38 +3623,18 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     // Index section is NOT loaded upfront. Each chunk's index slice is
     // range-read alongside its vertex bytes in loadChunkBytesAndUploadGpu.
 
-    // MeshGpu storage (per-mesh quant basis).
-    std::vector<MeshGpu> mesh_gpu;
-    mesh_gpu.reserve(metadata.meta.meshes.size());
-    for (const auto& mesh_info : metadata.meta.meshes) {
-        MeshGpu mesh_gpu_record = {};
-        mesh_gpu_record.aabb_min[0] = mesh_info.local_aabb_min[0];
-        mesh_gpu_record.aabb_min[1] = mesh_info.local_aabb_min[1];
-        mesh_gpu_record.aabb_min[2] = mesh_info.local_aabb_min[2];
-        mesh_gpu_record.aabb_max[0] = mesh_info.local_aabb_max[0];
-        mesh_gpu_record.aabb_max[1] = mesh_info.local_aabb_max[1];
-        mesh_gpu_record.aabb_max[2] = mesh_info.local_aabb_max[2];
-        mesh_gpu.push_back(mesh_gpu_record);
-    }
-
-    // InstanceGpu storage. Rebase object_ids globally.
+    // Rebase object_ids globally (element metadata records rebase to match).
     const std::uint32_t object_id_base = next_object_id_;
     std::uint32_t max_local_id = 0;
-    std::vector<InstanceGpu> inst_gpu;
-    inst_gpu.reserve(metadata.meta.instances.size());
     for (auto& instance_cpu : metadata.meta.instances) {
         if (instance_cpu.object_id > max_local_id) max_local_id = instance_cpu.object_id;
         instance_cpu.object_id = object_id_base + instance_cpu.object_id;
-        InstanceGpu instance_gpu = {};
-        std::memcpy(instance_gpu.transform, instance_cpu.transform, sizeof(instance_gpu.transform));
-        instance_gpu.object_id            = instance_cpu.object_id;
-        instance_gpu.color_override_rgba8 = instance_cpu.color_override_rgba8;
-        instance_gpu.mesh_id              = instance_cpu.mesh_id;
-        inst_gpu.push_back(instance_gpu);
     }
     next_object_id_ = object_id_base + max_local_id + 1;
-    model_gpu_data.object_id_base = object_id_base;  // element metadata records rebase to match
+    model_gpu_data.object_id_base = object_id_base;
 
+    const std::vector<MeshGpu>     mesh_gpu = meshGpuRecords(metadata.meta.meshes);
+    const std::vector<InstanceGpu> inst_gpu = instanceGpuRecords(metadata.meta.instances);
     if (!createModelBuffers(session_model_id, model_gpu_data, mesh_gpu, inst_gpu)) {
         Log::warn() << "[wgpu] model " << session_model_id
                     << " not loaded: the device cannot fit its metadata buffers";
@@ -3980,7 +4026,7 @@ void ViewportCore::pumpWebChunkLoads() {
         auto it = models_gpu_.find(next.session_model_id);
         if (it == models_gpu_.end()) continue;
         ModelGpuData& m = it->second;
-        if (m.hidden || next.ci >= m.chunks.size()) continue;
+        if (!m.drawable() || next.ci >= m.chunks.size()) continue;
         auto& c = m.chunks[next.ci];
         if (c.is_resident || c.is_loading)     continue;
         if (c.contribution_visible_count == 0) continue;   // no longer worth drawing
@@ -4328,6 +4374,7 @@ void ViewportCore::streamingProgress(int& resident_chunks, int& total_chunks) co
     resident_chunks = 0;
     total_chunks    = 0;
     for (const auto& [session_model_id, m] : models_gpu_) {
+        if (m.unloaded) continue;
         for (const auto& c : m.chunks) {
             ++total_chunks;
             if (c.is_resident) ++resident_chunks;
@@ -4359,7 +4406,7 @@ void ViewportCore::streamingModelProgress(int idx, int& resident_chunks,
     total_chunks    = 0;
     if (idx < 0 || idx >= int(models_gpu_.size())) return;
     auto it = models_gpu_.find(modelIdsInLoadOrder()[std::size_t(idx)]);
-    if (it == models_gpu_.end()) return;
+    if (it == models_gpu_.end() || it->second.unloaded) return;
     for (const auto& c : it->second.chunks) {
         ++total_chunks;
         if (c.is_resident) ++resident_chunks;
@@ -4428,7 +4475,7 @@ void ViewportCore::streamingByteProgress(std::uint64_t& total_bytes,
     // whole model this view even requires.
     total_bytes = needed_bytes = loaded_bytes = 0;
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             // Report COMPRESSED bytes — what actually crosses the network. Fall
             // back to raw for direct (in-memory) loads that have no blobs.
@@ -5682,7 +5729,7 @@ void ViewportCore::encodeSelectionMaskPass(WGPUCommandEncoder enc) {
     // Same draw stream as the main pass, opaque and transparent together —
     // a selected element that happens to be translucent still gets a halo.
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -6144,7 +6191,7 @@ void ViewportCore::encodePickReadbackToStaging(int x_pixels, int y_pixels,
     wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -6343,7 +6390,7 @@ void ViewportCore::isolateSelected() {
     // object_id 0 (unpickable) is skipped.
     const auto& sel_ids = selection_.selectionIds();
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const InstanceInfo& inst : m.instances) {
             if (inst.object_id == 0) continue;
             if (sel_ids.find(inst.object_id) == sel_ids.end())
@@ -6366,7 +6413,7 @@ void ViewportCore::hideAll() {
     // showAll, and isolateSelected with an empty selection. Model-hidden
     // models are already gone from the cull, so they contribute nothing.
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const InstanceInfo& inst : m.instances) visibility_.hide(inst.object_id);
     }
     Log::info().noquote().nospace() << "[wgpu] hid all (" << visibility_.hiddenCount() << ")";
@@ -6546,7 +6593,7 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
     wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -6666,7 +6713,7 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
     wgpuRenderPassEncoderSetPipeline(pass, box_pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -6856,7 +6903,7 @@ bool ViewportCore::raycastSurfaceForObject(std::uint32_t object_id, int x_pixels
     float           best_radius = 0.0f;
     bool found = false;
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& inst : m.instances) {
             if (inst.object_id != object_id) continue;
             float t = 0.0f;
@@ -7171,7 +7218,7 @@ bool ViewportCore::raycast(const float origin[3], const float dir[3],
     float         best_normal[3] = {0, 0, 0};
 
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(m.instances.size()); ++inst_idx) {
             const InstanceInfo& inst = m.instances[inst_idx];
             if (!rayAabbSlab(origin, inv_d, inst.world_aabb_min, inst.world_aabb_max)) {
@@ -7732,7 +7779,7 @@ void ViewportCore::render() {
             std::vector<std::pair<std::uint32_t, std::future<std::uint32_t>>> futures;
             futures.reserve(models_gpu_.size());
             for (auto& [session_model_id, m] : models_gpu_) {
-                if (m.hidden) continue;
+                if (!m.drawable()) continue;
                 auto& m_ref = m;
                 futures.emplace_back(session_model_id, std::async(std::launch::async,
                     [this, &m_ref, &planes, &eye_a, &fwd_a, &right_a, &up_a,
@@ -7749,7 +7796,7 @@ void ViewportCore::render() {
             }
         } else {
             for (auto& [session_model_id, m] : models_gpu_) {
-                if (m.hidden) continue;
+                if (!m.drawable()) continue;
                 hiz_reject_count_ += cullModelCpuCompute(
                     m, planes, eye_a, fwd_a, right_a, up_a, focal_px,
                     effective_min_px, lod1_pixel_threshold_,
@@ -7761,7 +7808,7 @@ void ViewportCore::render() {
         Stopwatch upload_timer;
         upload_timer.start();
         for (auto& [session_model_id, m] : models_gpu_) {
-            if (m.hidden) continue;
+            if (!m.drawable()) continue;
             cullModelCpuUpload(m);
             for (const auto& c : m.chunks) {
                 last_visible_objects_   += c.total_visible_draws;
@@ -7842,7 +7889,7 @@ void ViewportCore::render() {
         wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
 
         for (const auto& [session_model_id, m] : models_gpu_) {
-            if (m.hidden) continue;
+            if (!m.drawable()) continue;
             for (const auto& c : m.chunks) {
                 if (!c.bind_group || c.opaque_visible_vertices == 0) continue;
                 wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -7853,7 +7900,7 @@ void ViewportCore::render() {
 
         wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_transparent_);
         for (const auto& [session_model_id, m] : models_gpu_) {
-            if (m.hidden) continue;
+            if (!m.drawable()) continue;
             for (const auto& c : m.chunks) {
                 if (!c.bind_group) continue;
                 const std::uint32_t transparent_verts =
@@ -7975,13 +8022,29 @@ void ViewportCore::render() {
         stats.unique_meshes     = total_meshes;
         std::uint32_t draw_calls = 0;
         for (const auto& [session_model_id, mm] : models_gpu_) {
-            if (mm.hidden) continue;
+            if (!mm.drawable()) continue;
             for (const auto& c : mm.chunks) {
                 if (c.is_resident && c.total_visible_draws > 0) ++draw_calls;
             }
         }
         stats.gl_draw_calls      = draw_calls;
         stats.indirect_sub_draws = last_sub_draws_;
+        std::uint32_t wanted = 0, wanted_missing = 0;
+        std::uint64_t wanted_missing_bytes = 0;
+        for (const auto& [session_model_id, mm] : models_gpu_) {
+            if (!mm.drawable()) continue;
+            for (const auto& c : mm.chunks) {
+                if (c.contribution_visible_count == 0) continue;
+                ++wanted;
+                if (c.is_resident) continue;
+                ++wanted_missing;
+                wanted_missing_bytes += c.vertex_byte_size
+                                      + c.index_count * sizeof(std::uint32_t);
+            }
+        }
+        stats.chunks_wanted         = wanted;
+        stats.chunks_wanted_missing = wanted_missing;
+        stats.wanted_missing_bytes  = wanted_missing_bytes;
         stats.vram_used_bytes     = pool_.total_used_bytes();
         stats.vram_capacity_bytes = pool_.total_capacity_bytes();
         stats.vram_budget_bytes   = budget_.bounded() ? budget_.cache_budget_bytes() : 0;

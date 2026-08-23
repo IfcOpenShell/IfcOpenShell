@@ -447,6 +447,15 @@ struct ModelGpuData {
     // is gone; cull iterates m.chunks instead.
 
     bool hidden = false;
+    // Unloaded by the user: every chunk evicted and the model's own GPU
+    // buffers released, while the CPU mirrors (meshes, instances, chunk
+    // plan, element metadata) stay so the entry remains in the scene and
+    // loadModel can bring it back without touching the disk. Distinct
+    // from hidden (a viewing state; the geometry may stay resident) and
+    // from removal (the model leaves the scene).
+    bool unloaded = false;
+    // Whether cull / draw / pick / streaming should consider this model.
+    bool drawable() const { return !hidden && !unloaded; }
 
     // Per-model federation matrices in metres. Default identity → no
     // per-model contribution to the composed transform. See bonsai's

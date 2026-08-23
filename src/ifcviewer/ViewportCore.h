@@ -157,6 +157,17 @@ public:
     void resetScene();
     void hideModel(uint32_t session_model_id);
     void showModel(uint32_t session_model_id);
+    // Release a model's GPU memory (every chunk + its own buffers) while
+    // keeping it in the scene; loadModel recreates the buffers from the
+    // CPU mirrors and lets chunks stream back. Neither touches hidden.
+    // loadModel returns false when the device cannot fit the model's
+    // buffers even after the cache yielded (it stays unloaded).
+    void unloadModel(uint32_t session_model_id);
+    bool loadModel(uint32_t session_model_id);
+    bool isModelUnloaded(uint32_t session_model_id) const;
+    // Bytes this model currently holds on the GPU: resident chunk
+    // geometry plus its mesh/instance/cull buffers. 0 when unloaded.
+    std::uint64_t modelVramBytes(uint32_t session_model_id) const;
 
     // Federation matrix setters. Each writes to model state and posts
     // a recompose so per-instance world matrices stay consistent with

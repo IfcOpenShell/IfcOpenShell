@@ -142,6 +142,13 @@ public:
     // consults. requestUpdate() so the change is visible immediately.
     void hideModel(uint32_t session_model_id);
     void showModel(uint32_t session_model_id);
+    // GPU residency of a model, independent of visibility: unloadModel
+    // frees everything it holds on the device while it stays in the
+    // scene; loadModel brings it back (false if the device cannot fit it).
+    void unloadModel(uint32_t session_model_id);
+    bool loadModel(uint32_t session_model_id);
+    bool isModelUnloaded(uint32_t session_model_id) const;
+    std::uint64_t modelVramBytes(uint32_t session_model_id) const;
 
     // Federation pipeline: composed instance transform =
     //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation

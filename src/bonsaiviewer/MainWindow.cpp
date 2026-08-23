@@ -428,7 +428,8 @@ void MainWindow::setupPanels() {
     spatial_panel_ = new modules::spatial_hierarchy::SpatialHierarchyPanel(this);
     properties_panel_ = new modules::properties::PropertiesPanel(this);
 
-    models_view_ = new modules::models::ModelsPanelView(models_panel_, session_state_, this);
+    models_view_ = new modules::models::ModelsPanelView(
+        models_panel_, session_state_, viewport_widget_->viewport(), this);
     spatial_view_ = new modules::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel_, session_state_, this);
     properties_view_ = new modules::properties::PropertiesPanelView(properties_panel_, session_state_, this);
 
@@ -481,6 +482,13 @@ void MainWindow::setupStatus() {
     status_mode_label_ = new QLabel("Ready", this);
     status_selection_label_ = new QLabel("No selection", this);
     status_perf_label_ = new QLabel(this);
+    status_memory_label_ = new QLabel(this);
+    status_memory_label_->setVisible(false);
+    status_memory_label_->setToolTip(
+        "The geometry in view needs more GPU memory than is available, so the "
+        "viewer keeps the largest on-screen parts resident and streams the rest "
+        "as you move. Right-click a model in the Models panel and choose "
+        "\"Unload Model\" to free its GPU memory for the others.");
     status_progress_bar_ = new QProgressBar(this);
     status_perf_label_->setVisible(AppSettings::instance().showStats());
     status_progress_bar_->setMaximumWidth(200);
@@ -489,6 +497,7 @@ void MainWindow::setupStatus() {
     statusBar()->setSizeGripEnabled(false);
     statusBar()->addWidget(status_mode_label_);
     statusBar()->addWidget(status_selection_label_, 1);
+    statusBar()->addPermanentWidget(status_memory_label_);
     statusBar()->addPermanentWidget(status_perf_label_);
     statusBar()->addPermanentWidget(status_progress_bar_);
 
@@ -554,8 +563,28 @@ void MainWindow::setupLoader() {
 
     connect(viewport_widget_->viewport(), &ViewportWindow::frameStatsUpdated, this,
             [this](const ViewportWindow::FrameStats& stats) {
-        if (!status_perf_label_->isVisible()) return;
         const double mb = 1.0 / (1024.0 * 1024.0);
+
+        // Missing chunks are normal for a moment after every camera move
+        // while streaming catches up; only a shortfall that persists means
+        // the view does not fit, and only that is worth telling the user.
+        constexpr qint64 kShortfallNoticeMs = 3000;
+        if (stats.chunks_wanted_missing == 0) {
+            memory_shortfall_since_.invalidate();
+            status_memory_label_->setVisible(false);
+        } else {
+            if (!memory_shortfall_since_.isValid()) memory_shortfall_since_.start();
+            if (memory_shortfall_since_.elapsed() >= kShortfallNoticeMs) {
+                status_memory_label_->setText(
+                    QString("GPU memory full: %1 of %2 visible chunks (%3 MB) not loaded")
+                        .arg(stats.chunks_wanted_missing)
+                        .arg(stats.chunks_wanted)
+                        .arg(double(stats.wanted_missing_bytes) * mb, 0, 'f', 0));
+                status_memory_label_->setVisible(true);
+            }
+        }
+
+        if (!status_perf_label_->isVisible()) return;
         QString text =
             QString("%1 fps | %2 ms | %3/%4 obj | %5/%6 tri | %7 draws | VRAM %8/%9 MB")
                 .arg(stats.fps, 0, 'f', 1)
@@ -580,6 +609,11 @@ void MainWindow::setupLoader() {
             text += QString(" | Device %1/%2 MB")
                 .arg(double(stats.device_vram_used_bytes) * mb, 0, 'f', 0)
                 .arg(double(stats.device_vram_total_bytes) * mb, 0, 'f', 0);
+        }
+        if (stats.chunks_wanted_missing > 0) {
+            text += QString(" | %1/%2 chunks waiting")
+                .arg(stats.chunks_wanted_missing)
+                .arg(stats.chunks_wanted);
         }
         status_perf_label_->setText(text);
     });

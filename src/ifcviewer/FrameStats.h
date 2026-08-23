@@ -44,6 +44,15 @@ struct FrameStats {
     std::uint64_t vram_used_bytes;
     std::uint64_t vram_capacity_bytes;
     std::uint64_t vram_budget_bytes;
+    // The camera's working set: chunks the streaming driver wants resident
+    // (in frustum and large enough on screen) and how many of those are
+    // not — i.e. geometry the user should be seeing but is not yet, or
+    // cannot be because it does not fit the cache. Transiently non-zero
+    // after any camera move; persistently non-zero means the scene does
+    // not fit in VRAM.
+    std::uint32_t chunks_wanted;
+    std::uint32_t chunks_wanted_missing;
+    std::uint64_t wanted_missing_bytes;   // raw vertex + index bytes of the missing chunks
     // Whole-device VRAM from the driver (NVML / sysfs, see GpuMemory.h).
     // Desktop only; zero on web or when no backend could answer, so
     // consumers must treat 0 as "unknown" rather than as empty.

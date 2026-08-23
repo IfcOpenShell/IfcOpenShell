@@ -594,6 +594,10 @@ void ViewportWindow::removeModel(uint32_t session_model_id)   { core_.removeMode
 void ViewportWindow::resetScene()                     { core_.resetScene(); }
 void ViewportWindow::hideModel(uint32_t session_model_id)     { core_.hideModel(session_model_id); }
 void ViewportWindow::showModel(uint32_t session_model_id)     { core_.showModel(session_model_id); }
+void ViewportWindow::unloadModel(uint32_t session_model_id)   { core_.unloadModel(session_model_id); }
+bool ViewportWindow::loadModel(uint32_t session_model_id)     { return core_.loadModel(session_model_id); }
+bool ViewportWindow::isModelUnloaded(uint32_t session_model_id) const { return core_.isModelUnloaded(session_model_id); }
+std::uint64_t ViewportWindow::modelVramBytes(uint32_t session_model_id) const { return core_.modelVramBytes(session_model_id); }
 
 void ViewportWindow::setFederatedFalseOrigin(const Eigen::Matrix4d& m) {
     core_.setFederatedFalseOrigin(m);

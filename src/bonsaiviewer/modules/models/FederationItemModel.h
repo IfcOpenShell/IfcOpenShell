@@ -31,7 +31,7 @@ class Federation;
 namespace bonsaiviewer::modules::models {
 
 // QStandardItemModel that mirrors the Federation tree (groups + models in
-// two columns: name + visibility icon). Subscribes directly to Federation's
+// three columns: name, GPU memory, visibility icon). Subscribes directly to Federation's
 // granular signals so each mutation only touches the affected rows — view
 // state (expansion, selection, scroll) is preserved automatically.
 //
@@ -57,6 +57,12 @@ public:
     // previously- and newly-active model rows.
     void setActiveModelId(const QString& model_id);
 
+    // GPU residency is viewport state, not Federation state, so it is pushed
+    // in by the owning View: the memory column shows `vram_bytes` for a
+    // loaded model and "unloaded" for one the user unloaded (which is also
+    // drawn in italics). Models the viewport knows nothing about show blank.
+    void setModelResidency(const QString& model_id, bool unloaded, quint64 vram_bytes);
+
 private slots:
     void onGroupAdded(const QString& group_id);
     void onGroupRemoved(const QString& group_id);
@@ -72,6 +78,7 @@ private:
     QStandardItem* makeGroupNameItem(const QString& group_id, const QString& display_name) const;
     QStandardItem* makeModelNameItem(const QString& model_id, const QString& display_name) const;
     QStandardItem* makeVisibilityItem(ItemKind kind, bool visible) const;
+    QStandardItem* makeMemoryItem() const;
     void styleRowVisibility(QStandardItem* name_item, bool visible) const;
 
     QStandardItem* findItem(const QString& id) const;
