@@ -566,7 +566,11 @@ void MainWindow::setupLoader() {
                 .arg(stats.total_triangles)
                 .arg(stats.gl_draw_calls)
                 .arg(double(stats.vram_used_bytes) * mb, 0, 'f', 0)
-                .arg(double(stats.vram_capacity_bytes) * mb, 0, 'f', 0);
+                // Used against what the cache may grow to; the pool's
+                // momentary capacity only until the budget is known.
+                .arg(double(stats.vram_budget_bytes > 0
+                                ? stats.vram_budget_bytes
+                                : stats.vram_capacity_bytes) * mb, 0, 'f', 0);
         // Device total is only known when a driver backend answered.
         if (stats.device_vram_total_bytes > 0) {
             text += QString(" | Device %1/%2 MB")

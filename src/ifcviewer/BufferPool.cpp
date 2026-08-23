@@ -18,7 +18,9 @@
  ********************************************************************************/
 
 #include "BufferPool.h"
+#include "GpuAllocScope.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -59,16 +61,21 @@ bool BufferPool::addSubBuffer() {
     if (!device_ || per_sub_buffer_capacity_ == 0) return false;
     if (growth_disabled_) return false;
 
-    // 64 MB floor: smaller sub-buffers aren't worth the per-allocation
-    // bookkeeping cost (one bind group per chunk, free-list overhead).
-    // If the driver won't grant even 64 MB the pool is genuinely at
-    // its ceiling; growth_disabled_ latches and future grow attempts
-    // skip the doomed retry.
-    constexpr uint64_t MIN_SUB_BUFFER_BYTES = 64ull * 1024 * 1024;
     uint64_t try_size = last_growth_size_ > 0
                       ? last_growth_size_
                       : per_sub_buffer_capacity_;
     if (try_size < MIN_SUB_BUFFER_BYTES) try_size = MIN_SUB_BUFFER_BYTES;
+
+    // Never overshoot the budget: the cache's whole job is to stop short
+    // of what the required tier needs, and a sub-buffer that straddles
+    // the line would take exactly the bytes it was told to leave. A
+    // budget refusal is not a driver refusal, so growth_disabled_ is not
+    // latched — the budget is the (already lower) ceiling.
+    if (max_total_capacity_bytes_ > 0) {
+        const uint64_t total = total_capacity_bytes();
+        if (total + MIN_SUB_BUFFER_BYTES > max_total_capacity_bytes_) return false;
+        try_size = std::min(try_size, max_total_capacity_bytes_ - total);
+    }
 
 #if defined(__EMSCRIPTEN__)
     // Web can't synchronously learn whether createBuffer OOM'd: the
@@ -94,7 +101,7 @@ bool BufferPool::addSubBuffer() {
     desc.label.data   = label;
     desc.label.length = std::strlen(label);
 
-    wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
+    GpuAllocScope scope(instance_, device_);
     WGPUBuffer buf = wgpuDeviceCreateBuffer(device_, &desc);
 
     SubPool sp;
@@ -107,15 +114,7 @@ bool BufferPool::addSubBuffer() {
     last_growth_size_ = try_size;
     growth_pending_   = true;
 
-    WGPUPopErrorScopeCallbackInfo pcb = {};
-    pcb.mode = WGPUCallbackMode_AllowSpontaneous;
-    pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
-                      WGPUStringView, void* ud1, void* /*ud2*/) {
-        static_cast<BufferPool*>(ud1)->resolveProvisionalGrowth(
-            type != WGPUErrorType_NoError);
-    };
-    pcb.userdata1 = this;
-    wgpuDevicePopErrorScope(device_, pcb);
+    scope.end([this](bool ok) { resolveProvisionalGrowth(!ok); });
 
     // No usable space yet: the provisional sub-buffer isn't handed out
     // until validated. alloc fails this frame and retries on a later one.
@@ -132,31 +131,10 @@ bool BufferPool::addSubBuffer() {
         desc.label.data   = label;
         desc.label.length = std::strlen(label);
 
-        // wgpu-native classifies "Not enough memory left" as Validation,
-        // not OutOfMemory. Nested scopes: OOM inner, Validation outer.
-        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
-        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
-
+        GpuAllocScope scope(instance_, device_);
         WGPUBuffer buf = wgpuDeviceCreateBuffer(device_, &desc);
-
-        struct PopResult { bool done = false; bool error = false; };
-        auto pop = [&](PopResult& pop_result) {
-            WGPUPopErrorScopeCallbackInfo pcb = {};
-            pcb.mode = WGPUCallbackMode_AllowProcessEvents;
-            pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
-                              WGPUStringView, void* ud1, void* /*ud2*/) {
-                auto* p = static_cast<PopResult*>(ud1);
-                p->done  = true;
-                p->error = (type != WGPUErrorType_NoError);
-            };
-            pcb.userdata1 = &pop_result;
-            wgpuDevicePopErrorScope(device_, pcb);
-            while (!pop_result.done) wgpuInstanceProcessEvents(instance_);
-        };
-        PopResult oom_pop, validation_pop;
-        pop(oom_pop);
-        pop(validation_pop);
-        const bool ok = buf && !oom_pop.error && !validation_pop.error;
+        bool ok = false;
+        scope.end([&](bool result) { ok = result && buf; });
 
         if (ok) {
             SubPool sp;
@@ -186,6 +164,39 @@ bool BufferPool::addSubBuffer() {
     growth_disabled_ = true;
     return false;
 #endif  // __EMSCRIPTEN__
+}
+
+uint64_t BufferPool::shrinkToCapacity(
+        uint64_t target_bytes,
+        const std::function<void(int sub_idx)>& evict_sub_buffer) {
+    uint64_t released = 0;
+    while (!sub_pools_.empty() && total_capacity_bytes() > target_bytes) {
+        const int idx = int(sub_pools_.size()) - 1;
+        if (sub_pools_[size_t(idx)].provisional) break;
+        evict_sub_buffer(idx);
+        SubPool& sub_pool = sub_pools_[size_t(idx)];
+        assert(sub_pool.used == 0 && "owner must free every slice before a sub-buffer is released");
+        if (sub_pool.buffer && sub_pool.owns_handle) {
+            // Destroy, not just release: the handle may still be
+            // referenced by in-flight work, and destroy tells the
+            // backend to reclaim the memory as soon as that completes
+            // instead of when the last reference goes away.
+            wgpuBufferDestroy(sub_pool.buffer);
+            wgpuBufferRelease(sub_pool.buffer);
+        }
+        released += sub_pool.capacity;
+        sub_pools_.pop_back();
+    }
+    if (released > 0) {
+        std::fprintf(stderr,
+            "[wgpu pool] released %llu MB under memory pressure; pool now %llu MB "
+            "across %zu sub-buffer(s), budget %llu MB\n",
+            (unsigned long long)(released / (1024 * 1024)),
+            (unsigned long long)(total_capacity_bytes() / (1024 * 1024)),
+            sub_pools_.size(),
+            (unsigned long long)(max_total_capacity_bytes_ / (1024 * 1024)));
+    }
+    return released;
 }
 
 #if defined(__EMSCRIPTEN__)
@@ -325,9 +336,10 @@ uint64_t BufferPool::largest_free_run_bytes() const {
 
 void BufferPool::addSubBufferForTesting(WGPUBuffer fake_buffer, uint64_t capacity) {
     SubPool sp;
-    sp.buffer   = fake_buffer;
-    sp.capacity = capacity;
-    sp.used     = 0;
+    sp.buffer      = fake_buffer;
+    sp.capacity    = capacity;
+    sp.used        = 0;
+    sp.owns_handle = false;
     sp.free_ranges.push_back({0, capacity});
     sub_pools_.push_back(std::move(sp));
 }

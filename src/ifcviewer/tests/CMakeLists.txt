@@ -109,6 +109,12 @@ endif()
 add_ifcviewer_unit_test(test_selection)
 add_ifcviewer_unit_test(test_visibility)
 
+# GpuBudget: the pure policy deciding how much device memory the geometry
+# cache may hold and how it yields under pressure. No wgpu at all.
+add_ifcviewer_unit_test(test_gpu_budget
+    SOURCES ${IFCVIEWER_SRC}/GpuBudget.cpp
+)
+
 # BufferPool sub-allocator invariants. The pool's wgpu calls live inside
 # addSubBuffer() (the growth path); tests use the addSubBufferForTesting
 # seam to preseed sub-pools with fake handles, so the only wgpu touchpoint
@@ -117,7 +123,7 @@ add_ifcviewer_unit_test(test_visibility)
 # the pool go out of scope holding any. Linking wgpu_native satisfies the
 # symbol regardless.
 add_ifcviewer_unit_test(test_buffer_pool
-    SOURCES ${IFCVIEWER_SRC}/BufferPool.cpp
+    SOURCES ${IFCVIEWER_SRC}/BufferPool.cpp ${IFCVIEWER_SRC}/GpuAllocScope.cpp
     LIBS wgpu_native
 )
 if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)

@@ -145,6 +145,8 @@ set(IFCVIEWER_CORE_SOURCES
     InstanceCompose.cpp
     LodBuilder.cpp
     FederationMath.cpp
+    GpuAllocScope.cpp
+    GpuBudget.cpp
     GpuMemory.cpp
     SidecarCache.cpp
     SidecarCompress.cpp

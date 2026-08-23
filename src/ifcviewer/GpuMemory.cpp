@@ -24,7 +24,7 @@
 #include <cstring>
 #include <string>
 
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__EMSCRIPTEN__)
 #include <dirent.h>
 #include <dlfcn.h>
 #endif
@@ -32,7 +32,7 @@
 namespace ifcviewer {
 namespace {
 
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__EMSCRIPTEN__)
 
 // NVML, loaded at run time rather than linked: the viewer must run on machines
 // with no NVIDIA driver at all, so a link-time dependency is not an option.
@@ -179,13 +179,13 @@ bool querySysfs(std::uint32_t vendor_id, std::uint32_t device_id, GpuMemoryInfo&
     return found;
 }
 
-#endif  // __linux__
+#endif  // __linux__ && !__EMSCRIPTEN__
 
 }  // namespace
 
 GpuMemoryInfo queryGpuMemory(std::uint32_t vendor_id, std::uint32_t device_id) {
     GpuMemoryInfo info;
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__EMSCRIPTEN__)
     if (queryNvml(vendor_id, device_id, info)) return info;
     if (querySysfs(vendor_id, device_id, info)) return info;
 #else

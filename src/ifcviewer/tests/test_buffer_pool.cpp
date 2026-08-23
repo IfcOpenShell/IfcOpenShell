@@ -34,6 +34,7 @@
 #include <catch2/catch_all.hpp>
 
 #include <cstdint>
+#include <vector>
 
 namespace {
 
@@ -251,4 +252,63 @@ TEST_CASE("free with invalid slice is a no-op", "[buffer_pool]") {
     // Real free still works after these no-ops.
     pool.free(a);
     REQUIRE(pool.total_used_bytes() == 0);
+}
+
+// ---- Budget ceiling + shrink (the cache yielding to the required tier) ----
+
+TEST_CASE("can_grow respects the total-capacity budget with sub-buffer granularity", "[buffer_pool]") {
+    BufferPool pool;
+    FakePoolGuard guard{pool};
+    // No device configured, so can_grow is false regardless; the budget
+    // arithmetic is what we check via max_total_capacity_bytes.
+    pool.setMaxTotalCapacity(256ull * 1024 * 1024);
+    REQUIRE(pool.max_total_capacity_bytes() == 256ull * 1024 * 1024);
+    pool.addSubBufferForTesting(fake_handle(1), 200ull * 1024 * 1024);
+    // 200 MB held + 64 MB floor > 256 MB budget: a grow could not fit.
+    REQUIRE_FALSE(pool.can_grow());
+}
+
+TEST_CASE("shrinkToCapacity releases sub-buffers newest-first after the owner empties them", "[buffer_pool]") {
+    BufferPool pool;
+    FakePoolGuard guard{pool};
+    pool.addSubBufferForTesting(fake_handle(1), 1024);
+    pool.addSubBufferForTesting(fake_handle(2), 1024);
+    pool.addSubBufferForTesting(fake_handle(3), 1024);
+
+    auto a = pool.alloc(256, 16);   // sub 0
+    auto b = pool.alloc(1024, 16);  // sub 1 (sub 0 has only 768 left)
+    auto c = pool.alloc(512, 16);   // sub 0 again (first fit)
+    auto d = pool.alloc(512, 16);   // sub 2
+    REQUIRE(a.sub_idx == 0);
+    REQUIRE(b.sub_idx == 1);
+    REQUIRE(c.sub_idx == 0);
+    REQUIRE(d.sub_idx == 2);
+
+    std::vector<int> evicted;
+    auto evict = [&](int sub_idx) {
+        evicted.push_back(sub_idx);
+        if (sub_idx == 2) pool.free(d);
+        if (sub_idx == 1) pool.free(b);
+        if (sub_idx == 0) { pool.free(a); pool.free(c); }
+    };
+
+    // Shrink to 1024: drops sub 2 then sub 1; sub 0 and its slices survive
+    // with their sub_idx still valid.
+    const uint64_t released = pool.shrinkToCapacity(1024, evict);
+    REQUIRE(released == 2048);
+    REQUIRE(evicted == std::vector<int>{2, 1});
+    REQUIRE(pool.sub_buffer_count() == 1);
+    REQUIRE(pool.total_capacity_bytes() == 1024);
+    REQUIRE(pool.total_used_bytes() == 256 + 512);
+    REQUIRE(pool.largest_free_run_bytes() == 256);
+
+    // Already at or below target: nothing happens, evictor not consulted.
+    evicted.clear();
+    REQUIRE(pool.shrinkToCapacity(1024, evict) == 0);
+    REQUIRE(evicted.empty());
+
+    // Shrinking to zero empties the pool entirely.
+    REQUIRE(pool.shrinkToCapacity(0, evict) == 1024);
+    REQUIRE(pool.sub_buffer_count() == 0);
+    REQUIRE(evicted == std::vector<int>{0});
 }

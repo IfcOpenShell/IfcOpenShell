@@ -28,6 +28,7 @@
 #endif
 
 #include "CameraMath.h"
+#include "GpuAllocScope.h"
 #include "GpuMemory.h"
 #include "InstanceCompose.h"
 #include "Log.h"
@@ -61,6 +62,17 @@ Eigen::Vector3f orbitEye(const float target[3], float dist,
 ViewportCore::ViewportCore(ViewportHost* host) : host_(host) {}
 ViewportCore::~ViewportCore() = default;
 
+void releaseModelBuffers(ModelGpuData& m) {
+    for (auto& c : m.chunks) {
+        if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
+        if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
+        if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
+    }
+    if (m.mesh_storage)     { wgpuBufferRelease(m.mesh_storage);     m.mesh_storage = nullptr; }
+    if (m.instance_storage) { wgpuBufferRelease(m.instance_storage); m.instance_storage = nullptr; }
+    m.vram_bytes_ssbo = 0;
+}
+
 // Tear down a model's per-chunk GPU resources, free its pool slices,
 // and reset all the bookkeeping vectors so the slot can be reused.
 // Static because callers from outside this TU still live in
@@ -77,10 +89,8 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
             pool.free(c.index_slice);
             c.index_slice = {};
         }
-        if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
-        if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
-        if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
     }
+    releaseModelBuffers(m);
     m.chunks.clear();
     m.mesh_chunk_idx.clear();
     m.mesh_chunk_local_base_vertex.clear();
@@ -90,8 +100,6 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
     m.instance_base_vertex.clear();
     m.instance_ebo_first_u32.clear();
     m.instance_lod1_first_u32.clear();
-    if (m.mesh_storage)         { wgpuBufferRelease(m.mesh_storage);          m.mesh_storage = nullptr; }
-    if (m.instance_storage)     { wgpuBufferRelease(m.instance_storage);      m.instance_storage = nullptr; }
     m.vertex_bytes   = 0;
     m.index_count    = 0;
     m.mesh_count     = 0;
@@ -1593,20 +1601,158 @@ bool ViewportCore::createPool() {
         std::max<uint64_t>(MIN_POOL_CAPACITY, INITIAL_SUB_BUFFER));
     pool_.configure(instance_, device_, pool_usage, per_sub,
                     "ifcviewer-wgpu.pool");
+
+    // How far the pool may grow. The cache must stop short of what the
+    // required tier (attachments, model metadata, staging) will need,
+    // because those are allocated later and the frame cannot be drawn
+    // without them; see GpuBudget.h for the model.
+    std::uint64_t device_free = 0;
+    std::uint64_t hard_cap    = 0;
 #if defined(__EMSCRIPTEN__)
-    // Cap total pool capacity below the wasm heap ceiling. On web a growth that
-    // would push the heap past MAXIMUM_MEMORY is a bad_alloc → uncatchable
-    // abort, so the pool must stop growing (and evict) before then. Leave
-    // headroom for metadata (instances/maps), transient decompression buffers,
-    // and wgpu overhead. Big federations then keep a bounded, highest-priority
-    // resident set instead of aborting.
-    pool_.setMaxTotalCapacity(3072ull * 1024 * 1024);  // 3 GB (heap ceiling 4 GB)
+    // No memory query on web. Cap total pool capacity below the wasm heap
+    // ceiling: a growth that would push the heap past MAXIMUM_MEMORY is a
+    // bad_alloc → uncatchable abort, so the pool must stop growing (and
+    // evict) before then. Leave headroom for metadata (instances/maps),
+    // transient decompression buffers, and wgpu overhead. Big federations
+    // then keep a bounded, highest-priority resident set instead of
+    // aborting. Device exhaustion below that is learnt through pressure.
+    hard_cap = 3072ull * 1024 * 1024;  // 3 GB (heap ceiling 4 GB)
+#else
+    {
+        WGPUAdapterInfo adapter_info = WGPU_ADAPTER_INFO_INIT;
+        wgpuAdapterGetInfo(adapter_, &adapter_info);
+        const ifcviewer::GpuMemoryInfo mem =
+            ifcviewer::queryGpuMemory(adapter_info.vendorID, adapter_info.deviceID);
+        wgpuAdapterInfoFreeMembers(adapter_info);
+        if (mem.valid) device_free = mem.free_bytes();
+    }
 #endif
+    budget_.configure(device_free, requiredTierReserveBytes(), hard_cap);
+    pool_.setMaxTotalCapacity(budget_.bounded() ? budget_.cache_budget_bytes() : 0);
+
     Log::info() << "wgpu: pool per-sub-buffer capacity = "
                 << (per_sub / (1024 * 1024)) << " MB (grows lazily on "
                 << "demand; device maxBufferSize = "
                 << (device_limits.maxBufferSize / (1024 * 1024)) << " MB)";
+    if (budget_.bounded()) {
+        Log::info() << "wgpu: geometry cache budget = "
+                    << (budget_.cache_budget_bytes() / (1024 * 1024)) << " MB"
+                    << (device_free > 0
+                        ? " (device free " + std::to_string(device_free / (1024 * 1024))
+                          + " MB - reserve "
+                          + std::to_string(requiredTierReserveBytes() / (1024 * 1024))
+                          + " MB)"
+                        : " (fixed cap)");
+    } else {
+        Log::info() << "wgpu: geometry cache budget unknown (no device memory "
+                       "query); bounded on first memory-pressure event";
+    }
     return true;
+}
+
+std::uint64_t ViewportCore::attachmentBytesPerPixel() {
+    // Sizes follow the formats in ensureDepthTexture / ensureMsaaColorTexture /
+    // ensureSelectionOutlineTextures / createPickAttachments.
+    constexpr std::uint64_t msaa = kViewportSampleCount;
+    return 4 * msaa          // msaa colour, 4 B/sample (any 8-bit RGBA surface)
+         + 4 * msaa          // depth32 msaa
+         + 1 * msaa          // selection mask msaa (R8)
+         + 1                 // selection mask resolve (R8)
+         + 4                 // selection scratch (RGBA8)
+         + 4 + 8 + 16 + 4;   // pick: R32Uint id, RGBA16F normal, RGBA32F position, depth32
+}
+
+std::uint64_t ViewportCore::requiredTierReserveBytes() {
+    // Attachments at a 4K surface — a user can maximise onto a larger
+    // monitor after load, and the cache must already have left room —
+    // plus a fixed margin for per-model metadata buffers, readback
+    // staging, and the driver's own bookkeeping.
+    constexpr std::uint64_t kMaxPlausiblePixels = 3840ull * 2160;
+    constexpr std::uint64_t kFixedMargin        = 256ull * 1024 * 1024;
+    return attachmentBytesPerPixel() * kMaxPlausiblePixels + kFixedMargin;
+}
+
+bool ViewportCore::onRequiredAllocationFailed(const char* what, std::uint64_t bytes) {
+    const std::uint64_t capacity_before = pool_.total_capacity_bytes();
+    const bool lowered = budget_.onPressure(capacity_before, bytes);
+    const double mb = 1.0 / (1024.0 * 1024.0);
+    if (!lowered) {
+        Log::warn() << "[wgpu] out of memory allocating " << what << " ("
+                    << double(bytes) * mb << " MB) and the geometry cache ("
+                    << double(capacity_before) * mb
+                    << " MB) has nothing left to give -- device exhausted";
+        return false;
+    }
+    pool_.setMaxTotalCapacity(budget_.cache_budget_bytes());
+    const std::uint64_t released = pool_.shrinkToCapacity(
+        budget_.cache_budget_bytes(),
+        [this](int sub_idx) { evictChunksInSubBuffer(sub_idx); });
+    Log::warn() << "[wgpu] out of memory allocating " << what << " ("
+                << double(bytes) * mb << " MB); geometry cache budget lowered to "
+                << double(budget_.cache_budget_bytes()) * mb << " MB, released "
+                << double(released) * mb << " MB (pressure event #"
+                << budget_.pressure_events() << ")";
+#if !defined(__EMSCRIPTEN__)
+    // Released buffers are reclaimed once the GPU has finished with them;
+    // wait for that so the retry that follows sees the memory. On web
+    // there is no blocking wait — the next frame's attempt will.
+    wgpuDevicePoll(device_, true, nullptr);
+#endif
+    return released > 0;
+}
+
+void ViewportCore::evictChunksInSubBuffer(int sub_idx) {
+    for (auto& [session_model_id, m] : models_gpu_) {
+        for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
+            const auto& c = m.chunks[ci];
+            if (!c.is_resident) continue;
+            if (c.vertex_slice.sub_idx == sub_idx || c.index_slice.sub_idx == sub_idx) {
+                unloadChunk(m, ci);
+            }
+        }
+    }
+}
+
+bool ViewportCore::allocateRequired(const char* what, std::uint64_t bytes,
+                                    const std::function<void()>& create,
+                                    const std::function<void()>& release,
+                                    std::function<void()> on_web_failure) {
+#if defined(__EMSCRIPTEN__)
+    (void)release;
+    GpuAllocScope scope(instance_, device_);
+    create();
+    scope.end([this, what, bytes, on_web_failure = std::move(on_web_failure)](bool ok) {
+        if (ok) return;
+        onRequiredAllocationFailed(what, bytes);
+        if (on_web_failure) on_web_failure();
+    });
+    return true;
+#else
+    (void)on_web_failure;
+    // Each failed attempt lowers the budget by the allocation plus slack
+    // and releases at least one sub-buffer, so the loop strictly shrinks
+    // the cache and ends at the floor — the driver may need more headroom
+    // than one carve-out (its refusal threshold is not "free == 0").
+    for (;;) {
+        GpuAllocScope scope(instance_, device_);
+        create();
+        bool ok = false;
+        scope.end([&](bool result) { ok = result; });
+        if (ok) return true;
+        release();
+        if (!onRequiredAllocationFailed(what, bytes)) return false;
+    }
+#endif
+}
+
+WGPUBuffer ViewportCore::createRequiredBuffer(const WGPUBufferDescriptor& desc,
+                                              const char* what) {
+    WGPUBuffer buf = nullptr;
+    const bool ok = allocateRequired(
+        what, desc.size,
+        [&]() { buf = wgpuDeviceCreateBuffer(device_, &desc); },
+        [&]() { if (buf) { wgpuBufferRelease(buf); buf = nullptr; } });
+    return ok ? buf : nullptr;
 }
 
 bool ViewportCore::initWgpu(bool web_limits) {
@@ -3129,6 +3275,64 @@ SidecarData& getOrCreateDirectStaging(
 
 } // namespace
 
+bool ViewportCore::createModelBuffers(std::uint32_t session_model_id,
+                                      ModelGpuData& m,
+                                      const std::vector<MeshGpu>& mesh_gpu,
+                                      const std::vector<InstanceGpu>& inst_gpu) {
+    const std::size_t mesh_storage_bytes = mesh_gpu.size() * sizeof(MeshGpu);
+    const std::size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
+    std::uint64_t total_bytes = mesh_storage_bytes + inst_storage_bytes;
+    for (const auto& c : m.chunks) {
+        total_bytes += c.visible_draws_capacity * sizeof(ModelGpuData::VisibleDrawGpu)
+                     + c.prefix_sums_capacity * sizeof(std::uint32_t) + 16;
+    }
+
+    return allocateRequired(
+        "model buffers", total_bytes,
+        [&]() {
+            for (auto& chunk : m.chunks) {
+                WGPUBufferDescriptor vd_desc = {};
+                vd_desc.size  = std::max<std::uint64_t>(
+                    chunk.visible_draws_capacity * sizeof(ModelGpuData::VisibleDrawGpu), 16);
+                vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+                vd_desc.label = svFromCStr("model.chunk.visible_draws");
+                chunk.visible_draws_buffer = wgpuDeviceCreateBuffer(device_, &vd_desc);
+                m.vram_bytes_ssbo += vd_desc.size;
+
+                WGPUBufferDescriptor ps_desc = {};
+                ps_desc.size  = std::max<std::uint64_t>(
+                    chunk.prefix_sums_capacity * sizeof(std::uint32_t), 16);
+                ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+                ps_desc.label = svFromCStr("model.chunk.prefix_sums");
+                chunk.prefix_sums_buffer = wgpuDeviceCreateBuffer(device_, &ps_desc);
+                m.vram_bytes_ssbo += ps_desc.size;
+
+                WGPUBufferDescriptor mu_desc = {};
+                mu_desc.size  = 16;
+                mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+                mu_desc.label = svFromCStr("model.chunk.uniform");
+                chunk.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
+                m.vram_bytes_ssbo += 16;
+            }
+            m.mesh_storage = createBufferWithData(
+                device_, queue_, mesh_gpu.data(), mesh_storage_bytes,
+                WGPUBufferUsage_Storage, "model.mesh_storage");
+            m.vram_bytes_ssbo += mesh_storage_bytes;
+            m.instance_storage = createBufferWithData(
+                device_, queue_, inst_gpu.data(), inst_storage_bytes,
+                WGPUBufferUsage_Storage, "model.instance_storage");
+            m.vram_bytes_ssbo += inst_storage_bytes;
+        },
+        [&]() { releaseModelBuffers(m); },
+        // Web hears of the failure after the model is in the scene; its
+        // buffers are error objects that would fail every bind, so drop it.
+        [this, session_model_id]() {
+            Log::warn() << "[wgpu] model " << session_model_id
+                        << " removed: the device could not fit its metadata buffers";
+            removeModel(session_model_id);
+        });
+}
+
 void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
                                     StreamingSidecar metadata) {
     if (!device_ || !queue_) {
@@ -3306,35 +3510,12 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         model_gpu_data.vertex_bytes += chunk.vertex_byte_size;
         model_gpu_data.index_count  += std::uint32_t(chunk.index_count);
 
-        // Small per-chunk buffers, allocated upfront so cull can write into
-        // them. visible_draws_buffer cap = chunk's instance count.
+        // Per-chunk cull buffer capacities: visible_draws cap = the chunk's
+        // instance count. The buffers themselves are created together with
+        // the model's other buffers in createModelBuffers below.
         const std::size_t chunk_inst = std::max<std::size_t>(chunk_instance_count[chunk_index], 1);
-        const std::size_t draws_bytes = chunk_inst * sizeof(ModelGpuData::VisibleDrawGpu);
-        const std::size_t ps_bytes    = (chunk_inst + 1) * sizeof(std::uint32_t);
-
-        WGPUBufferDescriptor vd_desc = {};
-        vd_desc.size  = std::max<std::uint64_t>(draws_bytes, 16);
-        vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-        vd_desc.label = svFromCStr("model.chunk.visible_draws");
-        chunk.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
         chunk.visible_draws_capacity = chunk_inst;
-        model_gpu_data.vram_bytes_ssbo += vd_desc.size;
-
-        WGPUBufferDescriptor ps_desc = {};
-        ps_desc.size  = std::max<std::uint64_t>(ps_bytes, 16);
-        ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-        ps_desc.label = svFromCStr("model.chunk.prefix_sums");
-        chunk.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
-        chunk.prefix_sums_capacity = chunk_inst + 1;
-        model_gpu_data.vram_bytes_ssbo += ps_desc.size;
-
-        WGPUBufferDescriptor mu_desc = {};
-        mu_desc.size  = 16;
-        mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
-        mu_desc.label = svFromCStr("model.chunk.uniform");
-        chunk.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
-        model_gpu_data.vram_bytes_ssbo += 16;
-
+        chunk.prefix_sums_capacity   = chunk_inst + 1;
         chunk.visible_draws_scratch.reserve(chunk_inst);
         chunk.prefix_sums_scratch.reserve(chunk_inst + 1);
     }
@@ -3355,13 +3536,6 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         mesh_gpu_record.aabb_max[2] = mesh_info.local_aabb_max[2];
         mesh_gpu.push_back(mesh_gpu_record);
     }
-    const std::size_t mesh_storage_bytes = mesh_gpu.size() * sizeof(MeshGpu);
-    model_gpu_data.mesh_storage = createBufferWithData(
-        device_, queue_,
-        mesh_gpu.data(), mesh_storage_bytes,
-        WGPUBufferUsage_Storage,
-        "model.mesh_storage");
-    model_gpu_data.vram_bytes_ssbo += mesh_storage_bytes;
 
     // InstanceGpu storage. Rebase object_ids globally.
     const std::uint32_t object_id_base = next_object_id_;
@@ -3380,13 +3554,12 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     }
     next_object_id_ = object_id_base + max_local_id + 1;
     model_gpu_data.object_id_base = object_id_base;  // element metadata records rebase to match
-    const std::size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
-    model_gpu_data.instance_storage = createBufferWithData(
-        device_, queue_,
-        inst_gpu.data(), inst_storage_bytes,
-        WGPUBufferUsage_Storage,
-        "model.instance_storage");
-    model_gpu_data.vram_bytes_ssbo += inst_storage_bytes;
+
+    if (!createModelBuffers(session_model_id, model_gpu_data, mesh_gpu, inst_gpu)) {
+        Log::warn() << "[wgpu] model " << session_model_id
+                    << " not loaded: the device cannot fit its metadata buffers";
+        return;
+    }
 
     // Hand off CPU mirrors.
     model_gpu_data.meshes    = std::move(metadata.meta.meshes);
@@ -4473,21 +4646,7 @@ void ViewportCore::ensureHizTextures(int viewport_w, int viewport_h) {
 
     if (dst_w == hiz_resolve_w_ && dst_h == hiz_resolve_h_ && hiz_resolve_view_) return;
 
-    if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
-    if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
-    for (int s = 0; s < HIZ_SLOTS; ++s) {
-        if (hiz_staging_buffers_[s]) {
-            if (hiz_slot_state_[s] == HizSlotState::Mapped) {
-                wgpuBufferUnmap(hiz_staging_buffers_[s]);
-            }
-            wgpuBufferRelease(hiz_staging_buffers_[s]);
-            hiz_staging_buffers_[s] = nullptr;
-        }
-        hiz_slot_state_[s] = HizSlotState::Idle;
-    }
-    hiz_write_idx_ = 0;
-    hiz_valid_     = false;
-    if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
+    releaseHizTextures();
 
     WGPUTextureDescriptor desc = {};
     desc.usage         = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
@@ -4530,9 +4689,8 @@ void ViewportCore::ensureHizTextures(int viewport_w, int viewport_h) {
     hiz_valid_     = false;
 }
 
-void ViewportCore::releaseHizResources() {
+void ViewportCore::releaseHizTextures() {
     if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
-    if (hiz_uniform_buffer_)  { wgpuBufferRelease(hiz_uniform_buffer_);    hiz_uniform_buffer_ = nullptr; }
     if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
     if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
     for (int s = 0; s < HIZ_SLOTS; ++s) {
@@ -4546,12 +4704,17 @@ void ViewportCore::releaseHizResources() {
         hiz_slot_state_[s] = HizSlotState::Idle;
     }
     hiz_write_idx_ = 0;
+    hiz_resolve_w_ = hiz_resolve_h_ = hiz_padded_bpr_ = 0;
+    hiz_valid_     = false;
+}
+
+void ViewportCore::releaseHizResources() {
+    releaseHizTextures();
+    if (hiz_uniform_buffer_)  { wgpuBufferRelease(hiz_uniform_buffer_);    hiz_uniform_buffer_ = nullptr; }
     if (hiz_pipeline_)        { wgpuRenderPipelineRelease(hiz_pipeline_);  hiz_pipeline_ = nullptr; }
     if (hiz_shader_module_)   { wgpuShaderModuleRelease(hiz_shader_module_); hiz_shader_module_ = nullptr; }
     if (hiz_pipeline_layout_) { wgpuPipelineLayoutRelease(hiz_pipeline_layout_); hiz_pipeline_layout_ = nullptr; }
     if (hiz_bgl_)             { wgpuBindGroupLayoutRelease(hiz_bgl_);      hiz_bgl_ = nullptr; }
-    hiz_resolve_w_ = hiz_resolve_h_ = hiz_padded_bpr_ = 0;
-    hiz_valid_ = false;
     hiz_pyramid_.clear();
     hiz_mip_offset_.clear();
     hiz_mip_w_.clear();
@@ -4837,6 +5000,44 @@ bool ViewportCore::aabbOccludedByHiz(const float mn[3], const float mx[3]) const
         }
     }
     return rejected;
+}
+
+bool ViewportCore::ensureRenderAttachments(int width_px, int height_px) {
+    const std::uint64_t bytes =
+        attachmentBytesPerPixel() * std::uint64_t(width_px) * std::uint64_t(height_px);
+    const bool ok = allocateRequired(
+        "render attachments", bytes,
+        [&]() {
+            ensureDepthTexture(width_px, height_px);
+            ensureMsaaColorTexture(width_px, height_px);
+            ensureHizTextures(width_px, height_px);
+            ensureSelectionOutlineTextures(width_px, height_px);
+            createPickAttachments(width_px, height_px);
+        },
+        [&]() { releaseRenderAttachments(); },
+        // Web learns of the failure after the views are already in use:
+        // drop the set and reconfigure against the now-smaller cache.
+        [this]() {
+            releaseRenderAttachments();
+            int w = 0, h = 0;
+            host_->framebufferSize(w, h);
+            if (w > 0 && h > 0) configureSurface(w, h);
+            host_->requestFrame();
+        });
+    if (!ok && render_attachments_ok_) {
+        Log::warn() << "[wgpu] render attachments unavailable at " << width_px
+                    << "x" << height_px << "; frames are skipped until memory frees up";
+    }
+    render_attachments_ok_ = ok;
+    return ok;
+}
+
+void ViewportCore::releaseRenderAttachments() {
+    releaseDepthTexture();
+    releaseMsaaColorTexture();
+    releaseHizTextures();
+    releaseSelectionOutlineTextures();
+    releasePickResources();
 }
 
 void ViewportCore::ensureDepthTexture(int w, int h) {
@@ -5736,8 +5937,18 @@ bool ViewportCore::buildBoxPickPipeline() {
     return true;
 }
 
-void ViewportCore::ensurePickAttachments(int w, int h) {
-    if (w <= 0 || h <= 0) return;
+bool ViewportCore::ensurePickAttachments(int w, int h) {
+    if (w <= 0 || h <= 0) return false;
+    if (w == pick_w_ && h == pick_h_ && pick_color_view_) return true;
+    constexpr std::uint64_t kPickBytesPerPixel = 4 + 8 + 16 + 4;
+    const std::uint64_t bytes = kPickBytesPerPixel * std::uint64_t(w) * std::uint64_t(h);
+    return allocateRequired(
+        "pick attachments", bytes,
+        [&]() { createPickAttachments(w, h); },
+        [&]() { releasePickResources(); });
+}
+
+void ViewportCore::createPickAttachments(int w, int h) {
     if (w == pick_w_ && h == pick_h_ && pick_color_view_) return;
 
     if (pick_color_view_)     { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
@@ -5964,8 +6175,8 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
     if (x_pixels < 0 || y_pixels < 0 ||
         x_pixels >= configured_w_ || y_pixels >= configured_h_) return 0;
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) return 0;
+    if (!ensurePickAttachments(configured_w_, configured_h_)
+        || !pick_staging_buffer_) return 0;
     if (normal_out && !pick_normal_staging_buffer_) return 0;
 
     encodePickReadbackToStaging(x_pixels, y_pixels, normal_out != nullptr);
@@ -6193,8 +6404,8 @@ void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
     if (x_pixels < 0 || y_pixels < 0 ||
         x_pixels >= configured_w_ || y_pixels >= configured_h_) { miss(0); return; }
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) { miss(0); return; }
+    if (!ensurePickAttachments(configured_w_, configured_h_)
+        || !pick_staging_buffer_) { miss(0); return; }
 
     // One pick in flight at a time. Clicks are far slower than a readback, so
     // dropping a pick issued while another is mapping is acceptable (and
@@ -6239,8 +6450,7 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
     if (y + h > configured_h_) h = configured_h_ - y;
     if (w <= 0 || h <= 0) return false;
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_) return false;
+    if (!ensurePickAttachments(configured_w_, configured_h_)) return false;
 
     // Padded bytes-per-row. R32UInt = 4 B/texel; align to 256 B.
     constexpr std::uint64_t kWgpuBytesPerRowAlign = 256;
@@ -6259,8 +6469,8 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
         sb.size  = cap;
         sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
         sb.label = svFromCStr("ifcviewer-wgpu.box_pick_staging");
-        box_pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
-        box_pick_staging_capacity_ = cap;
+        box_pick_staging_buffer_ = createRequiredBuffer(sb, "box pick staging");
+        box_pick_staging_capacity_ = box_pick_staging_buffer_ ? cap : 0;
     }
     if (!box_pick_staging_buffer_) return false;
 
@@ -6374,8 +6584,7 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
     if (y + h > configured_h_) h = configured_h_ - y;
     if (w <= 0 || h <= 0) return false;
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_depth_view_) return false;
+    if (!ensurePickAttachments(configured_w_, configured_h_)) return false;
 
     const std::uint64_t needed_bytes = std::uint64_t(hit_flags_words_) * sizeof(std::uint32_t);
     if (needed_bytes > hit_flags_staging_capacity_) {
@@ -6388,8 +6597,8 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
         sb.size  = cap;
         sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
         sb.label = svFromCStr("ifcviewer-wgpu.hit_flags_staging");
-        hit_flags_staging_buffer_   = wgpuDeviceCreateBuffer(device_, &sb);
-        hit_flags_staging_capacity_ = cap;
+        hit_flags_staging_buffer_   = createRequiredBuffer(sb, "hit flags staging");
+        hit_flags_staging_capacity_ = hit_flags_staging_buffer_ ? cap : 0;
     }
     if (!hit_flags_staging_buffer_) return false;
 
@@ -6701,9 +6910,8 @@ void ViewportCore::pickSurfaceAtAsync(int x_pixels, int y_pixels,
     if (configured_w_ <= 0 || configured_h_ <= 0) { miss(); return; }
     if (x_pixels < 0 || y_pixels < 0 ||
         x_pixels >= configured_w_ || y_pixels >= configured_h_) { miss(); return; }
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ ||
-        !pick_staging_buffer_ || !pick_normal_staging_buffer_) { miss(); return; }
+    if (!ensurePickAttachments(configured_w_, configured_h_)
+        || !pick_staging_buffer_ || !pick_normal_staging_buffer_) { miss(); return; }
     // Shares the single-pick staging buffers → shares the in-flight guard.
     if (pick_async_in_flight_) { miss(); return; }
     pick_async_in_flight_ = true;
@@ -7154,10 +7362,7 @@ void ViewportCore::configureSurface(int width_px, int height_px) {
     configured_w_       = width_px;
     configured_h_       = height_px;
     surface_configured_ = true;
-    ensureDepthTexture(width_px, height_px);
-    ensureMsaaColorTexture(width_px, height_px);
-    ensureHizTextures(width_px, height_px);
-    ensureSelectionOutlineTextures(width_px, height_px);
+    ensureRenderAttachments(width_px, height_px);
     // depth_view_ was just replaced; force the HiZ + edge bind groups
     // to rebuild against the new view on next encode.
     if (hiz_bind_group_) {
@@ -7210,7 +7415,8 @@ WGPUBuffer ViewportCore::encodeScreenshotCapture(
     bdesc.size  = total_bytes;
     bdesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
     bdesc.label = svFromCStr("ifcviewer-wgpu.capture");
-    WGPUBuffer capture_buffer = wgpuDeviceCreateBuffer(device_, &bdesc);
+    WGPUBuffer capture_buffer = createRequiredBuffer(bdesc, "screenshot capture");
+    if (!capture_buffer) return nullptr;
 
     WGPUTexelCopyTextureInfo src = {};
     src.texture = surface_texture;
@@ -7342,6 +7548,12 @@ void ViewportCore::render() {
     // we don't busy-loop reconfiguring a dead surface — that retry storm is
     // what otherwise freezes the tab. The page logs guidance to reload.
     if (device_lost_) return;
+    // configureSurface could not fit the per-pixel attachments even after
+    // the geometry cache yielded. Drawing would submit invalid views (an
+    // abort on wgpu-native), so try again — memory may have been freed by
+    // another process since — and skip the frame if it still does not fit.
+    if (!render_attachments_ok_
+        && !ensureRenderAttachments(configured_w_, configured_h_)) return;
 
     Stopwatch frame_timer;
     frame_timer.start();
@@ -7738,6 +7950,7 @@ void ViewportCore::render() {
         stats.indirect_sub_draws = last_sub_draws_;
         stats.vram_used_bytes     = pool_.total_used_bytes();
         stats.vram_capacity_bytes = pool_.total_capacity_bytes();
+        stats.vram_budget_bytes   = budget_.bounded() ? budget_.cache_budget_bytes() : 0;
 #if !defined(__EMSCRIPTEN__)
         if (!device_vram_poll_timer_.isValid()
             || device_vram_poll_timer_.elapsed() >= 1000) {

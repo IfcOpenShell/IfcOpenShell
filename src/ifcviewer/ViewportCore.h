@@ -49,6 +49,7 @@
 
 #include "AxisIndicatorRenderer.h"
 #include "BufferPool.h"
+#include "GpuBudget.h"
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
@@ -481,6 +482,12 @@ public:
     // brings them in. Triggers an auto-viewAll on the first model (so a
     // freshly-loaded scene frames itself).
     void applyCachedModel(std::uint32_t session_model_id, StreamingSidecar metadata);
+    // The model's required-tier buffers (mesh + instance storage, per-chunk
+    // cull buffers) as one allocation unit — see allocateRequired. False
+    // when the device cannot fit them even after the cache yielded.
+    bool createModelBuffers(std::uint32_t session_model_id, ModelGpuData& m,
+                            const std::vector<MeshGpu>& mesh_gpu,
+                            const std::vector<InstanceGpu>& inst_gpu);
 
     // Qt-free sidecar load: readSidecarMetadata + applyCachedModel.
     // Used by the web build (and any other non-Qt embedder) so the
@@ -705,6 +712,9 @@ public:
     // dimensions match. Resets ping-pong state so any in-flight map is
     // dropped (caller already ensured the surface resize blocked).
     void ensureHizTextures(int viewport_w, int viewport_h);
+    // Drop just the resolve texture + staging buffers (pipeline stays),
+    // resetting the ping-pong state. ensureHizTextures recreates them.
+    void releaseHizTextures();
 
     // Tear down every HiZ-owned wgpu resource (pipeline + textures +
     // staging buffers + pyramid). Called from shutdown() before
@@ -800,8 +810,13 @@ public:
     bool buildPickPipeline();
 
     // (Re)allocate the pick MRT attachments + readback staging buffers
-    // to the supplied size. Idempotent when dimensions match.
-    void ensurePickAttachments(int w, int h);
+    // to the supplied size. Idempotent when dimensions match. Created
+    // eagerly with the other attachments in configureSurface; the pick
+    // entry points call it again only as the retry after a pressure
+    // shrink, and bail when it returns false.
+    bool ensurePickAttachments(int w, int h);
+    // The raw (unscoped) creation ensurePickAttachments wraps.
+    void createPickAttachments(int w, int h);
 
     // Encode the one-shot pick pass + copy the (x, y) texel into the pick
     // staging buffer(s) and submit. Shared by the sync (pickObjectAt) and
@@ -1051,6 +1066,63 @@ public:
 
 private:
     bool createPool();
+
+    // ---- Memory tiers (see GpuBudget.h) ------------------------------------
+    //
+    // Every allocation the frame cannot do without — the per-pixel
+    // attachments, a model's metadata buffers, readback staging — is
+    // "required" and goes through one of these so an out-of-memory is
+    // observed and answered by shrinking the geometry cache, instead of
+    // surfacing as an invalid resource that aborts in wgpuQueueSubmit.
+
+    // Reserve to hold back from the cache for the required tier: the
+    // per-pixel attachments at the largest plausible surface plus margin.
+    static std::uint64_t requiredTierReserveBytes();
+    // Bytes every per-pixel attachment set costs (MSAA colour + depth,
+    // selection mask trio, pick MRT + depth) — used to size both the
+    // reserve and the pressure carve-out when an attachment set fails.
+    static std::uint64_t attachmentBytesPerPixel();
+
+    // A required allocation of `bytes` (`what` names it for the log)
+    // failed. Lowers the budget, evicts and releases cache sub-buffers
+    // down to it, and on desktop waits for the device to actually reclaim
+    // them so an immediate retry can succeed. Returns false when the
+    // cache had nothing left to give: the device is exhausted and the
+    // caller degrades (skips the operation) rather than retrying.
+    bool onRequiredAllocationFailed(const char* what, std::uint64_t bytes);
+    // Unload every resident chunk whose slices live in pool sub-buffer
+    // `sub_idx`; the evictor BufferPool::shrinkToCapacity calls before it
+    // releases that sub-buffer.
+    void evictChunksInSubBuffer(int sub_idx);
+
+    // Run `create` (one or more wgpu allocations totalling ~`bytes`) under
+    // an allocation scope. Desktop: verified synchronously; on failure
+    // `release` undoes the attempt, the cache yields, and `create` runs
+    // again, until it succeeds or the cache has nothing left to give
+    // (false). Web: the resources are used
+    // provisionally and true is returned; if the scope later reports a
+    // failure the cache yields and `on_web_failure` (if any) corrects
+    // course, since the caller has long since moved on.
+    bool allocateRequired(const char* what, std::uint64_t bytes,
+                          const std::function<void()>& create,
+                          const std::function<void()>& release,
+                          std::function<void()> on_web_failure = {});
+    // allocateRequired for a single buffer: the buffer, or null when the
+    // device could not fit it even after the cache yielded.
+    WGPUBuffer createRequiredBuffer(const WGPUBufferDescriptor& desc,
+                                    const char* what);
+
+    // (Re)create every per-pixel attachment for a width_px × height_px
+    // surface as one required allocation. False when they could not be
+    // allocated even after the cache yielded; render() then skips the
+    // frame rather than submitting with invalid views.
+    bool ensureRenderAttachments(int width_px, int height_px);
+    void releaseRenderAttachments();
+
+    GpuBudget budget_;
+    // Latched false by ensureRenderAttachments when the device could not
+    // fit the attachments; re-evaluated on the next configureSurface.
+    bool      render_attachments_ok_ = true;
 
     // The scene's models in load order (ascending session_model_id, minted at
     // request time — see loadSidecarMetadataWeb). Every per-model API indexes

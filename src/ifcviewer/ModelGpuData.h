@@ -475,5 +475,9 @@ struct ModelGpuData {
 // ranges via `pool.free()`) and clear its size mirrors. Safe to call
 // repeatedly; idempotent on already-released entries.
 void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool);
+// Just the model's own (non-pool) wgpu buffers: mesh + instance storage
+// and the per-chunk cull buffers. Chunk bookkeeping is left intact so the
+// buffers can be re-created — the undo step of a failed model load.
+void releaseModelBuffers(ModelGpuData& m);
 
 #endif // WGPUMODELGPUDATA_H
