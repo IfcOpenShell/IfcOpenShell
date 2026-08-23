@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "OverlayRenderer.h"
+#include "WgpuDynamicOffsets.h"
 
 #include <QFont>
 #include <QFontMetrics>
@@ -886,7 +887,7 @@ void OverlayRenderer::encodeOverlayLines(WGPURenderPassEncoder pass,
         wgpuQueueWriteBuffer(queue_, overlay_line_uniform_buffer_,
                              slot_off + 96, viewport, sizeof(viewport));
         const uint32_t dynamic_offsets[1] = { uint32_t(slot_off) };
-        wgpuRenderPassEncoderSetBindGroup(pass, 0, overlay_line_bind_group_,
+        ifcviewer::setBindGroupDynamic(pass, 0, overlay_line_bind_group_,
                                           1, dynamic_offsets);
         wgpuRenderPassEncoderDraw(pass, d.vertex_count, 1, d.first_vertex, 0);
     }

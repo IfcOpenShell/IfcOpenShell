@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "SectionGizmoRenderer.h"
+#include "WgpuDynamicOffsets.h"
 
 #include <algorithm>
 #include <array>
@@ -335,7 +336,7 @@ void SectionGizmoRenderer::encode(WGPURenderPassEncoder pass, const Eigen::Matri
                            bitangent, nn, tr, tg, tb, 1.0f, vw, vh);
         const uint32_t slot_offset = uint32_t(i) * kSectionUniformSlot;
         wgpuQueueWriteBuffer(queue_, uniform_buffer_, slot_offset, slot, sizeof(slot));
-        wgpuRenderPassEncoderSetBindGroup(pass, 0, bind_group_, 1, &slot_offset);
+        ifcviewer::setBindGroupDynamic(pass, 0, bind_group_, 1, &slot_offset);
         wgpuRenderPassEncoderDraw(pass, uint32_t(vertex_count_), 1, 0, 0);
     }
 }

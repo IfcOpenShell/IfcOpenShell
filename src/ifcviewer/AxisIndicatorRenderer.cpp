@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "AxisIndicatorRenderer.h"
+#include "WgpuDynamicOffsets.h"
 
 #include <algorithm>
 #include <cmath>
@@ -341,10 +342,10 @@ void AxisIndicatorRenderer::encodePivot(WGPURenderPassEncoder pass,
 
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, vertex_buffer_, 0, WGPU_WHOLE_SIZE);
     wgpuRenderPassEncoderSetPipeline(pass, pivot_xray_pipeline_);
-    wgpuRenderPassEncoderSetBindGroup(pass, 0, bind_group_, 1, &xray_off);
+    ifcviewer::setBindGroupDynamic(pass, 0, bind_group_, 1, &xray_off);
     wgpuRenderPassEncoderDraw(pass, kAxisVertexCount, 1, 0, 0);
     wgpuRenderPassEncoderSetPipeline(pass, pivot_pipeline_);
-    wgpuRenderPassEncoderSetBindGroup(pass, 0, bind_group_, 1, &visible_off);
+    ifcviewer::setBindGroupDynamic(pass, 0, bind_group_, 1, &visible_off);
     wgpuRenderPassEncoderDraw(pass, kAxisVertexCount, 1, 0, 0);
 }
 
@@ -404,7 +405,7 @@ void AxisIndicatorRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
                                      0.0f, 1.0f);
     wgpuRenderPassEncoderSetPipeline(pass, corner_pipeline_);
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, vertex_buffer_, 0, WGPU_WHOLE_SIZE);
-    wgpuRenderPassEncoderSetBindGroup(pass, 0, bind_group_, 1, &slot_offset);
+    ifcviewer::setBindGroupDynamic(pass, 0, bind_group_, 1, &slot_offset);
     wgpuRenderPassEncoderDraw(pass, kAxisVertexCount, 1, 0, 0);
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
