@@ -88,8 +88,21 @@ public:
 
     // Desktop: a fresh driver report. `device_free_bytes` 0 = the query
     // could not answer -- ignored, the budget keeps its last value.
+    //
+    // The first report bounds the cache outright. After that the budget
+    // moves only on *sustained* readings, because the report includes
+    // transients the viewer itself creates -- the upload staging behind a
+    // burst of chunk loads, a released sub-buffer the driver has not yet
+    // reclaimed -- and a budget that followed every reading oscillated:
+    // grow, read a momentary low, shrink, read the rebound, grow again,
+    // reloading the same chunks every few seconds. So: lower when free
+    // memory is below half the margin on kConfirmReports consecutive
+    // reports; raise when it is above 1.5× the margin on as many; between
+    // those nothing changes. A refused allocation (onPressure) is never
+    // deferred.
     void update(std::uint64_t device_free_bytes,
                 std::uint64_t cache_capacity_bytes);
+    static constexpr int kConfirmReports = 2;
 
     // A required allocation of `bytes_needed` failed while the cache held
     // `cache_capacity_bytes` and the driver reported `device_free_bytes`
@@ -124,6 +137,9 @@ private:
 
     bool          bounded_         = false;
     std::uint64_t budget_          = 0;
+    bool          had_device_report_ = false;
+    int           low_reports_     = 0;  // consecutive reports below the lower band
+    int           high_reports_    = 0;  // consecutive reports above the upper band
     std::uint64_t hard_cap_        = 0;
     // Reported-free memory that a refusal proved unusable, plus slack.
     std::uint64_t learned_margin_  = 0;

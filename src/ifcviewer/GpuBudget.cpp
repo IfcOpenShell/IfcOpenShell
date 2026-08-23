@@ -37,7 +37,24 @@ void GpuBudget::update(std::uint64_t device_free_bytes,
     if (device_free_bytes == 0) return;
     const std::uint64_t available = cache_capacity_bytes + device_free_bytes;
     const std::uint64_t margin    = margin_bytes();
-    bound(available > margin ? available - margin : 0);
+    const std::uint64_t reading   = available > margin ? available - margin : 0;
+    if (!had_device_report_) {
+        had_device_report_ = true;
+        bound(reading);
+        return;
+    }
+
+    const bool tight = device_free_bytes < margin / 2;
+    const bool roomy = device_free_bytes > margin + margin / 2 && reading > budget_;
+    low_reports_  = tight ? low_reports_ + 1  : 0;
+    high_reports_ = roomy ? high_reports_ + 1 : 0;
+    if (low_reports_ >= kConfirmReports) {
+        bound(std::min(budget_, reading));
+        low_reports_ = 0;
+    } else if (high_reports_ >= kConfirmReports) {
+        bound(reading);
+        high_reports_ = 0;
+    }
 }
 
 bool GpuBudget::onPressure(std::uint64_t cache_capacity_bytes,
@@ -64,5 +81,6 @@ bool GpuBudget::onPressure(std::uint64_t cache_capacity_bytes,
     const std::uint64_t lowered = std::max(target, kMinCacheBudgetBytes);
     if (bounded_ && lowered >= budget_) return false;
     bound(lowered);
+    low_reports_ = high_reports_ = 0;
     return true;
 }

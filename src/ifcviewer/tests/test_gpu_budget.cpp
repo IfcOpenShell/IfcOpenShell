@@ -40,23 +40,68 @@ TEST_CASE("nothing known leaves the cache unbounded", "[gpu_budget]") {
     REQUIRE_FALSE(b.bounded());
 }
 
-TEST_CASE("a device report bounds the cache at held + free - margin", "[gpu_budget]") {
+TEST_CASE("the first device report bounds the cache at held + free - margin", "[gpu_budget]") {
     GpuBudget b;
     b.update(2800 * MB, 0);
     REQUIRE(b.bounded());
     REQUIRE(b.cache_budget_bytes() == 2800 * MB - GpuBudget::kFixedMarginBytes);
 
     // The pool now holds 1000 MB and the driver reports 1800 MB free: the
-    // cache's own bytes count as available to it.
+    // cache's own bytes count as available to it, so nothing moves.
+    b.update(1800 * MB, 1000 * MB);
     b.update(1800 * MB, 1000 * MB);
     REQUIRE(b.cache_budget_bytes() == 2800 * MB - GpuBudget::kFixedMarginBytes);
+}
 
-    // Another process took 1000 MB: the budget follows the device down.
-    b.update(800 * MB, 1000 * MB);
-    REQUIRE(b.cache_budget_bytes() == 1800 * MB - GpuBudget::kFixedMarginBytes);
-    // ...and back up when it is released.
-    b.update(1800 * MB, 1000 * MB);
-    REQUIRE(b.cache_budget_bytes() == 2800 * MB - GpuBudget::kFixedMarginBytes);
+TEST_CASE("a momentary reading never moves the budget; a sustained one does", "[gpu_budget]") {
+    const std::uint64_t margin = GpuBudget::kFixedMarginBytes;
+    GpuBudget b;
+    b.update(2800 * MB, 0);
+    const std::uint64_t initial = b.cache_budget_bytes();
+
+    // Pool at budget; one poll reads 80 MB free (upload staging in flight).
+    b.update(80 * MB, initial);
+    REQUIRE(b.cache_budget_bytes() == initial);
+    // The staging drained: back in the dead band, streak reset.
+    b.update(margin, initial);
+    b.update(80 * MB, initial);
+    REQUIRE(b.cache_budget_bytes() == initial);
+
+    // Tight on two consecutive reports: another process really took it.
+    b.update(80 * MB, initial);
+    REQUIRE(b.cache_budget_bytes() == initial + 80 * MB - margin);
+    const std::uint64_t lowered = b.cache_budget_bytes();
+
+    // One roomy report is not enough to raise it...
+    b.update(1500 * MB, lowered);
+    REQUIRE(b.cache_budget_bytes() == lowered);
+    // ...two are.
+    b.update(1500 * MB, lowered);
+    REQUIRE(b.cache_budget_bytes() == lowered + 1500 * MB - margin);
+}
+
+TEST_CASE("free memory inside the dead band changes nothing however long it lasts", "[gpu_budget]") {
+    const std::uint64_t margin = GpuBudget::kFixedMarginBytes;
+    GpuBudget b;
+    b.update(2800 * MB, 0);
+    const std::uint64_t initial = b.cache_budget_bytes();
+    for (int i = 0; i < 10; ++i) b.update(margin, initial);              // exactly the margin
+    for (int i = 0; i < 10; ++i) b.update(margin + margin / 2, initial); // top of the band
+    for (int i = 0; i < 10; ++i) b.update(margin / 2, initial);          // bottom of the band
+    REQUIRE(b.cache_budget_bytes() == initial);
+}
+
+TEST_CASE("a refusal lowers the budget immediately and resets the streaks", "[gpu_budget]") {
+    GpuBudget b;
+    b.update(2800 * MB, 0);
+    const std::uint64_t initial = b.cache_budget_bytes();
+    b.update(80 * MB, initial);  // one tight report
+    REQUIRE(b.onPressure(initial, 100 * MB, 80 * MB));
+    REQUIRE(b.cache_budget_bytes() < initial);
+    const std::uint64_t after = b.cache_budget_bytes();
+    // The streak did not carry over: one more tight report is not two.
+    b.update(80 * MB, after);
+    REQUIRE(b.cache_budget_bytes() == after);
 }
 
 TEST_CASE("less than the margin available floors the budget, not zero", "[gpu_budget]") {
@@ -135,8 +180,9 @@ TEST_CASE("a refusal with memory still reported free teaches the margin", "[gpu_
     REQUIRE(b.margin_bytes()
             == GpuBudget::kFixedMarginBytes + 162 * MB + GpuBudget::kPressureSlackBytes);
 
-    // The next live report stops short by the learned amount, so the pool
+    // The next live reports stop short by the learned amount, so the pool
     // does not grow straight back into the same refusal.
+    b.update(221 * MB, 2048 * MB);
     b.update(221 * MB, 2048 * MB);
     REQUIRE(b.cache_budget_bytes() == 2048 * MB + 221 * MB - b.margin_bytes());
 
