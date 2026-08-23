@@ -42,7 +42,6 @@ import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData
 from bonsai.bim.module.drawing.decoration import CutDecorator
 
-
 _wireframe_batch_cache: dict[int, dict[str, tuple[GPUBatch, int, list]]] = {}
 _wireframe_vert_fmt: GPUVertFormat | None = None
 _triangle_batch_cache: dict[int, tuple[GPUBatch, int]] = {}
@@ -157,6 +156,7 @@ def _get_solid_triangles(obj: bpy.types.Object) -> list[tuple[tuple, tuple, tupl
 
     eval_obj.to_mesh_clear()
     return tris
+
 
 def _get_cut_object_solid_triangles(obj: bpy.types.Object) -> list[tuple[tuple, tuple, tuple]]:
     """
@@ -306,6 +306,7 @@ def _get_boundary_features(obj: bpy.types.Object) -> tuple[list[tuple[float, flo
     eval_obj.to_mesh_clear()
     return verts, edge_pairs
 
+
 def _get_cut_object_features(
     obj: bpy.types.Object,
 ) -> (list[tuple[float, float, float]], list[tuple[tuple[float, float, float], tuple[float, float, float]]]):
@@ -322,7 +323,11 @@ def _get_cut_object_features(
     model_props = tool.Model.get_model_props()
     if not (element := tool.Ifc.get_entity(obj)):
         return [], []
-    if model_props.show_cut_decorator and element.id() in DecoratorData.cut_cache and (hasattr(obj.data, "polygons") and len(obj.data.polygons) > 0):
+    if (
+        model_props.show_cut_decorator
+        and element.id() in DecoratorData.cut_cache
+        and (hasattr(obj.data, "polygons") and len(obj.data.polygons) > 0)
+    ):
         verts, edges = DecoratorData.cut_cache[element.id()]
         if not verts or not edges:
             return {}, {}
@@ -373,8 +378,6 @@ def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch
 
         all_vert_coords, edge_pairs = _get_boundary_features(obj)
 
-
-
     batches: dict[str, tuple[GPUBatch, int, list]] = {}
 
     # POINTS batch (all wireframe vertices)
@@ -410,16 +413,17 @@ def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch
         _wireframe_batch_cache[cache_key] = batches
     return batches
 
+
 def _get_tris_render_ops(objs_to_raycast: list[bpy.types.Object]) -> list[tuple[GPUBatch, Matrix, int]]:
     """Build render ops for solid (triangle) objects to raycast.
 
-    Each mesh contributes a single TRIANGLES batch and a slot base that 
-    encodes its index in the global ``_obj_list`` (slot 0 is reserved for 
+    Each mesh contributes a single TRIANGLES batch and a slot base that
+    encodes its index in the global ``_obj_list`` (slot 0 is reserved for
     the background). The batch is drawn unlit so the object index can be
-    read back from the framebuffer. 
+    read back from the framebuffer.
 
-    Args: 
-        objs_to_raycast: iterable of candidate objects. 
+    Args:
+        objs_to_raycast: iterable of candidate objects.
 
     Returns:
         list[tuple[GPUBatch, Matrix, int]]: ``(batch, world_matrix, slot_base)``
@@ -446,28 +450,31 @@ def _get_tris_render_ops(objs_to_raycast: list[bpy.types.Object]) -> list[tuple[
         slot_base = obj_index + 1  # slot 0 = background
         render_ops.append((batch, snap_obj.matrix_world.copy(), slot_base))
     return render_ops
-    
-def _create_tris_snaps(context: bpy.types.Context, event: bpy.types.Event, mouse_read_rect, buffers_list, last_buf, xray_mode) -> tuple[list[dict], bpy.types.Object | None]:
+
+
+def _create_tris_snaps(
+    context: bpy.types.Context, event: bpy.types.Event, mouse_read_rect, buffers_list, last_buf, xray_mode
+) -> tuple[list[dict], bpy.types.Object | None]:
     """Decode the triangle readback buffer(s) into face snaps.
- 
-    In xray mode each object is read back as a single pixel under the 
-    cursor (``buffers_list``); otherwise the center pixel of the readback 
-    region (``last_buf``) is decoded. Every hit object is then ray cast for 
-    real to find the exact face, producing one ``Face`` snap per hit. 
- 
-    Args: 
-        context: Blender context. 
+
+    In xray mode each object is read back as a single pixel under the
+    cursor (``buffers_list``); otherwise the center pixel of the readback
+    region (``last_buf``) is decoded. Every hit object is then ray cast for
+    real to find the exact face, producing one ``Face`` snap per hit.
+
+    Args:
+        context: Blender context.
         event: the event carrying the cursor position.
-        mouse: ``(mx, read_x, my, read_y)`` cursor and readback origin. 
-        buffers_list: per-object single-pixel buffers (xray mode only). 
+        mouse: ``(mx, read_x, my, read_y)`` cursor and readback origin.
+        buffers_list: per-object single-pixel buffers (xray mode only).
         last_buf: full readback region buffer (non-xray mode).
         xray_mode: whether solid xray rendering is active.
- 
+
     Returns:
         tuple[list[dict], bpy.types.Object | None]: the face snaps and the
-        closest hit object, or ``([], None)`` when nothing was hit. 
+        closest hit object, or ``([], None)`` when nothing was hit.
     """
-           
+
     global _obj_list
 
     w, h, mx, my, read_x, read_y = mouse_read_rect
@@ -525,7 +532,7 @@ def _create_tris_snaps(context: bpy.types.Context, event: bpy.types.Event, mouse
                 "group": "Object",
                 "object": hit_obj,
                 "face_index": face_index,
-                "is_cut": is_cut_face, # Used later in snap
+                "is_cut": is_cut_face,  # Used later in snap
                 "distance": 9,  # High value so it has low priority
             }
             dist = (hit - ray_origin).length
@@ -536,24 +543,27 @@ def _create_tris_snaps(context: bpy.types.Context, event: bpy.types.Event, mouse
             snaps.append(snap)
 
     return snaps, closest_obj
-    
-def _get_wireframe_render_ops(objs_to_raycast: list[bpy.types.Objects]) -> tuple[list[tuple[GPUBatch, Matrix, int]], list[tuple]]:
+
+
+def _get_wireframe_render_ops(
+    objs_to_raycast: list[bpy.types.Objects],
+) -> tuple[list[tuple[GPUBatch, Matrix, int]], list[tuple]]:
     """Build render ops for wireframe (non-solid) objects.
 
-    Boundary points and lines of each object are assigned sequential slot 
+    Boundary points and lines of each object are assigned sequential slot
     IDs across all objects, so every vertex and edge gets a unique encoded
     ID. Per-object slot ranges are recorded in ``obj_slots`` for decoding.
 
-    Args: 
-    objs_to_raycast: iterable of candidate objects. 
+    Args:
+    objs_to_raycast: iterable of candidate objects.
 
     Returns:
-    tuple[list[tuple[GPUBatch, Matrix, int]], list[tuple]]: 
+    tuple[list[tuple[GPUBatch, Matrix, int]], list[tuple]]:
     ``(render_ops, obj_slots)`` where ``render_ops`` holds
-    ``(batch, world_matrix, slot_base)`` and each ``obj_slots`` 
+    ``(batch, world_matrix, slot_base)`` and each ``obj_slots``
     entry is ``(snap_obj, pts_start, n_pts, lines_start, n_lines)``.
     """
-       
+
     render_ops: list[tuple[GPUBatch, Matrix, int]] = []
     obj_slots: list[tuple] = []  # [(snap_obj, pts_start, n_pts, lines_start, n_lines), ...]
 
@@ -589,25 +599,28 @@ def _get_wireframe_render_ops(objs_to_raycast: list[bpy.types.Objects]) -> tuple
 
     return render_ops, obj_slots
 
-def _create_wireframe_snaps(context: bpy.types.Context, event: bpy.types.Event, mouse_read_rect, obj_slots, last_buf) -> tuple[list[dict], None]:
-    """Decode the wireframe readback buffer into vertex/edge snaps. 
+
+def _create_wireframe_snaps(
+    context: bpy.types.Context, event: bpy.types.Event, mouse_read_rect, obj_slots, last_buf
+) -> tuple[list[dict], None]:
+    """Decode the wireframe readback buffer into vertex/edge snaps.
 
     Finds the closest non-zero pixel to the cursor, maps its encoded slot ID
-    back to a vertex or edge via ``obj_slots``, then builds the candidate 
-    snaps (Vertex, Edge, Edge Center, plus endpoint Vertex snaps within the 
+    back to a vertex or edge via ``obj_slots``, then builds the candidate
+    snaps (Vertex, Edge, Edge Center, plus endpoint Vertex snaps within the
     snap threshold).
 
-    Args: 
-        context: Blender context. 
+    Args:
+        context: Blender context.
         event: the event carrying the cursor position.
-        mouse: ``(mx, read_x, my, read_y)`` cursor and readback origin. 
-        obj_slots: ``[(snap_obj, pts_start, n_pts, lines_start, n_lines), ...]``. 
+        mouse: ``(mx, read_x, my, read_y)`` cursor and readback origin.
+        obj_slots: ``[(snap_obj, pts_start, n_pts, lines_start, n_lines), ...]``.
         last_buf: full readback region buffer.
 
     Returns:
         tuple[list[dict], None]: the wireframe snaps, or ``([], None)`` when
-        no non-zero pixel is found near the cursor. 
-    """ 
+        no non-zero pixel is found near the cursor.
+    """
     global _wireframe_batch_cache
 
     w, h, mx, my, read_x, read_y = mouse_read_rect
@@ -692,7 +705,7 @@ def _create_wireframe_snaps(context: bpy.types.Context, event: bpy.types.Event, 
                         )
 
                         # Edge Center snap (midpoint)
-                        mid = (v0 + v1) / 2 # TODO Allow divisions by other values
+                        mid = (v0 + v1) / 2  # TODO Allow divisions by other values
                         mid_proj = tool.Cad.point_on_edge(mid, (ray_target, loc))
                         mid_dist = (mid - mid_proj).length
                         snaps.append(
@@ -722,6 +735,7 @@ def _create_wireframe_snaps(context: bpy.types.Context, event: bpy.types.Event, 
             break
 
     return snaps, None
+
 
 class Raycast(bonsai.core.tool.Raycast):
     offset = 10
@@ -1163,13 +1177,13 @@ class Raycast(bonsai.core.tool.Raycast):
     def clear_cache(cls):
         global _wireframe_batch_cache, _wireframe_vert_fmt, _triangle_batch_cache, _triangle_vert_fmt, _encoding_shader, _offscreen, _obj_list
         _wireframe_batch_cache = {}
-        _wireframe_vert_fmt= None
-        _triangle_batch_cache= {}
-        _triangle_vert_fmt= None
-        _encoding_shader= None
-        _offscreen= None
-        _obj_list= []
-        
+        _wireframe_vert_fmt = None
+        _triangle_batch_cache = {}
+        _triangle_vert_fmt = None
+        _encoding_shader = None
+        _offscreen = None
+        _obj_list = []
+
     @classmethod
     def ray_cast_by_proximity(
         cls,

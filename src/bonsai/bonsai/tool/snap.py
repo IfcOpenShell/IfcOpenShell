@@ -435,7 +435,7 @@ class Snap(bonsai.core.tool.Snap):
 
             detected_snaps.extend(wireframe_snaps)
 
- # Axis and Plane
+        # Axis and Plane
         if tool.Ifc.get():
             elevation = tool.Root.get_default_container_elevation()
         else:
