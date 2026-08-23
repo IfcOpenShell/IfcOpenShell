@@ -926,6 +926,62 @@ extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_bytes_loaded_c() {
     return double(loaded_bytes);
 }
 
+// ---- Frame stats + GPU residency ------------------------------------------
+
+// The latest FrameStats as doubles, in this order (see FrameStats.h):
+//  0 fps, 1 frame_time_ms, 2 total_objects, 3 visible_objects,
+//  4 total_triangles, 5 visible_triangles, 6 draw_calls,
+//  7 vram_used_bytes, 8 vram_capacity_bytes, 9 vram_budget_bytes,
+// 10 chunks_wanted, 11 chunks_wanted_missing, 12 wanted_missing_bytes.
+// Device-wide VRAM is not included: there is no query for it on web.
+// Returns the number of values written (0 before the first frame).
+constexpr int kFrameStatsValues = 13;
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_frame_stats_c(double* out, int capacity) {
+    if (!g_app || !out || capacity < kFrameStatsValues) return 0;
+    const FrameStats& s = g_app->host.lastFrameStats();
+    out[0]  = s.fps;
+    out[1]  = s.frame_time_ms;
+    out[2]  = s.total_objects;
+    out[3]  = s.visible_objects;
+    out[4]  = s.total_triangles;
+    out[5]  = s.visible_triangles;
+    out[6]  = s.gl_draw_calls;
+    out[7]  = double(s.vram_used_bytes);
+    out[8]  = double(s.vram_capacity_bytes);
+    out[9]  = double(s.vram_budget_bytes);
+    out[10] = s.chunks_wanted;
+    out[11] = s.chunks_wanted_missing;
+    out[12] = double(s.wanted_missing_bytes);
+    return kFrameStatsValues;
+}
+
+// Per-model GPU residency, keyed by source id like the other per-model
+// exports. Unload frees everything the model holds on the GPU while it stays
+// in the scene; load brings it back (0 if the device cannot fit its buffers).
+// Neither touches visibility.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_unload_model_c(int source_id) {
+    if (!g_app) return;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    if (session_model_id == 0) return;
+    g_app->core.unloadModel(session_model_id);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_load_model_c(int source_id) {
+    if (!g_app) return 0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    if (session_model_id == 0) return 0;
+    return g_app->core.loadModel(session_model_id) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_unloaded_c(int source_id) {
+    if (!g_app) return 0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    return session_model_id != 0 && g_app->core.isModelUnloaded(session_model_id) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_model_vram_bytes_c(int source_id) {
+    if (!g_app) return 0.0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    return session_model_id == 0 ? 0.0 : double(g_app->core.modelVramBytes(session_model_id));
+}
+
 int main(int /*argc*/, char** /*argv*/) {
     Log::info() << "ifcviewer-web: starting";
     g_app = new AppState();

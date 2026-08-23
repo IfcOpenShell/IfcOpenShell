@@ -54,9 +54,16 @@ public:
     // core.render().
     bool consumeFrameRequest();
 
+    // The most recent per-frame stats (fps, VRAM, working set). Latched
+    // here so the page can read them whenever it likes (ifcv_get_frame_stats_c)
+    // instead of being called back every frame across the wasm boundary.
+    void onFrameStats(const FrameStats& stats) override { last_stats_ = stats; }
+    const FrameStats& lastFrameStats() const { return last_stats_; }
+
 private:
     std::string canvas_selector_;
     bool        request_frame_pending_ = true;  // arm an initial frame
+    FrameStats  last_stats_ = {};
 };
 
 #endif  // WEBVIEWPORTHOST_H

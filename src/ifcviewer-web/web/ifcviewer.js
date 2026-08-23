@@ -530,6 +530,45 @@
         };
       },
 
+      // The latest frame's statistics — what BonsaiViewer's status bar shows.
+      // `vram` is the streamed-geometry cache: bytes held by resident chunks,
+      // the pool's current capacity, and the budget it may grow to (0 while
+      // unbounded). `workingSet` is what the camera wants resident: chunks in
+      // view and large enough to draw, how many of those are not resident,
+      // and their size — transiently non-zero after a camera move, and
+      // persistently non-zero when the scene does not fit in GPU memory
+      // (unload a model to make room). Null before the first frame.
+      stats: function () {
+        const n = 13;
+        const ptr = Module._malloc(n * 8);
+        try {
+          if (!Module._ifcv_get_frame_stats_c(ptr, n)) return null;
+          const d = Module.HEAPF64.subarray(ptr >>> 3, (ptr >>> 3) + n);
+          return {
+            fps: d[0],
+            frameTimeMs: d[1],
+            objects:   { visible: d[3], total: d[2] },
+            triangles: { visible: d[5], total: d[4] },
+            drawCalls: d[6],
+            vram: { usedBytes: d[7], capacityBytes: d[8], budgetBytes: d[9] },
+            workingSet: { chunks: d[10], chunksMissing: d[11], missingBytes: d[12] },
+          };
+        } finally {
+          Module._free(ptr);
+        }
+      },
+
+      // GPU residency per model, by source id. Unloading frees everything
+      // the model holds on the GPU while it stays in the scene (its
+      // visibility untouched); loading brings it back, streaming the
+      // geometry in again on demand. loadModel resolves false when the
+      // device cannot fit the model's buffers. This is the lever when
+      // stats().workingSet.chunksMissing stays above zero.
+      unloadModel:    function (sourceId) { Module._ifcv_unload_model_c(sourceId | 0); },
+      loadModel:      function (sourceId) { return Module._ifcv_load_model_c(sourceId | 0) !== 0; },
+      modelUnloaded:  function (sourceId) { return Module._ifcv_model_unloaded_c(sourceId | 0) !== 0; },
+      modelVramBytes: function (sourceId) { return Module._ifcv_model_vram_bytes_c(sourceId | 0); },
+
       registerFileSource: registerFile,
       registerUrlSource: registerUrl,
 
