@@ -36,6 +36,160 @@ if TYPE_CHECKING:
     from bonsai.bim.prop import BIMSnapGroups, BIMSnapProperties
 
 
+def _get_gpu_object_snaps(
+    context: bpy.types.Context,
+    event: bpy.types.Event,
+    objs_to_raycast: list[bpy.types.Object],
+    xray_mode: bool,
+) -> list[dict[str, Any]]:
+    detected_snaps: list[dict[str, Any]] = []
+    snap_faces, closest_obj = tool.Raycast.get_gpu_solid_snaps(context, event, objs_to_raycast)
+    wireframe_snaps, _ = tool.Raycast.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
+
+    if not xray_mode:
+        for snap in snap_faces:
+            if snap["object"] == closest_obj:
+                detected_snaps.append(snap)
+                # Tris from cut geometry are irregular, so we don't want to use them
+                # to create edges and vertices snaps. They are handled by wireframe snaps
+                if not snap["is_cut"]:
+                    snap_points = tool.Raycast.ray_cast_by_proximity(
+                        context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]]
+                    )
+                    for point in snap_points:
+                        point["group"] = "Object"
+                        detected_snaps.append(point)
+
+                # Get wireframe snaps that are not occluded by face snap
+                ray_origin = tool.Raycast.get_viewport_ray_data(context, event)[0]
+                occl_dist = (snap["point"] - ray_origin).length + 1e-4
+                visible_wireframe_snaps = [w for w in wireframe_snaps if (w["point"] - ray_origin).length <= occl_dist]
+                detected_snaps.extend(visible_wireframe_snaps)
+                continue
+
+        if not snap_faces:
+            detected_snaps.extend(wireframe_snaps)
+
+    else:
+        # Doesn't include face snaps, only their edges and vertices
+        for snap in snap_faces:
+            snap_points = tool.Raycast.ray_cast_by_proximity(
+                context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]]
+            )
+            for point in snap_points:
+                point["group"] = "Object"
+                detected_snaps.append(point)
+
+        detected_snaps.extend(wireframe_snaps)
+
+    return detected_snaps
+
+
+def _get_cpu_object_snaps(
+    context: bpy.types.Context,
+    event: bpy.types.Event,
+    objs_to_raycast: list[bpy.types.Object],
+    xray_mode: bool,
+) -> list[dict[str, Any]]:
+    detected_snaps: list[dict[str, Any]] = []
+    closest_snaps = tool.Raycast.ray_cast_and_get_closest_to_camera_snaps(context, event, objs_to_raycast)
+    wireframe_snaps = [snap for snap in closest_snaps if snap["group"] == "Wireframe"]
+    face_snaps = [snap for snap in closest_snaps if snap["group"] == "Object"]
+
+    if not xray_mode:
+        closest_face_snap = None
+        for snap in face_snaps:
+            if snap.get("is_closest_to_camera"):
+                closest_face_snap = snap
+                break
+
+        if closest_face_snap:
+            detected_snaps.append(closest_face_snap)
+            snap_points = tool.Raycast.ray_cast_by_proximity(
+                context,
+                event,
+                closest_face_snap["object"],
+                closest_face_snap["object"].data.polygons[closest_face_snap["face_index"]],
+            )
+            for point in snap_points:
+                point["group"] = "Object"
+                detected_snaps.append(point)
+
+            # Get wireframe snaps that are not occluded by face snap
+            ray_origin = tool.Raycast.get_viewport_ray_data(context, event)[0]
+            occl_dist = (closest_face_snap["point"] - ray_origin).length + 1e-4
+            visible_wireframe_snaps = [w for w in wireframe_snaps if (w["point"] - ray_origin).length <= occl_dist]
+            detected_snaps.extend(visible_wireframe_snaps)
+        else:
+            detected_snaps.extend(wireframe_snaps)
+    else:
+        # Doesn't include face snaps, only their edges and vertices
+        for snap in face_snaps:
+            if snap["face_index"] is None:
+                continue
+            snap_points = tool.Raycast.ray_cast_by_proximity(
+                context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]]
+            )
+            for point in snap_points:
+                point["group"] = "Object"
+                detected_snaps.append(point)
+
+        detected_snaps.extend(wireframe_snaps)
+
+    return detected_snaps
+
+
+def _get_cut_object_snaps(
+    context: bpy.types.Context,
+    event: bpy.types.Event,
+) -> list[dict[str, Any]]:
+    if not CutDecorator.installed:
+        return []
+
+    cut_snaps: list[dict[str, Any]] = []
+    model_props = tool.Model.get_model_props()
+
+    for obj in [o for o in context.visible_objects if o.type == "MESH"]:
+        if not (element := tool.Ifc.get_entity(obj)):
+            continue
+
+        if model_props.show_cut_decorator and element.id() in DecoratorData.cut_cache:
+            verts, edges = DecoratorData.cut_cache[element.id()]
+            if not verts or not edges:
+                continue
+
+            bm = bmesh.new()
+            bverts = [bm.verts.new(pos) for pos in verts]
+            for edge in edges:
+                bm.edges.new([bverts[vi] for vi in edge])
+
+            snap_points = tool.Raycast.ray_cast_by_proximity(context, event, None, None, bm)
+            if snap_points:
+                for p in snap_points:
+                    p["group"] = "Object"
+                    p["object"] = obj
+                    cut_snaps.append(p)
+
+        if model_props.show_cut_decorator_fill and element.id() in DecoratorData.fill_cache:
+            bm = bmesh.new()
+            for color, verts_and_tris in DecoratorData.fill_cache[element.id()].items():
+                for verts, tris in verts_and_tris:
+                    bverts = [bm.verts.new(pos) for pos in verts]
+                    for tri in tris:
+                        verts = [bverts[vi] for vi in tri]
+                        if not bm.faces.get(verts):
+                            bm.faces.new(verts)
+
+            snap_points = tool.Raycast.ray_cast_by_proximity(context, event, None, None, bm)
+            if snap_points:
+                for p in snap_points:
+                    p["group"] = "Object"
+                    p["object"] = obj
+                    cut_snaps.append(p)
+
+    return cut_snaps
+
+
 class Snap(bonsai.core.tool.Snap):
     tool_state = None
     snap_plane_method = None
@@ -394,46 +548,15 @@ class Snap(bonsai.core.tool.Snap):
             space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
         )
         objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
-        snap_faces, closest_obj = tool.Raycast.get_gpu_solid_snaps(context, event, objs_to_raycast)
-        wireframe_snaps, _ = tool.Raycast.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
+        props = cls.get_snap_props()
 
-        if not xray_mode:
-            for snap in snap_faces:
-                if snap["object"] == closest_obj:
-                    detected_snaps.append(snap)
-                    # Tris from cut geometry are irregular, so we don't want to use them
-                    # to create edges and vertices snaps. They are handled by wireframe snaps
-                    if not snap["is_cut"]:
-                        snap_points = tool.Raycast.ray_cast_by_proximity(
-                            context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]]
-                        )
-                        for point in snap_points:
-                            point["group"] = "Object"
-                            detected_snaps.append(point)
-
-                    # Get wireframe snaps that are not occluded by face snap
-                    ray_origin = tool.Raycast.get_viewport_ray_data(context, event)[0]
-                    occl_dist = (snap["point"] - ray_origin).length + 1e-4
-                    visible_wireframe_snaps = [
-                        w for w in wireframe_snaps if (w["point"] - ray_origin).length <= occl_dist
-                    ]
-                    detected_snaps.extend(visible_wireframe_snaps)
-                    continue
-
-            if not snap_faces:
-                detected_snaps.extend(wireframe_snaps)
-
+        if props.use_gpu_snapping:
+            detected_snaps.extend(_get_gpu_object_snaps(context, event, objs_to_raycast, xray_mode))
         else:
-            # Doesn't include face snaps, only their edges and vertices
-            for snap in snap_faces:
-                snap_points = tool.Raycast.ray_cast_by_proximity(
-                    context, event, snap["object"], snap["object"].data.polygons[snap["face_index"]]
-                )
-                for point in snap_points:
-                    point["group"] = "Object"
-                    detected_snaps.append(point)
-
-            detected_snaps.extend(wireframe_snaps)
+            detected_snaps.extend(_get_cpu_object_snaps(context, event, objs_to_raycast, xray_mode))
+            cut_snaps = _get_cut_object_snaps(context, event)
+            if cut_snaps:
+                detected_snaps = cut_snaps
 
         # Axis and Plane
         if tool.Ifc.get():
