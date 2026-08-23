@@ -58,6 +58,11 @@ public:
     // here so the page can read them whenever it likes (ifcv_get_frame_stats_c)
     // instead of being called back every frame across the wasm boundary.
     void onFrameStats(const FrameStats& stats) override { last_stats_ = stats; }
+
+    // No measurement tools on web yet, so nothing reads the CPU triangle
+    // shadow — and at 12 B/vertex it is a large slice of a 4 GB-capped
+    // wasm heap. Flip when the tools are ported.
+    bool wantsCpuMeshTriangles() const override { return false; }
     const FrameStats& lastFrameStats() const { return last_stats_; }
 
 private:

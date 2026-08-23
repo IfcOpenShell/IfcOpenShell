@@ -2353,6 +2353,16 @@ bool ViewportCore::applyStreamedChunk(
     c.is_loading       = false;
     c.loaded_frame_idx = streaming_frame_idx_;
 
+    // The CPU triangle shadow follows residency: count this chunk into each
+    // of its meshes (a mesh can live in several chunks under the spatial
+    // planner); unloadChunk counts it back out and releases the shadow of
+    // any mesh with no resident chunk left.
+    if (m.mesh_resident_chunk_refs.size() == m.meshes.size()) {
+        for (std::uint32_t mi : c.mesh_ids) {
+            if (mi < m.mesh_resident_chunk_refs.size()) ++m.mesh_resident_chunk_refs[mi];
+        }
+    }
+
     // Per-mesh alpha probe. Scan every vertex of every mesh in this chunk
     // for any alpha byte < 255 — fires the mesh_has_alpha flag the cull
     // classifier reads to route instances of this mesh to the transparent
@@ -2389,9 +2399,17 @@ bool ViewportCore::applyStreamedChunk(
     // chunk to deliver each mesh fills it in.
     bool filled_volume = false;
     if (!m.mesh_local_volumes.empty() && !idx.empty()) {
+        const bool want_tris = host_->wantsCpuMeshTriangles();
         for (std::uint32_t mi : c.mesh_ids) {
             if (mi >= m.meshes.size() || mi >= m.mesh_local_volumes.size()) continue;
-            if (m.mesh_local_volumes[mi] != 0.0) continue;
+            // Volume is computed once per mesh (8 B, kept across eviction);
+            // the triangle shadow is refilled whenever this mesh returns to
+            // residency after its shadow was released.
+            const bool need_volume = m.mesh_local_volumes[mi] == 0.0;
+            const bool need_tris   = want_tris
+                && mi < m.mesh_triangles_cache.size()
+                && m.mesh_triangles_cache[mi].indices.empty();
+            if (!need_volume && !need_tris) continue;
             const MeshInfo& mesh = m.meshes[mi];
             if (mesh.vertex_count == 0 || mesh.index_count < 3) continue;
             const std::size_t v_off =
@@ -2402,14 +2420,18 @@ bool ViewportCore::applyStreamedChunk(
                 + std::size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
             if (v_end > vbytes.size()) continue;
             if (i_off + mesh.index_count > idx.size()) continue;
-            ModelGpuData::MeshTriangles* tris =
-                (mi < m.mesh_triangles_cache.size())
-                    ? &m.mesh_triangles_cache[mi]
-                    : nullptr;
-            m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
+            const double volume = computeMeshLocalVolumeQuantised(
                 mesh, vbytes.data() + v_off, idx.data() + i_off, mesh.index_count,
-                tris);
-            filled_volume = true;
+                need_tris ? &m.mesh_triangles_cache[mi] : nullptr);
+            if (need_tris) {
+                const auto& tris = m.mesh_triangles_cache[mi];
+                m.cpu_shadow_bytes += tris.positions.size() * sizeof(float)
+                                    + tris.indices.size() * sizeof(std::uint32_t);
+            }
+            if (need_volume) {
+                m.mesh_local_volumes[mi] = volume;
+                filled_volume = true;
+            }
         }
     }
     // Fire the tool-refresh callback once per apply if anything new filled
@@ -2486,6 +2508,38 @@ void ViewportCore::unloadChunk(ModelGpuData& m, std::size_t chunk_idx) {
     c.total_visible_draws    = 0;
     c.total_visible_vertices = 0;
     c.is_resident = false;
+
+    // CPU side of the eviction. The cull scratch and the uploaded mirrors
+    // are only meaningful for a resident chunk (cull no longer emits for
+    // non-resident ones); releasing them here also keeps the memcmp
+    // dirty-check honest — after a model unload/load cycle the GPU cull
+    // buffers are fresh, and a stale mirror would wrongly skip the first
+    // upload into them. Assignment, not clear(): capacity must go too.
+    c.visible_draws_scratch             = {};
+    c.prefix_sums_scratch               = {};
+    c.visible_draws_scratch_transparent = {};
+    c.transparent_per_draw_vertex_counts = {};
+    c.visible_draws_uploaded            = {};
+    c.prefix_sums_uploaded              = {};
+
+    // Count this chunk out of its meshes' residency; a mesh with no
+    // resident chunk left releases its triangle shadow (refilled from the
+    // chunk bytes on the next residency — see applyStreamedChunk).
+    if (m.mesh_resident_chunk_refs.size() == m.meshes.size()) {
+        for (std::uint32_t mi : c.mesh_ids) {
+            if (mi >= m.mesh_resident_chunk_refs.size()) continue;
+            if (m.mesh_resident_chunk_refs[mi] > 0) --m.mesh_resident_chunk_refs[mi];
+            if (m.mesh_resident_chunk_refs[mi] == 0
+                && mi < m.mesh_triangles_cache.size()) {
+                auto& tris = m.mesh_triangles_cache[mi];
+                const std::uint64_t bytes = tris.positions.size() * sizeof(float)
+                                          + tris.indices.size() * sizeof(std::uint32_t);
+                m.cpu_shadow_bytes = m.cpu_shadow_bytes > bytes
+                                   ? m.cpu_shadow_bytes - bytes : 0;
+                tris = {};
+            }
+        }
+    }
 }
 
 // ===========================================================================
@@ -3168,6 +3222,13 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         // decide what's worth fetching for the current view.
         ++c.contribution_visible_count;
 
+        // Streaming has everything it needs. The HiZ test and the draw
+        // emission below only matter for a chunk that can actually draw;
+        // for a non-resident one they were pure waste — scratch heap that
+        // eviction never reclaimed and per-frame buffer uploads that
+        // render() skipped anyway.
+        if (!c.is_resident) return;
+
         if (hiz_active
             && hiz_occluded(inst.world_aabb_min, inst.world_aabb_max)) {
             ++hiz_rejects;
@@ -3616,8 +3677,9 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         const std::size_t chunk_inst = std::max<std::size_t>(chunk_instance_count[chunk_index], 1);
         chunk.visible_draws_capacity = chunk_inst;
         chunk.prefix_sums_capacity   = chunk_inst + 1;
-        chunk.visible_draws_scratch.reserve(chunk_inst);
-        chunk.prefix_sums_scratch.reserve(chunk_inst + 1);
+        // The CPU scratch is NOT reserved here: it grows on the chunk's
+        // first resident cull and is released again on eviction, so only
+        // resident chunks pay for it.
     }
 
     // Index section is NOT loaded upfront. Each chunk's index slice is
@@ -3672,6 +3734,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     // inside applyStreamedChunk as the bytes arrive.
     model_gpu_data.mesh_local_volumes.assign(model_gpu_data.meshes.size(), 0.0);
     model_gpu_data.mesh_triangles_cache.assign(model_gpu_data.meshes.size(), ModelGpuData::MeshTriangles{});
+    model_gpu_data.mesh_resident_chunk_refs.assign(model_gpu_data.meshes.size(), 0);
     model_gpu_data.mesh_has_alpha.assign(model_gpu_data.meshes.size(), std::uint8_t(0));
 
     // object_id → instance index lookup. Volume tool reads it on every
@@ -8082,6 +8145,7 @@ void ViewportCore::render() {
         ++interactive_frame_count_;
         const float ms = float(frame_timer.nsecsElapsed()) / 1e6f;
         std::uint64_t total_vbo = 0, total_ebo = 0, total_ssbo = 0;
+        std::uint64_t total_cpu_shadow = 0;
         std::uint32_t total_instances = 0;
         std::size_t chunks_total = 0, chunks_resident = 0;
         std::size_t chunks_frustum_vis = 0, chunks_missing = 0;
@@ -8089,6 +8153,7 @@ void ViewportCore::render() {
             total_vbo  += mo.vram_bytes_vbo;
             total_ebo  += mo.vram_bytes_ebo;
             total_ssbo += mo.vram_bytes_ssbo;
+            total_cpu_shadow += mo.cpu_shadow_bytes;
             total_instances += mo.instance_count;
             for (const auto& c : mo.chunks) {
                 ++chunks_total;
@@ -8119,6 +8184,7 @@ void ViewportCore::render() {
             << "  chunks " << chunks_resident << "/" << chunks_frustum_vis
             << "/" << chunks_total << " (missing " << chunks_missing << ")"
             << "  vram " << fmtF(double(total_vbo + total_ebo + total_ssbo) * mb, 1) << "MB"
+            << "  cpuTris " << fmtF(float(double(total_cpu_shadow) * mb), 1) << "MB"
             << "  models " << models_gpu_.size()
             << "  lod1 " << lod1_dbg_count_ << "/" << (lod1_dbg_count_ + lod0_dbg_eligible_count_)
             << " (saved " << lod1_dbg_tris_saved_ << " tris, "

@@ -434,6 +434,19 @@ struct ModelGpuData {
         std::vector<uint32_t> indices;    // 3 * triangle_count, LOD0
     };
     std::vector<MeshTriangles> mesh_triangles_cache;
+    // How many RESIDENT chunks currently contain each mesh (the spatial
+    // planner may duplicate a mesh into several chunks). Maintained by
+    // applyStreamedChunk / unloadChunk; when it drops to zero the mesh's
+    // mesh_triangles_cache entry is released — the shadow follows GPU
+    // residency instead of accumulating every mesh ever loaded, which on
+    // a large federation grew monotonically toward the whole scene's
+    // geometry on the CPU heap. mesh_local_volumes is NOT released: the
+    // Volume tool needs it for evicted meshes too, and it is 8 B/mesh.
+    std::vector<std::uint16_t> mesh_resident_chunk_refs;
+    // Bytes currently held by mesh_triangles_cache, maintained at the fill
+    // (applyStreamedChunk) and release (unloadChunk) sites so the heartbeat
+    // log can report the shadow without walking every mesh per frame.
+    std::uint64_t cpu_shadow_bytes = 0;
 
     // object_id (globally rebased) → instance index in `instances`.
     // Populated alongside the instance vector so the Volume tool can do
