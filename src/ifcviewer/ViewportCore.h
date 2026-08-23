@@ -597,6 +597,20 @@ public:
     // resident. On web that means calling loadAllElementMetadataWeb first —
     // models still lazily un-fetched simply contribute nothing.
     std::vector<ElementRef> elements() const;
+    // One model's elements (by load-order index, same as modelProgress),
+    // handed out as slices into the model's string table — valid only for
+    // the duration of the visit, no per-element string copies. The web
+    // objects export serialises hundreds of thousands of elements straight
+    // from these; materialising ElementRefs there tripled the peak heap.
+    struct ElementSlices {
+        std::uint32_t object_id = 0;
+        int           source_id = -1;
+        const char*   guid = nullptr; std::uint32_t guid_len = 0;
+        const char*   name = nullptr; std::uint32_t name_len = 0;
+        const char*   type = nullptr; std::uint32_t type_len = 0;
+    };
+    void visitModelElements(int model_index,
+                            const std::function<void(const ElementSlices&)>& visit) const;
 
     // The single element behind one object_id — the pick path's lookup, which
     // must not pay for materialising the whole table. Scans only the model that

@@ -257,13 +257,22 @@
     // Completion side of ifcv_request_objects_c: the element tables have all
     // landed and the scene's objects are ready as JSON. `token` matches the
     // request to its pending Promise.
+    // token -> {rows, resolve}. The wasm side streams the objects array one
+    // model per batch (so the whole-scene JSON never exists in one string on
+    // its heap); Done resolves with the accumulated rows.
     const pendingObjects = new Map();
     let objectsToken = 0;
-    Module.__ifcvOnObjects = function (token, json) {
-      const resolve = pendingObjects.get(token);
-      if (!resolve) return;
+    Module.__ifcvOnObjectsBatch = function (token, json) {
+      const pending = pendingObjects.get(token);
+      if (!pending) return;
+      const rows = JSON.parse(json);
+      for (let i = 0; i < rows.length; ++i) pending.rows.push(rows[i]);
+    };
+    Module.__ifcvOnObjectsDone = function (token) {
+      const pending = pendingObjects.get(token);
+      if (!pending) return;
       pendingObjects.delete(token);
-      resolve(JSON.parse(json));
+      pending.resolve(pending.rows);
     };
 
     // Some test harnesses / the fullscreen page want the raw module on window.
@@ -442,7 +451,7 @@
       getObjects: function () {
         const token = ++objectsToken;
         return new Promise(function (resolve) {
-          pendingObjects.set(token, resolve);
+          pendingObjects.set(token, { rows: [], resolve: resolve });
           Module._ifcv_request_objects_c(token);
         }).then(function (objects) {
           objectIndex = new Map();

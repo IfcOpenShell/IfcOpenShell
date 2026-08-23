@@ -4514,6 +4514,36 @@ std::vector<ViewportCore::ElementRef> ViewportCore::elements() const {
     return out;
 }
 
+void ViewportCore::visitModelElements(
+        int model_index,
+        const std::function<void(const ElementSlices&)>& visit) const {
+    const std::vector<std::uint32_t> ids = modelIdsInLoadOrder();
+    if (model_index < 0 || std::size_t(model_index) >= ids.size()) return;
+    auto it = models_gpu_.find(ids[std::size_t(model_index)]);
+    if (it == models_gpu_.end()) return;
+    const ModelGpuData& m = it->second;
+    auto slice = [&m](std::uint32_t offset, std::uint32_t length,
+                      const char*& out_ptr, std::uint32_t& out_len) {
+        // Out-of-range or zero-length offsets mean "no string was written".
+        if (length > 0 && std::size_t(offset) + length <= m.string_table.size()) {
+            out_ptr = m.string_table.data() + offset;
+            out_len = length;
+        } else {
+            out_ptr = nullptr;
+            out_len = 0;
+        }
+    };
+    for (const ElementTableRecord& e : m.elements) {
+        ElementSlices out;
+        out.object_id = e.object_id;
+        out.source_id = m.web_source_id;
+        slice(e.guid_offset, e.guid_length, out.guid, out.guid_len);
+        slice(e.name_offset, e.name_length, out.name, out.name_len);
+        slice(e.type_offset, e.type_length, out.type, out.type_len);
+        visit(out);
+    }
+}
+
 bool ViewportCore::elementForObject(std::uint32_t object_id, ElementRef& out) const {
     InstanceCompose::InstanceLookup lk;
     if (!findInstance(object_id, lk)) return false;

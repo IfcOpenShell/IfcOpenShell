@@ -195,9 +195,10 @@ int fillIdsAscending(const std::unordered_set<std::uint32_t>& ids,
 // Quote `s` as a JSON string literal. IFC names come straight from the model
 // and can hold quotes, backslashes and control characters; UTF-8 continuation
 // bytes are already legal JSON and pass through untouched.
-std::string jsonString(const std::string& s) {
-    std::string out = "\"";
-    for (unsigned char c : s) {
+void appendJsonString(std::string& out, const char* data, std::uint32_t length) {
+    out += '"';
+    for (std::uint32_t i = 0; i < length; ++i) {
+        const unsigned char c = (unsigned char)data[i];
         switch (c) {
             case '"':  out += "\\\""; break;
             case '\\': out += "\\\\"; break;
@@ -216,8 +217,9 @@ std::string jsonString(const std::string& s) {
                 }
         }
     }
-    return out + '"';
+    out += '"';
 }
+
 
 NavKind classifyPress(const ViewportCore::NavBindings& b, int em_button,
                       bool shift, bool ctrl, bool alt) {
@@ -822,27 +824,49 @@ extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_model_georef_c(int source_id, doubl
 // Promise the JS layer is holding.
 extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_request_objects_c(int token) {
     if (!g_app || !g_app->ready) {
-        EM_ASM({ if (Module.__ifcvOnObjects) Module.__ifcvOnObjects($0, '[]'); }, token);
+        EM_ASM({ if (Module.__ifcvOnObjectsDone) Module.__ifcvOnObjectsDone($0); }, token);
         return;
     }
     g_app->core.loadAllElementMetadataWeb([token](bool) {
         // Partial failures are not fatal: a model whose element block failed to
         // fetch simply contributes no rows, and the rest still resolve.
-        std::string json = "[";
-        bool first = true;
-        for (const ViewportCore::ElementRef& e : g_app->core.elements()) {
-            if (!first) json += ',';
-            first = false;
-            json += "{\"objectId\":" + std::to_string(e.object_id)
-                  + ",\"model\":"    + std::to_string(e.model_index)
-                  + ",\"sourceId\":" + std::to_string(e.source_id)
-                  + ",\"guid\":"     + jsonString(e.guid)
-                  + ",\"name\":"     + jsonString(e.name)
-                  + ",\"type\":"     + jsonString(e.type) + '}';
+        //
+        // Serialised one model per batch, straight from string-table slices.
+        // The whole-scene single-string version materialised three string
+        // copies per element plus a scene-sized JSON blob simultaneously —
+        // a 400+ MB transient at ~600k elements, and the wasm heap never
+        // returns pages, so that peak became the session's floor. Peak is
+        // now one model's JSON; the string keeps its capacity across models
+        // so it reallocates only up to the largest one.
+        std::string json;
+        const int model_count = g_app->core.streamingModelCount();
+        for (int model_index = 0; model_index < model_count; ++model_index) {
+            json.clear();
+            json += '[';
+            bool first = true;
+            g_app->core.visitModelElements(model_index,
+                [&](const ViewportCore::ElementSlices& e) {
+                    if (!first) json += ',';
+                    first = false;
+                    json += "{\"objectId\":";
+                    json += std::to_string(e.object_id);
+                    json += ",\"model\":";
+                    json += std::to_string(model_index);
+                    json += ",\"sourceId\":";
+                    json += std::to_string(e.source_id);
+                    json += ",\"guid\":";
+                    appendJsonString(json, e.guid, e.guid_len);
+                    json += ",\"name\":";
+                    appendJsonString(json, e.name, e.name_len);
+                    json += ",\"type\":";
+                    appendJsonString(json, e.type, e.type_len);
+                    json += '}';
+                });
+            json += ']';
+            EM_ASM({ if (Module.__ifcvOnObjectsBatch) Module.__ifcvOnObjectsBatch($0, UTF8ToString($1)); },
+                   token, json.c_str());
         }
-        json += ']';
-        EM_ASM({ if (Module.__ifcvOnObjects) Module.__ifcvOnObjects($0, UTF8ToString($1)); },
-               token, json.c_str());
+        EM_ASM({ if (Module.__ifcvOnObjectsDone) Module.__ifcvOnObjectsDone($0); }, token);
     });
 }
 
