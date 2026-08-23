@@ -123,6 +123,13 @@ public:
                        <= max_total_capacity_bytes_);
     }
 
+    // True once the driver (not the budget) has refused growth even at the
+    // floor size. On platforms with no memory query this is the only device
+    // report there is: the owner treats the first refusal as a pressure
+    // event and carves the required-tier margin out of the cache before a
+    // required allocation has to fail for it (see ViewportCore::render).
+    bool     growth_was_refused() const { return growth_disabled_; }
+
     // Whether a growth is in flight. On web that window is real time — a
     // provisional sub-buffer validates asynchronously a frame or two later — so
     // the streaming driver has to know that free space is still on its way and

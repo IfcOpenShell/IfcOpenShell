@@ -1155,6 +1155,9 @@ private:
     void releaseRenderAttachments();
 
     GpuBudget budget_;
+    // Latch: the pool's first driver-refused growth has been answered by
+    // carving the margin out of the cache (see render()).
+    bool      pool_growth_refusal_handled_ = false;
     // Adapter ids, read once at init, for matching the driver's memory
     // report to the card wgpu is actually using.
     std::uint32_t adapter_vendor_id_ = 0;

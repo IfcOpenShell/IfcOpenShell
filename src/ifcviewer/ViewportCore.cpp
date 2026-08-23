@@ -7732,6 +7732,24 @@ void ViewportCore::render() {
     Stopwatch frame_timer;
     frame_timer.start();
 
+    // The driver refusing pool growth is the query-less platform's device
+    // report (web has no memory query; the pool just grew until the GPU
+    // process said no). Answer it once, immediately: lower the budget so
+    // the required-tier margin comes back out of the cache NOW, instead of
+    // the next attachment resize having to fail — and paint broken frames —
+    // before pressure feedback carves the same room.
+    if (pool_.growth_was_refused() && !pool_growth_refusal_handled_) {
+        pool_growth_refusal_handled_ = true;
+        const double mb = 1.0 / (1024.0 * 1024.0);
+        Log::info() << "[wgpu] driver refused geometry-cache growth at "
+                    << double(pool_.total_capacity_bytes()) * mb
+                    << " MB -- reserving the required-tier margin out of the cache";
+        if (budget_.onPressure(pool_.total_capacity_bytes(),
+                               GpuBudget::kFixedMarginBytes, 0)) {
+            applyBudgetToPool();
+        }
+    }
+
     // Drain any HiZ async readbacks completed since last frame.
     if (hiz_enabled_) drainHizReadbacks();
 
