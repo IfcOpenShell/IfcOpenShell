@@ -125,13 +125,6 @@ export interface WasmAssets {
 export interface InitOptions {
   /** WASM asset configuration. */
   wasmAssets?: WasmAssets;
-  /**
-   * Node/source-checkout WASM artifact root.
-   *
-   * This is resolved with `@ifcopenshell-js/wasm` and is primarily useful for
-   * tests and local development where multiple build directories may exist.
-   */
-  wasmRoot?: string;
   /** Custom plugin loader override. Defaults to the loader supplied by the asset descriptor. */
   pluginLoader?: PluginLoader;
 }
