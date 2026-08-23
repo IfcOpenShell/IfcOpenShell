@@ -1657,9 +1657,15 @@ ifcviewer::GpuMemoryInfo ViewportCore::queryDeviceMemory() const {
 }
 
 void ViewportCore::pollDeviceMemory() {
-    if (device_vram_poll_timer_.isValid()
+    // Re-derive immediately after the pool has grown: a ceiling computed
+    // from a second-old report can be reached by growth plus the upload
+    // staging that rides on it, leaving the device far below the margin
+    // before the next scheduled poll notices.
+    const bool pool_grew = pool_.sub_buffer_count() != polled_sub_buffer_count_;
+    if (!pool_grew && device_vram_poll_timer_.isValid()
         && device_vram_poll_timer_.elapsed() < 1000) return;
     device_vram_poll_timer_.start();
+    polled_sub_buffer_count_ = pool_.sub_buffer_count();
     const ifcviewer::GpuMemoryInfo mem = queryDeviceMemory();
     if (!mem.valid) return;
     device_vram_used_bytes_  = mem.used_bytes;
@@ -1672,12 +1678,10 @@ void ViewportCore::applyBudgetToPool() {
     if (!budget_.bounded()) return;
     const std::uint64_t budget = budget_.cache_budget_bytes();
     pool_.setMaxTotalCapacity(budget);
-    // Whole sub-buffers are the release granularity, so only act once the
-    // excess is worth one; below that the fixed margin covers it.
-    const std::uint64_t capacity = pool_.total_capacity_bytes();
-    if (capacity < budget + BufferPool::MIN_SUB_BUFFER_BYTES) return;
+    const std::uint64_t target = budget_.shrinkTarget(pool_.total_capacity_bytes());
+    if (target == 0) return;
     const std::uint64_t released = pool_.shrinkToCapacity(
-        budget, [this](int sub_idx) { evictChunksInSubBuffer(sub_idx); });
+        target, [this](int sub_idx) { evictChunksInSubBuffer(sub_idx); });
     if (released > 0) {
         const double mb = 1.0 / (1024.0 * 1024.0);
         Log::info() << "[wgpu] device has less to give: geometry cache budget now "
@@ -1712,8 +1716,10 @@ bool ViewportCore::onRequiredAllocationFailed(const char* what, std::uint64_t by
         return false;
     }
     pool_.setMaxTotalCapacity(budget_.cache_budget_bytes());
-    const std::uint64_t released = pool_.shrinkToCapacity(
-        budget_.cache_budget_bytes(),
+    // The budget was just lowered by what the allocation needs; free at
+    // least that much, whatever the sub-buffer granularity.
+    const std::uint64_t released = pool_.releaseAtLeast(
+        capacity_before - budget_.cache_budget_bytes(),
         [this](int sub_idx) { evictChunksInSubBuffer(sub_idx); });
     Log::warn() << "[wgpu] out of memory allocating " << what << " ("
                 << double(bytes) * mb << " MB); geometry cache budget lowered to "

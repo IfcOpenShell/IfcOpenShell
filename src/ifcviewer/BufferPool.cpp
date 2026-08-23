@@ -166,36 +166,65 @@ bool BufferPool::addSubBuffer() {
 #endif  // __EMSCRIPTEN__
 }
 
+uint64_t BufferPool::releaseNewestSubBuffer(
+        const std::function<void(int sub_idx)>& evict_sub_buffer) {
+    if (sub_pools_.empty()) return 0;
+    const int idx = int(sub_pools_.size()) - 1;
+    if (sub_pools_[size_t(idx)].provisional) return 0;
+    evict_sub_buffer(idx);
+    SubPool& sub_pool = sub_pools_[size_t(idx)];
+    assert(sub_pool.used == 0 && "owner must free every slice before a sub-buffer is released");
+    if (sub_pool.buffer && sub_pool.owns_handle) {
+        // Destroy, not just release: the handle may still be
+        // referenced by in-flight work, and destroy tells the
+        // backend to reclaim the memory as soon as that completes
+        // instead of when the last reference goes away.
+        wgpuBufferDestroy(sub_pool.buffer);
+        wgpuBufferRelease(sub_pool.buffer);
+    }
+    const uint64_t released = sub_pool.capacity;
+    sub_pools_.pop_back();
+    return released;
+}
+
+namespace {
+void logRelease(uint64_t released, uint64_t total, size_t count, uint64_t budget) {
+    if (released == 0) return;
+    std::fprintf(stderr,
+        "[wgpu pool] released %llu MB under memory pressure; pool now %llu MB "
+        "across %zu sub-buffer(s), budget %llu MB\n",
+        (unsigned long long)(released / (1024 * 1024)),
+        (unsigned long long)(total / (1024 * 1024)),
+        count,
+        (unsigned long long)(budget / (1024 * 1024)));
+}
+}  // namespace
+
 uint64_t BufferPool::shrinkToCapacity(
         uint64_t target_bytes,
         const std::function<void(int sub_idx)>& evict_sub_buffer) {
     uint64_t released = 0;
-    while (!sub_pools_.empty() && total_capacity_bytes() > target_bytes) {
-        const int idx = int(sub_pools_.size()) - 1;
-        if (sub_pools_[size_t(idx)].provisional) break;
-        evict_sub_buffer(idx);
-        SubPool& sub_pool = sub_pools_[size_t(idx)];
-        assert(sub_pool.used == 0 && "owner must free every slice before a sub-buffer is released");
-        if (sub_pool.buffer && sub_pool.owns_handle) {
-            // Destroy, not just release: the handle may still be
-            // referenced by in-flight work, and destroy tells the
-            // backend to reclaim the memory as soon as that completes
-            // instead of when the last reference goes away.
-            wgpuBufferDestroy(sub_pool.buffer);
-            wgpuBufferRelease(sub_pool.buffer);
-        }
-        released += sub_pool.capacity;
-        sub_pools_.pop_back();
+    while (!sub_pools_.empty()) {
+        const SubPool& newest = sub_pools_.back();
+        if (newest.provisional) break;
+        const uint64_t capacity = total_capacity_bytes();
+        if (capacity < target_bytes + newest.capacity) break;  // would undershoot
+        released += releaseNewestSubBuffer(evict_sub_buffer);
     }
-    if (released > 0) {
-        std::fprintf(stderr,
-            "[wgpu pool] released %llu MB under memory pressure; pool now %llu MB "
-            "across %zu sub-buffer(s), budget %llu MB\n",
-            (unsigned long long)(released / (1024 * 1024)),
-            (unsigned long long)(total_capacity_bytes() / (1024 * 1024)),
-            sub_pools_.size(),
-            (unsigned long long)(max_total_capacity_bytes_ / (1024 * 1024)));
+    logRelease(released, total_capacity_bytes(), sub_pools_.size(), max_total_capacity_bytes_);
+    return released;
+}
+
+uint64_t BufferPool::releaseAtLeast(
+        uint64_t bytes,
+        const std::function<void(int sub_idx)>& evict_sub_buffer) {
+    uint64_t released = 0;
+    while (released < bytes) {
+        const uint64_t got = releaseNewestSubBuffer(evict_sub_buffer);
+        if (got == 0) break;
+        released += got;
     }
+    logRelease(released, total_capacity_bytes(), sub_pools_.size(), max_total_capacity_bytes_);
     return released;
 }
 

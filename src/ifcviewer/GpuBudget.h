@@ -74,6 +74,13 @@ public:
     // budget, so the very next small required allocation does not fail
     // again and trigger another shrink cycle.
     static constexpr std::uint64_t kPressureSlackBytes  = 32ull * 1024 * 1024;
+    // The live budget moves with every driver report, and reports jitter
+    // (upload staging, other processes). The pool's ceiling follows the
+    // budget exactly, but geometry already resident is only evicted once
+    // the pool is over budget by this much — i.e. once the device's free
+    // memory has dropped below half the margin — so a transient dip does
+    // not cost a shrink-and-reload.
+    static constexpr std::uint64_t kShrinkHysteresisBytes = kFixedMarginBytes / 2;
 
     // Absolute ceiling regardless of device memory (the wasm heap on web).
     // 0 = none.
@@ -94,6 +101,13 @@ public:
     bool onPressure(std::uint64_t cache_capacity_bytes,
                     std::uint64_t bytes_needed,
                     std::uint64_t device_free_bytes);
+
+    // Capacity the pool should shrink to right now, or 0 when it is within
+    // the hysteresis band (or the budget is unbounded).
+    std::uint64_t shrinkTarget(std::uint64_t cache_capacity_bytes) const {
+        if (!bounded_ || cache_capacity_bytes < budget_ + kShrinkHysteresisBytes) return 0;
+        return budget_;
+    }
 
     // False until something bounds the cache (a device report, a cap, or
     // a pressure event). The pool then grows until the driver refuses,

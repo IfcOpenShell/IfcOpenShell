@@ -1578,6 +1578,7 @@ private:
     std::uint64_t device_vram_used_bytes_  = 0;
     std::uint64_t device_vram_total_bytes_ = 0;
     Stopwatch     device_vram_poll_timer_;
+    std::size_t   polled_sub_buffer_count_ = 0;
     double last_cull_ms_                  = 0.0;
     double last_cull_compute_ms_          = 0.0;
     double last_cull_upload_ms_           = 0.0;

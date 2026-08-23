@@ -137,18 +137,26 @@ public:
     void     setMaxTotalCapacity(uint64_t max_bytes) { max_total_capacity_bytes_ = max_bytes; }
     uint64_t max_total_capacity_bytes() const { return max_total_capacity_bytes_; }
 
-    // Release whole sub-buffers, newest first, until total capacity is
-    // ≤ target_bytes (or nothing is left). Before each sub-buffer is
-    // dropped, `evict_sub_buffer(sub_idx)` is invoked so the owner can
-    // free every slice that lives in it — the pool does not know what a
-    // slice holds, and a sub-buffer is only released once it is empty.
-    // Releasing from the back keeps every surviving Slice::sub_idx valid.
-    // Returns the number of bytes released. This is how the cache yields
-    // memory to the required tier (see GpuBudget); on web a provisional
-    // sub-buffer that is still validating is left alone and the shrink is
-    // retried once that resolves.
+    // Release whole sub-buffers, newest first. Before each is dropped,
+    // `evict_sub_buffer(sub_idx)` is invoked so the owner can free every
+    // slice that lives in it — the pool does not know what a slice holds,
+    // and a sub-buffer is only released once it is empty. Releasing from
+    // the back keeps every surviving Slice::sub_idx valid. Both return the
+    // bytes released. This is how the cache yields memory to the required
+    // tier (see GpuBudget); on web a provisional sub-buffer that is still
+    // validating is left alone and the caller retries once it resolves.
+    //
+    // shrinkToCapacity never goes *below* target_bytes: a sub-buffer is
+    // released only while doing so keeps capacity ≥ target, so an excess
+    // smaller than the newest sub-buffer releases nothing (the budget's
+    // margin absorbs it) instead of dropping 256 MB for the last 36.
     uint64_t shrinkToCapacity(uint64_t target_bytes,
                               const std::function<void(int sub_idx)>& evict_sub_buffer);
+    // releaseAtLeast frees sub-buffers until at least `bytes` have gone
+    // (or nothing is left) — for a failed required allocation that needs
+    // that much back no matter the granularity.
+    uint64_t releaseAtLeast(uint64_t bytes,
+                            const std::function<void(int sub_idx)>& evict_sub_buffer);
 
     // Proactively add a sub-buffer (no allocation). On web this kicks off the
     // async provisional-validation cycle so validated free space appears a
@@ -201,6 +209,10 @@ private:
     // ≥ MIN_SUB_BUFFER_BYTES; false only when even the minimum size is
     // refused, at which point growth_disabled_ latches.
     bool addSubBuffer();
+    // Drop the newest sub-buffer after `evict_sub_buffer` empties it.
+    // Returns its capacity; 0 when the pool is empty or the newest
+    // sub-buffer is still provisional (web).
+    uint64_t releaseNewestSubBuffer(const std::function<void(int sub_idx)>& evict_sub_buffer);
 
 #if defined(__EMSCRIPTEN__)
     // Web-only async-growth resolver. Called from the AllowSpontaneous

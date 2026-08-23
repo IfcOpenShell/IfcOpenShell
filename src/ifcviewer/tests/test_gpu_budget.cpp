@@ -150,3 +150,13 @@ TEST_CASE("a refusal with memory still reported free teaches the margin", "[gpu_
     REQUIRE(b.margin_bytes()
             == GpuBudget::kFixedMarginBytes + 162 * MB + GpuBudget::kPressureSlackBytes);
 }
+
+TEST_CASE("resident geometry is only shrunk once over budget by the hysteresis", "[gpu_budget]") {
+    GpuBudget b;
+    REQUIRE(b.shrinkTarget(4096 * MB) == 0);  // unbounded: never
+    b.update(2800 * MB, 0);
+    const std::uint64_t budget = b.cache_budget_bytes();
+    REQUIRE(b.shrinkTarget(budget) == 0);
+    REQUIRE(b.shrinkTarget(budget + GpuBudget::kShrinkHysteresisBytes - 1) == 0);
+    REQUIRE(b.shrinkTarget(budget + GpuBudget::kShrinkHysteresisBytes) == budget);
+}

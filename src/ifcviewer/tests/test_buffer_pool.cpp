@@ -312,3 +312,41 @@ TEST_CASE("shrinkToCapacity releases sub-buffers newest-first after the owner em
     REQUIRE(pool.sub_buffer_count() == 0);
     REQUIRE(evicted == std::vector<int>{0});
 }
+
+TEST_CASE("shrinkToCapacity never undershoots the target", "[buffer_pool]") {
+    BufferPool pool;
+    FakePoolGuard guard{pool};
+    pool.addSubBufferForTesting(fake_handle(1), 256);
+    pool.addSubBufferForTesting(fake_handle(2), 256);
+    pool.addSubBufferForTesting(fake_handle(3), 73);
+    pool.addSubBufferForTesting(fake_handle(4), 73);
+    auto evict = [](int) {};
+
+    // 658 held, target 476: 182 over. The two 73s go (36 still over);
+    // the 256 would undershoot, so it stays — the margin absorbs 36.
+    REQUIRE(pool.shrinkToCapacity(476, evict) == 146);
+    REQUIRE(pool.total_capacity_bytes() == 512);
+    // An excess smaller than the newest sub-buffer releases nothing.
+    REQUIRE(pool.shrinkToCapacity(500, evict) == 0);
+    REQUIRE(pool.total_capacity_bytes() == 512);
+}
+
+TEST_CASE("releaseAtLeast frees whole sub-buffers until the requested bytes are gone", "[buffer_pool]") {
+    BufferPool pool;
+    FakePoolGuard guard{pool};
+    pool.addSubBufferForTesting(fake_handle(1), 256);
+    pool.addSubBufferForTesting(fake_handle(2), 73);
+    pool.addSubBufferForTesting(fake_handle(3), 73);
+    std::vector<int> evicted;
+    auto evict = [&](int sub_idx) { evicted.push_back(sub_idx); };
+
+    // Needs 100: 73 is not enough, 73+73 is. Overshoot by a sub-buffer is
+    // the point — the allocation must fit.
+    REQUIRE(pool.releaseAtLeast(100, evict) == 146);
+    REQUIRE(evicted == std::vector<int>{2, 1});
+    REQUIRE(pool.total_capacity_bytes() == 256);
+    // More than the pool holds: everything goes, no crash.
+    REQUIRE(pool.releaseAtLeast(1000, evict) == 256);
+    REQUIRE(pool.sub_buffer_count() == 0);
+    REQUIRE(pool.releaseAtLeast(1, evict) == 0);
+}
