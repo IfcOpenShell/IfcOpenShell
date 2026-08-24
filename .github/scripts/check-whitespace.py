@@ -284,12 +284,17 @@ PATTERNS = (
     "*.cpp",
     "*.h",
     "*.i",
+    "*.cmake",
+    "*/CMakeLists.txt",
 )
 
 REPO_ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
 
 # Generated files; formatted by the express codegen, not by this script.
-IGNORED_DIRS = (REPO_ROOT / "src/ifcparse/schemas",)
+IGNORED_DIRS = (
+    REPO_ROOT / "src/ifcparse/schemas",
+    REPO_ROOT / "win/patches",
+)
 
 
 def get_tracked_files(root: Path | None = None) -> list[Path]:
