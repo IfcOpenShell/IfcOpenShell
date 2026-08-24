@@ -233,6 +233,7 @@
     let broken = false;     // a write failed (quota?): serve network, stop filling
     let complete = spansCover(spans, 0, meta.size);
     let writeChain = Promise.resolve();
+    let lastForegroundRead = 0;   // performance.now() of the viewer's last read
 
     const persistLedger = () => {
       dirtySince = 0;
@@ -249,12 +250,66 @@
         .catch(() => {});
     };
 
+    const storeBytes = (start, stop, buf) => {
+      if (broken || complete || buf.byteLength !== stop - start) return;
+      const copy = buf.slice(0);
+      writeChain = writeChain
+        .then(() => cacheCall('write', name, { pos: start, data: copy }, [copy]))
+        .then(() => {
+          spans = spansAdd(spans, start, stop);
+          dirtySince += stop - start;
+          // Persist the ledger periodically — bytes on disk that the
+          // ledger does not record are merely re-fetched next visit.
+          if (dirtySince >= (4 << 20)) return persistLedger();
+        })
+        .then(finishIfComplete)
+        .catch(() => { broken = true; });
+    };
+
+    // Background completion: streaming only reads what the camera needs, so
+    // left alone the cache converges on the *viewed* bytes, not the file —
+    // and a user cannot be expected to orbit every model into view to
+    // finish it. Once the viewer has been quiet for a moment, fetch the
+    // uncovered spans in order, one modest range at a time, yielding
+    // whenever real reads resume so interactive streaming always wins.
+    const IDLE_MS = 1500, STEP_BYTES = 8 << 20;
+    let backgroundDone = false;
+    async function backgroundFill() {
+      while (!complete && !broken && !backgroundDone) {
+        if (performance.now() - lastForegroundRead < IDLE_MS) {
+          await new Promise((r) => setTimeout(r, IDLE_MS));
+          continue;
+        }
+        // First gap not yet covered.
+        let at = 0;
+        for (const [a, b] of spans) { if (a > at) break; at = Math.max(at, b); }
+        if (at >= meta.size) { finishIfComplete(); return; }
+        let stop = Math.min(at + STEP_BYTES, meta.size);
+        for (const [a] of spans) { if (a > at) { stop = Math.min(stop, a); break; } }
+        try {
+          const res = await fetch(url, {
+            headers: { Range: 'bytes=' + at + '-' + (stop - 1) },
+          });
+          if (res.status !== 206 && res.status !== 200) return;   // server changed its mind
+          let buf = await res.arrayBuffer();
+          if (res.status === 200 && buf.byteLength > stop - at) buf = buf.slice(at, stop);
+          storeBytes(at, stop, buf);
+          await writeChain;
+        } catch (err) {
+          return;   // offline etc: the foreground path is affected too, stop quietly
+        }
+      }
+    }
+    setTimeout(backgroundFill, IDLE_MS);
+
     return {
       size: meta.size,
+      stopBackgroundFill() { backgroundDone = true; },
       slice(start, end) {
         const stop = Math.min(end, meta.size);
         return {
           arrayBuffer: async () => {
+            lastForegroundRead = performance.now();
             if (spansCover(spans, start, stop)) {
               if (complete) {
                 const fh = await dir.getFileHandle(name);
@@ -277,20 +332,7 @@
             if (res.status === 200 && buf.byteLength > stop - start) {
               buf = buf.slice(start, stop);
             }
-            if (!broken && !complete && buf.byteLength === stop - start) {
-              const copy = buf.slice(0);
-              writeChain = writeChain
-                .then(() => cacheCall('write', name, { pos: start, data: copy }, [copy]))
-                .then(() => {
-                  spans = spansAdd(spans, start, stop);
-                  dirtySince += stop - start;
-                  // Persist the ledger periodically — bytes on disk that the
-                  // ledger does not record are merely re-fetched next visit.
-                  if (dirtySince >= (4 << 20)) return persistLedger();
-                })
-                .then(finishIfComplete)
-                .catch(() => { broken = true; });
-            }
+            storeBytes(start, stop, buf);
             return buf;
           },
         };
