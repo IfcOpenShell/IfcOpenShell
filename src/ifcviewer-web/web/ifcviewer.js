@@ -51,6 +51,307 @@
     return cr ? parseInt(cr.split('/')[1] || '0', 10) : 0;
   }
 
+  // ---- OPFS model cache ------------------------------------------------------
+  //
+  // addUrl(url, {cache: true}) keeps a local copy of the sidecar in the
+  // Origin Private File System, filled FROM THE VIEWER'S OWN RANGED READS —
+  // no second download, and only the bytes the camera actually needed.
+  // (Browsers do not populate their HTTP cache from ranged fetches: measured
+  // 0 of 78 range requests served from cache even with a strong ETag.)
+  //
+  // Entries are keyed by a hash of the URL and validated by ETag (falling
+  // back to Last-Modified + size); a byte-span ledger records which ranges
+  // are really on disk, so a partial copy is never mistaken for a whole one —
+  // a read is served locally only when its span is fully covered. On the next
+  // visit a complete validated copy loads with zero geometry traffic; if the
+  // server is unreachable, the newest complete copy is used as-is (offline).
+  //
+  // Writes go through a dedicated worker holding a FileSystemSyncAccessHandle:
+  // positional writes with no copy-on-open (createWritable({keepExistingData})
+  // copies the whole existing file into a swap file per open — quadratic as
+  // the cache fills), and the handle's exclusive lock makes a second tab fall
+  // back to plain network instead of corrupting the entry. Browsers without
+  // sync access handles just never cache — behaviour is exactly as without
+  // the flag.
+  const CACHE_DIR = 'ifcviewer-cache';
+
+  const cacheWorkerSource = `
+    const handles = new Map();
+    onmessage = async (e) => {
+      const { id, op, name, pos, data, len } = e.data;
+      const reply = (msg, transfer) => postMessage(Object.assign({ id }, msg), transfer || []);
+      try {
+        if (op === 'open') {
+          const root = await navigator.storage.getDirectory();
+          const dir = await root.getDirectoryHandle('${CACHE_DIR}', { create: true });
+          const fh = await dir.getFileHandle(name, { create: true });
+          handles.set(name, await fh.createSyncAccessHandle());
+          reply({ ok: true, size: handles.get(name).getSize() });
+        } else if (op === 'write') {
+          handles.get(name).write(new Uint8Array(data), { at: pos });
+          reply({ ok: true });
+        } else if (op === 'read') {
+          const buf = new Uint8Array(len);
+          const n = handles.get(name).read(buf, { at: pos });
+          reply({ ok: n === len, data: buf.buffer }, [buf.buffer]);
+        } else if (op === 'close') {
+          const h = handles.get(name);
+          if (h) { h.flush(); h.close(); handles.delete(name); }
+          reply({ ok: true });
+        } else {
+          reply({ ok: false, error: 'unknown op ' + op });
+        }
+      } catch (err) {
+        reply({ ok: false, error: String((err && err.message) || err) });
+      }
+    };
+  `;
+
+  let cacheWorker = null;   // lazily created; false once known unusable
+  let cacheMsgId = 0;
+  const cachePending = new Map();
+  function cacheCall(op, name, extra, transfer) {
+    if (cacheWorker === false) return Promise.reject(new Error('no cache worker'));
+    if (!cacheWorker) {
+      try {
+        cacheWorker = new Worker(URL.createObjectURL(
+          new Blob([cacheWorkerSource], { type: 'text/javascript' })));
+        cacheWorker.onmessage = (e) => {
+          const pending = cachePending.get(e.data.id);
+          if (!pending) return;
+          cachePending.delete(e.data.id);
+          if (e.data.ok) pending.resolve(e.data);
+          else pending.reject(new Error(e.data.error || (op + ' failed')));
+        };
+      } catch (err) {
+        cacheWorker = false;
+        return Promise.reject(err);
+      }
+    }
+    const id = ++cacheMsgId;
+    return new Promise((resolve, reject) => {
+      cachePending.set(id, { resolve: resolve, reject: reject });
+      cacheWorker.postMessage(Object.assign({ id: id, op: op, name: name }, extra || {}),
+                              transfer || []);
+    });
+  }
+
+  async function cacheDirHandle(create) {
+    const root = await navigator.storage.getDirectory();
+    return root.getDirectoryHandle(CACHE_DIR, { create: !!create });
+  }
+
+  let persistAsked = false;
+  async function openCacheDir() {
+    try {
+      const dir = await cacheDirHandle(true);
+      // Without this a large cache is "best effort" and the browser may drop
+      // it under disk pressure — invisibly, looking like the site being slow
+      // again on the next visit.
+      if (!persistAsked && navigator.storage.persist) {
+        persistAsked = true;
+        navigator.storage.persist().catch(() => {});
+      }
+      return dir;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  async function cacheEntryName(url) {
+    const bytes = new TextEncoder().encode(url);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest).slice(0, 16))
+      .map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Sorted, merged, half-open [start, end) byte spans.
+  function spansAdd(spans, start, end) {
+    const out = [];
+    let s0 = start, e0 = end;
+    for (const [a, b] of spans) {
+      if (b < s0 || a > e0) out.push([a, b]);
+      else { s0 = Math.min(s0, a); e0 = Math.max(e0, b); }
+    }
+    out.push([s0, e0]);
+    out.sort((x, y) => x[0] - y[0]);
+    return out;
+  }
+  const spansCover = (spans, start, end) =>
+    spans.some(([a, b]) => a <= start && b >= end);
+  const spansBytes = (spans) => spans.reduce((sum, [a, b]) => sum + (b - a), 0);
+
+  async function readCacheMeta(dir, name) {
+    try {
+      const fh = await dir.getFileHandle(name + '.meta');
+      return JSON.parse(await (await fh.getFile()).text());
+    } catch (err) {
+      return null;
+    }
+  }
+  // The meta file is tiny, so main-thread createWritable is fine here; only
+  // the tab holding the data file's exclusive lock ever writes it.
+  async function writeCacheMeta(dir, name, meta) {
+    const fh = await dir.getFileHandle(name + '.meta', { create: true });
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(meta));
+    await w.close();
+  }
+  async function removeCacheEntry(dir, name) {
+    await dir.removeEntry(name).catch(() => {});
+    await dir.removeEntry(name + '.meta').catch(() => {});
+  }
+
+  async function headValidators(url) {
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      if (!res.ok) return null;
+      return {
+        etag: res.headers.get('ETag') || null,
+        lastModified: res.headers.get('Last-Modified') || null,
+        size: parseInt(res.headers.get('Content-Length') || '0', 10) || 0,
+      };
+    } catch (err) {
+      return null;    // offline, or CORS refused HEAD
+    }
+  }
+  function validatorsMatch(meta, head) {
+    if (meta.etag && head.etag) return meta.etag === head.etag;
+    if (meta.lastModified && head.lastModified) {
+      return meta.lastModified === head.lastModified && meta.size === head.size;
+    }
+    return false;
+  }
+
+  // A Blob-shaped source (`size` + `slice(a, b).arrayBuffer()`) backed by the
+  // OPFS entry, filling from every ranged read that goes through it. The
+  // wasm's read shim only ever calls those two members, so this passes for
+  // the File it would get from a picked file.
+  function fillingCacheSource(dir, name, url, meta) {
+    let spans = meta.spans.slice();
+    let dirtySince = 0;     // bytes written since the ledger was persisted
+    let broken = false;     // a write failed (quota?): serve network, stop filling
+    let complete = spansCover(spans, 0, meta.size);
+    let writeChain = Promise.resolve();
+
+    const persistLedger = () => {
+      dirtySince = 0;
+      return writeCacheMeta(dir, name, Object.assign({}, meta, { spans: spans }))
+        .catch(() => {});
+    };
+    const finishIfComplete = () => {
+      if (complete || !spansCover(spans, 0, meta.size)) return;
+      complete = true;
+      // Flush + release the lock; from here reads come off the closed file.
+      writeChain = writeChain
+        .then(() => cacheCall('close', name))
+        .then(persistLedger)
+        .catch(() => {});
+    };
+
+    return {
+      size: meta.size,
+      slice(start, end) {
+        const stop = Math.min(end, meta.size);
+        return {
+          arrayBuffer: async () => {
+            if (spansCover(spans, start, stop)) {
+              if (complete) {
+                const fh = await dir.getFileHandle(name);
+                return (await fh.getFile()).slice(start, stop).arrayBuffer();
+              }
+              // Serialise behind the writes so a just-written range is
+              // readable (sync-handle writes are visible to the same handle
+              // immediately; ordering through the chain keeps it simple).
+              return (writeChain = writeChain.then(() =>
+                cacheCall('read', name, { pos: start, len: stop - start })
+              )).then((r) => r.data);
+            }
+            const res = await fetch(url, {
+              headers: { Range: 'bytes=' + start + '-' + (stop - 1) },
+            });
+            if (res.status !== 206 && res.status !== 200) {
+              throw new Error('range fetch failed: ' + res.status);
+            }
+            let buf = await res.arrayBuffer();
+            if (res.status === 200 && buf.byteLength > stop - start) {
+              buf = buf.slice(start, stop);
+            }
+            if (!broken && !complete && buf.byteLength === stop - start) {
+              const copy = buf.slice(0);
+              writeChain = writeChain
+                .then(() => cacheCall('write', name, { pos: start, data: copy }, [copy]))
+                .then(() => {
+                  spans = spansAdd(spans, start, stop);
+                  dirtySince += stop - start;
+                  // Persist the ledger periodically — bytes on disk that the
+                  // ledger does not record are merely re-fetched next visit.
+                  if (dirtySince >= (4 << 20)) return persistLedger();
+                })
+                .then(finishIfComplete)
+                .catch(() => { broken = true; });
+            }
+            return buf;
+          },
+        };
+      },
+    };
+  }
+
+  // Decide what to hand the loader for a cached URL:
+  //   {file}    — a complete validated local copy (zero network)
+  //   {source}  — a Blob-shaped self-filling source
+  //   null      — cache unusable here (no OPFS / no validators / second tab):
+  //               caller falls back to the plain URL path.
+  async function cachedUrlSource(url) {
+    if (!(crypto && crypto.subtle) || !(navigator.storage && navigator.storage.getDirectory)) {
+      return null;
+    }
+    const head = await headValidators(url);
+    const dir = await openCacheDir();
+    if (!dir) return null;
+    const name = await cacheEntryName(url);
+    const meta = await readCacheMeta(dir, name);
+
+    const completeLocal = async (m) => {
+      const fh = await dir.getFileHandle(name);
+      const file = await fh.getFile();
+      return file.size === m.size ? { file: file } : null;
+    };
+
+    if (!head) {
+      // Offline (or HEAD refused): a complete copy is better than nothing —
+      // this is the offline story. Anything less falls back to the URL path,
+      // which will fail the same way it always did.
+      if (meta && spansCover(meta.spans, 0, meta.size)) return completeLocal(meta);
+      return null;
+    }
+    if (!head.etag && !head.lastModified) return null;  // nothing to validate by
+    if (!head.size) return null;
+
+    if (meta && validatorsMatch(meta, head)) {
+      if (spansCover(meta.spans, 0, meta.size)) {
+        const local = await completeLocal(meta);
+        if (local) return local;
+      }
+      // Partial copy of the still-current file: resume filling it.
+    } else if (meta) {
+      await removeCacheEntry(dir, name);      // server has a different file now
+    }
+
+    const fresh = (!meta || !validatorsMatch(meta, head))
+      ? { url: url, etag: head.etag, lastModified: head.lastModified,
+          size: head.size, spans: [] }
+      : meta;
+    try {
+      await cacheCall('open', name);          // exclusive: a second tab lands in catch
+    } catch (err) {
+      return null;
+    }
+    await writeCacheMeta(dir, name, fresh).catch(() => {});
+    return { source: fillingCacheSource(dir, name, url, fresh) };
+  }
+
   // Mouse navigation schemes the wasm's classifyPress understands. Named so a
   // typo is an error here rather than a silent fall-back to blender in the core.
   const NAV_PRESETS = ['blender', 'rhino', 'revit', 'web'];
@@ -593,12 +894,77 @@
         Module._load_sidecar_from_source_c(sid);
         return sid;
       },
+      // `cache: true` keeps a local OPFS copy filled from the viewer's own
+      // ranged reads (see the OPFS model cache section above): the next visit
+      // loads it with zero geometry traffic, and a complete copy still opens
+      // when the server is unreachable. Falls back to plain URL streaming
+      // wherever the cache cannot help (no OPFS, no validators from the
+      // server, another tab already filling this entry).
       addUrl: async function (url, o) {
         if (o && o.replace) this.clearScene();
-        const sid = await registerUrl(url);
+        let sid = null;
+        if (o && o.cache) {
+          const cached = await cachedUrlSource(url).catch(() => null);
+          if (cached) {
+            const src = cached.file || cached.source;
+            sid = Module.__ifcvSources.length;
+            Module.__ifcvSources.push({ file: src, url: null, size: src.size });
+          }
+        }
+        if (sid === null) sid = await registerUrl(url);
         if (o && o.name) this.setModelName(sid, o.name);
         Module._load_sidecar_from_source_c(sid);
         return sid;
+      },
+
+      // What the OPFS cache holds: [{url, size, cachedBytes, complete}] plus
+      // the browser's storage estimate. Entries whose ledger has not caught
+      // up with the last few reads under-report slightly; nothing over-reports.
+      cacheInfo: async function () {
+        const out = { entries: [], estimate: null };
+        try {
+          const dir = await cacheDirHandle(false);
+          for await (const key of dir.keys()) {
+            if (!key.endsWith('.meta')) continue;
+            try {
+              const meta = JSON.parse(await (await
+                (await dir.getFileHandle(key)).getFile()).text());
+              out.entries.push({
+                url: meta.url,
+                size: meta.size,
+                cachedBytes: spansBytes(meta.spans),
+                complete: spansCover(meta.spans, 0, meta.size),
+              });
+            } catch (err) { /* torn meta: skip */ }
+          }
+        } catch (err) { /* no cache dir yet */ }
+        if (navigator.storage && navigator.storage.estimate) {
+          out.estimate = await navigator.storage.estimate().catch(() => null);
+        }
+        return out;
+      },
+
+      // Drop cached models — one URL, or everything. Sources already handed
+      // to the viewer keep working (open handles and Files stay readable);
+      // the next visit simply streams from the network again.
+      clearCache: async function (url) {
+        try {
+          const dir = await cacheDirHandle(false);
+          const only = url ? await cacheEntryName(url) : null;
+          const names = [];
+          for await (const key of dir.keys()) {
+            const base = key.endsWith('.meta') ? key.slice(0, -5) : key;
+            if (!only || base === only) names.push(key);
+          }
+          let n = 0;
+          for (const key of names) {
+            await dir.removeEntry(key).catch(() => {});
+            if (!key.endsWith('.meta')) n++;
+          }
+          return n;
+        } catch (err) {
+          return 0;
+        }
       },
 
       // ---- Federation ------------------------------------------------------

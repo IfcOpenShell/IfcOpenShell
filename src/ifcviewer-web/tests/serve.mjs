@@ -6,6 +6,7 @@
 // Serve dir resolution: $WEB_BUILD_DIR if set, else the repo's build-web.
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -46,6 +47,9 @@ http.createServer(async (req, res) => {
     try { body = await readFile(inRoot); }
     catch { body = await readFile(inSrc); }   // fall back to the source dir
     const ctype = MIME[path.extname(p)] || 'application/octet-stream';
+    // A strong ETag from the content, so the OPFS cache spec can exercise
+    // validation exactly the way a real Accept-Ranges host would offer it.
+    const etag = '"' + createHash('sha1').update(body).digest('hex').slice(0, 16) + '"';
 
     // HEAD: headers only — lets the remote backend resolve total size.
     if (req.method === 'HEAD') {
@@ -53,6 +57,7 @@ http.createServer(async (req, res) => {
         'Content-Type': ctype,
         'Content-Length': body.length,
         'Accept-Ranges': 'bytes',
+        'ETag': etag,
       });
       res.end();
       return;
@@ -74,12 +79,13 @@ http.createServer(async (req, res) => {
         'Content-Range': `bytes ${start}-${end}/${body.length}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': slice.length,
+        'ETag': etag,
       });
       res.end(slice);
       return;
     }
 
-    res.writeHead(200, { 'Content-Type': ctype, 'Accept-Ranges': 'bytes' });
+    res.writeHead(200, { 'Content-Type': ctype, 'Accept-Ranges': 'bytes', 'ETag': etag });
     res.end(body);
   } catch {
     res.writeHead(404).end('not found');
