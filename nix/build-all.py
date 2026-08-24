@@ -628,7 +628,7 @@ def restore_env(var_name: str, old_value: str | None) -> None:
         os.environ[var_name] = old_value
 
 
-def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False) -> str:
+def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False, env: dict[str, str] | None = None) -> str:
     """
     Wraps `subprocess.Popen.communicate()` and logs the command being executed,
     sets up logging `stderr` to `LOG_FILE` (in append mode) and returns stdout
@@ -652,7 +652,7 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False) -> 
     # Ensure both live logs available in the log file
     # and the putput.
     with open(LOG_FILE, "a", encoding="utf-8") as log_file_handle:
-        proc = sp.Popen(cmds, cwd=cwd, stdout=sp.PIPE, stderr=sp.PIPE, encoding="utf-8")
+        proc = sp.Popen(cmds, cwd=cwd, stdout=sp.PIPE, stderr=sp.PIPE, encoding="utf-8", env=env)
         assert proc.stdout and proc.stderr
 
         t_out = threading.Thread(target=stream_reader, args=(proc.stdout, stdout, log_file_handle))
@@ -1710,6 +1710,42 @@ if not WASM and (
 
     run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=ifcos_build_dir)
     run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=ifcos_build_dir)
+
+    def test_examples() -> None:
+        cecho("Running examples...", GREEN)
+        examples_bin_dir = Path(DEPS_DIR) / "install" / "ifcopenshell" / "bin"
+
+        examples_env = os.environ.copy()
+        ld_library_paths = ["../lib"]
+        if ARGS.occt_shared:
+            ld_library_paths.append(f"{OCCT_INSTALL_PATH}/lib")
+        examples_env["LD_LIBRARY_PATH"] = os.pathsep.join(ld_library_paths)
+
+        examples: dict[tuple[str, ...], str | None] = {
+            ("./IfcOpenHouse",): "IfcOpenHouse.ifc",
+            ("./IfcParseExamples", "IfcOpenHouse.ifc"): None,
+            ("./IfcAdvancedHouse",): "IfcAdvancedHouse.ifc",
+        }
+        # Only for ifc4x3 schema.
+        if (examples_bin_dir / "IfcAlignment").is_file():
+            examples[("./IfcAlignment",)] = "FHWA_Bridge_Geometry_Alignment_Example.ifc"
+            examples[("./IfcSimplifiedAlignment",)] = "FHWA_Bridge_Geometry_Alignment_Example_Simplified.ifc"
+
+        produced_files: set[str] = set()
+        try:
+            for cmd, expected_file in examples.items():
+                run(cmd, cwd=str(examples_bin_dir), env=examples_env)
+                if expected_file is None:
+                    continue
+                if not (examples_bin_dir / expected_file).is_file():
+                    raise RuntimeError(f"Example `{' '.join(cmd)}` did not produce expected file '{expected_file}'.")
+                produced_files.add(expected_file)
+        finally:
+            for produced_file in produced_files:
+                (examples_bin_dir / produced_file).unlink(missing_ok=True)
+
+    if ARGS.build_examples:
+        test_examples()
 
 if "IfcOpenShell-Python" in targets:
     wrapper_ldflags = ""
