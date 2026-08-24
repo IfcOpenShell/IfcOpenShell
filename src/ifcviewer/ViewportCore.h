@@ -1632,6 +1632,19 @@ private:
     double last_cull_compute_ms_          = 0.0;
     double last_cull_upload_ms_           = 0.0;
     double last_stream_ms_                = 0.0;
+    // Motion-cull latch. The coarse motion threshold used to follow the
+    // per-frame "did the camera move" test directly, which flip-flops
+    // during a slow low-fps drag: coalesced mouse events leave frames
+    // where the camera happens not to change, so the cull alternated
+    // between the 3 px and 15 px thresholds — most of the scene vanishing
+    // and reappearing every few frames, with a full visible-set re-upload
+    // at each flip. The latch holds the coarse threshold until the camera
+    // has been still for kMotionHoldMs, so a drag degrades once at its
+    // start and restores once, shortly after it ends.
+    static constexpr int kMotionHoldMs = 250;
+    bool      motion_cull_latched_ = false;
+    Stopwatch motion_hold_timer_;
+
     // True when the cull just used motion_min_pixel_radius_ — render()
     // schedules one more frame so the camera-now-stopped state recomputes
     // the cull at the still threshold and previously dropped sub-pixel

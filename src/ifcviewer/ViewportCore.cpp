@@ -7870,8 +7870,20 @@ void ViewportCore::render() {
              || camera_distance_  != prev_camera_distance_
              || camera_yaw_deg_   != prev_camera_yaw_deg_
              || camera_pitch_deg_ != prev_camera_pitch_deg_);
+        if (camera_moved) {
+            motion_cull_latched_ = true;
+            motion_hold_timer_.start();
+        } else if (motion_cull_latched_
+                   && motion_hold_timer_.elapsed() >= kMotionHoldMs) {
+            motion_cull_latched_ = false;
+        }
+        // While the latch holds with the camera still, keep frames coming so
+        // the expiry actually happens and the fine-threshold re-cull runs —
+        // the loop is on demand, and a fully-resident scene would otherwise
+        // stay coarsely culled until the next input.
+        if (motion_cull_latched_ && !camera_moved) host_->requestFrame();
         const bool use_motion_threshold =
-            camera_moved && motion_min_pixel_radius_ > min_pixel_radius_;
+            motion_cull_latched_ && motion_min_pixel_radius_ > min_pixel_radius_;
         const float effective_min_px =
             use_motion_threshold ? motion_min_pixel_radius_ : min_pixel_radius_;
         last_cull_was_motion_ = use_motion_threshold;
