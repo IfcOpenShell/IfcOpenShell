@@ -205,6 +205,7 @@ class Args(NamedTuple):
     verbose: bool
     shared: bool
     ifcopenshell_shared: bool
+    occt_shared: bool
     mac_cross_compile_intel: bool
     wasm: bool
 
@@ -296,6 +297,12 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         "Redundant if -shared is also passed.",
     )
     arg_parser.add_argument(
+        "--occt-shared",
+        action="store_true",
+        default=False,
+        help="Build OCCT as shared. Redundant if -shared is also passed.",
+    )
+    arg_parser.add_argument(
         "-mac-cross-compile-intel",
         "--mac-cross-compile-intel",
         action="store_true",
@@ -311,7 +318,8 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         lto=namespace.lto,
         verbose=namespace.verbose,
         shared=namespace.shared,
-        ifcopenshell_shared=namespace.ifcopenshell_shared,
+        ifcopenshell_shared=namespace.ifcopenshell_shared or namespace.shared,
+        occt_shared=namespace.occt_shared or namespace.shared,
         mac_cross_compile_intel=namespace.mac_cross_compile_intel,
         wasm=namespace.wasm,
     )
@@ -520,12 +528,9 @@ else:
 OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = not ARGS.shared
 """Whether dependencies are built static."""
-IFCOPENSHELL_STATIC = BUILD_STATIC and not ARGS.ifcopenshell_shared
-"""Whether IfcOpenShell's own libraries are built static."""
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
 LINK_TYPE = "static" if BUILD_STATIC else "shared"
-LINK_TYPE_UCFIRST = LINK_TYPE.capitalize()
 LIBRARY_EXT = "a" if BUILD_STATIC else "so"
 PIC = "-fPIC" if BUILD_STATIC else ""
 
@@ -1039,6 +1044,8 @@ ADDITIONAL_ARGS_STR = " ".join(ADDITIONAL_ARGS)
 
 CXXFLAGS_MINIMAL = f"{CXXFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
 CFLAGS_MINIMAL = f"{CFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
+CXXFLAGS_SHARED = CXXFLAGS_MINIMAL
+CFLAGS_SHARED = CFLAGS_MINIMAL
 if WASM:
     # WASM `SIDE_MODULE_` are absorbed by `emcmake` automatically.
     CXXFLAGS = CXXFLAGS_MINIMAL
@@ -1048,16 +1055,16 @@ elif sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev
         CXXFLAGS = f"{CXXFLAGS} {PIC} -fdata-sections -ffunction-sections -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
         CFLAGS = f"{CFLAGS}   {PIC} -fdata-sections -ffunction-sections -fvisibility=hidden {ADDITIONAL_ARGS_STR}"
     else:
-        CXXFLAGS = CXXFLAGS_MINIMAL
-        CFLAGS = CFLAGS_MINIMAL
+        CXXFLAGS = CXXFLAGS_SHARED
+        CFLAGS = CFLAGS_SHARED
     LDFLAGS = f"{LDFLAGS}  -Wl,--gc-sections {ADDITIONAL_ARGS_STR}"
 else:
     if BUILD_STATIC:
         CXXFLAGS = f"{CXXFLAGS} {PIC} -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
         CFLAGS = f"{CFLAGS}   {PIC} -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
     else:
-        CXXFLAGS = CXXFLAGS_MINIMAL
-        CFLAGS = CFLAGS_MINIMAL
+        CXXFLAGS = CXXFLAGS_SHARED
+        CFLAGS = CFLAGS_SHARED
     LDFLAGS = f"{LDFLAGS} {ADDITIONAL_ARGS_STR}"
 
 if ARGS.lto:
@@ -1143,6 +1150,9 @@ if "swig" in targets:
 if USE_OCCT and "occ" in targets:
     occt_args: list[str] = []
     patches: list[str] = []
+    occt_link_type = "Shared" if ARGS.occt_shared else "Static"
+    occt_name = f"occt-shared-{OCCT_VERSION}" if ARGS.occt_shared else f"occt-{OCCT_VERSION}"
+    OCCT_INSTALL_PATH = f"{DEPS_DIR}/install/{occt_name}"
     if OCCT_VERSION < "7.4":
         patches.append("./patches/occt/enable-exception-handling.patch")
 
@@ -1157,12 +1167,23 @@ if USE_OCCT and "occ" in targets:
     if WASM:
         patches.append("./patches/occt/no_em_js.patch")
 
+    if ARGS.occt_shared:
+        # Using static flags for shared builds break it
+        # (e.g. `-fvisibility=hidden` hides many symbols).
+        # So we temporarily override flags.
+        OLD_CPP_FLAGS = os.environ["CPPFLAGS"]
+        OLD_CXX_FLAGS = os.environ["CXXFLAGS"]
+        OLD_C_FLAGS = os.environ["CFLAGS"]
+        os.environ["CXXFLAGS"] = CXXFLAGS_SHARED
+        os.environ["CPPFLAGS"] = CXXFLAGS_SHARED
+        os.environ["CFLAGS"] = CFLAGS_SHARED
+
     build_dependency(
-        name=f"occt-{OCCT_VERSION}",
+        name=occt_name,
         mode="cmake",
         build_tool_args=[
-            f"-DINSTALL_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}",
-            f"-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}",
+            f"-DINSTALL_DIR={OCCT_INSTALL_PATH}",
+            f"-DBUILD_LIBRARY_TYPE={occt_link_type}",
             f"-DBUILD_MODULE_Draw=0",
             f"-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             # Disable xlib explicitly, as it tries to use it on Desktop Ubuntu, adding unnecessary dependency.
@@ -1181,6 +1202,11 @@ if USE_OCCT and "occ" in targets:
         patch=patches,
         revision="V" + OCCT_VERSION.replace(".", "_"),
     )
+
+    if ARGS.occt_shared:
+        restore_env("CPPFLAGS", OLD_CPP_FLAGS)
+        restore_env("CXXFLAGS", OLD_CXX_FLAGS)
+        restore_env("CFLAGS", OLD_C_FLAGS)
 elif "occ" in targets:
     build_dependency(
         name=f"oce-{OCE_VERSION}",
@@ -1554,7 +1580,7 @@ os.makedirs(ifcos_build_dir, exist_ok=True)
 cmake_args = [
     "-DUSE_MMAP=OFF",
     f"-DBUILD_EXAMPLES={OFF_ON[ARGS.build_examples]}",
-    "-DBUILD_SHARED_LIBS=" + OFF_ON[not IFCOPENSHELL_STATIC],
+    "-DBUILD_SHARED_LIBS=" + OFF_ON[ARGS.ifcopenshell_shared],
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DCREATE_BUNDLE=On",
@@ -1599,7 +1625,7 @@ if "cgal" in targets:
     cmake_args.append(f"-DCGAL_WITH_GMPXX=Off")
 
 if "occ" in targets and USE_OCCT:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/occt-{OCCT_VERSION}")
+    cmake_args_prefix_path.append(OCCT_INSTALL_PATH)
 
 elif "occ" in targets:
     # We don't support find_package for OCE.
