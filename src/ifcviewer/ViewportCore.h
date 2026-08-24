@@ -1594,6 +1594,27 @@ private:
     // for parallel-vs-serial benchmarking. Default ON.
     bool  cull_threads_enabled_    = true;
 
+    // ---- Cull-input tracking -------------------------------------------
+    //
+    // The CPU cull is the single largest per-frame cost (the whole frame on
+    // the single-threaded web build), and most requested frames do not
+    // change its inputs — overlay redraws, pick feedback, streaming frames
+    // where no chunk actually landed. scene_epoch_ is bumped by everything
+    // that can alter a cull's outcome besides the camera (residency,
+    // visibility, colours, transforms, model set, HiZ pyramid updates);
+    // render() re-culls only when the epoch, the camera, or a cull-relevant
+    // setting changed, and otherwise draws from the buffers the last cull
+    // uploaded.
+    std::uint64_t scene_epoch_ = 0;
+    void markCullInputsChanged() { ++scene_epoch_; }
+    bool          has_last_cull_       = false;
+    Eigen::Matrix4f last_cull_vp_      = Eigen::Matrix4f::Zero();
+    std::uint64_t last_cull_epoch_     = 0;
+    float         last_cull_min_px_    = -1.0f;
+    float         last_cull_lod_px_    = -1.0f;
+    float         last_cull_xray_      = -1.0f;
+    bool          last_cull_hiz_       = false;
+
     // Per-frame stats latched by render() for FrameStats emission +
     // the interactive heartbeat / bench per-frame line.
     std::uint32_t last_visible_objects_   = 0;

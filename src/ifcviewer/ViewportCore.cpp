@@ -143,6 +143,7 @@ std::vector<InstanceGpu> instanceGpuRecords(const std::vector<InstanceInfo>& ins
 }  // namespace
 
 void ViewportCore::removeModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     releaseWgpuModelGpuData(it->second, pool_);
@@ -151,6 +152,7 @@ void ViewportCore::removeModel(uint32_t session_model_id) {
 }
 
 void ViewportCore::resetScene() {
+    markCullInputsChanged();
     for (auto& [session_model_id, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
     // A fresh scene should auto-frame its first model. Without this the flag
@@ -162,6 +164,7 @@ void ViewportCore::resetScene() {
 }
 
 void ViewportCore::hideModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end() || it->second.hidden) return;
     it->second.hidden = true;
@@ -169,6 +172,7 @@ void ViewportCore::hideModel(uint32_t session_model_id) {
 }
 
 void ViewportCore::showModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end() || !it->second.hidden) return;
     it->second.hidden = false;
@@ -186,6 +190,7 @@ void ViewportCore::unloadModel(uint32_t session_model_id) {
 }
 
 bool ViewportCore::loadModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return false;
     ModelGpuData& m = it->second;
@@ -335,7 +340,28 @@ float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
     return (xmax - xmin) * (ymax - ymin);
 }
 
+void rebuildCullInstances(ModelGpuData& m) {
+    m.cull_instances.resize(m.instances.size());
+    for (std::size_t i = 0; i < m.instances.size(); ++i) {
+        const InstanceInfo& inst = m.instances[i];
+        ModelGpuData::CullInstance& out = m.cull_instances[i];
+        for (int a = 0; a < 3; ++a) {
+            out.aabb_min[a] = inst.world_aabb_min[a];
+            out.aabb_max[a] = inst.world_aabb_max[a];
+        }
+        out.mesh_id              = inst.mesh_id;
+        out.object_id            = inst.object_id;
+        out.color_override_rgba8 = inst.color_override_rgba8;
+        out.chunk_idx            = i < m.instance_chunk_idx.size()
+                                 ? m.instance_chunk_idx[i] : 0;
+    }
+}
+
 void ViewportCore::uploadInstanceRecords(ModelGpuData& m) {
+    // Every path that mutates instances (recompose, transforms, colour
+    // overrides) funnels through here, so the packed cull mirror follows.
+    rebuildCullInstances(m);
+    markCullInputsChanged();
     if (!wgpu_initialized_ || m.instances.empty() || m.instance_storage == nullptr) return;
     const std::vector<InstanceGpu> gpu = instanceGpuRecords(m.instances);
     wgpuQueueWriteBuffer(queue_, m.instance_storage, 0,
@@ -2352,6 +2378,7 @@ bool ViewportCore::applyStreamedChunk(
     c.is_resident      = true;
     c.is_loading       = false;
     c.loaded_frame_idx = streaming_frame_idx_;
+    markCullInputsChanged();
 
     // The CPU triangle shadow follows residency: count this chunk into each
     // of its meshes (a mesh can live in several chunks under the spatial
@@ -2508,6 +2535,7 @@ void ViewportCore::unloadChunk(ModelGpuData& m, std::size_t chunk_idx) {
     c.total_visible_draws    = 0;
     c.total_visible_vertices = 0;
     c.is_resident = false;
+    markCullInputsChanged();
 
     // CPU side of the eviction. The cull scratch and the uploaded mirrors
     // are only meaningful for a resident chunk (cull no longer emits for
@@ -3133,7 +3161,8 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         const HizOccludedFn& hiz_occluded) const {
     std::uint32_t hiz_rejects = 0;
 
-    if (m.instances.empty() || m.meshes.empty() || m.chunks.empty()) {
+    if (m.instances.empty() || m.meshes.empty() || m.chunks.empty()
+        || m.cull_instances.size() != m.instances.size()) {
         return 0;
     }
 
@@ -3161,15 +3190,15 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
     std::vector<std::uint32_t> running_vertex_count(m.chunks.size(), 0);
 
     auto process_instance = [&](std::uint32_t i) {
-        const auto& inst = m.instances[i];
+        const ModelGpuData::CullInstance& inst = m.cull_instances[i];
         if (inst.mesh_id >= m.meshes.size()) return;
         if (visibility_.isHidden(inst.object_id)) return;
         // Per-instance frustum still needed: a partially-covered subtree
         // descended this far means *some* leaves are visible, but not
         // necessarily this one.
-        if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
+        if (!aabbInFrustum(inst.aabb_min, inst.aabb_max, planes)) return;
 
-        const std::uint32_t chunk_idx = m.instance_chunk_idx[i];
+        const std::uint32_t chunk_idx = inst.chunk_idx;
         ModelGpuData::Chunk& c = m.chunks[chunk_idx];
 
         // Bump the chunk's frustum-only counter before contribution / HiZ
@@ -3183,12 +3212,12 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         // rectangle projection (tight — used for streaming priority).
         float projected_px = std::numeric_limits<float>::infinity();
         {
-            const float cx = 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
-            const float cy = 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
-            const float cz = 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
-            const float ex = inst.world_aabb_max[0] - inst.world_aabb_min[0];
-            const float ey = inst.world_aabb_max[1] - inst.world_aabb_min[1];
-            const float ez = inst.world_aabb_max[2] - inst.world_aabb_min[2];
+            const float cx = 0.5f * (inst.aabb_min[0] + inst.aabb_max[0]);
+            const float cy = 0.5f * (inst.aabb_min[1] + inst.aabb_max[1]);
+            const float cz = 0.5f * (inst.aabb_min[2] + inst.aabb_max[2]);
+            const float ex = inst.aabb_max[0] - inst.aabb_min[0];
+            const float ey = inst.aabb_max[1] - inst.aabb_min[1];
+            const float ez = inst.aabb_max[2] - inst.aabb_min[2];
             const float radius_world = 0.5f * std::sqrt(ex*ex + ey*ey + ez*ez);
             const float view_z = forward[0] * (cx - eye[0])
                                + forward[1] * (cy - eye[1])
@@ -3230,7 +3259,7 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         if (!c.is_resident) return;
 
         if (hiz_active
-            && hiz_occluded(inst.world_aabb_min, inst.world_aabb_max)) {
+            && hiz_occluded(inst.aabb_min, inst.aabb_max)) {
             ++hiz_rejects;
             return;
         }
@@ -3744,6 +3773,8 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     for (std::uint32_t i = 0; i < std::uint32_t(model_gpu_data.instances.size()); ++i) {
         model_gpu_data.object_id_to_instance.emplace(model_gpu_data.instances[i].object_id, i);
     }
+    rebuildCullInstances(model_gpu_data);
+    markCullInputsChanged();
 
     // Per-chunk world AABBs + instance-id lists from instance_to_chunk.
     for (std::size_t chunk_index = 0; chunk_index < model_gpu_data.chunks.size(); ++chunk_index) {
@@ -5074,6 +5105,7 @@ void ViewportCore::drainHizReadbacks() {
 
         hiz_vp_    = hiz_slot_vp_[slot];
         hiz_valid_ = true;
+        markCullInputsChanged();
     }
 }
 
@@ -6468,6 +6500,7 @@ void ViewportCore::applyMarqueeToSelection(const std::vector<std::uint32_t>& ids
 }
 
 void ViewportCore::hideSelected() {
+    markCullInputsChanged();
     if (selection_.count() == 0) return;
     for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
     const size_t n = selection_.count();
@@ -6477,6 +6510,7 @@ void ViewportCore::hideSelected() {
 }
 
 void ViewportCore::isolateSelected() {
+    markCullInputsChanged();
     if (selection_.count() == 0) return;
     // Hide every object in a VISIBLE model that isn't selected. Model-hidden
     // objects stay model-hidden (element-level hiding on top is redundant), and
@@ -6495,6 +6529,7 @@ void ViewportCore::isolateSelected() {
 }
 
 void ViewportCore::showAll() {
+    markCullInputsChanged();
     if (visibility_.hiddenCount() == 0) return;
     visibility_.clear();
     Log::info() << "[wgpu] show all";
@@ -6502,6 +6537,7 @@ void ViewportCore::showAll() {
 }
 
 void ViewportCore::hideAll() {
+    markCullInputsChanged();
     // Element-level hide of everything in a visible model — the inverse of
     // showAll, and isolateSelected with an empty selection. Model-hidden
     // models are already gone from the cull, so they contribute nothing.
@@ -6514,6 +6550,7 @@ void ViewportCore::hideAll() {
 }
 
 void ViewportCore::setObjectsVisible(const std::vector<std::uint32_t>& object_ids, bool visible) {
+    markCullInputsChanged();
     for (std::uint32_t id : object_ids) {
         if (visible) visibility_.show(id);
         else         visibility_.hide(id);
@@ -7793,10 +7830,6 @@ void ViewportCore::render() {
     updateFrameUniforms();
 
     // ---- Per-frame cull --------------------------------------------------
-    last_visible_objects_   = 0;
-    last_visible_triangles_ = 0;
-    last_sub_draws_         = 0;
-    hiz_reject_count_       = 0;
     Stopwatch cull_timer;
     cull_timer.start();
     cull_writes_this_frame_ = 0;
@@ -7877,6 +7910,36 @@ void ViewportCore::render() {
             };
         }
 
+        // Re-cull only when something that can change its outcome did:
+        // the camera, the scene epoch (residency / visibility / colours /
+        // transforms / models / a new HiZ pyramid), or a cull-relevant
+        // setting. Everything the draw needs from a cull persists — the
+        // per-chunk counters and the uploaded visible_draws buffers — so a
+        // frame requested for an overlay, a pick highlight, or a streaming
+        // tick where nothing landed skips the whole walk. Benchmarks are
+        // exempt so bench numbers keep measuring the real cull.
+        const bool cull_inputs_unchanged =
+            bench_total_ == 0
+            && has_last_cull_
+            && last_cull_epoch_  == scene_epoch_
+            && last_cull_vp_     == vp_this_frame
+            && last_cull_min_px_ == effective_min_px
+            && last_cull_lod_px_ == lod1_pixel_threshold_
+            && last_cull_xray_   == xray_alpha_cap_
+            && last_cull_hiz_    == hiz_for_this_frame;
+        if (!cull_inputs_unchanged) {
+            has_last_cull_    = true;
+            last_cull_epoch_  = scene_epoch_;
+            last_cull_vp_     = vp_this_frame;
+            last_cull_min_px_ = effective_min_px;
+            last_cull_lod_px_ = lod1_pixel_threshold_;
+            last_cull_xray_   = xray_alpha_cap_;
+            last_cull_hiz_    = hiz_for_this_frame;
+            last_visible_objects_   = 0;
+            last_visible_triangles_ = 0;
+            last_sub_draws_         = 0;
+            hiz_reject_count_       = 0;
+
         // Force sequential on Emscripten: std::async(std::launch::async)
         // without -pthread throws std::system_error from inside libstdc++,
         // and we link without exceptions so that becomes abort(). Until
@@ -7929,6 +7992,10 @@ void ViewportCore::render() {
         }
         last_cull_compute_ms_ = cull_compute_ms;
         last_cull_upload_ms_  = double(upload_timer.nsecsElapsed()) / 1e6;
+        } else {
+            last_cull_compute_ms_ = 0.0;
+            last_cull_upload_ms_  = 0.0;
+        }
     }
 
     const double cull_only_ms = double(cull_timer.nsecsElapsed()) / 1e6;

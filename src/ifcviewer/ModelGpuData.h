@@ -395,6 +395,25 @@ struct ModelGpuData {
     std::vector<MeshInfo>    meshes;
     std::vector<InstanceInfo> instances;
 
+    // The cull-hot per-instance fields packed contiguously. InstanceInfo is
+    // 232 bytes with the AABB 200 bytes from the ids, so the per-frame cull
+    // paid two or three cache lines per instance — at half a million
+    // instances that is the whole frame budget on the single-threaded web
+    // build. 40 bytes per entry here makes the walk sequential. Rebuilt by
+    // rebuildCullInstances wherever instances change (applyCachedModel,
+    // uploadInstanceRecords — which every recompose and colour change
+    // already funnels through).
+    struct CullInstance {
+        float         aabb_min[3];
+        float         aabb_max[3];
+        std::uint32_t mesh_id;
+        std::uint32_t object_id;
+        std::uint32_t color_override_rgba8;
+        std::uint32_t chunk_idx;
+    };
+    static_assert(sizeof(CullInstance) == 40, "keep the cull walk dense");
+    std::vector<CullInstance> cull_instances;
+
     // Per-mesh "any vertex has alpha < 255?" flag, indexed by mesh_id.
     // Populated at uploadStreamedMesh / applyStreamedChunk as vertex bytes
     // become CPU-resident. Used at cull time to classify each instance
@@ -501,5 +520,7 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool);
 // and the per-chunk cull buffers. Chunk bookkeeping is left intact so the
 // buffers can be re-created — the undo step of a failed model load.
 void releaseModelBuffers(ModelGpuData& m);
+// Refresh ModelGpuData::cull_instances from instances + instance_chunk_idx.
+void rebuildCullInstances(ModelGpuData& m);
 
 #endif // WGPUMODELGPUDATA_H
