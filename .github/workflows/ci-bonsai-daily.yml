@@ -119,7 +119,7 @@ jobs:
           blender --command extension install-file -r user_default -e $bonsai_zip
           blender --command extension list
 
-          git clone https://github.com/IfcOpenShell/IfcOpenShell.git IfcOpenShell
+          git clone --branch ${{ github.ref_name }} --single-branch https://github.com/IfcOpenShell/IfcOpenShell.git IfcOpenShell
 
           # Reregister Bonsai.
           # Note that running it in background might miss some errors
