@@ -69,30 +69,15 @@ endif # def PYVERSION
 IFCMERGE_VERSION:=2026-04-07
 
 ifdef PLATFORM
-SUPPORTED_PLATFORMS := linux macos macosm1 win
+SUPPORTED_PLATFORMS := linux macosm1 win
 
 ifeq ($(filter $(PLATFORM),$(SUPPORTED_PLATFORMS)),)
 $(error Unsupported PLATFORM=$(PLATFORM). Must be one of $(SUPPORTED_PLATFORMS))
 endif
 
-ifeq ($(PLATFORM),macos)
-ifeq ($(PYVERSION),py313)
-$(error Blender 5.1 with Python 3.13 doesn't support intel macOS.)
-endif
-endif
-
 ifeq ($(PLATFORM), linux)
 PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
 BLENDER_PLATFORM:=linux-x64
-endif
-
-ifeq ($(PLATFORM), macos)
-ifeq ($(PYVERSION), py311)
-PYPI_PLATFORM:=--platform macosx_10_10_x86_64
-else
-PYPI_PLATFORM:=--platform macosx_10_13_x86_64
-endif
-BLENDER_PLATFORM:=macos-x64
 endif
 
 ifeq ($(PLATFORM), macosm1)
@@ -194,10 +179,8 @@ endif
 	# Provides networkx graph analysis for project dependency calculations
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download networkx --dest=./wheels
 	# Required by IFCDiff
-	# Pinned <9.1: deepdiff 9.1.0 adds cachebox<6,>=5.2 which only ships macOS x86_64
-	# wheels for macosx_10_12+ and is incompatible with our macos py311 --platform
-	# macosx_10_10_x86_64 target. Revisit once the macos py311 platform tag is bumped
-	# to 10_13 (matching py312/py313).
+	# Pinned <9.1: deepdiff 9.1.0 adds the compiled dependency cachebox<6,>=5.2,
+	# which this platformless download cannot provide for every target platform.
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "deepdiff<9.1" --dest=./wheels
 	# Required by IFCCSV and ifcopenshell.util.selector
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download lark --dest=./wheels
@@ -215,8 +198,6 @@ endif
 	# pyradiance is using different platform versions than defaults in our makefile.
 ifeq ($(PLATFORM), linux)
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform manylinux_2_28_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-else ifeq ($(PLATFORM), macos)
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 endif
