@@ -157,7 +157,7 @@ BUILD_BONSAIVIEWER = is_on_off(os.getenv("BUILD_BONSAIVIEWER"), default=False)
 USE_OCCT = is_on_off(os.getenv("USE_OCCT"), default=True)
 PYTHON_USER_SITE = is_on_off(os.getenv("PYTHON_USER_SITE"), default=False)
 
-PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
+PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 JSON_VERSION = "3.11.3"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
@@ -1316,6 +1316,14 @@ if "OpenCOLLADA" in targets:
         revision=OPENCOLLADA_VERSION,
     )
 
+
+def python_consider_rc(python_version: str) -> str:
+    # TODO: remove after Python 3.15 release.
+    if python_version == "3.15.0":
+        python_version += "rc1"
+    return python_version
+
+
 if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
     OLD_CPP_FLAGS = os.environ["CPPFLAGS"]
@@ -1344,13 +1352,16 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
         PYTHON_CONFIGURE_ARGS.extend(["--with-universal-archs=intel-64", "--enable-universalsdk"])
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
+        python_version_url = PYTHON_VERSION
+        PYTHON_VERSION = python_consider_rc(PYTHON_VERSION)
+
         # Don't fail silently on missing Python dependencies (e.g. openssl or zlib),
         # because later ifcopenshell-python build will fail too but in a more confusing way.
         build_dependency(
             f"python-{PYTHON_VERSION}",
             "autoconf",
             PYTHON_CONFIGURE_ARGS,
-            f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
+            f"http://www.python.org/ftp/python/{python_version_url}/",
             f"Python-{PYTHON_VERSION}.tgz",
         )
         python_install = INSTALL_DIR / f"python-{PYTHON_VERSION}"
@@ -1851,6 +1862,7 @@ if "IfcOpenShell-Python" in targets:
         compile_python_wrapper(platform.python_version(), python_info["include"], sys.executable)
     else:
         for python_version in PYTHON_VERSIONS:
+            python_version = python_consider_rc(python_version)
             python_path = INSTALL_DIR / f"python-{python_version}"
             module_dir = compile_python_wrapper(python_version, python_path=python_path)
             assert module_dir
