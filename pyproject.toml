@@ -113,6 +113,7 @@ unresolved-attribute = "ignore"
 invalid-argument-type = "ignore"
 invalid-method-override = "ignore"
 invalid-assignment = "ignore"
+unsound-assignment = "ignore"
 invalid-parameter-default = "ignore"
 missing-override-decorator = "ignore"
 invalid-yield = "ignore"
@@ -126,6 +127,8 @@ no-matching-overload = "ignore"
 not-subscriptable = "ignore"
 unsupported-dynamic-base = "ignore"
 unsupported-operator = "ignore"
+# `@persistent` is incorrectly annotated as `Any` in fake-bpy, needs to be resolved upstream.
+dynamic-function-decorator-return = "ignore"
 
 [tool.ty.environment]
 extra-paths = [
