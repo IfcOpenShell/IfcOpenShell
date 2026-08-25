@@ -187,12 +187,11 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 				}
 			}
 
-			const NCollection_Array1<Poly_Triangle>& triangles = tri->Triangles();
-			for (int i = 1; i <= triangles.Length(); ++i) {
+			for (int i = 1; i <= tri->NbTriangles(); ++i) {
 				int n1, n2, n3;
 				if (face.Orientation() == TopAbs_REVERSED)
-					triangles(i).Get(n3, n2, n1);
-				else triangles(i).Get(n1, n2, n3);
+					tri->Triangle(i).Get(n3, n2, n1);
+				else tri->Triangle(i).Get(n1, n2, n3);
 
 				if (dict[n1] == dict[n2] || dict[n2] == dict[n3] || dict[n3] == dict[n1]) {
 					logger.warning("GEO", 185, "Mesher generated a degenerate triangle, ignoring");
@@ -656,14 +655,13 @@ namespace {
 						coords.push_back(tri->Node(i).Transformed(loc).XYZ());
 					}
 
-					const NCollection_Array1<Poly_Triangle>& triangles = tri->Triangles();
-					for (int i = 1; i <= triangles.Length(); ++i) {
+					for (int i = 1; i <= tri->NbTriangles(); ++i) {
 						int n1, n2, n3;
 
 						if (face.Orientation() == TopAbs_REVERSED) {
-							triangles(i).Get(n3, n2, n1);
+							tri->Triangle(i).Get(n3, n2, n1);
 						} else {
-							triangles(i).Get(n1, n2, n3);
+							tri->Triangle(i).Get(n1, n2, n3);
 						}
 
 						const gp_XYZ& pt1 = coords[n1 - 1];
