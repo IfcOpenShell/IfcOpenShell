@@ -464,6 +464,10 @@ cd "%DEPENDENCY_DIR%"
 :: so disable it from the build altogether as we have no use for it
 findstr #add_subdirectory(COLLADAValidator) CMakeLists.txt>NUL
 IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOLLADA_CMakeLists.txt.patch" --ignore-whitespace
+:: std::tr1::unordered_map was a legacy MSVC compatibility shim kept around through VS2022's STL, but newer
+:: toolsets (e.g. VS2026/v145) no longer provide it, breaking the build with error C2039: 'tr1' is not a member of 'std'.
+findstr /C:"typedef std::unordered_map<MarkId, FilePosType > MarkIdToFilePos;" common\libBuffer\include\CommonFWriteBufferFlusher.h>NUL
+IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOLLADA_CommonFWriteBufferFlusher_tr1.patch" --ignore-whitespace
 :: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
@@ -747,7 +751,12 @@ set QT6_MSVC_YEAR=%VS_VER%
 IF /I "%VS_TOOLSET%"=="v141" set QT6_MSVC_YEAR=2017
 IF /I "%VS_TOOLSET%"=="v142" set QT6_MSVC_YEAR=2019
 IF /I "%VS_TOOLSET%"=="v143" set QT6_MSVC_YEAR=2022
-IF /I "%VS_TOOLSET%"=="v145" set QT6_MSVC_YEAR=2026
+:: Qt has not published prebuilt msvc2026 binaries yet (aqt only lists win64_msvc2022_64 as of
+:: Qt 6.7-6.10). The v14x MSVC toolsets share a stable ABI/CRT, so fall back to the msvc2022
+:: binaries until Qt ships msvc2026 ones. Revisit once `aqt list-qt windows desktop --arch <ver>`
+:: shows a msvc2026 entry.
+IF /I "%VS_TOOLSET%"=="v145" set QT6_MSVC_YEAR=2022
+IF "%VS_VER%"=="2026" set QT6_MSVC_YEAR=2022
 
 set QT6_ARCH=
 set QT6_INSTALL_SUFFIX=

@@ -20,10 +20,14 @@
 :: Example usage:
 ::   run-cmake.bat vs2022-x64
 ::   run-cmake.bat vs2022-x64 -DGLTF_SUPPORT=ON
+::   run-cmake.bat vs2022-x64 -DUSE_CCACHE=OFF
 ::
 :: Used environment variables:
 :: - `ADD_COMMIT_SHA` - if defined then `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` cmake args will be set to `ON`.
 :: - `USE_NINJA` - if defined then the Ninja generator will be used instead of the Visual Studio.
+::
+:: -DUSE_CCACHE=OFF (also accepts 0/FALSE/NO/N) disables ccache: the bundled ccache
+:: install dir is kept out of CMAKE_PREFIX_PATH, and CMakeLists.txt skips detecting it.
 
 
 @if not defined ECHO_ON ( echo off )
@@ -79,6 +83,27 @@ if %_test% EQU 1 (
 if not (%1)==() (
     set ARGUMENTS=%*
     call set ARGUMENTS=%%ARGUMENTS:%1=%%
+)
+
+:: Honor -DUSE_CCACHE=OFF (also accepts 0/FALSE/NO/N, case-insensitive) by keeping
+:: the bundled ccache out of CMAKE_PREFIX_PATH so it can't be auto-detected below.
+set USE_CCACHE_VALUE=
+for %%A in (%*) do (
+    set "ARG=%%~A"
+    if not "!ARG:-DUSE_CCACHE=!"=="!ARG!" (
+        for /f "tokens=2 delims==" %%V in ("!ARG!") do set "USE_CCACHE_VALUE=%%V"
+    )
+)
+if defined USE_CCACHE_VALUE (
+    if /I "!USE_CCACHE_VALUE!"=="OFF"   set DISABLE_CCACHE=1
+    if /I "!USE_CCACHE_VALUE!"=="0"     set DISABLE_CCACHE=1
+    if /I "!USE_CCACHE_VALUE!"=="FALSE" set DISABLE_CCACHE=1
+    if /I "!USE_CCACHE_VALUE!"=="NO"    set DISABLE_CCACHE=1
+    if /I "!USE_CCACHE_VALUE!"=="N"     set DISABLE_CCACHE=1
+)
+if defined DISABLE_CCACHE (
+    echo USE_CCACHE=%USE_CCACHE_VALUE% passed, disabling ccache.
+    set "CCACHE_INSTALL_DIR="
 )
 
 pushd ..

@@ -178,26 +178,31 @@ if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM)
     set(BUILD_IFCGEOM ON)
 endif()
 
-find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
-    message(STATUS "`ccache` is found, using it as a compiler launcher.")
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_FOUND}")
-    if(MSVC)
-        # By default Visual Studio generators will use /Zi which is not compatible
-        # with ccache, so tell Visual Studio to use /Z7 instead.
-        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
-        # Not needed for Ninja.
-        if(CMAKE_GENERATOR MATCHES "Visual Studio")
-            file(COPY_FILE
-                ${CCACHE_FOUND} ${CMAKE_BINARY_DIR}/cl.exe
-                ONLY_IF_DIFFERENT)
-            set(CMAKE_VS_GLOBALS
-                "CLToolExe=cl.exe"
-                "CLToolPath=${CMAKE_BINARY_DIR}"
-                "UseMultiToolTask=true"
-            )
+option(USE_CCACHE "Use ccache as a compiler launcher if it is found" ON)
+if(USE_CCACHE)
+    find_program(CCACHE_FOUND ccache)
+    if(CCACHE_FOUND)
+        message(STATUS "`ccache` is found, using it as a compiler launcher.")
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_FOUND}")
+        if(MSVC)
+            # By default Visual Studio generators will use /Zi which is not compatible
+            # with ccache, so tell Visual Studio to use /Z7 instead.
+            set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+            # Not needed for Ninja.
+            if(CMAKE_GENERATOR MATCHES "Visual Studio")
+                file(COPY_FILE
+                    ${CCACHE_FOUND} ${CMAKE_BINARY_DIR}/cl.exe
+                    ONLY_IF_DIFFERENT)
+                set(CMAKE_VS_GLOBALS
+                    "CLToolExe=cl.exe"
+                    "CLToolPath=${CMAKE_BINARY_DIR}"
+                    "UseMultiToolTask=true"
+                )
+            endif()
         endif()
     endif()
+else()
+    message(STATUS "ccache usage disabled via USE_CCACHE=OFF")
 endif()
 
 if(MSVC AND MSVC_PARALLEL_BUILD)
