@@ -124,7 +124,7 @@ jobs:
           # Reregister Bonsai.
           # Note that running it in background might miss some errors
           # (e.g. tools are not registered in background mode).
-          blender --background --python IfcOpenShell/src/bonsai/scripts/reregister_bonsai.py
+          blender --background --python-exit-code 1 --python IfcOpenShell/src/bonsai/scripts/reregister_bonsai.py
 
           # Install sverchok.
           wget -q -O sverchok.zip https://github.com/nortikin/sverchok/archive/refs/heads/master.zip
@@ -171,6 +171,6 @@ jobs:
 
           cd IfcOpenShell/src/bonsai
           pip install -r requirements-dev.txt
-          blender --background --python scripts/setup_pytest.py
-          blender --python-expr "import bonsai; print(bonsai.bbim_semver); import ifcopenshell; print(ifcopenshell.version)" --background
+          blender --background --python-exit-code 1 --python scripts/setup_pytest.py
+          blender --python-exit-code 1 --python-expr "import bonsai; print(bonsai.bbim_semver); import ifcopenshell; print(ifcopenshell.version)" --background
           make test
