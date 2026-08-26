@@ -119,7 +119,13 @@ def stage_qt_runtime_payload(exe_path: Path, dest: Path, qt_dir: Path | None) ->
     # Copy all QT libs to `dest`.
     for lib_file in (qt_dir / "lib").iterdir():
         if is_so_file(lib_file):
-            shutil.copy(lib_file, dest / lib_file.name, follow_symlinks=False)
+            dest_file = dest / lib_file.name
+            # Currently we install some qt libs to `install/ifcopenshell/lib` too,
+            # so there's a bit of overlap beteen stage_runtime and stage_qt_runtime,
+            # hence the skip.
+            if dest_file.exists():
+                continue
+            shutil.copy(lib_file, dest_file, follow_symlinks=False)
     ensure_soname_links(dest)
 
     # Copy QT plugins.
