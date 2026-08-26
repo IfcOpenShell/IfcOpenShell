@@ -13,13 +13,19 @@ from pathlib import Path
 from typing import Literal
 
 
+class C:
+    GREY = "\033[90m"
+    YELLOW = "\033[33m"
+    RESET = "\033[0m"
+
+
 def run(
     *cmd: str,
     cwd: Path | None = None,
     env: dict[str, str] | None = None,
     stderr: int | None = None,
 ) -> str:
-    print("$", shlex.join(cmd))
+    print(f"{C.GREY}$ {shlex.join(cmd)}{C.RESET}")
     return subprocess.check_output(cmd, cwd=cwd, env=env, stderr=stderr, text=True)
 
 
@@ -184,15 +190,15 @@ def check_runtime_dependencies(package_dir: Path) -> None:
             continue
 
         if "not found" in ldd_output:
-            print(f"Missing runtime dependencies for {binary_file}")
+            print(f"{C.YELLOW}Missing runtime dependencies for {binary_file}{C.RESET}")
             for line in ldd_output.splitlines():
                 if "not found" in line:
-                    print(line)
+                    print(f"{C.YELLOW}{line}{C.RESET}")
             missing = True
 
     # TODO: should error?
     if missing:
-        print("Runtime dependency check found issues; continuing packaging.")
+        print(f"{C.YELLOW}Runtime dependency check found issues; continuing packaging.{C.RESET}")
 
 
 def package_python_wrapper(
