@@ -3,6 +3,7 @@
 # ///
 
 import argparse
+import logging
 import os
 import platform
 import re
@@ -10,13 +11,32 @@ import shlex
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Literal
+from typing import Literal, NamedTuple
 
 
 class C:
     GREY = "\033[90m"
     YELLOW = "\033[33m"
+    RED = "\033[31m"
     RESET = "\033[0m"
+
+
+class ColorFormatter(logging.Formatter):
+    COLORS = {
+        logging.DEBUG: C.GREY,
+        logging.WARNING: C.YELLOW,
+        logging.ERROR: C.RED,
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        color = self.COLORS.get(record.levelno, C.RESET)
+        return f"{color}{super().format(record)}{C.RESET}"
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(ColorFormatter("%(message)s"))
+logging.basicConfig(level=logging.INFO, handlers=[handler])
+logger = logging.getLogger(__name__)
 
 
 def run(
@@ -25,7 +45,7 @@ def run(
     env: dict[str, str] | None = None,
     stderr: int | None = None,
 ) -> str:
-    print(f"{C.GREY}$ {shlex.join(cmd)}{C.RESET}")
+    logger.debug(f"$ {shlex.join(cmd)}")
     return subprocess.check_output(cmd, cwd=cwd, env=env, stderr=stderr, text=True)
 
 
@@ -186,21 +206,21 @@ def check_runtime_dependencies(package_dir: Path) -> None:
         try:
             ldd_output = run("ldd", str(binary_file), env=env, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            print(f"ldd failed for {binary_file}")
-            print(e.output, end="")
+            logger.error(f"ldd failed for {binary_file}")
+            logger.error(e.output)
             missing = True
             continue
 
         if "not found" in ldd_output:
-            print(f"{C.YELLOW}Missing runtime dependencies for {binary_file}{C.RESET}")
+            logger.warning(f"Missing runtime dependencies for {binary_file}")
             for line in ldd_output.splitlines():
                 if "not found" in line:
-                    print(f"{C.YELLOW}{line}{C.RESET}")
+                    logger.warning(line)
             missing = True
 
     # TODO: should error?
     if missing:
-        print(f"{C.YELLOW}Runtime dependency check found issues; continuing packaging.{C.RESET}")
+        logger.warning("Runtime dependency check found issues; continuing packaging.")
 
 
 def package_python_wrapper(
@@ -210,7 +230,7 @@ def package_python_wrapper(
     output_dir: Path,
     arch_suffix: str,
 ) -> None:
-    print(f"Packaging python wrapper '{py_dir.name}'")
+    logger.info(f"Packaging python wrapper '{py_dir.name}'")
     py_version = py_dir.name
     postfix = "" if py_version[-1].isdigit() else py_version[-1]
     # Match and convert `x.y` -> `xy`.
@@ -257,7 +277,7 @@ def package_executable(
     arch_suffix: str,
 ) -> None:
     exe = exe_path.name
-    print(f"Packaging executable '{exe}'")
+    logger.info(f"Packaging executable '{exe}'")
     package_dir = ifcopenshell_install_dir / f".package-{exe}"
     if package_dir.exists():
         # Clean up previous local runs.
@@ -303,7 +323,7 @@ def package_app_bundle(
     is the connector.
     """
     app = app_path.stem
-    print(f"Packaging app bundle '{app}'")
+    logger.info(f"Packaging app bundle '{app}'")
 
     if app == "BonsaiViewer":
         # ConnectorDiscovery looks in applicationDirPath()/connectors,
@@ -317,12 +337,27 @@ def package_app_bundle(
 
 
 ARCH_SUFFIXES = ("linux64", "linuxarm64", "macosm164")
+LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
+
+
+class Args(NamedTuple):
+    arch_suffix: str
+    log_level: str
+
+
+ARGS: Args
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("arch_suffix", choices=ARCH_SUFFIXES, help="Zip filename suffix.")
+    # TODO: relax default to INFO once things get more stable.
+    parser.add_argument("--log-level", default="DEBUG", choices=LOG_LEVELS, help="Logging verbosity.")
     args = parser.parse_args()
+
+    global ARGS
+    ARGS = Args(arch_suffix=args.arch_suffix, log_level=args.log_level)
+    logger.setLevel(ARGS.log_level)
 
     # bonsaiviewer-autodesk is now a Rust connector. packaging/build.py
     # invokes `cargo build --release` and stages the binary +
@@ -334,7 +369,7 @@ def main() -> None:
     assert autodesk_connector_dir.is_dir()
 
     # Locate the ifcopenshell install dir and stage QT6 alongside the zip output.
-    install_root = get_install_dir(args.arch_suffix)
+    install_root = get_install_dir(ARGS.arch_suffix)
     ifcopenshell_install_dir = install_root / "ifcopenshell"
 
     output_dir = Path.home() / "output"
@@ -348,7 +383,7 @@ def main() -> None:
     # and zip them, bundling all dynamic libs from `lib`.
     github_sha = get_git_sha()
     for py_dir in sorted(ifcopenshell_install_dir.glob("python-*")):
-        package_python_wrapper(py_dir, ifcopenshell_install_dir, github_sha, output_dir, args.arch_suffix)
+        package_python_wrapper(py_dir, ifcopenshell_install_dir, github_sha, output_dir, ARGS.arch_suffix)
 
     # Iterate over all executables in `install/ifcopenshell/bin` and zip them.
     # Each zip bundles dynamic libs from `lib` and also qt libs.
@@ -362,12 +397,12 @@ def main() -> None:
                 output_dir,
                 autodesk_connector_dir,
                 qt_dir,
-                args.arch_suffix,
+                ARGS.arch_suffix,
             )
 
     if is_platform("MAC"):
         for app_path in sorted(install_root.glob("*.app")):
-            package_app_bundle(app_path, install_root, github_sha, output_dir, autodesk_connector_dir, args.arch_suffix)
+            package_app_bundle(app_path, install_root, github_sha, output_dir, autodesk_connector_dir, ARGS.arch_suffix)
 
 
 if __name__ == "__main__":
