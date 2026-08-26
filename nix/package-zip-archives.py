@@ -27,6 +27,11 @@ REPO_ROOT = Path(run("git", "-C", str(Path(__file__).parent), "rev-parse", "--sh
 VERSION = "v" + (REPO_ROOT / "VERSION").read_text().strip()
 
 
+def get_git_sha() -> str:
+    sha = os.getenv("GITHUB_SHA") or run("git", "rev-parse", "HEAD", cwd=REPO_ROOT).strip()
+    return sha[:7]
+
+
 def is_platform(name: Literal["MAC", "LINUX"]) -> bool:
     current = "MAC" if platform.system() == "Darwin" else "LINUX"
     return current == name
@@ -318,7 +323,7 @@ def main() -> None:
 
     # Iterate over all built Python wrappers in `install/ifcopenshell/python-x.y.z`
     # and zip them, bundling all dynamic libs from `lib`.
-    github_sha = os.environ["GITHUB_SHA"][:7]
+    github_sha = get_git_sha()
     for py_dir in sorted(ifcopenshell_install_dir.glob("python-*")):
         package_python_wrapper(py_dir, ifcopenshell_install_dir, github_sha, output_dir, args.arch_suffix)
 
