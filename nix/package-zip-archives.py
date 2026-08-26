@@ -245,6 +245,9 @@ def package_executable(
     exe = exe_path.name
     print(f"Packaging executable '{exe}'")
     package_dir = ifcopenshell_install_dir / f".package-{exe}"
+    if package_dir.exists():
+        # Clean up previous local runs.
+        shutil.rmtree(package_dir)
     package_dir.mkdir(parents=True)
 
     shutil.copy(exe_path, package_dir / exe)
