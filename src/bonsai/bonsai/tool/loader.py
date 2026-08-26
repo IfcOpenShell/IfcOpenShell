@@ -456,8 +456,9 @@ class Loader(bonsai.core.tool.Loader):
                     node.location = bsdf.location - Vector((400, 0))
                     node.image = image
                     blender_material.node_tree.links.new(node.outputs[0], bsdf.inputs["Base Color"])
-                    # leave it to default(OPAQUE) when no Transparency defined
-                    if transparency := rendering_style.get("Transparency", None):
+                    # Enable transparency when the image itself has an alpha channel,
+                    # even if the style's uniform Transparency is 0.0 (e.g. reference images).
+                    if image.channels == 4:
                         blender_material.node_tree.links.new(node.outputs[1], bsdf.inputs["Alpha"])
                         blender_material.blend_method = "BLEND"
 
