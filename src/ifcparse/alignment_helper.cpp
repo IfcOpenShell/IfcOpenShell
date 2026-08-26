@@ -536,7 +536,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
-        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentStart(create_length(file, 0.0));
         curve_segment.setSegmentLength(create_length(file, length));
         curve_segment.setParentCurve(parent_curve);
 
@@ -549,7 +549,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
-        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentStart(create_length(file, 0.0));
         curve_segment.setSegmentLength(create_length(file, length * start_radius / std::fabs(start_radius)));
         curve_segment.setParentCurve(parent_curve);
 
@@ -570,7 +570,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
-        curve_segment.setSegmentLength(create_length(file, offset));
+        curve_segment.setSegmentStart(create_length(file, offset));
         curve_segment.setSegmentLength(create_length(file, length));
         curve_segment.setParentCurve(parent_curve);
 
@@ -606,7 +606,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
-        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentStart(create_length(file, 0.0));
         curve_segment.setSegmentLength(create_length(file, length));
         curve_segment.setParentCurve(parent_curve);
 
@@ -628,7 +628,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
-        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentStart(create_length(file, 0.0));
         curve_segment.setSegmentLength(create_length(file, length));
         curve_segment.setParentCurve(parent_curve);
 
@@ -659,7 +659,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
-        curve_segment.setSegmentLength(create_length(file, offset));
+        curve_segment.setSegmentStart(create_length(file, offset));
         curve_segment.setSegmentLength(create_length(file, length));
         curve_segment.setParentCurve(parent_curve);
 
@@ -692,7 +692,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         Ifc4x3_add2::IfcCurveSegment curve_segment1 = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment1.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment1.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
-        curve_segment1.setSegmentLength(create_length(file, 0.0));
+        curve_segment1.setSegmentStart(create_length(file, 0.0));
         curve_segment1.setSegmentLength(create_length(file, length / 2));
         curve_segment1.setParentCurve(parent_curve1);
 
@@ -724,7 +724,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         Ifc4x3_add2::IfcCurveSegment curve_segment2 = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment2.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment2.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
-        curve_segment2.setSegmentLength(create_length(file, length / 2));
+        curve_segment2.setSegmentStart(create_length(file, length / 2));
         curve_segment2.setSegmentLength(create_length(file, length / 2));
         curve_segment2.setParentCurve(parent_curve2);
 
@@ -756,7 +756,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
-        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentStart(create_length(file, 0.0));
         curve_segment.setSegmentLength(create_length(file, length));
         curve_segment.setParentCurve(parent_curve);
 
@@ -795,7 +795,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_distance_along, start_height, dx, dy));
-        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentStart(create_length(file, 0.0));
         curve_segment.setSegmentLength(create_length(file, segment_curve_length));
         curve_segment.setParentCurve(parent_curve);
 
@@ -822,7 +822,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_distance_along, start_height, dx, dy));
-        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentStart(create_length(file, 0.0));
         curve_segment.setSegmentLength(create_length(file, segment_curve_length));
         curve_segment.setParentCurve(parent_curve);
 
@@ -848,7 +848,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
         Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
         curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
         curve_segment.setPlacement(file.addPlacement2d(start_distance_along, start_height, 1.0, 0.));
-        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentStart(create_length(file, 0.0));
         curve_segment.setSegmentLength(create_length(file, segment_curve_length));
         curve_segment.setParentCurve(parent_curve);
 
