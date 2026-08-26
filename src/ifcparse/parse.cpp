@@ -1651,27 +1651,42 @@ express::base::set_attribute_value(size_t i, const T& t) {
         apply_individual_instance_visitor(current_attribute, (int)i).apply(visitor);
     }
 
-    data()->set_attribute_value(i, t);
-    auto new_attribute = get_attribute_value(i);
-
-    // Register inverse indices in file
-    if constexpr (std::is_same_v<T, express::base> || std::is_same_v<T, std::vector<express::base>> || std::is_same_v<T, std::vector<std::vector<express::base>>>) {
-        register_inverse_visitor visitor(*file(), *this);
-        apply_individual_instance_visitor(new_attribute, (int)i).apply(visitor);
+    // A null/empty single instance attribute (e.g. an omitted optional like
+    // OwnerHistory, ObjectPlacement or Representation) must not be persisted
+    // as a "set" attribute: doing so leaves isNull() false for it afterwards,
+    // so generated getters proceed to as<T>() and dereference a null instance.
+    bool should_set = true;
+    if constexpr (std::is_same_v<T, express::base>) {
+        should_set = static_cast<bool>(t);
     }
 
-    // Register new attribute guid in guid map
-    if (i == 0 && (file()->ifcroot_type() != nullptr) && this->declaration().is(*file()->ifcroot_type())) {
-        try {
-            auto guid = (std::string) new_attribute;
-            auto it = file()->internal_guid_map().find(guid);
-            if (it != file()->internal_guid_map().end()) {
-                file()->logger().warning("Duplicate guid " + guid);
-            }
-            file()->internal_guid_map().insert({guid, *this});
-        } catch (ifcopenshell::exception& e) {
-            file()->logger().error(e);
+    if (should_set) {
+        data()->set_attribute_value(i, t);
+        auto new_attribute = get_attribute_value(i);
+
+        // Register inverse indices in file
+        if constexpr (std::is_same_v<T, express::base> || std::is_same_v<T, std::vector<express::base>> || std::is_same_v<T, std::vector<std::vector<express::base>>>) {
+            register_inverse_visitor visitor(*file(), *this);
+            apply_individual_instance_visitor(new_attribute, (int)i).apply(visitor);
         }
+
+        // Register new attribute guid in guid map
+        if (i == 0 && (file()->ifcroot_type() != nullptr) && this->declaration().is(*file()->ifcroot_type())) {
+            try {
+                auto guid = (std::string) new_attribute;
+                auto it = file()->internal_guid_map().find(guid);
+                if (it != file()->internal_guid_map().end()) {
+                    file()->logger().warning("Duplicate guid " + guid);
+                }
+                file()->internal_guid_map().insert({guid, *this});
+            } catch (ifcopenshell::exception& e) {
+                file()->logger().error(e);
+            }
+        }
+    } else if (!current_attribute.isNull()) {
+        // The attribute previously held a value, so record the clearing
+        // explicitly as blank instead of silently leaving the old value in place.
+        data()->set_attribute_value(i, blank{});
     }
 }
 
