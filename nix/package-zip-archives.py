@@ -196,6 +196,7 @@ def package_python_wrapper(
     output_dir: Path,
     arch_suffix: str,
 ) -> None:
+    print(f"Packaging python wrapper '{py_dir.name}'")
     py_version = py_dir.name
     postfix = "" if py_version[-1].isdigit() else py_version[-1]
     # Match and convert `x.y` -> `xy`.
@@ -242,6 +243,7 @@ def package_executable(
     arch_suffix: str,
 ) -> None:
     exe = exe_path.name
+    print(f"Packaging executable '{exe}'")
     package_dir = ifcopenshell_install_dir / f".package-{exe}"
     package_dir.mkdir(parents=True)
 
@@ -284,6 +286,7 @@ def package_app_bundle(
     is the connector.
     """
     app = app_path.stem
+    print(f"Packaging app bundle '{app}'")
 
     if app == "BonsaiViewer":
         # ConnectorDiscovery looks in applicationDirPath()/connectors,
