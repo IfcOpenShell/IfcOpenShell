@@ -43,11 +43,14 @@ def is_platform(name: Literal["MAC", "LINUX"]) -> bool:
     return current == name
 
 
-def get_install_dir() -> Path:
+def get_install_dir(arch_suffix: str) -> Path:
     if is_platform("MAC"):
         pattern = "Darwin/*/*/install"
     else:
-        pattern = "*/*/install"
+        if "arm64" in arch_suffix:
+            pattern = "Linux/aarch64/install"
+        else:
+            pattern = "Linux/x86_64/install"
     for data in (REPO_ROOT / "build").glob(pattern):
         return data
     raise Exception("No install dir found")
@@ -314,9 +317,12 @@ def package_app_bundle(
     run("zip", "-qq", "-r", str(zip_path), app_path.name, cwd=install_root)
 
 
+ARCH_SUFFIXES = ("linux64", "linuxarm64", "macosm164")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("arch_suffix", help="Zip filename suffix, e.g. linux64 or linuxarm64.")
+    parser.add_argument("arch_suffix", choices=ARCH_SUFFIXES, help="Zip filename suffix.")
     args = parser.parse_args()
 
     # bonsaiviewer-autodesk is now a Rust connector. packaging/build.py
@@ -329,7 +335,7 @@ def main() -> None:
     assert autodesk_connector_dir.is_dir()
 
     # Locate the ifcopenshell install dir and stage QT6 alongside the zip output.
-    install_root = get_install_dir()
+    install_root = get_install_dir(args.arch_suffix)
     ifcopenshell_install_dir = install_root / "ifcopenshell"
 
     output_dir = Path.home() / "output"
