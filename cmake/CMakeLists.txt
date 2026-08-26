@@ -178,7 +178,7 @@ if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM)
     set(BUILD_IFCGEOM ON)
 endif()
 
-option(USE_CCACHE "Use ccache as a compiler launcher if it is found" ON)
+option(USE_CCACHE "Use ccache as a compiler launcher if it is found" OFF)
 if(USE_CCACHE)
     find_program(CCACHE_FOUND ccache)
     if(CCACHE_FOUND)

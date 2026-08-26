@@ -1655,7 +1655,6 @@ express::base::set_attribute_value(size_t i, const T& t) {
     // OwnerHistory, ObjectPlacement or Representation) must not be persisted
     // as a "set" attribute: doing so leaves isNull() false for it afterwards,
     // so generated getters proceed to as<T>() and dereference a null instance.
-    // Skip the assignment entirely in that case, same as leaving it unset.
     bool should_set = true;
     if constexpr (std::is_same_v<T, express::base>) {
         should_set = static_cast<bool>(t);
@@ -1684,6 +1683,10 @@ express::base::set_attribute_value(size_t i, const T& t) {
                 file()->logger().error(e);
             }
         }
+    } else if (!current_attribute.isNull()) {
+        // The attribute previously held a value, so record the clearing
+        // explicitly as blank instead of silently leaving the old value in place.
+        data()->set_attribute_value(i, blank{});
     }
 }
 
