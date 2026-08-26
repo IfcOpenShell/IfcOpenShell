@@ -72,8 +72,7 @@ def ensure_soname_links(dest: Path) -> None:
             readelf_output = run("readelf", "-d", str(shared_object))
         except subprocess.CalledProcessError:
             continue
-        # TODO: actual pattern is "Library soname" instead of "Shared library"?
-        match = re.search(r"\(SONAME\).*Shared library: \[(.*)\]", readelf_output)
+        match = re.search(r"\(SONAME\).*Library soname: \[(.*)\]", readelf_output)
         if not match:
             continue
         soname = match.group(1)
