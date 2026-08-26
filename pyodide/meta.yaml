@@ -9,7 +9,7 @@ source:
 
 build:
   script: |
-    BUILD_CFG=Release python nix/build-all.py -v --wasm --py313
+    BUILD_CFG=Release python nix/build-all.py -v --wasm
 
 about:
   home: http://ifcopenshell.org
