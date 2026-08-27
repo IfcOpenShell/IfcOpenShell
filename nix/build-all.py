@@ -1285,13 +1285,7 @@ if "OpenCOLLADA" in targets:
     # OpenCOLLADAConfig.cmake.in hardcodes shared-lib targets on Unix regardless of
     # whether shared libs were actually built. We make it follow `USE_SHARED` instead.
     patches.append("./patches/opencollada/config_select_libs_by_use_shared.patch")
-
-    if WASM:
-        # This is necessary for the WASM build, because recent versions of
-        # clang don't have the tr1:: namespace anymore. However, it breaks
-        # some versions of gcc (9.4.0 at least) due to specializing std::hash
-        # outside of the std:: namespace.
-        patches.append("./patches/opencollada/remove_tr1.patch")
+    patches.append("./patches/opencollada/remove_tr1.patch")
 
     build_dependency(
         "OpenCOLLADA",
