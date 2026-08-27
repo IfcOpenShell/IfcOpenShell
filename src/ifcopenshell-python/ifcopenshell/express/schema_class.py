@@ -321,9 +321,11 @@ class EarlyBoundCodeWriter:
 
         self.statements.extend(
             (
+                "static std::mutex schema_mutex;",
                 "static std::unique_ptr<schema_definition> schema;",
                 "",
                 "void %s::clear_schema() {" % schema_name_title,
+                "    std::lock_guard<std::mutex> lock(schema_mutex);",
                 "    schema.reset();",
                 "}",
                 "",
@@ -333,6 +335,7 @@ class EarlyBoundCodeWriter:
         self.statements.extend(
             (
                 "const schema_definition& %s::get_schema() {" % schema_name_title,
+                "    std::lock_guard<std::mutex> lock(schema_mutex);",
                 "    if (!schema) {",
                 "        schema.reset(%(schema_name)s_populate_schema());" % locals(),
                 "    }",
