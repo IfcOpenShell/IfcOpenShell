@@ -239,12 +239,20 @@ def package_python_wrapper(
     numbers = "".join(version_match.group().split("."))
     py_version_major = f"python-{numbers}{postfix}"
 
-    ifcopenshell_dir = py_dir / "ifcopenshell"
-    staging_dir = py_dir.parent / "ifcopenshell_"
-    staging_dir.mkdir()
-    for item in list(py_dir.iterdir()):
-        shutil.move(str(item), str(staging_dir))
-    staging_dir.rename(ifcopenshell_dir)
+    package_dir = ifcopenshell_install_dir / f".package-{py_version_major}"
+    if package_dir.exists():
+        # Clean up previous local runs.
+        shutil.rmtree(package_dir)
+    package_dir.mkdir(parents=True)
+
+    ifcopenshell_dir = package_dir / "ifcopenshell"
+    ifcopenshell_dir.mkdir()
+    for item in py_dir.iterdir():
+        dest = ifcopenshell_dir / item.name
+        if item.is_dir():
+            shutil.copytree(item, dest, symlinks=True)
+        else:
+            shutil.copy(item, dest, follow_symlinks=False)
 
     # Cache from test run during build.
     pycache_dir = ifcopenshell_dir / "__pycache__"
@@ -256,9 +264,9 @@ def package_python_wrapper(
     # TODO: packs qt libs also?
     stage_runtime_payload(ifcopenshell_install_dir, ifcopenshell_dir)
 
-    zip_name = f"ifcopenshell-{py_version_major}-{VERSION}-{github_sha}-{arch_suffix}.zip"
-    run("zip", "-y", "-r", "-qq", zip_name, "ifcopenshell", cwd=py_dir)
-    shutil.move(str(py_dir / zip_name), str(output_dir / zip_name))
+    zip_path = output_dir / f"ifcopenshell-{py_version_major}-{VERSION}-{github_sha}-{arch_suffix}.zip"
+    run("zip", "-y", "-r", "-qq", "-1", str(zip_path), "ifcopenshell", cwd=package_dir)
+    shutil.rmtree(package_dir)
 
 
 def is_packageable_executable(path: Path) -> bool:
