@@ -1,3 +1,13 @@
+# Removing use of `tr1` namespace that might not be available on some systems.
+#
+# Current status on different systems:
+# - msvc - removed `tr1` namespace in 14.51 (`_MSC_VER == 1951`)
+# - gcc (with libstdc++) - currently neither deprecated nor removed, though there are plans to
+# - clang (with libc++) - never had it
+#
+# One of the hunks in the patch is patching `_MSC_VER == 1500`, so it's not stricly needed,
+# but kept it just so it will be easy to check the absense of any `tr1` use.
+
 diff --git a/COLLADABaseUtils/include/COLLADABUhash_map.h b/COLLADABaseUtils/include/COLLADABUhash_map.h
 index 8ab0fb9b..12503bfb 100644
 --- a/COLLADABaseUtils/include/COLLADABUhash_map.h
