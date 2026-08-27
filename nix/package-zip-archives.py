@@ -182,6 +182,17 @@ def stage_qt_runtime_payload(exe_path: Path, dest: Path, qt_dir: Path | None) ->
     qt_conf_path.write_text("[Paths]\nPrefix = .\n")
 
 
+KNOWN_EXCEPTIONS = frozenset(
+    (
+        # Optional Qt SQL driver plugins we don't ship the client libs for.
+        "libqsqlpsql.so",
+        "libqsqlmysql.so",
+        "libqsqlmimer.so",
+        "libqsqlodbc.so",
+    )
+)
+
+
 def check_runtime_dependencies(package_dir: Path) -> None:
     """Check all binaries in `package_dir` and report if they're still missing dependencies or are static."""
 
@@ -212,11 +223,14 @@ def check_runtime_dependencies(package_dir: Path) -> None:
             continue
 
         if "not found" in ldd_output:
-            logger.warning(f"Missing runtime dependencies for {binary_file}")
+            is_known = binary_file.name in KNOWN_EXCEPTIONS
+            log = logger.debug if is_known else logger.warning
+            log(f"Missing runtime dependencies for {binary_file}")
             for line in ldd_output.splitlines():
                 if "not found" in line:
-                    logger.warning(line)
-            missing = True
+                    log(line)
+            if not is_known:
+                missing = True
 
     # TODO: should error?
     if missing:
