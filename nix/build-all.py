@@ -1701,6 +1701,7 @@ ifcos_build_args = [
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
     f"-DBUILD_BONSAIVIEWER={OFF_ON['BonsaiViewer' in targets]}",
     f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
+    "-DUSE_CCACHE=ON",
 ]
 
 if not WASM and (

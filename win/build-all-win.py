@@ -210,6 +210,7 @@ def build() -> None:
                 "-DGLTF_SUPPORT=ON",
                 "-DBUILD_EXAMPLES=OFF",
                 "-DBUILD_BONSAIVIEWER=ON",
+                "-DUSE_CCACHE=ON",
             ]
         )
         restore_env(*OLD_ADD_COMMIT_SHA)

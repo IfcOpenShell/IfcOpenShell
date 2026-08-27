@@ -44,6 +44,7 @@ jobs:
         cmake \
          -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
          -DCMAKE_BUILD_TYPE=Release \
+         -DUSE_CCACHE=ON \
          -DCMAKE_PREFIX_PATH=/usr \
          -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
          -DBUILD_PACKAGE=On \
