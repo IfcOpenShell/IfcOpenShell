@@ -264,6 +264,9 @@ def package_python_wrapper(
     # TODO: packs qt libs also?
     stage_runtime_payload(ifcopenshell_install_dir, ifcopenshell_dir)
 
+    if not is_platform("MAC"):
+        check_runtime_dependencies(ifcopenshell_dir)
+
     zip_path = output_dir / f"ifcopenshell-{py_version_major}-{VERSION}-{github_sha}-{arch_suffix}.zip"
     run("zip", "-y", "-r", "-qq", "-1", str(zip_path), "ifcopenshell", cwd=package_dir)
     shutil.rmtree(package_dir)
