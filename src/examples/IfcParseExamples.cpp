@@ -99,6 +99,8 @@ std::string format_string(const ifcopenshell::attribute_value& argument) {
 		stream << v;
 		return stream.str();
 		break; }
+	default:
+		break;
 	}
 	return "?";
 }
