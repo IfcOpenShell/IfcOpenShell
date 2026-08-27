@@ -124,6 +124,10 @@ def stage_runtime_payload(ifcopenshell_install_dir: Path, dest: Path, *, include
     if not is_platform("MAC"):
         ensure_soname_links(dest)
 
+        for lib_so in dest.glob("*.so*"):
+            if lib_so.is_file():
+                run("patchelf", "--set-rpath", "$ORIGIN", str(lib_so))
+
 
 def stage_qt_runtime_payload(exe_path: Path, dest: Path, qt_dir: Path | None) -> None:
     """Copy QT libs/plugins from `qt_dir` next to `exe_path`, if it depends on QT."""
