@@ -331,8 +331,8 @@ if (WITH_ROCKSDB)
     # /MDd-flavored rocksdb_d.lib into an /MD (NDEBUG) binary, causing a CRT/runtime-library
     # mismatch that depends on nothing but that alphabetical ordering.
     set_target_properties(${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET} PROPERTIES
-        MAP_IMPORTED_CONFIG_RELWITHDEBINFO RELEASE
-        MAP_IMPORTED_CONFIG_MINSIZEREL RELEASE
+        MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE"
+        MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE"
     )
     target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE ${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET})
 
