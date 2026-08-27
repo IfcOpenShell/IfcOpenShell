@@ -83,6 +83,13 @@ def find_qt_dir(install_root: Path, qt6_version: str) -> Path | None:
     return None
 
 
+def find_occt_dir(install_root: Path) -> Path:
+    candidates = [candidate for candidate in install_root.glob("occt-shared-*") if candidate.is_dir()]
+    if len(candidates) != 1:
+        raise Exception(f"Expected exactly one OCCT shared candidate, found: {candidates}")
+    return candidates[0]
+
+
 def ensure_soname_links(paths: list[Path]) -> None:
     """Ensure that all shared libraries in `paths` are present using their SONAMEs (at least as symlinks)."""
     for shared_object in paths:
@@ -107,11 +114,11 @@ def is_shared_library(path: Path) -> bool:
     return name.endswith((".so", ".dylib", ".dll")) or ".so." in name
 
 
-def stage_runtime_payload(ifcopenshell_install_dir: Path, dest: Path, *, include_geometry_writers: bool = True) -> None:
-    """Copy all libs from `ifcopenshell_install_dir/{bin,lib,lib64}` into `dest`."""
+def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_writers: bool = True) -> None:
+    """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest`."""
     runtime_files = []
     for runtime_dir_name in ("bin", "lib", "lib64"):
-        runtime_dir = ifcopenshell_install_dir / runtime_dir_name
+        runtime_dir = install_dir / runtime_dir_name
         if not runtime_dir.is_dir():
             continue
         for runtime_file in runtime_dir.rglob("*"):
@@ -252,6 +259,7 @@ def package_python_wrapper(
     github_sha: str,
     output_dir: Path,
     arch_suffix: str,
+    occt_dir: Path | None,
 ) -> None:
     logger.info(f"Packaging python wrapper '{py_dir.name}'")
     py_version = py_dir.name
@@ -292,6 +300,9 @@ def package_python_wrapper(
     # TODO: packs qt libs also?
     stage_runtime_payload(ifcopenshell_install_dir, ifcopenshell_dir)
 
+    if occt_dir:
+        stage_runtime_payload(occt_dir, ifcopenshell_dir)
+
     if not is_platform("MAC"):
         check_runtime_dependencies(ifcopenshell_dir)
 
@@ -313,6 +324,7 @@ def package_executable(
     output_dir: Path,
     autodesk_connector_dir: Path,
     qt_dir: Path | None,
+    occt_dir: Path | None,
     arch_suffix: str,
 ) -> None:
     exe = exe_path.name
@@ -327,6 +339,9 @@ def package_executable(
     # TODO: kept `is_platform(MAC)` to retain original bash script behaviour,
     # but is this guard needed or it should be always False?
     stage_runtime_payload(ifcopenshell_install_dir, package_dir, include_geometry_writers=is_platform("MAC"))
+
+    if occt_dir:
+        stage_runtime_payload(occt_dir, package_dir)
 
     # On macOS, rpath is already set at build time via CMake's INSTALL_RPATH, and
     # QT apps are packaged as .app bundles (`package_app_bundle`) instead.
@@ -382,6 +397,7 @@ LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
 class Args(NamedTuple):
     arch_suffix: str
     log_level: str
+    occt_shared: bool
 
 
 ARGS: Args
@@ -392,10 +408,12 @@ def main() -> None:
     parser.add_argument("arch_suffix", choices=ARCH_SUFFIXES, help="Zip filename suffix.")
     # TODO: relax default to INFO once things get more stable.
     parser.add_argument("--log-level", default="DEBUG", choices=LOG_LEVELS, help="Logging verbosity.")
+    # TODO: add `--shared`.
+    parser.add_argument("--occt-shared", action="store_true", help="OCCT was built as shared libraries.")
     args = parser.parse_args()
 
     global ARGS
-    ARGS = Args(arch_suffix=args.arch_suffix, log_level=args.log_level)
+    ARGS = Args(arch_suffix=args.arch_suffix, log_level=args.log_level, occt_shared=args.occt_shared)
     logger.setLevel(ARGS.log_level)
 
     # bonsaiviewer-autodesk is now a Rust connector. packaging/build.py
@@ -418,11 +436,13 @@ def main() -> None:
     qt_dir_env = os.getenv("QT_DIR")
     qt_dir = Path(qt_dir_env) if qt_dir_env else find_qt_dir(install_root, qt6_version)
 
+    occt_dir = find_occt_dir(install_root) if ARGS.occt_shared else None
+
     # Iterate over all built Python wrappers in `install/ifcopenshell/python-x.y.z`
     # and zip them, bundling all dynamic libs from `lib`.
     github_sha = get_git_sha()
     for py_dir in sorted(ifcopenshell_install_dir.glob("python-*")):
-        package_python_wrapper(py_dir, ifcopenshell_install_dir, github_sha, output_dir, ARGS.arch_suffix)
+        package_python_wrapper(py_dir, ifcopenshell_install_dir, github_sha, output_dir, ARGS.arch_suffix, occt_dir)
 
     # Iterate over all executables in `install/ifcopenshell/bin` and zip them.
     # Each zip bundles dynamic libs from `lib` and also qt libs.
@@ -436,6 +456,7 @@ def main() -> None:
                 output_dir,
                 autodesk_connector_dir,
                 qt_dir,
+                occt_dir,
                 ARGS.arch_suffix,
             )
 
