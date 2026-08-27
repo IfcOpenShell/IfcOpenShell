@@ -21,7 +21,7 @@ jobs:
     steps:
     - name: Set env
       run: echo ok go
-      
+
   build:
     needs: activate
     runs-on: ubuntu-latest

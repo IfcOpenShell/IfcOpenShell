@@ -84,7 +84,7 @@ jobs:
           libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
           ${OCCT_CMAKE_DEPS} \
           libcgal-dev libeigen3-dev
-          
+
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.23
         with:
@@ -176,7 +176,7 @@ jobs:
         run: |
           echo $Python3_ROOT_DIR
           echo ${{ env.pythonLocation }}
-          
+
           mkdir build && cd build
           cmake \
                -DCMAKE_BUILD_TYPE=Release \
@@ -223,7 +223,7 @@ jobs:
           cmake --build .
           ./IfcOpenHouse                && test -f IfcOpenHouse.ifc
           ./IfcParseExamples IfcOpenHouse.ifc
-          ./IfcAdvancedHouse            && test -f IfcAdvancedHouse.ifc 
+          ./IfcAdvancedHouse            && test -f IfcAdvancedHouse.ifc
           ./IfcAlignment                && test -f FHWA_Bridge_Geometry_Alignment_Example.ifc
           ./IfcSimplifiedAlignment      && test -f FHWA_Bridge_Geometry_Alignment_Example_Simplified.ifc
 

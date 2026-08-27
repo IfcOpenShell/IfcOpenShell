@@ -286,6 +286,7 @@ PATTERNS = (
     "*.i",
     "*.cmake",
     "*/CMakeLists.txt",
+    "*.yml",
 )
 
 REPO_ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
