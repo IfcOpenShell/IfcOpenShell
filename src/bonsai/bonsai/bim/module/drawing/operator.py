@@ -482,6 +482,7 @@ class CreateDrawing(bpy.types.Operator):
 
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
+                    self.generate_reference_images(svg_path)
 
             if self.open_viewer:
                 drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(self.drawing))
@@ -550,6 +551,75 @@ class CreateDrawing(bpy.types.Operator):
                         outfile.write(line)
             outfile.write("</svg>")
         return svg_path
+
+    def generate_reference_images(self, svg_path: str) -> None:
+        """Embed reference image annotations into the printed drawing SVG.
+
+        Reference images are textured planes that the linework serializer does
+        not emit, so they are added here as SVG image elements below all
+        linework. The source PNG is copied next to the drawing so the SVG keeps
+        its alpha transparency.
+        """
+        reference_images = [
+            element
+            for element in tool.Drawing.get_drawing_elements(self.camera_element)
+            if tool.Drawing.is_reference_image(element)
+        ]
+        if not reference_images:
+            return
+
+        drawing_dir = os.path.dirname(svg_path)
+        assets_dir = os.path.join(drawing_dir, "assets")
+
+        try:
+            root = etree.parse(svg_path).getroot()
+        except etree.XMLSyntaxError:
+            return
+
+        images = []
+        for element in reference_images:
+            obj = tool.Ifc.get_object(element)
+            if not obj:
+                continue
+            rect = self.svg_writer.get_image_rect(obj)
+            if rect is None:
+                continue
+            texture = tool.Drawing.get_reference_image_texture(element)
+            if not texture or texture.is_a("IfcBlobTexture"):
+                continue
+            image_url = getattr(texture, "URLReference", None) or getattr(texture, "UrlReference", None)
+            if not image_url:
+                continue
+            source_path = Path(tool.Ifc.resolve_uri(image_url))
+            if not source_path.is_file():
+                continue
+
+            os.makedirs(assets_dir, exist_ok=True)
+            target_path = os.path.join(assets_dir, f"{element.GlobalId}-{source_path.name}")
+            if not os.path.exists(target_path) or not os.path.samefile(source_path, target_path):
+                shutil.copyfile(source_path, target_path)
+            href = os.path.relpath(target_path, drawing_dir)
+
+            x, y, width, height = rect
+            image = etree.SubElement(root, "{http://www.w3.org/2000/svg}image")
+            image.set("{http://www.w3.org/1999/xlink}href", href)
+            image.set("x", str(x))
+            image.set("y", str(y))
+            image.set("width", str(width))
+            image.set("height", str(height))
+            image.set("preserveAspectRatio", "none")
+            image.set("class", "IfcAnnotation")
+            image.set("{http://www.ifcopenshell.org/ns}guid", element.GlobalId)
+            images.append(image)
+
+        if not images:
+            return
+
+        for image in reversed(images):
+            root.insert(0, image)
+
+        with open(svg_path, "wb") as svg:
+            svg.write(etree.tostring(root))
 
     def generate_underlay(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
