@@ -134,6 +134,7 @@ option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only ins
 option(USE_DEBUG_PYTHON "Use debug binaries when building Debug IfcPython on Windows." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, requires git" OFF)
 option(VERSION_OVERRIDE "Use VERSION as the branch label when commit information is embedded" OFF)
+option(USE_CCACHE "Use ccache as a compiler launcher if it is found" OFF)
 
 set(
     PYTHON_MODULE_INSTALL_DIR
@@ -178,7 +179,6 @@ if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM)
     set(BUILD_IFCGEOM ON)
 endif()
 
-option(USE_CCACHE "Use ccache as a compiler launcher if it is found" OFF)
 if(USE_CCACHE)
     find_program(CCACHE_FOUND ccache)
     if(CCACHE_FOUND)
