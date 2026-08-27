@@ -42,6 +42,7 @@ echo.
 setlocal EnableDelayedExpansion
 
 set SCRIPT_DIR=%~dp0
+for %%I in ("%SCRIPT_DIR%..") do set "REPO_ROOT=%%~fI"
 
 :: Make sure vcvarsall.bat is called and dev env set is up.
 IF "%VSINSTALLDIR%"=="" (
@@ -453,6 +454,7 @@ set DEPENDENCY_INSTALL_NAME=OpenCOLLADA
 set NEXT_DEPENDENCY_LABEL=OCCT
 :: Always clone it, even if it's installed, because it contains xml headers we need.
 :: Use a fixed revision in order to prevent introducing breaking changes
+:: TODO: commit is almost 3 years behind the latest version used in nix/build-all.py, need to test and bump.
 call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
 
 call :CheckInstallation
@@ -467,7 +469,7 @@ IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOL
 :: std::tr1::unordered_map was a legacy MSVC compatibility shim kept around through VS2022's STL, but newer
 :: toolsets (e.g. VS2026/v145) no longer provide it, breaking the build with error C2039: 'tr1' is not a member of 'std'.
 findstr /C:"typedef std::unordered_map<MarkId, FilePosType > MarkIdToFilePos;" common\libBuffer\include\CommonFWriteBufferFlusher.h>NUL
-IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOLLADA_CommonFWriteBufferFlusher_tr1.patch" --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%REPO_ROOT%\nix\patches\opencollada\remove_tr1.patch" --ignore-whitespace
 :: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
