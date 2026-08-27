@@ -83,9 +83,9 @@ def find_qt_dir(install_root: Path, qt6_version: str) -> Path | None:
     return None
 
 
-def ensure_soname_links(dest: Path) -> None:
-    """Ensure that all shared libraries in `dest` are present using their SONAMEs (at least as symlinks)."""
-    for shared_object in dest.glob("*.so*"):
+def ensure_soname_links(paths: list[Path]) -> None:
+    """Ensure that all shared libraries in `paths` are present using their SONAMEs (at least as symlinks)."""
+    for shared_object in paths:
         if not shared_object.is_file():
             continue
         try:
@@ -96,7 +96,7 @@ def ensure_soname_links(dest: Path) -> None:
         if not match:
             continue
         soname = match.group(1)
-        soname_path = dest / soname
+        soname_path = shared_object.parent / soname
         if soname_path.exists():
             continue
         soname_path.symlink_to(shared_object.name)
@@ -109,6 +109,7 @@ def is_shared_library(path: Path) -> bool:
 
 def stage_runtime_payload(ifcopenshell_install_dir: Path, dest: Path, *, include_geometry_writers: bool = True) -> None:
     """Copy all libs from `ifcopenshell_install_dir/{bin,lib,lib64}` into `dest`."""
+    runtime_files = []
     for runtime_dir_name in ("bin", "lib", "lib64"):
         runtime_dir = ifcopenshell_install_dir / runtime_dir_name
         if not runtime_dir.is_dir():
@@ -120,11 +121,13 @@ def stage_runtime_payload(ifcopenshell_install_dir: Path, dest: Path, *, include
                 continue
             if not include_geometry_writers and runtime_file.name.startswith("ifcopenshell.geometry.writer."):
                 continue
-            shutil.copy(runtime_file, dest / runtime_file.name, follow_symlinks=False)
+            dest_file = dest / runtime_file.name
+            shutil.copy(runtime_file, dest_file, follow_symlinks=False)
+            runtime_files.append(dest_file)
     if not is_platform("MAC"):
-        ensure_soname_links(dest)
+        ensure_soname_links(runtime_files)
 
-        for lib_so in dest.glob("*.so*"):
+        for lib_so in runtime_files:
             if lib_so.is_file():
                 run("patchelf", "--set-rpath", "$ORIGIN", str(lib_so))
 
@@ -149,16 +152,18 @@ def stage_qt_runtime_payload(exe_path: Path, dest: Path, qt_dir: Path | None) ->
         return
 
     # Copy all QT libs to `dest`.
+    qt_lib_files = []
     for lib_file in (qt_dir / "lib").iterdir():
         if is_so_file(lib_file):
             dest_file = dest / lib_file.name
+            qt_lib_files.append(dest_file)
             # Currently we install some qt libs to `install/ifcopenshell/lib` too,
             # so there's a bit of overlap beteen stage_runtime and stage_qt_runtime,
             # hence the skip.
             if dest_file.exists():
                 continue
             shutil.copy(lib_file, dest_file, follow_symlinks=False)
-    ensure_soname_links(dest)
+    ensure_soname_links(qt_lib_files)
 
     # Copy QT plugins.
     plugins_dir = qt_dir / "plugins"
@@ -178,7 +183,7 @@ def stage_qt_runtime_payload(exe_path: Path, dest: Path, qt_dir: Path | None) ->
                     run("patchelf", "--set-rpath", "$ORIGIN/../..:$ORIGIN", str(plugin_so))
 
     # Non-recursive, set rpath only for top-level libs.
-    for lib_so in dest.glob("*.so*"):
+    for lib_so in qt_lib_files:
         if lib_so.is_file():
             run("patchelf", "--set-rpath", "$ORIGIN", str(lib_so))
 
@@ -271,6 +276,11 @@ def package_python_wrapper(
             shutil.copytree(item, dest, symlinks=True)
         else:
             shutil.copy(item, dest, follow_symlinks=False)
+
+    if not is_platform("MAC"):
+        for lib_so in ifcopenshell_dir.glob("*.so*"):
+            if lib_so.is_file():
+                run("patchelf", "--set-rpath", "$ORIGIN", str(lib_so))
 
     # Cache from test run during build.
     pycache_dir = ifcopenshell_dir / "__pycache__"
