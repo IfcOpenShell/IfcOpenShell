@@ -111,6 +111,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import json
 import logging
 import multiprocessing
 import os
@@ -127,7 +128,7 @@ import time
 from collections.abc import Generator, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, NamedTuple
+from typing import Literal, NamedTuple, TypeAlias
 from urllib.request import urlretrieve
 
 from typing_extensions import assert_never
@@ -933,9 +934,7 @@ def build_dependency(
         logger.info(f"\rBuilding {name}...   ")
         run(["./b2", f"-j{IFCOS_NUM_BUILD_PROCS}"] + build_tool_args, cwd=extract_dir, can_fail=WASM)
         logger.info(f"\rInstalling {name}... ")
-        shutil.copytree(
-            os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", f"boost-{BOOST_VERSION}", "boost")
-        )
+        shutil.copytree(os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", name, "boost"))
         logger.info(f"\rInstalled {name}     \n")
 
     if ARGS.diskcleanup:
@@ -971,7 +970,8 @@ def install_qt6() -> str:
         )
 
     host, qt_arch, install_suffix = get_qt6_aqt_config()
-    qt_install_root = INSTALL_DIR / f"qt6-{QT6_VERSION}-{install_suffix}"
+    Dependencies.register("qt6", f"{QT6_VERSION}-{install_suffix}", use_shared_suffix=False)
+    qt_install_root = Dependencies.get_install_dir("qt6")
     qt_dir = qt_install_root / QT6_VERSION / install_suffix
     os.environ["QT_DIR"] = str(qt_dir)
 
@@ -1086,13 +1086,75 @@ os.environ["CLICOLOR_FORCE"] = "1"
 # @tfk: this is no longer needed
 # build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
 
+Dependency: TypeAlias = Literal[
+    "manifold",
+    "occt",
+    "qt6",
+    "pcre",
+    "libxml2",
+    "OpenCOLLADA",
+    "json",
+    "eigen",
+    "swig",
+    "oce",
+    "cgal",
+    "gmp",
+    "mpfr",
+    "zstd",
+    "rocksdb",
+    "boost",
+    "tbb",
+    "usd",
+    "python",
+]
+
+
+class Dependencies:
+    names: dict[Dependency, str] = {}
+    runtime_dependencies: set[Dependency] = set()
+
+    @classmethod
+    def register(
+        cls,
+        dependency: Dependency,
+        version: str,
+        *,
+        use_shared_suffix: bool = not BUILD_STATIC,
+        bundle_as_runtime_dependency: bool = True,
+        alternative_name: str | None = None,
+    ) -> str:
+        """Register a dependency's install directory name.
+
+        :return: The registered install directory name.
+        """
+        name_prefix = alternative_name or dependency
+        name = f"{name_prefix}-shared-{version}" if use_shared_suffix else f"{name_prefix}-{version}"
+        cls.names[dependency] = name
+        if bundle_as_runtime_dependency:
+            cls.runtime_dependencies.add(dependency)
+        return name
+
+    @classmethod
+    def get_install_dir(cls, dependency: Dependency) -> Path:
+        return Path(DEPS_DIR) / "install" / cls.names[dependency]
+
+    @classmethod
+    def write_install_dirs_json(cls) -> None:
+        install_dirs = {dependency: str(cls.get_install_dir(dependency)) for dependency in cls.runtime_dependencies}
+        install_dirs_path = INSTALL_DIR / "install_dirs.json"
+        install_dirs_path.write_text(json.dumps(install_dirs, indent=2))
+        logger.info(f"Wrote {install_dirs_path}")
+
+
 if "json" in targets:
-    dependency_name = f"json-{JSON_VERSION}"
+    dependency_name = Dependencies.register(
+        "json", JSON_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False
+    )
     build_dependency(
         name=dependency_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('json')}",
             "-DJSON_BuildTests=OFF",
         ],
         download_url=f"https://github.com/nlohmann/json/releases/download/v{JSON_VERSION}",
@@ -1100,13 +1162,19 @@ if "json" in targets:
     )
 
 if "eigen" in targets:
-    dependency_name = f"eigen-install-{EIGEN_VERSION}"
+    # We add '-install-' in the middle, so it won't be confused with git repo we used previously.
+    dependency_name = Dependencies.register(
+        "eigen",
+        EIGEN_VERSION,
+        use_shared_suffix=False,
+        bundle_as_runtime_dependency=False,
+        alternative_name="eigen-install",
+    )
     build_dependency(
-        name=f"{dependency_name}",
+        name=dependency_name,
         mode="cmake",
-        # We add '-install-' in the middle, so it won't be confused with git repo we used previously.
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('eigen')}",
         ],
         download_url=f"https://gitlab.com/libeigen/eigen/-/archive/{EIGEN_VERSION}/",
         download_name=f"eigen-{EIGEN_VERSION}.tar.gz",
@@ -1120,8 +1188,9 @@ if "pcre" in targets:
         os.environ["CXX"] = MAC_CROSS_COMPILE_INTEL_CXX
     # Keep it autoconf as OpenCOLLADA is pretty old and might break
     # if we update it's dependencies for mmore modern cmake.
+    pcre_name = Dependencies.register("pcre", PCRE_VERSION)
     build_dependency(
-        name=f"pcre-{PCRE_VERSION}",
+        name=pcre_name,
         mode="autoconf",
         build_tool_args=[DISABLE_FLAG],
         download_url=f"https://downloads.sourceforge.net/project/pcre/pcre/{PCRE_VERSION}/",
@@ -1132,13 +1201,15 @@ if "pcre" in targets:
         restore_env("CXX", OLD_CXX)
 
 if "swig" in targets:
-    dependency_name = f"swig-{SWIG_VERSION}"
+    dependency_name = Dependencies.register(
+        "swig", SWIG_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False
+    )
     build_dependency(
         name=dependency_name,
         mode="cmake",
         build_tool_args=[
             "-DWITH_PCRE=OFF",
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('swig')}",
         ],
         download_url="https://github.com/swig/swig.git",
         download_name="swig",
@@ -1151,8 +1222,8 @@ if USE_OCCT and "occ" in targets:
     occt_args: list[str] = []
     patches: list[str] = []
     occt_link_type = "Shared" if ARGS.occt_shared else "Static"
-    occt_name = f"occt-shared-{OCCT_VERSION}" if ARGS.occt_shared else f"occt-{OCCT_VERSION}"
-    OCCT_INSTALL_PATH = f"{DEPS_DIR}/install/{occt_name}"
+    occt_name = Dependencies.register("occt", OCCT_VERSION, use_shared_suffix=ARGS.occt_shared)
+    OCCT_INSTALL_PATH = Dependencies.get_install_dir("occt")
     if OCCT_VERSION < "7.4":
         patches.append("./patches/occt/enable-exception-handling.patch")
 
@@ -1208,8 +1279,9 @@ if USE_OCCT and "occ" in targets:
         restore_env("CXXFLAGS", OLD_CXX_FLAGS)
         restore_env("CFLAGS", OLD_C_FLAGS)
 elif "occ" in targets:
+    oce_name = Dependencies.register("oce", OCE_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False)
     build_dependency(
-        name=f"oce-{OCE_VERSION}",
+        name=oce_name,
         mode="cmake",
         build_tool_args=[
             f"-DOCE_DISABLE_TKSERVICE_FONT=ON",
@@ -1218,14 +1290,14 @@ elif "occ" in targets:
             f"-DOCE_DISABLE_X11=ON",
             f"-DOCE_VISUALISATION=OFF",
             f"-DOCE_OCAF=OFF",
-            f"-DOCE_INSTALL_PREFIX={DEPS_DIR}/install/oce-{OCE_VERSION}",
+            f"-DOCE_INSTALL_PREFIX={Dependencies.get_install_dir('oce')}",
         ],
         download_url="https://github.com/tpaviot/oce/archive/",
         download_name=f"OCE-{OCE_VERSION}.tar.gz",
     )
 
 if "manifold" in targets:
-    dependency_name = f"manifold-{MANIFOLD_VERSION}"
+    dependency_name = Dependencies.register("manifold", MANIFOLD_VERSION)
     patches = []
     if WASM:
         patches.append("./patches/manifold/install-metadata-for-emscripten.patch")
@@ -1233,7 +1305,7 @@ if "manifold" in targets:
         name=dependency_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('manifold')}",
             "-DMANIFOLD_PAR=OFF",
             "-DMANIFOLD_CROSS_SECTION=OFF",
             "-DMANIFOLD_PYBIND=OFF",
@@ -1266,8 +1338,9 @@ if "libxml2" in targets:
     ]
     if WASM:
         build_tool_args.append("--without-threads")
+    libxml2_name = Dependencies.register("libxml2", LIBXML2_VERSION)
     build_dependency(
-        f"libxml2-{LIBXML2_VERSION}",
+        libxml2_name,
         "autoconf",
         build_tool_args=build_tool_args,
         download_url=f"https://download.gnome.org/sources/libxml2/{'.'.join(LIBXML2_VERSION.split('.')[0:2])}/",
@@ -1287,16 +1360,17 @@ if "OpenCOLLADA" in targets:
     patches.append("./patches/opencollada/config_select_libs_by_use_shared.patch")
     patches.append("./patches/opencollada/remove_tr1.patch")
 
+    opencollada_name = Dependencies.register("OpenCOLLADA", OPENCOLLADA_VERSION)
     build_dependency(
-        "OpenCOLLADA",
+        opencollada_name,
         "cmake",
         build_tool_args=[
-            f"-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
-            f"-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
-            f"-DPCRE_INCLUDE_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/include",
-            f"-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.{LIBRARY_EXT}",
-            f"-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.{LIBRARY_EXT}",
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/",
+            f"-DLIBXML2_INCLUDE_DIR={Dependencies.get_install_dir('libxml2')}/include/libxml2",
+            f"-DLIBXML2_LIBRARIES={Dependencies.get_install_dir('libxml2')}/lib/libxml2.{LIBRARY_EXT}",
+            f"-DPCRE_INCLUDE_DIR={Dependencies.get_install_dir('pcre')}/include",
+            f"-DPCRE_PCREPOSIX_LIBRARY={Dependencies.get_install_dir('pcre')}/lib/libpcreposix.{LIBRARY_EXT}",
+            f"-DPCRE_PCRE_LIBRARY={Dependencies.get_install_dir('pcre')}/lib/libpcre.{LIBRARY_EXT}",
+            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('OpenCOLLADA')}/",
             # OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in error in cmake 4.
             f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             f"-DUSE_STATIC={OFF_ON[BUILD_STATIC]}",
@@ -1349,16 +1423,19 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
         python_version_url = PYTHON_VERSION
         PYTHON_VERSION = python_consider_rc(PYTHON_VERSION)
 
+        python_name = Dependencies.register(
+            "python", PYTHON_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False
+        )
         # Don't fail silently on missing Python dependencies (e.g. openssl or zlib),
         # because later ifcopenshell-python build will fail too but in a more confusing way.
         build_dependency(
-            f"python-{PYTHON_VERSION}",
+            python_name,
             "autoconf",
             PYTHON_CONFIGURE_ARGS,
             f"http://www.python.org/ftp/python/{python_version_url}/",
             f"Python-{PYTHON_VERSION}.tgz",
         )
-        python_install = INSTALL_DIR / f"python-{PYTHON_VERSION}"
+        python_install = Dependencies.get_install_dir("python")
         python_bin = python_install / "bin" / "python3"
         # `_ssl` module is present -> we will be able to install `numpy` later
         # to verify IfcOpenShell installation
@@ -1384,11 +1461,12 @@ if "boost" in targets:
     toolset = []
     if WASM:
         toolset.append("toolset=emscripten")
+    boost_name = Dependencies.register("boost", BOOST_VERSION)
     build_dependency(
-        f"boost-{BOOST_VERSION}",
+        boost_name,
         mode="bjam",
         build_tool_args=[
-            f"--stagedir={DEPS_DIR}/install/boost-{BOOST_VERSION}",
+            f"--stagedir={Dependencies.get_install_dir('boost')}",
             "--with-system",
             "--with-program_options",
             "--with-regex",
@@ -1414,7 +1492,7 @@ if "boost" in targets:
         # only supported on nix for now
         run(
             ("find", ".", "-name", "*.bc", "-exec", "bash", "-c", "emar q ${1%.bc}.a $1", "bash", "{}", ";"),
-            cwd=f"{DEPS_DIR}/install/boost-{BOOST_VERSION}/lib",
+            cwd=f"{Dependencies.get_install_dir('boost')}/lib",
         )
 
 if "cgal" in targets:
@@ -1448,8 +1526,9 @@ if "cgal" in targets:
     if GMP_VERSION != "6.3.0":
         raise Exception(f"GMP_VERSION changed to {GMP_VERSION}, check whether {gmp_patches} is still needed.")
 
+    gmp_name = Dependencies.register("gmp", GMP_VERSION)
     build_dependency(
-        name=f"gmp-{GMP_VERSION}",
+        name=gmp_name,
         mode="autoconf",
         build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, "--with-pic", *gmp_args],
         pre_compile_subs=([("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if WASM else []),
@@ -1462,10 +1541,16 @@ if "cgal" in targets:
     if WASM and APPLE:
         restore_env("HOST_CC", OLD_HOST_CC)
 
+    mpfr_name = Dependencies.register("mpfr", MPFR_VERSION)
     build_dependency(
-        name=f"mpfr-{MPFR_VERSION}",
+        name=mpfr_name,
         mode="autoconf",
-        build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, *mpfr_args, f"--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}"],
+        build_tool_args=[
+            ENABLE_FLAG,
+            DISABLE_FLAG,
+            *mpfr_args,
+            f"--with-gmp={Dependencies.get_install_dir('gmp')}",
+        ],
         download_url=f"http://www.mpfr.org/mpfr-{MPFR_VERSION}/",
         download_name=f"mpfr-{MPFR_VERSION}.tar.bz2",
     )
@@ -1473,16 +1558,19 @@ if "cgal" in targets:
     if MAC_CROSS_COMPILE_INTEL:
         restore_env("CC", OLD_CC)
 
+    # CGAL itself is header-only, but we keep `-shared-`,
+    # because it's shared dependencies might sneak in to the cmake configs.
+    cgal_name = Dependencies.register("cgal", CGAL_VERSION, bundle_as_runtime_dependency=False)
     build_dependency(
-        name=f"cgal-{CGAL_VERSION}",
+        name=cgal_name,
         mode="cmake",
         build_tool_args=[
-            f"-DGMP_LIBRARIES={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib/libgmp.{LIBRARY_EXT}",
-            f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-            f"-DMPFR_LIBRARIES={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib/libmpfr.{LIBRARY_EXT}",
-            f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
-            f"-DBoost_INCLUDE_DIR={DEPS_DIR}/install/boost-{BOOST_VERSION}",
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/cgal-{CGAL_VERSION}/",
+            f"-DGMP_LIBRARIES={Dependencies.get_install_dir('gmp')}/lib/libgmp.{LIBRARY_EXT}",
+            f"-DGMP_INCLUDE_DIR={Dependencies.get_install_dir('gmp')}/include",
+            f"-DMPFR_LIBRARIES={Dependencies.get_install_dir('mpfr')}/lib/libmpfr.{LIBRARY_EXT}",
+            f"-DMPFR_INCLUDE_DIR={Dependencies.get_install_dir('mpfr')}/include",
+            f"-DBoost_INCLUDE_DIR={Dependencies.get_install_dir('boost')}",
+            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('cgal')}/",
             f"-DCGAL_HEADER_ONLY=On",
             f"-DBUILD_SHARED_LIBS=Off",
         ],
@@ -1493,23 +1581,25 @@ if "cgal" in targets:
     )
 
 if "usd" in targets:
+    tbb_name = Dependencies.register("tbb", TBB_VERSION)
     build_dependency(
-        name=f"oneTBB-{TBB_VERSION}",
+        name=tbb_name,
         mode="cmake",
-        build_tool_args=[f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/tbb-{TBB_VERSION}", f"-DTBB_TEST=OFF"],
+        build_tool_args=[f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('tbb')}", f"-DTBB_TEST=OFF"],
         download_url="https://github.com/oneapi-src/oneTBB",
         download_name="oneTBB",
         download_tool=download_tool_git,
         revision=f"v{TBB_VERSION}",
     )
 
+    usd_name = Dependencies.register("usd", USD_VERSION)
     build_dependency(
-        name=f"usd-{USD_VERSION}",
+        name=usd_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/usd-{USD_VERSION}",
-            f"-DBOOST_ROOT={DEPS_DIR}/install/boost-{BOOST_VERSION}",
-            f"-DTBB_ROOT_DIR={DEPS_DIR}/install/tbb-{TBB_VERSION}",
+            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('usd')}",
+            f"-DBOOST_ROOT={Dependencies.get_install_dir('boost')}",
+            f"-DTBB_ROOT_DIR={Dependencies.get_install_dir('tbb')}",
             f"-DPXR_ENABLE_PYTHON_SUPPORT=FALSE",
             f"-DPXR_ENABLE_GL_SUPPORT=FALSE",
             f"-DPXR_BUILD_IMAGING=FALSE",
@@ -1525,11 +1615,12 @@ if "usd" in targets:
     )
 
 if "zstd" in targets:
+    zstd_name = Dependencies.register("zstd", ZSTD_VERSION)
     build_dependency(
-        name=f"zstd-{ZSTD_VERSION}",
+        name=zstd_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
+            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('zstd')}",
             f"-DZSTD_BUILD_STATIC=ON",
             f"-DZSTD_BUILD_SHARED=OFF",
             f"-DCMAKE_INSTALL_LIBDIR=lib",
@@ -1543,11 +1634,12 @@ if "zstd" in targets:
     )
 
 if "rocksdb" in targets:
+    rocksdb_name = Dependencies.register("rocksdb", ROCKSDB_VERSION)
     build_dependency(
-        name=f"rocksdb-{ROCKSDB_VERSION}",
+        name=rocksdb_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}",
+            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('rocksdb')}",
             f"-DFAIL_ON_WARNINGS=Off",
             f"-DWITH_TESTS=OFF",
             f"-DWITH_TOOLS=OFF",
@@ -1559,7 +1651,7 @@ if "rocksdb" in targets:
             f"-DUSE_RTTI=On",
             f"-DWITH_ZSTD=On",
             f"-DPORTABLE=1",
-            f"-DCMAKE_PREFIX_PATH={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
+            f"-DCMAKE_PREFIX_PATH={Dependencies.get_install_dir('zstd')}",
             *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
         download_url="https://github.com/facebook/rocksdb",
@@ -1594,11 +1686,13 @@ cmake_args = [
     *MAC_CROSS_COMPILE_INTEL_ARGS,
 ]
 """Default CMake args to use for all CMake configs."""
-cmake_args_prefix_path: list[str] = [
-    f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
-    f"{DEPS_DIR}/install/eigen-install-{EIGEN_VERSION}",
-    f"{DEPS_DIR}/install/json-{JSON_VERSION}",
-]
+cmake_args_prefix_path: list[str] = []
+if "boost" in targets:
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("boost")))
+if "eigen" in targets:
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("eigen")))
+if "json" in targets:
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("json")))
 
 
 def get_cmake_args_prefix_path(additional_paths: Sequence[str] = ()) -> list[str]:
@@ -1624,28 +1718,28 @@ if schemas:
     cmake_args.append(f"-DSCHEMA_VERSIONS={schemas}")
 
 if "cgal" in targets:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/cgal-{CGAL_VERSION}")
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/gmp-{GMP_VERSION}")
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}")
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("cgal")))
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("gmp")))
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("mpfr")))
     cmake_args.append(f"-DCGAL_WITH_GMPXX=Off")
 
 if "occ" in targets and USE_OCCT:
-    cmake_args_prefix_path.append(OCCT_INSTALL_PATH)
+    cmake_args_prefix_path.append(str(OCCT_INSTALL_PATH))
 
 elif "occ" in targets:
     # We don't support find_package for OCE.
-    occ_include_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce"
-    occ_library_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
+    occ_include_dir = f"{Dependencies.get_install_dir('oce')}/include/oce"
+    occ_library_dir = f"{Dependencies.get_install_dir('oce')}/lib"
     cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
 
 if "manifold" in targets:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("manifold")))
     cmake_args.append("-DWITH_MANIFOLD=On")
 
 if "OpenCOLLADA" in targets:
     # pcre is a dependency of OpenCOLLADA, but since we `find_package`,
     # we don't need to add it explicitly here as cmake will find it from the config.
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/OpenCOLLADA")
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("OpenCOLLADA")))
 else:
     cmake_args.extend(
         [
@@ -1654,14 +1748,14 @@ else:
     )
 
 if "libxml2" in targets:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}")
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("libxml2")))
 
 if "usd" in targets:
     cmake_args.append("-DUSD_SUPPORT=ON")
     cmake_args_prefix_path.extend(
         [
-            f"{DEPS_DIR}/install/tbb-{TBB_VERSION}",
-            f"{DEPS_DIR}/install/usd-{USD_VERSION}",
+            str(Dependencies.get_install_dir("tbb")),
+            str(Dependencies.get_install_dir("usd")),
         ]
     )
 
@@ -1674,8 +1768,8 @@ if "rocksdb" in targets:
     )
     cmake_args_prefix_path.extend(
         [
-            f"{DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}",
-            f"{DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
+            str(Dependencies.get_install_dir("rocksdb")),
+            str(Dependencies.get_install_dir("zstd")),
         ]
     )
 
@@ -1683,7 +1777,7 @@ if "swig" in targets:
     # `cmake_args_prefix_path` won't work on wasm
     # because `find_program` in emscripten toolchain don't use `find_root_path`.
     # As a workaround we provide executable path directly on all platforms.
-    cmake_args.append(f"-DSWIG_EXECUTABLE={DEPS_DIR}/install/swig-{SWIG_VERSION}/bin/swig")
+    cmake_args.append(f"-DSWIG_EXECUTABLE={Dependencies.get_install_dir('swig')}/bin/swig")
 
 if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])
@@ -1879,5 +1973,7 @@ if "IfcOpenShell-Python" in targets:
             if os.path.exists(dest):
                 shutil.rmtree(dest)
             run([cp, "-R", module_dir, dest])
+
+Dependencies.write_install_dirs_json()
 
 logger.info("\rBuilt IfcOpenShell...\n\n")
