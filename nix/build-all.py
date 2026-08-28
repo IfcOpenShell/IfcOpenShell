@@ -488,7 +488,7 @@ dependency_tree: dict[str, tuple[str, ...]] = {
     "occ": (),
     "pcre": (),
     "json": (),
-    "cgal": (),
+    "cgal": ("boost",),
     "eigen": (),
     "rocksdb": ("zstd",),
     "zstd": (),
