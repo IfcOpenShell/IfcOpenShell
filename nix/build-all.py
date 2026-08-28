@@ -1533,8 +1533,10 @@ if "cgal" in targets:
         build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, "--with-pic", *gmp_args],
         pre_compile_subs=([("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if WASM else []),
         patch=gmp_patches,
-        # Sometimes ftp.gnu.org is very slow, use ftpmirror.gnu.org as a workaround.
-        download_url="https://ftpmirror.gnu.org/gnu/gmp/",
+        # Alternative mirrors:
+        # - ftpmirror.gnu.org
+        # - ftp.gnu.org
+        download_url="https://mirrors.kernel.org/gnu/gmp/",
         download_name=f"gmp-{GMP_VERSION}.tar.bz2",
     )
 
