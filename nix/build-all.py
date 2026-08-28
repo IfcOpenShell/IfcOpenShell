@@ -1722,7 +1722,12 @@ if not WASM and (
         examples_bin_dir = Path(DEPS_DIR) / "install" / "ifcopenshell" / "bin"
 
         examples_env = os.environ.copy()
-        ld_library_paths = ["../lib"]
+        ld_library_paths = [
+            # E.g. Debian.
+            "../lib",
+            # E.g. Rocky.
+            "../lib64",
+        ]
         if ARGS.occt_shared:
             ld_library_paths.append(f"{OCCT_INSTALL_PATH}/lib")
         examples_env["LD_LIBRARY_PATH"] = os.pathsep.join(ld_library_paths)
