@@ -45,3 +45,54 @@ TEST_CASE("Bypassed entity types include their subtypes", "[ifcparse]") {
     CHECK(file.instances_by_type("IfcRepresentationItem").empty());
     CHECK(file.instances_by_type("IfcCartesianPoint").empty());
 }
+
+TEST_CASE("Aggregate inverse updates preserve reference multiplicity", "[ifcparse]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* segment_declaration = file.schema()->declaration_by_name("IfcCompositeCurveSegment");
+    auto curve = file.create(file.schema()->declaration_by_name("IfcCompositeCurve"));
+    auto segment_a = file.create(segment_declaration);
+    auto segment_b = file.create(segment_declaration);
+    auto segment_c = file.create(segment_declaration);
+    auto segment_d = file.create(segment_declaration);
+    const auto inverse_count = [&file](const express::base& instance) {
+        return file.instances_by_reference(instance.id()).size();
+    };
+
+    curve.set_attribute_value(0, std::vector<express::base>{segment_a, segment_a, segment_b, segment_c});
+    CHECK(inverse_count(segment_a) == 2);
+    CHECK(inverse_count(segment_b) == 1);
+    CHECK(inverse_count(segment_c) == 1);
+    CHECK(inverse_count(segment_d) == 0);
+
+    curve.set_attribute_value(0, std::vector<express::base>{segment_a, segment_a, segment_b, segment_c, segment_d});
+    CHECK(inverse_count(segment_a) == 2);
+    CHECK(inverse_count(segment_b) == 1);
+    CHECK(inverse_count(segment_c) == 1);
+    CHECK(inverse_count(segment_d) == 1);
+
+    curve.set_attribute_value(0, std::vector<express::base>{segment_a, segment_a, segment_b, segment_c});
+    CHECK(inverse_count(segment_a) == 2);
+    CHECK(inverse_count(segment_b) == 1);
+    CHECK(inverse_count(segment_c) == 1);
+    CHECK(inverse_count(segment_d) == 0);
+
+    const std::vector<express::base> reordered{segment_c, segment_a, segment_b, segment_a};
+    curve.set_attribute_value(0, reordered);
+    CHECK((std::vector<express::base>)curve.get_attribute_value(0) == reordered);
+    CHECK(inverse_count(segment_a) == 2);
+    CHECK(inverse_count(segment_b) == 1);
+    CHECK(inverse_count(segment_c) == 1);
+    CHECK(inverse_count(segment_d) == 0);
+
+    curve.set_attribute_value(0, std::vector<express::base>{segment_a, segment_b, segment_b, segment_d});
+    CHECK(inverse_count(segment_a) == 1);
+    CHECK(inverse_count(segment_b) == 2);
+    CHECK(inverse_count(segment_c) == 0);
+    CHECK(inverse_count(segment_d) == 1);
+
+    curve.set_attribute_value(0, std::vector<express::base>{segment_c, segment_c, segment_d});
+    CHECK(inverse_count(segment_a) == 0);
+    CHECK(inverse_count(segment_b) == 0);
+    CHECK(inverse_count(segment_c) == 2);
+    CHECK(inverse_count(segment_d) == 1);
+}
