@@ -129,6 +129,12 @@ def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_wri
             if not include_geometry_writers and runtime_file.name.startswith("ifcopenshell.geometry.writer."):
                 continue
             dest_file = dest / runtime_file.name
+            # Currently there's an overlap between dependencies installations.
+            # E.g. libraries from occt are installed to both `ifcopenshell/lib`
+            # (as part of `ifcopenshell_deploy_qt_runtime`)
+            # and to `occt-shared/lib`. So we skip previously installed binaries.
+            if dest_file.exists():
+                continue
             shutil.copy(runtime_file, dest_file, follow_symlinks=False)
             runtime_files.append(dest_file)
     if not is_platform("MAC"):
