@@ -161,7 +161,7 @@
 
 	template <>
 	int cast_pyobject(PyObject* element) {
-		return static_cast<int>(PyInt_AsLong(element));
+		return static_cast<int>(PyLong_AsLong(element));
 	}
 
 	template <>
@@ -255,9 +255,9 @@
 		}
 	}
 
-	PyObject* pythonize(const int& t)                   { return PyInt_FromLong(t);                                                                  }
+	PyObject* pythonize(const int& t)                   { return PyLong_FromLong(t);                                                                  }
 	PyObject* pythonize(const int64_t& t)               { return PyLong_FromLongLong(t);                                                             }
-	PyObject* pythonize(const unsigned int& t)          { return PyInt_FromLong(t);                                                                  }
+	PyObject* pythonize(const unsigned int& t)          { return PyLong_FromLong(t);                                                                  }
 	PyObject* pythonize(const bool& t)                  { return PyBool_FromLong(t);                                                                 }
 	PyObject* pythonize(const boost::logic::tribool& t) { return boost::logic::indeterminate(t) ? PyUnicode_FromString("UNKNOWN") : PyBool_FromLong((bool)t) ;}
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }

@@ -1,5 +1,5 @@
 %typemap(out) ifcopenshell::argument_type {
-	$result = SWIG_Python_str_FromChar(ifcopenshell::argument_type_to_string($1));
+	$result = PyUnicode_FromString(ifcopenshell::argument_type_to_string($1));
 }
 
 %typemap(out) ifcopenshell::declaration* {
@@ -24,7 +24,7 @@
 
 %typemap(out) ifcopenshell::simple_type::data_type {
 	static const char* const data_type_strings[] = {"binary", "boolean", "integer", "logical", "number", "real", "string"};
-	$result = SWIG_Python_str_FromChar(data_type_strings[(int)$1]);
+	$result = PyUnicode_FromString(data_type_strings[(int)$1]);
 }
 
 %typemap(out) attribute_value {
