@@ -756,6 +756,12 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 sx = -1.0 if mirror_axes[0] > 0.5 else 1.0
                 sy = -1.0 if mirror_axes[1] > 0.5 else 1.0
+                # Pure Z-local mirror: H_2d=identity (det=+1) makes the object-matrix
+                # det negative, so the RH correction fires and flips local Y.
+                # Pre-compensate by including a Y-flip so H_2d stays a proper reflection
+                # (det=-1) and the RH correction never fires.
+                if mirror_axes[2] > 0.5 and not (mirror_axes[0] > 0.5 or mirror_axes[1] > 0.5):
+                    sy = -1.0
                 mirror_H_local_2d = np.array([[sx, 0.0], [0.0, sy]])
                 mirror_P_local = Matrix([[sx, 0, 0], [0, sy, 0], [0, 0, 1]])
         else:
@@ -1080,11 +1086,19 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 oc = getattr(sw, "OuterCurve", None) if sw else None
                 if oc and oc.is_a("IfcIndexedPolyCurve"):
                     apply_H2d_to_indexed_poly_curve(oc)
-                    # Mirror Position location
+                    # Mirror Position: location, RefDirection (X axis), and Axis (Z axis)
                     if item.Position is not None:
                         base = list(item.Position.Location.Coordinates)
                         xy = H_2d @ np.array(base[:2], dtype=float)
                         item.Position.Location.Coordinates = [float(xy[0]), float(xy[1])] + list(base[2:])
+                        if item.Position.RefDirection is not None:
+                            ref = list(item.Position.RefDirection.DirectionRatios)
+                            xy_ref = H_2d @ np.array(ref[:2], dtype=float)
+                            item.Position.RefDirection.DirectionRatios = [float(xy_ref[0]), float(xy_ref[1])] + list(ref[2:])
+                        if item.Position.Axis is not None:
+                            ax = list(item.Position.Axis.DirectionRatios)
+                            xy_ax = H_2d @ np.array(ax[:2], dtype=float)
+                            item.Position.Axis.DirectionRatios = [float(xy_ax[0]), float(xy_ax[1])] + list(ax[2:])
                     # Mirror extrusion direction (XY only; Z unchanged)
                     ext = list(item.ExtrudedDirection.DirectionRatios)
                     xy_ext = H_2d @ np.array(ext[:2], dtype=float)
