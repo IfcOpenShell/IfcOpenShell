@@ -37,6 +37,22 @@ DRAWING_PADDING = 10
 DEFAULT_POSITION = Vector((30, 30))
 SVG = "{http://www.w3.org/2000/svg}"
 XLINK = "{http://www.w3.org/1999/xlink}"
+# Presentation attributes whose value may be a `url(#target)` reference. They are
+# equivalent to the same named CSS properties, so a document is free to use either
+# these or `style`, and both have to be rewritten when ids are prefixed.
+URL_ATTRIBUTES = (
+    "clip-path",
+    "color-profile",
+    "cursor",
+    "fill",
+    "filter",
+    "marker",
+    "marker-end",
+    "marker-mid",
+    "marker-start",
+    "mask",
+    "stroke",
+)
 
 
 class SheetBuilder:
@@ -320,6 +336,10 @@ class SheetBuilder:
         titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
         image = titleblock.findall(f"{SVG}image")[0]
         g = self.parse_embedded_svg(image, sheet.get_info())
+        # the titleblock shares the sheet with the drawings and references, so its
+        # ids need the same namespacing. `sheet.id()` cannot collide with the
+        # document ids used for the other views, they all come from the same file.
+        g = self.ensure_unique_ids(g, sheet.id())
         grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
         true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
         for north in g.iterfind(f'.//{SVG}g[@data-type="grid-north"]'):
@@ -393,17 +413,20 @@ class SheetBuilder:
             # add class "prefix" to all classes
             if "class" in attrib:
                 attrib["class"] += f" {prefix}"
-            if "filter" in attrib:
-                # example use "#fill-background" filter
-                attrib["filter"] = replace_urls(attrib["filter"])
-            if "style" in attrib:
-                attrib["style"] = replace_urls(attrib["style"])
-            if svg_element.tag == f"{SVG}use":
-                href_attrib = f"{XLINK}href"
-                if href_attrib in attrib:
-                    href = attrib[href_attrib]
-                    if href.startswith("#"):
-                        attrib[href_attrib] = f"#{prefix}-{href[1:]}"
+            # rewrite `url(#target)` wherever it can appear: the `style` property
+            # and every presentation attribute. Inkscape authored references rely on
+            # the latter, e.g. `<g clip-path="url(#clipPath1)">`, which is left
+            # dangling if only the ids are prefixed.
+            for url_attrib in ("style",) + URL_ATTRIBUTES:
+                value = attrib.get(url_attrib)
+                if value is not None:
+                    attrib[url_attrib] = replace_urls(value)
+            # local fragment hrefs: `<use>` glyphs, `<textPath>`, `<mpath>` and
+            # gradients or patterns inheriting from another via `xlink:href`
+            for href_attrib in (f"{XLINK}href", "href"):
+                href = attrib.get(href_attrib)
+                if href is not None and href.startswith("#"):
+                    attrib[href_attrib] = f"#{prefix}-{href[1:]}"
 
         return svg
 
