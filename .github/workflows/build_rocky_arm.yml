@@ -45,14 +45,11 @@ jobs:
                          libXfixes-devel libXft-devel pango-devel cairo-devel libstdc++-static
           git config --global --add safe.directory '*'
 
-      - name: Install Rust
-        # The bonsaiviewer-autodesk connector is a Rust crate; the "Package
-        # .zip archives" step below runs `cargo build --release` via
-        # packaging/build.py. Match the dedicated connector workflow's stable
-        # toolchain (dtolnay/rust-toolchain@stable).
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      # The bonsaiviewer-autodesk connector is a Rust crate; the "Package
+      # .zip archives" step below runs `cargo build --release` via
+      # packaging/build.py. Match the dedicated connector workflow's stable
+      # toolchain, rather than whatever Rust the runner image happens to ship.
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Install aws cli
         run: |
