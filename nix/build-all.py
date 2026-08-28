@@ -532,7 +532,7 @@ BUILD_STATIC = not ARGS.shared
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
 LINK_TYPE = "static" if BUILD_STATIC else "shared"
-LIBRARY_EXT = "a" if BUILD_STATIC else "so"
+LIBRARY_EXT = "a" if BUILD_STATIC else ("dylib" if APPLE else "so")
 PIC = "-fPIC" if BUILD_STATIC else ""
 
 if DYNAMIC_ARGS.py_versions:
