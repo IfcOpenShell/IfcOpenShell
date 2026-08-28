@@ -1689,14 +1689,24 @@ if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])
     cmake_args.append(f"-DQT_DIR={os.environ['QT_DIR']}")
 
+IFCOPENSHELL_INSTALL_PATH = f"{DEPS_DIR}/install/ifcopenshell"
 ifcos_build_args = [
     f"-DBUILD_IFCGEOM={OFF_ON['IfcGeom' in targets]}",
     f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
     f"-DBUILD_BONSAIVIEWER={OFF_ON['BonsaiViewer' in targets]}",
-    f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
+    f"-DCMAKE_INSTALL_PREFIX={IFCOPENSHELL_INSTALL_PATH}",
     "-DUSE_CCACHE=ON",
 ]
+
+ld_library_paths = [
+    # E.g. Debian.
+    f"{IFCOPENSHELL_INSTALL_PATH}/lib",
+    # E.g. Rocky.
+    f"{IFCOPENSHELL_INSTALL_PATH}/lib64",
+]
+if ARGS.occt_shared and "occ" in targets:
+    ld_library_paths.append(f"{OCCT_INSTALL_PATH}/lib")
 
 if not WASM and (
     "BonsaiViewer" in targets
@@ -1722,14 +1732,6 @@ if not WASM and (
         examples_bin_dir = Path(DEPS_DIR) / "install" / "ifcopenshell" / "bin"
 
         examples_env = os.environ.copy()
-        ld_library_paths = [
-            # E.g. Debian.
-            "../lib",
-            # E.g. Rocky.
-            "../lib64",
-        ]
-        if ARGS.occt_shared:
-            ld_library_paths.append(f"{OCCT_INSTALL_PATH}/lib")
         examples_env["LD_LIBRARY_PATH"] = os.pathsep.join(ld_library_paths)
 
         examples: dict[tuple[str, ...], str | None] = {
@@ -1825,8 +1827,11 @@ if "IfcOpenShell-Python" in targets:
         if python_executable:
             run([python_executable, "-m", "ensurepip"])
             run([python_executable, "-m", "pip", "install", "--user", "numpy", "typing_extensions"])
+            env = os.environ.copy()
+            env["LD_LIBRARY_PATH"] = os.pathsep.join(ld_library_paths)
             module_dir = run(
-                [python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]
+                [python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"],
+                env=env,
             )
             # Use just the last line is used,
             # because output might contain warning like `No stream support: No module named 'lark'`.
