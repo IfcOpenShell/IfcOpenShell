@@ -719,7 +719,11 @@ def run_autoconf(dependency_name: str, configure_args: list[str], cwd: str) -> N
 
 
 def run_cmake(
-    name, cmake_args: list[str], cmake_dir: str | None = None, cwd: str | None = None, native: bool = False
+    name,
+    cmake_args: list[str],
+    cmake_dir: str | None = None,
+    cwd: str | None = None,
+    native: bool = False,
 ) -> None:
     if cmake_dir is None:
         P = ".."
@@ -746,6 +750,9 @@ def run_cmake(
         cmake_flags.append(
             f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
         )
+
+    if not any("CMAKE_INSTALL_PREFIX" in f for f in cmake_args):
+        cmake_flags.append(f"-DCMAKE_INSTALL_PREFIX={Path(DEPS_DIR) / 'install' / name}")
 
     if WASM and native:
         # Override emscripten cmake toolchain coming from environment variable.
@@ -1154,7 +1161,6 @@ if "json" in targets:
         name=dependency_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('json')}",
             "-DJSON_BuildTests=OFF",
         ],
         download_url=f"https://github.com/nlohmann/json/releases/download/v{JSON_VERSION}",
@@ -1173,9 +1179,7 @@ if "eigen" in targets:
     build_dependency(
         name=dependency_name,
         mode="cmake",
-        build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('eigen')}",
-        ],
+        build_tool_args=[],
         download_url=f"https://gitlab.com/libeigen/eigen/-/archive/{EIGEN_VERSION}/",
         download_name=f"eigen-{EIGEN_VERSION}.tar.gz",
     )
@@ -1209,7 +1213,6 @@ if "swig" in targets:
         mode="cmake",
         build_tool_args=[
             "-DWITH_PCRE=OFF",
-            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('swig')}",
         ],
         download_url="https://github.com/swig/swig.git",
         download_name="swig",
@@ -1253,7 +1256,6 @@ if USE_OCCT and "occ" in targets:
         name=occt_name,
         mode="cmake",
         build_tool_args=[
-            f"-DINSTALL_DIR={OCCT_INSTALL_PATH}",
             f"-DBUILD_LIBRARY_TYPE={occt_link_type}",
             f"-DBUILD_MODULE_Draw=0",
             f"-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
@@ -1305,7 +1307,6 @@ if "manifold" in targets:
         name=dependency_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('manifold')}",
             "-DMANIFOLD_PAR=OFF",
             "-DMANIFOLD_CROSS_SECTION=OFF",
             "-DMANIFOLD_PYBIND=OFF",
@@ -1370,7 +1371,6 @@ if "OpenCOLLADA" in targets:
             f"-DPCRE_INCLUDE_DIR={Dependencies.get_install_dir('pcre')}/include",
             f"-DPCRE_PCREPOSIX_LIBRARY={Dependencies.get_install_dir('pcre')}/lib/libpcreposix.{LIBRARY_EXT}",
             f"-DPCRE_PCRE_LIBRARY={Dependencies.get_install_dir('pcre')}/lib/libpcre.{LIBRARY_EXT}",
-            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('OpenCOLLADA')}/",
             # OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in error in cmake 4.
             f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             f"-DUSE_STATIC={OFF_ON[BUILD_STATIC]}",
@@ -1570,7 +1570,6 @@ if "cgal" in targets:
             f"-DMPFR_LIBRARIES={Dependencies.get_install_dir('mpfr')}/lib/libmpfr.{LIBRARY_EXT}",
             f"-DMPFR_INCLUDE_DIR={Dependencies.get_install_dir('mpfr')}/include",
             f"-DBoost_INCLUDE_DIR={Dependencies.get_install_dir('boost')}",
-            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('cgal')}/",
             f"-DCGAL_HEADER_ONLY=On",
             f"-DBUILD_SHARED_LIBS=Off",
         ],
@@ -1585,7 +1584,9 @@ if "usd" in targets:
     build_dependency(
         name=tbb_name,
         mode="cmake",
-        build_tool_args=[f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('tbb')}", f"-DTBB_TEST=OFF"],
+        build_tool_args=[
+            f"-DTBB_TEST=OFF",
+        ],
         download_url="https://github.com/oneapi-src/oneTBB",
         download_name="oneTBB",
         download_tool=download_tool_git,
@@ -1597,7 +1598,6 @@ if "usd" in targets:
         name=usd_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('usd')}",
             f"-DBOOST_ROOT={Dependencies.get_install_dir('boost')}",
             f"-DTBB_ROOT_DIR={Dependencies.get_install_dir('tbb')}",
             f"-DPXR_ENABLE_PYTHON_SUPPORT=FALSE",
@@ -1620,7 +1620,6 @@ if "zstd" in targets:
         name=zstd_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('zstd')}",
             f"-DZSTD_BUILD_STATIC=ON",
             f"-DZSTD_BUILD_SHARED=OFF",
             f"-DCMAKE_INSTALL_LIBDIR=lib",
@@ -1639,7 +1638,6 @@ if "rocksdb" in targets:
         name=rocksdb_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={Dependencies.get_install_dir('rocksdb')}",
             f"-DFAIL_ON_WARNINGS=Off",
             f"-DWITH_TESTS=OFF",
             f"-DWITH_TOOLS=OFF",
@@ -1789,7 +1787,6 @@ ifcos_build_args = [
     f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
     f"-DBUILD_BONSAIVIEWER={OFF_ON['BonsaiViewer' in targets]}",
-    f"-DCMAKE_INSTALL_PREFIX={IFCOPENSHELL_INSTALL_PATH}",
     "-DUSE_CCACHE=ON",
 ]
 
@@ -1814,7 +1811,12 @@ if not WASM and (
         f"-DBUILD_IFCPYTHON=OFF",
     ]
 
-    run_cmake("", exec_args + cmake_args + get_cmake_args_prefix_path(), cmake_dir=CMAKE_DIR, cwd=ifcos_build_dir)
+    run_cmake(
+        "ifcopenshell",
+        exec_args + cmake_args + get_cmake_args_prefix_path(),
+        cmake_dir=CMAKE_DIR,
+        cwd=ifcos_build_dir,
+    )
 
     logger.info("\rBuilding executables...   ")
 
@@ -1892,7 +1894,7 @@ if "IfcOpenShell-Python" in targets:
 
         try:
             run_cmake(
-                "",
+                "ifcopenshell",
                 ifcos_build_args
                 + [
                     "-DBUILD_IFCPYTHON=ON",
