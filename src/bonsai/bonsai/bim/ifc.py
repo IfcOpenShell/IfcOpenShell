@@ -125,6 +125,8 @@ class IfcStore:
     future: list[TransactionStep] = []
     schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
     session_files: dict[str, ifcopenshell.file] = {}
+    cache: Optional[ifcopenshell.geom.serializers.hdf5] = None
+    cache_path: str = ""
 
     @staticmethod
     def purge():
@@ -143,6 +145,8 @@ class IfcStore:
         IfcStore.future = []
         IfcStore.schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
         IfcStore.session_files = {}
+        IfcStore.cache = None
+        IfcStore.cache_path = ""
 
     @staticmethod
     def get_file() -> ifcopenshell.file | None:
