@@ -29,7 +29,7 @@ def build_generator() -> str:
 
 assert Path.cwd() == Path(__file__).parent, "Run this script from the 'win' directory."
 
-PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.0", "3.14.0"]
+PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 REPO_PATH = Path(__file__).parent.parent
 REPO_WIN = REPO_PATH / "win"
 # Prebuilt Autodesk connector folder, produced by the connector's packaging
