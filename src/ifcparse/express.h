@@ -132,6 +132,11 @@ class IFC_PARSE_API base {
 
     template <class T>
     T as() const {
+        if (!*this) {
+            // Unresolved or malformed attribute reference (e.g. a step-id
+            // that never resolved to an instance). Never dereference it.
+            return T{};
+        }
         if constexpr (std::is_same_v<entity, T>) {
             if (declaration().as_entity() != nullptr) {
                 return T(data_weak());
