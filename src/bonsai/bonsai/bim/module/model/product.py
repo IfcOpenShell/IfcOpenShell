@@ -1085,20 +1085,46 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 sw = item.SweptArea
                 oc = getattr(sw, "OuterCurve", None) if sw else None
                 if oc and oc.is_a("IfcIndexedPolyCurve"):
-                    apply_H2d_to_indexed_poly_curve(oc)
-                    # Mirror Position: location, RefDirection (X axis), and Axis (Z axis)
+                    # Profile coords live in the Position frame, which may be rotated within
+                    # element-local XY.  Applying H_2d directly to profile coords is only correct
+                    # when RefDirection == element X.  The general form is a change-of-basis:
+                    #   T = A_2d^T @ H_2d @ A_2d
+                    # where A_2d = [RefDir_2d | Y_2d] (the Position frame in element-local 2D).
+                    # For axis-aligned RefDir (the common slab case) T == H_2d; for rotated RefDir
+                    # T accounts for the frame orientation without touching RefDirection itself.
+                    # RefDirection and Axis must NOT be updated — updating them double-flips the
+                    # geometry for axis-aligned RefDir slabs (the two flips cancel, giving no mirror).
+                    pos_H_2d = H_2d
+                    if item.Position is not None and item.Position.RefDirection is not None:
+                        ref_ratios = item.Position.RefDirection.DirectionRatios
+                        refdir_2d = np.array([ref_ratios[0], ref_ratios[1]], dtype=float)
+                        axis_dir = np.array(
+                            item.Position.Axis.DirectionRatios if item.Position.Axis else [0.0, 0.0, 1.0],
+                            dtype=float,
+                        )
+                        refdir_3d = np.array([refdir_2d[0], refdir_2d[1], 0.0])
+                        y_3d = np.cross(axis_dir, refdir_3d)
+                        y_2d = y_3d[:2]
+                        A_2d = np.column_stack([refdir_2d, y_2d])
+                        if abs(np.linalg.det(A_2d)) > 1e-6:
+                            pos_H_2d = A_2d.T @ H_2d @ A_2d
+                    def _apply_pos_H2d(ipc):
+                        pts = ipc.Points
+                        new_coords = []
+                        for co in pts.CoordList:
+                            xy = pos_H_2d @ np.array(co[:2], dtype=float)
+                            new_coords.append([float(xy[0]), float(xy[1])] + list(co[2:]))
+                        pts.CoordList = new_coords
+                    _apply_pos_H2d(oc)
+                    for inner in getattr(sw, "InnerCurves", None) or []:
+                        if inner.is_a("IfcIndexedPolyCurve"):
+                            _apply_pos_H2d(inner)
+                    # Mirror Position.Location only (RefDirection and Axis are intentionally
+                    # left unchanged — see comment above)
                     if item.Position is not None:
                         base = list(item.Position.Location.Coordinates)
                         xy = H_2d @ np.array(base[:2], dtype=float)
                         item.Position.Location.Coordinates = [float(xy[0]), float(xy[1])] + list(base[2:])
-                        if item.Position.RefDirection is not None:
-                            ref = list(item.Position.RefDirection.DirectionRatios)
-                            xy_ref = H_2d @ np.array(ref[:2], dtype=float)
-                            item.Position.RefDirection.DirectionRatios = [float(xy_ref[0]), float(xy_ref[1])] + list(ref[2:])
-                        if item.Position.Axis is not None:
-                            ax = list(item.Position.Axis.DirectionRatios)
-                            xy_ax = H_2d @ np.array(ax[:2], dtype=float)
-                            item.Position.Axis.DirectionRatios = [float(xy_ax[0]), float(xy_ax[1])] + list(ax[2:])
                     # Mirror extrusion direction (XY only; Z unchanged)
                     ext = list(item.ExtrudedDirection.DirectionRatios)
                     xy_ext = H_2d @ np.array(ext[:2], dtype=float)
