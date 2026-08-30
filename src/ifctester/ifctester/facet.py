@@ -201,7 +201,7 @@ class Entity(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]] = None
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
 
         if isinstance(self.name, str):
@@ -280,7 +280,7 @@ class Attribute(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
 
         results = []
@@ -415,7 +415,7 @@ class Classification(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 
@@ -480,7 +480,7 @@ class PartOf(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
         return list(ifc_file)  # Lazy
 
@@ -673,7 +673,7 @@ class Property(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
         if ifc_file.schema == "IFC2X3":
             return ifc_file.by_type("IfcObjectDefinition")
@@ -946,7 +946,7 @@ class Material(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 
