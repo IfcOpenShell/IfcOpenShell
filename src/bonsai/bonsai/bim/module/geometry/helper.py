@@ -485,9 +485,8 @@ class Helper:
         points = []
         for point in loop:
             transformed_point = curve_ucs["matrix"] @ mesh.vertices[point].co
-            points.append(self.create_cartesian_point(transformed_point.x, transformed_point.y))
-        points.append(points[0])
-        return self.file.createIfcPolyline(points)
+            points.append((self.convert_si_to_unit(transformed_point.x), self.convert_si_to_unit(transformed_point.y)))
+        return self.builder.polyline(points, closed=True)
 
     def create_cartesian_point(self, x: float, y: float, z: Optional[float] = None) -> ifcopenshell.entity_instance:
         x = self.convert_si_to_unit(x)
