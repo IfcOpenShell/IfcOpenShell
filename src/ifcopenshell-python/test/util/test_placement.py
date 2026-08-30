@@ -40,3 +40,31 @@ class TestGetStoreyElevationIFC4(test.bootstrap.IFC4):
         assert subject.get_storey_elevation(storey) == 0.0
         building = self.file.createIfcBuilding()
         assert subject.get_storey_elevation(building) == 0.0
+
+
+class TestGetAxis2PlacementIFC4(test.bootstrap.IFC4):
+    def test_2d_placement_with_ref_direction(self):
+        """Regression test: IfcCircleProfileDef.Position is always a real
+        IfcAxis2Placement2D with an explicit RefDirection (never None), so
+        this path is exercised on every parameterized-profile slab/column.
+        Previously raised ValueError from an in-place ndarray.resize() call
+        on a 2-element DirectionRatios array."""
+        placement = self.file.createIfcAxis2Placement2D(
+            Location=self.file.createIfcCartesianPoint((1.0, 2.0)),
+            RefDirection=self.file.createIfcDirection((0.0, 1.0)),
+        )
+        matrix = subject.get_axis2placement(placement)
+        assert list(matrix[:, 3]) == [1.0, 2.0, 0.0, 1.0]
+
+    def test_2d_placement_without_ref_direction_defaults_to_identity_axes(self):
+        placement = self.file.createIfcAxis2Placement2D(
+            Location=self.file.createIfcCartesianPoint((0.0, 0.0)),
+            RefDirection=None,
+        )
+        matrix = subject.get_axis2placement(placement)
+        assert matrix.tolist() == [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
