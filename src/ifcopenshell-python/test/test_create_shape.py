@@ -1,10 +1,12 @@
 import functools
 import itertools
+import math
 import multiprocessing
 import operator
 import os
 from typing import get_args
 
+import numpy as np
 import pytest
 
 import ifcopenshell
@@ -268,6 +270,276 @@ def test_logging():
     assert ("GEO089", "Non-positive extrusion height encountered for:") in [
         (msg.code, msg.message) for msg in new_items
     ]
+
+
+class TestSectionedSolidHorizontalRakedEndCut(test.bootstrap.IFC4X3):
+    """An IfcSectionedSolidHorizontal whose two IfcAxis2PlacementLinear cross
+    section positions use direction vectors inconsistently -- one raked
+    RefDirection + width scale, the other plain -- must still loft a uniform
+    prism (raked at one end, square at the other), not a wedge, and must not
+    log GEO 42."""
+
+    def _build_wingwall(self, theta):
+        f = self.file
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="Test")
+        ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=ctx
+        )
+
+        self.L, self.w, self.h = 40.0, 20.0 / 12.0, 6.0
+        width_scale = 1.0 / math.cos(theta)
+
+        directrix = f.createIfcPolyline(
+            Points=[f.createIfcCartesianPoint((0.0, 0.0, 0.0)), f.createIfcCartesianPoint((self.L, 0.0, 0.0))]
+        )
+
+        def rect(half_width):
+            coords = (
+                (-half_width, 0.0),
+                (half_width, 0.0),
+                (half_width, self.h),
+                (-half_width, self.h),
+                (-half_width, 0.0),
+            )
+            return f.createIfcArbitraryClosedProfileDef(
+                ProfileType="AREA",
+                OuterCurve=f.createIfcIndexedPolyCurve(
+                    Points=f.createIfcCartesianPointList2D(coords), Segments=None, SelfIntersect=False
+                ),
+            )
+
+        axis = f.createIfcDirection((0.0, 0.0, 1.0))
+        # Rakes the near end cap about the vertical axis by theta while keeping
+        # the section's width axis (Axis x RefDirection) perpendicular extent at w.
+        ref_direction = f.createIfcDirection((math.cos(theta), -math.sin(theta), 0.0))
+
+        def location(distance_along):
+            return f.createIfcPointByDistanceExpression(
+                DistanceAlong=f.createIfcLengthMeasure(distance_along), BasisCurve=directrix
+            )
+
+        near = f.createIfcAxis2PlacementLinear(Location=location(0.0), Axis=axis, RefDirection=ref_direction)
+        far = f.createIfcAxis2PlacementLinear(Location=location(self.L), Axis=axis)
+
+        solid = f.createIfcSectionedSolidHorizontal(
+            Directrix=directrix,
+            CrossSections=[rect(0.5 * self.w * width_scale), rect(0.5 * self.w)],
+            CrossSectionPositions=[near, far],
+        )
+        return f.createIfcShapeRepresentation(
+            ContextOfItems=body,
+            RepresentationIdentifier="Body",
+            RepresentationType="AdvancedSweptSolid",
+            Items=[solid],
+        )
+
+    @pytest.mark.skipif(
+        not ifcopenshell.geom.has_geometry_library("opencascade"), reason="requires the OpenCASCADE kernel"
+    )
+    def test_raked_end_keeps_uniform_perpendicular_thickness(self):
+        theta = math.radians(25.0 + 22.0 / 60.0 + 58.0 / 3600.0)
+        representation = self._build_wingwall(theta)
+
+        logger = ifcopenshell.logger()
+        logger.output_format(logger.FMT_INMEMORY)
+        settings = ifcopenshell.geom.settings()
+        settings.set("use-world-coords", True)
+        geometry = ifcopenshell.geom.create_shape(settings, representation, logger=logger)
+
+        assert "GEO42" not in [msg.code for msg in logger]
+
+        v = ifcopenshell.util.shape.get_vertices(geometry)
+        xs = v[:, 0]
+
+        # Uniform thickness perpendicular to the (X aligned) directrix. The whole
+        # solid spans exactly w in Y; a wedge (the pre fix behaviour) does not.
+        assert np.ptp(v[:, 1]) == pytest.approx(self.w, abs=1e-4)
+        for x0 in np.linspace(3.0, self.L - 3.0, 12):
+            slab = v[np.abs(xs - x0) < 1.0]
+            if len(slab) < 4:
+                continue
+            assert np.ptp(slab[:, 1]) == pytest.approx(self.w, abs=1e-4), f"thickness at x={x0:.1f}"
+
+        # Far end square to the directrix (all vertices at x == L), near end raked
+        # about the vertical axis by exactly theta (its extreme vertex sits at
+        # -w/2 * tan(theta) along the directrix).
+        assert xs.max() == pytest.approx(self.L, abs=1e-4)
+        assert np.ptp(v[xs > xs.max() - 1e-4][:, 0]) < 1e-4
+        assert xs.min() == pytest.approx(-0.5 * self.w * math.tan(theta), abs=1e-4)
+
+
+class TestSectionedSolidHorizontalHonoursAxis(test.bootstrap.IFC4X3):
+    """An IfcSectionedSolidHorizontal whose cross section placements carry an
+    explicit Axis = (0,0,1) but no RefDirection must sweep the profile with its
+    Y axis on that Axis and its normal on the directrix tangent (buildingSMART
+    IFC4.x-IF #147) -- i.e. following the curve. Regression test for the case
+    where the directrix does not run along the global X axis: the profile used
+    to be placed with a fixed [e_y | e_z | e_x] permutation that ignored the
+    directrix, collapsing the swept solid (a road pavement running north-south
+    would come out a sliver a few centimetres wide)."""
+
+    def _build(self, theta=0.0):
+        f = self.file
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="Test")
+        ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=ctx
+        )
+
+        self.L, self.width, self.height = 60.0, 12.0, 0.5
+
+        # Directrix runs along +Y, not +X.
+        directrix = f.createIfcPolyline(
+            Points=[f.createIfcCartesianPoint((0.0, 0.0, 0.0)), f.createIfcCartesianPoint((0.0, self.L, 0.0))]
+        )
+
+        def rect(half_width):
+            coords = (
+                (-half_width, 0.0),
+                (half_width, 0.0),
+                (half_width, self.height),
+                (-half_width, self.height),
+                (-half_width, 0.0),
+            )
+            return f.createIfcArbitraryClosedProfileDef(
+                ProfileType="AREA",
+                OuterCurve=f.createIfcIndexedPolyCurve(
+                    Points=f.createIfcCartesianPointList2D(coords), Segments=None, SelfIntersect=False
+                ),
+            )
+
+        axis = f.createIfcDirection((0.0, 0.0, 1.0))
+
+        def location(distance_along):
+            return f.createIfcPointByDistanceExpression(
+                DistanceAlong=f.createIfcLengthMeasure(distance_along), BasisCurve=directrix
+            )
+
+        near = f.createIfcAxis2PlacementLinear(Location=location(0.0), Axis=axis)
+        if theta:
+            # Directrix tangent is +Y; rake the far cap about the vertical Axis.
+            ref_direction = f.createIfcDirection((math.sin(theta), math.cos(theta), 0.0))
+            far = f.createIfcAxis2PlacementLinear(Location=location(self.L), Axis=axis, RefDirection=ref_direction)
+            far_half = 0.5 * self.width / math.cos(theta)
+        else:
+            far = f.createIfcAxis2PlacementLinear(Location=location(self.L), Axis=axis)
+            far_half = 0.5 * self.width
+
+        solid = f.createIfcSectionedSolidHorizontal(
+            Directrix=directrix,
+            CrossSections=[rect(0.5 * self.width), rect(far_half)],
+            CrossSectionPositions=[near, far],
+        )
+        return f.createIfcShapeRepresentation(
+            ContextOfItems=body,
+            RepresentationIdentifier="Body",
+            RepresentationType="AdvancedSweptSolid",
+            Items=[solid],
+        )
+
+    def _shape(self, representation):
+        logger = ifcopenshell.logger()
+        logger.output_format(logger.FMT_INMEMORY)
+        settings = ifcopenshell.geom.settings()
+        settings.set("use-world-coords", True)
+        geometry = ifcopenshell.geom.create_shape(settings, representation, logger=logger)
+        assert "GEO42" not in [msg.code for msg in logger]
+        return ifcopenshell.util.shape.get_vertices(geometry)
+
+    @pytest.mark.skipif(
+        not ifcopenshell.geom.has_geometry_library("opencascade"), reason="requires the OpenCASCADE kernel"
+    )
+    def test_square_run_follows_the_directrix(self):
+        v = self._shape(self._build())
+        # width across the road -> world X, crown -> world Z, length -> world Y.
+        assert np.ptp(v[:, 0]) == pytest.approx(self.width, abs=1e-4)
+        assert np.ptp(v[:, 1]) == pytest.approx(self.L, abs=1e-4)
+        assert np.ptp(v[:, 2]) == pytest.approx(self.height, abs=1e-4)
+
+    @pytest.mark.skipif(
+        not ifcopenshell.geom.has_geometry_library("opencascade"), reason="requires the OpenCASCADE kernel"
+    )
+    def test_raked_far_end_on_a_non_axis_aligned_directrix(self):
+        theta = math.radians(25.0 + 22.0 / 60.0 + 58.0 / 3600.0)
+        v = self._shape(self._build(theta))
+        ys = v[:, 1]
+        # Uniform width perpendicular to the directrix, square near end, raked far end.
+        assert np.ptp(v[:, 0]) == pytest.approx(self.width, abs=1e-4)
+        for y0 in np.linspace(5.0, self.L - 5.0, 10):
+            slab = v[np.abs(ys - y0) < 1.0]
+            if len(slab) >= 4:
+                assert np.ptp(slab[:, 0]) == pytest.approx(self.width, abs=1e-4), f"width at y={y0:.1f}"
+        assert ys.min() == pytest.approx(0.0, abs=1e-4)
+        assert np.ptp(v[ys < ys.min() + 1e-4][:, 1]) < 1e-4
+        assert ys.max() == pytest.approx(self.L + 0.5 * self.width * math.tan(theta), abs=1e-4)
+
+
+class TestSectionedSolidHorizontalOffsetUnits(test.bootstrap.IFC4X3):
+    """IfcPointByDistanceExpression.OffsetLateral / OffsetVertical are
+    IfcLengthMeasure and must be scaled by the model length unit, exactly like
+    DistanceAlong. Regression test: in a millimetre model a 3000 mm lateral
+    offset must move the swept solid 3 m, not 3000 m."""
+
+    @pytest.mark.skipif(
+        not ifcopenshell.geom.has_geometry_library("opencascade"), reason="requires the OpenCASCADE kernel"
+    )
+    def test_lateral_offset_is_scaled_by_the_length_unit(self):
+        f = self.file
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="Test")
+        unit = ifcopenshell.api.unit.add_si_unit(f, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(f, units=[unit])
+        ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=ctx
+        )
+
+        length_mm, width_mm, offset_mm = 20000.0, 4000.0, 3000.0
+        directrix = f.createIfcPolyline(
+            Points=[f.createIfcCartesianPoint((0.0, 0.0, 0.0)), f.createIfcCartesianPoint((length_mm, 0.0, 0.0))]
+        )
+        hw = 0.5 * width_mm
+        profile = f.createIfcArbitraryClosedProfileDef(
+            ProfileType="AREA",
+            OuterCurve=f.createIfcIndexedPolyCurve(
+                Points=f.createIfcCartesianPointList2D(((-hw, 0.0), (hw, 0.0), (hw, 500.0), (-hw, 500.0), (-hw, 0.0))),
+                Segments=None,
+                SelfIntersect=False,
+            ),
+        )
+        axis = f.createIfcDirection((0.0, 0.0, 1.0))
+
+        def position(distance_along):
+            return f.createIfcAxis2PlacementLinear(
+                Location=f.createIfcPointByDistanceExpression(
+                    DistanceAlong=f.createIfcLengthMeasure(distance_along),
+                    OffsetLateral=offset_mm,
+                    BasisCurve=directrix,
+                ),
+                Axis=axis,
+            )
+
+        solid = f.createIfcSectionedSolidHorizontal(
+            Directrix=directrix,
+            CrossSections=[profile, profile],
+            CrossSectionPositions=[position(0.0), position(length_mm)],
+        )
+        representation = f.createIfcShapeRepresentation(
+            ContextOfItems=body,
+            RepresentationIdentifier="Body",
+            RepresentationType="AdvancedSweptSolid",
+            Items=[solid],
+        )
+
+        settings = ifcopenshell.geom.settings()
+        settings.set("use-world-coords", True)
+        geometry = ifcopenshell.geom.create_shape(settings, representation)
+        v = ifcopenshell.util.shape.get_vertices(geometry)  # metres
+
+        # Directrix +X, Axis +Z -> profile local x is world +Y; +OffsetLateral shifts there.
+        assert np.ptp(v[:, 0]) == pytest.approx(length_mm / 1000.0, abs=1e-4)
+        assert np.ptp(v[:, 1]) == pytest.approx(width_mm / 1000.0, abs=1e-4)
+        assert v[:, 1].mean() == pytest.approx(offset_mm / 1000.0, abs=1e-3)
 
 
 if __name__ == "__main__":
