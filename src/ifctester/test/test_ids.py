@@ -395,3 +395,24 @@ class TestSpecification:
             [wall],
             [],
         )
+
+    def test_optional_facet_with_empty_value_passes(self):
+        """Specification with required + optional facets should pass when optional attribute is empty."""
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.requirements.append(ids.Attribute(name="Name", value="Waldo", cardinality="required"))
+        spec.requirements.append(ids.Attribute(name="Description", value="Foobar", cardinality="optional"))
+        specs.specifications.append(spec)
+
+        spec.set_usage("required")
+        model = ifcopenshell.file()
+        wall = model.createIfcWall(Name="Waldo")
+        run(
+            "Optional facet with empty value should not cause specification failure",
+            specs,
+            model,
+            True,
+            [wall],
+            [],
+        )
