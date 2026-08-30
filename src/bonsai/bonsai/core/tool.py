@@ -191,6 +191,15 @@ class Classification:
 
 
 @interface
+class License:
+    def get_pset(cls, element): pass
+    def get_effective_pset(cls, element): pass
+    def set_license(cls, file, element, spdx_id, copyright_notice, attribution_text, source_url): pass
+    def remove_license(cls, file, element): pass
+    def inherit_library_license(cls, file, element, library, library_element): pass
+
+
+@interface
 class Collector:
     def assign(cls, obj, should_clean_users_collection=False): pass
 
