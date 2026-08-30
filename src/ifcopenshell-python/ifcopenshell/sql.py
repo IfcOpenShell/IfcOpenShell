@@ -385,8 +385,12 @@ class sqlite_entity:
         # print("*" * 100)
         # print("GETATTR", self.sqlite_wrapper.id, self.sqlite_wrapper.ifc_class, name)
 
-        INVALID, FORWARD, INVERSE = range(3)
+        INVALID, FORWARD, INVERSE, DERIVED = range(4)
         attr_cat = self.wrapped_data.get_attribute_category(name)
+        if attr_cat == DERIVED:
+            # Derived attributes aren't stored or computed for SQLite-linked
+            # files, so callers must treat None as "not available" here.
+            return None
         if attr_cat == FORWARD:
             if self.sqlite_wrapper.attribute_cache:
                 # print(self.sqlite_wrapper.ifc_class)
