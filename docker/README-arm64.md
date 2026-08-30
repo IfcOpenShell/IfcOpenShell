@@ -146,3 +146,19 @@ not through `ifcos_env build`), so there's nothing to ignore there.
 
 Do not touch any `occt:*` / `occtdraw:*` image - unrelated to this harness,
 belongs to a different maintainer's build setup.
+
+## Known limitation: OCC-native serializers
+
+With the default static OpenCASCADE link, the SVG (`--plan`, `--model`),
+STEP and IGES serializers do not work in this build: `IfcConvert` aborts
+with `Standard_NoSuchObject` or writes an empty B-rep, on any model. OBJ,
+glTF, COLLADA and the Python wrapper are unaffected. This is the
+per-plug-in static OCCT problem described in #9341, not something specific
+to arm64.
+
+Building with `--shared` does not resolve it here: the cached
+`occt-shared-7.8.1` on the `rockylinux9-arm64` branch was compiled against
+glibc 2.38 and CXXABI 1.3.15, newer than Rocky Linux 9 provides, so
+`IfcGeomServer` fails to link (`undefined reference to fmod@GLIBC_2.38`).
+Until #9341 lands or OCCT is rebuilt shared inside the container, use this
+harness for geometry kernel, parser and Python wrapper verification only.
