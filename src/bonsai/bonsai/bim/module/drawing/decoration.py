@@ -1000,7 +1000,7 @@ class FallDecorator(BaseDecorator):
         # generate label text
         # same function as in svgwriter.py
         def get_label_text():
-            B, A = [v.co.xyz for v in spline_points[:2]]
+            B, A = [obj.matrix_world @ v.co.xyz for v in spline_points[:2]]
             rise = abs(A.z - B.z)
             O = A.copy()
             O.z = B.z
@@ -1014,13 +1014,14 @@ class FallDecorator(BaseDecorator):
                 angle = 90
 
             # uses SLOPE_ANGLE as default
-            object_type = DecoratorData.data["fall"].get(obj, {}).get("object_type", None)
+            object_type = DecoratorData.data["fall"].get(obj.name, {}).get("object_type", None)
             if object_type in ("FALL", "SLOPE_ANGLE"):
                 return f"{angle}°"
             elif object_type == "SLOPE_FRACTION":
                 if angle == 90:
                     return "-"
-                return f"{self.format_value(context, rise)} / {self.format_value(context, run)}"
+                segment_length = (B - A).length
+                return f"{self.format_value(context, rise)} / {self.format_value(context, segment_length)}"
             elif object_type == "SLOPE_PERCENT":
                 if angle == 90:
                     return "-"
