@@ -20,8 +20,10 @@ import tempfile
 from math import pi
 from pathlib import Path
 
+import ifcpatch
 import numpy as np
 import pytest
+from ifcpatch.recipes import Ifc2Sql
 
 import ifcopenshell.api.context
 import ifcopenshell.api.georeference
@@ -31,10 +33,8 @@ import ifcopenshell.api.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit as subject
-import ifcpatch
 import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from ifcpatch.recipes import Ifc2Sql
 
 
 class TestMmToM:
@@ -149,7 +149,9 @@ class TestGetCandidateUnits(test.bootstrap.IFC4):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
         area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
-        modulus = ifcopenshell.api.unit.add_derived_unit(self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1})
+        modulus = ifcopenshell.api.unit.add_derived_unit(
+            self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1}
+        )
         assert subject.get_candidate_units(self.file, "MODULUSOFELASTICITYUNIT") == [modulus]
 
     def test_userdefined_derived_unit_matched_by_dimensional_fallback(self):
@@ -288,7 +290,9 @@ class TestCalculateUnitScale(test.bootstrap.IFC4):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
         area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT", prefix="MILLI")
-        modulus = ifcopenshell.api.unit.add_derived_unit(self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1})
+        modulus = ifcopenshell.api.unit.add_derived_unit(
+            self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1}
+        )
         ifcopenshell.api.unit.assign_unit(self.file, units=[modulus])
         # AREAUNIT is a pure power of length, so its MILLI prefix is raised to
         # the length exponent (2) per #9278: (1e-3)**2 = 1e-6, inverted by the
@@ -397,7 +401,9 @@ class TestGetUnitSymbol(test.bootstrap.IFC4):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
         area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
-        modulus = ifcopenshell.api.unit.add_derived_unit(self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1})
+        modulus = ifcopenshell.api.unit.add_derived_unit(
+            self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1}
+        )
         assert subject.get_unit_symbol(modulus) == "N/m2"
 
     def test_unnamed_derived_unit_still_composes_a_symbol_without_crashing(self):
@@ -420,7 +426,9 @@ class TestIdentifyUnitDimensions(test.bootstrap.IFC4):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")
         area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
-        modulus = ifcopenshell.api.unit.add_derived_unit(self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1})
+        modulus = ifcopenshell.api.unit.add_derived_unit(
+            self.file, "MODULUSOFELASTICITYUNIT", None, {force: 1, area: -1}
+        )
         assert subject.identify_unit_dimensions(modulus) == "PRESSUREUNIT"
 
     def test_returns_none_for_no_match(self):

@@ -69,9 +69,7 @@ class TestEditingAnOverriddenUnitPropertyRoundTrips(NewFile):
 
         element = ifc.createIfcWall()
         pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Pset_Test")
-        prop = ifc.createIfcPropertySingleValue(
-            Name="Foo", NominalValue=ifc.createIfcLengthMeasure(2.5), Unit=length_m
-        )
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcLengthMeasure(2.5), Unit=length_m)
         pset.HasProperties = [prop]
 
         obj = bpy.data.objects.new("Wall", None)
@@ -308,9 +306,7 @@ class TestEditPsetWithUnitOverridePicker(NewFile):
 
         element = ifc.createIfcWall()
         pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Pset_Test")
-        prop = ifc.createIfcPropertySingleValue(
-            Name="Foo", NominalValue=ifc.createIfcLengthMeasure(2.5), Unit=length_m
-        )
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcLengthMeasure(2.5), Unit=length_m)
         pset.HasProperties = [prop]
 
         obj = bpy.data.objects.new("Wall", None)
