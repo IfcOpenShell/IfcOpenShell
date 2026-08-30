@@ -1584,7 +1584,8 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
         return;
     }
 
-    tokens = new IfcSpfLexer(s, logger());
+    std::unique_ptr<IfcSpfLexer> tokens_owner(new IfcSpfLexer(s, logger()));
+    tokens = tokens_owner.get();
 
     std::vector<std::string> schemas;
 
@@ -1688,8 +1689,6 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
     }
 
     logger().Status("\rDone scanning file   ");
-
-    delete tokens;
 
     if (good_ != file_open_status::SUCCESS) {
         return;
