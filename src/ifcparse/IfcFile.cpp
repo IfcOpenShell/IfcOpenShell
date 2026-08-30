@@ -61,7 +61,11 @@ namespace {
     template <typename Fn>
     void dispatch_token(boost::optional<size_t> instance_id, int attribute_id, IfcParse::Token t, IfcParse::declaration* decl, Logger& logger, Fn fn) {
         if (t.type == IfcParse::Token_BINARY) {
-            fn(IfcParse::TokenFunc::asBinary(t));
+            try {
+                fn(IfcParse::TokenFunc::asBinary(t));
+            } catch (IfcParse::IfcException& e) {
+                logger.Error("VAL", 20, "Invalid binary token at offset " + std::to_string(t.startPos));
+            }
         } else if (IfcParse::TokenFunc::isBool(t)) {
             fn(IfcParse::TokenFunc::asBool(t));
         } else if (IfcParse::TokenFunc::isLogical(t)) {
