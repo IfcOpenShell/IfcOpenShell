@@ -436,19 +436,8 @@ class StatusData:
     def load(cls) -> None:
         cls.is_loaded = True
         cls.data = {
-            "statuses_with_elements": cls.statuses_with_elements(),
             "active_element_status": cls.active_element_status(),
         }
-
-    @classmethod
-    def statuses_with_elements(cls) -> set[str]:
-        statuses = ["No Status"]
-        statuses.extend(tool.Sequence.ELEMENT_STATUSES)
-        statuses_used: set[str] = set()
-        for status in statuses:
-            if tool.Sequence.get_elements_by_status(status):
-                statuses_used.add(status)
-        return statuses_used
 
     @classmethod
     def active_element_status(cls) -> set[str]:

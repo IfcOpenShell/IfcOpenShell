@@ -52,6 +52,55 @@ class TestGetElementStatus(NewFile):
         assert subject.get_element_status(element) == {"EXISTING", "TEMPORARY"}
 
 
+class TestSetVisibilityByStatus(NewFile):
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+
+        def add_wall_with_status(status):
+            bpy.ops.mesh.primitive_cube_add()
+            obj = bpy.context.active_object
+            bpy.ops.bim.assign_class(ifc_class="IfcWall")
+            if status is not None:
+                element = tool.Ifc.get_entity(obj)
+                pset = ifcopenshell.api.pset.add_pset(ifc, element, "Pset_WallCommon")
+                ifcopenshell.api.pset.edit_pset(ifc, pset, properties={"Status": [status]})
+            return obj
+
+        obj_new = add_wall_with_status("NEW")
+        obj_existing = add_wall_with_status("EXISTING")
+        obj_no_status = add_wall_with_status(None)
+
+        subject.set_visibility_by_status({"NEW"})
+        assert obj_new.hide_get() is False
+        assert obj_existing.hide_get() is True
+        assert obj_no_status.hide_get() is True
+
+        subject.set_visibility_by_status({"No Status", "EXISTING"})
+        assert obj_new.hide_get() is True
+        assert obj_existing.hide_get() is False
+        assert obj_no_status.hide_get() is False
+
+
+class TestEnableStatusFilters(NewFile):
+    def test_has_elements_is_stored_on_the_status_property(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+
+        bpy.ops.mesh.primitive_cube_add()
+        obj = bpy.context.active_object
+        bpy.ops.bim.assign_class(ifc_class="IfcWall")
+        element = tool.Ifc.get_entity(obj)
+        pset = ifcopenshell.api.pset.add_pset(ifc, element, "Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(ifc, pset, properties={"Status": ["NEW"]})
+
+        bpy.ops.bim.enable_status_filters()
+
+        statuses_by_name = {s.name: s for s in tool.Sequence.get_status_props().statuses}
+        assert statuses_by_name["NEW"].has_elements is True
+        assert statuses_by_name["EXISTING"].has_elements is False
+
+
 class TestAssignStatus(NewFile):
     def test_run(self):
         bpy.ops.bim.create_project()
