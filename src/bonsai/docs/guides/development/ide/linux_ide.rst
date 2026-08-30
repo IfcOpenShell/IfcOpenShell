@@ -42,18 +42,18 @@ Integrated Development Environment (IDE) and we will create a dedicated user for
 2. **Install Blender for the created user**: We will install blender locally in the users home directory.
    We must check that we are following the `Systems requirements <https://docs.bonsaibim.org/guides/development/installation.html/>`__.
 
-   We will download Blender 4.2 from the `Blender download page <https://www.blender.org/download/>`__.
-   In particular, we take the `4.2 LTS <https://www.blender.org/download/lts/4-2/>`__ for Linux.
+   We will download Blender 4.5 from the `Blender download page <https://www.blender.org/download/>`__.
+   In particular, we take the `4.5 LTS <https://www.blender.org/download/lts/4-5/>`__ for Linux.
    
    We will download the Linux 64 bit version: 
    
-   https://www.blender.org/download/release/Blender4.2/blender-4.2.8-linux-x64.tar.xz
+   https://www.blender.org/download/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz
 
    .. code-block:: bash
 
-      wget https://download.blender.org/release/Blender4.2/blender-4.2.8-linux-x64.tar.xz
-      tar -xvf blender-4.2.8-linux-x64.tar.xz
-      mv blender-4.2.8-linux-x64 /home/falken10vdl/.local/share/applications/blender-4.2.8-linux-x64
+      wget https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz
+      tar -xvf blender-4.5.3-linux-x64.tar.xz
+      mv blender-4.5.3-linux-x64 /home/falken10vdl/.local/share/applications/blender-4.5.3-linux-x64
 
    .. warning::
    
@@ -67,9 +67,9 @@ Integrated Development Environment (IDE) and we will create a dedicated user for
    
    .. code-block:: bash
 
-      ln -s /home/falken10vdl/.local/share/applications/blender-4.2.8-linux-x64/blender /home/falken10vdl/.local/bin/blender
-      sed -i 's/^Terminal=.*/Terminal=true/' /home/falken10vdl/.local/share/applications/blender-4.2.8-linux-x64/blender.desktop
-      sed -i 's|^Icon=.*|Icon=/home/falken10vdl/.local/share/applications/blender-4.2.8-linux-x64/blender.svg|' /home/falken10vdl/.local/share/applications/blender-4.2.8-linux-x64/blender.desktop
+      ln -s /home/falken10vdl/.local/share/applications/blender-4.5.3-linux-x64/blender /home/falken10vdl/.local/bin/blender
+      sed -i 's/^Terminal=.*/Terminal=true/' /home/falken10vdl/.local/share/applications/blender-4.5.3-linux-x64/blender.desktop
+      sed -i 's|^Icon=.*|Icon=/home/falken10vdl/.local/share/applications/blender-4.5.3-linux-x64/blender.svg|' /home/falken10vdl/.local/share/applications/blender-4.5.3-linux-x64/blender.desktop
 
    .. image:: images/blender-installation-1.png
       :width: 1000 px
@@ -104,7 +104,7 @@ Integrated Development Environment (IDE) and we will create a dedicated user for
       :width: 1000 px
 
    
-   In our case it is version 3.11.7
+   In our case it is version 3.11.11
    
    We will need to install the closest version in our Linux machine.
    
@@ -263,7 +263,7 @@ Integrated Development Environment (IDE) and we will create a dedicated user for
 X. **BONUS: Editing Bonsai Documentation**: Please refer to `Writing documentation <https://docs.bonsaibim.org/guides/development/writing_docs.html/>`__ for details on how to edit and contribute
    documentation. Here we just summarize the steps to integrate that workflow in VSCode and using Inkscape.
 
-   - Download and install Inkscape from `Inkscape download page <https://inkscape.org/release>`__. In our case we will use `Inkscape 1.4 Linux AppImage <https://inkscape.org/release/1.4/gnulinux/>`__.
+   - Download and install Inkscape from `Inkscape download page <https://inkscape.org/release>`__. In our case we will use `An Executable file for Linux AppImage <https://inkscape.org/release/inkscape-1.4.2/gnulinux/appimage/dl/>`__.
      
      .. note::
 
@@ -273,7 +273,9 @@ X. **BONUS: Editing Bonsai Documentation**: Please refer to `Writing documentati
 
    .. container:: blockbutton
 
-      `Download style annotation file <https://docs.bonsaibim.org/quickstart/ide/bonsai_style_annotation.svg>`__
+      .. raw:: html
+
+         <a href="../../../_static/bonsai_style_annotation.svg" download>Download style annotation file</a>
 
    It contains some shapes and styles that you can use to create your own diagrams.
 
@@ -388,52 +390,30 @@ Now let's find out how to interact with GitHub in order to make changes to the B
    .. image:: images/selecting-forked-repo.png
       :width: 1000 px
 
-   VSCode will ask you to select a folder where the repository will be cloned. and it will start the cloning process.
+   VSCode will ask you to select a folder where the repository will be cloned and it will start the cloning process.
+   
+   In our case we will clone it in the directory /home/falken10vdl/bonsaiDevel
 
-   Once finished, you will see the repository in the Explorer tool.
+   Once finished, you will see the repository in the VS Code Explorer tool 
 
    .. image:: images/cloned-repo.png
       :width: 1000 px
 
-10. **Link the Bonsai addon to the local cloned repository**: We will now edit the following 
-    script that establishes links from the unstable-installation to the cloned repository so we 
-    can easily see the changes done in the cloned repository taken effect when we load blender 
+   under the directory /home/falken10vdl/bonsaiDevel/IfcOpenShell
+
+   .. image:: images/cloned-repo-directory.png
+      :width: 1000 px
+      
+
+
+10. **Link the Bonsai addon to the local cloned repository**: We will now go to the scripts directory and execute the python script dev_environment.py that establishes links 
+    from the unstable-installation to the cloned repository so we can easily see the changes done in the cloned repository taken effect when we load blender 
     locally.
-
-    .. container:: blockbutton
-
-       :download:`Download dev_environment.sh <linux/dev_environment.sh>`
-
-    Edit the file to match the paths in your system. In our case we will edit the following lines:
-
-    - REPO_PATH="$HOME/bonsaiDevel/IfcOpenShell"
-    - BLENDER_PATH="$HOME/.config/blender/4.2"
-    - PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
-    - BONSAI_PATH="${BLENDER_PATH}/extensions/raw_githubusercontent_com/bonsai"
 
     We execute the script in the terminal. Confirm the data and the script will create the necessary links.
 
-    .. code-block:: bash
-
-       ./dev_environment.sh
-
-    .. image:: images/dev-environment-sh.png
+    .. image:: images/dev-environment-script.png
        :width: 1000 px
-
-    .. image:: images/dev-environment-sh-executed.png
-       :width: 1000 px
-
-    .. warning::
-   
-       If you receive an error like this:
-
-       .. code-block:: bash
-
-          cp: cannot stat '/home/falken10vdl/.config/blender/4.2/extensions/.local/lib/python3.11/site-packages/ifcopenshell/*_wrapper*': No such file or directory
-
-       It means that you have not installed the Bonsai Blender extension. Please refer to tha 
-       last part of point 2. above and follow the `Unstable installation <https://docs.bonsaibim.org/guides/development/installation.html#unstable-installation>`__.
-
 
 11. **Adjust the VSCode Blender extension**: We will now make some adjustments to the VSCode Blender extension to ease the reload of the addon.
     Select the Extensions tool. Then  :menuselection:`Blender Development` and then select :menuselection:`Settings`.
