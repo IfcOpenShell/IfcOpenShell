@@ -128,10 +128,9 @@ class Usecase:
         elif unit_type == "volume":
             type_prefix = "CUBIC_"
         return self.file.createIfcSIUnit(
-            None,
-            "{}UNIT".format(unit_type.upper()),
-            ifcopenshell.util.unit.get_prefix(data["raw"]),
-            type_prefix + ifcopenshell.util.unit.get_unit_name(data["raw"]),
+            UnitType="{}UNIT".format(unit_type.upper()),
+            Prefix=ifcopenshell.util.unit.get_prefix(data["raw"]),
+            Name=type_prefix + ifcopenshell.util.unit.get_unit_name(data["raw"]),
         )
 
     def create_imperial_unit(self, unit_type: str, data: dict) -> ifcopenshell.entity_instance:
@@ -148,10 +147,8 @@ class Usecase:
             assert False, unit_type
 
         si_unit = self.file.createIfcSIUnit(
-            None,
-            "{}UNIT".format(unit_type.upper()),
-            None,
-            "{}METRE".format(name_prefix.upper() + "_" if name_prefix else ""),
+            UnitType="{}UNIT".format(unit_type.upper()),
+            Name="{}METRE".format(name_prefix.upper() + "_" if name_prefix else ""),
         )
         if data["raw"] == "INCHES":
             name = "{}inch".format(name_prefix + " " if name_prefix else "")
