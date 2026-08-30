@@ -127,6 +127,7 @@ def switch_representation(
     assert element
     geometry.clear_cache(element)
     geometry.reimport_element_representations(obj, representation, apply_openings=apply_openings)
+    geometry.update_bbox_accumulation(obj)
 
 
 def get_representation_ifc_parameters(geometry: type[tool.Geometry], obj: bpy.types.Object) -> None:
