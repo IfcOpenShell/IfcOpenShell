@@ -10,7 +10,7 @@ Bonsai extends Blender's tool system, which provides a consistent way to interac
 - Tools are accessed from the Toolbar, typically located on the left side of the 3D viewport.
 - Only one tool can be active per Workspace and mode.
 - Most tools are controlled using the Left Mouse Button (LMB), though some use modifier keys.
-- Press :kbd:`Shift` + :kbd:`Spacebar` to open the tool shortcut menu for quick access.
+- Press :kbd:`Shift+Spacebar` to open the tool shortcut menu for quick access.
 - The Quick Favorites menu (:kbd:`Q`) allows you to gather your most-used tools for easy access.
 
 Bonsai integrates its tools seamlessly into this system, adding BIM-specific functionality while maintaining consistency with Blender's interface.
@@ -51,7 +51,7 @@ The Bonsai toolbar extends Blender's built-in toolbar with additional tools spec
 These tools are positioned between the Transform and Annotate sections of the standard Blender toolbar.
 
 .. tip::
-  Press :kbd:`Shift` + :kbd:`Spacebar` to open the tool shortcut menu.
+  Press :kbd:`Shift+Spacebar` to open the tool shortcut menu.
   From there, you can quickly select any tool using its corresponding number or letter key.
 
 .. figure:: images/toolbar_shortcut-menu.png

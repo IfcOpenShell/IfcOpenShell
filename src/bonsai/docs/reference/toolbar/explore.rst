@@ -8,7 +8,7 @@ making Bonsai a more comprehensive native IFC authoring and viewing tool.
 Shortcut
 --------
 
-:kbd:`Shift` + :kbd:`Spacebar`, :kbd:`5`
+:kbd:`Shift+Spacebar`, :kbd:`5`
 
 Toolbar Icon
 ------------
@@ -25,15 +25,15 @@ Tool Options
 Key Features
 ------------
 
-- **Walk Mode** (Shortcut: :kbd:`Shift` + :kbd:`W`): Navigate through your model in a first-person perspective.
+- **Walk Mode** (Shortcut: :kbd:`Shift+W`): Navigate through your model in a first-person perspective.
    - Use :kbd:`W`, :kbd:`A`, :kbd:`S`, :kbd:`D` keys or arrow keys for movement.
    - Provides a game-like experience for exploring interiors.
 
-- **Add Clipping Plane** (Shortcut: :kbd:`Shift` + :kbd:`C`): Create a cutting plane to view cross-sections of your model.
+- **Add Clipping Plane** (Shortcut: :kbd:`Shift+C`): Create a cutting plane to view cross-sections of your model.
    - Drag the plane to adjust its position.
    - Add multiple clipping planes simultaneously for complex views.
 
-- **Flip Clipping Plane** (Shortcut: :kbd:`Shift` + :kbd:`F`): Reverse the direction of the active clipping plane.
+- **Flip Clipping Plane** (Shortcut: :kbd:`Shift+F`): Reverse the direction of the active clipping plane.
 
 
 Usage
