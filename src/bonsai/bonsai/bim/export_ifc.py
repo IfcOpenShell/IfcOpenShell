@@ -120,10 +120,10 @@ class IfcExporter:
                 # updata_representation will run edit_object_placement if object is scaled
                 # and had no openings.
                 return element
-        if not tool.Ifc.is_moved(obj):
-            return
         if element.is_a("IfcGridAxis"):
             return self.sync_grid_axis_object_placement(obj, element)
+        if not tool.Ifc.is_moved(obj):
+            return
         if not hasattr(element, "ObjectPlacement"):
             return
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
@@ -134,7 +134,8 @@ class IfcExporter:
         grid_obj = tool.Ifc.get_object(grid)
         if grid_obj:
             self.sync_object_placement(grid_obj)
-            if grid_obj.matrix_world != obj.matrix_world:
+            matrices_differ = grid_obj.matrix_world != obj.matrix_world
+            if matrices_differ:
                 bpy.ops.bim.update_representation(obj=obj.name)
         tool.Geometry.record_object_position(obj)
 
