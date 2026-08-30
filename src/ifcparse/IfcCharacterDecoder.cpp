@@ -98,8 +98,9 @@ namespace {
         int codepage = 1;
         unsigned int hex = 0;
         unsigned int hex_count = 0;
+        bool closed = false;
 
-        while ((current_char = stream_.peek()) != 0) {
+        while (!stream_.eof() && (current_char = stream_.peek()) != 0) {
             if (EXPECTS_CHARACTER(parse_state)) {
                 builder_.push_back(IfcUtil::convert_codepage(codepage, current_char + 0x80));
                 parse_state = 0;
@@ -162,6 +163,7 @@ namespace {
                                                   (current_char == '\\' && parse_state == FIRST_SOLIDUS) ||
                                                   (current_char == '\'' && parse_state == APOSTROPHE))) {
                 if (parse_state == APOSTROPHE && current_char != '\'') {
+                    closed = true;
                     break;
                 }
                 throw IfcInvalidTokenException(stream_.tell(), current_char);
@@ -170,6 +172,9 @@ namespace {
                 builder_.push_back(current_char);
             }
             stream_.increment();
+        }
+        if (!closed && stream_.eof()) {
+            logger.Warning("SYN", 41, "Unterminated string literal at offset " + std::to_string(stream_.tell()));
         }
         builder_.push_back('\'');
 
