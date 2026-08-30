@@ -152,8 +152,8 @@ class IfcDiff:
             total_diffed += 1
             if total_diffed % 250 == 0:
                 print("{}/{} diffed ...".format(total_diffed, total_same_elements), end="\r", flush=True)
-            old = self.old.by_id(global_id)
-            new = self.new.by_id(global_id)
+            old = self.old.by_guid(global_id)
+            new = self.new.by_guid(global_id)
             if should_check_attributes:
                 if self.diff_element(old, new) and self.is_shallow:
                     continue
