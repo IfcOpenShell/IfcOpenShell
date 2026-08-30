@@ -65,10 +65,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface& inst) {
 
 		// Corresponds to the profile X, Y directions (hopefully).
 		Eigen::Vector3d po(
-			pbde.OffsetLateral().value_or(0.),
-			// @todo I don't understand whether vertical is an offset relative to the tangent plane or to the global XY plane
-			pbde.OffsetVertical().value_or(0.),
-			0.
+            pbde.OffsetLateral().value_or(0.) * length_unit_,
+            // @todo I don't understand whether vertical is an offset relative to the tangent plane or to the global XY plane
+            pbde.OffsetVertical().value_or(0.) * length_unit_,
+            0.
 		);
 
 		profile_offsets.push_back(po);
