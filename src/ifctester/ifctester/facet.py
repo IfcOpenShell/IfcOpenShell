@@ -710,7 +710,7 @@ class Property(Facet):
                         for p in self.get_properties(inst.wrapped_data.file.by_id(pset_props["id"]))
                         if p.Name == self.baseName
                     ).NominalValue.is_a("IfcLogical"):
-                        pass
+                        props[pset_name][self.baseName] = prop
                     elif prop is not None and prop != "":
                         props[pset_name][self.baseName] = prop
                 else:
