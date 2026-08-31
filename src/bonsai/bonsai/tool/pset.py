@@ -233,7 +233,7 @@ class Pset(bonsai.core.tool.Pset):
                     if unit := getattr(prop_or_prop_template, "Unit", None):
                         return cls.get_special_type_for_unit(unit)
         elif prop_or_prop_template.is_a("IfcPhysicalSimpleQuantity"):
-            entity = prop_or_prop_template.wrapped_data.declaration().as_entity()
+            entity = prop_or_prop_template.declaration.as_entity()
             measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
             return cls.get_special_type_for_measure_class(measure_class)
         return ""
@@ -293,7 +293,7 @@ class Pset(bonsai.core.tool.Pset):
         return ifcopenshell.util.unit.get_project_unit(ifc_file, f"{special_type}UNIT")
 
     @classmethod
-    def convert_attribute_unit(cls, metadata: "Attribute", new_unit_id: int, ifc_file: ifcopenshell.file) -> None:
+    def convert_attribute_unit(cls, metadata: Attribute, new_unit_id: int, ifc_file: ifcopenshell.file) -> None:
         """Rescale `metadata.float_value` in place so its physical quantity is preserved when
         switching from its current effective unit to the unit named by `new_unit_id` (0 = project
         default). No-op for non-measurable attributes or when old and new resolve to the same unit.
@@ -404,7 +404,9 @@ class Pset(bonsai.core.tool.Pset):
                 # Some real-world files (e.g. certain exporters) set Unit on properties that
                 # aren't actually measures -- ignore it there, since we only ever treat Unit as
                 # meaningful for measurable special_types (matching the UI picker's own gating).
-                own_unit = getattr(prop, "Unit", None) if cls.is_measurable_special_type(metadata.special_type) else None
+                own_unit = (
+                    getattr(prop, "Unit", None) if cls.is_measurable_special_type(metadata.special_type) else None
+                )
                 metadata.unit_id = own_unit.id() if own_unit else 0
                 metadata.unit_id_enum = str(metadata.unit_id)
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
