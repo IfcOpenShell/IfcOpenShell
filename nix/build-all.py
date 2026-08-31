@@ -1791,6 +1791,7 @@ ifcos_build_args = [
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
     f"-DBUILD_BONSAIVIEWER={OFF_ON['BonsaiViewer' in targets]}",
     "-DUSE_CCACHE=ON",
+    "-DIFCOPENSHELL_DEPLOY_QT_RUNTIME=OFF",
 ]
 
 ld_library_paths = [

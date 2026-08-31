@@ -198,11 +198,6 @@ def stage_qt_runtime_payload(exe_path: Path, dest: Path, qt_dir: Path | None) ->
         if is_so_file(lib_file):
             dest_file = dest / lib_file.name
             qt_lib_files.append(dest_file)
-            # Currently we install some qt libs to `install/ifcopenshell/lib` too,
-            # so there's a bit of overlap beteen stage_runtime and stage_qt_runtime,
-            # hence the skip.
-            if dest_file.exists():
-                continue
             shutil.copy(lib_file, dest_file, follow_symlinks=False)
     ensure_soname_links(qt_lib_files)
 
@@ -331,7 +326,6 @@ def package_python_wrapper(
     for pyc_file in ifcopenshell_dir.rglob("*.pyc"):
         pyc_file.unlink()
 
-    # TODO: packs qt libs also?
     stage_runtime_payload(ifcopenshell_install_dir, ifcopenshell_dir)
 
     for runtime_dir in runtime_dirs:
