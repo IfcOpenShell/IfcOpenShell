@@ -78,6 +78,7 @@ class Search(bonsai.core.tool.Search):
                     ifc_filter.filter_mode = filter_mode
                 else:
                     ifc_filter.filter_mode = "ADD"
+                ifc_filter.enabled = bool(filter_data.get("enabled", True))
 
     FilterModule = Union[Literal["search", "csv", "diff", "drawing_include", "drawing_exclude"], str]
 
@@ -106,25 +107,157 @@ class Search(bonsai.core.tool.Search):
         cls, query: str, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
     ) -> None:
         filter_groups.clear()
-        transformer = ImportFilterQueryTransformer(filter_groups)
-        transformer.transform(ifcopenshell.util.selector.filter_elements_grammar.parse(query))
+        grammar = ifcopenshell.util.selector.filter_elements_grammar
+        # The lexer throws /* ... */ comments away, so parse a copy with the comment
+        # markers stripped instead. Anything that used to be inside a comment becomes a
+        # facet with "enabled" unticked, which is how it gets written back out again.
+        expanded, commented_ranges = cls._expand_comments(query)
+        tree = None
+        if commented_ranges:
+            try:
+                tree = grammar.parse(expanded)
+            except Exception:
+                tree = None  # Prose, not a facet -- fall back to dropping the comment.
+        if tree is None:
+            disabled_flags = None
+            tree = grammar.parse(query)
+        else:
+            disabled_flags = cls._get_disabled_flags(tree, commented_ranges)
+        transformer = ImportFilterQueryTransformer(filter_groups, disabled_flags)
+        transformer.transform(tree)
+
+    @classmethod
+    def _split_comments(cls, query: str) -> list[tuple[bool, str]]:
+        """Split a query into (is_comment, text) chunks the way the lexer sees it.
+
+        A /* inside a quoted string is not a comment, and an unterminated /* is not one
+        either (the grammar would reject it), so it is left in place as ordinary text.
+        """
+        chunks: list[tuple[bool, str]] = []
+        buffer: list[str] = []
+        i = 0
+        in_string = False
+        while i < len(query):
+            char = query[i]
+            if in_string:
+                if char == "\\" and i + 1 < len(query):
+                    buffer.append(query[i : i + 2])
+                    i += 2
+                    continue
+                if char == '"':
+                    in_string = False
+                buffer.append(char)
+                i += 1
+            elif char == '"':
+                in_string = True
+                buffer.append(char)
+                i += 1
+            elif query.startswith("/*", i):
+                end = query.find("*/", i + 2)
+                if end == -1:
+                    buffer.append(query[i:])
+                    break
+                chunks.append((False, "".join(buffer)))
+                buffer = []
+                chunks.append((True, query[i + 2 : end]))
+                i = end + 2
+            else:
+                buffer.append(char)
+                i += 1
+        chunks.append((False, "".join(buffer)))
+        return chunks
+
+    @classmethod
+    def _expand_comments(cls, query: str) -> tuple[str, list[tuple[int, int]]]:
+        """Strip the /* */ markers, keeping what was inside them.
+
+        Returns the resulting query and the character ranges within it that used to be
+        commented out. Comment bodies are spliced in verbatim, so the ranges line up
+        with the token positions of the parse tree.
+        """
+        expanded: list[str] = []
+        ranges: list[tuple[int, int]] = []
+        pos = 0
+        for is_comment, text in cls._split_comments(query):
+            if is_comment:
+                ranges.append((pos, pos + len(text)))
+            expanded.append(text)
+            pos += len(text)
+        return "".join(expanded), ranges
+
+    @classmethod
+    def _get_disabled_flags(cls, tree: lark.Tree, commented_ranges: list[tuple[int, int]]) -> list[bool]:
+        """One flag per facet, in the order the transformer will visit them."""
+        flags: list[bool] = []
+        for facet_list in tree.children[0].children:
+            for facet in facet_list.children:
+                positions = [
+                    token.start_pos
+                    for token in facet.scan_values(lambda v: isinstance(v, lark.Token))
+                    if token.start_pos is not None
+                ]
+                pos = min(positions) if positions else -1
+                flags.append(any(start <= pos < end for start, end in commented_ranges))
+        return flags
 
     @classmethod
     def export_filter_query(cls, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]) -> str:
-        query = []
+        """Serialise filter groups back into a selector query.
+
+        Facets with "enabled" unticked are written out as /* ... */ block comments, so
+        that they survive a round trip through the query string (bim.edit_filter_query,
+        saved searches, CSV templates). The comment swallows one of the adjacent ","
+        or "+" separators so that what is left still parses.
+        """
+        rendered: list[str] = []
+        # Groups where everything is disabled have nothing to hang a "+" off, so they
+        # wait here until there is a neighbouring group to attach them to.
+        pending: list[str] = []
         for filter_group in filter_groups:
-            filter_group_query = []
+            parts: list[tuple[bool, str]] = []
             for ifc_filter in filter_group.filters:
                 if not ifc_filter.value:
                     continue
 
                 query_part = cls._export_single_filter(ifc_filter)
                 if query_part:
-                    filter_group_query.append(query_part)
+                    parts.append((ifc_filter.enabled, query_part))
 
-            if filter_group_query:
-                query.append(", ".join(filter_group_query))
-        return " + ".join(query)
+            if not parts:
+                continue
+            if not any(enabled for enabled, _ in parts):
+                pending.append(", ".join(part for _, part in parts))
+                continue
+
+            filter_group_query = cls._export_filter_group(parts)
+            if pending:
+                filter_group_query = "".join(f"/* {p} + */ " for p in pending) + filter_group_query
+                pending = []
+            rendered.append(filter_group_query)
+
+        if pending:
+            if not rendered:
+                # Nothing is enabled anywhere. A comment only query does not parse, and
+                # an empty query already means "no filter", so the comments are dropped
+                # here -- the facets themselves are still kept in the UI.
+                return ""
+            rendered[-1] += "".join(f" /* + {p} */" for p in pending)
+        return " + ".join(rendered)
+
+    @classmethod
+    def _export_filter_group(cls, parts: list[tuple[bool, str]]) -> str:
+        """Join one group's facets, commenting out the disabled ones with a separator."""
+        query = ""
+        has_enabled = False
+        for enabled, part in parts:
+            if enabled:
+                query += f", {part}" if has_enabled else part
+                has_enabled = True
+            elif has_enabled:
+                query += f" /*, {part} */"
+            else:
+                query += f"/* {part}, */ "
+        return query
 
     @classmethod
     def _export_single_filter(cls, ifc_filter: BIMFacet) -> str:
@@ -205,14 +338,18 @@ class Search(bonsai.core.tool.Search):
         for filter_group in filter_groups:
             group_results: set[ifcopenshell.entity_instance] = set()
 
-            for filter_index, ifc_filter in enumerate(filter_group.filters):
-                if not ifc_filter.value:
+            filter_index = -1
+            for ifc_filter in filter_group.filters:
+                if not ifc_filter.value or not ifc_filter.enabled:
                     continue
 
                 query = cls._export_single_filter(ifc_filter)
                 if not query:
                     continue
 
+                # Counts only the filters that run, so that disabling the first one
+                # promotes the next, as it would if the query string was parsed.
+                filter_index += 1
                 if filter_index == 0:
                     mode = "ADD"
                 else:
@@ -275,7 +412,7 @@ class Search(bonsai.core.tool.Search):
                 filter_type = filter_data.get("type", "")
                 value = filter_data.get("value", "")
 
-                if not filter_type or not value:
+                if not filter_type or not value or not filter_data.get("enabled", True):
                     continue
 
                 query_part = None
@@ -361,7 +498,9 @@ class Search(bonsai.core.tool.Search):
 
     @classmethod
     def wrap_value(cls, ifc_filter: BIMFacet, value: str) -> str:
-        if value.startswith("/") and value.endswith("/"):
+        # A leading "/*" would lex as the start of a block comment, and no regex can
+        # start with a quantifier anyway, so quote those instead of passing them through.
+        if value.startswith("/") and value.endswith("/") and not value.startswith("/*"):
             return value
         elif value in ("NULL", "TRUE", "FALSE"):
             return value
@@ -563,8 +702,15 @@ class Search(bonsai.core.tool.Search):
 
 
 class ImportFilterQueryTransformer(lark.Transformer):
-    def __init__(self, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]):
+    def __init__(
+        self,
+        filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup],
+        disabled_flags: Union[list[bool], None] = None,
+    ):
         self.filter_groups = filter_groups
+        # One flag per facet, in document order. facet_list callbacks fire left to right,
+        # so consuming one flag per facet keeps the two in step.
+        self.disabled_flags = iter(disabled_flags) if disabled_flags is not None else None
 
     def get_results(self):
         results = set()
@@ -578,8 +724,8 @@ class ImportFilterQueryTransformer(lark.Transformer):
         is_first_group = len(self.filter_groups) == 1
         new2 = None
         for filter_index, arg in enumerate(args):
-            if arg["type"] == "instance" and global_ids:
-                assert new2
+            enabled = True if self.disabled_flags is None else not next(self.disabled_flags, False)
+            if arg["type"] == "instance" and global_ids and new2 is not None and new2.enabled == enabled:
                 if "bpy.data.texts" in new2.value:
                     data_name = new2.value.split("bpy.data.texts")[1][2:-2]
                     bpy.data.texts[data_name].write("," + arg["value"])
@@ -597,6 +743,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
             new2 = new.filters.add()
             new2.type = arg["type"]
             new2.value = arg["value"]
+            new2.enabled = enabled
             if "name" in arg:
                 new2.name = arg["name"]
             if "pset" in arg:
