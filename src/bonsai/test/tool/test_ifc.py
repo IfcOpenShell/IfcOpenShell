@@ -343,3 +343,30 @@ class TestUri(test.bim.bootstrap.NewFile):
 
             rel_path = "../" + link_name
             assert subject.normalize_path(rel_path) == rel_path
+
+
+class TestGetEntityById(test.bim.bootstrap.NewFile):
+    def test_returns_the_instance_for_a_live_id(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        wall = ifc.createIfcWall()
+        assert subject.get_entity_by_id(wall.id()) == wall
+
+    def test_returns_none_for_a_removed_id(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        wall = ifc.createIfcWall()
+        wall_id = wall.id()
+        ifc.remove(wall)
+        assert subject.get_entity_by_id(wall_id) is None
+
+    def test_returns_none_for_an_id_never_allocated(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        assert subject.get_entity_by_id(99999) is None
+
+    def test_returns_none_for_a_falsy_id(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        assert subject.get_entity_by_id(0) is None
+        assert subject.get_entity_by_id(None) is None
