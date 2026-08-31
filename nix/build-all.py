@@ -527,6 +527,8 @@ else:
 OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = not ARGS.shared
 """Whether dependencies are built static."""
+BUILD_SHARED = not BUILD_STATIC
+"""Whether dependencies are built shared."""
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
 LINK_TYPE = "static" if BUILD_STATIC else "shared"
@@ -1798,6 +1800,8 @@ ld_library_paths = [
 ]
 if ARGS.occt_shared and "occ" in targets:
     ld_library_paths.append(f"{OCCT_INSTALL_PATH}/lib")
+if ARGS.shared and "boost" in targets:
+    ld_library_paths.append(f"{Dependencies.get_install_dir('boost')}/lib")
 
 if not WASM and (
     "BonsaiViewer" in targets
