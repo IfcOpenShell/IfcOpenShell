@@ -351,7 +351,7 @@ def cecho(message, color=NO_COLOR):
 
 APPLE = platform.system() == "Darwin"
 MAC_CROSS_COMPILE_INTEL = ARGS.mac_cross_compile_intel
-assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
+assert APPLE or not MAC_CROSS_COMPILE_INTEL
 
 WASM = ARGS.wasm
 """Build WASM outside pyodide build environment."""
@@ -400,7 +400,7 @@ if WASM:
     assert get_pyodide_build_version() >= (0, 31)
 
 TOOLSET = None
-if platform.system() == "Darwin":
+if APPLE:
     # C++11 features used in OCCT 7+ need a more recent stdlib
     # TOOLSET = "10.9" if USE_OCCT else "10.6"
     # /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/arm64/10.9/build/rocksdb/cache/clock_cache.cc:732:14: error: aligned allocation function of type 'void *(std::size_t, std::align_val_t)' is only available on macOS 10.13 or newer
@@ -673,7 +673,7 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False, env
     return "".join(stdout).strip()
 
 
-if platform.system() == "Darwin":
+if APPLE:
     if run(["sw_vers", "-productVersion"]) >= "11.":
         # Apparently not supported
         PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) >= (3, 7)]
@@ -1033,7 +1033,7 @@ cecho("Collecting dependencies:", GREEN)
 
 ADDITIONAL_ARGS = []
 
-if platform.system() == "Darwin":
+if APPLE:
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
 # If the linker supports GC sections, set it up to reduce binary file size
@@ -1403,7 +1403,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     # with the system python because of some threading initialization
     PYTHON_CONFIGURE_ARGS: list[str] = []
     original_path = ""
-    if platform.system() == "Darwin":
+    if APPLE:
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
         open_ssl_prefix = run([brew, "--prefix", "openssl@3"]).strip()
         # I'm not sure why, but if I do `"{open_ssl_prefix}"` (keep the quotes),
@@ -1858,7 +1858,7 @@ if not WASM and (
 
 if "IfcOpenShell-Python" in targets:
     wrapper_ldflags = ""
-    if platform.system() == "Darwin":
+    if APPLE:
         # On OSX the actual Python library is not linked against.
         wrapper_ldflags = "-Wl,-undefined,dynamic_lookup"
 
@@ -1934,7 +1934,7 @@ if "IfcOpenShell-Python" in targets:
             module_dir = module_dir.strip().splitlines()[-1]
             module_dir = os.path.dirname(module_dir)
 
-            if platform.system() != "Darwin":
+            if not APPLE:
                 if BUILD_CFG == "Release":
                     for so in glob.glob(os.path.join(module_dir, "*.so")):
                         if WASM:
