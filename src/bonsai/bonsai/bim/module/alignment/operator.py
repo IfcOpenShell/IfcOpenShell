@@ -51,7 +51,7 @@ class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         self.file = tool.Ifc.get()
         start = time.time()
-        alignment = ifcopenshell.api.alignment.create_from_csv(self.file, self.filepath)
+        alignment = ifcopenshell.api.alignment.create_from_csv(self.file, self.filepath, start_station=0.0)
 
         # IFC 4.1.5.1 alignments cannot be contained in spatial structures, but can be referenced into them
         sites = self.file.by_type("IfcSite")

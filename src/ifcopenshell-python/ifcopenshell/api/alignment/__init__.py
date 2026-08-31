@@ -23,9 +23,11 @@ This API is defined in terms of the semantic definition of an alignment. The cor
 is created and maintained automatically. The manditory zero length segment for the semantic and geometric definitions
 are automatically created and maintained.
 
-Alignments are created with stationing referents. Each layout segment is assigned a position referent that informs about
-the start point of the segment. An example is the point of curvature of a horizontal circular curve. The referent is
-nested to the segment representing the circular arc and is named with the alignment name and an indicator of the position and the station, e.g. "MyAlignment 145+98.32 (P.C.)"
+Stationing is defined explicitly by calling add_stationing_referent() after the layout segments (and therefore the
+basis curve geometry) exist - create() does not add one. update_key_point_referents() assigns each layout segment a
+position referent that informs about the start point of the segment. An example is the point of curvature of a
+horizontal circular curve. The referent is nested to the segment representing the circular arc and is named with the
+alignment name and an indicator of the position and the station, e.g. "MyAlignment 145+98.32 (P.C.)"
 
 This API does not determine alignment parameters based on rules, such as minimum curve radius as a function of design speed or sight distance.
 
@@ -35,7 +37,7 @@ Presently, this API supports:
     1. Creating alignments, both horizontal and vertical, using the PI method. Alignment definition can be read from a CSV file.
     2. Creating alignments segment by segment.
     3. Automatic creation of geometric definitions (IfcCompositeCurve, IfcGradientCurve, IfcSegmentedReferenceCurve)
-    4. Automatic definition of stationing
+    4. Explicit definition of stationing, including station equations and reverse (decreasing) stationing
     5. Automatic definition of alignment transition point referents
     6. Utility functions for printing business logical and geometric representations, as well as minimal geometry evaluations
 

@@ -24,7 +24,7 @@ import ifcopenshell.util.element
 
 
 def _create_test_file():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -43,7 +43,7 @@ def _create_test_alignment_with_vertical(file):
     # include_vertical=True so that get_curve() (IfcGradientCurve, on the "Axis" representation)
     # and get_basis_curve() (IfcCompositeCurve, on the "FootPrint" representation) are different
     # entities, letting the on_basis_curve option be observed.
-    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True, start_station=0.0)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True)
     assert ifcopenshell.api.alignment.get_basis_curve(alignment).is_a("IfcCompositeCurve")
     assert ifcopenshell.api.alignment.get_curve(alignment).is_a("IfcGradientCurve")
     assert ifcopenshell.api.alignment.get_basis_curve(alignment) != ifcopenshell.api.alignment.get_curve(alignment)
@@ -110,6 +110,44 @@ def test_add_stationing_referent_on_basis_curve_false():
     assert basis_curve != ifcopenshell.api.alignment.get_basis_curve(alignment)
 
 
+def test_add_stationing_referent_without_geometry_placed_at_global_origin():
+    # An alignment with no resolvable basis curve gets an IfcLocalPlacement at (0, 0),
+    # not an IfcLinearPlacement, and does not require the alignment to have an ObjectPlacement.
+    file = _create_test_file()
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_geometry=False)
+
+    referent = ifcopenshell.api.alignment.add_stationing_referent(
+        file, "1+00.000", alignment, distance_along=0.0, station=100.0
+    )
+
+    _assert_common_referent_asserts(referent, "1+00.000", 100.0)
+    assert referent.ObjectPlacement.is_a("IfcLocalPlacement")
+    assert referent.ObjectPlacement.RelativePlacement.Location.Coordinates == (0.0, 0.0)
+
+
+def test_add_stationing_referent_has_increasing_station():
+    file = _create_test_file()
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_geometry=False)
+
+    # default: HasIncreasingStation is not written
+    default_referent = ifcopenshell.api.alignment.add_stationing_referent(
+        file, "1+00.000", alignment, distance_along=0.0, station=100.0
+    )
+    assert (
+        ifcopenshell.util.element.get_pset(default_referent, name="Pset_Stationing", prop="HasIncreasingStation") is None
+    )
+
+    # explicit False (reverse stationing) is written
+    reverse_referent = ifcopenshell.api.alignment.add_stationing_referent(
+        file, "R", alignment, distance_along=0.0, station=100.0, has_increasing_station=False
+    )
+    assert (
+        ifcopenshell.util.element.get_pset(reverse_referent, name="Pset_Stationing", prop="HasIncreasingStation") is False
+    )
+
+
 test_add_stationing_referent_on_basis_curve_none_defaults_to_basis_curve()
 test_add_stationing_referent_on_basis_curve_true()
 test_add_stationing_referent_on_basis_curve_false()
+test_add_stationing_referent_without_geometry_placed_at_global_origin()
+test_add_stationing_referent_has_increasing_station()

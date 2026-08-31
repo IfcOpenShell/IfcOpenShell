@@ -57,7 +57,7 @@ def test_create_representation():
         (12799.99998062693, 89.99999997234107, 0.9999875002340269, -0.004999937569813611),
     ]
 
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     file.header.file_description.description = ["ViewDefinition [Alignment-basedView]"]
 
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="FHWA Alignment")
@@ -77,9 +77,15 @@ def test_create_representation():
     site = file.createIfcSite(GlobalId=ifcopenshell.guid.new(), Name="Site")
     ifcopenshell.api.aggregate.assign_object(file, relating_object=project, products=[site])
 
-    alignment = ifcopenshell.api.alignment.create(
-        file, "E-Line", include_vertical=True, start_station=10000.0, include_geometry=False
+    alignment = ifcopenshell.api.alignment.create(file, "E-Line", include_vertical=True, include_geometry=False)
+
+    # stationing is defined before the geometry exists, so the referent is placed at the global
+    # origin; create_representation() must restate it onto the basis curve at DistanceAlong 0.0
+    ifcopenshell.api.alignment.add_stationing_referent(
+        file, "E-Line 100+00.00", alignment, distance_along=0.0, station=10000.0
     )
+    start_referent = ifcopenshell.api.alignment.get_stationing_nest(file, alignment).RelatedObjects[0]
+    assert start_referent.ObjectPlacement.is_a("IfcLocalPlacement")
 
     # alignment is referenced into spatial structure of site per CT 4.1.5.1
     ifcopenshell.api.spatial.reference_structure(file, products=[alignment], relating_structure=site)
@@ -419,6 +425,10 @@ def test_create_representation():
     )
 
     ifcopenshell.api.alignment.create_representation(file, alignment)
+
+    # the starting referent is now placed relative to the basis curve at DistanceAlong 0.0
+    assert start_referent.ObjectPlacement.is_a("IfcLinearPlacement")
+    assert start_referent.ObjectPlacement.RelativePlacement.Location.DistanceAlong.wrappedValue == 0.0
 
     curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
     assert curve.is_a("IfcCompositeCurve")

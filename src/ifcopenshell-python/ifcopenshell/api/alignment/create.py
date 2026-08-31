@@ -20,7 +20,6 @@ import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
-import ifcopenshell.util.alignment
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._add_zero_length_segment import _add_zero_length_segment
 from ifcopenshell.api.alignment._create_geometric_representation import (
@@ -34,7 +33,6 @@ def create(
     include_vertical: bool = False,
     include_cant: bool = False,
     include_geometry: bool = True,
-    start_station: float = 0.0,
 ) -> entity_instance:
     """
     Creates a new alignment with a horizontal layout. Optionally, vertical and cant layouts can be created as well.
@@ -49,19 +47,15 @@ def create(
     The horizontal geometry in the Viennese Bend transition curves depends on the Viennese Bend cant parameters. create_layout_segment() automatically creates
     the geometric representation from the semantic definition. The horizontal segment geometric representation will fail if the cant segment is not defined.
 
-    If geometric representations are created, the alignment stationing referent is also created using the start_station value. IfcReferent.ObjectPlacement
-    is required for linear positiion elements and IfcLinearPlacement is defined relative to alignment curve geometry.
-    This referent's Name follows the same "<alignment name> <station>" convention update_key_point_referents() uses
-    for its own key-point referents (e.g. "MyAlignment 49+00.00"), so that every referent nested under an alignment
-    is identifiable by name alone, without needing to inspect its Pset_Stationing or placement to know which
-    alignment it belongs to.
+    This function does not define the alignment's stationing. Call add_stationing_referent() once the layout
+    segments (and therefore the basis curve geometry) exist to place the starting-station IfcReferent, and again
+    for any station equations. Until stationing is defined, get_alignment_start_station() reports 0.0.
 
     :param file:
     :param name: name assigned to IfcAlignment.Name
     :param include_vertical: If True, IfcAlignmentVertical is created. IfcGradientCurve is created if include_geometry is True
     :param include_cant: If True, IfcAlignmentCant is created. IfcSegmentedReferenceCurve is created if include_geometry is True
     :param include_geometry: If True, the geometric representations are added
-    :param start_station: station value at the start of the alignment.
     :return: Returns an IfcAlignment
     """
     alignment = file.createIfcAlignment(
@@ -89,9 +83,6 @@ def create(
 
     if include_geometry:
         _create_geometric_representation(file, alignment)
-
-    referent_name = f"{name} {ifcopenshell.util.alignment.station_as_string(file, start_station)}"
-    referent = ifcopenshell.api.alignment.add_stationing_referent(file, referent_name, alignment, 0.0, start_station)
 
     for layout in alignment_layouts:
         _add_zero_length_segment(file, layout)

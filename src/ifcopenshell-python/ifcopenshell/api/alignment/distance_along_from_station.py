@@ -22,16 +22,7 @@ import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.util.element
 from ifcopenshell import entity_instance
-
-
-def _distance_along_of_referent(referent: entity_instance) -> float:
-    placement = referent.ObjectPlacement
-    if placement.is_a("IfcLinearPlacement"):
-        return placement.RelativePlacement.Location.DistanceAlong.wrappedValue
-    # IfcLocalPlacement fallback (e.g. semantic-only alignment, or the placement could not yet
-    # be expressed relative to a basis curve) carries no DistanceAlong; it is only ever used for
-    # the starting referent, at distance 0.0.
-    return 0.0
+from ifcopenshell.api.alignment._referent_distance_along import _referent_distance_along
 
 
 def distance_along_from_station(file: ifcopenshell.file, alignment: entity_instance, station: float) -> Optional[float]:
@@ -41,18 +32,24 @@ def distance_along_from_station(file: ifcopenshell.file, alignment: entity_insta
     If the alignment does not have stationing defined with an IfcReferent, the start of the alignment is assumed
     to be at station 0.0. That is, the station is the distance along.
 
-    Station equations (where Pset_Stationing.IncomingStation is set on a referent) are taken into account.
+    Station equations (where Pset_Stationing.IncomingStation is set on a referent) and reverse
+    (decreasing) stationing (where Pset_Stationing.HasIncreasingStation is False) are taken into account.
+
     For each STATION referent nested to the alignment, DistanceAlong (D) and the outgoing station (S, i.e.
-    Pset_Stationing.Station) are read off, sorted by DistanceAlong. The requested station is located within
-    the segment defined by the last referent whose outgoing station is less than or equal to it, and the
-    distance along is computed as D + (station - S) for that referent.
+    Pset_Stationing.Station) are read off and sorted by DistanceAlong. A direction sign is tracked while
+    walking the sorted referents: it starts at +1 and is set to +1 or -1 at any referent that carries an
+    explicit Pset_Stationing.HasIncreasingStation, so each referent's region has a sign sigma of +1
+    (increasing) or -1 (decreasing). HasIncreasingStation may flip any number of times along the alignment -
+    unrealistic, but valid IFC, and handled. The governing referent is the last one, by DistanceAlong, for
+    which sigma * (station - S) >= 0, and the distance along is D + sigma * (station - S).
 
-    If the station falls within a gap introduced by a forward (gap) station equation - that is, it was skipped
-    over by the equation - there is no distance along that corresponds to it, and None is returned.
+    If the station falls within a gap introduced by a station equation - that is, it was skipped over by the
+    equation - there is no distance along that corresponds to it, and None is returned.
 
-    Note that an overlap (backward) station equation causes a range of stations to correspond to two distinct
-    distances along the alignment, one on either side of the equation. This implementation returns the distance
-    along in the segment following the equation (i.e. the outgoing side).
+    Note that an overlap station equation - or a HasIncreasingStation direction reversal, which creates an
+    equivalent overlap zone - causes a range of stations to correspond to two (or more) distinct distances
+    along the alignment. This implementation returns the most downstream one (largest DistanceAlong), i.e.
+    the match in the region following the last equation / reversal.
 
     :param alignment: the alignment
     :param station: station value
@@ -72,31 +69,42 @@ def distance_along_from_station(file: ifcopenshell.file, alignment: entity_insta
         start_station = ifcopenshell.api.alignment.get_alignment_start_station(file, alignment)
         return station - start_station
 
-    stations = [
+    referents = [
         (
-            _distance_along_of_referent(referent),
+            _referent_distance_along(referent),
             ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="Station"),
+            ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="HasIncreasingStation"),
         )
         for referent in stationing_nest.RelatedObjects
     ]
-    stations.sort(key=lambda entry: entry[0])
+    referents.sort(key=lambda entry: entry[0])
+
+    # Assign each referent's region a direction sign: +1 increasing, -1 decreasing. The sign
+    # starts increasing and flips at any referent carrying an explicit HasIncreasingStation.
+    sigma = 1.0
+    stations = []
+    for distance_along, outgoing_station, has_increasing_station in referents:
+        if has_increasing_station is not None:
+            sigma = 1.0 if has_increasing_station else -1.0
+        stations.append((distance_along, outgoing_station, sigma))
 
     index = None
-    for i, (distance_along, outgoing_station) in enumerate(stations):
-        if outgoing_station <= station:
+    for i, (distance_along, outgoing_station, region_sign) in enumerate(stations):
+        if region_sign * (station - outgoing_station) >= 0.0:
             index = i
 
     if index is None:
         # station precedes the alignment's starting station; extrapolate from the first referent
-        distance_along, outgoing_station = stations[0]
-        return distance_along + (station - outgoing_station)
+        distance_along, outgoing_station, region_sign = stations[0]
+        return distance_along + region_sign * (station - outgoing_station)
 
-    distance_along, outgoing_station = stations[index]
+    distance_along, outgoing_station, region_sign = stations[index]
+    advance = region_sign * (station - outgoing_station)
 
     if index + 1 < len(stations):
-        next_distance_along, _ = stations[index + 1]
-        if station - outgoing_station > next_distance_along - distance_along:
-            # the station was skipped over by a forward (gap) station equation
+        next_distance_along, _, _ = stations[index + 1]
+        if advance > next_distance_along - distance_along:
+            # the station was skipped over by a gap station equation
             return None
 
-    return distance_along + (station - outgoing_station)
+    return distance_along + advance

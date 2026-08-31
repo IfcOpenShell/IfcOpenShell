@@ -18,6 +18,7 @@
 
 import math
 from collections.abc import Sequence
+from typing import Optional
 
 import ifcopenshell
 import ifcopenshell.api.aggregate
@@ -123,22 +124,23 @@ def create_as_polyline(
     file: ifcopenshell.file,
     name: str,
     points: Sequence[entity_instance],
-    start_station: float = 0.0,
+    start_station: Optional[float] = None,
 ) -> entity_instance:
     """
     Creates a new IfcAlignment with an IfcPolyline representation.
 
     The IfcAlignment is aggreated to IfcProject
 
-    The stationing referent created from start_station has Name "<alignment name> <station>"
-    (e.g. "MyAlignment 49+00.00"), the same convention update_key_point_referents() and
-    create() use for their own referents, so every referent nested under an alignment is
-    identifiable by name alone.
+    If start_station is given, a STATION IfcReferent named "<alignment name> <station>"
+    (e.g. "MyAlignment 49+00.00") is added at distance along 0.0 - the same naming
+    convention update_key_point_referents() uses for its own referents, so every referent
+    nested under an alignment is identifiable by name alone. If None (the default), no
+    stationing referent is created.
 
     :param file:
     :param name: name assigned to IfcAlignment.Name
     :param points: sequence of points defining the polyline
-    :param start_station: station value at the start of the alignment
+    :param start_station: station value at the start of the alignment, or None for no stationing referent
     :return: Returns an IfcAlignment
     """
     alignment = file.createIfcAlignment(
@@ -149,8 +151,9 @@ def create_as_polyline(
     _create_polyline_representation(file, alignment, points)
 
     # define stationing
-    referent_name = f"{alignment.Name} {ifcopenshell.util.alignment.station_as_string(file, start_station)}"
-    referent = ifcopenshell.api.alignment.add_stationing_referent(file, referent_name, alignment, 0.0, start_station)
+    if start_station is not None:
+        referent_name = f"{alignment.Name} {ifcopenshell.util.alignment.station_as_string(file, start_station)}"
+        ifcopenshell.api.alignment.add_stationing_referent(file, referent_name, alignment, 0.0, start_station)
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]

@@ -17,13 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import csv
+from typing import Optional
 
 import ifcopenshell
 import ifcopenshell.api.alignment
+import ifcopenshell.util.alignment
 from ifcopenshell import entity_instance
 
 
-def create_from_csv(file: ifcopenshell.file, filepath: str) -> entity_instance:
+def create_from_csv(
+    file: ifcopenshell.file, filepath: str, start_station: Optional[float] = None
+) -> entity_instance:
     """
     Creates an alignment from PI data stored in a CSV file.
 
@@ -55,6 +59,8 @@ def create_from_csv(file: ifcopenshell.file, filepath: str) -> entity_instance:
     The CSV file contains one horizontal alignment, zero, one, or more vertical alignments
 
     :param filepath: path the to CSV file
+    :param start_station: if given, the starting station value; a STATION IfcReferent is added at
+        distance along 0.0 once the geometry exists. If None (the default), no stationing referent is created.
     :return: IfcAlignment
     """
     alignment = None
@@ -97,4 +103,9 @@ def create_from_csv(file: ifcopenshell.file, filepath: str) -> entity_instance:
                 )
 
     assert alignment is not None
+
+    if start_station is not None:
+        referent_name = f"{alignment.Name} {ifcopenshell.util.alignment.station_as_string(file, start_station)}"
+        ifcopenshell.api.alignment.add_stationing_referent(file, referent_name, alignment, 0.0, start_station)
+
     return alignment
