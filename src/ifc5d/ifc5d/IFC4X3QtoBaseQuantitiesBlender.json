@@ -265,12 +265,12 @@
             },
             "IfcEarthworksCut": {
                 "Qto_EarthworksCutBaseQuantities": {
-                    "Depth": "get_height",
-                    "Length": "get_length",
+                    "Depth": "get_void_height",
+                    "Length": "get_void_length",
                     "LooseVolume": null,
-                    "UndisturbedVolume": "get_net_volume",
+                    "UndisturbedVolume": "get_void_volume",
                     "Weight": null,
-                    "Width": "get_width"
+                    "Width": "get_void_width"
                 }
             },
             "IfcEarthworksFill": {

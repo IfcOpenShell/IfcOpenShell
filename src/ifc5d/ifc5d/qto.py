@@ -26,6 +26,8 @@ from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any, Literal, NamedTuple, Union, get_args
 
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.geom
@@ -292,6 +294,21 @@ class IfcOpenShell(QtoCalculator):
             "The covering's thickness: the side area axis for AXIS2 (e.g. wall finishes), "
             "otherwise the local Z depth (e.g. floor or ceiling finishes)",
         ),
+        "get_void_x": Function(
+            "IfcLengthMeasure",
+            "Void X",
+            "The X extent of the material actually removed from the host voided by this element",
+        ),
+        "get_void_y": Function(
+            "IfcLengthMeasure",
+            "Void Y",
+            "The Y extent of the material actually removed from the host voided by this element",
+        ),
+        "get_void_z": Function(
+            "IfcLengthMeasure",
+            "Void Z",
+            "The Z extent (e.g. excavation depth) of the material actually removed from the host voided by this element",
+        ),
         # IfcAreaMeasure
         "get_area": Function("IfcAreaMeasure", "Area", "The total surface area of the element"),
         "get_covering_area": Function(
@@ -330,6 +347,11 @@ class IfcOpenShell(QtoCalculator):
         ),
         # IfcVolumeMeasure
         "get_volume": Function("IfcVolumeMeasure", "Volume", "Calculates the volume of a manifold shape"),
+        "get_void_volume": Function(
+            "IfcVolumeMeasure",
+            "Void Volume",
+            "The volume of the material actually removed from the host voided by this element",
+        ),
         # IfcMassMeasure
         "get_weight": Function(
             "IfcMassMeasure",
@@ -357,6 +379,10 @@ class IfcOpenShell(QtoCalculator):
     internal_functions = (
         "get_segment_length",
         "get_weight",
+        "get_void_x",
+        "get_void_y",
+        "get_void_z",
+        "get_void_volume",
         "get_opening_width",
         "get_opening_height",
         "get_opening_depth",
@@ -373,6 +399,7 @@ class IfcOpenShell(QtoCalculator):
         cls.gross_settings.set("disable-opening-subtractions", True)
         cls.net_settings = ifcopenshell.geom.settings()
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        cls._void_shape_cache = {}
 
         gross_qtos: QtosFormulas = {}
         net_qtos: QtosFormulas = {}
@@ -430,6 +457,11 @@ class IfcOpenShell(QtoCalculator):
                             elif formula.startswith("get_opening_"):
                                 value = cls.get_opening_quantity(geometry, formula)
                                 value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
+                            elif formula.startswith("get_void_"):
+                                value = cls.get_void_quantity(element, geometry, formula)
+                                if value is None:
+                                    continue
+                                value = cls.unit_converter.convert(value, cls.raw_functions[formula].measure)
                             elif formula in cls.footing_functions:
                                 value = getattr(cls, formula)(element, geometry)
                                 if value is None:
@@ -448,6 +480,8 @@ class IfcOpenShell(QtoCalculator):
                             results[element][name][quantity] = value
                     if not iterator.next():
                         break
+
+        cls._void_shape_cache = {}
 
     @staticmethod
     def create_iterators(
@@ -492,6 +526,66 @@ class IfcOpenShell(QtoCalculator):
         if is_horizontal:
             return ifcopenshell.util.shape.get_footprint_area(geometry)
         return ifcopenshell.util.shape.get_side_area(geometry)
+
+    @classmethod
+    def _create_void_shape(cls, element, settings):
+        key = (element.id(), settings is cls.gross_settings)
+        if key not in cls._void_shape_cache:
+            try:
+                cls._void_shape_cache[key] = ifcopenshell.geom.create_shape(settings, element)
+            except RuntimeError:
+                cls._void_shape_cache[key] = None
+        return cls._void_shape_cache[key]
+
+    @classmethod
+    def get_void_quantity(
+        cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType, formula: str
+    ) -> Union[float, None]:
+        """Get a dimension or the volume of the material actually removed from the voided host.
+
+        Subtraction solids are deliberately modelled oversized, so the feature's
+        own shape systematically overstates what is excavated from the host (#9376).
+        The volume is the host's gross volume minus its net volume, which is exact
+        when this feature is the host's only void; with several voids it cannot be
+        attributed to one feature, so ``None`` is returned rather than a wrong
+        number. Dimensions are the extents of the world-space bounding box
+        intersection between the feature and the host's gross shape, exact for
+        axis-aligned box cuts and an upper bound otherwise. An element that voids
+        nothing is measured on its own shape.
+
+        :param element: IFC element entity.
+        :param geometry: The element's own geometry output.
+        :param formula: One of the ``get_void_*`` internal function names.
+        :return: The quantity in SI units, or ``None`` if it cannot be derived.
+        """
+        rels = getattr(element, "VoidsElements", None)
+        if not rels:
+            if formula == "get_void_volume":
+                return ifcopenshell.util.shape.get_volume(geometry)
+            return getattr(ifcopenshell.util.shape, f"get_{formula[-1]}")(geometry)
+        host = rels[0].RelatingBuildingElement
+        if formula == "get_void_volume":
+            if len(host.HasOpenings) != 1:
+                return None
+            gross_shape = cls._create_void_shape(host, cls.gross_settings)
+            net_shape = cls._create_void_shape(host, cls.net_settings)
+            if gross_shape is None or net_shape is None:
+                return None
+            gross_volume = ifcopenshell.util.shape.get_volume(gross_shape.geometry)
+            net_volume = ifcopenshell.util.shape.get_volume(net_shape.geometry)
+            return gross_volume - net_volume
+        host_shape = cls._create_void_shape(host, cls.gross_settings)
+        cut_shape = cls._create_void_shape(element, cls.net_settings)
+        if host_shape is None or cut_shape is None:
+            return None
+        cut_verts = ifcopenshell.util.shape.get_shape_vertices(cut_shape, cut_shape.geometry)
+        host_verts = ifcopenshell.util.shape.get_shape_vertices(host_shape, host_shape.geometry)
+        if not len(cut_verts) or not len(host_verts):
+            return None
+        lower = np.maximum(cut_verts.min(axis=0), host_verts.min(axis=0))
+        upper = np.minimum(cut_verts.max(axis=0), host_verts.max(axis=0))
+        extents = np.maximum(upper - lower, 0.0)
+        return float(extents["xyz".index(formula[-1])])
 
     @classmethod
     def get_segment_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
@@ -677,6 +771,9 @@ class Blender(QtoCalculator):
         "get_footing_height": Function("IfcLengthMeasure", "Height", ""),
         "get_footing_length": Function("IfcLengthMeasure", "Length", ""),
         "get_footing_width": Function("IfcLengthMeasure", "Width", ""),
+        "get_void_height": Function("IfcLengthMeasure", "Void Height", ""),
+        "get_void_length": Function("IfcLengthMeasure", "Void Length", ""),
+        "get_void_width": Function("IfcLengthMeasure", "Void Width", ""),
         # IfcAreaMeasure
         "get_covering_gross_area": Function("IfcAreaMeasure", "Covering Gross Area", ""),
         "get_covering_net_area": Function("IfcAreaMeasure", "Covering Net Area", ""),
@@ -700,6 +797,7 @@ class Blender(QtoCalculator):
         "get_gross_volume": Function("IfcVolumeMeasure", "Gross Volume", ""),
         "get_net_volume": Function("IfcVolumeMeasure", "Net Volume", ""),
         "get_space_net_volume": Function("IfcVolumeMeasure", "Space Net Volume", ""),
+        "get_void_volume": Function("IfcVolumeMeasure", "Void Volume", ""),
         # IfcMassMeasure
         "get_gross_weight": Function("IfcMassMeasure", "Gross Weight", ""),
         "get_net_weight": Function("IfcMassMeasure", "Net Weight", ""),
