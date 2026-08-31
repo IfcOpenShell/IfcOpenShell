@@ -33,9 +33,9 @@ uses — is ``nix/build-all.py``. It downloads and compiles every dependency
 
 .. code-block:: bash
 
-    BUILD_BONSAIVIEWER=ON python3 ./nix/build-all.py
+    python3 ./nix/build-all.py
 
-Setting ``BUILD_BONSAIVIEWER=ON`` pulls in the ``BonsaiViewer`` and ``qt6``
+By default, the script pulls in the ``BonsaiViewer`` and ``qt6``
 targets along with their dependencies. This is self-contained but slow on a
 cold checkout, because it builds the whole dependency stack from source. The
 finished executable lands under the platform build tree, e.g.

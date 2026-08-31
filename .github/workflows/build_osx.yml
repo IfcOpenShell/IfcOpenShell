@@ -104,7 +104,7 @@ jobs:
           # .dylib` failed to resolve at import time. ifcwrap now sets
           # INSTALL_RPATH to "@loader_path" on Apple.
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
-            BUILD_BONSAIVIEWER=ON QT_DIR="${QT_DIR}" \
+            QT_DIR="${QT_DIR}" \
             uv run ./nix/build-all.py -v --diskcleanup --ifcopenshell-shared ${MAC_INTEL} \
             | tee build.log
 

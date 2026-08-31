@@ -25,7 +25,7 @@
 
 """
 Example usage:
-    # Build all targets by default, except BonsaiViewer (it's set explicitly).
+    # Build all targets by default.
     python build-all.py
 
     # Build just the provided targets.
@@ -59,7 +59,6 @@ Used environment variables:
     Example value: 'pyodide/cpython/installs/python-3.13.2'
     - ``ADD_COMMIT_SHA`` - `off` by default. If enabled
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
-    - ``BUILD_BONSAIVIEWER`` - enable building BonsaiViewer, `off` by default.
     - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
     - ``PYTHON_USER_SITE`` - install the Python wrapper into the user's site-packages directory
     instead of the interpreter's prefix, `off` by default.
@@ -154,7 +153,6 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = is_on_off(os.getenv("USE_CURRENT_PYTHON_VERSION"), default=False)
 ADD_COMMIT_SHA = is_on_off(os.getenv("ADD_COMMIT_SHA"), default=False)
 IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
-BUILD_BONSAIVIEWER = is_on_off(os.getenv("BUILD_BONSAIVIEWER"), default=False)
 USE_OCCT = is_on_off(os.getenv("USE_OCCT"), default=True)
 PYTHON_USER_SITE = is_on_off(os.getenv("PYTHON_USER_SITE"), default=False)
 
@@ -547,10 +545,10 @@ else:
     targets = set(dependency_tree.keys())
 
 targets = set(t for t in targets if t.lower() not in DYNAMIC_ARGS.without)
-if not explicit_targets and not BUILD_BONSAIVIEWER:
-    targets.difference_update({"BonsaiViewer", "qt6"})
-if BUILD_BONSAIVIEWER:
-    targets.update(gather_dependencies("BonsaiViewer"))
+
+# Allow `-without-bonsaiviewer` to be a shortcut for `-without-bonsaiviewer -without-qt6`.
+if "bonsaiviewer" in DYNAMIC_ARGS.without:
+    targets.discard("qt6")
 
 # Opt-out for the Python wrapper. Currently used by the bonsai CI workflow
 # on macOS, where the post-plug-in-refactor wrapper hard-links
