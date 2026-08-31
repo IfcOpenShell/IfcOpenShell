@@ -350,6 +350,7 @@ def cecho(message, color=NO_COLOR):
 
 
 APPLE = platform.system() == "Darwin"
+LIBRARY_PATH_ENV_VAR = "DYLD_LIBRARY_PATH" if APPLE else "LD_LIBRARY_PATH"
 MAC_CROSS_COMPILE_INTEL = ARGS.mac_cross_compile_intel
 assert APPLE or not MAC_CROSS_COMPILE_INTEL
 
@@ -1832,7 +1833,7 @@ if not WASM and (
         examples_bin_dir = Path(DEPS_DIR) / "install" / "ifcopenshell" / "bin"
 
         examples_env = os.environ.copy()
-        examples_env["LD_LIBRARY_PATH"] = os.pathsep.join(ld_library_paths)
+        examples_env[LIBRARY_PATH_ENV_VAR] = os.pathsep.join(ld_library_paths)
 
         examples: dict[tuple[str, ...], str | None] = {
             ("./IfcOpenHouse",): "IfcOpenHouse.ifc",
@@ -1928,7 +1929,7 @@ if "IfcOpenShell-Python" in targets:
             run([python_executable, "-m", "ensurepip"])
             run([python_executable, "-m", "pip", "install", "--user", "numpy", "typing_extensions"])
             env = os.environ.copy()
-            env["LD_LIBRARY_PATH"] = os.pathsep.join(ld_library_paths)
+            env[LIBRARY_PATH_ENV_VAR] = os.pathsep.join(ld_library_paths)
             module_dir = run(
                 [python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"],
                 env=env,
