@@ -21,6 +21,7 @@ import os
 from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
 
 import bpy
+import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
@@ -32,8 +33,6 @@ from bpy.props import (
     StringProperty,
 )
 from bpy.types import PropertyGroup
-
-import ifcopenshell.util.unit
 
 import bonsai.bim
 import bonsai.bim.handler

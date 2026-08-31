@@ -510,7 +510,11 @@ def get_project_unit(
         for unit in unit_assignment.Units or []:
             if getattr(unit, "UnitType", None) == unit_type:
                 return unit
-            if dimensional_match is None and unit.is_a("IfcDerivedUnit") and identify_unit_dimensions(unit) == unit_type:
+            if (
+                dimensional_match is None
+                and unit.is_a("IfcDerivedUnit")
+                and identify_unit_dimensions(unit) == unit_type
+            ):
                 dimensional_match = unit
         return dimensional_match
 
