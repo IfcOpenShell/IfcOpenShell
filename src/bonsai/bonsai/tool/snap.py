@@ -30,21 +30,21 @@ import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData
 from bonsai.bim.module.drawing.decoration import CutDecorator
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.decorator import GpuSnapDecorator, PolylineDecorator
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import BIMSnapGroups, BIMSnapProperties
 
 
-def _get_gpu_object_snaps(
+def _process_gpu_object_snaps(
     context: bpy.types.Context,
     event: bpy.types.Event,
-    objs_to_raycast: list[bpy.types.Object],
+    snap_faces: list[dict[str, Any]],
+    closest_obj: bpy.types.Object | None,
+    wireframe_snaps: list[dict[str, Any]],
     xray_mode: bool,
 ) -> list[dict[str, Any]]:
     detected_snaps: list[dict[str, Any]] = []
-    snap_faces, closest_obj = tool.Raycast.get_gpu_solid_snaps(context, event, objs_to_raycast)
-    wireframe_snaps, _ = tool.Raycast.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
 
     if not xray_mode:
         for snap in snap_faces:
@@ -83,6 +83,17 @@ def _get_gpu_object_snaps(
         detected_snaps.extend(wireframe_snaps)
 
     return detected_snaps
+
+
+def _get_gpu_object_snaps(
+    context: bpy.types.Context,
+    event: bpy.types.Event,
+    objs_to_raycast: list[bpy.types.Object],
+    xray_mode: bool,
+) -> list[dict[str, Any]]:
+    snap_faces, closest_obj = tool.Raycast.get_gpu_solid_snaps(context, event, objs_to_raycast)
+    wireframe_snaps, _ = tool.Raycast.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
+    return _process_gpu_object_snaps(context, event, snap_faces, closest_obj, wireframe_snaps, xray_mode)
 
 
 def _get_cpu_object_snaps(
@@ -551,7 +562,15 @@ class Snap(bonsai.core.tool.Snap):
         props = cls.get_snap_props()
 
         if props.use_gpu_snapping:
-            detected_snaps.extend(_get_gpu_object_snaps(context, event, objs_to_raycast, xray_mode))
+            GpuSnapDecorator.set_request(event, objs_to_raycast)
+            cached = GpuSnapDecorator.get_cache()
+            if cached is None:
+                detected_snaps.extend(_get_gpu_object_snaps(context, event, objs_to_raycast, xray_mode))
+            else:
+                snap_faces, closest_obj, wireframe_snaps = cached
+                detected_snaps.extend(
+                    _process_gpu_object_snaps(context, event, snap_faces, closest_obj, wireframe_snaps, xray_mode)
+                )
         else:
             detected_snaps.extend(_get_cpu_object_snaps(context, event, objs_to_raycast, xray_mode))
             cut_snaps = _get_cut_object_snaps(context, event)
