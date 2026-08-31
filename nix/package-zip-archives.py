@@ -340,6 +340,8 @@ def package_python_wrapper(
     if not is_platform("MAC"):
         check_runtime_dependencies(ifcopenshell_dir)
 
+    if ARGS.no_zip:
+        return
     zip_path = output_dir / f"ifcopenshell-{py_version_major}-{VERSION}-{github_sha}-{arch_suffix}.zip"
     run("zip", "-y", "-r", "-qq", "-1", str(zip_path), "ifcopenshell", cwd=package_dir)
     shutil.rmtree(package_dir)
@@ -390,6 +392,8 @@ def package_executable(
 
         check_runtime_dependencies(package_dir)
 
+    if ARGS.no_zip:
+        return
     zip_path = output_dir / f"{exe}-{VERSION}-{github_sha}-{arch_suffix}.zip"
     run("zip", "-y", "-qq", "-r", str(zip_path), ".", cwd=package_dir)
     shutil.rmtree(package_dir)
@@ -420,6 +424,8 @@ def package_app_bundle(
         connectors_dir.mkdir(parents=True)
         shutil.copytree(autodesk_connector_dir, connectors_dir / autodesk_connector_dir.name, symlinks=True)
 
+    if ARGS.no_zip:
+        return
     zip_path = output_dir / f"{app}-{VERSION}-{github_sha}-{arch_suffix}.zip"
     run("zip", "-qq", "-r", str(zip_path), app_path.name, cwd=install_root)
 
@@ -433,6 +439,7 @@ class Args(NamedTuple):
     log_level: str
     occt_shared: bool
     shared: bool
+    no_zip: bool
 
 
 ARGS: Args
@@ -445,6 +452,14 @@ def main() -> None:
     parser.add_argument("--log-level", default="DEBUG", choices=LOG_LEVELS, help="Logging verbosity.")
     parser.add_argument("--occt-shared", action="store_true", help="OCCT was built as shared libraries.")
     parser.add_argument("--shared", action="store_true", help="Build was made with shared libraries.")
+    parser.add_argument(
+        "--no-zip",
+        action="store_true",
+        help=(
+            "Stage packages but skip creating zip archives and don't clean up the staged "
+            "directories, useful for local debugging."
+        ),
+    )
     args = parser.parse_args()
 
     global ARGS
@@ -453,6 +468,7 @@ def main() -> None:
         log_level=args.log_level,
         occt_shared=args.occt_shared,
         shared=args.shared,
+        no_zip=args.no_zip,
     )
     logger.setLevel(ARGS.log_level)
 
