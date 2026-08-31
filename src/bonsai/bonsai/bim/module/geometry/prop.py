@@ -228,7 +228,9 @@ def get_storey_world_z(obj: bpy.types.Object) -> Union[float, None]:
     element = tool.Ifc.get_entity(obj)
     if not element:
         return None
-    storey = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuildingStorey")
+    # get_parent (not get_container) so spatial elements like IfcSpace, which reach their
+    # storey via aggregation rather than spatial containment, resolve correctly.
+    storey = ifcopenshell.util.element.get_parent(element, ifc_class="IfcBuildingStorey")
     if not storey:
         return None
     if storey_obj := tool.Ifc.get_object(storey):
