@@ -1108,6 +1108,13 @@ class Raycast(bonsai.core.tool.Raycast):
         if _offscreen is None:
             _offscreen = GPUOffScreen(max(w, 1), max(h, 1), format="RGBA8")
 
+        # Save GPU state so it can be restored even if readback fails.
+        prev_depth_mask = gpu.state.depth_mask_get()
+        prev_depth_test = gpu.state.depth_test_get()
+        prev_blend = gpu.state.blend_get()
+        face_culling_get = getattr(gpu.state, "face_culling_get", None)
+        prev_face_culling = face_culling_get() if face_culling_get is not None else None
+
         _encoding_shader.bind()
 
         if xray_mode:
@@ -1137,27 +1144,30 @@ class Raycast(bonsai.core.tool.Raycast):
 
         buffers_list = []
         last_buf = None
-        with _offscreen.bind():
-            fb = gpu.state.active_framebuffer_get()
-            fb.clear(color=(0.0, 0.0, 0.0, 0.0), depth=1.0)
+        try:
+            with _offscreen.bind():
+                fb = gpu.state.active_framebuffer_get()
+                fb.clear(color=(0.0, 0.0, 0.0, 0.0), depth=1.0)
 
-            for batch, world_mat, slot_base in render_ops:
-                mvp = rv3d.perspective_matrix @ world_mat
-                _encoding_shader.uniform_float("MVP", mvp)
-                _encoding_shader.uniform_float("slot_base", float(slot_base))
-                with gpu.matrix.push_pop():
-                    gpu.matrix.load_matrix(Matrix.Identity(4))
-                    batch.draw(_encoding_shader)
+                for batch, world_mat, slot_base in render_ops:
+                    mvp = rv3d.perspective_matrix @ world_mat
+                    _encoding_shader.uniform_float("MVP", mvp)
+                    _encoding_shader.uniform_float("slot_base", float(slot_base))
+                    with gpu.matrix.push_pop():
+                        gpu.matrix.load_matrix(Matrix.Identity(4))
+                        batch.draw(_encoding_shader)
 
-                if read_per_object:  # gets all buffers
-                    buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
-                    buffers_list.append(buf)
-            if not read_per_object:
-                last_buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
-
-        # Restore state
-        gpu.state.depth_mask_set(True)
-        gpu.state.depth_test_set("LESS")
+                    if read_per_object:  # gets all buffers
+                        buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
+                        buffers_list.append(buf)
+                if not read_per_object:
+                    last_buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
+        finally:
+            gpu.state.depth_mask_set(prev_depth_mask)
+            gpu.state.depth_test_set(prev_depth_test)
+            gpu.state.blend_set(prev_blend)
+            if prev_face_culling is not None:
+                gpu.state.face_culling_set(prev_face_culling)
 
         mouse_read_rect = (w, h, mx, my, read_x, read_y)
         if tris:
@@ -1172,6 +1182,20 @@ class Raycast(bonsai.core.tool.Raycast):
     @classmethod
     def get_gpu_wireframe_snaps(cls, context, event, objs_to_raycast):
         return cls.get_gpu_detection_snaps(context, event, objs_to_raycast)
+
+    @classmethod
+    def detect_gpu_snaps(cls, context, event, request):
+        """GPU snap detection callback for ``GpuSnapDecorator``."""
+        if bpy.app.background:
+            return None
+
+        objs_to_raycast = request["objs_to_raycast"]
+        if not objs_to_raycast:
+            return None
+
+        solid_snaps, closest_obj = cls.get_gpu_solid_snaps(context, event, objs_to_raycast)
+        wireframe_snaps, _ = cls.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
+        return solid_snaps, closest_obj, wireframe_snaps
 
     @classmethod
     def clear_cache(cls):

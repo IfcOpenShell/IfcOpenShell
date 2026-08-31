@@ -26,7 +26,7 @@ import ifcopenshell.util.unit
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.decorator import GpuSnapDecorator, PolylineDecorator
 
 
 class PolylineOperator:
@@ -424,6 +424,7 @@ class PolylineOperator:
     def cleanup(self, context: bpy.Types.Context):
         context.workspace.status_text_set(text=None)
         PolylineDecorator.uninstall()
+        GpuSnapDecorator.uninstall()
         tool.Polyline.clear_polyline()
         tool.Raycast.clear_cache()
         tool.Blender.update_viewport()
@@ -460,6 +461,7 @@ class PolylineOperator:
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         PolylineDecorator.install(context)
+        GpuSnapDecorator.install(context, event, detection=tool.Raycast.detect_gpu_snaps)
         tool.Snap.clear_snapping_point()
 
         self.tool_state.use_default_container = False
