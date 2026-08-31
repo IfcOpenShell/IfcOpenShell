@@ -647,6 +647,39 @@ def get_void_intersection_mesh(o: bpy.types.Object) -> Optional[bpy.types.Mesh]:
         delete_mesh(gross_mesh)
 
 
+# Per-take-off-run memo for the void intersection, keyed by object name.
+# One BOOLEAN evaluation serves all four quantities of an element; the qto
+# engine clears it at the start of every calculate() run.
+_void_result_cache: dict[str, Union[tuple[float, "VectorTuple"], None]] = {}
+
+
+def clear_void_cache() -> None:
+    _void_result_cache.clear()
+
+
+def _get_void_result(o: bpy.types.Object) -> Union[tuple[float, "VectorTuple"], None]:
+    """(volume, extents) of the host intersection, or None if o voids nothing."""
+    key = o.name
+    if key in _void_result_cache:
+        return _void_result_cache[key]
+    mesh = get_void_intersection_mesh(o)
+    if mesh is None:
+        result = None
+    else:
+        bm = get_bmesh_from_mesh(mesh)
+        volume = bm.calc_volume()
+        bm.free()
+        if not mesh.vertices:
+            extents = (0.0, 0.0, 0.0)
+        else:
+            coords = [v.co for v in mesh.vertices]
+            extents = tuple(max(c[i] for c in coords) - min(c[i] for c in coords) for i in range(3))
+        delete_mesh(mesh)
+        result = (volume, extents)
+    _void_result_cache[key] = result
+    return result
+
+
 def get_void_volume(o: bpy.types.Object) -> float:
     """Calculate the volume actually removed from the host voided by this element.
 
@@ -657,14 +690,10 @@ def get_void_volume(o: bpy.types.Object) -> float:
     :param o: Blender object
     :return float: volume
     """
-    mesh = get_void_intersection_mesh(o)
-    if mesh is None:
+    result = _get_void_result(o)
+    if result is None:
         return get_net_volume(o)
-    bm = get_bmesh_from_mesh(mesh)
-    volume = bm.calc_volume()
-    bm.free()
-    delete_mesh(mesh)
-    return volume
+    return result[0]
 
 
 def get_void_extents(o: bpy.types.Object) -> Optional[VectorTuple]:
@@ -673,16 +702,10 @@ def get_void_extents(o: bpy.types.Object) -> Optional[VectorTuple]:
     :param o: Blender object
     :return: (x, y, z) extents, or None if the element voids nothing
     """
-    mesh = get_void_intersection_mesh(o)
-    if mesh is None:
+    result = _get_void_result(o)
+    if result is None:
         return None
-    if not mesh.vertices:
-        extents = (0.0, 0.0, 0.0)
-    else:
-        coords = [v.co for v in mesh.vertices]
-        extents = tuple(max(c[i] for c in coords) - min(c[i] for c in coords) for i in range(3))
-    delete_mesh(mesh)
-    return extents
+    return result[1]
 
 
 def get_void_length(o: bpy.types.Object) -> float:

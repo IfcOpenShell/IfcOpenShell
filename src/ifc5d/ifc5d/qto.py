@@ -827,6 +827,7 @@ class Blender(QtoCalculator):
         import bonsai.bim.module.qto.calculator as calculator
         import bonsai.tool as tool
 
+        calculator.clear_void_cache()
         unit_converter = SI2ProjectUnitConverter(ifc_file)
         formula_functions: dict[str, types.FunctionType] = {}
 
