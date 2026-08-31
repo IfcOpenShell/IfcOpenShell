@@ -1462,7 +1462,9 @@ if "boost" in targets:
     toolset = []
     if WASM:
         toolset.append("toolset=emscripten")
-    boost_name = Dependencies.register("boost", BOOST_VERSION)
+    # TODO: drop `boost_alternative_name` on next BOOST_VERSION bump, it's only needed to force rebuild cache.
+    boost_alternative_name = "boost-disable-icu" if BUILD_SHARED and BOOST_VERSION == "1.86.0" else None
+    boost_name = Dependencies.register("boost", BOOST_VERSION, alternative_name=boost_alternative_name)
     build_dependency(
         boost_name,
         mode="bjam",
@@ -1475,6 +1477,11 @@ if "boost" in targets:
             "--with-date_time",
             "--with-iostreams",
             "--with-filesystem",
+            # By default boost will keep ICU enabled, if it manages to find dev ICU dev package on the system.
+            # Which then creates issues when during our executables packaging.
+            # E.g. it ends up linking system's `libicudata.so.67`, so then we need to somehow detect and bundle
+            # along the `libboost_regex.so`. So since we don't use it, better just skip it.
+            "--disable-icu",
             f"link={LINK_TYPE}",
             *toolset,
             *map(str_concat("cxxflags"), CXXFLAGS.strip().split(" ")),
