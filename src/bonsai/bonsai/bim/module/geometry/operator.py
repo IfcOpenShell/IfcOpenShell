@@ -4091,7 +4091,7 @@ class OverrideMoveSelect(bpy.types.Operator):
             if obj == props.editing_aggregate:
                 continue
             element = tool.Ifc.get_entity(obj)
-            if not element or not element.is_a("IfcElement"):
+            if not element or not (element.is_a("IfcElement") or element.is_a("IfcAnnotation")):
                 continue
 
             if parts := ifcopenshell.util.element.get_parts(element):
