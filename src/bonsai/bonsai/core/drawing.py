@@ -458,16 +458,20 @@ def remove_drawing(
             drawing_tool.delete_object(reference_obj)
         ifc.run("root.remove_product", product=reference)
 
-    information = drawing_tool.get_reference_document(drawing_tool.get_drawing_document(drawing))
-    uri = ifc.resolve_uri(drawing_tool.get_document_uri(information))
-    if drawing_tool.does_file_exist(uri):
-        drawing_tool.delete_file(uri)
-    ifc.run("document.remove_information", information=information)
+    drawing_document = drawing_tool.get_drawing_document(drawing)
+    if drawing_document is not None:
+        information = drawing_tool.get_reference_document(drawing_document)
+        uri = ifc.resolve_uri(drawing_tool.get_document_uri(information))
+        if drawing_tool.does_file_exist(uri):
+            drawing_tool.delete_file(uri)
+        ifc.run("document.remove_information", information=information)
 
     group = drawing_tool.get_drawing_group(drawing)
     if group:
         drawing_tool.delete_drawing_elements(drawing_tool.get_group_elements(group))
         ifc.run("group.remove_group", group=group)
+    else:
+        drawing_tool.delete_drawing_elements([drawing])
 
     drawing_tool.import_drawings()
 
