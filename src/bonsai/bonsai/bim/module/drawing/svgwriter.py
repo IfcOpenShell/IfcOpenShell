@@ -846,22 +846,7 @@ class SvgWriter:
                 if display_data[current_marker_position]["add_circle"]:
                     self.svg.add(self.svg.use("#section-tag", insert=symbol_position_svg))
 
-                    reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
-                    text_position = symbol_position_svg
-                    text_style = SvgWriter.get_box_alignment_parameters("center")
-                    self.svg.add(
-                        self.svg.text(
-                            reference_id,
-                            insert=(text_position[0], text_position[1] - 2.5),
-                            class_="SECTION",
-                            **text_style,
-                        )
-                    )
-                    self.svg.add(
-                        self.svg.text(
-                            sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="SECTION", **text_style
-                        )
-                    )
+                    self.draw_marker_reference_text(tool.Ifc.get_entity(obj), symbol_position_svg, "SECTION")
 
     def draw_elevation_annotation(self, obj: bpy.types.Object) -> None:
         x_offset = self.raw_width / 2
@@ -879,17 +864,23 @@ class SvgWriter:
         self.svg.add(self.svg.use("#elevation-arrow", insert=symbol_position_svg, transform=transform))
         self.svg.add(self.svg.use("#elevation-tag", insert=symbol_position_svg))
 
-        reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
-        text_position = symbol_position_svg
+        self.draw_marker_reference_text(tool.Ifc.get_entity(obj), symbol_position_svg, "ELEVATION")
+
+    def draw_marker_reference_text(self, element: ifcopenshell.entity_instance, insert: Vector, class_: str) -> None:
+        """Draw the drawing number (and optionally the sheet reference) under a section/elevation tag circle."""
+        reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(element)
         text_style = SvgWriter.get_box_alignment_parameters("center")
-        self.svg.add(
-            self.svg.text(
-                reference_id, insert=(text_position[0], text_position[1] - 2.5), class_="ELEVATION", **text_style
-            )
-        )
-        self.svg.add(
-            self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="ELEVATION", **text_style)
-        )
+        if self.should_show_sheet_references():
+            self.svg.add(self.svg.text(reference_id, insert=(insert[0], insert[1] - 2.5), class_=class_, **text_style))
+            self.svg.add(self.svg.text(sheet_id, insert=(insert[0], insert[1] + 2.5), class_=class_, **text_style))
+        else:
+            self.svg.add(self.svg.text(reference_id, insert=(insert[0], insert[1]), class_=class_, **text_style))
+
+    def should_show_sheet_references(self) -> bool:
+        drawing = tool.Ifc.get_entity(self.camera)
+        if not drawing:
+            return True
+        return tool.Drawing.show_sheet_references(drawing)
 
     def get_reference_and_sheet_id_from_annotation(self, element: ifcopenshell.entity_instance) -> tuple[str, str]:
         reference_id = "-"
