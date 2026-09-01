@@ -25,9 +25,7 @@ import ifcopenshell.util.alignment
 from ifcopenshell import entity_instance
 
 
-def create_from_csv(
-    file: ifcopenshell.file, filepath: str, start_station: Optional[float] = None
-) -> entity_instance:
+def create_from_csv(file: ifcopenshell.file, filepath: str, start_station: Optional[float] = None) -> entity_instance:
     """
     Creates an alignment from PI data stored in a CSV file.
 
