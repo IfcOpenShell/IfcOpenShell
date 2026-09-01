@@ -2347,14 +2347,12 @@ class Blender(bonsai.core.tool.Blender):
         override = cls.get_viewport_context()
         with bpy.context.temp_override(**override):
             bpy.ops.object.hide_view_clear(select=False)
-
-        bpy.ops.object.select_all(action="DESELECT")
+            bpy.ops.object.select_all(action="DESELECT")
         for obj in objs:
             obj.select_set(True)
         with bpy.context.temp_override(**override):
             bpy.ops.object.hide_view_set(unselected=True)
-
-        bpy.ops.object.select_all(action="DESELECT")
+            bpy.ops.object.select_all(action="DESELECT")
         for name in previously_selected:
             obj = bpy.data.objects.get(name)
             if obj:
