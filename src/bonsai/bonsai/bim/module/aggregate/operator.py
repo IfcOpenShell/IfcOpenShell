@@ -266,32 +266,36 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
     one_level_deep: bpy.props.BoolProperty(
         name="One Level Deep", description="Select only immediate children, not recursively", default=False
     )
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, properties):
         if properties.select_parts:
-            return "Select Aggregate and Parts.\n\nCtrl+click to select only one level deep"
+            return "Select Aggregate and Parts.\n\nCtrl+click to select only one level deep\nALT+Click to also unhide hidden objects (viewport and local hide)"
         else:
-            return "Select Aggregate"
+            return "Select Aggregate\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.ctrl:
             self.one_level_deep = True
+        self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
-        all_parts = []
+        aggregates = {}
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if element:
                 aggregate = ifcopenshell.util.element.get_aggregate(element)
                 if aggregate:
-                    all_parts.append(aggregate)
+                    aggregates[aggregate.id()] = aggregate
                     obj.select_set(False)
                 else:
                     pass
             if not element:
                 obj.select_set(False)
+
+        all_parts = list(aggregates.values())
 
         if self.select_parts:
             selected_parts = []
@@ -317,12 +321,18 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
             for element in set(selected_parts + all_parts):
                 obj = tool.Ifc.get_object(element)
                 if obj:
+                    if self.should_unhide:
+                        obj.hide_viewport = False
+                        obj.hide_set(False)
                     obj.select_set(True)
 
         else:
             for aggregate_element in all_parts:
                 aggregate_obj = tool.Ifc.get_object(aggregate_element)
                 if aggregate_obj:
+                    if self.should_unhide:
+                        aggregate_obj.hide_viewport = False
+                        aggregate_obj.hide_set(False)
                     aggregate_obj.select_set(True)
                     bpy.context.view_layer.objects.active = aggregate_obj
 
@@ -407,13 +417,18 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
     bl_label = "Select linked aggregates"
     bl_options = {"REGISTER", "UNDO"}
     select_parts: bpy.props.BoolProperty(default=False)
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, properties):
         if properties.select_parts:
-            return "Select all aggregates, subaggregates and all their parts"
+            return "Select all aggregates, subaggregates and all their parts\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
         else:
-            return "Select all aggregates"
+            return "Select all aggregates\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
+
+    def invoke(self, context, event):
+        self.should_unhide = event.alt
+        return self.execute(context)
 
     def execute(self, context):
         for obj in context.selected_objects:
@@ -446,11 +461,18 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
                     for element in parts_objs:
                         obj = tool.Ifc.get_object(element)
                         if obj:
+                            if self.should_unhide:
+                                obj.hide_viewport = False
+                                obj.hide_set(False)
                             obj.select_set(True)
                 else:
                     for element in parts:
                         obj = tool.Ifc.get_object(element)
-                        obj.select_set(True)
+                        if obj:
+                            if self.should_unhide:
+                                obj.hide_viewport = False
+                                obj.hide_set(False)
+                            obj.select_set(True)
 
         return {"FINISHED"}
 

@@ -61,24 +61,107 @@ class DisableEditingMaterials(bpy.types.Operator):
 class SelectByMaterial(bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
-    bl_description = "Select objects using the provided material"
+    bl_description = "Select objects using the provided material\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.should_unhide = event.alt
+        return self.execute(context)
 
     def execute(self, context):
-        material = tool.Ifc.get().by_id(self.material)
-        core.select_by_material(tool.Material, tool.Spatial, material=material)
+        # Determine the layer index hint from the explicit material prop, if any.
+        # When the user clicks a specific layer in the UI, self.material is that
+        # layer's IfcMaterial. We find its index so we can pull the same layer
+        # from every other selected object's layer set.
+        layer_index = None
+        if self.material:
+            ref_mat = tool.Ifc.get().by_id(self.material)
+            layer_index = self._get_layer_index(ref_mat)
 
-        # copy selection query to clipboard
-        if material.is_a("IfcMaterialLayerSet"):
-            material_name = material.LayerSetName
-        else:
-            material_name = material.Name
-        result = f'material="{material_name}"'
+        materials = {}
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            mat = ifcopenshell.util.element.get_material(element)
+            if not mat:
+                continue
+
+            resolved = self._resolve_material(mat, layer_index)
+            if resolved:
+                materials[resolved.id()] = resolved
+
+        # Fall back to the explicit material prop if selection yields nothing
+        if not materials and self.material:
+            materials = {self.material: tool.Ifc.get().by_id(self.material)}
+
+        if not materials:
+            return {"FINISHED"}
+
+        for mat in materials.values():
+            core.select_by_material(tool.Material, tool.Spatial, material=mat, should_unhide=self.should_unhide)
+
+        result = " + ".join(f'material = "{self._get_name(m)}"' for m in materials.values())
         bpy.context.window_manager.clipboard = result
         self.report({"INFO"}, f"({result}) was copied to the clipboard.")
 
         return {"FINISHED"}
+
+    def _get_layer_index(self, material):
+        """Return the 0-based layer index if material is an IfcMaterial inside a layer set."""
+        if not material.is_a("IfcMaterial"):
+            return None
+        ifc = tool.Ifc.get()
+        for layer in ifc.get_inverse(material):
+            if not layer.is_a("IfcMaterialLayer"):
+                continue
+            for layer_set in ifc.get_inverse(layer):
+                if not layer_set.is_a("IfcMaterialLayerSet"):
+                    continue
+                layers = list(layer_set.MaterialLayers)
+                if layer in layers:
+                    return layers.index(layer)
+        return None
+
+    def _resolve_material(self, mat, layer_index):
+        """Resolve an assigned material to the specific entity to select/name by.
+
+        When layer_index is set, drills into the layer set and returns the
+        IfcMaterial at that index (or None if the set has fewer layers).
+        Otherwise returns the layer set / profile set / constituent set itself.
+        """
+        if mat.is_a("IfcMaterialLayerSetUsage"):
+            mat = mat.ForLayerSet
+        elif mat.is_a("IfcMaterialProfileSetUsage"):
+            mat = mat.ForProfileSet
+
+        if layer_index is not None and mat.is_a("IfcMaterialLayerSet"):
+            layers = list(mat.MaterialLayers)
+            if layer_index < len(layers):
+                return layers[layer_index].Material
+            return None
+
+        return mat
+
+    def _get_name(self, material):
+        if material.is_a("IfcMaterialLayerSet"):
+            if material.LayerSetName:
+                return material.LayerSetName
+            names = [l.Material.Name for l in (material.MaterialLayers or []) if l.Material and l.Material.Name]
+            return ", ".join(names) if names else material.is_a()
+        if material.is_a("IfcMaterialProfileSet"):
+            if material.Name:
+                return material.Name
+            names = [p.Material.Name for p in (material.MaterialProfiles or []) if p.Material and p.Material.Name]
+            return ", ".join(names) if names else material.is_a()
+        if material.is_a("IfcMaterialConstituentSet"):
+            if material.Name:
+                return material.Name
+            names = [c.Material.Name for c in (material.MaterialConstituents or []) if c.Material and c.Material.Name]
+            return ", ".join(names) if names else material.is_a()
+        return getattr(material, "Name", None) or material.is_a()
 
 
 class EnableEditingMaterial(bpy.types.Operator):
