@@ -177,6 +177,12 @@ class CadFillet(bpy.types.Operator):
         elif set(selected_edges[0].verts) & set(cut_edges[1].verts):
             selected_edges.append(cut_edges[1])
 
+        if len(selected_edges) != 2 or not (set(selected_edges[0].verts) & set(selected_edges[1].verts)):
+            # The two edges don't share a vertex (eg. they're two disjoint profile
+            # lines), so there's no corner to slide/spin the fillet arc around.
+            self.report({"ERROR"}, "The selected edges are not connected and cannot be filleted.")
+            return {"CANCELLED"}
+
         # Calculate the distance to slide each edge to make space for the fillet arc
         shared_vert = next(iter(set(selected_edges[0].verts) & set(selected_edges[1].verts)))
         v1 = selected_edges[0].other_vert(shared_vert)
@@ -669,10 +675,8 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         self.obj = obj
         self.mesh = mesh
         if self.has_selected_existing_arc(context):
-            self.change_radius(context)
-        else:
-            return self.create_arc(context)
-        return {"FINISHED"}
+            return self.change_radius(context)
+        return self.create_arc(context)
 
     def has_selected_existing_arc(self, context: bpy.types.Context) -> bool:
         obj = self.obj
@@ -694,19 +698,29 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
                 pass  # Potentially fail if the vert has been removed in the previous operation
         return False
 
-    def change_radius(self, context: bpy.types.Context) -> None:
+    def change_radius(self, context: bpy.types.Context) -> set[str]:
         obj = self.obj
         bm = bmesh.from_edit_mesh(self.mesh)
         edges = [e for e in bm.edges if e.select and not e.hide]
 
-        mid = next(iter(set(edges[0].verts) & set(edges[1].verts)))
+        if len(edges) != 2:
+            self.report({"ERROR"}, "Exactly 2 fillet edges should be selected.")
+            return {"CANCELLED"}
+
+        shared_verts = set(edges[0].verts) & set(edges[1].verts)
+        if not shared_verts:
+            # The fillet's legs are no longer connected to its midpoint (eg. the user
+            # deleted or detached geometry), so there's no arc left to resize.
+            self.report({"ERROR"}, "The selected fillet is no longer connected and its radius cannot be changed.")
+            return {"CANCELLED"}
+        mid = next(iter(shared_verts))
         v1 = edges[0].other_vert(mid)
         v2 = edges[1].other_vert(mid)
         assert v1 and v2
         center = tool.Cad.get_center_of_arc([v1.co, mid.co, v2.co])
 
         if len(v1.link_edges) != 2 or len(v2.link_edges) != 2:
-            return
+            return {"CANCELLED"}
 
         v3 = v1.link_edges[1].other_vert(v1) if mid in v1.link_edges[0].verts else v1.link_edges[0].other_vert(v1)
         v4 = v2.link_edges[1].other_vert(v2) if mid in v2.link_edges[0].verts else v2.link_edges[0].other_vert(v2)
@@ -732,6 +746,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         bm.verts.index_update()
         bm.edges.index_update()
         bmesh.update_edit_mesh(self.mesh)
+        return {"FINISHED"}
 
     def create_arc(self, context: bpy.types.Context) -> set[str]:
         obj = self.obj
@@ -761,21 +776,35 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
 
         bmesh.ops.remove_doubles(bm, verts=all_verts, dist=1e-4)
 
+        # The edges may already share a vertex, or they may be disjoint (e.g. two
+        # profile lines with a gap between them). Either way, find the corner they
+        # should be filleted around: their shared vertex, or the virtual intersection
+        # of the lines they lie on if extended.
+        edge1_verts = tuple(selected_edges[0].verts)
+        edge2_verts = tuple(selected_edges[1].verts)
+        corner_result = tool.Cad.get_fillet_corner(tuple(v.co for v in edge1_verts), tuple(v.co for v in edge2_verts))
+        if corner_result is None:
+            self.report({"ERROR"}, "The selected edges are parallel or not coplanar and cannot be filleted.")
+            return {"CANCELLED"}
+        corner, near1_co, far1_co, near2_co, far2_co = corner_result
+
+        near1 = next(v for v in edge1_verts if v.co == near1_co)
+        v1 = next(v for v in edge1_verts if v.co == far1_co)
+        near2 = next(v for v in edge2_verts if v.co == near2_co)
+        v2 = next(v for v in edge2_verts if v.co == far2_co)
+        verts_to_delete = {near1, near2}
+
         # Calculate the distance to slide each edge to make space for the fillet arc
-        shared_vert = next(iter(set(selected_edges[0].verts) & set(selected_edges[1].verts)))
-        v1 = selected_edges[0].other_vert(shared_vert)
-        v2 = selected_edges[1].other_vert(shared_vert)
-        assert v1 and v2
-        dir1 = (v1.co - shared_vert.co).normalized()
-        dir2 = (v2.co - shared_vert.co).normalized()
+        dir1 = (v1.co - corner).normalized()
+        dir2 = (v2.co - corner).normalized()
         edge_angle = dir1.angle(dir2)
         slide_distance = self.radius / math.tan(edge_angle / 2)
 
         angle = math.pi - edge_angle
-        fillet_v1co = shared_vert.co + (dir1 * slide_distance)
-        fillet_v2co = shared_vert.co + (dir2 * slide_distance)
+        fillet_v1co = corner + (dir1 * slide_distance)
+        fillet_v2co = corner + (dir2 * slide_distance)
 
-        normal = mathutils.geometry.normal([v1.co, shared_vert.co, v2.co])
+        normal = mathutils.geometry.normal([v1.co, corner, v2.co])
 
         center = mathutils.geometry.intersect_line_line(
             fillet_v1co, fillet_v1co + normal.cross(dir1), fillet_v2co, fillet_v2co + normal.cross(dir2)
@@ -792,7 +821,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         bm.edges.new((fillet_v1, midpoint))
         bm.edges.new((fillet_v2, midpoint))
 
-        bmesh.ops.delete(bm, geom=[shared_vert], context="VERTS")
+        bmesh.ops.delete(bm, geom=list(verts_to_delete), context="VERTS")
 
         for vert in [fillet_v1, midpoint, fillet_v2]:
             vert[deform_layer][group.index] = 1
