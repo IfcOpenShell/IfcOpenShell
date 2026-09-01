@@ -62,6 +62,10 @@ Used environment variables:
     - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
     - ``PYTHON_USER_SITE`` - install the Python wrapper into the user's site-packages directory
     instead of the interpreter's prefix, `off` by default.
+    - ``QT_DIR`` - optional path to a pre-installed Qt6 (e.g. `brew --prefix qt` on Mac`).
+    Skips fetching Qt6 via aqtinstall if the install is found there.
+    - ``QT6_VERSION`` - Qt6 version to fetch via aqtinstall when building the viewer,
+    defaults to the version hardcoded in this script.
 
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
