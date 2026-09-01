@@ -990,10 +990,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 		return oss.str();
 	}
 
-	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> helper_fn_create_shape(ifcopenshell::logger& logger, const std::string& geometry_library, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation = express::base()) {
-		ifcopenshell::file* file = instance.file();
-
-		ifcopenshell::geom::converter kernel(ifcopenshell::geom::kernels::construct(file, geometry_library, settings, logger), file, settings, logger);
+	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> helper_fn_create_shape_with_converter(ifcopenshell::geom::converter& kernel, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation) {
 		if (instance.declaration().is("IfcProduct")) {
 			if (representation && !representation.declaration().is("IfcRepresentation")) {
 				throw ifcopenshell::exception("Supplied representation not of type IfcRepresentation");
@@ -1069,6 +1066,12 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 		}
 		return std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*>();
 	}
+
+	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> helper_fn_create_shape(ifcopenshell::logger& logger, const std::string& geometry_library, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation = express::base()) {
+		ifcopenshell::file* file = instance.file();
+		ifcopenshell::geom::converter kernel(ifcopenshell::geom::kernels::construct(file, geometry_library, settings, logger), file, settings, logger);
+		return helper_fn_create_shape_with_converter(kernel, settings, instance, representation);
+	}
 %}
 
 %typemap(out) ifcopenshell::geom::taxonomy::item::ptr {
@@ -1114,6 +1117,37 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> create_shape(ifcopenshell::geom::settings& settings, const express::base& instance, const char* const geometry_library="opencascade", ifcopenshell::logger* logger = nullptr) {
 		return create_shape(settings, instance, express::base(), geometry_library, logger);
 	}
+%}
+
+%inline %{
+	// Reusable geometry kernel handle bound to a (geometry_library, file,
+	// settings) triple. Constructing it resolves the kernel once and reuses
+	// the converter, mapping and caches for every create_shape call.
+	class geometry_kernel {
+	public:
+		geometry_kernel(const std::string& geometry_library, ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr)
+			: file_(file)
+			, settings_(settings)
+			, converter_(ifcopenshell::geom::kernels::construct(file, geometry_library, settings_, ifcopenshell::logger_or_root(logger)), file, settings_, ifcopenshell::logger_or_root(logger))
+		{}
+
+		std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> create_shape(const express::base& instance, const express::base& representation) {
+			if (instance.file() != file_) {
+				throw ifcopenshell::exception("Instance does not belong to the file this kernel was constructed for");
+			}
+			return helper_fn_create_shape_with_converter(converter_, settings_, instance, representation);
+		}
+
+		// Manual definition of overload without representation argument
+		std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> create_shape(const express::base& instance) {
+			return create_shape(instance, express::base());
+		}
+
+	private:
+		ifcopenshell::file* file_;
+		ifcopenshell::geom::settings settings_;
+		ifcopenshell::geom::converter converter_;
+	};
 %}
 
 // @todo bring back serialization OCCT -> IFC by means of opencascade_geometry_ifc_writer_registry
