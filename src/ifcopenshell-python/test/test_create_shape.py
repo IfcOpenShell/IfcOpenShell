@@ -9,11 +9,13 @@ import pytest
 
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.geom
+import ifcopenshell.guid
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.shape
 import test.bootstrap
@@ -192,6 +194,68 @@ class TestAssignObject:
 
         # even though there are only 12 unique vertices as the cubes are touching
         assert len(set(vs)) == 12
+
+
+class TestUnitsWithProjectLibrary(test.bootstrap.IFC4X3):
+    """https://github.com/IfcOpenShell/IfcOpenShell/issues/9294
+
+    IfcProjectLibrary is also an IfcContext, so a file with a project and a
+    library legitimately has more than one IfcContext instance. The geometry
+    kernel used to require exactly one IfcContext to resolve units, so any
+    such file silently lost unit detection and read every length 1000x too
+    large for a millimetre project.
+    """
+
+    def build(self, library=None):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name="P")
+        mm = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[mm])
+        parent = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            self.file,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+            parent=parent,
+        )
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="W")
+        representation = ifcopenshell.api.geometry.add_wall_representation(
+            self.file, context=body, length=5.0, height=3.0, thickness=0.2
+        )
+        ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=representation)
+
+        project = self.file.by_type("IfcProject")[0]
+        if library == "bare":
+            self.file.create_entity("IfcProjectLibrary", GlobalId=ifcopenshell.guid.new())
+        elif library == "shares_units":
+            self.file.create_entity(
+                "IfcProjectLibrary",
+                GlobalId=ifcopenshell.guid.new(),
+                UnitsInContext=project.UnitsInContext,
+            )
+        return wall
+
+    def wall_x_extent(self, wall):
+        settings = ifcopenshell.geom.settings()
+        iterator = ifcopenshell.geom.iterator(settings, self.file, include=[wall])
+        assert iterator.initialize()
+        shape = iterator.get()
+        xs = shape.geometry.verts[0::3]
+        return max(xs) - min(xs)
+
+    def test_no_library(self):
+        wall = self.build(library=None)
+        assert self.wall_x_extent(wall) == pytest.approx(5.0)
+
+    def test_bare_library(self):
+        wall = self.build(library="bare")
+        assert len(self.file.by_type("IfcContext")) == 2
+        assert self.wall_x_extent(wall) == pytest.approx(5.0)
+
+    def test_library_sharing_units(self):
+        wall = self.build(library="shares_units")
+        assert len(self.file.by_type("IfcContext")) == 2
+        assert self.wall_x_extent(wall) == pytest.approx(5.0)
 
 
 def test_iterator():
