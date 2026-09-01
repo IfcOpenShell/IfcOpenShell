@@ -39,6 +39,7 @@ APPENDABLE_ASSET = Literal[
     "IfcCostSchedule",
     "IfcProfileDef",
     "IfcPresentationStyle",
+    "IfcGroup",
 ]
 APPENDABLE_ASSET_TYPES: tuple[APPENDABLE_ASSET, ...] = get_args(APPENDABLE_ASSET)
 MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
@@ -68,8 +69,8 @@ def append_asset(
 
     :param library: The file object containing the asset.
     :param element: An element in the library file of the asset. It may be
-        an IfcTypeProduct, IfcProduct, IfcMaterial, IfcCostSchedule, or
-        IfcProfileDef.
+        an IfcTypeProduct, IfcProduct, IfcMaterial, IfcCostSchedule,
+        IfcProfileDef, or IfcGroup.
     :param reuse_identities: Optional dictionary of mapped entities' identities to the
         already created elements. It will be used to avoid creating
         duplicated inverse elements during multiple `project.append_asset` calls. If you want
@@ -236,6 +237,9 @@ class Usecase:
         elif self.settings["element"].is_a("IfcPresentationStyle"):
             self.target_class = "IfcPresentationStyle"
             return self.append_presentation_style()
+        elif self.settings["element"].is_a("IfcGroup"):
+            self.target_class = "IfcGroup"
+            return self.append_group()
 
     def by_guid(self, guid: str) -> Union[ifcopenshell.entity_instance, None]:
         try:
@@ -384,6 +388,33 @@ class Usecase:
             "IfcDistributionElementType": ["IsNestedBy"],
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem", "LayerAssignment"],
+            "IfcRepresentation": ["LayerAssignments"],
+            "IfcProductDefinitionShape": ["HasShapeAspects"],
+            "IfcRepresentationMap": ["HasShapeAspects"],
+        }
+        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        element = self.add_element(self.settings["element"])
+        self.reuse_existing_contexts()
+        return element
+
+    def append_group(self):
+        # A group (IfcGroup and subtypes like IfcSystem, IfcZone) is appended
+        # together with its members. Members are reached through the group's
+        # ``IsGroupedBy`` inverse (the IfcRelAssignsToGroup relationship), whose
+        # ``RelatedObjects`` are copied via the regular element-append path, so
+        # they bring their own materials, properties, and representations. The
+        # relationship itself is recreated in the destination linking the copied
+        # group to the copied members.
+        self.whitelisted_inverse_attributes = {
+            "IfcObjectDefinition": ["HasAssociations"],
+            "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
+            "IfcGroup": ["IsGroupedBy"],
+            "IfcElement": ["HasOpenings"],
+            self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
+            "IfcRepresentationItem": [
+                "StyledByItem",
+                "LayerAssignments" if self.file.schema == "IFC2X3" else "LayerAssignment",
+            ],
             "IfcRepresentation": ["LayerAssignments"],
             "IfcProductDefinitionShape": ["HasShapeAspects"],
             "IfcRepresentationMap": ["HasShapeAspects"],
