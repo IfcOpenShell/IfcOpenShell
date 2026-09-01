@@ -2539,6 +2539,25 @@ class Geometry(bonsai.core.tool.Geometry):
 
         # Recreate decompositions
         tool.Duplicate.recreate_decompositions(decomposition_relationships, old_to_new)
+
+        # Reload geometry for duplicated elements that have unfilled openings.
+        # copy_class (API) copies HasOpenings in IFC, but the mesh geometry is
+        # just a data-block copy of the original — switch_representation must be
+        # called so the opening boolean is actually computed for the new element.
+        for new_els in old_to_new.values():
+            for new_el in new_els:
+                has_openings = getattr(new_el, "HasOpenings", None)
+                if not has_openings:
+                    continue
+                # Only reload for openings that have no filling (filled openings
+                # are already handled by recreate_decompositions).
+                unfilled = [rel for rel in has_openings if not rel.RelatedOpeningElement.HasFillings]
+                if not unfilled:
+                    continue
+                new_obj_final = tool.Ifc.get_object(new_el)
+                if new_obj_final:
+                    tool.Model.reload_body_representation(new_obj_final)
+
         cls.remove_linked_aggregate_data(old_to_new)
 
         # In-loop regenerate_wall runs before recreate_connections, so any new
