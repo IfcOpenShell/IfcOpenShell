@@ -179,7 +179,6 @@ MANIFOLD_VERSION = "3.2.1"
 QT6_VERSION = os.getenv("QT6_VERSION", "6.8.3")
 
 # binaries
-cp = "cp"
 bash = "bash"
 git = "git"
 bunzip2 = "bunzip2"
@@ -1976,11 +1975,11 @@ if "IfcOpenShell-Python" in targets:
             # Not sure why, but added after reading this in the logs
             # cp: /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/x86_64/10.15/install/ifcopenshell/python-3.9.11: No such file or directory
             # D'oh this was just due to a missing f-string f but doesn't hurt to keep it in.
-            run(["mkdir", "-p", os.path.join(DEPS_DIR, "install", "ifcopenshell")])
-            dest = os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")
-            if os.path.exists(dest):
+            dest = Path(DEPS_DIR) / "install" / "ifcopenshell" / f"python-{python_version}"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if dest.exists():
                 shutil.rmtree(dest)
-            run([cp, "-R", module_dir, dest])
+            shutil.copytree(module_dir, dest)
 
 Dependencies.write_install_dirs_json()
 
