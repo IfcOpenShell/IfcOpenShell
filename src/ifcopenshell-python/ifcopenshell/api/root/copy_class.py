@@ -52,6 +52,11 @@ def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -
       will also be copied.
     * Path connectivity is not copied, as there is no guarantee that the
       connections are still valid.
+    * Annotations assigned to the product are not copied. They stay assigned to
+      the original only, so the copy starts with no annotations. Sharing them
+      would leave one annotation labelling two products, which is invalid.
+      Other objects assigned to the product, such as tasks that output it, are
+      still inherited by the copy.
 
     :param product: The IfcProduct to copy.
     :return: The copied product
@@ -135,6 +140,18 @@ class Usecase:
                 continue
             elif inverse.is_a("IfcRelDefinesByType") and inverse.RelatingType == from_element:
                 continue
+            elif inverse.is_a("IfcRelAssignsToProduct") and inverse.RelatingProduct == from_element:
+                # An annotation labels exactly one product, so it must not be shared. The
+                # generic branch below would copy the relationship and swap the product,
+                # leaving the original's annotations assigned to both products. See #4014.
+                # Other assignments are fine to inherit: the same relationship also holds
+                # tasks that output this product, and a task may output many products.
+                related_objects = [e for e in inverse.RelatedObjects if not e.is_a("IfcAnnotation")]
+                if not related_objects:
+                    continue
+                new_inverse = ifcopenshell.util.element.copy(self.file, inverse)
+                new_inverse.RelatedObjects = related_objects
+                new_inverse.RelatingProduct = to_element
             elif inverse.is_a("IfcRelVoidsElement") and inverse.RelatingBuildingElement == from_element:
                 opening = inverse.RelatedOpeningElement
                 # We don't copy filled openings, since there is no guarantee the filling is also copied
