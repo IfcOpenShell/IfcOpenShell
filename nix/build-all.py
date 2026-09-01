@@ -578,7 +578,7 @@ if WASM:
         cecho(f"Skipping targets for wasm build: {', '.join(sorted(skip_targets))}", YELLOW)
     targets.difference_update(skip_targets)
 
-print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t)))))
+logger.info("Building: " + " ".join(sorted(targets, key=lambda t: len(list(gather_dependencies(t))))))
 
 # Check that required tools are in PATH
 yacc = "yacc"  # Used during swig building process, installed with `bison` on Debian / `byacc` on Red Hat.
@@ -667,9 +667,9 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False, env
     logger.debug(f"command returned {proc.returncode}")
 
     if proc.returncode != 0 and not can_fail:
-        print("-" * 70)
-        print("".join(stderr))
-        print("-" * 70)
+        logger.error("-" * 70)
+        logger.error("".join(stderr))
+        logger.error("-" * 70)
         raise RuntimeError(f"Command `{' '.join(cmds)}` returned exit code {proc.returncode}")
 
     return "".join(stdout).strip()
@@ -844,7 +844,7 @@ def build_dependency(
                     urlretrieve(url, os.path.join(build_dir, download_path))
                     break
                 except ConnectionError as e:
-                    print(e, "... retrying...")
+                    logger.warning(f"{e} ... retrying...")
                     time.sleep(30.0)
                     continue
         else:
@@ -1435,8 +1435,8 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
         try:
             run([str(python_bin), "-c", "import _ssl"])
         except RuntimeError:
-            print(
-                "ERROR: Python was built without SSL support (_ssl module is missing). "
+            logger.error(
+                "Python was built without SSL support (_ssl module is missing). "
                 f"To fix this: remove the installed Python at {python_install}; "
                 "install OpenSSL development libraries and re-run."
             )
