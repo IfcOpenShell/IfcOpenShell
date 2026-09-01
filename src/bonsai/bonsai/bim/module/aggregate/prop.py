@@ -149,6 +149,10 @@ class BIMAggregateProperties(PropertyGroup):
         name="True if it was previously in aggregate mode",
         default=False,
     )
+    was_in_local_view: BoolProperty(
+        name="Was In Local View",
+        default=False,
+    )
 
     if TYPE_CHECKING:
         in_aggregate_mode: bool
@@ -159,3 +163,4 @@ class BIMAggregateProperties(PropertyGroup):
         previously_selected_objects: bpy.types.bpy_prop_collection_idprop[Objects]
         aggregate_decorator: bool
         previous_state: bool
+        was_in_local_view: bool
