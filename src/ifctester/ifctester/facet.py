@@ -20,14 +20,16 @@ from __future__ import annotations
 
 import builtins
 import re
-from functools import lru_cache
+from functools import cache, lru_cache
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
 
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from xmlschema.validators import identities
+from elementpath.regex import translate_pattern
+
+translate_pattern = cache(translate_pattern)
 
 if TYPE_CHECKING:
     from .ids import Specification
@@ -1069,7 +1071,10 @@ class Restriction:
                         return False
                     value = value if isinstance(value, list) else [value]
                     for pattern in value:
-                        if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
+                        xsd_pattern = translate_pattern(
+                            pattern, back_references=False, lazy_quantifiers=False, anchors=False
+                        )
+                        if re.compile(xsd_pattern).fullmatch(other) is None:
                             return False
                 elif constraint == "length":
                     if len(str(other)) != int(value):
