@@ -28,6 +28,8 @@
 #include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <map>
+#include <mutex>
 #include <vector>
 
 namespace ifcopenshell {
@@ -110,6 +112,11 @@ namespace {
 
 		return match;
 	}
+
+	// Component resolution scans the plugin directory and loads modules from
+	// disk, which is too expensive to repeat on every kernel construction.
+	std::mutex hybrid_component_mutex;
+	std::map<std::string, std::vector<std::string>> hybrid_component_cache;
 }
 
 void ifcopenshell::geom::kernels::kernel_registry::bind(const kernel_info& info, create_fn create, const plugin::module& module) {
@@ -149,6 +156,22 @@ std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom
 	auto geometry_library_lower = boost::to_lower_copy(geometry_library);
 	auto& registry = kernel_registry_instance();
 
+	if (geometry_library_lower.rfind("hybrid-", 0) == 0) {
+		std::lock_guard<std::mutex> lock(hybrid_component_mutex);
+		auto cached = hybrid_component_cache.find(geometry_library_lower);
+		if (cached != hybrid_component_cache.end()) {
+			std::vector<std::unique_ptr<abstract_kernel>> kernels;
+			for (const auto& backend_id : cached->second) {
+				kernels.push_back(registry.create(backend_id, file, settings, logger));
+			}
+			for (auto it = kernels.begin(); it != kernels.end(); ++it) {
+				(**it).propagate_exceptions = it == kernels.begin();
+				(**it).partial_success_is_success = it == kernels.end() - 1;
+			}
+			return std::make_unique<hybrid_kernel>(geometry_library, file, settings, std::move(kernels), logger);
+		}
+	}
+
 	if (!registry.has(geometry_library_lower)) {
 		load_kernel_plugin(registry, geometry_library_lower);
 	}
@@ -157,8 +180,13 @@ std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom
 	}
 
 	if (geometry_library_lower.rfind("hybrid-", 0) == 0) {
+		const auto hybrid_key = geometry_library_lower;
+
+		std::lock_guard<std::mutex> lock(hybrid_component_mutex);
+
 		geometry_library_lower = geometry_library_lower.substr(strlen("hybrid"));
 		std::vector<std::unique_ptr<abstract_kernel>> kernels;
+		std::vector<std::string> component_backend_ids;
 		while (!geometry_library_lower.empty()) {
 			if (geometry_library_lower.find("-", 0) == 0) {
 				geometry_library_lower = geometry_library_lower.substr(strlen("-"));
@@ -174,6 +202,7 @@ std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom
 			}
 
 			kernels.push_back(registry.create(matched_backend_id, file, settings, logger));
+			component_backend_ids.push_back(matched_backend_id);
 			geometry_library_lower = geometry_library_lower.substr(matched_backend_id.size());
 		}
 
@@ -183,6 +212,7 @@ std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom
 		}
 
 		if (!kernels.empty()) {
+			hybrid_component_cache.emplace(hybrid_key, std::move(component_backend_ids));
 			return std::make_unique<hybrid_kernel>(geometry_library, file, settings, std::move(kernels), logger);
 		}
 	}
