@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.util.unit
 from bpy.types import Menu, Panel, UIList
 
 import bonsai.bim
@@ -30,6 +29,7 @@ from bonsai.bim.module.geometry.data import (
     RepresentationItemsData,
     RepresentationsData,
 )
+from bonsai.bim.module.geometry.prop import format_rotation, get_storey_world_z
 from bonsai.bim.module.layer.data import LayersData
 
 
@@ -484,32 +484,50 @@ class BIM_PT_placement(Panel):
             row.label(text="No Object Placement Found")
             return
 
-        is_imperial = False
-        if tool.Ifc.get():
-            length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
-            if length_unit and length_unit.Name != "METRE":
-                is_imperial = True
-
         row = self.layout.row()
         row.label(text="Location:")
 
-        if is_imperial:
-            loc = context.active_object.location
-            for i, (axis, comp) in enumerate(zip("XYZ", (loc.x, loc.y, loc.z))):
-                split = self.layout.split(factor=0.6)
-                split.prop(context.active_object, "location", index=i, text=axis)
-                sub = split.row()
-                sub.enabled = False
-                sub.alignment = "LEFT"
-                sub.label(text=tool.Unit.format_distance(comp))
-        else:
-            for i, axis in enumerate("XYZ"):
-                self.layout.prop(context.active_object, "location", index=i, text=axis)
+        gprops = tool.Geometry.get_object_geometry_props(obj)
+        # Editable Z elevation relative to the containing storey; shown for both unit systems.
+        has_storey = get_storey_world_z(obj) is not None
+
+        # format_distance auto-detects the project unit system, so the same read-only value
+        # column works for both metric and imperial.
+        loc = obj.location
+        for i, (axis, comp) in enumerate(zip("XYZ", (loc.x, loc.y, loc.z))):
+            split = self.layout.split(factor=0.5)
+            split.prop(obj, "location", index=i, text=axis)
+            # The read-only value doubles as a button: click to select objects sharing it.
+            op = split.operator(
+                "bim.select_similar_placement_value",
+                text=tool.Unit.format_distance(comp),
+                emboss=False,
+            )
+            op.mode = axis
+
+        if has_storey:
+            split = self.layout.split(factor=0.5)
+            split.prop(gprops, "storey_relative_elevation", text="Elevation from Storey")
+            op = split.operator(
+                "bim.select_similar_placement_value",
+                text=tool.Unit.format_distance(gprops.storey_relative_elevation),
+                emboss=False,
+            )
+            op.mode = "ELEVATION"
 
         row = self.layout.row()
         row.label(text="Rotation:")
+        rot = obj.rotation_euler
         for i, axis in enumerate("XYZ"):
-            self.layout.prop(context.active_object, "rotation_euler", index=i, text=axis)
+            split = self.layout.split(factor=0.5)
+            split.prop(obj, "rotation_euler", index=i, text=axis)
+            # The read-only value doubles as a button: click to select objects sharing it.
+            op = split.operator(
+                "bim.select_similar_placement_value",
+                text=format_rotation(rot[i]),
+                emboss=False,
+            )
+            op.mode = "R" + axis
 
         if props.blender_offset_type != "NONE":
             row = self.layout.row(align=True)
