@@ -157,6 +157,103 @@ class TestImportCameraProps(NewFile):
         assert props.ridge_angle_min_degrees == pytest.approx(30.0)
         assert props.render_flush is True
 
+    def test_defaults_status_classes_off_when_pset_is_absent(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        camera = bpy.data.cameras.new("Camera")
+
+        subject.import_camera_props(drawing, camera)
+
+        assert subject.get_camera_props(camera).has_status_classes is False
+
+    def test_imports_status_classes_from_drawing_metadata(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Metadata": "Name, /Pset_.*Common/.Status"})
+        camera = bpy.data.cameras.new("Camera")
+
+        subject.import_camera_props(drawing, camera)
+
+        assert subject.get_camera_props(camera).has_status_classes is True
+
+    def test_unrelated_metadata_does_not_enable_status_classes(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Metadata": "Name, id"})
+        camera = bpy.data.cameras.new("Camera")
+
+        subject.import_camera_props(drawing, camera)
+
+        assert subject.get_camera_props(camera).has_status_classes is False
+
+
+class TestStatusClassesToggle(NewFile):
+    def create_active_drawing_camera(self) -> tuple[ifcopenshell.file, ifcopenshell.entity_instance]:
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        camera_obj = subject.create_camera("Camera", mathutils.Matrix(), "ORTHOGRAPHIC", "PLAN_VIEW")
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        tool.Ifc.link(drawing, camera_obj)
+        bpy.context.scene.camera = camera_obj
+        return ifc, drawing
+
+    def test_enabling_writes_the_status_query_to_metadata(self):
+        ifc, drawing = self.create_active_drawing_camera()
+
+        subject.get_camera_props(bpy.context.scene.camera).has_status_classes = True
+
+        assert subject.get_drawing_metadata(drawing) == ["/Pset_.*Common/.Status"]
+
+    def test_enabling_preserves_metadata_the_user_already_typed(self):
+        ifc, drawing = self.create_active_drawing_camera()
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Metadata": "Name"})
+
+        subject.get_camera_props(bpy.context.scene.camera).has_status_classes = True
+
+        assert subject.get_drawing_metadata(drawing) == ["Name", "/Pset_.*Common/.Status"]
+
+    def test_disabling_removes_only_the_status_query(self):
+        ifc, drawing = self.create_active_drawing_camera()
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Metadata": "Name, /Pset_.*Common/.Status, id"})
+        props = subject.get_camera_props(bpy.context.scene.camera)
+        subject.import_camera_props(drawing, bpy.context.scene.camera.data)
+        assert props.has_status_classes is True
+
+        props.has_status_classes = False
+
+        assert subject.get_drawing_metadata(drawing) == ["Name", "id"]
+
+    def test_enabling_matches_typing_the_query_by_hand(self):
+        ifc, drawing = self.create_active_drawing_camera()
+        hand_typed = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=hand_typed, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Metadata": "/Pset_.*Common/.Status"})
+
+        subject.get_camera_props(bpy.context.scene.camera).has_status_classes = True
+
+        toggled_pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+        hand_typed_pset = ifcopenshell.util.element.get_pset(hand_typed, "EPset_Drawing")
+        assert toggled_pset["Metadata"] == hand_typed_pset["Metadata"]
+
+    def test_disabling_an_already_disabled_toggle_does_not_touch_the_drawing(self):
+        ifc, drawing = self.create_active_drawing_camera()
+        props = subject.get_camera_props(bpy.context.scene.camera)
+        props.has_status_classes = True
+        props.has_status_classes = False
+        snapshot = ifc.to_string()
+
+        props.has_status_classes = False
+
+        assert ifc.to_string() == snapshot
+        assert subject.get_drawing_metadata(drawing) == []
+
 
 class TestSyncPerspectiveCameraShifts(NewFile):
     def test_round_trips_perspective_camera_shifts_through_drawing_pset(self):

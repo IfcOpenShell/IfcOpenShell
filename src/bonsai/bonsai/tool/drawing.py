@@ -84,6 +84,7 @@ class Drawing(bonsai.core.tool.Drawing):
     LocationHintLiteral = Literal["PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST"]
     LOCATION_HINT_LITERALS = ("PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST")
     LocationHintType = Union[LocationHintLiteral, str]
+    STATUS_METADATA_QUERY = "/Pset_.*Common/.Status"
 
     # ObjectType: annotation_name, description, icon, data_type
     # fmt: off
@@ -1089,11 +1090,13 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.render_sharp = True
         camera_props.ridge_angle_min_degrees = 45.0
         camera_props.render_flush = False
+        camera_props.has_status_classes = False
         camera.shift_x = 0.0
         camera.shift_y = 0.0
 
         pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         if pset:
+            camera_props.has_status_classes = cls.STATUS_METADATA_QUERY in cls.get_drawing_metadata(drawing)
             if "TargetView" in pset:
                 camera_props.target_view = pset["TargetView"]
             if "Scale" in pset:
@@ -2325,7 +2328,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_drawing_metadata(cls, drawing: ifcopenshell.entity_instance) -> list[str]:
-        pset_data = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+        pset_data = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing") or {}
         metadata_str = pset_data.get("Metadata", "") or ""
         return [v_ for v in metadata_str.split(",") if (v_ := v.strip())]
 
