@@ -758,3 +758,41 @@ class TestApplyItemIdsAsVertexGroups(NewFile):
                 vert = verts[vi]
                 groups = [g.group for g in vert.groups]
                 assert groups == [ios_item_ids_unique[i]]
+
+
+class TestRecalculateWallsWithNewConnections(NewFile):
+    def create_connected_wall(self, ifc: ifcopenshell.file, type_has_maps: bool) -> ifcopenshell.entity_instance:
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[wall], relating_type=wall_type)
+        if type_has_maps:
+            wall_type.RepresentationMaps = [ifc.createIfcRepresentationMap()]
+        other = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        ifc.create_entity("IfcRelConnectsPathElements", RelatingElement=wall, RelatedElement=other)
+        obj = bpy.data.objects.new("Wall", bpy.data.meshes.new("Mesh"))
+        tool.Ifc.link(wall, obj)
+        return wall
+
+    def recalculated_walls(self, wall: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
+        recalculated: list[bpy.types.Object] = []
+        original = tool.Model.recalculate_walls
+        tool.Model.recalculate_walls = lambda objs: recalculated.extend(objs)
+        try:
+            subject._recalculate_walls_with_new_connections({wall: [wall]})
+        finally:
+            tool.Model.recalculate_walls = original
+        return recalculated
+
+    def test_a_wall_generated_from_a_layer_set_is_recalculated(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = self.create_connected_wall(ifc, type_has_maps=False)
+        assert self.recalculated_walls(wall) == [tool.Ifc.get_object(wall)]
+
+    def test_a_wall_backed_by_type_representation_maps_keeps_its_authored_body(self):
+        # Recalculating rebuilds the body from a layer set and axis, which
+        # discards authored geometry such as ArchiCAD roof clips (issue #7487).
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = self.create_connected_wall(ifc, type_has_maps=True)
+        assert self.recalculated_walls(wall) == []

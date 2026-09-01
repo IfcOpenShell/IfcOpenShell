@@ -34,9 +34,37 @@ class TestCopyClass:
         ifc.link("element", "obj").should_be_called()
         root.get_element_type("element").should_be_called().will_return("type")
         root.does_type_have_representations("type").should_be_called().will_return(True)
+        root.has_independent_representation("original_element").should_be_called().will_return(False)
         ifc.run("type.map_type_representations", related_object="element", relating_type="type").should_be_called()
         ifc.get_object("type").should_be_called().will_return("type_obj")
         root.link_object_data("type_obj", "obj").should_be_called()
+        collector.assign("obj").should_be_called()
+        subject.copy_class(ifc, collector, geometry, root, obj="obj")
+
+    def test_copy_keeps_authored_geometry_when_occurrence_has_independent_representation(
+        self, ifc, collector, geometry, root
+    ):
+        # Some exporters (e.g. ArchiCAD) give a type one IfcRepresentationMap
+        # per occurrence, so an occurrence with its own authored body must
+        # copy that body instead of being remapped onto a sibling's geometry
+        # (issue #7487, issue #7996).
+        ifc.get_entity("obj").should_be_called().will_return("original_element")
+        root.is_element_a("original_element", "IfcRelSpaceBoundary").should_be_called().will_return(False)
+        root.get_object_representation("obj").should_be_called().will_return("representation")
+        ifc.run("root.copy_class", product="original_element").should_be_called().will_return("element")
+        ifc.link("element", "obj").should_be_called()
+        root.get_element_type("element").should_be_called().will_return("type")
+        root.does_type_have_representations("type").should_be_called().will_return(True)
+        root.has_independent_representation("original_element").should_be_called().will_return(True)
+        root.copy_representation("original_element", "element").should_be_called().will_return("copied_entities")
+        geometry.copy_data_links("data", "copied_entities").should_be_called()
+        geometry.change_object_data("obj", "data", is_global=True).should_be_called()
+        geometry.duplicate_object_data("obj").should_be_called().will_return("data")
+        ifc.get_entity("data").should_be_called().will_return("new_representation")
+        geometry.get_representation_name("new_representation").should_be_called().will_return("name")
+        geometry.rename_object("data", "name").should_be_called()
+        root.has_material_styles("element").should_be_called().will_return(False)
+        root.assign_body_styles("element", "obj").should_be_called()
         collector.assign("obj").should_be_called()
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 

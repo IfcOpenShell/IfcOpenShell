@@ -122,6 +122,28 @@ class Root(bonsai.core.tool.Root):
         return bool(element.RepresentationMaps)
 
     @classmethod
+    def has_independent_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        """``True`` if the element carries its own geometry inline rather than
+        deriving it from its type's representation maps.
+
+        A type occurrence that maps its type's geometry stores only
+        ``IfcMappedItem`` items pointing at the type's ``IfcRepresentationMap``\\ s.
+        An occurrence with an authored body (e.g. an imported ArchiCAD
+        ``SweptSolid`` wall) stores the geometry directly. Duplicating the
+        latter must copy that inline geometry, not remap the type: some
+        exporters emit a distinct ``RepresentationMap`` per occurrence on the
+        shared type, so remapping would graft every sibling occurrence's
+        geometry onto the copy (issue #7487)."""
+        representation = getattr(element, "Representation", None)
+        if not representation:
+            return False
+        for rep in representation.Representations:
+            for item in rep.Items:
+                if not item.is_a("IfcMappedItem"):
+                    return True
+        return False
+
+    @classmethod
     def get_decomposition_relationships(
         cls, objs: list[bpy.types.Object]
     ) -> dict[ifcopenshell.entity_instance, dict[str, Any]]:
