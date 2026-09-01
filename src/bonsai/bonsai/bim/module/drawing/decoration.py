@@ -2121,6 +2121,12 @@ class DecorationsHandler:
         if context.region_data.view_perspective != "CAMERA":
             return
 
+        # The view can report a CAMERA perspective while the scene has no active camera assigned
+        # (e.g. the drawing camera was deleted). Decorators need it for paper-space scaling
+        # (get_camera_width_mm), so bail out instead of crashing on camera.data.
+        if context.scene.camera is None:
+            return
+
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
