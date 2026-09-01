@@ -127,6 +127,7 @@ class TestImportCameraProps(NewFile):
         assert props.render_sharp is True
         assert props.ridge_angle_min_degrees == pytest.approx(45.0)
         assert props.render_flush is False
+        assert props.render_hidden is False
 
     def test_imports_edge_classification_props_from_drawing_pset(self):
         ifc = ifcopenshell.file()
@@ -143,6 +144,7 @@ class TestImportCameraProps(NewFile):
                 "RenderSharp": False,
                 "RidgeAngleMinDegrees": 30.0,
                 "RenderFlush": True,
+                "RenderHidden": True,
             },
         )
         camera = bpy.data.cameras.new("Camera")
@@ -156,6 +158,7 @@ class TestImportCameraProps(NewFile):
         assert props.render_sharp is False
         assert props.ridge_angle_min_degrees == pytest.approx(30.0)
         assert props.render_flush is True
+        assert props.render_hidden is True
 
 
 class TestSyncPerspectiveCameraShifts(NewFile):

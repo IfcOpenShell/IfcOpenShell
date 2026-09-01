@@ -127,6 +127,9 @@ class BIM_PT_camera(Panel):
             row.prop(props, "render_flush")
 
         row = self.layout.row()
+        row.prop(props, "render_hidden")
+
+        row = self.layout.row()
         row.prop(props, "width")
         row = self.layout.row()
         row.prop(props, "height")
