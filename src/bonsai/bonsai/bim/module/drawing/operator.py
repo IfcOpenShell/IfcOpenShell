@@ -1902,6 +1902,75 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
 
 
+class AddDimensionTextAnnotation(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_dimension_text_annotation"
+    bl_label = "Add Linked Text Label"
+    bl_description = (
+        "Create a separate TEXT annotation for this dimension's label\n"
+        "and relate the two with IfcRelAssignsToProduct.\n\n"
+        "The dimension's own Description attribute keeps working as before,\n"
+        "this adds a second, independent annotation for cases that need it"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if not obj or not tool.Ifc.get():
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return False
+        return tool.Drawing.is_annotation_object_type(element, ["DIMENSION", "DIAMETER"])
+
+    def _execute(self, context):
+        dimension_obj = context.active_object
+        dimension_element = tool.Ifc.get_entity(dimension_obj)
+        assert dimension_element
+
+        drawing = tool.Drawing.get_annotation_drawing(dimension_element)
+        if not drawing:
+            self.report({"WARNING"}, "Dimension is not part of a drawing.")
+            return
+
+        label_text = dimension_element.Description or ""
+
+        text_obj = core.add_annotation(
+            tool.Ifc,
+            tool.Collector,
+            tool.Drawing,
+            drawing=drawing,
+            object_type="TEXT",
+            relating_type=None,
+            enable_editing=False,
+        )
+        tool.Drawing.edit_text_literals(
+            text_obj, literal_attributes=[{"Literal": label_text, "Path": "RIGHT", "BoxAlignment": "bottom-middle"}]
+        )
+        tool.Drawing.setup_annotation_object(text_obj, "TEXT", related_object=dimension_obj)
+
+        bpy.ops.object.select_all(action="DESELECT")
+        text_obj.select_set(True)
+        context.view_layer.objects.active = text_obj
+        tool.Blender.update_viewport()
+
+
+class SelectDimensionTextAnnotation(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_dimension_text_annotation"
+    bl_label = "Select Linked Text Label"
+    bl_description = "Select the TEXT annotation linked to this dimension"
+    bl_options = {"REGISTER", "UNDO"}
+    object_name: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        text_obj = bpy.data.objects.get(self.object_name)
+        if not text_obj:
+            return
+        bpy.ops.object.select_all(action="DESELECT")
+        text_obj.select_set(True)
+        context.view_layer.objects.active = text_obj
+
+
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"
