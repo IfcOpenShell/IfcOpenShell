@@ -238,6 +238,9 @@ KNOWN_EXCEPTIONS = frozenset(
 )
 
 
+HAS_MISSING_DEPENDENCIES = False
+
+
 def check_runtime_dependencies(package_dir: Path) -> None:
     """Check all binaries in `package_dir` and report if they're still missing dependencies or are static."""
 
@@ -277,8 +280,9 @@ def check_runtime_dependencies(package_dir: Path) -> None:
             if not is_known:
                 missing = True
 
-    # TODO: should error?
     if missing:
+        global HAS_MISSING_DEPENDENCIES
+        HAS_MISSING_DEPENDENCIES = True
         logger.warning("Runtime dependency check found issues; continuing packaging.")
 
 
@@ -434,6 +438,7 @@ class Args(NamedTuple):
     occt_shared: bool
     shared: bool
     no_zip: bool
+    fail_on_missing_deps: bool
 
 
 ARGS: Args
@@ -454,6 +459,11 @@ def main() -> None:
             "directories, useful for local debugging."
         ),
     )
+    parser.add_argument(
+        "--fail-on-missing-deps",
+        action="store_true",
+        help="Exit with an error at the end if any packaged binary has missing runtime dependencies.",
+    )
     args = parser.parse_args()
 
     global ARGS
@@ -463,6 +473,7 @@ def main() -> None:
         occt_shared=args.occt_shared,
         shared=args.shared,
         no_zip=args.no_zip,
+        fail_on_missing_deps=args.fail_on_missing_deps,
     )
     logger.setLevel(ARGS.log_level)
 
@@ -510,6 +521,9 @@ def main() -> None:
     if is_platform("MAC"):
         for app_path in sorted(install_root.glob("*.app")):
             package_app_bundle(app_path, install_root, github_sha, output_dir, autodesk_connector_dir, ARGS.arch_suffix)
+
+    if ARGS.fail_on_missing_deps and HAS_MISSING_DEPENDENCIES:
+        raise Exception("Runtime dependency check found issues; see warnings above.")
 
 
 if __name__ == "__main__":
