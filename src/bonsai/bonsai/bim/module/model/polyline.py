@@ -26,7 +26,7 @@ import ifcopenshell.util.unit
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.model.decorator import GpuSnapDecorator, PolylineDecorator
+from bonsai.bim.module.model.decorator import GpuSnapDecorator, PolylineDecorator, ProductDecorator
 
 
 class PolylineOperator:
@@ -425,6 +425,7 @@ class PolylineOperator:
         context.workspace.status_text_set(text=None)
         PolylineDecorator.uninstall()
         GpuSnapDecorator.uninstall()
+        ProductDecorator.uninstall()
         tool.Polyline.clear_polyline()
         tool.Raycast.clear_cache()
         tool.Blender.update_viewport()

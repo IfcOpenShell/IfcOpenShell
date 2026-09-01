@@ -3389,11 +3389,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
             tool.Blender.update_viewport()
 
         if event.value == "RELEASE" and event.type in {"ESC", "RIGHTMOUSE"}:
-            polyline_props.insertion_polyline.clear()
-            context.workspace.status_text_set(text=None)
-            PolylineDecorator.uninstall()
-            FaceAreaDecorator.uninstall()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"CANCELLED"}
 
         return {"RUNNING_MODAL"}
@@ -3404,6 +3400,10 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.install(context, ui_only=True)
         FaceAreaDecorator.install(context)
         return {"RUNNING_MODAL"}
+
+    def cleanup(self, context):
+        FaceAreaDecorator.uninstall()
+        super().cleanup(context)
 
 
 class ClearMeasurement(bpy.types.Operator):
@@ -3522,11 +3522,9 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def cancel_tool(self, context: bpy.types.Context) -> set["rna_enums.OperatorReturnItems"]:
-        context.workspace.status_text_set(text=None)
         if hasattr(self, "tool_state"):
             self.tool_state.plane_method = None
-        PolylineDecorator.uninstall()
-        tool.Blender.update_viewport()
+        self.cleanup(context)
         return {"CANCELLED"}
 
     def handle_custom_instructions(self, context: bpy.types.Context) -> None:
@@ -3597,10 +3595,8 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
 
             self.report({"INFO"}, f"Applied scale factor: {scale_factor:.4f}")
 
-        context.workspace.status_text_set(text=None)
         self.tool_state.plane_method = None
-        PolylineDecorator.uninstall()
-        tool.Blender.update_viewport()
+        self.cleanup(context)
 
         return {"FINISHED"}
 
