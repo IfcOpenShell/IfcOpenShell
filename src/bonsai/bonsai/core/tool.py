@@ -477,12 +477,14 @@ class Geometry:
     def is_box_representation(cls, representation): pass
     def is_data_supported_for_adding_representation(cls, data): pass
     def is_mapped_representation(cls, representation): pass
+    def is_text_literal(cls, representation): pass
     def is_type_product(cls, element): pass
     def link(cls, element, obj): pass
     def record_object_materials(cls, obj): pass
     def record_object_position(cls, obj): pass
     def recreate_object_with_data(cls, obj, data): pass
     def reimport_element_representations(cls, obj, representation, apply_openings=True): pass
+    def reimport_element_representations_batch(cls, items): pass
     def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
     def replace_object_data_globally(cls, old_data, new_data): pass
