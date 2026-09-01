@@ -112,6 +112,7 @@ classes = (
     wall.GizmoWallFilletReedit,
     wall.GizmoWallFilletToggleOpenings,
     wall.GizmoPairDisconnect,
+    wall.GizmoSlabAlign,
     wall.GizmoSlabEdition,
     wall.GizmoSlabUnjoinWalls,
     wall.GizmoWallJoinIntersection,
