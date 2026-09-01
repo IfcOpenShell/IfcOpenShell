@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import contextlib
+import io
 import logging
 import os
 import platform
@@ -933,17 +935,39 @@ class DebugActiveDrawing(bpy.types.Operator):
     bl_description = (
         "Will iterate over all visible drawing's objects, trying to narrow down the list of possible failing objects"
     )
+    should_export_isolated_file: bpy.props.BoolProperty(
+        name="Export Failing Elements to IFC",
+        description="Save a minimal IFC file containing only the failing elements after the search completes",
+        default=False,
+    )
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event):
+        return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context: bpy.types.Context):
         ifc_file = tool.Ifc.get()
-        props = tool.Drawing.get_document_props()
-        drawing_item = props.drawings[props.active_drawing_index]
-        drawing = tool.Ifc.get().by_id(drawing_item.ifc_definition_id)
+        if not ifc_file:
+            self.report({"ERROR"}, "No IFC file loaded.")
+            return {"CANCELLED"}
+        if not context.scene.camera:
+            self.report({"ERROR"}, "No active drawing camera in the scene.")
+            return {"CANCELLED"}
+        drawing_id = tool.Blender.get_ifc_definition_id(context.scene.camera)
+        if not drawing_id:
+            self.report({"ERROR"}, "Active camera is not linked to an IFC drawing element.")
+            return {"CANCELLED"}
+        drawing = ifc_file.by_id(drawing_id)
 
         GREEN = "\033[92m"
+        RED = "\033[91m"
         CYAN = "\033[96m"
+        BOLD = "\033[1m"
         END = "\033[0m"
         ATTEMPS = 10
+
+        def elem_label(e: ifcopenshell.entity_instance) -> str:
+            name = getattr(e, "Name", None) or "?"
+            return f"#{e.id()} {e.is_a()} '{name}'"
 
         # run create drawing with sync for once
         # to make sure everything is actually in sync
@@ -955,11 +979,11 @@ class DebugActiveDrawing(bpy.types.Operator):
             self.report({"INFO"}, "No errors creating drawing, nothing to investigate.")
             return {"FINISHED"}
 
-        all_elements = [e for obj in context.visible_objects if (e := tool.Ifc.get_entity(obj))]
-        all_elements = set(all_elements)
+        all_elements = {e for obj in context.visible_objects if (e := tool.Ifc.get_entity(obj))}
 
         original_exclude = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "Exclude")
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
+        failing_elements: list[ifcopenshell.entity_instance] = []
 
         def drawing_fails_to_load(chunk_to_include: set[ifcopenshell.entity_instance]) -> bool:
             current_elements = all_elements - chunk_to_include
@@ -969,66 +993,122 @@ class DebugActiveDrawing(bpy.types.Operator):
             ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Exclude": new_exclude})
 
             try:
-                bpy.ops.bim.create_drawing(sync=False)
-                result = False
-            except Exception as e:
-                # print(e)
-                result = True
+                with contextlib.redirect_stdout(io.StringIO()):
+                    bpy.ops.bim.create_drawing(sync=False)
+                failed = False
+            except Exception:
+                failed = True
 
             ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Exclude": original_exclude})
-            return result
+            return failed
 
         def test_elements(elements: list[ifcopenshell.entity_instance], attempts: int = ATTEMPS) -> None:
-            print(f"{CYAN}processing {len(elements)} elements{END}")
             if not elements:
-                print(f"Empty list of elements, will stop...")
                 return
 
-            n_elements = len(elements)
-            middle = int(n_elements / 2)
+            if len(elements) == 1:
+                element = elements[0]
+                if drawing_fails_to_load({element}):
+                    print(f"  {RED}FAIL{END}  {elem_label(element)}")
+                    failing_elements.append(element)
+                else:
+                    print(f"  {GREEN}ok{END}    {elem_label(element)}")
+                return
+
+            print(f"{CYAN}Narrowing {len(elements)} elements...{END}")
+            middle = len(elements) // 2
             chunk1, chunk2 = elements[:middle], elements[middle:]
             test_chunk_1 = drawing_fails_to_load(set(chunk1))
             test_chunk_2 = drawing_fails_to_load(set(chunk2))
 
-            if (
-                # both chunks do not fail anymore
-                (not test_chunk_1 and not test_chunk_2)
-                # or we have 1 element chunk that is still failing
-                or (test_chunk_1 and not chunk2)
-                or (test_chunk_2 and not chunk1)
-            ):
-                if attempts == 0 or n_elements in (1, 2):
-                    print(f"{GREEN}Couldn't narrow it down any further.{END}")
-                    print(f"It's some of the {n_elements} elements:")
-                    print(elements)
-
-                    print("Let's test excluding them...")
-                    for element in elements:
-                        test = drawing_fails_to_load(all_elements - {element})
-                        if test:
-                            print(f"{CYAN}Excluding element didn't fixed the drawing: {END}")
-                            print(element)
-                        else:
-                            print(f"{GREEN}Excluding element fixed the drawing: {END}")
-                            print(element)
-                else:
-                    print(f"{CYAN}Will try to reshuffle elements and try again, attempt {ATTEMPS-attempts+1}/{ATTEMPS}")
-                    attempts -= 1
+            if not test_chunk_1 and not test_chunk_2:
+                # Neither half alone fails — elements may interact; reshuffle and retry
+                if attempts > 0:
+                    print(f"{CYAN}  Neither half fails alone, reshuffling (attempt {ATTEMPS - attempts + 1}/{ATTEMPS})...{END}")
                     random.shuffle(elements)
-                    test_elements(elements, attempts)
+                    test_elements(elements, attempts - 1)
+                else:
+                    print(f"{CYAN}  Could not isolate further. Possible interacting candidates:{END}")
+                    for e in elements:
+                        print(f"    ? {elem_label(e)}")
                 return
 
-            # if chunk fails we need to investigate it further
             if test_chunk_1:
                 test_elements(chunk1)
-
             if test_chunk_2:
                 test_elements(chunk2)
 
+        print(f"\n{BOLD}{'='*60}{END}")
+        print(f"{BOLD}Searching {len(all_elements)} elements for drawing failures...{END}")
+        print(f"{BOLD}{'='*60}{END}\n")
+
         test_elements(list(all_elements))
 
-        self.report({"INFO"}, "See system console for the results")
+        if failing_elements:
+            for obj in context.scene.objects:
+                obj.select_set(False)
+            for element in failing_elements:
+                if obj := tool.Ifc.get_object(element):
+                    obj.select_set(True)
+
+        print(f"\n{BOLD}{'='*60}{END}")
+        if failing_elements:
+            print(f"{BOLD}{RED}Found {len(failing_elements)} failing element(s):{END}")
+            for e in failing_elements:
+                print(f"  {RED}✗{END} {elem_label(e)}")
+            if self.should_export_isolated_file:
+                output_path = os.path.splitext(tool.Ifc.get_path())[0] + "_failing_elements.ifc"
+                print(f"\n{CYAN}Exporting isolated IFC file...{END}", flush=True)
+                self._export_elements(ifc_file, failing_elements, output_path)
+                print(f"{GREEN}Done.{END} Saved to: {output_path}")
+                print(
+                    f"\n{CYAN}Please attach {os.path.basename(output_path)} when reporting this issue at"
+                    f" https://github.com/IfcOpenShell/IfcOpenShell/issues/new/choose"
+                    f" — this helps the team reproduce and fix the underlying geometry bug.{END}"
+                )
+                self.report({"INFO"}, f"Found {len(failing_elements)} failing element(s) — exported to {output_path}")
+            else:
+                print(
+                    f"\n{CYAN}If possible, re-run with 'Export Failing Elements to IFC' enabled, then attach"
+                    f" the exported file when reporting at https://github.com/IfcOpenShell/IfcOpenShell/issues/new/choose"
+                    f" — this could help fix deeper geometry bugs.{END}"
+                )
+                self.report({"INFO"}, f"Found {len(failing_elements)} failing element(s) — see system console.")
+        else:
+            print(f"{BOLD}{GREEN}No individually failing elements found.{END}")
+            print("  (Failure may require a specific combination of elements.)")
+            self.report({"INFO"}, "No individually failing elements found — see system console.")
+        print(f"{BOLD}{'='*60}{END}\n")
+
         return {"FINISHED"}
+
+    def _export_elements(
+        self,
+        ifc_file: ifcopenshell.file,
+        elements: list[ifcopenshell.entity_instance],
+        output_path: str,
+    ) -> None:
+        from ifcpatch.recipes.ExtractElements import Patcher
+
+        patcher = Patcher.__new__(Patcher)
+        patcher.file = ifc_file
+        patcher.logger = None
+        patcher.contained_ins = {}
+        patcher.aggregates = {}
+        patcher.new = ifcopenshell.file(schema_version=ifc_file.schema_version)
+        patcher.owner_history = None
+        patcher.reuse_identities = {}
+        patcher.assume_asset_uniqueness_by_name = True
+        for owner_history in ifc_file.by_type("IfcOwnerHistory"):
+            patcher.owner_history = patcher.new.add(owner_history)
+            break
+        projects = ifc_file.by_type("IfcProject")
+        if projects:
+            patcher.add_element(projects[0])
+        for element in elements:
+            patcher.add_element(element)
+        patcher.create_spatial_tree()
+        patcher.new.write(output_path)
 
 
 class ToggleDetailedIOSLogs(bpy.types.Operator):
