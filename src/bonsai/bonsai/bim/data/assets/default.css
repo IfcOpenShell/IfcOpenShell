@@ -101,3 +101,20 @@ text.GRID, tspan.GRID { /* 5mm */ font-size: 8.25px; }
 .PredefinedType-STEEL { fill: url(#steel); stroke: black; stroke-width: 0.5; }
 .PredefinedType-CONCRETE { fill: url(#concrete); stroke: black; stroke-width: 0.5; }
 .PredefinedType-PLASTERBOARD { fill: url(#sand); stroke: black; stroke-width: 0.25; }
+/* Per element classes, assigned via EPset_Annotation.Classes. Declared last so
+   they override the class, material and predefined type rules above. */
+.fine { stroke-width: 0.18; }
+.thin { stroke-width: 0.25; }
+.medium { stroke-width: 0.35; }
+.thick { stroke-width: 0.5; }
+.strong { stroke-width: 1; }
+.dashed { stroke-dasharray: 3, 2; }
+.dotted { stroke-dasharray: 0.5, 1.5; }
+.dashdot { stroke-dasharray: 6, 2, 1, 2; }
+.hidden { stroke: none; fill: none; }
+.fill-none { fill: none; }
+.fill-white { fill: #ffffff; }
+.fill-light { fill: #dddddd; }
+.fill-grey { fill: #aaaaaa; }
+.fill-dark { fill: #777777; }
+.fill-solid { fill: #000000; }
