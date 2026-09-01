@@ -84,6 +84,7 @@ modules = {
     "gis": None,
     "covetool": None,
     "augin": None,
+    "cadsketcher": None,
     "debug": None,
     "ifcgit": None,
     "covering": None,
