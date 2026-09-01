@@ -21,11 +21,13 @@ import os
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
+import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
+import ifcopenshell.validate
 import numpy
 import pytest
 
@@ -130,6 +132,62 @@ class TestExtractElements(test.bootstrap.IFC4):
         output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
         assert output.by_type("IfcProject")[0].GlobalId == project.GlobalId
         assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId
+
+    def test_extract_without_leaving_orphan_placements(self):
+        # Regression test for #9419: extraction rebases each extracted
+        # product's placement, and the copied site/storey placement chain was
+        # left behind with an empty PlacesObject inverse.
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        site = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[site], relating_object=project)
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=site)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=site)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=storey)
+        for i in range(2):
+            wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+            ifcopenshell.api.spatial.assign_container(self.file, products=[wall], relating_structure=storey)
+            matrix = numpy.eye(4)
+            matrix[0][3] = i + 1.0
+            ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=matrix)
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        assert len(output.by_type("IfcWall")) == 2
+        assert not [p for p in output.by_type("IfcLocalPlacement") if not p.PlacesObject]
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate(output, logger)
+        assert not [s for s in logger.statements if "PlacesObject" in str(s)]
+
+    def test_extract_without_leaving_orphan_placement_ancestors_of_excluded_products(self):
+        # Regression test for #9419: the door is placed relative to its
+        # opening, which is placed relative to the wall, and only the door is
+        # extracted. The copied wall and opening placements must not survive
+        # as orphans with an empty PlacesObject.
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=project)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=storey)
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall, door], relating_structure=storey)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+        ifcopenshell.api.feature.add_filling(self.file, element=door, opening=opening)
+        matrix = numpy.eye(4)
+        matrix[0][3] = 1.0
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=matrix)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=opening, matrix=matrix.copy())
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=door, matrix=matrix.copy())
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcDoor"]})
+
+        assert output.by_type("IfcDoor")
+        assert not output.by_type("IfcWall")
+        assert not [p for p in output.by_type("IfcLocalPlacement") if not p.PlacesObject]
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate(output, logger)
+        assert not [s for s in logger.statements if "PlacesObject" in str(s)]
 
 
 class TestExtractElementsIFC2X3(test.bootstrap.IFC2X3, TestExtractElements):

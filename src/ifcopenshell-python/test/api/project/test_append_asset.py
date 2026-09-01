@@ -37,6 +37,7 @@ import ifcopenshell.api.unit
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.validate
 import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
@@ -646,6 +647,39 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         # Ensure their attributes are also not duplicated.
         assert len(ifc_file.by_type("IfcTelecomAddress")) == 1
         assert len(ifc_file.by_type("IfcActorRole")) == 2
+
+    def test_append_products_without_leaving_orphan_placements(self):
+        # Regression test for #9419: appending a product copies its placement
+        # ancestors (the site/storey chain), then rebases the placement,
+        # leaving the copied ancestors with an empty PlacesObject inverse.
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        project = ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        site = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSite")
+        storey = ifcopenshell.api.root.create_entity(library, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(library, products=[site], relating_object=project)
+        ifcopenshell.api.aggregate.assign_object(library, products=[storey], relating_object=site)
+        ifcopenshell.api.geometry.edit_object_placement(library, product=site)
+        ifcopenshell.api.geometry.edit_object_placement(library, product=storey)
+        walls = []
+        for i in range(2):
+            wall = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+            ifcopenshell.api.spatial.assign_container(library, products=[wall], relating_structure=storey)
+            matrix = np.eye(4)
+            matrix[0][3] = i + 1.0
+            ifcopenshell.api.geometry.edit_object_placement(library, product=wall, matrix=matrix)
+            walls.append(wall)
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        reuse_identities = {}
+        for wall in walls:
+            ifcopenshell.api.project.append_asset(
+                self.file, library=library, element=wall, reuse_identities=reuse_identities
+            )
+        assert len(self.file.by_type("IfcWall")) == 2
+        assert not [p for p in self.file.by_type("IfcLocalPlacement") if not p.PlacesObject]
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate(self.file, logger)
+        assert not [s for s in logger.statements if "PlacesObject" in str(s)]
 
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
