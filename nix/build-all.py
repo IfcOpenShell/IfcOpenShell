@@ -126,7 +126,7 @@ import textwrap
 import threading
 import time
 from collections.abc import Generator, Sequence
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Literal, NamedTuple, TypeAlias
 from urllib.request import urlretrieve
@@ -188,7 +188,6 @@ cplusplus = "c++"
 autoconf = "autoconf"
 automake = "automake"
 make = "make"
-date = "date"
 strip = "strip"
 xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
 brew = "brew"
@@ -606,12 +605,10 @@ download_tool_git = "git"
 
 # Create log directory and file
 
-log_dir = os.path.join(DEPS_DIR, "logs")
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-LOG_FILE = os.path.join(log_dir, sp.check_output([date, "+%Y%m%d"], encoding="utf-8").strip()) + ".log"
-if not os.path.exists(LOG_FILE):
-    open(LOG_FILE, "w").close()
+log_dir = Path(DEPS_DIR) / "logs"
+log_dir.mkdir(parents=True, exist_ok=True)
+LOG_FILE = log_dir / f"{date.today().strftime('%Y%m%d')}.log"
+LOG_FILE.touch(exist_ok=True)
 logger.info(f"using command log file '{LOG_FILE}'")
 
 # Causing havoc in python 3.11 build
