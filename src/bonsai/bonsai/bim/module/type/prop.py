@@ -45,6 +45,22 @@ def get_relating_type(self: "BIMTypeProperties", context: bpy.types.Context) -> 
     return TypeData.data["relating_types"]
 
 
+def get_length_per_instance(self: "BIMTypeProperties") -> bool:
+    # Reflect the current IFC state (per-instance vs typed length) so the checkbox has no stored
+    # state to keep in sync. TypeData caches the flag; the panel loads it before drawing.
+    if not TypeData.is_loaded:
+        TypeData.load()
+    return bool(TypeData.data.get("can_make_length_type_driven"))
+
+
+def set_length_per_instance(self: "BIMTypeProperties", value: bool) -> None:
+    # Ticking the box makes the length per-instance; unticking re-maps it back to the type.
+    if value:
+        bpy.ops.bim.make_profile_length_per_instance()
+    else:
+        bpy.ops.bim.make_profile_length_type_driven()
+
+
 def update_relating_type_class(self: "BIMTypeProperties", context: bpy.types.Context) -> None:
     TypeData.is_loaded = False
 
@@ -90,6 +106,15 @@ class BIMTypeProperties(PropertyGroup):
     )
     is_editing_type_attributes: BoolProperty(name="Is Editing Type Attributes")
     type_attributes: CollectionProperty(type=Attribute, name="Type Attributes")
+    length_per_instance: BoolProperty(
+        name="Per-instance Length",
+        description=(
+            "Ticked: this profile occurrence has its own editable extrusion length. "
+            "Unticked: the length is typed/shared (driven by the type's representation)"
+        ),
+        get=get_length_per_instance,
+        set=set_length_per_instance,
+    )
 
     if TYPE_CHECKING:
         is_editing_type: bool
@@ -98,3 +123,4 @@ class BIMTypeProperties(PropertyGroup):
         relating_type_object: Union[bpy.types.Object, None]
         is_editing_type_attributes: bool
         type_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        length_per_instance: bool
