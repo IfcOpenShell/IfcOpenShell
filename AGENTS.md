@@ -100,6 +100,31 @@ AI-generated, identify them.
 - Otherwise, add a blank line after the subject followed by a short explanation
   of a few lines in the body.
 
+### AI Effort Indicator (Optional but Recommended)
+
+For commits generated with the assistance of an AI tool, include an **effort  
+estimate** in the commit message body indicating how difficult the agent  
+assessed the task to be.
+
+This should be a number from **1 (trivial)** to **10 (very difficult or uncertain)**.
+
+This signal can help reviewers identify which changes may require closer  
+inspection, especially where the agent encountered ambiguity or complexity.
+
+Example:
+```
+Fix off-by-one error in element iteration  
+  
+The loop termination condition was incorrect when processing  
+IfcRelAggregates relationships.  
+  
+Generated with the assistance of an AI coding tool.  
+AI effort: 7/10
+```
+Note: This value is subjective and should not be treated as a guarantee of  
+correctness. High-effort changes may warrant additional scrutiny, but  
+low-effort changes can still contain errors.
+
 ## Code Style
 
 ### Python
