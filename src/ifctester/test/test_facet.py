@@ -33,6 +33,8 @@ import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifcopenshell.util.pset
+import pytest
+from elementpath.regex import RegexError
 
 import ifctester.facet
 import ifctester.ids
@@ -1752,6 +1754,21 @@ class TestRestriction:
         assert restriction == "AB01"
         assert restriction != "AB"
         assert restriction != "01"
+
+    def test_pattern_treats_anchors_as_literal_characters(self):
+        restriction = Restriction(options={"pattern": "^.{1,5}$"})
+        assert restriction != "AB"
+        assert restriction == "^AB$"
+
+    def test_pattern_is_implicitly_anchored(self):
+        restriction = Restriction(options={"pattern": ".{1,5}"})
+        assert restriction == "abc"
+        assert restriction != "abcdef"
+
+    def test_pattern_rejects_regex_features_outside_xsd(self):
+        for pattern in ("(a)\\1", "a+?"):
+            with pytest.raises(RegexError):
+                Restriction(options={"pattern": pattern}) == "aa"
 
     def test_filtering_using_restrictions(self):
         set_facet("restriction")
