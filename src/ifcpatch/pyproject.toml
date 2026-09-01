@@ -37,5 +37,5 @@ extend = "../../pyproject.toml"
 
 [tool.ruff.lint]
 extend-select = [
-    "unused-import", # unused imports
+    "unused-import",
 ]

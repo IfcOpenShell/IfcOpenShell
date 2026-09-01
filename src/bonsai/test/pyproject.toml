@@ -1,5 +1,5 @@
 [tool.ruff]
 extend = "../pyproject.toml"
 lint.ignore = [
-  "unused-import",  # unused imports
+  "unused-import",
 ]
