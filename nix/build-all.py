@@ -110,6 +110,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import importlib.util
 import json
 import logging
 import multiprocessing
@@ -985,9 +986,7 @@ def install_qt6() -> str:
 
     os.makedirs(qt_install_root, exist_ok=True)
 
-    try:
-        import aqt  # ty:ignore[unresolved-import]
-    except ModuleNotFoundError:
+    if importlib.util.find_spec("aqt") is None:
         logger.error(
             "Could not find an existing Qt6 install, so aqtinstall is needed to fetch it automatically. "
             "Install the `aqtinstall` PyPI package or set QT_DIR."
