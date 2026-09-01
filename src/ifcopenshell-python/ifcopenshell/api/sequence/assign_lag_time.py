@@ -16,11 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
+from typing import Union
+
 import ifcopenshell.util.date
 
 
 def assign_lag_time(
-    file: ifcopenshell.file, rel_sequence: ifcopenshell.entity_instance, lag_value: str, duration_type: str = "WORKTIME"
+    file: ifcopenshell.file,
+    rel_sequence: ifcopenshell.entity_instance,
+    lag_value: Union[str, datetime.timedelta, float],
+    duration_type: str = "WORKTIME",
 ) -> ifcopenshell.entity_instance:
     """Assign a lag time to a sequence relationship between tasks
 
@@ -34,7 +40,9 @@ def assign_lag_time(
     are allowed.
 
     :param rel_sequence: The IfcRelSequence to assign the lag time to.
-    :param lag_value: An ISO standardised duration string.
+    :param lag_value: An ISO standardised duration string or a percentage
+        ratio, where 0.5 represents 50%. A datetime timedelta is also
+        supported.
     :param duration_type: Choose from WORKTIME for the associated
         calendar-based lag times (this is the most common scenario and is
         recommended as a default), or ELAPSEDTIME to not follow the
@@ -80,8 +88,11 @@ def assign_lag_time(
         # for whatever reason.
         ifcopenshell.api.sequence.assign_lag_time(model, rel_sequence=sequence, lag_value="P1D")
     """
-    duration = file.create_entity("IfcDuration", ifcopenshell.util.date.datetime2ifc(lag_value, "IfcDuration"))
-    lag_time = file.create_entity("IfcLagTime", DurationType=duration_type, LagValue=duration)
+    if isinstance(lag_value, float):
+        lag_value = file.create_entity("IfcRatioMeasure", lag_value)
+    else:
+        lag_value = file.create_entity("IfcDuration", ifcopenshell.util.date.datetime2ifc(lag_value, "IfcDuration"))
+    lag_time = file.create_entity("IfcLagTime", DurationType=duration_type, LagValue=lag_value)
     if rel_sequence.is_a("IfcRelSequence"):
         if (current_lag_time := rel_sequence.TimeLag) and file.get_total_inverses(current_lag_time) == 1:
             file.remove(current_lag_time)
