@@ -189,8 +189,6 @@ autoconf = "autoconf"
 automake = "automake"
 make = "make"
 date = "date"
-curl = "curl"
-wget = "wget"
 strip = "strip"
 xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
 brew = "brew"
@@ -684,11 +682,6 @@ if APPLE:
         # This is now solved with the '__PYVENV_LAUNCHER__' hack
         # PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) < (3, 11)]
         pass
-
-BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
-
-OCE_LOCATION = f"https://github.com/tpaviot/oce/archive/OCE-{OCE_VERSION}.tar.gz"
-BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BOOST_VERSION}/"
 
 # Helper functions
 
@@ -1458,6 +1451,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     os.environ["CFLAGS"] = OLD_C_FLAGS
 
 if "boost" in targets:
+    BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BOOST_VERSION}/"
     str_concat = lambda prefix: lambda postfix: "" if postfix.strip() == "" else "=".join((prefix, postfix.strip()))
     toolset = []
     if WASM:
