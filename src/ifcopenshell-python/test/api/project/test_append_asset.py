@@ -18,6 +18,7 @@
 
 import numpy as np
 
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.classification
 import ifcopenshell.api.context
 import ifcopenshell.api.cost
@@ -31,6 +32,7 @@ import ifcopenshell.api.profile
 import ifcopenshell.api.project
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.api.style
 import ifcopenshell.api.system
 import ifcopenshell.api.type
