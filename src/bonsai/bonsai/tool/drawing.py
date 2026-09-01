@@ -1089,6 +1089,7 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.render_sharp = True
         camera_props.ridge_angle_min_degrees = 45.0
         camera_props.render_flush = False
+        camera_props.freestyle_ifc_only = False
         camera.shift_x = 0.0
         camera.shift_y = 0.0
 
@@ -1138,6 +1139,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.fill_mode = str(pset["FillMode"])
             if "CutMode" in pset:
                 camera_props.cut_mode = str(pset["CutMode"])
+            if "FreestyleIfcOnly" in pset:
+                camera_props.freestyle_ifc_only = bool(pset["FreestyleIfcOnly"])
             if camera.type == "PERSP":
                 shifts = cls.get_perspective_camera_shifts(drawing)
                 camera.shift_x = shifts["shift_x"]

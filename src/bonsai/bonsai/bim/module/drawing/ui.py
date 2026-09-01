@@ -113,6 +113,9 @@ class BIM_PT_camera(Panel):
             row.prop(props, "fill_mode")
             row = self.layout.row()
             row.prop(props, "cut_mode")
+        elif props.linework_mode == "FREESTYLE":
+            row = self.layout.row()
+            row.prop(props, "freestyle_ifc_only")
 
         row = self.layout.row()
         row.prop(props, "use_edge_classification")
