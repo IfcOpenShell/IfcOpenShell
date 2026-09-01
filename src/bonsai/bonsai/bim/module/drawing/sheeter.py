@@ -24,6 +24,7 @@ import urllib.parse
 import uuid
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Union
 from xml.dom import minidom
 
 import ifcopenshell.util.geolocation
@@ -210,6 +211,71 @@ class SheetBuilder:
                         image.attrib["height"] = str(view_height)
 
         layout_tree.write(layout_path)
+
+    def find_sheet_item(
+        self, layout_root: ET.Element, reference: ifcopenshell.entity_instance
+    ) -> Union[ET.Element, None]:
+        for g in layout_root.findall(f"{SVG}g"):
+            if g.attrib.get("data-id") == str(reference.id()):
+                return g
+        return None
+
+    def get_sheet_item_position(
+        self, reference: ifcopenshell.entity_instance, sheet: ifcopenshell.entity_instance
+    ) -> Union[Vector, None]:
+        """Position in mm of a drawing/schedule/reference placed on a sheet layout."""
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        assert layout_path
+        if not os.path.exists(layout_path):
+            return None
+
+        layout_root = ET.parse(layout_path).getroot()
+        view = self.find_sheet_item(layout_root, reference)
+        if view is None:
+            return None
+
+        content = self.get_sheet_item_content(view)
+        if content is None:
+            return None
+        return Vector((self.convert_to_mm(content.attrib["x"]), self.convert_to_mm(content.attrib["y"])))
+
+    def set_sheet_item_position(
+        self, reference: ifcopenshell.entity_instance, sheet: ifcopenshell.entity_instance, x: float, y: float
+    ) -> bool:
+        """Move a sheet item and its view title to an absolute position in mm."""
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
+
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        assert layout_path
+        if not os.path.exists(layout_path):
+            return False
+
+        layout_tree = ET.parse(layout_path)
+        view = self.find_sheet_item(layout_tree.getroot(), reference)
+        if view is None:
+            return False
+
+        content = self.get_sheet_item_content(view)
+        if content is None:
+            return False
+
+        offset = Vector((x, y)) - Vector(
+            (self.convert_to_mm(content.attrib["x"]), self.convert_to_mm(content.attrib["y"]))
+        )
+
+        for image in view.findall(f"{SVG}image"):
+            image.attrib["x"] = str(round(self.convert_to_mm(image.attrib["x"]) + offset.x, 4))
+            image.attrib["y"] = str(round(self.convert_to_mm(image.attrib["y"]) + offset.y, 4))
+
+        layout_tree.write(layout_path)
+        return True
+
+    def get_sheet_item_content(self, view: ET.Element) -> Union[ET.Element, None]:
+        for image in view.findall(f"{SVG}image"):
+            if image.attrib.get("data-type") in ("foreground", "content"):
+                return image
+        return None
 
     def remove_drawing(self, reference: ifcopenshell.entity_instance, sheet: ifcopenshell.entity_instance) -> None:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
