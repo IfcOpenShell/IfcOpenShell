@@ -146,7 +146,8 @@ class Patcher:
                 continue
 
             constituent_name = constituent.Name.strip()
-            if width := element_quantities.get(constituent_name):
+            width = element_quantities.get(constituent_name)
+            if width is not None:
                 constituent_widths[constituent] = width * unit_scale
                 total_width += width * unit_scale
             else:
