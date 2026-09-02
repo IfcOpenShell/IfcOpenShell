@@ -864,6 +864,14 @@ class TestClassification:
             expected=True,
         )
 
+        facet = Classification(value="1")
+        run(
+            "A value-only facet with no system specified does not wrongly require a system match",
+            facet=facet,
+            inst=element1,
+            expected=True,
+        )
+
         facet = Classification(system="Foobar")
         run("Systems should match exactly 1/5", facet=facet, inst=project, expected=True)
         run("Systems should match exactly 2/5", facet=facet, inst=element0, expected=False)
@@ -1346,6 +1354,39 @@ class TestProperty:
         run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=True)
         prop.NominalValue = ifc.create_entity("IfcMassMeasure", 6.0)
         run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=False)
+
+    def test_ifc2x3_predefined_property_sets_expose_direct_attributes(self):
+        set_facet("property")
+
+        # IfcPreDefinedPropertySet does not exist in IFC2X3, so its former
+        # subtypes (e.g. IfcDoorLiningProperties) fall straight through to
+        # IfcPropertySetDefinition, storing values as direct attributes
+        # rather than IfcProperty entities. This used to crash with a
+        # TypeError instead of correctly matching (or failing) the value.
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        door = ifc.create_entity("IfcDoor", GlobalId=ifcopenshell.guid.new())
+        lining = ifc.create_entity(
+            "IfcDoorLiningProperties",
+            GlobalId=ifcopenshell.guid.new(),
+            Name="Foo_Bar",
+            LiningDepth=0.05,
+        )
+        ifc.create_entity(
+            "IfcRelDefinesByProperties",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[door],
+            RelatingPropertyDefinition=lining,
+        )
+
+        facet = Property(
+            propertySet="Foo_Bar", baseName="LiningDepth", value="0.05", dataType="IFCPOSITIVELENGTHMEASURE"
+        )
+        run("IFC2X3 predefined property sets expose direct attributes 1/2", facet=facet, inst=door, expected=True)
+
+        facet = Property(
+            propertySet="Foo_Bar", baseName="LiningDepth", value="0.9", dataType="IFCPOSITIVELENGTHMEASURE"
+        )
+        run("IFC2X3 predefined property sets expose direct attributes 2/2", facet=facet, inst=door, expected=False)
 
     def setup_ifc(self):
         ifc = ifcopenshell.file()

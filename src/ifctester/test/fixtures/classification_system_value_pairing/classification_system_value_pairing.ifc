@@ -1,0 +1,17 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2026-08-06T08:10:47',(''),(''),'IfcOpenShell 0.8.5-1c5b825','IfcOpenShell 0.8.5-1c5b825','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROJECT('1Fu_ePwY1DZxzRl9jojPI0',$,'P',$,$,$,$,$,$);
+#2=IFCWALL('3foV$XgsXBg9j1W4aNefvj',$,'Wall1',$,$,$,$,$,$);
+#3=IFCCLASSIFICATION($,$,$,'SystemA',$,$,$);
+#4=IFCCLASSIFICATIONREFERENCE($,'WRONG',$,#3,$,$);
+#5=IFCRELASSOCIATESCLASSIFICATION('05rScmOVzMoQXOfbYdtLYj',$,$,$,(#2),#4);
+#6=IFCCLASSIFICATION($,$,$,'SystemB',$,$,$);
+#7=IFCCLASSIFICATIONREFERENCE($,'ExpectedValue',$,#6,$,$);
+#8=IFCRELASSOCIATESCLASSIFICATION('15rScmOVzMoQXOfbYdtLYj',$,$,$,(#2),#7);
+ENDSEC;
+END-ISO-10303-21;
