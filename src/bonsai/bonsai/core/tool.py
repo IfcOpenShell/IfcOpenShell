@@ -868,6 +868,7 @@ class Resource:
     def enable_editing_resource_time(cls, resource): pass
     def enable_editing_resource(cls, resource): pass
     def expand_resource(cls, resource): pass
+    def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
     def get_constraints(cls, resource): pass
     def get_highlighted_resource(cls): pass
     def get_metric_reference(cls, metric, is_deep): pass
