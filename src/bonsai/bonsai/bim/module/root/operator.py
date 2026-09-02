@@ -344,6 +344,8 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc, tool.Geometry, obj=obj, representation=representation
                 )
+                # Restore the original quads/n-gons the reimport triangulated.
+                tool.Geometry.dissolve_triangulated_edges(obj)
             else:
 
                 def is_representation_supported() -> bool:
