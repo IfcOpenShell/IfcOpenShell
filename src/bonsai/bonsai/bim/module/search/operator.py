@@ -34,6 +34,7 @@ from bpy.props import (
     StringProperty,
 )
 from bpy.types import Operator
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 from natsort import natsorted
 
 import bonsai.core.search as core
@@ -870,21 +871,7 @@ class SaveSearch(Operator, tool.Ifc.Operator):
         try:
             query = tool.Search.export_filter_query(filter_groups)
             results = tool.Search.execute_filter_groups(filter_groups)
-
-            filter_structure: list[list[dict[str, Any]]] = []
-            for filter_group in filter_groups:
-                group_data: list[dict[str, Any]] = []
-                for ifc_filter in filter_group.filters:
-                    filter_data = {
-                        "type": ifc_filter.type,
-                        "name": ifc_filter.name,
-                        "value": ifc_filter.value,
-                        "pset": ifc_filter.pset,
-                        "comparison": ifc_filter.comparison,
-                        "filter_mode": ifc_filter.filter_mode,
-                    }
-                    group_data.append(filter_data)
-                filter_structure.append(group_data)
+            filter_structure = tool.Search.export_filter_structure(filter_groups)
         except:
             print(traceback.format_exc())
             self.report({"ERROR"}, "Error occurred trying save search.")
@@ -982,6 +969,54 @@ class RemoveSearch(Operator, tool.Ifc.Operator):
         if not SearchData.is_loaded:
             SearchData.load()
         return context.window_manager.invoke_props_dialog(self)
+
+
+class ExportSearchFilter(Operator, ExportHelper):
+    bl_idname = "bim.export_search_filter"
+    bl_label = "Export Search Filter"
+    bl_description = "Export search filter to a JSON file, so it can be reused in other IFC projects"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".json"
+    filter_glob: StringProperty(default="*.json", options={"HIDDEN"})
+    module: StringProperty()
+
+    if TYPE_CHECKING:
+        module: str
+
+    def execute(self, context):
+        filter_groups = tool.Search.get_filter_groups(self.module or "search")
+        data = {
+            "type": "BBIM_Search",
+            "query": tool.Search.export_filter_query(filter_groups),
+            "filter_structure": tool.Search.export_filter_structure(filter_groups),
+        }
+        with open(self.filepath, "w") as outfile:
+            json.dump(data, outfile)
+        return {"FINISHED"}
+
+
+class ImportSearchFilter(Operator, ImportHelper):
+    bl_idname = "bim.import_search_filter"
+    bl_label = "Import Search Filter"
+    bl_description = "Import a search filter previously exported to a JSON file"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".json"
+    filter_glob: StringProperty(default="*.json", options={"HIDDEN"})
+    module: StringProperty()
+
+    if TYPE_CHECKING:
+        module: str
+
+    def execute(self, context):
+        filter_groups = tool.Search.get_filter_groups(self.module or "search")
+        with open(self.filepath, "r") as infile:
+            data = json.load(infile)
+
+        if "filter_structure" in data:
+            tool.Search.import_filter_structure(data["filter_structure"], filter_groups)
+        else:
+            tool.Search.import_filter_query(data.get("query", ""), filter_groups)
+        return {"FINISHED"}
 
 
 class ColourByProperty(Operator):
@@ -1232,6 +1267,49 @@ class LoadColourscheme(Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
+
+
+class ExportColourscheme(Operator, ExportHelper):
+    bl_idname = "bim.export_colourscheme"
+    bl_label = "Export Colourscheme"
+    bl_description = "Export colourscheme to a JSON file, so it can be reused in other IFC projects"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".json"
+    filter_glob: StringProperty(default="*.json", options={"HIDDEN"})
+
+    def execute(self, context):
+        props = tool.Search.get_search_props()
+        data = {
+            "type": "BBIM_Colourscheme",
+            "colourscheme_query": props.colourscheme_query,
+            "colourscheme": {cs.name: {"colour": cs.colour[0:3], "total": cs.total} for cs in props.colourscheme},
+        }
+        with open(self.filepath, "w") as outfile:
+            json.dump(data, outfile)
+        return {"FINISHED"}
+
+
+class ImportColourscheme(Operator, ImportHelper):
+    bl_idname = "bim.import_colourscheme"
+    bl_label = "Import Colourscheme"
+    bl_description = "Import a colourscheme previously exported to a JSON file"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".json"
+    filter_glob: StringProperty(default="*.json", options={"HIDDEN"})
+
+    def execute(self, context):
+        props = tool.Search.get_search_props()
+        with open(self.filepath, "r") as infile:
+            data = json.load(infile)
+
+        props.colourscheme_query = data.get("colourscheme_query") or ""
+        props.colourscheme.clear()
+        for name, colour_data in data.get("colourscheme", {}).items():
+            new = props.colourscheme.add()
+            new.name = name
+            new.total = colour_data["total"]
+            new.colour = colour_data["colour"]
+        return {"FINISHED"}
 
 
 class SelectGlobalId(Operator):
