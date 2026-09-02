@@ -21,21 +21,41 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRightCircularCylinder* inst) {
-	// @todo
-	return nullptr;
-	/*
+#include <boost/math/constants/constants.hpp>
 
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRightCircularCylinder* inst) {
 	const double r = inst->Radius() * length_unit_;
 	const double h = inst->Height() * length_unit_;
 
-	BRepPrimAPI_MakeCylinder builder(r, h);
-	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(inst->Position(),trsf);
-	
-	// IfcCsgPrimitive3D.Position has unit scale factor
-	shape = builder.Solid().Moved(trsf);
+	const double precision = settings_.get<settings::Precision>().get();
+	if (r < precision || h < precision) {
+		logger_.Message(Logger::LOG_ERROR, "GEO", 89, "Non-positive radius or height encountered for:", inst);
+		return nullptr;
+	}
 
-	return true;
-	*/
+	// A right circular cylinder is a disk of radius r extruded by its height h
+	// along the local +Z axis. Build the disk as a single circular loop face,
+	// mirroring IfcCircleProfileDef, then wrap it in a taxonomy::extrusion so
+	// both geometry kernels handle it through the ordinary swept-solid path.
+	auto circle = taxonomy::make<taxonomy::circle>();
+	circle->radius = r;
+	circle->matrix = taxonomy::make<taxonomy::matrix4>();
+
+	auto edge = taxonomy::make<taxonomy::edge>();
+	edge->basis = circle;
+	edge->start = 0.;
+	edge->end = 2 * boost::math::constants::pi<double>();
+
+	auto loop = taxonomy::make<taxonomy::loop>();
+	loop->children = { edge };
+	loop->external = true;
+
+	auto face = taxonomy::make<taxonomy::face>();
+	face->children.push_back(loop);
+
+	// IfcCsgPrimitive3D.Position places the whole solid; map() applies the unit scale.
+	auto matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+	auto direction = taxonomy::make<taxonomy::direction3>(0, 0, 1);
+
+	return taxonomy::make<taxonomy::extrusion>(matrix, face, direction, h);
 }
