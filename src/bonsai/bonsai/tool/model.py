@@ -787,7 +787,15 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> MaterialLayerParameters:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        layer_set_direction = "AXIS2"
+        # Without an actual IfcMaterialLayerSetUsage to read LayerSetDirection
+        # from (eg. a parametric IfcRoof, which never gets one), fall back to
+        # the same class-based inference get_usage_type() uses, rather than
+        # always guessing the wall-like AXIS2. Anything not recognised keeps
+        # defaulting to AXIS2, matching prior behaviour.
+        if element.is_a() in cls.AXIS3_HOST_CLASSES:
+            layer_set_direction = "AXIS3"
+        else:
+            layer_set_direction = "AXIS2"
         offset = 0.0
         thickness = 0.0
         direction_sense = "POSITIVE"
@@ -1041,6 +1049,22 @@ class Model(bonsai.core.tool.Model):
         if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
             return material.MaterialProfiles[0].Profile
 
+    # Classes that behave like a horizontal (or sloped, e.g. a roof) slab when
+    # no explicit IfcMaterialLayerSetUsage tells us the layer set direction.
+    AXIS3_HOST_CLASSES = (
+        "IfcSlabType",
+        "IfcRoofType",
+        "IfcRampType",
+        "IfcPlateType",
+        "IfcSlab",
+        "IfcRoof",
+        "IfcRamp",
+        "IfcPlate",
+    )
+    # Classes that behave like a vertical wall when no explicit
+    # IfcMaterialLayerSetUsage tells us the layer set direction.
+    AXIS2_HOST_CLASSES = ("IfcWallType", "IfcWall")
+
     @classmethod
     def get_usage_type(
         cls, element: ifcopenshell.entity_instance
@@ -1052,18 +1076,9 @@ class Model(bonsai.core.tool.Model):
             elif material.is_a("IfcMaterialLayerSet"):
                 axis = ifcopenshell.util.element.get_pset(element, "EPset_Parametric", "LayerSetDirection")
                 if axis is None:
-                    if element.is_a() in (
-                        "IfcSlabType",
-                        "IfcRoofType",
-                        "IfcRampType",
-                        "IfcPlateType",
-                        "IfcSlab",
-                        "IfcRoof",
-                        "IfcRamp",
-                        "IfcPlate",
-                    ):
+                    if element.is_a() in cls.AXIS3_HOST_CLASSES:
                         axis = "AXIS3"
-                    elif element.is_a() in ("IfcWallType", "IfcWall"):
+                    elif element.is_a() in cls.AXIS2_HOST_CLASSES:
                         axis = "AXIS2"
                     else:
                         return
