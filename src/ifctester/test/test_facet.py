@@ -22,6 +22,7 @@ import uuid
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.classification
+import ifcopenshell.api.feature
 import ifcopenshell.api.group
 import ifcopenshell.api.material
 import ifcopenshell.api.nest
@@ -1586,6 +1587,25 @@ class TestPartOf:
             expected=False,
         )
 
+        element.PredefinedType = "USERDEFINED"
+        element.ObjectType = "SLABRADOR"
+        facet = PartOf(name="IFCSLAB", predefinedType="USERDEFINED", relation="IFCRELAGGREGATES")
+        run(
+            "An aggregate predefined type may specify USERDEFINED itself",
+            facet=facet,
+            inst=subelement,
+            expected=True,
+        )
+        facet = PartOf(
+            name="IFCSLAB", predefinedType="USERDEFINED", relation="IFCRELAGGREGATES", cardinality="prohibited"
+        )
+        run(
+            "A prohibited aggregate predefined type check fails a user-defined match",
+            facet=facet,
+            inst=subelement,
+            expected=False,
+        )
+
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
@@ -1618,6 +1638,23 @@ class TestPartOf:
         facet = PartOf(name="IFCINVENTORY", predefinedType="BUNNY", relation="IFCRELASSIGNSTOGROUP")
         run("A group predefined type must match exactly 2/2", facet=facet, inst=element, expected=True)
 
+        facet = PartOf(name="IFCINVENTORY", predefinedType="USERDEFINED", relation="IFCRELASSIGNSTOGROUP")
+        run(
+            "A group predefined type may specify USERDEFINED itself",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
+        facet = PartOf(
+            name="IFCINVENTORY", predefinedType="USERDEFINED", relation="IFCRELASSIGNSTOGROUP", cardinality="prohibited"
+        )
+        run(
+            "A prohibited group predefined type check fails a user-defined match",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
+
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcElementAssembly")
         container = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
@@ -1641,6 +1678,26 @@ class TestPartOf:
         run("The container predefined type must match exactly 1/2", facet=facet, inst=element, expected=False)
         facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE", predefinedType="BURROW")
         run("The container predefined type must match exactly 2/2", facet=facet, inst=element, expected=True)
+
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE", predefinedType="USERDEFINED")
+        run(
+            "The container predefined type may specify USERDEFINED itself",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
+        facet = PartOf(
+            relation="IFCRELCONTAINEDINSPATIALSTRUCTURE",
+            name="IFCSPACE",
+            predefinedType="USERDEFINED",
+            cardinality="prohibited",
+        )
+        run(
+            "A prohibited container predefined type check fails a user-defined match",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
@@ -1675,6 +1732,23 @@ class TestPartOf:
         facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE", predefinedType="WATERBOTTLE")
         run("The nest predefined type must match exactly 2/2", facet=facet, inst=subelement, expected=True)
 
+        facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE", predefinedType="USERDEFINED")
+        run(
+            "The nest predefined type may specify USERDEFINED itself",
+            facet=facet,
+            inst=subelement,
+            expected=True,
+        )
+        facet = PartOf(
+            relation="IFCRELNESTS", name="IFCFURNITURE", predefinedType="USERDEFINED", cardinality="prohibited"
+        )
+        run(
+            "A prohibited nest predefined type check fails a user-defined match",
+            facet=facet,
+            inst=subelement,
+            expected=False,
+        )
+
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcFurniture")
         subelement = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDiscreteAccessory")
@@ -1683,6 +1757,66 @@ class TestPartOf:
         ifcopenshell.api.nest.assign_object(ifc, related_objects=[subsubelement], relating_object=subelement)
         facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE")
         run("Nesting may be indirect", facet=facet, inst=subsubelement, expected=True)
+
+        ifc = ifcopenshell.file()
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
+        subelement = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam")
+        facet = PartOf(name="IFCSLAB")
+        run("An unattached element fails a default (no-relation) check", facet=facet, inst=subelement, expected=False)
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[subelement], relating_object=element)
+        run("A default (no-relation) check walks the aggregation ancestry", facet=facet, inst=subelement, expected=True)
+
+        element.PredefinedType = "USERDEFINED"
+        element.ObjectType = "SLABRADOR"
+        facet = PartOf(name="IFCSLAB", predefinedType="USERDEFINED")
+        run(
+            "A default (no-relation) predefined type may specify USERDEFINED itself",
+            facet=facet,
+            inst=subelement,
+            expected=True,
+        )
+        facet = PartOf(name="IFCSLAB", predefinedType="USERDEFINED", cardinality="prohibited")
+        run(
+            "A prohibited default (no-relation) predefined type check fails a user-defined match",
+            facet=facet,
+            inst=subelement,
+            expected=False,
+        )
+
+        ifc = ifcopenshell.file()
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType", predefined_type="USERDEFINED")
+        wall_type.ElementType = "CUSTOMWALL"
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[wall], relating_type=wall_type)
+        door = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoor")
+        opening = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.feature.add_feature(ifc, feature=opening, element=wall)
+        ifcopenshell.api.feature.add_filling(ifc, opening=opening, element=door)
+        facet = PartOf(name="IFCWALL", relation="IFCRELVOIDSELEMENT IFCRELFILLSELEMENT")
+        run(
+            "A filling element passes a voids/fills relationship via its opening", facet=facet, inst=door, expected=True
+        )
+        run("An opening passes a voids/fills relationship with its host", facet=facet, inst=opening, expected=True)
+
+        facet = PartOf(name="IFCWALL", predefinedType="USERDEFINED", relation="IFCRELVOIDSELEMENT IFCRELFILLSELEMENT")
+        run(
+            "A voids/fills predefined type may specify USERDEFINED itself",
+            facet=facet,
+            inst=door,
+            expected=True,
+        )
+        facet = PartOf(
+            name="IFCWALL",
+            predefinedType="USERDEFINED",
+            relation="IFCRELVOIDSELEMENT IFCRELFILLSELEMENT",
+            cardinality="prohibited",
+        )
+        run(
+            "A prohibited voids/fills predefined type check fails a user-defined match",
+            facet=facet,
+            inst=door,
+            expected=False,
+        )
 
 
 class TestRestriction:
