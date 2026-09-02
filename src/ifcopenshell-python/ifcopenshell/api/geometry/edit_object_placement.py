@@ -57,6 +57,11 @@ def edit_object_placement(
         and you want all children to follow. If False (default), child elements
         keep their current world positions; their local placements are rewritten
         to compensate for the parent move.
+
+        Openings are the exception and always follow their host, regardless of
+        this setting. This holds even for openings that some authoring tools
+        place outside the host's placement tree, which are moved explicitly
+        from their ``IfcRelVoidsElement`` relationship.
     :return: The new or updated IfcLocalPlacement entity
     """
     usecase = Usecase()
@@ -83,9 +88,13 @@ class Usecase:
         if not self.settings["is_si"]:
             self.convert_matrix_to_si(self.settings["matrix"])
 
+        should_transform_children = self.settings["should_transform_children"]
+
         children_settings = []
-        if not self.settings["should_transform_children"]:
+        if not should_transform_children:
             children_settings = self.get_children_settings(self.settings["product"].ObjectPlacement)
+
+        detached_openings = self.get_detached_openings(self.settings["product"].ObjectPlacement)
 
         placement_rel_to = self.get_placement_rel_to()
         relative_placement = self.get_relative_placement(placement_rel_to)
@@ -111,6 +120,17 @@ class Usecase:
         for settings in children_settings:
             self.settings = settings
             self.execute()
+
+        if detached_openings:
+            new_matrix = ifcopenshell.util.placement.get_local_placement(new_placement)
+            for opening, relative_matrix in detached_openings:
+                self.settings = {
+                    "product": opening,
+                    "matrix": new_matrix @ relative_matrix,
+                    "is_si": False,
+                    "should_transform_children": should_transform_children,
+                }
+                self.execute()
 
         return new_placement
 
@@ -143,6 +163,43 @@ class Usecase:
 
         if relating_object:
             return getattr(relating_object, "ObjectPlacement", None)
+
+    def get_detached_openings(
+        self, placement: Union[ifcopenshell.entity_instance, None]
+    ) -> list[tuple[ifcopenshell.entity_instance, NPArrayOfFloats]]:
+        """Openings that void the product but are not placed relative to it.
+
+        Openings placed relative to the product follow it through the placement
+        rewrite in ``execute``. Openings that are semantically bound via
+        ``IfcRelVoidsElement`` but placed elsewhere in the placement tree are
+        invisible to that rewrite and must be moved explicitly. Each is returned
+        with its matrix expressed in the product's local coordinate system.
+        """
+        if placement is None:
+            return []
+        openings = []
+        for rel in getattr(self.settings["product"], "HasOpenings", None) or ():
+            opening = rel.RelatedOpeningElement
+            opening_placement = opening.ObjectPlacement
+            if opening_placement is None or self.is_placed_relative_to(opening_placement, placement):
+                continue
+            openings.append((opening, opening_placement))
+        if not openings:
+            return []
+        inverted_matrix = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(placement))
+        return [
+            (opening, inverted_matrix @ ifcopenshell.util.placement.get_local_placement(opening_placement))
+            for opening, opening_placement in openings
+        ]
+
+    @staticmethod
+    def is_placed_relative_to(placement: ifcopenshell.entity_instance, ancestor: ifcopenshell.entity_instance) -> bool:
+        parent = getattr(placement, "PlacementRelTo", None)
+        while parent is not None:
+            if parent == ancestor:
+                return True
+            parent = getattr(parent, "PlacementRelTo", None)
+        return False
 
     def get_children_settings(self, placement: Union[ifcopenshell.entity_instance, None]) -> list[dict]:
         if not placement:
