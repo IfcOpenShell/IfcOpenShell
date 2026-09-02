@@ -64,11 +64,13 @@ class LoadGroupDecorationData:
         if props.activity_type == "Action":
             groups = m.LoadedBy or []
             for g in groups:
-                ret.append((str(g.id()), ".   " + abrv[g.PredefinedType] + "   " + g.Name, ""))
+                ret.append((str(g.id()), ".   " + abrv[g.PredefinedType] + "   " + (g.Name or ""), ""))
                 related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
                 for item in related_objects:
                     for subgoup in [sg for sg in item if sg.is_a("IfcStructuralLoadGroup")]:
-                        ret.append((str(subgoup.id()), ".       " + abrv[subgoup.PredefinedType] + subgoup.Name, ""))
+                        ret.append(
+                            (str(subgoup.id()), ".       " + abrv[subgoup.PredefinedType] + (subgoup.Name or ""), "")
+                        )
 
         elif props.activity_type == "External Reaction":
             groups = m.HasResults or []
