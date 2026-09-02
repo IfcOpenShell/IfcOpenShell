@@ -360,8 +360,12 @@ try:
             assert False, "Not supported during streaming."
 
         def __getattr__(self, name: str) -> Any:
-            INVALID, FORWARD, INVERSE = range(3)
+            INVALID, FORWARD, INVERSE, DERIVED = range(4)
             attr_cat = self.wrapped_data.get_attribute_category(name)
+            if attr_cat == DERIVED:
+                raise RuntimeError(
+                    f"Derived attributes (e.g. '{name}') are not supported for {type(self).__name__} entities."
+                )
             if attr_cat == FORWARD:
                 if self.stream_wrapper.attribute_cache:
                     return self.stream_wrapper.attribute_cache[name]
