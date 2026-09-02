@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import date, datetime, timedelta
 from typing import Any, TypedDict, Union
 
@@ -8,6 +9,45 @@ import ifcopenshell.api.control
 import ifcopenshell.api.resource
 import ifcopenshell.api.sequence
 from typing_extensions import NotRequired
+
+
+class InvalidInputPathError(Exception):
+    """Raised when an input path is empty, missing, a directory, or unreadable."""
+
+
+class InvalidOutputPathError(Exception):
+    """Raised when an output path is empty, a directory, or in a missing folder."""
+
+
+def validate_input_path(path: Union[str, None], description: str = "file") -> str:
+    """Check that ``path`` points at a readable file before it is handed to a parser."""
+    if not path or not str(path).strip():
+        raise InvalidInputPathError(f"No {description} was selected.")
+    path = str(path)
+    if os.path.isdir(path):
+        raise InvalidInputPathError(f"The selected {description} is a folder, not a file: {path}")
+    if not os.path.exists(path):
+        raise InvalidInputPathError(f"The selected {description} does not exist: {path}")
+    if not os.path.isfile(path):
+        raise InvalidInputPathError(f"The selected {description} is not a file: {path}")
+    if not os.access(path, os.R_OK):
+        raise InvalidInputPathError(f"The selected {description} cannot be read: {path}")
+    return path
+
+
+def validate_output_path(path: Union[str, None], description: str = "file") -> str:
+    """Check that ``path`` can be written to before any conversion work is done."""
+    if not path or not str(path).strip():
+        raise InvalidOutputPathError(f"No {description} was selected.")
+    path = str(path)
+    if os.path.isdir(path):
+        raise InvalidOutputPathError(f"The selected {description} is a folder, not a file: {path}")
+    directory = os.path.dirname(os.path.abspath(path))
+    if not os.path.isdir(directory):
+        raise InvalidOutputPathError(f"The folder for the selected {description} does not exist: {directory}")
+    if not os.access(directory, os.W_OK):
+        raise InvalidOutputPathError(f"The folder for the selected {description} cannot be written to: {directory}")
+    return path
 
 
 class WorkSlot(TypedDict):
