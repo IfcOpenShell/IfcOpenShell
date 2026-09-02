@@ -1034,6 +1034,15 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		}
 	}
 
+	// #5186 When the 2D extrusion-optimization path below partitions the tools
+	// (handling some as 2D through-holes and leaving a 3D remainder), it overwrites
+	// the working operand list `b`. A subsequent higher-fuzziness retry would then
+	// only see the remainder and silently drop the 2D-handled cuts. We therefore
+	// preserve the complete (post-elimination) operand set and remember whether the
+	// partition happened, so we can fall back to a plain 3D boolean over all tools.
+	NCollection_List<TopoDS_Shape> b_all_before_2d_partition;
+	bool did_2d_partition = false;
+
 	if (op == BOPAlgo_CUT) {
 		TopoDS_Face a_face;
 		std::pair<double, double> a_interval;
@@ -1108,6 +1117,10 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					if (mp.IsDone()) {
 						if (b_remainder_3d.Extent()) {
 							settings.log().Notice("GEO", 139, std::to_string(b_remainder_3d.Extent()) + " operands remaining to process in 3D");
+							// #5186 Remember the full operand set before it is replaced by the
+							// 3D remainder, so a failed retry can fall back to a plain 3D boolean.
+							copy_operand(b, b_all_before_2d_partition);
+							did_2d_partition = true;
 							b = b_remainder_3d;
 							s1s.Clear();
 							s1s.Append(mp.Shape());
@@ -1416,6 +1429,23 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		}
 	}
 	if (!success) {
+		if (did_2d_partition) {
+			// #5186 The 2D extrusion-optimization partitioned the tools and the
+			// combined 2D/3D result was rejected. The working operand list `b` now
+			// only holds the 3D remainder, so a plain fuzziness retry would drop the
+			// cuts already handled in 2D. Fall back to a single plain 3D boolean over
+			// the complete tool set with the 2D optimization disabled. This is gated:
+			// it only runs after the optimized path has failed, so successful cuts are
+			// untouched.
+			boolean_settings settings_no_2d = settings;
+			settings_no_2d.attempt_2d = false;
+			TopoDS_Shape fallback_result;
+			if (boolean_operation(settings_no_2d, a, b_all_before_2d_partition, op, fallback_result, fuzziness) && !fallback_result.IsNull()) {
+				settings.log().Notice("GEO", 154, "Recovered 2D-partitioned subtraction via plain 3D boolean");
+				result = fallback_result;
+				return true;
+			}
+		}
 		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
 		} else {
