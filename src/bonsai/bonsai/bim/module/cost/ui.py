@@ -747,9 +747,10 @@ class BIM_UL_cost_items_trait:
         if cost_item["AssignedCostRate"] is not None:
             op = row.operator("bim.show_assigned_cost_rate", text="", emboss=False, icon="ZOOM_IN")
             identification = cost_item["AssignedCostRate"].Identification
-            op.parent_cost_schedule_name = CostSchedulesData.data["cost_items"][cost_item["AssignedCostRate"].id()][
+            parent_cost_schedule = CostSchedulesData.data["cost_items"][cost_item["AssignedCostRate"].id()][
                 "ParentCostSchedule"
-            ].Name
+            ]
+            op.parent_cost_schedule_name = parent_cost_schedule.Name if parent_cost_schedule is not None else "-"
             op.assigned_rate_identification = identification if identification is not None else "XXX"
             op.assigned_rate_name = cost_item["AssignedCostRate"].Name or ""
             op.assigned_rate_description = cost_item["AssignedCostRate"].Description or ""
