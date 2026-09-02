@@ -373,6 +373,12 @@ class Geometry(bonsai.core.tool.Geometry):
                 bpy.data.curves.remove(data)
             except TypeError:
                 bpy.data.cameras.remove(data)
+        except ReferenceError:
+            # The data-block was already removed elsewhere (e.g. purged as an
+            # orphan in between an earlier "has data users" check and this
+            # deferred cleanup call). It's already gone, so there's nothing
+            # left to do.
+            pass
 
     @classmethod
     def is_locked(cls, element: ifcopenshell.entity_instance) -> bool:
