@@ -123,7 +123,7 @@ class sqlite(file):
         # For creating C++ instances so that some of the calls here work
         self.shadow_file = ifcopenshell.file(schema_identifier=self.schema)
         # But we only create them once per type because we basically only need access to 'semi-static' such as get_attribute_category()
-        self.instance_map = {}
+        self.instance_map: dict[str, ifcopenshell.entity_instance] = {}
 
         self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map")
         self.id_map: dict[int, str] = {}
@@ -186,7 +186,7 @@ class sqlite(file):
         """Not supported for sqlite database."""
         assert False, "Not supported for sqlite database."
 
-    def _create_entity(self, type):
+    def _create_entity(self, type: str) -> ifcopenshell.entity_instance:
         if inst := self.instance_map.get(type):
             return inst
         else:
@@ -348,6 +348,7 @@ class sqlite(file):
 
 class sqlite_entity:
     sqlite_wrapper: sqlite_wrapper
+    wrapped_data: ifcopenshell.entity_instance
 
     def __init__(self, id: int, ifc_class: str, file: sqlite = None):
         if not ifc_class:
