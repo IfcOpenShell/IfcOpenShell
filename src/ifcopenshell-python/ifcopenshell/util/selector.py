@@ -345,8 +345,15 @@ class FormatTransformer(lark.Transformer):
 
     def metric_length(self, args):
         value, precision, decimal_places = args
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            # The value is not numeric (e.g. "N/A"), so formatting it as a
+            # length is meaningless. Return it unchanged instead of crashing
+            # the whole expression (#5297).
+            return value
         return ifcopenshell.util.unit.format_length(
-            float(value), float(precision), int(decimal_places), unit_system="metric"
+            value, float(precision), int(decimal_places), unit_system="metric"
         )
 
     def imperial_length(self, args):
@@ -368,8 +375,14 @@ class FormatTransformer(lark.Transformer):
             input_unit = "inch" if input_unit == "inch" else "foot"
             output_unit = "inch" if output_unit == "inch" else "foot"
 
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            # Non-numeric values pass through unchanged, as in metric_length (#5297).
+            return value
+
         return ifcopenshell.util.unit.format_length(
-            float(value),
+            value,
             int(precision),
             suppress_zero_inches=(suppress_zero_inches if suppress_zero_inches is not None else False),
             unit_system="imperial",
