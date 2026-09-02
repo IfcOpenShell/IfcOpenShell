@@ -40,11 +40,13 @@ def cast_to_value(from_value, to_value):
             # Casting str -> float means that notation like '1e3' is preserved
             # We do not cast to int because 42.0 == 42 and 42.3 != 42
             return float(from_value)
-        elif target_type == "bool":
+        elif target_type == "bool" and isinstance(from_value, str):
             if from_value in ("true", "1"):
                 return True
             elif from_value in ("false", "0"):
                 return False
+            # Any other spelling is not a boolean, so it must not match either state
+            return None
         return builtins.__dict__[target_type](from_value)
     except ValueError:
         pass
