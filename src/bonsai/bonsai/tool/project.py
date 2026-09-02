@@ -733,7 +733,7 @@ class Project(bonsai.core.tool.Project):
             index = obj_guids.index(guid)
             if index in obj_hidden_indices:
                 assert False, "Unexpected. Why would you need the geometry for the hidden element?"
-            obj_guid_ids = cls.get_linked_element_guid_ids(obj, skip_hidden=False)
+            obj_guid_ids = cls.get_linked_element_guid_ids(obj, skip_hidden=True)
             guid_end_index = obj_guid_ids[index]
             guid_start_index = index and obj_guid_ids[index - 1]
             return slice(guid_start_index, guid_end_index)
