@@ -224,6 +224,15 @@ class Spatial(bonsai.core.tool.Spatial):
             if obj and view_layer.objects.get(obj.name):
                 if unhide:
                     obj.hide_set(False)
+                    # `obj.hide_set` only clears the object's own hide flag. If the
+                    # object lives in a collection that's hidden from the viewport
+                    # by default (e.g. "IfcTypeProduct", "IfcStructuralItem",
+                    # "Unsorted", "IfcAnnotation*" - see
+                    # Collector.set_layer_collection_visibility), it still won't
+                    # show up as selected, so also reveal its collection(s).
+                    for collection in obj.users_collection:
+                        if layer_collection := tool.Blender.get_layer_collection(collection):
+                            layer_collection.hide_viewport = False
                 obj.select_set(True)
 
     @classmethod
