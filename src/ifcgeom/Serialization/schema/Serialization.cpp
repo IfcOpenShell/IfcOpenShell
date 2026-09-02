@@ -111,6 +111,12 @@ namespace {
 
 template <>
 int convert_to_ifc(const opencascade::handle<Geom_Curve>& c, IfcSchema::IfcCurve*& curve, bool advanced) {
+	// Guard against a null curve handle. BRep_Tool::Curve() returns a null handle for
+	// edges without a 3D curve (e.g. the degenerate pole edges of a sphere), and
+	// dereferencing it via ->DynamicType() below would crash. See #4926.
+	if (c.IsNull()) {
+		return 0;
+	}
 	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
         opencascade::handle<Geom_TrimmedCurve> trim = opencascade::handle<Geom_TrimmedCurve>::DownCast(c);
 		const opencascade::handle<Geom_Curve> basis = trim->BasisCurve();
@@ -279,6 +285,10 @@ int convert_to_ifc(const opencascade::handle<Geom_Curve>& c, IfcSchema::IfcCurve
 
 template <>
 int convert_to_ifc(const opencascade::handle<Geom_Surface>& s, IfcSchema::IfcSurface*& surface, bool advanced) {
+	// Guard against a null surface handle before dereferencing via ->DynamicType(). See #4926.
+	if (s.IsNull()) {
+		return 0;
+	}
 	if (s->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		opencascade::handle<Geom_Plane> plane = opencascade::handle<Geom_Plane>::DownCast(s);
 		IfcSchema::IfcAxis2Placement3D* place;
@@ -527,6 +537,12 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
 template <>
 int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advanced) {
 	opencascade::handle<Geom_Surface> surf = BRep_Tool::Surface(f);
+	// A face may lack an underlying geometric surface (e.g. a purely triangulated face),
+	// in which case BRep_Tool::Surface() returns a null handle. Skip it gracefully rather
+	// than crashing on the surf->DynamicType() dereference further down. See #4926.
+	if (surf.IsNull()) {
+		return 0;
+	}
 	TopExp_Explorer exp(f, TopAbs_WIRE);
 	IfcSchema::IfcFaceBound::list::ptr bounds(new IfcSchema::IfcFaceBound::list);
 	int index = 0;
