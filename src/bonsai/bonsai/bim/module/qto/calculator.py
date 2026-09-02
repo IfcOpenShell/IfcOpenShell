@@ -611,6 +611,148 @@ def has_openings(obj: bpy.types.Object) -> list[ifcopenshell.entity_instance]:
     return [o for o in ifcopenshell.util.element.get_openings(element)]
 
 
+def get_void_intersection_mesh(o: bpy.types.Object) -> Optional[bpy.types.Mesh]:
+    """Boolean-intersect a voiding feature element with its host's gross geometry.
+
+    :param o: Blender object of an IfcFeatureElementSubtraction (e.g. IfcEarthworksCut)
+    :return: World-space intersection mesh (the caller must delete it), or None
+        if the element voids nothing or the host has no Blender object
+    """
+    element = tool.Ifc.get_entity(o)
+    if not element:
+        return None
+    rels = getattr(element, "VoidsElements", None)
+    if not rels:
+        return None
+    host = rels[0].RelatingBuildingElement
+    host_obj = tool.Ifc.get_object(host)
+    if not isinstance(host_obj, bpy.types.Object):
+        return None
+    gross_mesh = get_gross_element_mesh(host)
+    temp_host = bpy.data.objects.new("QtoVoidHost", gross_mesh)
+    bpy.context.scene.collection.objects.link(temp_host)
+    try:
+        temp_host.matrix_world = host_obj.matrix_world.copy()
+        modifier = temp_host.modifiers.new("QtoVoidIntersection", "BOOLEAN")
+        assert isinstance(modifier, bpy.types.BooleanModifier)
+        modifier.operation = "INTERSECT"
+        modifier.solver = "EXACT"
+        modifier.object = o
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        mesh = bpy.data.meshes.new_from_object(temp_host.evaluated_get(depsgraph))
+        mesh.transform(temp_host.matrix_world)
+        return mesh
+    finally:
+        delete_obj(temp_host)
+        delete_mesh(gross_mesh)
+
+
+# Per-take-off-run memo for the void intersection, keyed by object name.
+# One BOOLEAN evaluation serves all four quantities of an element; the qto
+# engine clears it at the start of every calculate() run.
+_void_result_cache: dict[str, Union[tuple[float, "VectorTuple"], None]] = {}
+
+
+def clear_void_cache() -> None:
+    _void_result_cache.clear()
+
+
+def _get_void_result(o: bpy.types.Object) -> Union[tuple[float, "VectorTuple"], None]:
+    """(volume, extents) of the host intersection, or None if o voids nothing."""
+    key = o.name
+    if key in _void_result_cache:
+        return _void_result_cache[key]
+    mesh = get_void_intersection_mesh(o)
+    if mesh is None:
+        result = None
+    else:
+        bm = get_bmesh_from_mesh(mesh)
+        volume = bm.calc_volume()
+        bm.free()
+        if not mesh.vertices:
+            extents = (0.0, 0.0, 0.0)
+        else:
+            coords = [v.co for v in mesh.vertices]
+            extents = tuple(max(c[i] for c in coords) - min(c[i] for c in coords) for i in range(3))
+        delete_mesh(mesh)
+        result = (volume, extents)
+    _void_result_cache[key] = result
+    return result
+
+
+def get_void_volume(o: bpy.types.Object) -> float:
+    """Calculate the volume actually removed from the host voided by this element.
+
+    Subtraction solids are deliberately oversized, so the element's own volume
+    overstates the removed material. Falls back to the element's own net volume
+    when it voids nothing.
+
+    :param o: Blender object
+    :return float: volume
+    """
+    result = _get_void_result(o)
+    if result is None:
+        return get_net_volume(o)
+    return result[0]
+
+
+def get_void_extents(o: bpy.types.Object) -> Optional[VectorTuple]:
+    """Calculate the world-axis extents of the material removed from the voided host.
+
+    :param o: Blender object
+    :return: (x, y, z) extents, or None if the element voids nothing
+    """
+    result = _get_void_result(o)
+    if result is None:
+        return None
+    return result[1]
+
+
+def get_void_length(o: bpy.types.Object) -> float:
+    """Calculate the length of the material actually removed from the voided host.
+
+    The larger horizontal extent of the intersection with the host's gross
+    geometry. Falls back to the element's own length when it voids nothing.
+
+    :param o: Blender object
+    :return float: length
+    """
+    extents = get_void_extents(o)
+    if extents is None:
+        return get_length(o)
+    return max(extents[0], extents[1])
+
+
+def get_void_width(o: bpy.types.Object) -> float:
+    """Calculate the width of the material actually removed from the voided host.
+
+    The smaller horizontal extent of the intersection with the host's gross
+    geometry. Falls back to the element's own width when it voids nothing.
+
+    :param o: Blender object
+    :return float: width
+    """
+    extents = get_void_extents(o)
+    if extents is None:
+        return get_width(o)
+    return min(extents[0], extents[1])
+
+
+def get_void_height(o: bpy.types.Object) -> float:
+    """Calculate the height (e.g. excavation depth) of the material actually removed from the voided host.
+
+    The vertical extent of the intersection with the host's gross geometry.
+    Falls back to the element's own height when it voids nothing.
+
+    :param o: Blender object
+    :return float: height
+    """
+    extents = get_void_extents(o)
+    if extents is None:
+        return get_height(o)
+    return extents[2]
+
+
 def get_obj_decompositions(obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
     element = tool.Ifc.get_entity(obj)
     assert element
