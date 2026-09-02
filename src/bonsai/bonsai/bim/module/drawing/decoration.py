@@ -40,6 +40,7 @@ from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
 
 import bonsai.bim.module.drawing.helper as helper
+import bonsai.bim.module.drawing.svg_symbol as svg_symbol
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 from bonsai.bim.module.drawing.helper import format_distance
@@ -547,6 +548,57 @@ class BaseDecorator:
         text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
         return text_dir
 
+    def get_symbols_path(self) -> Optional[str]:
+        """Resolve the path to the ``symbols.svg`` resource used by the active
+        drawing, falling back to the bundled default one."""
+        try:
+            props = tool.Drawing.get_document_props()
+            symbols_path = props.symbols_path
+            if symbols_path:
+                resolved = tool.Ifc.resolve_uri(symbols_path)
+                if resolved and os.path.exists(resolved):
+                    return resolved
+        except Exception:
+            pass
+        try:
+            return str(tool.Blender.get_data_dir_path(Path("assets") / "symbols.svg"))
+        except Exception:
+            return None
+
+    def draw_glyph(
+        self, context: bpy.types.Context, symbol_id: str, pos: Vector, rotation: float = 0.0, scale: float = 1.0
+    ) -> None:
+        """Draw the real symbol geometry (from `symbols.svg`) at `pos`, falling
+        back to a generic asterisk marker if the symbol can't be resolved.
+
+        `pos` is a world space position, `rotation` is in radians.
+        """
+        polylines = None
+        if symbols_path := self.get_symbols_path():
+            polylines = svg_symbol.get_symbol_polylines(symbols_path, symbol_id)
+
+        if not polylines:
+            self.draw_asterisk(context, pos, rotation, scale)
+            return
+
+        viewportDrawingScale = self.get_viewport_drawing_scale(context)
+        v0 = worldspace_to_winspace([pos], context)[0]
+        rot_matrix = Matrix.Rotation(rotation, 2)
+        glyph_scale = viewportDrawingScale * scale
+
+        output_verts = []
+        output_edges = []
+        out_kwargs = {
+            "output_verts": output_verts,
+            "output_edges": output_edges,
+        }
+        start_i = 0
+        for polyline in polylines:
+            # flip Y since SVG is Y-down while the viewport window space is Y-up
+            offsets = [(rot_matrix @ Vector((p.x, -p.y)) * glyph_scale).to_3d() for p in polyline]
+            start_i = add_verts_sequence(add_offsets(v0, offsets), start_i, **out_kwargs)
+        self.draw_lines(context, None, output_verts, output_edges)
+
     def draw_symbol(self, context: bpy.types.Context, obj: bpy.types.Object, annotation_dir: Vector) -> None:
         if obj.type not in ("MESH", "EMPTY"):
             return
@@ -565,7 +617,7 @@ class BaseDecorator:
                 return
 
             for vert in mesh.vertices:
-                self.draw_asterisk(context, obj.matrix_world @ vert.co)
+                self.draw_glyph(context, symbol, obj.matrix_world @ vert.co)
 
             return
 
@@ -575,7 +627,7 @@ class BaseDecorator:
 
         rotation = -Vector((1, 0)).angle_signed(annotation_dir)
         # NOTE: for now we assume that scale is uniform
-        self.draw_asterisk(context, obj.location, rotation, obj.scale.x)
+        self.draw_glyph(context, symbol, obj.location, rotation, obj.scale.x)
 
     def draw_text(
         self,
