@@ -784,13 +784,14 @@ class entity_instance(entity_instance_mixin):
         "AGGREGATE OF AGGREGATE OF ENTITY INSTANCE",
         "UNKNOWN",
     ]: ...
-    def get_attribute_category(self, name: str) -> Literal[0, 1, 2]:
+    def get_attribute_category(self, name: str) -> Literal[0, 1, 2, 3]:
         """Get attribute category id.
 
         Available categories:
         - `0` - invalid attribute
         - `1` - forward attribute
         - `2` - inverse attributes
+        - `3` - derived attribute
         """
         ...
 
