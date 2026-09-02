@@ -230,39 +230,44 @@ jobs:
 
       - name: Test ifcopenshell-python
         run: |
+          fail() {
+            echo "::error::$1 check failed, see the step log for the details."
+            ERROR=1
+          }
+
+          ERROR=0
           cd test
-          python tests.py
+          python tests.py || fail "tests.py"
           cd ../src/ifcopenshell-python
           pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
-          ERROR=0
-          make test-parallel || ERROR=1
-          cd ../bcf && make test || ERROR=1
+          make test-parallel || fail "ifcopenshell-python"
+          cd ../bcf && make test || fail "bcf"
           pip install requests
-          cd ../bsdd && make test || ERROR=1
+          cd ../bsdd && make test || fail "bsdd"
           pip install deepdiff
-          cd ../ifcdiff && make test || ERROR=1
-          cd ../ifcpatch && make test || ERROR=1
+          cd ../ifcdiff && make test || fail "ifcdiff"
+          cd ../ifcpatch && make test || fail "ifcpatch"
           pip install -e ../ifc5d --no-deps
           pip install odfpy openpyxl
-          cd ../ifc5d && make test || ERROR=1
+          cd ../ifc5d && make test || fail "ifc5d"
           pip install -e ../ifcquery --no-deps
-          cd ../ifcquery && make test || ERROR=1
+          cd ../ifcquery && make test || fail "ifcquery"
           pip install -e ../ifcedit --no-deps
-          cd ../ifcedit && make test || ERROR=1
+          cd ../ifcedit && make test || fail "ifcedit"
           # Pinned <2: mcp 2.0.0 renamed mcp.server.fastmcp.FastMCP to
           # mcp.server.mcpserver.MCPServer, which ifcmcp doesn't support yet.
           pip install "mcp>=1.0,<2"
           pip install -e ../ifcmcp --no-deps
-          cd ../ifcmcp && make test || ERROR=1
+          cd ../ifcmcp && make test || fail "ifcmcp"
           pip install -e ../ifctester --no-deps
-          cd ../ifctester && make test || ERROR=1
-          make build-ids-docs || ERROR=1
+          cd ../ifctester && make test || fail "ifctester"
+          make build-ids-docs || fail "build-ids-docs"
           # Run mathutils related tests at the end to ensure no other code is relying on mathutils.
           # mathutils only has pre-built wheels for Python 3.13+; skip on older versions.
           cd ../ifcopenshell-python
           if python -c "import sys; sys.exit(0 if sys.version_info >= (3, 13) else 1)"; then
             pip install mathutils
-            make test-mathutils || ERROR=1
+            make test-mathutils || fail "mathutils"
           fi
           if [ $ERROR -ne 0 ]; then
             echo "One or more tests failed";
