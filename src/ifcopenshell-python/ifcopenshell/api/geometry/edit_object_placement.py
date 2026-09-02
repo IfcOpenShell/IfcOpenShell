@@ -81,7 +81,7 @@ class Usecase:
         self.builder = ShapeBuilder(self.file)
 
         if not self.settings["is_si"]:
-            self.convert_matrix_to_si(self.settings["matrix"])
+            self.settings["matrix"] = self.convert_matrix_to_si(self.settings["matrix"])
 
         children_settings = []
         if not self.settings["should_transform_children"]:
@@ -114,10 +114,17 @@ class Usecase:
 
         return new_placement
 
-    def convert_matrix_to_si(self, matrix: NPArrayOfFloats):
+    def convert_matrix_to_si(self, matrix: NPArrayOfFloats) -> NPArrayOfFloats:
+        # Return a converted copy rather than mutating in place: callers may
+        # reuse the same matrix object across several edit_object_placement()
+        # calls (e.g. multiple elements sharing one IfcLocalPlacement), and an
+        # in-place mutation would silently apply the unit conversion twice on
+        # the second call.
+        matrix = np.array(matrix, dtype=float, copy=True)
         matrix[0][3] *= self.unit_scale
         matrix[1][3] *= self.unit_scale
         matrix[2][3] *= self.unit_scale
+        return matrix
 
     def get_placement_rel_to(self) -> Union[ifcopenshell.entity_instance, None]:
         product = self.settings["product"]
