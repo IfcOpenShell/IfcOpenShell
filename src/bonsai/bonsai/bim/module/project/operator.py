@@ -1576,7 +1576,6 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
 
     def link_ifc(self) -> Union[set[str], None]:
         blend_filepath = self.filepath_.with_suffix(".ifc.cache.blend")
-        h5_filepath = self.filepath_.with_suffix(".ifc.cache.h5")
         json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
 
         def should_clear_cache() -> bool:
@@ -1597,37 +1596,60 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             os.remove(blend_filepath)
 
         if not blend_filepath.exists():
+            cache_dir = blend_filepath.parent
+            try:
+                with tempfile.NamedTemporaryFile(dir=cache_dir, delete=True):
+                    pass
+            except OSError as e:
+                self.report(
+                    {"ERROR"},
+                    f"Cannot link '{self.filepath_.name}': the folder '{cache_dir}' is not writable ({e}). "
+                    "Linking needs to create a cache file next to the IFC. Move the file to a writable, "
+                    "non-synced location (not a read-only, network, or cloud-synced folder like OneDrive/"
+                    "Dropbox) or fix its permissions.",
+                )
+                return {"CANCELLED"}
+
             pprops = tool.Project.get_project_props()
             gprops = tool.Georeference.get_georeference_props()
+            addon_name = tool.Blender.get_blender_addon_package_name()
 
             code = f"""
 import bpy
 import sys
 
 def run():
+    import addon_utils
+    # Bonsai may have only been enabled in the current session and not yet
+    # saved to preferences. --addons on the command line below registers the
+    # classes but does not populate bpy.context.preferences.addons, and any
+    # code that reads addon preferences (e.g. loading pset templates) would
+    # then fail. Enabling it here as well fixes that.
+    addon_utils.enable({addon_name!r}, default_set=True, persistent=False)
+
     import bonsai.tool as tool
     gprops = tool.Georeference.get_georeference_props()
     # Our model origin becomes their host model origin
     gprops.has_blender_offset = {gprops.has_blender_offset}
-    gprops.blender_offset_x = "{gprops.blender_offset_x}"
-    gprops.blender_offset_y = "{gprops.blender_offset_y}"
-    gprops.blender_offset_z = "{gprops.blender_offset_z}"
-    gprops.blender_x_axis_abscissa = "{gprops.blender_x_axis_abscissa}"
-    gprops.blender_x_axis_ordinate = "{gprops.blender_x_axis_ordinate}"
+    gprops.blender_offset_x = {gprops.blender_offset_x!r}
+    gprops.blender_offset_y = {gprops.blender_offset_y!r}
+    gprops.blender_offset_z = {gprops.blender_offset_z!r}
+    gprops.blender_x_axis_abscissa = {gprops.blender_x_axis_abscissa!r}
+    gprops.blender_x_axis_ordinate = {gprops.blender_x_axis_ordinate!r}
     pprops = tool.Project.get_project_props()
     pprops.distance_limit = {pprops.distance_limit}
-    pprops.false_origin_mode = "{pprops.false_origin_mode}"
-    pprops.false_origin = "{pprops.false_origin}"
-    pprops.project_north = "{pprops.project_north}"
+    pprops.false_origin_mode = {pprops.false_origin_mode!r}
+    pprops.false_origin = {pprops.false_origin!r}
+    pprops.project_north = {pprops.project_north!r}
     # Use absolute path to be safe from cwd changes.
     try:
-        bpy.ops.bim.load_linked_project(filepath=r"{str(self.filepath_)}", query={repr(self.query)})
+        bpy.ops.bim.load_linked_project(filepath={str(self.filepath_)!r}, query={self.query!r})
     except RuntimeError as e:
         # Operator failed (returned CANCELLED with error report)
         print(f"Failed to load linked project: {{e}}")
         sys.exit(1)
     # Use str instead of as_posix to avoid issues with Windows shared paths.
-    bpy.ops.wm.save_as_mainfile(filepath=r"{str(blend_filepath)}")
+    bpy.ops.wm.save_as_mainfile(filepath={str(blend_filepath)!r})
 
 try:
     run()
@@ -1647,17 +1669,38 @@ except Exception as e:
                     # Explicitly ask to enable Bonsai for this Blender instance
                     # as Bonsai may be just enabled and user preferences are not saved.
                     "--addons",
-                    tool.Blender.get_blender_addon_package_name(),
+                    addon_name,
                     "--python",
                     temp_file.name,
                     "--python-exit-code",
                     "1",
-                ]
+                ],
+                capture_output=True,
+                text=True,
             )
             if run.returncode == 1:
+                details = (run.stderr or run.stdout or "").strip()
                 print("An error occurred while processing your IFC.")
+                if details:
+                    print(details)
                 if not blend_filepath.exists() or blend_filepath.stat().st_mtime < t:
+                    message = (
+                        f"Failed to link '{self.filepath_.name}': the background process that builds the cache failed."
+                    )
+                    if details:
+                        # Last non-empty line is usually the actual error (e.g. the exception message).
+                        last_line = next((line for line in reversed(details.splitlines()) if line.strip()), "")
+                        if last_line:
+                            message += f" {last_line}"
+                    message += " See the system console for the full error."
+                    self.report({"ERROR"}, message)
                     return {"CANCELLED"}
+                else:
+                    self.report(
+                        {"WARNING"},
+                        f"'{self.filepath_.name}' was linked but a warning occurred while processing it; "
+                        "see the system console for details.",
+                    )
 
         self.set_model_origin_from_link()
         self.set_georeferencing_indicator()
