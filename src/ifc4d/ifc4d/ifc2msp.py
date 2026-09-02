@@ -25,6 +25,27 @@ import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
 
+def duration_to_hours(duration, hours_per_day, is_elapsed=False):
+    """Convert an ifcopenshell.util.date.ifc2datetime() result to a float number of hours.
+
+    ``duration`` is either an isodate.Duration or a datetime.timedelta (both
+    ifc2datetime() return types), which both expose ``.days``, ``.seconds``
+    and ``.microseconds``. Reading only ``.days`` silently drops any lag or
+    task duration below 24 hours, since ISO durations like "PT12H0M0S" carry
+    that 12 hours in ``.seconds``, not ``.days``.
+
+    MSPDI's own units are elapsed hours regardless of format: a WORKTIME
+    duration is elapsed hours reinterpreted as a day count via
+    ``hours_per_day`` (see ``msp2ifc.py``'s ``create_rel_sequences``, which
+    builds ``timedelta(days=lag_hours / hours_per_day)`` on import), so the
+    export-side inverse divides the day-equivalent back out by
+    ``hours_per_day``. An ELAPSEDTIME duration is real clock hours with no
+    calendar involved, so 24 hours per day always applies.
+    """
+    total_days = duration.days + (duration.seconds + duration.microseconds / 1_000_000) / 86400
+    return total_days * (24 if is_elapsed else hours_per_day)
+
+
 class Ifc2Msp:
     def __init__(self):
         self.xml = None
@@ -205,7 +226,9 @@ class Ifc2Msp:
         if task.TaskTime:
             if task.TaskTime.ScheduleDuration:
                 duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
-                ET.SubElement(el, "Duration").text = f"PT{duration.days * 8}H0M0S"
+                hours = duration_to_hours(duration, self.hours_per_day)
+                total_minutes = round(hours * 60)
+                ET.SubElement(el, "Duration").text = f"PT{total_minutes // 60}H{total_minutes % 60}M0S"
             if task.TaskTime.ScheduleStart:
                 ET.SubElement(el, "Start").text = task.TaskTime.ScheduleStart
                 self.start_dates.append(task.TaskTime.ScheduleStart)
@@ -236,10 +259,17 @@ class Ifc2Msp:
             self.link_element(rel, predecessor_link)
             if rel.TimeLag and rel.TimeLag.LagValue:
                 duration = ifcopenshell.util.date.ifc2datetime(rel.TimeLag.LagValue.wrappedValue)
+                is_elapsed = rel.TimeLag.DurationType == "ELAPSEDTIME"
+                hours = duration_to_hours(duration, self.hours_per_day, is_elapsed=is_elapsed)
                 # Lag time is expressed in tenths of a minute. Seriously, Microsoft?
-                ET.SubElement(predecessor_link, "LinkLag").text = str(duration.days * self.hours_per_day * 60 * 10)
+                ET.SubElement(predecessor_link, "LinkLag").text = str(round(hours * 60 * 10))
+                # LagFormat 8 is "Elapsed Days" (24/7), 7 is "Days" (calendar based).
+                # msp2ifc.py's importer keys off this to pick the right hours_per_day
+                # divisor back out; it must match what was used to build LinkLag above.
+                ET.SubElement(predecessor_link, "LagFormat").text = "8" if is_elapsed else "7"
             else:
                 ET.SubElement(predecessor_link, "LinkLag").text = "0"
+                ET.SubElement(predecessor_link, "LagFormat").text = "7"
             ET.SubElement(predecessor_link, "PredecessorUID").text = str(predecessor.id())
             ET.SubElement(predecessor_link, "Type").text = {
                 "START_START": "3",
