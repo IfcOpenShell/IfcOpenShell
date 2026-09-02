@@ -1,0 +1,13 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2026-08-01T07:15:40',(''),(''),'IfcOpenShell 0.8.6-3e7b739','IfcOpenShell 0.8.6-3e7b739','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROJECT('0neHLLIQD7PfnET3xUMUD4',$,'P',$,$,$,$,$,$);
+#2=IFCSPACE('0Y8DYxGJn2ZvXqMKuBwiaQ',$,'Room1',$,'CustomSpace',$,$,$,$,.USERDEFINED.,$);
+#3=IFCWALL('0w5TacK0fCJPdDdO9hoTET',$,'Wall1',$,$,$,$,$,$);
+#4=IFCRELCONTAINEDINSPATIALSTRUCTURE('1hb_WnBcjAFP9qal5SwqWv',$,$,$,(#3),#2);
+ENDSEC;
+END-ISO-10303-21;
