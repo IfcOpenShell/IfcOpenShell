@@ -30,6 +30,15 @@
 #include <TopExp.hxx>
 #include <Geom_Circle.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
+#include <BRepCheck_Analyzer.hxx>
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
+#include <ShapeFix_Solid.hxx>
+#include <BRepTools_WireExplorer.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
+#include <Geom_Line.hxx>
+#include <Geom_TrimmedCurve.hxx>
+#include <Precision.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -81,6 +90,73 @@ namespace {
 		}
 		return false;
 	}
+
+	// Removes directrix vertices that are collinear with both neighbours,
+	// within tolerance (see #1541). Only open, purely linear directrices are
+	// simplified; wires with a non-linear segment, or (nearly) closed, are
+	// left untouched.
+	bool collapse_collinear_directrix_vertices(TopoDS_Wire& w, double tol, int& n_collapsed) {
+		std::vector<gp_Pnt> pts;
+		for (BRepTools_WireExplorer exp(w); exp.More(); exp.Next()) {
+			const TopoDS_Edge& e = exp.Current();
+			double u0, u1;
+			Handle(Geom_Curve) crv = BRep_Tool::Curve(e, u0, u1);
+			if (crv.IsNull()) {
+				return false;
+			}
+			if (crv->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+				crv = Handle(Geom_TrimmedCurve)::DownCast(crv)->BasisCurve();
+			}
+			if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+				return false;
+			}
+			if (pts.empty()) {
+				pts.push_back(BRep_Tool::Pnt(TopExp::FirstVertex(e, Standard_True)));
+			}
+			pts.push_back(BRep_Tool::Pnt(TopExp::LastVertex(e, Standard_True)));
+		}
+		// Need at least one interior vertex, and keep (nearly) closed loops
+		// untouched, their seam corner is handled separately below.
+		if (pts.size() < 3 || pts.front().Distance(pts.back()) < tol) {
+			return false;
+		}
+		bool changed = true;
+		while (changed) {
+			changed = false;
+			for (size_t i = 1; i + 1 < pts.size(); ++i) {
+				const gp_Pnt& a = pts[i - 1];
+				const gp_Pnt& b = pts[i];
+				const gp_Pnt& c = pts[i + 1];
+				gp_Vec ac(a, c);
+				double ac_len = ac.Magnitude();
+				if (ac_len < ::Precision::Confusion()) {
+					continue;
+				}
+				gp_Vec ab(a, b);
+				// Distance from b to line(a, c).
+				double dist = ab.Crossed(ac).Magnitude() / ac_len;
+				if (dist >= tol) {
+					continue;
+				}
+				pts.erase(pts.begin() + i);
+				++n_collapsed;
+				changed = true;
+				break;
+			}
+		}
+		if (n_collapsed == 0) {
+			return false;
+		}
+		BRepBuilderAPI_MakePolygon mp;
+		for (const auto& p : pts) {
+			mp.Add(p);
+		}
+		if (!mp.IsDone()) {
+			return false;
+		}
+		w = mp.Wire();
+		return true;
+	}
 }
 
 bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
@@ -128,11 +204,6 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
         }
     }
 	
-	// Build the wire from curve, which is the directrix offset toward the origin
-	// when applied_temporary_offset is set. Using scs->curve here left the wire
-	// far from the origin yet still translated the result back by +mean, which
-	// misplaced sweeps far from the origin (#4848). When no offset is applied
-	// curve aliases scs->curve, so near-origin geometry is unaffected.
 	auto w = convert_curve(curve);
 	if (w.which() != 2) {
 		Logger::Root().Error("UNS", 9, "Unsupported directrix");
@@ -164,6 +235,16 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 
 	gp_Trsf directrix;
 	TopoDS_Wire wire = boost::get<TopoDS_Wire>(w);
+
+	{
+		// See collapse_collinear_directrix_vertices: sanitize redundant,
+		// (near-)collinear directrix vertices that can otherwise corrupt
+		// OCCT's corner trimming at the next real corner (#1541).
+		int n_collapsed = 0;
+		if (collapse_collinear_directrix_vertices(wire, settings_.get<settings::Precision>().get(), n_collapsed)) {
+			Logger::Root().Message(Logger::LOG_WARNING, "GEO", 260, "Collapsed " + std::to_string(n_collapsed) + " redundant collinear directrix vert(ices)", scs->instance);
+		}
+	}
 
 	const bool is_plane = surface && surface->DynamicType() == STANDARD_TYPE(Geom_Plane);
 
@@ -253,6 +334,12 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	std::unique_ptr<BRepBuilderAPI_MakeFace> mf0, mf1;
 	TopoDS_Face f0, f1;
 
+	// A closed directrix yields a tube whose first and last sections coincide
+	// on the bisector plane of the seam corner, so that the tube is already a
+	// closed shell. End caps would duplicate that internal face and make the
+	// shell non-manifold.
+	const bool directrix_is_closed = wire.Closed() != 0;
+
 	for (int i = 0; i < 2; ++i) {
 		for (TopExp_Explorer exp(face, TopAbs_WIRE); exp.More(); exp.Next()) {
 			const auto& section = TopoDS::Wire(exp.Current());
@@ -272,19 +359,22 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 			if (!builder.IsDone()) {
 				return false;
 			}
-			auto w0 = TopoDS::Wire(builder.FirstShape());
-			auto w1 = TopoDS::Wire(builder.LastShape());
-			if (mf0) {
-				mf0->Add(w0);
-				mf1->Add(w1);
-			} else {
-				f0 = BRepBuilderAPI_MakeFace(w0).Face();
-				f1 = BRepBuilderAPI_MakeFace(w1).Face();
-				if (f0.IsNull() || f1.IsNull()) {
-					return false;
+
+			if (!directrix_is_closed) {
+				auto w0 = TopoDS::Wire(builder.FirstShape());
+				auto w1 = TopoDS::Wire(builder.LastShape());
+				if (mf0) {
+					mf0->Add(w0);
+					mf1->Add(w1);
+				} else {
+					f0 = BRepBuilderAPI_MakeFace(w0).Face();
+					f1 = BRepBuilderAPI_MakeFace(w1).Face();
+					if (f0.IsNull() || f1.IsNull()) {
+						return false;
+					}
+					mf0.reset(new BRepBuilderAPI_MakeFace(f0));
+					mf1.reset(new BRepBuilderAPI_MakeFace(f1));
 				}
-				mf0.reset(new BRepBuilderAPI_MakeFace(f0));
-				mf1.reset(new BRepBuilderAPI_MakeFace(f1));
 			}
 
 			for (TopExp_Explorer exp2(builder.Shape(), TopAbs_FACE); exp2.More(); exp2.Next()) {
@@ -293,15 +383,49 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 		}
 	}
 
-	if (mf0->IsDone() && mf1->IsDone()) {
-		BB.Add(comp, mf0->Face());
-		BB.Add(comp, mf1->Face());
-	} else {
-		BB.Add(comp, f0);
-		BB.Add(comp, f1);
+	if (!directrix_is_closed) {
+		// The cap at the start of the sweep bounds the solid against the sweep
+		// direction, so it is reversed relative to the section wire, the same
+		// convention as BRepOffsetAPI_MakePipeShell::MakeSolid. Adding both
+		// caps unreversed left the shell orientation inconsistent, which
+		// showed up as inside-out or non-manifold solids.
+		TopoDS_Face cap0, cap1;
+		if (mf0->IsDone() && mf1->IsDone()) {
+			cap0 = mf0->Face();
+			cap1 = mf1->Face();
+		} else {
+			cap0 = f0;
+			cap1 = f1;
+		}
+		cap0.Reverse();
+		BB.Add(comp, cap0);
+		BB.Add(comp, cap1);
 	}
 
 	result = BRepBuilderAPI_MakeSolid(comp).Solid();
+
+	if (!BRepCheck_Analyzer(result).IsValid()) {
+		// Sharp corners under the RightCorner transition can leave individual
+		// trimmed faces with self-intersecting wires; ShapeFix_Solid repairs
+		// those in place without altering the mitred geometry.
+		ShapeFix_Solid fix;
+		fix.Init(TopoDS::Solid(result));
+		fix.Perform();
+		if (!fix.Solid().IsNull()) {
+			result = fix.Solid();
+		}
+	}
+
+	{
+		// The orientation of the section wire determines whether the swept
+		// faces point inward or outward, so the assembled solid can come out
+		// inside-out as a whole. A negative volume identifies that case.
+		GProp_GProps props;
+		BRepGProp::VolumeProperties(result, props);
+		if (props.Mass() < 0.) {
+			result.Complement();
+		}
+	}
 
 	if (applied_temporary_offset) {
         gp_Trsf trsf;
