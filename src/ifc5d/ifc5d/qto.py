@@ -254,6 +254,13 @@ class IfcOpenShell(QtoCalculator):
         "get_segment_length": Function(
             "IfcLengthMeasure", "Segment Length", "Intelligently guesses the length of flow segments"
         ),
+        "get_extrusion_length": Function(
+            "IfcLengthMeasure",
+            "Extrusion Length",
+            "The extruded length of a member, read from the extrusion depth when the body is a "
+            "single extruded area solid with a parameterized cross section. Falls back to the "
+            "maximum X, Y, or Z local dimension for any other representation.",
+        ),
         "get_opening_width": Function(
             "IfcLengthMeasure", "Opening Width", "The width of an opening, guessing the opening orientation"
         ),
@@ -356,6 +363,7 @@ class IfcOpenShell(QtoCalculator):
 
     internal_functions = (
         "get_segment_length",
+        "get_extrusion_length",
         "get_weight",
         "get_opening_width",
         "get_opening_height",
@@ -422,6 +430,12 @@ class IfcOpenShell(QtoCalculator):
                                 value = cls.get_segment_length(element)
                                 if value is None:
                                     continue
+                            elif formula == "get_extrusion_length":
+                                # Depth is already in project units, like get_segment_length.
+                                value = cls.get_extrusion_length(element)
+                                if value is None:
+                                    value = ifcopenshell.util.shape.get_max_xyz(geometry)
+                                    value = cls.unit_converter.convert(value, "IfcLengthMeasure")
                             elif formula == "get_weight":
                                 calculation_type = "GROSS" if iterator.settings is cls.gross_settings else "NET"
                                 value = cls.get_weight(element, geometry, calculation_type)
@@ -523,6 +537,38 @@ class IfcOpenShell(QtoCalculator):
             y = ifcopenshell.util.shape.get_y(area_shape) / cls.unit_scale
             z = item.Depth
             return max([x, y, z])
+
+    @classmethod
+    def get_extrusion_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Get the extruded length of a member from its Body representation.
+
+        ``IfcExtrudedAreaSolid.Depth`` is the distance the cross section is
+        swept, so it is the length whatever the extrusion direction and whatever
+        the element's placement. A bounding box maximum is only equal to it when
+        the member happens to run along a local axis, and underestimates any
+        diagonal member. Reading the depth also keeps openings out of the
+        answer, since voids never alter the extrusion.
+
+        Only a parameterized swept area is trusted. An arbitrary profile is as
+        likely to be a plate outline swept by its thickness (a stair stringer,
+        say) as a real cross section, and the depth would then be the thickness.
+        The same distinction is made in ``get_segment_length``.
+
+        :param element: IFC element entity.
+        :return: ``float`` length in project units, or ``None`` when the body is
+            not a single parameterized extrusion, in which case the caller falls
+            back to the bounding box heuristic.
+        """
+        for rep in ifcopenshell.util.representation.get_representations_iter(element):
+            if rep.RepresentationIdentifier != "Body":
+                continue
+            items = rep.Items or []
+            # IfcExtrudedAreaSolidTapered is a subtype and still has a Depth.
+            if len(items) == 1 and items[0].is_a("IfcExtrudedAreaSolid"):
+                if items[0].SweptArea.is_a("IfcParameterizedProfileDef"):
+                    return items[0].Depth
+            return None
+        return None
 
     # Footings are authored two ways, so a single static axis rule cannot be correct for both.
     # Beam-like footings (STRIP_FOOTING, FOOTING_BEAM) are a profile extruded along the local Z
