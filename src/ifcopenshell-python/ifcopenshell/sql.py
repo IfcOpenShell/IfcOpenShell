@@ -380,9 +380,9 @@ class sqlite_entity:
         INVALID, FORWARD, INVERSE, DERIVED = range(4)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == DERIVED:
-            # Derived attributes aren't stored or computed for SQLite-linked
-            # files, so callers must treat None as "not available" here.
-            return None
+            raise RuntimeError(
+                f"Derived attributes (e.g. '{name}') are not supported for {type(self).__name__} entities."
+            )
         if attr_cat == FORWARD:
             if self.sqlite_wrapper.attribute_cache:
                 return self.sqlite_wrapper.attribute_cache[name]
