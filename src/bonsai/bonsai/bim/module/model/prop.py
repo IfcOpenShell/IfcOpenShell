@@ -556,12 +556,12 @@ class BIMStairProperties(PropertyGroup):
         name="Number of Treads", default=6, soft_min=1, min=0, update=update_number_of_treads
     )
     total_length_target: bpy.props.FloatProperty(
-        name="Total Length Target",
+        name="Total Length",
         default=3.0,
         min=0.01,
         subtype="DISTANCE",
         update=update_total_length_target,
-        description="Total Length Target, might not be exactly respected depending on the parameters",
+        description="Total Length target, might not be exactly respected depending on the parameters",
     )
     total_length_lock: bpy.props.BoolProperty(
         default=False,
@@ -572,7 +572,7 @@ class BIMStairProperties(PropertyGroup):
         name="Tread Depth", default=0.25, min=0.01, subtype="DISTANCE", update=update_stair
     )
     tread_run: bpy.props.FloatProperty(
-        name="Tread Run", default=0.3, min=0.01, subtype="DISTANCE", update=update_tread_run
+        name="Tread Length", default=0.3, min=0.01, subtype="DISTANCE", update=update_tread_run
     )
     base_slab_depth: bpy.props.FloatProperty(
         name="Base Slab Depth", default=0.25, min=0, subtype="DISTANCE", update=update_stair
@@ -588,14 +588,14 @@ class BIMStairProperties(PropertyGroup):
         update=validate_nosing_value,
     )
     custom_tread_lock: bpy.props.BoolProperty(
-        name="Lock First/Last Treads to Tread Run",
-        description="When enabled, first and last treads automatically use the Tread Run value",
+        name="Lock First/Last Treads to Tread Length",
+        description="When enabled, first and last treads automatically use the Tread Length value",
         default=True,
         update=update_custom_tread_lock,
     )
     custom_first_last_tread_run: bpy.props.FloatVectorProperty(
-        name="Custom First / Last Treads Widths",
-        description='Specify custom first / last treads widths, different from the general "Tread Run". Leave 0 to disable.',
+        name="Custom First / Last Tread Lengths",
+        description='Specify custom first / last tread lengths, different from the general "Tread Length". Leave 0 to disable.',
         default=(0, 0),
         min=0,
         unit="LENGTH",

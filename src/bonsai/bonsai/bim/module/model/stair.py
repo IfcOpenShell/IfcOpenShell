@@ -558,6 +558,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         DimensionGizmoConfig(
             attr_name="tread_run",
             axis=(1, 0, 0),
+            prop_name="Tread Length",
             min_value=0.01,
             visibility_condition=lambda p: p.has_tread_run_gizmo(),
             matrix_position=lambda p: V_(
