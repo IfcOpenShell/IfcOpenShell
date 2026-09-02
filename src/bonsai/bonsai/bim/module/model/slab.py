@@ -727,6 +727,9 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         old_profile = extrusion.SweptArea
+        # Other elements may share this profile; find them before it's replaced/removed below.
+        other_elements = [e for e in ifcopenshell.util.element.get_elements_by_profile(old_profile) if e != element]
+
         for inverse in tool.Ifc.get().get_inverse(old_profile):
             ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
@@ -737,6 +740,11 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             obj=obj,
             representation=body,
         )
+
+        # Their Blender meshes are still stale, unlike the just-regenerated edited object.
+        other_objs = [o for e in other_elements if (o := tool.Ifc.get_object(e))]
+        if other_objs:
+            tool.Geometry.reload_representation(other_objs)
 
         # Only certain classes should have a footprint
         if element.is_a() not in ("IfcSlab", "IfcRamp"):
