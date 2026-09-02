@@ -1029,6 +1029,30 @@ class Model(bonsai.core.tool.Model):
             ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
     @classmethod
+    def remap_manual_booleans(
+        cls, element: ifcopenshell.entity_instance, id_map: dict[int, ifcopenshell.entity_instance]
+    ) -> None:
+        """Repoint ``element``'s 'BBIM_Boolean' pset onto freshly copied booleans.
+
+        When an element is duplicated the pset is copied verbatim, so its ids
+        still refer to the source's booleans while the copy owns brand new
+        boolean entities from the deep-copied representation. ``id_map`` is the
+        source-id to new-entity mapping produced by the representation copy;
+        replace every stored id that was copied with the id of its new entity so
+        the copy tracks its own manual booleans.
+        """
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        if not pset_data:
+            return
+        stored_ids = json.loads(pset_data["Data"])
+        remapped = [id_map[i].id() if i in id_map else i for i in stored_ids]
+        if remapped == stored_ids:
+            return
+        pset = tool.Ifc.get().by_id(pset_data["id"])
+        data = tool.Ifc.get().createIfcText(json.dumps(remapped))
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
+
+    @classmethod
     def get_flow_segment_axis(cls, obj: bpy.types.Object) -> tuple[Vector, Vector]:
         z_values = [v[2] for v in obj.bound_box]
         return (obj.matrix_world @ Vector((0, 0, min(z_values))), obj.matrix_world @ Vector((0, 0, max(z_values))))
