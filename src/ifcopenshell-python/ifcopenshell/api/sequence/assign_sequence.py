@@ -109,15 +109,15 @@ def assign_sequence(
     for rel in related_process.IsSuccessorFrom or []:
         if rel.RelatingProcess == relating_process:
             return rel
-    rel = file.create_entity(
-        "IfcRelSequence",
-        **{
-            "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-            "RelatingProcess": relating_process,
-            "RelatedProcess": related_process,
-            "SequenceType": sequence_type,
-        }
-    )
+    attributes = {
+        "GlobalId": ifcopenshell.guid.new(),
+        "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
+        "RelatingProcess": relating_process,
+        "RelatedProcess": related_process,
+        "SequenceType": sequence_type,
+    }
+    if file.schema == "IFC2X3":
+        attributes["TimeLag"] = 0.0
+    rel = file.create_entity("IfcRelSequence", **attributes)
     ifcopenshell.api.sequence.cascade_schedule(file, task=relating_process)
     return rel
