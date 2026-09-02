@@ -75,7 +75,8 @@ class ClashSet(TypedDict):
 
 
 class ClashGroup(TypedDict):
-    elements: dict[str, ifcopenshell.entity_instance]
+    # Keyed by the element itself, not by GlobalId (only unique within one file).
+    elements: dict[ifcopenshell.entity_instance, ifcopenshell.entity_instance]
 
 
 class Clasher:
@@ -207,14 +208,13 @@ class Clasher:
         assert iterator.initialize()
         while True:
             self.tree.add_element(iterator.get())
-            shape = iterator.get()
             if not iterator.next():
                 break
         self.logger.info(f"Tree finished {time.time() - start}")
 
-        # Add group elements.
+        # Add group elements. Key by the element itself, not GlobalId (see ClashGroup).
         start = time.time()
-        self.groups[name]["elements"].update({e.GlobalId: e for e in elements})
+        self.groups[name]["elements"].update({e: e for e in elements})
         self.logger.info(f"Element metadata finished {time.time() - start}")
         start = time.time()
 
@@ -301,7 +301,6 @@ class Clasher:
                 max_distance_between_grouped_points = 3
 
             model = OPTICS(min_samples=2, max_eps=max_distance_between_grouped_points)
-            model.fit_predict(data)
             pred = model.fit_predict(data)
 
             # Insert the smart groups into the clashes
