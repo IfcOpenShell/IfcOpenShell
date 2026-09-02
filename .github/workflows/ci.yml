@@ -45,6 +45,8 @@ jobs:
       # Colored output for cmake.
       CLICOLOR_FORCE: "1"
       CMAKE_COLOR_DIAGNOSTICS: "ON"
+      # Colored output for pytest.
+      FORCE_COLOR: "1"
     steps:
       - uses: actions/checkout@v7
         with:
