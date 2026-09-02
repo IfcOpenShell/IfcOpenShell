@@ -2096,6 +2096,14 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         else:
             output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
         output_file = Path(output_file).as_posix().replace("\\", "/")
+        # The stored IFC path can be relative (use_relative_project_path stores it that
+        # way after each save). invoke() resolves it to absolute, but EXEC_DEFAULT saves
+        # that pass filepath= directly (e.g. autosave) skip invoke(), and self.filepath
+        # has no SKIP_SAVE so a remembered relative value can leak into execute() too. A
+        # relative path here would be written against Blender's CWD and fail, so always
+        # resolve to absolute for the actual write; the relative form is re-derived for
+        # storage below.
+        output_file = Path(tool.Blender.ensure_blender_path_is_abs(Path(output_file))).as_posix().replace("\\", "/")
 
         settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
         settings.json_version = self.json_version
