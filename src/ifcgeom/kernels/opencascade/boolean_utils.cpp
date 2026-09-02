@@ -10,6 +10,7 @@
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
 #include <Bnd_Box.hxx>
+#include <BRepBndLib.hxx>
 #include <Extrema_ExtPC.hxx>
 #include <Geom_Plane.hxx>
 #include <Geom_BSplineCurve.hxx>
@@ -832,6 +833,34 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
+namespace {
+	// An empty subtraction result is only plausible when the second operands
+	// can jointly cover the first operand, both in bounding box and in volume. #5779
+	bool empty_cut_result_plausible(double tolerance, const TopoDS_Shape& a, const NCollection_List<TopoDS_Shape>& b) {
+		Bnd_Box A, B;
+		BRepBndLib::Add(a, A);
+		double volume_b = 0.;
+		for (NCollection_List<TopoDS_Shape>::Iterator it(b); it.More(); it.Next()) {
+			BRepBndLib::Add(it.Value(), B);
+			volume_b += std::abs(IfcGeom::util::shape_volume(it.Value()));
+		}
+		if (A.IsVoid() || B.IsVoid()) {
+			return false;
+		}
+		B.Enlarge(tolerance);
+		double axmin, aymin, azmin, axmax, aymax, azmax;
+		double bxmin, bymin, bzmin, bxmax, bymax, bzmax;
+		A.Get(axmin, aymin, azmin, axmax, aymax, azmax);
+		B.Get(bxmin, bymin, bzmin, bxmax, bymax, bzmax);
+		if (!(bxmin <= axmin && bymin <= aymin && bzmin <= azmin &&
+			axmax <= bxmax && aymax <= bymax && azmax <= bzmax)) {
+			return false;
+		}
+		const double volume_a = IfcGeom::util::shape_volume(a);
+		return volume_b >= volume_a * (1. - 1.e-6);
+	}
+}
+
 bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	using namespace std::string_literals;
 
@@ -1332,7 +1361,10 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					int result_n_faces = count(r, TopAbs_FACE);
 					int first_op_n_faces = count(a, TopAbs_FACE);
 
-					if (op == BOPAlgo_CUT && has_open_shells && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
+					if (op == BOPAlgo_CUT && result_n_faces == 0 && first_op_n_faces > 0 && !empty_cut_result_plausible(settings.precision + fuzziness, a, b)) {
+						success = false;
+						settings.log().Notice("GEO", 405, "Empty subtraction result discarded because second operands do not enclose first operand");
+					} else if (op == BOPAlgo_CUT && has_open_shells && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
 						success = false;
 						settings.log().Notice("GEO", 149, "Boolean result discarded because subtractions results in only the addition of faces");
 					} else {
