@@ -423,7 +423,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Ifc.get(),
                 products=[element],
                 classification=classification,
-                identification=bsdd_classification.reference_code,
+                identification=bsdd_classification.reference_code or None,
                 name=bsdd_classification.name,
             )
             reference.Location = bsdd_classification.uri
