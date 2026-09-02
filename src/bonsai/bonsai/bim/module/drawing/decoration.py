@@ -924,8 +924,14 @@ class LeaderDecorator(BaseDecorator):
         return (obj.matrix_world @ spline_points[0].co).to_3d()
 
     def decorate(self, context, obj):
-        self.draw_arrow(context, obj)
-        self.draw_text(context, obj, self.get_spline_end(obj))
+        # A text leader can lose its leader curve and keep only the text literal, leaving an empty object.
+        # Without a curve there is no arrow to draw and no spline to anchor the text, so fall back to the
+        # origin like a plain text annotation instead of raising and aborting every following decoration.
+        if isinstance(obj.data, bpy.types.Curve) and obj.data.splines:
+            self.draw_arrow(context, obj)
+            self.draw_text(context, obj, self.get_spline_end(obj))
+        else:
+            self.draw_text(context, obj)
 
 
 class RadiusDecorator(BaseDecorator):
