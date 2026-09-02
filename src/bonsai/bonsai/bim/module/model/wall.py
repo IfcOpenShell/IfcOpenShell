@@ -696,6 +696,35 @@ class FlipWall(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class TrimWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.trim_wall"
+    bl_label = "Trim Wall"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Connects and trims two non-parallel LAYER2 elements (walls, railings, etc) into a joint"
+
+    @classmethod
+    def poll(cls, context):
+        selected_objs = [
+            o
+            for o in tool.Blender.get_selected_objects()
+            if (e := tool.Ifc.get_entity(o)) and tool.Model.get_usage_type(e) == "LAYER2"
+        ]
+        if len(selected_objs) != 2:
+            cls.poll_message_set("Exactly two LAYER2 items (walls, railings, etc) must be selected to perform a trim.")
+            return False
+        if _poll_reject_array_children(cls):
+            return False
+        return True
+
+    def _perform(self, context):
+        try:
+            core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
+        except core.RequireTwoWallsError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+        return {"FINISHED"}
+
+
 class SplitWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.split_wall"
     bl_label = "Split Wall"
@@ -743,6 +772,9 @@ class MergeWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
         mesh_objects = [o for o in tool.Model.get_selected_ifc_objects() if o.type == "MESH"]
         if len(mesh_objects) != 2:
             cls.poll_message_set("Please select exactly two mesh IFC objects.")
+            return False
+        if any(not (e := tool.Ifc.get_entity(o)) or tool.Model.get_usage_type(e) != "LAYER2" for o in mesh_objects):
+            cls.poll_message_set("Both selected items must be LAYER2 (walls, railings, etc) to perform a merge.")
             return False
         if _poll_reject_array_children(cls):
             return False
