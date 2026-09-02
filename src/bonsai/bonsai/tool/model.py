@@ -1083,6 +1083,12 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
 
     @classmethod
+    def get_filling_host(cls, element: ifcopenshell.entity_instance) -> Optional[ifcopenshell.entity_instance]:
+        """Return the wall/element whose void ``element`` fills, or ``None`` if it fills nothing."""
+        opening = ifcopenshell.util.element.get_filled_void(element)
+        return ifcopenshell.util.element.get_voided_element(opening) if opening else None
+
+    @classmethod
     def get_wall_axis(
         cls, obj: bpy.types.Object, layers: Optional[MaterialLayerParameters] = None
     ) -> dict[str, list[Vector]]:
@@ -2172,6 +2178,15 @@ class Model(bonsai.core.tool.Model):
             cls.regenerate_filling_opening_body(filling)
 
         return voided_objs
+
+    @classmethod
+    def recalculate_fillings(cls, objs: Iterable[bpy.types.Object]) -> None:
+        """Resync moved fillings' openings, reusing ``bim.recalculate_fill``."""
+        objs = list(objs)
+        if not objs:
+            return
+        with bpy.context.temp_override(selected_objects=objs):
+            bpy.ops.bim.recalculate_fill()
 
     @classmethod
     def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
