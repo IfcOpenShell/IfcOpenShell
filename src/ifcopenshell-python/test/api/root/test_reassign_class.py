@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
@@ -77,6 +79,23 @@ class TestReassignClass(test.bootstrap.IFC4):
         # original clases are gone
         assert len(self.file.by_type("IfcWall")) == 0
         assert len(self.file.by_type("IfcWallType")) == 0
+
+    def test_raising_a_clear_error_when_no_occurrence_class_is_applicable(self):
+        # Regression test for #8210: classes with no applicable occurrences
+        # (e.g. IfcTypeProduct) raised an uncaught StopIteration instead of
+        # a clear error when the type had occurrences to reassign.
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        with pytest.raises(TypeError):
+            ifcopenshell.api.root.reassign_class(self.file, product=element_type, ifc_class="IfcTypeProduct")
+
+    def test_raising_a_clear_error_when_no_type_class_is_applicable(self):
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        with pytest.raises(TypeError):
+            ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcAnnotation")
 
     def test_reassigning_type_class_and_its_occurrences_classes_if_entity_was_typed(self):
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
