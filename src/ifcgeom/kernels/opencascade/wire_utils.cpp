@@ -420,6 +420,19 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List
 
 	bool intersected = false;
 
+	// Precompute a bounding box per edge (enlarged by the intersection tolerance)
+	// so the expensive GeomAPI_ExtremaCurveCurve test below can be skipped for edge
+	// pairs whose extents do not come close to overlapping. On advanced b-rep models
+	// (see issue #5999) the exhaustive O(n^2) extrema computation over curved edges
+	// dominates runtime; this broad-phase prune mirrors the box filtering already
+	// used for the n > 64 tree path and does not change the set of reported
+	// intersections (disjoint boxes cannot contain a qualifying crossing).
+	std::vector<Bnd_Box> edge_boxes(n);
+	for (int e = 0; e < n; ++e) {
+		BRepBndLib::Add(wd->Edge(e + 1), edge_boxes[e]);
+		edge_boxes[e].Enlarge(eps);
+	}
+
 	// tfk: Extrema on infinite curves proved to be more robust.
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
@@ -451,6 +464,13 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List
 
 			// Only check non-consecutive edges
 			if (i == n - 1 && j == 0) continue;
+
+			// Broad-phase prune: if the edge extents (already padded by eps) are
+			// disjoint the curves cannot yield a qualifying intersection, so skip
+			// the costly extrema computation.
+			if (edge_boxes[i].IsOut(edge_boxes[j])) {
+				continue;
+			}
 
 			double u11, u12, u21, u22, U1, U2;
 			GeomAPI_ExtremaCurveCurve ecc(
