@@ -613,6 +613,23 @@ def filter_elements(
 class SetElementValueException(Exception): ...
 
 
+def _is_editable_pset(pset: ifcopenshell.entity_instance) -> bool:
+    """True if `pset` holds simple properties that can be written using
+    ifcopenshell.api.pset.edit_pset.
+
+    This includes IfcPropertySet, as well as IfcMaterialProperties and
+    IfcProfileProperties (IFC4+), and IfcExtendedMaterialProperties
+    (IFC2X3), which are edited the same way. IfcElementQuantity is handled
+    separately via ifcopenshell.api.pset.edit_qto.
+    """
+    return (
+        pset.is_a("IfcPropertySet")
+        or pset.is_a("IfcMaterialProperties")
+        or pset.is_a("IfcProfileProperties")
+        or pset.is_a("IfcExtendedMaterialProperties")
+    )
+
+
 def set_element_value(
     ifc_file: ifcopenshell.file,
     element: Union[
@@ -814,11 +831,11 @@ def set_element_value(
             if isinstance(key, re.Pattern):
                 for prop, prop_value in element.items():
                     if key.match(prop):
-                        if pset.is_a("IfcPropertySet") and prop_value != value:
+                        if _is_editable_pset(pset) and prop_value != value:
                             ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={prop: value})
                         elif pset.is_a("IfcElementQuantity") and prop_value != float(value):
                             ifcopenshell.api.pset.edit_qto(ifc_file, qto=pset, properties={prop: float(value)})
-            elif pset.is_a("IfcPropertySet") and element.get(key, None) != value:
+            elif _is_editable_pset(pset) and element.get(key, None) != value:
 
                 def process_pset_prop_value(
                     pset: ifcopenshell.entity_instance, prop: str, value: Any
