@@ -315,14 +315,14 @@
             "IfcFooting": {
                 "Qto_FootingBaseQuantities": {
                     "CrossSectionArea": null,
-                    "GrossSurfaceArea": null,
-                    "GrossVolume": null,
+                    "GrossSurfaceArea": "gross_get_area",
+                    "GrossVolume": "gross_get_volume",
                     "GrossWeight": "gross_get_weight",
                     "Height": "net_get_footing_height",
                     "Length": "net_get_footing_length",
                     "NetVolume": "net_get_volume",
                     "NetWeight": "net_get_weight",
-                    "OuterSurfaceArea": null,
+                    "OuterSurfaceArea": "net_get_outer_surface_area",
                     "Width": "net_get_footing_width"
                 }
             },
