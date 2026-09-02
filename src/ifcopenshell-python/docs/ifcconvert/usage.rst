@@ -16,12 +16,11 @@ you provide for the output file determines what format the IFC is converted to.
     On Windows, you can drag and drop a ``.ifc`` file on the ``IfcConvert.exe``
     file to automatically convert it to an ``.obj`` file.
 
-For any conversion, it is recommended to use multiple cores to speed up
-processing:
+By default, IfcConvert uses all available CPU cores to speed up processing. To
+use a specific number of threads instead:
 
 .. code-block:: bash
 
-    # Change "7" to the number of CPU cores you have then plus one.
     IfcConvert -j 7 /path/to/input.ifc /path/to/output.dae
 
 By default, units are converted to meters. If you want to retain the original units:
@@ -112,8 +111,11 @@ CLI Manual
       --kernel arg (=opencascade)           Geometry kernel to use (opencascade, 
                                             cgal, cgal-simple, hybrid-cgal-simple-o
                                             pencascade).
-      -j [ --threads ] arg (=1)             Number of parallel processing threads 
-                                            for geometry interpretation.
+      -j [ --threads ] arg (=0)             Number of parallel processing threads
+                                            for geometry interpretation. Defaults
+                                            to 0, which auto-detects the number
+                                            of concurrent threads supported by
+                                            the system.
       --center-model                        Centers the elements by applying the 
                                             center point of all placements as an 
                                             offset.Can take several minutes on 

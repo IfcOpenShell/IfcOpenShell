@@ -297,8 +297,9 @@ int main(int argc, char** argv) {
 	geom_options.add_options()
 		("kernel", po::value<std::string>(&geometry_kernel)->default_value(default_kernel),
 			"Geometry kernel to use (opencascade, cgal, cgal-simple, hybrid-cgal-simple-opencascade).")
-		("threads,j", po::value<int>(&num_threads)->default_value(1),
-			"Number of parallel processing threads for geometry interpretation.")
+		("threads,j", po::value<int>(&num_threads)->default_value(0),
+			"Number of parallel processing threads for geometry interpretation. "
+			"Defaults to 0, which auto-detects the number of concurrent threads supported by the system.")
 		("center-model",
             "Centers the elements by applying the center point of all placements as an offset."
             "Can take several minutes on large models.")
