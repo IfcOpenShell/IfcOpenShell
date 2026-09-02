@@ -1265,19 +1265,20 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def toggle_hide_spaces(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
-        first_obj = tool.Ifc.get_object(spaces[0])
-        assert isinstance(first_obj, bpy.types.Object)
-        obj: bpy.types.Object
-        if first_obj.hide_get() == False:
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
-                obj.hide_set(True)
+        # `hide_get`/`hide_set` raise for objects that are not in the active view
+        # layer (e.g. spaces living in an excluded collection), so skip those.
+        view_layer = bpy.context.view_layer
+        objs = [
+            obj
+            for space in spaces
+            if isinstance(obj := tool.Ifc.get_object(space), bpy.types.Object) and view_layer.objects.get(obj.name)
+        ]
+        if not objs:
             return
 
-        elif first_obj.hide_get() == True:
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
-                obj.hide_set(False)
+        should_hide = objs[0].hide_get() == False
+        for obj in objs:
+            obj.hide_set(should_hide)
 
     @classmethod
     def set_default_container(cls, container: ifcopenshell.entity_instance) -> None:
