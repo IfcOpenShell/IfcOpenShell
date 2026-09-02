@@ -71,16 +71,16 @@ build-urls:
 
 .PHONY: test
 test:
-	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
+	pytest --import-mode=importlib -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
 
 .PHONY: test-parallel
 test-parallel:
 	@NPROCS=$$(nproc 2>/dev/null || sysctl -n hw.ncpu); \
-	pytest -p no:pytest-blender -n $$NPROCS test --ignore=test/util/test_shape_builder.py
+	pytest --import-mode=importlib -p no:pytest-blender -n $$NPROCS test --ignore=test/util/test_shape_builder.py
 
 .PHONY: test-mathutils
 test-mathutils:
-	pytest -p no:pytest-blender test/util/test_shape_builder.py
+	pytest --import-mode=importlib -p no:pytest-blender test/util/test_shape_builder.py
 
 
 .PHONY: license
@@ -90,7 +90,7 @@ license:
 
 .PHONY: coverage
 coverage:
-	coverage run --source ifcopenshell -m pytest -p no:pytest-blender test
+	coverage run --source ifcopenshell -m pytest --import-mode=importlib -p no:pytest-blender test
 	coverage html
 	xdg-open htmlcov/index.html
 
