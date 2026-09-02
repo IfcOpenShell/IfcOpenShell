@@ -102,6 +102,17 @@ src/bonsai/bonsai/bim/data/gantt/index.html
 src/bonsai/bonsai/bim/data/gantt/jsgantt.js
 src/bonsai/bonsai/bim/data/gantt/jsgantt.css
 src/bonsai/bonsai/bim/data/webui/static/js/jquery.min.js
+src/bonsai/bonsai/bim/data/webui/static/js/tabulator.min.js
+src/bonsai/bonsai/bim/data/webui/static/js/socket.io.min.js
+src/bonsai/bonsai/bim/data/webui/static/js/svg.min.js
+src/bonsai/bonsai/bim/data/webui/static/js/svg-pan-zoom.min.js
+src/bonsai/bonsai/bim/data/webui/static/js/bootstrap.min.js
+src/bonsai/bonsai/bim/data/webui/static/css/tabulator_site.min.css
+src/bonsai/bonsai/bim/data/webui/static/css/tabulator_site_dark.min.css
+src/bonsai/bonsai/bim/data/webui/static/css/all.min.css
+src/bonsai/bonsai/bim/data/webui/static/css/bootstrap.min.css
+src/bonsai/bonsai/bim/data/webui/static/webfonts/
+src/bonsai/bonsai/bim/data/webui/static/images/
 src/bonsai/bonsai/bim/data/webui/running_pid.json
 
 # ifcopenshell swig and compiled files

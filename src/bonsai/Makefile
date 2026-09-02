@@ -224,6 +224,42 @@ endif
 	# jQuery is required for web UI functionality
 	cd build/bonsai/bim/data/webui/static/js/ && wget https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
 
+	# Tabulator renders the schedule and costing tables in the web UI.
+	# Pinned to 6.5.2, the version unpkg's unversioned URL currently resolves
+	# to, so a future upstream release can't silently change table behaviour.
+	cd build/bonsai/bim/data/webui/static/js/ && wget https://unpkg.com/tabulator-tables@6.5.2/dist/js/tabulator.min.js
+	cd build/bonsai/bim/data/webui/static/css/ && wget https://unpkg.com/tabulator-tables@6.5.2/dist/css/tabulator_site.min.css
+	cd build/bonsai/bim/data/webui/static/css/ && wget https://unpkg.com/tabulator-tables@6.5.2/dist/css/tabulator_site_dark.min.css
+
+	# Socket.IO client is required for the web UI's realtime connection to Blender
+	cd build/bonsai/bim/data/webui/static/js/ && wget https://cdn.socket.io/4.0.0/socket.io.min.js
+
+	# Font Awesome provides the icons used throughout the web UI.
+	# The CSS references these webfonts by relative path, so both must ship together.
+	cd build/bonsai/bim/data/webui/static/css/ && wget https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css
+	mkdir -p build/bonsai/bim/data/webui/static/webfonts
+	cd build/bonsai/bim/data/webui/static/webfonts/ && wget https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-brands-400.ttf
+	cd build/bonsai/bim/data/webui/static/webfonts/ && wget https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-brands-400.woff2
+	cd build/bonsai/bim/data/webui/static/webfonts/ && wget https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-regular-400.ttf
+	cd build/bonsai/bim/data/webui/static/webfonts/ && wget https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-regular-400.woff2
+	cd build/bonsai/bim/data/webui/static/webfonts/ && wget https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-solid-900.ttf
+	cd build/bonsai/bim/data/webui/static/webfonts/ && wget https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-solid-900.woff2
+	cd build/bonsai/bim/data/webui/static/webfonts/ && wget https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-v4compatibility.ttf
+	cd build/bonsai/bim/data/webui/static/webfonts/ && wget https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-v4compatibility.woff2
+
+	# SVG.js and svg-pan-zoom render and pan/zoom the drawings viewer in the web UI
+	cd build/bonsai/bim/data/webui/static/js/ && wget https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.1.1/svg.min.js
+	cd build/bonsai/bim/data/webui/static/js/ && wget https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js
+
+	# Bootstrap provides layout and the collapsible panels in the drawings viewer
+	cd build/bonsai/bim/data/webui/static/css/ && wget https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css
+	cd build/bonsai/bim/data/webui/static/js/ && wget https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js
+
+	# Bonsai's own branding images used across the web UI
+	mkdir -p build/bonsai/bim/data/webui/static/images
+	cd build/bonsai/bim/data/webui/static/images/ && wget https://bonsaibim.org/assets/images/favicon-blender.png
+	cd build/bonsai/bim/data/webui/static/images/ && wget https://bonsaibim.org/assets/images/blender/blender-logo.png
+
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css

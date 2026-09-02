@@ -8,14 +8,14 @@
     <link
       rel="icon"
       type="image/x-icon"
-      href="https://bonsaibim.org/assets/images/favicon-blender.png"
+      href="/static/images/favicon-blender.png?v={{v}}"
     />
     <!-- here we request the CSS file from the server, -->
     <!-- using registered static path in the server -->
     <link rel="stylesheet" href="/static/css/demo.css?v={{v}}" id="demo-stylesheet" />
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+      href="/static/css/all.min.css?v={{v}}"
     />
     <script
       type="text/javascript"
@@ -23,7 +23,7 @@
     ></script>
     <script
       type="text/javascript"
-      src="https://cdn.socket.io/4.0.0/socket.io.min.js"
+      src="/static/js/socket.io.min.js?v={{v}}"
     ></script>
     <script>
       // here we define the port that the server is listening on.
@@ -39,7 +39,7 @@
     <!-- the navigation bar at the top of the page. -->
     <nav>
       <img
-        src="https://bonsaibim.org/assets/images/blender/blender-logo.png"
+        src="/static/images/blender-logo.png?v={{v}}"
         alt="Logo"
         class="logo"
       />
