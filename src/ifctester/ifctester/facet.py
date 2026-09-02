@@ -45,6 +45,9 @@ def cast_to_value(from_value, to_value):
                 return True
             elif from_value in ("false", "0"):
                 return False
+            # An unrecognised string (e.g. wrong case) must not silently cast
+            # to True via bool(str), which is truthy for any non-empty string.
+            return None if isinstance(from_value, str) else bool(from_value)
         return builtins.__dict__[target_type](from_value)
     except ValueError:
         pass
