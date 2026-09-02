@@ -1280,7 +1280,20 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.extend_profile(join_type="T")
 
         else:
-            bpy.ops.bim.extend_walls_to_underside()
+            walls = [
+                obj
+                for obj in bpy.context.selected_objects
+                if (element := tool.Ifc.get_entity(obj)) and tool.Parametric.is_path_connectable_wall(element)
+            ]
+            if walls and len(bpy.context.selected_objects) > len(walls):
+                bpy.ops.bim.extend_walls_to_underside()
+            else:
+                self.report(
+                    {"ERROR"},
+                    "Extend to underside works with layered walls (LAYER2): "
+                    "select at least one wall plus the target element. "
+                    "Extending columns or similar elements is not supported yet.",
+                )
 
     def hotkey_S_F(self):
         if not bpy.context.selected_objects:
