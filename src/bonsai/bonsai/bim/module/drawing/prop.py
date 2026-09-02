@@ -543,6 +543,13 @@ class BIMCameraProperties(PropertyGroup):
         default=True,
         update=get_update_layer_callback("has_annotation", "HasAnnotation"),
     )
+    has_axis_linework: BoolProperty(
+        name="Axis Linework",
+        description="Draw the reference lines held in each element's Axis representation, such as "
+        "wall and beam centrelines. Style them with the .axis CSS class",
+        default=False,
+        update=get_update_layer_callback("has_axis_linework", "HasAxisLinework"),
+    )
     use_edge_classification: BoolProperty(
         name="Use Edge Classification",
         description="Classify projection edges into boundary/outline/sharp/crease/flush "
