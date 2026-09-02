@@ -1112,13 +1112,189 @@ class Spatial(bonsai.core.tool.Spatial):
         poly: Polygon,
         h: float,
         polygon_is_si: bool = True,
+        follow_ceiling: bool = False,
+        base_z: float = 0.0,
     ) -> None:
         """Create or replace the IFC body representation of a space from a polygon.
 
         :param h: The height in SI (meters).
+        :param follow_ceiling: Sample geometry above the footprint so the space
+            top follows sloping roofs/slabs instead of being flat.
+        :param base_z: World Z (SI) of the space bottom, the raycast reference plane.
         """
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        if follow_ceiling:
+            result = cls.create_ceiling_sampled_space_mesh(obj, poly, h, base_z, polygon_is_si)
+            if isinstance(result, bpy.types.Mesh):
+                cls.set_tessellated_representation_from_mesh(obj, element, result)
+                return
+            if result is not None:
+                h = result
         cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
+
+    @classmethod
+    def should_follow_ceiling(cls) -> bool:
+        return tool.Model.get_model_props().space_follow_ceiling
+
+    @classmethod
+    def get_ceiling_z_at_point(cls, x: float, y: float, base_z: float, max_height: float = 50.0) -> Union[float, None]:
+        """Return the world Z (SI) of the first bounding element above a point, or None."""
+        origin = Vector((x, y, base_z + 0.05))
+        direction = Vector((0.0, 0.0, 1.0))
+        for _ in range(8):
+            hit, location, normal, _, hit_obj, _ = tool.Blender.ray_cast_scene(bpy.context, origin, direction)
+            if not hit or location.z > base_z + max_height:
+                return None
+            element = tool.Ifc.get_entity(hit_obj)
+            # Skip spaces, annotations and grazing hits on vertical faces (e.g. the bounding walls).
+            if (
+                element
+                and not element.is_a("IfcSpace")
+                and not element.is_a("IfcOpeningElement")
+                and not element.is_a("IfcAnnotation")
+                and abs(normal.z) > 0.1
+            ):
+                return location.z
+            origin = location + Vector((0.0, 0.0, 0.001))
+        return None
+
+    @classmethod
+    def subdivide_top_face_to_spacing(cls, bm: bmesh.types.BMesh, top_z: float, spacing: float) -> None:
+        """Triangulate and subdivide the flat top faces until edges are shorter than spacing."""
+        top_faces = [f for f in bm.faces if all(abs(v.co.z - top_z) < 1e-5 for v in f.verts)]
+        bmesh.ops.triangulate(bm, faces=top_faces)
+        for _ in range(8):
+            edges = [
+                e for e in bm.edges if all(abs(v.co.z - top_z) < 1e-5 for v in e.verts) and e.calc_length() > spacing
+            ]
+            if not edges:
+                return
+            bmesh.ops.subdivide_edges(bm, edges=edges, cuts=1)
+
+    @classmethod
+    def create_ceiling_sampled_space_mesh(
+        cls,
+        obj: bpy.types.Object,
+        poly: Polygon,
+        h: float,
+        base_z: float,
+        polygon_is_si: bool = True,
+    ) -> Union[bpy.types.Mesh, float, None]:
+        """Build a space solid whose top follows the geometry found above the footprint.
+
+        Heights are sampled by raycasting upward from the space bottom across the
+        footprint. Sample points with no hit fall back to the flat height ``h``.
+
+        :param h: The fallback height in SI (meters).
+        :param base_z: World Z (SI) of the space bottom.
+        :return: A triangulated mesh in obj local space (SI) if the sampled top is
+            sloped, a uniform height in SI if it is flat, or None if nothing was
+            hit at all (callers should fall back to the flat extrusion).
+        """
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        bpy.context.view_layer.update()
+        mat = obj.matrix_world.copy()
+        mat_inv = mat.inverted()
+        coords = []
+        world_coords = []
+        for v in shapely.get_exterior_ring(poly).coords[:-1]:
+            world_si = Vector((v[0], v[1], 0))
+            if not polygon_is_si:
+                world_si = world_si * unit_scale
+            world_coords.append((world_si.x, world_si.y))
+            local_si = mat_inv @ world_si
+            coords.append((local_si.x, local_si.y))
+        if len(coords) < 3:
+            return None
+
+        # Rays cast exactly on the footprint boundary graze the bounding walls,
+        # so nudge boundary samples slightly inward before raycasting.
+        shrunk_poly = shapely.Polygon(world_coords).buffer(-0.02)
+        if shrunk_poly.is_empty:
+            shrunk_poly = None
+
+        xs = [c[0] for c in coords]
+        ys = [c[1] for c in coords]
+        # Cap the sample grid at roughly 64x64 to keep huge footprints tractable.
+        spacing = max(0.5, (max(xs) - min(xs)) / 64, (max(ys) - min(ys)) / 64)
+
+        bm = bmesh.new()
+        try:
+            verts = [bm.verts.new((x, y, 0.0)) for x, y in coords]
+            try:
+                bottom = bm.faces.new(verts)
+            except ValueError:
+                return None
+            ret = bmesh.ops.extrude_face_region(bm, geom=[bottom])
+            top_verts = [g for g in ret["geom"] if isinstance(g, bmesh.types.BMVert)]
+            bmesh.ops.translate(bm, verts=top_verts, vec=(0.0, 0.0, h))
+            cls.subdivide_top_face_to_spacing(bm, h, spacing)
+
+            top_verts = [v for v in bm.verts if abs(v.co.z - h) < 1e-5]
+            heights = []
+            hits = 0
+            for v in top_verts:
+                world = mat @ v.co
+                sx, sy = world.x, world.y
+                if shrunk_poly is not None and not shapely.contains_xy(shrunk_poly, sx, sy):
+                    nearest = shapely.ops.nearest_points(shrunk_poly, shapely.Point(sx, sy))[0]
+                    sx, sy = nearest.x, nearest.y
+                hit_z = cls.get_ceiling_z_at_point(sx, sy, base_z)
+                if hit_z is None:
+                    heights.append(h)
+                else:
+                    hits += 1
+                    heights.append(max(hit_z - base_z, 0.1))
+            if not hits:
+                return None
+            if max(heights) - min(heights) < 0.01:
+                return sum(heights) / len(heights)
+
+            for v, height in zip(top_verts, heights):
+                v.co.z = height
+            # Moving top verts makes side/top faces non-planar, so triangulate everything.
+            bmesh.ops.triangulate(bm, faces=list(bm.faces))
+            bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+            mesh = bpy.data.meshes.new("Space")
+            bm.to_mesh(mesh)
+            return mesh
+        finally:
+            bm.free()
+
+    @classmethod
+    def set_tessellated_representation_from_mesh(
+        cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance, mesh: bpy.types.Mesh
+    ) -> None:
+        """Create or replace the IFC body representation from a local-space mesh."""
+        ifc_file = tool.Ifc.get()
+        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if old_body:
+            context = old_body.ContextOfItems
+        else:
+            context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        new_body = ifcopenshell.api.geometry.add_representation(
+            ifc_file,
+            context=context,
+            blender_object=obj,
+            geometry=mesh,
+            coordinate_offset=tool.Geometry.get_cartesian_point_offset(obj),
+            total_items=1,
+            should_force_faceted_brep=tool.Geometry.should_force_faceted_brep(),
+            should_force_triangulation=True,
+            should_generate_uvs=False,
+        )
+        bpy.data.meshes.remove(mesh)
+        assert new_body
+        if old_body:
+            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=old_body)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_body)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_body,
+        )
 
     @classmethod
     def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj: bpy.types.Object) -> None:

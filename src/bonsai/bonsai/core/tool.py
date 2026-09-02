@@ -1094,7 +1094,12 @@ class Spatial:
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
     def get_2d_vertices_from_polygon(cls, poly, obj, polygon_is_si=True): pass
     def set_extrusion_representation_from_polygon(cls, obj, element, poly, depth_ifc, polygon_is_si=True): pass
-    def set_space_representation_from_polygon(cls, obj, element, poly, h, polygon_is_si=True): pass
+    def set_space_representation_from_polygon(cls, obj, element, poly, h, polygon_is_si=True, follow_ceiling=False, base_z=0.0): pass
+    def should_follow_ceiling(cls): pass
+    def get_ceiling_z_at_point(cls, x, y, base_z, max_height=50.0): pass
+    def subdivide_top_face_to_spacing(cls, bm, top_z, spacing): pass
+    def create_ceiling_sampled_space_mesh(cls, obj, poly, h, base_z, polygon_is_si=True): pass
+    def set_tessellated_representation_from_mesh(cls, obj, element, mesh): pass
     def set_covering_representation_from_polygon(cls, obj, poly, polygon_is_si=True): pass
     def create_object(cls, name): pass
     def set_obj_origin_to_polygon_center(cls, obj, poly, polygon_is_si=True): pass
