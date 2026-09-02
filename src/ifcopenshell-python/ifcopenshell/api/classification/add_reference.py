@@ -21,6 +21,7 @@ from typing import Any, Optional, Union
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
+import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 
@@ -159,7 +160,7 @@ class Usecase:
         return self.add_from_identification()
 
     def add_from_identification(self):
-        reference = self.get_existing_reference(self.settings["identification"])
+        reference = self.get_existing_reference(self.settings["identification"], self.settings["classification"])
         if not reference:
             reference = self.file.createIfcClassificationReference(
                 Name=self.settings["name"], ReferencedSource=self.settings["classification"]
@@ -178,7 +179,7 @@ class Usecase:
         else:
             identification = self.settings["reference"].Identification
 
-        reference = self.get_existing_reference(identification)
+        reference = self.get_existing_reference(identification, self.settings["classification"])
         if not reference:
             migrator = ifcopenshell.util.schema.Migrator()
 
@@ -212,14 +213,28 @@ class Usecase:
         self.update_relationships(reference)
         return reference
 
-    def get_existing_reference(self, identification: Optional[str] = None) -> Union[ifcopenshell.entity_instance, None]:
+    def get_existing_reference(
+        self,
+        identification: Optional[str] = None,
+        classification: Optional[ifcopenshell.entity_instance] = None,
+    ) -> Union[ifcopenshell.entity_instance, None]:
         for reference in self.file.by_type("IfcClassificationReference"):
             if self.file.schema == "IFC2X3":
-                if reference.ItemReference == identification:
-                    return reference
+                if reference.ItemReference != identification:
+                    continue
             else:
-                if reference.Identification == identification:
-                    return reference
+                if reference.Identification != identification:
+                    continue
+            # Matching on identification alone is not enough: two different
+            # classification systems may reuse the same identification (or
+            # both leave it unset), so scope the match to the classification
+            # being referenced to avoid reusing an unrelated reference.
+            if (
+                classification is not None
+                and ifcopenshell.util.classification.get_classification(reference) != classification
+            ):
+                continue
+            return reference
 
     def update_relationships(self, reference: ifcopenshell.entity_instance) -> None:
         root_rel, non_root_rel = None, None
