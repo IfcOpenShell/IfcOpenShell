@@ -109,6 +109,9 @@ class Patcher(ifcpatch.BasePatcher):
         # This fixes symptom D.
 
         for wall in self.file.by_type("IfcWall"):
+            if wall.Representation is None:
+                self.logger.warning(f"Skipping wall {wall.GlobalId} with no Representation")
+                continue
             reps = list(wall.Representation.Representations)
             reps_excluding_axis = [r for r in reps if r.RepresentationIdentifier != "Axis"]
             wall.Representation.Representations = reps_excluding_axis
@@ -132,7 +135,12 @@ class Patcher(ifcpatch.BasePatcher):
         #
         # This fixes symptom E.
 
-        for door in self.file.by_type("IfcDoorType"):
+        # IFC2X3 has no IfcDoorType: the door type entity there is named
+        # IfcDoorStyle. Both descend from IfcTypeProduct and both declare
+        # the same optional RepresentationMaps attribute, so only the class
+        # name to query differs between schemas.
+        door_type_class = "IfcDoorStyle" if self.file.schema == "IFC2X3" else "IfcDoorType"
+        for door in self.file.by_type(door_type_class):
             rep_maps = list(door.RepresentationMaps or [])
             door.RepresentationMaps = [
                 r
@@ -154,10 +162,18 @@ class Patcher(ifcpatch.BasePatcher):
         # This fixes symptom A, B, and F.
 
         for door in self.file.by_type("IfcDoor"):
+            if door.Representation is None:
+                self.logger.warning(f"Skipping door {door.GlobalId} with no Representation")
+                continue
             reps = list(door.Representation.Representations)
             reps_excluding_footprint = [r for r in reps if r.RepresentationIdentifier != "FootPrint"]
             footprint_reps = [r for r in reps if r.RepresentationIdentifier == "FootPrint"]
             if not footprint_reps:
+                continue
+            if not door.ContainedInStructure:
+                self.logger.warning(
+                    f"Skipping door {door.GlobalId} with a FootPrint representation but no spatial container"
+                )
                 continue
             door_copy = ifcopenshell.util.element.copy(self.file, door)
             door_copy = ifcopenshell.util.schema.reassign_class(self.file, door_copy, "IfcDiscreteAccessory")
@@ -185,6 +201,13 @@ class Patcher(ifcpatch.BasePatcher):
         # See bug https://github.com/Autodesk/revit-ifc/issues/359
         #
         # This fixes symptom C.
+
+        # IfcIndexedPolyCurve (and its IfcArcIndex segments) do not exist in
+        # IFC2X3, which has no arc index representation to facet. Same
+        # reasoning as DowngradeIndexedPolyCurve.py: this section is simply
+        # not applicable to that schema, so there is nothing to do.
+        if self.file.schema == "IFC2X3":
+            return
 
         settings = ifcopenshell.geom.settings()
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
