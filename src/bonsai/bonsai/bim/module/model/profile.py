@@ -579,6 +579,19 @@ class DumbProfileJoiner:
 
         intersect, _ = tool.Cad.intersect_edges(axis1, axis2)
 
+        # `intersect` is where profile1's centerline crosses profile2's centerline,
+        # extended infinitely in both directions. If that crossing point doesn't
+        # actually fall within profile2's own bounded length, profile2 doesn't
+        # physically reach profile1 (e.g. the two elements were joined in the
+        # opposite of their physically intended direction, such as pressing
+        # Shift+E with the "through" member active instead of the "crossing"
+        # member). Trimming profile1's body against profile2's face plane in that
+        # case would silently displace profile1's mesh to a location inconsistent
+        # with its own axis representation. Bail out instead of producing that
+        # broken geometry.
+        if not (0 - 0.001 <= tool.Cad.edge_percent(intersect, axis2) <= 1 + 0.001):
+            return False
+
         proposed_axis = [self.axis[0], intersect] if connection1 == "ATEND" else [intersect, self.axis[1]]
 
         if tool.Cad.is_x(tool.Cad.angle_edges(self.axis, proposed_axis, degrees=True), 180):
