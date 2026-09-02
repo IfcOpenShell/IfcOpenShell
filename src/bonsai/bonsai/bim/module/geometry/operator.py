@@ -3465,6 +3465,8 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue  # Skip if no IFC entity is found
+            if not element.Representation:
+                continue  # Skip if the element has no geometric representation
 
             representation_item_id = element.Representation.Representations[0].Items[0].id()
             representation_item = tool.Ifc.get_entity_by_id(representation_item_id)

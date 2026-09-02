@@ -3168,10 +3168,11 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         active_sheet = tool.Drawing.get_active_sheet()
         ifc_file = tool.Ifc.get()
         schedule = tool.Ifc.get().by_id(active_schedule.ifc_definition_id)
-        if tool.Ifc.get_schema() == "IFC2X3":
-            schedule_location = tool.Drawing.get_path_with_ext(schedule.DocumentReferences[0].Location, "svg")
-        else:
-            schedule_location = tool.Drawing.get_path_with_ext(schedule.HasDocumentReferences[0].Location, "svg")
+        schedule_references = tool.Drawing.get_document_references(schedule)
+        if not schedule_references:
+            self.report({"ERROR"}, "The schedule must be generated before adding to a sheet.")
+            return
+        schedule_location = tool.Drawing.get_path_with_ext(schedule_references[0].Location, "svg")
 
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
         if not sheet.is_a("IfcDocumentInformation"):
@@ -3241,10 +3242,11 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         active_sheet = tool.Drawing.get_active_sheet()
         ifc_file = tool.Ifc.get()
         extref = tool.Ifc.get().by_id(active_reference.ifc_definition_id)
-        if tool.Ifc.get_schema() == "IFC2X3":
-            extref_location = tool.Drawing.get_path_with_ext(extref.DocumentReferences[0].Location, "svg")
-        else:
-            extref_location = tool.Drawing.get_path_with_ext(extref.HasDocumentReferences[0].Location, "svg")
+        extref_references = tool.Drawing.get_document_references(extref)
+        if not extref_references:
+            self.report({"ERROR"}, "The reference must be generated before adding to a sheet.")
+            return
+        extref_location = tool.Drawing.get_path_with_ext(extref_references[0].Location, "svg")
 
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
         if not sheet.is_a("IfcDocumentInformation"):

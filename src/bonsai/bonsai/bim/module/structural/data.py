@@ -73,7 +73,7 @@ class LoadGroupDecorationData:
         elif props.activity_type == "External Reaction":
             groups = m.HasResults or []
             for g in groups:
-                result_name = g.ResultForLoadGroup.Name or ""
+                result_name = (g.ResultForLoadGroup.Name or "") if g.ResultForLoadGroup else ""
                 group_name = g.Name or ""
                 ret.append((str(g.id()), group_name + " " + result_name, ""))
 
