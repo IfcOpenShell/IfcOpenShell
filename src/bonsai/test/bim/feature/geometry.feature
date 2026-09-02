@@ -271,6 +271,22 @@ Scenario: Override delete - with active IFC data
     When I press "bim.override_object_delete"
     Then the object "IfcWall/Cube" does not exist
 
+Scenario: Override delete - an aggregate and its only part together
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.add_aggregate(aggregate_name='Assembly')"
+    And the object "IfcWall/Cube" is selected
+    And additionally the object "IfcElementAssembly/Assembly" is selected
+    When I press "bim.override_object_delete"
+    Then the object "IfcWall/Cube" does not exist
+    And the object "IfcElementAssembly/Assembly" does not exist
+
 Scenario: Override outliner delete
     Given an untestable scenario
     Then nothing happens
