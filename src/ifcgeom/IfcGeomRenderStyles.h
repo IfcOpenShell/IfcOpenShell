@@ -30,8 +30,18 @@
 #include <sstream>
 #include <memory>
 
+namespace IfcParse {
+	class declaration;
+}
+
 namespace IfcGeom {
-	IFC_GEOM_API const ifcopenshell::geometry::taxonomy::style::ptr& get_default_style(const std::string& ifc_type);
+	// Looks up the default (fallback) style registered for `ifc_type`. When no style is
+	// registered for that exact type and `decl` is provided, the type's supertype chain
+	// (as defined by the IFC schema) is walked until a registered ancestor is found, so
+	// e.g. IfcSlabStandardCase inherits the style registered for IfcSlab. Falls back to
+	// the generic default style ("*" in a --default-material-file, or a fixed grey) when
+	// neither the type nor any of its supertypes have a registered style.
+	IFC_GEOM_API const ifcopenshell::geometry::taxonomy::style::ptr& get_default_style(const std::string& ifc_type, const IfcParse::declaration* decl = nullptr);
 
 	IFC_GEOM_API ifcopenshell::geometry::taxonomy::style::ptr& update_default_style(const std::string& ifc_type);
 
