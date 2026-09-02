@@ -903,7 +903,9 @@ class Root:
     def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
+    def has_mapped_representation(cls, element): pass
     def has_material_styles(cls, element): pass
+    def has_transformed_mapped_representation(cls, element): pass
     def is_containable(cls, element): pass
     def is_drawing_annotation(cls, element): pass
     def is_element_a(cls, element, ifc_class): pass
