@@ -35,6 +35,63 @@ Scenario: Add pset - multiple objects
     When I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
 
+Scenario: Edit pset - multiple objects applies a new pset to the whole selection
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube" is selected
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube.001" is selected
+    And additionally the object "IfcWall/Cube" is selected
+    And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
+    And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
+    And I set "active_object.PsetProperties.properties['FireRating'].metadata.string_value" to "2HR"
+    When I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
+    And the variable "other_wall" is "tool.Ifc.get_entity(bpy.data.objects['IfcWall/Cube.001'])"
+    And the variable "fire_rating" is "ifcopenshell.util.element.get_pset({other_wall}, 'Pset_WallCommon', 'FireRating', should_inherit=False)"
+    Then the variable "fire_rating" equals "'2HR'"
+
+Scenario: Edit pset - multiple objects does not clobber an element's own existing pset
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube" is selected
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube.001" is selected
+    And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
+    And I press "bim.add_pset(obj='IfcWall/Cube.001', obj_type='Object')"
+    And I set "active_object.PsetProperties.properties['Reference'].metadata.string_value" to "EXISTING"
+    And I press "bim.edit_pset(obj='IfcWall/Cube.001', obj_type='Object')"
+    And the object "IfcWall/Cube.001" is selected
+    And additionally the object "IfcWall/Cube" is selected
+    And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
+    And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
+    And I set "active_object.PsetProperties.properties['FireRating'].metadata.string_value" to "1HR"
+    When I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
+    And the variable "other_wall" is "tool.Ifc.get_entity(bpy.data.objects['IfcWall/Cube.001'])"
+    And the variable "other_reference" is "ifcopenshell.util.element.get_pset({other_wall}, 'Pset_WallCommon', 'Reference', should_inherit=False)"
+    And the variable "other_fire_rating" is "ifcopenshell.util.element.get_pset({other_wall}, 'Pset_WallCommon', 'FireRating', should_inherit=False)"
+    Then the variable "other_reference" equals "'EXISTING'"
+    And the variable "other_fire_rating" equals "None"
+
 Scenario: Enable pset editing - object
     Given an empty IFC project
     And I add a cube
