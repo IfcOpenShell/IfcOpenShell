@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
 from math import pi
 
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.attribute
 import ifcopenshell.api.root
 import ifcopenshell.api.system
 import ifcopenshell.util.representation
@@ -32,6 +34,7 @@ from mathutils import Euler, Matrix, Vector
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.system import System as subject
+from bonsai.tool.system import bend_curve_points
 from test.bim.bootstrap import NewFile
 
 
@@ -457,3 +460,186 @@ class TestFlowElementAndControls(NewFile):
         controls = subject.get_flow_element_controls(flow_element)
         assert set(controls) == set((flow_control, flow_control1))
         assert subject.get_flow_control_flow_element(flow_control) == flow_element
+
+
+class TestBendCurvePoints:
+    """https://github.com/IfcOpenShell/IfcOpenShell/issues/6278 - the
+    flow-direction decoration used to draw a straight port-to-port line
+    through a bend fitting, cutting across the corner instead of following
+    it. ``bend_curve_points`` is the pure geometry behind the fix: a cubic
+    bezier tangent to each port's axis, sampled into a polyline."""
+
+    # A real 90 degree duct bend's two ports (radius 0.375), reproduced from
+    # a live bim.mep_add_bend splice - see TestBuildDecorationDataBendCurve.
+    PORT_A = Vector((2.7, 2.0, 0.0))
+    AXIS_A = Vector((1.0, 0.0, 0.0))
+    PORT_B = Vector((3.075, 1.625, 0.0))
+    AXIS_B = Vector((0.0, 1.0, 0.0))
+
+    def test_90_degree_bend_hugs_the_true_arc(self):
+        points = bend_curve_points(self.PORT_A, self.AXIS_A, self.PORT_B, self.AXIS_B)
+        assert points is not None
+        assert points[0] == self.PORT_A
+        assert points[-1] == self.PORT_B
+
+        # The true arc (perpendicular tangents at A and B) has its center
+        # where the two tangent lines cross, here (2.7, 1.625, 0), radius
+        # 0.375. The curve's own midpoint should land on it almost exactly,
+        # unlike the chord's midpoint, which cuts across the corner.
+        center = Vector((2.7, 1.625, 0.0))
+        radius = 0.375
+        true_arc_midpoint = center + ((self.PORT_A - center) + (self.PORT_B - center)).normalized() * radius
+        curve_midpoint = points[len(points) // 2]
+        chord_midpoint = (self.PORT_A + self.PORT_B) / 2
+
+        curve_error = (curve_midpoint - true_arc_midpoint).length
+        chord_error = (chord_midpoint - true_arc_midpoint).length
+        assert curve_error < 1e-4
+        assert chord_error > 0.1
+        assert curve_error < chord_error / 100
+
+    def test_degenerate_axes_fall_back_to_straight_line(self):
+        # Collinear ports (a straight fitting): both axes already match the chord.
+        assert bend_curve_points(Vector((0, 0, 0)), Vector((1, 0, 0)), Vector((2, 0, 0)), Vector((-1, 0, 0))) is None
+        # Missing axis (e.g. neighbour couldn't be resolved).
+        assert bend_curve_points(Vector((0, 0, 0)), None, Vector((2, 0, 0)), Vector((1, 0, 0))) is None
+        # Zero-length axis.
+        assert bend_curve_points(Vector((0, 0, 0)), Vector((0, 0, 0)), Vector((2, 0, 0)), Vector((1, 0, 0))) is None
+        # Non-convex/divergent tangents (no sensible corner ahead of either port).
+        assert bend_curve_points(Vector((0, 0, 0)), Vector((-1, 0, 0)), Vector((2, 0, 0)), Vector((1, 0, 0))) is None
+        # Coincident ports.
+        assert bend_curve_points(Vector((1, 1, 1)), Vector((1, 0, 0)), Vector((1, 1, 1)), Vector((0, 1, 0))) is None
+
+    def test_shallow_and_sharp_angles_stay_close_to_the_true_arc(self):
+        center = Vector((0.0, 1.0, 0.0))
+        radius = 1.0
+        port_a = center + Vector((0, -1, 0)) * radius
+        axis_a = Vector((1, 0, 0))
+        for degrees in (5, 10, 30, 45, 90):
+            theta = math.radians(degrees)
+            port_b = center + Vector((math.sin(theta), -math.cos(theta), 0)) * radius
+            axis_b = -Vector((math.cos(theta), math.sin(theta), 0))
+            points = bend_curve_points(port_a, axis_a, port_b, axis_b)
+            assert points is not None, f"expected a curve at {degrees} degrees"
+            true_mid = center + ((port_a - center) + (port_b - center)).normalized() * radius
+            curve_mid = points[len(points) // 2]
+            assert (curve_mid - true_mid).length < 0.011, f"curve strayed too far from the arc at {degrees} degrees"
+
+    def test_extreme_near_reversal_falls_back_to_straight_line(self):
+        # ~170 degrees of turn: tangent lines meet so far away that a single
+        # cubic bezier can't approximate it sensibly - must not crash or
+        # produce a wild result, just fall back.
+        center = Vector((0.0, 1.0, 0.0))
+        radius = 1.0
+        port_a = center + Vector((0, -1, 0)) * radius
+        axis_a = Vector((1, 0, 0))
+        theta = math.radians(170)
+        port_b = center + Vector((math.sin(theta), -math.cos(theta), 0)) * radius
+        axis_b = -Vector((math.cos(theta), math.sin(theta), 0))
+        assert bend_curve_points(port_a, axis_a, port_b, axis_b) is None
+
+
+class TestBuildDecorationDataBendCurve(NewFile):
+    """End-to-end: splice a real bend into two straight ducts via the actual
+    bim.mep_add_bend operator, then check tool.System's decoration builder
+    draws a curved polyline through the bend (not the straight chord) while
+    an untouched straight segment's own decoration is completely unaffected."""
+
+    FIXTURE = "test/files/mep-duct-bend-flow-direction.ifc"
+    SEGMENT_UPSTREAM_ID = 4276
+    SEGMENT_DOWNSTREAM_ID = 4298
+    UPSTREAM_PORT_ID = 4350
+    STRAIGHT_SEGMENT_ID = 4252
+
+    def _build_bend(self):
+        result = bpy.ops.bim.load_project(filepath=self.FIXTURE)
+        assert result == {"FINISHED"}
+        ifc = tool.Ifc.get()
+
+        upstream_obj = tool.Ifc.get_object(ifc.by_id(self.SEGMENT_UPSTREAM_ID))
+        downstream_obj = tool.Ifc.get_object(ifc.by_id(self.SEGMENT_DOWNSTREAM_ID))
+        bpy.context.view_layer.objects.active = upstream_obj
+        upstream_obj.select_set(True)
+        downstream_obj.select_set(True)
+
+        result = bpy.ops.bim.mep_add_bend(
+            start_segment_id=ifc.by_id(self.SEGMENT_UPSTREAM_ID).id(),
+            end_segment_id=ifc.by_id(self.SEGMENT_DOWNSTREAM_ID).id(),
+        )
+        assert result == {"FINISHED"}
+
+        fitting_port = subject.get_connected_port(ifc.by_id(self.UPSTREAM_PORT_ID))
+        fitting = subject.get_port_relating_element(fitting_port)
+        assert fitting.is_a("IfcDuctFitting")
+
+        # Give the fitting's own two ports a resolvable SOURCE/SINK pair so
+        # the decorator actually draws an arrow through it (this repo's
+        # mep_add_bend doesn't establish that on its own - see #6278/#8733,
+        # a separate, already-fixed issue about the flow direction itself).
+        for port in subject.get_ports(fitting):
+            ifcopenshell.api.attribute.edit_attributes(
+                ifc, product=port, attributes={"FlowDirection": "SINK" if port == fitting_port else "SOURCE"}
+            )
+        return ifc, fitting
+
+    def _decoration_for(self, ifc, element):
+        from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
+
+        obj = tool.Ifc.get_object(element)
+        bpy.ops.object.select_all(action="DESELECT")
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        bpy.context.view_layer.update()
+
+        ObjectSystemData.is_loaded = False
+        ObjectSystemData.load()
+        SystemDecorationData.is_loaded = False
+        SystemDecorationData.load()
+        SystemDecorationData.data["decorated_elements"] = {element}
+        subject._decoration_data_cache_key = None
+        subject._decoration_data_cache = None
+        return subject._build_decoration_data()
+
+    def test_bend_fitting_draws_a_curve_not_a_chord(self):
+        ifc, fitting = self._build_bend()
+        data = self._decoration_for(ifc, fitting)
+
+        # Straight chord = 2 vertices/1 edge for the base line; a curve
+        # injects sampled interior points, so there must be more than that.
+        assert len(data["all_vertices"]) > 14
+        port_a, port_b = data["all_vertices"][0], data["all_vertices"][1]
+        # The curve's own sampled points must bulge away from the chord.
+        max_deviation = 0.0
+        chord_dir = (port_b - port_a).normalized()
+        for vertex in data["all_vertices"][2:]:
+            offset = vertex - port_a
+            lateral = offset - chord_dir * offset.dot(chord_dir)
+            max_deviation = max(max_deviation, lateral.length)
+        assert max_deviation > 0.05, "expected the curve to visibly bulge away from the straight chord"
+
+    def test_straight_segment_decoration_is_unaffected(self):
+        ifc, _fitting = self._build_bend()
+
+        segment = ifc.by_id(self.STRAIGHT_SEGMENT_ID)
+        ports = subject.get_ports(segment)
+        for i, port in enumerate(ports):
+            ifcopenshell.api.attribute.edit_attributes(
+                ifc, product=port, attributes={"FlowDirection": "SOURCE" if i == 0 else "SINK"}
+            )
+
+        data = self._decoration_for(ifc, segment)
+        # A plain 2-port straight run: exactly the port-to-port chord edge,
+        # no injected curve vertices - the fitting-only code path must never
+        # touch a segment's own decoration.
+        assert data["selected_edges"][0] == (0, 1)
+        port_a, port_b = data["all_vertices"][0], data["all_vertices"][1]
+        chord_dir = (port_b - port_a).normalized()
+        direction_lines_width = 0.05
+        for vertex in data["all_vertices"][2:]:
+            # Every arrow vertex is either exactly on the port-to-port chord
+            # (the arrow tip) or offset from it by exactly the arrowhead's
+            # perpendicular wingspan (the two wing tips) - i.e. still the
+            # original straight-line arrow shape, never a curve sample.
+            offset = vertex - port_a
+            lateral = offset - chord_dir * offset.dot(chord_dir)
+            assert lateral.length < 1e-4 or abs(lateral.length - direction_lines_width) < 1e-4
