@@ -23,6 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.system
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
@@ -457,3 +458,145 @@ class TestFlowElementAndControls(NewFile):
         controls = subject.get_flow_element_controls(flow_element)
         assert set(controls) == set((flow_control, flow_control1))
         assert subject.get_flow_control_flow_element(flow_control) == flow_element
+
+
+# The port-size and port-connect tests below were generated with the assistance
+# of an AI coding tool.
+def _add_profiled_segment_type(
+    ifc: ifcopenshell.file, ifc_class: str, profile: ifcopenshell.entity_instance, name: str = "TYPE"
+) -> ifcopenshell.entity_instance:
+    """Create a flow segment type carrying a single-profile material set."""
+    import ifcopenshell.api.material
+
+    segment_type = ifcopenshell.api.root.create_entity(ifc, ifc_class=ifc_class, name=name)
+    material = ifcopenshell.api.material.add_material(ifc, name=name)
+    profile_set = ifcopenshell.api.material.add_material_set(ifc, name=name, set_type="IfcMaterialProfileSet")
+    ifcopenshell.api.material.add_profile(ifc, profile_set=profile_set, material=material, profile=profile)
+    ifcopenshell.api.material.assign_material(
+        ifc, products=[segment_type], type="IfcMaterialProfileSet", material=profile_set
+    )
+    return segment_type
+
+
+class TestPortSizeSync(NewFile):
+    def test_pipe_segment_ports_carry_nominal_diameter(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        profile = ifc.create_entity("IfcCircleProfileDef", ProfileType="AREA", ProfileName="DN100", Radius=50.0)
+        segment_type = _add_profiled_segment_type(ifc, "IfcPipeSegmentType", profile)
+        bpy.ops.bim.add_occurrence(relating_type_id=segment_type.id())
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        ports = ifcopenshell.util.system.get_ports(element)
+        assert len(ports) == 2
+        for port in ports:
+            pset = ifcopenshell.util.element.get_pset(port, "Pset_DistributionPortTypePipe")
+            assert pset and pset["NominalDiameter"] == 100.0
+            symbol = ifcopenshell.util.unit.get_unit_symbol(ifcopenshell.util.unit.get_project_unit(ifc, "LENGTHUNIT"))
+            assert subject.get_port_size_label(port) == f"⌀100 {symbol}"
+
+    def test_rectangular_duct_ports_carry_width_and_height(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        profile = ifc.create_entity("IfcRectangleProfileDef", ProfileType="AREA", XDim=200.0, YDim=100.0)
+        segment_type = _add_profiled_segment_type(ifc, "IfcDuctSegmentType", profile)
+        bpy.ops.bim.add_occurrence(relating_type_id=segment_type.id())
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        ports = ifcopenshell.util.system.get_ports(element)
+        assert len(ports) == 2
+        for port in ports:
+            pset = ifcopenshell.util.element.get_pset(port, "Pset_DistributionPortTypeDuct")
+            assert pset and pset["NominalWidth"] == 200.0 and pset["NominalHeight"] == 100.0
+            symbol = ifcopenshell.util.unit.get_unit_symbol(ifcopenshell.util.unit.get_project_unit(ifc, "LENGTHUNIT"))
+            assert subject.get_port_size_label(port) == f"200x100 {symbol}"
+
+    def test_ports_without_profile_get_no_size(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        obj = bpy.data.objects["Cube"]
+        bpy.ops.bim.assign_class(ifc_class="IfcPipeSegment", predefined_type="RIGIDSEGMENT", userdefined_type="")
+        ports = subject.add_ports(obj)
+        assert len(ports) == 2
+        for port in ports:
+            assert ifcopenshell.util.element.get_pset(port, "Pset_DistributionPortTypePipe") is None
+            assert subject.get_port_size_label(port) == ""
+
+
+class TestMEPConnectPorts(NewFile):
+    def _pipe_occurrence(self, segment_type):
+        bpy.ops.bim.add_occurrence(relating_type_id=segment_type.id())
+        obj = bpy.context.active_object
+        return obj, tool.Ifc.get_entity(obj)
+
+    def _free_port_objects(self, seg_a, seg_b):
+        """Show ports and return the (end port of A, start port of B) pair with their objects."""
+        from bonsai.bim.module.model.mep import MEPGenerator
+
+        for segment in (seg_a, seg_b):
+            tool.Blender.select_and_activate_single_object(bpy.context, tool.Ifc.get_object(segment))
+            bpy.ops.bim.show_ports()
+        port_a = MEPGenerator.get_segment_data(seg_a)["end_port"]
+        port_b = MEPGenerator.get_segment_data(seg_b)["start_port"]
+        port_a_obj = tool.Ifc.get_object(port_a)
+        port_b_obj = tool.Ifc.get_object(port_b)
+        assert port_a_obj and port_b_obj
+        bpy.ops.object.select_all(action="DESELECT")
+        port_a_obj.select_set(True)
+        port_b_obj.select_set(True)
+        bpy.context.view_layer.objects.active = port_a_obj
+        return port_a, port_b
+
+    def _make_collinear_segments(self, type_a, type_b, gap_factor=1.0):
+        obj_a, seg_a = self._pipe_occurrence(type_a)
+        obj_b, seg_b = self._pipe_occurrence(type_b)
+        axis_start, axis_end = tool.Model.get_flow_segment_axis(obj_a)
+        axis_dir = (axis_end - axis_start).normalized()
+        length = (axis_end - axis_start).length
+        obj_b.matrix_world = obj_a.matrix_world.copy()
+        obj_b.matrix_world.translation = axis_end + axis_dir * length * gap_factor
+        bpy.context.view_layer.update()
+        tool.System.run_geometry_edit_object_placement(obj_b)
+        return (obj_a, seg_a), (obj_b, seg_b)
+
+    def test_connect_same_profile_ports_with_bridging_segment(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        profile = ifc.create_entity("IfcCircleProfileDef", ProfileType="AREA", ProfileName="DN100", Radius=50.0)
+        type_a = _add_profiled_segment_type(ifc, "IfcPipeSegmentType", profile, name="A")
+        (obj_a, seg_a), (obj_b, seg_b) = self._make_collinear_segments(type_a, type_a)
+        port_a, port_b = self._free_port_objects(seg_a, seg_b)
+
+        assert bpy.ops.bim.mep_connect_ports() == {"FINISHED"}
+
+        bridge_port = ifcopenshell.util.system.get_connected_port(port_a)
+        assert bridge_port
+        bridge = ifcopenshell.util.system.get_port_element(bridge_port)
+        assert bridge.is_a("IfcPipeSegment") and bridge not in (seg_a, seg_b)
+        assert ifcopenshell.util.element.get_type(bridge) == type_a
+        far_port = ifcopenshell.util.system.get_connected_port(port_b)
+        assert far_port and ifcopenshell.util.system.get_port_element(far_port) == bridge
+        assert len(ifc.by_type("IfcPipeFitting")) == 0
+        pset = ifcopenshell.util.element.get_pset(bridge_port, "Pset_DistributionPortTypePipe")
+        assert pset and pset["NominalDiameter"] == 100.0
+
+    def test_connect_differing_profiles_inserts_transition(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        profile_a = ifc.create_entity("IfcCircleProfileDef", ProfileType="AREA", ProfileName="DN100", Radius=0.05)
+        profile_b = ifc.create_entity("IfcCircleProfileDef", ProfileType="AREA", ProfileName="DN50", Radius=0.025)
+        type_a = _add_profiled_segment_type(ifc, "IfcPipeSegmentType", profile_a, name="A")
+        type_b = _add_profiled_segment_type(ifc, "IfcPipeSegmentType", profile_b, name="B")
+        (obj_a, seg_a), (obj_b, seg_b) = self._make_collinear_segments(type_a, type_b)
+        port_a, port_b = self._free_port_objects(seg_a, seg_b)
+
+        assert bpy.ops.bim.mep_connect_ports() == {"FINISHED"}
+
+        bridge_port = ifcopenshell.util.system.get_connected_port(port_a)
+        assert bridge_port
+        bridge = ifcopenshell.util.system.get_port_element(bridge_port)
+        assert bridge.is_a("IfcPipeSegment") and ifcopenshell.util.element.get_type(bridge) == type_a
+
+        fittings = ifc.by_type("IfcPipeFitting")
+        assert len(fittings) == 1
+        assert ifcopenshell.util.element.get_predefined_type(fittings[0]) == "TRANSITION"
+        far_port = ifcopenshell.util.system.get_connected_port(port_b)
+        assert far_port and ifcopenshell.util.system.get_port_element(far_port) == fittings[0]
