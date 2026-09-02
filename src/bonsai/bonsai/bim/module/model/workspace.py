@@ -930,6 +930,12 @@ class EditObjectUI:
                 row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
                 row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
 
+                if AuthoringData.data["active_class"] in ("IfcDuctSegment", "IfcPipeSegment"):
+                    row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                    add_layout_hotkey_operator(
+                        row, "Split", "S_K", "Split selected segment into two at the cursor location", ui_context
+                    )
+
             else:
                 add_layout_hotkey_operator(row, "Edit Axis", "A_E", "", ui_context)
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
@@ -1367,6 +1373,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.split_wall()
+        elif self.active_class == "IfcPipeSegment":
+            bpy.ops.bim.split_pipe_segment_at_cursor()
+        elif self.active_class == "IfcDuctSegment":
+            bpy.ops.bim.split_duct_segment_at_cursor()
 
     def hotkey_S_T(self):
         if not bpy.context.selected_objects:
