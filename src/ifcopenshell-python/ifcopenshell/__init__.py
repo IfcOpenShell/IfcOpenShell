@@ -396,7 +396,9 @@ def schema_by_name(
         message = _missing_schema_plugins_message(schema)
         if message is None:
             raise
-        raise SchemaError(message) from e
+        # Deliberately still a RuntimeError: only the message changes, so code
+        # already catching the old error keeps working.
+        raise RuntimeError(message) from e
 
 
 SupportedFormat = Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", "rocksdb", None]

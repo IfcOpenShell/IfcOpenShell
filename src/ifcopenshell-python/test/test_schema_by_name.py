@@ -32,12 +32,12 @@ class TestSchemaByName:
     def test_unknown_schema_keeps_the_original_error(self):
         with pytest.raises(RuntimeError) as excinfo:
             ifcopenshell.schema_by_name("IFC9")
-        assert not isinstance(excinfo.value, ifcopenshell.SchemaError)
+        assert "incomplete or half updated" not in str(excinfo.value)
 
     def test_missing_schema_plugins_are_explained(self, monkeypatch):
         monkeypatch.setattr(ifcopenshell.ifcopenshell_wrapper, "schema_by_name", fail_lookup)
         monkeypatch.setattr(ifcopenshell.ifcopenshell_wrapper, "schema_names", lambda: ("HEADER_SECTION_SCHEMA",))
-        with pytest.raises(ifcopenshell.SchemaError) as excinfo:
+        with pytest.raises(RuntimeError) as excinfo:
             ifcopenshell.schema_by_name("IFC4")
         message = str(excinfo.value)
         assert "No schema named IFC4" in message
@@ -48,4 +48,4 @@ class TestSchemaByName:
         monkeypatch.setattr(ifcopenshell.ifcopenshell_wrapper, "schema_by_name", fail_lookup)
         with pytest.raises(RuntimeError) as excinfo:
             ifcopenshell.schema_by_name("IFC4")
-        assert not isinstance(excinfo.value, ifcopenshell.SchemaError)
+        assert "incomplete or half updated" not in str(excinfo.value)
