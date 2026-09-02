@@ -142,6 +142,19 @@ def is_shared_library(path: Path) -> bool:
     return name.endswith((".so", ".dylib", ".dll")) or ".so." in name
 
 
+# Runtime plug-ins are loaded by name and carry the underscore-prefixed
+# `ifcopenshell_` names without a platform library prefix (see
+# `decorated_basename()` in src/plugin/plugin.cpp and `ifcopenshell_plugin_target()`
+# in cmake/utilities.cmake), while the core shared libraries keep the dotted
+# `ifcopenshell.` names and the platform `lib` prefix. Match both conventions.
+IFC_GEOMETRY_WRITER_PREFIXES = ("ifcopenshell.geometry.writer.", "ifcopenshell_geometry_writer_")
+
+
+def is_geometry_writer(path: Path) -> bool:
+    name = path.name.removeprefix("lib")
+    return name.startswith(IFC_GEOMETRY_WRITER_PREFIXES)
+
+
 def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_writers: bool = True) -> None:
     """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest`."""
     runtime_files = []
@@ -154,7 +167,7 @@ def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_wri
                 continue
             if not is_shared_library(runtime_file):
                 continue
-            if not include_geometry_writers and runtime_file.name.startswith("ifcopenshell.geometry.writer."):
+            if not include_geometry_writers and is_geometry_writer(runtime_file):
                 continue
             dest_file = dest / runtime_file.name
             # Currently there's an overlap between dependencies installations.
