@@ -724,6 +724,7 @@ class Nest:
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
     def get_container(cls, element): pass
+    def get_relating_object(cls, related_element): pass
 
 
 @interface
