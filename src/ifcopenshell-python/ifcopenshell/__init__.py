@@ -162,6 +162,62 @@ class SchemaError(Error):
     pass
 
 
+# Schemas built by a default (non-WASM) build, see SCHEMA_VERSIONS in cmake/CMakeLists.txt.
+_EXPECTED_SCHEMA_PLUGINS = ("2x3", "4", "4x1", "4x2", "4x3", "4x3_tc1", "4x3_add1", "4x3_add2")
+
+
+def _schema_plugin_suffix() -> str:
+    if sys.platform == "win32":
+        return ".dll"
+    elif sys.platform == "darwin":
+        return ".dylib"
+    return ".so"
+
+
+def _schema_plugin_dirs() -> list[str]:
+    """Directories where the schema plugin libraries are expected to live."""
+    dirs: list[str] = []
+    try:
+        dirs.extend(get_plugin_search_paths())
+    except Exception:
+        pass
+    native = getattr(ifcopenshell_wrapper, "_ifcopenshell_wrapper", None)
+    for path in (getattr(native, "__file__", None), getattr(ifcopenshell_wrapper, "__file__", None), __file__):
+        if path:
+            dirs.append(os.path.dirname(os.path.abspath(path)))
+    return list(dict.fromkeys(dirs))
+
+
+def _missing_schema_plugins_message(schema: str) -> Optional[str]:
+    """Explain a failed schema lookup caused by missing schema plugin libraries.
+
+    Returns ``None`` if schemas are registered, meaning the lookup failed for
+    an unrelated reason such as an unknown schema name.
+    """
+    try:
+        names = tuple(ifcopenshell_wrapper.schema_names())
+    except Exception:
+        return None
+    if any(name.upper().startswith("IFC") for name in names):
+        return None
+
+    suffix = _schema_plugin_suffix()
+    expected = ["ifcopenshell_parse_schema_ifc" + version + suffix for version in _EXPECTED_SCHEMA_PLUGINS]
+    dirs = _schema_plugin_dirs()
+    missing = [name for name in expected if not any(os.path.isfile(os.path.join(d, name)) for d in dirs)]
+    return (
+        "No schema named %s. No IFC schema is registered at all, which means this IfcOpenShell "
+        "installation is incomplete or half updated: every IFC schema is loaded from a separate "
+        "plugin library next to the Python wrapper, and none of them could be found.\n"
+        "Searched: %s\n"
+        "Missing: %s\n"
+        "If a Blender extension update reported that it could not remove old files "
+        '("Access is denied", "The directory is not empty"), close Blender completely, delete the '
+        "leftover extension directory and install the extension again."
+        % (schema, ", ".join(dirs) or "(no directory resolved)", ", ".join(missing) or "(none)")
+    )
+
+
 @overload
 def open(
     path: Union[os.PathLike, str],
@@ -334,7 +390,13 @@ def schema_by_name(
         schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
     else:
         schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
-    return ifcopenshell_wrapper.schema_by_name(schema)
+    try:
+        return ifcopenshell_wrapper.schema_by_name(schema)
+    except Exception as e:
+        message = _missing_schema_plugins_message(schema)
+        if message is None:
+            raise
+        raise SchemaError(message) from e
 
 
 SupportedFormat = Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", "rocksdb", None]
