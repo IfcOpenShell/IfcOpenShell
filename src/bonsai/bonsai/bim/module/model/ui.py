@@ -826,29 +826,31 @@ def draw_roof_properties(layout: bpy.types.UILayout, props: module_prop.BIMRoofP
 def draw_stair_properties(layout: bpy.types.UILayout, props: module_prop.BIMStairProperties) -> None:
     """Draw stair properties UI (shared between properties panel and preferences)."""
     for prop_name in props.get_props_kwargs():
-        # Skip custom_tread_lock as it's handled with custom_first_last_tread_run
-        if prop_name == "custom_tread_lock":
-            continue
-
         prop_value = getattr(props, prop_name)
 
-        # Special handling for custom_first_last_tread_run
+        # First/last tread each get their own independent lock toggle + value.
         if prop_name == "custom_first_last_tread_run":
-            # Draw the lock toggle
-            row_lock = layout.row(align=True)
-            lock_text = "Lock First/Last Treads" if not props.custom_tread_lock else "Unlock First/Last Treads"
-            row_lock.prop(
+            row_first_lock = layout.row(align=True)
+            first_locked = props.custom_first_tread_lock
+            row_first_lock.prop(
                 props,
-                "custom_tread_lock",
-                text=lock_text,
-                icon="LOCKED" if props.custom_tread_lock else "UNLOCKED",
+                "custom_first_tread_lock",
+                text="Lock First Tread" if first_locked else "Unlock First Tread",
+                icon="LOCKED" if first_locked else "UNLOCKED",
             )
+            if not first_locked:
+                row_first_lock.prop(props, prop_name, index=0, text="First Tread Run")
 
-            # Only show the custom values input if unlocked
-            if not props.custom_tread_lock:
-                prop_readable_name = props.bl_rna.properties[prop_name].name
-                layout.label(text=f"{prop_readable_name}:")
-                layout.prop(props, prop_name, text="")
+            row_last_lock = layout.row(align=True)
+            last_locked = props.custom_last_tread_lock
+            row_last_lock.prop(
+                props,
+                "custom_last_tread_lock",
+                text="Lock Last Tread" if last_locked else "Unlock Last Tread",
+                icon="LOCKED" if last_locked else "UNLOCKED",
+            )
+            if not last_locked:
+                row_last_lock.prop(props, prop_name, index=1, text="Last Tread Run")
         elif isinstance(prop_value, Iterable) and not isinstance(prop_value, str):
             prop_readable_name = props.bl_rna.properties[prop_name].name
             layout.label(text=f"{prop_readable_name}:")
