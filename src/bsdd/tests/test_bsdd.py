@@ -31,7 +31,7 @@ def test_get_nbs_classes():
     assert "Ac" in [l["code"] for l in nbs_classes["classes"]]
 
 
-pytest.mark.skip(reason="Re-enable when deprecation warning is addressed")
+@pytest.mark.skip(reason="Re-enable when deprecation warning is addressed")
 def test_get_class():
     uri_light_fixture = next(l for l in get_ifc_classes()["classes"] if "IfcLightFixture" == l["code"])["uri"]
     # TODO: fix deprecation warning.
