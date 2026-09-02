@@ -1264,10 +1264,23 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         }
 
         get_z_basis = lambda o: tool.Cad.get_basis_vector(o, 2)
-        segments_intersection_ws = tool.Cad.intersect_edges(
+        # intersect_edges returns None when the two axes are parallel / collinear
+        # (mathutils.intersect_line_line has no crossing to report). Guard it the
+        # same way compute_bend_preview_polylines does, so a bend on parallel
+        # segments fails with a clear message instead of raising
+        # "'NoneType' object is not subscriptable". See issue #3932.
+        segments_intersection = tool.Cad.intersect_edges(
             (start_object.location, start_object.location + get_z_basis(start_object)),
             (end_object.location, end_object.location + get_z_basis(end_object)),
-        )[0]
+        )
+        if segments_intersection is None:
+            self.report(
+                {"ERROR"},
+                "The two segments are parallel or collinear, so their axes never cross. "
+                "A bend needs two segments that meet at an angle.",
+            )
+            return {"CANCELLED"}
+        segments_intersection_ws = segments_intersection[0]
 
         start_point, first_segment_start = tool.Cad.closest_and_furthest_vectors(
             segments_intersection_ws, (start_segment_data["start_point"], start_segment_data["end_point"])

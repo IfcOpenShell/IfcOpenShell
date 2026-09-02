@@ -369,3 +369,89 @@ def test_finish_bend_preview_catches_runtime_error_from_dispatch():
     assert "CANCELLED" in result, "RuntimeError from dispatch must be converted to CANCELLED"
     assert fake_props.is_active is True, "failed dispatch must leave preview active for re-tune"
     op_self.report.assert_called()
+
+
+# ---------------------------------------------------------------------------
+# MEPAddBend._execute — parallel/degenerate intersection guard (issue #3932)
+# ---------------------------------------------------------------------------
+
+
+def test_mep_add_bend_cancels_cleanly_when_axes_do_not_cross():
+    """``tool.Cad.intersect_edges`` returns ``None`` when the two segment
+    axes are parallel / collinear (no crossing). Before the guard,
+    ``MEPAddBend._execute`` indexed that ``None`` with ``[0]`` and raised
+    ``TypeError: 'NoneType' object is not subscriptable`` (issue #3932).
+
+    The commit operator must instead report an ERROR and return CANCELLED,
+    matching the None-guard ``compute_bend_preview_polylines`` already uses
+    and the ERROR+CANCELLED contract ``FinishBendPreview`` relies on."""
+    from types import SimpleNamespace
+
+    import ifcopenshell.util.element
+    import ifcopenshell.util.unit
+    from mathutils import Matrix, Vector
+
+    from bonsai import tool
+    from bonsai.bim.module.model import mep as mep_module
+    from bonsai.bim.module.model.mep import MEPAddBend
+
+    class _Stand:
+        editing_bend_id = 0
+        start_segment_id = 101
+        end_segment_id = 102
+        start_length = 0.1
+        end_length = 0.1
+        radius = 0.2
+
+        def __init__(self):
+            self.report = MagicMock()
+
+    # Two parallel segments (both along +Z, offset in X) — identity rotation
+    # so the rotation-difference precheck passes and execution reaches the
+    # axis-intersection step.
+    start_obj = MagicMock(name="start_obj")
+    start_obj.matrix_world = Matrix.Identity(4)
+    start_obj.location = Vector((0, 0, 0))
+    end_obj = MagicMock(name="end_obj")
+    end_obj.matrix_world = Matrix.Identity(4)
+    end_obj.location = Vector((2, 0, 0))
+
+    start_el = MagicMock(name="start_el")
+    end_el = MagicMock(name="end_el")
+    seg_type = MagicMock(name="seg_type")
+
+    circle = MagicMock(name="circle_profile")
+    circle.Radius = 0.05
+    circle.is_a = lambda c: c == "IfcCircleProfileDef"
+
+    def _seg_data(_element):
+        # start_point / end_point must be distinct Vector objects — _execute
+        # keys a ports map by id() of these vectors.
+        return {
+            "start_point": Vector((0, 0, 0)),
+            "end_point": Vector((0, 0, 1)),
+            "start_port": MagicMock(name="start_port"),
+            "end_port": MagicMock(name="end_port"),
+        }
+
+    ifc_file = MagicMock(name="ifc_file")
+    ifc_file.by_id = lambda i: {101: start_el, 102: end_el}[i]
+    objects = {id(start_el): start_obj, id(end_el): end_obj}
+
+    op_self = _Stand()
+    with (
+        patch.object(tool.Ifc, "get", return_value=ifc_file),
+        patch.object(tool.Ifc, "get_object", side_effect=lambda e: objects[id(e)]),
+        patch.object(ifcopenshell.util.unit, "calculate_unit_scale", return_value=1.0),
+        patch.object(ifcopenshell.util.element, "get_type", side_effect=lambda e: seg_type),
+        patch.object(tool.Model, "get_flow_segment_profile", return_value=circle),
+        patch.object(mep_module.MEPGenerator, "get_segment_data", side_effect=_seg_data),
+        patch.object(tool.Cad, "intersect_edges", return_value=None),
+    ):
+        result = MEPAddBend._execute(op_self, MagicMock(name="context"))
+
+    assert result == {"CANCELLED"}, f"parallel axes must cancel, got {result}"
+    op_self.report.assert_called_once()
+    level, message = op_self.report.call_args[0]
+    assert "ERROR" in level
+    assert "parallel" in message.lower()
