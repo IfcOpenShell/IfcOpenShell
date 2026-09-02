@@ -216,7 +216,7 @@ function addTableElement(blenderId, csvData, filename) {
     // update column defination on clicking an item
     // specifically the topCalc and pass calc type to the topCalcFormatter function
     // uisng the topCalcFormatterParams field
-    return calculations.map((calc) => ({
+    const menu = calculations.map((calc) => ({
       label: `Show ${
         calc.charAt(0).toUpperCase() + calc.slice(1)
       } for ${field}`,
@@ -225,6 +225,18 @@ function addTableElement(blenderId, csvData, filename) {
           .getColumn()
           .updateDefinition({ topCalc: calc, topCalcFormatterParams: calc }),
     }));
+
+    // topCalc defaults to "sum" for every column (see columnDefaults below)
+    // with no way to turn it off. Add an explicit option to hide it.
+    menu.push({
+      label: `Hide calculation for ${field}`,
+      action: (e, cell) =>
+        cell
+          .getColumn()
+          .updateDefinition({ topCalc: false, topCalcFormatterParams: false }),
+    });
+
+    return menu;
   }
 
   function calcFormatter(cell, formatterParams, onRendered) {
