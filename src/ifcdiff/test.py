@@ -122,6 +122,31 @@ class TestIfcDiff:
                 results = json.load(f)
             assert "Pset_WallCommon" in str(results["changed"][wall.GlobalId]["properties_changed"])
 
+    def test_explicit_zero_precision_is_respected(self):
+        # Regression test: IfcGeometricRepresentationContext.Precision is an
+        # optional attribute, so 0.0 is a legitimate, explicit "compare
+        # exactly" value and must not be confused with "not set". get_precision()
+        # previously used `contexts[0].Precision or 1e-4`, which is falsy for
+        # 0.0 too, silently widening the tolerance back to 1e-4 and causing a
+        # small but real property change to be missed entirely.
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+        pset = ifcopenshell.api.pset.add_pset(ifc_file, product=wall, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"ThermalTransmittance": 1.0})
+        model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+        model_context.Precision = 0.0
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        wall_new = new_file.by_id(wall.id())
+        pset_new = new_file.by_id(pset.id())
+        ifcopenshell.api.pset.edit_pset(new_file, pset=pset_new, properties={"ThermalTransmittance": 1.00005})
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["property"])
+        assert ifc_diff.get_precision() == 0.0
+        ifc_diff.diff()
+        assert wall.GlobalId in ifc_diff.change_register
+        assert ifc_diff.change_register[wall.GlobalId]["properties_changed"]
+
     def test_changed_geometry(self):
         ifc_file = setup_project()
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
