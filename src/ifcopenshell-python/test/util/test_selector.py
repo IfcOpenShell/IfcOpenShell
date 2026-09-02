@@ -477,6 +477,20 @@ class TestSetElementValue(test.bootstrap.IFC4):
         subject.set_element_value(self.file, layer, "Material.Name", "Foo")
         assert material.Name == "Foo"
 
+    def test_set_boolean_attribute_is_case_insensitive(self):
+        # ParameterTakesPrecedence is a direct IfcBoolean attribute. Setting
+        # it via a plain string forces the setattr fast-path to fail and
+        # fall back to the type-cast branch in set_element_value, which used
+        # to special-case only "Yes"/"No" and silently coerce any other
+        # spelling ("no", "NO") to True via bool(value) (#8100 adjacent).
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoorType")
+        for value in ("Yes", "yes", "YES", "True", "true", "TRUE", "1"):
+            subject.set_element_value(self.file, element, "ParameterTakesPrecedence", value)
+            assert element.ParameterTakesPrecedence is True, value
+        for value in ("No", "no", "NO", "False", "false", "FALSE", "0"):
+            subject.set_element_value(self.file, element, "ParameterTakesPrecedence", value)
+            assert element.ParameterTakesPrecedence is False, value
+
 
 class TestSetElementValuePredefinedType(test.bootstrap.IFC4):
     def test_setting_an_element_predefined_type(self):
