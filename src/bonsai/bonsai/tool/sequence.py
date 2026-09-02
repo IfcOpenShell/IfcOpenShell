@@ -1528,7 +1528,10 @@ class Sequence(bonsai.core.tool.Sequence):
             finish = parser.parse(props.finish, dayfirst=True, fuzzy=True)
             duration = finish - start
             frame_date = (((scene.frame_current - props.start_frame) / props.total_frames) * duration) + start
-            return frame_date.date().isoformat()
+            # Match the DD/MM/YY convention used everywhere else in the sequence
+            # module for displaying dates (see ifcopenshell.util.date.canonicalise_time),
+            # instead of a lone ISO 8601 outlier. See #2477.
+            return ifcopenshell.util.date.canonicalise_time(frame_date.date())
 
         data = bpy.data.curves.get("Timeline")
         if not data:
