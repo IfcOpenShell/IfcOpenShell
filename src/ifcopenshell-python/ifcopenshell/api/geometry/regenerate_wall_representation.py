@@ -110,6 +110,13 @@ class Regenerator:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
         self.is_angled = False
 
+        if not self.body:
+            if not (model := ifcopenshell.util.representation.get_context(file, "Model")):
+                model = ifcopenshell.api.context.add_context(file, context_type="Model")
+            self.body = ifcopenshell.api.context.add_context(
+                file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+            )
+
         if not self.axis:
             if not (plan := ifcopenshell.util.representation.get_context(file, "Plan")):
                 plan = ifcopenshell.api.context.add_context(file, context_type="Plan")
