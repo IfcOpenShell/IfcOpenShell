@@ -1482,8 +1482,7 @@ class Model(bonsai.core.tool.Model):
             voided_element = tool.Ifc.get_entity(voided_obj)
             if voided_element is None:
                 continue
-            context = tool.Geometry.get_active_representation_context(voided_obj)
-            representation = tool.Geometry.get_representation_by_context(voided_element, context)
+            representation = tool.Geometry.get_host_representation_to_recut(voided_obj)
             if representation is None:
                 continue
             tool.Geometry.recut_host(voided_obj, representation)
