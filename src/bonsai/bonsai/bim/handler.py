@@ -327,6 +327,31 @@ def loadIfcStore(scene: bpy.types.Scene) -> None:
     tool.Autosave.reset_timer()
 
 
+def has_unsaved_ifc_changes() -> bool:
+    """True if saving the .blend now would silently drop IFC edits.
+
+    Bonsai keeps IFC edits in memory until "Save IFC Project" is run
+    explicitly; saving the .blend file alone (Ctrl+S) discards them the
+    next time the file is reopened. See #9270."""
+    if not tool.Ifc.get():
+        return False
+    return tool.Blender.get_bim_props().is_dirty
+
+
+@persistent
+def save_pre(_) -> None:
+    if not has_unsaved_ifc_changes():
+        return
+    window = bpy.context.window
+    if not window:
+        return
+
+    def draw(menu_self: bpy.types.Menu, _context: bpy.types.Context) -> None:
+        menu_self.layout.label(text="Run File > Save IFC Project, or your IFC edits will be lost.")
+
+    bpy.context.window_manager.popup_menu(draw, title="Unsaved IFC Changes", icon="ERROR")
+
+
 @persistent
 def undo_post(scene: bpy.types.Scene) -> None:
     props = tool.Blender.get_bim_props()
