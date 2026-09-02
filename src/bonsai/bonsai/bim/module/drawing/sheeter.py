@@ -335,49 +335,51 @@ class SheetBuilder:
         """
         prefix = f"d{drawing_id}"  # just number doesn't work
 
-        # add .prefix class to all css selectors
-        style = svg.find(f"{SVG}defs/{SVG}style")
-        assert style is not None
-        style_data = style.text
-        assert style_data is not None
-        text = ""
-        brackets_level = 0
-        selector_buffer = ""  # Buffer to accumulate selectors across lines
-
-        for l in style_data:
-            if l == "{":
-                if brackets_level == 0:
-                    # Get all accumulated selector text (may span multiple lines)
-                    # Find where the last rule ended (after last }) or start of text
-                    last_close = text.rfind("}")
-                    if last_close == -1:
-                        selector_text = text
-                        text = ""
-                    else:
-                        selector_text = text[last_close + 1 :]
-                        text = text[: last_close + 1]
-
-                    # Process all selectors (split by comma)
-                    css_selectors = []
-                    for css_selector in selector_text.split(","):
-                        css_selector = css_selector.strip()
-                        if css_selector:  # Only process non-empty selectors
-                            css_selector = f"{css_selector}.{prefix}"
-                            css_selectors.append(css_selector)
-
-                    text += ", ".join(css_selectors) + " "
-                brackets_level += 1
-            elif l == "}":
-                brackets_level -= 1
-            text += l
-
         def replace_urls(text: str) -> str:
             """replace urls `url(#marker)` with `url(#prefix-marker)`
             since `url(#marker.prefix)` doesn't seem to work
             """
             return re.sub(r"url\(#([^\)]+)\)", rf"url(#{prefix}-\1)", text)
 
-        style.text = replace_urls(text)
+        # add .prefix class to all css selectors
+        # Some embedded documents (e.g. plain references) have no stylesheet, so
+        # this is optional. The id and class prefixing below always runs so that
+        # ids and classes stay unique across the whole sheet.
+        style = svg.find(f"{SVG}defs/{SVG}style")
+        if style is not None and style.text is not None:
+            style_data = style.text
+            text = ""
+            brackets_level = 0
+            selector_buffer = ""  # Buffer to accumulate selectors across lines
+
+            for l in style_data:
+                if l == "{":
+                    if brackets_level == 0:
+                        # Get all accumulated selector text (may span multiple lines)
+                        # Find where the last rule ended (after last }) or start of text
+                        last_close = text.rfind("}")
+                        if last_close == -1:
+                            selector_text = text
+                            text = ""
+                        else:
+                            selector_text = text[last_close + 1 :]
+                            text = text[: last_close + 1]
+
+                        # Process all selectors (split by comma)
+                        css_selectors = []
+                        for css_selector in selector_text.split(","):
+                            css_selector = css_selector.strip()
+                            if css_selector:  # Only process non-empty selectors
+                                css_selector = f"{css_selector}.{prefix}"
+                                css_selectors.append(css_selector)
+
+                        text += ", ".join(css_selectors) + " "
+                    brackets_level += 1
+                elif l == "}":
+                    brackets_level -= 1
+                text += l
+
+            style.text = replace_urls(text)
 
         for svg_element in svg.findall(f".//*"):
             if svg_element.tag in (f"{SVG}style", f"{SVG}svg"):
@@ -478,7 +480,13 @@ class SheetBuilder:
                     view_title = image
 
             if table is not None:
-                view.append(self.parse_embedded_svg(table, {}))
+                # Scope the document's styles to its own elements, just like drawings.
+                # Without this, a schedule's `text { font-family: ... }` rule is emitted
+                # globally and clobbers (or is clobbered by) other documents on the sheet,
+                # so the schedule loses its own font. See issue #5221.
+                svg = self.parse_embedded_svg(table, {})
+                svg = self.ensure_drawing_unique_styles(svg, int(view.attrib["data-id"]))
+                view.append(svg)
 
             if view_title is not None:
                 path = self.get_href(table)
