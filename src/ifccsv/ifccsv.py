@@ -497,6 +497,14 @@ class IfcCsv:
         for i, value in enumerate(row):
             if i == 0:
                 continue  # Skip GlobalId
+            if isinstance(value, float) and value != value:
+                # A blank XLSX/ODS cell is read back by pandas as float `nan`
+                # (not as an empty string or None), since pandas cannot tell a
+                # blank cell apart from a genuinely missing one. Without this,
+                # `nan` falls through the checks below untouched and later gets
+                # stringified, silently setting the IFC attribute to the
+                # literal text "nan" instead of clearing it.
+                value = empty
             if value == null:
                 value = None
             elif value == empty:
