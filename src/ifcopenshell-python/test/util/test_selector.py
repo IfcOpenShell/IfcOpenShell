@@ -397,6 +397,31 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, parent=Element2") == {element2, element3}
         assert subject.filter_elements(self.file, "IfcWall, parent=Space") == {element}
 
+    def test_selecting_by_parent_excludes_a_filling_element_hosted_by_a_different_storey(self):
+        # See https://github.com/IfcOpenShell/IfcOpenShell/issues/6770 : a
+        # window on storey 1 was incorrectly excluded by `parent="storey 2"`
+        # because the opening it fills also happens to void a wall on
+        # storey 2 ("void through walls" technique).
+        storey1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey", name="Storey 1")
+        storey2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey", name="Storey 2")
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Wall1")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Wall2")
+        window = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow", name="Window")
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall1], relating_structure=storey1)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall2], relating_structure=storey2)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[window], relating_structure=storey1)
+
+        # The same opening voids both walls, on two different storeys.
+        self.file.create_entity("IfcRelVoidsElement", ifcopenshell.guid.new(), None, None, None, wall1, opening)
+        self.file.create_entity("IfcRelVoidsElement", ifcopenshell.guid.new(), None, None, None, wall2, opening)
+        ifcopenshell.api.feature.add_filling(self.file, element=window, opening=opening)
+
+        elements = {wall1, wall2, window}
+        assert subject.filter_elements(self.file, 'parent="Storey 2"', elements) == {wall2}
+        assert elements - subject.filter_elements(self.file, 'parent="Storey 2"', elements) == {wall1, window}
+
     def test_selecting_multiple_filter_groups(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element.Name = "Foo"
