@@ -179,7 +179,7 @@ def format_debug_info(info: dict[str, Any]) -> str:
     return text.strip()
 
 
-def get_binaries(path: Path) -> Generator[Path, None, None]:
+def get_binaries(path: Path) -> Generator[Path]:
     yield from path.glob("**/*.pyd")
     yield from path.glob("**/*.dll")
     # pyradiance is using .so files on windows for some reason.

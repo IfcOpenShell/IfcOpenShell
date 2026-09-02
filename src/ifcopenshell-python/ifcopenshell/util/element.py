@@ -1940,7 +1940,7 @@ def has_property(product: ifcopenshell.entity_instance, property_name: str) -> b
     return any(property_name in quantities.keys() for quantities in qtos.values())
 
 
-def get_openings(element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance, None, None]:
+def get_openings(element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance]:
     """Get element openings as IfcRelVoidsElements.
 
     Use `.RelatedOpeningElement` to get the opening element.
