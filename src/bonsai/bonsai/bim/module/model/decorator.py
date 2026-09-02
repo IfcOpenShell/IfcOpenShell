@@ -50,7 +50,6 @@ from bonsai.bim.module.drawing.gizmos import (
     DOOR_SWING_ANGLE_MAX,
     DOOR_SWING_ANGLE_MIN,
 )
-from bonsai.bim.module.drawing.helper import format_distance
 
 
 def highlight_color(color, alpha=0.1):
@@ -1875,7 +1874,7 @@ class BoundingBoxDecorator(tool.Blender.ViewportDecorator):
         for axis, (screen_co, value) in screen_coords.items():
             blf.position(font_id, screen_co.x, screen_co.y, 0)
             blf.color(font_id, 1, 1, 1, 1)
-            value_str = f"D{axis.lower()}: " + format_distance(value, hide_units=False)
+            value_str = f"D{axis.lower()}: " + tool.Unit.format_distance(value, hide_units=False)
             text_length = blf.dimensions(font_id, value_str)
             self.draw_text_background(context, screen_co, text_length)
             blf.draw(font_id, value_str)
@@ -1886,7 +1885,7 @@ class BoundingBoxDecorator(tool.Blender.ViewportDecorator):
         font_id = 0
         text_dimensions = {}
         for axis, (screen_co, value) in screen_coords.items():
-            value_str = f"D{axis.lower()}: " + format_distance(value, hide_units=False)
+            value_str = f"D{axis.lower()}: " + tool.Unit.format_distance(value, hide_units=False)
             text_dimensions[axis] = blf.dimensions(font_id, value_str)
 
         min_spacing = 5

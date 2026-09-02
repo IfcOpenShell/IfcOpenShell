@@ -448,3 +448,55 @@ class TestSetActiveUnit(NewFile):
         subject.set_active_unit(unit)
         props = tool.Unit.get_unit_props()
         assert props.active_unit_id == unit.id()
+
+
+class TestFormatDistance(NewFile):
+    def create_project(self, ifc: ifcopenshell.file, unit: ifcopenshell.entity_instance) -> None:
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[unit])
+
+    def create_millimeters_project(self) -> None:
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        self.create_project(ifc, ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI"))
+
+    def test_formatting_in_the_project_unit_by_default(self):
+        self.create_millimeters_project()
+        assert subject.format_distance(2.0) == "2000 mm"
+
+    def test_display_length_unit_overrides_the_project_unit(self):
+        self.create_millimeters_project()
+        props = subject.get_unit_props()
+        props.display_length_unit = "METERS"
+        assert subject.format_distance(2.0) == "2.000 m"
+        props.display_length_unit = "CENTIMETERS"
+        assert subject.format_distance(2.0) == "200.0 cm"
+        props.display_length_unit = "FEET_FRACTIONAL"
+        assert subject.format_distance(0.3048, precision="1/32") == "1'"
+        props.display_length_unit = "FEET_DECIMAL"
+        assert subject.format_distance(0.3048) == "1.0'"
+        assert subject.format_distance(0.3048, suppress_zero_inches=False) == "1.0' - 0"
+
+    def test_an_explicit_custom_unit_wins_over_the_display_unit(self):
+        self.create_millimeters_project()
+        props = subject.get_unit_props()
+        props.display_length_unit = "METERS"
+        assert subject.format_distance(2.0, custom_unit="Millimeters") == "2000 mm"
+
+    def test_display_length_unit_on_an_imperial_project(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        self.create_project(ifc, ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="foot"))
+        assert subject.format_distance(0.3048) == "1' - 0"
+        props = subject.get_unit_props()
+        props.display_length_unit = "MILLIMETERS"
+        assert subject.format_distance(0.3048) == "305 mm"
+
+
+class TestGetDisplayLengthCustomUnit(NewFile):
+    def test_run(self):
+        props = subject.get_unit_props()
+        assert props.display_length_unit == "PROJECT"
+        assert subject.get_display_length_custom_unit() is None
+        props.display_length_unit = "FEET_FRACTIONAL"
+        assert subject.get_display_length_custom_unit() == "Feet and Inches - Fractional"
+        props.display_length_unit = "MILLIMETERS"
+        assert subject.get_display_length_custom_unit() == "Millimeters"
