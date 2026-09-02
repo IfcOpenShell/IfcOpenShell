@@ -24,6 +24,8 @@ import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
+from .common import validate_output_path
+
 
 class Ifc2Msp:
     def __init__(self):
@@ -45,6 +47,7 @@ class Ifc2Msp:
         self.work_schedule = None
 
     def execute(self):
+        validate_output_path(self.xml, "MS Project .xml file")
         self.root = ET.Element("Project")
         self.root.attrib["xmlns"] = "http://schemas.microsoft.com/project"
 

@@ -19,7 +19,7 @@
 
 from xerparser.reader import Reader
 
-from .common import ScheduleIfcGenerator
+from .common import ScheduleIfcGenerator, validate_input_path
 
 
 class P6XER2Ifc:
@@ -74,6 +74,7 @@ class P6XER2Ifc:
         }
 
     def execute(self):
+        validate_input_path(self.xer, "P6 .xer file")
         self.parse_xer()
         settings = {
             "work_plan": self.work_plan,
