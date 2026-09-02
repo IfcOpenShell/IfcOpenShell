@@ -133,12 +133,22 @@ contained inside the actively selected **Spatial Container**.
 
 .. image:: images/spatial-tree.png
 
-With a **Spatial Container** selected, use the **Isolate** button or **Hide /
-Show Icons** to quickly focus or control visibility. Use the search filters at
-the bottom of the **Container** or **Element** lists to quickly find objects,
-and use the **Select Icon** to select them.
+With an **Element** selected in the list, use the **Isolate** button or
+**Hide / Show Icons** to quickly focus or control visibility. Use the search
+filters at the bottom of the **Container** or **Element** lists to quickly
+find objects, and use the **Select Icon** to select them.
 
 .. image:: images/spatial-tree-features.png
+
+.. note::
+
+   The **Element** list **Isolate** button and **Hide / Show Icons** shown
+   above do not currently respect an active status filter (see
+   :menuselection:`Properties --> Scheduling --> Status`), and vice versa.
+   The older **Spatial Container** list versions of these buttons do not
+   have this problem, which is why they are still available as an opt in
+   under :menuselection:`Edit --> Preferences --> Add-ons --> Bonsai -->
+   Extras`, enable **Container hide/show/isolate** to bring them back.
 
 **Elements** are grouped into IFC **Classes**, such as Wall, Slab, or Door.
 Within that, **Elements** are grouped into **Construction Types**. You'll see a
