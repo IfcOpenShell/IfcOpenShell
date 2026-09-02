@@ -124,7 +124,13 @@ class TestPackageSupportedPlatforms:
 
         return missing_urls
 
-    @pytest.mark.skip(reason="Re-enable when builds are fully operational again")
+    # TODO: drop this xfail once BUILD_COMMIT is bumped past ad113e1.
+    @pytest.mark.xfail(
+        condition="BUILD_COMMIT:=ad113e1"
+        in (Path(__file__).parents[3] / "src/ifcopenshell-python/Makefile").read_text(),
+        reason="pyodide wasm32 wheel is not published for build ad113e1",
+        strict=False,
+    )
     def test_run(self) -> None:
         required_urls = self.get_required_urls()
         maybe_missing_urls = self.get_missing_urls_fast(required_urls)
