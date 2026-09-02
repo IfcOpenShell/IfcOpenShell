@@ -171,7 +171,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		valid_result = true;
 		for (; it.More(); it.Next()) {
 			TopoDS_Shape part;
-			if (util::boolean_operation(bst, it.Value(), b, op_to_occt(br->operation), part)) {
+			if (util::boolean_operation(bst, it.Value(), b, op_to_occt(br->operation), part, -1.)) {
 				B.Add(C, part);
 			} else {
 				valid_result = false;
@@ -183,7 +183,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 			a = b.First();
 			b.RemoveFirst();
 		}
-		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r);
+		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r, -1.);
 	}
 
 	if (valid_result) {

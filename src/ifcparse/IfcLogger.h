@@ -93,6 +93,9 @@ class IFC_PARSE_API Logger {
     const IfcUtil::IfcBaseClass* current_product() const;
     void current_product(const IfcUtil::IfcBaseClass* product);
 
+    // Renders a captured log_message through this logger's own output; used by Append().
+    void emit(const log_message& m);
+
   public:
     Logger() = default;
     Logger(const Logger&) = delete;
