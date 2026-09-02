@@ -233,16 +233,21 @@ class Entity(Facet):
         is_pass = inst.is_a().upper() == self.name
         reason = None
 
-        if (
-            not is_pass
-            and inst.file.schema == "IFC2X3"
-            and not self.name.endswith("TYPE")
-            and (element_type := ifcopenshell.util.element.get_type(inst))
-        ):
-            is_pass = element_type.is_a().upper() == f"{self.name}TYPE"
-            reason = {"type": "NAME", "actual": element_type.is_a().upper()[:-4]}
-        elif not is_pass:
-            reason = {"type": "NAME", "actual": inst.is_a().upper()}
+        if not is_pass:
+            # An IFC2X3 occurrence may only be typed, so also try matching it as
+            # its type with the TYPE suffix removed (IfcWallType -> IFCWALL).
+            # self.name may be a plain string or a Restriction; deriving the name
+            # from the type and comparing with == handles both and avoids calling
+            # string methods on a Restriction, which used to crash on the fail path.
+            element_type = (
+                ifcopenshell.util.element.get_type(inst) if inst.file.schema == "IFC2X3" else None
+            )
+            type_name = element_type.is_a().upper() if element_type else ""
+            if type_name.endswith("TYPE") and type_name[:-4] == self.name:
+                is_pass = True
+                reason = {"type": "NAME", "actual": type_name[:-4]}
+            else:
+                reason = {"type": "NAME", "actual": inst.is_a().upper()}
 
         predefined_type = None
         if is_pass and self.predefinedType:
