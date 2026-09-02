@@ -317,7 +317,11 @@ class Drawing(bonsai.core.tool.Drawing):
             # shapely magic
             boundary_lines = [shapely.LineString([verts[v] for v in e]) for e in edges]
             unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+            if not hasattr(unioned_boundaries, "geoms"):
+                raise ValueError("Related object doesn't form a closed outline for a revision cloud.")
             all_polygons = shapely.polygonize(unioned_boundaries.geoms).geoms
+            if not all_polygons:
+                raise ValueError("Related object doesn't form a closed outline for a revision cloud.")
             outer_shell = unary_union(all_polygons)
 
             bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)

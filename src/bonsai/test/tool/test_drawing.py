@@ -61,6 +61,30 @@ class TestCreateAnnotationObject(NewFile):
         pass
 
 
+class TestSetupAnnotationObject(NewFile):
+    def test_revision_cloud_raises_when_related_object_has_no_closed_outline(self):
+        # A related object with a single edge makes shapely.union_all return
+        # a scalar LineString, not a MultiLineString.
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        wall = ifc.createIfcWall()
+        mesh = bpy.data.meshes.new("Wall")
+        mesh.from_pydata([(0.0, 0.0, 0.0), (5.0, 0.0, 0.0)], [(0, 1)], [])
+        mesh.update()
+        revised_obj = bpy.data.objects.new("Wall", mesh)
+        bpy.context.collection.objects.link(revised_obj)
+        tool.Ifc.link(wall, revised_obj)
+
+        annotation = ifc.createIfcAnnotation()
+        cloud_obj = bpy.data.objects.new("Cloud", bpy.data.meshes.new("Cloud"))
+        bpy.context.collection.objects.link(cloud_obj)
+        tool.Ifc.link(annotation, cloud_obj)
+
+        with pytest.raises(ValueError, match="closed outline"):
+            subject.setup_annotation_object(cloud_obj, "REVISION_CLOUD", revised_obj)
+
+
 class TestCreateCamera(NewFile):
     def test_run(self):
         obj = subject.create_camera("Name", mathutils.Matrix(), "PERSPECTIVE", "PLAN_VIEW")
