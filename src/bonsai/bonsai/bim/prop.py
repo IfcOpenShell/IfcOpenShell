@@ -720,6 +720,16 @@ class BIMObjectProperties(PropertyGroup):
     )
     location_checksum: StringProperty(name="Location Checksum")
     rotation_checksum: StringProperty(name="Rotation Checksum")
+    is_manually_hidden: BoolProperty(
+        name="Is Manually Hidden",
+        description="Whether the object was hidden by the Isolate/Show/Hide element visibility tools",
+        default=False,
+    )
+    is_hidden_by_status: BoolProperty(
+        name="Is Hidden By Status",
+        description="Whether the object is hidden by the active Status filter",
+        default=False,
+    )
 
     if TYPE_CHECKING:
         collection: Union[bpy.types.Collection, None]
@@ -730,6 +740,8 @@ class BIMObjectProperties(PropertyGroup):
         is_renaming: bool
         location_checksum: str
         rotation_checksum: str
+        is_manually_hidden: bool
+        is_hidden_by_status: bool
 
 
 def get_profiles(self: "BIMMeshProperties", context: bpy.types.Context):
