@@ -89,23 +89,39 @@ class ColourByPropertyData:
     @classmethod
     def colourscheme_key(cls):
         default = [("QUERY", "Custom Query", "Specify a custom query to colour by"), None]
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return default
+
+        keys = set()
+
+        # Include the attributes of the currently selected element's class, if any.
         obj = bpy.context.active_object
-        if not obj:
-            return default
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return default
-        keys = [a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes()]
-        psets = ifcopenshell.util.element.get_psets(element)
-        for pset, properties in psets.items():
-            if pset.endswith("Common"):
-                keys.extend([f'/.*Common/."{name}"' for name in properties.keys() if name != "id"])
-            elif pset.endswith("BaseQuantities"):
-                keys.extend([f'/.*BaseQuantities/."{name}"' for name in properties.keys() if name != "id"])
-            else:
-                keys.extend([f'"{pset}"."{name}"' for name in properties.keys() if name != "id"])
-        results = [(k, k, "") for k in keys]
+        element = tool.Ifc.get_entity(obj) if obj else None
+        if element:
+            keys.update(a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes())
+
+        # Regardless of selection, offer every property and quantity set defined
+        # anywhere in the loaded IFC file, not just the ones on the active object.
+        for pset in ifc_file.by_type("IfcPropertySet"):
+            keys.update(cls.property_set_keys(pset.Name, (p.Name for p in pset.HasProperties or [])))
+        for qto in ifc_file.by_type("IfcElementQuantity"):
+            keys.update(cls.property_set_keys(qto.Name, (q.Name for q in qto.Quantities or [])))
+
+        results = [(k, k, "") for k in natsorted(keys)]
         return default + results
+
+    @staticmethod
+    def property_set_keys(pset_name, property_names):
+        if not pset_name:
+            return []
+        if pset_name.endswith("Common"):
+            template = '/.*Common/."{}"'
+        elif pset_name.endswith("BaseQuantities"):
+            template = '/.*BaseQuantities/."{}"'
+        else:
+            template = f'"{pset_name}"."{{}}"'
+        return [template.format(name) for name in property_names if name and name != "id"]
 
 
 class SelectSimilarData:
