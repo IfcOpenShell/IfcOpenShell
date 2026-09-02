@@ -165,7 +165,12 @@ def get_pset(
 
 
 def get_psets(
-    element: ifcopenshell.entity_instance, psets_only=False, qtos_only=False, should_inherit=True, verbose=False
+    element: ifcopenshell.entity_instance,
+    psets_only=False,
+    qtos_only=False,
+    should_inherit=True,
+    verbose=False,
+    psets_cache: Optional[dict[int, dict[str, dict[str, Any]]]] = None,
 ) -> dict[str, dict[str, Any]]:
     """Retrieve property sets, their related properties' names & values and ids.
 
@@ -177,6 +182,12 @@ def get_psets(
     :param qtos_only: Default as False. Set to true if only quantities are needed.
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
     :param verbose: More detailed prop values, defaults to False.
+    :param psets_cache: Optional dict used to memoise the type's psets by
+        `element.id()` across many calls, e.g. when calling get_psets for
+        every occurrence of a type-heavy model in a loop. Only pass a dict
+        you create and discard immediately after that loop: it is not kept
+        in sync with edits to the model, so reusing it across an edit will
+        return stale results.
     :return: Key, value pair of psets' names and their properties' names & values
 
     Example:
@@ -187,6 +198,13 @@ def get_psets(
         psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
         qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
         psets_and_qtos = ifcopenshell.util.element.get_psets(element)
+
+        # Calling get_psets for every occurrence of a type-heavy model
+        # recomputes the same type's psets over and over. A caller-owned,
+        # short-lived cache avoids that:
+        cache = {}
+        for wall in ifc_file.by_type("IfcWall"):
+            psets = ifcopenshell.util.element.get_psets(wall, psets_cache=cache)
     """
     ifc_file = element.file
     is_ifc2x3 = ifc_file.schema == "IFC2X3"
@@ -223,9 +241,26 @@ def get_psets(
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
-                psets = get_psets(
-                    element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False, verbose=verbose
-                )
+                if psets_cache is None:
+                    psets = get_psets(
+                        element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False, verbose=verbose
+                    )
+                else:
+                    # Copy out of the cache: callers below mutate `psets` in
+                    # place with this occurrence's overrides.
+                    type_id = element_type.id()
+                    type_psets = psets_cache.get(type_id)
+                    if type_psets is None:
+                        type_psets = get_psets(
+                            element_type,
+                            psets_only=psets_only,
+                            qtos_only=qtos_only,
+                            should_inherit=False,
+                            verbose=verbose,
+                            psets_cache=psets_cache,
+                        )
+                        psets_cache[type_id] = type_psets
+                    psets = {name: dict(props) for name, props in type_psets.items()}
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
