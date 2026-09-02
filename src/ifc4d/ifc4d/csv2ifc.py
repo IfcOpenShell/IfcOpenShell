@@ -28,6 +28,7 @@ import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.resource
 import ifcopenshell.api.root
+import ifcopenshell.api.sequence
 import ifcopenshell.api.unit
 import ifcopenshell.util.date
 import ifcopenshell.util.element
@@ -50,6 +51,7 @@ SUPPORTED_COLUMN = Literal[
 
 # Optional columns:
 # - GUID
+# - TASK GUID
 # - BASE QUANTITY NAME
 # - BASE QUANTITY VALUE
 # - BASE QUANTITY CLASS
@@ -164,6 +166,10 @@ class Csv2Ifc:
                 "class": quantity_class,
             }
 
+        task_guid = None
+        if (header_index := self.headers.get("TASK GUID", None)) is not None:
+            task_guid = row[header_index] or None
+
         return {
             "Name": str(name).strip() if name else None,
             "Description": row[self.headers["DESCRIPTION"]],
@@ -173,6 +179,7 @@ class Csv2Ifc:
             "children": [],
             "usage": row[self.headers["USAGE"]],
             "quantity_data": quantity_data,
+            "task_guid": task_guid,
         }
 
     def create_ifc(self) -> None:
@@ -220,7 +227,27 @@ class Csv2Ifc:
             # 3 IfcPhysicalSimpleQuantity Value
             quantity[3] = quantity_data["value"]
 
+        if task_guid := resource.get("task_guid"):
+            self.assign_resource_to_task(resource["ifc"], task_guid)
+
         self.create_resources(resource["children"], resource["ifc"])
+
+    def assign_resource_to_task(self, resource: ifcopenshell.entity_instance, task_guid: str) -> None:
+        assert self.file
+        try:
+            task = self.file.by_guid(task_guid)
+        except RuntimeError:
+            print(
+                f"Bonsai: resource '{resource.Name}' references TASK GUID '{task_guid}', which is not in the model. Skipping task allocation."
+            )
+            return
+        if not task.is_a("IfcTask"):
+            print(
+                f"Bonsai: TASK GUID '{task_guid}' for resource '{resource.Name}' resolves to "
+                f"an {task.is_a()}, not an IfcTask. Skipping task allocation."
+            )
+            return
+        ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
 
     # TODO: never used.
     def create_unit(self, symbol, unit_type):
@@ -256,6 +283,7 @@ class Ifc2CsvRow(NamedTuple):
     base_quantity_value: Union[float, None]
     base_quantity_type: Union[str, None]
     guid: str
+    task_guid: Union[str, None]
 
 
 class Ifc2Csv:
@@ -275,6 +303,7 @@ class Ifc2Csv:
         "BASE QUANTITY VALUE",
         "BASE QUANTITY CLASS",
         "GUID",
+        "TASK GUID",
     )
     assert len(HEADER) == len(Ifc2CsvRow._fields)
 
@@ -335,6 +364,15 @@ class Ifc2Csv:
             base_quantity_value = base_quantity[3]
             base_quantity_class = base_quantity.is_a()
 
+        # A resource can be allocated to a task via IfcRelAssignsToProcess.
+        # A resource is not expected to be allocated to more than one task at
+        # a time, so only the first assignment found is exported.
+        task_guid = None
+        for rel in resource.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToProcess") and rel.RelatingProcess.is_a("IfcTask"):
+                task_guid = rel.RelatingProcess.GlobalId
+                break
+
         return Ifc2CsvRow(
             hierarchy=hierarchy_level,
             resource_type=self.inverse_resource_map[resource.is_a()],
@@ -349,4 +387,5 @@ class Ifc2Csv:
             base_quantity_value=base_quantity_value,
             base_quantity_type=base_quantity_class,
             guid=resource.GlobalId,
+            task_guid=task_guid,
         )
