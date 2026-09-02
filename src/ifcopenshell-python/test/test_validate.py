@@ -18,9 +18,11 @@
 
 import glob
 import os
+import tempfile
 
 import pytest
 
+import ifcopenshell
 import ifcopenshell.validate
 
 
@@ -39,6 +41,25 @@ def test_file(file):
         assert len(logger.statements) > 0
     if file.startswith("pass-"):
         assert len(logger.statements) == 0
+
+
+def test_validate_rejects_sqlite_file_instead_of_crashing():
+    # ifcopenshell.sqlite only keeps a partial, query-oriented header (see
+    # ifcopenshell.sql.sqlite.header), so it cannot be validated. Regression
+    # test for validate() previously raising an unguarded AttributeError
+    # deep inside validate_ifc_header() instead of failing cleanly.
+    from ifcpatch.recipes import Ifc2Sql
+
+    ifc_path = os.path.join(os.path.dirname(__file__), "files", "basic.ifc")
+    ifc_file = ifcopenshell.open(ifc_path)
+    with tempfile.NamedTemporaryFile(suffix=".ifcsqlite") as tmp:
+        Ifc2Sql.Patcher(ifc_file, database=tmp.name).patch()
+        ifc_sqlite = ifcopenshell.open(tmp.name)
+        assert isinstance(ifc_sqlite, ifcopenshell.sqlite)
+
+        logger = ifcopenshell.validate.json_logger()
+        with pytest.raises(NotImplementedError):
+            ifcopenshell.validate.validate(ifc_sqlite, logger)
 
 
 if __name__ == "__main__":
