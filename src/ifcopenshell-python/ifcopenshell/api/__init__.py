@@ -232,6 +232,10 @@ def extract_docs(module: str, usecase: str) -> dict[str, Any]:
 
 def serialise_settings(settings):
     def serialise_entity_instance(entity):
+        # entity.id() crashes if the underlying instance was since deleted;
+        # entity.wrapped_data.id_ is a plain, crash-safe attribute read.
+        if entity.wrapped_data.id_ == 0:
+            return {"cast_type": "entity_instance", "value": None, "Name": "<stale reference>"}
         return {"cast_type": "entity_instance", "value": entity.id(), "Name": getattr(entity, "Name", None)}
 
     vcs_settings = settings.copy()

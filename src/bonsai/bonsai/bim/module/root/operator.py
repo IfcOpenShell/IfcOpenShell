@@ -115,13 +115,14 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
         if predefined_type == "USERDEFINED":
             predefined_type = root_props.ifc_userdefined_type
 
-        # NOTE: root.reassign_class
-        # automatically will reassign class for other occurrences of the type
-        # so we need to run it only for the types or non-typed elements
+        # NOTE: root.reassign_class on a type automatically reassigns the class
+        # of all its occurrences, so when every occurrence of a type is selected
+        # we reassign the type once instead of each occurrence individually
         elements_to_reassign: dict[ifcopenshell.entity_instance, str] = dict()
         # need to update blender object name
         # for all elements that were changed in the process
         elements_to_update: set[ifcopenshell.entity_instance] = set()
+        selected_elements = set(e for o in objects if (e := tool.Ifc.get_entity(o)))
         for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -157,9 +158,15 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
                 elements_to_update.update(ifcopenshell.util.element.get_types(element))
                 continue
             elif same_ifc_product and (element_type := ifcopenshell.util.element.get_type(element)):
-                assert type_ifc_class
-                elements_to_reassign[element_type] = type_ifc_class
-                elements_to_update.update(ifcopenshell.util.element.get_types(element_type))
+                occurrences = set(ifcopenshell.util.element.get_types(element_type))
+                if occurrences <= selected_elements:
+                    assert type_ifc_class
+                    elements_to_reassign[element_type] = type_ifc_class
+                    elements_to_update.update(occurrences)
+                else:
+                    # only some occurrences of the type are selected - reassign
+                    # just those, root.reassign_class will detach them from the type
+                    elements_to_reassign[element] = ifc_class
                 continue
 
             # non-typed element
