@@ -98,9 +98,9 @@ utility:
 
 .. code-block:: console
 
-    $ python -m ifcfm -h
+    $ ifcfm -h
 
-    usage: __main__.py [-h] [-p PRESET] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE]
+    usage: ifcfm [-h] [-p PRESET] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE]
 
     Extracts FM data from IFC to spreadsheets
 

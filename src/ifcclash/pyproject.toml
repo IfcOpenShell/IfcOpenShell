@@ -29,6 +29,9 @@ Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
+[project.scripts]
+ifcclash = "ifcclash.__main__:main"
+
 [tool.setuptools.packages.find]
 include = ["ifcclash"]
 exclude = ["test*"]
