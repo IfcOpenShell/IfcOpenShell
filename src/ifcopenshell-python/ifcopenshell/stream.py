@@ -188,13 +188,13 @@ try:
                     # For creating C++ instances so that some of the calls here work
                     self.shadow_file = ifcopenshell.file(schema=self.schema)
                     # But we only create them once per type because we basically only need access to 'semi-static' such as get_attribute_category()
-                    self.instance_map = {}
+                    self.instance_map: dict[str, ifcopenshell.entity_instance] = {}
 
                 offset += len(line) + newline_character
 
             self.preprocess_schema()
 
-        def _create_entity(self, type):
+        def _create_entity(self, type: str) -> ifcopenshell.entity_instance:
             if inst := self.instance_map.get(type):
                 return inst
             else:
@@ -328,6 +328,7 @@ try:
 
     class stream_entity:
         stream_wrapper: stream_wrapper
+        wrapped_data: ifcopenshell.entity_instance
 
         def __init__(self, id: int, ifc_class: str, file: stream = None):
             if not ifc_class:

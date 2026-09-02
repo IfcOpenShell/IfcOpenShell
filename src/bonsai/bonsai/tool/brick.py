@@ -31,6 +31,7 @@ import ifcopenshell.guid
 import ifcopenshell.util.brick
 import ifcopenshell.util.element
 import ifcopenshell.util.system
+from brickschema.persistent import Changeset
 
 import bonsai.core.brick
 import bonsai.core.tool
@@ -580,7 +581,7 @@ class BrickStore:
 
     @classmethod
     @contextmanager
-    def new_changeset(cls) -> Generator[Any, None, None]:
+    def new_changeset(cls) -> Generator[Changeset]:
         cls.current_changesets += 1
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             yield cs
