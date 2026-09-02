@@ -701,6 +701,7 @@ class Model:
     def get_material_layer_parameters(cls, element): pass
     def get_slab_clipping_bmesh(cls, obj): pass
     def get_usage_type(cls, element): pass
+    def get_local_horizontal_extents(cls, obj): pass
     def get_wall_axis(cls, obj, layers=None): pass
     def import_curve(cls, curve, obj=None, position=None): pass
     def import_profile(cls, profile, obj=None, position=None): pass
