@@ -37,6 +37,7 @@ if TYPE_CHECKING:
         AddEditPropertyEntry,
         DeletePsetEntry,
         GlobalPsetProperties,
+        IfcProperty,
         PsetProperties,
         RenamePropertyEntry,
     )
@@ -47,6 +48,15 @@ class Pset(bonsai.core.tool.Pset):
     PSET_TYPE = Literal["PSET", "QTO"]
     BulkOperationType = Literal["ADD_EDIT", "RENAME", "DELETE"]
     BULK_OPERATION_TYPES = ("ADD_EDIT", "RENAME", "DELETE")
+
+    #: Maps IfcPropertyBoundedValue Blender attribute names to the IFC attribute they represent.
+    #: Kept in sync with `bonsai.bim.module.pset.prop.BOUNDED_VALUE_ATTRS` (duplicated here to
+    #: avoid a runtime circular import between this module and `bonsai.bim.module.pset.prop`).
+    BOUNDED_VALUE_ATTRS: tuple[tuple[str, str], ...] = (
+        ("lower_bound_value", "LowerBoundValue"),
+        ("upper_bound_value", "UpperBoundValue"),
+        ("set_point_value", "SetPointValue"),
+    )
 
     @classmethod
     def get_global_pset_props(cls) -> GlobalPsetProperties:
@@ -268,6 +278,16 @@ class Pset(bonsai.core.tool.Pset):
                     new = simple_prop.enumerated_value.enumerated_values.add()
                     setattr(new, data_type, enum)
                     new.is_selected = enum in selected_enum_items
+            elif prop.is_a("IfcPropertyBoundedValue"):
+                bounded_prop = props.properties.add()
+                bounded_prop.name = prop.Name
+                bounded_prop.value_type = "IfcPropertyBoundedValue"
+                metadata = bounded_prop.metadata
+                metadata.name = prop.Name
+                metadata.is_null = True
+                metadata.is_optional = True
+                process_prop_description(metadata)
+                cls.set_bounded_value_attributes(bounded_prop, prop)
             else:
                 if prop.is_a("IfcPropertySingleValue"):
                     value = prop.NominalValue.wrappedValue if prop.NominalValue else None
@@ -285,6 +305,69 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.special_type = cls.get_special_type_for_prop(prop)
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
                 process_prop_description(metadata)
+
+    @classmethod
+    def get_bounded_value_dict(cls, prop: IfcProperty) -> dict[str, Any]:
+        """Builds the dict expected by ``ifcopenshell.api.pset.edit_pset`` for a bounded value
+        property row, containing only the sub-fields the user hasn't marked as null."""
+        return {
+            ifc_attribute: attr.get_value()
+            for attr_name, ifc_attribute in cls.BOUNDED_VALUE_ATTRS
+            if not (attr := getattr(prop.bounded_value, attr_name)).is_null
+        }
+
+    @classmethod
+    def set_bounded_value_attributes(
+        cls,
+        bounded_prop: IfcProperty,
+        prop: Union[ifcopenshell.entity_instance, None] = None,
+        data_type: Union[str, None] = None,
+    ) -> None:
+        """Populates the Lower/Upper/SetPoint Attribute sub-fields of a bounded value property row.
+
+        :param prop: An existing ``IfcPropertyBoundedValue`` to read values from, if any.
+        :param data_type: Fallback Blender data type (e.g. ``"float"``) used for sub-fields that
+            have no existing value yet, e.g. when proposing a still-empty property from a template.
+        """
+        resolved_data_type = data_type
+        if prop is not None and resolved_data_type is None:
+            for _, ifc_attribute in cls.BOUNDED_VALUE_ATTRS:
+                if (value := getattr(prop, ifc_attribute, None)) is not None:
+                    resolved_data_type = ifcopenshell.util.attribute.get_primitive_type(
+                        tool.Ifc.schema().declaration_by_name(value.is_a())
+                    )
+                    break
+        resolved_data_type = resolved_data_type or "float"
+
+        for attr_name, ifc_attribute in cls.BOUNDED_VALUE_ATTRS:
+            attr = getattr(bounded_prop.bounded_value, attr_name)
+            attr.name = ifc_attribute
+            attr.is_optional = True
+            value = getattr(prop, ifc_attribute, None) if prop is not None else None
+            if value is not None:
+                attr.set_value(value.wrappedValue)
+                attr.is_null = False
+            else:
+                attr.data_type = resolved_data_type
+                attr.is_null = True
+
+    @classmethod
+    def import_bounded_value_from_template(
+        cls,
+        pset_template: ifcopenshell.entity_instance,
+        prop_template: ifcopenshell.entity_instance,
+        props: PsetProperties,
+    ) -> None:
+        prop = props.properties.add()
+        prop.name = prop_template.Name
+        prop.value_type = "IfcPropertyBoundedValue"
+        metadata = prop.metadata
+        metadata.name = prop_template.Name
+        metadata.is_null = True
+        metadata.is_optional = True
+        metadata.ifc_class = pset_template.Name
+        bonsai.bim.helper.add_attribute_description(metadata, prop_template)
+        cls.set_bounded_value_attributes(prop, data_type=cls.get_prop_template_primitive_type(prop_template))
 
     @classmethod
     def get_prop_template_primitive_type(cls, prop_template: ifcopenshell.entity_instance) -> str:
@@ -416,9 +499,15 @@ class Pset(bonsai.core.tool.Pset):
                     continue
                 cls.import_enumerated_value_from_template(prop_template, simplified_data, props)
 
+            elif prop_template.TemplateType == "P_BOUNDEDVALUE":
+                if prop_data:
+                    # Existing property (of any class) will be added by import_pset_from_existing,
+                    # which can read all of LowerBoundValue/UpperBoundValue/SetPointValue directly.
+                    continue
+                cls.import_bounded_value_from_template(pset_template, prop_template, props)
+
             else:
                 # NOTE: currently unsupported types:
-                # - P_BOUNDEDVALUE
                 # - P_LISTVALUE
                 # - P_REFERENCEVALUE
                 # - P_TABLEVALUE
