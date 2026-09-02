@@ -420,7 +420,12 @@ class BaseDecorator:
 
         prefs = tool.Blender.get_addon_preferences()
         magic_font_scale = prefs.doc.magic_font_scale
-        font_size_px = int(magic_font_scale * mm_to_px) * font_size_mm / 2.5
+        # NOTE: do not wrap `magic_font_scale * mm_to_px` in int(). mm_to_px changes with viewport
+        # zoom, screen DPI and the drawing's Raster X resolution, so truncating it quantised the
+        # paper-mm-to-pixel conversion. That made the on-screen text size relative to the drawing
+        # jump in steps and drift away from the SVG/print size (see #3353, #3683). Keeping it as a
+        # float ties the viewport font size to the same resolution-independent mm basis the SVG uses.
+        font_size_px = magic_font_scale * mm_to_px * font_size_mm / 2.5
         pos = pos - line_no * font_size_px * rotation_matrix[1]
 
         blf.size(font_id, font_size_px)
