@@ -70,8 +70,13 @@ class SvIfcGetAttribute(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                 self.value_out.append(entity[int(attribute_name)])
             else:
                 self.value_out.append(entity.get_info()[attribute_name])
-        except:
-            pass
+        except (KeyError, IndexError, ValueError):
+            # Keep a placeholder so value_out stays aligned, entity by
+            # entity, with the input entity list. Silently dropping the
+            # entry here would shift every later entity one position
+            # earlier and misalign the output against callers that zip it
+            # back against their own entity list.
+            self.value_out.append(None)
 
 
 def register():

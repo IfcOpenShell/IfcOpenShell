@@ -51,12 +51,14 @@ class SvIfcByQuery(bpy.types.Node, SverchCustomTreeNode, helper.SvIfcCore):
         if not self.inputs["query"].sv_get()[0][0]:
             return
         self.file = SvIfcStore.get_file()
+        self.entities_out = []
         self.sv_input_names = ["query"]
         super().process()
+        self.outputs["Entity"].sv_set(self.entities_out)
 
     def process_ifc(self, query: str) -> None:
         elements = ifcopenshell.util.selector.filter_elements(self.file, query)
-        self.outputs["Entity"].sv_set(elements)
+        self.entities_out.extend(elements)
 
 
 def register():

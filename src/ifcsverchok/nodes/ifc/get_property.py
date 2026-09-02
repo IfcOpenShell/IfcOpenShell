@@ -69,8 +69,13 @@ class SvIfcGetProperty(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
         for entity in self.entities:
             try:
                 self.value_out.append(ifcopenshell.util.element.get_psets(entity)[pset_name][prop_name])
-            except:
-                pass
+            except KeyError:
+                # Keep a placeholder so value_out stays aligned, entity by
+                # entity, with self.entities. Silently dropping the entry
+                # here would shift every later entity one position earlier
+                # and misalign the output against callers that zip it back
+                # against their own entity list.
+                self.value_out.append(None)
         self.outputs["value"].sv_set(self.value_out)
 
 
