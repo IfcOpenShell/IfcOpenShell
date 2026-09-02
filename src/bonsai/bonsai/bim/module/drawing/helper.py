@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import math
 
 import bpy
@@ -25,6 +26,12 @@ import mathutils.geometry
 from mathutils import Vector
 
 import bonsai.tool as tool
+
+logger = logging.getLogger(__name__)
+
+# Files whose LENGTHUNIT is missing a Name are schema-non-conformant. Warn about
+# them once per file instead of once per formatted distance (#8885).
+_warned_nameless_length_units: set[tuple[int, int]] = set()
 
 # Code taken and updated from https://blenderartists.org/t/detecting-intersection-of-bounding-boxes/457520/2
 
@@ -181,30 +188,41 @@ def format_distance(
     area_unit_symbol = " m2" if unit_system == "METRIC" else " ft2"
 
     # Get IFC Unit Settings
-    if tool.Ifc.get():
+    ifc_file = tool.Ifc.get()
+    if ifc_file:
         unit_scale = 1
-        if length_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT"):
-            unit_system = "METRIC" if length_unit.Name == "METRE" else "IMPERIAL"
-            unit_length = length_unit.Name.upper()
-            if hasattr(length_unit, "Prefix") and length_unit.Prefix:
-                unit_length = length_unit.Prefix + length_unit.Name
-            unit_length_mapping = {
-                "MILE": "MILES",
-                "FOOT": "FEET",
-                "INCH": "INCHES",
-                "KILOMETRE": "KILOMETERS",
-                "METRE": "METERS",
-                "DECIMETRE": "DECIMETERS",
-                "CENTIMETRE": "CENTIMETERS",
-                "MILLIMETRE": "MILLIMETERS",
-                "MICROMETRE": "MICROMETERS",
-            }
-            # Fall through for units without a dedicated formatter (e.g.
-            # HECTOMETRE) so they use the adaptive branch instead of a
-            # KeyError (#8255).
-            unit_length = unit_length_mapping.get(unit_length, unit_length)
+        if length_unit := ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT"):
+            if length_unit.Name is None:
+                warn_key = (id(ifc_file), length_unit.id())
+                if warn_key not in _warned_nameless_length_units:
+                    _warned_nameless_length_units.add(warn_key)
+                    logger.warning(
+                        "IfcSIUnit #%d (LENGTHUNIT) has no Name, which is not schema-conformant. "
+                        "Falling back to Blender's scene unit settings for distance formatting.",
+                        length_unit.id(),
+                    )
+            else:
+                unit_system = "METRIC" if length_unit.Name == "METRE" else "IMPERIAL"
+                unit_length = length_unit.Name.upper()
+                if hasattr(length_unit, "Prefix") and length_unit.Prefix:
+                    unit_length = length_unit.Prefix + length_unit.Name
+                unit_length_mapping = {
+                    "MILE": "MILES",
+                    "FOOT": "FEET",
+                    "INCH": "INCHES",
+                    "KILOMETRE": "KILOMETERS",
+                    "METRE": "METERS",
+                    "DECIMETRE": "DECIMETERS",
+                    "CENTIMETRE": "CENTIMETERS",
+                    "MILLIMETRE": "MILLIMETERS",
+                    "MICROMETRE": "MICROMETERS",
+                }
+                # Fall through for units without a dedicated formatter (e.g.
+                # HECTOMETRE) so they use the adaptive branch instead of a
+                # KeyError (#8255).
+                unit_length = unit_length_mapping.get(unit_length, unit_length)
         # For now we only format area in IFC Units
-        if area_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
+        if area_unit := ifcopenshell.util.unit.get_project_unit(ifc_file, "AREAUNIT"):
             area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(area_unit)
 
     unit_fraction = True if unit_system == "IMPERIAL" else False
