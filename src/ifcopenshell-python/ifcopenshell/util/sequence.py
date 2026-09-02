@@ -221,6 +221,77 @@ def is_day_in_work_time(day, work_time: ifcopenshell.entity_instance) -> bool:
     return is_day_in_work_time
 
 
+def _recurrence_base_match(recurrence: ifcopenshell.entity_instance, recurrence_type: RECURRENCE_TYPE, day) -> bool:
+    """Whether `day` matches the pattern's day/week/month shape, ignoring Interval and Occurrences."""
+    if recurrence_type == "DAILY":
+        return True
+    elif recurrence_type == "WEEKLY":
+        return (day.weekday() + 1) in recurrence.WeekdayComponent
+    elif recurrence_type == "MONTHLY_BY_DAY_OF_MONTH":
+        return day.day in recurrence.DayComponent
+    elif recurrence_type == "MONTHLY_BY_POSITION":
+        return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(day.day / 7) + 1 == recurrence.Position
+    elif recurrence_type == "YEARLY_BY_DAY_OF_MONTH":
+        return day.month in recurrence.MonthComponent and day.day in recurrence.DayComponent
+    elif recurrence_type == "YEARLY_BY_POSITION":
+        return (
+            day.month in recurrence.MonthComponent
+            and (day.weekday() + 1) in recurrence.WeekdayComponent
+            and floor(day.day / 7) + 1 == recurrence.Position
+        )
+    return False
+
+
+def _recurrence_cycle_index(recurrence_type: RECURRENCE_TYPE, start: datetime.date, day: datetime.date):
+    """The Nth day/week/month/year cycle `day` falls in, counted from `start`. None if before `start`."""
+    if day < start:
+        return None
+    if recurrence_type == "DAILY":
+        return (day - start).days
+    elif recurrence_type == "WEEKLY":
+        start_week = start - datetime.timedelta(days=start.weekday())
+        day_week = day - datetime.timedelta(days=day.weekday())
+        return (day_week - start_week).days // 7
+    elif recurrence_type in ("MONTHLY_BY_DAY_OF_MONTH", "MONTHLY_BY_POSITION"):
+        return (day.year - start.year) * 12 + (day.month - start.month)
+    elif recurrence_type in ("YEARLY_BY_DAY_OF_MONTH", "YEARLY_BY_POSITION"):
+        return day.year - start.year
+    return None
+
+
+def _is_recurring_day_applicable(
+    work_time: ifcopenshell.entity_instance,
+    day: datetime.date,
+    recurrence: ifcopenshell.entity_instance,
+    recurrence_type: RECURRENCE_TYPE,
+) -> bool:
+    """Interval and Occurrences handling, anchored on the work time's Start (attribute 4)."""
+    start = ifcopenshell.util.date.ifc2datetime(work_time[4])
+    if isinstance(start, datetime.datetime):
+        start = datetime.date(start.year, start.month, start.day)
+    if not _recurrence_base_match(recurrence, recurrence_type, day):
+        return False
+    cycle = _recurrence_cycle_index(recurrence_type, start, day)
+    if cycle is None:
+        return False
+    interval = recurrence.Interval or 1
+    if cycle % interval != 0:
+        return False
+    occurrences = recurrence.Occurrences
+    if not occurrences:
+        return True
+    count = 0
+    current = start
+    while current <= day:
+        current_cycle = _recurrence_cycle_index(recurrence_type, start, current)
+        if current_cycle % interval == 0 and _recurrence_base_match(recurrence, recurrence_type, current):
+            count += 1
+            if count > occurrences:
+                return False
+        current += datetime.timedelta(days=1)
+    return count <= occurrences
+
+
 def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day) -> bool:
     if not is_day_in_work_time(day, work_time):
         return False
@@ -237,28 +308,37 @@ def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day)
         # 4 IfcWorktime Start
         if not work_time[4]:
             return False
-        return False  # TODO
+        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
     elif recurrence_type == "WEEKLY":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (day.weekday() + 1) in recurrence.WeekdayComponent
         # 4 IfcWorktime Start
         if not work_time[4]:
             return False
-        return False  # TODO
+        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
     elif recurrence_type == "MONTHLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
             return day.day in recurrence.DayComponent
-        return False  # TODO
+        # 4 IfcWorktime Start
+        if not work_time[4]:
+            return False
+        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
     elif recurrence_type == "MONTHLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(day.day / 7) + 1 == recurrence[
                 "Position"
             ]
-        return False  # TODO
+        # 4 IfcWorktime Start
+        if not work_time[4]:
+            return False
+        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
     elif recurrence_type == "YEARLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
             return day.month in recurrence.MonthComponent and day.day in recurrence.DayComponent
-        return False  # TODO
+        # 4 IfcWorktime Start
+        if not work_time[4]:
+            return False
+        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
     elif recurrence_type == "YEARLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (
@@ -266,7 +346,10 @@ def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day)
                 and (day.weekday() + 1) in recurrence.WeekdayComponent
                 and floor(day.day / 7) + 1 == recurrence.Position
             )
-        return False  # TODO
+        # 4 IfcWorktime Start
+        if not work_time[4]:
+            return False
+        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
 
 
 def get_task_work_schedule(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
