@@ -363,6 +363,71 @@ class Unit(bonsai.core.tool.Unit):
         return name.split("/")[0] if "/" in name else None
 
     @classmethod
+    def get_unit_si_scale(cls, unit: ifcopenshell.entity_instance) -> float | None:
+        """Get a named unit's magnitude in SI units, or None if it cannot be determined."""
+        scale = 1.0
+        while unit.is_a("IfcConversionBasedUnit"):
+            value = unit.ConversionFactor.ValueComponent.wrappedValue
+            if not isinstance(value, (int, float)):
+                return None
+            scale *= value
+            unit = unit.ConversionFactor.UnitComponent
+        if unit.is_a("IfcSIUnit"):
+            return scale * ifcopenshell.util.unit.get_prefix_multiplier(unit.Prefix)
+        return None
+
+    @classmethod
+    def get_project_rescale_factor(cls, new_si_scale: float | None) -> float | None:
+        """Get the factor by which stored lengths would physically rescale, or None if they wouldn't.
+
+        Compares the prospective SI scale of the project length unit against the
+        current one. Returns None when the scale is unknown, unchanged, or the
+        project has no length-bearing data worth warning about yet.
+        """
+        if new_si_scale is None or not new_si_scale:
+            return None
+        ifc_file = tool.Ifc.get()
+        if not ifc_file.by_type("IfcShapeRepresentation") and not ifc_file.by_type("IfcMaterialLayer"):
+            return None
+        old_si_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        if not old_si_scale or math.isclose(new_si_scale, old_si_scale, rel_tol=1e-9):
+            return None
+        return new_si_scale / old_si_scale
+
+    @classmethod
+    def is_project_unit(cls, unit: ifcopenshell.entity_instance) -> bool:
+        assignment = ifcopenshell.util.unit.get_unit_assignment(tool.Ifc.get())
+        return bool(assignment) and unit in (assignment.Units or ())
+
+    @classmethod
+    def get_assign_unit_rescale_factor(cls, unit: ifcopenshell.entity_instance) -> float | None:
+        """Get the rescale factor assigning this unit as project default would cause, or None."""
+        if getattr(unit, "UnitType", None) != "LENGTHUNIT":
+            return None
+        return cls.get_project_rescale_factor(cls.get_unit_si_scale(unit))
+
+    @classmethod
+    def get_edit_unit_rescale_factor(cls, unit: ifcopenshell.entity_instance) -> float | None:
+        """Get the rescale factor applying the currently edited unit attributes would cause, or None."""
+        if not unit.is_a("IfcSIUnit") or unit.UnitType != "LENGTHUNIT" or not cls.is_project_unit(unit):
+            return None
+        attributes = cls.export_unit_attributes()
+        if attributes.get("UnitType") != "LENGTHUNIT" or attributes.get("Name") != "METRE":
+            return None
+        return cls.get_project_rescale_factor(ifcopenshell.util.unit.get_prefix_multiplier(attributes.get("Prefix")))
+
+    @classmethod
+    def get_scene_units_rescale_factor(cls) -> float | None:
+        """Get the rescale factor assigning the Blender scene length unit would cause, or None."""
+        if not (name := cls.get_scene_unit_name("LENGTHUNIT")):
+            return None
+        if cls.is_si_unit(name):
+            new_scale = ifcopenshell.util.unit.get_prefix_multiplier(cls.get_scene_unit_si_prefix(name))
+        else:
+            new_scale = ifcopenshell.util.unit.si_conversions.get(name)
+        return cls.get_project_rescale_factor(new_scale)
+
+    @classmethod
     def import_unit_attributes(cls, unit: ifcopenshell.entity_instance) -> None:
         props = cls.get_unit_props()
 
