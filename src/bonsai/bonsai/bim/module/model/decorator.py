@@ -1533,10 +1533,11 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
         if not (data := self.obj_data):
             return
         relating_type = self.relating_type
+        relating_class = relating_type.is_a()
         model_props = tool.Model.get_model_props()
-        if relating_type.is_a("IfcDoorType"):
+        if relating_class in ("IfcDoorType", "IfcDoorStyle"):
             rl = float(model_props.rl1)
-        elif relating_type.is_a("IfcWindowType"):
+        elif relating_class in ("IfcWindowType", "IfcWindowStyle"):
             rl = float(model_props.rl2)
         else:
             rl = 0
@@ -1546,30 +1547,30 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
         mouse_point = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
         snap_obj = bpy.data.objects.get(snap_prop.snap_object)
         snap_element = tool.Ifc.get_entity(snap_obj)
+        if snap_element and (container := ifcopenshell.util.element.get_container(snap_element)):
+            container_obj = tool.Ifc.get_object(container)
+            mouse_point.z = container_obj.location.z
         rot_mat = Matrix()
-        if relating_type.is_a() in ["IfcDoorType", "IfcWindowType"] and snap_element and snap_element.is_a("IfcWall"):
+        if (
+            relating_class in ("IfcDoorType", "IfcDoorStyle", "IfcWindowType", "IfcWindowStyle")
+            and snap_element
+            and snap_element.is_a("IfcWall")
+        ):
             layers = tool.Model.get_material_layer_parameters(snap_element)
             axes = tool.Model.get_wall_axis(snap_obj, layers=layers)
             axis_base = axes["base"]
             axis_side = axes["side"]
             point_on_base_axis = tool.Cad.point_on_edge(mouse_point, axis_base)
             point_on_side_axis = tool.Cad.point_on_edge(mouse_point, axis_side)
-            if (point_on_base_axis - mouse_point).length_squared <= (point_on_side_axis - mouse_point).length_squared:
-                # mouse is snapped to the base axis, the preview looks exactly like the placed door / window
-                rot_mat = snap_obj.matrix_world
-            else:
+            # rotation only: the ghost is positioned by translate_mouse, so
+            # carrying the wall's own translation would displace it
+            rot_quat = snap_obj.matrix_world.to_quaternion()
+            if (point_on_base_axis - mouse_point).length_squared > (point_on_side_axis - mouse_point).length_squared:
                 # mouse is snapped to the side axis, the preview is inverted, rotate it now and correct x position later
-                rot_mat = (
-                    (snap_obj.matrix_world.to_quaternion() @ Quaternion(Vector((0, 0, 1)), radians(180)))
-                    .to_matrix()
-                    .to_4x4()
-                )
+                rot_quat = rot_quat @ Quaternion(Vector((0, 0, 1)), radians(180))
+            rot_mat = rot_quat.to_matrix().to_4x4()
 
             mouse_point.z = snap_obj.matrix_world.translation.z
-
-        if snap_element and (container := ifcopenshell.util.element.get_container(snap_element)):
-            container_obj = tool.Ifc.get_object(container)
-            mouse_point.z = container_obj.location.z
 
         obj_type = tool.Ifc.get_object(relating_type)
 
