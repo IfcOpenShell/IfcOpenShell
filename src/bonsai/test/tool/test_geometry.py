@@ -166,6 +166,35 @@ class TestGetActiveRepresentation(NewFile):
         assert subject.get_active_representation(obj) is None
 
 
+class TestGetDataRepresentation(NewFile):
+    def test_returns_representation_for_live_id(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation = ifc.createIfcShapeRepresentation()
+        mesh = bpy.data.meshes.new("Mesh")
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = representation.id()
+        assert subject.get_data_representation(mesh) == representation
+
+    def test_returns_none_when_mesh_has_no_id(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        mesh = bpy.data.meshes.new("Mesh")
+        assert subject.get_data_representation(mesh) is None
+
+    def test_returns_none_when_id_is_stale(self):
+        """A representation rebuild can free the old entity while obj.data
+        still tracks its id. Returning ``None`` keeps every UI redraw alive
+        instead of spamming ``RuntimeError`` from the by_id lookup."""
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation = ifc.createIfcShapeRepresentation()
+        mesh = bpy.data.meshes.new("Mesh")
+        stale_id = representation.id()
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
+        ifc.remove(representation)
+        assert subject.get_data_representation(mesh) is None
+
+
 class TestGetRepresentationId(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -297,6 +326,34 @@ class TestIsBodyRepresentation(NewFile):
         assert subject.is_body_representation(representation) is True
         context.ContextIdentifier = "Clearance"
         assert subject.is_body_representation(representation) is False
+
+
+class TestIsBooleanOperand(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        item = ifc.createIfcBooleanResult()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = item.id()
+        assert subject.is_boolean_operand(obj) is True
+
+    def test_returns_false_for_non_boolean_item(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        item = ifc.createIfcShapeRepresentation()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = item.id()
+        assert subject.is_boolean_operand(obj) is False
+
+    def test_returns_false_instead_of_raising_for_a_stale_ifc_definition_id(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        item = ifc.createIfcBooleanResult()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        stale_id = item.id()
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
+        ifc.remove(item)
+        assert subject.is_boolean_operand(obj) is False
 
 
 class TestIsBoxRepresentation(NewFile):
