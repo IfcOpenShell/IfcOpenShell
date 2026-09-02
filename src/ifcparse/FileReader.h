@@ -74,21 +74,33 @@ public:
 
     /// \brief Seek to an absolute byte position.
     /// \throws std::out_of_range if pos > size().
-    void seek(size_t pos);
+    void seek(size_t pos) {
+        if (pos > size()) throw std::out_of_range("seek out of range");
+        cursor_ = pos;
+    }
 
     /// \brief Return the current cursor position.
-    size_t tell() const;
+    size_t tell() const { return cursor_; }
 
     /// \brief Total file size in bytes.
-    size_t size() const;
+    size_t size() const { return contiguous_ ? contiguous_size_ : impl_->size(); }
 
     /// \brief Peek the byte at the current cursor.
     /// \throws std::out_of_range at EOF.
-    char peek() const;
+    char peek() const {
+        if (contiguous_) {
+            if (cursor_ >= contiguous_size_) throw std::out_of_range("peek at EOF");
+            return contiguous_[cursor_];
+        }
+        return peek_paged_();
+    }
 
     /// \brief Advance the cursor by n bytes (default 1).
     /// \throws std::out_of_range if advancing crosses EOF.
-    void increment(size_t n = 1);
+    void increment(size_t n = 1) {
+        if (cursor_ + n > size()) throw std::out_of_range("increment past EOF");
+        cursor_ += n;
+    }
 
     /// \brief Push the next sequential page (pushed backend only).
 	/// \param data Contents of the page.
@@ -102,18 +114,35 @@ public:
 
     /// \brief Returns true if the cursor is at or beyond the end of available data.
     /// For the pushed backend, EOF means all pushed bytes have been consumed.
-    bool eof() const;
+    bool eof() const { return cursor_ >= size(); }
 
     /// \brief Equivalent of peek() followed by increment(1)
-    char read();
+    char read() {
+        auto c = peek();
+        increment(1);
+        return c;
+    }
 
     /// \brief Equivalent of peek() followed by increment(1)
-    char get(size_t offset) const;
+    char get(size_t offset) const {
+        if (contiguous_) {
+            if (offset >= contiguous_size_) throw std::out_of_range("get out of range");
+            return contiguous_[offset];
+        }
+        return impl_->get(offset);
+    }
+
+    /// \brief Entire backing buffer, indexed by absolute file offset, when the backend
+    /// is stable contiguous memory (full-buffer or mmap); nullptr otherwise.
+    const char* contiguous_buffer() const { return contiguous_; }
 
     struct Impl {
         virtual ~Impl() = default;
         virtual size_t size() const = 0;
         virtual char get(size_t pos) const = 0;
+        /// \brief Backends with a stable in-memory buffer return it here so that the
+        /// per-character accessors can bypass virtual dispatch; default nullptr.
+        virtual const char* contiguous_data() const { return nullptr; }
         /// \brief Backend may support pushing pages; default throws.
         virtual void pushNextPage(const std::string&) {
             throw std::logic_error("push_next_page: backend does not support pushed mode");
@@ -126,6 +155,11 @@ public:
 private:
     std::shared_ptr<Impl> impl_;
     size_t cursor_ = 0;
+    const char* contiguous_ = nullptr;
+    size_t contiguous_size_ = 0;
+
+    void init_contiguous_();
+    char peek_paged_() const;
 };
 
 } // namespace IfcParse

@@ -190,6 +190,38 @@ Token IfcSpfLexer::Next() {
     if (character == '\'') {
         // If a string is encountered defer processing to the IfcCharacterDecoder
         str = *decoder_;
+    } else if (const char* buf = stream->contiguous_buffer()) {
+        // Bulk scan on contiguous storage to avoid per-character accessor calls
+        const size_t size = stream->size();
+        size_t end = pos + 1;
+        bool has_whitespace = false;
+        while (end < size) {
+            character = buf[end];
+            if (character == '(' ||
+                character == ')' ||
+                character == '=' ||
+                character == ',' ||
+                character == ';' ||
+                character == '/') {
+                break;
+            }
+            if (character == ' ' || character == '\r' || character == '\n' || character == '\t') {
+                has_whitespace = true;
+            }
+            ++end;
+        }
+        if (!has_whitespace) {
+            str.assign(buf + pos, end - pos);
+        } else {
+            str.clear();
+            for (size_t i = pos; i < end; ++i) {
+                character = buf[i];
+                if (!(character == ' ' || character == '\r' || character == '\n' || character == '\t')) {
+                    str.push_back(character);
+                }
+            }
+        }
+        stream->seek(end);
     } else {
         str.assign(&character, 1);
 
@@ -219,6 +251,34 @@ Token IfcSpfLexer::Next() {
 //
 void IfcSpfLexer::TokenString(size_t offset, std::string& buffer) {
     buffer.clear();
+    if (const char* buf = stream->contiguous_buffer()) {
+        const size_t size = stream->size();
+        size_t pos = offset;
+        while (pos < size) {
+            char character = buf[pos];
+            if (!buffer.empty() && (character == '(' ||
+                                    character == ')' ||
+                                    character == '=' ||
+                                    character == ',' ||
+                                    character == ';' ||
+                                    character == '/')) {
+                break;
+            }
+            ++pos;
+            if (character == ' ' ||
+                character == '\r' ||
+                character == '\n' ||
+                character == '\t') {
+                continue;
+            }
+            if (character == '\'') {
+                buffer = decoder_->get(pos);
+                break;
+            }
+            buffer.push_back(character);
+        }
+        return;
+    }
 	auto local_stream = *this->stream;
 	local_stream.seek(offset);
     while (!local_stream.eof()) {
