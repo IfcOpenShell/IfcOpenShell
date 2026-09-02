@@ -1933,7 +1933,9 @@ void SvgSerializer::write(const geometry_data& data) {
 					const double area = prop.Mass();
 					std::stringstream ss;
 					ss << std::setprecision(2) << std::fixed << std::showpoint << area;
-					labels.push_back(ss.str() + "m&#178;");
+					// UTF-8 for U+00B2, not an "&#178;" entity, to avoid double-escaping below.
+					labels.push_back(ss.str() + "m\xc2\xb2");
+					po()->first += " " + namespace_prefix_ + "area=\"" + ss.str() + "\"";
 				}
 
 				util::string_buffer path;
