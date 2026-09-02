@@ -1,0 +1,11 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2026-08-07T00:00:00',(''),(''),'IfcOpenShell','IfcOpenShell','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROJECT('1Fu_ePwY1DZxzRl9jojPIx',$,'P',$,$,$,$,$,$);
+#2=IFCWALL('3Fu_ePwY1DZxzRl9jojPIx',$,'42.123456',$,$,$,$,$,$);
+ENDSEC;
+END-ISO-10303-21;
