@@ -21,66 +21,110 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
+#include "../profile_helper.h"
+
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef* inst) {
-	return nullptr;
-
-	/*
 	const double d = inst->Thickness() * length_unit_ / 2.;
-	auto f = taxonomy::make<taxonomy::face>();
-	auto ofc = taxonomy::make<taxonomy::offset_curve>();
-	ofc->basis = map(inst->Curve());
-	ofc->offset = d;
-	// @todo
-	// f->children.push_back(ofc);
-	return f;
-	*/
+	const double eps = settings_.get<settings::Precision>().get();
 
-	// @todo we still need to handle this in the geometry libraries
-
-	/*
-	TopoDS_Wire wire;
-	if (!convert_wire(inst->Curve(), wire)) return false;
-
-	// BRepOffsetAPI_MakeOffset insists on creating circular arc
-	// segments for joining the curves that constitute the center
-	// line. This is probably not in accordance with the IFC spec.
-	// Although it does not specify a method to join segments
-	// explicitly, it does dictate 'a constant thickness along the
-	// curve'. Therefore for simple singular wires a quick
-	// alternative is provided that uses a straight join.
-
-	TopExp_Explorer exp(wire, TopAbs_EDGE);
-	TopoDS_Edge edge = TopoDS::Edge(exp.Current());
-	exp.Next();
-
-	if (!exp.More()) {
-		double u1, u2;
-		Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, u1, u2);
-
-		Handle(Geom_TrimmedCurve) trim = new Geom_TrimmedCurve(curve, u1, u2);
-
-		Handle(Geom_OffsetCurve) c1 = new Geom_OffsetCurve(trim,  d, gp::DZ());
-		Handle(Geom_OffsetCurve) c2 = new Geom_OffsetCurve(trim, -d, gp::DZ());
-
-		gp_Pnt c1a, c1b, c2a, c2b;
-		c1->D0(c1->FirstParameter(), c1a);
-		c1->D0(c1->LastParameter(), c1b);
-		c2->D0(c2->FirstParameter(), c2a);
-		c2->D0(c2->LastParameter(), c2b);
-
-		BRepBuilderAPI_MakeWire mw;
-		mw.Add(BRepBuilderAPI_MakeEdge(c1));
-		mw.Add(BRepBuilderAPI_MakeEdge(c1a, c2a));
-		mw.Add(BRepBuilderAPI_MakeEdge(c2));
-		mw.Add(BRepBuilderAPI_MakeEdge(c2b, c1b));
-		
-		face = BRepBuilderAPI_MakeFace(mw.Wire());
-	} else {
-		BRepOffsetAPI_MakeOffset offset(BRepBuilderAPI_MakeFace(gp_Pln(gp::Origin(), gp::DZ())));
-		offset.AddWire(wire);
-		offset.Perform(d);
-		face = BRepBuilderAPI_MakeFace(TopoDS::Wire(offset));
+	if (d < eps) {
+		logger_.Warning("GEO", 403, "Thickness below precision for:", inst);
+		return nullptr;
 	}
-	return true;
-	*/
+
+	auto mapped = map(inst->Curve());
+	if (!mapped) {
+		return nullptr;
+	}
+	auto crv = taxonomy::dcast<taxonomy::loop>(mapped);
+	if (!crv || crv->children.empty()) {
+		logger_.Warning("GEO", 404, "Unsupported centerline curve for:", inst);
+		return nullptr;
+	}
+	if (!crv->is_polyhedron()) {
+		logger_.Warning("GEO", 404, "Unsupported curved centerline segments for:", inst);
+		return nullptr;
+	}
+
+	std::vector<Eigen::Vector2d> pts;
+	pts.reserve(crv->children.size() + 1);
+	for (auto& e : crv->children) {
+		if (e->start.which() != 1 || e->end.which() != 1) {
+			logger_.Warning("GEO", 404, "Unsupported parametric trims on centerline for:", inst);
+			return nullptr;
+		}
+		Eigen::Vector2d p = boost::get<taxonomy::point3::ptr>(e->start)->ccomponents().head<2>();
+		Eigen::Vector2d q = boost::get<taxonomy::point3::ptr>(e->end)->ccomponents().head<2>();
+		if (pts.empty()) {
+			pts.push_back(p);
+		} else if ((pts.back() - p).norm() > eps) {
+			logger_.Warning("GEO", 405, "Unsupported discontinuous centerline for:", inst);
+			return nullptr;
+		}
+		pts.push_back(q);
+	}
+
+	if (pts.size() < 2 || (pts.front() - pts.back()).norm() < eps) {
+		logger_.Warning("GEO", 405, "Unsupported closed or degenerate centerline for:", inst);
+		return nullptr;
+	}
+
+	const size_t n = pts.size();
+	std::vector<Eigen::Vector2d> normals(n - 1);
+	for (size_t i = 0; i < n - 1; ++i) {
+		Eigen::Vector2d t = pts[i + 1] - pts[i];
+		const double l = t.norm();
+		if (l < eps) {
+			logger_.Warning("GEO", 405, "Degenerate centerline segment for:", inst);
+			return nullptr;
+		}
+		t /= l;
+		normals[i] = Eigen::Vector2d(-t.y(), t.x());
+	}
+
+	// Straight miter joins at the vertices, because the profile prescribes a
+	// constant thickness along the curve, which the arc joins of a generic
+	// offset algorithm would violate.
+	std::vector<Eigen::Vector2d> miters(n);
+	miters.front() = normals.front();
+	miters.back() = normals.back();
+	for (size_t i = 1; i < n - 1; ++i) {
+		const double denom = 1. + normals[i - 1].dot(normals[i]);
+		if (denom < 1.e-9) {
+			logger_.Warning("GEO", 405, "Centerline reverses onto itself for:", inst);
+			return nullptr;
+		}
+		miters[i] = (normals[i - 1] + normals[i]) / denom;
+	}
+
+	std::vector<Eigen::Vector2d> polygon;
+	polygon.reserve(2 * n);
+	for (size_t i = 0; i < n; ++i) {
+		polygon.push_back(pts[i] - d * miters[i]);
+	}
+	for (size_t i = n; i-- > 0;) {
+		polygon.push_back(pts[i] + d * miters[i]);
+	}
+
+	double twice_area = 0.;
+	for (size_t i = 0; i < polygon.size(); ++i) {
+		const auto& a = polygon[i];
+		const auto& b = polygon[(i + 1) % polygon.size()];
+		twice_area += a.x() * b.y() - b.x() * a.y();
+	}
+	if (twice_area < 0.) {
+		std::reverse(polygon.begin(), polygon.end());
+	}
+
+	std::vector<taxonomy::point3::ptr> ps;
+	ps.reserve(polygon.size() + 1);
+	for (auto& p : polygon) {
+		ps.push_back(taxonomy::make<taxonomy::point3>(p.x(), p.y(), 0.));
+	}
+	ps.push_back(ps.front());
+
+	auto loop = polygon_from_points(ps);
+	auto face = taxonomy::make<taxonomy::face>();
+	face->children = { loop };
+	return face;
 }
