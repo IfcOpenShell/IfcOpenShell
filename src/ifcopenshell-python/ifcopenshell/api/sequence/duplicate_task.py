@@ -21,7 +21,6 @@ import ifcopenshell.api.nest
 import ifcopenshell.api.owner
 import ifcopenshell.api.sequence
 import ifcopenshell.guid
-import ifcopenshell.util.date
 import ifcopenshell.util.element
 
 
@@ -157,16 +156,22 @@ class Usecase:
                             relating_process=relating_process,
                             related_process=related_process,
                         )
-                        if inverse.TimeLag:
-                            ifcopenshell.api.sequence.assign_lag_time(
+                        if inverse.TimeLag and inverse.TimeLag.LagValue is not None:
+                            # LagValue may be an IfcDuration (ISO 8601 string) or an
+                            # IfcRatioMeasure (a plain float, e.g. a percentage of the
+                            # predecessor's duration). assign_lag_time only creates
+                            # duration-typed lags, so create a placeholder and let
+                            # edit_lag_time set the value with the correct type.
+                            new_lag_time = ifcopenshell.api.sequence.assign_lag_time(
                                 self.file,
                                 rel_sequence=rel,
-                                lag_value=(
-                                    ifcopenshell.util.date.ifc2datetime(inverse.TimeLag.LagValue.wrappedValue)
-                                    if inverse.TimeLag.LagValue
-                                    else None
-                                ),
+                                lag_value="P0D",
                                 duration_type=inverse.TimeLag.DurationType,
+                            )
+                            ifcopenshell.api.sequence.edit_lag_time(
+                                self.file,
+                                lag_time=new_lag_time,
+                                attributes={"LagValue": inverse.TimeLag.LagValue.wrappedValue},
                             )
 
     def create_object_reference(
