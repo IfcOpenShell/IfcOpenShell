@@ -151,7 +151,7 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytest --dest=./wheels
 	# Provides Brickschema functionality
 	# Is not platform specific but has platform specific dependencies.
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "brickschema[persistence]==0.7.6a2" $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "brickschema[persistence]" $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required for SVG to DXF conversion
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download ezdxf $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by bcf
