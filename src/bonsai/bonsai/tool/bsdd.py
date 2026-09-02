@@ -232,11 +232,19 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 )
                 dictionary_name = response.get("name", "")
                 dictionary_namespace_uri = response.get("uri", "")
-                for _class in sorted(response.get("classes", []), key=lambda c: c["referenceCode"]):
+                # `referenceCode`, `name` and `uri` are all optional in the bSDD API
+                # response (see bsdd.ClassListItemContractV1), so classes missing them
+                # must not crash the search. Sort classes with a reference code first,
+                # keeping those without one at the end in their original order.
+                classes = sorted(
+                    response.get("classes", []),
+                    key=lambda c: (c.get("referenceCode") is None, c.get("referenceCode") or ""),
+                )
+                for _class in classes:
                     prop = bprops.classifications.add()
-                    prop.name = _class["name"]
-                    prop.reference_code = _class["referenceCode"]
-                    prop.uri = _class["uri"]
+                    prop.name = _class.get("name", "")
+                    prop.reference_code = _class.get("referenceCode", "")
+                    prop.uri = _class.get("uri", "")
                     prop.dictionary_name = dictionary_name
                     prop.dictionary_namespace_uri = dictionary_namespace_uri
 
