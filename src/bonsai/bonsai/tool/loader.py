@@ -873,10 +873,16 @@ class Loader(bonsai.core.tool.Loader):
         element: ifcopenshell.entity_instance,
         representation: ifcopenshell.entity_instance,
         shape: W.TriangulationElement,
+        existing_camera: Union[bpy.types.Camera, None] = None,
     ) -> bpy.types.Camera:
-        """Create camera data.
+        """Create or update camera data.
 
         Camera props are automatically updated based on ``element`` and ``shape``.
+        If ``existing_camera`` is given, it is updated in place instead of
+        creating a new data-block. BIMCameraProperties (Width, Height, and
+        the rest of the drawing settings) live on the camera data-block, so
+        replacing it invalidates anything still referencing the old one,
+        see #9031.
         """
         geometry = shape.geometry
         width = ifcopenshell.util.shape.get_x(geometry)
@@ -886,7 +892,11 @@ class Loader(bonsai.core.tool.Loader):
         if any(e.is_a() == "IfcRectangularPyramid" for e in tool.Ifc.get().traverse(representation)):
             camera_type = "PERSP"
 
-        camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
+        if existing_camera is not None:
+            camera = existing_camera
+            camera.name = tool.Loader.get_mesh_name_from_shape(geometry)
+        else:
+            camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
         props = tool.Drawing.get_camera_props(camera)
         props.camera_type = camera_type
         camera.show_limits = True
