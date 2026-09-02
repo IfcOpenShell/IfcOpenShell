@@ -779,9 +779,21 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
         try {
             next_token = lexer_->Next();
         } catch (const IfcException& e) {
+            // #3460 An exception escaping the tokenizer means the stream cannot be
+            // advanced any further (e.g. a truncated or unterminated token at the
+            // end of the file). Parsing genuinely terminates here, so flag the file
+            // as invalid instead of silently reporting success. Without this, a throw
+            // that happens once the stream is already at EOF slips past the
+            // "!eof && Token_NONE" check below and leaves good_ == SUCCESS. Recoverable
+            // single-instance errors are handled by the SYN 3/4/5 paths above and never
+            // reach here.
+            good_ = file_open_status::INVALID_SYNTAX;
             logger_.get().Message(Logger::LOG_ERROR, "SYN", 6, std::string(e.what()) + ". Parsing terminated");
+            break;
         } catch (...) {
+            good_ = file_open_status::INVALID_SYNTAX;
             logger_.get().Message(Logger::LOG_ERROR, "SYN", 7, "Parsing terminated");
+            break;
         }
 
         if (!lexer_->stream->eof() && next_token.type == Token_NONE) {
