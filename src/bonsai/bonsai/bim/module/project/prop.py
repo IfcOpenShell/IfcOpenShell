@@ -327,6 +327,15 @@ class PendingArrayRepair(PropertyGroup):
 class BIMProjectProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_loading: BoolProperty(name="Is Loading", default=False)
+    advanced_load_filepath: StringProperty(
+        name="Advanced Load Pending Filepath",
+        description=(
+            "Transient path of the file being previewed in Advanced import mode. The Save target is deliberately "
+            "left unchanged while this is set, and is only committed to this path once the user clicks "
+            '"Load Project Elements" (see #8611)'
+        ),
+        options={"SKIP_SAVE"},
+    )
     mvd: StringProperty(name="MVD")
     author_name: StringProperty(name="Author")
     author_email: StringProperty(name="Author Email")
@@ -532,6 +541,7 @@ class BIMProjectProperties(PropertyGroup):
     if TYPE_CHECKING:
         is_editing: bool
         is_loading: bool
+        advanced_load_filepath: str
         mvd: str
         author_name: str
         author_email: str
