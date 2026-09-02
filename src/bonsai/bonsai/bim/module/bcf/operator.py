@@ -555,6 +555,15 @@ class AddBcfViewpoint(bpy.types.Operator):
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
 
+        # Align the camera to the active 3D view for the snapshot, then restore it.
+        assert isinstance(blender_camera.data, bpy.types.Camera)
+        original_matrix_world = blender_camera.matrix_world.copy()
+        original_ortho_scale = blender_camera.data.ortho_scale
+        space = tool.Blender.get_view3d_space()
+        if space and space.region_3d.view_perspective != "CAMERA":
+            with context.temp_override(**tool.Blender.get_viewport_context()):
+                bpy.ops.view3d.camera_to_view()
+
         direction = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 0.0, -1.0))
         up = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 1.0, 0.0))
 
@@ -626,6 +635,9 @@ class AddBcfViewpoint(bpy.types.Operator):
         with open(blender_render.filepath, "rb") as f:
             snapshot = f.read()
         # viewpoint.snapshot = blender_render.filepath
+
+        blender_camera.matrix_world = original_matrix_world
+        blender_camera.data.ortho_scale = original_ortho_scale
 
         if isinstance(visualization_info, bcf.v2.model.VisualizationInfo):
             vizinfo = bcf.v2.visinfo.VisualizationInfoHandler(visualization_info=visualization_info, snapshot=snapshot)
