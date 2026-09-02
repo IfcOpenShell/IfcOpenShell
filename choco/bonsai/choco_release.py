@@ -229,7 +229,7 @@ run(
         "mono",
         "/opt/chocolatey/choco.exe",
         "setapikey",
-        "--key={choco_token}",
+        f"--key={choco_token}",
         "--source=https://push.chocolatey.org/",
         "--allow-unofficial",
     ]
