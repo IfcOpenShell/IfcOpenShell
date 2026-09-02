@@ -1246,37 +1246,39 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def toggle_spaces_visibility_wired_and_textured(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
-        first_obj = tool.Ifc.get_object(spaces[0])
-        assert isinstance(first_obj, bpy.types.Object)
-        obj: bpy.types.Object
+        # Spaces may have no corresponding Blender object (e.g. it was deleted
+        # without going through Bonsai's IFC-aware delete), so skip those instead of crashing.
+        objs = [obj for space in spaces if (obj := tool.Ifc.get_object(space)) is not None]
+        if not objs:
+            return
+        first_obj = objs[0]
         if first_obj.display_type == "TEXTURED":
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
+            for obj in objs:
                 obj.show_wire = True
                 obj.display_type = "WIRE"
             return
 
         elif first_obj.display_type == "WIRE":
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
+            for obj in objs:
                 obj.show_wire = False
                 obj.display_type = "TEXTURED"
             return
 
     @classmethod
     def toggle_hide_spaces(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
-        first_obj = tool.Ifc.get_object(spaces[0])
-        assert isinstance(first_obj, bpy.types.Object)
-        obj: bpy.types.Object
+        # Spaces may have no corresponding Blender object (e.g. it was deleted
+        # without going through Bonsai's IFC-aware delete), so skip those instead of crashing.
+        objs = [obj for space in spaces if (obj := tool.Ifc.get_object(space)) is not None]
+        if not objs:
+            return
+        first_obj = objs[0]
         if first_obj.hide_get() == False:
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
+            for obj in objs:
                 obj.hide_set(True)
             return
 
         elif first_obj.hide_get() == True:
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
+            for obj in objs:
                 obj.hide_set(False)
 
     @classmethod
