@@ -366,22 +366,26 @@ class Usecase:
     def create_camera_pyramid_representation(self) -> ifcopenshell.entity_instance:
         assert isinstance(self.geometry, bpy.types.Camera)
         props = tool.Drawing.get_camera_props(self.geometry)
-        raster_x = props.raster_x
-        raster_y = props.raster_y
-        fov = self.settings["geometry"].angle
 
         clip_end = self.settings["geometry"].clip_end
         clip_start = self.settings["geometry"].clip_start
 
-        if self.is_camera_landscape():
-            half_width = math.tan(fov / 2) * clip_end
-            half_height = half_width * raster_y / raster_x
-        else:
-            half_height = math.tan(fov / 2) * clip_end
-            half_width = half_height * raster_x / raster_y
+        # Width and Height are independent camera framing properties set by the
+        # user (`props.width` / `props.height`), just like Depth (`clip_end`).
+        # They must be used directly as the pyramid's base dimensions instead of
+        # being derived from the camera's field of view (`camera.angle`) and
+        # `clip_end`, otherwise editing Depth alone rescales Width/Height on the
+        # next representation regeneration (#6322). The field of view itself is
+        # only needed for Blender's perspective viewport preview, so it's the
+        # derived quantity here, computed the same way as on import (see
+        # `Loader.create_camera`).
+        x_length = props.width
+        y_length = props.height
+        half_width = x_length / 2
+        half_height = y_length / 2
 
-        x_length = 2 * half_width
-        y_length = 2 * half_height
+        fov = 2 * math.atan(max(half_width, half_height) / clip_end)
+        self.geometry.angle = fov
 
         pyramid = self.file.create_entity(
             "IfcRectangularPyramid",
