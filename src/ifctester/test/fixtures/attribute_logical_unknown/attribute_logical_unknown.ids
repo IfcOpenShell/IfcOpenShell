@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>Prohibited LayerOn attribute</title>
+        <description>LayerOn must not be present; UNKNOWN is a present value.</description>
+    </info>
+    <specifications>
+        <specification name="Presentation layers must not set LayerOn" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPRESENTATIONLAYERWITHSTYLE</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <attribute cardinality="prohibited">
+                    <name>
+                        <simpleValue>LayerOn</simpleValue>
+                    </name>
+                </attribute>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
