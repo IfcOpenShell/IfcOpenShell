@@ -339,6 +339,29 @@ def resolve_items(
     return results
 
 
+def get_mapped_item_matrix(element: ifcopenshell.entity_instance) -> Union[npt.NDArray[np.float64], None]:
+    """Get the transformation matrix contributed by an element's IfcMappedItem, if any.
+
+    An element positioned through an IfcMappedItem gets part of its world
+    position from the mapping (``MappingTarget`` combined with
+    ``MappingSource.MappingOrigin``), not only from ``ObjectPlacement``. This
+    resolves that mapping transform so it can be combined with the element's
+    local placement matrix (e.g. via ``ObjectPlacement matrix @ this matrix``).
+
+    :param element: An IfcProduct
+    :return: A 4x4 numpy matrix, or None if the element has no mapped item.
+    """
+    representations = list(getattr(getattr(element, "Representation", None), "Representations", None) or [])
+    # Prefer the Body representation, as it best reflects the element's actual
+    # position, but fall back to any other representation with a mapped item.
+    representations.sort(key=lambda r: getattr(r, "RepresentationIdentifier", None) != "Body")
+    for representation in representations:
+        for item in representation.Items or []:
+            if item.is_a("IfcMappedItem"):
+                return ifcopenshell.util.placement.get_mappeditem_transformation(item)
+    return None
+
+
 def resolve_base_items(
     representation: ifcopenshell.entity_instance,
 ) -> Generator[ifcopenshell.entity_instance, None, None]:
