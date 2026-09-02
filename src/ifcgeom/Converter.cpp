@@ -55,17 +55,29 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 		std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information> neigbour_layers;
 		int layerset_id, lid;
 
-		if (mapping_->get_layerset_information(product, layerinfo, layerset_id)) {
-			representation_id_builder << "-layerset-" << layerset_id;
-			if (mapping_->get_wall_neighbours(product, neighbours)) {
-				for (auto& n : neighbours) {
-					auto p = std::get<2>(n);
-					mapping_->get_layerset_information(p, neigbour_layers[p], lid);
+		// Layerset slicing is best-effort: gathering the layerset information or
+		// applying it may throw (e.g. when the axis representation cannot be cast
+		// to a curve, or when the active kernel does not implement slicing). In
+		// that case the element still has a perfectly valid unsliced body
+		// representation in `shapes`, so we fall back to that rather than letting
+		// the exception propagate and silently drop the element entirely (#6607).
+		try {
+			if (mapping_->get_layerset_information(product, layerinfo, layerset_id)) {
+				representation_id_builder << "-layerset-" << layerset_id;
+				if (mapping_->get_wall_neighbours(product, neighbours)) {
+					for (auto& n : neighbours) {
+						auto p = std::get<2>(n);
+						mapping_->get_layerset_information(p, neigbour_layers[p], lid);
+					}
+					kernel_->apply_folded_layerset(shapes, layerinfo, neigbour_layers);
+				} else {
+					kernel_->apply_layerset(shapes, layerinfo);
 				}
-				kernel_->apply_folded_layerset(shapes, layerinfo, neigbour_layers);
-			} else {
-				kernel_->apply_layerset(shapes, layerinfo);
 			}
+		} catch (const std::exception& e) {
+			logger_.Message(Logger::LOG_WARNING, "GEO", 260, std::string("Layerset slicing failed, falling back to unsliced representation: ") + e.what(), product);
+		} catch (...) {
+			logger_.Message(Logger::LOG_WARNING, "GEO", 260, "Layerset slicing failed, falling back to unsliced representation", product);
 		}
 
 		/*
