@@ -2250,12 +2250,12 @@ class Model(bonsai.core.tool.Model):
         result = cls.auto_detect_profiles(obj, mesh)
         fill_area = None
         if isinstance(result, dict) and (profile_def := result["profile_def"]):
-            if profile_def.is_a("IfcArbitraryClosedProfileDef"):
-                fill_area = result["ifc_file"].createIfcAnnotationFillArea(profile_def.OuterCurve)
-            elif profile_def.is_a("IfcArbitraryProfileDefWithVoids"):
+            if profile_def.is_a("IfcArbitraryProfileDefWithVoids"):
                 fill_area = result["ifc_file"].createIfcAnnotationFillArea(
                     profile_def.OuterCurve, profile_def.InnerCurves
                 )
+            elif profile_def.is_a("IfcArbitraryClosedProfileDef"):
+                fill_area = result["ifc_file"].createIfcAnnotationFillArea(profile_def.OuterCurve)
             if fill_area:
                 return {"ifc_file": result["ifc_file"], "annotation_fill_area": fill_area}
 
