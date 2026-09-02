@@ -556,6 +556,29 @@ namespace IfcGeom {
                             }
                         }
 
+                        // A triangle can genuinely lie inside B while every one of its
+                        // vertices sits exactly on a shared boundary face of B (so each
+                        // vertex has zero penetration depth). This is the perfectly
+                        // aligned / coplanar overlap that otherwise goes undetected
+                        // (#4594): two centered walls overlapping on a shared axis, where
+                        // the penetrating end-cap's corners land on B's coincident side
+                        // faces. The triangle centroid is strictly interior in that case,
+                        // so sample it as an extra protrusion witness. Merely touching
+                        // (non-overlapping) geometry keeps a centroid on B's surface, i.e.
+                        // depth ~0, and is still discarded by the "> tolerance" gate below.
+                        {
+                            const gp_Pnt centroid(
+                                (verts_a[tri[0]].X() + verts_a[tri[1]].X() + verts_a[tri[2]].X()) / 3.0,
+                                (verts_a[tri[0]].Y() + verts_a[tri[1]].Y() + verts_a[tri[2]].Y()) / 3.0,
+                                (verts_a[tri[0]].Z() + verts_a[tri[1]].Z() + verts_a[tri[2]].Z()) / 3.0
+                            );
+                            if ( ! obb_b.IsOut(centroid)
+                                    && is_point_in_shape(centroid, bvh_b, tris_b, verts_b)
+                                    && is_point_in_shape(centroid, bvh_b, tris_b, verts_b, true)) {
+                                points_in_b.push_back(centroid);
+                            }
+                        }
+
                         // If there are no points in b, this may be a "piercing" triangle.
                         if (points_in_b.empty()) {
                             gp_Vec v1_a_vec(verts_a[tri[0]].XYZ());
