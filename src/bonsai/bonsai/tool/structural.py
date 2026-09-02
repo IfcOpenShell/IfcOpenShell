@@ -197,7 +197,8 @@ class Structural(bonsai.core.tool.Structural):
         :return: IfcTopologyRepresentation if it's valid.
         """
         vertex_representation, undefined_representation = None, None
-        # At least 1 representation is mandatory in IFC for IfcStructuralPointConnection.
+        if not product.Representation:
+            return None
         for rep in product.Representation.Representations:
             rep: ifcopenshell.entity_instance
             rep_type: str = rep.RepresentationType
