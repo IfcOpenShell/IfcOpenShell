@@ -555,15 +555,35 @@ class AddBcfViewpoint(bpy.types.Operator):
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
 
-        direction = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 0.0, -1.0))
-        up = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 1.0, 0.0))
+        # BCF viewpoints are stored in global (map) coordinates. On a
+        # georeferenced model the Blender camera is in the local, offset space,
+        # so convert it to global here, mirroring the global2local applied on
+        # restore in setup_camera(). Without this the saved viewpoint holds
+        # local coordinates and reloading shifts the camera by the offset. See #8205.
+        camera_matrix = blender_camera.matrix_world
+        geo_props = tool.Georeference.get_georeference_props()
+        if geo_props.has_blender_offset:
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            camera_matrix = Matrix(
+                ifcopenshell.util.geolocation.local2global(
+                    np.array(blender_camera.matrix_world),
+                    float(geo_props.blender_offset_x) * unit_scale,
+                    float(geo_props.blender_offset_y) * unit_scale,
+                    float(geo_props.blender_offset_z) * unit_scale,
+                    float(geo_props.blender_x_axis_abscissa),
+                    float(geo_props.blender_x_axis_ordinate),
+                ).tolist()
+            )
+        camera_location = camera_matrix.translation
+        direction = camera_matrix.to_quaternion() @ Vector((0.0, 0.0, -1.0))
+        up = camera_matrix.to_quaternion() @ Vector((0.0, 1.0, 0.0))
 
         blender_render = context.scene.render
         assert isinstance(blender_camera.data, bpy.types.Camera)
         visinfo_guid = str(uuid.uuid4())
         if bcf_v2:
             camera_view_point = bcf.v2.model.Point(
-                x=blender_camera.location.x, y=blender_camera.location.y, z=blender_camera.location.z
+                x=camera_location.x, y=camera_location.y, z=camera_location.z
             )
             camera_direction = bcf.v2.model.Direction(x=direction.x, y=direction.y, z=direction.z)
             camera_up_vector = bcf.v2.model.Direction(x=up.x, y=up.y, z=up.z)
@@ -588,7 +608,7 @@ class AddBcfViewpoint(bpy.types.Operator):
                 return {"FINISHED"}
         else:
             camera_view_point = bcf.v3.model.Point(
-                x=blender_camera.location.x, y=blender_camera.location.y, z=blender_camera.location.z
+                x=camera_location.x, y=camera_location.y, z=camera_location.z
             )
             camera_direction = bcf.v3.model.Direction(x=direction.x, y=direction.y, z=direction.z)
             camera_up_vector = bcf.v3.model.Direction(x=up.x, y=up.y, z=up.z)
