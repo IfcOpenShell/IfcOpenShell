@@ -746,7 +746,10 @@ class ShaderInfo:
                 coords_for_shader = []
                 indices = []
             for info in self.info:
-                info["uniforms"][2][1] = maxforce
+                for uniform in info["uniforms"]:
+                    if uniform[0] == "maxload":
+                        uniform[1] = maxforce
+                        break
 
     def process_total_linear_loads(
         self,
