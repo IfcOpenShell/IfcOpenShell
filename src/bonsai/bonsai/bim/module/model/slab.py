@@ -727,9 +727,16 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         old_profile = extrusion.SweptArea
-        for inverse in tool.Ifc.get().get_inverse(old_profile):
-            ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
-        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
+        profile_unchanged = tool.Model.profile_shape_is_unchanged(old_profile, profile)
+        if profile_unchanged:
+            # Keep the parametric profile that an edit mode round trip would otherwise
+            # rewrite as an arbitrary profile (see #6481).
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), profile)
+            profile = old_profile
+        else:
+            for inverse in tool.Ifc.get().get_inverse(old_profile):
+                ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -738,8 +745,9 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             representation=body,
         )
 
-        # Only certain classes should have a footprint
-        if element.is_a() not in ("IfcSlab", "IfcRamp"):
+        # An unchanged profile keeps its existing footprint, and a parametric profile has no
+        # OuterCurve to rebuild one from anyway.
+        if profile_unchanged or element.is_a() not in ("IfcSlab", "IfcRamp"):
             return
 
         footprint_context = ifcopenshell.util.representation.get_context(
