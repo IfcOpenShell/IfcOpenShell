@@ -80,6 +80,11 @@ jobs:
           sudo cmake --install swig/build
           swig -version
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.23
+        with:
+          key: ci-ifcwrap-standalone-ubuntu-22.04-${{ runner.arch }}
+
       - name: Configure minimal IfcOpenShell
         run: |
           cmake -S cmake -B build-ifcopenshell \
@@ -89,6 +94,7 @@ jobs:
             -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
             -DMINIMAL_BUILD=ON \
             -DBUILD_IFCPYTHON=OFF \
+            -DUSE_CCACHE=ON \
             "-DSCHEMA_VERSIONS=4x3_add2"
 
       - name: Build and install minimal IfcOpenShell
@@ -113,6 +119,7 @@ jobs:
           cmake -S src/ifcwrap -B "build-ifcwrap-311" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${IFCOPENSHELL_PREFIX};/usr" \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DPython_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
             -DPython_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}" \
             -DPYTHON_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
@@ -148,6 +155,7 @@ jobs:
           cmake -S src/ifcwrap -B "build-ifcwrap-312" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${IFCOPENSHELL_PREFIX};/usr" \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DPython_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
             -DPython_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}" \
             -DPYTHON_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
