@@ -1180,6 +1180,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             bonsai.last_error = traceback.format_exc()
             raise
         tool.Autosave.reset_timer()
+        tool.FileWatcher.reset_timer()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1226,6 +1227,86 @@ class RevertProject(bpy.types.Operator, IFCFileSelector):
         props = tool.Blender.get_bim_props()
         bpy.ops.bim.load_project(should_start_fresh_session=True, filepath=props.ifc_file)
         return {"FINISHED"}
+
+
+# The two operators below were generated with the assistance of an AI coding tool.
+class ReloadProject(bpy.types.Operator):
+    bl_idname = "bim.reload_project"
+    bl_label = "Reload IFC Project"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Reload the IFC file from disk without resetting the current view.\n"
+        "Use this when another application has modified the file. "
+        "Unsaved changes in the current session are discarded"
+    )
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Blender.get_bim_props()
+        if not props.ifc_file:
+            cls.poll_message_set("IFC project needs to be loaded and saved on the disk.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        props = tool.Blender.get_bim_props()
+        if props.is_dirty:
+            return context.window_manager.invoke_props_dialog(
+                self, width=420, title="Reload IFC Project", confirm_text="Reload"
+            )
+        return self.execute(context)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="You have unsaved changes in this session.", icon="ERROR")
+        layout.label(text="Reloading from disk will discard them.")
+
+    def execute(self, context):
+        props = tool.Blender.get_bim_props()
+        path_ifc = tool.Blender.ensure_blender_path_is_abs(Path(props.ifc_file)).as_posix()
+        if not os.path.isfile(path_ifc):
+            self.report({"ERROR"}, f"IFC file not found: {path_ifc}")
+            return {"CANCELLED"}
+        tool.Project.reload_ifc_file(path_ifc)
+        self.report({"INFO"}, f'Reloaded "{os.path.basename(path_ifc)}" from disk')
+        return {"FINISHED"}
+
+
+class FileChangedReloadPrompt(bpy.types.Operator):
+    bl_idname = "bim.file_changed_reload_prompt"
+    bl_label = "External File Change Detected"
+    bl_options = set()
+
+    def invoke(self, context, event):
+        result = context.window_manager.invoke_props_dialog(
+            self, width=420, title="External File Change Detected", confirm_text="Reload"
+        )
+        # Suspend the watcher only if the dialog is really showing, so a
+        # failed dialog can never mute change detection permanently.
+        if "RUNNING_MODAL" in result:
+            tool.FileWatcher.set_prompt_active(True)
+        return result
+
+    def draw(self, context):
+        props = tool.Blender.get_bim_props()
+        layout = self.layout
+        layout.label(text="The IFC file has changed on disk:", icon="INFO")
+        layout.label(text=os.path.basename(props.ifc_file))
+        layout.separator()
+        if props.is_dirty:
+            layout.label(text="You have unsaved changes in this session.", icon="ERROR")
+            layout.label(text="Reloading will discard them.")
+        layout.label(text="Reload the file, keeping the current view?")
+
+    def execute(self, context):
+        tool.FileWatcher.set_prompt_active(False)
+        return bpy.ops.bim.reload_project("EXEC_DEFAULT")
+
+    def cancel(self, context):
+        # Also reached via Escape or a click outside the dialog. The watcher
+        # snapshot was already updated when the change was detected, so the
+        # prompt will not reappear until the file changes again.
+        tool.FileWatcher.set_prompt_active(False)
 
 
 class LoadProjectElements(bpy.types.Operator):
@@ -2160,6 +2241,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
         bonsai.bim.handler.refresh_ui_data()
         tool.Autosave.reset_timer()
+        tool.FileWatcher.reset_timer()
 
     @classmethod
     def description(cls, context, properties):

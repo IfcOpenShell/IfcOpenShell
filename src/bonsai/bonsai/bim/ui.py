@@ -619,6 +619,47 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         ],
         default="PROMPT",
     )
+
+    def update_watch_ifc_settings(self, context: bpy.types.Context) -> None:
+        if self.watch_ifc_enabled:
+            tool.FileWatcher.reset_timer()
+        else:
+            tool.FileWatcher.cancel_timer()
+
+    watch_ifc_enabled: BoolProperty(
+        name="Watch IFC File For External Changes",
+        description=(
+            "Periodically check whether another application has modified the IFC file on disk, "
+            "and offer to reload it without resetting the current view"
+        ),
+        default=False,
+        update=update_watch_ifc_settings,
+    )
+    watch_ifc_interval_seconds: bpy.props.IntProperty(
+        name="Watch Interval (Seconds)",
+        description="How often to check the IFC file on disk for external modifications",
+        default=2,
+        min=1,
+        max=3600,
+        update=update_watch_ifc_settings,
+    )
+    watch_ifc_mode: bpy.props.EnumProperty(
+        name="Watch Mode",
+        items=[
+            (
+                "PROMPT",
+                "Ask Before Reloading",
+                "Show a dialog offering to reload the project when the file changes on disk",
+            ),
+            (
+                "AUTO",
+                "Reload Automatically (Viewer Mode)",
+                "Reload the project silently when the file changes on disk. "
+                "If there are unsaved changes in the current session, you will be asked first to avoid data loss",
+            ),
+        ],
+        default="PROMPT",
+    )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_always_cache: BoolProperty(
         name="Always Cache Geometry",
@@ -734,6 +775,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         autosave_enabled: bool
         autosave_interval_minutes: int
         autosave_mode: Literal["PROMPT", "BACKUP"]
+        watch_ifc_enabled: bool
+        watch_ifc_interval_seconds: int
+        watch_ifc_mode: Literal["PROMPT", "AUTO"]
         should_stream: bool
         should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
@@ -888,6 +932,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         if self.autosave_enabled:
             layout.prop(self, "autosave_interval_minutes")
             layout.prop(self, "autosave_mode")
+        layout.label(text="Watch IFC File:")
+        layout.prop(self, "watch_ifc_enabled")
+        if self.watch_ifc_enabled:
+            layout.prop(self, "watch_ifc_interval_seconds")
+            layout.prop(self, "watch_ifc_mode")
         layout.prop(self, "should_stream")
         layout.prop(self, "should_always_cache")
         layout.label(text="bSDD:")
