@@ -6,6 +6,7 @@
 #include <Geom_Plane.hxx>
 #include <Geom_BSplineSurface.hxx>
 #include <Geom_CylindricalSurface.hxx>
+#include <Geom_ElementarySurface.hxx>
 
 #include <BRepTools_WireExplorer.hxx>
 
@@ -559,7 +560,20 @@ int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advance
 		if (!convert_to_ifc(surf, surface, advanced)) {
 			return 0;
 		}
-		face = new IfcSchema::IfcAdvancedFace(bounds, surface, f.Orientation() == TopAbs_FORWARD);
+		// The emitted IFC surface placement is an IfcAxis2Placement3D, which is
+		// inherently right-handed (like gp_Ax2). For an elementary surface whose
+		// underlying gp_Ax3 is indirect (left-handed) the Ax3 -> Ax2 conversion
+		// performed in the surface converter silently flips the surface normal
+		// sense (radial for cylinder/cone/sphere, axial for plane). The face
+		// SameSense flag is derived from the original TopoDS orientation, so it
+		// must be inverted to keep agreeing with the emitted surface normal,
+		// otherwise round-tripped curved faces (e.g. cylinders) come out inverted. See #5067.
+		bool same_sense = f.Orientation() == TopAbs_FORWARD;
+		opencascade::handle<Geom_ElementarySurface> elem = opencascade::handle<Geom_ElementarySurface>::DownCast(surf);
+		if (!elem.IsNull() && !elem->Position().Direct()) {
+			same_sense = !same_sense;
+		}
+		face = new IfcSchema::IfcAdvancedFace(bounds, surface, same_sense);
 		return 1;
 #else
 		// No IfcAdvancedFace in Ifc2x3
