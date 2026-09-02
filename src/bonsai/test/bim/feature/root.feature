@@ -145,6 +145,16 @@ Scenario: Assign a spatial class to a cube already in a collection
     And the object "IfcSpace/Cube" is in the collection "IfcSpace"
     And the object "IfcSpace/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
+Scenario: Assign a class to a collection instance
+    Given an empty IFC project
+    And I add a collection instance of a cube
+    When the object "CubeAsset" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcFurniture"
+    And I press "bim.assign_class"
+    Then the object "IfcFurniture/CubeAsset" is an "IfcFurniture"
+    And the object "IfcFurniture/CubeAsset" has no data
+
 Scenario: Assign a class to a cube in a collection
     Given an empty IFC project
     And I add a cube
