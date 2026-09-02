@@ -760,6 +760,11 @@ class Spatial(bonsai.core.tool.Spatial):
         for ifc_class in ["IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate"]:
             if visible_element.is_a(ifc_class):
                 return True
+        # A window is only its own boundary when it isn't filling an opening
+        # in another building element, since a hosted window already bounds
+        # the space through its host wall.
+        if visible_element.is_a("IfcWindow") and not cls.get_host_element(visible_element):
+            return True
         return False
 
     @classmethod
@@ -939,6 +944,8 @@ class Spatial(bonsai.core.tool.Spatial):
         for obj in selected_objects:
             subelement = tool.Ifc.get_entity(obj)
             if subelement.is_a("IfcWall") or subelement.is_a("IfcColumn"):
+                boundary_elements.append(subelement)
+            elif subelement.is_a("IfcWindow") and not cls.get_host_element(subelement):
                 boundary_elements.append(subelement)
         return boundary_elements
 
