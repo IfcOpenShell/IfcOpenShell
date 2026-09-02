@@ -135,6 +135,45 @@ class TestGetRepresentationData(NewFile):
         assert subject.get_representation_data(representation) == data
 
 
+class TestGetRepresentationItem(NewFile):
+    def test_returns_the_item_for_a_live_representation_item_id(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        item = ifc.createIfcExtrudedAreaSolid()
+        data = bpy.data.meshes.new("Mesh")
+        subject.get_mesh_props(data).ifc_definition_id = item.id()
+        obj = bpy.data.objects.new("Object", data)
+        assert subject.get_representation_item(obj) == item
+        assert subject.is_representation_item(obj) is True
+
+    def test_returns_none_for_a_live_id_that_is_not_a_representation_item(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        data = bpy.data.meshes.new("Mesh")
+        subject.get_mesh_props(data).ifc_definition_id = wall.id()
+        obj = bpy.data.objects.new("Object", data)
+        assert subject.get_representation_item(obj) is None
+        assert subject.is_representation_item(obj) is False
+
+    def test_returns_none_instead_of_raising_for_an_id_from_a_different_file(self):
+        # Regression test for #7351: an object duplicated/pasted in from a
+        # different IFC session can keep an ifc_definition_id that only
+        # existed in that other file. Against the current file that id is
+        # simply missing, and this must be treated as "not a representation
+        # item of this file" rather than crash with `by_id`'s RuntimeError.
+        other_ifc = ifcopenshell.file()
+        foreign_item = other_ifc.createIfcExtrudedAreaSolid()
+
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        data = bpy.data.meshes.new("Mesh")
+        subject.get_mesh_props(data).ifc_definition_id = foreign_item.id()
+        obj = bpy.data.objects.new("Object", data)
+        assert subject.get_representation_item(obj) is None
+        assert subject.is_representation_item(obj) is False
+
+
 class TestGetActiveRepresentation(NewFile):
     def test_returns_representation_for_live_id(self):
         ifc = ifcopenshell.file()
