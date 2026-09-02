@@ -312,3 +312,29 @@ class TestGenerateSpace(NewFile):
         bpy.ops.bim.generate_space()
 
         assert np.isclose(space.location.z, 5), f"Expected z=5, got {space.location.z}"
+
+
+class TestGetFilterMatcher(NewFile):
+    def test_plain_substring_matching_is_case_insensitive(self):
+        matcher = subject.get_filter_matcher("spp", is_regex=False)
+        assert matcher("SPP-01")
+        assert not matcher("Level 2 Office")
+
+    def test_regex_matching_is_case_insensitive(self):
+        matcher = subject.get_filter_matcher(r"^SPP-\d+", is_regex=True)
+        assert matcher("spp-01")
+        assert not matcher("SPPX")
+
+    def test_regex_pattern_matches_anywhere_in_string(self):
+        matcher = subject.get_filter_matcher(".*Level 2.*", is_regex=True)
+        assert matcher("Level 2 Office")
+        assert not matcher("Level 3 Office")
+
+    def test_invalid_regex_falls_back_to_substring_matching(self):
+        matcher = subject.get_filter_matcher("^SPP-[", is_regex=True)
+        assert matcher("prefix ^SPP-[ suffix")
+        assert not matcher("SPP-01")
+
+    def test_is_valid_regex(self):
+        assert subject.is_valid_regex(r"^SPP-\d+")
+        assert not subject.is_valid_regex("^SPP-[")
