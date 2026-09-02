@@ -106,18 +106,11 @@ src/bonsai/bonsai/bim/data/gantt/jsgantt.css
 src/bonsai/bonsai/bim/data/webui/static/js/jquery.min.js
 src/bonsai/bonsai/bim/data/webui/running_pid.json
 
-# ifcopenshell swig and compiled files
-src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper*.so
+# ifcopenshell swig, compiled files, plugins, shared dependencies
+src/ifcopenshell-python/ifcopenshell/*.so*
+src/ifcopenshell-python/ifcopenshell/*.dylib*
+src/ifcopenshell-python/ifcopenshell/*.dll
 src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
-
-# plugins
-src/ifcopenshell-python/ifcopenshell/ifcopenshell_document_*.so
-src/ifcopenshell-python/ifcopenshell/ifcopenshell_geometry_*.so
-src/ifcopenshell-python/ifcopenshell/ifcopenshell_parse_schema*.so
-src/ifcopenshell-python/ifcopenshell/libifcopenshell.geometry.so
-src/ifcopenshell-python/ifcopenshell/libifcopenshell.geometry.writer.so
-src/ifcopenshell-python/ifcopenshell/libifcopenshell.parse.so
-src/ifcopenshell-python/ifcopenshell/libifcopenshell.plugin.so
 
 # apple
 .DS_Store
