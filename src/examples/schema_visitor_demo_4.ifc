@@ -1,0 +1,11 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((''),'2;1');
+FILE_NAME('schema_visitor_demo_4.ifc','2026-07-19T00:00:00',(''),(''),'IfcOpenShell','IfcOpenShell','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCSPACE('1YHntSGZL5FhdY1nlqZa0',$,'Kitchen (IFC4)',$,$,$,$,$,$,$,$);
+#2=IFCSPACE('1YHntSGZL5FhdY1nlqZa1',$,'Lounge (IFC4)',$,$,$,$,$,$,$,$);
+ENDSEC;
+END-ISO-10303-21;
