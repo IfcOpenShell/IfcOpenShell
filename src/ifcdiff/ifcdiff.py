@@ -281,6 +281,12 @@ class IfcDiff:
         return 1e-4
 
     def diff_element(self, old, new):
+        is_changed = False
+        if new.GlobalId and old.is_a() != new.is_a():
+            self.change_register.setdefault(new.GlobalId, {}).update(
+                {"class_changed": {"old": old.is_a(), "new": new.is_a()}}
+            )
+            is_changed = True
         diff = DeepDiff(
             [a for a in old if not isinstance(a, (ifcopenshell.entity_instance, tuple))],
             [a for a in new if not isinstance(a, (ifcopenshell.entity_instance, tuple))],
@@ -290,6 +296,8 @@ class IfcDiff:
         )
         if diff and new.GlobalId:
             self.change_register.setdefault(new.GlobalId, {}).update({"attributes_changed": True})
+            is_changed = True
+        if is_changed:
             return True
 
     def diff_element_relationships(self, old, new):
