@@ -38,6 +38,7 @@ from bonsai.bim.module.model.data import (
     SverchokData,
     WindowData,
 )
+from bonsai.bim.module.model.sweptdisksolid import get_swept_disk_solid_body
 
 if TYPE_CHECKING or bpy.app.version >= (5, 0, 0):
     import _bl_ui_utils.layout as bl_ui_utils_layout
@@ -631,6 +632,31 @@ class BIM_PT_railing(bpy.types.Panel):
             row = self.layout.row()
             row.label(text="No Railing Found")
             row.operator("bim.add_railing", icon="ADD", text="")
+
+
+class BIM_PT_swept_disk_solid(bpy.types.Panel):
+    bl_label = "Swept Disk Solid"
+    bl_idname = "BIM_PT_swept_disk_solid"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
+
+    def draw(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj) if obj else None
+        body = get_swept_disk_solid_body(element)
+
+        if body:
+            self.layout.label(text="Tab into Edit Mode to edit the directrix path.", icon="INFO")
+            row = self.layout.row(align=True)
+            row.prop(obj.data, "bevel_depth", text="Radius")
+            row.operator("bim.update_representation", icon="FILE_REFRESH", text="")
+        else:
+            row = self.layout.row()
+            row.label(text="No Swept Disk Solid Found")
+            row.operator("mesh.add_swept_disk_solid", icon="ADD", text="")
 
 
 class BIM_PT_roof(bpy.types.Panel):
