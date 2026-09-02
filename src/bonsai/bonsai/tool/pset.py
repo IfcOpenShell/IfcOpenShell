@@ -70,9 +70,9 @@ class Pset(bonsai.core.tool.Pset):
 
     @classmethod
     def get_element_pset(
-        cls, element: ifcopenshell.entity_instance, pset_name: str
+        cls, element: ifcopenshell.entity_instance, pset_name: str, should_inherit: bool = True
     ) -> Union[ifcopenshell.entity_instance, None]:
-        pset = ifcopenshell.util.element.get_pset(element, pset_name)
+        pset = ifcopenshell.util.element.get_pset(element, pset_name, should_inherit=should_inherit)
         if pset:
             return tool.Ifc.get().by_id(pset["id"])
 
