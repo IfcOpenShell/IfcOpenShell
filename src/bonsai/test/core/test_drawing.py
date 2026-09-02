@@ -47,6 +47,13 @@ class TestEditText:
         subject.edit_text(drawing, obj="obj")
 
 
+class TestEditTextLiteralValue:
+    def test_run(self, drawing):
+        drawing.sanitize_multiline_literal("value\n").should_be_called().will_return("value")
+        drawing.edit_text_literal_value("obj", 0, "value").should_be_called()
+        subject.edit_text_literal_value(drawing, obj="obj", literal_index=0, value="value\n")
+
+
 class TestEnableEditingAssignedProduct:
     def test_run(self, drawing):
         drawing.enable_editing_assigned_product("obj").should_be_called()
