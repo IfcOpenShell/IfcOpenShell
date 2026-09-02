@@ -322,8 +322,10 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         # Check relating_type_id enum_items since it's possible
         # that we're adding e.g. IfcRoofType being in a Slab Tool
         # and roof type id won't be present in the relating_type_id enum.
-        if self.from_invoke and str(self.relating_type_id) in AuthoringData.data["relating_type_id"]:
-            props.relating_type_id = str(self.relating_type_id)
+        if self.from_invoke:
+            relating_type_ids = [e[0] for e in AuthoringData.data["relating_type_id"]]
+            if str(self.relating_type_id) in relating_type_ids:
+                props.relating_type_id = str(self.relating_type_id)
 
         building_obj, building_element = None, None
         if len(context.selected_objects) == 1 and context.active_object:
