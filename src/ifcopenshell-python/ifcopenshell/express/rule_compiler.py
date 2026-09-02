@@ -792,6 +792,34 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
                 child.parent = node
 
 
+def collect_uniqueness_rules(schema):
+    """Enumerate the entity-level EXPRESS ``UNIQUE`` clauses of a parsed schema.
+
+    ``schema`` is an ``ifcopenshell.express.express_parser`` schema (the pyparsing
+    AST wrapper), whose entity definitions expose ``.unique`` as a list of
+    ``(label, attributes)`` pairs. Returns an ordered mapping::
+
+        {entity_name: [(rule_label, (attribute_name, ...)), ...], ...}
+
+    limited to entities that actually declare a ``UNIQUE`` clause. This is the
+    single source of truth used both to emit ``uniqueness_rules`` into the
+    generated schema rules module and, at runtime, to drive uniqueness
+    validation, so the data always tracks the EXPRESS schema rather than a
+    hand-maintained table.
+    """
+    rules = {}
+    for name, entity in schema.entities.items():
+        unique = getattr(entity, "unique", None)
+        if unique:
+            rules[name] = [(label, tuple(attributes)) for label, attributes in unique]
+    return rules
+
+
+def format_uniqueness_rules(schema):
+    """Render :func:`collect_uniqueness_rules` as an assignable Python literal."""
+    return "uniqueness_rules = " + repr(collect_uniqueness_rules(schema))
+
+
 if __name__ == "__main__":
     import io
     import sys
@@ -1012,6 +1040,10 @@ INDETERMINATE = indeterminate_type()
             file=output,
             sep="\n",
         )
+
+    # Entity-level UNIQUE clauses are not retained by the compiled C++ schema, so
+    # emit them here (straight from express_parser) for ifcopenshell.validate.
+    print(format_uniqueness_rules(schema), "\n", file=output, sep="\n")
 
     for nm in schema.all_declarations.keys():
         print(nm)
