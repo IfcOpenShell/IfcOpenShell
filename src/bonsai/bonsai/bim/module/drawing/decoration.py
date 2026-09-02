@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-import os
 from collections.abc import Generator, Iterator
 from functools import cache
 from math import acos, atan, cos, degrees, pi, radians, sin
@@ -42,6 +41,7 @@ from mathutils import Matrix, Vector
 import bonsai.bim.module.drawing.helper as helper
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
+from bonsai.bim.module.drawing.font_resolver import find_system_font
 from bonsai.bim.module.drawing.helper import format_distance
 from bonsai.bim.module.drawing.shaders import add_offsets, add_verts_sequence
 
@@ -2066,24 +2066,16 @@ class DecorationsHandler:
             drawing_font_path = tool.Blender.get_data_dir_path(Path("fonts") / drawing_font)
 
             if not drawing_font_path.is_file():
-                # 2 — Fallback search: Windows font directories
-                # TODO - Linux
-                win_font_dirs = [
-                    Path(os.environ.get("WINDIR", "C:\\Windows")) / "Fonts",
-                    # Add any custom enterprise paths here if needed
-                ]
-
-                found_font = None
-                for font_dir in win_font_dirs:
-                    candidate = font_dir / drawing_font
-                    if candidate.is_file():
-                        found_font = candidate
-                        break
+                # 2 — Fallback search: the OS's own font directories, so users can
+                # point this preference at any font already installed on their
+                # system (for example, one with broader glyph coverage than the
+                # bundled default).
+                found_font = find_system_font(drawing_font)
 
                 if found_font:
                     drawing_font_path = found_font
                 else:
-                    print(f"[BIM] Font '{drawing_font}' not found in addon or Windows fonts.")
+                    print(f"[BIM] Font '{drawing_font}' not found in addon or system font directories.")
                     return  # Bail out without assigning fonts
 
             font_id = blf.load(str(drawing_font_path))
