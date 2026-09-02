@@ -79,8 +79,6 @@ class MSP2Ifc:
 
         for task in project.find("pr:Tasks", self.ns):
             task_id = task.find("pr:UID", self.ns).text
-            task_index_level = task.find("pr:OutlineLevel", self.ns).text
-            wbs_id = task.find("pr:WBS", self.ns).text
             relationships = self.parse_relationship_xml(task)
             outline_level = int(task.find("pr:OutlineLevel", self.ns).text)
 
@@ -90,22 +88,30 @@ class MSP2Ifc:
             self.outline_level = outline_level
             self.outline_parents[outline_level] = task_id
 
-            # Microsoft Project stores durations in terms of hours.
-            duration = ifcopenshell.util.date.ifc2datetime(task.find("pr:Duration", self.ns).text)
-            hours = duration.days * 24
-            hours += duration.seconds / 60 / 60
-            # Let's convert it into days, where days is the appropriate hours per day
-            duration = timedelta(days=hours / float(hours_per_day))
+            # Many elements are optional in practice: summary tasks in files
+            # exported by Ifc2Msp or ProjectLibre carry no Duration/Start/Finish,
+            # and WBS/Priority/CalendarUID may be absent entirely.
+            duration = None
+            duration_text = task.findtext("pr:Duration", namespaces=self.ns)
+            if duration_text:
+                # Microsoft Project stores durations in terms of hours.
+                duration = ifcopenshell.util.date.ifc2datetime(duration_text)
+                hours = duration.days * 24
+                hours += duration.seconds / 60 / 60
+                # Let's convert it into days, where days is the appropriate hours per day
+                duration = timedelta(days=hours / float(hours_per_day))
 
+            start_text = task.findtext("pr:Start", namespaces=self.ns)
+            finish_text = task.findtext("pr:Finish", namespaces=self.ns)
             self.tasks[task_id] = {
-                "Name": task.find("pr:Name", self.ns).text,
-                "OutlineNumber": task.find("pr:OutlineNumber", self.ns).text,
+                "Name": task.findtext("pr:Name", namespaces=self.ns),
+                "OutlineNumber": task.findtext("pr:OutlineNumber", namespaces=self.ns),
                 "OutlineLevel": outline_level,
-                "Start": datetime.datetime.fromisoformat(task.find("pr:Start", self.ns).text),
-                "Finish": datetime.datetime.fromisoformat(task.find("pr:Finish", self.ns).text),
+                "Start": datetime.datetime.fromisoformat(start_text) if start_text else None,
+                "Finish": datetime.datetime.fromisoformat(finish_text) if finish_text else None,
                 "Duration": duration,
-                "Priority": task.find("pr:Priority", self.ns).text,
-                "CalendarUID": task.find("pr:CalendarUID", self.ns).text,
+                "Priority": task.findtext("pr:Priority", namespaces=self.ns),
+                "CalendarUID": task.findtext("pr:CalendarUID", namespaces=self.ns) or "-1",
                 "PredecessorTasks": relationships if relationships else None,
                 "subtasks": [],
                 "ifc": None,
@@ -177,7 +183,9 @@ class MSP2Ifc:
             }
             return data
 
-        for calendar in project.find("pr:Calendars", self.ns).findall("pr:Calendar", self.ns):
+        calendars_element = project.find("pr:Calendars", self.ns)
+        calendar_elements = calendars_element.findall("pr:Calendar", self.ns) if calendars_element is not None else []
+        for calendar in calendar_elements:
             calendar_id = calendar.find("pr:UID", self.ns).text
             week_days = []
             exceptions = []
@@ -255,9 +263,9 @@ class MSP2Ifc:
 
         calendar = None
         if task["CalendarUID"] != "-1":
-            calendar = self.calendars[task["CalendarUID"]]["ifc"]
+            calendar = self.calendars.get(task["CalendarUID"], {}).get("ifc")
         elif not parent_task and self.project["CalendarUID"]:
-            calendar = self.calendars[self.project["CalendarUID"]]["ifc"]
+            calendar = self.calendars.get(self.project["CalendarUID"], {}).get("ifc")
 
         if calendar:
             ifcopenshell.api.control.assign_control(
@@ -272,7 +280,7 @@ class MSP2Ifc:
             attributes={
                 "Name": task["Name"],
                 "Identification": task["OutlineNumber"],
-                "IsMilestone": task["Start"] == task["Finish"],
+                "IsMilestone": bool(task["Start"]) and task["Start"] == task["Finish"],
             },
         )
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task["ifc"])
