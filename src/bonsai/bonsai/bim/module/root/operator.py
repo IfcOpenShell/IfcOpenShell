@@ -393,6 +393,14 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         # TODO: reload representation might lead to the object being replaced by object of the other type.
         # We probably should track it somehow and keep the original selection.
 
+        # Objects may have just been relinked into new collections (e.g. types
+        # into the "IfcTypeProduct" collection) above. Make sure the view
+        # layer's object bases are up to date before validating the selection
+        # below, otherwise a just-relinked (but perfectly valid) active object
+        # can be seen as "not in the current view layer" and be dropped,
+        # leaving `context.active_object` as None for the rest of the caller.
+        context.view_layer.update()
+
         # Validate selection and reapply it.
         current_selection = tool.Blender.validate_object_selection(*current_selection)
         tool.Blender.set_objects_selection(*current_selection)
