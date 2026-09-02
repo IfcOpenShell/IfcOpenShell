@@ -22,7 +22,12 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
-from natsort import natsorted
+
+try:
+    from natsort import natsorted
+except Exception:
+    # See #6900: don't let a broken natsort disable all of Bonsai.
+    natsorted = sorted
 
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
