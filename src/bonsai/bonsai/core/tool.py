@@ -373,6 +373,8 @@ class Drawing:
     def get_assigned_product(cls, element): pass
     def get_assigned_product_workaround(cls, element): pass
     def get_body_context(cls): pass
+    def get_drawing_camera_context(cls): pass
+    def get_drawing_camera_representation(cls, drawing): pass
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass
     def get_default_layout_path(cls, identification, name): pass
