@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import bpy
 import ifcopenshell.api.attribute
@@ -234,11 +234,218 @@ class DisableEditingType(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def poll_select_type_isolation() -> Union[float, None]:
+    """Module level trampoline so ``bpy.app.timers.is_registered`` has a stable identity."""
+    return SelectTypeIsolation.poll()
+
+
+class SelectTypeIsolation:
+    """Remembers what ALT+Click on bim.select_type changed, so leaving local view can undo it.
+
+    Blender restores the viewport position by itself when local view is toggled off, but the
+    visibility and selection changes we make to reveal the type are ours to put back.
+    """
+
+    POLL_INTERVAL = 0.25
+    stash = None
+
+    @classmethod
+    def start(cls, context: bpy.types.Context) -> None:
+        """Begin remembering. Re-isolating while already isolated keeps the original state."""
+        if cls.stash is not None and bpy.app.timers.is_registered(poll_select_type_isolation):
+            return
+        active_obj = context.active_object
+        cls.stash = {
+            "selected": [o.name for o in context.selected_objects],
+            "active": active_obj.name if active_obj else None,
+            "objects": {},
+            "layer_collections": {},
+            "collections": {},
+            "view": None,
+            "local_view": None,
+        }
+
+    @classmethod
+    def discard(cls) -> None:
+        cls.stash = None
+
+    @classmethod
+    def stash_object(cls, obj: bpy.types.Object) -> None:
+        if cls.stash is None:
+            return
+        try:
+            is_hidden = obj.hide_get()
+        except RuntimeError:  # not in the view layer yet
+            is_hidden = False
+        cls.stash["objects"].setdefault(obj.name, (obj.hide_viewport, is_hidden))
+
+    @classmethod
+    def stash_layer_collection(cls, layer_collection: bpy.types.LayerCollection) -> None:
+        if cls.stash is None:
+            return
+        cls.stash["layer_collections"].setdefault(
+            layer_collection.name, (layer_collection.exclude, layer_collection.hide_viewport)
+        )
+        cls.stash["collections"].setdefault(layer_collection.collection.name, layer_collection.collection.hide_viewport)
+
+    @classmethod
+    def watch(cls) -> None:
+        """Poll for local view being switched off, then restore."""
+        if cls.stash is None:
+            return
+        if not bpy.app.timers.is_registered(poll_select_type_isolation):
+            bpy.app.timers.register(poll_select_type_isolation, first_interval=cls.POLL_INTERVAL)
+
+    @classmethod
+    def poll(cls) -> Union[float, None]:
+        if cls.stash is None:
+            return None
+        if cls.is_in_local_view():
+            return cls.POLL_INTERVAL
+        cls.restore()
+        return None
+
+    @classmethod
+    def is_in_local_view(cls) -> bool:
+        if not (wm := bpy.context.window_manager):
+            return False
+        for window in wm.windows:
+            for area in window.screen.areas:
+                if area.type != "VIEW_3D":
+                    continue
+                space = area.spaces.active
+                if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
+                    return True
+        return False
+
+    @classmethod
+    def stash_view(cls, space: bpy.types.SpaceView3D) -> None:
+        """Record the viewpoint, and the local view membership, as they were before framing.
+
+        Blender does not remember what a local view session contained once it is toggled
+        off, so if one was already open we note its members and put them back ourselves.
+        """
+        if cls.stash is None or cls.stash["view"] is not None:
+            return  # already isolating, the first ALT+Click owns the viewpoint
+        region_3d = space.region_3d
+        cls.stash["view"] = {
+            "perspective": region_3d.view_perspective,
+            "location": region_3d.view_location.copy(),
+            "rotation": region_3d.view_rotation.copy(),
+            "distance": region_3d.view_distance,
+            "camera_zoom": region_3d.view_camera_zoom,
+            "camera_offset": tuple(region_3d.view_camera_offset),
+        }
+        view_layer = cls.get_view_layer()
+        if space.local_view and view_layer:
+            cls.stash["local_view"] = {o.name for o in view_layer.objects if o.local_view_get(space)}
+
+    @classmethod
+    def pop_local_view(cls, space: bpy.types.SpaceView3D) -> None:
+        """Drop the types out of a local view that was already open, and stay in it."""
+        stash = cls.stash
+        if not stash or not space.local_view:
+            cls.restore()
+            return
+        members = stash["local_view"] or set()
+        view = stash["view"]
+        for name in stash["objects"]:
+            if name in members:
+                continue  # it was already on screen before ALT+Click, leave it be
+            if obj := bpy.data.objects.get(name):
+                try:
+                    obj.local_view_set(space, False)
+                except RuntimeError:
+                    pass
+        cls.restore()
+        cls.apply_view(space, view)
+
+    @classmethod
+    def apply_view(cls, space: bpy.types.SpaceView3D, view: Union[dict, None]) -> None:
+        """Put the viewpoint back by hand. No operator runs, so there is no smooth view to fight."""
+        if not view:
+            return
+        region_3d = space.region_3d
+        region_3d.view_perspective = view["perspective"]
+        region_3d.view_location = view["location"]
+        region_3d.view_rotation = view["rotation"]
+        region_3d.view_distance = view["distance"]
+        if view["perspective"] == "CAMERA":
+            region_3d.view_camera_zoom = view["camera_zoom"]
+            region_3d.view_camera_offset = view["camera_offset"]
+
+    @classmethod
+    def get_view_layer(cls) -> Union[bpy.types.ViewLayer, None]:
+        """bpy.context has no window inside a timer callback, so go via the window manager."""
+        if not (wm := bpy.context.window_manager) or not wm.windows:
+            return None
+        window = bpy.context.window or wm.windows[0]
+        return window.view_layer
+
+    @classmethod
+    def restore(cls) -> None:
+        stash, cls.stash = cls.stash, None
+        if not stash or not (view_layer := cls.get_view_layer()):
+            return
+
+        # Selection first, while everything is still in the view layer.
+        for obj in list(view_layer.objects.selected):
+            obj.select_set(False, view_layer=view_layer)
+        for name in stash["selected"]:
+            if obj := bpy.data.objects.get(name):
+                try:
+                    obj.select_set(True, view_layer=view_layer)
+                except RuntimeError:
+                    pass
+        active_obj = bpy.data.objects.get(stash["active"]) if stash["active"] else None
+        try:
+            view_layer.objects.active = active_obj
+        except RuntimeError:
+            pass
+
+        for name, (hide_viewport, is_hidden) in stash["objects"].items():
+            if not (obj := bpy.data.objects.get(name)):
+                continue
+            obj.hide_viewport = hide_viewport
+            try:
+                obj.hide_set(is_hidden, view_layer=view_layer)
+            except RuntimeError:
+                pass
+
+        for name, hide_viewport in stash["collections"].items():
+            if collection := bpy.data.collections.get(name):
+                collection.hide_viewport = hide_viewport
+
+        # Layer collections last - re-excluding one drops its objects out of the view layer.
+        layer_collections = {}
+
+        def collect(layer_collection):
+            layer_collections[layer_collection.name] = layer_collection
+            for child in layer_collection.children:
+                collect(child)
+
+        collect(view_layer.layer_collection)
+        for name, (exclude, hide_viewport) in stash["layer_collections"].items():
+            if layer_collection := layer_collections.get(name):
+                layer_collection.hide_viewport = hide_viewport
+                layer_collection.exclude = exclude
+
+
 class SelectType(bpy.types.Operator):
     bl_idname = "bim.select_type"
     bl_label = "Select Type"
+    bl_description = (
+        "Select Type"
+        "\nALT+Click to also reveal the type, frame it and isolate it in local view"
+        "\nNumpad / when done returns to the view you came from"
+    )
     bl_options = {"REGISTER", "UNDO"}
     relating_type: bpy.props.IntProperty()
+    should_isolate: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.should_isolate = event.alt
+        return self.execute(context)
 
     def execute(self, context):
 
@@ -251,6 +458,12 @@ class SelectType(bpy.types.Operator):
             active_obj = context.active_object
             selected_objs.append(active_obj)  # update selected_objs so the active_obj is at the end of the list
 
+        if self.should_isolate:
+            SelectTypeIsolation.start(context)
+            # Local view is built from the selection, so start from the types alone.
+            for selected_obj in context.selected_objects:
+                selected_obj.select_set(False)
+
         last_relating_type_obj = None
         for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
@@ -258,6 +471,12 @@ class SelectType(bpy.types.Operator):
             if relating_type:
                 relating_type_obj = tool.Ifc.get_object(relating_type)
                 if relating_type_obj:
+                    if self.should_isolate:
+                        # The type may sit in an excluded/hidden collection, in which case it's
+                        # not in the view layer at all and can't be hidden, selected or framed.
+                        self.reveal_collections(context, relating_type_obj)
+                        SelectTypeIsolation.stash_object(relating_type_obj)
+                        relating_type_obj.hide_viewport = False
                     if relating_type_obj.hide_get():
                         relating_type_obj.hide_set(False)
                     relating_type_obj.select_set(True)
@@ -267,7 +486,50 @@ class SelectType(bpy.types.Operator):
 
         context.view_layer.objects.active = last_relating_type_obj  # makes the active_obj's type the active object
 
+        if self.should_isolate:
+            if last_relating_type_obj:
+                self.isolate_in_local_view(context)
+            else:
+                SelectTypeIsolation.discard()
+
         return {"FINISHED"}
+
+    def reveal_collections(self, context, obj):
+        """Un-exclude and unhide every layer collection leading to obj."""
+        collections = set(obj.users_collection)
+
+        def reveal(layer_collection, is_root=False):
+            found = layer_collection.collection in collections
+            for child in layer_collection.children:
+                if reveal(child):
+                    found = True
+            if found and not is_root:  # the master collection has nothing of its own to reveal
+                SelectTypeIsolation.stash_layer_collection(layer_collection)
+                layer_collection.exclude = False
+                layer_collection.hide_viewport = False
+                layer_collection.collection.hide_viewport = False
+            return found
+
+        reveal(context.view_layer.layer_collection, is_root=True)
+
+    def isolate_in_local_view(self, context):
+        """Zoom to the selected types, isolating them in local view."""
+        if not tool.Blender.get_view3d_area():
+            SelectTypeIsolation.discard()
+            return
+        context_override = tool.Blender.get_viewport_context()
+        space = context_override["space_data"]
+        SelectTypeIsolation.stash_view(space)
+        if space.local_view:
+            # Already in local view - add the types to it instead of toggling it off.
+            for obj in context.selected_objects:
+                obj.local_view_set(space, True)
+            with context.temp_override(**context_override):
+                bpy.ops.view3d.view_selected()
+        else:
+            with context.temp_override(**context_override):
+                bpy.ops.view3d.localview(frame_selected=True)
+        SelectTypeIsolation.watch()
 
     def find_collection_in_ifcproject(self, context, collection_name):
 
@@ -280,6 +542,32 @@ class SelectType(bpy.types.Operator):
         if ifc_project_collection:
             collection_in_view_layer = ifc_project_collection.children.get(collection_name)
             return collection_in_view_layer
+
+
+class ExitTypeIsolation(bpy.types.Operator):
+    bl_idname = "bim.exit_type_isolation"
+    bl_label = "Exit Type Isolation"
+    bl_description = "Leave the local view that ALT+Click Select Type opened, back to whatever was on screen before"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return SelectTypeIsolation.stash is not None
+
+    def execute(self, context):
+        stash = SelectTypeIsolation.stash
+        if stash is None or not tool.Blender.get_view3d_area():
+            return {"CANCELLED"}
+        context_override = tool.Blender.get_viewport_context()
+        space = context_override["space_data"]
+        if stash["local_view"] is None:
+            # We opened local view ourselves, so closing it is enough - Blender restores the view.
+            with context.temp_override(**context_override):
+                bpy.ops.view3d.localview()
+            SelectTypeIsolation.restore()
+        else:
+            SelectTypeIsolation.pop_local_view(space)
+        return {"FINISHED"}
 
 
 class SelectSimilarType(bpy.types.Operator):
