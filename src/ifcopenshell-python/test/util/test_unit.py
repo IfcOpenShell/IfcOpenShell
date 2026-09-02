@@ -186,6 +186,16 @@ class TestConvert(test.bootstrap.IFC4):
         assert subject.convert(1, None, "SQUARE_METRE", "MILLI", "SQUARE_METRE") == 1000000
         assert subject.convert(1, None, "CUBIC_METRE", "MILLI", "CUBIC_METRE") == 1000000000
 
+    def test_area_and_volume_conversion_based_units_are_scaled_by_prefix_squared_and_cubed(self):
+        # Regression test: converting a non-SI area/volume unit (as named per
+        # IFC4 Annex A, lower-case e.g. "square foot") to a prefixed SI unit
+        # (upper-case enumerant, e.g. "SQUARE_METRE") must square/cube the
+        # prefix multiplier, the same as converting between two SI units does.
+        assert subject.convert(1, None, "square foot", "MILLI", "SQUARE_METRE") == pytest.approx(92903.04)
+        assert subject.convert(1, "MILLI", "SQUARE_METRE", None, "square foot") == pytest.approx(1 / 92903.04)
+        assert subject.convert(1, None, "cubic foot", "MILLI", "CUBIC_METRE") == pytest.approx(28316846.71168849)
+        assert subject.convert(1, "MILLI", "CUBIC_METRE", None, "cubic foot") == pytest.approx(1 / 28316846.71168849)
+
 
 class TestCalculateUnitScale(test.bootstrap.IFC4):
     def test_prefix_and_conversion_based_units_are_considered(self):
@@ -261,6 +271,24 @@ class TestFormatLength(test.bootstrap.IFC4):
         assert (
             subject.format_length(25.23, 4, unit_system="imperial", input_unit="inch", output_unit="inch") == '25 1/4"'
         )
+
+    def test_negative_values_get_a_single_leading_sign(self):
+        assert subject.format_length(-1.5, 1, unit_system="imperial", input_unit="foot") == "-1' - 6\""
+        assert subject.format_length(-0.5, 1, unit_system="imperial", input_unit="foot") == "-0' - 6\""
+        assert subject.format_length(-13.25, 16, unit_system="imperial", input_unit="foot", output_unit="inch") == (
+            '-159"'
+        )
+        assert subject.format_length(-1.23456, 0.01, unit_system="metric") == "-1.23"
+
+    def test_invalid_unit_system_raises_instead_of_returning_none(self):
+        with pytest.raises(ValueError):
+            subject.format_length(1.5, 1, unit_system="Imperial")
+        with pytest.raises(ValueError):
+            subject.format_length(1.5, 1, unit_system="Metric")
+
+    def test_invalid_input_unit_raises_a_clear_error(self):
+        with pytest.raises(ValueError):
+            subject.format_length(1.5, 1, unit_system="imperial", input_unit="bogus")
 
 
 class TestIsAttrType(test.bootstrap.IFC4):
