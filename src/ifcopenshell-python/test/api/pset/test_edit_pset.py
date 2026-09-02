@@ -330,3 +330,15 @@ class TestEditPsetIFC4(test.bootstrap.IFC4, TestEditPsetIFC2X3):
         assert len(pset.HasProperties[0].ListValues) == 3
         assert set(map(ifcopenshell.entity_instance.is_a, pset.HasProperties[0].ListValues)) == {"IfcIdentifier"}
         assert list(map(operator.itemgetter(0), pset.HasProperties[0].ListValues)) == ["One", "Two", "Three"]
+
+        # Updating an existing IfcPropertyListValue must not raise NotImplementedError.
+        ifcopenshell.api.pset.edit_pset(
+            self.file,
+            pset=pset,
+            properties={
+                "Protocols": ["Four", "Five"],
+            },
+        )
+        assert pset.HasProperties[0].is_a("IfcPropertyListValue")
+        assert set(map(ifcopenshell.entity_instance.is_a, pset.HasProperties[0].ListValues)) == {"IfcIdentifier"}
+        assert list(map(operator.itemgetter(0), pset.HasProperties[0].ListValues)) == ["Four", "Five"]
