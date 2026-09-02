@@ -445,6 +445,11 @@ class IfcOpenShell(QtoCalculator):
                                 value = formula_functions[formula](geometry)
                                 assert isinstance(value, (float, int))
                                 value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
+                            # get_volume returns nan for a non-manifold mesh (its volume is
+                            # undefined, see #6125); skip such quantities rather than writing
+                            # nan into the IFC. The self-inequality test avoids importing math.
+                            if isinstance(value, float) and value != value:
+                                continue
                             results[element][name][quantity] = value
                     if not iterator.next():
                         break

@@ -451,19 +451,24 @@ def get_net_ceiling_area(obj: bpy.types.Object) -> float:
     return total_net_ceiling_area
 
 
-def get_space_net_volume(obj: bpy.types.Object) -> float:
+def get_space_net_volume(obj: bpy.types.Object) -> Union[float, None]:
     decompositions = get_obj_decompositions(obj)
     if not decompositions:
         return get_gross_volume(obj)
 
     total_space_net_volume = get_gross_volume(obj)
+    if total_space_net_volume is None:
+        return None
 
     for decomposition in decompositions:
         decomposition_type = decomposition.get_info()["type"]
         if decomposition_type == "IfcWall" or decomposition_type == "IfcColumn":
             decomposition_obj = tool.Ifc.get_object(decomposition)
             assert isinstance(decomposition_obj, bpy.types.Object)
-            total_space_net_volume -= get_net_volume(decomposition_obj)
+            decomposition_net_volume = get_net_volume(decomposition_obj)
+            if decomposition_net_volume is None:
+                return None
+            total_space_net_volume -= decomposition_net_volume
 
     return total_space_net_volume
 
@@ -578,16 +583,32 @@ def is_polygon_in_vg(polygon: bpy.types.MeshPolygon, vertices_in_vg: list[int]) 
     return True
 
 
-def get_net_volume(o: bpy.types.Object) -> float:
+def is_manifold(bm: bmesh.types.BMesh) -> bool:
+    """Checks whether a bmesh is a closed, consistently oriented manifold.
+
+    calc_volume assumes a watertight mesh with matching face winding across
+    every edge. An open mesh or one with inconsistent winding gives a
+    meaningless result, see https://github.com/IfcOpenShell/IfcOpenShell/issues/6125.
+
+    :param bm: A bmesh instance.
+    :return: ``True`` if every edge is shared by exactly two faces with matching winding.
+    """
+    return all(edge.is_contiguous for edge in bm.edges)
+
+
+def get_net_volume(o: bpy.types.Object) -> Union[float, None]:
     assert isinstance(o.data, bpy.types.Mesh)
     o_mesh = bmesh.new()
     o_mesh.from_mesh(o.data)
+    if not is_manifold(o_mesh):
+        o_mesh.free()
+        return None
     volume = o_mesh.calc_volume()
     o_mesh.free()
     return volume
 
 
-def get_gross_volume(o: bpy.types.Object) -> float:
+def get_gross_volume(o: bpy.types.Object) -> Union[float, None]:
     if not has_openings(o):
         return get_net_volume(o)
 
@@ -595,6 +616,11 @@ def get_gross_volume(o: bpy.types.Object) -> float:
     assert element
     mesh = get_gross_element_mesh(element)
     bm = get_bmesh_from_mesh(mesh)
+
+    if not is_manifold(bm):
+        bm.free()
+        delete_mesh(mesh)
+        return None
 
     gross_volume = bm.calc_volume()
 
@@ -634,6 +660,8 @@ def get_gross_weight(obj: bpy.types.Object) -> Union[float, None]:
         return
 
     gross_volume = get_gross_volume(obj)
+    if gross_volume is None:
+        return None
     gross_weight = obj_mass_density * gross_volume
     return gross_weight
 
@@ -656,6 +684,8 @@ def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
         return
 
     net_volume = get_net_volume(obj)
+    if net_volume is None:
+        return None
     net_weight = obj_mass_density * net_volume
     return net_weight
 

@@ -68,13 +68,49 @@ def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
     return abs(x - value) < tolerance
 
 
+def is_manifold(geometry: W.Triangulation) -> bool:
+    """Checks whether a triangulated geometry is a closed, consistently oriented manifold
+
+    Every edge, as an unordered pair of vertices, must be shared by exactly
+    two triangles, and those two triangles must traverse it in opposite
+    directions. A single use means an open hole or boundary; a third use, or
+    two uses in the same direction, means the winding is inconsistent (e.g. a
+    flipped or duplicated face) - both invalidate volume calculations that
+    rely on a closed, consistently wound mesh.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :return: ``True`` if the geometry is a closed, consistently oriented manifold
+    """
+    faces = geometry.faces
+    edge_state: dict[tuple[int, int], int] = {}
+    for i in range(0, len(faces), 3):
+        a, b, c = faces[i], faces[i + 1], faces[i + 2]
+        for u, v in ((a, b), (b, c), (c, a)):
+            if u == v:
+                return False
+            edge, direction = ((u, v), 1) if u < v else ((v, u), -1)
+            state = edge_state.get(edge)
+            if state is None:
+                edge_state[edge] = direction
+            elif state == -direction:
+                edge_state[edge] = 0
+            else:
+                return False
+    return all(state == 0 for state in edge_state.values())
+
+
 def get_volume(geometry: W.Triangulation) -> float:
     """Calculates the total internal volume of a geometry
 
-    Volumes of non-manifold geometry will be unpredictable.
+    The volume is derived from the divergence theorem (summing signed
+    tetrahedra), which is only meaningful for a closed, consistently oriented
+    manifold (watertight) mesh. For non-manifold or open geometry that value
+    is undefined and can be wildly over- or under-estimated, so
+    ``float("nan")`` is returned instead of a bogus number. See
+    https://github.com/IfcOpenShell/IfcOpenShell/issues/6125.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: The volume in m3
+    :return: The volume in m3, or ``nan`` if the mesh is not a closed manifold
     """
 
     # https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
@@ -86,6 +122,9 @@ def get_volume(geometry: W.Triangulation) -> float:
         v213 = p2[0] * p1[1] * p3[2]
         v123 = p1[0] * p2[1] * p3[2]
         return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
+
+    if not is_manifold(geometry):
+        return float("nan")
 
     # Can't optimize it using buffers - performance seems to get only worse.
     verts = geometry.verts
