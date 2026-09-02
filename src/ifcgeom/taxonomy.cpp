@@ -3,6 +3,9 @@
 #include "profile_helper.h"
 #include "function_item_evaluator.h"
 
+#include <set>
+#include <utility>
+
 using namespace ifcopenshell::geometry::taxonomy;
 
 namespace {
@@ -885,4 +888,558 @@ boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_fu
 		}
 	}
     return function_item_;
+}
+
+namespace {
+	// Seed normal for the rotation-minimizing frame: any unit vector perpendicular
+	// to the tangent t.
+	Eigen::Vector3d rmf_seed_normal(const Eigen::Vector3d& t) {
+		Eigen::Vector3d a = std::abs(t.x()) < 0.9 ? Eigen::Vector3d(1., 0., 0.) : Eigen::Vector3d(0., 1., 0.);
+		Eigen::Vector3d n = a - a.dot(t) * t;
+		double nn = n.norm();
+		if (nn < 1.e-12) {
+			a = Eigen::Vector3d(0., 0., 1.);
+			n = a - a.dot(t) * t;
+			nn = n.norm();
+		}
+		return n / nn;
+	}
+
+	// Tessellate an ordered list of edges (line + circle arc segments) into 3d
+	// points, honouring edge orientation. Consecutive duplicates are collapsed.
+	// Returns false if an edge uses an unsupported basis curve.
+	bool tessellate_edges(const std::vector<edge::ptr>& edges, int circle_segments, double deflection, std::vector<Eigen::Vector3d>& out) {
+		const double two_pi = 2.0 * std::acos(-1.0);
+		auto push_pt = [&out](const Eigen::Vector3d& v) {
+			if (out.empty() || (out.back() - v).norm() > 1.e-9) {
+				out.push_back(v);
+			}
+		};
+		for (auto& e : edges) {
+			std::vector<Eigen::Vector3d> seg;
+			if (e->basis && e->basis->kind() == CIRCLE) {
+				const circle::ptr c = std::static_pointer_cast<circle>(e->basis);
+				auto* s_pnt = boost::get<point3::ptr>(&e->start);
+				auto* e_pnt = boost::get<point3::ptr>(&e->end);
+				auto* s_par = boost::get<double>(&e->start);
+				auto* e_par = boost::get<double>(&e->end);
+				double s, en;
+				if (s_pnt) { s = project_onto_curve(c, **s_pnt); } else if (s_par) { s = *s_par; } else { return false; }
+				if (e_pnt) { en = project_onto_curve(c, **e_pnt); } else if (e_par) { en = *e_par; } else { return false; }
+				// Same two modes as the CGAL kernel's conic handling: a positive
+				// circle-segments count is a fixed, radius independent density, while 0
+				// (the default) derives the count from the mesher linear deflection so
+				// the chord deviation stays within tolerance regardless of radius.
+				const double span = std::fabs(en - s);
+				int n;
+				if (circle_segments > 0) {
+					n = (int)std::ceil(circle_segments * span / two_pi);
+				} else if (deflection > 0. && c->radius > deflection) {
+					const double max_segment_angle = 2.0 * std::acos(1.0 - deflection / c->radius);
+					n = (int)std::ceil(span / max_segment_angle);
+				} else {
+					n = (int)std::ceil(span / (two_pi / 4.));
+				}
+				n = std::max(2, n);
+				for (int k = 0; k <= n; ++k) {
+					double u = s + (en - s) * (double)k / (double)n;
+					point3 P;
+					evaluate_curve(c, u, P);
+					seg.push_back(P.ccomponents());
+				}
+			} else if (e->start.which() == 1 && e->end.which() == 1) {
+				seg.push_back(boost::get<point3::ptr>(e->start)->ccomponents());
+				seg.push_back(boost::get<point3::ptr>(e->end)->ccomponents());
+			} else {
+				return false;
+			}
+			if (!e->orientation.get_value_or(true)) {
+				std::reverse(seg.begin(), seg.end());
+			}
+			for (auto& v : seg) {
+				push_pt(v);
+			}
+		}
+		return true;
+	}
+}
+
+shell::ptr sweep_along_curve::as_shell(int circle_segments, double deflection) const {
+	// A reference surface (IfcSurfaceCurveSweptAreaSolid) constrains the profile
+	// orientation to that surface. Approximating without honouring it would give
+	// the wrong twist, so leave those to the kernel's native handling.
+	if (surface) {
+		return nullptr;
+	}
+
+	auto directrix = dcast<loop>(curve);
+	auto profile = dcast<face>(basis);
+	if (!directrix || !profile || profile->children.empty()) {
+		return nullptr;
+	}
+
+	// 1. Tessellate the directrix into an ordered path of stations.
+	std::vector<Eigen::Vector3d> path;
+	if (!tessellate_edges(directrix->children, circle_segments, deflection, path) || path.size() < 2) {
+		return nullptr;
+	}
+	const size_t m = path.size();
+
+	// 2. Tessellate the profile loops into local 2d rings (the profile lives in
+	// the z=0 plane). The exterior boundary is emitted first so that a hollow
+	// profile becomes an outer boundary with the remaining rings as holes.
+	struct ring_t {
+		std::vector<Eigen::Vector2d> pts;
+		bool external = false;
+	};
+	std::vector<ring_t> rings;
+	for (auto& lp : profile->children) {
+		std::vector<Eigen::Vector3d> pts3;
+		if (!tessellate_edges(lp->children, circle_segments, deflection, pts3)) {
+			return nullptr;
+		}
+		// Drop the duplicated closing point of the (closed) profile loop.
+		if (pts3.size() >= 2 && (pts3.front() - pts3.back()).norm() < 1.e-9) {
+			pts3.pop_back();
+		}
+		if (pts3.size() < 3) {
+			continue;
+		}
+		ring_t r;
+		r.external = lp->external.get_value_or(false);
+		for (auto& v : pts3) {
+			r.pts.emplace_back(v.x(), v.y());
+		}
+		rings.push_back(std::move(r));
+	}
+	if (rings.empty()) {
+		return nullptr;
+	}
+	std::stable_sort(rings.begin(), rings.end(), [](const ring_t& a, const ring_t& b) {
+		return a.external > b.external;
+	});
+
+	// 3. Per-station tangents and a rotation-minimizing normal along the
+	// directrix (double-reflection method, Wang et al. 2008). When a fixed
+	// reference direction is present it seeds the initial normal.
+	std::vector<Eigen::Vector3d> tang(m), seg(m > 0 ? m - 1 : 0);
+	for (size_t i = 0; i + 1 < m; ++i) {
+		seg[i] = (path[i + 1] - path[i]).normalized();
+	}
+	tang[0] = seg[0];
+	tang[m - 1] = seg[m - 2];
+	for (size_t i = 1; i + 1 < m; ++i) {
+		Eigen::Vector3d s = seg[i - 1] + seg[i];
+		tang[i] = s.norm() > 1.e-12 ? s.normalized() : seg[i];
+	}
+
+	std::vector<Eigen::Vector3d> nrm(m);
+	if (direction) {
+		Eigen::Vector3d ref = direction->ccomponents();
+		Eigen::Vector3d proj = ref - ref.dot(tang[0]) * tang[0];
+		nrm[0] = proj.norm() > 1.e-12 ? proj.normalized() : rmf_seed_normal(tang[0]);
+	} else {
+		nrm[0] = rmf_seed_normal(tang[0]);
+	}
+	for (size_t i = 0; i + 1 < m; ++i) {
+		const Eigen::Vector3d v1 = path[i + 1] - path[i];
+		const double c1 = v1.dot(v1);
+		if (c1 < 1.e-18) {
+			nrm[i + 1] = nrm[i];
+			continue;
+		}
+		const Eigen::Vector3d rL = nrm[i] - (2.0 / c1) * v1.dot(nrm[i]) * v1;
+		const Eigen::Vector3d tL = tang[i] - (2.0 / c1) * v1.dot(tang[i]) * v1;
+		const Eigen::Vector3d v2 = tang[i + 1] - tL;
+		const double c2 = v2.dot(v2);
+		Eigen::Vector3d rn = c2 < 1.e-18 ? rL : (rL - (2.0 / c2) * v2.dot(rL) * v2);
+		rn = rn - rn.dot(tang[i + 1]) * tang[i + 1];
+		double rl = rn.norm();
+		nrm[i + 1] = rl > 1.e-12 ? (rn / rl) : nrm[i];
+	}
+
+	std::vector<Eigen::Vector3d> U(m), W(m);
+	for (size_t i = 0; i < m; ++i) {
+		U[i] = nrm[i];
+		W[i] = tang[i].cross(nrm[i]).normalized();
+	}
+
+	// 4. Instance every ring at every station.
+	auto make_point = [](const Eigen::Vector3d& v) { return make<point3>(v); };
+	auto make_ring_loop = [&make_point](const std::vector<Eigen::Vector3d>& poly, bool external) {
+		auto lp = make<loop>();
+		lp->external = external;
+		lp->closed = true;
+		const size_t n = poly.size();
+		std::vector<point3::ptr> pp;
+		pp.reserve(n);
+		for (auto& v : poly) {
+			pp.push_back(make_point(v));
+		}
+		for (size_t i = 0; i < n; ++i) {
+			auto e = make<edge>();
+			e->start = pp[i];
+			e->end = pp[(i + 1) % n];
+			lp->children.push_back(e);
+		}
+		return lp;
+	};
+
+	auto sh = make<shell>();
+	sh->instance = instance;
+	sh->matrix = matrix;
+	sh->surface_style = surface_style;
+	sh->closed = true;
+
+	auto add_triangle = [&](const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c) {
+		auto f = make<face>();
+		f->instance = instance;
+		f->children.push_back(make_ring_loop({ a, b, c }, true));
+		sh->children.push_back(f);
+	};
+
+	// Station points for each ring, kept for the end caps.
+	std::vector<std::vector<std::vector<Eigen::Vector3d>>> station_pts(rings.size());
+	for (size_t ri = 0; ri < rings.size(); ++ri) {
+		const auto& r = rings[ri];
+		const size_t N = r.pts.size();
+		station_pts[ri].assign(m, std::vector<Eigen::Vector3d>(N));
+		for (size_t i = 0; i < m; ++i) {
+			for (size_t j = 0; j < N; ++j) {
+				station_pts[ri][i][j] = path[i] + r.pts[j].x() * U[i] + r.pts[j].y() * W[i];
+			}
+		}
+		// Side wall triangles between consecutive stations.
+		for (size_t i = 0; i + 1 < m; ++i) {
+			for (size_t j = 0; j < N; ++j) {
+				const size_t k = (j + 1) % N;
+				add_triangle(station_pts[ri][i][j], station_pts[ri][i][k], station_pts[ri][i + 1][k]);
+				add_triangle(station_pts[ri][i][j], station_pts[ri][i + 1][k], station_pts[ri][i + 1][j]);
+			}
+		}
+	}
+
+	// 5. End caps. The exterior ring is the outer boundary, any remaining rings
+	// become holes (a hollow swept disk becomes an annulus).
+	for (int end = 0; end < 2; ++end) {
+		const size_t i = end == 0 ? 0 : m - 1;
+		auto f = make<face>();
+		f->instance = instance;
+		f->children.push_back(make_ring_loop(station_pts.front()[i], true));
+		for (size_t ri = 1; ri < rings.size(); ++ri) {
+			f->children.push_back(make_ring_loop(station_pts[ri][i], false));
+		}
+		sh->children.push_back(f);
+	}
+
+	if (sh->children.empty()) {
+		return nullptr;
+	}
+	return sh;
+}
+
+shell::ptr loft::as_shell() const {
+	// Mirrors the polyhedral branch of the opencascade loft, i.e. the path taken
+	// after the non_polygonal guard that does NOT use BRepOffsetAPI_ThruSections.
+	// It is purely geometric (points and triangles), so it lives here and both the
+	// opencascade and the lighter cgal kernels can consume the resulting shell.
+	if (children.size() < 2) {
+		return nullptr;
+	}
+
+	// The polyhedral branch is only valid when every profile edge is linear. A
+	// curved edge belongs to the ThruSections branch, so bail out and let the
+	// caller fall back to the kernel's native lofting.
+	for (auto& ch : children) {
+		if (ch->kind() == FACE) {
+			for (auto& w : std::static_pointer_cast<face>(ch)->children) {
+				if (!w->is_polyhedron()) {
+					return nullptr;
+				}
+			}
+		} else if (ch->kind() == LOOP) {
+			if (!std::static_pointer_cast<loop>(ch)->is_polyhedron()) {
+				return nullptr;
+			}
+		} else {
+			return nullptr;
+		}
+	}
+
+	const bool sections_are_faces = children.front()->kind() == FACE;
+	const bool tagged =
+		children.front()->kind() == LOOP &&
+		std::static_pointer_cast<loop>(children.front())->tags.is_initialized();
+
+	auto sh = make<shell>();
+	sh->instance = instance;
+	sh->surface_style = surface_style;
+	sh->closed = sections_are_faces;
+
+	auto add_triangle = [&](const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c) {
+		std::array<point3::ptr, 3> pp = { make<point3>(a), make<point3>(b), make<point3>(c) };
+		auto lp = make<loop>();
+		lp->closed = true;
+		lp->external = true;
+		for (int i = 0; i < 3; ++i) {
+			auto e = make<edge>();
+			e->start = pp[i];
+			e->end = pp[(i + 1) % 3];
+			lp->children.push_back(e);
+		}
+		auto f = make<face>();
+		f->instance = instance;
+		f->children.push_back(lp);
+		sh->children.push_back(f);
+	};
+
+	if (tagged) {
+		// Open profiles carry availability tags that establish a correspondence
+		// between the (differently sized) vertex sets of consecutive sections. This
+		// is a faithful port of the tag-driven merge triangulation from the
+		// opencascade loft.
+		auto has_intersection = [](const std::set<std::string>& X, const std::set<std::string>& Y) {
+			auto itA = X.begin();
+			auto itB = Y.begin();
+			while (itA != X.end() && itB != Y.end()) {
+				if (*itA < *itB) {
+					++itA;
+				} else if (*itB < *itA) {
+					++itB;
+				} else {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		// Reduce a loop to its ordered vertices, collapsing zero-length edges into
+		// merged tag sets, and bake the loop placement into world coordinates.
+		auto loop_to_points = [](const loop::ptr& lp) -> std::pair<std::vector<Eigen::Vector3d>, std::vector<std::set<std::string>>> {
+			const auto& input_tags = lp->tags;
+			std::vector<point3::ptr> pts;
+			std::vector<std::set<std::string>> tags;
+			std::vector<std::string>::const_iterator tag_it;
+			if (!lp->closed.get_value_or(false)) {
+				pts = { boost::get<point3::ptr>(lp->children[0]->start) };
+				if (input_tags) {
+					tags = { { input_tags->front() } };
+					tag_it = ++input_tags->begin();
+				}
+			}
+			for (auto& e : lp->children) {
+				const auto& p1 = boost::get<point3::ptr>(e->start);
+				const auto& p2 = boost::get<point3::ptr>(e->end);
+				if (input_tags && p1->ccomponents() == p2->ccomponents()) {
+					tags.back().insert(*tag_it);
+					++tag_it;
+				} else {
+					pts.push_back(p2);
+					if (input_tags) {
+						tags.emplace_back();
+						tags.back().insert(*tag_it);
+						++tag_it;
+					}
+				}
+			}
+			if (!input_tags && lp->closed.get_value_or(false)) {
+				pts.push_back(pts.front());
+			}
+			Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+			const bool has_m = lp->matrix && !lp->matrix->is_identity();
+			if (has_m) {
+				m = lp->matrix->ccomponents();
+			}
+			std::vector<Eigen::Vector3d> out;
+			out.reserve(pts.size());
+			for (auto& p : pts) {
+				Eigen::Vector3d v = p->ccomponents();
+				if (has_m) {
+					Eigen::Vector4d h(v.x(), v.y(), v.z(), 1.0);
+					v = (m * h).head<3>();
+				}
+				out.push_back(v);
+			}
+			return { out, tags };
+		};
+
+		std::vector<std::vector<Eigen::Vector3d>> section_points;
+		std::vector<std::vector<std::set<std::string>>> section_tags;
+		for (auto& ch : children) {
+			if (ch->kind() != LOOP) {
+				return nullptr;
+			}
+			auto [pts, tgs] = loop_to_points(std::static_pointer_cast<loop>(ch));
+			if (pts.size() < 2 || tgs.size() < 2) {
+				return nullptr;
+			}
+			section_points.push_back(std::move(pts));
+			section_tags.push_back(std::move(tgs));
+		}
+
+		for (size_t s = 0; s + 1 < children.size(); ++s) {
+			const auto& A = section_points[s];
+			const auto& B = section_points[s + 1];
+			const auto& C = section_tags[s];
+			const auto& D = section_tags[s + 1];
+
+			auto a = A.begin();
+			auto b = B.begin();
+			auto c = C.begin();
+			auto d = D.begin();
+
+			if (!has_intersection(*c, *d)) {
+				// Corresponds to a hard error on the opencascade path; bail out so
+				// the caller can fall back rather than emit a malformed shell.
+				return nullptr;
+			}
+
+			while (c != (C.end() - 1) && d != (C.end() - 1)) {
+				if (c != (C.end() - 1) && has_intersection(*(c + 1), *d)) {
+					add_triangle(*a, *(a + 1), *b);
+					++a;
+					++c;
+				} else if (d != (D.end() - 1) && has_intersection(*c, *(d + 1))) {
+					add_triangle(*a, *(b + 1), *b);
+					++b;
+					++d;
+				} else if (c != (C.end() - 1) && d != (D.end() - 1) && has_intersection(*(c + 1), *(d + 1))) {
+					add_triangle(*a, *(a + 1), *b);
+					add_triangle(*(a + 1), *(b + 1), *b);
+					++a;
+					++b;
+					++c;
+					++d;
+				} else {
+					return nullptr;
+				}
+			}
+		}
+
+		if (sh->children.empty()) {
+			return nullptr;
+		}
+		return sh;
+	}
+
+	// Plain path: every section is decomposed into an ordered set of rings (the
+	// outer ring first). Each ring is stored as its ordered edges (start, end) so
+	// consecutive sections can be stitched edge for edge, exactly as the
+	// opencascade WireExplorer walk does.
+	struct ring_t {
+		std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> edges;
+	};
+	std::vector<std::vector<ring_t>> sections;
+	sections.reserve(children.size());
+
+	auto edge_point = [](const edge::ptr& e, bool end, const Eigen::Matrix4d* m) -> Eigen::Vector3d {
+		Eigen::Vector3d v = boost::get<point3::ptr>(end ? e->end : e->start)->ccomponents();
+		if (m) {
+			Eigen::Vector4d h(v.x(), v.y(), v.z(), 1.0);
+			v = (*m * h).head<3>();
+		}
+		return v;
+	};
+
+	for (auto& ch : children) {
+		std::vector<ring_t> rings;
+		if (ch->kind() == FACE) {
+			auto f = std::static_pointer_cast<face>(ch);
+			Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+			const bool has_m = f->matrix && !f->matrix->is_identity();
+			if (has_m) {
+				m = f->matrix->ccomponents();
+			}
+			// The outer boundary is processed first so it becomes the outer wire of
+			// the caps and pairs up with the outer wire of the neighbouring section.
+			std::vector<loop::ptr> ordered(f->children.begin(), f->children.end());
+			std::stable_sort(ordered.begin(), ordered.end(), [](const loop::ptr& x, const loop::ptr& y) {
+				return x->external.get_value_or(false) > y->external.get_value_or(false);
+			});
+			for (auto& lp : ordered) {
+				ring_t r;
+				for (auto& e : lp->children) {
+					r.edges.emplace_back(edge_point(e, false, has_m ? &m : nullptr), edge_point(e, true, has_m ? &m : nullptr));
+				}
+				rings.push_back(std::move(r));
+			}
+		} else {
+			auto lp = std::static_pointer_cast<loop>(ch);
+			ring_t r;
+			for (auto& e : lp->children) {
+				r.edges.emplace_back(edge_point(e, false, nullptr), edge_point(e, true, nullptr));
+			}
+			rings.push_back(std::move(r));
+		}
+		sections.push_back(std::move(rings));
+	}
+
+	// Begin and end caps for closed (face) sections.
+	auto add_cap = [&](const std::vector<ring_t>& rings, bool reversed) {
+		auto f = make<face>();
+		f->instance = instance;
+		for (size_t r = 0; r < rings.size(); ++r) {
+			std::vector<Eigen::Vector3d> poly;
+			poly.reserve(rings[r].edges.size());
+			for (auto& seg : rings[r].edges) {
+				poly.push_back(seg.first);
+			}
+			if (reversed) {
+				std::reverse(poly.begin(), poly.end());
+			}
+			const size_t N = poly.size();
+			if (N < 3) {
+				continue;
+			}
+			std::vector<point3::ptr> pp;
+			pp.reserve(N);
+			for (auto& v : poly) {
+				pp.push_back(make<point3>(v));
+			}
+			auto lp = make<loop>();
+			lp->closed = true;
+			lp->external = (r == 0);
+			for (size_t k = 0; k < N; ++k) {
+				auto e = make<edge>();
+				e->start = pp[k];
+				e->end = pp[(k + 1) % N];
+				lp->children.push_back(e);
+			}
+			f->children.push_back(lp);
+		}
+		if (!f->children.empty()) {
+			sh->children.push_back(f);
+		}
+	};
+
+	if (sections_are_faces) {
+		add_cap(sections.front(), true);
+		add_cap(sections.back(), false);
+	}
+
+	// Side walls: stitch each ring of one section to the corresponding ring of the
+	// next. Every quad (edge k of both rings) becomes two triangles.
+	for (size_t s = 0; s + 1 < sections.size(); ++s) {
+		const auto& ra = sections[s];
+		const auto& rb = sections[s + 1];
+		const size_t nr = std::min(ra.size(), rb.size());
+		for (size_t r = 0; r < nr; ++r) {
+			const auto& ea = ra[r].edges;
+			const auto& eb = rb[r].edges;
+			const size_t n = std::min(ea.size(), eb.size());
+			for (size_t k = 0; k < n; ++k) {
+				const Eigen::Vector3d& e1a = ea[k].first;
+				const Eigen::Vector3d& e1b = ea[k].second;
+				const Eigen::Vector3d& e3a = eb[k].first;
+				const Eigen::Vector3d& e3b = eb[k].second;
+				add_triangle(e1a, e1b, e3b);
+				add_triangle(e3b, e3a, e1a);
+			}
+		}
+	}
+
+	if (sh->children.empty()) {
+		return nullptr;
+	}
+	return sh;
 }
