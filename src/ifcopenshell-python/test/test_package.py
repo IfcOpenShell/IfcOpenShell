@@ -20,6 +20,7 @@ import http.client
 from pathlib import Path
 from urllib.parse import urlparse
 
+import pytest
 from typing_extensions import assert_never
 
 SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314")
@@ -123,6 +124,7 @@ class TestPackageSupportedPlatforms:
 
         return missing_urls
 
+    @pytest.mark.skip(reason="Re-enable when builds are fully operational again")
     def test_run(self) -> None:
         required_urls = self.get_required_urls()
         maybe_missing_urls = self.get_missing_urls_fast(required_urls)

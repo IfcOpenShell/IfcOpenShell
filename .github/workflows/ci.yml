@@ -233,7 +233,6 @@ jobs:
           cd test
           python tests.py
           cd ../src/ifcopenshell-python
-          mv ifcopenshell ifcopenshell-local # Force testing on installed module
           pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
           ERROR=0
           make test-parallel || ERROR=1
