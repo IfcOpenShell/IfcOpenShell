@@ -132,7 +132,6 @@ class TestIds:
         specs.to_xml(fn)
         os.remove(fn)
 
-    @pytest.mark.skip(reason="Re-enable when failure is investigated")
     def test_creating_a_minimal_ids_and_validating(self):
         specs = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
