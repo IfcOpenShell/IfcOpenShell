@@ -594,6 +594,7 @@ class IfcGit:
     def get_ifcgit_props(cls): pass
     def get_modified_step_ids(cls, step_ids): pass
     def get_path_dir(cls, path_ifc): pass
+    def get_project_asset_paths(cls, path_ifc): pass
     def get_revisions_step_ids(cls): pass
     def is_head_detached(cls): pass
     def repo_has_commits(cls): pass
@@ -609,6 +610,7 @@ class IfcGit:
     def refresh_revision_list(cls, path_ifc): pass
     def repo_from_path(cls, path): pass
     def run_git_diff(cls, operator, save_to_temp): pass
+    def stage_asset_files(cls, asset_paths): pass
     def switch_to_revision_item(cls): pass
     def tags_by_hexsha(cls, repo): pass
     def update_step_ids(cls, step_ids, modified_step_ids): pass

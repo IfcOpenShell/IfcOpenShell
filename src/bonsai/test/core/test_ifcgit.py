@@ -73,12 +73,16 @@ class TestDiscardUncommitted:
 class TestCommitChanges:
     def test_commit_on_branch_without_new_branch(self, ifcgit, ifc):
         ifc.get_path().should_be_called().will_return("path/to/model.ifc")
+        ifcgit.get_project_asset_paths("path/to/model.ifc").should_be_called().will_return([])
+        ifcgit.stage_asset_files([]).should_be_called().will_return([])
         ifcgit.is_head_detached().should_be_called().will_return(False)
         ifcgit.git_commit("path/to/model.ifc", "my message").should_be_called()
         subject.commit_changes(ifcgit, ifc, "my message", "")
 
     def test_commit_on_branch_with_new_branch(self, ifcgit, ifc):
         ifc.get_path().should_be_called().will_return("path/to/model.ifc")
+        ifcgit.get_project_asset_paths("path/to/model.ifc").should_be_called().will_return([])
+        ifcgit.stage_asset_files([]).should_be_called().will_return([])
         ifcgit.is_head_detached().should_be_called().will_return(False)
         ifcgit.checkout_new_branch("path/to/model.ifc", "feature").should_be_called()
         ifcgit.git_commit("path/to/model.ifc", "my message").should_be_called()
@@ -86,10 +90,25 @@ class TestCommitChanges:
 
     def test_commit_on_detached_head(self, ifcgit, ifc):
         ifc.get_path().should_be_called().will_return("path/to/model.ifc")
+        ifcgit.get_project_asset_paths("path/to/model.ifc").should_be_called().will_return([])
+        ifcgit.stage_asset_files([]).should_be_called().will_return([])
         ifcgit.is_head_detached().should_be_called().will_return(True)
         ifcgit.git_commit("path/to/model.ifc", "my message").should_be_called()
         ifcgit.create_new_branch("feature").should_be_called()
         subject.commit_changes(ifcgit, ifc, "my message", "feature")
+
+    def test_commit_warns_about_assets_outside_the_repo(self, ifcgit, ifc):
+        ifc.get_path().should_be_called().will_return("path/to/model.ifc")
+        ifcgit.get_project_asset_paths("path/to/model.ifc").should_be_called().will_return(["/elsewhere/style.css"])
+        ifcgit.stage_asset_files(["/elsewhere/style.css"]).should_be_called().will_return(["/elsewhere/style.css"])
+        ifcgit.is_head_detached().should_be_called().will_return(False)
+        ifcgit.git_commit("path/to/model.ifc", "my message").should_be_called()
+        op = MockOperator()
+        subject.commit_changes(ifcgit, ifc, "my message", "", operator=op)
+        assert len(op.reports) == 1
+        level, message = op.reports[0]
+        assert level == {"WARNING"}
+        assert "/elsewhere/style.css" in message
 
 
 class TestAddTag:

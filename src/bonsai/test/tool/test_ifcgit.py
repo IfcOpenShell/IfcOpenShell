@@ -20,7 +20,14 @@
 import os
 import tempfile
 
+import bpy
+import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.guid
+
+import bonsai.core.ifcgit
 import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.tool.ifcgit import IfcGit, IfcGitRepo
 from test.bim.bootstrap import NewFile
 
@@ -457,6 +464,138 @@ class TestIfcDiffIds(NewFile):
 
 
 # ---------------------------------------------------------------------------
+# Project asset tracking
+# ---------------------------------------------------------------------------
+
+
+def _make_drawing_with_resources(ifc: "ifcopenshell.file", properties: dict) -> None:
+    annotation = ifc.createIfcAnnotation(ifcopenshell.guid.new(), None, "PLAN", None, "DRAWING")
+    pset = ifcopenshell.api.pset.add_pset(ifc, product=annotation, name="EPset_Drawing")
+    ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties=properties)
+
+
+class TestGetProjectAssetPaths(NewFile):
+    def test_returns_empty_list_without_a_file(self):
+        # NewFile leaves no IFC loaded
+        assert IfcGit.get_project_asset_paths("/repo/model.ifc") == []
+
+    def test_collects_drawing_resources_relative_to_the_ifc(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        _make_drawing_with_resources(
+            ifc,
+            {
+                "Stylesheet": "drawings/assets/default.css",
+                "Markers": "drawings/assets/markers.svg",
+                "Symbols": "drawings/assets/symbols.svg",
+                "Patterns": "drawings/assets/patterns.svg",
+            },
+        )
+        result = IfcGit.get_project_asset_paths("/repo/sub/model.ifc")
+        assert result == sorted(
+            [
+                os.path.normpath("/repo/sub/drawings/assets/default.css"),
+                os.path.normpath("/repo/sub/drawings/assets/markers.svg"),
+                os.path.normpath("/repo/sub/drawings/assets/symbols.svg"),
+                os.path.normpath("/repo/sub/drawings/assets/patterns.svg"),
+            ]
+        )
+
+    def test_deduplicates_resources_shared_by_drawings(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        _make_drawing_with_resources(ifc, {"Stylesheet": "assets/default.css"})
+        _make_drawing_with_resources(ifc, {"Stylesheet": "assets/default.css"})
+        result = IfcGit.get_project_asset_paths("/repo/model.ifc")
+        assert result == [os.path.normpath("/repo/assets/default.css")]
+
+    def test_keeps_absolute_paths_and_skips_urls_and_generated_outputs(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        _make_drawing_with_resources(
+            ifc,
+            {
+                "Stylesheet": "/absolute/style.css",
+                "Markers": "https://example.com/markers.svg",
+                "ShadingStyles": "assets/shading_styles.json",
+            },
+        )
+        result = IfcGit.get_project_asset_paths("/repo/model.ifc")
+        assert result == [os.path.normpath("/absolute/style.css")]
+
+    def test_ignores_annotations_that_are_not_drawings(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcAnnotation(ifcopenshell.guid.new(), None, "text", None, "TEXT")
+        assert IfcGit.get_project_asset_paths("/repo/model.ifc") == []
+
+    def test_collects_sheet_titleblocks_and_layouts_but_not_generated_sheets(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        sheet = ifc.createIfcDocumentInformation("A01", "Sheet", None, None, None, None, "SHEET")
+        ifc.createIfcDocumentReference("layouts/titleblocks/A1.svg", None, None, "TITLEBLOCK", sheet)
+        ifc.createIfcDocumentReference("layouts/A01 - Sheet.svg", None, None, "LAYOUT", sheet)
+        ifc.createIfcDocumentReference("sheets/A01 - Sheet.svg", None, None, "SHEET", sheet)
+        result = IfcGit.get_project_asset_paths("/repo/model.ifc")
+        assert result == sorted(
+            [
+                os.path.normpath("/repo/layouts/titleblocks/A1.svg"),
+                os.path.normpath("/repo/layouts/A01 - Sheet.svg"),
+            ]
+        )
+
+    def test_collects_all_files_in_the_titleblocks_dir(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc = ifcopenshell.file()
+            tool.Ifc.set(ifc)
+            project = ifc.createIfcProject(ifcopenshell.guid.new(), None, "My Project")
+            pset = ifcopenshell.api.pset.add_pset(ifc, product=project, name="BBIM_Documentation")
+            ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"TitleblocksDir": "titleblocks"})
+            titleblocks_dir = os.path.join(tmpdir, "titleblocks")
+            os.makedirs(titleblocks_dir)
+            titleblock = os.path.join(titleblocks_dir, "A1.svg")
+            open(titleblock, "w").close()
+            open(os.path.join(titleblocks_dir, ".hidden"), "w").close()
+            result = IfcGit.get_project_asset_paths(os.path.join(tmpdir, "model.ifc"))
+            assert result == [os.path.normpath(titleblock)]
+
+
+class TestStageAssetFiles(NewFile):
+    @requires_git
+    def test_stages_assets_inside_the_repo_and_returns_outside_ones(self):
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            tempfile.TemporaryDirectory() as elsewhere,
+        ):
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            inside = os.path.join(tmpdir, "assets", "default.css")
+            os.makedirs(os.path.dirname(inside))
+            open(inside, "w").close()
+            outside = os.path.join(elsewhere, "shared.css")
+            open(outside, "w").close()
+            missing = os.path.join(tmpdir, "assets", "missing.svg")
+            try:
+                result = IfcGit.stage_asset_files(sorted([inside, outside, missing]))
+                assert result == [outside]
+                staged = [entry[0] for entry in repo.index.entries]
+                assert "assets/default.css" in staged
+            finally:
+                IfcGitRepo.repo = None
+
+    @requires_git
+    def test_stages_nothing_for_empty_input(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            try:
+                assert IfcGit.stage_asset_files([]) == []
+                assert len(repo.index.entries) == 0
+            finally:
+                IfcGitRepo.repo = None
+
+
+# ---------------------------------------------------------------------------
 # Merge conflict report — store / clear / get
 # ---------------------------------------------------------------------------
 
@@ -583,3 +722,144 @@ class TestConfigIfcmerge:
             assert "--prioritise-local" in cmd
             assert "> $MERGED.ifcmerge" in cmd
             IfcGitRepo.repo = None
+
+
+# ---------------------------------------------------------------------------
+# Real-world integration coverage (#8687 review feedback from brunopostle):
+# drive the actual Bonsai authoring operators and the real commit_changes
+# core flow against a real git repo, instead of hand-written psets and a
+# mocked git object. Regression coverage for the three scenarios manually
+# verified live: a project with a full drawing + sheet, a project with no
+# drawings configured at all, and an asset referenced outside the repo.
+# ---------------------------------------------------------------------------
+
+
+class _RecordingOperator:
+    def __init__(self):
+        self.reports = []
+
+    def report(self, level, message):
+        self.reports.append((level, message))
+
+
+def _committed_files(repo):
+    return sorted(repo.head.commit.stats.files.keys())
+
+
+class TestCommitChangesRealProject(NewFile):
+    @requires_git
+    def test_commits_a_real_drawing_and_sheet_alongside_the_ifc(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+            bpy.ops.bim.create_project()
+            wall_type = tool.Ifc.get().by_type("IfcWallType")[0]
+            bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+
+            ifc_path = os.path.join(tmpdir, "project.ifc")
+            bpy.ops.bim.save_project(filepath=ifc_path, should_save_as=True)
+            tool.Ifc.set_path(ifc_path)
+
+            bpy.ops.bim.add_drawing()
+            drawings = [d for d in tool.Ifc.get().by_type("IfcAnnotation") if d.ObjectType == "DRAWING"]
+            assert drawings, "add_drawing did not create a DRAWING annotation"
+
+            bpy.ops.bim.add_sheet()
+            sheets = [s for s in tool.Ifc.get().by_type("IfcDocumentInformation") if s.Scope == "SHEET"]
+            assert sheets, "add_sheet did not create a SHEET document"
+
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            try:
+                repo.index.add([os.path.normpath(ifc_path)])
+                repo.index.commit("initial")
+                with open(ifc_path, "a") as f:
+                    f.write("\n/* test touch */\n")
+
+                operator = _RecordingOperator()
+                bonsai.core.ifcgit.commit_changes(IfcGit, tool.Ifc, "add drawing + sheet", operator=operator)
+
+                committed = _committed_files(repo)
+                assert any(f.endswith(".ifc") for f in committed)
+                # The sheet's layout SVG is real on disk right after add_sheet
+                # and must be committed alongside the IFC.
+                assert any("layouts" in f for f in committed)
+                assert not operator.reports, f"unexpected warnings: {operator.reports}"
+            finally:
+                IfcGitRepo.repo = None
+
+    @requires_git
+    def test_commits_cleanly_when_no_drawings_are_configured(self):
+        """Matches brunopostle's own report: a branch/project with no drawings
+        configured must commit exactly as it did before asset tracking existed."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+            bpy.ops.bim.create_project()
+            slab_type = tool.Ifc.get().by_type("IfcSlabType")[0]
+            bpy.ops.bim.add_occurrence(relating_type_id=slab_type.id())
+
+            ifc_path = os.path.join(tmpdir, "project.ifc")
+            bpy.ops.bim.save_project(filepath=ifc_path, should_save_as=True)
+            tool.Ifc.set_path(ifc_path)
+
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            try:
+                repo.index.add([os.path.normpath(ifc_path)])
+                repo.index.commit("initial")
+                with open(ifc_path, "a") as f:
+                    f.write("\n/* test touch */\n")
+
+                operator = _RecordingOperator()
+                bonsai.core.ifcgit.commit_changes(IfcGit, tool.Ifc, "no drawings", operator=operator)
+
+                assert _committed_files(repo) == [os.path.basename(ifc_path)]
+                assert not operator.reports
+            finally:
+                IfcGitRepo.repo = None
+
+    @requires_git
+    def test_warns_and_skips_an_asset_referenced_outside_the_repo(self):
+        with tempfile.TemporaryDirectory() as tmpdir, tempfile.TemporaryDirectory() as outside_dir:
+            tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+            bpy.ops.bim.create_project()
+            wall_type = tool.Ifc.get().by_type("IfcWallType")[0]
+            bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+
+            ifc_path = os.path.join(tmpdir, "project.ifc")
+            bpy.ops.bim.save_project(filepath=ifc_path, should_save_as=True)
+            tool.Ifc.set_path(ifc_path)
+
+            bpy.ops.bim.add_drawing()
+            drawing = [d for d in tool.Ifc.get().by_type("IfcAnnotation") if d.ObjectType == "DRAWING"][-1]
+
+            outside_stylesheet = os.path.join(outside_dir, "shared_system_stylesheet.css")
+            with open(outside_stylesheet, "w") as f:
+                f.write("/* shared */")
+
+            pset_entity = next(
+                r.RelatingPropertyDefinition
+                for r in drawing.IsDefinedBy
+                if r.RelatingPropertyDefinition.Name == "EPset_Drawing"
+            )
+            ifcopenshell.api.pset.edit_pset(
+                tool.Ifc.get(), pset=pset_entity, properties={"Stylesheet": outside_stylesheet}
+            )
+
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            try:
+                repo.index.add([os.path.normpath(ifc_path)])
+                repo.index.commit("initial")
+                with open(ifc_path, "a") as f:
+                    f.write("\n/* test touch */\n")
+
+                operator = _RecordingOperator()
+                bonsai.core.ifcgit.commit_changes(IfcGit, tool.Ifc, "outside asset", operator=operator)
+
+                committed = _committed_files(repo)
+                assert any(f.endswith(".ifc") for f in committed)
+                assert "shared_system_stylesheet.css" not in {os.path.basename(f) for f in committed}
+                assert operator.reports, "expected a warning about the outside-repo asset"
+                assert "shared_system_stylesheet.css" in operator.reports[0][1]
+            finally:
+                IfcGitRepo.repo = None
