@@ -168,7 +168,16 @@ namespace {
 					auto v1 = boost::get<double>(e_start);
 					auto v2 = boost::get<double>(e_end);
 
-					if (is_conic && ALMOST_THE_SAME(fmod(v2 - v1, M_PI * 2.), 0.)) {
+					if (is_conic && ALMOST_THE_SAME(v1, v2)) {
+						// A zero-span parameter trim (e.g. an IfcTrimmedCurve trimmed
+						// from 0 to 0) is a degenerate segment, not a full revolution.
+						// The modulo-2pi test below cannot tell the two apart (fmod(0)
+						// == 0), so without this guard a spurious full conic edge would
+						// be emitted, inserting a closed circle into the wire and
+						// breaking curve joining (#6912). Signal a degenerate segment so
+						// the caller can skip it.
+						throw std::runtime_error("Degenerate zero-span trimmed conic segment");
+					} else if (is_conic && ALMOST_THE_SAME(fmod(v2 - v1, M_PI * 2.), 0.)) {
 						E = BRepBuilderAPI_MakeEdge(curve).Edge();
 					} else {
 						E = BRepBuilderAPI_MakeEdge(curve, v1, v2).Edge();
