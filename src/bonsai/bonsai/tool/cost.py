@@ -948,7 +948,7 @@ class Cost(bonsai.core.tool.Cost):
                 new.name = cost_item.Name or "Unnamed"
                 new.ifc_definition_id = cost_item.id()
                 quantity, unit = cls.calculate_parametric_quantity(cost_item, product)
-                new.total_quantity = quantity or 1
+                new.total_quantity = quantity or 0
                 new.unit_symbol = unit or ""
                 new.total_cost_quantity = ifcopenshell.util.cost.get_total_quantity(cost_item)
 
