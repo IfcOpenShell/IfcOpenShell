@@ -780,6 +780,242 @@ class RecalculateWall(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+def _convex_hull_2d(points: np.ndarray) -> Optional[np.ndarray]:
+    """Andrew's monotone chain convex hull of 2D points, returned
+    counter-clockwise. Returns None when fewer than 3 unique points remain
+    (a degenerate footprint), leaving the caller to fall back to an
+    axis-aligned box."""
+    unique = sorted(set(map(tuple, np.round(points, 9))))
+    if len(unique) < 3:
+        return None
+
+    def cross(o: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower: list[tuple[float, float]] = []
+    for p in unique:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper: list[tuple[float, float]] = []
+    for p in reversed(unique):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    hull = lower[:-1] + upper[:-1]
+    if len(hull) < 3:
+        return None
+    return np.array(hull, dtype=float)
+
+
+def _min_area_rectangle(points: np.ndarray) -> Optional[tuple[np.ndarray, float, float, float]]:
+    """Minimum-area enclosing rectangle of a 2D point cloud, computed with
+    rotating calipers over the convex hull edges. Returns
+    ``(center_xy, length_angle, length, thickness)`` where ``length`` is the
+    longer side, ``thickness`` the shorter, and ``length_angle`` the world
+    angle (radians) of the long axis. Falls back to the axis-aligned bounding
+    box for degenerate hulls."""
+    if len(points) == 0:
+        return None
+    hull = _convex_hull_2d(points)
+    if hull is None:
+        minx, miny = points.min(axis=0)
+        maxx, maxy = points.max(axis=0)
+        width, depth = float(maxx - minx), float(maxy - miny)
+        center = np.array([(minx + maxx) / 2.0, (miny + maxy) / 2.0])
+        if width >= depth:
+            return center, 0.0, width, depth
+        return center, math.pi / 2.0, depth, width
+
+    best: Optional[tuple[float, float, float, float, float, float]] = None
+    n = len(hull)
+    for i in range(n):
+        edge = hull[(i + 1) % n] - hull[i]
+        angle = math.atan2(edge[1], edge[0])
+        c, s = math.cos(-angle), math.sin(-angle)
+        rot = hull @ np.array([[c, -s], [s, c]]).T
+        minx, maxx = rot[:, 0].min(), rot[:, 0].max()
+        miny, maxy = rot[:, 1].min(), rot[:, 1].max()
+        area = (maxx - minx) * (maxy - miny)
+        if best is None or area < best[0]:
+            best = (area, angle, minx, maxx, miny, maxy)
+    assert best is not None
+    _, angle, minx, maxx, miny, maxy = best
+    width_along, width_across = maxx - minx, maxy - miny
+    cx_rot, cy_rot = (minx + maxx) / 2.0, (miny + maxy) / 2.0
+    c, s = math.cos(angle), math.sin(angle)
+    center = np.array([c * cx_rot - s * cy_rot, s * cx_rot + c * cy_rot])
+    if width_along >= width_across:
+        return center, angle, float(width_along), float(width_across)
+    return center, angle + math.pi / 2.0, float(width_across), float(width_along)
+
+
+def _wall_box_from_mesh(obj: bpy.types.Object) -> Optional[tuple[Matrix, float, float, float]]:
+    """Derive a parametric wall's placement and dimensions from an object's
+    current mesh footprint. Returns ``(matrix_world, length, thickness,
+    height)`` in SI meters, or None if the mesh is degenerate.
+
+    ``length`` and ``thickness`` come from the minimum-area rectangle of the
+    footprint projected onto the horizontal plane (Cyril Waechter's "rotated
+    bounding box" for issue #8108); ``height`` is the vertical extent. The
+    matrix places the wall so that local +X runs along the length, local +Y
+    across the thickness (the wall body sits on the +Y side of the axis
+    reference line, matching :func:`add_wall_representation`), and local +Z is
+    up, with the origin at the reference corner (axis start)."""
+    mesh = obj.data
+    assert isinstance(mesh, bpy.types.Mesh)
+    if not mesh.vertices:
+        return None
+    matrix_world = obj.matrix_world
+    coords = np.array([(matrix_world @ v.co).to_tuple() for v in mesh.vertices], dtype=float)
+    zmin, zmax = float(coords[:, 2].min()), float(coords[:, 2].max())
+    height = zmax - zmin
+    rect = _min_area_rectangle(coords[:, :2])
+    if rect is None:
+        return None
+    center_xy, length_angle, length, thickness = rect
+    if length <= 1e-6 or thickness <= 1e-6 or height <= 1e-6:
+        return None
+    u = Vector((math.cos(length_angle), math.sin(length_angle), 0.0))
+    z = Vector((0.0, 0.0, 1.0))
+    v = z.cross(u)
+    origin = Vector((center_xy[0], center_xy[1], zmin)) - u * (length / 2.0) - v * (thickness / 2.0)
+    matrix = Matrix(
+        (
+            (u.x, v.x, z.x, origin.x),
+            (u.y, v.y, z.y, origin.y),
+            (u.z, v.z, z.z, origin.z),
+            (0.0, 0.0, 0.0, 1.0),
+        )
+    )
+    return matrix, length, thickness, height
+
+
+class ConvertToParametricWall(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.convert_to_parametric_wall"
+    bl_label = "Convert To Parametric Wall"
+    bl_description = (
+        "Rebuild the active IfcWall as a standard Bonsai parametric (layered) wall "
+        "fitted to the current mesh's bounding footprint.\n"
+        "Length, thickness and height are derived from the mesh; openings are not recovered.\n"
+        "The result is editable with the normal wall tools (extend, cardinal point, layer thickness)"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if not obj or not isinstance(obj.data, bpy.types.Mesh):
+            cls.poll_message_set("Active object must be a mesh.")
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcWall"):
+            cls.poll_message_set("Active object must be an IfcWall.")
+            return False
+        return True
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        obj = context.active_object
+        assert obj and isinstance(obj.data, bpy.types.Mesh)
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        if body_context is None:
+            self.report({"ERROR"}, "Project has no Model/Body/MODEL_VIEW context.")
+            return {"CANCELLED"}
+        axis_context = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Axis", "GRAPH_VIEW")
+
+        box = _wall_box_from_mesh(obj)
+        if box is None:
+            self.report({"ERROR"}, f"Could not derive a wall box from '{obj.name}' (mesh is empty or degenerate).")
+            return {"CANCELLED"}
+        matrix, length, thickness, height = box
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        # A parametric wall's thickness comes from its material layer set. Reuse
+        # the element's current material for the single layer where possible so
+        # the conversion keeps its identity, otherwise fall back like the native
+        # LAYERSET_AXIS2 template does.
+        layer_material = None
+        current_material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if current_material:
+            if current_material.is_a("IfcMaterialLayerSet") and current_material.MaterialLayers:
+                layer_material = current_material.MaterialLayers[0].Material
+            elif current_material.is_a("IfcMaterial"):
+                layer_material = current_material
+        if layer_material is None:
+            existing_materials = ifc_file.by_type("IfcMaterial")
+            layer_material = (
+                existing_materials[0]
+                if existing_materials
+                else ifcopenshell.api.material.add_material(ifc_file, name="Unknown")
+            )
+
+        layer_set = ifcopenshell.api.material.add_material_set(ifc_file, name="Unnamed", set_type="IfcMaterialLayerSet")
+        layer = ifcopenshell.api.material.add_layer(ifc_file, layer_set=layer_set, material=layer_material)
+        layer.LayerThickness = thickness / unit_scale
+        # Assigning the usage unassigns any prior material association first.
+        ifcopenshell.api.material.assign_material(
+            ifc_file, products=[element], type="IfcMaterialLayerSetUsage", material=layer_set
+        )
+
+        # Drop the old frozen body (and any stale axis) so the parametric ones
+        # take their place in the Body/Axis contexts.
+        for ctx in (body_context, axis_context):
+            if ctx is None:
+                continue
+            old_rep = tool.Geometry.get_representation_by_context(element, ctx)
+            if old_rep:
+                ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=old_rep)
+                ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_rep)
+
+        obj.matrix_world = matrix
+        context.view_layer.update()
+
+        if axis_context:
+            axis_rep = ifcopenshell.api.geometry.add_axis_representation(
+                ifc_file, context=axis_context, axis=[(0.0, 0.0), (length, 0.0)]
+            )
+            ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=axis_rep)
+
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+        body_rep = ifcopenshell.api.geometry.add_wall_representation(
+            ifc_file,
+            context=body_context,
+            thickness=thickness,
+            direction_sense="POSITIVE",
+            offset=0.0,
+            length=length,
+            height=height,
+            x_angle=0.0,
+        )
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=body_rep)
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=body_rep)
+
+        # Mark it as a Bonsai layered wall so the wall tools recognise and
+        # regenerate it, and lock the layer-set direction to AXIS2.
+        pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Parametric")
+        if pset_data:
+            pset = ifc_file.by_id(pset_data["id"])
+        else:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Parametric")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
+        usage = ifcopenshell.util.element.get_material(element)
+        if usage and usage.is_a("IfcMaterialLayerSetUsage"):
+            usage.LayerSetDirection = "AXIS2"
+
+        tool.Blender.select_object(obj)
+        self.report(
+            {"INFO"},
+            f"'{obj.name}' converted to a parametric wall "
+            f"(length {length:.3f} m, thickness {thickness:.3f} m, height {height:.3f} m).",
+        )
+        return {"FINISHED"}
+
+
 class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_depth"
     bl_label = "Update"
