@@ -1232,9 +1232,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 obj.select_set(False)
                 continue
             usage = tool.Model.get_usage_type(element)
-            if not usage:
-                representation = tool.Geometry.get_active_representation(obj)
-                representation = tool.Geometry.resolve_mapped_representation(representation)
             selected_usages.setdefault(usage, []).append(obj)
 
         if len(bpy.context.selected_objects) == 1:
