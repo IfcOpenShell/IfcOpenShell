@@ -317,6 +317,29 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=New") == {element2}
         assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=Temporary") == {element, element2}
 
+    def test_selecting_by_boolean_property(self):
+        # bool subclasses int, so a naive isinstance(element_value, int) check
+        # matches booleans first and tries int(value) on a non-numeric string
+        # like "True", which raises and is swallowed, silently returning no
+        # match. Booleans must be handled before the numeric branches.
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"IsExternal": True})
+        pset2 = ifcopenshell.api.pset.add_pset(self.file, product=element2, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset2, properties={"IsExternal": False})
+        for true_value in ("TRUE", "True", "true", "1"):
+            assert subject.filter_elements(self.file, f"IfcWall, Pset_WallCommon.IsExternal={true_value}") == {
+                element
+            }, true_value
+        for false_value in ("FALSE", "False", "false", "0"):
+            assert subject.filter_elements(self.file, f"IfcWall, Pset_WallCommon.IsExternal={false_value}") == {
+                element2
+            }, false_value
+        # A non-boolean-spelling string never matches a boolean property, and
+        # must not raise either.
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.IsExternal=Maybe") == set()
+
     def test_selecting_by_property_with_comparisons(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
