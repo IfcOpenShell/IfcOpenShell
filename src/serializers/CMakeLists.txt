@@ -59,6 +59,8 @@ endfunction()
 
 if(WITH_ROCKSDB)
     add_document_serializer_plugin(document_serializer_rdb "document.rdb" SOURCES document_rdb_plugin.cpp rocks_db_serializer.cpp LIBRARIES ${IFCOPENSHELL_ROCKSDB_TARGET})
+    # Still not fully a plugin and ifcwrap depends on it directly.
+    install(TARGETS document_serializer_rdb EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endif()
 
 add_subdirectory(schema_dependent)

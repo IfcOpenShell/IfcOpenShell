@@ -50,6 +50,7 @@ if(IFCOPENSHELL_IFCWRAP_STANDALONE)
 
     set(WITH_OPENCASCADE "${IFCOPENSHELL_WITH_OPENCASCADE}")
     set(WITH_CGAL "${IFCOPENSHELL_WITH_CGAL}")
+    set(WITH_ROCKSDB "${IFCOPENSHELL_WITH_ROCKSDB}")
     set(SWIG_DEFINES "")
 
     if(IFCOPENSHELL_WITH_OPENCASCADE)
@@ -67,6 +68,7 @@ if(IFCOPENSHELL_IFCWRAP_STANDALONE)
     if(IFCOPENSHELL_WITH_ROCKSDB)
         list(APPEND SWIG_DEFINES -DIFOPSH_WITH_ROCKSDB)
         list(APPEND _ifcwrap_feature_definitions IFOPSH_WITH_ROCKSDB)
+        add_library(document_serializer_rdb ALIAS IfcOpenShell::document_serializer_rdb)
     endif()
 endif()
 
