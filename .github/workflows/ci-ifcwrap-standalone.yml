@@ -70,20 +70,22 @@ jobs:
             tcl-dev \
             tk-dev
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.23
+        with:
+          key: ci-ifcwrap-standalone-ubuntu-22.04-${{ runner.arch }}
+
       - name: Build SWIG
         # IfcOpenShell requires SWIG 4.1+, ubuntu-22.04 ships 4.0.2.
         run: |
           sudo apt-get remove --purge -y swig swig4.0
           git clone https://github.com/swig/swig --branch v4.2.1 --depth 1
-          cmake -S swig -B swig/build -DCMAKE_BUILD_TYPE=Release
+          cmake -S swig -B swig/build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build swig/build -j "$(nproc)"
           sudo cmake --install swig/build
           swig -version
-
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.23
-        with:
-          key: ci-ifcwrap-standalone-ubuntu-22.04-${{ runner.arch }}
 
       - name: Configure minimal IfcOpenShell
         run: |
