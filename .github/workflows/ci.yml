@@ -3,8 +3,12 @@ name: ci
 on:
   push:
     paths: &ci_paths
+      - 'src/bcf/**'
+      - 'src/bsdd/**'
+      - 'src/examples/**'
       - 'src/ifcblender/**'
       - 'src/ifcconvert/**'
+      - 'src/ifcdiff/**'
       - 'src/ifcgeom/**'
       - 'src/ifcgeomserver/**'
       - 'src/ifcmax/**'
@@ -14,12 +18,15 @@ on:
       - 'src/ifcopenshell-python/**'
       - '!src/ifcopenshell-python/docs/**'
       - 'src/ifcparse/**'
+      - 'src/ifcpatch/**'
       - 'src/ifcquery/**'
+      - 'src/ifctester/**'
       - 'src/ifcwrap/**'
       - 'src/svgfill/**'
       - 'src/serializers/**'
       - 'conda/**'
       - 'cmake/**'
+      - 'test/**'
       - '.github/workflows/ci.yml'
   pull_request:
     paths: *ci_paths
