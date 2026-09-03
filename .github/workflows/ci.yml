@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    paths:
+    paths: &ci_paths
       - 'src/ifcblender/**'
       - 'src/ifcconvert/**'
       - 'src/ifcgeom/**'
@@ -24,6 +24,7 @@ on:
       - 'cmake/**'
       - '.github/workflows/ci.yml'
   pull_request:
+    paths: *ci_paths
 
 jobs:
   activate:
