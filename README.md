@@ -67,7 +67,6 @@ The IfcOpenShell C++ codebase is split into multiple interal libraries:
 | ifcgeom                   | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | ifcgeom\_schema\_agnostic | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | ifcgeomserver             | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
-| ifcjni                    | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | ifcparse                  | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | ifcwrap                   | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | serializers               | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
