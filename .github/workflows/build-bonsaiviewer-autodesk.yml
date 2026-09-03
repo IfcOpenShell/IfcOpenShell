@@ -8,13 +8,11 @@ name: Test Bonsai Viewer Autodesk Connector
 on:
   workflow_dispatch:
   push:
-    paths:
+    paths: &ci_paths
       - 'src/bonsaiviewer-autodesk/**'
       - '.github/workflows/build-bonsaiviewer-autodesk.yml'
   pull_request:
-    paths:
-      - 'src/bonsaiviewer-autodesk/**'
-      - '.github/workflows/build-bonsaiviewer-autodesk.yml'
+    paths: *ci_paths
 
 jobs:
   test:
