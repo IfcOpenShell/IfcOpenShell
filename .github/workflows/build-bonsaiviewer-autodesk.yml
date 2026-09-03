@@ -26,6 +26,25 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Install system dependencies
+        run: |
+          pkgs=(
+            libdbus-1-dev
+            libx11-dev
+            libxext-dev
+            libxinerama-dev
+            libxcursor-dev
+            libxrender-dev
+            libxfixes-dev
+            libxft-dev
+            libfontconfig1-dev
+            libpango1.0-dev
+            libcairo2-dev
+            libgl1-mesa-dev
+          )
+          sudo apt-get update
+          sudo apt-get install -y "${pkgs[@]}"
+
       - uses: dtolnay/rust-toolchain@stable
 
       # cargo-target reuse across runs. Massive cold-build speedup,
