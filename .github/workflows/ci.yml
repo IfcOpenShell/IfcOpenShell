@@ -6,7 +6,6 @@ on:
       - 'src/ifcblender/**'
       - 'src/ifcconvert/**'
       - 'src/ifcgeom/**'
-      - 'src/ifcgeom_schema_agnostic/**'
       - 'src/ifcgeomserver/**'
       - 'src/ifcmax/**'
       - 'src/ifc5d/**'
