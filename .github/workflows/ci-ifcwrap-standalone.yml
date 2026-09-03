@@ -4,7 +4,7 @@ name: ci-ifcwrap-standalone
 on:
   workflow_dispatch:
   pull_request:
-    paths:
+    paths: &ci_paths
       - ".github/workflows/ci-ifcwrap-standalone.yml"
       - "cmake/**"
       - "src/ifcwrap/**"
@@ -15,16 +15,7 @@ on:
       - "src/ifcopenshell-python/**"
       - "src/svgfill/**"
   push:
-    paths:
-      - ".github/workflows/ci-ifcwrap-standalone.yml"
-      - "cmake/**"
-      - "src/ifcwrap/**"
-      - "src/ifcparse/**"
-      - "src/ifcgeom/**"
-      - "src/serializers/**"
-      - "src/ifcconvert/**"
-      - "src/ifcopenshell-python/**"
-      - "src/svgfill/**"
+    paths: *ci_paths
 
 env:
   IFCOPENSHELL_PREFIX: ${{ github.workspace }}/ifcopenshell-install
