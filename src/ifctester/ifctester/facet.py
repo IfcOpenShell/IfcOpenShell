@@ -236,6 +236,7 @@ class Entity(Facet):
         if (
             not is_pass
             and inst.file.schema == "IFC2X3"
+            and isinstance(self.name, str)
             and not self.name.endswith("TYPE")
             and (element_type := ifcopenshell.util.element.get_type(inst))
         ):
