@@ -125,6 +125,22 @@ class TestAssign(NewIfc):
         assert len(space_obj.users_collection) == 2
         assert space_obj.users_collection[0].name != space_obj.name
 
+    def test_spatial_zone_elements_are_placed_in_their_spatial_parents_collection(self):
+        assert bpy.context.scene
+        zone_obj = bpy.data.objects.new("IfcSpatialZone/Name", None)
+        zone_element = tool.Ifc.get().createIfcSpatialZone()
+        tool.Ifc.link(zone_element, zone_obj)
+        bpy.context.scene.collection.objects.link(zone_obj)
+        ifcopenshell.api.aggregate.assign_object(
+            tool.Ifc.get(),
+            relating_object=tool.Ifc.get().by_type("IfcSite")[0],
+            products=[zone_element],
+        )
+        subject.assign(zone_obj)
+        assert len(zone_obj.users_collection) == 2
+        assert zone_obj.users_collection[0].name == "IfcSite/My Site"
+        assert not bpy.data.collections.get("Unsorted")
+
     def test_aggregates_are_also_placed_in_their_container(self):
         assert bpy.context.scene
         element_obj = bpy.data.objects.new("IfcElementAssembly/Name", None)
