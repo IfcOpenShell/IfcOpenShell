@@ -110,18 +110,6 @@ INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 
-if(WITH_CGAL)
-    if(IFCOPENSHELL_IFCWRAP_STANDALONE)
-        if(TARGET IfcOpenShell::svgfill)
-            set(LIBSVGFILL IfcOpenShell::svgfill)
-        else()
-            message(FATAL_ERROR "IfcOpenShell was built with CGAL, but the exported svgfill target was not found.")
-        endif()
-    else()
-        set(LIBSVGFILL svgfill)
-    endif()
-endif()
-
 set_source_files_properties(IfcPython.i PROPERTIES CPLUSPLUS ON)
 # Rebuild on changes in other .i files.
 SET_PROPERTY(
