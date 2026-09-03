@@ -71,6 +71,84 @@ keys by `.identifier`, not `.name` — relevant if ever touching pass sockets ag
 - `render_complete` / `render_cancel` → `clear_compositor` (materials persist)
 - `save_pre` → `restore_transparency` (never bake temp materials into the .blend)
 - `save_post`, `load_post` → `sync_live_effects` (re-apply the live preview)
+- `depsgraph_update_post` → re-apply after a geometry edit rebuilt an object we swapped
+  (see below)
+
+### Surviving representation reloads
+
+Editing geometry replaces the object's data outright — `Geometry.change_object_data`
+does `obj.data = data` — so the material slots come back from IFC and the temporary
+transparent copies are silently dropped. Nothing notifies this module, so the preview
+would just vanish until the toggle was cycled. Reproduced with:
+
+```
+bim.enable_editing_extrusion_profile → bim.direct_profile_edit → editmode_toggle
+  → bim.edit_extrusion_profile → bim.direct_profile_edit
+```
+
+Two parts to the fix:
+
+- `_transparency_restore` records the temp material alongside the original, and
+  `restore_transparency` only undoes a slot that **still holds that temp material**.
+  Otherwise the restore writes the pre-edit material over whatever the reload just put
+  there.
+- `depsgraph_update_post` → `live_state_is_stale()` → deferred `sync_live_effects`. Kept
+  cheap: returns immediately unless transparency is applied *and* the update names an
+  object in `_tracked_objects`. Skipped outside OBJECT mode (leaving edit mode fires
+  another update), and deferred through `bpy.app.timers` so material writes happen
+  outside the notification, as with the msgbus camera subscription. The staleness check
+  is what stops it looping: our own re-apply leaves nothing stale.
+
+### Scale: a rule can match thousands of objects
+
+The first version copied a material **per slot**, so a rule matching a few thousand
+elements created a few thousand material datablocks (each with its own node tree), and
+every re-sync tore all of it down and rebuilt it. Two changes make that workable:
+
+- **Shared temp materials.** `get_temp_material(material, amount)` caches by
+  `(source material name, amount)`, so the count is the number of distinct
+  material/amount pairs — usually a handful — not the number of slots. Sharing stays
+  safe for `user_remap` precisely because every user of a temp material had the same
+  original. The source material name is recorded on the temp as `SOURCE_KEY`.
+- **Incremental sync.** `sync_live_effects` no longer restores everything and re-applies.
+  Pass 1 keeps slots already carrying the right temp material and undoes only what is no
+  longer wanted; pass 2 applies only to what is not already covered. As a side effect it
+  can no longer destroy a preview it is unable to rebuild, which was its own bug.
+
+Two supporting details:
+
+- `live_state_is_stale(names)` is scoped to the objects a depsgraph update actually
+  touched. Walking every swapped slot on every update is wasted work at this scale.
+- `_tracked_objects` holds what the rules **want**, not what was successfully applied, so
+  an object whose mesh is mid-rebuild is still watched and picked up when it returns.
+  Objects with nothing swappable never report stale, or they would request a resync
+  forever.
+
+`sync_live_effects` also **adopts orphans** — a slot holding one of our temp materials
+with no matching entry, left behind by a rebuild we did not observe. It is traced back
+via `SOURCE_KEY` and re-registered, rather than silently baked into the saved file.
+
+Smoke-tested headless on 4.5.7: three objects sharing one source material produce exactly
+one temp material, and a stray reference is remapped rather than emptied.
+
+### Known limitation: elements with no material
+
+Transparency is produced by **copying the element's existing material** and mixing a
+Transparent BSDF into it. An element with no Blender material — no IFC surface style —
+has nothing to copy, so `apply_transparency` skips it and the rule silently does
+nothing for that element (`has NO material slots` in the debug trace). Confirmed
+2026-09-02: assigning the elements a material makes it work.
+
+Making it work regardless means inventing a material and appending a slot, which
+mutates `obj.data` — IFC-linked geometry that Bonsai checksums via
+`Geometry.record_object_materials` to decide whether styles need writing back. Not done
+for that reason; revisit only with a test that the model is not dirtied.
+
+Do not confuse this with a slot that exists but is *empty*. That was a bug in this
+module — `bpy.data.materials.remove()` unlinks from every user, so deleting a temp
+material that had ridden onto a rebuilt mesh emptied the live slot. Fixed by
+`user_remap`-ing back to the original first and never force-deleting a temp material
+that still has users.
 
 ## Storage / gating
 
@@ -80,9 +158,12 @@ keys by `.identifier`, not `.name` — relevant if ever touching pass sockets ag
   `status_render_{rule_index}` (see `tool/search.py`).
 - The render path is the compositor, which only runs for F12 and `render.render()`
   drawing underlays. Viewport/OpenGL drawings bypass it, so the panel disables the
-  toggle when the *applied* shading style (`EPset_Drawing.CurrentShadingStyle`) is
-  not "Default" render type. The drawing also needs an underlay for the override to
-  appear in it.
+  toggle when the style is not a "Default" render type. The gate reads exactly what
+  `generate_underlay` branches on — `BIMCameraProperties.get_active_drawing_style()`,
+  the row highlighted in the Drawing Styles list — **not**
+  `EPset_Drawing.CurrentShadingStyle`, which is only rewritten by
+  `bim.activate_drawing_style` and readily goes stale (see issue #9319). The drawing
+  also needs an underlay for the override to appear in it.
 
 ## IFC persistence (coarse auto-sync)
 
