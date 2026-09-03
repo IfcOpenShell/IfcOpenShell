@@ -51,8 +51,7 @@ jobs:
         id: black-annotations
         run: |
           uv tool install black-codeclimate
-          pip install github_action_utils
-          black --diff --check . | black-codeclimate | python .github/scripts/black_to_github_annotations.py
+          black --diff --check . | black-codeclimate | uv run .github/scripts/black_to_github_annotations.py
         continue-on-error: true
 
       - name: ty check (venv setup)
