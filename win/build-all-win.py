@@ -9,9 +9,14 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 from zipfile import ZipFile
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "packaging"))
+
+import check_runtime_plugins
 
 
 def is_arm64() -> bool:
@@ -210,6 +215,20 @@ def write_zip(zip_path: Path, files: dict[str, Path], generated_files: dict[str,
             zipf.write(file, arcname=arcname)
         for arcname, contents in sorted((generated_files or {}).items()):
             zipf.writestr(arcname, contents)
+    verify_zip(zip_path, files, generated_files)
+
+
+def verify_zip(zip_path: Path, files: dict[str, Path], generated_files: dict[str, str] | None = None) -> None:
+    """Assert the archive on disk holds everything we collected and a usable plugin set."""
+    with ZipFile(zip_path) as zipf:
+        members = zipf.namelist()
+
+    expected = {Path(arcname).as_posix() for arcname in {**files, **(generated_files or {})}}
+    dropped = sorted(expected - {Path(member).as_posix() for member in members})
+    if dropped:
+        raise RuntimeError(f"{zip_path} is missing collected files: {', '.join(dropped)}")
+
+    check_runtime_plugins.check(members, str(zip_path))
 
 
 def build() -> None:
