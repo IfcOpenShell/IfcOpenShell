@@ -273,6 +273,8 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
         # Exclude compiled extensions and shared libraries (including versioned .so.X.Y) -
         # they're part of dev environment and shouldn't leak into installation.
         list(FILTER sourcefiles EXCLUDE REGEX [[\.(so(\.[0-9]+)*|pyd|dylib)$]])
+        # Exclude cached bytecode.
+        list(FILTER sourcefiles EXCLUDE REGEX [[\.pyc$]])
         foreach(file ${sourcefiles})
             file(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
             get_filename_component(dir "${relative}" DIRECTORY)
