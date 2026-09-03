@@ -8,7 +8,6 @@ on:
       - 'src/ifcgeom/**'
       - 'src/ifcgeom_schema_agnostic/**'
       - 'src/ifcgeomserver/**'
-      - 'src/ifcjni/**'
       - 'src/ifcmax/**'
       - 'src/ifc5d/**'
       - 'src/ifcedit/**'
