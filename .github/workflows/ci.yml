@@ -182,16 +182,15 @@ jobs:
 
       - name: Build ifcopenshell
         run: |
-          echo $Python3_ROOT_DIR
-          echo ${{ env.pythonLocation }}
+          which python
 
           mkdir build && cd build
           cmake \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
-               -DPYTHON_EXECUTABLE:FILEPATH=${{ env.pythonLocation }}/bin/python \
-               -DPYTHON_INCLUDE_DIR:PATH=${{ env.pythonLocation }}/include/python3.11 \
+               -DPYTHON_EXECUTABLE:FILEPATH=$(which python) \
+               -DPYTHON_INCLUDE_DIR:PATH=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
                -DUSE_MMAP=On \
                -DUSE_CCACHE=ON \
                -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} \
