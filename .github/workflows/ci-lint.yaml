@@ -24,10 +24,11 @@ jobs:
         with:
           python-version: ${{ env.MIN_BLENDER_PY_VERSION }}
 
+      - name: Action - setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
       - name: Install dependencies
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          cat requirements-tools.txt | xargs -L1 uv tool install
+        run: cat requirements-tools.txt | xargs -L1 uv tool install
 
       # black doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
