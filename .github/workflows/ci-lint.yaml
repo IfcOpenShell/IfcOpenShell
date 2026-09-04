@@ -103,6 +103,11 @@ jobs:
           exit $ERROR
         continue-on-error: true
 
+      - name: Check whitespace
+        id: check-whitespace
+        run: poe check-whitespace
+        continue-on-error: true
+
       - name: Final check
         run: |
           ERROR=0
@@ -120,5 +125,8 @@ jobs:
           fi
           if [ "${{ steps.ty-ios.outcome }}" != "success" ]; then
             echo "::error::ty check (ios) failed, see 'ty check (ios)' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.check-whitespace.outcome }}" != "success" ]; then
+            echo "::error::Whitespace check failed, see 'Check whitespace' step for the details." && ERROR=1
           fi
           exit $ERROR
