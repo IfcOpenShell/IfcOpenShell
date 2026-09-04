@@ -23,11 +23,14 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
+import ifcopenshell.api.layer
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
+import ifcopenshell.validate
 import numpy
 import pytest
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 import ifcpatch
 import test.bootstrap
@@ -82,6 +85,48 @@ class TestExtractElements(test.bootstrap.IFC4):
         output = ifcpatch.execute({"file": ifc, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
         assert output.by_type("IfcWall")
         assert not output.by_type("IfcSlab")
+
+    def test_keep_presentation_layer_items_of_extracted_elements(self):
+        # Regression test for #9419: the layer assignment was copied into the
+        # output but its AssignedItems (SET [1:?]) was left empty.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        builder = ShapeBuilder(self.file)
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        layer = ifcopenshell.api.layer.add_layer(self.file, name="TestLayer")
+        for _ in range(2):
+            wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+            item = builder.extrude(builder.profile(builder.rectangle((1, 1))))
+            representation = builder.get_representation(model, item)
+            ifcopenshell.api.geometry.assign_representation(self.file, wall, representation)
+            ifcopenshell.api.layer.assign_layer(self.file, items=[representation], layer=layer)
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        layers = output.by_type("IfcPresentationLayerAssignment")
+        assert len(layers) == 1
+        representations = output.by_type("IfcShapeRepresentation")
+        assert len(representations) == 2
+        assert set(layers[0].AssignedItems) == set(representations)
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate(output, logger)
+        assert not [s for s in logger.statements if "AssignedItems" in str(s)]
+
+    def test_keep_presentation_layer_items_extracting_a_single_element(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        builder = ShapeBuilder(self.file)
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        layer = ifcopenshell.api.layer.add_layer(self.file, name="TestLayer")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        item = builder.extrude(builder.profile(builder.rectangle((1, 1))))
+        representation = builder.get_representation(model, item)
+        ifcopenshell.api.geometry.assign_representation(self.file, wall, representation)
+        ifcopenshell.api.layer.assign_layer(self.file, items=[representation], layer=layer)
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        layer_new = output.by_type("IfcPresentationLayerAssignment")[0]
+        assert len(layer_new.AssignedItems) == 1
+        assert layer_new.AssignedItems[0] == output.by_type("IfcShapeRepresentation")[0]
 
     def test_preserving_georeferencing(self):
         # Regression test for #8199: ExtractElements must carry IfcMapConversion
