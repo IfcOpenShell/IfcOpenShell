@@ -24,12 +24,14 @@ import ifcopenshell.api.feature
 import ifcopenshell.api.nest
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
+import ifcopenshell.util.representation
 import numpy as np
 from mathutils import Matrix
 
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.spatial import Spatial as subject
+from bonsai.tool.spatial import _bump_geom_cache_token
 from test.bim.bootstrap import NewFile
 
 
@@ -258,17 +260,44 @@ class TestSelectProducts(NewFile):
         assert obj in bpy.context.selected_objects
 
 
+class _BlockHelper:
+    """Shared helpers for creating IFC walls/slabs with solid-block representations."""
+
+    @staticmethod
+    def create_wall(ifc, height=10.0):
+        """Create an IFC wall with a 10x10x{height} block representation from z=0."""
+        ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        placement_2d = ifc.createIfcAxis2Placement2D(ifc.createIfcCartesianPoint([0.0, 0.0]))
+        profile = ifc.createIfcRectangleProfileDef("AREA", None, placement_2d, 10.0, 10.0)
+        placement_3d = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint([-5.0, -5.0, 0.0]))
+        extrusion = ifc.createIfcExtrudedAreaSolid(
+            profile, placement_3d, ifc.createIfcDirection([0.0, 0.0, 1.0]), height
+        )
+        shape_rep = ifc.createIfcShapeRepresentation(ctx, "Body", "SweptSolid", [extrusion])
+        wall.Representation = ifc.createIfcProductDefinitionShape(None, None, [shape_rep])
+        return wall, extrusion
+
+    @staticmethod
+    def create_slab(ifc, z=4.0):
+        """Create an IfcSlab with a 12x12x1.0 block representation at bottom_z={z}."""
+        ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
+        slab = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
+        placement_2d = ifc.createIfcAxis2Placement2D(ifc.createIfcCartesianPoint([0.0, 0.0]))
+        profile = ifc.createIfcRectangleProfileDef("AREA", None, placement_2d, 12.0, 12.0)
+        placement_3d = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint([-6.0, -6.0, z]))
+        extrusion = ifc.createIfcExtrudedAreaSolid(profile, placement_3d, ifc.createIfcDirection([0.0, 0.0, 1.0]), 1.0)
+        shape_rep = ifc.createIfcShapeRepresentation(ctx, "Body", "SweptSolid", [extrusion])
+        slab.Representation = ifc.createIfcProductDefinitionShape(None, None, [shape_rep])
+
+
 class TestGenerateSpace(NewFile):
     def test_generate_space_at_cursor(self):
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
-        scene = bpy.context.scene
-        product = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
-        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
-        obj = bpy.data.objects["Cube"]
-        scene.collection.objects.link(obj)
-        tool.Ifc.link(product, obj)
-        scene.cursor.location = (0, 0, 0)
+        # The wall block spans z=0..10, bisects to a 10x10 polygon at cut_z.
+        _BlockHelper.create_wall(ifc, height=10.0)
+        bpy.context.scene.cursor.location = (0, 0, 0)
 
         bpy.ops.bim.generate_space()
         space = bpy.data.objects["IfcSpace/Space"]
@@ -292,13 +321,8 @@ class TestGenerateSpace(NewFile):
     def test_regenerate_space_preserves_z_location(self):
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
-        scene = bpy.context.scene
-        product = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
-        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
-        obj = bpy.data.objects["Cube"]
-        scene.collection.objects.link(obj)
-        tool.Ifc.link(product, obj)
-        scene.cursor.location = (0, 0, 0)
+        _BlockHelper.create_wall(ifc, height=10.0)
+        bpy.context.scene.cursor.location = (0, 0, 0)
 
         bpy.ops.bim.generate_space()
         space = bpy.data.objects["IfcSpace/Space"]
@@ -307,8 +331,158 @@ class TestGenerateSpace(NewFile):
 
         bpy.context.view_layer.objects.active = space
         space.select_set(True)
-        obj.select_set(False)
 
         bpy.ops.bim.generate_space()
 
         assert np.isclose(space.location.z, 5), f"Expected z=5, got {space.location.z}"
+
+    def test_auto_space_height_from_slab_above(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_wall(ifc, height=10.0)
+        _BlockHelper.create_slab(ifc, z=4.0)
+        bpy.context.scene.cursor.location = (0, 0, 0)
+
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        assert np.isclose(space.dimensions.z, 4, atol=0.1), f"Expected height ~4, got {space.dimensions.z}"
+
+    def test_forced_space_height(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_wall(ifc, height=10.0)
+        bpy.context.scene.cursor.location = (0, 0, 0)
+
+        spatial_props = tool.Spatial.get_spatial_props()
+        spatial_props.force_space_height = True
+        spatial_props.space_height = 5
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        assert np.isclose(space.dimensions.z, 5, atol=0.1), f"Expected height 5, got {space.dimensions.z}"
+
+    def test_auto_space_height_fallback_no_slab(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_wall(ifc, height=10.0)
+        bpy.context.scene.cursor.location = (0, 0, 0)
+
+        spatial_props = tool.Spatial.get_spatial_props()
+        spatial_props.force_space_height = False
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        assert space.dimensions.z > 0, f"Expected positive height, got {space.dimensions.z}"
+
+    def test_apply_space_height_to_selection(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_wall(ifc, height=10.0)
+        bpy.context.scene.cursor.location = (0, 0, 0)
+
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+
+        spatial_props = tool.Spatial.get_spatial_props()
+        spatial_props.space_height = 6
+        bpy.context.view_layer.objects.active = space
+        space.select_set(True)
+
+        bpy.ops.bim.apply_space_height_to_selection()
+        bpy.context.view_layer.update()
+        assert np.isclose(space.dimensions.z, 6, atol=0.1), f"Expected height 6, got {space.dimensions.z}"
+
+    def test_cache_survives_second_generation(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_wall(ifc, height=10.0)
+        bpy.context.scene.cursor.location = (0, 0, 0)
+
+        bpy.ops.bim.generate_space()
+        space1 = bpy.data.objects["IfcSpace/Space"]
+        height1 = space1.dimensions.z
+
+        bpy.ops.bim.generate_space()
+        space2 = bpy.data.objects["IfcSpace/Space"]
+        height2 = space2.dimensions.z
+
+        assert np.isclose(height1, height2, atol=0.1), f"Cache changed height: {height1} vs {height2}"
+
+    def test_regenerate_after_wall_height_change(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        wall, extrusion = _BlockHelper.create_wall(ifc, height=10.0)
+        bpy.context.scene.cursor.location = (0, 0, 0)
+
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        original_height = space.dimensions.z
+
+        # Modify the IFC representation to change the wall height.
+        extrusion.Depth = 15.0
+        _bump_geom_cache_token()
+
+        bpy.context.view_layer.objects.active = space
+        space.select_set(True)
+
+        bpy.ops.bim.generate_space()
+        new_height = space.dimensions.z
+        assert new_height != original_height or new_height > 0
+
+    def test_regenerate_space_from_centered_cube_representation(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_wall(ifc, height=10.0)
+        scene = bpy.context.scene
+        scene.cursor.location = (0, 0, 0)
+
+        # Create a space with a unit cube PolygonalFaceSet centered at local origin.
+        ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
+        points = ifc.createIfcCartesianPointList3D(
+            [
+                (-0.5, -0.5, -0.5),
+                (-0.5, -0.5, 0.5),
+                (-0.5, 0.5, -0.5),
+                (-0.5, 0.5, 0.5),
+                (0.5, -0.5, -0.5),
+                (0.5, -0.5, 0.5),
+                (0.5, 0.5, -0.5),
+                (0.5, 0.5, 0.5),
+            ]
+        )
+        faces = [
+            ifc.createIfcIndexedPolygonalFace([1, 2, 4, 3]),
+            ifc.createIfcIndexedPolygonalFace([3, 4, 8, 7]),
+            ifc.createIfcIndexedPolygonalFace([7, 8, 6, 5]),
+            ifc.createIfcIndexedPolygonalFace([5, 6, 2, 1]),
+            ifc.createIfcIndexedPolygonalFace([3, 7, 5, 1]),
+            ifc.createIfcIndexedPolygonalFace([8, 4, 2, 6]),
+        ]
+        face_set = ifc.createIfcPolygonalFaceSet(points, closed=True, faces=faces)
+        shape_rep = ifc.createIfcShapeRepresentation(ctx, "Body", "Tessellation", [face_set])
+
+        space_element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        space_element.Representation = ifc.createIfcProductDefinitionShape(None, None, [shape_rep])
+
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 5))
+        obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(obj)
+        tool.Ifc.link(space_element, obj)
+        bpy.context.view_layer.update()
+        obj.name = "MySpace"
+
+        # Check the cube's world bottom Z before regeneration.
+        bottom_z = (obj.matrix_world @ Vector(obj.bound_box[0])).z
+        assert np.isclose(bottom_z, 4.5), f"Expected bottom_z=4.5, got {bottom_z}"
+
+        # Regenerate the space.
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        bpy.ops.bim.generate_space()
+
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        verts = [v.co.z for v in mesh.vertices]
+        min_z = min(verts)
+        max_z = max(verts)
+        assert min_z >= 0, f"Expected extrusion to start at local z>=0, got min_z={min_z}"
+        assert max_z > 0, f"Expected extrusion to have positive height, got max_z={max_z}"
+        assert np.isclose(obj.location.z, 4.5, atol=0.01), f"Expected location.z=4.5, got {obj.location.z}"
