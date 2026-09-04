@@ -181,6 +181,13 @@ class WASMModule extends EventEmitter {
     }
 
     /**
+     * Test an XSD pattern against sample values using ifctester's restriction logic
+     */
+    async testPattern(pattern: string, values: string[]) {
+        return this._apiCall('testPattern', pattern, values);
+    }
+
+    /**
      * Load an IFC file. Returns a unique ID for the loaded file.
      */
     async loadIfc(ifcData: number[] | Uint8Array | ArrayBuffer) {
@@ -313,6 +320,7 @@ export const {
     getApplicablePsets,
     getMaterialCategories,
     getStandardClassificationSystems,
+    testPattern,
     loadIfc,
     unloadIfc,
     auditIfc,
