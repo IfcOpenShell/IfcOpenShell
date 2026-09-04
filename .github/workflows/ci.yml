@@ -269,13 +269,6 @@ jobs:
           pip install -e ../ifctester --no-deps
           cd ../ifctester && make test || fail "ifctester"
           make build-ids-docs || fail "build-ids-docs"
-          # Run mathutils related tests at the end to ensure no other code is relying on mathutils.
-          # mathutils only has pre-built wheels for Python 3.13+; skip on older versions.
-          cd ../ifcopenshell-python
-          if python -c "import sys; sys.exit(0 if sys.version_info >= (3, 13) else 1)"; then
-            pip install mathutils
-            make test-mathutils || fail "mathutils"
-          fi
           if [ $ERROR -ne 0 ]; then
             echo "One or more tests failed";
             exit 1;

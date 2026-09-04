@@ -71,16 +71,12 @@ build-urls:
 
 .PHONY: test
 test:
-	pytest --import-mode=importlib -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
+	pytest --import-mode=importlib -p no:pytest-blender test
 
 .PHONY: test-parallel
 test-parallel:
 	@NPROCS=$$(nproc 2>/dev/null || sysctl -n hw.ncpu); \
-	pytest --import-mode=importlib -p no:pytest-blender -n $$NPROCS test --ignore=test/util/test_shape_builder.py
-
-.PHONY: test-mathutils
-test-mathutils:
-	pytest --import-mode=importlib -p no:pytest-blender test/util/test_shape_builder.py
+	pytest --import-mode=importlib -p no:pytest-blender -n $$NPROCS test
 
 
 .PHONY: license
