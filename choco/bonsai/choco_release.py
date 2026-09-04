@@ -14,6 +14,7 @@ import hashlib
 import os
 import pathlib
 import re
+import shlex
 import subprocess
 from typing import NoReturn
 from urllib import request
@@ -22,7 +23,7 @@ from github import Github
 
 
 def get_repo_tag_names() -> list[str]:
-    git_return = subprocess.check_output("git tag -l", text=True)
+    git_return = subprocess.check_output(["git", "tag", "-l"], text=True)
     tag_names = [tag_name for tag_name in git_return.split("\n") if tag_name]
     print(f"{len(tag_names)} tag_names found in repo")
     return tag_names
@@ -81,7 +82,9 @@ def get_release_zip(tag: str) -> tuple[str, str]:
 
 
 def run(command: str) -> None:
-    subprocess.check_output(command)
+    # A bare string is looked up as a single executable name, so
+    # "git status" fails with FileNotFoundError. Split it first.
+    subprocess.check_output(shlex.split(command))
 
 
 start = datetime.datetime.now()
@@ -105,7 +108,7 @@ should_release = False
 target_release_tag = ""
 TARGET_OS = "windows-x64"
 
-git_status = subprocess.check_output("git status", text=True)
+git_status = subprocess.check_output(["git", "status"], text=True)
 print(git_status)
 
 for tag_name in get_repo_tag_names():
