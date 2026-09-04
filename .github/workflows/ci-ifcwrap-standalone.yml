@@ -62,7 +62,7 @@ jobs:
             tk-dev
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.23
+        uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ci-ifcwrap-standalone-ubuntu-22.04-${{ runner.arch }}
 
