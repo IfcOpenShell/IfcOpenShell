@@ -313,8 +313,9 @@ CLI Manual
       --circle-segments arg (= 0)           Number of segments to approximate full
                                             circles in the CGAL kernel. When 0 (the
                                             default) the segment count is derived from
-                                            mesher-linear-deflection instead, so curves
-                                            stay within the deflection tolerance
+                                            mesher-linear-deflection and
+                                            mesher-angular-deflection instead, whichever
+                                            is stricter, so curves stay within tolerance
                                             regardless of radius.
       --cgal-smooth-angle-degrees arg (= -1)
                                             Angle in degrees under which adjacent 
