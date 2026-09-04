@@ -822,7 +822,7 @@ Scenario: Create a MEP transition
     And the object "IfcDuctSegment/RectSegment" is at "0,0,0"
     And the object "IfcDuctSegment/RectSegment" dimensions are "0.4,0.2,2.370096"
     And the object "IfcDuctSegment/CircleSegment" is at "3.1299,0,0"
-    And the object "IfcDuctSegment/CircleSegment" dimensions are "0.1000, 0.09927, 2.370096"
+    And the object "IfcDuctSegment/CircleSegment" dimensions are "0.1000, 0.1000, 2.370096"
     And the object "IfcDuctFitting/DuctFitting" is at "2.370096, 0.0000, 0.0000"
     And the object "IfcDuctFitting/DuctFitting" dimensions are "0.4000, 0.2000, 0.759807"
 
