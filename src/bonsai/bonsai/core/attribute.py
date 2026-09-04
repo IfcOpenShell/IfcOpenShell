@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
 
@@ -31,7 +31,7 @@ def copy_attribute_to_selection(
     root: type[tool.Root],
     spatial: type[tool.Spatial],
     name: str,
-    value: Union[str, None],
+    value: Any,
 ) -> int:
     total_changed = 0
     has_edited_spatial_name = False
