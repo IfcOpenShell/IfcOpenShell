@@ -227,7 +227,14 @@ class Entity(Facet):
                     continue
         if self.predefinedType:
             return [r for r in results if self(r)]
-        return results
+        # `results` may come straight from ifc_file.by_type(), which is not guaranteed
+        # to be a `list` (e.g. it can be a `tuple`). Every other Facet.filter() gates
+        # on `isinstance(elements, list)` to decide whether a population has already
+        # been computed for it to narrow, versus starting a fresh, entity-type-agnostic
+        # scan of the whole model. Returning anything but a `list` here defeats that
+        # gate for the very next facet in the applicability, silently discarding this
+        # entity restriction instead of intersecting with it.
+        return list(results)
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> EntityResult:
         is_pass = inst.is_a().upper() == self.name
