@@ -488,4 +488,8 @@ class Root(bonsai.core.tool.Root):
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
             )
+            if version != "IFC4":
+                # IFC4X3+: alignments are created like any other element
+                # (Saikei); the create flow bootstraps the horizontal layout.
+                products += ("IfcAlignment",)
         return products
