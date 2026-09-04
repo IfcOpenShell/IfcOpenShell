@@ -817,6 +817,12 @@ set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 
 set(CPACK_GENERATOR "TGZ;DEB")
+# Only enable the RPM generator when rpmbuild is available so that DEB-only
+# hosts (e.g. Debian/Ubuntu CI) don't fail when running `make package`.
+find_program(RPMBUILD_EXECUTABLE rpmbuild)
+if(RPMBUILD_EXECUTABLE)
+    list(APPEND CPACK_GENERATOR "RPM")
+endif()
 set(CPACK_SOURCE_GENERATOR "TGZ")
 
 foreach(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
@@ -834,6 +840,43 @@ set(CPACK_DEBIAN_PACKAGE_SECTION "science")
 set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}${EXTRA_VERSION}")
 set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
 # set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/cmake/debian/postinst")
+
+# RPM packaging (Fedora / RHEL / Rocky / openSUSE).
+# RPM versions may not contain hyphens, so any pre-release suffix in
+# EXTRA_VERSION (e.g. "-alpha.3") is folded into the RPM release field.
+string(REGEX REPLACE "^-+" "" RPM_EXTRA_VERSION "${EXTRA_VERSION}")
+if(RPM_EXTRA_VERSION)
+    set(CPACK_RPM_PACKAGE_RELEASE "0.${RPM_EXTRA_VERSION}")
+else()
+    set(CPACK_RPM_PACKAGE_RELEASE "1")
+endif()
+
+set(CPACK_RPM_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_RPM_PACKAGE_VERSION
+    "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}"
+)
+set(CPACK_RPM_PACKAGE_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_RPM_PACKAGE_LICENSE "LGPLv3+")
+set(CPACK_RPM_PACKAGE_GROUP "Applications/Engineering")
+set(CPACK_RPM_PACKAGE_VENDOR "${CPACK_PACKAGE_VENDOR}")
+set(CPACK_RPM_PACKAGE_URL "https://ifcopenshell.org")
+set(CPACK_RPM_PACKAGE_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
+set(CPACK_RPM_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
+# Shared-library dependencies (OpenCASCADE, Boost, HDF5, libxml2, GMP, MPFR,
+# ...) are resolved automatically from the installed ELF binaries by RPM's
+# soname dependency generator (CPACK_RPM_PACKAGE_AUTOREQPROV defaults to ON).
+# This maps each library to the correct distro (sub)package -- e.g. on Fedora
+# OpenCASCADE ships as opencascade-foundation/-modeling/-visualization/-ocaf
+# rather than a single "opencascade" package. Only the Python interpreter is
+# listed explicitly, since it is loaded by the interpreter and not linked as a
+# shared library, so the soname generator cannot infer it. The Python
+# packages below are the third-party runtime imports of the ifcopenshell
+# Python module (see src/ifcopenshell-python/pyproject.toml); without them
+# `import ifcopenshell.util.*` fails on a clean system. Names follow Fedora's
+# python3-* convention.
+set(CPACK_RPM_PACKAGE_REQUIRES
+    "python3, python3-shapely, python3-numpy, python3-isodate, python3-dateutil, python3-lark, python3-pyparsing, python3-typing-extensions"
+)
 
 include(CPack)
 
