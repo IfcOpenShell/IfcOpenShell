@@ -23,6 +23,10 @@ void ifcopenshell::geom::impl::mapping_registry::bind(const std::string& schema_
 	entry.module_ = module.meta().id.empty() ? plugin::module(mapping_plugin_metadata(schema_name)) : module;
 }
 
+bool ifcopenshell::geom::impl::mapping_registry::has(const std::string& schema_name) const {
+	return entries_.find(mapping_key(schema_name)) != entries_.end();
+}
+
 ifcopenshell::geom::abstract_mapping* ifcopenshell::geom::impl::mapping_registry::construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& log) {
 	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
 	auto it = entries_.find(schema_name_lower);

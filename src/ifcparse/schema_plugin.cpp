@@ -17,7 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-// This file was generated with the assistance of an AI coding tool.
 
 #include "schema.h"
 
@@ -30,6 +29,7 @@
 #define CAT(a, b) a##b
 #define EXPAND_AND_CAT(a, b) CAT(a, b)
 #define schema_plugin EXPAND_AND_CAT(schema_plugin_, IfcSchema)
+#define emscripten_register_schema_plugin EXPAND_AND_CAT(ifcopenshell_emscripten_register_schema_, IFCOPENSHELL_WASM_PLUGIN_ID)
 
 #include <boost/dll/alias.hpp>
 
@@ -58,3 +58,11 @@ template IFC_SCHEMA_API double ifcopenshell::get_SI_equivalent<IfcSchema>(const 
 BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
 BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
 BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::register_plugin, ifcopenshell_register_schema_plugin_v1)
+
+#ifdef __EMSCRIPTEN__
+extern "C" void emscripten_register_schema_plugin() {
+	ifcopenshell::schema_plugin::register_plugin(
+		ifcopenshell::schema_registry_instance(),
+		ifcopenshell::plugin::module::builtin(ifcopenshell::schema_plugin::plugin_metadata()));
+}
+#endif
