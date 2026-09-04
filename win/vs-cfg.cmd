@@ -36,10 +36,7 @@
 ::
 :: NOTE: The delayed environment variable expansion needs to be enabled before calling this.
 ::
-:: Output variables:
-:: - VC_VER - e.g. "14.5"
-:: - VS_VER - e.g. "2026"
-:: - BOOST_BOOTSTRAP_VER - e.g. "vc145"
+:: See CMake3AndNewer for script output variables.
 
 @if not defined ECHO_ON ( echo off )
 
@@ -228,14 +225,18 @@ exit /b 1
 
 :CMake3AndNewer
 
+    :: Script output variables.
     :: check variables for debugging
      echo GENERATOR:           [!GENERATOR!]
+    ::VS_VER - e.g. "2026"
      echo VS_VER:              [!VS_VER!]
      echo VS_PLATFORM:         [!VS_PLATFORM!]
      echo VS_TOOLSET:          [!VS_TOOLSET!]
+    ::VC_VER - e.g. "14.5"
      echo VC_VER:              [!VC_VER!]
      echo ARCH_BITS:           [!ARCH_BITS!]
      echo TARGET_ARCH:         [!TARGET_ARCH!]
+    ::BOOST_BOOTSTRAP_VER - e.g. "vc145"
      echo BOOST_BOOTSTRAP_VER: [!BOOST_BOOTSTRAP_VER!]
      echo BOOST_TOOLSET:       [!BOOST_TOOLSET!]
      echo BOOST_WIN_API:       [!BOOST_WIN_API!]
