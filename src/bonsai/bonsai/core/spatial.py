@@ -205,6 +205,7 @@ def generate_space(
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
 
     if element and element.is_a("IfcSpace"):
+        z = active_obj.location.z
         container = ifcopenshell.util.element.get_parent(element) or root.get_default_container()
     else:
         container = root.get_default_container()
@@ -235,8 +236,15 @@ def generate_space(
 
     if element and element.is_a("IfcSpace"):
         assert active_obj
-        active_obj.location.z = z
-        spatial.set_space_representation_from_polygon(active_obj, element, space_polygon, h, polygon_is_si=True)
+        spatial.set_space_representation_from_polygon(
+            active_obj,
+            element,
+            space_polygon,
+            h,
+            polygon_is_si=True,
+            bounding_walls=bounding_walls,
+            container=container,
+        )
     else:
         if relating_type:
             name = model.generate_occurrence_name(relating_type, "IfcSpace")
@@ -249,7 +257,9 @@ def generate_space(
         spatial.assign_ifcspace_class_to_obj(obj)
 
         element = ifc.get_entity(obj)
-        spatial.set_space_representation_from_polygon(obj, element, space_polygon, h, polygon_is_si=True)
+        spatial.set_space_representation_from_polygon(
+            obj, element, space_polygon, h, polygon_is_si=True, bounding_walls=bounding_walls, container=container
+        )
 
         if relating_type:
             spatial.assign_relating_type_to_element(ifc, type, element, relating_type)
