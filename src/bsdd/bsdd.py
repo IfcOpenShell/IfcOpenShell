@@ -712,7 +712,7 @@ class Client:
         return self.get(f"api/Unit/{version}")
 
     def get_dictionary(
-        self, dictionary_uri: str = "", include_test_dictionaries: bool = "False", version: int = 1
+        self, dictionary_uri: str = "", include_test_dictionaries: bool = False, version: int = 1
     ) -> DictionaryResponseContractV1:
         """
         Get list of available Dictionaries
