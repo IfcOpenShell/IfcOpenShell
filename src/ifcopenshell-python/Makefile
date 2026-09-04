@@ -120,6 +120,7 @@ endif
 	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
 	# them too, otherwise the wrapper fails to import. See #9364.
 	find dist/working/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} dist/ifcopenshell/ \;
+	$(PYTHON) ../../packaging/check_runtime_plugins.py dist/ifcopenshell
 	rm -rf dist/working
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
 	cd dist && zip -r ifcopenshell-python-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ifcopenshell
@@ -142,6 +143,7 @@ endif
 	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
 	# them too, otherwise the wrapper fails to import. See #9364.
 	find build/botbuild/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} build/ifcopenshell/ \;
+	$(PYTHON) ../../packaging/check_runtime_plugins.py build/ifcopenshell
 	cp ../../README.md build/
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)
