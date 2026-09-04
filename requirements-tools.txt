@@ -1,5 +1,5 @@
 black==26.5.1
-ruff==0.16.4
+ruff==0.16.5
 poethepoet
 ty==0.0.74
 gersemi==0.28.1
