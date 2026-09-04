@@ -96,7 +96,8 @@ class WheelBuilder:
             return vars
 
         vars: dict[str, str] = parse_makefile_vars()
-        binary_version = vars["BINARY_VERSION"]
+        # Wheels are named with the normalized version, e.g. 0.9.0alpha0 -> 0.9.0a0.
+        binary_version = vars["BINARY_VERSION"].replace("alpha", "a")
         build_commit = vars["BUILD_COMMIT"]
         filename = f"ifcopenshell-{binary_version}+{build_commit}-cp313-cp313-pyodide_2025_0_wasm32.whl"
         encoded_filename = quote(filename, safe="")
