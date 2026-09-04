@@ -18,286 +18,871 @@
     along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 -->
 <!DOCTYPE html>
-<html lang={{_lang}}>
+<html lang="{{_lang}}">
 <head>
     <meta charset="utf-8" />
+    <script>
+        (function () {
+            try {
+                var stored = window.localStorage.getItem("ifctester-report-theme");
+                if (stored === "light" || stored === "dark") {
+                    document.documentElement.setAttribute("data-theme", stored);
+                }
+            } catch (e) {}
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="foobaro">
-    <title>{{name}}</title>
-    <link href="https://fonts.googleapis.com/css?family=Comfortaa|Inconsolata|Open+Sans&display=swap" rel="stylesheet">
+    <meta name="description" content="IDS audit report for {{filename}}">
+    <title>{{title}}</title>
     <style>
         :root {
-            --green: #97cc64;
-            --light-green: #b6cca1;
-            --red: #fb5a3e;
-            --light-red: #fbb4a8;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+            --font-mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Consolas, Menlo, "Roboto Mono", "Liberation Mono", "DejaVu Sans Mono", monospace;
+
+            --pass: #97cc64;
+            --pass-dark: #4d7328;
+            --pass-solid: #4d7328;
+            --pass-bg: #dcf0c4;
+            --pass-border: #94c85f;
+            --fail: #fb5a3e;
+            --fail-dark: #a52d17;
+            --fail-solid: #a52d17;
+            --fail-bg: #fdd9cd;
+            --fail-border: #f4926f;
+            --warn: #8a5a0c;
+            --warn-bg: #f8e8c9;
+            --warn-border: #e0b768;
+            --skip-bg: #e6e8eb;
+            --skip-border: #c7cbd1;
+            --skip-text: #50555b;
+
+            --bg: #ffffff;
+            --bg-raised: #eef0f2;
+            --bg-sunken: #e2e5ea;
+            --text: #1c1e21;
+            --text-muted: #5b6066;
+            --border: #d3d7dc;
+            --link: #1a5fb4;
+            --shadow: 0 1px 2px rgba(20, 20, 25, 0.08), 0 2px 10px rgba(20, 20, 25, 0.06);
+            --radius: 10px;
         }
-        body { font-family: 'Arial', sans-serif; padding: 10px 40px; }
-        section { padding: 15px; border-radius: 5px; border: 1px solid #eee; margin-bottom: 15px; }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --pass: #97cc64;
+                --pass-dark: #bfe396;
+                --pass-solid: #3f6030;
+                --pass-bg: #25391f;
+                --pass-border: #46692f;
+                --fail: #fb5a3e;
+                --fail-dark: #ffb49f;
+                --fail-solid: #8f2712;
+                --fail-bg: #3f231c;
+                --fail-border: #7a3a29;
+                --warn: #e8bd6c;
+                --warn-bg: #3d3018;
+                --warn-border: #63501f;
+                --skip-bg: #292c30;
+                --skip-border: #3d4147;
+                --skip-text: #a7acb2;
+
+                --bg: #16181a;
+                --bg-raised: #222528;
+                --bg-sunken: #2a2d32;
+                --text: #eceef0;
+                --text-muted: #a6acb3;
+                --border: #3a3e44;
+                --link: #7cb0f0;
+                --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 12px rgba(0, 0, 0, 0.35);
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --pass: #97cc64;
+            --pass-dark: #bfe396;
+            --pass-solid: #3f6030;
+            --pass-bg: #25391f;
+            --pass-border: #46692f;
+            --fail: #fb5a3e;
+            --fail-dark: #ffb49f;
+            --fail-solid: #8f2712;
+            --fail-bg: #3f231c;
+            --fail-border: #7a3a29;
+            --warn: #e8bd6c;
+            --warn-bg: #3d3018;
+            --warn-border: #63501f;
+            --skip-bg: #292c30;
+            --skip-border: #3d4147;
+            --skip-text: #a7acb2;
+
+            --bg: #16181a;
+            --bg-raised: #222528;
+            --bg-sunken: #2a2d32;
+            --text: #eceef0;
+            --text-muted: #a6acb3;
+            --border: #3a3e44;
+            --link: #7cb0f0;
+            --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        * { box-sizing: border-box; }
+
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-sunken);
+            color: var(--text);
+            margin: 0;
+            padding: 0 0 48px;
+            line-height: 1.5;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); }
+
+        .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+        /* ---- Masthead ---- */
+        header.masthead {
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 28px 0 24px;
+            margin-bottom: 24px;
+        }
+        header.masthead .wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .theme-toggle {
+            display: inline-flex;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 2px;
+            background: var(--bg-raised);
+            flex: 0 0 auto;
+        }
+        .theme-toggle-btn {
+            font: inherit;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 999px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .theme-toggle-btn[aria-pressed="true"] {
+            background: var(--bg);
+            color: var(--text);
+            box-shadow: var(--shadow);
+        }
+        header.masthead h1 {
+            font-size: 1.6rem;
+            margin: 0 0 4px;
+            letter-spacing: -0.01em;
+        }
+        header.masthead .meta {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        header.masthead .meta code {
+            font-family: var(--font-mono);
+            background: var(--bg-sunken);
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+
+        /* ---- Summary ---- */
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 760px) {
+            .summary { grid-template-columns: 1fr; }
+        }
+        .stat-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            box-shadow: var(--shadow);
+        }
+        .stat-card h3 {
+            margin: 0 0 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+        .stat-card .stat-row {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .stat-card .stat-percent {
+            font-size: 1.9rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .stat-card .stat-fraction {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .stat-card.is-pass .stat-percent { color: var(--pass-dark); }
+        .stat-card.is-fail .stat-percent { color: var(--fail-dark); }
+        .meter {
+            height: 8px;
+            border-radius: 999px;
+            background: var(--skip-bg);
+            overflow: hidden;
+        }
+        .meter > span {
+            display: block;
+            height: 100%;
+            border-radius: 999px;
+        }
+        .meter.pass > span { background: var(--pass); }
+        .meter.fail > span { background: var(--fail); }
+
+        .overall-banner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 14px 20px;
+            margin-bottom: 28px;
+            background: var(--bg);
+            box-shadow: var(--shadow);
+        }
+        .overall-banner.is-pass { background: var(--pass-bg); border-color: var(--pass-border); }
+        .overall-banner.is-fail { background: var(--fail-bg); border-color: var(--fail-border); }
+        .overall-banner .badge {
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 4px 12px;
+            border-radius: 999px;
+            color: #fff;
+        }
+        .overall-banner.is-pass .badge { background: var(--pass-solid); }
+        .overall-banner.is-fail .badge { background: var(--fail-solid); }
+        .overall-banner .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+        /* ---- Controls (JS-enhanced, degrades gracefully) ---- */
+        .btn {
+            font: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover { border-color: var(--fail); }
+        .js-only { display: none; }
+        .has-js .js-only { display: inline-block; }
+        .has-js .js-only.inline { display: inline; }
+        .has-js .js-only.theme-toggle { display: inline-flex; }
+
+        body.filter-failures .specification.all-pass { display: none; }
+
+        /* ---- Specification sections ---- */
+        section.specification {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            overflow: hidden;
+            scroll-margin-top: 16px;
+        }
         {{#hide_skipped}}
-        .specification.is-skipped { display: none; }
+        section.specification.is-skipped { display: none; }
         {{/hide_skipped}}
-        section>h2 { margin-top: 0px; }
-        span.time { color: #999; font-style: italic; float: right; }
-        span.step-time { float: right; color: #555; font-size: 0.8em; font-style: italic; }
-        span.item { padding: 5px; border-radius: 5px; margin-right: 5px; border: 1px solid #eee; }
-        span.item.pass, span.item.fail { color: #FFF; font-weight: bold; border: 0px; }
-        p.fail { background-color: #fb5a3e; padding: 5px; border-radius: 5px; color: #fff; }
-        p.unspecified { background-color: #994f00; padding: 5px; border-radius: 5px; color: #fff; }
-        p.skipped { background-color: #8b8d8f; padding: 5px; border-radius: 5px; color: #fff; }
-        p.description { background-color: #eee; border-radius: 5px; padding: 20px; margin-left: auto; margin-right: auto; display: inline-block; font-weight: bold;}
-        li { padding: 10px; font-family: monospace; border-radius: 5px; margin-bottom: 5px; }
-        li.pass { background-color: var(--light-green); color: #333; }
-        li.fail { background-color: var(--light-red); color: #900; }
-        li.unspecified { background-color: #ffd37f; color: #a30; }
-        li.skipped { background-color: #f5f5f5; color: #333; }
-        li p { margin-bottom: 0px; }
-        footer { color: #999; font-size: 0.8em; }
-        header { text-align: center; }
-        hr { margin: 20px; margin-left: 0px; margin-right: 0px;  border: none; border-top: 1px solid #ccc; }
-        summary { display: flex; cursor: pointer; }
-        summary::-webkit-details-marker { display: none; }
-        * {box-sizing:border-box}
-        .container { width: 100%; background-color: #ddd; border-radius: 5px}
-        .percent { text-align: left; padding-top: 5px; padding-left: 5px; padding-bottom: 5px; color: white; border-radius: 5px; white-space: nowrap; }
-        .pass { background-color: var(--green); }
-        .fail { background-color: var(--red); }
-        table { width: 100%; border-spacing: 0; border-radius: 5px; margin-top: 10px; }
-        th, td { padding: 5px; color: #000; }
-        table.pass { border-bottom: 2px solid var(--green); }
-        table.fail { border-bottom: 2px solid var(--red); }
-        table thead>tr { font-weight: bold; color: #000; }
-        table.pass tbody tr { border-bottom: 1px solid var(--green); }
-        table.fail tbody tr { border-bottom: 1px solid var(--red); }
-        tbody tr:nth-child(odd) { background-color: rgba(1, 1, 1, 0.05); }
-        tbody tr:nth-child(even) { background-color: rgba(1, 1, 1, 0.1); }
-        tbody tr:hover { background-color: rgba(0, 0, 0, 0); }
-        div.info { float: left; width: 30%; }
-        div.results { float: left; width: calc(70% - 20px); margin-left: 20px; padding: 20px; border-radius: 5px; background-color: #fafafa; }
+
+        section.specification > .spec-head {
+            display: flex;
+            gap: 4px;
+            align-items: stretch;
+            border-left: 5px solid var(--skip-border);
+        }
+        section.specification.status-pass > .spec-head { border-left-color: var(--pass); }
+        section.specification.status-fail > .spec-head { border-left-color: var(--fail); }
+
+        .spec-head-main { flex: 1 1 auto; padding: 18px 22px; min-width: 0; }
+        .spec-head-side {
+            flex: 0 0 220px;
+            padding: 18px 22px;
+            border-left: 1px solid var(--border);
+            background: var(--bg-raised);
+        }
+        @media (max-width: 820px) {
+            section.specification > .spec-head { flex-direction: column; }
+            .spec-head-side { border-left: none; border-top: 1px solid var(--border); flex-basis: auto; }
+        }
+
+        .spec-title-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+        .spec-title-row h2 { margin: 0; font-size: 1.15rem; letter-spacing: -0.005em; }
+        .pill {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 2px 9px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .pill-pass { background: var(--pass-solid); color: #fff; border: 1px solid var(--pass-solid); }
+        .pill-fail { background: var(--fail-solid); color: #fff; border: 1px solid var(--fail-solid); }
+        .pill-skip { background: var(--skip-bg); color: var(--skip-text); border: 1px solid var(--skip-border); }
+        .pill-cardinality { background: var(--bg-sunken); color: var(--text-muted); border: 1px solid var(--border); }
+
+        .spec-desc { color: var(--text-muted); margin: 8px 0 0; max-width: 68ch; }
+        .spec-instructions {
+            margin: 10px 0 0;
+            font-size: 0.9rem;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        .warning-line {
+            margin: 10px 0 0;
+            font-size: 0.85rem;
+            color: var(--warn);
+            background: var(--warn-bg);
+            border: 1px solid var(--warn-border);
+            border-radius: 6px;
+            padding: 6px 10px;
+            display: inline-block;
+        }
+
+        .side-metric { margin-bottom: 10px; }
+        .side-metric:last-child { margin-bottom: 0; }
+        .side-metric .label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+        .side-metric .value { font-weight: 600; font-size: 0.95rem; }
+
+        .spec-body { padding: 4px 22px 20px; }
+
+        .applicability-box {
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 14px 0 18px;
+        }
+        .applicability-box h4 {
+            margin: 0 0 8px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        .applicability-box ul { margin: 0; padding-left: 18px; }
+        .applicability-box li { margin-bottom: 3px; }
+
+        h4.requirements-heading {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin: 18px 0 8px;
+        }
+
+        ol.requirements { list-style: none; margin: 0; padding: 0; }
+
+        li.requirement {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            background: var(--bg);
+        }
+        li.requirement.status-pass { border-left: 4px solid var(--pass); }
+        li.requirement.status-fail { border-left: 4px solid var(--fail); }
+        li.requirement.status-skip { border-left: 4px solid var(--skip-border); }
+
+        li.requirement > details > summary {
+            cursor: pointer;
+            list-style: none;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        li.requirement > details > summary::-webkit-details-marker { display: none; }
+        li.requirement > details > summary::before {
+            content: "\25B8";
+            display: inline-block;
+            color: var(--text-muted);
+            transition: transform 0.12s ease;
+            flex: 0 0 auto;
+        }
+        li.requirement > details[open] > summary::before { transform: rotate(90deg); }
+        li.requirement .req-text { flex: 1 1 auto; min-width: 0; }
+        li.requirement .req-count {
+            flex: 0 0 auto;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        li.requirement.status-fail .req-count { color: var(--fail-dark); }
+
+        .req-detail { padding: 0 16px 16px; }
+        .req-instructions {
+            background: var(--bg-raised);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 0.88rem;
+        }
+        .req-instructions .label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .not-applicable-note {
+            font-size: 0.88rem;
+            color: var(--skip-text);
+            background: var(--skip-bg);
+            border: 1px dashed var(--skip-border);
+            border-radius: 6px;
+            padding: 10px 12px;
+        }
+
+        /* ---- Entity tables ---- */
+        .table-scroll { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+        table.entities {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 560px;
+        }
+        table.entities caption {
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 8px 12px;
+        }
+        table.entities.pass caption { background: var(--pass-bg); color: var(--pass-dark); }
+        table.entities.fail caption { background: var(--fail-bg); color: var(--fail-dark); }
+        table.entities thead tr { background: var(--bg-raised); }
+        table.entities th {
+            text-align: left;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            padding: 7px 12px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        table.entities td {
+            padding: 7px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        table.entities tbody tr:last-child td { border-bottom: none; }
+        table.entities tbody tr:nth-child(even) { background: var(--bg-raised); }
+        table.entities td.col-class { font-weight: 600; white-space: nowrap; }
+        table.entities td.col-id { font-family: var(--font-mono); font-size: 0.8em; color: var(--text-muted); white-space: nowrap; }
+        table.entities td.col-reason { color: var(--fail-dark); }
+        tr.omitted-row td, tr.extra-of-type-row td {
+            text-align: center;
+            font-style: italic;
+            color: var(--text-muted);
+            background: var(--bg-sunken) !important;
+        }
+
+        footer.page-footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            margin-top: 32px;
+        }
+
+        /* ---- Print ---- */
+        @media print {
+            body { background: #fff; color: #000; font-size: 11pt; padding: 0; }
+            .wrap { max-width: none; padding: 0 12mm; }
+            header.masthead { border-bottom: 1px solid #999; }
+            .js-only, .no-print, .theme-toggle { display: none !important; }
+            .overall-banner, .stat-card, section.specification {
+                box-shadow: none;
+                border: 1px solid #999 !important;
+                break-inside: avoid;
+            }
+            section.specification { page-break-inside: avoid; margin-bottom: 12pt; }
+            li.requirement { break-inside: avoid; }
+            details { break-inside: avoid; }
+            a { color: inherit; text-decoration: underline; }
+            .pill-pass, .overall-banner.is-pass .badge { color: #000 !important; background: #fff !important; border: 1.5px solid #000 !important; }
+            .pill-fail, .overall-banner.is-fail .badge { color: #000 !important; background: #fff !important; border: 1.5px solid #000 !important; font-weight: 900; }
+            table.entities.fail caption, table.entities.pass caption { background: #fff !important; border: 1px solid #999; }
+            body.filter-failures .specification.all-pass { display: block; }
+        }
     </style>
 </head>
 <body>
-    <header>
-        <h1>{{title}}</h1>
-        <p><strong>{{#filename}}{{filename}}<br />{{/filename}}{{date}}</strong></p>
-    </header>
-    <h2>Summary</h2>
-    <div class="container">
-        <div class="{{#status}}pass{{/status}}{{^status}}fail{{/status}} percent" style="width: {{percent_checks_pass}}%;">{{percent_checks_pass}}%</div>
-    </div>
-    <p>
-        <span class="item {{#status}}pass{{/status}}{{^status}}fail{{/status}}">{{#status}}Pass{{/status}}{{^status}}Fail{{/status}}</span>
-        <span class="item">
-            Specifications passed: <strong>{{total_specifications_pass}}</strong> / <strong>{{total_specifications}}</strong>
-        </span>
-        <span class="item">
-            Requirements passed: <strong>{{total_requirements_pass}}</strong> / <strong>{{total_requirements}}</strong>
-        </span>
-        <span class="item">
-            Checks passed: <strong>{{total_checks_pass}}</strong> / <strong>{{total_checks}}</strong>
-        </span>
-    </p>
-    <hr>
-    {{#specifications}}
-    <section class="specification{{#is_skipped}} is-skipped{{/is_skipped}}" style="clear: both; overflow: hidden;">
-        <div class="info">
-            <h2>{{name}}</h2>
-            {{#description}}
-            <p>{{description}}</p>
-            {{/description}}
-            {{#instructions}}
-            <p><em>{{instructions}}</em></p>
-            {{/instructions}}
-
-            <div class="container">
-                <div class="
-                {{#is_skipped}}skipped{{/is_skipped}}
-                {{^is_skipped}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/is_skipped}}
-                percent" style="width: {{^total_checks}}100{{/total_checks}}{{#total_checks}}{{percent_checks_pass}}{{/total_checks}}%;">{{#is_skipped}}Skipped{{/is_skipped}}{{^is_skipped}}{{percent_checks_pass}}%{{/is_skipped}}</div>
+    <header class="masthead">
+        <div class="wrap">
+            <div>
+                <h1>{{title}}</h1>
+                <p class="meta">
+                    {{#filename}}<code>{{filename}}</code> &middot; {{/filename}}{{date}}
+                </p>
             </div>
-            <p>
-                <span class="item {{#is_skipped}}skipped{{/is_skipped}}{{^is_skipped}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/is_skipped}}">{{#is_skipped}}Optional: Skipped{{/is_skipped}}{{^is_skipped}}{{#status}}{{cardinality}}: Pass{{/status}}{{^status}}{{cardinality}}: Fail{{/status}}{{/is_skipped}}</span>
-                {{#is_prohibited}}
-                <span class="item">
-                    Elements matched: <strong>{{total_applicable}}</strong>
-                </span>
-                {{/is_prohibited}}
-                {{^is_prohibited}}
-                <span class="item">
-                    Checks passed: <strong>{{total_checks_pass}}</strong> / <strong>{{total_checks}}</strong>
-                </span>
-                <span class="item">
-                    Elements passed: <strong>{{total_applicable_pass}}</strong> / <strong>{{total_applicable}}</strong>
-                </span>
-                {{/is_prohibited}}
-            </p>
-            {{^is_ifc_version}}
-            <p>
-                <span class="item">
-                    <strong>Warning:</strong> specification does not apply to this IFC version
-                </span>
-            </p>
-            {{/is_ifc_version}}
+            <div class="theme-toggle js-only" role="group" aria-label="Theme">
+                <button type="button" class="theme-toggle-btn" data-theme-choice="light">Light</button>
+                <button type="button" class="theme-toggle-btn" data-theme-choice="auto">Auto</button>
+                <button type="button" class="theme-toggle-btn" data-theme-choice="dark">Dark</button>
+            </div>
         </div>
-        <div class="results">
-            <p>
-                <strong>Applicability</strong>
-            </p>
-            <ul>
-                {{#applicability}}
-                <li>{{.}}</li>
-                {{/applicability}}
-            </ul>
-            {{#has_requirements}}
-            <p>
-                <strong>Requirements</strong>
-            </p>
-            <ol>
-                {{#requirements}}
-                <li class="{{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}}">
-                    <details>
-                        <summary>
-                            {{description}}
-                        </summary>
-                        {{#instructions}}
-                        <div class="instructions">
-                            <p>
-                                <strong>Instructions</strong>
-                            </p>
-                            {{instructions}}
-                        </div>
-                        {{/instructions}}
-                        {{#total_ckecks}}
-                        <table class="skipped">
-                            <thead>
-                            </thead>
-                        </table>
-                        {{/total_ckecks}} 
-                        {{#total_pass}}
-                        <table class="pass">
-                            <thead>
-                                <tr>
-                                    <th>Class</th>
-                                    <th>PredefinedType</th>
-                                    <th>Name</th>
-                                    <th>Description</th>
-                                    <th>GlobalId</th>
-                                    <th>Tag</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {{#passed_entities}}
-                                <tr>
-                                    <td>{{class}}</td>
-                                    <td>{{predefined_type}}</td>
-                                    <td>{{name}}</td>
-                                    <td>{{description}}</td>
-                                    <td>{{global_id}}</td>
-                                    <td>{{tag}}</td>
-                                </tr>
-                                {{#extra_of_type}}
-                                <tr>
-                                    <td colspan="7">... {{extra_of_type}} more of the same element type ({{type_name}} with Tag {{type_tag}} and GlobalId {{type_global_id}}) not shown ...</td>
-                                </tr>
-                                {{/extra_of_type}}
-                                {{/passed_entities}}
-                                {{#has_omitted_passes}}
-                                <tr>
-                                    <td colspan="7"> ... {{total_omitted_passes}} more passing elements not shown out of {{total_passed_entities}} total ...</td>
-                                </tr>
-                                {{/has_omitted_passes}}
-                            </tbody>
-                        </table>
-                        {{/total_pass}}
-                        {{#total_fail}}
-                        <table class="fail">
-                            <thead>
-                                <tr>
-                                    <th>Class</th>
-                                    <th>PredefinedType</th>
-                                    <th>Name</th>
-                                    <th>Description</th>
-                                    <th>Warning</th>
-                                    <th>GlobalId</th>
-                                    <th>Tag</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {{#failed_entities}}
-                                <tr>
-                                    <td>{{class}}</td>
-                                    <td>{{predefined_type}}</td>
-                                    <td>{{name}}</td>
-                                    <td>{{description}}</td>
-                                    <td>{{reason}}</td>
-                                    <td>{{global_id}}</td>
-                                    <td>{{tag}}</td>
-                                </tr>
-                                {{#extra_of_type}}
-                                <tr>
-                                    <td colspan="7">... {{extra_of_type}} more of the same element type ({{type_name}} with Tag {{type_tag}} and GlobalId {{type_global_id}}) not shown ...</td>
-                                </tr>
-                                {{/extra_of_type}}
-                                {{/failed_entities}}
-                                {{#has_omitted_failures}}
-                                <tr>
-                                    <td colspan="7"> ... {{total_omitted_failures}} more failing elements not shown out of {{total_failed_entities}} total ...</td>
-                                </tr>
-                                {{/has_omitted_failures}}
-                            </tbody>
-                        </table>
-                        {{/total_fail}}
-                    </details>
-                </li>
-                {{/requirements}}
-            </ol>
-            {{/has_requirements}}
-            {{#is_prohibited}}
-            {{#total_applicable}}
-            <table class="fail">
-                <thead>
-                    <tr>
-                        <th>Class</th>
-                        <th>PredefinedType</th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>GlobalId</th>
-                        <th>Tag</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#applicable_entities}}
-                    <tr>
-                        <td>{{class}}</td>
-                        <td>{{predefined_type}}</td>
-                        <td>{{name}}</td>
-                        <td>{{description}}</td>
-                        <td>{{global_id}}</td>
-                        <td>{{tag}}</td>
-                    </tr>
-                    {{#extra_of_type}}
-                    <tr>
-                        <td colspan="7">... {{extra_of_type}} more of the same element type ({{type_name}} with Tag {{type_tag}} and GlobalId {{type_global_id}}) not shown ...</td>
-                    </tr>
-                    {{/extra_of_type}}
-                    {{/applicable_entities}}
-                    {{#has_omitted_applicable}}
-                    <tr>
-                        <td colspan="7"> ... {{total_omitted_applicable}} more failing elements not shown out of {{total_applicable}} total ...</td>
-                    </tr>
-                    {{/has_omitted_applicable}}
-                </tbody>
-            </table>
-            {{/total_applicable}}
-            {{/is_prohibited}}
+    </header>
+
+    <div class="wrap">
+        <div class="overall-banner {{#status}}is-pass{{/status}}{{^status}}is-fail{{/status}}" id="top">
+            <span class="badge">{{#status}}Overall: Pass{{/status}}{{^status}}Overall: Fail{{/status}}</span>
+            <span class="controls">
+                <a class="btn js-only" href="#first-failure">Jump to first failure</a>
+                <button type="button" class="btn js-only" id="toggle-failures-only">Show failures only</button>
+            </span>
         </div>
-    </section>
-    {{/specifications}}
-    <hr>
-    <footer>
-        <p>
-            Report by the <a href="https://bonsaibim.org/">Bonsai</a> and <a href="http://ifcopenshell.org/">IfcOpenShell</a>.
+
+        <section class="summary">
+            <div class="stat-card {{#status}}is-pass{{/status}}{{^status}}is-fail{{/status}}">
+                <h3>Specifications</h3>
+                <div class="stat-row">
+                    <span class="stat-percent">{{percent_specifications_pass}}%</span>
+                    <span class="stat-fraction">{{total_specifications_pass}} / {{total_specifications}} passed</span>
+                </div>
+                <div class="meter {{#status}}pass{{/status}}{{^status}}fail{{/status}}"><span style="width: {{percent_specifications_pass}}%;"></span></div>
+            </div>
+            <div class="stat-card">
+                <h3>Requirements</h3>
+                <div class="stat-row">
+                    <span class="stat-percent">{{percent_requirements_pass}}%</span>
+                    <span class="stat-fraction">{{total_requirements_pass}} / {{total_requirements}} passed</span>
+                </div>
+                <div class="meter {{#status}}pass{{/status}}{{^status}}fail{{/status}}"><span style="width: {{percent_requirements_pass}}%;"></span></div>
+            </div>
+            <div class="stat-card">
+                <h3>Checks</h3>
+                <div class="stat-row">
+                    <span class="stat-percent">{{percent_checks_pass}}%</span>
+                    <span class="stat-fraction">{{total_checks_pass}} / {{total_checks}} passed</span>
+                </div>
+                <div class="meter {{#status}}pass{{/status}}{{^status}}fail{{/status}}"><span style="width: {{percent_checks_pass}}%;"></span></div>
+            </div>
+        </section>
+        <p class="spec-desc no-print" style="margin: -8px 0 24px;">
+            A specification passes only if every one of its requirements passes for every applicable element, so a high check pass rate can still mean many specifications fail.
         </p>
-    </footer>
+
+        {{#specifications}}
+        <section class="specification{{#is_skipped}} is-skipped{{/is_skipped}}{{#status}} status-pass all-pass{{/status}}{{^status}} status-fail{{/status}}">
+            <div class="spec-head">
+                <div class="spec-head-main">
+                    <div class="spec-title-row">
+                        <h2>{{name}}</h2>
+                        {{#is_skipped}}<span class="pill pill-skip">Skipped</span>{{/is_skipped}}
+                        {{^is_skipped}}
+                        {{#status}}<span class="pill pill-pass">Pass</span>{{/status}}
+                        {{^status}}<span class="pill pill-fail">Fail</span>{{/status}}
+                        {{/is_skipped}}
+                        <span class="pill pill-cardinality">{{cardinality}}</span>
+                    </div>
+                    {{#description}}<p class="spec-desc">{{description}}</p>{{/description}}
+                    {{#instructions}}<p class="spec-instructions">{{instructions}}</p>{{/instructions}}
+                    {{^is_ifc_version}}
+                    <p class="warning-line">Warning: this specification does not apply to this IFC version</p>
+                    {{/is_ifc_version}}
+                </div>
+                <div class="spec-head-side">
+                    {{#is_prohibited}}
+                    <div class="side-metric">
+                        <div class="label">Elements matched</div>
+                        <div class="value">{{total_applicable}}</div>
+                    </div>
+                    {{/is_prohibited}}
+                    {{^is_prohibited}}
+                    <div class="side-metric">
+                        <div class="label">Checks passed</div>
+                        <div class="value">{{total_checks_pass}} / {{total_checks}}</div>
+                    </div>
+                    <div class="side-metric">
+                        <div class="label">Elements passed</div>
+                        <div class="value">{{total_applicable_pass}} / {{total_applicable}}</div>
+                    </div>
+                    {{/is_prohibited}}
+                </div>
+            </div>
+
+            <div class="spec-body">
+                <div class="applicability-box">
+                    <h4>Applies to</h4>
+                    <ul>
+                        {{#applicability}}
+                        <li>{{.}}</li>
+                        {{/applicability}}
+                    </ul>
+                </div>
+
+                {{#has_requirements}}
+                <h4 class="requirements-heading">Requirements</h4>
+                <ol class="requirements">
+                    {{#requirements}}
+                    <li class="requirement {{^total_applicable}}status-skip{{/total_applicable}}{{#total_applicable}}{{#status}}status-pass{{/status}}{{^status}}status-fail{{/status}}{{/total_applicable}}">
+                        <details {{^status}}open{{/status}}>
+                            <summary>
+                                <span class="req-text">{{description}}</span>
+                                {{#total_applicable}}<span class="req-count">{{total_pass}} / {{total_applicable}}</span>{{/total_applicable}}
+                            </summary>
+                            <div class="req-detail">
+                                {{#instructions}}
+                                <div class="req-instructions">
+                                    <div class="label">Instructions</div>
+                                    <div>{{instructions}}</div>
+                                </div>
+                                {{/instructions}}
+                                {{^total_applicable}}
+                                <p class="not-applicable-note">No applicable elements for this specification, so this requirement was not checked.</p>
+                                {{/total_applicable}}
+                                {{#total_pass}}
+                                <div class="table-scroll">
+                                <table class="entities pass">
+                                    <caption>Passed</caption>
+                                    <thead>
+                                        <tr>
+                                            <th>Class</th>
+                                            <th>Predefined type</th>
+                                            <th>Name</th>
+                                            <th>Description</th>
+                                            <th>GlobalId</th>
+                                            <th>Tag</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{#passed_entities}}
+                                        <tr>
+                                            <td class="col-class">{{class}}</td>
+                                            <td>{{predefined_type}}</td>
+                                            <td>{{name}}</td>
+                                            <td>{{description}}</td>
+                                            <td class="col-id">{{global_id}}</td>
+                                            <td class="col-id">{{tag}}</td>
+                                        </tr>
+                                        {{#extra_of_type}}
+                                        <tr class="extra-of-type-row">
+                                            <td colspan="6">&hellip; {{extra_of_type}} more of the same element type ({{type_name}}, Tag {{type_tag}}, GlobalId {{type_global_id}}) not shown &hellip;</td>
+                                        </tr>
+                                        {{/extra_of_type}}
+                                        {{/passed_entities}}
+                                        {{#has_omitted_passes}}
+                                        <tr class="omitted-row">
+                                            <td colspan="6">&hellip; {{total_omitted_passes}} more passing elements not shown out of {{total_passed_entities}} total &hellip;</td>
+                                        </tr>
+                                        {{/has_omitted_passes}}
+                                    </tbody>
+                                </table>
+                                </div>
+                                {{/total_pass}}
+                                {{#total_fail}}
+                                <div class="table-scroll" style="margin-top: 10px;">
+                                <table class="entities fail">
+                                    <caption>Failed</caption>
+                                    <thead>
+                                        <tr>
+                                            <th>Class</th>
+                                            <th>Predefined type</th>
+                                            <th>Name</th>
+                                            <th>Description</th>
+                                            <th>Reason</th>
+                                            <th>GlobalId</th>
+                                            <th>Tag</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{#failed_entities}}
+                                        <tr>
+                                            <td class="col-class">{{class}}</td>
+                                            <td>{{predefined_type}}</td>
+                                            <td>{{name}}</td>
+                                            <td>{{description}}</td>
+                                            <td class="col-reason">{{reason}}</td>
+                                            <td class="col-id">{{global_id}}</td>
+                                            <td class="col-id">{{tag}}</td>
+                                        </tr>
+                                        {{#extra_of_type}}
+                                        <tr class="extra-of-type-row">
+                                            <td colspan="7">&hellip; {{extra_of_type}} more of the same element type ({{type_name}}, Tag {{type_tag}}, GlobalId {{type_global_id}}) not shown &hellip;</td>
+                                        </tr>
+                                        {{/extra_of_type}}
+                                        {{/failed_entities}}
+                                        {{#has_omitted_failures}}
+                                        <tr class="omitted-row">
+                                            <td colspan="7">&hellip; {{total_omitted_failures}} more failing elements not shown out of {{total_failed_entities}} total &hellip;</td>
+                                        </tr>
+                                        {{/has_omitted_failures}}
+                                    </tbody>
+                                </table>
+                                </div>
+                                {{/total_fail}}
+                            </div>
+                        </details>
+                    </li>
+                    {{/requirements}}
+                </ol>
+                {{/has_requirements}}
+
+                {{#is_prohibited}}
+                {{#total_applicable}}
+                <div class="table-scroll">
+                <table class="entities fail">
+                    <caption>Matched (prohibited)</caption>
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Predefined type</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>GlobalId</th>
+                            <th>Tag</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#applicable_entities}}
+                        <tr>
+                            <td class="col-class">{{class}}</td>
+                            <td>{{predefined_type}}</td>
+                            <td>{{name}}</td>
+                            <td>{{description}}</td>
+                            <td class="col-id">{{global_id}}</td>
+                            <td class="col-id">{{tag}}</td>
+                        </tr>
+                        {{#extra_of_type}}
+                        <tr class="extra-of-type-row">
+                            <td colspan="6">&hellip; {{extra_of_type}} more of the same element type ({{type_name}}, Tag {{type_tag}}, GlobalId {{type_global_id}}) not shown &hellip;</td>
+                        </tr>
+                        {{/extra_of_type}}
+                        {{/applicable_entities}}
+                        {{#has_omitted_applicable}}
+                        <tr class="omitted-row">
+                            <td colspan="6">&hellip; {{total_omitted_applicable}} more matched elements not shown out of {{total_applicable}} total &hellip;</td>
+                        </tr>
+                        {{/has_omitted_applicable}}
+                    </tbody>
+                </table>
+                </div>
+                {{/total_applicable}}
+                {{/is_prohibited}}
+            </div>
+        </section>
+        {{/specifications}}
+
+        <footer class="page-footer">
+            <p>Report by <a href="https://bonsaibim.org/">Bonsai</a> and <a href="http://ifcopenshell.org/">IfcOpenShell</a>.</p>
+        </footer>
+    </div>
+
+    <script>
+        (function () {
+            document.documentElement.classList.add("has-js");
+            document.body.classList.add("has-js");
+            var toggle = document.getElementById("toggle-failures-only");
+            if (toggle) {
+                toggle.addEventListener("click", function () {
+                    var active = document.body.classList.toggle("filter-failures");
+                    toggle.textContent = active ? "Show all specifications" : "Show failures only";
+                });
+            }
+            var firstFailure = document.querySelector("li.requirement.status-fail");
+            if (firstFailure) {
+                firstFailure.id = "first-failure";
+            } else {
+                var jump = document.querySelector('a[href="#first-failure"]');
+                if (jump) { jump.style.display = "none"; }
+            }
+
+            var THEME_KEY = "ifctester-report-theme";
+
+            function getStoredTheme() {
+                try {
+                    return window.localStorage.getItem(THEME_KEY);
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function setStoredTheme(value) {
+                try {
+                    if (value === "auto") {
+                        window.localStorage.removeItem(THEME_KEY);
+                    } else {
+                        window.localStorage.setItem(THEME_KEY, value);
+                    }
+                } catch (e) {}
+            }
+
+            function applyTheme(value) {
+                if (value === "light" || value === "dark") {
+                    document.documentElement.setAttribute("data-theme", value);
+                } else {
+                    document.documentElement.removeAttribute("data-theme");
+                }
+            }
+
+            var themeButtons = document.querySelectorAll(".theme-toggle-btn");
+            if (themeButtons.length) {
+                var currentTheme = getStoredTheme() || "auto";
+
+                var updatePressed = function () {
+                    for (var i = 0; i < themeButtons.length; i++) {
+                        var btn = themeButtons[i];
+                        var pressed = btn.getAttribute("data-theme-choice") === currentTheme;
+                        btn.setAttribute("aria-pressed", pressed ? "true" : "false");
+                    }
+                };
+                updatePressed();
+
+                for (var i = 0; i < themeButtons.length; i++) {
+                    (function (btn) {
+                        btn.addEventListener("click", function () {
+                            currentTheme = btn.getAttribute("data-theme-choice");
+                            applyTheme(currentTheme);
+                            setStoredTheme(currentTheme);
+                            updatePressed();
+                        });
+                    })(themeButtons[i]);
+                }
+            }
+        })();
+    </script>
 </body>
 </html>
