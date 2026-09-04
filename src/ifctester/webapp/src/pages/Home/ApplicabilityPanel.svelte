@@ -31,13 +31,26 @@
     
     async function removeFacet(facetType: FacetType, facetIndex: number) {
         if (!activeSpecification || !documentState || !IDS.Module.activeDocument) return;
-        
+
         await IDS.deleteFacet(
-            IDS.Module.activeDocument, 
+            IDS.Module.activeDocument,
             documentState.activeSpecification ?? 0,
-            "applicability", 
+            "applicability",
             facetType,
             facetIndex
+        );
+    }
+
+    function moveFacet(facetType: FacetType, facetIndex: number, direction: -1 | 1) {
+        if (!activeSpecification || !documentState || !IDS.Module.activeDocument) return;
+
+        IDS.moveFacet(
+            IDS.Module.activeDocument,
+            documentState.activeSpecification ?? 0,
+            "applicability",
+            facetType,
+            facetIndex,
+            direction
         );
     }
 
@@ -66,9 +79,11 @@
                         bind:facet={facets[index]} 
                         {facetType} 
                         specification={activeSpecification}
-                        activeTab="applicability" 
-                        {removeFacet} 
+                        activeTab="applicability"
+                        {removeFacet}
+                        {moveFacet}
                         {index}
+                        listLength={facets.length}
                     />
                 {/each}
             {/each}

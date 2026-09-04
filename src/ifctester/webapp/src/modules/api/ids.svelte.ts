@@ -268,6 +268,23 @@ export async function deleteFacet(
     list.splice(facetId, 1);
 }
 
+export function moveFacet(
+    docId: string,
+    specId: number,
+    clause: "applicability" | "requirements",
+    facet: "entity" | "attribute" | "classification" | "partOf" | "property" | "material",
+    facetId: number,
+    direction: -1 | 1
+) {
+    const spec = Module.documents[docId].specifications.specification[specId];
+    const list = (spec[clause] as Record<string, unknown> | undefined)?.[facet] as Facet[] | undefined;
+    if (!list) return;
+    const target = facetId + direction;
+    if (facetId < 0 || facetId >= list.length || target < 0 || target >= list.length) return;
+    const [moved] = list.splice(facetId, 1);
+    list.splice(target, 0, moved);
+}
+
 export function getSpecUsage(spec?: Specification | null): IdsCardinality {
     if (!spec?.applicability) return 'required';
     const minOccurs = spec.applicability["@minOccurs"] as number | undefined;
