@@ -2261,6 +2261,9 @@ class AutosavePrompt(bpy.types.Operator):
     bl_options = set()
 
     def invoke(self, context, event):
+        # Mark a reminder as open so the re-arming autosave timer won't stack
+        # another dialog on top while this one is still waiting for the user.
+        tool.Autosave.set_prompt_open(True)
         return context.window_manager.invoke_props_dialog(
             self, width=400, confirm_text="Save", title="Autosave Reminder"
         )
@@ -2271,6 +2274,7 @@ class AutosavePrompt(bpy.types.Operator):
         layout.label(text="Would you like to save your IFC project now?")
 
     def execute(self, context):
+        tool.Autosave.set_prompt_open(False)
         # Get current IFC path
         props = tool.Blender.get_bim_props()
         current_ifc_path = props.ifc_file
@@ -2289,6 +2293,7 @@ class AutosavePrompt(bpy.types.Operator):
         return result
 
     def cancel(self, context):
+        tool.Autosave.set_prompt_open(False)
         tool.Autosave.reset_timer()
         return {"CANCELLED"}
 
