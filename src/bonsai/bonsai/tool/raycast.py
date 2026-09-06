@@ -39,13 +39,15 @@ from mathutils import Matrix, Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim.decorator_cache import get_decorator_cache_token
 from bonsai.bim.module.drawing.data import DecoratorData
 from bonsai.bim.module.drawing.decoration import CutDecorator
 
-_wireframe_batch_cache: dict[int, dict[str, tuple[GPUBatch, int, list]]] = {}
+_wireframe_batch_cache: dict[tuple[int, int], dict[str, tuple[GPUBatch, int, list]]] = {}
 _wireframe_vert_fmt: GPUVertFormat | None = None
-_triangle_batch_cache: dict[int, tuple[GPUBatch, int]] = {}
+_triangle_batch_cache: dict[tuple[int, int], tuple[GPUBatch, int]] = {}
 _triangle_vert_fmt: GPUVertFormat | None = None
+_last_decorator_cache_token: int | None = None
 _encoding_shader: gpu.types.GPUShader | None = None
 _offscreen: GPUOffScreen | None = None
 _obj_list: list[[bpy.types.Object, bool]] = []
@@ -99,6 +101,16 @@ def _create_vert_format() -> GPUVertFormat:
     fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
     fmt.attr_add(id="vert_slot", comp_type="F32", len=1, fetch_mode="FLOAT")
     return fmt
+
+
+def _discard_stale_batches_if_token_changed() -> None:
+    """Clear GPU batches when the decorator cache token is bumped on file load, undo, redo, or depsgraph changes."""
+    global _last_decorator_cache_token
+    token = get_decorator_cache_token()
+    if token != _last_decorator_cache_token:
+        _triangle_batch_cache.clear()
+        _wireframe_batch_cache.clear()
+        _last_decorator_cache_token = token
 
 
 def _find_closest_wireframe_pixel(buffer_data, cx, cy):
@@ -203,7 +215,8 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch | None, bo
     if _triangle_vert_fmt is None:
         _triangle_vert_fmt = _create_vert_format()
 
-    cache_key = id(obj)
+    _discard_stale_batches_if_token_changed()
+    cache_key = (obj.session_uid, get_decorator_cache_token())
     if cache_key in _triangle_batch_cache:
         return _triangle_batch_cache[cache_key]
 
@@ -355,7 +368,8 @@ def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch
     if _wireframe_vert_fmt is None:
         _wireframe_vert_fmt = _create_vert_format()
 
-    cache_key = id(obj)
+    _discard_stale_batches_if_token_changed()
+    cache_key = (obj.session_uid, get_decorator_cache_token())
 
     # Cache hit
     if cache_key in _wireframe_batch_cache:
@@ -1199,7 +1213,7 @@ class Raycast(bonsai.core.tool.Raycast):
 
     @classmethod
     def clear_cache(cls):
-        global _wireframe_batch_cache, _wireframe_vert_fmt, _triangle_batch_cache, _triangle_vert_fmt, _encoding_shader, _offscreen, _obj_list
+        global _wireframe_batch_cache, _wireframe_vert_fmt, _triangle_batch_cache, _triangle_vert_fmt, _encoding_shader, _offscreen, _obj_list, _last_decorator_cache_token
         _wireframe_batch_cache = {}
         _wireframe_vert_fmt = None
         _triangle_batch_cache = {}
@@ -1207,6 +1221,7 @@ class Raycast(bonsai.core.tool.Raycast):
         _encoding_shader = None
         _offscreen = None
         _obj_list = []
+        _last_decorator_cache_token = None
 
     @classmethod
     def ray_cast_by_proximity(
