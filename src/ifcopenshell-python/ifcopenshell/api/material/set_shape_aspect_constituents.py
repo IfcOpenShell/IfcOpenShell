@@ -87,7 +87,7 @@ def set_shape_aspect_constituents(
     should_create_new_material_set = False
     if material := ifcopenshell.util.element.get_material(element):
         if (
-            material.is_a("IfcMaterialConstituent")
+            material.is_a("IfcMaterialConstituentSet")
             and len(names := [c.Name for c in material.MaterialConstituents]) == len(materials)
             and set(names) == set(materials.keys())
         ):
