@@ -1806,6 +1806,34 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
         assert is_x(number, expected_dimensions[i]), f"Expected {expected_dimensions} but got {actual_dimensions}"
 
 
+# An inscribed tessellation is never wider than the profile it approximates, so
+# the slack is one sided: short of nominal is fine, over nominal is not.
+DIMENSION_RELATIVE_TOLERANCE = 0.05
+
+
+@then(parsers.parse('the object "{name}" dimensions are approximately "{dimensions}"'))
+def the_object_name_dimensions_are_approximately_dimensions(name, dimensions):
+    """Assert nominal dimensions without pinning the mesher's tessellation.
+
+    Bonsai meshes with mesher-angular-deflection 0.5, so a conforming full
+    circle turns at most 0.5 rad per chord and needs at least
+    ceil(2 * pi / 0.5) = 13 of them. The bounding box of a polygon with that
+    many chords inscribed in a circle is at least 2r * cos(pi / 13), 97.1% of
+    the nominal diameter, whatever the phase the mesher starts sampling at.
+    5% accepts every tessellation that honours the setting, with headroom, and
+    the upper bound stays exact because an inscribed profile cannot overshoot.
+    """
+    actual_dimensions = list(the_object_name_exists(name).dimensions)
+    expected_dimensions = [float(co) for co in dimensions.split(",")]
+    assert len(actual_dimensions) == len(
+        expected_dimensions
+    ), f"Expected {len(expected_dimensions)} dimensions but got {actual_dimensions}"
+    for actual, expected in zip(actual_dimensions, expected_dimensions):
+        lower = expected - abs(expected) * DIMENSION_RELATIVE_TOLERANCE - 1e-5
+        upper = expected + 1e-5
+        assert lower <= actual <= upper, f"Expected approximately {expected_dimensions} but got {actual_dimensions}"
+
+
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
 def the_object_name_top_right_corner_is_at_location(name, location):
     obj = the_object_name_exists(name)
