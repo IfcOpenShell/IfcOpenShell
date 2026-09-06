@@ -507,8 +507,8 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 								if ((fn2 * facet_normal) >= *smooth_treshold) {
 									normal_accum = normal_accum + fn2;
 								}
-								++vh;
 							}
+							++vh;
 						} while (vh != vh_begin);
 					}
 				}
