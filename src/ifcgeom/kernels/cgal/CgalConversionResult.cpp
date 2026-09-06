@@ -553,8 +553,9 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			vertexidx[i] = (int)vidx;
 			is_face_boundary[i] = setting_use_original_edges
 				? original_edges.find({ current_halfedge->vertex()->point(), current_halfedge->prev()->vertex()->point() }) != original_edges.end()
-				: facet_to_component[face] != facet_to_component[current_halfedge->opposite()->face()];
-				
+				: current_halfedge->opposite()->is_border()
+				|| facet_to_component.at(face) != facet_to_component.at(current_halfedge->opposite()->face());
+
 			++i;
 			++num_vertices;
 			++current_halfedge;
