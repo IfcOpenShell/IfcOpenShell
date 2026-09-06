@@ -31,6 +31,9 @@ def load_post(*args):
     else:
         decoration.DecorationsHandler.uninstall()
 
+    # CutDecorator is drawing-view-only state and must not survive a new file.
+    decoration.CutDecorator.uninstall()
+
 
 @persistent
 def depsgraph_update_pre_handler(scene):
