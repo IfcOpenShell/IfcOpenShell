@@ -171,24 +171,15 @@ IF %VS_VER%==2026 ( set "VC_VER=14.5" )
 set BOOST_BOOTSTRAP_VER=vc%VC_VER%
 set BOOST_BOOTSTRAP_VER=%BOOST_BOOTSTRAP_VER:.=%
 
-set VS_TOOLSET_HOST=
-
 :: determine the toolset and winapi for Boost b2
-:: optionally use 64bit toolset to work around memory errors when linking
 IF DEFINED VS_TOOLSET (
     set BOOST_TOOLSET=msvc-%BOOST_TOOLSET%
     if "!VS_TOOLSET:~-3!"=="_xp" (
         set BOOST_WIN_API=define=BOOST_USE_WINAPI_VERSION=0x0501
     )
-    IF NOT "%VS_HOST%"=="" (
-        set VS_TOOLSET_HOST=%VS_TOOLSET%,host=%VS_HOST%
-    )
 ) ELSE (
     set BOOST_TOOLSET=msvc-%VC_VER%
     set BOOST_WIN_API=
-    IF NOT "%VS_HOST%"=="" (
-        set VS_TOOLSET_HOST=host=%VS_HOST%
-    )
 )
 
 IF %VS_PLATFORM%==Win32 (
