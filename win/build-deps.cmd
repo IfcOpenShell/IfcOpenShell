@@ -1035,11 +1035,7 @@ pushd %BUILD_DIR%
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
 
-set VS_TOOLSET_CMAKE_ARG=
-IF NOT "%VS_TOOLSET_HOST%"=="" (
-    set VS_TOOLSET_CMAKE_ARG=-T %VS_TOOLSET_HOST%
-)
-set COMMAND=cmake .. -G %GENERATOR% -A %VS_PLATFORM% %VS_TOOLSET_CMAKE_ARG% %*
+set COMMAND=cmake .. -G %GENERATOR% -A %VS_PLATFORM% %*
 echo %COMMAND%
 %COMMAND%
 set RET=%ERRORLEVEL%
