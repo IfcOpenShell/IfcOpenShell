@@ -150,7 +150,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     @contextmanager
-    def batch_host_recut(cls) -> Generator[None, None, None]:
+    def batch_host_recut(cls) -> Generator[None]:
         """Coalesce host body work — `recut_host` and `update_host_representation`
         calls inside the with-block enqueue by voided element id. On the outermost
         exit: every host's `update_representation` runs first (writes Blender mesh
@@ -2093,7 +2093,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return use_immediate_repr
 
     @classmethod
-    def get_openings(cls, element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance, None, None]:
+    def get_openings(cls, element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance]:
         """Get element openings as IfcRelVoidsElements.
 
         Use `.RelatedOpeningElement` to get the opening element.

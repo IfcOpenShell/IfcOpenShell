@@ -733,7 +733,7 @@ if(BUILD_IFCMAX)
     add_subdirectory(../src/ifcmax ifcmax)
 endif()
 
-if(BUILD_IFCPYTHON AND WITH_CGAL)
+if(WITH_CGAL)
     add_subdirectory(../src/svgfill svgfill)
 endif()
 

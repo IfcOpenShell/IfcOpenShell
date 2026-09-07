@@ -50,6 +50,7 @@ if(IFCOPENSHELL_IFCWRAP_STANDALONE)
 
     set(WITH_OPENCASCADE "${IFCOPENSHELL_WITH_OPENCASCADE}")
     set(WITH_CGAL "${IFCOPENSHELL_WITH_CGAL}")
+    set(WITH_ROCKSDB "${IFCOPENSHELL_WITH_ROCKSDB}")
     set(SWIG_DEFINES "")
 
     if(IFCOPENSHELL_WITH_OPENCASCADE)
@@ -67,6 +68,7 @@ if(IFCOPENSHELL_IFCWRAP_STANDALONE)
     if(IFCOPENSHELL_WITH_ROCKSDB)
         list(APPEND SWIG_DEFINES -DIFOPSH_WITH_ROCKSDB)
         list(APPEND _ifcwrap_feature_definitions IFOPSH_WITH_ROCKSDB)
+        add_library(document_serializer_rdb ALIAS IfcOpenShell::document_serializer_rdb)
     endif()
 endif()
 
@@ -109,18 +111,6 @@ set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
-
-if(WITH_CGAL)
-    if(IFCOPENSHELL_IFCWRAP_STANDALONE)
-        if(TARGET IfcOpenShell::svgfill)
-            set(LIBSVGFILL IfcOpenShell::svgfill)
-        else()
-            message(FATAL_ERROR "IfcOpenShell was built with CGAL, but the exported svgfill target was not found.")
-        endif()
-    else()
-        set(LIBSVGFILL svgfill)
-    endif()
-endif()
 
 set_source_files_properties(IfcPython.i PROPERTIES CPLUSPLUS ON)
 # Rebuild on changes in other .i files.
@@ -282,8 +272,11 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
     ELSE()
         message(STATUS "Python wrapper will be installed to '${python_package_dir}'.")
         file(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*")
-        # Exclude compiled extensions - they're part of dev environment and shouldn't leak into installation.
-        list(FILTER sourcefiles EXCLUDE REGEX "\\.(so|pyd|dylib)$")
+        # Exclude compiled extensions and shared libraries (including versioned .so.X.Y) -
+        # they're part of dev environment and shouldn't leak into installation.
+        list(FILTER sourcefiles EXCLUDE REGEX [[\.(so(\.[0-9]+)*|pyd|dylib)$]])
+        # Exclude cached bytecode.
+        list(FILTER sourcefiles EXCLUDE REGEX [[\.pyc$]])
         foreach(file ${sourcefiles})
             file(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
             get_filename_component(dir "${relative}" DIRECTORY)

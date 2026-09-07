@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from math import degrees, radians, sqrt
+from math import degrees, sqrt
 from typing import Any, Union
 
 import numpy as np
@@ -31,11 +31,6 @@ from ifcopenshell.util.shape_builder import (
     arc_to_polyline_points,
     is_x,
     np_angle,
-    np_angle_signed,
-    np_intersect_line_line,
-    np_matrix_to_euler,
-    np_normal,
-    np_rotation_matrix,
     np_to_3d,
     polygonal_face_set_to_faceted_brep,
 )
@@ -145,89 +140,6 @@ class TestPolygonalFaceSetToFacetedBrep(test.bootstrap.IFC4):
         face_set = self.file.create_entity("IfcTriangulatedFaceSet", Coordinates=coords, CoordIndex=[(1, 1, 5)])
         with pytest.raises(ValueError, match="outside CoordList range"):
             polygonal_face_set_to_faceted_brep(face_set)
-
-
-class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):
-    def test_np_rotation_matrix(self):
-        from mathutils import Matrix, Vector  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
-
-        # 2D.
-        assert np.allclose(Matrix.Rotation(radians(45), 2), np_rotation_matrix(radians(45), 2))
-        assert np.allclose(Matrix.Rotation(radians(45), 2, "Z"), np_rotation_matrix(radians(45), 2, "Z"))
-
-        # 3D.
-        assert np.allclose(Matrix.Rotation(radians(45), 3, "X"), np_rotation_matrix(radians(45), 3, "X"))
-        assert np.allclose(Matrix.Rotation(radians(45), 3, "Y"), np_rotation_matrix(radians(45), 3, "Y"))
-        assert np.allclose(Matrix.Rotation(radians(45), 3, "Z"), np_rotation_matrix(radians(45), 3, "Z"))
-        rotation_vector_args = radians(45), 3, Vector((1, 1, 1)).normalized()
-        assert np.allclose(Matrix.Rotation(*rotation_vector_args), np_rotation_matrix(*rotation_vector_args))
-
-        # Size 4.
-        assert np.allclose(Matrix.Rotation(radians(45), 4, "X"), np_rotation_matrix(radians(45), 4, "X"))
-        assert np.allclose(Matrix.Rotation(radians(45), 4, "Y"), np_rotation_matrix(radians(45), 4, "Y"))
-        assert np.allclose(Matrix.Rotation(radians(45), 4, "Z"), np_rotation_matrix(radians(45), 4, "Z"))
-        rotation_vector_args = radians(45), 4, Vector((1, 1, 1)).normalized()
-        assert np.allclose(Matrix.Rotation(*rotation_vector_args), np_rotation_matrix(*rotation_vector_args))
-
-    def test_np_matrix_to_euler(self):
-        from mathutils import Euler  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
-
-        # Test 3x3.
-        rot = Euler((0.5, 0.5, 0.5)).to_matrix()
-        assert np.allclose(rot.to_euler(), np_matrix_to_euler(V(rot)))
-
-        rot = rot.to_4x4()
-        assert np.allclose(rot.to_euler(), np_matrix_to_euler(V(rot)))
-
-        # Ensure support scaled matrices.
-        rot = Euler((0.5, 0.5, 0.5)).to_matrix()
-        rot.col[0] *= 2
-        assert np.allclose(rot.to_euler(), np_matrix_to_euler(V(rot)))
-
-    def test_np_angle(self):
-        from mathutils import Vector  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
-
-        v1, v2 = (1, 0, 0), (0, 1, 0)
-        angle = np_angle(v1, v2)
-        assert is_x(angle, Vector(v1).angle(Vector(v2)))
-        assert is_x(angle, radians(90))
-
-        v1, v2 = v1[:2], v2[:2]
-        angle = np_angle_signed(v1, v2)
-        assert is_x(angle, Vector(v1).angle_signed(Vector(v2)))
-        assert is_x(angle, -radians(90))
-
-        v1, v2 = (0, 1, 0), (1, 0, 0)
-        angle = np_angle(v1, v2)
-        assert is_x(angle, Vector(v1).angle(Vector(v2)))
-        assert is_x(angle, radians(90))
-
-        v1, v2 = v1[:2], v2[:2]
-        angle = np_angle_signed(v1, v2)
-        assert is_x(angle, Vector(v1).angle_signed(Vector(v2)))
-        assert is_x(angle, radians(90))
-
-    def test_np_normal(self):
-        import mathutils.geometry  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
-
-        vectors = (0, 0, 0), (1, 0, 0), (0, 1, 0)
-        n = mathutils.geometry.normal(vectors)
-        assert np.allclose(n, np_normal(vectors))
-        assert np.allclose(n, (0, 0, 1))
-
-        vectors = (0, 0, 0), (0, 1, 0), (1, 0, 0)
-        n = mathutils.geometry.normal(vectors)
-        assert np.allclose(n, np_normal(vectors))
-        assert np.allclose(n, (0, 0, -1))
-
-    def test_np_intersect_line_line(self):
-        import mathutils.geometry  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
-
-        p1, p2 = [0, 0, 0], [1, 1, 1]
-        q1, q2 = [0, 1, 0], [1, 0, 1]
-        expected = mathutils.geometry.intersect_line_line(tuple(p1), tuple(p2), tuple(q1), tuple(q2))
-        result = np_intersect_line_line(p1, p2, q1, q2)
-        assert np.allclose(expected, result)
 
 
 class TestRectangle(test.bootstrap.IFC4):
