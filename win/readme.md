@@ -99,7 +99,6 @@ Directory Structure
 |   install-ifcopenshell.bat        - Installs/deploys IFCOS using MSVC.
 |   readme.md                       - This file
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS using MSVC
-|   set-python-to-path.bat          - Utility for setting PYTHONHOME (read from BuildDepsCache-<ARCH>.txt) to PATH
 |   vs-cfg.cmd                      - Utility file used by the build scripts
 \---patches                         - Contains patches for the dependencies
 \---utils                           - Contains various utilities for the build scripts
