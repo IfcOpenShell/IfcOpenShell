@@ -72,10 +72,9 @@ Before building the dependencies, disable the script from installing Python:
 > buid-deps.cmd
 ```
 
-After building the dependencies, append Python version and installation directory information to the BuildDepsCache file
+After building the dependencies, append Python installation directory information to the BuildDepsCache file
 in `IfcOpenShell\win`:
 ```
-> echo PY_VER_MAJOR_MINOR=35>> BuildDepsCache-x64.txt
 > echo PYTHONHOME=C:\Python3>> BuildDepsCache-x64.txt
 ```
 
