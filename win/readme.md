@@ -19,7 +19,7 @@ User-friendly CMake Visual Studio generator shorthands are supported. They are c
 "vs2013-x86"         => cmake -G "Visual Studio 12 2013" -A Win32
 "vs2015-x64"         => cmake -G "Visual Studio 14 2015" -A x64
 "vs2017-ARM64"       => cmake -G "Visual Studio 15 2017" -A ARM64
-"vs2019-x86-v141_xp" => cmake -G "Visual Studio 16 2019" -A Win32 -T v141_xp
+"vs2019-x86-v141"    => cmake -G "Visual Studio 16 2019" -A Win32 -T v141
 ```
 Of course not all Visual C++ compilers support any platform or toolset, refer to the Visual Studio and CMake documentation for this. If you do not specify a toolset, the compiler will use the default toolset for the version, i.e. vs2019 will use the v142 toolset.
 
