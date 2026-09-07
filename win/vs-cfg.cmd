@@ -166,22 +166,18 @@ IF DEFINED VS_TOOLSET (
 
 IF %VS_PLATFORM%==Win32 (
     set ARCH_BITS=32
-    set TARGET_ARCH=x86
 )
 
 IF %VS_PLATFORM%==x64 (
     set ARCH_BITS=64
-    set TARGET_ARCH=x64
 )
 
 IF %VS_PLATFORM%==ARM (
     set ARCH_BITS=32
-    set TARGET_ARCH=ARM
 )
 
 IF %VS_PLATFORM%==ARM64 (
     set ARCH_BITS=64
-    set TARGET_ARCH=ARM64
 )
 
 :: Check CMake version and convert possible new format (>= 3.0) generator names to the old versions if using older CMake for VS <= 2013,
@@ -208,7 +204,6 @@ exit /b 1
     ::VC_VER - e.g. "14.5"
      echo VC_VER:              [!VC_VER!]
      echo ARCH_BITS:           [!ARCH_BITS!]
-     echo TARGET_ARCH:         [!TARGET_ARCH!]
     ::BOOST_BOOTSTRAP_VER - e.g. "vc145"
      echo BOOST_BOOTSTRAP_VER: [!BOOST_BOOTSTRAP_VER!]
      echo BOOST_TOOLSET:       [!BOOST_TOOLSET!]
@@ -225,12 +220,12 @@ set PATH=%~dp0utils;%PATH%
 
 :: Fetch and build the dependencies to a dedicated directory depending on the used VS version and target architecture.
 :: NOTE For IfcOpenShell we can build all of our deps both x86 and x64 using different VS versions in the same directories
-:: so no need for -%VS_VER%-%TARGET_ARCH% postfix.
-:: set DEPS_DIR=%CD%\deps-%VS_VER%-%TARGET_ARCH%
+:: so no need for -%VS_VER%-%VS_PLATFORM% postfix.
+:: set DEPS_DIR=%CD%\deps-%VS_VER%-%VS_PLATFORM%
 pushd ..
 set DEPS_DIR=%CD%\_deps
 set INSTALL_DIR=%CD%\_deps-%GEN_SHORTHAND%-installed
-:: set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%TARGET_ARCH%-%DEBUG_OR_RELEASE_LOWERCASE%-installed
+:: set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%VS_PLATFORM%-%DEBUG_OR_RELEASE_LOWERCASE%-installed
 :: BUILD_DIR is a relative build directory used for CMake-based projects
 set BUILD_DIR=_build-%GEN_SHORTHAND%
 popd
