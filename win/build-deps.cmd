@@ -202,7 +202,7 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 :: Cache last used CMake generator and configurable dependency dirs for other scripts to use
 :: This is consolidated at the beginning of the script so that the script can be partially
 :: executed by jumping (using goto) to different labels.
-if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo QT6_VERSION=%QT6_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
