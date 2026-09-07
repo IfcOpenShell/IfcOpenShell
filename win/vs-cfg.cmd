@@ -115,8 +115,7 @@ IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
 )
 
 :: Check that the used CMake version supports the chosen generator
-set GENERATOR_CHECK=%GENERATOR: Win64=%
-cmake --help | findstr /c:%GENERATOR_CHECK% >nul
+cmake --help | findstr /c:%GENERATOR% >nul
 if not %ERRORLEVEL%==0 (
 call utils\cecho.cmd 0 12 "%~nx0: The used CMake version does not support generator '`"!GENERATOR!`'"- cannot proceed."
 exit /b 1
@@ -151,10 +150,6 @@ FOR %%i IN (%GENERATOR_SPLIT%) DO (
     IF !LEN!==1 set VC_VER=%%i
     IF !LEN!==2 set VC_VER=%%i
     IF !LEN!==4 set VS_VER=%%i
-    :: Are going to perform a 64-bit build?
-    IF %%i==Win64 (
-        set VS_PLATFORM=x64
-    )
 )
 
 :PlatformDefined
