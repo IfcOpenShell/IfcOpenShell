@@ -88,9 +88,6 @@ IF NOT "!BUILD_TYPE!"=="Build" IF NOT "!BUILD_TYPE!"=="Rebuild" IF NOT "!BUILD_T
 IF NOT EXIST "%DEPS_DIR%". mkdir "%DEPS_DIR%"
 IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 
-:: If we use VS2008, framework path (for MSBuild) may not be correctly set. Manually attempt to add in that case
-IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
-
 :: User-configurable build options
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
 IF NOT DEFINED IFCOS_INSTALL_QT6 set IFCOS_INSTALL_QT6=TRUE
