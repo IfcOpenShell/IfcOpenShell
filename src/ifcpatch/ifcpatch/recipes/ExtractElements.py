@@ -87,12 +87,27 @@ class Patcher(ifcpatch.BasePatcher):
         self.new = ifcopenshell.file(schema_version=self.file.schema_version)
         self.owner_history = None
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = {}
+        # Relationships reached via shared inverses (material, type, property sets)
+        # are deferred here and their member lists assigned once, avoiding the
+        # O(n^2) cost of re-assigning a growing list on every element append.
+        self.deferred_relationship_members: dict[
+            int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]
+        ] = {}
+        # A presentation layer is shared by every element drawn on it, so its item
+        # set is collected here and written once instead of on every element append.
+        self.deferred_layer_items: dict[
+            int, tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+        ] = {}
         for owner_history in self.file.by_type("IfcOwnerHistory"):
             self.owner_history = self.new.add(owner_history)
             break
         self.add_element(self.file.by_type("IfcProject")[0])
         for element in ifcopenshell.util.selector.filter_elements(self.file, self.query):
             self.add_element(element)
+        ifcopenshell.api.project.flush_deferred_relationship_members(
+            self.new, self.deferred_relationship_members, self.reuse_identities
+        )
+        ifcopenshell.api.project.flush_deferred_layer_items(self.deferred_layer_items)
         self.create_spatial_tree()
         self.file = self.new
 
@@ -120,6 +135,8 @@ class Patcher(ifcpatch.BasePatcher):
             element=element,
             reuse_identities=self.reuse_identities,
             assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
+            deferred_relationship_members=self.deferred_relationship_members,
+            deferred_layer_items=self.deferred_layer_items,
         )
 
     def add_spatial_structures(
