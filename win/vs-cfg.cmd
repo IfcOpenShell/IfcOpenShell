@@ -32,7 +32,7 @@
 ::   "vs2013-x86"         => cmake -G "Visual Studio 12 2013" -A Win32
 ::   "vs2015-x64"         => cmake -G "Visual Studio 14 2015" -A x64
 ::   "vs2017-ARM64"       => cmake -G "Visual Studio 15 2017" -A ARM64
-::   "vs2019-x86-v141_xp" => cmake -G "Visual Studio 16 2019" -A Win32 -T v141_xp
+::   "vs2019-x86-v141"    => cmake -G "Visual Studio 16 2019" -A Win32 -T v141
 ::
 :: NOTE: The delayed environment variable expansion needs to be enabled before calling this.
 ::
@@ -70,11 +70,8 @@ echo(!GEN_SHORTHAND! | findstr /c:"-ARM"     >nul && ( set "VS_PLATFORM=ARM" )
 echo(!GEN_SHORTHAND! | findstr /c:"-ARM64"   >nul && ( set "VS_PLATFORM=ARM64" )
 
 echo(!GEN_SHORTHAND! | findstr /c:"-v120"    >nul && ( set "VS_TOOLSET=v120" )    && ( set "BOOST_TOOLSET=12.0" )
-echo(!GEN_SHORTHAND! | findstr /c:"-v120_xp" >nul && ( set "VS_TOOLSET=v120_xp" ) && ( set "BOOST_TOOLSET=12.0" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v140"    >nul && ( set "VS_TOOLSET=v140" )    && ( set "BOOST_TOOLSET=14.0" )
-echo(!GEN_SHORTHAND! | findstr /c:"-v140_xp" >nul && ( set "VS_TOOLSET=v140_xp" ) && ( set "BOOST_TOOLSET=14.0" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v141"    >nul && ( set "VS_TOOLSET=v141" )    && ( set "BOOST_TOOLSET=14.1" )
-echo(!GEN_SHORTHAND! | findstr /c:"-v141_xp" >nul && ( set "VS_TOOLSET=v141_xp" ) && ( set "BOOST_TOOLSET=14.1" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v142"    >nul && ( set "VS_TOOLSET=v142" )    && ( set "BOOST_TOOLSET=14.2" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v143"    >nul && ( set "VS_TOOLSET=v143" )    && ( set "BOOST_TOOLSET=14.3" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v145"    >nul && ( set "VS_TOOLSET=v145" )    && ( set "BOOST_TOOLSET=14.5" )
@@ -160,15 +157,11 @@ IF %VS_VER%==2026 ( set "VC_VER=14.5" )
 set BOOST_BOOTSTRAP_VER=vc%VC_VER%
 set BOOST_BOOTSTRAP_VER=%BOOST_BOOTSTRAP_VER:.=%
 
-:: determine the toolset and winapi for Boost b2
+:: determine the toolset for Boost b2
 IF DEFINED VS_TOOLSET (
     set BOOST_TOOLSET=msvc-%BOOST_TOOLSET%
-    if "!VS_TOOLSET:~-3!"=="_xp" (
-        set BOOST_WIN_API=define=BOOST_USE_WINAPI_VERSION=0x0501
-    )
 ) ELSE (
     set BOOST_TOOLSET=msvc-%VC_VER%
-    set BOOST_WIN_API=
 )
 
 IF %VS_PLATFORM%==Win32 (
@@ -219,7 +212,6 @@ exit /b 1
     ::BOOST_BOOTSTRAP_VER - e.g. "vc145"
      echo BOOST_BOOTSTRAP_VER: [!BOOST_BOOTSTRAP_VER!]
      echo BOOST_TOOLSET:       [!BOOST_TOOLSET!]
-     echo BOOST_WIN_API:       [!BOOST_WIN_API!]
 
 IF DEFINED VS_TOOLSET (
     set GEN_SHORTHAND=vs%VS_VER%-%VS_PLATFORM%-%VS_TOOLSET%
