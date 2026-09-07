@@ -79,6 +79,8 @@ echo(!GEN_SHORTHAND! | findstr /c:"-v140_xp" >nul && ( set "VS_TOOLSET=v140_xp" 
 echo(!GEN_SHORTHAND! | findstr /c:"-v141"    >nul && ( set "VS_TOOLSET=v141" )    && ( set "BOOST_TOOLSET=14.1" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v141_xp" >nul && ( set "VS_TOOLSET=v141_xp" ) && ( set "BOOST_TOOLSET=14.1" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v142"    >nul && ( set "VS_TOOLSET=v142" )    && ( set "BOOST_TOOLSET=14.2" )
+echo(!GEN_SHORTHAND! | findstr /c:"-v143"    >nul && ( set "VS_TOOLSET=v143" )    && ( set "BOOST_TOOLSET=14.3" )
+echo(!GEN_SHORTHAND! | findstr /c:"-v145"    >nul && ( set "VS_TOOLSET=v145" )    && ( set "BOOST_TOOLSET=14.5" )
 
 SET VS_VER=%GEN_SHORTHAND:~0,4%
 
