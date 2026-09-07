@@ -118,8 +118,8 @@ set PWSH_TOOLS=powershell -NonInteractive -File %SCRIPT_DIR%\utils\tools.ps1
 cmake --version | findstr version > temp.txt
 set /p CMAKE_VERSION=<temp.txt
 del temp.txt
-if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
-    echo "CMake v3.11.4 or higher is required"
+if "%CMAKE_VERSION%" LSS "cmake version 3.21.0" (
+    echo "CMake v3.21.0 or higher is required"
     goto :ErrorAndPrintUsage
 )
 

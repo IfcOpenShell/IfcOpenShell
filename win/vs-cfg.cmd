@@ -200,7 +200,7 @@ IF NOT "%CMAKE_PATH%"=="" (
 )
 
 :: reject older CMake, see also build-deps.cmd
-echo "CMake v3.11.4 or higher is required"
+echo "CMake v3.21.0 or higher is required"
 exit /b 1
 
 :CMake3AndNewer
