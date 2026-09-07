@@ -130,10 +130,8 @@ set BOOST_VER=%BOOST_VERSION:.=_%
 call cecho.cmd 0 10 "Script configuration:"
 call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR%`'`t
 echo   - Passed to CMake -G option.
-call cecho.cmd 0 13 "* Target Architecture`t= %TARGET_ARCH%"
-echo   - Whether were doing 32-bit (x86) or 64-bit (x64, arm64) build.
 call cecho.cmd 0 13 "* Target Platform`t= %VS_PLATFORM%"
-echo   - Passed to CMake -A option.
+echo   - Whether were doing 32-bit (Win32) or 64-bit (x64, ARM64) build. Passed to CMake -A option.
 call cecho.cmd 0 13 "* Target Toolset`t= %VS_TOOLSET%"
 echo   - Passed to CMake -T option.
 call cecho.cmd 0 13 "* Dependency Directory`t= %DEPS_DIR%"
@@ -197,7 +195,7 @@ for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do (
     set PY_VER_MAJOR_MINOR=%%a%%b
 )
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    IF /I "%TARGET_ARCH%"=="arm64" (
+    IF /I "%VS_PLATFORM%"=="arm64" (
         set PYTHONHOME=%DEPS_DIR%\pythonarm64.%PYTHON_VERSION%\tools
     ) ELSE (
         set PYTHONHOME=%DEPS_DIR%\python.%PYTHON_VERSION%\tools
@@ -418,9 +416,9 @@ if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 )
 
-if /I "%TARGET_ARCH%"=="x64" (
+if /I "%VS_PLATFORM%"=="x64" (
     set B2_ARCH_FEATURE=x86
-) else if /I "%TARGET_ARCH%"=="arm64" (
+) else if /I "%VS_PLATFORM%"=="arm64" (
     set B2_ARCH_FEATURE=arm
 ) else (
     echo "Failed to identify architecture"
@@ -564,8 +562,8 @@ SET COMPILE_WITH_WPO=FALSE
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
 set PYTHON_AMD64_POSTFIX=
-IF /I "%TARGET_ARCH%"=="x64"   set "PYTHON_AMD64_POSTFIX=-amd64"
-IF /I "%TARGET_ARCH%"=="arm64" set "PYTHON_AMD64_POSTFIX=-arm64"
+IF /I "%VS_PLATFORM%"=="x64"   set "PYTHON_AMD64_POSTFIX=-amd64"
+IF /I "%VS_PLATFORM%"=="arm64" set "PYTHON_AMD64_POSTFIX=-arm64"
 set "PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe"
 
 IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
@@ -574,7 +572,7 @@ IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :: nuget doesn't support providing architecture for packages.
-IF /I NOT "%TARGET_ARCH%"=="x64" IF /I NOT "%TARGET_ARCH%"=="arm64" (
+IF /I NOT "%VS_PLATFORM%"=="x64" IF /I NOT "%VS_PLATFORM%"=="arm64" (
     call cecho.cmd 0 12 "Automatic installation of Python for x86 builds is not supported,"
     call cecho.cmd 0 12 "please install Python %PYTHON_VERSION% manually and ensure that it is available in PATH."
     call cecho.cmd 0 12 "https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER%"
@@ -586,7 +584,7 @@ if EXIST "%PYTHONHOME%" (
     goto :SWIG
 )
 
-IF /I "%TARGET_ARCH%"=="x64" (
+IF /I "%VS_PLATFORM%"=="x64" (
     "%NUGET_EXE%" install Python -Version %PYTHON_VERSION% -OutputDirectory "%DEPS_DIR%"
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 ) ELSE (
@@ -761,11 +759,11 @@ set QT6_ARCH=
 set QT6_INSTALL_SUFFIX=
 set QT6_HOST_ARCH=
 set QT6_HOST_INSTALL_SUFFIX=
-IF /I "%TARGET_ARCH%"=="x64" (
+IF /I "%VS_PLATFORM%"=="x64" (
     set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_64
     set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_64
 )
-IF /I "%TARGET_ARCH%"=="arm64" (
+IF /I "%VS_PLATFORM%"=="arm64" (
     set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_arm64_cross_compiled
     set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_arm64
     REM Qt publishes Windows ARM64 packages as cross-compiled Qt. Even on the
