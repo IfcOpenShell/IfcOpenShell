@@ -855,7 +855,7 @@ class file_mixin:
             self.transaction.unbatch()
         return self.unbatch()
 
-    def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
+    def __iter__(self) -> Generator[ifcopenshell.entity_instance]:
         return iter(self[id] for id in self.entity_names())
 
     def assign_header_from(self, other: ifcopenshell.file) -> None:

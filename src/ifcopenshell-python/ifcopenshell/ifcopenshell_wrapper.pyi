@@ -784,13 +784,14 @@ class entity_instance(entity_instance_mixin):
         "AGGREGATE OF AGGREGATE OF ENTITY INSTANCE",
         "UNKNOWN",
     ]: ...
-    def get_attribute_category(self, name: str) -> Literal[0, 1, 2]:
+    def get_attribute_category(self, name: str) -> Literal[0, 1, 2, 3]:
         """Get attribute category id.
 
         Available categories:
         - `0` - invalid attribute
         - `1` - forward attribute
         - `2` - inverse attributes
+        - `3` - derived attribute
         """
         ...
 
@@ -1014,6 +1015,10 @@ class geometry_conversion_result:
     products_2: Any
     representation: Any
     def is_parallel(self) -> bool: ...
+
+class geometry_kernel:
+    def __init__(self, geometry_library, file, settings, logger=None): ...
+    def create_shape(self, *args): ...
 
 class gradient_function(function_item):
     def __init__(self, *args): ...

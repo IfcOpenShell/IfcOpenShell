@@ -377,7 +377,7 @@ class iterator(ifcopenshell_wrapper.iterator):
         def get(self):
             return wrap_shape_creation(self.settings, ifcopenshell_wrapper.iterator.get(self))
 
-    def __iter__(self) -> Generator[IteratorOutput, None, None]:
+    def __iter__(self) -> Generator[IteratorOutput]:
         if self.initialize():
             while True:
                 yield self.get()
@@ -621,18 +621,14 @@ def map_shape(settings: settings, inst: entity_instance) -> ifcopenshell_wrapper
 
 
 @overload
-def consume_iterator(it: iterator, with_progress: Literal[False] = False) -> Generator[IteratorOutput, None, None]: ...
+def consume_iterator(it: iterator, with_progress: Literal[False] = False) -> Generator[IteratorOutput]: ...
 @overload
-def consume_iterator(
-    it: iterator, with_progress: Literal[True]
-) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+def consume_iterator(it: iterator, with_progress: Literal[True]) -> Generator[tuple[int, IteratorOutput]]: ...
 @overload
-def consume_iterator(
-    it: iterator, with_progress: bool
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+def consume_iterator(it: iterator, with_progress: bool) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]: ...
 def consume_iterator(
     it: iterator, with_progress: bool = False
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
+) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]:
     if it.initialize():
         while True:
             if with_progress:
@@ -656,7 +652,7 @@ def iterate(
     with_progress: Literal[False] = False,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[IteratorOutput, None, None]: ...
+) -> Generator[IteratorOutput]: ...
 @overload
 def iterate(
     settings: settings,
@@ -668,7 +664,7 @@ def iterate(
     with_progress: Literal[True] = True,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+) -> Generator[tuple[int, IteratorOutput]]: ...
 @overload
 def iterate(
     settings: settings,
@@ -680,7 +676,7 @@ def iterate(
     with_progress: bool = False,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]: ...
 def iterate(
     settings: settings,
     file_or_filename: Union[file, str],
@@ -691,7 +687,7 @@ def iterate(
     with_progress: bool = False,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
+) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]:
     """Get a geometry iterator for the provided file."""
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
     yield from consume_iterator(it, with_progress=with_progress)

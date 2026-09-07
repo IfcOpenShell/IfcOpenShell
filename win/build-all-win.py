@@ -170,9 +170,7 @@ def is_geometry_writer(file: Path) -> bool:
 def collect_ifc_runtime_plugins(dlls: set[Path], dependencies: set[Path]) -> set[Path]:
     """IfcOpenShell plugins are loaded by name at runtime, so dumpbin cannot discover them."""
     return {
-        d
-        for d in (dlls - dependencies)
-        if d.name.startswith(IFC_RUNTIME_PLUGIN_PREFIXES) and not is_geometry_writer(d)
+        d for d in (dlls - dependencies) if d.name.startswith(IFC_RUNTIME_PLUGIN_PREFIXES) and not is_geometry_writer(d)
     }
 
 
