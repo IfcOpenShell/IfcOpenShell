@@ -20,10 +20,11 @@ import http.client
 from pathlib import Path
 from urllib.parse import urlparse
 
+import pytest
 from typing_extensions import assert_never
 
 SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314")
-SUPPORTED_PLATFORMS = ("win64", "linux64", "macos64", "macosm164")
+SUPPORTED_PLATFORMS = ("win64", "linux64", "macosm164")
 
 WASM_SUPPORTED_PY_VERSIONS = ("313",)
 WASM_PLATFORM = "pyodide_2025_0_wasm32"
@@ -123,6 +124,13 @@ class TestPackageSupportedPlatforms:
 
         return missing_urls
 
+    # TODO: drop this xfail once BUILD_COMMIT is bumped past ad113e1.
+    @pytest.mark.xfail(
+        condition="BUILD_COMMIT:=ad113e1"
+        in (Path(__file__).parents[3] / "src/ifcopenshell-python/Makefile").read_text(),
+        reason="pyodide wasm32 wheel is not published for build ad113e1",
+        strict=False,
+    )
     def test_run(self) -> None:
         required_urls = self.get_required_urls()
         maybe_missing_urls = self.get_missing_urls_fast(required_urls)
