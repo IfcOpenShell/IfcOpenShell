@@ -227,9 +227,6 @@ IF DEFINED VS_TOOLSET (
     set GEN_SHORTHAND=vs%VS_VER%-%VS_PLATFORM%
 )
 
-:: VS project file extension is different on older VS versions
-set VCPROJ_FILE_EXT=vcxproj
-
 :: Add utils to PATH
 set ORIGINAL_PATH=%PATH%
 set PATH=%~dp0utils;%PATH%
