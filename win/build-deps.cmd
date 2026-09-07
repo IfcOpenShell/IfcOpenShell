@@ -272,7 +272,6 @@ pushd "%DEPS_DIR%\sqlite-amalgamation-3430100"
 cl /c sqlite3.c
 lib /OUT:%INSTALL_DIR%\sqlite3\lib\sqlite3.lib sqlite3.obj
 cl sqlite3.c shell.c /link /out:%INSTALL_DIR%\sqlite3\bin\sqlite3.exe
-set PATH=%PATH%;%INSTALL_DIR%\sqlite3\bin
 copy sqlite3.h %INSTALL_DIR%\sqlite3\include
 popd
 
@@ -284,6 +283,7 @@ call :ExtractArchive proj-%PROJ_VERSION%.zip "%DEPS_DIR%" "%DEPS_DIR%\proj-%PROJ
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-%PROJ_VERSION%" ^
+    -DCMAKE_PREFIX_PATH="%INSTALL_DIR%\sqlite3" ^
     -DSQLITE3_INCLUDE_DIR=%INSTALL_DIR%\sqlite3\include ^
     -DSQLITE3_LIBRARY=%INSTALL_DIR%\sqlite3\lib\sqlite3.lib ^
     -DENABLE_TIFF=Off -DENABLE_CURL=Off -DBUILD_PROJSYNC=Off ^
