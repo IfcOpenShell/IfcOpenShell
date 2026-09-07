@@ -3265,13 +3265,10 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
             and event.value == "RELEASE"
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ) or single_mode:
-            context.workspace.status_text_set(text=None)
             self.tool_state.plane_method = None
-            PolylineDecorator.uninstall()
             tool.Polyline.move_polyline_to_measure(context, self.input_ui)
-            tool.Polyline.clear_polyline()
             MeasureDecorator.install(context)
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)

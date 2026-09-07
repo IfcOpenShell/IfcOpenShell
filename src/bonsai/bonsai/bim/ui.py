@@ -2071,3 +2071,6 @@ class BIM_PT_snappping(Panel):
         row.prop(groups, "object", toggle=True)
         row.prop(groups, "polyline", toggle=True)
         row.prop(groups, "measure", toggle=True)
+        layout.separator()
+        row = layout.row(align=True)
+        row.prop(prop, "use_gpu_snapping", toggle=True)

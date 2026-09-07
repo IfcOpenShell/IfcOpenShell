@@ -96,6 +96,10 @@ def callback_alignment():
     yield alignment
 
 
+def _label(name):
+    return name.rsplit("(", 1)[1].rstrip(")")
+
+
 def test_with_default_names(default_names_alignment):
     file = default_names_alignment.file
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(default_names_alignment)
@@ -118,8 +122,8 @@ def test_with_default_names(default_names_alignment):
         "V.P.O.E.",
     ]
 
-    assert [r.Name.split(" (")[0] for r in h_nest.RelatedObjects] == expected_h
-    assert [r.Name.split(" (")[0] for r in v_nest.RelatedObjects] == expected_v
+    assert [_label(r.Name) for r in h_nest.RelatedObjects] == expected_h
+    assert [_label(r.Name) for r in v_nest.RelatedObjects] == expected_v
 
 
 def test_with_callbacks(callback_alignment):
@@ -133,7 +137,7 @@ def test_with_callbacks(callback_alignment):
     expected_h = ["A", "Q", "Q", "Q", "Q", "Q", "Q", "Z"]
     expected_v = ["a", "q", "q", "q", "q", "q", "q", "q", "q", "z"]
 
-    assert [r.Name.split(" (")[0] for r in h_nest.RelatedObjects] == expected_h
-    assert [r.Name.split(" (")[0] for r in v_nest.RelatedObjects] == expected_v
+    assert [_label(r.Name) for r in h_nest.RelatedObjects] == expected_h
+    assert [_label(r.Name) for r in v_nest.RelatedObjects] == expected_v
 
     ifcopenshell.api.alignment.register_referent_name_callback(None, None, None)  # reset global state

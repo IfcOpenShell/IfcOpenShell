@@ -128,6 +128,11 @@ def create_as_polyline(
 
     The IfcAlignment is aggreated to IfcProject
 
+    The stationing referent created from start_station has Name "<alignment name> <station>"
+    (e.g. "MyAlignment 49+00.00"), the same convention update_key_point_referents() and
+    create() use for their own referents, so every referent nested under an alignment is
+    identifiable by name alone.
+
     :param file:
     :param name: name assigned to IfcAlignment.Name
     :param points: sequence of points defining the polyline
@@ -142,8 +147,8 @@ def create_as_polyline(
     _create_polyline_representation(file, alignment, points)
 
     # define stationing
-    name = ifcopenshell.util.alignment.station_as_string(file, start_station)
-    referent = ifcopenshell.api.alignment.add_stationing_referent(file, name, alignment, 0.0, start_station)
+    referent_name = f"{alignment.Name} {ifcopenshell.util.alignment.station_as_string(file, start_station)}"
+    referent = ifcopenshell.api.alignment.add_stationing_referent(file, referent_name, alignment, 0.0, start_station)
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]

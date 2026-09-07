@@ -66,6 +66,10 @@ def _pset_station(referent):
     return ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="Station")
 
 
+def _label(name):
+    return name.rsplit("(", 1)[1].rstrip(")")
+
+
 def test_wrong_layout_type_raises_type_error():
     file = _new_file()
     alignment = _build_alignment(file)
@@ -82,13 +86,13 @@ def test_default_rel_nests_created_when_none_provided():
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
 
     assert nest.is_a("IfcRelNests")
-    assert nest.RelatingObject == horizontal
+    assert nest.RelatingObject == alignment
     assert nest.id() != segment_nest.id()
     assert len(nest.RelatedObjects) == 8
     assert all(r.is_a("IfcReferent") for r in nest.RelatedObjects)
 
 
-def test_second_call_without_rel_nests_reuses_existing_nest():
+def test_second_call_without_rel_nests_creates_separate_nest():
     file = _new_file()
     alignment = _build_alignment(file)
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
@@ -97,10 +101,23 @@ def test_second_call_without_rel_nests_reuses_existing_nest():
     nest1 = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
     nest2 = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
 
-    assert nest1.id() == nest2.id()
-    assert len(nest2.RelatedObjects) == 16
+    assert nest1.id() != nest2.id()
+    assert len(nest1.RelatedObjects) == 8
+    assert len(nest2.RelatedObjects) == 8
     segment_count_after = len(ifcopenshell.api.alignment.get_alignment_segment_nest(horizontal).RelatedObjects)
     assert segment_count_after == segment_count_before
+
+
+def test_passing_previous_nest_back_in_accumulates():
+    file = _new_file()
+    alignment = _build_alignment(file)
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+
+    nest1 = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
+    nest2 = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal, rel_nests=nest1)
+
+    assert nest1.id() == nest2.id()
+    assert len(nest2.RelatedObjects) == 16
 
 
 def test_provided_rel_nests_is_used_as_is():
@@ -108,7 +125,7 @@ def test_provided_rel_nests_is_used_as_is():
     alignment = _build_alignment(file)
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
 
-    # the nest may live anywhere the caller chooses, e.g. hung off the parent IfcAlignment
+    # rel_nests.RelatingObject must be the IfcAlignment that nests `layout`
     rel_nests = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=())
 
     result = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal, rel_nests=rel_nests)
@@ -116,6 +133,17 @@ def test_provided_rel_nests_is_used_as_is():
     assert result.id() == rel_nests.id()
     assert result.RelatingObject == alignment
     assert len(result.RelatedObjects) == 8
+
+
+def test_provided_rel_nests_with_wrong_relating_object_raises_type_error():
+    file = _new_file()
+    alignment = _build_alignment(file)
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+
+    rel_nests = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(), RelatingObject=horizontal, RelatedObjects=())
+
+    with pytest.raises(TypeError):
+        ifcopenshell.api.alignment.update_key_point_referents(file, horizontal, rel_nests=rel_nests)
 
 
 def test_clear_true_removes_old_referents_and_psets():
@@ -157,7 +185,7 @@ def test_default_horizontal_labels_and_order():
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
 
     expected = ["P.O.B.", "P.C.", "P.T.", "P.C.", "P.T.", "P.C.", "P.T.", "P.O.E."]
-    assert [r.Name.split(" (")[0] for r in nest.RelatedObjects] == expected
+    assert [_label(r.Name) for r in nest.RelatedObjects] == expected
 
     stations = [_pset_station(r) for r in nest.RelatedObjects]
     assert stations == sorted(stations)
@@ -183,7 +211,7 @@ def test_default_vertical_labels_and_order():
         "P.V.T.",
         "V.P.O.E.",
     ]
-    assert [r.Name.split(" (")[0] for r in nest.RelatedObjects] == expected
+    assert [_label(r.Name) for r in nest.RelatedObjects] == expected
 
     segments = ifcopenshell.api.alignment.get_layout_segments(vertical)
     real_segments = segments[:-1] if ifcopenshell.api.alignment.has_zero_length_segment(vertical) else segments
@@ -200,7 +228,7 @@ def test_name_format():
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
     referent = nest.RelatedObjects[0]
     station = _pset_station(referent)
-    assert referent.Name == f"P.O.B. ({ifcopenshell.util.alignment.station_as_string(file, station)})"
+    assert referent.Name == f"{alignment.Name} {ifcopenshell.util.alignment.station_as_string(file, station)} (P.O.B.)"
 
 
 def test_geometric_placement_when_layout_has_representation():
@@ -268,7 +296,7 @@ def test_cant_layout_boundary_labels():
 
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, cant)
 
-    labels = [r.Name.split(" (")[0] for r in nest.RelatedObjects]
+    labels = [_label(r.Name) for r in nest.RelatedObjects]
     assert labels[0] == "C.P.O.B."
     assert labels[-1] == "C.P.O.E."
     # CONSTANTCANT -> CONSTANTCANT is currently an unfilled "xx" placeholder in the cant lookup
@@ -307,7 +335,7 @@ def test_single_real_segment_produces_only_boundary_labels():
     ifcopenshell.api.alignment.create_layout_segment(file, horizontal, design_parameters)
 
     nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
-    labels = [r.Name.split(" (")[0] for r in nest.RelatedObjects]
+    labels = [_label(r.Name) for r in nest.RelatedObjects]
     assert labels == ["P.O.B.", "P.O.E."]
 
 
@@ -345,6 +373,41 @@ def test_start_station_composes_for_child_alignment():
     assert stations == pytest.approx([100.0, 600.0, 900.0])
 
 
+def test_rel_nests_from_ancestor_used_for_naming_and_nesting():
+    """A vertical layout living under a child alignment (once a second vertical layout is
+    added, per CT 4.1.4.4.1.2) can still have its key-point referents named after and nested
+    to an ancestor alignment's own rel_nests -- e.g. the same one already holding that
+    ancestor's horizontal key points -- rather than the child's generic "Child of X" name."""
+    file = _new_file()
+    alignment = ifcopenshell.api.alignment.create(file, "A1", include_vertical=False, start_station=100.0)
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    horizontal_nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
+    horizontal_count = len(horizontal_nest.RelatedObjects)
+
+    ifcopenshell.api.alignment.add_vertical_layout(file, alignment)
+    ifcopenshell.api.alignment.add_vertical_layout(file, alignment)  # forces the child-alignment split
+    child_alignment = alignment.IsDecomposedBy[0].RelatedObjects[-1]
+    child_vertical = ifcopenshell.api.alignment.get_vertical_layout(child_alignment)
+
+    dp = file.createIfcAlignmentVerticalSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=500.0,
+        StartHeight=10.0,
+        StartGradient=0.01,
+        EndGradient=0.01,
+        PredefinedType="CONSTANTGRADIENT",
+    )
+    ifcopenshell.api.alignment.create_layout_segment(file, child_vertical, dp)
+
+    result = ifcopenshell.api.alignment.update_key_point_referents(file, child_vertical, rel_nests=horizontal_nest)
+
+    assert result == horizontal_nest
+    assert result.RelatingObject == alignment
+    assert len(result.RelatedObjects) == horizontal_count + 2
+    assert all(r.Name.startswith("A1 ") for r in result.RelatedObjects)
+    assert not any("Child of" in r.Name for r in result.RelatedObjects)
+
+
 def test_returns_ifc_rel_nests():
     file = _new_file()
     alignment = _build_alignment(file)
@@ -356,8 +419,10 @@ def test_returns_ifc_rel_nests():
 
 test_wrong_layout_type_raises_type_error()
 test_default_rel_nests_created_when_none_provided()
-test_second_call_without_rel_nests_reuses_existing_nest()
+test_second_call_without_rel_nests_creates_separate_nest()
+test_passing_previous_nest_back_in_accumulates()
 test_provided_rel_nests_is_used_as_is()
+test_provided_rel_nests_with_wrong_relating_object_raises_type_error()
 test_clear_true_removes_old_referents_and_psets()
 test_clear_false_appends_without_dedup()
 test_default_horizontal_labels_and_order()
@@ -369,4 +434,5 @@ test_cant_layout_boundary_labels()
 test_no_real_segments_produces_no_referents()
 test_single_real_segment_produces_only_boundary_labels()
 test_start_station_composes_for_child_alignment()
+test_rel_nests_from_ancestor_used_for_naming_and_nesting()
 test_returns_ifc_rel_nests()

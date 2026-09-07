@@ -51,6 +51,10 @@ def create(
 
     If geometric representations are created, the alignment stationing referent is also created using the start_station value. IfcReferent.ObjectPlacement
     is required for linear positiion elements and IfcLinearPlacement is defined relative to alignment curve geometry.
+    This referent's Name follows the same "<alignment name> <station>" convention update_key_point_referents() uses
+    for its own key-point referents (e.g. "MyAlignment 49+00.00"), so that every referent nested under an alignment
+    is identifiable by name alone, without needing to inspect its Pset_Stationing or placement to know which
+    alignment it belongs to.
 
     :param file:
     :param name: name assigned to IfcAlignment.Name
@@ -86,7 +90,7 @@ def create(
     if include_geometry:
         _create_geometric_representation(file, alignment)
 
-    referent_name = ifcopenshell.util.alignment.station_as_string(file, start_station)
+    referent_name = f"{name} {ifcopenshell.util.alignment.station_as_string(file, start_station)}"
     referent = ifcopenshell.api.alignment.add_stationing_referent(file, referent_name, alignment, 0.0, start_station)
 
     for layout in alignment_layouts:
