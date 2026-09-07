@@ -91,16 +91,10 @@ echo(!GENERATOR! | findstr /c:"vs20" >nul && (
 )
 :GeneratorShorthandCheckDone
 
-:: Deduce desired architecture from the location of cl.exe
-:: TODO harmless "INFO: Could not find files for the given pattern(s)." spam if cl.exe not in path
-:: Look for path with either "amd64" or "x64" (VS 2017 and newer)
-where cl.exe | findstr "amd64 x64" >nul
-set START=%ERRORLEVEL%
-
 :: NOTE add space before VC_VER so that e.g. "12" doesn't match with "2012"
 IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
     set VC_VER=%VisualStudioVersion:.0=%
-    FOR /L %%i in (%START%,1,%LAST_GENERATOR_IDX%) DO (
+    FOR /L %%i in (1,1,%LAST_GENERATOR_IDX%) DO (
         echo(!GENERATORS[%%i]! | findstr /c:" !VC_VER!" >nul && (
             set GENERATOR=!GENERATORS[%%i]!
             call utils\cecho.cmd black cyan "Generator not passed, but VisualStudioVersion=%VisualStudioVersion% environment variable detected:"
