@@ -77,6 +77,5 @@ The IfcOpenShell C++ codebase is split into multiple interal libraries:
 [IFC4x3 Add2]: https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/ "IFC4x3 Add2"
 [Visual Studio]: https://www.visualstudio.com/ "Visual Studio"
 [Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
-[MSYS2]: https://msys2.github.io/ "MSYS2"
 [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
 [nix/build-all.py]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.py "nix/build-all.py"

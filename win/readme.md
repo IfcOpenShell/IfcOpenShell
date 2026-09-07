@@ -5,19 +5,10 @@ and its dependencies.
 
 As a general guideline, `.cmd` files are non-standalone batch files that need to be run from command prompt or from
 another batch file, and/or while the Visual Studio ("MSVC") environment variables set, and `.bat` files are standalone batch
-files that can also be invoked e.g. by double-clicking in the File Explorer. `.sh` files are for MSYS**2** + MinGW ("MSYS"
-) compilation.
+files that can also be invoked e.g. by double-clicking in the File Explorer.
 
 Usage Instructions
 ------------------
-### MSYS
-
-Building using MSYS is very similar to using the MSVC batch files, but instead the shell scripts
-are used. Note that the MSYS support is currently a bit experimental. It is advised to check out the contents
-of the shell scripts before using them. Note that contrary to MSVC, with MSYS all of the dependencies are not
-built or used as static libraries. Currently Release build is used for all libraries.
-
-### MSVC
 Launch the proper Visual Studio command prompt, cd to the 'win' directory inside the IfcOpenShell directory and execute `build-deps.cmd` to fetch, build and install the dependencies. The batch file will print the requirements for a successful execution. The script allows a few user-configurable build options which are listed below.
 
 `build-deps.cmd` expects a CMake generator as `%1` and a build configuration type (`RelWithDebInfo`, `Release`, `MinSizeRel`, or `Debug`, defaults to `RelWithDebInfo`) as `%2`. If the generator is not provided, the generator is deduced from the MSVC environment variables.
@@ -71,8 +62,6 @@ Before building the dependencies, enable the OCCT usage:
 > build-deps.cmd
 ```
 
-Please note that this option is not yet available in the MSYS build scripts.
-
 Using an already existing Python installation
 ---------------------------------------------
 
@@ -97,23 +86,19 @@ Directory Structure
 ------------------
 ```
 ..
-+---build-*                         - Created by run-cmake.bat/sh, specific for a certain compiler and and target architecture
-+---deps                            - Created by build-deps.cmd/sh, common for all compilers
-+---deps-*-installed                - Created by build-deps.cmd/sh, specific for a certain compiler and target architecture
++---build-*                         - Created by run-cmake.bat, specific for a certain compiler and and target architecture
++---deps                            - Created by build-deps.cmd, common for all compilers
++---deps-*-installed                - Created by build-deps.cmd, specific for a certain compiler and target architecture
 +---installed-*                     - Created by installing the IFCOS project, specific for a certain compiler and target architecture
 \---win
 |   build-all.cmd                   - Runs all of the build scripts for IFCOS and it dependencies in a row without pauses
 |   build-deps.cmd                  - Fetches and builds all needed dependencies for IFCOS using MSVC
-|   build-deps.sh                   - Fetches and builds all needed dependencies for IFCOS using MSYS
 |   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.cmd
 |   build-ifcopenshell.bat          - Builds IFCOS using MSVC
-|   build-ifcopenshell.sh           - Builds IFCOS using MSYS
 |   build-type-cfg.cmd              - Utility file used by the build scripts
 |   install-ifcopenshell.bat        - Installs/deploys IFCOS using MSVC.
-|   install-ifcopenshell.sh         - Installs/deploys IFCOS using MSYS.
 |   readme.md                       - This file
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS using MSVC
-|   run-cmake.sh                    - Sets environment variables for the dependencies and runs CMake for IFCOS using MSYS
 |   set-python-to-path.bat          - Utility for setting PYTHONHOME (read from BuildDepsCache-<ARCH>.txt) to PATH
 |   vs-cfg.cmd                      - Utility file used by the build scripts
 \---patches                         - Contains patches for the dependencies
