@@ -1052,7 +1052,8 @@ popd
 exit /b %RET%
 
 :: BuildSolution - Builds/Rebuilds/Cleans a solution using MSBuild
-:: Params: %1 solutionName, %2 configuration
+:: Params: %1 solutionName, %2 configuration, %3 target (optional; a specific MSBuild target/project
+::         within the solution)
 :BuildSolution
 IF [%~3]==[] (
     set TARGET=%BUILD_TYPE%
