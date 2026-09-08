@@ -512,7 +512,9 @@ cd "%DEPENDENCY_DIR%"
 ::
 :: OCCT 7.8.1 we're using is becoming old and it was targeting cmake 3.1+.
 ::To make it buildable on cmake 4, we override policy version, but it may have some quirks in the future and we may consider version bump.
-call :RunCMake -DINSTALL_DIR="%DEPENDENCY_INSTALL_DIR%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX="" ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
+    -DBUILD_LIBRARY_TYPE="Static" ^
+    -DCMAKE_DEBUG_POSTFIX="" ^
     -DBUILD_MODULE_Draw=0 ^
     -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF ^
     -DUSE_XLIB=OFF ^
