@@ -122,8 +122,6 @@ if "%CMAKE_VERSION%" LSS "cmake version 3.21.0" (
 
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
 set BOOST_VERSION=1.92.0
-:: Version string with underscores instead of dots.
-set BOOST_VER=%BOOST_VERSION:.=_%
 
 :: Print build configuration information
 
@@ -381,9 +379,14 @@ popd
 :Boost
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
-set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
+set DEPENDENCY_DIR=%DEPS_DIR%\boost-%BOOST_VERSION%
 set DEPENDENCY_INSTALL_DIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%
 echo BOOST_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+
+:: Remove leftover dir from before the switch to the archive's actual top-level folder naming.
+:: TODO: remove it a bit later.
+IF EXIST "%DEPS_DIR%\boost_%BOOST_VERSION:.=_%". rmdir /s /q "%DEPS_DIR%\boost_%BOOST_VERSION:.=_%"
+
 :: Needed for CGAL build.
 set BOOST_ROOT=%DEPENDENCY_DIR%
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
@@ -397,11 +400,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPS_DIR%"
 call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" %DEPENDENCY_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-
-:: top-level folder name changed when migrating to github releases
-if exist "%DEPS_DIR%\boost-%BOOST_VERSION%". (
-    ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
-)
 
 :: As boost 1.90.0 it still includes b2 that doesn't support vc145 (not to mention older boost versions).
 :: So to support vc145 we download b2 separately (only if we do use vc145).
@@ -936,7 +934,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: cd "%DEPENDENCY_DIR%"
 :: call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\usd"  ^
-::                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%" ^
+::                -DBOOST_ROOT="%DEPS_DIR%\boost-%BOOST_VERSION%" ^
 ::                -DOneTBB_CMAKE_ENABLE=On                    ^
 ::                -DTBB_ROOT_DIR="%INSTALL_DIR%\tbb"          ^
 ::                -DPXR_ENABLE_PYTHON_SUPPORT=FALSE           ^
