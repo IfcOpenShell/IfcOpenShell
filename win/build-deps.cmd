@@ -425,7 +425,7 @@ cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPENDENCY_DIR%\bin.v2\project-cache.jam"
 
-call .\b2 toolset=%BOOST_TOOLSET% architecture=%B2_ARCH_FEATURE% runtime-link=shared address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
+call .\b2 toolset=%BOOST_TOOLSET% architecture=%B2_ARCH_FEATURE% address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=%DEPENDENCY_INSTALL_DIR%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
