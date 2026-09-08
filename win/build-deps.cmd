@@ -551,10 +551,6 @@ SET COMPILE_WITH_WPO=FALSE
 :Python
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
-set PYTHON_AMD64_POSTFIX=
-IF /I "%VS_PLATFORM%"=="x64"   set "PYTHON_AMD64_POSTFIX=-amd64"
-IF /I "%VS_PLATFORM%"=="arm64" set "PYTHON_AMD64_POSTFIX=-arm64"
-set "PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe"
 
 IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     call cecho.cmd 0 13 "IFCOS_INSTALL_PYTHON not 'TRUE', skipping installation of Python."
@@ -565,7 +561,7 @@ IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 IF /I NOT "%VS_PLATFORM%"=="x64" IF /I NOT "%VS_PLATFORM%"=="arm64" (
     call cecho.cmd 0 12 "Automatic installation of Python for x86 builds is not supported,"
     call cecho.cmd 0 12 "please install Python %PYTHON_VERSION% manually and ensure that it is available in PATH."
-    call cecho.cmd 0 12 "https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER%"
+    call cecho.cmd 0 12 "https://www.python.org/ftp/python/%PYTHON_VERSION%/python-%PYTHON_VERSION%.exe"
     goto :Error
 )
 
