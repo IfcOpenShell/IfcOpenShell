@@ -476,7 +476,7 @@ call :MarkInstallation
 
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
-set DEPENDENCY_NAME=OpenCASCADE
+set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 :: TODO: `new-layout` suffix can be dropped on the next OCCT version update, it's only needed
 :: to separate the legacy layout installation (used by version 7.8.1) from the new one.
 set OCCT_NEW_LAYOUT_SUFFIX=
@@ -490,9 +490,7 @@ echo OCC_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 call :CheckInstallation
 if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
-set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
-set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
 cd "%DEPS_DIR%"
 call :GitCloneAndCheckoutRevision https://github.com/Open-Cascade-SAS/OCCT "%DEPENDENCY_DIR%" %OCCT_VER%
 if not %ERRORLEVEL%==0 goto :Error
