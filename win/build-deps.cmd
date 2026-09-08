@@ -326,6 +326,7 @@ IF /I "%VS_PLATFORM%"=="ARM64" (
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd msvc
 cd vs%VS_VER:~2,2%
+:: mpir's vcxproj files only define Debug/Release configurations (no RelWithDebInfo/MinSizeRel).
 call .\msbuild.bat gc LIB %VS_PLATFORM% %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
@@ -362,6 +363,7 @@ if "%VS_VER%"=="2017" (
   set orig_platform_toolset=v142
 )
 powershell -c "get-childitem %DEPENDENCY_DIR%\%mpfr_sln% -recurse -include *.vcxproj | select -expand fullname | foreach { (Get-Content $_) -replace '%orig_platform_toolset%', 'v%VC_VER:.=%' | Set-Content $_ }"
+:: mpfr's vcxproj files only define Debug/Release configurations (no RelWithDebInfo/MinSizeRel).
 call :BuildSolution "%DEPENDENCY_DIR%\%mpfr_sln%\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM This command fails because not all msvc projects are patched with the right sdk version
