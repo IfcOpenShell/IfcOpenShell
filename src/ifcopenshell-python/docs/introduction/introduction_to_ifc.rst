@@ -61,7 +61,7 @@ attributes, and explore relationships. Your journey begins here.
 .. seealso::
 
     If you are already familiar with IFC and just want to learn how to use
-    IfcOpenShell, you can jump to the `Core functionality crash course`_.
+    IfcOpenShell, you can jump to :doc:`../ifcopenshell-python/hello_world`.
 
 Begin learning IFC
 ------------------
@@ -203,19 +203,243 @@ between **IFC Classes**. In this guide, we'll focus on the five most common
 Concept 1: the project context
 ------------------------------
 
+Every IFC model contains exactly one **IfcProject**. It is the root of the
+model, and it answers two questions that every other element depends on: what
+units the numbers are in, and what geometric contexts exist.
+
+.. code-block:: python
+
+    import ifcopenshell
+    model = ifcopenshell.open('AC20-FZK-Haus.ifc')
+
+    project = model.by_type("IfcProject")[0]
+    print(project.Name) # Projekt-FZK-Haus
+
+    for unit in project.UnitsInContext.Units:
+        if unit.is_a("IfcSIUnit"):
+            print(unit.UnitType, unit.Name) # LENGTHUNIT METRE, AREAUNIT SQUARE_METRE, ...
+
+This matters more than it may look. A length of ``0.24`` means nothing until
+you know whether the model measures in metres or millimetres. IfcOpenShell can
+work this out for you:
+
+.. code-block:: python
+
+    import ifcopenshell.util.unit
+    print(ifcopenshell.util.unit.calculate_unit_scale(model)) # 1.0 for a model in metres
+
+The **IfcProject** also holds one or more **IfcGeometricRepresentationContext**
+elements. These define the coordinate space that all geometry in the model is
+expressed in, including its precision.
+
+.. code-block:: python
+
+    for context in project.RepresentationContexts:
+        print(context.ContextType, context.Precision) # Model 1e-05, Plan 1e-05
+
+.. warning::
+
+   A valid IFC model has exactly one **IfcProject**. If you are creating a
+   model from scratch, create it first, before anything else.
+
 Concept 2: spatial decomposition
 --------------------------------
+
+Real buildings are made of nested places: a site holds a building, a building
+holds storeys, and a storey holds rooms. IFC mirrors this with a chain of
+**IfcSite**, **IfcBuilding**, **IfcBuildingStorey** and **IfcSpace**.
+
+Two different relationships are at work here, and telling them apart is the
+single most useful thing to understand about IFC.
+
+**Aggregation** breaks a place into smaller places. A building is *made of*
+its storeys.
+
+**Containment** puts a physical element into a place. A wall is *located in* a
+storey. The wall is not part of the storey the way a storey is part of a
+building.
+
+.. code-block:: python
+
+    import ifcopenshell.util.element
+
+    wall = model.by_type("IfcWall")[0]
+    print(wall.Name) # Wand-Int-ERDG-4
+
+    # Containment: which place is this wall in?
+    storey = ifcopenshell.util.element.get_container(wall)
+    print(storey.Name) # Erdgeschoss
+
+    # Aggregation: what is that storey part of?
+    building = ifcopenshell.util.element.get_aggregate(storey)
+    print(building.Name) # FZK-Haus
+
+Following that chain all the way up the sample model gives:
+
+::
+
+    IfcWallStandardCase   Wand-Int-ERDG-4
+    IfcBuildingStorey     Erdgeschoss
+    IfcBuilding           FZK-Haus
+    IfcSite               Gelaende
+    IfcProject            Projekt-FZK-Haus
+
+You can also travel in the other direction and ask what a place holds. Note
+that this returns everything below it, not only its direct children.
+
+.. code-block:: python
+
+    elements = ifcopenshell.util.element.get_decomposition(storey)
+    print(len(elements)) # 58
+
+.. tip::
+
+   If you are looking for "all the walls on the ground floor", you want
+   containment. If you are looking for "all the storeys in this building", you
+   want aggregation.
 
 Concept 3: object typing
 ------------------------
 
+Most buildings repeat themselves. A house may have thirteen walls, but only
+two kinds of wall. IFC separates the thing that exists from the kind of thing
+it is.
+
+Each individual wall is an **occurrence**. The shared definition is a **type**,
+here an **IfcWallType**. Properties that are true of every wall of that kind,
+such as its construction, live on the type and are not repeated thirteen times.
+
+.. code-block:: python
+
+    print(len(model.by_type("IfcWall")))     # 13 occurrences
+    print(len(model.by_type("IfcWallType"))) # 2 types
+
+    wall_type = ifcopenshell.util.element.get_type(wall)
+    print(wall_type.Name) # Leichtbeton 102890359 240
+
+    # And back the other way, every occurrence of that type:
+    print(len(ifcopenshell.util.element.get_types(wall_type))) # 5
+
+.. tip::
+
+   If you change something on the type, you change it for every occurrence of
+   that type. That is usually what you want, and occasionally a nasty surprise.
+
+.. note::
+
+   ``by_type`` includes subclasses. In this model every wall is actually an
+   **IfcWallStandardCase**, which is a subtype of **IfcWall**, so asking for
+   ``IfcWall`` still finds all thirteen. If you ever need to exclude
+   subclasses, pass ``include_subtypes=False``.
+
 Concept 4: attributes and property sets
 ---------------------------------------
+
+There are two different ways an element carries information, and beginners
+often go looking in the wrong one.
+
+**Attributes** are fixed by the IFC schema. Every **IfcWall** has a
+**GlobalId**, a **Name** and a **Description**, in a defined order, whether or
+not they are filled in. You read them directly:
+
+.. code-block:: python
+
+    print(wall.GlobalId)    # 2XPyKWY018sA1ygZKgQPtU
+    print(wall.Name)        # Wand-Int-ERDG-4
+    print(wall.is_a())      # IfcWallStandardCase
+
+**Property sets** are extensible. Anyone can attach one, and this is where most
+of the interesting data in a real model actually lives. They are grouped by
+name, and IfcOpenShell returns them as a plain dictionary:
+
+.. code-block:: python
+
+    psets = ifcopenshell.util.element.get_psets(wall)
+    print(psets["Pset_WallCommon"]["ThermalTransmittance"]) # 1.5
+    print(psets["BaseQuantities"]["Width"])                 # 0.24
+
+In this model that one wall carries ``Pset_WallCommon``, ``BaseQuantities`` and
+several sets written by the authoring application.
+
+.. tip::
+
+   Property set names beginning with ``Pset_`` are standardised by
+   buildingSMART and mean the same thing in every model. Names like
+   ``ArchiCADProperties`` were invented by the software that exported the file,
+   and another tool will not know what they mean.
 
 Concept 5: material assignment
 ------------------------------
 
+Materials in IFC are not simply a name attached to an element. A wall is often
+built of layers, and IFC records the thickness and order of those layers so
+that the model knows the wall is 240 mm of lightweight concrete rather than
+merely "concrete".
+
+.. code-block:: python
+
+    material = ifcopenshell.util.element.get_material(wall)
+    print(material.is_a()) # IfcMaterialLayerSetUsage
+
+That result is not a material. It is a *usage*, which describes how a layer
+set is applied to this particular wall, including which side it is measured
+from. The layers themselves are one step further in:
+
+.. code-block:: python
+
+    layer_set = material.ForLayerSet
+    for layer in layer_set.MaterialLayers:
+        print(layer.Material.Name, layer.LayerThickness)
+        # Leichtbeton 102890359 0.24
+
+If you only want the layer set and not the usage wrapper, ask for it directly:
+
+.. code-block:: python
+
+    ifcopenshell.util.element.get_material(wall, should_skip_usage=True)
+    # #15069=IfcMaterialLayerSet((#15067),'Leichtbeton 102890359 0.24',$)
+
+.. note::
+
+   Other elements use different material concepts. A column may use an
+   **IfcMaterialProfileSet**, and a simple element may point straight at a
+   single **IfcMaterial**. ``get_material`` handles all of them, which is why
+   it is worth using instead of following the relationships by hand.
+
 Self-learning IFC: how to learn more
 ------------------------------------
 
+You now know enough to explore a model on your own. The most effective way to
+learn IFC is to open a real file and follow it, rather than to read the
+specification front to back.
 
+A method that works well:
+
+1. Open a model you understand, ideally one of your own buildings.
+2. Pick an element you can point at in real life, such as a particular door.
+3. Print it, read its attributes, and print its property sets.
+4. Ask what it is contained in, what its type is, and what it is made of, using
+   the four utilities from this guide.
+5. When you meet an **IFC Class** you do not recognise, look it up in the
+   official documentation for your schema version.
+
+.. code-block:: python
+
+    element = model.by_type("IfcDoor")[0]
+    print(element.Name)
+    print(ifcopenshell.util.element.get_container(element))
+    print(ifcopenshell.util.element.get_type(element))
+    print(ifcopenshell.util.element.get_psets(element))
+    print(ifcopenshell.util.element.get_material(element))
+
+Two habits will save you a great deal of time. First, remember that the plain
+text of a ``.ifc`` file is readable: when something surprises you, search the
+file for the element ID and look at the raw line. Second, remember that the
+official documentation is organised by **IFC Class**, so once you know the
+class name you can always find the authoritative answer.
+
+.. seealso::
+
+    :doc:`../ifcopenshell-python/hello_world` gets you running IfcOpenShell in
+    a few lines, and :doc:`../ifcopenshell-python/code_examples` covers
+    selecting, editing and creating IFC data in much more depth.
