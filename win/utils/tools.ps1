@@ -24,61 +24,6 @@ function mark {
     New-Item -Path $marker_filepath -ItemType File | Out-Null
 }
 
-# This function can be deprecated in the future, since installations are marked automatically.
-# It's here only to avoid some disruption during the transition period.
-function mark_based_on_artifacts {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$dependency_name,
-
-        [Parameter(Mandatory = $true)]
-        [string]$installation_dir
-    )
-
-    if ($dependency_name -eq "opencollada") {
-        if ($env:BUILD_CFG -eq "Debug") {
-            $artifact = "lib\opencollada\OpenCOLLADAFrameworkd.lib"
-        }
-        else {
-            $artifact = "lib\opencollada\OpenCOLLADAFramework.lib"
-        }
-    }
-    elseif ($dependency_name -eq "OpenCASCADE") {
-        # New OCCT folder layout was introduced after marker files were added,
-        # so installation don't need artifact-based detection.
-        return
-    }
-    elseif ($dependency_name -eq "rocksdb") {
-        if ($env:BUILD_CFG -eq "Debug") {
-            $artifact = "lib\rocksdb_d.lib"
-        }
-        else {
-            $artifact = "lib\rocksdb.lib"
-        }
-    }
-    elseif ($dependency_name -eq "qt6") {
-        # Qt has a nested install layout, so build-deps.cmd validates its
-        # Release/Debug artifacts before marking the installation.
-        return
-    }
-    else {
-        throw "Unexpected dependency name '$dependency_name'."
-    }
-    $artifact_filepath = Join-Path -Path $installation_dir -ChildPath $artifact
-    if (-not (Test-Path -Path $artifact_filepath)) {
-        return
-    }
-    if (-not (Test-Path -Path $installation_dir)) {
-        throw "Directory '$installation_dir' does not exist."
-    }
-    $marker_filepath = Join-Path -Path $installation_dir -ChildPath $ENV:MARKER_FILE
-    if (Test-Path -Path $marker_filepath) {
-        return
-    }
-    . $cecho 0 13 "Found artifact '$artifact' for dependency '$dependency_name' $env:BUILD_CFG."
-    & mark $installation_dir
-}
-
 # Check if installation exists for the current `BUILD_CFG`.
 # Returns exit code 200 if installation exists, 404 otherwise.
 # Since we want Release and Debug installation to coexist,
@@ -94,8 +39,6 @@ function check_installation {
     if (-not (Test-Path -Path $installation_dir)) {
         exit 404
     }
-
-    & mark_based_on_artifacts $dependency_name $installation_dir
 
     $marker_filepath = Join-Path -Path $installation_dir -ChildPath $ENV:MARKER_FILE
     if (-not (Test-Path -Path $marker_filepath)) {
