@@ -460,9 +460,6 @@ IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOL
 :: toolsets (e.g. VS2026/v145) no longer provide it, breaking the build with error C2039: 'tr1' is not a member of 'std'.
 findstr /C:"typedef std::unordered_map<MarkId, FilePosType > MarkIdToFilePos;" common\libBuffer\include\CommonFWriteBufferFlusher.h>NUL
 IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%REPO_ROOT%\nix\patches\opencollada\remove_tr1.patch" --ignore-whitespace
-:: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
-:: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
-REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
 :: NOTE Enforce that the embedded LibXml2 and PCRE are used as there might be problems with arbitrary versions of the libraries.
 :: OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in error in cmake 4, so we override minimum cmake version.
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" -DUSE_STATIC_MSVC_RUNTIME=0 -DCMAKE_DEBUG_POSTFIX=d ^
