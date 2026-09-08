@@ -535,9 +535,6 @@ IF %ARCH_BITS%==32 (
 call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 
-:: If `inc` is present in installation folder, then installation takes much longer
-:: See https://github.com/Open-Cascade-SAS/OCCT/issues/901
-powershell -c "$path = '%DEPENDENCY_INSTALL_DIR%\inc'; if (Test-Path $path) { Remove-Item -Recurse -Force $path }"
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 
