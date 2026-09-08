@@ -1573,8 +1573,6 @@ if "cgal" in targets:
             f"-DMPFR_LIBRARIES={Dependencies.get_install_dir('mpfr')}/lib/libmpfr.{LIBRARY_EXT}",
             f"-DMPFR_INCLUDE_DIR={Dependencies.get_install_dir('mpfr')}/include",
             f"-DBoost_INCLUDE_DIR={Dependencies.get_install_dir('boost')}",
-            f"-DCGAL_HEADER_ONLY=On",
-            f"-DBUILD_SHARED_LIBS=Off",
         ],
         download_url="https://github.com/CGAL/cgal.git",
         download_name="cgal",

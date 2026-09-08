@@ -637,8 +637,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 git reset --hard
 git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
-               -DCGAL_HEADER_ONLY=On
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
