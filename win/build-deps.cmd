@@ -477,9 +477,11 @@ call :MarkInstallation
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
 set DEPENDENCY_NAME=OpenCASCADE
-:: `new-layout` suffix can be removed on the next OCCT version update
-:: it's needed to separate legacy layout installation from the new one.
-set OCCT_DEPENDENCY_INSTALL_NAME=opencascade-%OCCT_VERSION%-new-layout
+:: TODO: `new-layout` suffix can be dropped on the next OCCT version update, it's only needed
+:: to separate the legacy layout installation (used by version 7.8.1) from the new one.
+set OCCT_NEW_LAYOUT_SUFFIX=
+IF "%OCCT_VERSION%"=="7.8.1" set OCCT_NEW_LAYOUT_SUFFIX=-new-layout
+set OCCT_DEPENDENCY_INSTALL_NAME=opencascade-%OCCT_VERSION%%OCCT_NEW_LAYOUT_SUFFIX%
 set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
 set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set NEXT_DEPENDENCY_LABEL=Python
