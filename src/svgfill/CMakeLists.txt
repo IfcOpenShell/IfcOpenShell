@@ -12,10 +12,8 @@ endif()
 
 if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
     set(Boost_USE_STATIC_LIBS ON)
+    set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
-    if(USE_STATIC_MSVC_RUNTIME)
-        set(Boost_USE_STATIC_RUNTIME ON)
-    endif()
 else()
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and it's going to conflict if there are multiple, as is
