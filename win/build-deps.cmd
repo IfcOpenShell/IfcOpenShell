@@ -387,8 +387,6 @@ echo BOOST_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 :: TODO: remove it a bit later.
 IF EXIST "%DEPS_DIR%\boost_%BOOST_VERSION:.=_%". rmdir /s /q "%DEPS_DIR%\boost_%BOOST_VERSION:.=_%"
 
-:: Needed for CGAL build.
-set BOOST_ROOT=%DEPENDENCY_DIR%
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
 set BOOST_ZIP=boost-%BOOST_VERSION%-b2-nodocs.%ZIP_EXT%

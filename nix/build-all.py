@@ -1567,13 +1567,7 @@ if "cgal" in targets:
     build_dependency(
         name=cgal_name,
         mode="cmake",
-        build_tool_args=[
-            f"-DGMP_LIBRARIES={Dependencies.get_install_dir('gmp')}/lib/libgmp.{LIBRARY_EXT}",
-            f"-DGMP_INCLUDE_DIR={Dependencies.get_install_dir('gmp')}/include",
-            f"-DMPFR_LIBRARIES={Dependencies.get_install_dir('mpfr')}/lib/libmpfr.{LIBRARY_EXT}",
-            f"-DMPFR_INCLUDE_DIR={Dependencies.get_install_dir('mpfr')}/include",
-            f"-DBoost_INCLUDE_DIR={Dependencies.get_install_dir('boost')}",
-        ],
+        build_tool_args=[],
         download_url="https://github.com/CGAL/cgal.git",
         download_name="cgal",
         download_tool=download_tool_git,
