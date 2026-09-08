@@ -347,6 +347,7 @@ call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENC
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
+git clean -fdx
 powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
