@@ -620,7 +620,6 @@ call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" Release
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" Release
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-robocopy "%INSTALL_DIR%\swigwin\bin" "%INSTALL_DIR%\swigwin" /move /e
 
 goto :Successful
 
