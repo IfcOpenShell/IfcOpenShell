@@ -24,6 +24,7 @@ import urllib.parse
 import uuid
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Union
 from xml.dom import minidom
 
 import ifcopenshell.util.geolocation
@@ -211,6 +212,46 @@ class SheetBuilder:
 
         layout_tree.write(layout_path)
 
+    def find_drawing_group(
+        self,
+        layout_root: ET.Element,
+        layout_path: str,
+        reference: ifcopenshell.entity_instance,
+    ) -> Union[ET.Element, None]:
+        """Find the <g> a drawing reference was placed into.
+
+        `data-id` is the reference's STEP id, which is only meaningful while the
+        file keeps the numbering it had when the drawing was added. Merging a
+        project - or any round trip through a tool that renumbers entities -
+        leaves every `data-id` in every layout pointing at nothing, and matching
+        on it alone then finds no group at all.
+
+        The drawing's own file is stable across that, so it is used as a
+        fallback. Layout hrefs are relative to the layout and URL-encoded, hence
+        the unquote and the join.
+        """
+        for g in layout_root.findall(f"{SVG}g"):
+            if g.attrib.get("data-id") == str(reference.id()):
+                return g
+
+        drawing_path = tool.Drawing.get_document_uri(reference)
+        if not drawing_path:
+            return None
+        wanted = os.path.normcase(os.path.normpath(drawing_path))
+        layout_dir = os.path.dirname(layout_path)
+
+        for g in layout_root.findall(f'{SVG}g[@data-type="drawing"]'):
+            foreground = g.find(f'.//{SVG}image[@data-type="foreground"]')
+            if foreground is None:
+                continue
+            href = foreground.attrib.get(f"{XLINK}href") or foreground.attrib.get("href")
+            if not href:
+                continue
+            candidate = os.path.normpath(os.path.join(layout_dir, urllib.parse.unquote(href)))
+            if os.path.normcase(candidate) == wanted:
+                return g
+        return None
+
     def remove_drawing(self, reference: ifcopenshell.entity_instance, sheet: ifcopenshell.entity_instance) -> None:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
 
@@ -221,11 +262,18 @@ class SheetBuilder:
         layout_tree = ET.parse(layout_path)
         layout_root = layout_tree.getroot()
 
-        for g in layout_root.findall(f"{SVG}g"):
-            if g.attrib.get("data-id") == str(reference.id()):
-                layout_root.remove(g)
-                break
+        group = self.find_drawing_group(layout_root, layout_path, reference)
+        if group is None:
+            # Nothing to remove, so nothing to write. Rewriting the layout here
+            # would reserialise it - a changed mtime and a whole-file diff for a
+            # removal that did not happen, which is what made this hard to spot.
+            print(
+                f"WARNING. Could not find drawing #{reference.id()} in layout '{layout_path}'. "
+                "It has been removed from the sheet in the IFC, but the layout is unchanged."
+            )
+            return
 
+        layout_root.remove(group)
         layout_tree.write(layout_path)
 
     def add_document(
