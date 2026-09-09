@@ -699,6 +699,8 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 :: see rocksdb\thirdparty.inc
 :: providing package is not supported on Windows.
+:: ZSTD_INCLUDE / ZSTD_LIB_DEBUG / ZSTD_LIB_RELEASE must be env vars,
+:: providing them as cmake -D args have no effect on MSVC.
 set ZSTD_INCLUDE=%INSTALL_DIR%\zstd\include
 set ZSTD_LIB_DEBUG=%INSTALL_DIR%\zstd\lib\zstd_static.lib
 set ZSTD_LIB_RELEASE=%INSTALL_DIR%\zstd\lib\zstd_static.lib
@@ -711,9 +713,6 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" 
                -DWITH_CORE_TOOLS=OFF ^
                -DROCKSDB_BUILD_SHARED=OFF ^
                -DWITH_ZSTD=On ^
-               -DZSTD_INCLUDE_DIR="%ZSTD_INCLUDE%" ^
-               -DZSTD_LIBRARY_DEBUG="%ZSTD_LIB_DEBUG%" ^
-               -DZSTD_LIBRARY_RELEASE="%ZSTD_LIB_RELEASE%" ^
                -DPORTABLE=1 ^
                -DCMAKE_DEBUG_POSTFIX="_d"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
