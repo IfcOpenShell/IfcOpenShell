@@ -5,47 +5,36 @@ and its dependencies.
 
 As a general guideline, `.cmd` files are non-standalone batch files that need to be run from command prompt or from
 another batch file, and/or while the Visual Studio ("MSVC") environment variables set, and `.bat` files are standalone batch
-files that can also be invoked e.g. by double-clicking in the File Explorer. `.sh` files are for MSYS**2** + MinGW ("MSYS"
-) compilation.
+files that can also be invoked e.g. by double-clicking in the File Explorer.
 
 Usage Instructions
 ------------------
-### MSYS
+Launch the proper Visual Studio command prompt, cd to the 'win' directory inside the IfcOpenShell directory and execute `python build-deps.py` to fetch, build and install the dependencies. The script will print the requirements for a successful execution. It allows a few user-configurable build options which are listed below (run `python build-deps.py --help` for the full list).
 
-Building using MSYS is very similar to using the MSVC batch files, but instead the shell scripts
-are used. Note that the MSYS support is currently a bit experimental. It is advised to check out the contents
-of the shell scripts before using them. Note that contrary to MSVC, with MSYS all of the dependencies are not
-built or used as static libraries. Currently Release build is used for all libraries.
-
-### MSVC
-Launch the proper Visual Studio command prompt, cd to the 'win' directory inside the IfcOpenShell directory and execute `build-deps.cmd` to fetch, build and install the dependencies. The batch file will print the requirements for a successful execution. The script allows a few user-configurable build options which are listed below.
-
-`build-deps.cmd` expects a CMake generator as `%1` and a build configuration type (`RelWithDebInfo`, `Release`, `MinSizeRel`, or `Debug`, defaults to `RelWithDebInfo`) as `%2`. If the generator is not provided, the generator is deduced from the MSVC environment variables.
+`build-deps.py` expects a CMake generator as the 1st positional argument and a build configuration type (`RelWithDebInfo`, `Release`, `MinSizeRel`, or `Debug`, defaults to `RelWithDebInfo`) as the 2nd. If the generator is not provided, it is deduced from the MSVC environment variables.
 
 User-friendly CMake Visual Studio generator shorthands are supported. They are converted to the appropriate CMake generators and options. Shorthands are indeed the preferable way to specify the generator, since they allow a more accurate platform and toolset configuration. Here are some examples:
 ```
-"vs2013"             => cmake -G "Visual Studio 12 2013" -A Win32
-"vs2013-x86"         => cmake -G "Visual Studio 12 2013" -A Win32
-"vs2015-x64"         => cmake -G "Visual Studio 14 2015" -A x64
-"vs2017-ARM64"       => cmake -G "Visual Studio 15 2017" -A ARM64
-"vs2019-x86-v141_xp" => cmake -G "Visual Studio 16 2019" -A Win32 -T v141_xp
+"vs2019-x86-v141"    => cmake -G "Visual Studio 16 2019" -A Win32 -T v141
+"vs2022-x64"         => cmake -G "Visual Studio 17 2022" -A x64
+"vs2022-ARM64"       => cmake -G "Visual Studio 17 2022" -A ARM64
 ```
 Of course not all Visual C++ compilers support any platform or toolset, refer to the Visual Studio and CMake documentation for this. If you do not specify a toolset, the compiler will use the default toolset for the version, i.e. vs2019 will use the v142 toolset.
 
-A build type (`Build`, `Rebuild`, or `Clean`, defaults to `Build`) can be provided as `%3`.
+A build type (`Build`, `Rebuild`, or `Clean`, defaults to `Build`) can be provided as the 3rd positional argument.
 
-See `vs-cfg.cmd` if you wish to change the defaults. The batch file will create `deps\` and `deps-vs<VERSION>-<PLATFORM>[-<TOOLSET>]-installed\` directories to the project root. Debug and release builds of the dependencies can co-exist by simply running:
+The script will create `_deps\` and `_deps-vs<VERSION>-<PLATFORM>[-<TOOLSET>]-installed\` directories in the project root. Debug and release builds of the dependencies can co-exist by simply running:
 ```
-> build-deps.cmd <GENERATOR> Debug
-> build-deps.cmd <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>
-```
-
-After the dependencies are build, execute `run-cmake.bat`. The batch file expects a CMake generator as `%1`, that is interpreted just like the `build-deps.cmd` script, and the rest of possible parameters are passed as is. If a generator is not provided, the generator is read from the BuildDepsCache file, or tried to be deduced from the location of `cl.exe`. If passing build options for the script, the generator must be always passed as the first option:
-```
-> run-cmake.bat vs2015-x64 -DUSE_IFC4=1 -DBUILD_IFCPYTHON=0
+> python build-deps.py <GENERATOR> Debug
+> python build-deps.py <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>
 ```
 
-**If you wish to use any library from a custom location, modify the paths in `run-cmake.bat` accordingly**. The batch script will create a folder of form `build-vs<VERSION>-<PLATFORM>[-<TOOLSET>]\` which will contain the solution and project files for MSVC.
+After the dependencies are built, execute `run-cmake.bat`. The batch file expects a CMake generator as `%1`, that is interpreted just like the `build-deps.py` script, and the rest of possible parameters are passed as is. If a generator is not provided, the generator is read from the BuildDepsCache file, or tried to be deduced from the location of `cl.exe`. If passing build options for the script, the generator must be always passed as the first option:
+```
+> run-cmake.bat vs2022-x64 -DGLTF_SUPPORT=ON
+```
+
+**If you wish to use any library from a custom location, modify the paths in `run-cmake.bat` accordingly**. The batch script will create a folder of form `_build-vs<VERSION>-<PLATFORM>[-<TOOLSET>]\` which will contain the solution and project files for MSVC.
 
 Note that building IfcOpenShell as 64-bit is recommended as many of real life IFC files has been observed to take easily more than 2 GBs of RAM while converting.
 
@@ -56,37 +45,23 @@ files expect `%1` and `%2` in same fashion as above and possible extra parameter
 or regular Command Prompt if BuildDepsCache file exists (the last modified version is used). Running the scripts without extra
 parameters reads the build options from an existing CMakeCache.txt.
 
-The project will be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root folder and the
+The project will be installed to `_installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root folder and the
 required IfcOpenShell-Python parts are deployed to the `<PYTHONHOME>\Lib\site-packages\` folder. The 3ds Max plug-in,
 `IfcMax.dli`, needs to be copied manually to the 3ds Max's `plugins` folder.
-
-**Note:** Currently all of the dependencies are build as static libraries against the static run-time allowing the
-developer to effortlessly deploy standalone IFCOS executables.
-
-Using the official Open CASCADE release instead of community edition
----------------------------------------------
-Before building the dependencies, enable the OCCT usage:
-```
-> set IFCOS_USE_OCCT=TRUE
-> build-deps.cmd
-```
-
-Please note that this option is not yet available in the MSYS build scripts.
 
 Using an already existing Python installation
 ---------------------------------------------
 
-Let's say you have already installed 64-bit Python 3.5.1 to `C:\Python3`.
+Let's say you have already installed 64-bit Python 3.13 to `C:\Python3`.
 Before building the dependencies, disable the script from installing Python:
 ```
 > set IFCOS_INSTALL_PYTHON=FALSE
-> buid-deps.cmd
+> python build-deps.py
 ```
 
-After building the dependencies, append Python version and installation directory information to the BuildDepsCache file
+After building the dependencies, append Python installation directory information to the BuildDepsCache file
 in `IfcOpenShell\win`:
 ```
-> echo PY_VER_MAJOR_MINOR=35>> BuildDepsCache-x64.txt
 > echo PYTHONHOME=C:\Python3>> BuildDepsCache-x64.txt
 ```
 
@@ -97,24 +72,19 @@ Directory Structure
 ------------------
 ```
 ..
-+---build-*                         - Created by run-cmake.bat/sh, specific for a certain compiler and and target architecture
-+---deps                            - Created by build-deps.cmd/sh, common for all compilers
-+---deps-*-installed                - Created by build-deps.cmd/sh, specific for a certain compiler and target architecture
-+---installed-*                     - Created by installing the IFCOS project, specific for a certain compiler and target architecture
++---_build-*                        - Created by run-cmake.bat, specific for a certain compiler and and target architecture
++---_deps                           - Created by build-deps.py, common for all compilers
++---_deps-*-installed               - Created by build-deps.py, specific for a certain compiler and target architecture
++---_installed-*                    - Created by installing the IFCOS project, specific for a certain compiler and target architecture
 \---win
 |   build-all.cmd                   - Runs all of the build scripts for IFCOS and it dependencies in a row without pauses
-|   build-deps.cmd                  - Fetches and builds all needed dependencies for IFCOS using MSVC
-|   build-deps.sh                   - Fetches and builds all needed dependencies for IFCOS using MSYS
-|   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.cmd
+|   build-deps.py                   - Fetches and builds all needed dependencies for IFCOS using MSVC
+|   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.py
 |   build-ifcopenshell.bat          - Builds IFCOS using MSVC
-|   build-ifcopenshell.sh           - Builds IFCOS using MSYS
 |   build-type-cfg.cmd              - Utility file used by the build scripts
 |   install-ifcopenshell.bat        - Installs/deploys IFCOS using MSVC.
-|   install-ifcopenshell.sh         - Installs/deploys IFCOS using MSYS.
 |   readme.md                       - This file
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS using MSVC
-|   run-cmake.sh                    - Sets environment variables for the dependencies and runs CMake for IFCOS using MSYS
-|   set-python-to-path.bat          - Utility for setting PYTHONHOME (read from BuildDepsCache-<ARCH>.txt) to PATH
 |   vs-cfg.cmd                      - Utility file used by the build scripts
 \---patches                         - Contains patches for the dependencies
 \---utils                           - Contains various utilities for the build scripts

@@ -1321,7 +1321,7 @@ class Drawing(bonsai.core.tool.Drawing):
             commands = json.loads(user_command)
             replacements = {"path": path}
             for command in commands:
-                command[0] = shutil.which(command[0]) or command[0]
+                command[0] = shutil.which(str(command[0])) or command[0]
                 subprocess.Popen([replacements.get(c, c) for c in command])
         else:
             if platform.system() == "Darwin":

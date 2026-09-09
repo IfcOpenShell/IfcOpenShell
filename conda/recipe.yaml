@@ -235,17 +235,7 @@ about:
       <td>LGPL-3.0-or-later*</td>
     </tr>
     <tr>
-      <td>ifcgeom_schema_agnostic</td>
-      <td>Internal library for IfcOpenShell</td>
-      <td>LGPL-3.0-or-later*</td>
-    </tr>
-    <tr>
       <td>ifcgeomserver</td>
-      <td>Internal library for IfcOpenShell</td>
-      <td>LGPL-3.0-or-later*</td>
-    </tr>
-    <tr>
-      <td>ifcjni</td>
       <td>Internal library for IfcOpenShell</td>
       <td>LGPL-3.0-or-later*</td>
     </tr>
@@ -296,11 +286,6 @@ about:
     [IFC]: https://technical.buildingsmart.org/standards/ifc/ "IFC"
     [IFC2x3 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ "IFC2x3 TC1"
     [IFC4 Add2 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/ "IFC4 Add2 TC1"
-    [Visual Studio]: https://www.visualstudio.com/ "Visual Studio"
-    [Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
-    [MSYS2]: https://msys2.github.io/ "MSYS2"
-    [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
-    [nix/build-all.py]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.py "nix/build-all.py"
   homepage: https://ifcopenshell.org
   repository: https://github.com/IfcOpenShell/IfcOpenShell
   documentation: https://ifcopenshell.org/

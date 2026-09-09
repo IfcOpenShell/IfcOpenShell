@@ -225,7 +225,7 @@ C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
    .. code-block:: bat
 
         cd IfcOpenShell\win
-        build-deps.cmd
+        python build-deps.py
         run-cmake.bat
 
 3. Open and build the solution file in Visual Studio:
@@ -247,38 +247,6 @@ C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
    .. code-block:: bat
 
         install-ifcopenshell.bat
-
-.. seealso::
-
-    For more information on configuring a Windows compilation see the `Windows
-    Readme
-    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/win/readme.md>`__.
-
-Compiling on Windows (MSYS2 + MinGW)
-------------------------------------
-
-This is for users of `MSYS2 <https://msys2.github.io/>`__ and `MinGW
-<https://www.mingw-w64.org/>`__.
-
-1. Fetch the latest source code, including all submodules.
-
-   .. code-block:: bat
-
-        git clone --recursive https://github.com/IfcOpenShell/IfcOpenshell.git
-
-   .. warning::
-
-        The path where the source code is cloned to can contain spaces but non-ASCII
-        characters are very likely to cause problems with the build.
-
-2. Start the MSYS2 Shell and then:
-
-   .. code-block:: bat
-
-        cd IfcOpenShell/win
-        ./build-deps.sh
-        ./run-cmake.sh
-        ./install-ifcopenshell.sh
 
 .. seealso::
 

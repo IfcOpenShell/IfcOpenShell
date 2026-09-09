@@ -9,13 +9,14 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 from zipfile import ZipFile
 
 
 def is_arm64() -> bool:
-    arch = os.environ.get("TARGET_ARCH", "").lower()
+    arch = os.environ.get("VS_PLATFORM", "").lower()
     if arch in ("arm64", "aarch64"):
         return True
     if arch in ("x64", "amd64", "x86_64"):
@@ -170,9 +171,7 @@ def is_geometry_writer(file: Path) -> bool:
 def collect_ifc_runtime_plugins(dlls: set[Path], dependencies: set[Path]) -> set[Path]:
     """IfcOpenShell plugins are loaded by name at runtime, so dumpbin cannot discover them."""
     return {
-        d
-        for d in (dlls - dependencies)
-        if d.name.startswith(IFC_RUNTIME_PLUGIN_PREFIXES) and not is_geometry_writer(d)
+        d for d in (dlls - dependencies) if d.name.startswith(IFC_RUNTIME_PLUGIN_PREFIXES) and not is_geometry_writer(d)
     }
 
 
@@ -219,7 +218,7 @@ def build() -> None:
         os.environ["PYTHON_VERSION"] = python_version
         print(f"Building for Python {python_version}...")
         subprocess.run(
-            [str(REPO_WIN / "build-deps.cmd"), build_generator(), "Release"],
+            [sys.executable, str(REPO_WIN / "build-deps.py"), build_generator(), "Release"],
             check=True,
             text=True,
             input="y\n",

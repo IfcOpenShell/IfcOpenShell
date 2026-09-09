@@ -24,10 +24,11 @@ jobs:
         with:
           python-version: ${{ env.MIN_BLENDER_PY_VERSION }}
 
+      - name: Action - setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
       - name: Install dependencies
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          cat requirements-tools.txt | xargs -L1 uv tool install
+        run: cat requirements-tools.txt | xargs -L1 uv tool install
 
       # black doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
@@ -51,8 +52,7 @@ jobs:
         id: black-annotations
         run: |
           uv tool install black-codeclimate
-          pip install github_action_utils
-          black --diff --check . | black-codeclimate | python .github/workflows/black_to_github_annotations.py
+          black --diff --check . | black-codeclimate | uv run .github/scripts/black_to_github_annotations.py
         continue-on-error: true
 
       - name: ty check (venv setup)
@@ -103,6 +103,11 @@ jobs:
           exit $ERROR
         continue-on-error: true
 
+      - name: Check whitespace
+        id: check-whitespace
+        run: poe check-whitespace
+        continue-on-error: true
+
       - name: Final check
         run: |
           ERROR=0
@@ -120,5 +125,8 @@ jobs:
           fi
           if [ "${{ steps.ty-ios.outcome }}" != "success" ]; then
             echo "::error::ty check (ios) failed, see 'ty check (ios)' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.check-whitespace.outcome }}" != "success" ]; then
+            echo "::error::Whitespace check failed, see 'Check whitespace' step for the details." && ERROR=1
           fi
           exit $ERROR

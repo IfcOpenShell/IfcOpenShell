@@ -235,7 +235,6 @@ endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
 if(MSVC)
-    message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
     # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
     # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
     add_definitions(-wd4251)
@@ -327,7 +326,7 @@ if (WITH_ROCKSDB)
     else()
         message(FATAL_ERROR "RocksDB found but neither RocksDB::rocksdb nor RocksDB::rocksdb-shared target exists")
     endif()
-    # Our win/build-deps.cmd builds RocksDB separately per Debug/Release config into the
+    # Our win/build-deps.py builds RocksDB separately per Debug/Release config into the
     # same install prefix, so the imported target only ever has DEBUG and RELEASE listed in
     # IMPORTED_CONFIGURATIONS. On a multi-config generator (Visual Studio), CMake maps any
     # unmatched build config to the *first* entry of that list, which happens to be DEBUG
@@ -335,9 +334,13 @@ if (WITH_ROCKSDB)
     # explicit mapping, RelWithDebInfo and MinSizeRel builds would end up linking the
     # /MDd-flavored rocksdb_d.lib into an /MD (NDEBUG) binary, causing a CRT/runtime-library
     # mismatch that depends on nothing but that alphabetical ordering.
+    #
+    # Important: we're mixing up MinSizeRel to RelWithDebInfo targets and vice versa, because
+    # multi-config builds always define targets for each config and it has to be able to find a fallback,
+    # otherwise configuration would fail.
     set_target_properties(${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET} PROPERTIES
-        MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE"
-        MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE"
+        MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE;MINSIZEREL"
+        MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE;RELWITHDEBINFO"
     )
     target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE ${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET})
 
@@ -475,21 +478,6 @@ if(MSVC)
     if(MSVC_VERSION GREATER 1900 AND(Boost_MAJOR_VERSION GREATER 1 OR Boost_MINOR_VERSION GREATER 66))
         add_definitions(-permissive-)
     endif()
-
-    # Link against the static VC runtime
-    # TODO Make this configurable
-    # if("$ENV{CONDA_BUILD}" STREQUAL "")
-    #     foreach(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
-    #     CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-    #     CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-    #         if(${flag} MATCHES "/MD")
-    #             STRING(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
-    #         endif()
-    #         if(${flag} MATCHES "/MDd")
-    #             STRING(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
-    #         endif()
-    #     endforeach()
-    # endif()
 
 	add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
 	# See #5158.
@@ -733,7 +721,7 @@ if(BUILD_IFCMAX)
     add_subdirectory(../src/ifcmax ifcmax)
 endif()
 
-if(BUILD_IFCPYTHON AND WITH_CGAL)
+if(WITH_CGAL)
     add_subdirectory(../src/svgfill svgfill)
 endif()
 

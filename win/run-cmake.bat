@@ -44,7 +44,7 @@ if (%1)==() (
 	)
 
     if not defined GEN_SHORTHAND (
-        echo BuildDepsCache file does not exist and/or GEN_SHORTHAND missing from it. Run build-deps.cmd to create it.
+        echo BuildDepsCache file does not exist and/or GEN_SHORTHAND missing from it. Run build-deps.py to create it.
         set IFCOS_PAUSE_ON_ERROR=pause
         goto :Error
     )
@@ -104,9 +104,6 @@ for /f "usebackq delims=" %%v in (`
 set PYTHON_INCLUDE_DIR=%PYTHONHOME%\include
 set PYTHON_LIBRARY=%PYTHONHOME%\libs\python%PY_VER_MAJOR_MINOR%.lib
 
-:: `swigwin` is a legacy installation folder name, before we started using versioned folders.
-:: we can remove it later.
-if not defined SWIG_INSTALL_DIR set SWIG_INSTALL_DIR=%INSTALL_DIR%\swigwin
 set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
 if defined ADD_COMMIT_SHA (
     set ADD_COMMIT_SHA=ON
@@ -138,7 +135,7 @@ echo   Arguments    = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_INSTALL_DIR       = %BOOST_INSTALL_DIR%
-:: OCC_INCLUDE_DIR / OCC_LIBRARY_DIR are legacy vars, they're not defined by build-deps.cmd anymore.
+:: OCC_INCLUDE_DIR / OCC_LIBRARY_DIR are legacy vars, they're not defined by build-deps.py anymore.
 echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
 echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
 echo    OCC_INSTALL_DIR         = %OCC_INSTALL_DIR%
@@ -161,6 +158,7 @@ echo    TBB_INSTALL_DIR         = %TBB_INSTALL_DIR%
 echo    USD_INSTALL_DIR         = %USD_INSTALL_DIR%
 echo    ROCKSDB_INSTALL_DIR     = %ROCKSDB_INSTALL_DIR%
 echo    ZSTD_INSTALL_DIR        = %ZSTD_INSTALL_DIR%
+echo    MANIFOLD_INSTALL_PATH   = %MANIFOLD_INSTALL_PATH%
 echo    QT_DIR                  = %QT_DIR%
 echo    QT_HOST_PATH            = %QT_HOST_PATH%
 echo    CCACHE_INSTALL_DIR      = %CCACHE_INSTALL_DIR%
@@ -179,12 +177,17 @@ set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%BOOST_INSTALL_DIR%;%CCACHE_INSTALL_DI
 set CMake_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%USD_INSTALL_DIR%;%TBB_INSTALL_DIR%
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%OCC_INSTALL_DIR%;%CGAL_INSTALL_DIR%
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%GMP_INSTALL_DIR%;%MPFR_INSTALL_DIR%
+:: TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
+if defined MANIFOLD_INSTALL_PATH set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%MANIFOLD_INSTALL_PATH%
 if defined QT_DIR set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%QT_DIR%
 
 set QT_DIR_OPTION=
 if defined QT_DIR set QT_DIR_OPTION=-DQT_DIR="%QT_DIR%"
 set QT_HOST_PATH_OPTION=
 if defined QT_HOST_PATH set QT_HOST_PATH_OPTION=-DQT_HOST_PATH="%QT_HOST_PATH%"
+:: TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
+set WITH_MANIFOLD_OPTION=
+if defined MANIFOLD_INSTALL_PATH set WITH_MANIFOLD_OPTION=-DWITH_MANIFOLD=ON
 
 :: Not fully supported - not available from install-ifcopenshell
 :: and some logs are still showing Visual Studio generators.
@@ -197,16 +200,13 @@ if defined USE_NINJA (
     set ARCH_OPTION=-A %VS_PLATFORM%
 )
 
-IF NOT "%VS_TOOLSET_HOST%"=="" (
-    set VS_TOOLSET_OPTION=-T %VS_TOOLSET_HOST%
-)
-
-cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% %VS_TOOLSET_OPTION% ^
+cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% ^
     -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
     -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
     -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
     %QT_DIR_OPTION% ^
     %QT_HOST_PATH_OPTION% ^
+    %WITH_MANIFOLD_OPTION% ^
     -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% -DVERSION_OVERRIDE=%VERSION_OVERRIDE% ^
     %ARGUMENTS%
 

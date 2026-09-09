@@ -88,9 +88,6 @@ IF NOT "!BUILD_TYPE!"=="Build" IF NOT "!BUILD_TYPE!"=="Rebuild" IF NOT "!BUILD_T
 IF NOT EXIST "%DEPS_DIR%". mkdir "%DEPS_DIR%"
 IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 
-:: If we use VS2008, framework path (for MSBuild) may not be correctly set. Manually attempt to add in that case
-IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
-
 :: User-configurable build options
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
 IF NOT DEFINED IFCOS_INSTALL_QT6 set IFCOS_INSTALL_QT6=TRUE
@@ -118,25 +115,21 @@ set PWSH_TOOLS=powershell -NonInteractive -File %SCRIPT_DIR%\utils\tools.ps1
 cmake --version | findstr version > temp.txt
 set /p CMAKE_VERSION=<temp.txt
 del temp.txt
-if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
-    echo "CMake v3.11.4 or higher is required"
+if "%CMAKE_VERSION%" LSS "cmake version 3.21.0" (
+    echo "CMake v3.21.0 or higher is required"
     goto :ErrorAndPrintUsage
 )
 
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
 set BOOST_VERSION=1.92.0
-:: Version string with underscores instead of dots.
-set BOOST_VER=%BOOST_VERSION:.=_%
 
 :: Print build configuration information
 
 call cecho.cmd 0 10 "Script configuration:"
 call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR%`'`t
 echo   - Passed to CMake -G option.
-call cecho.cmd 0 13 "* Target Architecture`t= %TARGET_ARCH%"
-echo   - Whether were doing 32-bit (x86) or 64-bit (x64, arm64) build.
 call cecho.cmd 0 13 "* Target Platform`t= %VS_PLATFORM%"
-echo   - Passed to CMake -A option.
+echo   - Whether were doing 32-bit (Win32) or 64-bit (x64, ARM64) build. Passed to CMake -A option.
 call cecho.cmd 0 13 "* Target Toolset`t= %VS_TOOLSET%"
 echo   - Passed to CMake -T option.
 call cecho.cmd 0 13 "* Dependency Directory`t= %DEPS_DIR%"
@@ -169,6 +162,10 @@ call :PrintUsage
 call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed."
 echo.
 
+call cecho.cmd 0 12 "WARNING: build-deps.cmd is deprecated since 09 Sep 2026 and will be removed very shortly."
+call cecho.cmd 0 12 "Use `python build-deps.py` instead. It's intended to be a drop-in replacement, so exactly the same args apply."
+echo.
+
 call cecho.cmd black cyan "If you are not ready with the above: type `'n`' in the prompt below. Build proceeds on all other inputs!"
 
 set /p do_continue="> "
@@ -196,11 +193,8 @@ IF DEFINED PYTHON_VERSION (
 )
 
 :: VERSION DERIVATIONS
-for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do (
-    set PY_VER_MAJOR_MINOR=%%a%%b
-)
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    IF /I "%TARGET_ARCH%"=="arm64" (
+    IF /I "%VS_PLATFORM%"=="arm64" (
         set PYTHONHOME=%DEPS_DIR%\pythonarm64.%PYTHON_VERSION%\tools
     ) ELSE (
         set PYTHONHOME=%DEPS_DIR%\python.%PYTHON_VERSION%\tools
@@ -210,7 +204,7 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 :: Cache last used CMake generator and configurable dependency dirs for other scripts to use
 :: This is consolidated at the beginning of the script so that the script can be partially
 :: executed by jumping (using goto) to different labels.
-if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo QT6_VERSION=%QT6_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
@@ -280,7 +274,6 @@ pushd "%DEPS_DIR%\sqlite-amalgamation-3430100"
 cl /c sqlite3.c
 lib /OUT:%INSTALL_DIR%\sqlite3\lib\sqlite3.lib sqlite3.obj
 cl sqlite3.c shell.c /link /out:%INSTALL_DIR%\sqlite3\bin\sqlite3.exe
-set PATH=%PATH%;%INSTALL_DIR%\sqlite3\bin
 copy sqlite3.h %INSTALL_DIR%\sqlite3\include
 popd
 
@@ -292,8 +285,9 @@ call :ExtractArchive proj-%PROJ_VERSION%.zip "%DEPS_DIR%" "%DEPS_DIR%\proj-%PROJ
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-%PROJ_VERSION%" ^
-    -DSQLITE3_INCLUDE_DIR=%INSTALL_DIR%\sqlite3\include ^
-    -DSQLITE3_LIBRARY=%INSTALL_DIR%\sqlite3\lib\sqlite3.lib ^
+    -DCMAKE_PREFIX_PATH="%INSTALL_DIR%\sqlite3" ^
+    -DSQLite3_INCLUDE_DIR=%INSTALL_DIR%\sqlite3\include ^
+    -DSQLite3_LIBRARY=%INSTALL_DIR%\sqlite3\lib\sqlite3.lib ^
     -DENABLE_TIFF=Off -DENABLE_CURL=Off -DBUILD_PROJSYNC=Off ^
     -DBUILD_SHARED_LIBS=Off ^
     -DBUILD_TESTING=Off
@@ -325,7 +319,7 @@ powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%U
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
+git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF /I "%VS_PLATFORM%"=="ARM64" (
     echo "Applying ARM64 Patches for Mpir"
@@ -334,6 +328,7 @@ IF /I "%VS_PLATFORM%"=="ARM64" (
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd msvc
 cd vs%VS_VER:~2,2%
+:: mpir's vcxproj files only define Debug/Release configurations (no RelWithDebInfo/MinSizeRel).
 call .\msbuild.bat gc LIB %VS_PLATFORM% %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
@@ -354,9 +349,10 @@ call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENC
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
+git clean -fdx
 powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
+git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF /I "%VS_PLATFORM%"=="ARM64" (
     echo "Applying ARM64 Patches for Mpfr"
@@ -369,7 +365,10 @@ if "%VS_VER%"=="2017" (
   set mpfr_sln=build.vs19
   set orig_platform_toolset=v142
 )
-powershell -c "get-childitem %DEPENDENCY_DIR%\%mpfr_sln% -recurse -include *.vcxproj | select -expand fullname | foreach { (Get-Content $_) -replace '%orig_platform_toolset%', 'v%VC_VER:.=%' | Set-Content $_ }"
+set target_platform_toolset=v%VC_VER:.=%
+IF DEFINED VS_TOOLSET set target_platform_toolset=%VS_TOOLSET%
+powershell -c "get-childitem %DEPENDENCY_DIR%\%mpfr_sln% -recurse -include *.vcxproj | select -expand fullname | foreach { (Get-Content $_) -replace '%orig_platform_toolset%', '%target_platform_toolset%' | Set-Content $_ }"
+:: mpfr's vcxproj files only define Debug/Release configurations (no RelWithDebInfo/MinSizeRel).
 call :BuildSolution "%DEPENDENCY_DIR%\%mpfr_sln%\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM This command fails because not all msvc projects are patched with the right sdk version
@@ -384,11 +383,14 @@ popd
 :Boost
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
-set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
+set DEPENDENCY_DIR=%DEPS_DIR%\boost-%BOOST_VERSION%
 set DEPENDENCY_INSTALL_DIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%
 echo BOOST_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-:: Needed for CGAL build.
-set BOOST_ROOT=%DEPENDENCY_DIR%
+
+:: Remove leftover dir from before the switch to the archive's actual top-level folder naming.
+:: TODO: remove it a bit later.
+IF EXIST "%DEPS_DIR%\boost_%BOOST_VERSION:.=_%". rmdir /s /q "%DEPS_DIR%\boost_%BOOST_VERSION:.=_%"
+
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
 set BOOST_ZIP=boost-%BOOST_VERSION%-b2-nodocs.%ZIP_EXT%
@@ -401,16 +403,6 @@ cd "%DEPS_DIR%"
 call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" %DEPENDENCY_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-:: top-level folder name changed when migrating to github releases
-if exist "%DEPS_DIR%\boost-%BOOST_VERSION%". (
-    ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
-)
-
-:: As boost 1.90.0 it still includes b2 that doesn't support vc145 (not to mention older boost versions).
-:: So to support vc145 we download b2 separately (only if we do use vc145).
-call :check_boost_vc145_compatibility "%VC_VER%" "%DEPS_DIR%" "%DEPENDENCY_DIR%"
-if NOT %ERRORLEVEL%==0 GOTO :Error
-
 :: Build Boost build script
 if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     cd "%DEPS_DIR%"
@@ -421,9 +413,9 @@ if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 )
 
-if /I "%TARGET_ARCH%"=="x64" (
+if /I "%VS_PLATFORM%"=="x64" (
     set B2_ARCH_FEATURE=x86
-) else if /I "%TARGET_ARCH%"=="arm64" (
+) else if /I "%VS_PLATFORM%"=="arm64" (
     set B2_ARCH_FEATURE=arm
 ) else (
     echo "Failed to identify architecture"
@@ -435,8 +427,8 @@ cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPENDENCY_DIR%\bin.v2\project-cache.jam"
 
-call .\b2 toolset=%BOOST_TOOLSET% architecture=%B2_ARCH_FEATURE% runtime-link=shared address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
-    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=%DEPENDENCY_INSTALL_DIR%
+call .\b2 toolset=%BOOST_TOOLSET% architecture=%B2_ARCH_FEATURE% address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
+    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=%DEPENDENCY_INSTALL_DIR%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -470,16 +462,12 @@ IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOL
 :: toolsets (e.g. VS2026/v145) no longer provide it, breaking the build with error C2039: 'tr1' is not a member of 'std'.
 findstr /C:"typedef std::unordered_map<MarkId, FilePosType > MarkIdToFilePos;" common\libBuffer\include\CommonFWriteBufferFlusher.h>NUL
 IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%REPO_ROOT%\nix\patches\opencollada\remove_tr1.patch" --ignore-whitespace
-:: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
-:: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
-REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
 :: NOTE Enforce that the embedded LibXml2 and PCRE are used as there might be problems with arbitrary versions of the libraries.
 :: OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in error in cmake 4, so we override minimum cmake version.
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" -DUSE_STATIC_MSVC_RUNTIME=0 -DCMAKE_DEBUG_POSTFIX=d ^
                -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES="" ^
                -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
 call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
@@ -490,10 +478,12 @@ call :MarkInstallation
 
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
-set DEPENDENCY_NAME=OpenCASCADE
-:: `new-layout` suffix can be removed on the next OCCT version update
-:: it's needed to separate legacy layout installation from the new one.
-set OCCT_DEPENDENCY_INSTALL_NAME=opencascade-%OCCT_VERSION%-new-layout
+set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
+:: TODO: `new-layout` suffix can be dropped on the next OCCT version update, it's only needed
+:: to separate the legacy layout installation (used by version 7.8.1) from the new one.
+set OCCT_NEW_LAYOUT_SUFFIX=
+IF "%OCCT_VERSION%"=="7.8.1" set OCCT_NEW_LAYOUT_SUFFIX=-new-layout
+set OCCT_DEPENDENCY_INSTALL_NAME=opencascade-%OCCT_VERSION%%OCCT_NEW_LAYOUT_SUFFIX%
 set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
 set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set NEXT_DEPENDENCY_LABEL=Python
@@ -502,9 +492,7 @@ echo OCC_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 call :CheckInstallation
 if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
-set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
-set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
 cd "%DEPS_DIR%"
 call :GitCloneAndCheckoutRevision https://github.com/Open-Cascade-SAS/OCCT "%DEPENDENCY_DIR%" %OCCT_VER%
 if not %ERRORLEVEL%==0 goto :Error
@@ -526,7 +514,9 @@ cd "%DEPENDENCY_DIR%"
 ::
 :: OCCT 7.8.1 we're using is becoming old and it was targeting cmake 3.1+.
 ::To make it buildable on cmake 4, we override policy version, but it may have some quirks in the future and we may consider version bump.
-call :RunCMake -DINSTALL_DIR="%DEPENDENCY_INSTALL_DIR%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX="" ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
+    -DBUILD_LIBRARY_TYPE="Static" ^
+    -DCMAKE_DEBUG_POSTFIX="" ^
     -DBUILD_MODULE_Draw=0 ^
     -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF ^
     -DUSE_XLIB=OFF ^
@@ -547,9 +537,6 @@ IF %ARCH_BITS%==32 (
 call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 
-:: If `inc` is present in installation folder, then installation takes much longer
-:: See https://github.com/Open-Cascade-SAS/OCCT/issues/901
-powershell -c "$path = '%DEPENDENCY_INSTALL_DIR%\inc'; if (Test-Path $path) { Remove-Item -Recurse -Force $path }"
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 
@@ -566,10 +553,6 @@ SET COMPILE_WITH_WPO=FALSE
 :Python
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
-set PYTHON_AMD64_POSTFIX=
-IF /I "%TARGET_ARCH%"=="x64"   set "PYTHON_AMD64_POSTFIX=-amd64"
-IF /I "%TARGET_ARCH%"=="arm64" set "PYTHON_AMD64_POSTFIX=-arm64"
-set "PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe"
 
 IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     call cecho.cmd 0 13 "IFCOS_INSTALL_PYTHON not 'TRUE', skipping installation of Python."
@@ -577,10 +560,10 @@ IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :: nuget doesn't support providing architecture for packages.
-IF /I NOT "%TARGET_ARCH%"=="x64" IF /I NOT "%TARGET_ARCH%"=="arm64" (
+IF /I NOT "%VS_PLATFORM%"=="x64" IF /I NOT "%VS_PLATFORM%"=="arm64" (
     call cecho.cmd 0 12 "Automatic installation of Python for x86 builds is not supported,"
     call cecho.cmd 0 12 "please install Python %PYTHON_VERSION% manually and ensure that it is available in PATH."
-    call cecho.cmd 0 12 "https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER%"
+    call cecho.cmd 0 12 "https://www.python.org/ftp/python/%PYTHON_VERSION%/python-%PYTHON_VERSION%.exe"
     goto :Error
 )
 
@@ -589,7 +572,7 @@ if EXIST "%PYTHONHOME%" (
     goto :SWIG
 )
 
-IF /I "%TARGET_ARCH%"=="x64" (
+IF /I "%VS_PLATFORM%"=="x64" (
     "%NUGET_EXE%" install Python -Version %PYTHON_VERSION% -OutputDirectory "%DEPS_DIR%"
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 ) ELSE (
@@ -639,7 +622,6 @@ call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" Release
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" Release
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-robocopy "%INSTALL_DIR%\swigwin\bin" "%INSTALL_DIR%\swigwin" /move /e
 
 goto :Successful
 
@@ -657,8 +639,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 git reset --hard
 git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
-               -DCGAL_HEADER_ONLY=On
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -722,6 +703,8 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 :: see rocksdb\thirdparty.inc
 :: providing package is not supported on Windows.
+:: ZSTD_INCLUDE / ZSTD_LIB_DEBUG / ZSTD_LIB_RELEASE must be env vars,
+:: providing them as cmake -D args have no effect on MSVC.
 set ZSTD_INCLUDE=%INSTALL_DIR%\zstd\include
 set ZSTD_LIB_DEBUG=%INSTALL_DIR%\zstd\lib\zstd_static.lib
 set ZSTD_LIB_RELEASE=%INSTALL_DIR%\zstd\lib\zstd_static.lib
@@ -734,9 +717,6 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" 
                -DWITH_CORE_TOOLS=OFF ^
                -DROCKSDB_BUILD_SHARED=OFF ^
                -DWITH_ZSTD=On ^
-               -DZSTD_INCLUDE_DIR="%ZSTD_INCLUDE%" ^
-               -DZSTD_LIBRARY_DEBUG="%ZSTD_LIB_DEBUG%" ^
-               -DZSTD_LIBRARY_RELEASE="%ZSTD_LIB_RELEASE%" ^
                -DPORTABLE=1 ^
                -DCMAKE_DEBUG_POSTFIX="_d"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -764,11 +744,11 @@ set QT6_ARCH=
 set QT6_INSTALL_SUFFIX=
 set QT6_HOST_ARCH=
 set QT6_HOST_INSTALL_SUFFIX=
-IF /I "%TARGET_ARCH%"=="x64" (
+IF /I "%VS_PLATFORM%"=="x64" (
     set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_64
     set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_64
 )
-IF /I "%TARGET_ARCH%"=="arm64" (
+IF /I "%VS_PLATFORM%"=="arm64" (
     set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_arm64_cross_compiled
     set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_arm64
     REM Qt publishes Windows ARM64 packages as cross-compiled Qt. Even on the
@@ -800,11 +780,11 @@ set QT6_CONFIG_DLL=Qt6Core.dll
 IF /I "%BUILD_CFG%"=="Debug" (
     set QT6_CONFIG_DLL=Qt6Cored.dll
 )
-set NEXT_DEPENDENCY_LABEL=Successful
+set NEXT_DEPENDENCY_LABEL=manifold
 
 IF NOT "%IFCOS_INSTALL_QT6%"=="TRUE" (
     call cecho.cmd 0 13 "IFCOS_INSTALL_QT6 not 'TRUE', skipping installation of Qt6."
-    goto :Successful
+    goto %NEXT_DEPENDENCY_LABEL%
 )
 
 echo QT6_INSTALL_DIR=%QT6_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
@@ -826,7 +806,7 @@ IF "%QT6_TARGET_INSTALLED%"=="TRUE" IF "%QT6_HOST_INSTALLED%"=="TRUE" (
     echo Found existing "%QT6_INSTALL_DIR%" for %BUILD_CFG%, skipping
     IF DEFINED QT6_HOST_INSTALL_DIR echo Found existing Qt host tools at "%QT6_HOST_INSTALL_DIR%", skipping
     call :MarkInstallation
-    goto :Successful
+    goto %NEXT_DEPENDENCY_LABEL%
 )
 
 set AQT_PYTHON=python
@@ -883,24 +863,26 @@ IF DEFINED QT6_HOST_INSTALL_DIR (
 )
 
 call :MarkInstallation
-goto :Successful
+goto %NEXT_DEPENDENCY_LABEL%
 
 :manifold
 set DEPENDENCY_NAME=manifold
 set MANIFOLD_VERSION=3.2.1
 set DEPENDENCY_DIR=%DEPS_DIR%\manifold-%MANIFOLD_VERSION%
 set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\manifold-%MANIFOLD_VERSION%
-echo MANIFOLD_ROOT=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+set NEXT_DEPENDENCY_LABEL=Successful
+:: TODO: test whether manifold links the debug CRT for Debug builds and needs separate
+:: Release/Debug install dirs instead of sharing one.
+echo MANIFOLD_INSTALL_PATH=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
 IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
     echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
-    goto :Eigen
+    goto %NEXT_DEPENDENCY_LABEL%
 )
 
 call :GitCloneAndCheckoutRevision https://github.com/elalish/manifold.git "%DEPENDENCY_DIR%" v%MANIFOLD_VERSION%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
-git reset --hard
 
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DBUILD_SHARED_LIBS=OFF ^
@@ -913,10 +895,11 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DMANIFOLD_EXPORT=OFF ^
                -DMANIFOLD_DOWNLOADS=OFF
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\manifold.sln" %BUILD_CFG%
+call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+goto %NEXT_DEPENDENCY_LABEL%
 
 :: :tbb
 :: set DEPENDENCY_NAME=tbb
@@ -939,7 +922,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: cd "%DEPENDENCY_DIR%"
 :: call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\usd"  ^
-::                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%" ^
+::                -DBOOST_ROOT="%DEPS_DIR%\boost-%BOOST_VERSION%" ^
 ::                -DOneTBB_CMAKE_ENABLE=On                    ^
 ::                -DTBB_ROOT_DIR="%INSTALL_DIR%\tbb"          ^
 ::                -DPXR_ENABLE_PYTHON_SUPPORT=FALSE           ^
@@ -1035,11 +1018,7 @@ pushd %BUILD_DIR%
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
 
-set VS_TOOLSET_CMAKE_ARG=
-IF NOT "%VS_TOOLSET_HOST%"=="" (
-    set VS_TOOLSET_CMAKE_ARG=-T %VS_TOOLSET_HOST%
-)
-set COMMAND=cmake .. -G %GENERATOR% -A %VS_PLATFORM% %VS_TOOLSET_CMAKE_ARG% %*
+set COMMAND=cmake .. -G %GENERATOR% -A %VS_PLATFORM% %*
 echo %COMMAND%
 %COMMAND%
 set RET=%ERRORLEVEL%
@@ -1064,7 +1043,8 @@ popd
 exit /b %RET%
 
 :: BuildSolution - Builds/Rebuilds/Cleans a solution using MSBuild
-:: Params: %1 solutionName, %2 configuration
+:: Params: %1 solutionName, %2 configuration, %3 target (optional; a specific MSBuild target/project
+::         within the solution)
 :BuildSolution
 IF [%~3]==[] (
     set TARGET=%BUILD_TYPE%
@@ -1118,15 +1098,6 @@ exit /b 0
 :: - DEPENDENCY_INSTALL_NAME
 :MarkInstallation
 %PWSH_TOOLS% mark "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-exit /b 0
-
-:: Params:
-:: - %1 - VC_VER
-:: - %2 - DEPS_DIR
-:: - %3 - BOOST_ROOT
-:check_boost_vc145_compatibility
-%PWSH_TOOLS% check_boost_vc145_compatibility "%1" "%2" "%3"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 exit /b 0
 

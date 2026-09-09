@@ -16,13 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from collections.abc import Generator
 from fractions import Fraction
 from math import pi
-from typing import Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, TypeAlias, Union
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+
+if TYPE_CHECKING:
+    DimensionalExponents: TypeAlias = tuple[int, int, int, int, int, int, int]
 
 prefixes = {
     "EXA": 1e18,
@@ -76,7 +81,7 @@ unit_names = [
     "WEBER",
 ]
 
-si_dimensions = {
+si_dimensions: dict[str, DimensionalExponents] = {
     "METRE": (1, 0, 0, 0, 0, 0, 0),
     "SQUARE_METRE": (2, 0, 0, 0, 0, 0, 0),
     "CUBIC_METRE": (3, 0, 0, 0, 0, 0, 0),
@@ -146,7 +151,7 @@ si_type_names = {
 
 # See IfcDimensionalExponents:
 # (Length, Mass, Time, ElectricCurrent, ThermodynamicTemperature, AmountOfSubstance, LuminousIntensity)
-named_dimensions = {
+named_dimensions: dict[str, DimensionalExponents] = {
     "ABSORBEDDOSEUNIT": (2, 0, -2, 0, 0, 0, 0),
     "AMOUNTOFSUBSTANCEUNIT": (0, 0, 0, 0, 0, 1, 0),
     "AREAUNIT": (2, 0, 0, 0, 0, 0, 0),
@@ -398,15 +403,15 @@ def get_full_unit_name(unit: ifcopenshell.entity_instance) -> str:
     return prefix + unit.Name.upper()
 
 
-def get_si_dimensions(name):
+def get_si_dimensions(name: str) -> DimensionalExponents:
     return si_dimensions.get(name, si_dimensions["OTHERWISE"])
 
 
-def get_named_dimensions(name):
+def get_named_dimensions(name: str) -> DimensionalExponents:
     return named_dimensions.get(name, (0, 0, 0, 0, 0, 0, 0))
 
 
-def get_unit_dimensions(unit: ifcopenshell.entity_instance) -> tuple[int, int, int, int, int, int, int]:
+def get_unit_dimensions(unit: ifcopenshell.entity_instance) -> DimensionalExponents:
     """Get the dimensional exponents of a unit, per IfcDimensionalExponents.
 
     Supports IfcSIUnit, IfcConversionBasedUnit, IfcContextDependentUnit, and
