@@ -165,3 +165,80 @@ TEST_CASE("Inverse lookups stay consistent across interleaved adds, removals and
     }
     CHECK(referencing_ids(target) == std::vector<int>{(int)trimmed.id()});
 }
+
+TEST_CASE("Deleting an instance unregisters the records its own attributes contributed", "[ifcparse]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    const auto* polyline_declaration = file.schema()->declaration_by_name("IfcPolyline");
+    const auto* trimmed_curve_declaration = file.schema()->declaration_by_name("IfcTrimmedCurve");
+
+    auto target = file.create(point_declaration);
+    auto second = file.create(point_declaration);
+
+    // A reference registered before the first lookup lands in the base tier,
+    // one registered after it in the delta.
+    auto base_referencer = file.create(polyline_declaration);
+    base_referencer.set_attribute_value(0, std::vector<express::base>{target, target});
+    REQUIRE(file.instances_by_reference(target.id()).size() == 2);
+    auto delta_referencer = file.create(polyline_declaration);
+    delta_referencer.set_attribute_value(0, std::vector<express::base>{target, second});
+    REQUIRE(file.instances_by_reference(target.id()).size() == 3);
+
+    // Duplicate references in one aggregate contribute two records; deleting
+    // the source must drop both.
+    file.remove_entity(base_referencer);
+    CHECK(file.instances_by_reference(target.id()).size() == 1);
+
+    // Referencing the same instance through two attributes contributes a
+    // record per attribute; deleting the source must drop them all.
+    auto trimmed = file.create(trimmed_curve_declaration);
+    trimmed.set_attribute_value(1, std::vector<express::base>{second});
+    trimmed.set_attribute_value(2, std::vector<express::base>{second});
+    CHECK(file.instances_by_reference(second.id()).size() == 3);
+    file.remove_entity(trimmed);
+    CHECK(file.instances_by_reference(second.id()).size() == 1);
+
+    // Deleting the target first prunes it out of the source's attribute, so
+    // deleting the source afterwards finds nothing left to unregister.
+    file.remove_entity(target);
+    file.remove_entity(delta_referencer);
+    CHECK(file.instances_by_reference(second.id()).empty());
+    CHECK(file.get_total_inverses(second.id()) == 0);
+}
+
+TEST_CASE("Batch deletion prunes surviving referencers and leaves no stale records", "[ifcparse]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    const auto* polyline_declaration = file.schema()->declaration_by_name("IfcPolyline");
+
+    auto kept_point = file.create(point_declaration);
+    std::vector<express::base> doomed_points;
+    for (int i = 0; i < 50; ++i) {
+        doomed_points.push_back(file.create(point_declaration));
+    }
+
+    // The survivor references every doomed point plus the kept one; a doomed
+    // referencer references the kept point.
+    auto survivor = file.create(polyline_declaration);
+    auto survivor_points = doomed_points;
+    survivor_points.push_back(kept_point);
+    survivor.set_attribute_value(0, survivor_points);
+    auto doomed_referencer = file.create(polyline_declaration);
+    doomed_referencer.set_attribute_value(0, std::vector<express::base>{kept_point});
+    REQUIRE(file.instances_by_reference(kept_point.id()).size() == 2);
+
+    file.batch();
+    for (auto& point : doomed_points) {
+        file.remove_entity(point);
+    }
+    file.remove_entity(doomed_referencer);
+    file.unbatch();
+
+    CHECK((std::vector<express::base>)survivor.get_attribute_value(0) == std::vector<express::base>{kept_point});
+    CHECK(file.instances_by_reference(kept_point.id()).size() == 1);
+    CHECK(file.get_total_inverses(kept_point.id()) == 1);
+    for (auto& point : doomed_points) {
+        CHECK(file.instances_by_reference(point.id()).empty());
+    }
+    CHECK(file.instances_by_reference(doomed_referencer.id()).empty());
+}
