@@ -479,21 +479,6 @@ if(MSVC)
         add_definitions(-permissive-)
     endif()
 
-    # Link against the static VC runtime
-    # TODO Make this configurable
-    # if("$ENV{CONDA_BUILD}" STREQUAL "")
-    #     foreach(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
-    #     CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-    #     CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-    #         if(${flag} MATCHES "/MD")
-    #             STRING(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
-    #         endif()
-    #         if(${flag} MATCHES "/MDd")
-    #             STRING(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
-    #         endif()
-    #     endforeach()
-    # endif()
-
 	add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
 	# See #5158.
 	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.40)
