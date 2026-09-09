@@ -444,27 +444,6 @@ namespace ifcopenshell {
                 return true;
             }
 
-            // Nothing indexes records by source, so this walks the whole index.
-            void remove_source(uint32_t source_id) {
-                sort();
-                for (auto& record : base_) {
-                    if (!is_dead(record) && record.source_id == source_id) {
-                        kill(record);
-                    }
-                }
-                for (auto it = delta_.begin(); it != delta_.end();) {
-                    auto& records = it->second;
-                    auto removed = std::remove_if(records.begin(), records.end(), [source_id](const inverse_record& record) {
-                        return record.source_id == source_id;
-                    });
-                    delta_size_ -= (size_t)std::distance(removed, records.end());
-                    records.erase(removed, records.end());
-                    it = records.empty() ? delta_.erase(it) : std::next(it);
-                }
-                compact_if_tombstones_dominate();
-                invalidate_materialized();
-            }
-
             // Finalizes bulk loading. Subsequent add() calls go to the delta.
             void sort() const {
                 if (!sorted_) {
