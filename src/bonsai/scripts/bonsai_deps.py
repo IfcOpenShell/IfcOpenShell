@@ -3,6 +3,7 @@
 Must be run from the repository root.
 """
 
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -12,12 +13,18 @@ DEPS = [
     ("https://github.com/nortikin/sverchok.git", "sverchok"),
 ]
 
+
+def run(command: list[str]) -> None:
+    print("$", shlex.join(command))
+    subprocess.check_call(command)
+
+
 base = Path("src/bonsai/external_dependencies")
 base.mkdir(parents=True, exist_ok=True)
 
 for url, name in DEPS:
     path = base / name
     if not path.exists():
-        subprocess.check_call(["git", "clone", url, str(path)])
+        run(["git", "clone", url, str(path)])
     else:
-        subprocess.check_call(["git", "-C", str(path), "pull", "--rebase"])
+        run(["git", "-C", str(path), "pull", "--rebase"])
