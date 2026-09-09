@@ -51,17 +51,6 @@ The project will be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder 
 required IfcOpenShell-Python parts are deployed to the `<PYTHONHOME>\Lib\site-packages\` folder. The 3ds Max plug-in,
 `IfcMax.dli`, needs to be copied manually to the 3ds Max's `plugins` folder.
 
-**Note:** Currently all of the dependencies are build as static libraries against the static run-time allowing the
-developer to effortlessly deploy standalone IFCOS executables.
-
-Using the official Open CASCADE release instead of community edition
----------------------------------------------
-Before building the dependencies, enable the OCCT usage:
-```
-> set IFCOS_USE_OCCT=TRUE
-> build-deps.cmd
-```
-
 Using an already existing Python installation
 ---------------------------------------------
 
