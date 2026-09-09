@@ -879,7 +879,6 @@ IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
 call :GitCloneAndCheckoutRevision https://github.com/elalish/manifold.git "%DEPENDENCY_DIR%" v%MANIFOLD_VERSION%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
-git reset --hard
 
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DBUILD_SHARED_LIBS=OFF ^
