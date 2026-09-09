@@ -235,7 +235,6 @@ endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
 if(MSVC)
-    message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
     # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
     # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
     add_definitions(-wd4251)
