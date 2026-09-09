@@ -56,7 +56,7 @@ Filtering is typically used to select any IFC element or type.
 
     "``IfcWall, Pset_WallCommon.FireRating=2HR``", "Any 2 hour fire rated wall"
 
-    "``IfcWall, Pset_WallCommon.ThermalTransmittance=""1.5""``", "Any wall with a U-value of 1.5. Note the quotes: ``1.5`` contains a ``.``, so unquoted it is a syntax error. See `Quoting values in filters`_."
+    "``IfcWall, Pset_WallCommon.ThermalTransmittance=1.5``", "Any wall with a U-value of 1.5. A decimal number is the one kind of value that may contain a ``.`` unquoted. See `Quoting values in filters`_."
 
     "``IfcWall, IfcColumn, IfcBeam, IfcFooting, /Pset_.*Common/.LoadBearing=TRUE``", "Any load bearing structure"
 
@@ -164,27 +164,31 @@ contain any of the following characters:
 
     ,  .  =  >  <  *  !  and whitespace
 
-If yours contains one of them, quote it. Every one of them except ``,`` is a
-syntax error when left unquoted. The ``,`` is the more dangerous case, because
-it does not error: it is read as the separator between two filters. So
-``Name=Foo,IfcWall`` does not look for the literal name ``Foo,IfcWall``, it
-quietly means "named ``Foo`` **and** an ``IfcWall``". Write
-``Name="Foo,IfcWall"`` to match the literal value.
+There is one exception, and it is only for a ``{{value}}``: a value that is a
+plain decimal number may contain the ``.`` unquoted, so
+``ThermalTransmittance=1.5`` is fine. A ``{{pset}}``, ``{{prop}}``, or
+``{{keys}}`` containing a ``.`` always needs quoting.
 
-The ``.`` is the one most likely to catch you out. It separates a property set
-from a property, so it cannot also appear in an unquoted value, and that makes
-every decimal number a syntax error unless it is quoted:
+Otherwise, if yours contains one of these characters, quote it. Every one of
+them except ``,`` is a syntax error when left unquoted. The ``,`` is the more
+dangerous case, because it does not error: it is read as the separator between
+two filters. So ``Name=Foo,IfcWall`` does not look for the literal name
+``Foo,IfcWall``, it quietly means "named ``Foo`` **and** an ``IfcWall``".
+Write ``Name="Foo,IfcWall"`` to match the literal value.
+
+The ``.`` still separates a property set from a property, so outside of a
+number it cannot appear in an unquoted value:
 
 .. code-block::
 
-    Pset_WallCommon.ThermalTransmittance=1.5      # syntax error
-    Pset_WallCommon.ThermalTransmittance="1.5"    # correct
+    Pset_WallCommon.ThermalTransmittance=1.5    # a number, no quotes needed
+    Pset_WallCommon.ThermalTransmittance>-.5    # signed and leading dot too
+    Name=v1.2                                   # syntax error, not a number
+    Name="v1.2"                                 # correct
 
-Whole numbers are unaffected, which is why ``FireRating=2HR`` and
-``ThermalTransmittance>1`` are fine unquoted while ``ThermalTransmittance>1.5``
-is not. Quoting a number does not turn the check into a text comparison -
-``>``, ``>=``, ``<``, and ``<=`` still compare numerically, so
-``ThermalTransmittance>"0.9"`` does match a value of ``1.5``.
+Quoting a number is still allowed and means exactly the same thing. Either way
+the check is not a text comparison - ``>``, ``>=``, ``<``, and ``<=`` compare
+numerically, so ``ThermalTransmittance>0.9`` does match a value of ``1.5``.
 
 .. note::
 
