@@ -335,9 +335,13 @@ if (WITH_ROCKSDB)
     # explicit mapping, RelWithDebInfo and MinSizeRel builds would end up linking the
     # /MDd-flavored rocksdb_d.lib into an /MD (NDEBUG) binary, causing a CRT/runtime-library
     # mismatch that depends on nothing but that alphabetical ordering.
+    #
+    # Important: we're mixing up MinSizeRel to RelWithDebInfo targets and vice versa, because
+    # multi-config builds always define targets for each config and it has to be able to find a fallback,
+    # otherwise configuration would fail.
     set_target_properties(${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET} PROPERTIES
-        MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE"
-        MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE"
+        MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE;MINSIZEREL"
+        MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE;RELWITHDEBINFO"
     )
     target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE ${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET})
 
