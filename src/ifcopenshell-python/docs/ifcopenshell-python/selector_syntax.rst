@@ -56,11 +56,13 @@ Filtering is typically used to select any IFC element or type.
 
     "``IfcWall, Pset_WallCommon.FireRating=2HR``", "Any 2 hour fire rated wall"
 
+    "``IfcWall, Pset_WallCommon.ThermalTransmittance=""1.5""``", "Any wall with a U-value of 1.5. Note the quotes: ``1.5`` contains a ``.``, so unquoted it is a syntax error. See `Quoting values in filters`_."
+
     "``IfcWall, IfcColumn, IfcBeam, IfcFooting, /Pset_.*Common/.LoadBearing=TRUE``", "Any load bearing structure"
 
     "``IfcElement, /Pset_.*Common/.FireRating != NULL``", "Any element with a fire rating property"
 
-    "``IfcWall, type=WT01, location=""Level 3""``", "Any walls of wall type WT01 on level 3 (we quote Level 3 since it has a space)"
+    "``IfcWall, type=WT01, location=""Level 3""``", "Any walls of wall type WT01 on level 3. We quote ``Level 3`` because it contains a space, but a space is only one of several characters that force quoting - see `Quoting values in filters`_."
 
     "``IfcElement, classification=/Pr_.*/``", "Any maintainable product according to Uniclass tables"
 
@@ -116,7 +118,7 @@ will search through all IfcTypeProducts and IfcProducts in the IFC project.
     "Classification", "Filter", "``classification{{=}}{{value}}``", "``classification=Foo`` specifies the criteria that elements must have an IfcClassificationReference with an ``Identification`` attribute with a value of ``Foo``."
     "Location", "Filter", "``location{{=}}{{value}}``", "``location=Foo`` specifies the criteria that elements must be contained directly or indirectly in a spatial element with a ``Name`` attribute with a value of ``Foo``."
     "Parent", "Filter", "``parent{{=}}{{value}}``", "``parent=Foo`` specifies the criteria that elements must be a direct or indirect child in the spatial hierarchy to an element with a ``Name`` attribute with a value of ``Foo``."
-    "Query", "Filter", "``query:{{keys}}{{=}}{{value}}``", "``query:types.count=0`` specifies the criteria that elements must have zero type occurrences. The query keys corresponds to the syntax used in the `Getting element values`_ section"
+    "Query", "Filter", "``query:{{keys}}{{=}}{{value}}``", "``query:""types.count""=0`` specifies the criteria that elements must have zero type occurrences. The query keys corresponds to the syntax used in the `Getting element values`_ section. Note that the keys are quoted: they usually contain a ``.``, which an unquoted string may not. See `Quoting values in filters`_."
 
 .. note::
 
@@ -149,8 +151,48 @@ three ways you can do so:
    :header: "Value Type", "Example", "Description"
 
     "Quoted string", "``""foo \""bar\"" baz""``", "The value must be in double quotes. The value may contain spaces, symbols, and other characters. If you need to use a double quote, you can escape it with a backslash. This is the safest, most general way to specify a value."
-    "Unquoted string", "``foobarbaz``", "For convenience, if you have a simple value which contains no spaces or special characters, you are free to specify it as an unquoted string."
+    "Unquoted string", "``foobarbaz``", "For convenience, if your value contains none of the characters listed under `Quoting values in filters`_ below, you are free to specify it as an unquoted string."
     "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. You can learn more about regular expressions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regex101.com/>`_."
+
+Quoting values in filters
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An unquoted ``{{pset}}``, ``{{prop}}``, ``{{keys}}``, or ``{{value}}`` may not
+contain any of the following characters:
+
+.. code-block::
+
+    ,  .  =  >  <  *  !  and whitespace
+
+If yours contains one of them, quote it. Every one of them except ``,`` is a
+syntax error when left unquoted. The ``,`` is the more dangerous case, because
+it does not error: it is read as the separator between two filters. So
+``Name=Foo,IfcWall`` does not look for the literal name ``Foo,IfcWall``, it
+quietly means "named ``Foo`` **and** an ``IfcWall``". Write
+``Name="Foo,IfcWall"`` to match the literal value.
+
+The ``.`` is the one most likely to catch you out. It separates a property set
+from a property, so it cannot also appear in an unquoted value, and that makes
+every decimal number a syntax error unless it is quoted:
+
+.. code-block::
+
+    Pset_WallCommon.ThermalTransmittance=1.5      # syntax error
+    Pset_WallCommon.ThermalTransmittance="1.5"    # correct
+
+Whole numbers are unaffected, which is why ``FireRating=2HR`` and
+``ThermalTransmittance>1`` are fine unquoted while ``ThermalTransmittance>1.5``
+is not. Quoting a number does not turn the check into a text comparison -
+``>``, ``>=``, ``<``, and ``<=`` still compare numerically, so
+``ThermalTransmittance>"0.9"`` does match a value of ``1.5``.
+
+.. note::
+
+    Query keys obey this same rule, and they nearly always contain a ``.``, so
+    in practice they always need quoting. Write ``query:"types.count"=0``.
+    Written as ``query:types.count=0`` it does not error, it is silently read
+    as a *property* filter looking for a ``count`` property inside a property
+    set named ``query:types``, which is not what you asked for.
 
 Getting element values
 ----------------------
@@ -235,8 +277,30 @@ do so:
    :header: "Value Type", "Example", "Description"
 
     "Quoted string", "``""foo \""bar\"" baz""``", "The value must be in double quotes. The value may contain spaces, symbols, and other characters. If you need to use a double quote, you can escape it with a backslash. This is the safest, most general way to specify a value."
-    "Unquoted string", "``foobarbaz``", "For convenience, if you have a simple value which contains no spaces or special characters, you are free to specify it as an unquoted string."
+    "Unquoted string", "``foobarbaz``", "For convenience, if your key contains none of the characters listed under `Quoting keys in value queries`_ below, you are free to specify it as an unquoted string."
     "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. You can learn more about regular expressions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regex101.com/>`_."
+
+Quoting keys in value queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The characters that need quoting here are not the same set as in
+`Quoting values in filters`_. An unquoted key may not contain any of:
+
+.. code-block::
+
+    .  =  /  and whitespace
+
+All four are a syntax error when left unquoted, so there is no silent
+misreading to worry about in this position. The ``.`` is the key separator and
+the ``/`` delimits a regex, so a property set or property whose own name
+contains either - or a space - has to be quoted:
+
+.. code-block::
+
+    "Fire Rating Data".FireRating
+
+The remaining characters that force quoting in a filter - ``,``, ``>``, ``<``,
+``*``, and ``!`` - are accepted unquoted here.
 
 Formatting
 ----------
