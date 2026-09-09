@@ -590,6 +590,18 @@ class ToggleGrids(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ToggleGridsSelectability(bpy.types.Operator):
+    bl_idname = "bim.toggle_grids_selectability"
+    bl_label = "Toggle Grids Selectability"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Allow or prevent grids and grid axes from being selected"
+    is_selectable: bpy.props.BoolProperty(name="Is Selectable", default=True, options={"SKIP_SAVE"})
+
+    def execute(self, context):
+        tool.Spatial.set_grid_selectability(self.is_selectable)
+        return {"FINISHED"}
+
+
 class ToggleSpatialElements(bpy.types.Operator):
     bl_idname = "bim.toggle_spatial_elements"
     bl_label = "Toggle Spatial Elements"
