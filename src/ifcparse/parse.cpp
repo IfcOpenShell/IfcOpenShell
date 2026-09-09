@@ -2940,7 +2940,7 @@ void file::process_deletion_(const express::base& entity) {
     // entity being deleted are not deleted themselves.
     if (!references.empty()) {
         for (auto& related_instance : references) {
-            if (std::find(batch_deletion_ids_.begin(), batch_deletion_ids_.end(), related_instance.id()) != batch_deletion_ids_.end()) {
+            if (batch_deletion_ids_.get<1>().count((int)related_instance.id()) != 0) {
                 continue;
             }
 
@@ -3021,7 +3021,20 @@ void ifcopenshell::impl::in_memory_file_storage::process_deletion_inverse(const 
 
     // Delete inverses into entity
     byref_excl_.erase(id);
-    byref_excl_.remove_source(id);
+
+    // Delete the records the entity contributed through its own attributes.
+    // Walking the attributes mirrors build_inverses_, so every record with
+    // this source is covered without scanning the whole index for it.
+    const auto* decl = entity.declaration().as_entity();
+    if (decl == nullptr) {
+        return;
+    }
+    std::function<void(const express::base&, int)> fn = [this, id, decl](const express::base& attr, int idx) {
+        if (attr.declaration().as_entity() != nullptr) {
+            byref_excl_.remove(attr.id(), id, (uint16_t)decl->index_in_schema(), idx);
+        }
+    };
+    apply_individual_instance_visitor(entity).apply(fn);
 }
 
 namespace {
