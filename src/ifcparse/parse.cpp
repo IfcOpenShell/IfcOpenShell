@@ -3091,11 +3091,10 @@ std::vector<express::base> file::instances_by_reference(int t) {
     std::vector<express::base> ret;
     std::visit([this, t, &ret](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto range = x.byref_excl_.equal_range((uint32_t)t);
-            ret.reserve(ret.size() + (size_t)std::distance(range.first, range.second));
-            for (auto it = range.first; it != range.second; ++it) {
-                ret.push_back(instance_by_id(it->source_id));
-            }
+            ret.reserve(ret.size() + x.byref_excl_.count((uint32_t)t));
+            x.byref_excl_.for_each((uint32_t)t, [this, &ret](const impl::inverse_record& record) {
+                ret.push_back(instance_by_id(record.source_id));
+            });
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
@@ -3251,11 +3250,10 @@ std::vector<int> file::get_inverse_indices_by_id(int instance_id) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
             handled = true;
-            auto range = x.byref_excl_.equal_range((uint32_t)instance_id);
-            return_value.reserve((size_t)std::distance(range.first, range.second));
-            for (auto it = range.first; it != range.second; ++it) {
-                return_value.push_back(it->attribute_index);
-            }
+            return_value.reserve(x.byref_excl_.count((uint32_t)instance_id));
+            x.byref_excl_.for_each((uint32_t)instance_id, [&return_value](const impl::inverse_record& record) {
+                return_value.push_back(record.attribute_index);
+            });
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
 #ifdef IFOPSH_WITH_ROCKSDB
             // @todo no lower/upper_bounds() implemented yet
@@ -3320,13 +3318,12 @@ std::vector<express::entity> file::get_inverse(int instance_id, const ifcopenshe
             visit_subtypes(type->as_entity(), [&source_types](const ifcopenshell::declaration* ent) {
                 source_types[ent->index_in_schema()] = 1;
             });
-            auto range = x.byref_excl_.equal_range((uint32_t)instance_id);
-            for (auto it = range.first; it != range.second; ++it) {
-                if (it->source_entity < source_types.size() && source_types[it->source_entity] &&
-                    (attribute_index == -1 || it->attribute_index == attribute_index)) {
-                    return_value.push_back(instance_by_id(it->source_id).template as<express::entity>());
+            x.byref_excl_.for_each((uint32_t)instance_id, [this, &source_types, attribute_index, &return_value](const impl::inverse_record& record) {
+                if (record.source_entity < source_types.size() && source_types[record.source_entity] &&
+                    (attribute_index == -1 || record.attribute_index == attribute_index)) {
+                    return_value.push_back(instance_by_id(record.source_id).template as<express::entity>());
                 }
-            }
+            });
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
@@ -3366,10 +3363,9 @@ size_t file::get_total_inverses(int instance_id) {
     std::visit([&counted_ids, instance_id](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto range = x.byref_excl_.equal_range((uint32_t)instance_id);
-            for (auto it = range.first; it != range.second; ++it) {
-                counted_ids.insert(it->source_id);
-            }
+            x.byref_excl_.for_each((uint32_t)instance_id, [&counted_ids](const impl::inverse_record& record) {
+                counted_ids.insert(record.source_id);
+            });
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             // @todo
         }
