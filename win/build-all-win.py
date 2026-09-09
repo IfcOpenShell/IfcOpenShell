@@ -9,13 +9,14 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 from zipfile import ZipFile
 
 
 def is_arm64() -> bool:
-    arch = os.environ.get("TARGET_ARCH", "").lower()
+    arch = os.environ.get("VS_PLATFORM", "").lower()
     if arch in ("arm64", "aarch64"):
         return True
     if arch in ("x64", "amd64", "x86_64"):
@@ -217,7 +218,7 @@ def build() -> None:
         os.environ["PYTHON_VERSION"] = python_version
         print(f"Building for Python {python_version}...")
         subprocess.run(
-            [str(REPO_WIN / "build-deps.cmd"), build_generator(), "Release"],
+            [sys.executable, str(REPO_WIN / "build-deps.py"), build_generator(), "Release"],
             check=True,
             text=True,
             input="y\n",

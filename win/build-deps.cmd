@@ -162,6 +162,10 @@ call :PrintUsage
 call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed."
 echo.
 
+call cecho.cmd 0 12 "WARNING: build-deps.cmd is deprecated since 09 Sep 2026 and will be removed very shortly."
+call cecho.cmd 0 12 "Use `python build-deps.py` instead. It's intended to be a drop-in replacement, so exactly the same args apply."
+echo.
+
 call cecho.cmd black cyan "If you are not ready with the above: type `'n`' in the prompt below. Build proceeds on all other inputs!"
 
 set /p do_continue="> "

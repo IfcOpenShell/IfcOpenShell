@@ -29,8 +29,8 @@ setlocal EnableDelayedExpansion
 
 call vs-cfg.cmd %1
 if not %ERRORLEVEL%==0 GOTO :Error
-:: Use "yes" trick to break the pause in build-deps.cmd
-echo y | call .\build-deps %1 %2
+:: Use "yes" trick to break the pause in build-deps.py
+echo y | python build-deps.py %1 %2
 if not %ERRORLEVEL%==0 goto :EOF
 :: Same trick as in run-cmake.bat
 set ARGUMENTS=%*

@@ -39,7 +39,7 @@ for /f "tokens=*" %%f in ('dir BuildDepsCache-*.txt /o:-n /t:a /b') do (
 set GENERATOR=%1
 if (%1)==() (
     if not defined GEN_SHORTHAND (
-        echo BuildDepsCache file does and/or GEN_SHORTHAND missing from it. Run build-deps.cmd to create it.
+        echo BuildDepsCache file does and/or GEN_SHORTHAND missing from it. Run build-deps.py to create it.
         set IFCOS_PAUSE_ON_ERROR=pause
         goto :Error
     )
