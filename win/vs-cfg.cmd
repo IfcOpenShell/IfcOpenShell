@@ -188,7 +188,7 @@ IF NOT "%CMAKE_PATH%"=="" (
     FOR /f "delims=" %%i in ('cmake --version ^| findstr /C:"cmake version 4"') DO GOTO :CMake3AndNewer
 )
 
-:: reject older CMake, see also build-deps.cmd
+:: reject older CMake, see also build-deps.py
 echo "CMake v3.21.0 or higher is required"
 exit /b 1
 

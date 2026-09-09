@@ -326,7 +326,7 @@ if (WITH_ROCKSDB)
     else()
         message(FATAL_ERROR "RocksDB found but neither RocksDB::rocksdb nor RocksDB::rocksdb-shared target exists")
     endif()
-    # Our win/build-deps.cmd builds RocksDB separately per Debug/Release config into the
+    # Our win/build-deps.py builds RocksDB separately per Debug/Release config into the
     # same install prefix, so the imported target only ever has DEBUG and RELEASE listed in
     # IMPORTED_CONFIGURATIONS. On a multi-config generator (Visual Studio), CMake maps any
     # unmatched build config to the *first* entry of that list, which happens to be DEBUG
