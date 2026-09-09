@@ -776,7 +776,7 @@ set QT6_CONFIG_DLL=Qt6Core.dll
 IF /I "%BUILD_CFG%"=="Debug" (
     set QT6_CONFIG_DLL=Qt6Cored.dll
 )
-set NEXT_DEPENDENCY_LABEL=Successful
+set NEXT_DEPENDENCY_LABEL=manifold
 
 IF NOT "%IFCOS_INSTALL_QT6%"=="TRUE" (
     call cecho.cmd 0 13 "IFCOS_INSTALL_QT6 not 'TRUE', skipping installation of Qt6."
@@ -866,11 +866,14 @@ set DEPENDENCY_NAME=manifold
 set MANIFOLD_VERSION=3.2.1
 set DEPENDENCY_DIR=%DEPS_DIR%\manifold-%MANIFOLD_VERSION%
 set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\manifold-%MANIFOLD_VERSION%
+set NEXT_DEPENDENCY_LABEL=Successful
+:: TODO: test whether manifold links the debug CRT for Debug builds and needs separate
+:: Release/Debug install dirs instead of sharing one.
 echo MANIFOLD_ROOT=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
 IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
     echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
-    goto :Eigen
+    goto %NEXT_DEPENDENCY_LABEL%
 )
 
 call :GitCloneAndCheckoutRevision https://github.com/elalish/manifold.git "%DEPENDENCY_DIR%" v%MANIFOLD_VERSION%
@@ -893,6 +896,7 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\manifold.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+goto %NEXT_DEPENDENCY_LABEL%
 
 :: :tbb
 :: set DEPENDENCY_NAME=tbb
