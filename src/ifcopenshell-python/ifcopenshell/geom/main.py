@@ -345,7 +345,7 @@ class iterator(ifcopenshell_wrapper.iterator):
             include_or_exclude_type = set(x.__class__.__name__ for x in include_or_exclude)
 
             if include_or_exclude_type == {"entity_instance"}:
-                include_or_exclude = cast(set[entity_instance], include_or_exclude)
+                include_or_exclude = cast(list[entity_instance], include_or_exclude)
 
                 for inst in include_or_exclude:
                     if not inst.is_a("IfcProduct"):
