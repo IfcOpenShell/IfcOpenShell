@@ -781,7 +781,7 @@ set NEXT_DEPENDENCY_LABEL=Successful
 
 IF NOT "%IFCOS_INSTALL_QT6%"=="TRUE" (
     call cecho.cmd 0 13 "IFCOS_INSTALL_QT6 not 'TRUE', skipping installation of Qt6."
-    goto :Successful
+    goto %NEXT_DEPENDENCY_LABEL%
 )
 
 echo QT6_INSTALL_DIR=%QT6_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
@@ -803,7 +803,7 @@ IF "%QT6_TARGET_INSTALLED%"=="TRUE" IF "%QT6_HOST_INSTALLED%"=="TRUE" (
     echo Found existing "%QT6_INSTALL_DIR%" for %BUILD_CFG%, skipping
     IF DEFINED QT6_HOST_INSTALL_DIR echo Found existing Qt host tools at "%QT6_HOST_INSTALL_DIR%", skipping
     call :MarkInstallation
-    goto :Successful
+    goto %NEXT_DEPENDENCY_LABEL%
 )
 
 set AQT_PYTHON=python
@@ -860,7 +860,7 @@ IF DEFINED QT6_HOST_INSTALL_DIR (
 )
 
 call :MarkInstallation
-goto :Successful
+goto %NEXT_DEPENDENCY_LABEL%
 
 :manifold
 set DEPENDENCY_NAME=manifold
