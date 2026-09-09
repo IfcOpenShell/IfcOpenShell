@@ -2264,7 +2264,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                 # [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]
                 commands = json.loads(svg2dxf_command)
                 for command in commands:
-                    command[0] = shutil.which(command[0]) or command[0]
+                    command[0] = shutil.which(str(command[0])) or command[0]
                     subprocess.run([replacements.get(c, c) for c in command])
 
             if self.open_viewer:
