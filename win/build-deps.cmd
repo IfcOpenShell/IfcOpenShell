@@ -869,7 +869,7 @@ set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\manifold-%MANIFOLD_VERSION%
 set NEXT_DEPENDENCY_LABEL=Successful
 :: TODO: test whether manifold links the debug CRT for Debug builds and needs separate
 :: Release/Debug install dirs instead of sharing one.
-echo MANIFOLD_ROOT=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo MANIFOLD_INSTALL_PATH=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
 IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
     echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
