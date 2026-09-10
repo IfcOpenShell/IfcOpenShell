@@ -54,6 +54,41 @@ if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
         set(OpenCASCADE_LIBRARIES "$<LINK_GROUP:RESCAN,${OpenCASCADE_LIBRARIES}>")
     endif()
 
+    if(UNIX AND NOT APPLE)
+        # Record only the OCCT modules whose symbols are actually referenced.
+        #
+        # OpenCASCADE_LIBRARIES is OCCT's *complete* module list, Visualization
+        # included -- TKV3d, TKOpenGl, TKService. Against a static OCCT that
+        # costs nothing, because an unreferenced module contributes no objects.
+        # Against a shared OCCT every entry becomes a hard DT_NEEDED, and
+        # libTKV3d pulls libGL.so.1 + libEGL.so.1, so `import ifcopenshell`
+        # dies on any headless machine with
+        #     ImportError: libEGL.so.1: cannot open shared object file
+        # even though IfcOpenShell never opens a window. Measured on a full
+        # 67-module link: 67 DT_NEEDED entries without the flag, 3 with it,
+        # and TKV3d/TKOpenGl gone in the second case.
+        #
+        # Goes before the LINK_GROUP above rather than inside it, and is a
+        # no-op for a static OCCT (--as-needed only governs shared libraries),
+        # so this is safe for both link types.
+        #
+        # Deliberately NOT closed with -Wl,--no-as-needed. CMake emits the
+        # imported targets' INTERFACE_LINK_LIBRARIES -- which is where OCCT
+        # lists libGL/libEGL -- *after* this item, so a closing bracket
+        # switches the flag back off just before the libraries it was added to
+        # exclude. Measured: with the bracket closed the plug-ins dropped from
+        # 47 DT_NEEDED libTK entries to 14 and lost TKV3d, yet still carried a
+        # direct libEGL.so.1 and failed to import on a headless server; with it
+        # left open the same 14 remain and libGL/libEGL are gone.
+        #
+        # The cost is that --as-needed stays in effect for whatever follows on
+        # the link line. That is the default on Debian/Ubuntu so it is
+        # well-trodden, but it does mean a library needed only for
+        # static-initialiser side effects could be dropped -- the thing to
+        # suspect first if a serialiser stops registering itself.
+        set(OpenCASCADE_LIBRARIES "-Wl,--as-needed" "${OpenCASCADE_LIBRARIES}")
+    endif()
+
     if(OpenCASCADE_VERSION VERSION_LESS "7.9.0" AND WIN32)
         # Bug in OCCT cmake configs < 7.9.0 - missing linked library.
         list(APPEND OpenCASCADE_LIBRARIES WSOCK32.lib)

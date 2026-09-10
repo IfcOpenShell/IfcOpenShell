@@ -89,7 +89,7 @@ jobs:
           set -o pipefail
           CXXFLAGS="-O3" CFLAGS="-O3" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
             uv run --with aqtinstall ./nix/build-all.py \
-            -v --diskcleanup --ifcopenshell-shared 2>&1 \
+            -v --diskcleanup --ifcopenshell-shared --occt-shared 2>&1 \
             | tee build.log
 
       - name: Upload Build Logs
@@ -119,7 +119,7 @@ jobs:
       - name: Package .zip archives
         shell: bash
         run: |
-          uv run nix/package-zip-archives.py linuxarm64
+          uv run nix/package-zip-archives.py linuxarm64 --occt-shared
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
