@@ -21,15 +21,14 @@
 #define IFC_GEOMSERIALIZATION_API_H
 
 #ifdef SWIG
-#define IFC_GEOMSERIALIZATION_API
+  #define IFC_GEOMSERIALIZATION_API
 #elif defined(_WIN32)
-#ifdef IFC_GEOMSERIALIZATION_EXPORTS
-#define IFC_GEOMSERIALIZATION_API __declspec(dllexport)
-#else
-#define IFC_GEOMSERIALIZATION_API __declspec(dllimport)
-#endif
-#else // simply assume *nix + GCC-like compiler
-#define IFC_GEOMSERIALIZATION_API __attribute__((visibility("default")))
-#endif
-
-#endif
+  #ifdef IFC_GEOMSERIALIZATION_EXPORTS
+    #define IFC_GEOMSERIALIZATION_API __declspec(dllexport)
+  #else
+    #define IFC_GEOMSERIALIZATION_API __declspec(dllimport)
+  #endif
+#else // *nix + GCC-like compiler
+  #define IFC_GEOMSERIALIZATION_API __attribute__((visibility("default")))
+#endif // SWIG
+#endif // IFC_GEOMSERIALIZATION_API_H

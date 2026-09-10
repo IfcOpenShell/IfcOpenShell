@@ -21,22 +21,21 @@
 #define IFC_PARSE_API_H
 
 #ifdef SWIG
-#define IFC_PARSE_API
-#define IFC_SCHEMA_API
+  #define IFC_PARSE_API
+  #define IFC_SCHEMA_API
 #elif defined(_WIN32)
-#ifdef IFC_PARSE_EXPORTS
-#define IFC_PARSE_API __declspec(dllexport)
-#else
-#define IFC_PARSE_API __declspec(dllimport)
-#endif
-#ifdef IFC_SCHEMA_EXPORTS
-#define IFC_SCHEMA_API __declspec(dllexport)
-#else
-#define IFC_SCHEMA_API IFC_PARSE_API
-#endif
-#else // simply assume *nix + GCC-like compiler
-#define IFC_PARSE_API __attribute__((visibility("default")))
-#define IFC_SCHEMA_API __attribute__((visibility("default")))
-#endif
-
-#endif
+  #ifdef IFC_PARSE_EXPORTS
+    #define IFC_PARSE_API __declspec(dllexport)
+  #else
+    #define IFC_PARSE_API __declspec(dllimport)
+  #endif
+  #ifdef IFC_SCHEMA_EXPORTS
+    #define IFC_SCHEMA_API __declspec(dllexport)
+  #else
+    #define IFC_SCHEMA_API IFC_PARSE_API
+  #endif
+#else // *nix + GCC-like compiler
+  #define IFC_PARSE_API __attribute__((visibility("default")))
+  #define IFC_SCHEMA_API __attribute__((visibility("default")))
+#endif // SWIG
+#endif // IFC_PARSE_API_H
