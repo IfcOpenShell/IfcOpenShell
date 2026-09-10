@@ -1546,13 +1546,17 @@ class CreateDrawing(bpy.types.Operator):
             join_criteria = join_criteria.split(",")
         else:
             # Drawing convention states that same objects classes with the same material are merged when cut.
+            # We compare the resolved list of constituent material names ("materials.Name") rather than
+            # "material.Name", because for layered walls/slabs the latter resolves to the optional
+            # IfcMaterialLayerSet.LayerSetName, which is frequently left unset (or set inconsistently) even when
+            # two elements share the exact same layer composition. That caused mitred/butt-joined walls with
+            # identical materials to keep a spurious visible seam in the 2D linework. See #6274.
             join_criteria = [
                 "class",
-                "material.Name",
+                "materials.Name",
                 "/Pset_.*Common/.Status",
                 "EPset_Status.Status",
                 "EPset_Status.UserDefinedStatus",
-                "Material.Name",
             ]
 
         join_classes = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinClasses")
