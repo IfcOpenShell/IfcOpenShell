@@ -536,19 +536,34 @@ boost::dynamic_bitset<> token::as_binary() {
 }
 
 std::string token::to_string() {
-    std::string result;
-    if (type == Token_OPERATOR || type == Token_BOOL) {
-		result.push_back(value_char);
-    } else if (type == Token_INT) {
-        result = std::to_string(value_int);
-    } else if (type == Token_FLOAT) {
+    switch (type) {
+    case Token_OPERATOR:
+    case Token_BOOL:
+        return std::string(1, value_char);
+
+    case Token_INT:
+        return std::to_string(value_int);
+
+    case Token_IDENTIFIER:
+        return "#" + std::to_string(value_int);
+
+    case Token_FLOAT: {
         std::ostringstream oss;
         oss << std::setprecision(15) << value_double;
-        result = oss.str();
-	} else {
-        return as_string();
+        return oss.str();
     }
-    return result;
+
+    case Token_STRING:
+    case Token_ENUMERATION:
+    case Token_BINARY:
+    case Token_KEYWORD:
+        return as_string();
+
+    case Token_NONE:
+        throw invalid_token_exception(start_pos, "", "");
+    }
+
+    throw exception("Unknown token type");
 }
 
 std::string ifcopenshell::encode_spf_string(const std::string& value) {

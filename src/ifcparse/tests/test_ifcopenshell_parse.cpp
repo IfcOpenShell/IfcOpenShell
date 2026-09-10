@@ -1,8 +1,11 @@
 // This file was generated with the assistance of an AI coding tool.
 
 #include <catch2/catch_test_macros.hpp>
+#include <ifcparse/exception.h>
 #include <ifcparse/file.h>
 #include <ifcparse/parse.h>
+#include <cstdint>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -95,6 +98,37 @@ TEST_CASE("Aggregate inverse updates preserve reference multiplicity", "[ifcpars
     CHECK(inverse_count(segment_b) == 0);
     CHECK(inverse_count(segment_c) == 2);
     CHECK(inverse_count(segment_d) == 1);
+}
+
+TEST_CASE("Tokens without a string representation do not recurse in to_string()", "[ifcparse]") {
+    // to_string() used to delegate to as_string() for every token type it did
+    // not handle explicitly, while as_string() builds its exception message
+    // with to_string(). An EOF marker or an instance name therefore recursed
+    // between the two until the stack was exhausted.
+    ifcopenshell::token eof;
+    REQUIRE(eof.type == ifcopenshell::token::Token_NONE);
+    CHECK_THROWS_AS(eof.to_string(), ifcopenshell::invalid_token_exception);
+    CHECK_THROWS_AS(eof.as_string(), ifcopenshell::invalid_token_exception);
+
+    ifcopenshell::token identifier(0, ifcopenshell::token::Token_IDENTIFIER, (int64_t)123);
+    CHECK(identifier.to_string() == "#123");
+    CHECK_THROWS_AS(identifier.as_string(), ifcopenshell::invalid_token_exception);
+}
+
+TEST_CASE("Files that contain no tokens are rejected rather than crashing", "[ifcparse]") {
+    // The header parser asks the lexer for a keyword before checking for EOF,
+    // so input that lexes to zero tokens reaches token::as_string() on the EOF
+    // marker. Parsing must fail cleanly instead of overflowing the stack.
+    const std::vector<std::string> inputs{" ", "\r\n\t  ", "/* only a comment */"};
+
+    for (const auto& contents : inputs) {
+        INFO("input: " << contents);
+        ifcopenshell::logger log;
+        std::istringstream input(contents);
+        ifcopenshell::file file(input, (int)contents.size(), log);
+
+        CHECK(file.good().value() != ifcopenshell::file_open_status::SUCCESS);
+    }
 }
 
 TEST_CASE("Inverse lookups stay consistent across interleaved adds, removals and reads", "[ifcparse]") {
