@@ -61,7 +61,8 @@ attributes, and explore relationships. Your journey begins here.
 .. seealso::
 
     If you are already familiar with IFC and just want to learn how to use
-    IfcOpenShell, you can jump to :doc:`../ifcopenshell-python/hello_world`.
+    IfcOpenShell, you can jump to the :doc:`core functionality crash course
+    <../ifcopenshell-python/hello_world>`.
 
 Begin learning IFC
 ------------------
@@ -203,14 +204,17 @@ between **IFC Classes**. In this guide, we'll focus on the five most common
 Concept 1: the project context
 ------------------------------
 
-Every IFC model contains exactly one **IfcProject**. It is the root of the
-model, and it answers two questions that every other element depends on: what
-units the numbers are in, and what geometric contexts exist.
+An IFC model contains at most one **IfcProject**. It is the root of the
+model. It provides the units the numbers in the model are in, and the
+geometric contexts. A file may also contain any number of
+**IfcProjectLibrary** entities.
 
 .. code-block:: python
 
     import ifcopenshell
-    model = ifcopenshell.open('AC20-FZK-Haus.ifc')
+    import ifcopenshell.util.unit
+
+    model = ifcopenshell.open('AC20-FZK-Haus.ifc') # the sample downloaded above
 
     project = model.by_type("IfcProject")[0]
     print(project.Name) # Projekt-FZK-Haus
@@ -219,13 +223,6 @@ units the numbers are in, and what geometric contexts exist.
         if unit.is_a("IfcSIUnit"):
             print(unit.UnitType, unit.Name) # LENGTHUNIT METRE, AREAUNIT SQUARE_METRE, ...
 
-This matters more than it may look. A length of ``0.24`` means nothing until
-you know whether the model measures in metres or millimetres. IfcOpenShell can
-work this out for you:
-
-.. code-block:: python
-
-    import ifcopenshell.util.unit
     print(ifcopenshell.util.unit.calculate_unit_scale(model)) # 1.0 for a model in metres
 
 The **IfcProject** also holds one or more **IfcGeometricRepresentationContext**
@@ -237,11 +234,6 @@ expressed in, including its precision.
     for context in project.RepresentationContexts:
         print(context.ContextType, context.Precision) # Model 1e-05, Plan 1e-05
 
-.. warning::
-
-   A valid IFC model has exactly one **IfcProject**. If you are creating a
-   model from scratch, create it first, before anything else.
-
 Concept 2: spatial decomposition
 --------------------------------
 
@@ -249,11 +241,11 @@ Real buildings are made of nested places: a site holds a building, a building
 holds storeys, and a storey holds rooms. IFC mirrors this with a chain of
 **IfcSite**, **IfcBuilding**, **IfcBuildingStorey** and **IfcSpace**.
 
-Two different relationships are at work here, and telling them apart is the
-single most useful thing to understand about IFC.
+Two different relationships are at work here:
 
 **Aggregation** breaks a place into smaller places. A building is *made of*
-its storeys.
+its storeys. This relationship can also be used for physical products, such
+as a window being made of frame and glazing.
 
 **Containment** puts a physical element into a place. A wall is *located in* a
 storey. The wall is not part of the storey the way a storey is part of a
@@ -284,13 +276,16 @@ Following that chain all the way up the sample model gives:
     IfcSite               Gelaende
     IfcProject            Projekt-FZK-Haus
 
-You can also travel in the other direction and ask what a place holds. Note
-that this returns everything below it, not only its direct children.
+You can also travel in the other direction and ask what a place holds. This
+returns everything below the place rather than only its direct children, and
+it includes more than the building elements you may be picturing. Of the 58
+below this storey, 14 are **IfcOpeningElement** and 12 are **IfcAnnotation**,
+alongside 9 walls, 9 windows, 6 spaces, 5 doors, a slab, a stair and a beam.
 
 .. code-block:: python
 
     elements = ifcopenshell.util.element.get_decomposition(storey)
-    print(len(elements)) # 58
+    print(len(elements)) # 58. This is a set, so it cannot be indexed.
 
 .. tip::
 
@@ -307,7 +302,8 @@ it is.
 
 Each individual wall is an **occurrence**. The shared definition is a **type**,
 here an **IfcWallType**. Properties that are true of every wall of that kind,
-such as its construction, live on the type and are not repeated thirteen times.
+such as its construction, live on the type and are not repeated thirteen
+times. Occurrences can exist without types.
 
 .. code-block:: python
 
@@ -318,25 +314,30 @@ such as its construction, live on the type and are not repeated thirteen times.
     print(wall_type.Name) # Leichtbeton 102890359 240
 
     # And back the other way, every occurrence of that type:
-    print(len(ifcopenshell.util.element.get_types(wall_type))) # 5
+    print(len(ifcopenshell.util.element.get_types(wall_type))) # 5 of the 13
 
 .. tip::
 
    If you change something on the type, you change it for every occurrence of
-   that type. That is usually what you want, and occasionally a nasty surprise.
+   that type, unless the same property also exists on an occurrence and
+   overrides it. That is usually what you want, and occasionally a nasty
+   surprise.
 
 .. note::
 
    ``by_type`` includes subclasses. In this model every wall is actually an
    **IfcWallStandardCase**, which is a subtype of **IfcWall**, so asking for
    ``IfcWall`` still finds all thirteen. If you ever need to exclude
-   subclasses, pass ``include_subtypes=False``.
+   subclasses, pass ``include_subtypes=False``, which returns ``0`` on this
+   model because it holds no direct ``IfcWall`` instances. Note that
+   ``by_type()`` looks up by schema entity type, such as ``IfcWall`` or
+   ``IfcCartesianPoint``, and not by **IfcTypeObject**, which is a specific
+   type or family of walls.
 
 Concept 4: attributes and property sets
 ---------------------------------------
 
-There are two different ways an element carries information, and beginners
-often go looking in the wrong one.
+There are two ways an element carries information:
 
 **Attributes** are fixed by the IFC schema. Every **IfcWall** has a
 **GlobalId**, a **Name** and a **Description**, in a defined order, whether or
@@ -348,9 +349,10 @@ not they are filled in. You read them directly:
     print(wall.Name)        # Wand-Int-ERDG-4
     print(wall.is_a())      # IfcWallStandardCase
 
-**Property sets** are extensible. Anyone can attach one, and this is where most
-of the interesting data in a real model actually lives. They are grouped by
-name, and IfcOpenShell returns them as a plain dictionary:
+**Property sets** are extensible. Tools and modellers can attach their own,
+and this is where most of the interesting data in a real model actually
+lives. When using the API, IfcOpenShell returns them as a plain dictionary
+keyed by property name:
 
 .. code-block:: python
 
@@ -359,7 +361,9 @@ name, and IfcOpenShell returns them as a plain dictionary:
     print(psets["BaseQuantities"]["Width"])                 # 0.24
 
 In this model that one wall carries ``Pset_WallCommon``, ``BaseQuantities`` and
-several sets written by the authoring application.
+several sets written by the authoring application. Each returned dictionary
+also carries an ``id`` key holding the property set's own STEP id. That is not
+a property, so skip it when you iterate.
 
 .. tip::
 
@@ -389,8 +393,7 @@ from. The layers themselves are one step further in:
 
     layer_set = material.ForLayerSet
     for layer in layer_set.MaterialLayers:
-        print(layer.Material.Name, layer.LayerThickness)
-        # Leichtbeton 102890359 0.24
+        print(layer.Material.Name, layer.LayerThickness) # Leichtbeton 102890359 0.24
 
 If you only want the layer set and not the usage wrapper, ask for it directly:
 
