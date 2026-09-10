@@ -63,6 +63,7 @@ from .create_layout_segment import create_layout_segment
 from .create_representation import create_representation
 from .create_segment_representations import create_segment_representations
 from .distance_along_from_station import distance_along_from_station
+from .station_from_distance_along import station_from_distance_along
 from .get_alignment import get_alignment
 from .get_alignment_layout_nest import get_alignment_layout_nest
 from .get_alignment_layouts import get_alignment_layouts
@@ -111,6 +112,7 @@ __all__ = [
     "create_representation",
     "create_segment_representations",
     "distance_along_from_station",
+    "station_from_distance_along",
     "get_alignment",
     "get_alignment_layout_nest",
     "get_alignment_layouts",
