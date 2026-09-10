@@ -21,15 +21,14 @@
 #define IFC_GEOMLIBRARY_API_H
 
 #ifdef SWIG
-#define IFC_GEOMLIBRARY_API
+  #define IFC_GEOMLIBRARY_API
 #elif defined(_WIN32)
-#ifdef IFC_GEOMLIBRARY_EXPORTS
-#define IFC_GEOMLIBRARY_API __declspec(dllexport)
-#else
-#define IFC_GEOMLIBRARY_API __declspec(dllimport)
-#endif
-#else // simply assume *nix + GCC-like compiler
-#define IFC_GEOMLIBRARY_API __attribute__((visibility("default")))
-#endif
-
-#endif
+  #ifdef IFC_GEOMLIBRARY_EXPORTS
+    #define IFC_GEOMLIBRARY_API __declspec(dllexport)
+  #else
+    #define IFC_GEOMLIBRARY_API __declspec(dllimport)
+  #endif
+#else // *nix + GCC-like compiler
+  #define IFC_GEOMLIBRARY_API __attribute__((visibility("default")))
+#endif // SWIG
+#endif // IFC_GEOMLIBRARY_API_H

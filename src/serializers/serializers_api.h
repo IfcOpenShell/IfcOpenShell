@@ -28,8 +28,7 @@
   #else
     #define SERIALIZERS_API __declspec(dllimport)
   #endif
-#else
+#else // *nix + GCC-like compiler
   #define SERIALIZERS_API __attribute__((visibility("default")))
-#endif
-
-#endif
+#endif // SWIG
+#endif // IFC_SERIALIZERS_API_H
