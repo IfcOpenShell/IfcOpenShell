@@ -130,3 +130,149 @@ TEST_CASE("Files that contain no tokens are rejected rather than crashing", "[if
         CHECK(file.good().value() != ifcopenshell::file_open_status::SUCCESS);
     }
 }
+
+TEST_CASE("Inverse lookups stay consistent across interleaved adds, removals and reads", "[ifcparse]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    const auto* polyline_declaration = file.schema()->declaration_by_name("IfcPolyline");
+    auto target = file.create(point_declaration);
+    auto other = file.create(point_declaration);
+
+    const auto referencing_ids = [&file](const express::base& instance) {
+        std::vector<int> ids;
+        for (const auto& referencing : file.instances_by_reference(instance.id())) {
+            ids.push_back(referencing.id());
+        }
+        std::sort(ids.begin(), ids.end());
+        return ids;
+    };
+
+    // Reading an inverse after every write is the pattern that used to
+    // re-sort the whole index per iteration. Enough iterations to fold the
+    // delta into the base several times over.
+    std::vector<express::base> polylines;
+    std::vector<int> expected;
+    for (int i = 0; i < 600; ++i) {
+        auto polyline = file.create(polyline_declaration);
+        polyline.set_attribute_value(0, std::vector<express::base>{target});
+        polylines.push_back(polyline);
+        expected.push_back(polyline.id());
+        REQUIRE(file.instances_by_reference(target.id()).size() == (size_t)i + 1);
+    }
+    CHECK(referencing_ids(target) == expected);
+    CHECK(file.get_inverse_indices_by_id(target.id()) == std::vector<int>(600, 0));
+    CHECK(file.get_total_inverses(target.id()) == 600);
+
+    // Repointing an attribute removes the old record and adds a new one,
+    // whether the record lives in the base or in the delta.
+    for (int i = 0; i < 600; i += 7) {
+        polylines[i].set_attribute_value(0, std::vector<express::base>{other});
+        expected.erase(std::find(expected.begin(), expected.end(), polylines[i].id()));
+    }
+    CHECK(referencing_ids(target) == expected);
+    CHECK(file.instances_by_reference(other.id()).size() == 86);
+
+    // The same source referencing the target through two attributes yields two records.
+    const auto* trimmed_curve_declaration = file.schema()->declaration_by_name("IfcTrimmedCurve");
+    auto trimmed = file.create(trimmed_curve_declaration);
+    trimmed.set_attribute_value(1, std::vector<express::base>{target});
+    trimmed.set_attribute_value(2, std::vector<express::base>{target});
+    CHECK(file.instances_by_reference(target.id()).size() == expected.size() + 2);
+    CHECK(file.get_total_inverses(target.id()) == expected.size() + 1);
+    trimmed.set_attribute_value(2, std::vector<express::base>{other});
+    expected.push_back((int)trimmed.id());
+    CHECK(referencing_ids(target) == expected);
+
+    // Deleting a referencing instance drops its records; deleting the
+    // target drops the records into it.
+    file.remove_entity(polylines[1]);
+    expected.erase(std::find(expected.begin(), expected.end(), polylines[1].id()));
+    CHECK(referencing_ids(target) == expected);
+    file.remove_entity(other);
+    CHECK(file.instances_by_reference(other.id()).empty());
+
+    // Removing most of the base tombstones it past the compaction threshold.
+    for (int i = 2; i < 600; ++i) {
+        if (i % 7 != 0) {
+            file.remove_entity(polylines[i]);
+        }
+    }
+    CHECK(referencing_ids(target) == std::vector<int>{(int)trimmed.id()});
+}
+
+TEST_CASE("Deleting an instance unregisters the records its own attributes contributed", "[ifcparse]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    const auto* polyline_declaration = file.schema()->declaration_by_name("IfcPolyline");
+    const auto* trimmed_curve_declaration = file.schema()->declaration_by_name("IfcTrimmedCurve");
+
+    auto target = file.create(point_declaration);
+    auto second = file.create(point_declaration);
+
+    // A reference registered before the first lookup lands in the base tier,
+    // one registered after it in the delta.
+    auto base_referencer = file.create(polyline_declaration);
+    base_referencer.set_attribute_value(0, std::vector<express::base>{target, target});
+    REQUIRE(file.instances_by_reference(target.id()).size() == 2);
+    auto delta_referencer = file.create(polyline_declaration);
+    delta_referencer.set_attribute_value(0, std::vector<express::base>{target, second});
+    REQUIRE(file.instances_by_reference(target.id()).size() == 3);
+
+    // Duplicate references in one aggregate contribute two records; deleting
+    // the source must drop both.
+    file.remove_entity(base_referencer);
+    CHECK(file.instances_by_reference(target.id()).size() == 1);
+
+    // Referencing the same instance through two attributes contributes a
+    // record per attribute; deleting the source must drop them all.
+    auto trimmed = file.create(trimmed_curve_declaration);
+    trimmed.set_attribute_value(1, std::vector<express::base>{second});
+    trimmed.set_attribute_value(2, std::vector<express::base>{second});
+    CHECK(file.instances_by_reference(second.id()).size() == 3);
+    file.remove_entity(trimmed);
+    CHECK(file.instances_by_reference(second.id()).size() == 1);
+
+    // Deleting the target first prunes it out of the source's attribute, so
+    // deleting the source afterwards finds nothing left to unregister.
+    file.remove_entity(target);
+    file.remove_entity(delta_referencer);
+    CHECK(file.instances_by_reference(second.id()).empty());
+    CHECK(file.get_total_inverses(second.id()) == 0);
+}
+
+TEST_CASE("Batch deletion prunes surviving referencers and leaves no stale records", "[ifcparse]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    const auto* polyline_declaration = file.schema()->declaration_by_name("IfcPolyline");
+
+    auto kept_point = file.create(point_declaration);
+    std::vector<express::base> doomed_points;
+    for (int i = 0; i < 50; ++i) {
+        doomed_points.push_back(file.create(point_declaration));
+    }
+
+    // The survivor references every doomed point plus the kept one; a doomed
+    // referencer references the kept point.
+    auto survivor = file.create(polyline_declaration);
+    auto survivor_points = doomed_points;
+    survivor_points.push_back(kept_point);
+    survivor.set_attribute_value(0, survivor_points);
+    auto doomed_referencer = file.create(polyline_declaration);
+    doomed_referencer.set_attribute_value(0, std::vector<express::base>{kept_point});
+    REQUIRE(file.instances_by_reference(kept_point.id()).size() == 2);
+
+    file.batch();
+    for (auto& point : doomed_points) {
+        file.remove_entity(point);
+    }
+    file.remove_entity(doomed_referencer);
+    file.unbatch();
+
+    CHECK((std::vector<express::base>)survivor.get_attribute_value(0) == std::vector<express::base>{kept_point});
+    CHECK(file.instances_by_reference(kept_point.id()).size() == 1);
+    CHECK(file.get_total_inverses(kept_point.id()) == 1);
+    for (auto& point : doomed_points) {
+        CHECK(file.instances_by_reference(point.id()).empty());
+    }
+    CHECK(file.instances_by_reference(doomed_referencer.id()).empty());
+}

@@ -31,6 +31,7 @@ namespace rocksdb {
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <memory>
 #include <cstring>
@@ -218,6 +219,29 @@ namespace ifcopenshell {
             int16_t attribute_index;
         };
 
+        // Which instances reference a given instance, and through which
+        // attribute. One index serves the whole file.
+        //
+        // Two tiers keep every operation cheap without giving up the compact
+        // flat layout that parsing relies on:
+        //
+        // - base_: one flat vector. Bulk loading appends to it unsorted and
+        //   sort() finalizes it once; lookups then binary-search it. Removing
+        //   a record tombstones it in place (attribute_index set to
+        //   dead_attribute) rather than erasing, so removal doesn't shift the
+        //   vector.
+        // - delta_: records added after sort(), bucketed by referenced_id.
+        //   A lookup reads the base range and then the bucket.
+        //
+        // compact() folds the delta into the base and drops tombstones. add()
+        // and the removal methods run it once the delta or the tombstones
+        // outgrow the live base (capped by delta_fold_limit), so folding is
+        // amortised O(1) per mutation and the delta's memory stays bounded.
+        //
+        // Before the split every lookup re-sorted the entire vector if
+        // anything had been added since the previous lookup, so a loop that
+        // creates an instance and then reads an inverse cost O(R log R) per
+        // iteration on a file with R references.
         class inverse_index {
         public:
             typedef std::map<std::tuple<short, short>, std::vector<uint32_t>> legacy_bucket;
@@ -227,11 +251,21 @@ namespace ifcopenshell {
             typedef legacy_map::value_type value_type;
             typedef legacy_map::iterator iterator;
             typedef legacy_map::const_iterator const_iterator;
-            typedef std::vector<inverse_record>::const_iterator record_iterator;
 
         private:
-            mutable std::vector<inverse_record> records_;
-            mutable bool sorted_ = true;
+            typedef std::vector<inverse_record>::const_iterator base_iterator;
+
+            // Attribute indices are small and non-negative, so the minimum
+            // value can't collide with a live record.
+            static constexpr int16_t dead_attribute = std::numeric_limits<int16_t>::min();
+            static constexpr size_t delta_fold_limit = size_t(1) << 20;
+
+            // Lookups on a const index still need to finalize bulk loading.
+            mutable std::vector<inverse_record> base_;
+            mutable bool sorted_ = false;
+            size_t dead_ = 0;
+            std::unordered_map<uint32_t, std::vector<inverse_record>> delta_;
+            size_t delta_size_ = 0;
             mutable std::unique_ptr<legacy_map> materialized_;
 
             static bool record_less(const inverse_record& a, const inverse_record& b) {
@@ -247,12 +281,67 @@ namespace ifcopenshell {
                 return a.source_id < b.source_id;
             }
 
-            static bool referenced_less(const inverse_record& a, uint32_t referenced_id) {
-                return a.referenced_id < referenced_id;
+            struct referenced_id_less {
+                bool operator()(const inverse_record& a, uint32_t referenced_id) const {
+                    return a.referenced_id < referenced_id;
+                }
+                bool operator()(uint32_t referenced_id, const inverse_record& a) const {
+                    return referenced_id < a.referenced_id;
+                }
+            };
+
+            static bool same_record(const inverse_record& a, const inverse_record& b) {
+                return a.referenced_id == b.referenced_id &&
+                    a.source_id == b.source_id &&
+                    a.source_entity == b.source_entity &&
+                    a.attribute_index == b.attribute_index;
             }
 
-            static bool referenced_less(uint32_t referenced_id, const inverse_record& a) {
-                return referenced_id < a.referenced_id;
+            static bool is_dead(const inverse_record& record) {
+                return record.attribute_index == dead_attribute;
+            }
+
+            void kill(inverse_record& record) {
+                record.attribute_index = dead_attribute;
+                ++dead_;
+            }
+
+            size_t live_base_size() const {
+                return base_.size() - dead_;
+            }
+
+            std::pair<base_iterator, base_iterator> base_range(uint32_t referenced_id) const {
+                sort();
+                return std::equal_range(base_.cbegin(), base_.cend(), referenced_id, referenced_id_less{});
+            }
+
+            std::pair<std::vector<inverse_record>::iterator, std::vector<inverse_record>::iterator> mutable_base_range(uint32_t referenced_id) {
+                sort();
+                return std::equal_range(base_.begin(), base_.end(), referenced_id, referenced_id_less{});
+            }
+
+            void compact() {
+                sort();
+                if (dead_ != 0) {
+                    base_.erase(std::remove_if(base_.begin(), base_.end(), is_dead), base_.end());
+                    dead_ = 0;
+                }
+                const auto base_end = (std::ptrdiff_t)base_.size();
+                base_.reserve(base_.size() + delta_size_);
+                for (const auto& bucket : delta_) {
+                    base_.insert(base_.end(), bucket.second.begin(), bucket.second.end());
+                }
+                delta_.clear();
+                delta_size_ = 0;
+                std::sort(base_.begin() + base_end, base_.end(), record_less);
+                std::inplace_merge(base_.begin(), base_.begin() + base_end, base_.end(), record_less);
+                invalidate_materialized();
+            }
+
+            void compact_if_tombstones_dominate() {
+                if (dead_ > live_base_size()) {
+                    compact();
+                }
             }
 
             void invalidate_materialized() const {
@@ -262,9 +351,20 @@ namespace ifcopenshell {
             legacy_map& materialize() const {
                 if (!materialized_) {
                     materialized_ = std::make_unique<legacy_map>();
-                    materialized_->reserve(records_.size());
-                    for (const auto& record : records_) {
+                    materialized_->reserve(size());
+                    const auto insert = [this](const inverse_record& record) {
                         (*materialized_)[(int)record.referenced_id][{(short)record.source_entity, (short)record.attribute_index}].push_back(record.source_id);
+                    };
+                    sort();
+                    for (const auto& record : base_) {
+                        if (!is_dead(record)) {
+                            insert(record);
+                        }
+                    }
+                    for (const auto& bucket : delta_) {
+                        for (const auto& record : bucket.second) {
+                            insert(record);
+                        }
                     }
                 }
                 return *materialized_;
@@ -274,14 +374,20 @@ namespace ifcopenshell {
             inverse_index() = default;
 
             inverse_index(const inverse_index& other)
-                : records_(other.records_)
+                : base_(other.base_)
                 , sorted_(other.sorted_)
+                , dead_(other.dead_)
+                , delta_(other.delta_)
+                , delta_size_(other.delta_size_)
             {}
 
             inverse_index& operator=(const inverse_index& other) {
                 if (this != &other) {
-                    records_ = other.records_;
+                    base_ = other.base_;
                     sorted_ = other.sorted_;
+                    dead_ = other.dead_;
+                    delta_ = other.delta_;
+                    delta_size_ = other.delta_size_;
                     materialized_.reset();
                 }
                 return *this;
@@ -291,73 +397,100 @@ namespace ifcopenshell {
             inverse_index& operator=(inverse_index&&) noexcept = default;
 
             void reserve(size_t size) {
-                records_.reserve(size);
+                base_.reserve(size);
             }
 
             void add(uint32_t referenced_id, uint32_t source_id, uint16_t source_entity, int attribute_index) {
-                records_.push_back({referenced_id, source_id, source_entity, (int16_t)attribute_index});
-                sorted_ = false;
+                const inverse_record record{referenced_id, source_id, source_entity, (int16_t)attribute_index};
+                if (sorted_) {
+                    delta_[referenced_id].push_back(record);
+                    ++delta_size_;
+                    if (delta_size_ > std::min(live_base_size(), delta_fold_limit)) {
+                        compact();
+                    }
+                } else {
+                    base_.push_back(record);
+                }
                 invalidate_materialized();
             }
 
             bool remove(uint32_t referenced_id, uint32_t source_id, uint16_t source_entity, int attribute_index) {
                 const inverse_record needle{referenced_id, source_id, source_entity, (int16_t)attribute_index};
-                auto it = std::find_if(records_.begin(), records_.end(), [&needle](const inverse_record& record) {
-                    return record.referenced_id == needle.referenced_id &&
-                        record.source_id == needle.source_id &&
-                        record.source_entity == needle.source_entity &&
-                        record.attribute_index == needle.attribute_index;
-                });
-                if (it == records_.end()) {
+                const auto matches = [&needle](const inverse_record& record) {
+                    return same_record(record, needle);
+                };
+                auto bucket = delta_.find(referenced_id);
+                if (bucket != delta_.end()) {
+                    auto& records = bucket->second;
+                    auto it = std::find_if(records.begin(), records.end(), matches);
+                    if (it != records.end()) {
+                        records.erase(it);
+                        --delta_size_;
+                        if (records.empty()) {
+                            delta_.erase(bucket);
+                        }
+                        invalidate_materialized();
+                        return true;
+                    }
+                }
+                auto range = mutable_base_range(referenced_id);
+                auto it = std::find_if(range.first, range.second, matches);
+                if (it == range.second) {
                     return false;
                 }
-                records_.erase(it);
+                kill(*it);
+                compact_if_tombstones_dominate();
                 invalidate_materialized();
                 return true;
             }
 
-            void remove_source(uint32_t source_id) {
-                records_.erase(std::remove_if(records_.begin(), records_.end(), [source_id](const inverse_record& record) {
-                    return record.source_id == source_id;
-                }), records_.end());
-                invalidate_materialized();
-            }
-
+            // Finalizes bulk loading. Subsequent add() calls go to the delta.
             void sort() const {
                 if (!sorted_) {
-                    std::sort(records_.begin(), records_.end(), record_less);
+                    std::sort(base_.begin(), base_.end(), record_less);
                     sorted_ = true;
                     invalidate_materialized();
                 }
             }
 
-            std::pair<record_iterator, record_iterator> equal_range(uint32_t referenced_id) const {
-                sort();
-                return std::equal_range(records_.begin(), records_.end(), referenced_id, [](const auto& a, const auto& b) {
-                    if constexpr (std::is_same_v<std::decay_t<decltype(a)>, inverse_record>) {
-                        return referenced_less(a, b);
-                    } else {
-                        return referenced_less(a, b);
+            // Visits every live record referencing referenced_id: the base
+            // records in record_less order, then the delta in insertion order.
+            template <typename Fn>
+            void for_each(uint32_t referenced_id, Fn&& fn) const {
+                auto range = base_range(referenced_id);
+                for (auto it = range.first; it != range.second; ++it) {
+                    if (!is_dead(*it)) {
+                        fn(*it);
                     }
-                });
+                }
+                auto bucket = delta_.find(referenced_id);
+                if (bucket != delta_.end()) {
+                    for (const auto& record : bucket->second) {
+                        fn(record);
+                    }
+                }
             }
 
-            const std::vector<inverse_record>& records() const {
-                sort();
-                return records_;
+            size_t count(uint32_t referenced_id) const {
+                size_t n = 0;
+                for_each(referenced_id, [&n](const inverse_record&) { ++n; });
+                return n;
             }
 
             bool empty() const {
-                return records_.empty();
+                return size() == 0;
             }
 
             size_t size() const {
-                return records_.size();
+                return live_base_size() + delta_size_;
             }
 
             void clear() {
-                records_.clear();
-                sorted_ = true;
+                base_.clear();
+                sorted_ = false;
+                dead_ = 0;
+                delta_.clear();
+                delta_size_ = 0;
                 materialized_.reset();
             }
 
@@ -385,13 +518,26 @@ namespace ifcopenshell {
                 return materialize().find(key);
             }
 
+            // Removes every record referencing key.
             size_t erase(const key_type& key) {
-                const auto old_size = records_.size();
-                records_.erase(std::remove_if(records_.begin(), records_.end(), [key](const inverse_record& record) {
-                    return record.referenced_id == (uint32_t)key;
-                }), records_.end());
+                const auto referenced_id = (uint32_t)key;
+                size_t removed = 0;
+                auto range = mutable_base_range(referenced_id);
+                for (auto it = range.first; it != range.second; ++it) {
+                    if (!is_dead(*it)) {
+                        kill(*it);
+                        ++removed;
+                    }
+                }
+                auto bucket = delta_.find(referenced_id);
+                if (bucket != delta_.end()) {
+                    removed += bucket->second.size();
+                    delta_size_ -= bucket->second.size();
+                    delta_.erase(bucket);
+                }
+                compact_if_tombstones_dominate();
                 invalidate_materialized();
-                return old_size - records_.size();
+                return removed;
             }
 
             std::pair<iterator, bool> insert(const value_type& value) {

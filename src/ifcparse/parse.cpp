@@ -2955,7 +2955,7 @@ void file::process_deletion_(const express::base& entity) {
     // entity being deleted are not deleted themselves.
     if (!references.empty()) {
         for (auto& related_instance : references) {
-            if (std::find(batch_deletion_ids_.begin(), batch_deletion_ids_.end(), related_instance.id()) != batch_deletion_ids_.end()) {
+            if (batch_deletion_ids_.get<1>().count((int)related_instance.id()) != 0) {
                 continue;
             }
 
@@ -3036,7 +3036,20 @@ void ifcopenshell::impl::in_memory_file_storage::process_deletion_inverse(const 
 
     // Delete inverses into entity
     byref_excl_.erase(id);
-    byref_excl_.remove_source(id);
+
+    // Delete the records the entity contributed through its own attributes.
+    // Walking the attributes mirrors build_inverses_, so every record with
+    // this source is covered without scanning the whole index for it.
+    const auto* decl = entity.declaration().as_entity();
+    if (decl == nullptr) {
+        return;
+    }
+    std::function<void(const express::base&, int)> fn = [this, id, decl](const express::base& attr, int idx) {
+        if (attr.declaration().as_entity() != nullptr) {
+            byref_excl_.remove(attr.id(), id, (uint16_t)decl->index_in_schema(), idx);
+        }
+    };
+    apply_individual_instance_visitor(entity).apply(fn);
 }
 
 namespace {
@@ -3106,11 +3119,10 @@ std::vector<express::base> file::instances_by_reference(int t) {
     std::vector<express::base> ret;
     std::visit([this, t, &ret](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto range = x.byref_excl_.equal_range((uint32_t)t);
-            ret.reserve(ret.size() + (size_t)std::distance(range.first, range.second));
-            for (auto it = range.first; it != range.second; ++it) {
-                ret.push_back(instance_by_id(it->source_id));
-            }
+            ret.reserve(ret.size() + x.byref_excl_.count((uint32_t)t));
+            x.byref_excl_.for_each((uint32_t)t, [this, &ret](const impl::inverse_record& record) {
+                ret.push_back(instance_by_id(record.source_id));
+            });
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
@@ -3266,11 +3278,10 @@ std::vector<int> file::get_inverse_indices_by_id(int instance_id) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
             handled = true;
-            auto range = x.byref_excl_.equal_range((uint32_t)instance_id);
-            return_value.reserve((size_t)std::distance(range.first, range.second));
-            for (auto it = range.first; it != range.second; ++it) {
-                return_value.push_back(it->attribute_index);
-            }
+            return_value.reserve(x.byref_excl_.count((uint32_t)instance_id));
+            x.byref_excl_.for_each((uint32_t)instance_id, [&return_value](const impl::inverse_record& record) {
+                return_value.push_back(record.attribute_index);
+            });
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
 #ifdef IFOPSH_WITH_ROCKSDB
             // @todo no lower/upper_bounds() implemented yet
@@ -3335,13 +3346,12 @@ std::vector<express::entity> file::get_inverse(int instance_id, const ifcopenshe
             visit_subtypes(type->as_entity(), [&source_types](const ifcopenshell::declaration* ent) {
                 source_types[ent->index_in_schema()] = 1;
             });
-            auto range = x.byref_excl_.equal_range((uint32_t)instance_id);
-            for (auto it = range.first; it != range.second; ++it) {
-                if (it->source_entity < source_types.size() && source_types[it->source_entity] &&
-                    (attribute_index == -1 || it->attribute_index == attribute_index)) {
-                    return_value.push_back(instance_by_id(it->source_id).template as<express::entity>());
+            x.byref_excl_.for_each((uint32_t)instance_id, [this, &source_types, attribute_index, &return_value](const impl::inverse_record& record) {
+                if (record.source_entity < source_types.size() && source_types[record.source_entity] &&
+                    (attribute_index == -1 || record.attribute_index == attribute_index)) {
+                    return_value.push_back(instance_by_id(record.source_id).template as<express::entity>());
                 }
-            }
+            });
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
@@ -3381,10 +3391,9 @@ size_t file::get_total_inverses(int instance_id) {
     std::visit([&counted_ids, instance_id](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto range = x.byref_excl_.equal_range((uint32_t)instance_id);
-            for (auto it = range.first; it != range.second; ++it) {
-                counted_ids.insert(it->source_id);
-            }
+            x.byref_excl_.for_each((uint32_t)instance_id, [&counted_ids](const impl::inverse_record& record) {
+                counted_ids.insert(record.source_id);
+            });
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             // @todo
         }
