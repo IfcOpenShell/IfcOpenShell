@@ -30,6 +30,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.classification.data import MaterialClassificationsData
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
 from bonsai.bim.module.profile.data import ProfileData
@@ -95,10 +96,11 @@ def update_material_name(self: "Material", context: bpy.types.Context) -> None:
     ifc_file = tool.Ifc.get()
     name = self.name
     material = ifc_file.by_id(self.ifc_definition_id)
-    if material.is_a("IfcMaterialLayerSet"):
-        material.LayerSetName = name
-    else:
-        material.Name = name
+    with IfcStore.track_transaction_outside_operator("Rename Material"):
+        if material.is_a("IfcMaterialLayerSet"):
+            material.LayerSetName = name
+        else:
+            material.Name = name
 
 
 def set_material_name(self: "Material", new_category_name: str) -> None:
