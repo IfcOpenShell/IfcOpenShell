@@ -37,8 +37,8 @@ from common import (
     HelpStrings,
     colorize,
     ensure_script_dir,
-    find_cached_gen_shorthand,
     logger,
+    resolve_generator,
     run_streamed,
 )
 from vs_cfg import vs_cfg
@@ -145,14 +145,7 @@ def main() -> None:
 
     ensure_script_dir()
 
-    generator = ARGS.generator
-    if generator is None:
-        generator = find_cached_gen_shorthand()
-        if generator is None:
-            logger.error(
-                "BuildDepsCache file does not exist and/or GEN_SHORTHAND missing from it. Run build-deps.py to create it."
-            )
-            sys.exit(1)
+    generator = resolve_generator(ARGS.generator)
 
     vs_cfg_vars = vs_cfg(generator, REPO_ROOT)
 
