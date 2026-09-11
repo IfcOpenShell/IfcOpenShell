@@ -547,7 +547,10 @@ class BIM_PT_product_assignments(Panel):
         element = tool.Ifc.get_entity(context.active_object)
         if not element:
             return False
-        return element.is_a("IfcAnnotation")
+        if element.is_a("IfcAnnotation"):
+            return True
+        # Products show the other side of the relationship: the annotations assigned to them.
+        return bool(tool.Drawing.get_assigned_annotations(element))
 
     def draw(self, context):
         if not ProductAssignmentsData.is_loaded:
@@ -555,6 +558,19 @@ class BIM_PT_product_assignments(Panel):
 
         assert self.layout
         assert (obj := context.active_object)
+
+        element = tool.Ifc.get_entity(obj)
+        if element and not element.is_a("IfcAnnotation"):
+            annotations = ProductAssignmentsData.data["assigned_annotations"]
+            row = self.layout.row(align=True)
+            row.label(text=f"{len(annotations)} Assigned Annotations", icon="OBJECT_DATA")
+            row.operator("bim.select_assigned_annotations", icon="RESTRICT_SELECT_OFF", text="")
+            for _, name in annotations[:10]:
+                self.layout.label(text=name, icon="GREASEPENCIL")
+            if len(annotations) > 10:
+                self.layout.label(text=f"...and {len(annotations) - 10} more")
+            return
+
         props = tool.Drawing.get_object_assigned_product_props(obj)
 
         if props.is_editing_product:
