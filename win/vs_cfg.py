@@ -95,6 +95,11 @@ class VsCfgResult(NamedTuple):
         """Compare against `vs_platform`, just to prevent typos."""
         return self.vs_platform == platform
 
+    @property
+    def vs_toolset(self) -> str:
+        """Effective toolset: `vs_toolset_override` if set, else the generator's default."""
+        return self.vs_toolset_override or self.generator.vs_toolset
+
 
 VS_TOOLSET_TO_VC_VER = {info.vs_toolset: info.vc_ver for info in CMAKE_GENERATORS.values()}
 """E.g. "v142" -> "14.2"."""

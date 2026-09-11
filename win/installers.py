@@ -723,7 +723,7 @@ def install_mpfr(
         orig_generator = CMAKE_GENERATORS["Visual Studio 16 2019"]
     orig_platform_toolset = orig_generator.vs_toolset
 
-    target_toolset = vs_cfg_vars.vs_toolset_override or vs_cfg_vars.generator.vs_toolset
+    target_toolset = vs_cfg_vars.vs_toolset
     for vcxproj in (dependency_dir / mpfr_sln_dir).rglob("*.vcxproj"):
         vcxproj.write_text(vcxproj.read_text().replace(orig_platform_toolset, target_toolset))
 
@@ -765,7 +765,7 @@ def install_qt6(
 
     build_deps_cache.add_entry("QT6_VERSION", QT6_VERSION)
 
-    vs_toolset = vs_cfg_vars.vs_toolset_override or vs_cfg_vars.generator.vs_toolset
+    vs_toolset = vs_cfg_vars.vs_toolset
     QT6_MSVC_YEAR = VS_TOOLSET_TO_VS_VER[vs_toolset]
     # Qt has not published prebuilt msvc2026 binaries yet (aqt only lists win64_msvc2022_64 as of
     # Qt 6.7-6.10). The v14x MSVC toolsets share a stable ABI/CRT, so fall back to the msvc2022
