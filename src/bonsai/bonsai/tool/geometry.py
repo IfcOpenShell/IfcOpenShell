@@ -350,6 +350,15 @@ class Geometry(bonsai.core.tool.Geometry):
         Note that clearing scale has no impact on cameras.
         """
         if cls.is_scaled(obj):
+            if isinstance(obj.data, (bpy.types.Camera, bpy.types.Light, bpy.types.Speaker)):
+                # object.transform_apply cannot touch this data -- it just reports
+                # "Objects have no data to transform" and leaves the scale alone, which
+                # is why the docstring says cameras are unaffected. Skipping the call
+                # keeps that behaviour and avoids the operator resolving bpy.context
+                # from inside the temp_override below, which has been seen to segfault
+                # (EXCEPTION_ACCESS_VIOLATION in BPY_context_member_get) when reached
+                # from a UI-invoked operator via bim.update_representation.
+                return
             if not obj.data:
                 location, rotation, _ = obj.matrix_world.decompose()
                 obj.matrix_world = Matrix.Translation(location) @ rotation.to_matrix().to_4x4()
