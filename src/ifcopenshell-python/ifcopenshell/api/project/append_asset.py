@@ -397,8 +397,8 @@ class Usecase:
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
-            "IfcElement": ["HasOpenings"],
-            "IfcDistributionElement": ["IsNestedBy"],
+            "IfcElement": ["HasOpenings", "HasPorts"] if self.file.schema == "IFC2X3" else ["HasOpenings"],
+            "IfcDistributionElement": ["IsNestedBy", "HasPorts"],
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": [
                 "StyledByItem",
