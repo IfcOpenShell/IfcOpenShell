@@ -234,18 +234,23 @@ class SelectGroupElements(bpy.types.Operator):
     bl_label = "Select Group elements"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Select objects assigned to the selected group and all nested groups\nALT + CLICK to exclude children"
+        "Select objects assigned to the selected group and all nested groups"
+        "\nCTRL + CLICK to exclude children"
+        "\nALT + CLICK to also unhide hidden objects (viewport and local hide)"
     )
     group: bpy.props.IntProperty()
     is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=True, options={"SKIP_SAVE"})
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        self.is_recursive = not event.alt
+        self.is_recursive = not event.ctrl
+        self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
         tool.Spatial.select_products(
-            ifcopenshell.util.element.get_grouped_by(tool.Ifc.get().by_id(self.group), is_recursive=self.is_recursive)
+            ifcopenshell.util.element.get_grouped_by(tool.Ifc.get().by_id(self.group), is_recursive=self.is_recursive),
+            unhide=self.should_unhide,
         )
         return {"FINISHED"}
 

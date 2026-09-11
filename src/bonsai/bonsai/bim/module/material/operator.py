@@ -61,13 +61,18 @@ class DisableEditingMaterials(bpy.types.Operator):
 class SelectByMaterial(bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
-    bl_description = "Select objects using the provided material"
+    bl_description = "Select objects using the provided material\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.should_unhide = event.alt
+        return self.execute(context)
 
     def execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
-        core.select_by_material(tool.Material, tool.Spatial, material=material)
+        core.select_by_material(tool.Material, tool.Spatial, material=material, should_unhide=self.should_unhide)
 
         # copy selection query to clipboard
         if material.is_a("IfcMaterialLayerSet"):
