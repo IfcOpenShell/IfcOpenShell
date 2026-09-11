@@ -933,6 +933,10 @@ std::vector<uint32_t> reference_names(const std::vector<ifcopenshell::reference_
     return names;
 }
 
+uint64_t first_reference_offset(const std::vector<ifcopenshell::reference_or_simple_type>& values) {
+    return values.empty() ? 0 : (uint64_t)std::get<ifcopenshell::instance_reference>(values.front()).file_offset;
+}
+
 std::vector<express::base> simple_type_instances(const std::vector<ifcopenshell::reference_or_simple_type>& values) {
     std::vector<express::base> instances;
     instances.reserve(values.size());
@@ -973,7 +977,7 @@ void set_direct_attribute(
         if (!in_place) {
             record(value);
         } else if (all_instance_references(value)) {
-            storage.set(attribute_index, ifcopenshell::unresolved_reference_list{reference_names(value)});
+            storage.set(attribute_index, ifcopenshell::unresolved_reference_list{reference_names(value), first_reference_offset(value)});
         } else if (all_simple_type_instances(value)) {
             storage.set(attribute_index, simple_type_instances(value));
         } else {
@@ -988,7 +992,11 @@ void set_direct_attribute(
         if (references) {
             ifcopenshell::unresolved_reference_list_list names;
             names.names.reserve(value.size());
+            names.file_offset = 0;
             for (const auto& inner : value) {
+                if (names.file_offset == 0) {
+                    names.file_offset = first_reference_offset(inner);
+                }
                 names.names.push_back(reference_names(inner));
             }
             storage.set(attribute_index, std::move(names));
@@ -2557,18 +2565,22 @@ void ifcopenshell::impl::in_memory_file_storage::resolve_instance_references(con
                 slots->set(i, blank{});
             }
         } else if (slots->template has<unresolved_reference_list>(i)) {
-            const auto names = std::move(slots->template get<unresolved_reference_list>(i).names);
+            auto& list = slots->template get<unresolved_reference_list>(i);
+            const uint64_t file_offset = list.file_offset;
+            const auto names = std::move(list.names);
             std::vector<express::base> instances;
             instances.reserve(names.size());
             for (auto name : names) {
                 express::base instance;
-                if (resolve_name(name, owner, i, std::nullopt, instance)) {
+                if (resolve_name(name, owner, i, file_offset, instance)) {
                     instances.push_back(instance);
                 }
             }
             slots->set(i, std::move(instances));
         } else if (slots->template has<unresolved_reference_list_list>(i)) {
-            const auto nested_names = std::move(slots->template get<unresolved_reference_list_list>(i).names);
+            auto& list = slots->template get<unresolved_reference_list_list>(i);
+            const uint64_t file_offset = list.file_offset;
+            const auto nested_names = std::move(list.names);
             std::vector<std::vector<express::base>> nested;
             nested.reserve(nested_names.size());
             for (const auto& names : nested_names) {
@@ -2576,7 +2588,7 @@ void ifcopenshell::impl::in_memory_file_storage::resolve_instance_references(con
                 instances.reserve(names.size());
                 for (auto name : names) {
                     express::base instance;
-                    if (resolve_name(name, owner, i, std::nullopt, instance)) {
+                    if (resolve_name(name, owner, i, file_offset, instance)) {
                         instances.push_back(instance);
                     }
                 }
