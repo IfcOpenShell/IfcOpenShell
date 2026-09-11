@@ -92,6 +92,35 @@ class TestClosestPoints(NewFile):
         assert subject.closest_points(edge1, edge2)[0] == (edge1[0], edge2[0])
 
 
+class TestGetFilletCorner(NewFile):
+    def test_edges_sharing_a_vertex(self):
+        edge1 = (V(0, 0, 0), V(1, 0, 0))
+        edge2 = (V(0, 0, 0), V(0, 1, 0))
+        corner, near1, far1, near2, far2 = subject.get_fillet_corner(edge1, edge2)
+        assert corner == V(0, 0, 0)
+        assert near1 == V(0, 0, 0) and far1 == V(1, 0, 0)
+        assert near2 == V(0, 0, 0) and far2 == V(0, 1, 0)
+
+    def test_disjoint_edges_use_virtual_intersection(self):
+        # Two edges that would meet at (0, 0, 0) if extended, but leave a gap.
+        edge1 = (V(2, 0, 0), V(1, 0, 0))
+        edge2 = (V(0, 1, 0), V(0, 2, 0))
+        corner, near1, far1, near2, far2 = subject.get_fillet_corner(edge1, edge2)
+        assert corner == V(0, 0, 0)
+        assert near1 == V(1, 0, 0) and far1 == V(2, 0, 0)
+        assert near2 == V(0, 1, 0) and far2 == V(0, 2, 0)
+
+    def test_parallel_edges_have_no_corner(self):
+        edge1 = (V(0, 0, 0), V(1, 0, 0))
+        edge2 = (V(0, 1, 0), V(1, 1, 0))
+        assert subject.get_fillet_corner(edge1, edge2) is None
+
+    def test_non_coplanar_edges_have_no_corner(self):
+        edge1 = (V(0, 0, 0), V(1, 0, 0))
+        edge2 = (V(0.5, -1, 1), V(0.5, 1, 1))
+        assert subject.get_fillet_corner(edge1, edge2) is None
+
+
 class TestObbWorldClipPlanes(NewFile):
     def test_unit_box_at_origin_returns_axis_aligned_planes(self):
         planes = subject.obb_world_clip_planes(

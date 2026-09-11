@@ -617,6 +617,41 @@ class Cad:
             return closest, furthest
 
     @classmethod
+    def get_fillet_corner(
+        cls, edge1: tuple[Vector, Vector], edge2: tuple[Vector, Vector]
+    ) -> Union[tuple[Vector, Vector, Vector, Vector, Vector], None]:
+        """Find the corner two edges should be filleted around.
+
+        If the edges already share an endpoint, that vertex is the corner. Otherwise
+        the edges are treated as if extended to the virtual intersection of the lines
+        they lie on, so that disjoint edges can still be filleted as though they met.
+
+        > edge1, edge2: each a tuple of the edge's two endpoint Vectors
+        < a tuple (corner, near1, far1, near2, far2), where near1/far1 are edge1's
+          endpoints closest to/furthest from the corner (and near2/far2 likewise for
+          edge2), or None if the edges are parallel or not coplanar and therefore have
+          no usable corner.
+        """
+        for v1 in edge1:
+            for v2 in edge2:
+                if (v1 - v2).length < VTX_PRECISION:
+                    far1 = edge1[1] if v1 == edge1[0] else edge1[0]
+                    far2 = edge2[1] if v2 == edge2[0] else edge2[0]
+                    return v1.copy(), v1, far1, v2, far2
+
+        intersection = cls.intersect_edges(edge1, edge2)
+        if intersection is None:
+            return None  # parallel edges, no intersection
+        c1, c2 = intersection
+        if (c1 - c2).length > VTX_PRECISION:
+            return None  # non-coplanar edges, no clean intersection point
+
+        corner = (c1 + c2) / 2
+        near1, far1 = cls.closest_and_furthest_vectors(corner, edge1)
+        near2, far2 = cls.closest_and_furthest_vectors(corner, edge2)
+        return corner, near1, far1, near2, far2
+
+    @classmethod
     def coords_tuple_from_edge_idx(cls, bm, idx):
         """bm is a bmesh representation"""
         return tuple(v.co for v in bm.edges[idx].verts)
