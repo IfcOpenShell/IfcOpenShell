@@ -53,8 +53,17 @@ def add_style(
 
     .. code:: python
 
-        # Create a new surface style
+        # Create a new surface style. Note that on its own this style is not
+        # yet valid: it must be given at least one presentation item, such
+        # as via ifcopenshell.api.style.add_surface_style.
         style = ifcopenshell.api.style.add_style(model)
+
+        # Create a simple shading colour and transparency.
+        ifcopenshell.api.style.add_surface_style(model,
+            style=style, ifc_class="IfcSurfaceStyleShading", attributes={
+                "SurfaceColour": {"Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8},
+                "Transparency": 0., # 0 is opaque, 1 is transparent
+            })
     """
 
     kwargs = {"Name": name}

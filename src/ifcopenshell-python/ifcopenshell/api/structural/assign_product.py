@@ -44,7 +44,7 @@ def assign_product(
 
         wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
         member = ifcopenshell.api.root.create_entity(
-            model, ifc_class="IfcStructuralSurfaceMember")
+            model, ifc_class="IfcStructuralSurfaceMember", predefined_type="SHELL")
         ifcopenshell.api.structural.assign_product(model,
             relating_product=member, related_object=wall)
     """

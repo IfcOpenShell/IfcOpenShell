@@ -36,8 +36,14 @@ def edit_presentation_style(
 
     .. code:: python
 
-        # Create a new surface style
+        # Create a new surface style with at least one presentation item,
+        # since a bare style without any is not yet valid.
         style = ifcopenshell.api.style.add_style(model)
+        ifcopenshell.api.style.add_surface_style(model,
+            style=style, ifc_class="IfcSurfaceStyleShading", attributes={
+                "SurfaceColour": {"Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8},
+                "Transparency": 0.,
+            })
 
         # Change the name of the style to "Foo"
         ifcopenshell.api.style.edit_presentation_style(model, style=style, attributes={"Name": "Foo"})

@@ -43,8 +43,8 @@ def assign_flow_control(
 
     .. code:: python
 
-        flow_element = model.createIfcFlowSegment()
-        flow_control = model.createIfcController()
+        flow_element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFlowSegment")
+        flow_control = ifcopenshell.api.root.create_entity(model, ifc_class="IfcController")
         relation = ifcopenshell.api.system.assign_flow_control(
             model, related_flow_control=flow_control, relating_flow_element=flow_element
         )
