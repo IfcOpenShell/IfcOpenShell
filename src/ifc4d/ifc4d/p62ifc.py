@@ -19,7 +19,7 @@
 import datetime
 import xml.etree.ElementTree as ET
 
-from .common import ScheduleIfcGenerator
+from .common import ScheduleIfcGenerator, validate_input_path
 
 
 class P62Ifc:
@@ -62,6 +62,7 @@ class P62Ifc:
     def execute(self):
         import time
 
+        validate_input_path(self.xml, "P6 .xml file")
         start = time.time()
         print("Started")
         self.parse_xml()

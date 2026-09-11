@@ -40,6 +40,30 @@ if TYPE_CHECKING:
     from bpy.stub_internal.rna_enums import OperatorReturnItems
 
 
+def validate_import_filepath(operator: bpy.types.Operator, filepath: str, description: str) -> bool:
+    """Report a readable error instead of letting the parser raise on a bad path."""
+    from ifc4d.common import InvalidInputPathError, validate_input_path
+
+    try:
+        validate_input_path(filepath, description)
+    except InvalidInputPathError as e:
+        operator.report({"ERROR"}, str(e))
+        return False
+    return True
+
+
+def validate_export_filepath(operator: bpy.types.Operator, filepath: str, description: str) -> bool:
+    """Report a readable error instead of letting the writer raise on a bad path."""
+    from ifc4d.common import InvalidOutputPathError, validate_output_path
+
+    try:
+        validate_output_path(filepath, description)
+    except InvalidOutputPathError as e:
+        operator.report({"ERROR"}, str(e))
+        return False
+    return True
+
+
 class EnableStatusFilters(bpy.types.Operator):
     bl_idname = "bim.enable_status_filters"
     bl_label = "Enable Status Filters"
@@ -837,6 +861,8 @@ class ImportWorkScheduleCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper)
     def _execute(self, context):
         from ifc4d.csv4d2ifc import Csv2Ifc
 
+        if not validate_import_filepath(self, self.filepath, "schedule .csv file"):
+            return
         self.file = tool.Ifc.get()
         start = time.time()
         csv2ifc = Csv2Ifc()
@@ -865,6 +891,8 @@ class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.p62ifc import P62Ifc
 
+        if not validate_import_filepath(self, self.filepath, "P6 .xml file"):
+            return
         self.file = tool.Ifc.get()
         start = time.time()
         p62ifc = P62Ifc()
@@ -894,6 +922,8 @@ class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.p6xer2ifc import P6XER2Ifc
 
+        if not validate_import_filepath(self, self.filepath, "P6 .xer file"):
+            return
         self.file = tool.Ifc.get()
         start = time.time()
         p6xer2ifc = P6XER2Ifc()
@@ -923,6 +953,8 @@ class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.pp2ifc import PP2Ifc
 
+        if not validate_import_filepath(self, self.filepath, "Powerproject .pp file"):
+            return
         self.file = tool.Ifc.get()
         start = time.time()
         pp2ifc = PP2Ifc()
@@ -952,6 +984,8 @@ class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
 
+        if not validate_import_filepath(self, self.filepath, "MS Project .xml file"):
+            return
         self.file = tool.Ifc.get()
         start = time.time()
         msp2ifc = MSP2Ifc()
@@ -983,11 +1017,14 @@ class ExportMSP(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         from ifc4d.ifc2msp import Ifc2Msp
 
+        filepath = bpy.path.ensure_ext(self.filepath, ".xml")
+        if not validate_export_filepath(self, filepath, "MS Project .xml file"):
+            return {"CANCELLED"}
         self.file = tool.Ifc.get()
         start = time.time()
         ifc2msp = Ifc2Msp()
         ifc2msp.work_schedule = self.file.by_type("IfcWorkSchedule")[0]
-        ifc2msp.xml = bpy.path.ensure_ext(self.filepath, ".xml")
+        ifc2msp.xml = filepath
         ifc2msp.file = self.file
         ifc2msp.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2msp.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
@@ -1017,10 +1054,13 @@ class ExportP6(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         from ifc4d.ifc2p6 import Ifc2P6
 
+        filepath = bpy.path.ensure_ext(self.filepath, ".xml")
+        if not validate_export_filepath(self, filepath, "P6 .xml file"):
+            return {"CANCELLED"}
         self.file = tool.Ifc.get()
         start = time.time()
         ifc2p6 = Ifc2P6()
-        ifc2p6.xml = bpy.path.ensure_ext(self.filepath, ".xml")
+        ifc2p6.xml = filepath
         ifc2p6.file = self.file
         ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
