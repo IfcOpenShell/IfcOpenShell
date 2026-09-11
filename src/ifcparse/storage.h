@@ -448,6 +448,7 @@ namespace ifcopenshell {
             void sort() const {
                 if (!sorted_) {
                     std::sort(base_.begin(), base_.end(), record_less);
+                    base_.shrink_to_fit();
                     sorted_ = true;
                     invalidate_materialized();
                 }
