@@ -42,6 +42,7 @@ classes = (
     operator.AddScheduleToSheet,
     operator.AddSheet,
     operator.AddTextLiteral,
+    operator.ApplyMultilineTextLiteral,
     operator.AssignSelectedObjectAsProduct,
     operator.BuildSchedule,
     operator.CleanWireframes,
@@ -64,6 +65,7 @@ classes = (
     operator.EditElementFilter,
     operator.EditSheet,
     operator.EditText,
+    operator.EditTextLiteralMultiline,
     operator.EditTextPopup,
     operator.EnableAddAnnotationType,
     operator.EnableEditingAssignedProduct,
@@ -198,6 +200,7 @@ def register():
     bpy.app.handlers.depsgraph_update_pre.append(handler.depsgraph_update_pre_handler)
     bpy.types.VIEW3D_MT_image_add.append(ui.add_object_button)
     bpy.types.VIEW3D_MT_object_context_menu.append(menu_func)
+    bpy.types.TEXT_HT_header.append(operator.draw_text_editor_header)
 
 
 def unregister():
@@ -213,3 +216,4 @@ def unregister():
     bpy.app.handlers.depsgraph_update_pre.remove(handler.depsgraph_update_pre_handler)
     bpy.types.VIEW3D_MT_image_add.remove(ui.add_object_button)
     bpy.types.VIEW3D_MT_object_context_menu.remove(menu_func)
+    bpy.types.TEXT_HT_header.remove(operator.draw_text_editor_header)

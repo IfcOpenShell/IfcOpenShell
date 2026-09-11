@@ -344,6 +344,7 @@ class Drawing:
     def does_file_exist(cls, uri): pass
     def edit_text_alignment(cls, obj, alignment): pass
     def edit_text_font_size(cls, obj, size): pass
+    def edit_text_literal_value(cls, obj, literal_index, value): pass
     def edit_text_literals(cls, obj, literals): pass
     def edit_text_symbol(cls, obj, symbol): pass
     def edit_text_wrap_length(cls, obj, wrap_length): pass
@@ -417,6 +418,7 @@ class Drawing:
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_type_assign_type(cls, element=None, relating_type=None): pass
+    def sanitize_multiline_literal(cls, value): pass
     def select_assigned_product(cls, drawing): pass
     def set_camera_name(cls, drawing, name): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
@@ -425,6 +427,7 @@ class Drawing:
     def setup_shading_styles_path(cls, resource_path): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
+    def unescape_literal_newlines(cls, value): pass
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
 
 
