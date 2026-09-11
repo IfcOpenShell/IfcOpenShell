@@ -21,6 +21,7 @@ from typing import Any
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
@@ -30,6 +31,7 @@ import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
+import mathutils
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
@@ -959,6 +961,445 @@ class TestOffsetWall(NewFile):
         usage.DirectionSense = "NEGATIVE"
         subject.offset_wall(obj, "EXTERIOR")
         assert usage.OffsetFromReferenceLine == 100
+
+
+class TestGetBodyContext(NewFile):
+    def create_imported_file(self) -> ifcopenshell.file:
+        """An IFC as exported by other authoring tools: a Model context, no subcontexts."""
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="Project")
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        context.ContextIdentifier = "Plan"
+        tool.Ifc.set(ifc)
+        return ifc
+
+    def test_returning_the_existing_body_subcontext(self):
+        ifc = self.create_imported_file()
+        parent = ifcopenshell.util.representation.get_context(ifc, "Model")
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=parent
+        )
+        assert subject.get_body_context() == body
+        assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
+
+    def test_creating_the_body_subcontext_if_the_file_has_none(self):
+        ifc = self.create_imported_file()
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+        body = subject.get_body_context()
+        assert body.ContextType == "Model"
+        assert body.ContextIdentifier == "Body"
+        assert body.TargetView == "MODEL_VIEW"
+        assert body.ParentContext == ifcopenshell.util.representation.get_context(ifc, "Model")
+
+    def test_creating_the_model_context_if_the_file_has_none(self):
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="Project")
+        tool.Ifc.set(ifc)
+        body = subject.get_body_context()
+        assert body.ParentContext == ifcopenshell.util.representation.get_context(ifc, "Model")
+
+    def test_not_creating_duplicates_on_repeated_calls(self):
+        ifc = self.create_imported_file()
+        assert subject.get_body_context() == subject.get_body_context()
+        assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
+
+
+class TestGetOrCreateContext(NewFile):
+    def create_imported_file(self) -> ifcopenshell.file:
+        """An IFC as exported by other authoring tools: a Model context, no subcontexts."""
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="Project")
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        context.ContextIdentifier = "Plan"
+        tool.Ifc.set(ifc)
+        return ifc
+
+    def test_creating_the_plan_body_subcontext_and_its_parent_context(self):
+        ifc = self.create_imported_file()
+        assert ifcopenshell.util.representation.get_context(ifc, "Plan") is None
+        plan_body = subject.get_or_create_context("Plan", "Body", "PLAN_VIEW")
+        assert plan_body.ContextType == "Plan"
+        assert plan_body.ContextIdentifier == "Body"
+        assert plan_body.TargetView == "PLAN_VIEW"
+        assert plan_body.ParentContext == ifcopenshell.util.representation.get_context(ifc, "Plan")
+        assert plan_body.ParentContext in ifc.by_type("IfcProject")[0].RepresentationContexts
+
+    def test_not_creating_duplicate_contexts_on_repeated_calls(self):
+        ifc = self.create_imported_file()
+        assert subject.get_or_create_context("Plan", "Body", "PLAN_VIEW") == subject.get_or_create_context(
+            "Plan", "Body", "PLAN_VIEW"
+        )
+        assert len(ifc.by_type("IfcGeometricRepresentationContext", include_subtypes=False)) == 2
+        assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
+
+
+class TestWindowRepresentationOnImportedFile(NewFile):
+    """window.py mirrors the door crash fixed above: it looked up
+    Model/Body/MODEL_VIEW directly and passed a possibly-None context
+    into add_window_representation, which crashes on .TargetView."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def test_creating_a_window_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = bpy.ops.mesh.add_window()
+        assert result == {"FINISHED"}
+
+        obj = bpy.context.view_layer.objects.active
+        element = tool.Ifc.get_entity(obj)
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_window(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+
+        bpy.ops.mesh.add_window()
+        bpy.context.view_layer.objects.active = None
+        bpy.ops.mesh.add_window()
+
+        assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
+
+
+class TestWallRepresentationOnImportedFile(NewFile):
+    """wall.py mirrors the door/window crash: DumbWallGenerator and
+    AddPerpendicularWall both looked up Model/Body/MODEL_VIEW directly and
+    passed a possibly-None context into add_wall_representation, which
+    crashes on .TargetView / .ContextIdentifier."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def get_wall_type(self, ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        return next(t for t in ifc.by_type("IfcWallType") if tool.Model.get_usage_type(t) == "LAYER2")
+
+    def test_creating_a_wall_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        wall_type = self.get_wall_type(ifc)
+        walls_before = {w.id() for w in ifc.by_type("IfcWall")}
+        result = bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+        assert result == {"FINISHED"}
+
+        wall = next(w for w in ifc.by_type("IfcWall") if w.id() not in walls_before)
+        body = ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_wall(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        wall_type = self.get_wall_type(ifc)
+
+        bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+    def test_add_perpendicular_wall_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        wall_type = self.get_wall_type(ifc)
+
+        walls_before = {w.id() for w in ifc.by_type("IfcWall")}
+        bpy.ops.bim.add_occurrence(relating_type_id=wall_type.id())
+        source_wall = next(w for w in ifc.by_type("IfcWall") if w.id() not in walls_before)
+        source_obj = tool.Ifc.get_object(source_wall)
+        tool.Blender.set_objects_selection(bpy.context, source_obj, (source_obj,))
+
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        bpy.context.scene.cursor.location = source_obj.matrix_world @ mathutils.Vector((0.5, 2.0, 0.0))
+        result = bpy.ops.bim.add_perpendicular_wall()
+        assert result == {"FINISHED"}
+
+        new_wall = next(w for w in ifc.by_type("IfcWall") if w.id() not in walls_before and w.id() != source_wall.id())
+        body = ifcopenshell.util.representation.get_representation(new_wall, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+
+class TestSlabRepresentationOnImportedFile(NewFile):
+    """slab.py mirrors the same crash in DumbSlabGenerator.generate() and in
+    DumbSlabPlaner.change_thickness() when an occurrence has no Body
+    representation of its own to fall back on."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def get_slab_type(self, ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        return next(t for t in ifc.by_type("IfcSlabType") if tool.Model.get_usage_type(t) == "LAYER3")
+
+    def test_creating_a_slab_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        slab_type = self.get_slab_type(ifc)
+        slabs_before = {s.id() for s in ifc.by_type("IfcSlab")}
+        result = bpy.ops.bim.add_occurrence(relating_type_id=slab_type.id())
+        assert result == {"FINISHED"}
+
+        slab = next(s for s in ifc.by_type("IfcSlab") if s.id() not in slabs_before)
+        body = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_slab(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        slab_type = self.get_slab_type(ifc)
+
+        bpy.ops.bim.add_occurrence(relating_type_id=slab_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=slab_type.id())
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+    def test_change_thickness_recreates_missing_body_context(self):
+        from bonsai.bim.module.model.slab import DumbSlabPlaner
+
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        slab_type = self.get_slab_type(ifc)
+        slabs_before = {s.id() for s in ifc.by_type("IfcSlab")}
+        bpy.ops.bim.add_occurrence(relating_type_id=slab_type.id())
+        slab = next(s for s in ifc.by_type("IfcSlab") if s.id() not in slabs_before)
+
+        # Simulate an occurrence with no body representation of its own, as
+        # an externally authored import might have.
+        existing_rep = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
+        assert existing_rep is not None
+        ifcopenshell.util.element.remove_deep2(ifc, existing_rep)
+        slab.Representation.Representations = tuple(r for r in slab.Representation.Representations if r != existing_rep)
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        layer_params = tool.Model.get_material_layer_parameters(slab)
+        DumbSlabPlaner().change_thickness(slab, layer_params["thickness"] * 2)
+
+        body = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+
+class TestRailingRepresentationOnImportedFile(NewFile):
+    """railing.py mirrors the same crash: BIM_OT_add_railing and the
+    WALL_MOUNTED_HANDRAIL branch of update_railing_modifier_ifc_data both
+    looked up Model/Body/MODEL_VIEW directly."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def test_creating_a_railing_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = bpy.ops.mesh.add_railing()
+        assert result == {"FINISHED"}
+
+        railing = ifc.by_type("IfcRailing")[0]
+        body = ifcopenshell.util.representation.get_representation(railing, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_railing(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+
+        bpy.ops.mesh.add_railing()
+        bpy.context.view_layer.objects.active = None
+        tool.Blender.set_objects_selection(bpy.context, None, ())
+        bpy.ops.mesh.add_railing()
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+    def test_wall_mounted_handrail_recreates_missing_body_context(self):
+        from bonsai.bim.module.model.railing import update_railing_modifier_ifc_data
+
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        bpy.ops.mesh.add_railing()
+        railing = ifc.by_type("IfcRailing")[0]
+        obj = tool.Ifc.get_object(railing)
+        tool.Blender.set_objects_selection(bpy.context, obj, (obj,))
+        props = tool.Model.get_railing_props(obj)
+        props.railing_type = "WALL_MOUNTED_HANDRAIL"
+        props.path_data = '{"edges": [[0, 1]], "verts": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]}'
+
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        update_railing_modifier_ifc_data(bpy.context)
+
+        body = ifcopenshell.util.representation.get_representation(railing, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+
+class TestRoofRepresentationOnImportedFile(NewFile):
+    """roof.py mirrors the same crash: BIM_OT_add_roof looked up
+    Model/Body/MODEL_VIEW directly and passed a possibly-None context into
+    root.assign_class, which asserts on it."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def test_creating_a_roof_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = bpy.ops.mesh.add_roof()
+        assert result == {"FINISHED"}
+
+        roof = ifc.by_type("IfcRoof")[0]
+        body = ifcopenshell.util.representation.get_representation(roof, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_roof(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+
+        bpy.ops.mesh.add_roof()
+        bpy.context.view_layer.objects.active = None
+        tool.Blender.set_objects_selection(bpy.context, None, ())
+        bpy.ops.mesh.add_roof()
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+
+class TestProfileRepresentationOnImportedFile(NewFile):
+    """profile.py mirrors the same crash: DumbProfileGenerator.generate()
+    and DumbProfileJoiner.unjoin() (via recreate_profile) both looked up
+    Model/Body/MODEL_VIEW directly."""
+
+    def strip_subcontexts(self, ifc: ifcopenshell.file) -> None:
+        for subcontext in ifc.by_type("IfcGeometricRepresentationSubContext"):
+            ifcopenshell.api.context.remove_context(ifc, context=subcontext)
+
+    def get_profile_type(self, ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        for t in ifc.by_type("IfcColumnType") + ifc.by_type("IfcBeamType") + ifc.by_type("IfcMemberType"):
+            material = ifcopenshell.util.element.get_material(t)
+            if material and material.is_a("IfcMaterialProfileSet"):
+                return t
+        assert False, "no profile-set type found in template"
+
+    def test_creating_a_profile_occurrence_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        profile_type = self.get_profile_type(ifc)
+        element_class = profile_type.is_a()[:-4]
+        elems_before = {e.id() for e in ifc.by_type(element_class)}
+        result = bpy.ops.bim.add_occurrence(relating_type_id=profile_type.id())
+        assert result == {"FINISHED"}
+
+        elem = next(e for e in ifc.by_type(element_class) if e.id() not in elems_before)
+        body = ifcopenshell.util.representation.get_representation(elem, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_not_creating_duplicate_body_contexts_on_a_second_occurrence(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        profile_type = self.get_profile_type(ifc)
+
+        bpy.ops.bim.add_occurrence(relating_type_id=profile_type.id())
+        bpy.context.view_layer.objects.active = None
+        tool.Blender.set_objects_selection(bpy.context, None, ())
+        bpy.ops.bim.add_occurrence(relating_type_id=profile_type.id())
+
+        body_subcontexts = [
+            sc
+            for sc in ifc.by_type("IfcGeometricRepresentationSubContext")
+            if sc.ContextIdentifier == "Body" and sc.TargetView == "MODEL_VIEW"
+        ]
+        assert len(body_subcontexts) == 1
+
+    def test_unjoin_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        profile_type = self.get_profile_type(ifc)
+        element_class = profile_type.is_a()[:-4]
+        elems_before = {e.id() for e in ifc.by_type(element_class)}
+        bpy.ops.bim.add_occurrence(relating_type_id=profile_type.id())
+        elem = next(e for e in ifc.by_type(element_class) if e.id() not in elems_before)
+        obj = tool.Ifc.get_object(elem)
+        tool.Blender.set_objects_selection(bpy.context, obj, (obj,))
+
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = bpy.ops.bim.extend_profile(join_type="-")
+        assert result == {"FINISHED"}
+
+        body = ifcopenshell.util.representation.get_representation(elem, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
 
 
 class TestGetSiblingOccurrenceCount(NewFile):
