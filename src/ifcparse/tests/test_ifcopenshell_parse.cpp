@@ -7,6 +7,8 @@
 #include <ifcparse/guid_map.h>
 #include <ifcparse/parse.h>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>

@@ -570,6 +570,14 @@ namespace ifcopenshell {
 
             unresolved_references* references_to_resolve = nullptr;
 
+            // When set, references read into an instance's attributes stay in
+            // the attribute slots as unresolved_reference* values instead of
+            // being copied into references_to_resolve, and only aggregates that
+            // mix references with inline typed values still use the table.
+            // read_from_stream() turns this on and resolves the slots in a
+            // second pass; streaming consumers of references() leave it off.
+            bool resolve_references_in_place = false;
+
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
             typedef dense_id_map<shared_pointer_type> entity_instance_by_name_storage;
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;

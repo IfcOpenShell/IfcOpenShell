@@ -897,29 +897,104 @@ void append_empty_direct_aggregate(const ifcopenshell::aggregation_type* aggrega
     }
 }
 
+// Whether every element of a reference_or_simple_type aggregate is a #name.
+template <typename Aggregate>
+bool all_instance_references(const Aggregate& values) {
+    for (const auto& value : values) {
+        if (!std::holds_alternative<ifcopenshell::instance_reference>(value)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename Aggregate>
+bool all_simple_type_instances(const Aggregate& values) {
+    for (const auto& value : values) {
+        if (!std::holds_alternative<express::base>(value)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::vector<uint32_t> reference_names(const std::vector<ifcopenshell::reference_or_simple_type>& values) {
+    std::vector<uint32_t> names;
+    names.reserve(values.size());
+    for (const auto& value : values) {
+        names.push_back((uint32_t)(int)std::get<ifcopenshell::instance_reference>(value));
+    }
+    return names;
+}
+
+std::vector<express::base> simple_type_instances(const std::vector<ifcopenshell::reference_or_simple_type>& values) {
+    std::vector<express::base> instances;
+    instances.reserve(values.size());
+    for (const auto& value : values) {
+        instances.push_back(std::get<express::base>(value));
+    }
+    return instances;
+}
+
 template <typename T>
 void set_direct_attribute(
     in_memory_attribute_storage& storage,
     std::optional<size_t> instance_name,
     ifcopenshell::unresolved_references* references_to_resolve,
+    bool resolve_in_place,
     size_t attribute_index,
     int resolve_reference_index,
     const T& value
 ) {
-    if constexpr (std::is_same_v<std::decay_t<T>, ifcopenshell::reference_or_simple_type>) {
+    // A diverted reference (resolve_reference_index != -1) belongs to a simple
+    // type instance nested in an attribute of the owner. In-place storage
+    // writes it into that instance's own slot, so no diversion is needed.
+    const bool in_place = resolve_in_place && instance_name;
+    const auto record = [&](const auto& v) {
         if (instance_name && references_to_resolve) {
-            references_to_resolve->push_back(std::make_pair(
-                ifcopenshell::mutable_attribute_value{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index},
-                value
-            ));
+            references_to_resolve->push_back({{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index}, v});
+        }
+    };
+    if constexpr (std::is_same_v<std::decay_t<T>, ifcopenshell::reference_or_simple_type>) {
+        if (!in_place) {
+            record(value);
+        } else if (const auto* reference = std::get_if<ifcopenshell::instance_reference>(&value)) {
+            storage.set(attribute_index, ifcopenshell::unresolved_reference{(uint32_t)reference->v, (uint64_t)reference->file_offset});
+        } else {
+            storage.set(attribute_index, std::get<express::base>(value));
         }
     } else if constexpr (std::is_same_v<std::decay_t<T>, std::vector<ifcopenshell::reference_or_simple_type>>) {
-        if (instance_name && references_to_resolve) {
-            references_to_resolve->push_back({{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index}, value});
+        if (!in_place) {
+            record(value);
+        } else if (all_instance_references(value)) {
+            storage.set(attribute_index, ifcopenshell::unresolved_reference_list{reference_names(value)});
+        } else if (all_simple_type_instances(value)) {
+            storage.set(attribute_index, simple_type_instances(value));
+        } else {
+            record(value);
         }
     } else if constexpr (std::is_same_v<std::decay_t<T>, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>) {
-        if (instance_name && references_to_resolve) {
-            references_to_resolve->push_back({{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index}, value});
+        bool references = in_place, instances = in_place;
+        for (const auto& inner : value) {
+            references = references && all_instance_references(inner);
+            instances = instances && all_simple_type_instances(inner);
+        }
+        if (references) {
+            ifcopenshell::unresolved_reference_list_list names;
+            names.names.reserve(value.size());
+            for (const auto& inner : value) {
+                names.names.push_back(reference_names(inner));
+            }
+            storage.set(attribute_index, std::move(names));
+        } else if (instances) {
+            std::vector<std::vector<express::base>> nested;
+            nested.reserve(value.size());
+            for (const auto& inner : value) {
+                nested.push_back(simple_type_instances(inner));
+            }
+            storage.set(attribute_index, std::move(nested));
+        } else {
+            record(value);
         }
     } else {
         storage.set(attribute_index, value);
@@ -1039,7 +1114,7 @@ shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
                     auto aggregate = read_direct_aggregate(*this, tokens, entity_instance_name, entity, reference_attribute_index, aggregate_parameter_type(parameter_type), logger_.get());
                     std::visit([&](const auto& value) {
                         if constexpr (!std::is_same_v<std::decay_t<decltype(value)>, blank>) {
-                            set_direct_attribute(storage, entity_instance_name, references_to_resolve, attribute_index_within_data, attribute_index, value);
+                            set_direct_attribute(storage, entity_instance_name, references_to_resolve, resolve_references_in_place, attribute_index_within_data, attribute_index, value);
                         }
                     }, aggregate.storage);
                 } else {
@@ -1066,7 +1141,7 @@ shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
                 }
                 if (retain_value) {
                     dispatch_token_direct(next, declared_type(parameter_type), (int) attribute_index_within_data, logger_.get(), [&](const auto& value) {
-                        set_direct_attribute(storage, entity_instance_name, references_to_resolve, attribute_index_within_data, attribute_index, value);
+                        set_direct_attribute(storage, entity_instance_name, references_to_resolve, resolve_references_in_place, attribute_index_within_data, attribute_index, value);
                     });
                 }
             }
@@ -2446,6 +2521,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
 
     auto ifcroot_type_ = schema->declaration_by_name("IfcRoot");
     streamer.bypass_types(typed_to_bypass);
+    streamer.resolve_references_in_place(true);
 
     logger_.get().status("Scanning file...");
 
@@ -2499,6 +2575,81 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
 
     const auto& bypassed = streamer.bypassed_instances();
 
+    // Replace the names left in attribute slots by in-place reference
+    // storage with the instances they refer to. Instances are visited in
+    // name order; simple type instances, which carry the references of
+    // select-typed attributes such as IfcPropertySetDefinitionSet, after.
+    const auto resolve_name = [this, &bypassed](uint32_t name, uint32_t owner, size_t attribute_index, std::optional<uint64_t> file_offset, express::base& result) {
+        if (std::binary_search(bypassed.begin(), bypassed.end(), name)) {
+            return false;
+        }
+        auto it = byid_.find(name);
+        if (it == byid_.end()) {
+            std::string message = "Instance reference #" + std::to_string(name) + " used by instance #" + std::to_string(owner) + " at attribute index " + std::to_string(attribute_index) + " not found";
+            if (file_offset) {
+                message += " at offset " + std::to_string(*file_offset);
+            }
+            logger_.get().error(message);
+            return false;
+        }
+        result = express::base(it->second);
+        return true;
+    };
+    const auto resolve_slots = [&resolve_name](const shared_pointer_type& data) {
+        auto* slots = data->storage_;
+        if (slots == nullptr) {
+            return;
+        }
+        const uint32_t owner = data->id();
+        for (size_t i = 0; i < slots->size(); ++i) {
+            if (slots->template has<unresolved_reference>(i)) {
+                const auto reference = slots->template get<unresolved_reference>(i);
+                express::base instance;
+                if (resolve_name(reference.name, owner, i, reference.file_offset, instance)) {
+                    slots->set(i, instance);
+                } else {
+                    slots->set(i, blank{});
+                }
+            } else if (slots->template has<unresolved_reference_list>(i)) {
+                const auto names = std::move(slots->template get<unresolved_reference_list>(i).names);
+                std::vector<express::base> instances;
+                instances.reserve(names.size());
+                for (auto name : names) {
+                    express::base instance;
+                    if (resolve_name(name, owner, i, std::nullopt, instance)) {
+                        instances.push_back(instance);
+                    }
+                }
+                slots->set(i, std::move(instances));
+            } else if (slots->template has<unresolved_reference_list_list>(i)) {
+                const auto nested_names = std::move(slots->template get<unresolved_reference_list_list>(i).names);
+                std::vector<std::vector<express::base>> nested;
+                nested.reserve(nested_names.size());
+                for (const auto& names : nested_names) {
+                    std::vector<express::base> instances;
+                    instances.reserve(names.size());
+                    for (auto name : names) {
+                        express::base instance;
+                        if (resolve_name(name, owner, i, std::nullopt, instance)) {
+                            instances.push_back(instance);
+                        }
+                    }
+                    nested.push_back(std::move(instances));
+                }
+                slots->set(i, std::move(nested));
+            }
+        }
+    };
+    for (auto it = byid_.begin(); it != byid_.end(); ++it) {
+        resolve_slots(it->second);
+    }
+    for (const auto& data : read_simple_type_instances) {
+        resolve_slots(data);
+    }
+
+    // Aggregates that mix references with inline typed values, and any
+    // consumer that reads with in-place storage off, still go through the
+    // reference table.
     for (const auto& p : streamer.references()) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;

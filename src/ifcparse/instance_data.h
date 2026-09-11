@@ -75,6 +75,10 @@ class IFC_PARSE_API derived {};
 class IFC_PARSE_API empty_aggregate {};
 class IFC_PARSE_API empty_aggregate_of_aggregate {};
 
+struct unresolved_reference;
+struct unresolved_reference_list;
+struct unresolved_reference_list_list;
+
 } // namespace ifcopenshell
 
 namespace impl {
@@ -132,6 +136,18 @@ namespace impl {
     struct variant_type_name<express::base> {
         static std::string get() { return "instance"; }
     };
+    template <>
+    struct variant_type_name<ifcopenshell::unresolved_reference> {
+        static std::string get() { return "unresolved reference"; }
+    };
+    template <>
+    struct variant_type_name<ifcopenshell::unresolved_reference_list> {
+        static std::string get() { return "unresolved reference list"; }
+    };
+    template <>
+    struct variant_type_name<ifcopenshell::unresolved_reference_list_list> {
+        static std::string get() { return "unresolved reference list of lists"; }
+    };
 
     template <>
     struct variant_type_name<ifcopenshell::empty_aggregate> {
@@ -154,6 +170,22 @@ namespace ifcopenshell {
 template<typename... Args>
 struct parameter_pack {
     static constexpr size_t size = sizeof...(Args);
+};
+
+// Parse-time only values. The parser stores an entity reference as the
+// referenced instance name until every instance has been read, then replaces
+// it with the instance in a second pass. The list forms hold only names, so
+// they cost four bytes per reference while the file loads. Their indices in
+// the pack match the Argument_UNRESOLVED_* members of argument_type.
+struct unresolved_reference {
+    uint32_t name;
+    uint64_t file_offset;
+};
+struct unresolved_reference_list {
+    std::vector<uint32_t> names;
+};
+struct unresolved_reference_list_list {
+    std::vector<std::vector<uint32_t>> names;
 };
 
 typedef parameter_pack <
@@ -213,7 +245,11 @@ typedef parameter_pack <
     // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
     std::vector<std::vector<double>>,
     // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
-    std::vector<std::vector<express::base>>>
+    std::vector<std::vector<express::base>>,
+    // PARSE-TIME ONLY, see above:
+    unresolved_reference,
+    unresolved_reference_list,
+    unresolved_reference_list_list>
 type_variant_parameter_pack;
 
 template<typename Pack>
