@@ -526,6 +526,13 @@ class BIMCameraProperties(PropertyGroup):
         name="Cut Mode",
         update=get_update_layer_callback("cut_mode", "CutMode"),
     )
+    freestyle_ifc_only: BoolProperty(
+        name="IFC Elements Only",
+        description="Restrict Freestyle linework to IFC elements, ignoring plain Blender "
+        "objects (e.g. entourage) so that high poly non-IFC geometry doesn't slow down the render",
+        default=False,
+        update=get_update_layer_callback("freestyle_ifc_only", "FreestyleIfcOnly"),
+    )
 
     # EPset_Drawing.
     has_underlay: BoolProperty(
