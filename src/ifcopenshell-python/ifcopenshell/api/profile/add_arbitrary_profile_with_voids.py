@@ -95,10 +95,18 @@ class Usecase:
                     )
                 )
         else:
-            outer_curve = self.file.create_entity(
-                "IfcIndexedPolyCurve",
-                (self.file.create_entity("IfcCartesianPointList3D", ifc_safe_vector_type(outer_points))),
-            )
+            outer_dimensions = outer_points.shape[1]
+            if outer_dimensions == 2:
+                outer_ifc_points = self.file.create_entity(
+                    "IfcCartesianPointList2D", ifc_safe_vector_type(outer_points)
+                )
+            elif outer_dimensions == 3:
+                outer_ifc_points = self.file.create_entity(
+                    "IfcCartesianPointList3D", ifc_safe_vector_type(outer_points)
+                )
+            else:
+                assert False, f"Invalid dimensions: {outer_dimensions}."
+            outer_curve = self.file.create_entity("IfcIndexedPolyCurve", outer_ifc_points)
             for inner_point in inner_points:
                 dimensions = inner_point.shape[1]
                 if dimensions == 2:

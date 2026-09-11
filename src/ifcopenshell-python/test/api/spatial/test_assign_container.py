@@ -103,6 +103,61 @@ class TestAssignContainer(test.bootstrap.IFC4):
         assert subelement.ObjectPlacement.PlacementRelTo.PlacesObject[0] == element2
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), matrix1)
 
+    def test_assigning_a_container_does_not_shift_a_sibling_sharing_the_placement(self):
+        # Regression test for #9114: IfcObjectPlacement.PlacesObject has
+        # cardinality 0:*, so several products may share one IfcLocalPlacement,
+        # and other products' placements may legitimately be expressed
+        # PlacementRelTo that shared placement. edit_object_placement()'s
+        # get_children_settings() captures a single matrix per referenced
+        # placement and reuses that same array object across every product
+        # referencing it. Reassigning the moved product's container then
+        # mutated that shared array in place while relocating the first
+        # sibling, silently corrupting the position captured for every
+        # sibling processed afterwards (e.g. an unrelated IfcWall on the
+        # same storey, sent to the origin).
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        storey1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        storey2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        moved_element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        sibling1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        sibling2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+
+        ifcopenshell.api.spatial.assign_container(self.file, products=[moved_element], relating_structure=storey1)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=moved_element, is_si=False)
+        # Mimic a real (if unusual) model where a spatial structure directly
+        # reuses one of its contained element's placement, so that other
+        # elements placed relative to the storey end up relative to it too.
+        storey1.ObjectPlacement = moved_element.ObjectPlacement
+
+        ifcopenshell.api.spatial.assign_container(self.file, products=[sibling1], relating_structure=storey1)
+        sibling_matrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1000.0),
+                (0.0, 1.0, 0.0, 2000.0),
+                (0.0, 0.0, 1.0, 3000.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        ifcopenshell.api.geometry.edit_object_placement(
+            self.file, product=sibling1, matrix=sibling_matrix.copy(), is_si=False
+        )
+        # Force sibling2 to literally reuse sibling1's IfcLocalPlacement, exactly
+        # as several elements may legitimately do in a real model.
+        ifcopenshell.api.spatial.assign_container(self.file, products=[sibling2], relating_structure=storey1)
+        sibling2.ObjectPlacement = sibling1.ObjectPlacement
+
+        expected_matrix = ifcopenshell.util.placement.get_local_placement(sibling2.ObjectPlacement)
+
+        ifcopenshell.api.spatial.assign_container(self.file, products=[moved_element], relating_structure=storey2)
+
+        assert numpy.array_equal(
+            ifcopenshell.util.placement.get_local_placement(sibling1.ObjectPlacement), expected_matrix
+        ), "sibling1 must keep its global position"
+        assert numpy.array_equal(
+            ifcopenshell.util.placement.get_local_placement(sibling2.ObjectPlacement), expected_matrix
+        ), "sibling2 must keep its global position, not be moved towards the origin"
+
     def test_not_updating_placement_if_placement_is_not_relative(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
