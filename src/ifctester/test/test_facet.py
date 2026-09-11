@@ -1152,6 +1152,78 @@ class TestProperty:
         facet = Property(propertySet="Foo_Bar", baseName="Foo", value="2", dataType="IFCLENGTHMEASURE")
         run("Any matching value in a bounded property will pass 4/4", facet=facet, inst=element, expected=False)
 
+        # A restriction against a bounded property must respect the whole declared
+        # interval, not any single value in it. See buildingSMART/IDS#371.
+        ifc = self.setup_ifc()
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
+        bounded_property = ifc.createIfcPropertyBoundedValue(
+            Name="Foo",
+            UpperBoundValue=ifc.createIfcLengthMeasure(4000),
+            LowerBoundValue=ifc.createIfcLengthMeasure(3000),
+        )
+        pset.HasProperties = [bounded_property]
+        restriction = Restriction(options={"minExclusive": 2, "maxInclusive": 5}, base="double")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value=restriction, dataType="IFCLENGTHMEASURE")
+        run(
+            "A bounded property entirely within a restriction range will pass",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
+
+        ifc = self.setup_ifc()
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
+        bounded_property = ifc.createIfcPropertyBoundedValue(
+            Name="Foo",
+            UpperBoundValue=ifc.createIfcLengthMeasure(3000),
+            LowerBoundValue=ifc.createIfcLengthMeasure(2000),
+        )
+        pset.HasProperties = [bounded_property]
+        restriction = Restriction(options={"minExclusive": 2, "maxInclusive": 5}, base="double")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value=restriction, dataType="IFCLENGTHMEASURE")
+        run(
+            "A bounded property exceeding an exclusive restriction bound will fail",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
+
+        ifc = self.setup_ifc()
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
+        bounded_property = ifc.createIfcPropertyBoundedValue(
+            Name="Foo",
+            UpperBoundValue=ifc.createIfcLengthMeasure(40000),
+        )
+        pset.HasProperties = [bounded_property]
+        restriction = Restriction(options={"minInclusive": 20}, base="double")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value=restriction, dataType="IFCLENGTHMEASURE")
+        run(
+            "A bounded property with an open lower bound will fail a minInclusive restriction",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
+
+        ifc = self.setup_ifc()
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
+        bounded_property = ifc.createIfcPropertyBoundedValue(
+            Name="Foo",
+            SetPointValue=ifc.createIfcLengthMeasure(3),
+        )
+        pset.HasProperties = [bounded_property]
+        restriction = Restriction(options={"minInclusive": 2, "maxInclusive": 5}, base="double")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value=restriction, dataType="IFCLENGTHMEASURE")
+        run(
+            "A bounded property with only SetPointValue will fail a restriction",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
+
         ifc = self.setup_ifc()
         element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
