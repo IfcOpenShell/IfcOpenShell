@@ -37,6 +37,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <cstring>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -201,10 +202,29 @@ public:
     explicit full_buffer_impl(const caller_fed_tag& tag);
     full_buffer_impl(const std::string& content, const caller_fed_tag& tag);
 
-    size_t size() const;
-    char get(size_t position) const;
-    uint32_t get_u32(size_t position) const;
-    uint64_t get_u64(size_t position) const;
+    size_t size() const { return size_; }
+    char get(size_t position) const {
+        if (position >= size_) {
+            throw std::out_of_range("get out of range");
+        }
+        return buf_.data()[position];
+    }
+    uint32_t get_u32(size_t position) const {
+        if (position + sizeof(uint32_t) > size_) {
+            throw std::out_of_range("get_u32 out of range");
+        }
+        uint32_t value;
+        std::memcpy(&value, buf_.data() + position, sizeof(value));
+        return value;
+    }
+    uint64_t get_u64(size_t position) const {
+        if (position + sizeof(uint64_t) > size_) {
+            throw std::out_of_range("get_u64 out of range");
+        }
+        uint64_t value;
+        std::memcpy(&value, buf_.data() + position, sizeof(value));
+        return value;
+    }
     void push_next_page(const std::string& page_data);
     void drop_pages(size_t up_to_position);
 
@@ -249,10 +269,29 @@ class IFC_PARSE_API mmap_impl {
 public:
     explicit mmap_impl(const std::string& path);
 
-    size_t size() const;
-    char get(size_t position) const;
-    uint32_t get_u32(size_t position) const;
-    uint64_t get_u64(size_t position) const;
+    size_t size() const { return size_; }
+    char get(size_t position) const {
+        if (position >= size_) {
+            throw std::out_of_range("get out of range");
+        }
+        return map_.data()[position];
+    }
+    uint32_t get_u32(size_t position) const {
+        if (position + sizeof(uint32_t) > size_) {
+            throw std::out_of_range("get_u32 out of range");
+        }
+        uint32_t value;
+        std::memcpy(&value, map_.data() + position, sizeof(value));
+        return value;
+    }
+    uint64_t get_u64(size_t position) const {
+        if (position + sizeof(uint64_t) > size_) {
+            throw std::out_of_range("get_u64 out of range");
+        }
+        uint64_t value;
+        std::memcpy(&value, map_.data() + position, sizeof(value));
+        return value;
+    }
     void push_next_page(const std::string& page_data);
     void drop_pages(size_t up_to_position);
 
