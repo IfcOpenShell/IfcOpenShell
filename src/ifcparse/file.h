@@ -237,6 +237,7 @@ public:
         batch_deletion_ids_t;
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
+    bool lazy_loading_ = false;
     void process_deletion_(const express::base& entity);
 
   public:
@@ -290,6 +291,13 @@ public:
     /// @brief Bypass loading of all instances of the specified type name. Only applies to parsed IFC-SPF files.
     /// @param type_name case insensitive name of the type to bypass
     void bypass_type(const std::string& type_name);
+
+    // Index the file with one scan and parse each instance's attributes on
+    // first access instead of parsing everything up front. Set before
+    // initialize(). Falls back to the full parse if the scan finds anything
+    // it does not handle.
+    void lazy_loading(bool value) { lazy_loading_ = value; }
+    bool lazy_loading() const { return lazy_loading_; }
 
     ~file();
 

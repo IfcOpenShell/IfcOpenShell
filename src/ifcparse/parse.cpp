@@ -43,6 +43,8 @@
 #include <charconv>
 #include <type_traits>
 #include <unordered_map>
+#include <functional>
+#include <string_view>
 
 // Apple clang's libc++ has no floating-point std::from_chars overload (it's
 // =deleted), so on macOS doubles are parsed via strtod_l with a cached "C"
@@ -1089,10 +1091,21 @@ shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
     bool coerce_attribute_count
 ) {
     static_cast<void>(coerce_attribute_count);
+    auto storage = load_attributes<Reader, in_memory_attribute_storage>(tokens, entity_instance_name, declaration, entity, attribute_index);
+    return ifcopenshell::make_pointer_type<instance_data>(file, declaration, (declaration && declaration->as_entity()) ? (uint32_t)entity_instance_name.value_or(0) : 0, std::move(storage));
+}
 
+template <typename Reader, typename Storage>
+Storage ifcopenshell::impl::in_memory_file_storage::load_attributes(
+    ifcopenshell::spf_lexer<Reader>* tokens,
+    std::optional<size_t> entity_instance_name,
+    const ifcopenshell::declaration* declaration,
+    const ifcopenshell::entity* entity,
+    int attribute_index
+) {
     parameter_type_view parameter_types(declaration);
     const size_t expected_size = parameter_types.size();
-    in_memory_attribute_storage storage(expected_size);
+    Storage storage(expected_size);
 
     token next = tokens->next();
     size_t attribute_index_within_data = 0;
@@ -1150,7 +1163,7 @@ shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
     }
 
     warn_attribute_count(declaration, entity_instance_name, expected_size, values_read, logger_.get());
-    return ifcopenshell::make_pointer_type<instance_data>(file, declaration, (declaration && declaration->as_entity()) ? (uint32_t)entity_instance_name.value_or(0) : 0, std::move(storage));
+    return storage;
 }
 
 template <typename Reader>
@@ -1163,6 +1176,9 @@ void ifcopenshell::impl::in_memory_file_storage::try_read_semicolon(ifcopenshell
 }
 
 void ifcopenshell::impl::in_memory_file_storage::register_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index) {
+    if (!register_inverses_) {
+        return;
+    }
     // Assume a check on token type has already been performed
     byref_excl_.add((uint32_t)inst_id, (uint32_t)id_from, (uint16_t)from_entity->index_in_schema(), attribute_index);
 }
@@ -1931,10 +1947,24 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
         ty = guess_file_type(path);
     }
     if (ty == FT_IFCSPF) {
-        file_reader<full_buffer_impl> s(path);
         storage_.emplace<1>(this, logger_.get());
         header_.reset(new spf_header(this, &logger_.get()));
-        std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
+        bool indexed = false;
+        if (lazy_loading_) {
+            indexed = std::get<impl::in_memory_file_storage>(storage_).index_lazily(path, schema_, max_id_, types_to_bypass_loading_);
+            if (!indexed) {
+                // Start over with the full parser.
+                storage_.emplace<1>(this, logger_.get());
+                header_.reset(new spf_header(this, &logger_.get()));
+                schema_ = nullptr;
+                max_id_ = 0;
+                lazy_loading_ = false;
+            }
+        }
+        if (!indexed) {
+            file_reader<full_buffer_impl> s(path);
+            std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
+        }
 
         if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
             // @todo unify these names, it's already confusing enough as it stands
@@ -2475,110 +2505,7 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointe
 
 template class IFC_PARSE_API ifcopenshell::instance_streamer<file_reader<full_buffer_impl>>;
 
-template <typename Reader>
-void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass) {
-    schema = nullptr;
-
-    if (!s->size() || s->eof()) {
-        good_ = file_open_status::READ_ERROR;
-        return;
-    }
-
-    std::vector<std::string> schemas;
-
-    instance_streamer<Reader> streamer(s, file, logger_.get());
-    // One inverse record per ~32 bytes of SPF text is a slight over-estimate on
-    // real models; reserving avoids the doubling copies and the capacity slack.
-    streamer.inverses().reserve(s->size() / 32);
-    streamer.yield_header_instances(false);
-
-    if (const auto* header = streamer.header()) {
-        try {
-            schemas = header->file_schema().schema_identifiers();
-        } catch (...) {
-        }
-    }
-
-    schema = streamer.schema();
-    if (schema == nullptr && schemas.size() == 1) {
-        try {
-            schema = ifcopenshell::schema_by_name(schemas.front());
-        } catch (const ifcopenshell::exception& e) {
-            good_ = file_open_status::UNSUPPORTED_SCHEMA;
-            logger_.get().error(e);
-        }
-    }
-
-    if (schema == nullptr) {
-        if (schemas.empty()) {
-            good_ = streamer.status();
-        } else {
-            good_ = file_open_status::UNSUPPORTED_SCHEMA;
-        }
-        logger_.get().message(ifcopenshell::logger::LOG_ERROR, "No support for file schema encountered (" + boost::algorithm::join(schemas, ", ") + ")");
-        return;
-    }
-
-    auto ifcroot_type_ = schema->declaration_by_name("IfcRoot");
-    streamer.bypass_types(typed_to_bypass);
-    streamer.resolve_references_in_place(true);
-
-    logger_.get().status("Scanning file...");
-
-    while (streamer) {
-        auto inst = streamer.read_instance();
-
-        if (!inst) {
-            break;
-        }
-
-        auto current_id = std::get<0>(*inst);
-        express::base instance(std::get<2>(*inst));
-
-        if (instance.declaration().is(*ifcroot_type_)) {
-            try {
-                const std::string guid = instance.get_attribute_value(0);
-                if (byguid_.find(guid) != byguid_.end()) {
-                    std::stringstream ss;
-                    ss << "Instance encountered with non-unique GlobalId " << guid;
-                    logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
-                }
-                byguid_[guid] = instance;
-            } catch (const exception& ex) {
-                logger_.get().message(ifcopenshell::logger::LOG_ERROR, ex.what());
-            }
-        }
-
-        const ifcopenshell::declaration* ty = &instance.declaration();
-        bytype_excl_[ty].push_back(instance);
-
-        if (byid_.find(current_id) != byid_.end()) {
-            std::stringstream ss;
-            ss << "Overwriting instance with name #" << current_id;
-            logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
-        }
-
-        byid_.insert({(uint32_t)current_id, std::get<2>(*inst)});
-        max_id = (std::max)(max_id, (unsigned int)current_id);
-    }
-
-    good_ = streamer.status();
-    byref_excl_ = std::move(streamer.inverses());
-    byref_excl_.sort();
-    read_simple_type_instances = streamer.steal_instances();
-
-    logger_.get().status("\rDone scanning file   ");
-
-    if (good_ != file_open_status::SUCCESS) {
-        return;
-    }
-
-    const auto& bypassed = streamer.bypassed_instances();
-
-    // Replace the names left in attribute slots by in-place reference
-    // storage with the instances they refer to. Instances are visited in
-    // name order; simple type instances, which carry the references of
-    // select-typed attributes such as IfcPropertySetDefinitionSet, after.
+void ifcopenshell::impl::in_memory_file_storage::resolve_instance_references(const shared_pointer_type& data, const std::vector<unsigned>& bypassed) {
     const auto resolve_name = [this, &bypassed](uint32_t name, uint32_t owner, size_t attribute_index, std::optional<uint64_t> file_offset, express::base& result) {
         if (std::binary_search(bypassed.begin(), bypassed.end(), name)) {
             return false;
@@ -2595,23 +2522,36 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
         result = express::base(it->second);
         return true;
     };
-    const auto resolve_slots = [&resolve_name](const shared_pointer_type& data) {
-        if (!data->storage_) {
-            return;
-        }
-        auto* slots = &*data->storage_;
-        const uint32_t owner = data->id();
-        for (size_t i = 0; i < slots->size(); ++i) {
-            if (slots->template has<unresolved_reference>(i)) {
-                const auto reference = slots->template get<unresolved_reference>(i);
+    if (!data->storage_) {
+        return;
+    }
+    auto* slots = &*data->storage_;
+    const uint32_t owner = data->id();
+    for (size_t i = 0; i < slots->size(); ++i) {
+        if (slots->template has<unresolved_reference>(i)) {
+            const auto reference = slots->template get<unresolved_reference>(i);
+            express::base instance;
+            if (resolve_name(reference.name, owner, i, reference.file_offset, instance)) {
+                slots->set(i, instance);
+            } else {
+                slots->set(i, blank{});
+            }
+        } else if (slots->template has<unresolved_reference_list>(i)) {
+            const auto names = std::move(slots->template get<unresolved_reference_list>(i).names);
+            std::vector<express::base> instances;
+            instances.reserve(names.size());
+            for (auto name : names) {
                 express::base instance;
-                if (resolve_name(reference.name, owner, i, reference.file_offset, instance)) {
-                    slots->set(i, instance);
-                } else {
-                    slots->set(i, blank{});
+                if (resolve_name(name, owner, i, std::nullopt, instance)) {
+                    instances.push_back(instance);
                 }
-            } else if (slots->template has<unresolved_reference_list>(i)) {
-                const auto names = std::move(slots->template get<unresolved_reference_list>(i).names);
+            }
+            slots->set(i, std::move(instances));
+        } else if (slots->template has<unresolved_reference_list_list>(i)) {
+            const auto nested_names = std::move(slots->template get<unresolved_reference_list_list>(i).names);
+            std::vector<std::vector<express::base>> nested;
+            nested.reserve(nested_names.size());
+            for (const auto& names : nested_names) {
                 std::vector<express::base> instances;
                 instances.reserve(names.size());
                 for (auto name : names) {
@@ -2620,37 +2560,15 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                         instances.push_back(instance);
                     }
                 }
-                slots->set(i, std::move(instances));
-            } else if (slots->template has<unresolved_reference_list_list>(i)) {
-                const auto nested_names = std::move(slots->template get<unresolved_reference_list_list>(i).names);
-                std::vector<std::vector<express::base>> nested;
-                nested.reserve(nested_names.size());
-                for (const auto& names : nested_names) {
-                    std::vector<express::base> instances;
-                    instances.reserve(names.size());
-                    for (auto name : names) {
-                        express::base instance;
-                        if (resolve_name(name, owner, i, std::nullopt, instance)) {
-                            instances.push_back(instance);
-                        }
-                    }
-                    nested.push_back(std::move(instances));
-                }
-                slots->set(i, std::move(nested));
+                nested.push_back(std::move(instances));
             }
+            slots->set(i, std::move(nested));
         }
-    };
-    for (auto it = byid_.begin(); it != byid_.end(); ++it) {
-        resolve_slots(it->second);
     }
-    for (const auto& data : read_simple_type_instances) {
-        resolve_slots(data);
-    }
+}
 
-    // Aggregates that mix references with inline typed values, and any
-    // consumer that reads with in-place storage off, still go through the
-    // reference table.
-    for (const auto& p : streamer.references()) {
+void ifcopenshell::impl::in_memory_file_storage::resolve_table_references(const unresolved_references& references, const std::vector<unsigned>& bypassed) {
+    for (const auto& p : references) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
 
@@ -2779,6 +2697,427 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
             }
         }
     }
+
+}
+
+
+struct ifcopenshell::impl::in_memory_file_storage::lazy_source {
+    file_reader<full_buffer_impl> reader;
+    spf_lexer<file_reader<full_buffer_impl>> lexer;
+    lazy_source(const std::string& path, ifcopenshell::logger& logger)
+        : reader(path), lexer(&reader, logger) {}
+};
+
+namespace {
+void delete_lazy_source(ifcopenshell::impl::in_memory_file_storage::lazy_source* source) {
+    delete source;
+}
+}
+
+void instance_data::ensure_loaded() const {
+    if (storage_ || file_ == nullptr || lazy_offset_ == 0) {
+        return;
+    }
+    if (auto* storage = std::get_if<ifcopenshell::impl::in_memory_file_storage>(&file_->storage_)) {
+        if (storage->lazy_) {
+            storage->materialize(const_cast<instance_data*>(this));
+        }
+    }
+}
+
+void ifcopenshell::impl::in_memory_file_storage::materialize(instance_data* data) {
+    auto& lexer = lazy_source_->lexer;
+    lexer.stream->seek((size_t)data->lazy_offset_);
+    data->lazy_offset_ = 0;
+    const auto* declaration = data->declaration();
+    register_inverses_ = false;
+    const size_t simple_type_instances_before = read_simple_type_instances.size();
+    auto storage = load_attributes<file_reader<full_buffer_impl>, in_memory_attribute_storage>(&lexer, (size_t)data->id(), declaration, declaration->as_entity(), -1);
+    register_inverses_ = true;
+    data->storage_.emplace(std::move(storage));
+    data->populate_derived_();
+    resolve_instance_references(data, lazy_bypassed_);
+    for (size_t i = simple_type_instances_before; i < read_simple_type_instances.size(); ++i) {
+        resolve_instance_references(read_simple_type_instances[i], lazy_bypassed_);
+    }
+    if (!lazy_mixed_references_.empty()) {
+        resolve_table_references(lazy_mixed_references_, lazy_bypassed_);
+        lazy_mixed_references_.clear();
+    }
+}
+
+namespace {
+// The scanner behind lazy loading. One pass over the DATA section tracking
+// only quote state, parenthesis depth, commas at depth one (the attribute
+// index) and #names; it records where each instance starts and every
+// reference it makes, and reads nothing else. Anything it does not expect
+// aborts the scan so the caller can fall back to the full parser.
+struct lazy_scan_error {
+    const char* reason;
+    size_t offset;
+};
+}
+
+bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string& path, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass) {
+    lazy_source_ = decltype(lazy_source_)(new lazy_source(path, logger_.get()), &delete_lazy_source);
+    auto& reader = lazy_source_->reader;
+    if (!reader.size()) {
+        return false;
+    }
+
+    // The header, the schema and the bypass set, exactly as the full parse
+    // derives them.
+    {
+        instance_streamer<file_reader<full_buffer_impl>> streamer(&reader, file, logger_.get());
+        schema = streamer.schema();
+    }
+    if (schema == nullptr) {
+        return false;
+    }
+    std::vector<char> bypassed_types(schema->declarations().size(), 0);
+    for (const auto& name : types_to_bypass) {
+        const ifcopenshell::declaration* declaration = nullptr;
+        try {
+            declaration = schema->declaration_by_name(name);
+        } catch (const ifcopenshell::exception&) {
+            continue;
+        }
+        std::function<void(const ifcopenshell::entity*)> mark = [&](const ifcopenshell::entity* e) {
+            bypassed_types[e->index_in_schema()] = 1;
+            for (const auto* subtype : e->subtypes()) {
+                mark(subtype);
+            }
+        };
+        if (const auto* e = declaration->as_entity()) {
+            mark(e);
+        }
+    }
+    const auto* ifcroot = schema->declaration_by_name("IfcRoot");
+
+    this->schema = schema;
+    resolve_references_in_place = true;
+    references_to_resolve = &lazy_mixed_references_;
+    lazy_ = true;
+
+    const char* p = reader.data();
+    const size_t n = reader.size();
+    std::unordered_map<std::string_view, const ifcopenshell::declaration*> declarations;
+    byref_excl_.reserve(n / 32);
+
+    try {
+        const char* data_section = (const char*)memmem(p, n, "\nDATA;", 6);
+        if (data_section == nullptr) {
+            throw lazy_scan_error{"no DATA section", 0};
+        }
+        size_t i = (size_t)(data_section - p) + 6;
+        while (i < n) {
+            while (i < n && (p[i] == '\n' || p[i] == '\r' || p[i] == ' ' || p[i] == '\t')) {
+                ++i;
+            }
+            if (i >= n) {
+                break;
+            }
+            if (p[i] == '/' && i + 1 < n && p[i + 1] == '*') {
+                const char* end = (const char*)memmem(p + i, n - i, "*/", 2);
+                if (end == nullptr) {
+                    throw lazy_scan_error{"unterminated comment", i};
+                }
+                i = (size_t)(end - p) + 2;
+                continue;
+            }
+            if (p[i] == 'E') {
+                if (n - i >= 6 && memcmp(p + i, "ENDSEC", 6) == 0) {
+                    break;
+                }
+                throw lazy_scan_error{"unexpected keyword between instances", i};
+            }
+            if (p[i] != '#') {
+                throw lazy_scan_error{"instance does not start with #", i};
+            }
+            ++i;
+            if (i >= n || p[i] < '0' || p[i] > '9') {
+                throw lazy_scan_error{"bad instance name", i};
+            }
+            uint32_t name = 0;
+            while (i < n && p[i] >= '0' && p[i] <= '9') {
+                name = name * 10 + (uint32_t)(p[i++] - '0');
+            }
+            while (i < n && p[i] == ' ') {
+                ++i;
+            }
+            if (i >= n || p[i] != '=') {
+                throw lazy_scan_error{"expected =", i};
+            }
+            ++i;
+            while (i < n && p[i] == ' ') {
+                ++i;
+            }
+            const size_t keyword_start = i;
+            while (i < n && ((p[i] >= 'A' && p[i] <= 'Z') || (p[i] >= '0' && p[i] <= '9') || p[i] == '_')) {
+                ++i;
+            }
+            if (i >= n || p[i] != '(' || i == keyword_start) {
+                throw lazy_scan_error{"expected TYPE(", i};
+            }
+            const std::string_view keyword(p + keyword_start, i - keyword_start);
+            const size_t paren = i++;
+
+            // Resolve the type; unknown or non-entity types are logged and the
+            // instance skipped, as the full parser does.
+            const ifcopenshell::declaration* declaration = nullptr;
+            auto found = declarations.find(keyword);
+            if (found == declarations.end()) {
+                try {
+                    declaration = schema->declaration_by_name(std::string(keyword));
+                    if (declaration->as_entity() == nullptr) {
+                        logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(keyword_start));
+                        declaration = nullptr;
+                    }
+                } catch (const ifcopenshell::exception& e) {
+                    logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(keyword_start));
+                }
+                declarations.emplace(keyword, declaration);
+            } else {
+                declaration = found->second;
+            }
+            const bool bypassed = declaration != nullptr && bypassed_types[declaration->index_in_schema()];
+            const bool record = declaration != nullptr && !bypassed;
+            const uint16_t type_index = record ? (uint16_t)declaration->index_in_schema() : 0;
+
+            int depth = 1;
+            int attribute = 0;
+            bool in_string = false;
+            for (; i < n; ++i) {
+                const char c = p[i];
+                if (in_string) {
+                    if (c == '\'') {
+                        in_string = false;
+                    }
+                    continue;
+                }
+                if (c == '\'') {
+                    in_string = true;
+                } else if (c == '(') {
+                    ++depth;
+                } else if (c == ')') {
+                    if (--depth == 0) {
+                        break;
+                    }
+                } else if (c == ',') {
+                    if (depth == 1) {
+                        ++attribute;
+                    }
+                } else if (c == '#') {
+                    uint32_t referenced = 0;
+                    size_t j = i + 1;
+                    while (j < n && p[j] >= '0' && p[j] <= '9') {
+                        referenced = referenced * 10 + (uint32_t)(p[j++] - '0');
+                    }
+                    if (j == i + 1) {
+                        throw lazy_scan_error{"# not followed by an instance name", i};
+                    }
+                    if (record) {
+                        byref_excl_.add(referenced, name, type_index, attribute);
+                    }
+                    i = j - 1;
+                } else if (c == '/' && i + 1 < n && p[i + 1] == '*') {
+                    const char* end = (const char*)memmem(p + i, n - i, "*/", 2);
+                    if (end == nullptr) {
+                        throw lazy_scan_error{"unterminated comment", i};
+                    }
+                    i = (size_t)(end - p) + 1;
+                } else if (c == ';') {
+                    throw lazy_scan_error{"; inside an instance", i};
+                }
+            }
+            if (i >= n) {
+                throw lazy_scan_error{"unterminated instance", paren};
+            }
+            ++i;
+            while (i < n && p[i] == ' ') {
+                ++i;
+            }
+            if (i >= n || p[i] != ';') {
+                throw lazy_scan_error{"expected ; after )", i};
+            }
+            ++i;
+
+            if (bypassed) {
+                lazy_bypassed_.push_back(name);
+                continue;
+            }
+            if (!record) {
+                continue;
+            }
+            auto data = ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{});
+            data->lazy_offset_ = (uint64_t)paren + 1;
+            if (!byid_.insert({name, data}).second) {
+                logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Overwriting instance with name #" + std::to_string(name));
+                byid_.erase(name);
+                byid_.insert({name, data});
+            }
+            express::base instance(data);
+            bytype_excl_[declaration].push_back(instance);
+            max_id = (std::max)(max_id, (unsigned int)name);
+
+            if (declaration->is(*ifcroot)) {
+                // The GlobalId is the first attribute; read it without the lexer.
+                size_t g = paren + 1;
+                while (g < n && p[g] == ' ') {
+                    ++g;
+                }
+                if (g < n && p[g] == '\'') {
+                    size_t e = g + 1;
+                    bool escapes = false;
+                    while (e < n) {
+                        if (p[e] == '\'') {
+                            if (e + 1 < n && p[e + 1] == '\'') {
+                                escapes = true;
+                                e += 2;
+                                continue;
+                            }
+                            break;
+                        }
+                        escapes = escapes || p[e] == '\\';
+                        ++e;
+                    }
+                    std::string guid(p + g + 1, e - g - 1);
+                    if (escapes) {
+                        guid = ifcopenshell::decode_spf_string(guid);
+                    }
+                    if (byguid_.find(guid) != byguid_.end()) {
+                        logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
+                    }
+                    byguid_[guid] = instance;
+                }
+            }
+        }
+    } catch (const lazy_scan_error& error) {
+        logger_.get().message(ifcopenshell::logger::LOG_NOTICE, std::string("Lazy loading not possible (") + error.reason + " at offset " + std::to_string(error.offset) + "), parsing the file in full");
+        return false;
+    }
+
+    std::sort(lazy_bypassed_.begin(), lazy_bypassed_.end());
+    byref_excl_.sort();
+    good_ = file_open_status::SUCCESS;
+    return true;
+}
+
+template <typename Reader>
+void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass) {
+    schema = nullptr;
+
+    if (!s->size() || s->eof()) {
+        good_ = file_open_status::READ_ERROR;
+        return;
+    }
+
+    std::vector<std::string> schemas;
+
+    instance_streamer<Reader> streamer(s, file, logger_.get());
+    // One inverse record per ~32 bytes of SPF text is a slight over-estimate on
+    // real models; reserving avoids the doubling copies and the capacity slack.
+    streamer.inverses().reserve(s->size() / 32);
+    streamer.yield_header_instances(false);
+
+    if (const auto* header = streamer.header()) {
+        try {
+            schemas = header->file_schema().schema_identifiers();
+        } catch (...) {
+        }
+    }
+
+    schema = streamer.schema();
+    if (schema == nullptr && schemas.size() == 1) {
+        try {
+            schema = ifcopenshell::schema_by_name(schemas.front());
+        } catch (const ifcopenshell::exception& e) {
+            good_ = file_open_status::UNSUPPORTED_SCHEMA;
+            logger_.get().error(e);
+        }
+    }
+
+    if (schema == nullptr) {
+        if (schemas.empty()) {
+            good_ = streamer.status();
+        } else {
+            good_ = file_open_status::UNSUPPORTED_SCHEMA;
+        }
+        logger_.get().message(ifcopenshell::logger::LOG_ERROR, "No support for file schema encountered (" + boost::algorithm::join(schemas, ", ") + ")");
+        return;
+    }
+
+    auto ifcroot_type_ = schema->declaration_by_name("IfcRoot");
+    streamer.bypass_types(typed_to_bypass);
+    streamer.resolve_references_in_place(true);
+
+    logger_.get().status("Scanning file...");
+
+    while (streamer) {
+        auto inst = streamer.read_instance();
+
+        if (!inst) {
+            break;
+        }
+
+        auto current_id = std::get<0>(*inst);
+        express::base instance(std::get<2>(*inst));
+
+        if (instance.declaration().is(*ifcroot_type_)) {
+            try {
+                const std::string guid = instance.get_attribute_value(0);
+                if (byguid_.find(guid) != byguid_.end()) {
+                    std::stringstream ss;
+                    ss << "Instance encountered with non-unique GlobalId " << guid;
+                    logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
+                }
+                byguid_[guid] = instance;
+            } catch (const exception& ex) {
+                logger_.get().message(ifcopenshell::logger::LOG_ERROR, ex.what());
+            }
+        }
+
+        const ifcopenshell::declaration* ty = &instance.declaration();
+        bytype_excl_[ty].push_back(instance);
+
+        if (byid_.find(current_id) != byid_.end()) {
+            std::stringstream ss;
+            ss << "Overwriting instance with name #" << current_id;
+            logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
+        }
+
+        byid_.insert({(uint32_t)current_id, std::get<2>(*inst)});
+        max_id = (std::max)(max_id, (unsigned int)current_id);
+    }
+
+    good_ = streamer.status();
+    byref_excl_ = std::move(streamer.inverses());
+    byref_excl_.sort();
+    read_simple_type_instances = streamer.steal_instances();
+
+    logger_.get().status("\rDone scanning file   ");
+
+    if (good_ != file_open_status::SUCCESS) {
+        return;
+    }
+
+    const auto& bypassed = streamer.bypassed_instances();
+
+    // Replace the names left in attribute slots by in-place reference
+    // storage with the instances they refer to. Instances are visited in
+    // name order; simple type instances, which carry the references of
+    // select-typed attributes such as IfcPropertySetDefinitionSet, after.
+    for (auto it = byid_.begin(); it != byid_.end(); ++it) {
+        resolve_instance_references(it->second, bypassed);
+    }
+    for (const auto& data : read_simple_type_instances) {
+        resolve_instance_references(data, bypassed);
+    }
+
+    // Aggregates that mix references with inline typed values, and any
+    // consumer that reads with in-place storage off, still go through the
+    // reference table.
+    resolve_table_references(streamer.references(), bypassed);
 
     logger_.get().status("Done resolving references");
 }
@@ -3746,6 +4085,7 @@ instance_data::instance_data(const instance_data& data)
 
 attribute_value instance_data::get_attribute_value(size_t index) const
 {
+    ensure_loaded();
     if (storage_) {
         return attribute_value(&*storage_, (uint8_t)index);
     } else {

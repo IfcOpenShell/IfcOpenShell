@@ -459,3 +459,68 @@ TEST_CASE("dense_id_map finds names inserted before the vector grew past them", 
     CHECK(map.find(base + 5) == map.end());
     CHECK(map.size() == 199999);
 }
+
+namespace {
+void check_lazy_matches_strict(const std::string& path) {
+    ifcopenshell::file strict(path);
+    REQUIRE(strict.good());
+    ifcopenshell::file lazy(ifcopenshell::uninitialized_tag{});
+    lazy.lazy_loading(true);
+    REQUIRE(lazy.initialize(path));
+    REQUIRE(lazy.lazy_loading());
+    REQUIRE(lazy.schema() == strict.schema());
+
+    size_t strict_count = 0;
+    for (auto it = strict.begin(); it != strict.end(); ++it) {
+        const express::base a = it->second;
+        const express::base b = lazy.instance_by_id((int)a.id());
+        REQUIRE(b);
+        REQUIRE(&b.declaration() == &a.declaration());
+        REQUIRE(lazy.instances_by_reference((int)a.id()).size() == strict.instances_by_reference((int)a.id()).size());
+        std::ostringstream sa, sb;
+        a.to_string(sa);
+        b.to_string(sb);
+        REQUIRE(sb.str() == sa.str());
+        ++strict_count;
+    }
+    size_t lazy_count = 0;
+    for (auto it = lazy.begin(); it != lazy.end(); ++it) {
+        ++lazy_count;
+    }
+    CHECK(lazy_count == strict_count);
+
+    for (const auto& rooted : strict.instances_by_type("IfcRoot")) {
+        const std::string guid = rooted.get_attribute_value(0);
+        REQUIRE(lazy.instance_by_guid(guid).id() == rooted.id());
+    }
+}
+}
+
+TEST_CASE("Lazy loading yields the same instances, attributes, inverses and GlobalIds as a full parse", "[ifcparse]") {
+    check_lazy_matches_strict(std::string(IFCOPENSHELL_TEST_FIXTURES) + "/ColumnPSetsOfSets.ifc");
+
+    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_lazy_loading_test.ifc";
+    {
+        std::ofstream out(path);
+        out << reference_resolution_spf;
+    }
+    check_lazy_matches_strict(path.string());
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("Lazy loading falls back to the full parser on syntax the scanner does not handle", "[ifcparse]") {
+    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_lazy_fallback_test.ifc";
+    {
+        std::ofstream out(path);
+        // A stray token between instances is legal for the full parser to complain about and skip, but the scanner gives up.
+        std::string spf(reference_resolution_spf);
+        spf.replace(spf.find("#8=IFCWALL"), 0, "STRAY;\n");
+        out << spf;
+    }
+    ifcopenshell::file lazy(ifcopenshell::uninitialized_tag{});
+    lazy.lazy_loading(true);
+    lazy.initialize(path.string());
+    std::filesystem::remove(path);
+    CHECK_FALSE(lazy.lazy_loading());
+    CHECK(lazy.instance_by_id(4));
+}
