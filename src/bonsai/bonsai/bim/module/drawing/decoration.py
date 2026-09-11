@@ -403,7 +403,13 @@ class BaseDecorator:
 
         color = tool.Blender.get_addon_preferences().decorations_colour
 
-        ang = -Vector((1, 0)).angle_signed(text_dir)
+        # text_dir can collapse to a zero-length vector (e.g. a section-level callout edge that
+        # points along the view axis loses its direction once projected to 2D via to_2d()).
+        # angle_signed() raises on zero-length input, so fall back to horizontal in that case.
+        if text_dir.length < 1e-6:
+            ang = 0.0
+        else:
+            ang = -Vector((1, 0)).angle_signed(text_dir)
         cos = math.cos(ang)
         sin = math.sin(ang)
         rotation_matrix = Matrix.Rotation(-ang, 2)
