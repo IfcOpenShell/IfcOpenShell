@@ -182,11 +182,15 @@ struct unresolved_reference {
     uint32_t name;
     uint64_t file_offset;
 };
+// The lists keep one offset, that of their first reference, so an error
+// about a missing name still points at the line it came from.
 struct unresolved_reference_list {
     std::vector<uint32_t> names;
+    uint64_t file_offset;
 };
 struct unresolved_reference_list_list {
     std::vector<std::vector<uint32_t>> names;
+    uint64_t file_offset;
 };
 
 typedef parameter_pack <
