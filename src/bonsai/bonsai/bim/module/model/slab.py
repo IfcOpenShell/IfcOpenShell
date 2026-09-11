@@ -271,14 +271,21 @@ class DumbSlabPlaner:
                 # For instances, a 30 degrees angled extrusion with positive direction has the same extrusion direction as a
                 # -150 degrees angled extrusion with negative direction. The difference lies in the object's rotation.
                 # This means that things can get messy if the user changes the object x angle somehow. We have to figure out an alternative approach.
+                direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
+
+                # No depth can realise the requested thickness once the extrusion runs
+                # perpendicular to the layer axis, so leave the representation alone.
+                layer_axis_ratio = direction_ratios.normalized().z
+                if tool.Cad.is_x(abs(layer_axis_ratio), 0, tolerance=0.001):
+                    return
+
                 existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 2 * pi, tolerance=0.001) else existing_x_angle
-                direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
                 offset_direction = direction_ratios.copy()
-                perpendicular_depth = thickness * abs(1 / cos(existing_x_angle))
-                perpendicular_offset = layer_offset * abs(1 / cos(existing_x_angle)) / self.unit_scale
+                perpendicular_depth = thickness / abs(layer_axis_ratio)
+                perpendicular_offset = layer_offset / abs(layer_axis_ratio) / self.unit_scale
 
                 # Check angle and z direction to determine whether the extrusion direction is positive or negative
                 if (abs(existing_x_angle) < (pi / 2) and direction_ratios.z > 0) or (
