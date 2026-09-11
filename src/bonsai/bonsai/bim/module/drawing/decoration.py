@@ -18,6 +18,7 @@
 
 import math
 import os
+import re
 from collections.abc import Generator, Iterator
 from functools import cache
 from math import acos, atan, cos, degrees, pi, radians, sin
@@ -1476,7 +1477,11 @@ class GridDecorator(BaseDecorator):
         p0 = location_3d_to_region_2d(region, region3d, v0)
         p1 = location_3d_to_region_2d(region, region3d, v1)
         dir = Vector((1, 0))
-        text = obj.name.split("/")[1].split(".")[0]
+        element = tool.Ifc.get_entity(obj)
+        axis_tag = getattr(element, "AxisTag", None) if element else None
+        if axis_tag is None:
+            axis_tag = re.sub(r"\.\d{3}$", "", obj.name.split("/")[1])
+        text = axis_tag
         if p0:
             self.draw_label(context, text, p0, dir, vcenter=True, gap=0)
         if p1:
