@@ -806,13 +806,19 @@ class Loader(bonsai.core.tool.Loader):
     ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
         context_settings = cls.settings.gross_context_settings if is_gross else cls.settings.context_settings
         geometry_library = tool.Project.get_project_props().geometry_library
+        error: Optional[Exception] = None
         for settings in context_settings:
             try:
                 result = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
                 if result:
                     return result
-            except:
-                pass
+            except Exception as e:
+                error = e
+        if error is not None:
+            print(
+                f"WARNING. Failed to create geometry for {element} using Geometry Library "
+                f"'{geometry_library}': {error}"
+            )
 
     @classmethod
     def create_point_cloud_mesh(cls, representation: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
