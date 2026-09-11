@@ -276,3 +276,21 @@ TEST_CASE("Batch deletion prunes surviving referencers and leaves no stale recor
     }
     CHECK(file.instances_by_reference(doomed_referencer.id()).empty());
 }
+
+TEST_CASE("Only a 22-character GlobalId is indexed", "[ifcparse]") {
+    const std::string data =
+        "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nFILE_NAME('','',(''),(''),'','','');\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\n"
+        "#1=IFCWALL('0YvctVUKr0kugbFTf53O9L',$,$,$,$,$,$,$,$);\n"
+        "#2=IFCWALL('id',$,$,$,$,$,$,$,$);\n"
+        "ENDSEC;\nEND-ISO-10303-21;\n";
+    std::string copy(data);
+    ifcopenshell::file file(copy.data(), (int)copy.size());
+    REQUIRE(file.good());
+    CHECK(file.instance_by_guid("0YvctVUKr0kugbFTf53O9L").id() == 1);
+    CHECK_THROWS(file.instance_by_guid("id"));
+    CHECK_THROWS(file.instance_by_guid("0YvctVUKr0kugbFTf53O9M"));
+    // A wall created after the open follows the same rule.
+    express::base wall = file.instance_by_id(2);
+    wall.set_attribute_value(0, std::string("1F$7lN9$r5MOA_lpAoNM52"));
+    CHECK(file.instance_by_guid("1F$7lN9$r5MOA_lpAoNM52").id() == 2);
+}

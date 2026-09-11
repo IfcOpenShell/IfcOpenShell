@@ -18,6 +18,9 @@
 ********************************************************************************/
 
 #include <map>
+#include <array>
+#include <cstring>
+#include <string>
 #include <variant>
 #include <tuple>
 #include <utility>
@@ -37,9 +40,48 @@ public:
 
     // Deduce common types from the first map type.
     // @todo these are not common types, but just the 1st
-    using key_type = typename std::tuple_element<0, std::tuple<Maps...>>::type::key_type;
-    using mapped_type = typename std::tuple_element<0, std::tuple<Maps...>>::type::mapped_type;
-    using value_type = typename std::tuple_element<0, std::tuple<Maps...>>::type::value_type;
+    // A map keyed by a fixed character array (the GlobalId index) is keyed
+    // by std::string at this interface; the key is converted on the way in,
+    // and a string of the wrong length is simply never found.
+    template <typename K>
+    struct public_key {
+        using type = K;
+    };
+    template <size_t N>
+    struct public_key<std::array<char, N>> {
+        using type = std::string;
+    };
+    using first_map = typename std::tuple_element<0, std::tuple<Maps...>>::type;
+    using key_type = typename public_key<typename first_map::key_type>::type;
+    using mapped_type = typename first_map::mapped_type;
+    using value_type = std::pair<const key_type, mapped_type>;
+
+    template <typename K>
+    struct is_char_array : std::false_type {};
+    template <size_t N>
+    struct is_char_array<std::array<char, N>> : std::true_type {};
+
+    template <typename MapT>
+    static bool to_map_key(const key_type& key, typename MapT::key_type& out) {
+        if constexpr (is_char_array<typename MapT::key_type>::value) {
+            if (key.size() != out.size()) {
+                return false;
+            }
+            std::memcpy(out.data(), key.data(), out.size());
+            return true;
+        } else {
+            out = static_cast<typename MapT::key_type>(key);
+            return true;
+        }
+    }
+    template <typename Pair>
+    static value_type to_value(const Pair& pair) {
+        if constexpr (is_char_array<std::decay_t<decltype(pair.first)>>::value) {
+            return value_type(std::string(pair.first.data(), pair.first.size()), pair.second);
+        } else {
+            return value_type(pair.first, pair.second);
+        }
+    }
 
     using underlying_iterator_variant = std::variant<typename Maps::iterator...>;
 
@@ -73,7 +115,7 @@ public:
         }
 
         value_type operator*() const {
-            return std::visit([](auto& it) -> value_type { return *it; }, it_var);
+            return std::visit([](auto& it) -> value_type { return variant_map::to_value(*it); }, it_var);
         }
 
         value_type* operator->() const {
@@ -134,7 +176,11 @@ public:
             if constexpr (std::is_same_v<std::decay_t<decltype(m)>, std::monostate>) {
                 return iterator{};
             } else {
-                return iterator(m->find(key));
+                typename std::decay_t<decltype(*m)>::key_type k{};
+                if (!to_map_key<std::decay_t<decltype(*m)>>(key, k)) {
+                    return iterator(m->end());
+                }
+                return iterator(m->find(k));
             }
         }, map_);
     }
@@ -144,7 +190,11 @@ public:
             if constexpr (std::is_same_v<std::decay_t<decltype(m)>, std::monostate>) {
                 return size_t(0);
             } else {
-                return m->erase(key);
+                typename std::decay_t<decltype(*m)>::key_type k{};
+                if (!to_map_key<std::decay_t<decltype(*m)>>(key, k)) {
+                    return 0;
+                }
+                return m->erase(k);
             }
         }, map_);
     }
@@ -155,7 +205,11 @@ public:
                 return size_t(0);
             } else {
                 // @todo erasing by iterator would be more efficient
-                return m->erase(it->first);
+                typename std::decay_t<decltype(*m)>::key_type k{};
+                if (!to_map_key<std::decay_t<decltype(*m)>>(it->first, k)) {
+                    return 0;
+                }
+                return m->erase(k);
             }
         }, map_);
     }
@@ -164,7 +218,11 @@ public:
         return std::visit([this, &value](auto m) -> std::pair<iterator, bool> {
             // @todo is monostate still necessary here?
             if constexpr (!std::is_same_v<std::decay_t<decltype(m)>, std::monostate>) {
-                auto result = m->insert(value);
+                typename std::decay_t<decltype(*m)>::key_type k{};
+                if (!to_map_key<std::decay_t<decltype(*m)>>(value.first, k)) {
+                    return { end(), false };
+                }
+                auto result = m->insert({ k, value.second });
                 return { iterator(result.first), result.second };
             } else {
                 return { end(), false };

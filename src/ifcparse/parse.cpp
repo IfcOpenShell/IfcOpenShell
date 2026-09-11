@@ -2452,12 +2452,15 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
         if (instance.declaration().is(*ifcroot_type_)) {
             try {
                 const std::string guid = instance.get_attribute_value(0);
-                if (byguid_.find(guid) != byguid_.end()) {
-                    std::stringstream ss;
-                    ss << "Instance encountered with non-unique GlobalId " << guid;
-                    logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
+                std::array<char, 22> key;
+                if (guid_key(guid, key)) {
+                    if (byguid_.count(key) != 0) {
+                        std::stringstream ss;
+                        ss << "Instance encountered with non-unique GlobalId " << guid;
+                        logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
+                    }
+                    byguid_[key] = instance;
                 }
-                byguid_[guid] = instance;
             } catch (const exception& ex) {
                 logger_.get().message(ifcopenshell::logger::LOG_ERROR, ex.what());
             }
