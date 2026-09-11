@@ -1,0 +1,118 @@
+# IfcTester - IDS based model auditing
+# Copyright (C) 2021-2022 Thomas Krijnen <thomas@aecgeeks.com>, Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcTester.
+#
+# IfcTester is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcTester is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
+
+# This file was generated with the assistance of an AI coding tool.
+
+import ifcopenshell
+
+from ifctester import ids, reporter
+
+
+class TestJson:
+    def test_a_forced_failed_requirement_without_failures_is_not_reported_as_100_percent_pass(self):
+        # A violated prohibited specification (or a required specification with
+        # no applicable entities) forces requirement.status to False without
+        # ever populating requirement.failures, since per-element requirement
+        # checks are skipped in both cases. The reporter must not derive a
+        # pass count from the empty failures list in that situation.
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="No walls allowed")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        requirement = ids.Attribute(name="Name")
+        spec.requirements.append(requirement)
+        specs.specifications.append(spec)
+        spec.set_usage("prohibited")
+
+        model = ifcopenshell.file()
+        wall = model.createIfcWall(Name="Wally")
+        specs.validate(model)
+
+        assert requirement.failures == []
+        requirement.status = False  # As forced by a violated prohibited specification
+
+        results = reporter.Json(specs).report()
+        requirement_result = results["specifications"][0]["requirements"][0]
+        assert requirement_result["status"] is False
+        assert requirement_result["total_pass"] == 0
+        assert requirement_result["total_fail"] == 1
+        assert requirement_result["percent_pass"] == 0
+
+
+class TestConsole:
+    def test_a_violated_prohibited_specification_does_not_show_all_successes(self, capsys):
+        # specification.failed_entities is never populated for a prohibited
+        # specification, since per-element requirement checks are skipped.
+        # The success counter must not read that empty set as "all passed".
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="No walls allowed")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        specs.specifications.append(spec)
+        spec.set_usage("prohibited")
+
+        model = ifcopenshell.file()
+        model.createIfcWall(Name="Wally")
+        specs.validate(model)
+
+        assert spec.status is False
+        assert spec.failed_entities == set()
+
+        console = reporter.Console(specs, use_colour=False)
+        console.report()
+        printed = capsys.readouterr().out
+        assert "(0/1)" in printed
+        assert "(1/1)" not in printed
+
+
+class TestTxt:
+    def test_a_failed_specification_shows_the_fail_label_and_reason(self):
+        # Txt.print used "txt + '\\n' if end is None else end", which due to
+        # operator precedence discarded txt and kept only end whenever a
+        # caller passed an explicit end=. That silently dropped the
+        # [PASS]/[FAIL] label, the pass count, and every failure reason.
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Walls need a Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.requirements.append(ids.Attribute(name="Name"))
+        specs.specifications.append(spec)
+        spec.set_usage("required")
+
+        model = ifcopenshell.file()
+        model.createIfcWall(Name=None)
+        specs.validate(model)
+        assert spec.status is False
+
+        txt = reporter.Txt(specs)
+        txt.report()
+        assert "[FAIL] (0/1)" in txt.text
+        assert "The attribute value" in txt.text and "is empty" in txt.text
+
+        specs2 = ids.Ids(title="Title")
+        spec2 = ids.Specification(name="Walls need a Name")
+        spec2.applicability.append(ids.Entity(name="IFCWALL"))
+        spec2.requirements.append(ids.Attribute(name="Name"))
+        specs2.specifications.append(spec2)
+        spec2.set_usage("required")
+
+        model2 = ifcopenshell.file()
+        model2.createIfcWall(Name="Wally")
+        specs2.validate(model2)
+        assert spec2.status is True
+
+        txt2 = reporter.Txt(specs2)
+        txt2.report()
+        assert "[PASS] (1/1)" in txt2.text

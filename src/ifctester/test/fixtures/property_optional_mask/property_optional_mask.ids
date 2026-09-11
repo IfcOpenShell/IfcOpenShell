@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>Optional Foo property across matching psets</title>
+        <description>An optional property absent from one pset must not mask a bad value in another.</description>
+    </info>
+    <specifications>
+        <specification name="Foo must be Bar wherever present" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCWALL</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property cardinality="optional">
+                    <propertySet>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="Foo_.*" />
+                        </xs:restriction>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>Foo</simpleValue>
+                    </baseName>
+                    <value>
+                        <simpleValue>Bar</simpleValue>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
