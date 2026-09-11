@@ -282,8 +282,8 @@ class MSP2Ifc:
             attributes={
                 "ScheduleStart": task["Start"],
                 "ScheduleFinish": task["Finish"],
-                "DurationType": "WORKTIME" if task["Duration"] else None,
-                "ScheduleDuration": task["Duration"] if task["Duration"] else None,
+                "DurationType": "WORKTIME" if task["Duration"] is not None else None,
+                "ScheduleDuration": task["Duration"],
             },
         )
         for subtask_id in task["subtasks"]:
