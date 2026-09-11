@@ -77,7 +77,7 @@ Directory Structure
 +---_deps-*-installed               - Created by build-deps.py, specific for a certain compiler and target architecture
 +---_installed-*                    - Created by installing the IFCOS project, specific for a certain compiler and target architecture
 \---win
-|   build-all.cmd                   - Runs all of the build scripts for IFCOS and it dependencies in a row without pauses
+|   build-all.py                    - Runs all of the build scripts for IFCOS and it dependencies in a row without pauses
 |   build-deps.py                   - Fetches and builds all needed dependencies for IFCOS using MSVC
 |   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.py
 |   build-ifcopenshell.py           - Builds IFCOS using MSVC

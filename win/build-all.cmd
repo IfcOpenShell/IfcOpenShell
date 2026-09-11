@@ -29,6 +29,12 @@ setlocal EnableDelayedExpansion
 
 call vs-cfg.cmd %1
 if not %ERRORLEVEL%==0 GOTO :Error
+
+call cecho.cmd 0 12 "WARNING: build-all.cmd is deprecated since 11 Sep 2026 and will be removed very shortly."
+call cecho.cmd 0 12 "Use `python build-all.py` instead. It's intended to be a drop-in replacement, so exactly the same args apply,"
+call cecho.cmd 0 12 "except CMake args now need to be passed after `"--`", e.g. `python build-all.py vs2022-x64 -- -DGLTF_SUPPORT=ON`."
+echo.
+
 :: Use "yes" trick to break the pause in build-deps.py
 echo y | python build-deps.py %1 %2
 if not %ERRORLEVEL%==0 goto :EOF
