@@ -659,7 +659,9 @@ class ImportFilterQueryTransformer(lark.Transformer):
 
     def query(self, args):
         keys, comparison, value = args
-        return {"type": "query", "name": keys, "value": f"{comparison}{value}"}
+        # The exporter reads the comparison property for query facets, so the
+        # operator must not be folded into the value (#9352).
+        return {"type": "query", "name": keys, "comparison": comparison or "=", "value": value}
 
     def comparison(self, args):
         if args[0].data == "not":
