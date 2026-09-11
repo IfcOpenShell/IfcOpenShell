@@ -547,7 +547,15 @@ class IFC_PARSE_API instance_data {
 
   public:
       // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but an optional in_memory storage, where an empty optional means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
-      std::optional<in_memory_attribute_storage> storage_;
+      mutable std::optional<in_memory_attribute_storage> storage_;
+
+      // Lazy loading: the offset just past the opening parenthesis of this
+      // instance in the retained source, zero once the attributes are loaded.
+      uint64_t lazy_offset_ = 0;
+
+      // Parses the attributes from the retained source if this instance was
+      // indexed lazily and has not been accessed yet. No-op otherwise.
+      void ensure_loaded() const;
 
       const ifcopenshell::declaration* declaration() const {
           return declaration_;
@@ -577,6 +585,15 @@ class IFC_PARSE_API instance_data {
           static_cast<void>(storage);
           populate_derived_();
       }
+
+      // A lazily loaded instance: the attributes, including the derived
+      // markers, are filled in by the file storage on first access.
+      struct lazy_tag {};
+      instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, lazy_tag)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
+      {
+      }
+      friend struct ifcopenshell::impl::in_memory_file_storage;
 
       /*
       // now that there are referenced as shared_ptr there is no move constructor anymore
@@ -610,6 +627,7 @@ class IFC_PARSE_API instance_data {
 
     template<typename T>
     void set_attribute_value(std::size_t attribute_index, T&& value) {
+        ensure_loaded();
         if (storage_) {
             storage_->set(attribute_index, value);
             return;
@@ -625,6 +643,7 @@ class IFC_PARSE_API instance_data {
 
     template<typename T>
     bool has_attribute_value(std::size_t attribute_index) const {
+        ensure_loaded();
         if (storage_) {
             return storage_->has<T>(attribute_index);
         }
