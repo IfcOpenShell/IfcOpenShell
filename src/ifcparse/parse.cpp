@@ -2596,10 +2596,10 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
         return true;
     };
     const auto resolve_slots = [&resolve_name](const shared_pointer_type& data) {
-        auto* slots = data->storage_;
-        if (slots == nullptr) {
+        if (!data->storage_) {
             return;
         }
+        auto* slots = &*data->storage_;
         const uint32_t owner = data->id();
         for (size_t i = 0; i < slots->size(); ++i) {
             if (slots->template has<unresolved_reference>(i)) {
@@ -3747,7 +3747,7 @@ instance_data::instance_data(const instance_data& data)
 attribute_value instance_data::get_attribute_value(size_t index) const
 {
     if (storage_) {
-        return attribute_value(storage_, (uint8_t)index);
+        return attribute_value(&*storage_, (uint8_t)index);
     } else {
         auto* const storage = std::visit([](auto& m) -> ifcopenshell::impl::rocks_db_file_storage* {
             using U = std::decay_t<decltype(m)>;

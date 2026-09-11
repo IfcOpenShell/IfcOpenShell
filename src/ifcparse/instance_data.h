@@ -42,6 +42,7 @@
 
 #include <boost/optional.hpp>
 #include <memory>
+#include <optional>
 #include <boost/logic/tribool.hpp>
 #include <boost/dynamic_bitset.hpp>
 
@@ -545,8 +546,8 @@ class IFC_PARSE_API instance_data {
     void populate_derived_();
 
   public:
-      // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but in_memory*, where nullptr means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
-      in_memory_attribute_storage* storage_;
+      // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but an optional in_memory storage, where an empty optional means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
+      std::optional<in_memory_attribute_storage> storage_;
 
       const ifcopenshell::declaration* declaration() const {
           return declaration_;
@@ -565,13 +566,13 @@ class IFC_PARSE_API instance_data {
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, in_memory_attribute_storage&& storage)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(new in_memory_attribute_storage(std::move(storage)))
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::move(storage))
       {
             populate_derived_();
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, rocks_db_attribute_storage&& storage)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(nullptr)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
       {
           static_cast<void>(storage);
           populate_derived_();
@@ -580,7 +581,7 @@ class IFC_PARSE_API instance_data {
       /*
       // now that there are referenced as shared_ptr there is no move constructor anymore
       instance_data(instance_data&& other) noexcept
-          : file_(other.file_), id_(other.id_), declaration_(other.declaration_), storage_(std::exchange(other.storage_, nullptr))
+          : file_(other.file_), id_(other.id_), declaration_(other.declaration_), storage_(std::move(other.storage_))
       {}
       */
 
@@ -594,15 +595,15 @@ class IFC_PARSE_API instance_data {
       // same
       instance_data& operator=(instance_data&& other) noexcept {
           if (this != &other) {
-              delete storage_;
-              storage_ = std::exchange(other.storage_, nullptr);
+              storage_ = std::move(other.storage_);
+              other.storage_.reset();
           }
           return *this;
       }
       */
 
       ~instance_data() {
-          delete storage_;
+          storage_.reset();
       }
 
     attribute_value get_attribute_value(size_t attribute_index) const;
