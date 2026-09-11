@@ -353,6 +353,8 @@ class rocksdb_lazy_instance:
         attr = attribute_lookup(self.storage.schema_identifier, self.is_a()).get(name)
         if isinstance(attr, int):
             return self[attr]
+        elif attr is None:
+            raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(), name))
         else:
             entity_indices, attribute_index = attr
 

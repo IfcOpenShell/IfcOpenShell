@@ -119,5 +119,25 @@ def test_rocks():
         gc.collect()
 
 
+def test_rocks_storage_getattr_invalid_attribute():
+    # Regression test: rocksdb_lazy_instance.__getattr__() looked up the
+    # attribute name in a dict and, without checking for a miss, unpacked
+    # the result as a 2-tuple. An unrecognized attribute name crashed with
+    # "TypeError: cannot unpack non-iterable NoneType object" instead of
+    # the AttributeError entity_instance.__getattr__() raises for the same
+    # situation.
+    with tempfile.TemporaryDirectory() as d:
+        rfn = os.path.join(d, os.path.basename(fn))
+        ifcopenshell.convert_path_to_rocksdb(fn, rfn)
+
+        f = ifcopenshell.open(rfn)
+        inst = f.storage.by_id(1)
+        with pytest.raises(AttributeError):
+            inst.NotARealAttribute
+
+        del f
+        gc.collect()
+
+
 if __name__ == "__main__":
     pytest.main(["-sx", __file__])
