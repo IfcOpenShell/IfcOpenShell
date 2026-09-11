@@ -1106,6 +1106,7 @@ class Spatial:
     def get_relating_type_id(cls): pass
     def translate_obj_to_z_location(cls, obj, z): pass
     def assign_ifcspace_class_to_obj(cls, obj): pass
+    def unhide_viewport(cls, obj): pass
     def assign_type_to_obj(cls, obj): pass
     def assign_relating_type_to_element(cls, ifc, type, element, relating_type): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
