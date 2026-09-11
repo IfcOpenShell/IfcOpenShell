@@ -2467,7 +2467,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                     ss << "Instance encountered with non-unique GlobalId " << guid;
                     logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
                 }
-                byguid_[guid] = instance;
+                byguid_.insert_or_assign(guid, instance);
             } catch (const exception& ex) {
                 logger_.get().message(ifcopenshell::logger::LOG_ERROR, ex.what());
             }
