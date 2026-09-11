@@ -334,6 +334,10 @@ class BIM_PT_drawings(Panel):
 
                 row3.operator("bim.copy_annotation_to_drawing", icon="PASTEDOWN", text="")
 
+                row3.operator("bim.override_drawing_styles", icon="COPYDOWN", text="").drawing = (
+                    active_drawing.ifc_definition_id
+                )
+
                 row3.operator("bim.select_all_drawings", icon="CHECKBOX_HLT", text="")
                 row3.operator("bim.create_drawing", text="", icon="OUTPUT")
                 row3.operator("bim.convert_svg_to_dxf", text="", icon="SEQ_PREVIEW").view = active_drawing.name

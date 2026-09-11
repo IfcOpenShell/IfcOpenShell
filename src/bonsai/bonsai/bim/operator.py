@@ -362,6 +362,38 @@ class SelectDir(bpy.types.Operator, ImportHelper):
         return ImportHelper.invoke(self, context, event)
 
 
+class ApplyDrawingAssetsDir(bpy.types.Operator):
+    bl_idname = "bim.apply_drawing_assets_dir"
+    bl_label = "Apply Assets Directory To All Drawing Style Paths"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Set the default stylesheet, schedule stylesheet, markers, symbols, patterns and shading "
+        "styles paths below from the assets directory above, using Bonsai's standard asset filenames "
+        "(default.css, schedule.css, markers.svg, symbols.svg, patterns.svg, shading_styles.json), "
+        "instead of setting each path one by one"
+    )
+
+    # Maps DocPreferences path property name to the standard Bonsai asset filename.
+    ASSET_FILENAMES = {
+        "stylesheet_path": "default.css",
+        "schedules_stylesheet_path": "schedule.css",
+        "markers_path": "markers.svg",
+        "symbols_path": "symbols.svg",
+        "patterns_path": "patterns.svg",
+        "shadingstyles_path": "shading_styles.json",
+    }
+
+    def execute(self, context):
+        dprops = tool.Blender.get_addon_preferences().doc
+        assets_dir = dprops.assets_dir.replace("\\", "/")
+        if assets_dir and not assets_dir.endswith("/"):
+            assets_dir += "/"
+        for prop_name, filename in self.ASSET_FILENAMES.items():
+            setattr(dprops, prop_name, assets_dir + filename)
+        self.report({"INFO"}, "Applied assets directory to all six drawing style paths.")
+        return {"FINISHED"}
+
+
 class WinRegistryKeys(Enum):
     __bonsai_key = "bonsai.ifc"
     # Have to list all keys here

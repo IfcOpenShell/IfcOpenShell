@@ -93,6 +93,7 @@ classes = (
     operator.OpenSheet,
     operator.OrderTextLiteralDown,
     operator.OrderTextLiteralUp,
+    operator.OverrideDrawingStyles,
     operator.ReloadDrawingStyles,
     operator.RemoveDrawing,
     operator.RemoveDrawingFromSheet,
