@@ -73,14 +73,14 @@ from vs_cfg import VsCfgResult, get_vs_var, vs_cfg
 
 class Args(NamedTuple):
     generator: str | None
-    build_type_cfg: BuildCfg
+    build_cfg: BuildCfg
     build_type: BuildType
     reuse_boost: bool
 
 
 def print_build_config(
     vs_cfg_vars: VsCfgResult,
-    build_type_cfg: BuildCfg,
+    build_cfg: BuildCfg,
     build_type: BuildType,
     ifcos_install_python: bool,
     ifcos_install_qt6: bool,
@@ -100,10 +100,10 @@ def print_build_config(
     logger.info(f"  - The directory where {PROJECT_NAME} dependencies are fetched and built.")
     logger.info(field(f"* Installation Directory = {vs_cfg_vars.install_dir}"))
     logger.info(f"  - The directory where {PROJECT_NAME} dependencies are installed.")
-    logger.info(field(f"* Build Config Type\t= {build_type_cfg}"))
+    logger.info(field(f"* Build Config Type\t= {build_cfg}"))
     logger.info("  - The used build configuration type for the dependencies.")
     logger.info("    Defaults to RelWithDebInfo if not specified.")
-    if build_type_cfg == "MinSizeRel":
+    if build_cfg == "MinSizeRel":
         logger.warning("     WARNING: MinSizeRel build can suffer from a significant performance loss.")
     logger.info(field(f"* Build Type\t\t= {build_type}"))
     logger.info("  - The used build type for the dependencies (Build, Rebuild, Clean).")
@@ -150,7 +150,7 @@ def parse_args() -> Args:
         ),
     )
     parser.add_argument(
-        "build_type_cfg",
+        "build_cfg",
         nargs="?",
         default=BUILD_CFG_DEFAULT,
         choices=BUILD_CFGS,
@@ -182,7 +182,7 @@ def parse_args() -> Args:
     logger.setLevel(args.log_level)
     return Args(
         generator=args.generator,
-        build_type_cfg=args.build_type_cfg,
+        build_cfg=args.build_cfg,
         build_type=args.build_type,
         reuse_boost=args.reuse_boost,
     )
@@ -244,7 +244,7 @@ def main() -> None:
 
     print_build_config(
         vs_cfg_vars,
-        ARGS.build_type_cfg,
+        ARGS.build_cfg,
         ARGS.build_type,
         IFCOS_INSTALL_PYTHON,
         IFCOS_INSTALL_QT6,
@@ -265,23 +265,23 @@ def main() -> None:
 
     nuget_exe = install_nuget(vs_cfg_vars.deps_dir)
     install_ccache(vs_cfg_vars.deps_dir, nuget_exe, build_deps_cache)
-    install_proj(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
-    install_mpir(vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_type_cfg)
+    install_proj(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    install_mpir(vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_cfg)
     install_mpfr(
-        vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_type_cfg, ARGS.build_type, MSBUILD_CMD
+        vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_cfg, ARGS.build_type, MSBUILD_CMD
     )
-    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_type_cfg, IFCOS_NUM_BUILD_PROCS, ARGS.reuse_boost)
+    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, IFCOS_NUM_BUILD_PROCS, ARGS.reuse_boost)
     install_json(vs_cfg_vars.install_dir)
-    install_opencollada(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
-    install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
+    install_opencollada(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
     pythonhome = install_python(vs_cfg_vars, IFCOS_INSTALL_PYTHON, build_deps_cache, nuget_exe)
     install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, MSBUILD_MULTIPROC)
-    install_cgal(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
+    install_cgal(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_eigen(vs_cfg_vars)
-    install_zstd(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
-    install_rocksdb(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
-    install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_type_cfg, IFCOS_INSTALL_QT6, pythonhome)
-    install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
+    install_zstd(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    install_rocksdb(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, IFCOS_INSTALL_QT6, pythonhome)
+    install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
 
     print_success(START_TIME)
 
