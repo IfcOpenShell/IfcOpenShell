@@ -40,6 +40,11 @@ _timer_callback: Union[Callable[[], None], None] = None
 # See cleanup_stale_autosave() for why this is a cached plain string rather
 # than looked up live.
 _active_ifc_path_cache: Union[str, None] = None
+# True while a PROMPT-mode reminder dialog is open. The timer re-arms itself on
+# every expiry (see _on_timer_expired), so without this guard an unattended
+# session stacks a new dialog each interval. Owned by the AutosavePrompt
+# operator's lifecycle: set on invoke, cleared on execute/cancel.
+_prompt_open: bool = False
 
 
 class Autosave:
@@ -68,6 +73,15 @@ class Autosave:
         global _active_ifc_path_cache
         ifc_path = cls.get_active_ifc_path()
         _active_ifc_path_cache = ifc_path.as_posix() if ifc_path is not None else None
+
+    @classmethod
+    def is_prompt_open(cls) -> bool:
+        return _prompt_open
+
+    @classmethod
+    def set_prompt_open(cls, value: bool) -> None:
+        global _prompt_open
+        _prompt_open = value
 
     @classmethod
     def is_enabled(cls) -> bool:
@@ -121,7 +135,10 @@ class Autosave:
 
         if bim_props.is_dirty:
             if prefs.autosave_mode == "PROMPT":
-                bpy.ops.bim.autosave_prompt("INVOKE_DEFAULT")
+                # Don't stack dialogs: if a reminder is already waiting for the
+                # user, leave it be rather than opening another on this lapse.
+                if not cls.is_prompt_open():
+                    bpy.ops.bim.autosave_prompt("INVOKE_DEFAULT")
             elif prefs.autosave_mode == "BACKUP":
                 try:
                     cls.perform_backup(bpy.context)
