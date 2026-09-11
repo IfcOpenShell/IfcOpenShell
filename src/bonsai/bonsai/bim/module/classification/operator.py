@@ -259,7 +259,8 @@ class EnableEditingClassificationReference(bpy.types.Operator):
         props.reference_attributes.clear()
         ifc_reference = tool.Ifc.get().by_id(self.reference)
         bonsai.bim.helper.import_attributes(ifc_reference, props.reference_attributes)
-        props.classification_system_name = ifc_reference.ReferencedSource.Name or ""
+        source = ifc_reference.ReferencedSource
+        props.classification_system_name = (source.Name or "") if source else ""
         props.active_reference_id = self.reference
         return {"FINISHED"}
 
@@ -487,8 +488,10 @@ class ChangeClassificationLevel(bpy.types.Operator):
             new.has_references = bool(reference.HasReferences)
             new.referenced_source
         assert reference
-        if reference.ReferencedSource.is_a("IfcClassificationReference"):
-            props.active_library_referenced_source = reference.ReferencedSource.ReferencedSource.id()
+        source = reference.ReferencedSource
+        if source and source.is_a("IfcClassificationReference"):
+            nested_source = source.ReferencedSource
+            props.active_library_referenced_source = nested_source.id() if nested_source else 0
         else:
             props.active_library_referenced_source = 0
         return {"FINISHED"}
