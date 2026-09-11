@@ -26,7 +26,10 @@ namespace rocksdb {
 #include "file_open_status.h"
 #include "logger.h"
 
+#include <array>
 #include <functional>
+#include <string_view>
+#include <unordered_map>
 #include <variant>
 #include <algorithm>
 #include <cstdint>
@@ -572,7 +575,23 @@ namespace ifcopenshell {
             typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
             typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name;
-            typedef std::map<std::string, express::base> entity_instance_by_guid;
+            // The GlobalId index, keyed by the 22 characters of a GlobalId held
+            // inline so a lookup allocates nothing. Only a 22-character key can
+            // be stored or found; guid_key() says whether a string is one, and
+            // variant_map converts from std::string at the file's interface.
+            struct guid_key_hash {
+                size_t operator()(const std::array<char, 22>& key) const {
+                    return std::hash<std::string_view>()(std::string_view(key.data(), key.size()));
+                }
+            };
+            typedef std::unordered_map<std::array<char, 22>, express::base, guid_key_hash> entity_instance_by_guid;
+            static bool guid_key(const std::string& text, std::array<char, 22>& key) {
+                if (text.size() != key.size()) {
+                    return false;
+                }
+                std::memcpy(key.data(), text.data(), key.size());
+                return true;
+            }
             typedef inverse_index entities_by_ref;
             typedef entity_instance_by_name::iterator iterator;
 

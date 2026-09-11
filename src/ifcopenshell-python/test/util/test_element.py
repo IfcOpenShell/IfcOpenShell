@@ -1281,13 +1281,13 @@ class TestRemoveDeepIFC4(test.bootstrap.IFC4):
 
     def test_removing_an_element_recursively_except_if_an_element_is_referenced_elsewhere(self):
         owner = self.file.createIfcOwnerHistory()
-        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
-        element2 = self.file.createIfcWall(GlobalId="id2", OwnerHistory=owner)
+        element = self.file.createIfcWall(GlobalId="0YvctVUKr0kugbFTf53O9L", OwnerHistory=owner)
+        element2 = self.file.createIfcWall(GlobalId="1F$7lN9$r5MOA_lpAoNM52", OwnerHistory=owner)
         subject.remove_deep(self.file, element)
         with pytest.raises(RuntimeError):
-            self.file.by_guid("id1")
+            self.file.by_guid("0YvctVUKr0kugbFTf53O9L")
         assert self.file.by_id(1)
-        assert self.file.by_guid("id2")
+        assert self.file.by_guid("1F$7lN9$r5MOA_lpAoNM52")
 
 
 class TestRemoveDeep2IFC4(test.bootstrap.IFC4):
@@ -1301,20 +1301,20 @@ class TestRemoveDeep2IFC4(test.bootstrap.IFC4):
 
     def test_removing_an_element_recursively_except_if_an_element_is_referenced_elsewhere(self):
         owner = self.file.createIfcOwnerHistory()
-        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
-        element2 = self.file.createIfcWall(GlobalId="id2", OwnerHistory=owner)
+        element = self.file.createIfcWall(GlobalId="0YvctVUKr0kugbFTf53O9L", OwnerHistory=owner)
+        element2 = self.file.createIfcWall(GlobalId="1F$7lN9$r5MOA_lpAoNM52", OwnerHistory=owner)
         subject.remove_deep2(self.file, element)
         with pytest.raises(RuntimeError):
-            self.file.by_guid("id1")
+            self.file.by_guid("0YvctVUKr0kugbFTf53O9L")
         assert self.file.by_id(1)
-        assert self.file.by_guid("id2")
+        assert self.file.by_guid("1F$7lN9$r5MOA_lpAoNM52")
 
     def test_not_removing_an_element_still_referenced_somewhere(self):
         owner = self.file.createIfcOwnerHistory()
-        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
+        element = self.file.createIfcWall(GlobalId="0YvctVUKr0kugbFTf53O9L", OwnerHistory=owner)
         subject.remove_deep2(self.file, owner)
         assert self.file.by_id(1)
-        assert self.file.by_guid("id1")
+        assert self.file.by_guid("0YvctVUKr0kugbFTf53O9L")
 
 
 class TestBatchRemoveDeep2IFC4(test.bootstrap.IFC4):
