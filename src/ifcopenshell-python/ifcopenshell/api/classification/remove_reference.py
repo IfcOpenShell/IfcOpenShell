@@ -33,7 +33,7 @@ def remove_reference(
 
     :param reference: The IfcClassificationReference entity of the
         relationship you want to remove.
-    :param product: The list fo object entities of the relationship you want to
+    :param products: The list fo object entities of the relationship you want to
         remove.
 
     :raises TypeError: If file is IFC2X3 and `products` has non-IfcRoot elements.

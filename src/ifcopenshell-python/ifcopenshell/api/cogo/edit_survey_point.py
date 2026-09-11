@@ -24,7 +24,10 @@ def edit_survey_point(annotation: entity_instance, x: float, y: float, z: float 
     """
     Edits the location of a previously defined survey point
 
-    :param survey_point: The survey point
+    :param annotation: The survey point annotation to edit
+    :param x: The new X coordinate
+    :param y: The new Y coordinate
+    :param z: The new Z coordinate. Ignored if the survey point is 2D.
     :return: None
 
     Example:

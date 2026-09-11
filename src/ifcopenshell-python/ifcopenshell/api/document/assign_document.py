@@ -40,7 +40,7 @@ def assign_document(
     consistent with other external relationships (such as classification
     systems or libraries).
 
-    :param product: The list of objects to associate the document to. This could be
+    :param products: The list of objects to associate the document to. This could be
         almost any sensible object in IFC.
     :param document: The IfcDocumentReference to associate to, or
         alternatively an IfcDocumentInformation, though this is not

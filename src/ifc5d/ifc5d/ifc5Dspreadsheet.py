@@ -123,8 +123,10 @@ class IfcDataGetter:
         hierarchy: str = "1",
     ) -> list[CostItem]:
         """
-        :param cost_items_data: A list to fill with cost items.
-        :param index: Current hierarchy depth.
+        :param file: The IFC file the cost item belongs to.
+        :param cost_item: The IfcCostItem to serialise, including its nested cost items.
+        :param index: Row index of `cost_item` within its parent's list of nested cost items.
+        :param hierarchy: Dot-separated hierarchy path of `cost_item` (e.g. "1.2").
         """
         cost_items_data: list[CostItem] = []
 
