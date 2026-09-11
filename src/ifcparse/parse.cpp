@@ -3599,7 +3599,7 @@ instance_data::instance_data(const instance_data& data)
 attribute_value instance_data::get_attribute_value(size_t index) const
 {
     if (storage_) {
-        return attribute_value(storage_, (uint8_t)index);
+        return attribute_value(&*storage_, (uint8_t)index);
     } else {
         auto* const storage = std::visit([](auto& m) -> ifcopenshell::impl::rocks_db_file_storage* {
             using U = std::decay_t<decltype(m)>;
