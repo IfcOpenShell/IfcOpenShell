@@ -2818,7 +2818,7 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
             return self.exit_element_edit_mode(context, obj, element)
 
         # For other edit modes, use standard operator
-        return bpy.ops.bim.override_mode_set_object()
+        return bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
 
     def exit_item_edit_mode(self, context, obj):
         """Exit from representation item editing."""
@@ -2829,7 +2829,7 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
 
             item = tool.Geometry.get_active_representation(obj)
             if not item:
-                return bpy.ops.bim.override_mode_set_object()
+                return bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
 
             # Fix vertex order for annotation items
             props = tool.Geometry.get_geometry_props()
@@ -2943,7 +2943,7 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
 
             # Fallback
             else:
-                return bpy.ops.bim.override_mode_set_object()
+                return bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
 
         except Exception as e:
             self.report({"ERROR"}, f"Failed to save item changes: {str(e)}")
@@ -2970,7 +2970,7 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         # Fallback to standard operator
-        return bpy.ops.bim.override_mode_set_object()
+        return bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
 
     def handle_enter_edit_mode(self, context):
         """Handle entering edit mode from object mode."""
