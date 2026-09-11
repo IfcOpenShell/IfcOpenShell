@@ -28,7 +28,6 @@ import os
 import shutil
 import sys
 from datetime import datetime
-from pathlib import Path
 from typing import NamedTuple
 
 from common import (
@@ -43,7 +42,9 @@ from common import (
     BuildDepsCache,
     BuildType,
     C,
+    HelpStrings,
     colorize,
+    ensure_script_dir,
     is_on_off,
     logger,
     require_command,
@@ -144,19 +145,13 @@ def parse_args() -> Args:
         "generator",
         nargs="?",
         default=None,
-        help=(
-            "CMake generator to use. Accepts 3 forms: "
-            "(1) omitted - deduced from the active Visual Studio environment; "
-            "(2) shorthand, e.g. 'vs2022', 'vs2022-x64', 'vs2019-x86-v141' - optionally provide platform/toolset "
-            "using the suffix; "
-            "(3) full CMake generator name, e.g. 'Visual Studio 17 2022'."
-        ),
+        help=HelpStrings.generator("deduced from the active Visual Studio environment"),
     )
     parser.add_argument(
         "--generator",
         dest="generator_flag",
         default=None,
-        help="Alternative way to specify the generator, instead of the positional argument. See above for accepted forms.",
+        help=HelpStrings.GENERATOR_FLAG,
     )
     # SUPPRESS avoids a misleading "(default: None)" in `--help`,
     # though then arg might not be set and we use `getattr` to get it.
@@ -165,14 +160,14 @@ def parse_args() -> Args:
         nargs="?",
         default=argparse.SUPPRESS,
         choices=BUILD_CFGS,
-        help=f"Build configuration type. (default: {BUILD_CFG_DEFAULT})",
+        help=HelpStrings.BUILD_CFG,
     )
     parser.add_argument(
         "--build-cfg",
         dest="build_cfg_flag",
         default=BUILD_CFG_DEFAULT,
         choices=BUILD_CFGS,
-        help="Alternative way to specify the build configuration type, instead of the positional argument.",
+        help=HelpStrings.BUILD_CFG_FLAG,
     )
     parser.add_argument(
         "build_type",
@@ -208,11 +203,7 @@ def parse_args() -> Args:
         dest="num_build_procs",
         type=int,
         default=argparse.SUPPRESS,
-        help=(
-            "How many build processes may be run in parallel. "
-            "Also can be specified by using IFCOS_NUM_BUILD_PROCS env variable. "
-            "(default: NUMBER_OF_PROCESSORS)"
-        ),
+        help=HelpStrings.NUM_BUILD_PROCS,
     )
     parser.add_argument(
         "--install-python",
@@ -274,9 +265,7 @@ def main() -> None:
 
     logger.info(f"This script fetches and builds all {PROJECT_NAME} dependencies\n")
 
-    if Path.cwd() != SCRIPT_DIR:
-        logger.error(f"This script must be run from '{SCRIPT_DIR}'.")
-        sys.exit(1)
+    ensure_script_dir()
 
     # Make sure vcvarsall.bat is called and dev env set is up.
     get_vs_var("VSINSTALLDIR")
