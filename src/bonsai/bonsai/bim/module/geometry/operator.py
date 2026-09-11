@@ -987,7 +987,7 @@ class OverrideDelete(bpy.types.Operator):
         tool.Ifc.set(data["new_file"])
 
     def track_aggregates(self, objects_to_remove):
-        """Track aggregates that contain objects being deleted"""
+        """Track ids (not wrappers) of aggregates whose parts are being deleted"""
         aggregates_to_check = set()
         for obj in objects_to_remove:
             if not tool.Blender.is_valid_data_block(obj):
@@ -997,17 +997,16 @@ class OverrideDelete(bpy.types.Operator):
                 continue
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if aggregate:
-                aggregates_to_check.add(aggregate)
+                aggregates_to_check.add(aggregate.id())
         return aggregates_to_check
 
     def delete_empty_aggregates(self, aggregates_to_check):
         """Delete aggregates that now have no parts"""
         deleted_aggregates = []
-        for aggregate in aggregates_to_check:
-            # Check if aggregate still exists (might have been deleted already)
-            try:
-                aggregate.id()
-            except:
+        for aggregate_id in aggregates_to_check:
+            # Re-resolve by id: it may have been deleted earlier in this batch.
+            aggregate = tool.Ifc.get_entity_by_id(aggregate_id)
+            if aggregate is None:
                 continue
 
             # Skip spatial elements - they should not be deleted even if empty
