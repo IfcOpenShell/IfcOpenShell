@@ -540,6 +540,8 @@ def get_element_mass_density(element: ifcopenshell.entity_instance) -> Union[flo
         thicknesses = []
         obj_mass_density = 0
         for material_layer in material_layers:
+            if material_layer.Material is None:
+                return
             material_mass_density = ifcopenshell.util.element.get_pset(
                 material_layer.Material, "Pset_MaterialCommon", "MassDensity"
             )
@@ -556,6 +558,8 @@ def get_element_mass_density(element: ifcopenshell.entity_instance) -> Union[flo
     if material.is_a("IfcMaterialProfileSetUsage"):
         material_profiles = material.ForProfileSet.MaterialProfiles
         if len(material_profiles) == 1:
+            if material_profiles[0].Material is None:
+                return
             material_mass_density = ifcopenshell.util.element.get_pset(
                 material_profiles[0].Material, "Pset_MaterialCommon", "MassDensity"
             )

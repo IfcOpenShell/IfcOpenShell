@@ -623,6 +623,45 @@ class TestGetMaterials(test.bootstrap.IFC4):
         assert subject.get_materials(element) == [material]
 
 
+class TestGetElementMassDensity(test.bootstrap.IFC4):
+    def test_layer_set_usage_with_unassigned_layer_material(self):
+        # IfcMaterialLayer.Material is optional, e.g. an unassigned air gap layer.
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.material.add_material(self.file)
+        air_layer = self.file.create_entity("IfcMaterialLayer", Material=None, LayerThickness=0.05)
+        material_layer = self.file.create_entity("IfcMaterialLayer", Material=material, LayerThickness=0.1)
+        layer_set = self.file.create_entity("IfcMaterialLayerSet", MaterialLayers=[air_layer, material_layer])
+        usage = self.file.create_entity(
+            "IfcMaterialLayerSetUsage",
+            ForLayerSet=layer_set,
+            LayerSetDirection="AXIS2",
+            DirectionSense="POSITIVE",
+            OffsetFromReferenceLine=0.0,
+        )
+        self.file.create_entity(
+            "IfcRelAssociatesMaterial",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[wall],
+            RelatingMaterial=usage,
+        )
+        assert subject.get_element_mass_density(wall) is None
+
+    def test_profile_set_usage_with_unassigned_profile_material(self):
+        # IfcMaterialProfile.Material is optional.
+        column = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcColumn")
+        profile = self.file.create_entity("IfcArbitraryClosedProfileDef", ProfileType="AREA")
+        material_profile = self.file.create_entity("IfcMaterialProfile", Material=None, Profile=profile)
+        profile_set = self.file.create_entity("IfcMaterialProfileSet", MaterialProfiles=[material_profile])
+        usage = self.file.create_entity("IfcMaterialProfileSetUsage", ForProfileSet=profile_set)
+        self.file.create_entity(
+            "IfcRelAssociatesMaterial",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[column],
+            RelatingMaterial=usage,
+        )
+        assert subject.get_element_mass_density(column) is None
+
+
 class TestGetStyles(test.bootstrap.IFC4):
     def test_getting_the_styles_of_a_product(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
