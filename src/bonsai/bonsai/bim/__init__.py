@@ -184,6 +184,9 @@ classes = [
     ui.BIM_PT_tab_materials,
     ui.BIM_PT_tab_styles,
     ui.BIM_PT_tab_profiles,
+    # Civil infrastructure
+    ui.BIM_PT_tab_horizontal_alignment,
+    ui.BIM_PT_tab_alignments,
     # Drawings and documents
     ui.BIM_PT_tab_sheets,
     ui.BIM_PT_tab_drawings,

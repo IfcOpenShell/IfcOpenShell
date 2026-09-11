@@ -142,7 +142,7 @@ def _create_geometric_representation(file: ifcopenshell.file, alignment: entity_
             segmented_reference_curve = file.createIfcSegmentedReferenceCurve(
                 Segments=[], BaseCurve=gradient_curve, SelfIntersect=False
             )
-            representation = file.creatIfcShapeRepresentation(
+            representation = file.createIfcShapeRepresentation(
                 ContextOfItems=axis_geom_subcontext,
                 RepresentationIdentifier="Axis",
                 RepresentationType="Curve3D",

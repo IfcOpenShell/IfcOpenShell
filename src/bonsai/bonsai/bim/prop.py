@@ -530,6 +530,8 @@ def get_tab(
             ("PROJECT", "Project Overview", "", bonsai.bim.icons[icon_key].icon_id, 0),
             ("OBJECT", "Object Information", "", "FILE_3D", 1),
             ("GEOMETRY", "Geometry and Materials", "", "MATERIAL", 2),
+            ("CIVIL", "Civil Infrastructure", "", "CURVE_DATA", 11),
+            ("ALIGNMENTS", "Alignments", "", "ANIM_DATA", 12),
             ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
             ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 4),
             ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
