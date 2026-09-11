@@ -458,6 +458,14 @@ class Usecase:
                 self.added_elements[subelement.id()] = existing_element
                 if not self.has_whitelisted_inverses(existing_element):
                     self.check_inverses(subelement)
+                # A material set matched as "existing" may have just been forward-copied
+                # by file_add (which only copies forward attributes, not inverses). In that
+                # case its member materials never had their inverse attributes transplanted
+                # (notably IfcMaterial.HasRepresentation, which carries the material's surface
+                # style). Descend into the set so each member material gets check_inverses.
+                # The has_whitelisted_inverses guard keeps genuinely-reused materials idempotent.
+                if subelement.is_a() in MATERIAL_SETS:
+                    subelement_queue.extend(self.settings["library"].traverse(subelement, max_levels=1)[1:])
             else:
                 self.added_elements[subelement.id()] = self.file_add(subelement)
                 self.check_inverses(subelement)
