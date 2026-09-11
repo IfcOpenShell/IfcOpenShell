@@ -1419,9 +1419,17 @@ class Sequence(bonsai.core.tool.Sequence):
         bpy.context.scene.frame_end = int(settings["start_frame"] + settings["total_frames"] + 1)
 
     @classmethod
+    def get_animation_color(cls, colors, predefined_type):
+        if predefined_type and predefined_type in colors:
+            return colors[predefined_type].color
+        if "NOTDEFINED" in colors:
+            return colors["NOTDEFINED"].color
+        return (0.2, 0.2, 0.2)
+
+    @classmethod
     def animate_input(cls, obj, start_frame, product_frame, animation_type):
         props = cls.get_animation_props()
-        color = props.task_input_colors[product_frame["type"]].color
+        color = cls.get_animation_color(props.task_input_colors, product_frame["type"])
         if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
             cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
         else:
@@ -1430,7 +1438,7 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def animate_output(cls, obj, start_frame, product_frame, animation_type):
         props = cls.get_animation_props()
-        color = props.task_output_colors[product_frame["type"]].color
+        color = cls.get_animation_color(props.task_output_colors, product_frame["type"])
         if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
             cls.animate_creation(obj, start_frame, product_frame, color)
         elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
