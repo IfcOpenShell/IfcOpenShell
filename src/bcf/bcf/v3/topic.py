@@ -84,7 +84,7 @@ class TopicHandler:
 
     @property
     def bim_snippet(self) -> Optional[bytes]:
-        if not self._bim_snippet and self._topic_dir:
+        if self._bim_snippet is None and self._topic_dir:
             self._bim_snippet = self._load_bim_snippet()
         return self._bim_snippet
 
@@ -124,7 +124,7 @@ class TopicHandler:
             return self._reference_files
 
         for ref in self.header.files.file:
-            if ref.is_external:
+            if ref.is_external or not ref.reference:
                 continue
             real_path = self._topic_dir
             for path_part in ref.reference.split("/"):
@@ -203,8 +203,24 @@ class TopicHandler:
         if not snippet or snippet.is_external:
             return
         ref_filename = Path(snippet.reference).name
-        if self.bim_snippet:
+        if self.bim_snippet is not None:
             destination_zip.writestr(f"{self.topic.guid}/{ref_filename}", self.bim_snippet)
+
+    def _resolve_zip_path(self, reference: str) -> str:
+        """Resolve a topic-relative reference into its POSIX path inside the BCF zip.
+
+        Unlike walking self._topic_dir with joinpath()/parent, this doesn't rely on
+        zipfile.Path.at, which a freshly created topic (backed by a plain pathlib.Path,
+        not yet loaded from a zip) doesn't have.
+        """
+        parts = [self._topic_dir.name]
+        for path_part in reference.split("/"):
+            if path_part == "..":
+                if parts:
+                    parts.pop()
+            else:
+                parts.append(path_part)
+        return "/".join(parts)
 
     def _save_reference_files(self, destination_zip: ZipFileInterface) -> None:
         if not self.header:
@@ -214,10 +230,7 @@ class TopicHandler:
         for ref in self.header.files.file:
             if ref.is_external or not ref.reference:
                 continue
-            real_path = self._topic_dir
-            for path_part in ref.reference.split("/"):
-                real_path = real_path.parent if path_part == ".." else real_path.joinpath(path_part)
-            destination_zip.writestr(real_path.at, self.reference_files[ref.reference])
+            destination_zip.writestr(self._resolve_zip_path(ref.reference), self.reference_files[ref.reference])
 
     def add_viewpoint(self, element: entity_instance) -> VisualizationInfoHandler:
         """
