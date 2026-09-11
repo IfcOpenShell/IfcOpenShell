@@ -200,7 +200,7 @@ class TestGetBaseQto(test.bim.bootstrap.NewFile):
         wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         tool.Ifc.link(wall, wall_obj)
         product = tool.Ifc.get_entity(wall_obj)
-        assert not subject.get_base_qto(product) == True
+        assert subject.get_base_qto(product) is None
 
 
 class TestGetRelatedCostItemQuantities(test.bim.bootstrap.NewFile):

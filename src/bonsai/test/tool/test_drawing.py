@@ -234,11 +234,8 @@ class TestDeleteDrawingElements(NewFile):
 
         element_id = element.id()
         subject.delete_drawing_elements([element])
-        try:
+        with pytest.raises(RuntimeError):
             ifc.by_id(element_id)
-            assert False
-        except:
-            pass
         assert bpy.data.objects.get("Object") is None
 
 

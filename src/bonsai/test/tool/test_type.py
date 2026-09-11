@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.root
 import ifcopenshell.api.type
+import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -192,14 +193,12 @@ class TestIsRelatingTypeCompatible(NewFile):
         assert subject.is_relating_type_compatible(door, door_style) is True
 
     def test_legacy_style_pairing_refused_in_ifc4x3(self):
+        # IfcDoorStyle was removed in IFC4X3, so the legacy style/occurrence
+        # pairing is refused at the schema level: the entity cannot even be
+        # constructed, and is_relating_type_compatible() is never consulted.
         ifc = ifcopenshell.file(schema="IFC4X3")
-        door = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoor")
-        try:
-            door_style = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorStyle")
-        except Exception:
-            # IfcDoorStyle was removed in IFC4X3 — exclusion holds trivially.
-            return
-        assert subject.is_relating_type_compatible(door, door_style) is False
+        with pytest.raises(RuntimeError):
+            ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorStyle")
 
     def test_untypable_occurrence_returns_false(self):
         ifc = ifcopenshell.file()
