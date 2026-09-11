@@ -82,11 +82,6 @@ popd
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
-:: Legacy setup.
-if not defined BOOST_INSTALL_DIR (
-    set BOOST_INSTALL_DIR=%DEPS_DIR%\boost_1_86_0\stage\%GEN_SHORTHAND%
-)
-
 set OPENCOLLADA_INSTALL_DIR=%INSTALL_DIR%\OpenCOLLADA
 set LIBXML2_INCLUDE_DIR=%DEPS_DIR%\OpenCOLLADA\Externals\LibXML\include
 set LIBXML2_LIBRARIES=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada\xml.lib
