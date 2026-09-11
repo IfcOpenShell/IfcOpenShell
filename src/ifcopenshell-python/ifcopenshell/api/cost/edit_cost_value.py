@@ -60,5 +60,9 @@ def edit_cost_value(
                 )
                 value = file.create_entity("IfcMeasureWithUnit", value_component, value["UnitComponent"])
             if old_unit_basis:
-                ifcopenshell.util.element.remove_deep2(file, old_unit_basis)
+                # cost_value still references old_unit_basis at this point, so
+                # remove_deep2 would see an inverse outside the subgraph and
+                # silently do nothing. also_consider tells it to disregard that
+                # inverse, which is exactly what the argument is for.
+                ifcopenshell.util.element.remove_deep2(file, old_unit_basis, also_consider=[cost_value])
         setattr(cost_value, name, value)
