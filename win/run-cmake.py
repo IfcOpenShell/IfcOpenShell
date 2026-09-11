@@ -277,6 +277,9 @@ def main() -> None:
         f"-DCMAKE_PREFIX_PATH={cmake_prefix_path}",
         f"-DADD_COMMIT_SHA={ADD_COMMIT_SHA}",
         f"-DVERSION_OVERRIDE={VERSION_OVERRIDE}",
+        f"-DPYTHON_EXECUTABLE={python_executable}",
+        f"-DPYTHON_INCLUDE_DIR={python_include_dir}",
+        f"-DPYTHON_LIBRARY={python_library}",
     ]
     if qt_dir:
         cmake_args.append(f"-DQT_DIR={qt_dir}")
@@ -290,13 +293,7 @@ def main() -> None:
         "cmake",
         *cmake_args,
         cwd=build_dir,
-        env={
-            **Deps.env_dict(),
-            "PYTHONHOME": str(pythonhome),
-            "PYTHON_EXECUTABLE": str(python_executable),
-            "PYTHON_INCLUDE_DIR": str(python_include_dir),
-            "PYTHON_LIBRARY": str(python_library),
-        },
+        env=Deps.env_dict(),
     )
 
     logger.info("")
