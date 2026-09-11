@@ -24,10 +24,12 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.sequence
 import ifcopenshell.api.spatial
 import ifcopenshell.api.system
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import ifcopenshell.util.system
 import test.bootstrap
 
@@ -267,6 +269,53 @@ class TestCopyClass(test.bootstrap.IFC4):
         new = ifcopenshell.api.root.copy_class(self.file, product=element)
         assert len(self.file.by_type("IfcRelAssignsToGroup")) == 1
         assert new.HasAssignments[0].RelatingGroup == group
+
+    def assign_annotation_to_product(self, product, annotation):
+        return self.file.create_entity(
+            "IfcRelAssignsToProduct",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[annotation],
+            RelatingProduct=product,
+        )
+
+    def test_not_copying_assigned_annotations_so_they_stay_on_the_original_product(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        annotation = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        self.assign_annotation_to_product(element, annotation)
+        new = ifcopenshell.api.root.copy_class(self.file, product=element)
+        assert len(self.file.by_type("IfcRelAssignsToProduct")) == 1
+        assert len(annotation.HasAssignments) == 1
+        assert annotation.HasAssignments[0].RelatingProduct == element
+        assert not new.ReferencedBy
+
+    def test_maintaining_task_output_relationships_when_copying_a_product(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        task = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
+        ifcopenshell.api.sequence.assign_product(self.file, relating_product=element, related_object=task)
+        new = ifcopenshell.api.root.copy_class(self.file, product=element)
+        assert new.ReferencedBy
+        assert new.ReferencedBy[0].RelatedObjects == (task,)
+
+    def test_copying_a_product_keeps_task_outputs_but_drops_annotations_sharing_the_same_relationship(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        task = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
+        annotation = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        # Both APIs append to relating_product.ReferencedBy[0], so one rel holds both.
+        ifcopenshell.api.sequence.assign_product(self.file, relating_product=element, related_object=task)
+        rel = element.ReferencedBy[0]
+        rel.RelatedObjects = list(rel.RelatedObjects) + [annotation]
+        new = ifcopenshell.api.root.copy_class(self.file, product=element)
+        assert new.ReferencedBy[0].RelatedObjects == (task,)
+        assert len(annotation.HasAssignments) == 1
+        assert annotation.HasAssignments[0].RelatingProduct == element
+
+    def test_copying_an_annotation_keeps_it_assigned_to_the_same_product(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        annotation = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        self.assign_annotation_to_product(element, annotation)
+        new = ifcopenshell.api.root.copy_class(self.file, product=annotation)
+        assert len(self.file.by_type("IfcRelAssignsToProduct")) == 1
+        assert set(element.ReferencedBy[0].RelatedObjects) == {annotation, new}
 
 
 class TestCopyClassIFC2X3(test.bootstrap.IFC2X3):
