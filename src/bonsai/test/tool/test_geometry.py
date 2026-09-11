@@ -758,3 +758,74 @@ class TestApplyItemIdsAsVertexGroups(NewFile):
                 vert = verts[vi]
                 groups = [g.group for g in vert.groups]
                 assert groups == [ios_item_ids_unique[i]]
+
+
+class TestSyncActiveItemIndex(NewFile):
+    """https://github.com/IfcOpenShell/IfcOpenShell/issues/6239
+
+    Selecting a representation item object in the 3D viewport should
+    highlight the matching row in the "Representation Items" UI list.
+    """
+
+    def setup_item_mode(self, item_ifc_ids: list[int]) -> tuple[bpy.types.Object, list[bpy.types.Object]]:
+        rep_obj = bpy.data.objects.new("RepObj", bpy.data.meshes.new("RepObj"))
+        bpy.context.collection.objects.link(rep_obj)
+
+        gprops = tool.Geometry.get_geometry_props()
+        gprops.representation_obj = rep_obj
+
+        obj_props = tool.Geometry.get_object_geometry_props(rep_obj)
+        for ifc_id in item_ifc_ids:
+            row = obj_props.items.add()
+            row.name = "IfcPolygonalFaceSet"
+            row.ifc_definition_id = ifc_id
+
+        item_objs = []
+        for i, ifc_id in enumerate(item_ifc_ids):
+            item_obj = bpy.data.objects.new(f"Item.{i}", bpy.data.meshes.new(f"Item.{i}"))
+            bpy.context.collection.objects.link(item_obj)
+            tool.Geometry.get_mesh_props(item_obj.data).ifc_definition_id = ifc_id
+            item_objs.append(item_obj)
+        return rep_obj, item_objs
+
+    def test_selecting_an_item_object_syncs_the_active_row(self):
+        rep_obj, item_objs = self.setup_item_mode([101, 202])
+        obj_props = tool.Geometry.get_object_geometry_props(rep_obj)
+
+        bpy.context.view_layer.objects.active = item_objs[1]
+        subject.sync_active_item_index()
+        assert obj_props.active_item_index == 1
+
+        bpy.context.view_layer.objects.active = item_objs[0]
+        subject.sync_active_item_index()
+        assert obj_props.active_item_index == 0
+
+    def test_does_nothing_outside_item_mode(self):
+        rep_obj, item_objs = self.setup_item_mode([101, 202])
+        obj_props = tool.Geometry.get_object_geometry_props(rep_obj)
+        tool.Geometry.get_geometry_props().representation_obj = None
+
+        bpy.context.view_layer.objects.active = item_objs[1]
+        subject.sync_active_item_index()
+        assert obj_props.active_item_index == 0  # unchanged default
+
+    def test_does_nothing_for_unrelated_object(self):
+        rep_obj, item_objs = self.setup_item_mode([101, 202])
+        obj_props = tool.Geometry.get_object_geometry_props(rep_obj)
+        obj_props.active_item_index = 1
+
+        unrelated = bpy.data.objects.new("Unrelated", bpy.data.meshes.new("Unrelated"))
+        bpy.context.collection.objects.link(unrelated)
+        bpy.context.view_layer.objects.active = unrelated
+
+        subject.sync_active_item_index()  # must not raise
+        assert obj_props.active_item_index == 1  # unchanged
+
+    def test_does_nothing_when_representation_obj_itself_is_active(self):
+        rep_obj, item_objs = self.setup_item_mode([101, 202])
+        obj_props = tool.Geometry.get_object_geometry_props(rep_obj)
+        obj_props.active_item_index = 1
+
+        bpy.context.view_layer.objects.active = rep_obj
+        subject.sync_active_item_index()  # must not raise
+        assert obj_props.active_item_index == 1  # unchanged
