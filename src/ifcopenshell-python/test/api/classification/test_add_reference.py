@@ -93,6 +93,44 @@ class TestAddReference(test.bootstrap.IFC4):
         )
         assert len(rel.RelatedObjects) == 2
 
+    def test_adding_a_reference_does_not_reuse_a_reference_from_another_classification(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        classification1 = ifcopenshell.api.classification.add_classification(self.file, classification="Uniclass")
+        classification2 = ifcopenshell.api.classification.add_classification(self.file, classification="MyCustom")
+
+        # Same identification, different classification systems: must not be merged.
+        reference1 = ifcopenshell.api.classification.add_reference(
+            self.file,
+            products=[element],
+            identification="X",
+            name="Foo",
+            classification=classification1,
+        )
+        reference2 = ifcopenshell.api.classification.add_reference(
+            self.file,
+            products=[element2],
+            identification="X",
+            name="Bar",
+            classification=classification2,
+        )
+        assert reference1 != reference2
+        assert reference2.Name == "Bar"
+        assert reference2.ReferencedSource == classification2
+
+        # No identification at all also must not collide across classifications.
+        element3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        reference3 = ifcopenshell.api.classification.add_reference(
+            self.file,
+            products=[element3],
+            name="Baz",
+            classification=classification2,
+        )
+        assert reference3 != reference1
+        assert reference3.Name == "Baz"
+        assert reference3.ReferencedSource == classification2
+
     def test_adding_a_reference_to_a_resource_and_to_a_root(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         element = self.file.createIfcMaterial()

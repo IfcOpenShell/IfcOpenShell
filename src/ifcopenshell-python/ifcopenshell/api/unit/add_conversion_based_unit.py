@@ -72,7 +72,7 @@ def add_conversion_based_unit(
     value_component = file.create_entity("IfcReal", **{"wrappedValue": conversion_real})
     conversion_factor = file.createIfcMeasureWithUnit(value_component, si_unit)
 
-    if not conversion_offset:
+    if conversion_offset is None:
         conversion_offset = ifcopenshell.util.unit.si_offsets.get(name, 0)
 
     if conversion_offset:
