@@ -234,7 +234,7 @@ def get_attributes(ifc_file: ifcopenshell.file) -> list[dict[str, Any]]:
                 pset_description = val(pset.Description) or pset_name
                 category = get_category(pset)
                 for name, value in props.items():
-                    if value == "default" or not val(value):
+                    if value == "default" or val(value) is None:
                         continue
                     elif name in excluded_names:
                         continue
@@ -391,7 +391,7 @@ def get_floor_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_ins
         if height is not None:
             break
         for name, value in props.items():
-            if name in height_names and val(value):
+            if name in height_names and val(value) is not None:
                 height = str(value)
                 break
 
@@ -429,13 +429,13 @@ def get_space_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_ins
     net_area_names = {"NetFloorArea", "GSA"}
     for _, props in ifcopenshell.util.element.get_psets(element).items():
         for name, value in props.items():
-            if not room_tag and name in room_tag_names and val(value):
+            if not room_tag and name in room_tag_names and val(value) is not None:
                 room_tag = str(value)
-            if not usable_height and name in usable_height_names and val(value):
+            if not usable_height and name in usable_height_names and val(value) is not None:
                 usable_height = str(value)
-            if not gross_area and name in gross_area_names and val(value):
+            if not gross_area and name in gross_area_names and val(value) is not None:
                 gross_area = str(value)
-            if not net_area and name in net_area_names and val(value):
+            if not net_area and name in net_area_names and val(value) is not None:
                 net_area = str(value)
 
     return {
@@ -546,29 +546,32 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
 
         for name, value in props.items():
             for key, prop_names in pset_mapping.items():
-                if not pset_metadata.get(key, None) and name in prop_names and val(value):
+                if not pset_metadata.get(key, None) and name in prop_names and val(value) is not None:
                     pset_metadata[key] = str(value)
 
-            if not asset_type and name in asset_type_names and val(value):
-                value = value.strip().lower()
+            if not asset_type and name in asset_type_names and val(value) is not None:
+                # str(): AssetType is expected to be a string enum, but val()
+                # now also lets through non-string falsy values like 0 or
+                # False, which .strip() alone would crash on.
+                value = str(value).strip().lower()
                 if value in ("moveable", "nonfixed"):
                     asset_type = "Moveable"
                 elif value == "fixed":
                     asset_type = "Fixed"
-            if not warranty_duration_parts and name in warranty_duration_parts_names and val(value):
+            if not warranty_duration_parts and name in warranty_duration_parts_names and val(value) is not None:
                 warranty_duration_parts = str(value)
                 if not warranty_duration_unit:
                     warranty_duration_unit = get_property_unit(pset, name)
-            if not warranty_duration_labor and name in warranty_duration_labor_names and val(value):
+            if not warranty_duration_labor and name in warranty_duration_labor_names and val(value) is not None:
                 warranty_duration_labor = str(value)
                 if not warranty_duration_unit:
                     warranty_duration_unit = get_property_unit(pset, name)
-            if not expected_life and name in expected_life_names and val(value):
+            if not expected_life and name in expected_life_names and val(value) is not None:
                 expected_life = str(value)
                 if not duration_unit:
                     duration_unit = get_property_unit(pset, name)
 
-            if pset_warranty_type == "parts" and val(value):
+            if pset_warranty_type == "parts" and val(value) is not None:
                 if name == "PointOfContact":
                     # https://github.com/buildingSMART/IFC4.3.x-development/issues/698
                     pset_metadata["warranty_guarantor_parts"] = str(value)
@@ -576,7 +579,7 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
                     warranty_duration_parts = str(value)
                     unit = get_property_unit(pset, name)
                     warranty_duration_unit = unit or warranty_duration_unit
-            elif pset_warranty_type == "labor" and val(value):
+            elif pset_warranty_type == "labor" and val(value) is not None:
                 if name == "PointOfContact":
                     # https://github.com/buildingSMART/IFC4.3.x-development/issues/698
                     pset_metadata["warranty_guarantor_labor"] = str(value)
@@ -653,17 +656,17 @@ def get_component_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity
 
     for _, props in ifcopenshell.util.element.get_psets(element).items():
         for name, value in props.items():
-            if not serial_number and name == "SerialNumber" and val(value):
+            if not serial_number and name == "SerialNumber" and val(value) is not None:
                 serial_number = str(value)
-            if not installation_date and name == "InstallationDate" and val(value):
+            if not installation_date and name == "InstallationDate" and val(value) is not None:
                 installation_date = str(value)
-            if not warranty_start_date and name == "WarrantyStartDate" and val(value):
+            if not warranty_start_date and name == "WarrantyStartDate" and val(value) is not None:
                 warranty_start_date = str(value)
-            if not tag_number and name == "TagNumber" and val(value):
+            if not tag_number and name == "TagNumber" and val(value) is not None:
                 tag_number = str(value)
-            if not bar_code and name == "BarCode" and val(value):
+            if not bar_code and name == "BarCode" and val(value) is not None:
                 bar_code = str(value)
-            if not asset_identifier and name == "AssetIdentifier" and val(value):
+            if not asset_identifier and name == "AssetIdentifier" and val(value) is not None:
                 asset_identifier = str(value)
 
     return {
@@ -782,11 +785,11 @@ def get_spare_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_ins
     part_number = None
     for _, props in ifcopenshell.util.element.get_psets(element).items():
         for name, value in props.items():
-            if name == "Suppliers" and val(value):
+            if name == "Suppliers" and val(value) is not None:
                 suppliers = str(value)
-            if name == "SetNumber" and val(value):
+            if name == "SetNumber" and val(value) is not None:
                 set_number = str(value)
-            if name == "PartNumber" and val(value):
+            if name == "PartNumber" and val(value) is not None:
                 part_number = str(value)
 
     return {
@@ -844,15 +847,15 @@ def get_job_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_insta
     for _, props in ifcopenshell.util.element.get_psets(element).items():
         pset = ifc_file.by_id(props["id"])
         for name, value in props.items():
-            if not duration and name == "TaskDuration" and val(value):
+            if not duration and name == "TaskDuration" and val(value) is not None:
                 duration = str(value)
                 if not duration_unit:
                     duration_unit = get_property_unit(pset, name)
-            if not start and name == "TaskStartDate" and val(value):
+            if not start and name == "TaskStartDate" and val(value) is not None:
                 start = str(value)
                 if not task_start_unit:
                     task_start_unit = get_property_unit(pset, name)
-            if not frequency and name == "TaskInterval" and val(value):
+            if not frequency and name == "TaskInterval" and val(value) is not None:
                 frequency = str(value)
                 if not frequency_unit:
                     frequency_unit = get_property_unit(pset, name)
