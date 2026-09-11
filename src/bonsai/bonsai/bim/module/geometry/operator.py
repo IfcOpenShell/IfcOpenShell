@@ -3247,6 +3247,27 @@ class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             props.is_editing = False
 
 
+def resolve_representation_item(
+    operator: bpy.types.Operator, item_id: int
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Resolve an item id from the representation items UI list.
+
+    ``BIMObjectGeometryProperties.items`` is stored in the .blend, so its ids can
+    outlive the instances they point to - reopening a .blend next to its .ifc
+    replays a list that was built against a different state of the file. Refresh
+    the list and report instead of letting ``by_id`` raise
+    ``RuntimeError: Instance #N not found``.
+    """
+    if item := tool.Ifc.get_entity_by_id(item_id):
+        return item
+    operator.report(
+        {"ERROR"}, f"Representation item #{item_id} no longer exists, items list has been refreshed - try again."
+    )
+    bpy.ops.bim.disable_editing_representation_items()
+    bpy.ops.bim.enable_editing_representation_items()
+    return None
+
+
 class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_representation_item"
     bl_label = "Remove Representation Item"
@@ -3270,9 +3291,9 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         assert (obj := tool.Geometry.get_active_or_representation_obj())
         assert (element := tool.Ifc.get_entity(obj))
-        ifc_file = tool.Ifc.get()
 
-        representation_item = ifc_file.by_id(self.representation_item_id)
+        if not (representation_item := resolve_representation_item(self, self.representation_item_id)):
+            return {"CANCELLED"}
         tool.Geometry.remove_representation_item(representation_item, element)
         tool.Geometry.reload_representation(obj)
 
@@ -3298,7 +3319,8 @@ class SelectRepresentationItem(bpy.types.Operator):
         obj = tool.Geometry.get_active_or_representation_obj()
         obj_props = tool.Geometry.get_object_geometry_props(obj)
         assert obj_props.active_item
-        item = tool.Ifc.get().by_id(obj_props.active_item.ifc_definition_id)
+        if not (item := resolve_representation_item(self, obj_props.active_item.ifc_definition_id)):
+            return {"CANCELLED"}
         item_ids = self.get_nested_item_ids(item)
 
         props = tool.Geometry.get_geometry_props()
@@ -3361,13 +3383,13 @@ class EnableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator
         obj = tool.Geometry.get_active_or_representation_obj()
         assert obj
         props = tool.Geometry.get_object_geometry_props(obj)
-        props.is_editing_item_style = True
-        ifc_file = tool.Ifc.get()
 
         # set dropdown to currently active style
         assert (active_item := props.active_item)
         representation_item_id = active_item.ifc_definition_id
-        representation_item = ifc_file.by_id(representation_item_id)
+        if not (representation_item := resolve_representation_item(self, representation_item_id)):
+            return {"CANCELLED"}
+        props.is_editing_item_style = True
         style = tool.Style.get_representation_item_style(representation_item)
         if style:
             props.representation_item_style = str(style.id())
@@ -3393,7 +3415,8 @@ class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         assert (active_item := props.active_item)
         representation_item_id = active_item.ifc_definition_id
-        representation_item = ifc_file.by_id(representation_item_id)
+        if not (representation_item := resolve_representation_item(self, representation_item_id)):
+            return {"CANCELLED"}
 
         tool.Style.assign_style_to_representation_item(representation_item, surface_style)
         tool.Geometry.reload_representation(obj)
@@ -3431,9 +3454,7 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         # Get active representation item
         active_representation_item_id = active_props.active_item.ifc_definition_id
-        active_representation_item = tool.Ifc.get_entity_by_id(active_representation_item_id)
-        if not active_representation_item:
-            self.report({"ERROR"}, f"Couldn't find representation item by id {active_representation_item_id}.")
+        if not (active_representation_item := resolve_representation_item(self, active_representation_item_id)):
             return {"CANCELLED"}
 
         # Retrieve styles applied to the active representation item
@@ -3519,7 +3540,8 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
 
         assert props.active_item
         representation_item_id = props.active_item.ifc_definition_id
-        representation_item = ifc_file.by_id(representation_item_id)
+        if not (representation_item := resolve_representation_item(self, representation_item_id)):
+            return {"CANCELLED"}
 
         if props.representation_item_shape_aspect == "NEW":
             active_representation = tool.Geometry.get_active_representation(obj)
@@ -3592,7 +3614,8 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Opera
 
         assert props.active_item
         representation_item_id = props.active_item.ifc_definition_id
-        representation_item = ifc_file.by_id(representation_item_id)
+        if not (representation_item := resolve_representation_item(self, representation_item_id)):
+            return {"CANCELLED"}
         shape_aspect = ifc_file.by_id(props.active_item.shape_aspect_id)
 
         # unassign items before removing items as removing items
@@ -4197,7 +4220,8 @@ class EditRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
         new_layer = ifc_file.by_id(int(props.representation_item_layer))
 
         assert props.active_item
-        item = ifc_file.by_id(int(props.active_item.ifc_definition_id))
+        if not (item := resolve_representation_item(self, int(props.active_item.ifc_definition_id))):
+            return {"CANCELLED"}
         item_layer = next(iter(item.LayerAssignment), None)
 
         # We assume just 1 layer can be assigned to representation item.
@@ -4225,7 +4249,8 @@ class UnassignRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         assert obj
         props = tool.Geometry.get_object_geometry_props(obj)
-        item = ifc_file.by_id(props.active_item.ifc_definition_id)
+        if not (item := resolve_representation_item(self, props.active_item.ifc_definition_id)):
+            return {"CANCELLED"}
         layer = item.LayerAssignment[0]  # If there is no layer, then button is not visible in UI.
         ifcopenshell.api.layer.unassign_layer(ifc_file, [item], layer)
         bpy.ops.bim.enable_editing_representation_items()
