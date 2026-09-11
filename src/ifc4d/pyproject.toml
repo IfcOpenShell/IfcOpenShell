@@ -25,6 +25,9 @@ Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
+[project.scripts]
+ifc4d = "ifc4d.__main__:main"
+
 [tool.setuptools.packages.find]
 include = ["ifc4d"]
 exclude = ["test*"]

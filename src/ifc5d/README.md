@@ -104,7 +104,7 @@ writer.write()
 ### CLI app for converting IFC files to CSV, ODS or XLSX format.
 
 Usage:
-    python ifc5Dspreadsheet.py input_file output_dir [-l log_file] [-f format_type]
+    ifc5d-spreadsheet input_file output_dir [-l log_file] [-f format_type]
 
 Arguments:
     input_file (str): The path to the input IFC file to process.
@@ -115,8 +115,8 @@ Options:
     -f, --format format_type (str): The output format to export in (csv/ods/xlsx). Default is csv.
 
 Examples:
-    python ifc5Dspreadsheet.py "C:\Users\Dev-Machine\Desktop\test_cost.ifc" rev_01_schedule -l error.log -f ODS
-    python ifc5Dspreadsheet.py "C:\Users\Username\Desktop\test_cost.ifc" "C:\Users\Username\Desktop" -l error.log -f CSV
+    ifc5d-spreadsheet "C:\Users\Dev-Machine\Desktop\test_cost.ifc" rev_01_schedule -l error.log -f ODS
+    ifc5d-spreadsheet "C:\Users\Username\Desktop\test_cost.ifc" "C:\Users\Username\Desktop" -l error.log -f CSV
 
 ### Scripting:
 

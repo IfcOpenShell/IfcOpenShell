@@ -64,15 +64,15 @@ Source installation
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
 2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcdiff>`_.
 3. ``cd /path/to/IfcOpenShell/src/ifcdiff``
-4. ``pip install -r requirements.txt``
+4. ``pip install -e .``
 
 Here is a minimal example of how to use IfcDiff as a Python module or CLI
 utility:
 
 .. code-block:: console
 
-    $ python -m ifcdiff -h
-    usage: ifcdiff.py [-h] [-o OUTPUT] [-r RELATIONSHIPS] old new
+    $ ifcdiff -h
+    usage: ifcdiff [-h] [-o OUTPUT] [-r RELATIONSHIPS] old new
 
     Show the difference between two IFC files
 
@@ -86,7 +86,7 @@ utility:
                             The JSON diff file to output. Defaults to diff.json
       -r RELATIONSHIPS, --relationships RELATIONSHIPS
                             A list of space-separated relationships, chosen from "type", "property", "container", "aggregate", "classification"
-    $ python -m ifcdiff old.ifc new.ifc
+    $ ifcdiff old.ifc new.ifc
     $ cat diff.json
 
 Here is a minimal example of how to use IfcDiff as a library:
@@ -104,12 +104,6 @@ Here is a minimal example of how to use IfcDiff as a library:
 
    For more information on how to use IfcDiff as a library, check out the :doc:`API
    reference <autoapi/ifcdiff/index>`.
-
-You can also alias it to a command:
-
-.. code-block:: bash
-
-    alias ifcdiff='python -m ifcdiff'
 
 Geometry changes
 ----------------

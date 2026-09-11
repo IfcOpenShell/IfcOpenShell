@@ -25,9 +25,9 @@ utility:
 
 .. code-block:: console
 
-    $ python -m ifcclash -h
+    $ ifcclash -h
 
-    usage: __main__.py [-h] [-o OUTPUT] input
+    usage: ifcclash [-h] [-o OUTPUT] input
 
     Clashes geometry between two IFC files
 
@@ -110,13 +110,7 @@ Here is a minimal example of how to use IfcClash as a library:
     ifc_clasher.clash()
     ifc_clasher.export()
 
-You can also alias it to a command:
-
-.. code-block:: bash
-
-    alias ifcclash='python -m ifcclash'
-
-Alternatively, you can package it as an executable.
+You can package ifcclash as an executable:
 
 ::
 

@@ -26,6 +26,9 @@ Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
+[project.scripts]
+ifccityjson = "ifccityjson.__main__:cmdline"
+
 [tool.setuptools.packages.find]
 include = ["ifccityjson*"]
 exclude = ["test*"]

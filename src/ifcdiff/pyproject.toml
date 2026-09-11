@@ -25,5 +25,8 @@ Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
+[project.scripts]
+ifcdiff = "ifcdiff:main"
+
 [tool.setuptools]
 py-modules = ["ifcdiff"]

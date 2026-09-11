@@ -678,7 +678,7 @@ def main(
     return data
 
 
-if __name__ == "__main__":
+def cli():
     import argparse
     import time
 
@@ -741,3 +741,7 @@ if __name__ == "__main__":
 
     for t, dt in times:
         print(f"{t}: {dt}")
+
+
+if __name__ == "__main__":
+    cli()

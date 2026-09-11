@@ -757,7 +757,7 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
                 f.write(pdf_bytes)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="Specify an IFC file to process")
     parser.add_argument("output", help="The output directory")
@@ -784,3 +784,7 @@ if __name__ == "__main__":
 
     logger.info("Finished conversion in %ss", time.time() - start)
     logger.info("Conversion and report generation complete")
+
+
+if __name__ == "__main__":
+    main()
