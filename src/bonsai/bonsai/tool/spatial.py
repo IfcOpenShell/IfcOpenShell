@@ -768,6 +768,8 @@ class Spatial(bonsai.core.tool.Spatial):
     ) -> Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]]:
         boundary_lines = cls.get_boundary_lines_from_context_visible_objects()
         unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+        if not hasattr(unioned_boundaries, "geoms"):
+            return "NO POLYGONS FOUND"
         closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
         if not closed_polygons:
             return "NO POLYGONS FOUND"

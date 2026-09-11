@@ -503,7 +503,9 @@ class FilledOpeningGenerator:
         if profile:
             profile = ifcopenshell.util.representation.resolve_representation(profile)
 
-            def get_curve_2d_from_3d(profile: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+            def get_curve_2d_from_3d(
+                profile: ifcopenshell.entity_instance,
+            ) -> Union[ifcopenshell.entity_instance, None]:
                 if len(profile.Items) == 1:
                     curve_3d = profile.Items[0]
                     if tool.Ifc.get_schema() == "IFC2X3":
@@ -526,17 +528,24 @@ class FilledOpeningGenerator:
 
                 boundary_lines = [shapely.LineString([verts[v] for v in e]) for e in edges]
                 unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-                closed_polygons = shapely.polygonize(boundary_lines)
+                if not hasattr(unioned_boundaries, "geoms"):
+                    return None
+                closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+                if not closed_polygons.geoms:
+                    return None
                 polygon = max(closed_polygons.geoms, key=lambda polygon: polygon.area)
                 return shape_builder.polyline(list(polygon.exterior.coords))
 
-            extrusion = shape_builder.extrude(
-                get_curve_2d_from_3d(profile),
-                magnitude=thickness / unit_scale,
-                position=Vector([0.0, -thickness * 0.5 / unit_scale, 0.0]),
-                **shape_builder.extrude_kwargs("Y"),
-            )
-            return shape_builder.get_representation(context, [extrusion])
+            # A non-closed profile curve (eg. bad tessellation precision) has no
+            # 2D outline to extrude, so fall back to the bounding box path below.
+            if curve_2d := get_curve_2d_from_3d(profile):
+                extrusion = shape_builder.extrude(
+                    curve_2d,
+                    magnitude=thickness / unit_scale,
+                    position=Vector([0.0, -thickness * 0.5 / unit_scale, 0.0]),
+                    **shape_builder.extrude_kwargs("Y"),
+                )
+                return shape_builder.get_representation(context, [extrusion])
 
         if (
             filling_rep := tool.Geometry.get_active_representation(filling_obj)
