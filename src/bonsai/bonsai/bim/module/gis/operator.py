@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+
 import bpy
 from bpy.types import Operator
 
@@ -24,6 +26,14 @@ class BIM_OT_cityjson2ifc(Operator):
     bl_idname = "bim.convert_cityjson2ifc"
     bl_label = "Convert CityJSON to IFC"
     bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        input_path = context.scene.ifccityjson_properties.input
+        if not input_path or not os.path.exists(input_path):
+            cls.poll_message_set("Select an existing CityJSON input file first.")
+            return False
+        return True
 
     def execute(self, context):
         from cjio import cityjson
@@ -51,6 +61,14 @@ class BIM_OT_find_cityjson_lod(Operator):
     bl_idname = "bim.find_cityjson_lod"
     bl_label = "Find LODs in CityJSON File"
     bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        input_path = context.scene.ifccityjson_properties.input
+        if not input_path or not os.path.exists(input_path):
+            cls.poll_message_set("Select an existing CityJSON input file first.")
+            return False
+        return True
 
     def execute(self, context):
         from cjio import cityjson
