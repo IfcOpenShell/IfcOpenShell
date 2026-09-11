@@ -81,11 +81,9 @@ Directory Structure
 |   build-deps.py                   - Fetches and builds all needed dependencies for IFCOS using MSVC
 |   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.py
 |   build-ifcopenshell.py           - Builds IFCOS using MSVC
-|   build-type-cfg.cmd              - Utility file used by the build scripts
 |   install-ifcopenshell.py         - Installs/deploys IFCOS using MSVC.
 |   readme.md                       - This file
 |   run-cmake.py                    - Sets environment variables for the dependencies and runs CMake for IFCOS using MSVC
-|   vs-cfg.cmd                      - Utility file used by the build scripts
 \---patches                         - Contains patches for the dependencies
 \---utils                           - Contains various utilities for the build scripts
 ```
