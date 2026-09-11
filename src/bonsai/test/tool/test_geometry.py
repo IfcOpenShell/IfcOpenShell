@@ -22,6 +22,7 @@ from typing import Union
 import bpy
 import ifcopenshell
 import ifcopenshell.api.geometry
+import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.type
 import numpy as np
@@ -726,6 +727,68 @@ class TestRemoveRepresentationItemFromShapeAspect(NewFile):
         subject.remove_representation_items_from_shape_aspect([items[1]], shape_aspect1)
         representation = shape_aspect1.ShapeRepresentations[0]
         assert set(representation.Items) == {items[0]}
+
+
+class TestSyncShapeAspectsWithConstituentRename(NewFile):
+    def make_walled_constituent(self, ifc, context, constituent_set_name):
+        element = ifc.createIfcWall()
+        item = ifc.createIfcExtrudedAreaSolid()
+        representation = ifc.createIfcShapeRepresentation(Items=[item], ContextOfItems=context)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
+
+        material = ifc.createIfcMaterial(Name="Concrete")
+        constituent_set = ifcopenshell.api.material.add_material_set(
+            ifc, name=constituent_set_name, set_type="IfcMaterialConstituentSet"
+        )
+        constituent = ifcopenshell.api.material.add_constituent(ifc, constituent_set=constituent_set, material=material)
+        constituent.Name = "Concrete Constituent"
+        ifcopenshell.api.material.assign_material(
+            ifc, products=[element], type="IfcMaterialConstituentSet", material=constituent_set
+        )
+
+        shape_aspect = subject.create_shape_aspect(element.Representation, representation, [item], None)
+        shape_aspect.Name = "Concrete Constituent"
+        return constituent, shape_aspect
+
+    def test_renames_the_paired_shape_aspect(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        context = ifc.createIfcGeometricRepresentationContext()
+
+        constituent, shape_aspect = self.make_walled_constituent(ifc, context, "Set")
+
+        constituent.Name = "Renamed Constituent"
+        subject.sync_shape_aspects_with_constituent_rename(constituent, "Concrete Constituent")
+
+        assert shape_aspect.Name == "Renamed Constituent"
+
+    def test_does_not_touch_shape_aspects_of_unrelated_material_sets(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        context = ifc.createIfcGeometricRepresentationContext()
+
+        constituent, shape_aspect = self.make_walled_constituent(ifc, context, "Set")
+        other_constituent, other_shape_aspect = self.make_walled_constituent(ifc, context, "Other Set")
+
+        constituent.Name = "Renamed Constituent"
+        subject.sync_shape_aspects_with_constituent_rename(constituent, "Concrete Constituent")
+
+        assert shape_aspect.Name == "Renamed Constituent"
+        # Same coincidental name, but on a different material set: must be left alone.
+        assert other_shape_aspect.Name == "Concrete Constituent"
+
+    def test_noop_when_name_is_unchanged_or_absent(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        context = ifc.createIfcGeometricRepresentationContext()
+
+        constituent, shape_aspect = self.make_walled_constituent(ifc, context, "Set")
+
+        subject.sync_shape_aspects_with_constituent_rename(constituent, "Concrete Constituent")
+        assert shape_aspect.Name == "Concrete Constituent"
+
+        subject.sync_shape_aspects_with_constituent_rename(constituent, None)
+        assert shape_aspect.Name == "Concrete Constituent"
 
 
 class TestApplyItemIdsAsVertexGroups(NewFile):

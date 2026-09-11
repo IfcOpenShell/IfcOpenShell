@@ -818,12 +818,15 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.material_set_item_attributes)
 
         if material.is_a("IfcMaterialConstituentSet"):
+            constituent = self.file.by_id(self.material_set_item)
+            old_name = constituent.Name
             ifcopenshell.api.material.edit_constituent(
                 self.file,
-                constituent=self.file.by_id(self.material_set_item),
+                constituent=constituent,
                 attributes=attributes,
                 material=self.file.by_id(int(props.material_set_item_material)),
             )
+            tool.Geometry.sync_shape_aspects_with_constituent_rename(constituent, old_name)
         elif material.is_a("IfcMaterialLayerSet"):
             layer = self.file.by_id(self.material_set_item)
             ifcopenshell.api.material.edit_layer(
