@@ -721,10 +721,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 ifc_path = os.path.dirname(ifc_path)
             return os.path.abspath(os.path.join(ifc_path, document.Location))
         if document.is_a("IfcDocumentInformation"):
-            if tool.Ifc.get_schema() == "IFC2X3":
-                references = document.DocumentReferences
-            else:
-                references = document.HasDocumentReferences
+            references = cls.get_document_references(document)
             for reference in references:
                 if description and cls.get_reference_description(reference) != description:
                     continue

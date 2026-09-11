@@ -77,9 +77,9 @@ class Library(bonsai.core.tool.Library):
         props = cls.get_library_props()
         props.references.clear()
         if tool.Ifc.get_schema() == "IFC2X3":
-            references = library.LibraryReference
+            references = library.LibraryReference or []
         else:
-            references = library.HasLibraryReferences
+            references = library.HasLibraryReferences or []
         for reference in references:
             new = props.references.add()
             new.ifc_definition_id = reference.id()
