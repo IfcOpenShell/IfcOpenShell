@@ -79,6 +79,8 @@ text.header, tspan.header { /* 5mm */ font-size: 8.25px; }
 text.large, tspan.large { /* 3.5mm */ font-size: 5.78px; }
 text.regular, tspan.regular { /* 2.5mm */ font-size: 4.13px; }
 text.small, tspan.small { /* 1.8mm */ font-size: 2.97px; }
+text.tiny, tspan.tiny { /* 1.5mm */ font-size: 2.48px; }
+text.mini, tspan.mini { /* 1.3mm */ font-size: 2.15px; }
 text.GRID, tspan.GRID { /* 5mm */ font-size: 8.25px; }
 .material-blank { fill: white; }
 .material-diagonal1 { fill: url(#diagonal1); }

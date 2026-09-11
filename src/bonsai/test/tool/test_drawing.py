@@ -851,6 +851,25 @@ class TestEditText(NewFile):
         assert "title" in annotation_classes
         assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
 
+    @pytest.mark.parametrize("font_size, class_name", [("1.3", "mini"), ("1.5", "tiny")])
+    def test_change_text_font_size_to_small_sizes(self, font_size, class_name):
+        TestGetTextLiteral().test_run()
+        obj = bpy.data.objects["Object"]
+
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            props = tool.Drawing.get_text_props(obj)
+            props.font_size = font_size
+            bpy.ops.bim.edit_text()
+
+        annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
+        assert class_name in annotation_classes.split()
+        assert DecoratorData.get_text_data(obj)["FontSize"] == float(font_size)
+
+        # Font size round-trips back into the property.
+        subject.import_text_attributes(obj)
+        assert tool.Drawing.get_text_props(obj).font_size == font_size
+
     def test_add_second_literal(self, setup=True):
         if setup:
             TestGetTextLiteral().test_run()
