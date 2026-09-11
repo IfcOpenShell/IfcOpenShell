@@ -1215,11 +1215,9 @@ def install_manifold(
     dependency_dir = deps_dir / f"{DEPENDENCY_NAME}-{MANIFOLD_VERSION}"
     dependency_install_dir = install_dir / f"{DEPENDENCY_NAME}-{MANIFOLD_VERSION}"
 
-    # TODO: test whether manifold links the debug CRT for Debug builds and needs separate
-    # Release/Debug install dirs instead of sharing one.
     build_deps_cache.add_entry("MANIFOLD_INSTALL_PATH", str(dependency_install_dir))
 
-    if is_already_installed(dependency_install_dir):
+    if is_already_installed(dependency_install_dir, expected_build_cfg=build_cfg):
         return
 
     git_clone_and_checkout_revision(
@@ -1244,8 +1242,10 @@ def install_manifold(
         "-DMANIFOLD_TEST=OFF",
         "-DMANIFOLD_EXPORT=OFF",
         "-DMANIFOLD_DOWNLOADS=OFF",
+        "-DCMAKE_DEBUG_POSTFIX=_d",
     )
 
     build_path = dependency_dir / vs_cfg_vars.build_dir
     build_cmake_project(DEPENDENCY_NAME, build_path, build_cfg, msbuild_multiproc)
     install_cmake_project(DEPENDENCY_NAME, build_path, build_cfg)
+    mark_installation(dependency_install_dir, build_cfg)

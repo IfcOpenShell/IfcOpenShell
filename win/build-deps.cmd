@@ -869,16 +869,13 @@ goto %NEXT_DEPENDENCY_LABEL%
 set DEPENDENCY_NAME=manifold
 set MANIFOLD_VERSION=3.2.1
 set DEPENDENCY_DIR=%DEPS_DIR%\manifold-%MANIFOLD_VERSION%
-set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\manifold-%MANIFOLD_VERSION%
+set DEPENDENCY_INSTALL_NAME=manifold-%MANIFOLD_VERSION%
+set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set NEXT_DEPENDENCY_LABEL=Successful
-:: TODO: test whether manifold links the debug CRT for Debug builds and needs separate
-:: Release/Debug install dirs instead of sharing one.
 echo MANIFOLD_INSTALL_PATH=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
-IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
-    echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
-    goto %NEXT_DEPENDENCY_LABEL%
-)
+call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
 call :GitCloneAndCheckoutRevision https://github.com/elalish/manifold.git "%DEPENDENCY_DIR%" v%MANIFOLD_VERSION%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -893,12 +890,14 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DMANIFOLD_CBIND=OFF ^
                -DMANIFOLD_TEST=OFF ^
                -DMANIFOLD_EXPORT=OFF ^
-               -DMANIFOLD_DOWNLOADS=OFF
+               -DMANIFOLD_DOWNLOADS=OFF ^
+               -DCMAKE_DEBUG_POSTFIX="_d"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :MarkInstallation
 goto %NEXT_DEPENDENCY_LABEL%
 
 :: :tbb
