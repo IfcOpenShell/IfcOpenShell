@@ -125,11 +125,15 @@ class DrawingsData:
     def location_hint(cls) -> list[tuple[tool.Drawing.LocationHintType, str, str]]:
         props = tool.Drawing.get_document_props()
         if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
-            results = [("0", "Origin", "")]
-            results.extend(
-                [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
-            )
-            return results
+            origin = ("0", "Origin", "")
+            storeys = [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
+            if not storeys:
+                return [origin]
+            default_container = tool.Root.get_default_container()
+            if default_container and default_container.is_a("IfcBuildingStorey"):
+                default_id = str(default_container.id())
+                storeys.sort(key=lambda s: s[0] != default_id)
+            return storeys + [origin]
         elif props.target_view in ["MODEL_VIEW"]:
             return [(h.upper(), h, "") for h in ["Orthographic", "Perspective"]]
         return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]
