@@ -96,6 +96,7 @@ text.GRID, tspan.GRID { /* 5mm */ font-size: 8.25px; }
 .material-sand { fill: url(#sand); }
 .material-concrete { fill: url(#concrete); stroke-width: 0.5; }
 .IfcSpace { fill: none; stroke: none; }
+.IfcSpace.projection { fill: white; stroke: black; stroke-linecap: round; stroke-width: 0.25; }
 .PredefinedType-STUD { stroke: black; stroke-width: 1; }
 .PredefinedType-WOOD { fill: url(#wood); stroke: black; stroke-width: 0.5; }
 .PredefinedType-STEEL { fill: url(#steel); stroke: black; stroke-width: 0.5; }
