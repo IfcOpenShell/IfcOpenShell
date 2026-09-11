@@ -19,6 +19,7 @@
 # This file was modified with the assistance of an AI coding tool.
 
 import tempfile
+import types
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -58,6 +59,65 @@ class TestTransparentColor(NewFile):
         original = [1.0, 0.5, 0.25, 1.0]
         result = subject.transparent_color(original)
         assert result is not original
+
+
+class TestPinSceneCameraToOtherViewports(NewFile):
+    def test_camera_activation_pins_the_previous_camera_before_switching_scene_camera(self, monkeypatch):
+        assert bpy.context.scene
+        previous_camera = bpy.data.objects.new("Previous Camera", bpy.data.cameras.new("Previous Camera"))
+        new_camera = bpy.data.objects.new("New Camera", bpy.data.cameras.new("New Camera"))
+        bpy.context.scene.collection.objects.link(previous_camera)
+        bpy.context.scene.collection.objects.link(new_camera)
+        bpy.context.scene.camera = previous_camera
+        calls = []
+        monkeypatch.setattr(
+            subject,
+            "pin_scene_camera_to_other_viewports",
+            classmethod(lambda cls, camera, active_space: calls.append((camera, active_space))),
+        )
+
+        subject.activate_camera(new_camera)
+        subject.activate_camera(new_camera)
+
+        assert bpy.context.scene.camera == new_camera
+        assert calls == [(previous_camera, subject.get_view3d_space())]
+
+    def test_pins_only_other_camera_views_that_follow_the_scene_camera(self, monkeypatch):
+        previous_camera = object()
+        active_space = types.SimpleNamespace(
+            camera=None,
+            region_3d=types.SimpleNamespace(view_perspective="CAMERA"),
+            use_local_camera=False,
+        )
+        following_space = types.SimpleNamespace(
+            camera=None,
+            region_3d=types.SimpleNamespace(view_perspective="CAMERA"),
+            use_local_camera=False,
+        )
+        local_camera = object()
+        local_space = types.SimpleNamespace(
+            camera=local_camera,
+            region_3d=types.SimpleNamespace(view_perspective="CAMERA"),
+            use_local_camera=True,
+        )
+        perspective_space = types.SimpleNamespace(
+            camera=None,
+            region_3d=types.SimpleNamespace(view_perspective="PERSP"),
+            use_local_camera=False,
+        )
+        spaces = [active_space, following_space, local_space, perspective_space]
+        monkeypatch.setattr(subject, "get_view3d_spaces", classmethod(lambda cls: iter(spaces)))
+
+        subject.pin_scene_camera_to_other_viewports(previous_camera, active_space)
+
+        assert active_space.camera is None
+        assert active_space.use_local_camera is False
+        assert following_space.camera is previous_camera
+        assert following_space.use_local_camera is True
+        assert local_space.camera is local_camera
+        assert local_space.use_local_camera is True
+        assert perspective_space.camera is None
+        assert perspective_space.use_local_camera is False
 
 
 class TestViewportDecoratorDrawBatch(NewFile):
