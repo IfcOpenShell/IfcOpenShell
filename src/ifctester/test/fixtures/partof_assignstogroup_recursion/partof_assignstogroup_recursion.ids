@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>PartOf ASSIGNSTOGROUP recursion</title>
+        <description>A duct assigned to a zone, itself assigned to a system, must be found part of that system.</description>
+    </info>
+    <specifications>
+        <specification name="Ducts must be part of a system" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCDUCTSEGMENT</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <partOf relation="IFCRELASSIGNSTOGROUP" cardinality="required">
+                    <entity>
+                        <name>
+                            <simpleValue>IFCSYSTEM</simpleValue>
+                        </name>
+                    </entity>
+                </partOf>
+            </requirements>
+        </specification>
+        <specification name="Ducts must not be part of a system" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCDUCTSEGMENT</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <partOf relation="IFCRELASSIGNSTOGROUP" cardinality="prohibited">
+                    <entity>
+                        <name>
+                            <simpleValue>IFCSYSTEM</simpleValue>
+                        </name>
+                    </entity>
+                </partOf>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
