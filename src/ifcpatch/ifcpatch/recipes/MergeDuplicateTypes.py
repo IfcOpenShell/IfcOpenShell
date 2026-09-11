@@ -25,7 +25,7 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, file: ifcopenshell.file, logger: Logger, attribute: str = "Tag", should_merge_null: bool = True):
+    def __init__(self, file: ifcopenshell.file, logger: Logger, attribute: str = "Tag", should_merge_null: bool = False):
         """Merge duplicate element types via the Tag or another attribute
 
         Revit is notorious for creating many duplicate element types. Element
@@ -50,8 +50,18 @@ class Patcher:
         :param attribute: The name of the attribute to merge element types based
             on. Typically this will be "Tag" as it stores the unique ID from the
             proprietary BIM software.
-        :param should_merge_null: If True, all elements with an empty attribute
-            will be merged. If False, they will be kept separate.
+        Only types of the same IFC class are ever merged, so e.g. an
+        annotation type and a beam type that happen to share an attribute value
+        are never combined.
+
+        :param should_merge_null: If True, all types with an empty attribute
+            will be merged together. This defaults to False because an empty
+            attribute is an absence of evidence, not proof of duplication:
+            merging every untagged type into one silently destroys distinct
+            types (a common failure on Bonsai-authored or mixed models, where
+            genuine, differently-named types may all lack a Tag). Genuine Revit
+            duplicates always carry a populated Tag, so the default only affects
+            types the recipe has no reason to believe are duplicates.
 
         Example:
 
@@ -62,6 +72,9 @@ class Patcher:
 
             # Explicitly say we want to merge based on the Name attribute
             ifcpatch.execute({"file": model, "recipe": "MergeDuplicateTypes", "arguments": ["Name"]})
+
+            # Also merge all types that have an empty Tag into a single type
+            ifcpatch.execute({"file": model, "recipe": "MergeDuplicateTypes", "arguments": ["Tag", True]})
         """
         self.file = file
         self.logger = logger
@@ -71,9 +84,15 @@ class Patcher:
     def patch(self):
         keys: dict[Any, ifcopenshell.entity_instance] = {}
         for element_type in self.file.by_type("IfcTypeObject"):
-            key = getattr(element_type, self.attribute)
-            if not key and not self.should_merge_null:
+            attribute_value = getattr(element_type, self.attribute)
+            if not attribute_value and not self.should_merge_null:
                 continue
+            # Include the IFC class in the key so that only types of the same
+            # class are ever merged. Two types of different classes are not
+            # duplicates, and merging them would reassign occurrences to an
+            # incompatible type (e.g. an IfcTypeProduct used for annotations
+            # cannot type an IfcBeam), raising a TypeError in assign_type.
+            key = (element_type.is_a(), attribute_value)
             original_type = keys.get(key, None)
             if original_type:
                 elements = ifcopenshell.util.element.get_types(element_type)
