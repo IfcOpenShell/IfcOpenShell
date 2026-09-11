@@ -300,6 +300,11 @@ namespace IfcGeom {
 
 		void process_finished_rep(geometry_conversion_result* rep, ifcopenshell::geometry::Converter* kernel = nullptr);
 
+		// Appends the (already computed) elements of a finished task to the output
+		// lists. Must be called in a deterministic order (see process_concurrently)
+		// so that the emitted element order does not depend on thread completion order.
+		void emit_finished_rep_(geometry_conversion_result* rep);
+
 		void process_concurrently();
 
 		/// Computes model's bounding box (bounds_min and bounds_max).
