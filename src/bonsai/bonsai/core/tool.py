@@ -477,6 +477,7 @@ class Geometry:
     def is_box_representation(cls, representation): pass
     def is_data_supported_for_adding_representation(cls, data): pass
     def is_mapped_representation(cls, representation): pass
+    def is_mapped_representation_of_type(cls, representation, element_type): pass
     def is_type_product(cls, element): pass
     def link(cls, element, obj): pass
     def record_object_materials(cls, obj): pass

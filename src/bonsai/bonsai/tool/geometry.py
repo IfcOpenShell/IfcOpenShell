@@ -1318,6 +1318,25 @@ class Geometry(bonsai.core.tool.Geometry):
         return representation.RepresentationType == "MappedRepresentation"
 
     @classmethod
+    def is_mapped_representation_of_type(
+        cls,
+        representation: ifcopenshell.entity_instance,
+        element_type: Union[ifcopenshell.entity_instance, None],
+    ) -> bool:
+        """``True`` when ``representation`` is a mapped representation whose
+        ``IfcRepresentationMap`` is one of ``element_type``'s ``RepresentationMaps``
+        -- i.e. a genuine type-anchored shared representation, as opposed to a
+        floating map not owned by the type (which Revit exports produce)."""
+        if element_type is None or representation.RepresentationType != "MappedRepresentation":
+            return False
+        if not representation.Items:
+            return False
+        item = representation.Items[0]
+        if not item.is_a("IfcMappedItem"):
+            return False
+        return item.MappingSource in (element_type.RepresentationMaps or [])
+
+    @classmethod
     def is_meshlike(cls, representation: ifcopenshell.entity_instance) -> bool:
         if ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "AdvancedBrep",
