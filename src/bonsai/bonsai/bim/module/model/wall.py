@@ -477,6 +477,12 @@ class ExtendWallsToWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.If
     bl_description = "Extend and trim selected walls to another wall"
     bl_options = {"REGISTER", "UNDO"}
 
+    invert: bpy.props.BoolProperty(
+        name="Invert Trim Side",
+        description="Trim the other side of the extended wall instead of the guessed default",
+        default=False,
+    )
+
     @classmethod
     def poll(cls, context):
         if _poll_reject_array_children(cls):
@@ -509,7 +515,7 @@ class ExtendWallsToWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.If
                     bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 element = tool.Ifc.get_entity(obj)
                 ifcopenshell.api.geometry.connect_wall(
-                    tool.Ifc.get(), wall1=element, wall2=target_element, is_atpath=True
+                    tool.Ifc.get(), wall1=element, wall2=target_element, is_atpath=True, invert=self.invert
                 )
                 tool.Model.recreate_wall(element, obj)
             tool.Model.recreate_wall(target_element, target_obj)
@@ -1846,14 +1852,14 @@ class DumbWallJoiner:
         self.set_axis(element1, p1, p2)
         tool.Model.recreate_wall(element1, wall1)
 
-    def connect(self, obj1: bpy.types.Object, obj2: bpy.types.Object) -> None:
+    def connect(self, obj1: bpy.types.Object, obj2: bpy.types.Object, invert: bool = False) -> None:
         wall1 = tool.Ifc.get_entity(obj1)
         wall2 = tool.Ifc.get_entity(obj2)
         if tool.Ifc.is_moved(obj1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
         if tool.Ifc.is_moved(obj2):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
-        ifcopenshell.api.geometry.connect_wall(tool.Ifc.get(), wall1=wall1, wall2=wall2)
+        ifcopenshell.api.geometry.connect_wall(tool.Ifc.get(), wall1=wall1, wall2=wall2, invert=invert)
         tool.Model.recreate_wall(wall1, obj1)
         tool.Model.recreate_wall(wall2, obj2)
 
@@ -4756,6 +4762,12 @@ class JoinWallsIntersection(_CommitWallDraftsFirstMixin, bpy.types.Operator, too
     bl_description = "Join two walls at their corner"
     bl_options = {"REGISTER", "UNDO"}
 
+    invert: bpy.props.BoolProperty(
+        name="Invert Trim Side",
+        description="Trim the other side of the non-active wall instead of the guessed default",
+        default=False,
+    )
+
     @classmethod
     def poll(cls, context):
         if not tool.Model.has_selected_ifc_objects():
@@ -4767,7 +4779,7 @@ class JoinWallsIntersection(_CommitWallDraftsFirstMixin, bpy.types.Operator, too
 
     def _perform(self, context: bpy.types.Context) -> set[str]:
         try:
-            core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
+            core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, invert=self.invert)
         except core.RequireTwoWallsError as e:
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}
