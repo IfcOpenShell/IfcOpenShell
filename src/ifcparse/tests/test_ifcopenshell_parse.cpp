@@ -4,6 +4,7 @@
 #include <ifcparse/exception.h>
 #include <ifcparse/file.h>
 #include <ifcparse/dense_id_map.h>
+#include <ifcparse/guid_map.h>
 #include <ifcparse/parse.h>
 #include <cstdint>
 #include <sstream>

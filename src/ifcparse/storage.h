@@ -22,6 +22,7 @@ namespace rocksdb {
 #include "rocksdb_set_view.h"
 #include "map_variant.h"
 #include "dense_id_map.h"
+#include "guid_map.h"
 #include "map_transformer.h"
 #include "set_to_map_transformer.h"
 #include "file_open_status.h"
@@ -573,7 +574,7 @@ namespace ifcopenshell {
             typedef dense_id_map<shared_pointer_type> entity_instance_by_name_storage;
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
             typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name;
-            typedef std::map<std::string, express::base> entity_instance_by_guid;
+            typedef guid_map<express::base> entity_instance_by_guid;
             typedef inverse_index entities_by_ref;
             typedef entity_instance_by_name::iterator iterator;
 
