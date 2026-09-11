@@ -59,5 +59,7 @@ def add_cost_schedule(
         predefined_type=predefined_type,
         name=name,
     )
+    if file.schema == "IFC2X3":
+        cost_schedule.ID = "X"
     cost_schedule.UpdateDate = ifcopenshell.api.sequence.add_date_time(file, datetime.now())
     return cost_schedule
