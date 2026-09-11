@@ -429,13 +429,26 @@ class Usecase:
                 element=element_type,
                 reuse_identities=self.reuse_identities,
             )
-            ifcopenshell.api.type.assign_type(
-                self.file,
-                should_run_listeners=False,  # ty:ignore[unknown-argument]
-                related_objects=[element],
-                relating_type=new_type,
-                should_map_representations=False,
-            )
+            # `new_type` may resolve to a pre-existing element reused by
+            # GlobalId (see `get_existing_element`, which reuses any IfcRoot by
+            # GUID regardless of class). If the library type's GlobalId collides
+            # with an unrelated element already in the project, `new_type` can be
+            # an occurrence rather than a type and `assign_type` would raise,
+            # aborting the whole append. Guard it so one bad/colliding asset
+            # doesn't abort the batch; the occurrence is appended untyped. (#8667)
+            try:
+                ifcopenshell.api.type.assign_type(
+                    self.file,
+                    should_run_listeners=False,  # ty:ignore[unknown-argument]
+                    related_objects=[element],
+                    relating_type=new_type,
+                    should_map_representations=False,
+                )
+            except TypeError as e:
+                print(
+                    "Warning: append_asset could not type %s #%s with %s "
+                    "(GlobalId collision?): %s" % (element.is_a(), element.id(), new_type.is_a(), e)
+                )
             ifcopenshell.api.owner.settings.restore()
 
         return element
