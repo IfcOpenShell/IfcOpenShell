@@ -26,7 +26,6 @@ Installation is shown based on the IfcOpenShell build script directory output:
           -DLIBXML2_INCLUDE_DIR=%IFCOPENSHELL_ROOT%\deps\OpenCOLLADA\Externals\LibXML\include                   ^
           -DLIBXML2_LIBRARIES=%IFCOPENSHELL_ROOT%\deps-vs2017-x86-installed\OpenCOLLADA\lib\opencollada\xml.lib ^
           -DCGAL_INCLUDE_DIR=%IFCOPENSHELL_ROOT%\deps-vs2017-x86-installed\cgal\include                         ^
-          -DCGAL_LIBRARY_DIR=%IFCOPENSHELL_ROOT%\deps-vs2017-x86-installed\cgal\lib                             ^
           -DGMP_INCLUDE_DIR=%IFCOPENSHELL_ROOT%\deps-vs2017-x86-installed\mpir                                  ^
           -DGMP_LIBRARY_DIR=%IFCOPENSHELL_ROOT%\deps-vs2017-x86-installed\mpir                                  ^
           -DMPFR_INCLUDE_DIR=%IFCOPENSHELL_ROOT%\deps-vs2017-x86-installed\mpfr                                 ^
@@ -40,7 +39,6 @@ Installation is shown based on the IfcOpenShell build script directory output:
           -DLIBXML2_INCLUDE_DIR=${IFCOPENSHELL_INSTALL}/libxml2-2.9.9/include/libxml2     \
           -DLIBXML2_LIBRARIES=${IFCOPENSHELL_INSTALL}/libxml2-2.9.9/lib/libxml2.a         \
           -DCGAL_INCLUDE_DIR=${IFCOPENSHELL_INSTALL}/cgal-5.2/include                     \
-          -DCGAL_LIBRARY_DIR=${IFCOPENSHELL_INSTALL}/cgal-5.2/lib                         \
           -DGMP_INCLUDE_DIR=${IFCOPENSHELL_INSTALL}/gmp-6.1.2/include                     \
           -DGMP_LIBRARY_DIR=${IFCOPENSHELL_INSTALL}/gmp-6.1.2/lib                         \
           -DMPFR_INCLUDE_DIR=${IFCOPENSHELL_INSTALL}/mpfr-3.1.5/include                   \
