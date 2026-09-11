@@ -63,9 +63,9 @@ def step_impl(context, ifc_class, property_path, pattern):
             assert False
 
         prop = pset[property_name]
-        # get_psets returns just strings
+        # get_psets can return non-string types (bool, int, float, ...)
 
-        if not re.search(pattern, prop):
+        if not re.search(pattern, str(prop)):
             assert False
 
 

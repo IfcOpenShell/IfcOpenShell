@@ -83,9 +83,9 @@ def step_impl(context, guid, easting, northing, elevation):
         float(map_conversion["Eastings"]),
         float(map_conversion["Northings"]),
         float(map_conversion["OrthogonalHeight"]),
-        float(map_conversion["XAxisAbscissa"]),
-        float(map_conversion["XAxisOrdinate"]),
-        float(map_conversion["Scale"]),
+        float(map_conversion["XAxisAbscissa"] if map_conversion["XAxisAbscissa"] is not None else 1.0),
+        float(map_conversion["XAxisOrdinate"] if map_conversion["XAxisOrdinate"] is not None else 0.0),
+        float(map_conversion["Scale"] if map_conversion["Scale"] is not None else 1.0),
     )
     element_x = round(e, get_decimal_points(easting))
     element_y = round(n, get_decimal_points(northing))
