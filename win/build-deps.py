@@ -76,6 +76,9 @@ class Args(NamedTuple):
     build_cfg: BuildCfg
     build_type: BuildType
     reuse_boost: bool
+    num_build_procs: int
+    install_python: bool
+    install_qt6: bool
 
 
 def print_build_config(
@@ -200,6 +203,41 @@ def parse_args() -> Args:
             "Speeds up the build a bit when iterating/debugging this script."
         ),
     )
+    parser.add_argument(
+        "--num-build-procs",
+        dest="num_build_procs",
+        type=int,
+        default=argparse.SUPPRESS,
+        help=(
+            "How many build processes may be run in parallel. "
+            "Also can be specified by using IFCOS_NUM_BUILD_PROCS env variable. "
+            "(default: NUMBER_OF_PROCESSORS)"
+        ),
+    )
+    parser.add_argument(
+        "--install-python",
+        dest="install_python",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help=(
+            "Download and install Python. If disabled, an already installed Python is used - "
+            "set the PYTHONHOME env variable to its installation path before running run-cmake.bat. "
+            "Also can be specified by using IFCOS_INSTALL_PYTHON env variable. "
+            "(default: True)"
+        ),
+    )
+    parser.add_argument(
+        "--install-qt6",
+        dest="install_qt6",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help=(
+            "Download and install Qt6 using aqtinstall. If disabled, an already installed Qt6 is used - "
+            "set the QT_DIR env variable to its installation path before running run-cmake.bat. "
+            "Also can be specified by using IFCOS_INSTALL_QT6 env variable. "
+            "(default: True)"
+        ),
+    )
     args = parser.parse_args()
     logger.setLevel(args.log_level)
 
@@ -210,11 +248,24 @@ def parse_args() -> Args:
     build_cfg = getattr(args, "build_cfg", None) or args.build_cfg_flag
     build_type = getattr(args, "build_type", None) or args.build_type_flag
 
+    num_build_procs = getattr(args, "num_build_procs", None) or int(
+        os.getenv("IFCOS_NUM_BUILD_PROCS") or multiprocessing.cpu_count()
+    )
+    install_python = getattr(args, "install_python", None)
+    if install_python is None:
+        install_python = is_on_off(os.getenv("IFCOS_INSTALL_PYTHON"), default=True)
+    install_qt6 = getattr(args, "install_qt6", None)
+    if install_qt6 is None:
+        install_qt6 = is_on_off(os.getenv("IFCOS_INSTALL_QT6"), default=True)
+
     return Args(
         generator=generator,
         build_cfg=build_cfg,
         build_type=build_type,
         reuse_boost=args.reuse_boost,
+        num_build_procs=num_build_procs,
+        install_python=install_python,
+        install_qt6=install_qt6,
     )
 
 
@@ -248,17 +299,11 @@ def main() -> None:
     vs_cfg_vars.deps_dir.mkdir(parents=True, exist_ok=True)
     vs_cfg_vars.install_dir.mkdir(parents=True, exist_ok=True)
 
-    # User-configurable build options.
-    # TODO: add as cli options to make them appear in --help.
-    IFCOS_INSTALL_PYTHON = is_on_off(os.getenv("IFCOS_INSTALL_PYTHON"), default=True)
-    IFCOS_INSTALL_QT6 = is_on_off(os.getenv("IFCOS_INSTALL_QT6"), default=True)
-    IFCOS_NUM_BUILD_PROCS = int(os.getenv("IFCOS_NUM_BUILD_PROCS") or multiprocessing.cpu_count())
-
     # Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
     # TODO: consider inlining.
     MSBUILD_MULTIPROC = (
         "/m",
-        f"/p:CL_MPCount={IFCOS_NUM_BUILD_PROCS}",
+        f"/p:CL_MPCount={ARGS.num_build_procs}",
         "/p:UseMultiToolTask=true",
         "/p:EnforceProcessCountAcrossBuilds=true",
     )
@@ -276,9 +321,9 @@ def main() -> None:
         vs_cfg_vars,
         ARGS.build_cfg,
         ARGS.build_type,
-        IFCOS_INSTALL_PYTHON,
-        IFCOS_INSTALL_QT6,
-        IFCOS_NUM_BUILD_PROCS,
+        ARGS.install_python,
+        ARGS.install_qt6,
+        ARGS.num_build_procs,
     )
 
     logger.warning("Warning: You will need roughly 8 GB of disk space to proceed.\n")
@@ -300,17 +345,17 @@ def main() -> None:
     install_mpfr(
         vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_cfg, ARGS.build_type, MSBUILD_CMD
     )
-    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, IFCOS_NUM_BUILD_PROCS, ARGS.reuse_boost)
+    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.num_build_procs, ARGS.reuse_boost)
     install_json(vs_cfg_vars.install_dir)
     install_opencollada(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
-    pythonhome = install_python(vs_cfg_vars, IFCOS_INSTALL_PYTHON, build_deps_cache, nuget_exe)
+    pythonhome = install_python(vs_cfg_vars, ARGS.install_python, build_deps_cache, nuget_exe)
     install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, MSBUILD_MULTIPROC)
     install_cgal(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_eigen(vs_cfg_vars)
     install_zstd(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_rocksdb(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
-    install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, IFCOS_INSTALL_QT6, pythonhome)
+    install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.install_qt6, pythonhome)
     install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
 
     print_success(START_TIME)
