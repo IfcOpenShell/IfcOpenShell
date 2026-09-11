@@ -2874,6 +2874,29 @@ class Drawing(bonsai.core.tool.Drawing):
         return (start - offset).tolist(), (end + offset).tolist()
 
     @classmethod
+    def get_drawing_from_sheet_reference(
+        cls, reference: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Resolve the drawing IfcAnnotation referenced by a sheet's ``DRAWING`` document reference.
+
+        A sheet reference and the drawing's own document share the exact same ``Location``
+        (see :meth:`get_sheet_references`, the inverse of this lookup), so we match on that
+        instead of reconstructing and comparing the (sanitised) SVG filename or the drawing name.
+        This keeps the resolution correct for drawing names containing commas or any other
+        character stripped by :meth:`sanitise_filename`.
+        """
+        location = reference.Location
+        if not location:
+            return None
+        for drawing in tool.Ifc.get().by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            document = cls.get_drawing_document(drawing)
+            if document and document.Location == location:
+                return drawing
+        return None
+
+    @classmethod
     def get_sheet_references(cls, drawing: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         sheet_references: list[ifcopenshell.entity_instance] = []
         drawing_reference = cls.get_drawing_document(drawing)
