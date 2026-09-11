@@ -128,6 +128,14 @@ bool mapping::reuse_ok_(const IfcSchema::IfcProduct::list::ptr& products) {
     }
 
     if (products->size() == 1) {
+        // A lone product can still disqualify reuse: if it has openings, its
+        // cut geometry is unique to it and must not be shared with a mapped
+        // representation (e.g. the sole occurrence of a type). Otherwise the
+        // occurrence's own geometry is silently skipped in favour of the
+        // shared/type-level shape. See #9348.
+        if (!settings_.get<settings::DisableOpeningSubtractions>().get() && find_openings(*products->begin())->size()) {
+            return false;
+        }
         return true;
     }
 
@@ -237,7 +245,7 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
     for (auto representation : *representations) {
         IfcSchema::IfcRepresentationMap* rmap = nullptr;
         IfcSchema::IfcProduct::list::ptr ifcproducts = filter_products(products_represented_by(representation, rmap, false), filters);
-        
+
         if (ifcproducts->size() == 0) {
             continue;
         }
