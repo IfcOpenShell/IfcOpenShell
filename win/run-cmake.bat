@@ -136,7 +136,6 @@ echo    SWIG_INSTALL_DIR        = %SWIG_INSTALL_DIR%
 echo    JSON_INCLUDE_DIR        = %JSON_INCLUDE_DIR%
 echo.
 echo    CGAL_INSTALL_DIR        = %CGAL_INSTALL_DIR%
-:: echo    CGAL_LIBRARY_DIR        = %CGAL_LIBRARY_DIR%
 echo    GMP_INSTALL_DIR         = %GMP_INSTALL_DIR%
 echo    MPFR_INSTALL_DIR        = %MPFR_INSTALL_DIR%
 echo    EIGEN_DIR               = %EIGEN_DIR%
