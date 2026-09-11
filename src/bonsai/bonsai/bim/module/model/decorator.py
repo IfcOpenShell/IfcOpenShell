@@ -1554,16 +1554,26 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
             axis_side = axes["side"]
             point_on_base_axis = tool.Cad.point_on_edge(mouse_point, axis_base)
             point_on_side_axis = tool.Cad.point_on_edge(mouse_point, axis_side)
+            # Match FilledOpeningGenerator.generate: the filling faces the
+            # wall body from whichever face is snapped, so a NEGATIVE
+            # direction sense inverts which face needs the 180 degree turn.
+            flipped_wall = layers["direction_sense"] == "NEGATIVE"
             if (point_on_base_axis - mouse_point).length_squared <= (point_on_side_axis - mouse_point).length_squared:
-                # mouse is snapped to the base axis, the preview looks exactly like the placed door / window
-                rot_mat = snap_obj.matrix_world
+                # mouse is snapped to the base axis
+                rotate_filling = flipped_wall
             else:
-                # mouse is snapped to the side axis, the preview is inverted, rotate it now and correct x position later
+                # mouse is snapped to the side axis
+                rotate_filling = not flipped_wall
+            if rotate_filling:
+                # the preview is inverted, rotate it now and correct x position later
                 rot_mat = (
                     (snap_obj.matrix_world.to_quaternion() @ Quaternion(Vector((0, 0, 1)), radians(180)))
                     .to_matrix()
                     .to_4x4()
                 )
+            else:
+                # the preview looks exactly like the placed door / window
+                rot_mat = snap_obj.matrix_world
 
             mouse_point.z = snap_obj.matrix_world.translation.z
 
