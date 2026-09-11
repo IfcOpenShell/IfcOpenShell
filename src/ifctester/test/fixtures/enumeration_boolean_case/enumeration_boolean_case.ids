@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>Boolean enumeration matching is exact-case</title>
+        <description>An enumeration restriction over xs:boolean must not match a value it does not literally list.</description>
+    </info>
+    <specifications>
+        <specification name="Boolean enumeration matches only its listed literal" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCWALL</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCBOOLEAN">
+                    <propertySet>
+                        <simpleValue>Foo_Bar</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>RequiresFalse</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:boolean">
+                            <xs:enumeration value="FALSE" />
+                        </xs:restriction>
+                    </value>
+                </property>
+                <property dataType="IFCBOOLEAN">
+                    <propertySet>
+                        <simpleValue>Foo_Bar</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>RequiresTrueLower</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:boolean">
+                            <xs:enumeration value="true" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
