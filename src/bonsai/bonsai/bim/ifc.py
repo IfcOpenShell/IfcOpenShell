@@ -110,6 +110,8 @@ class IfcStore:
     """Should be set only using ``tool.Ifc.set``."""
 
     schema: Optional[ifcopenshell.ifcopenshell_wrapper.schema_definition] = None
+    cache: Optional[ifcopenshell.geom.serializers.hdf5] = None
+    cache_path: str = ""
     id_map: dict[int, IFC_CONNECTED_TYPE] = {}
     guid_map: dict[str, IFC_CONNECTED_TYPE] = {}
     edited_objs: set[bpy.types.Object] = set()
@@ -133,6 +135,8 @@ class IfcStore:
         IfcStore.path = ""
         IfcStore.file = None
         IfcStore.schema = None
+        IfcStore.cache = None
+        IfcStore.cache_path = ""
         IfcStore.id_map = {}
         IfcStore.guid_map = {}
         IfcStore.edited_objs = set()
