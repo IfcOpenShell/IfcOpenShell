@@ -19,7 +19,6 @@
 import ifcopenshell.api.boundary
 import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
-import ifcopenshell.api.grid
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
@@ -91,8 +90,13 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
         ifcopenshell.api.feature.remove_feature(file, feature=opening.RelatedOpeningElement)
 
     if product.is_a("IfcGrid"):
+        # Not ifcopenshell.api.grid.remove_grid_axis: the grid itself is
+        # being removed below, so the last-U/V-axis guard does not apply.
         for axis in product.UAxes + product.VAxes + (product.WAxes or ()):
-            ifcopenshell.api.grid.remove_grid_axis(file, axis=axis)
+            axis_curve = axis.AxisCurve
+            file.remove(axis)
+            if axis_curve:
+                ifcopenshell.util.element.remove_deep2(file, axis_curve)
 
     def element_exists(element_id):
         try:
