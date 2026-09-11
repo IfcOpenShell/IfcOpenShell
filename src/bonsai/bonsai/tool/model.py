@@ -944,7 +944,7 @@ class Model(bonsai.core.tool.Model):
         if pset_data:
             representation = tool.Geometry.get_body_representation(wall)
             chain_ids = {b.id() for b in cls.get_booleans(wall, representation)} if representation else set()
-            stored_ids = set(json.loads(pset_data["Data"]))
+            stored_ids = set(cls.parse_manual_boolean_ids(pset_data["Data"]))
             stale_ids = stored_ids - chain_ids
             if stale_ids:
                 cls.unmark_manual_booleans(wall, list(stale_ids))
@@ -975,13 +975,29 @@ class Model(bonsai.core.tool.Model):
                 tool.Geometry.remove_representation_item(sec, wall)
 
     @classmethod
+    def parse_manual_boolean_ids(cls, data: str) -> list[int]:
+        """Decode a ``BBIM_Boolean.Data`` payload into a list of boolean ids.
+
+        The payload is expected to be a JSON list of ids, but legacy/corrupt
+        files have been seen storing a JSON object instead (which used to crash
+        the boolean machinery with ``'dict' object has no attribute 'extend'``).
+        Coerce anything that isn't a list into an empty list so the callers can
+        rebuild from scratch rather than raise.
+        """
+        parsed = json.loads(data)
+        if not isinstance(parsed, list):
+            print(f"WARNING: unexpected BBIM_Boolean.Data payload {parsed!r}, ignoring it")
+            return []
+        return parsed
+
+    @classmethod
     def get_manual_booleans(
         cls, element: ifcopenshell.entity_instance, representation: Optional[ifcopenshell.entity_instance] = None
     ) -> list[ifcopenshell.entity_instance]:
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return []
-        boolean_ids = json.loads(pset["Data"])
+        boolean_ids = cls.parse_manual_boolean_ids(pset["Data"])
         if representation is None:
             representation = tool.Geometry.get_body_representation(element)
             if not representation:
@@ -998,7 +1014,7 @@ class Model(bonsai.core.tool.Model):
         boolean_ids = [b.id() for b in booleans]
         if pset_data:
             pset = tool.Ifc.get().by_id(pset_data["id"])
-            data = json.loads(pset_data["Data"])
+            data = cls.parse_manual_boolean_ids(pset_data["Data"])
             data.extend(boolean_ids)
             data = list(set(data))
         else:
@@ -1018,7 +1034,7 @@ class Model(bonsai.core.tool.Model):
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return
-        data = set(json.loads(pset["Data"]))
+        data = set(cls.parse_manual_boolean_ids(pset["Data"]))
         data -= set(boolean_ids)
         data = list(data)
         pset = tool.Ifc.get().by_id(pset["id"])
