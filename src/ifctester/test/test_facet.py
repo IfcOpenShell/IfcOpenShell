@@ -33,6 +33,7 @@ import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifcopenshell.util.pset
+import pytest
 
 import ifctester.facet
 import ifctester.ids
@@ -1703,6 +1704,22 @@ class TestRestriction:
         assert restriction != 10
         assert restriction == 5
         assert restriction != -1
+
+    def test_total_digits_and_fraction_digits_are_not_enforced(self):
+        with pytest.warns(UserWarning, match="totalDigits"):
+            restriction = Restriction(options={"totalDigits": 3}, base="decimal")
+        assert restriction == 123456
+        assert restriction.asdict() == {"@base": "xs:decimal", "xs:totalDigits": [{"@value": 3}]}
+
+        with pytest.warns(UserWarning, match="fractionDigits"):
+            restriction = Restriction(options={"fractionDigits": 2}, base="decimal")
+        assert restriction == 3.14159
+        assert restriction.asdict() == {"@base": "xs:decimal", "xs:fractionDigits": [{"@value": 2}]}
+
+    def test_white_space_is_not_enforced(self):
+        with pytest.warns(UserWarning, match="whiteSpace"):
+            restriction = Restriction(options={"whiteSpace": "collapse"}, base="string")
+        assert restriction == "  padded  "
 
     def test_pattern(self):
         restriction = Restriction(options={"pattern": "[A-Z]{2}[0-9]{2}"})
