@@ -196,6 +196,25 @@ class TestReassignClass(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcWallType")) == 0
         assert len(self.file.by_type("IfcSlab")) == 1
 
+    def test_reassigning_occurrence_to_type_keeps_a_sibling_sharing_its_shape(self):
+        # #9207: some authoring tools reuse the same IfcProductDefinitionShape
+        # across occurrences. switch_between_class_types unassigns every
+        # representation of `element` one at a time, so a shared shape must
+        # not be destroyed out from under the sibling that still owns it.
+        context = self.file.create_entity("IfcGeometricRepresentationContext")
+        representation = self.file.create_entity("IfcShapeRepresentation", ContextOfItems=context)
+        shape = self.file.createIfcProductDefinitionShape(Representations=[representation])
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        sibling = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.Representation = shape
+        sibling.Representation = shape
+
+        ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcWallType")
+
+        assert sibling.Representation == shape
+        assert representation in sibling.Representation.Representations
+        assert len(self.file.by_type("IfcProductDefinitionShape")) == 1
+
 
 class TestReassignClassIFC4X3(test.bootstrap.IFC4X3, TestReassignClass):
     pass

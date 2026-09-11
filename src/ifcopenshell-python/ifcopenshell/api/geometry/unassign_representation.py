@@ -46,18 +46,34 @@ class Usecase:
     def unassign_product_representation(
         self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
     ) -> None:
-        representations = list(product.Representation.Representations or [])
+        product_def = product.Representation
+        representations = list(product_def.Representations or [])
         if representation not in representations:
             return
         representations.remove(representation)
+
+        # product_def may be shared verbatim by other products (eg. some
+        # authoring tools reuse the same IfcProductDefinitionShape across
+        # occurrences, see #9207). Mutating it in place, or removing it once
+        # empty, would silently take the geometry away from every other
+        # owner too. Detach only this product onto its own definition
+        # instead, and leave the shared one untouched for its other owners.
+        if len(product_def.ShapeOfProduct) > 1:
+            if representations:
+                product.Representation = self.file.createIfcProductDefinitionShape(
+                    product_def.Name, product_def.Description, representations
+                )
+            else:
+                product.Representation = None
+            return
+
         if not representations:
-            product_def = product.Representation
             # TODO: should somehow find matching shape aspect and remove it
             # even before the last representation is removed.
             self.process_shape_aspects(product_def)
             self.file.remove(product_def)
         else:
-            product.Representation.Representations = representations
+            product_def.Representations = representations
 
     def unassign_type_representation(self) -> None:
         matching_representation_map = None

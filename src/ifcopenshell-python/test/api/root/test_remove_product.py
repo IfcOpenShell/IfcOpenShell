@@ -108,6 +108,39 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcExtrudedAreaSolid")) == 0
         assert len(self.file.by_type("IfcWall")) == 0
 
+    def test_removing_an_element_sharing_a_product_definition_shape(self):
+        # some authoring tools (eg. Revit) reuse the very same occurrence-level
+        # IfcProductDefinitionShape across multiple products (#9207)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        shape = self.file.createIfcProductDefinitionShape(
+            Representations=[
+                self.file.createIfcShapeRepresentation(
+                    ContextOfItems=context, Items=[self.file.createIfcExtrudedAreaSolid()]
+                )
+            ]
+        )
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.Representation = shape
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element1.Representation = shape
+
+        # removing one of the two owners must not touch the shared shape
+        ifcopenshell.api.root.remove_product(self.file, product=element)
+        assert len(self.file.by_type("IfcWall")) == 1
+        assert element1.Representation == shape
+        assert len(self.file.by_type("IfcProductDefinitionShape")) == 1
+        assert len(self.file.by_type("IfcShapeRepresentation")) == 1
+        assert len(self.file.by_type("IfcExtrudedAreaSolid")) == 1
+
+        # removing the last owner must still clean up the shape
+        ifcopenshell.api.root.remove_product(self.file, product=element1)
+        assert len(self.file.by_type("IfcWall")) == 0
+        assert len(self.file.by_type("IfcProductDefinitionShape")) == 0
+        assert len(self.file.by_type("IfcShapeRepresentation")) == 0
+        assert len(self.file.by_type("IfcExtrudedAreaSolid")) == 0
+
     def test_unassigning_but_not_removing_mapped_representations_of_an_element(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
