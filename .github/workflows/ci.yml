@@ -28,8 +28,10 @@ on:
       - 'cmake/**'
       - 'test/**'
       - '.github/workflows/ci.yml'
+  # No paths filter here on purpose. A skipped workflow reports no status,
+  # so a required check would stay pending forever on any PR the filter
+  # excludes (e.g. src/bonsai only). The push filter above still applies.
   pull_request:
-    paths: *ci_paths
 
 jobs:
   activate:
