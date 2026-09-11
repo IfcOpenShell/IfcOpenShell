@@ -208,6 +208,7 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 	}
 
 	std::list<cgal_face_t> face_list;
+	bool any_face_failed = false;
 	for (auto& f : l->children) {
 		bool success = false;
 		try {
@@ -216,6 +217,7 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 
 		if (!success) {
 			logger().Message(Logger::LOG_WARNING, "GEO", 79, "Failed to convert face:", f->instance);
+			any_face_failed = true;
 			continue;
 		}
 
@@ -223,6 +225,15 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 		//    for (auto &point: face.outer) {
 		//      std::cout << "\tPoint(" << point << ")" << std::endl;
 		//    }
+	}
+
+	// If any face was dropped and this kernel is not the final fallback in a
+	// hybrid chain (partial_success_is_success == false), report failure so the
+	// hybrid kernel escalates the whole shell to a later kernel (e.g. OpenCASCADE)
+	// rather than silently returning an incomplete shell. See hybrid_kernel.h,
+	// where partial_success_is_success is set false for every non-final kernel.
+	if (any_face_failed && !partial_success_is_success) {
+		return false;
 	}
 
 	shape = utils::create_polyhedron(face_list);
