@@ -328,6 +328,10 @@ class Blender(bonsai.core.tool.Blender):
             props = tool.System.get_zone_props()
             assert (active_zone := props.active_zone)
             return active_zone.ifc_definition_id
+        elif obj_type == "System":
+            props = tool.System.get_system_props()
+            assert (active_system := props.active_system_ui_item)
+            return active_system.ifc_definition_id
         assert_never(obj_type)
 
     @classmethod

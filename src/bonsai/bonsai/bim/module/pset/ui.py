@@ -36,6 +36,7 @@ from bonsai.bim.module.pset.data import (
     ProfilePsetsData,
     ResourcePsetsData,
     ResourceQtosData,
+    SystemPsetsData,
     TaskQtosData,
     WorkSchedulePsetsData,
     ZonePsetsData,
@@ -827,6 +828,40 @@ class BIM_PT_zone_psets(Panel):
             draw_psetqto_ui(context, 0, {}, props, self.layout, self.obj_type)
 
         for pset in ZonePsetsData.data["psets"]:
+            draw_psetqto_ui(context, pset["id"], pset, props, self.layout, self.obj_type)
+
+
+class BIM_PT_system_psets(Panel):
+    bl_label = "System Property Sets"
+    bl_idname = "BIM_PT_system_psets"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_systems"
+
+    obj_type: Literal["System"] = "System"
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.System.get_system_props()
+        return bool(props.active_system_ui_item)
+
+    def draw(self, context):
+        if not SystemPsetsData.is_loaded:
+            SystemPsetsData.load()
+
+        assert self.layout
+        props = tool.Pset.get_pset_props("", self.obj_type)
+        row = self.layout.row(align=True)
+        prop_with_search(row, props, "pset_name", text="")
+        op = row.operator("bim.add_pset", icon="ADD", text="")
+        op.obj_type = self.obj_type
+
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, self.obj_type)
+
+        for pset in SystemPsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, self.obj_type)
 
 
