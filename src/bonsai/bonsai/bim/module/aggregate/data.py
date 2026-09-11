@@ -87,7 +87,7 @@ class AggregateData:
                 r
                 for r in getattr(aggregate, "HasAssignments", []) or []
                 if r.is_a("IfcRelAssignsToGroup")
-                if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                if "BBIM_Linked_Aggregate" in (r.RelatingGroup.Name or "")
             ),
             None,
         )
