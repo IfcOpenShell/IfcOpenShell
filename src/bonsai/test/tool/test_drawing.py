@@ -1104,6 +1104,60 @@ class TestAddReferenceImage(NewFile):
         assert len(uv_node.outputs["Generated"].links[:]) == 1
 
 
+class TestIsReferenceImage(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        image = ifc.createIfcAnnotation(ObjectType="IMAGE")
+        text = ifc.createIfcAnnotation(ObjectType="TEXT")
+        assert subject.is_reference_image(image) is True
+        assert subject.is_reference_image(text) is False
+
+
+class TestGetReferenceImageTexture(NewFile):
+    def test_run(self):
+        props = tool.Project.get_project_props()
+        props.template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
+
+        filepath = Path("test/files/image.jpg").absolute()
+        bpy.ops.bim.add_reference_image(filepath=str(filepath), x_length=1, y_length=1)
+
+        obj = bpy.data.objects["IfcAnnotation/image"]
+        element = tool.Ifc.get_entity(obj)
+        texture = subject.get_reference_image_texture(element)
+        assert texture
+        assert texture.is_a("IfcImageTexture")
+        assert texture.URLReference
+
+
+class TestSvgWriterGetImageRect(NewFile):
+    def test_run(self):
+        from bonsai.bim.module.drawing import svgwriter
+
+        camera = subject.create_camera("Camera", mathutils.Matrix(), "PERSPECTIVE", "PLAN_VIEW")
+        writer = svgwriter.SvgWriter(
+            camera_width=2.0,
+            camera_height=2.0,
+            camera=camera,
+            camera_projection=(camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))),
+            scale=1 / 100,
+        )
+
+        mesh = bpy.data.meshes.new("plane")
+        mesh.from_pydata(
+            [(-1.0, -1.0, 0.0), (1.0, -1.0, 0.0), (1.0, 1.0, 0.0), (-1.0, 1.0, 0.0)],
+            [],
+            [[0, 1, 2, 3]],
+        )
+        mesh.update()
+        obj = bpy.data.objects.new("plane", mesh)
+
+        assert writer.get_image_rect(obj) == pytest.approx((0.0, 0.0, 20.0, 20.0))
+
+
 class TestIsDrawingActive(NewFile):
     def test_no_active_camera(self):
         bpy.context.scene.camera = None
