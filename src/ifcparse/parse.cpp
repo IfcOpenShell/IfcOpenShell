@@ -1975,9 +1975,14 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
             }
         }
         if (!indexed) {
-            file_reader<full_buffer_impl> s(path);
             std::get<impl::in_memory_file_storage>(storage_).parse_threads = effective_parse_threads();
-            std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
+            if (paged_reading_) {
+                file_reader<paged_file_impl> s(path, 64 << 10, 64);
+                std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
+            } else {
+                file_reader<full_buffer_impl> s(path);
+                std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
+            }
         }
 
         if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
@@ -3636,6 +3641,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
 
 template void ifcopenshell::impl::in_memory_file_storage::read_from_stream(file_reader<full_buffer_impl>* s, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
 template void ifcopenshell::impl::in_memory_file_storage::read_from_stream(file_reader<pushed_sequential_impl>* s, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
+template void ifcopenshell::impl::in_memory_file_storage::read_from_stream(file_reader<paged_file_impl>* s, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
 #ifdef USE_MMAP
 template void ifcopenshell::impl::in_memory_file_storage::read_from_stream(file_reader<mmap_impl>* s, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
 #endif
