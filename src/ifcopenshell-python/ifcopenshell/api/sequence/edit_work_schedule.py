@@ -49,7 +49,7 @@ def edit_work_schedule(
             work_schedule=work_schedule, attributes={"Description": "3 crane design option"})
     """
     for name, value in attributes.items():
-        if value:
+        if value is not None:
             if "Date" in name or "Time" in name:
                 value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
             elif name == "Duration" or name == "TotalFloat":

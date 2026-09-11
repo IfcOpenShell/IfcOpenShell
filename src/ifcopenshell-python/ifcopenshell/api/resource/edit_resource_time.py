@@ -82,7 +82,7 @@ class Usecase:
             metrics = ifcopenshell.util.constraint.get_metric_constraints(resource, "Usage." + name)
             if metrics and ifcopenshell.util.constraint.is_hard_constraint(metrics[0]):
                 continue
-            if value:
+            if value is not None:
                 if "Start" in name or "Finish" in name or name == "StatusTime":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
                 elif name == "ScheduleWork" or name == "ActualWork" or name == "RemainingTime":
