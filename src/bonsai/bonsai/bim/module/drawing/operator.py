@@ -1725,8 +1725,12 @@ class CreateDrawing(bpy.types.Operator):
                         polygon_classes.update(polygon2_classes)
                         queue.remove((polygon2, polygon2_classes))
 
-                g = etree.Element("g")
-                path = etree.SubElement(g, "path")
+                # Must be created in the SVG namespace. Serialisation looks
+                # identical either way, but an unnamespaced <g> is invisible to
+                # the ".//svg:g" XPath queries that run later in this same
+                # session (e.g. move_elements_to_top for EPset_Drawing.BringToFront).
+                g = etree.Element("{http://www.w3.org/2000/svg}g")
+                path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
                 d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
                 for interior in polygon.interiors:
                     d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
