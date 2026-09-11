@@ -126,6 +126,10 @@ private:
         return good_;
     }
 
+    void resolve_references_in_place(bool value) {
+        storage_.resolve_references_in_place = value;
+    }
+
     const ifcopenshell::unresolved_references& references() const {
         return references_to_resolve_;
     }
@@ -233,6 +237,9 @@ public:
         batch_deletion_ids_t;
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
+    bool lazy_loading_ = false;
+    unsigned parse_threads_ = 0;
+    bool paged_reading_ = false;
     void process_deletion_(const express::base& entity);
 
   public:
@@ -286,6 +293,27 @@ public:
     /// @brief Bypass loading of all instances of the specified type name. Only applies to parsed IFC-SPF files.
     /// @param type_name case insensitive name of the type to bypass
     void bypass_type(const std::string& type_name);
+
+    // Index the file with one scan and parse each instance's attributes on
+    // first access instead of parsing everything up front. Set before
+    // initialize(). Falls back to the full parse if the scan finds anything
+    // it does not handle.
+    void lazy_loading(bool value) { lazy_loading_ = value; }
+    bool lazy_loading() const { return lazy_loading_; }
+
+    // Threads used to parse instances; 0 (the default) picks one per core,
+    // capped at 16, or honours IFCOPENSHELL_PARSE_THREADS. Set before
+    // initialize().
+    void parse_threads(unsigned value) { parse_threads_ = value; }
+    unsigned parse_threads() const { return parse_threads_; }
+    unsigned effective_parse_threads() const;
+
+    // Read the file through the paged reader (64 KB pages, 4 MB cache)
+    // instead of loading it into memory as a whole. Set before
+    // initialize(). Applies to the full parse; lazy loading always reads
+    // in pages.
+    void paged_reading(bool value) { paged_reading_ = value; }
+    bool paged_reading() const { return paged_reading_; }
 
     ~file();
 

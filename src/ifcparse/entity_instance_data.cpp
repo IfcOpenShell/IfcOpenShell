@@ -30,6 +30,9 @@ public:
     int operator()(const express::base& /*i*/) const { return -1; }
     int operator()(const std::vector<express::base>& i) const { return (int)i.size(); }
     int operator()(const std::vector<std::vector<express::base>>& i) const { return (int)i.size(); }
+    int operator()(const unresolved_reference& /*i*/) const { return -1; }
+    int operator()(const unresolved_reference_list& i) const { return (int)i.names.size(); }
+    int operator()(const unresolved_reference_list_list& i) const { return (int)i.names.size(); }
 };
 
 namespace {

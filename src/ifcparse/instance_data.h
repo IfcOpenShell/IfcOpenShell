@@ -42,6 +42,7 @@
 
 #include <boost/optional.hpp>
 #include <memory>
+#include <optional>
 #include <boost/logic/tribool.hpp>
 #include <boost/dynamic_bitset.hpp>
 
@@ -74,6 +75,10 @@ class IFC_PARSE_API blank {};
 class IFC_PARSE_API derived {};
 class IFC_PARSE_API empty_aggregate {};
 class IFC_PARSE_API empty_aggregate_of_aggregate {};
+
+struct unresolved_reference;
+struct unresolved_reference_list;
+struct unresolved_reference_list_list;
 
 } // namespace ifcopenshell
 
@@ -132,6 +137,18 @@ namespace impl {
     struct variant_type_name<express::base> {
         static std::string get() { return "instance"; }
     };
+    template <>
+    struct variant_type_name<ifcopenshell::unresolved_reference> {
+        static std::string get() { return "unresolved reference"; }
+    };
+    template <>
+    struct variant_type_name<ifcopenshell::unresolved_reference_list> {
+        static std::string get() { return "unresolved reference list"; }
+    };
+    template <>
+    struct variant_type_name<ifcopenshell::unresolved_reference_list_list> {
+        static std::string get() { return "unresolved reference list of lists"; }
+    };
 
     template <>
     struct variant_type_name<ifcopenshell::empty_aggregate> {
@@ -154,6 +171,26 @@ namespace ifcopenshell {
 template<typename... Args>
 struct parameter_pack {
     static constexpr size_t size = sizeof...(Args);
+};
+
+// Parse-time only values. The parser stores an entity reference as the
+// referenced instance name until every instance has been read, then replaces
+// it with the instance in a second pass. The list forms hold only names, so
+// they cost four bytes per reference while the file loads. Their indices in
+// the pack match the Argument_UNRESOLVED_* members of argument_type.
+struct unresolved_reference {
+    uint32_t name;
+    uint64_t file_offset;
+};
+// The lists keep one offset, that of their first reference, so an error
+// about a missing name still points at the line it came from.
+struct unresolved_reference_list {
+    std::vector<uint32_t> names;
+    uint64_t file_offset;
+};
+struct unresolved_reference_list_list {
+    std::vector<std::vector<uint32_t>> names;
+    uint64_t file_offset;
 };
 
 typedef parameter_pack <
@@ -213,7 +250,11 @@ typedef parameter_pack <
     // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
     std::vector<std::vector<double>>,
     // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
-    std::vector<std::vector<express::base>>>
+    std::vector<std::vector<express::base>>,
+    // PARSE-TIME ONLY, see above:
+    unresolved_reference,
+    unresolved_reference_list,
+    unresolved_reference_list_list>
 type_variant_parameter_pack;
 
 template<typename Pack>
@@ -509,8 +550,16 @@ class IFC_PARSE_API instance_data {
     void populate_derived_();
 
   public:
-      // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but in_memory*, where nullptr means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
-      in_memory_attribute_storage* storage_;
+      // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but an optional in_memory storage, where an empty optional means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
+      mutable std::optional<in_memory_attribute_storage> storage_;
+
+      // Lazy loading: the offset just past the opening parenthesis of this
+      // instance in the retained source, zero once the attributes are loaded.
+      uint64_t lazy_offset_ = 0;
+
+      // Parses the attributes from the retained source if this instance was
+      // indexed lazily and has not been accessed yet. No-op otherwise.
+      void ensure_loaded() const;
 
       const ifcopenshell::declaration* declaration() const {
           return declaration_;
@@ -529,22 +578,31 @@ class IFC_PARSE_API instance_data {
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, in_memory_attribute_storage&& storage)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(new in_memory_attribute_storage(std::move(storage)))
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::move(storage))
       {
             populate_derived_();
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, rocks_db_attribute_storage&& storage)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(nullptr)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
       {
           static_cast<void>(storage);
           populate_derived_();
       }
 
+      // A lazily loaded instance: the attributes, including the derived
+      // markers, are filled in by the file storage on first access.
+      struct lazy_tag {};
+      instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, lazy_tag)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
+      {
+      }
+      friend struct ifcopenshell::impl::in_memory_file_storage;
+
       /*
       // now that there are referenced as shared_ptr there is no move constructor anymore
       instance_data(instance_data&& other) noexcept
-          : file_(other.file_), id_(other.id_), declaration_(other.declaration_), storage_(std::exchange(other.storage_, nullptr))
+          : file_(other.file_), id_(other.id_), declaration_(other.declaration_), storage_(std::move(other.storage_))
       {}
       */
 
@@ -558,21 +616,22 @@ class IFC_PARSE_API instance_data {
       // same
       instance_data& operator=(instance_data&& other) noexcept {
           if (this != &other) {
-              delete storage_;
-              storage_ = std::exchange(other.storage_, nullptr);
+              storage_ = std::move(other.storage_);
+              other.storage_.reset();
           }
           return *this;
       }
       */
 
       ~instance_data() {
-          delete storage_;
+          storage_.reset();
       }
 
     attribute_value get_attribute_value(size_t attribute_index) const;
 
     template<typename T>
     void set_attribute_value(std::size_t attribute_index, T&& value) {
+        ensure_loaded();
         if (storage_) {
             storage_->set(attribute_index, value);
             return;
@@ -588,6 +647,7 @@ class IFC_PARSE_API instance_data {
 
     template<typename T>
     bool has_attribute_value(std::size_t attribute_index) const {
+        ensure_loaded();
         if (storage_) {
             return storage_->has<T>(attribute_index);
         }

@@ -37,6 +37,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <cstring>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -133,11 +134,58 @@ public:
     size_t tell() const { return cursor_; }
 
     size_t size() const { return impl_->size(); }
+
+    // The whole content as one contiguous buffer. Only readers whose
+    // implementation holds the content contiguously provide this.
+    template <typename I = Impl>
+    auto data() const -> decltype(std::declval<const I&>().data()) { return impl_->data(); }
+
+    // Hands fn(const char* data, size_t length, size_t offset) contiguous
+    // spans that together cover [begin, end): a single span for a
+    // contiguous implementation, one per page for the paged one. This is
+    // how code that scans bytes stays independent of how the file is held.
+    template <typename Fn>
+    void for_each_span(size_t begin, size_t end, Fn&& fn) const {
+        end = std::min(end, size());
+        if (begin >= end) {
+            return;
+        }
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            const size_t page_size = impl_->page_size();
+            for (size_t index = begin / page_size; index * page_size < end; ++index) {
+                const auto page = impl_->page(index);
+                const size_t page_begin = index * page_size;
+                const size_t from = std::max(begin, page_begin) - page_begin;
+                const size_t to = std::min(end, page_begin + page.second) - page_begin;
+                if (to > from) {
+                    fn(page.first + from, to - from, page_begin + from);
+                }
+            }
+        } else if constexpr (std::is_same_v<Impl, pushed_sequential_impl>) {
+            throw std::logic_error("A pushed sequential reader has no random access to byte ranges");
+        } else {
+            fn(impl_->data() + begin, end - begin, begin);
+        }
+    }
+
+    // A reader over the same file that can be used from another thread:
+    // the paged implementation gets its own page cache, a contiguous one
+    // shares the (read-only) content.
+    file_reader reopen() const {
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            return file_reader(impl_->path(), impl_->page_size(), impl_->capacity());
+        } else {
+            return clone();
+        }
+    }
     size_t remaining() const { return size() - cursor_; }
 
     char peek() const {
         if (cursor_ >= size()) {
             throw std::out_of_range("peek at EOF");
+        }
+        if (const char* p = cached_(cursor_, 1)) {
+            return *p;
         }
         return impl_->get(cursor_);
     }
@@ -146,12 +194,22 @@ public:
         if (remaining() < sizeof(uint64_t)) {
             throw std::out_of_range("peek_u64 at EOF");
         }
+        if (const char* p = cached_(cursor_, sizeof(uint64_t))) {
+            uint64_t value;
+            std::memcpy(&value, p, sizeof(value));
+            return value;
+        }
         return impl_->get_u64(cursor_);
     }
 
     uint32_t peek_u32() const {
         if (remaining() < sizeof(uint32_t)) {
             throw std::out_of_range("peek_u32 at EOF");
+        }
+        if (const char* p = cached_(cursor_, sizeof(uint32_t))) {
+            uint32_t value;
+            std::memcpy(&value, p, sizeof(value));
+            return value;
         }
         return impl_->get_u32(cursor_);
     }
@@ -186,12 +244,49 @@ public:
     }
 
     char get(size_t position) const {
+        if (const char* p = cached_(position, 1)) {
+            return *p;
+        }
         return impl_->get(position);
     }
 
 private:
     std::shared_ptr<Impl> impl_;
     size_t cursor_ = 0;
+
+    // For the paged implementation: the page the cursor was last on, so
+    // consecutive reads don't each go through the page cache. The pointer
+    // is revalidated against the cache's eviction count.
+    mutable const char* cached_data_ = nullptr;
+    mutable size_t cached_begin_ = 0;
+    mutable size_t cached_end_ = 0;
+    mutable size_t cached_evictions_ = 0;
+
+    // A pointer to `count` bytes at `position` if they lie in one page,
+    // else nullptr. Always nullptr for a contiguous implementation, whose
+    // get() is already direct.
+    const char* cached_(size_t position, size_t count) const {
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            if (cached_data_ != nullptr && position >= cached_begin_ && position + count <= cached_end_ && cached_evictions_ == impl_->evictions()) {
+                return cached_data_ + (position - cached_begin_);
+            }
+            const size_t page_size = impl_->page_size();
+            const size_t index = position / page_size;
+            const auto page = impl_->page(index);
+            cached_data_ = page.first;
+            cached_begin_ = index * page_size;
+            cached_end_ = cached_begin_ + page.second;
+            cached_evictions_ = impl_->evictions();
+            if (position + count <= cached_end_) {
+                return cached_data_ + (position - cached_begin_);
+            }
+            return nullptr;
+        } else {
+            (void)position;
+            (void)count;
+            return nullptr;
+        }
+    }
 };
 
 class IFC_PARSE_API full_buffer_impl {
@@ -201,10 +296,30 @@ public:
     explicit full_buffer_impl(const caller_fed_tag& tag);
     full_buffer_impl(const std::string& content, const caller_fed_tag& tag);
 
-    size_t size() const;
-    char get(size_t position) const;
-    uint32_t get_u32(size_t position) const;
-    uint64_t get_u64(size_t position) const;
+    size_t size() const { return size_; }
+    const char* data() const { return buf_.data(); }
+    char get(size_t position) const {
+        if (position >= size_) {
+            throw std::out_of_range("get out of range");
+        }
+        return buf_.data()[position];
+    }
+    uint32_t get_u32(size_t position) const {
+        if (position + sizeof(uint32_t) > size_) {
+            throw std::out_of_range("get_u32 out of range");
+        }
+        uint32_t value;
+        std::memcpy(&value, buf_.data() + position, sizeof(value));
+        return value;
+    }
+    uint64_t get_u64(size_t position) const {
+        if (position + sizeof(uint64_t) > size_) {
+            throw std::out_of_range("get_u64 out of range");
+        }
+        uint64_t value;
+        std::memcpy(&value, buf_.data() + position, sizeof(value));
+        return value;
+    }
     void push_next_page(const std::string& page_data);
     void drop_pages(size_t up_to_position);
 
@@ -223,6 +338,18 @@ public:
     paged_file_impl(const std::string& path, size_t page_size, size_t page_capacity);
     ~paged_file_impl();
 
+    // One page's bytes; the page stays valid until capacity() further pages
+    // have been fetched.
+    std::pair<const char*, size_t> page(size_t index) const {
+        const auto& p = fetchPage_(index);
+        return {p.data.data(), p.data.size()};
+    }
+    size_t page_size() const { return page_size_; }
+    size_t capacity() const { return capacity_; }
+    const std::string& path() const { return fn_; }
+    // Incremented whenever a page leaves the cache, so a pointer into a
+    // page can be checked for validity cheaply.
+    size_t evictions() const { return evictions_; }
     size_t size() const;
     char get(size_t position) const;
     uint32_t get_u32(size_t position) const;
@@ -242,6 +369,7 @@ private:
     size_t capacity_ = 8;
     mutable std::list<size_t> lru_;
     mutable std::unordered_map<size_t, entry> map_;
+    mutable size_t evictions_ = 0;
 };
 
 #ifdef USE_MMAP
@@ -249,10 +377,30 @@ class IFC_PARSE_API mmap_impl {
 public:
     explicit mmap_impl(const std::string& path);
 
-    size_t size() const;
-    char get(size_t position) const;
-    uint32_t get_u32(size_t position) const;
-    uint64_t get_u64(size_t position) const;
+    size_t size() const { return size_; }
+    const char* data() const { return map_.data(); }
+    char get(size_t position) const {
+        if (position >= size_) {
+            throw std::out_of_range("get out of range");
+        }
+        return map_.data()[position];
+    }
+    uint32_t get_u32(size_t position) const {
+        if (position + sizeof(uint32_t) > size_) {
+            throw std::out_of_range("get_u32 out of range");
+        }
+        uint32_t value;
+        std::memcpy(&value, map_.data() + position, sizeof(value));
+        return value;
+    }
+    uint64_t get_u64(size_t position) const {
+        if (position + sizeof(uint64_t) > size_) {
+            throw std::out_of_range("get_u64 out of range");
+        }
+        uint64_t value;
+        std::memcpy(&value, map_.data() + position, sizeof(value));
+        return value;
+    }
     void push_next_page(const std::string& page_data);
     void drop_pages(size_t up_to_position);
 

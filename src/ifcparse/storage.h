@@ -21,6 +21,8 @@ namespace rocksdb {
 #include "rocksdb_map_adapter.h"
 #include "rocksdb_set_view.h"
 #include "map_variant.h"
+#include "dense_id_map.h"
+#include "guid_map.h"
 #include "map_transformer.h"
 #include "set_to_map_transformer.h"
 #include "file_open_status.h"
@@ -400,6 +402,19 @@ namespace ifcopenshell {
                 base_.reserve(size);
             }
 
+            // Takes over another index's records, e.g. one built by a parser
+            // worker. Both must still be in bulk-load mode (no delta).
+            void append(inverse_index&& other) {
+                if (base_.empty()) {
+                    base_ = std::move(other.base_);
+                } else {
+                    base_.insert(base_.end(), other.base_.begin(), other.base_.end());
+                }
+                sorted_ = false;
+                other.clear();
+                invalidate_materialized();
+            }
+
             void add(uint32_t referenced_id, uint32_t source_id, uint16_t source_entity, int attribute_index) {
                 const inverse_record record{referenced_id, source_id, source_entity, (int16_t)attribute_index};
                 if (sorted_) {
@@ -448,6 +463,7 @@ namespace ifcopenshell {
             void sort() const {
                 if (!sorted_) {
                     std::sort(base_.begin(), base_.end(), record_less);
+                    base_.shrink_to_fit();
                     sorted_ = true;
                     invalidate_materialized();
                 }
@@ -567,11 +583,40 @@ namespace ifcopenshell {
 
             unresolved_references* references_to_resolve = nullptr;
 
+            // When set, references read into an instance's attributes stay in
+            // the attribute slots as unresolved_reference* values instead of
+            // being copied into references_to_resolve, and only aggregates that
+            // mix references with inline typed values still use the table.
+            // read_from_stream() turns this on and resolves the slots in a
+            // second pass; streaming consumers of references() leave it off.
+            bool resolve_references_in_place = false;
+
+            // Number of threads read_from_stream() may use to parse instances;
+            // 1 parses serially. Set by file::initialize().
+            unsigned parse_threads = 1;
+
+            // Lazy loading (index_lazily): the file was scanned once to index
+            // its instances, references and GlobalIds, and each instance's
+            // attributes are parsed from the retained source the first time
+            // they are accessed (instance_data::ensure_loaded). Inverses were
+            // registered by the scan, so materialisation must not register
+            // them again.
+            struct lazy_source;
+            bool lazy_ = false;
+            bool register_inverses_ = true;
+            std::unique_ptr<lazy_source, void (*)(lazy_source*)> lazy_source_{nullptr, nullptr};
+            std::vector<unsigned> lazy_bypassed_;
+            unresolved_references lazy_mixed_references_;
+            bool index_lazily(const std::string& path, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
+            void materialize(instance_data* data);
+            void resolve_instance_references(const shared_pointer_type& data, const std::vector<unsigned>& bypassed);
+            void resolve_table_references(const unresolved_references& references, const std::vector<unsigned>& bypassed);
+
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
-            typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
+            typedef dense_id_map<shared_pointer_type> entity_instance_by_name_storage;
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
             typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name;
-            typedef std::map<std::string, express::base> entity_instance_by_guid;
+            typedef guid_map<express::base> entity_instance_by_guid;
             typedef inverse_index entities_by_ref;
             typedef entity_instance_by_name::iterator iterator;
 
@@ -622,6 +667,14 @@ namespace ifcopenshell {
 
             template <typename Reader>
             shared_pointer_type load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1, bool coerce_attribute_count = true);
+
+            // The attribute-reading half of load(): the tokens after the
+            // opening parenthesis into a fresh attribute array. Storage is
+            // always in_memory_attribute_storage; it is a template parameter
+            // only because that type is defined in a header that includes
+            // this one.
+            template <typename Reader, typename Storage>
+            Storage load_attributes(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1);
             template <typename Reader>
             void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
 
@@ -630,6 +683,14 @@ namespace ifcopenshell {
 
             template <typename Reader>
             void read_from_stream(Reader* stream, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
+
+            // Parses the DATA section with `threads` workers, each running the
+            // same per-instance reader over its own chunk, and merges the
+            // results in file order. Returns false, without side effects, when
+            // the file can't be chunked safely (comments in DATA) or is too
+            // small to be worth it; the caller then parses serially.
+            template <typename Reader>
+            bool read_instances_parallel(Reader* stream, const ifcopenshell::schema_definition* schema, const std::set<std::string>& types_to_bypass, unsigned int& max_id, unsigned threads, std::vector<unsigned>& bypassed, unresolved_references& mixed_references, std::vector<shared_pointer_type>& instances);
 
             file_open_status good_ = file_open_status::SUCCESS;
 

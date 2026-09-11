@@ -194,12 +194,19 @@ def open(
     readonly: bool = False,
     mmap: bool = False,
     bypass_types: Optional[Sequence[str]] = None,
+    lazy: bool = False,
     logger: Optional[logger] = None,
 ) -> Union[file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
     :param should_stream: Whether to open the file in streaming mode. Could be useful
         for reading large files.
+    :param lazy: Index the file with one quick scan and parse each instance's
+        attributes only when they are first read. Opening is then nearly
+        instant and memory stays proportional to what is accessed; reading
+        every attribute of every instance costs the same as a normal open,
+        just spread over the reads. Falls back to a normal open if the file
+        uses syntax the scanner does not handle.
     :param logger: Logger that receives native parser messages.
 
     You can specify a file format. If no format is given, it is guessed from
@@ -242,10 +249,12 @@ def open(
         return stream(path)
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
         f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, *optional_logger_args(logger))
-    elif bypass_types:
+    elif bypass_types or lazy:
         f = ifcopenshell_wrapper.file.create_uninitialized(*optional_logger_args(logger))
-        for ty in bypass_types:
+        for ty in bypass_types or ():
             f.bypass_type(ty)
+        if lazy:
+            f.lazy_loading(True)
         if mmap:
             # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
             f.initialize(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]

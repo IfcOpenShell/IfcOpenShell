@@ -150,6 +150,7 @@ void RocksDbSerializer::write_streaming_() {
 
 			std::vector<express::base> simple_type_instances;
 
+			data->ensure_loaded();
 			for (size_t i = 0; i < data->storage_->size(); i++) {
 				auto val = data->get_attribute_value(i);
 				val.apply_visitor([&](const auto& t) {
@@ -291,6 +292,7 @@ void RocksDbSerializer::write_streaming_() {
 				}
 				if (decl->is(*ifcroot_type)) {
 					// @nb attribute counts are not coerced, so the attribute may be absent
+					data->ensure_loaded();
 					const bool has_guid = data->storage_->size() > 0 && data->get_attribute_value(0).type() == ifcopenshell::Argument_STRING;
 					if (has_guid) {
 						size_t v = name;
