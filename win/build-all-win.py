@@ -236,7 +236,7 @@ def build() -> None:
             ]
         )
         restore_env(*OLD_ADD_COMMIT_SHA)
-        run([str(REPO_WIN / "install-ifcopenshell.bat"), build_generator(), "Release"])
+        run([sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release"])
 
 
 def archive_executables() -> None:

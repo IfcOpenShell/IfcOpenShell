@@ -240,13 +240,13 @@ C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
    Only) to deploy the headers and binaries into a single location if
    wanted/needed.
 
-   Alternatively, one can use the utility batch file(s) to build and install the
+   Alternatively, one can use the utility script(s) to build and install the
    project easily from the command-line (installing a project will build it
    also, if required):
 
    .. code-block:: bat
 
-        install-ifcopenshell.bat
+        python install-ifcopenshell.py
 
 .. seealso::
 

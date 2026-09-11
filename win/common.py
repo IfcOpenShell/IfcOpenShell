@@ -111,8 +111,39 @@ BUILD_TYPES = get_args(BuildType)
 BUILD_TYPE_DEFAULT: BuildType = "Build"
 
 
+class HelpStrings:
+    NUM_BUILD_PROCS = (
+        "How many build processes may be run in parallel. "
+        "Also can be specified by using IFCOS_NUM_BUILD_PROCS env variable. "
+        "(default: NUMBER_OF_PROCESSORS)"
+    )
+
+    GENERATOR_FLAG = (
+        "Alternative way to specify the generator, instead of the positional argument. See above for accepted forms."
+    )
+
+    BUILD_CFG = f"Build configuration type. (default: {BUILD_CFG_DEFAULT})"
+    BUILD_CFG_FLAG = "Alternative way to specify the build configuration type, instead of the positional argument."
+
+    @staticmethod
+    def generator(omitted_behavior: str) -> str:
+        return (
+            "CMake generator to use. Accepts 3 forms: "
+            f"(1) omitted - {omitted_behavior}; "
+            "(2) shorthand, e.g. 'vs2022', 'vs2022-x64', 'vs2019-x86-v141' - optionally provide platform/toolset "
+            "using the suffix; "
+            "(3) full CMake generator name, e.g. 'Visual Studio 17 2022'."
+        )
+
+
 def debug_or_release(build_cfg: BuildCfg) -> DebugOrRelease:
     return "Debug" if build_cfg == "Debug" else "Release"
+
+
+def ensure_script_dir() -> None:
+    if Path.cwd() != SCRIPT_DIR:
+        logger.error(f"This script must be run from '{SCRIPT_DIR}'.")
+        sys.exit(1)
 
 
 def require_command(command: str) -> str:
@@ -149,3 +180,21 @@ class BuildDepsCache:
     def add_entry(self, key: str, value: str) -> None:
         with self.path.open("a") as f:
             f.write(f"{key}={value}\n")
+
+    @staticmethod
+    def parse(path: Path) -> dict[str, str]:
+        entries: dict[str, str] = {}
+        for line in path.read_text().splitlines():
+            key, _, value = line.partition("=")
+            entries[key] = value
+        return entries
+
+
+def find_cached_gen_shorthand() -> str | None:
+    """Read GEN_SHORTHAND from the most recently modified BuildDepsCache-*.txt, if any."""
+    cache_files = sorted(SCRIPT_DIR.glob("BuildDepsCache-*.txt"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not cache_files:
+        return None
+    cache_file = cache_files[0]
+    logger.info(f"Found {cache_file.name}, reading GEN_SHORTHAND from it.")
+    return BuildDepsCache.parse(cache_file).get("GEN_SHORTHAND")
