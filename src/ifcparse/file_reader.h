@@ -184,6 +184,9 @@ public:
         if (cursor_ >= size()) {
             throw std::out_of_range("peek at EOF");
         }
+        if (const char* p = cached_(cursor_, 1)) {
+            return *p;
+        }
         return impl_->get(cursor_);
     }
 
@@ -191,12 +194,22 @@ public:
         if (remaining() < sizeof(uint64_t)) {
             throw std::out_of_range("peek_u64 at EOF");
         }
+        if (const char* p = cached_(cursor_, sizeof(uint64_t))) {
+            uint64_t value;
+            std::memcpy(&value, p, sizeof(value));
+            return value;
+        }
         return impl_->get_u64(cursor_);
     }
 
     uint32_t peek_u32() const {
         if (remaining() < sizeof(uint32_t)) {
             throw std::out_of_range("peek_u32 at EOF");
+        }
+        if (const char* p = cached_(cursor_, sizeof(uint32_t))) {
+            uint32_t value;
+            std::memcpy(&value, p, sizeof(value));
+            return value;
         }
         return impl_->get_u32(cursor_);
     }
@@ -231,12 +244,49 @@ public:
     }
 
     char get(size_t position) const {
+        if (const char* p = cached_(position, 1)) {
+            return *p;
+        }
         return impl_->get(position);
     }
 
 private:
     std::shared_ptr<Impl> impl_;
     size_t cursor_ = 0;
+
+    // For the paged implementation: the page the cursor was last on, so
+    // consecutive reads don't each go through the page cache. The pointer
+    // is revalidated against the cache's eviction count.
+    mutable const char* cached_data_ = nullptr;
+    mutable size_t cached_begin_ = 0;
+    mutable size_t cached_end_ = 0;
+    mutable size_t cached_evictions_ = 0;
+
+    // A pointer to `count` bytes at `position` if they lie in one page,
+    // else nullptr. Always nullptr for a contiguous implementation, whose
+    // get() is already direct.
+    const char* cached_(size_t position, size_t count) const {
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            if (cached_data_ != nullptr && position >= cached_begin_ && position + count <= cached_end_ && cached_evictions_ == impl_->evictions()) {
+                return cached_data_ + (position - cached_begin_);
+            }
+            const size_t page_size = impl_->page_size();
+            const size_t index = position / page_size;
+            const auto page = impl_->page(index);
+            cached_data_ = page.first;
+            cached_begin_ = index * page_size;
+            cached_end_ = cached_begin_ + page.second;
+            cached_evictions_ = impl_->evictions();
+            if (position + count <= cached_end_) {
+                return cached_data_ + (position - cached_begin_);
+            }
+            return nullptr;
+        } else {
+            (void)position;
+            (void)count;
+            return nullptr;
+        }
+    }
 };
 
 class IFC_PARSE_API full_buffer_impl {
@@ -297,6 +347,9 @@ public:
     size_t page_size() const { return page_size_; }
     size_t capacity() const { return capacity_; }
     const std::string& path() const { return fn_; }
+    // Incremented whenever a page leaves the cache, so a pointer into a
+    // page can be checked for validity cheaply.
+    size_t evictions() const { return evictions_; }
     size_t size() const;
     char get(size_t position) const;
     uint32_t get_u32(size_t position) const;
@@ -316,6 +369,7 @@ private:
     size_t capacity_ = 8;
     mutable std::list<size_t> lru_;
     mutable std::unordered_map<size_t, entry> map_;
+    mutable size_t evictions_ = 0;
 };
 
 #ifdef USE_MMAP
