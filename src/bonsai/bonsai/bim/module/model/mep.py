@@ -268,6 +268,8 @@ class MEPGenerator:
             return
 
         # adjust current segment ports and related flow segments
+        for port in ports:
+            tool.System.sync_port_size(port, segment)
         segment_data = self.get_segment_data(segment)
 
         for port_position in ("start_port", "end_port"):
