@@ -136,7 +136,7 @@ def print_success(start_time: datetime) -> None:
 
 
 def parse_args() -> Args:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         "generator",
         nargs="?",
@@ -150,18 +150,40 @@ def parse_args() -> Args:
         ),
     )
     parser.add_argument(
+        "--generator",
+        dest="generator_flag",
+        default=None,
+        help="Alternative way to specify the generator, instead of the positional argument. See above for accepted forms.",
+    )
+    # SUPPRESS avoids a misleading "(default: None)" in `--help`,
+    # though then arg might not be set and we use `getattr` to get it.
+    parser.add_argument(
         "build_cfg",
         nargs="?",
+        default=argparse.SUPPRESS,
+        choices=BUILD_CFGS,
+        help=f"Build configuration type. (default: {BUILD_CFG_DEFAULT})",
+    )
+    parser.add_argument(
+        "--build-cfg",
+        dest="build_cfg_flag",
         default=BUILD_CFG_DEFAULT,
         choices=BUILD_CFGS,
-        help="Build configuration type. Uses default if not provided.",
+        help="Alternative way to specify the build configuration type, instead of the positional argument.",
     )
     parser.add_argument(
         "build_type",
         nargs="?",
+        default=argparse.SUPPRESS,
+        choices=BUILD_TYPES,
+        help=f"Build type. (default: {BUILD_TYPE_DEFAULT})",
+    )
+    parser.add_argument(
+        "--build-type",
+        dest="build_type_flag",
         default=BUILD_TYPE_DEFAULT,
         choices=BUILD_TYPES,
-        help="Build type.",
+        help="Alternative way to specify the build type, instead of the positional argument.",
     )
     parser.add_argument(
         "--log-level",
@@ -180,10 +202,18 @@ def parse_args() -> Args:
     )
     args = parser.parse_args()
     logger.setLevel(args.log_level)
+
+    if args.generator is not None and args.generator_flag is not None:
+        parser.error("generator was specified both as a positional argument and as --generator.")
+    generator = args.generator or args.generator_flag
+
+    build_cfg = getattr(args, "build_cfg", None) or args.build_cfg_flag
+    build_type = getattr(args, "build_type", None) or args.build_type_flag
+
     return Args(
-        generator=args.generator,
-        build_cfg=args.build_cfg,
-        build_type=args.build_type,
+        generator=generator,
+        build_cfg=build_cfg,
+        build_type=build_type,
         reuse_boost=args.reuse_boost,
     )
 
