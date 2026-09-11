@@ -75,33 +75,6 @@ full_buffer_impl::full_buffer_impl(const std::string& content, const caller_fed_
     , size_(content.size()) {
 }
 
-size_t full_buffer_impl::size() const { return size_; }
-
-char full_buffer_impl::get(size_t pos) const {
-    if (pos >= buf_.size()) {
-        throw std::out_of_range("get out of range");
-    }
-    return buf_[pos];
-}
-
-uint64_t full_buffer_impl::get_u64(size_t pos) const {
-    if (pos + sizeof(uint64_t) > buf_.size()) {
-        throw std::out_of_range("get_u64 out of range");
-    }
-    uint64_t value;
-    std::memcpy(&value, buf_.data() + pos, sizeof(value));
-    return value;
-}
-
-uint32_t full_buffer_impl::get_u32(size_t pos) const {
-    if (pos + sizeof(uint32_t) > buf_.size()) {
-        throw std::out_of_range("get_u32 out of range");
-    }
-    uint32_t value;
-    std::memcpy(&value, buf_.data() + pos, sizeof(value));
-    return value;
-}
-
 void full_buffer_impl::push_next_page(const std::string& data) {
     buf_.insert(buf_.end(), data.begin(), data.end());
     size_ = buf_.size();
@@ -245,33 +218,6 @@ mmap_impl::mmap_impl(const std::string& fn) {
         throw std::runtime_error("Failed to open mapped_file_source");
     }
     size_ = static_cast<size_t>(map_.size());
-}
-
-size_t mmap_impl::size() const { return size_; }
-
-char mmap_impl::get(size_t pos) const {
-    if (pos >= size_) {
-        throw std::out_of_range("get out of range");
-    }
-    return map_.data()[pos];
-}
-
-uint64_t mmap_impl::get_u64(size_t pos) const {
-    if (pos + sizeof(uint64_t) > size_) {
-        throw std::out_of_range("get_u64 out of range");
-    }
-    uint64_t value;
-    std::memcpy(&value, map_.data() + pos, sizeof(value));
-    return value;
-}
-
-uint32_t mmap_impl::get_u32(size_t pos) const {
-    if (pos + sizeof(uint32_t) > size_) {
-        throw std::out_of_range("get_u32 out of range");
-    }
-    uint32_t value;
-    std::memcpy(&value, map_.data() + pos, sizeof(value));
-    return value;
 }
 
 void mmap_impl::push_next_page(const std::string&) {
