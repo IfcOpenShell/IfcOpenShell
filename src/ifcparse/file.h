@@ -238,6 +238,7 @@ public:
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
     bool lazy_loading_ = false;
+    unsigned parse_threads_ = 0;
     void process_deletion_(const express::base& entity);
 
   public:
@@ -298,6 +299,13 @@ public:
     // it does not handle.
     void lazy_loading(bool value) { lazy_loading_ = value; }
     bool lazy_loading() const { return lazy_loading_; }
+
+    // Threads used to parse instances; 0 (the default) picks one per core,
+    // capped at 16, or honours IFCOPENSHELL_PARSE_THREADS. Set before
+    // initialize().
+    void parse_threads(unsigned value) { parse_threads_ = value; }
+    unsigned parse_threads() const { return parse_threads_; }
+    unsigned effective_parse_threads() const;
 
     ~file();
 

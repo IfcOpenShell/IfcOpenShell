@@ -869,6 +869,12 @@ class file(file_mixin):
     def lazy_loading(self, *args: bool) -> bool:
         """Get, or with an argument set, whether ``initialize()`` indexes the file with one scan and parses each instance's attributes on first access. Set before ``initialize()``."""
         ...
+    def parse_threads(self, *args: int) -> int:
+        """Get, or with an argument set, the number of threads ``initialize()`` parses instances with; 0 uses one per core (capped at 16) or honours ``IFCOPENSHELL_PARSE_THREADS``."""
+        ...
+    def effective_parse_threads(self) -> int:
+        """The thread count ``initialize()`` will use given ``parse_threads()`` and the environment."""
+        ...
     # NOTE: inaccurate `*args` - not all args are `str`.
     def initialize(self, *args: str) -> bool:
         """Parse a file on a ``create_uninitialized()`` instance.
