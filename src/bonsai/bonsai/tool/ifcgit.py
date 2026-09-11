@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import os
 import re
 import subprocess
@@ -31,8 +30,6 @@ import bpy
 
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim import import_ifc
-from bonsai.bim.ifc import IfcStore
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -274,39 +271,9 @@ class IfcGit(bonsai.core.tool.IfcGit):
 
     @classmethod
     def load_project(cls, path_ifc: str = "") -> None:
-        """Clear and load an ifc project"""
+        """Clear and load an ifc project, preserving the current viewpoint"""
 
-        if path_ifc:
-            IfcStore.purge()
-        # delete any IfcProject/* collections
-        for collection in bpy.data.collections:
-            if re.match("^IfcProject/", collection.name):
-                cls.delete_collection(collection)
-        # delete any Ifc* objects not in IfcProject/ heirarchy
-        for obj in bpy.data.objects:
-            if re.match("^Ifc", obj.name):
-                bpy.data.objects.remove(obj, do_unlink=True)
-
-        bpy.data.orphans_purge(do_recursive=True)
-
-        import bonsai.bim.handler
-        from bonsai.bim.module.model.data import AuthoringData
-        from bonsai.bim.module.root.data import IfcClassData
-
-        AuthoringData.type_thumbnails = {}
-
-        IfcClassData.is_loaded = False
-
-        settings = import_ifc.IfcImportSettings.factory(bpy.context, path_ifc, logging.getLogger("ImportIFC"))
-        settings.should_setup_viewport_camera = False
-        ifc_importer = import_ifc.IfcImporter(settings)
-        ifc_importer.execute()
-        tool.Project.load_default_thumbnails()
-        tool.Project.set_default_context()
-        tool.Project.set_default_modeling_dimensions()
-        tool.Root.reload_grid_decorator()
-        bonsai.bim.handler.refresh_ui_data()
-        bpy.ops.object.select_all(action="DESELECT")
+        tool.Project.reload_ifc_file(path_ifc)
 
     @classmethod
     def branches_by_hexsha(cls, repo: git.Repo) -> dict[str, Any]:
@@ -514,12 +481,6 @@ class IfcGit(bonsai.core.tool.IfcGit):
         while f"{name}-{i}" in existing:
             i += 1
         return f"{name}-{i}"
-
-    @classmethod
-    def delete_collection(cls, blender_collection: bpy.types.Collection) -> None:
-        for obj in blender_collection.objects:
-            bpy.data.objects.remove(obj, do_unlink=True)
-        bpy.data.collections.remove(blender_collection)
 
     @classmethod
     def config_ifcmerge(cls) -> None:
