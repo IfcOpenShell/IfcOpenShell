@@ -2598,7 +2598,10 @@ class Drawing(bonsai.core.tool.Drawing):
         target_view = cls.get_drawing_target_view(drawing)
         subcontexts = cls.get_drawing_subcontexts(target_view)
 
-        # Switch representations
+        # Switch representations. Collected and applied in one batched call so
+        # elements sharing a context only pay for one geometry iterator between
+        # them, instead of one iterator per element. See #5696.
+        switch_items: list[tuple[bpy.types.Object, ifcopenshell.entity_instance, bool]] = []
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
             if not obj:
@@ -2616,13 +2619,10 @@ class Drawing(bonsai.core.tool.Drawing):
                     break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
-                    bonsai.core.geometry.switch_representation(
-                        tool.Ifc,
-                        tool.Geometry,
-                        obj=obj,
-                        representation=priority_representation,
-                    )
+                    switch_items.append((obj, priority_representation, True))
                     break
+
+        bonsai.core.geometry.switch_representations(tool.Ifc, tool.Geometry, items=switch_items)
 
         linked_handles: set[bpy.types.Object] = set()
         for link in tool.Project.get_project_props().get_loaded_links_for_drawings():

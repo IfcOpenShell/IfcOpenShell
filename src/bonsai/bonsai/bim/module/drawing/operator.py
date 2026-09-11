@@ -2436,13 +2436,11 @@ class ActivateModel(bpy.types.Operator):
             return refined_elements
 
         refined_elements = refine_elements(elements)
-        for _, (model, obj) in refined_elements.items():
-            bonsai.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=obj,
-                representation=model,
-            )
+        bonsai.core.geometry.switch_representations(
+            tool.Ifc,
+            tool.Geometry,
+            items=[(obj, model, True) for _, (model, obj) in refined_elements.items()],
+        )
 
         tool.Blender.reset_object_visibility()
         tool.Drawing.hide_all_drawing_collections()

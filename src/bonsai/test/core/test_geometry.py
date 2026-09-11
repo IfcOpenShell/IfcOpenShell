@@ -208,6 +208,41 @@ class TestSwitchRepresentation:
         )
 
 
+class TestSwitchRepresentations:
+    def test_batches_all_items_into_a_single_reimport_call(self, ifc, geometry):
+        # get_object_data returns truthy, so is_text_literal is short-circuited away,
+        # same as switch_representation's own guard.
+        geometry.get_object_data("obj1").should_be_called().will_return("data1")
+        ifc.get_entity("obj1").should_be_called().will_return("element1")
+        geometry.clear_cache("element1").should_be_called()
+
+        geometry.get_object_data("obj2").should_be_called().will_return("data2")
+        ifc.get_entity("obj2").should_be_called().will_return("element2")
+        geometry.clear_cache("element2").should_be_called()
+
+        geometry.reimport_element_representations_batch(
+            [("obj1", "rep1", True), ("obj2", "rep2", False)]
+        ).should_be_called()
+
+        subject.switch_representations(
+            ifc,
+            geometry,
+            items=[("obj1", "rep1", True), ("obj2", "rep2", False)],
+        )
+
+    def test_skips_text_literals_without_object_data(self, ifc, geometry):
+        geometry.get_object_data("obj1").should_be_called().will_return(None)
+        geometry.is_text_literal("rep1").should_be_called().will_return(True)
+
+        geometry.reimport_element_representations_batch([]).should_be_called()
+
+        subject.switch_representations(
+            ifc,
+            geometry,
+            items=[("obj1", "rep1", True)],
+        )
+
+
 class TestGetRepresentationIfcParameters:
     def test_run(self, geometry):
         geometry.get_object_data("obj").should_be_called().will_return("data")
