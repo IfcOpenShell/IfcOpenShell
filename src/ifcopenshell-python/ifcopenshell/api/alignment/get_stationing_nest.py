@@ -39,7 +39,7 @@ def get_stationing_nest(file: ifcopenshell.file, alignment: entity_instance) -> 
 
     for nest in alignment.IsNestedBy:
         for related_object in nest.RelatedObjects:
-            if related_object.is_a("IfcReferent"):
+            if related_object.is_a("IfcReferent") and related_object.PredefinedType == "STATION":
                 return nest
 
     return None
