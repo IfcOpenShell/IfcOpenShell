@@ -2412,6 +2412,9 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
     std::vector<std::string> schemas;
 
     instance_streamer<Reader> streamer(s, file, logger_.get());
+    // One inverse record per ~32 bytes of SPF text is a slight over-estimate on
+    // real models; reserving avoids the doubling copies and the capacity slack.
+    streamer.inverses().reserve(s->size() / 32);
     streamer.yield_header_instances(false);
 
     if (const auto* header = streamer.header()) {
