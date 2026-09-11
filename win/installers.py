@@ -197,6 +197,7 @@ def install_json(install_dir: Path) -> None:
     # TODO: sync it with build-all
     JSON_VERSION = "3.6.1"
     DEPENDENCY_NAME = f"json-{JSON_VERSION}"
+    # TODO: add JSON_VERSION to the install path during the next version bump.
     download_file(
         DEPENDENCY_NAME,
         f"https://github.com/nlohmann/json/releases/download/v{JSON_VERSION}/json.hpp",
@@ -348,6 +349,7 @@ def install_opencollada(
 
     DEPENDENCY_NAME = "OpenCOLLADA"
     dependency_dir = deps_dir / "OpenCOLLADA"
+    # TODO: add the pinned revision to the install path during the next revision bump.
 
     # TODO: we probably can install
     # Always clone it, even if it's installed, because it contains xml headers we need.
@@ -1098,6 +1100,7 @@ def install_zstd(
     ZSTD_VERSION = "1.5.7"
     DEPENDENCY_NAME = "zstd"
     dependency_dir = deps_dir / f"{DEPENDENCY_NAME}-{ZSTD_VERSION}"
+    # TODO: add ZSTD_VERSION to the install path during the next version bump.
     dependency_install_dir = install_dir / DEPENDENCY_NAME
 
     if is_already_installed(dependency_install_dir):
@@ -1146,6 +1149,7 @@ def install_rocksdb(
     ROCKSDB_VERSION = "9.11.2"
     DEPENDENCY_NAME = "rocksdb"
     dependency_dir = deps_dir / f"{DEPENDENCY_NAME}-{ROCKSDB_VERSION}"
+    # TODO: add ROCKSDB_VERSION to the install path during the next version bump.
     dependency_install_dir = install_dir / DEPENDENCY_NAME
 
     if is_already_installed(dependency_install_dir, expected_build_cfg=build_cfg):
