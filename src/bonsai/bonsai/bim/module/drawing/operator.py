@@ -986,12 +986,33 @@ class CreateDrawing(bpy.types.Operator):
 
         return svg_path
 
+    def parse_cached_svg(self, svg_path: str) -> Union[etree._ElementTree, None]:
+        """Parse a cached SVG, returning None if it exists but cannot be read.
+
+        A cache file being present on disk does not mean it is usable. It may be
+        zero bytes or truncated from a write that was interrupted part way, or it
+        may be an unhydrated cloud storage placeholder (Dropbox, OneDrive) whose
+        sync provider isn't running, in which case the directory entry reports the
+        full logical size but no content can actually be read back.
+
+        None of those are fatal. The caller treats it as a cache miss and
+        regenerates, which is always safe since the cache is derived data.
+        """
+        try:
+            return etree.parse(svg_path)
+        except (etree.XMLSyntaxError, OSError) as e:
+            self.report({"WARNING"}, f"Could not read cached SVG '{svg_path}', regenerating it instead. {e}")
+            return None
+
     def generate_linework(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
         svg_path = self.get_svg_path(cache_type="linework")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
-            return svg_path
+            # Only reuse the cache if it can actually be read - combine_svgs reads
+            # this path back line by line and cannot recover from a bad file.
+            if self.parse_cached_svg(svg_path) is not None:
+                return svg_path
 
         ifc = tool.Ifc.get()
         semantics = None
@@ -1015,12 +1036,12 @@ class CreateDrawing(bpy.types.Operator):
             edited_guids.add(element.GlobalId) if hasattr(element, "GlobalId") else None
         cached_linework = set()
         if os.path.isfile(svg_path):
-            tree = etree.parse(svg_path)
-            root = tree.getroot()
-            cached_linework = {
-                el.get("{http://www.ifcopenshell.org/ns}guid")
-                for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]")
-            }
+            if (tree := self.parse_cached_svg(svg_path)) is not None:
+                root = tree.getroot()
+                cached_linework = {
+                    el.get("{http://www.ifcopenshell.org/ns}guid")
+                    for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]")
+                }
         cached_linework -= edited_guids
 
         bim_props = tool.Blender.get_bim_props()
@@ -1258,6 +1279,11 @@ class CreateDrawing(bpy.types.Operator):
                     for pi, p in enumerate(g2.getElementsByTagName("path")):
                         d = p.getAttribute("d")
                         coords = [co[1:].split(",") for co in d.split() if co[1:]]
+                        # A cell with fewer than 3 points is a degenerate sliver with no area.
+                        # The area check below would discard it anyway, but shapely raises on
+                        # 1 or 2 coordinates before we ever get to look at the area.
+                        if len(coords) < 3:
+                            continue
                         polygon = shapely.Polygon(coords)
                         # 1mm2 polygons aren't worth styling in paperspace. Raycasting is expensive!
                         if polygon.area < 1:
