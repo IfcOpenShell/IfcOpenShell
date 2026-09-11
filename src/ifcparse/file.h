@@ -239,6 +239,7 @@ public:
     bool batch_mode_ = false;
     bool lazy_loading_ = false;
     unsigned parse_threads_ = 0;
+    bool paged_reading_ = false;
     void process_deletion_(const express::base& entity);
 
   public:
@@ -306,6 +307,13 @@ public:
     void parse_threads(unsigned value) { parse_threads_ = value; }
     unsigned parse_threads() const { return parse_threads_; }
     unsigned effective_parse_threads() const;
+
+    // Read the file through the paged reader (64 KB pages, 4 MB cache)
+    // instead of loading it into memory as a whole. Set before
+    // initialize(). Applies to the full parse; lazy loading always reads
+    // in pages.
+    void paged_reading(bool value) { paged_reading_ = value; }
+    bool paged_reading() const { return paged_reading_; }
 
     ~file();
 

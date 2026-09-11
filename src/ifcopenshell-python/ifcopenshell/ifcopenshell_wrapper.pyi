@@ -875,6 +875,9 @@ class file(file_mixin):
     def effective_parse_threads(self) -> int:
         """The thread count ``initialize()`` will use given ``parse_threads()`` and the environment."""
         ...
+    def paged_reading(self, *args: bool) -> bool:
+        """Get, or with an argument set, whether ``initialize()`` reads the file through the paged reader instead of loading it whole. Set before ``initialize()``."""
+        ...
     # NOTE: inaccurate `*args` - not all args are `str`.
     def initialize(self, *args: str) -> bool:
         """Parse a file on a ``create_uninitialized()`` instance.
