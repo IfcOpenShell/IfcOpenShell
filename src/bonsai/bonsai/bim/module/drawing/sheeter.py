@@ -37,6 +37,22 @@ DRAWING_PADDING = 10
 DEFAULT_POSITION = Vector((30, 30))
 SVG = "{http://www.w3.org/2000/svg}"
 XLINK = "{http://www.w3.org/1999/xlink}"
+# Presentation attributes whose value may be a `url(#target)` reference. They are
+# equivalent to the same named CSS properties, so a document is free to use either
+# these or `style`, and both have to be rewritten when ids are prefixed.
+URL_ATTRIBUTES = (
+    "clip-path",
+    "color-profile",
+    "cursor",
+    "fill",
+    "filter",
+    "marker",
+    "marker-end",
+    "marker-mid",
+    "marker-start",
+    "mask",
+    "stroke",
+)
 
 
 class SheetBuilder:
@@ -320,6 +336,10 @@ class SheetBuilder:
         titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
         image = titleblock.findall(f"{SVG}image")[0]
         g = self.parse_embedded_svg(image, sheet.get_info())
+        # the titleblock shares the sheet with the drawings and references, so its
+        # ids need the same namespacing. `sheet.id()` cannot collide with the
+        # document ids used for the other views, they all come from the same file.
+        g = self.ensure_unique_ids(g, sheet.id())
         grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
         true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
         for north in g.iterfind(f'.//{SVG}g[@data-type="grid-north"]'):
@@ -329,47 +349,17 @@ class SheetBuilder:
         titleblock.append(g)
         titleblock.remove(image)
 
-    def ensure_drawing_unique_styles(self, svg: ET.Element, drawing_id: int) -> ET.Element:
-        """ensures all drawing's classes and ids will be unique for the whole sheet
-        by adding `drawing_id` based prefix
+    def ensure_unique_ids(self, svg: ET.Element, view_id: int) -> ET.Element:
+        """ensures all view's classes and ids will be unique for the whole sheet
+        by adding `view_id` based prefix.
+
+        Applies to both drawings and referenced documents. Referenced documents
+        (for example markdown converted to SVG) commonly define glyph symbols with
+        generic ids like `glyph-0-0` and reference them via `<use>`. Without a per
+        view prefix these ids collide across embedded views, so every `<use>`
+        resolves to the first matching id and the text is garbled.
         """
-        prefix = f"d{drawing_id}"  # just number doesn't work
-
-        # add .prefix class to all css selectors
-        style = svg.find(f"{SVG}defs/{SVG}style")
-        assert style is not None
-        style_data = style.text
-        assert style_data is not None
-        text = ""
-        brackets_level = 0
-        selector_buffer = ""  # Buffer to accumulate selectors across lines
-
-        for l in style_data:
-            if l == "{":
-                if brackets_level == 0:
-                    # Get all accumulated selector text (may span multiple lines)
-                    # Find where the last rule ended (after last }) or start of text
-                    last_close = text.rfind("}")
-                    if last_close == -1:
-                        selector_text = text
-                        text = ""
-                    else:
-                        selector_text = text[last_close + 1 :]
-                        text = text[: last_close + 1]
-
-                    # Process all selectors (split by comma)
-                    css_selectors = []
-                    for css_selector in selector_text.split(","):
-                        css_selector = css_selector.strip()
-                        if css_selector:  # Only process non-empty selectors
-                            css_selector = f"{css_selector}.{prefix}"
-                            css_selectors.append(css_selector)
-
-                    text += ", ".join(css_selectors) + " "
-                brackets_level += 1
-            elif l == "}":
-                brackets_level -= 1
-            text += l
+        prefix = f"d{view_id}"  # just number doesn't work
 
         def replace_urls(text: str) -> str:
             """replace urls `url(#marker)` with `url(#prefix-marker)`
@@ -377,7 +367,41 @@ class SheetBuilder:
             """
             return re.sub(r"url\(#([^\)]+)\)", rf"url(#{prefix}-\1)", text)
 
-        style.text = replace_urls(text)
+        # add .prefix class to all css selectors
+        style = svg.find(f"{SVG}defs/{SVG}style")
+        if style is not None and style.text is not None:
+            style_data = style.text
+            text = ""
+            brackets_level = 0
+
+            for l in style_data:
+                if l == "{":
+                    if brackets_level == 0:
+                        # Get all accumulated selector text (may span multiple lines)
+                        # Find where the last rule ended (after last }) or start of text
+                        last_close = text.rfind("}")
+                        if last_close == -1:
+                            selector_text = text
+                            text = ""
+                        else:
+                            selector_text = text[last_close + 1 :]
+                            text = text[: last_close + 1]
+
+                        # Process all selectors (split by comma)
+                        css_selectors = []
+                        for css_selector in selector_text.split(","):
+                            css_selector = css_selector.strip()
+                            if css_selector:  # Only process non-empty selectors
+                                css_selector = f"{css_selector}.{prefix}"
+                                css_selectors.append(css_selector)
+
+                        text += ", ".join(css_selectors) + " "
+                    brackets_level += 1
+                elif l == "}":
+                    brackets_level -= 1
+                text += l
+
+            style.text = replace_urls(text)
 
         for svg_element in svg.findall(f".//*"):
             if svg_element.tag in (f"{SVG}style", f"{SVG}svg"):
@@ -389,17 +413,20 @@ class SheetBuilder:
             # add class "prefix" to all classes
             if "class" in attrib:
                 attrib["class"] += f" {prefix}"
-            if "filter" in attrib:
-                # example use "#fill-background" filter
-                attrib["filter"] = replace_urls(attrib["filter"])
-            if "style" in attrib:
-                attrib["style"] = replace_urls(attrib["style"])
-            if svg_element.tag == f"{SVG}use":
-                href_attrib = f"{XLINK}href"
-                if href_attrib in attrib:
-                    href = attrib[href_attrib]
-                    if href.startswith("#"):
-                        attrib[href_attrib] = f"#{prefix}-{href[1:]}"
+            # rewrite `url(#target)` wherever it can appear: the `style` property
+            # and every presentation attribute. Inkscape authored references rely on
+            # the latter, e.g. `<g clip-path="url(#clipPath1)">`, which is left
+            # dangling if only the ids are prefixed.
+            for url_attrib in ("style",) + URL_ATTRIBUTES:
+                value = attrib.get(url_attrib)
+                if value is not None:
+                    attrib[url_attrib] = replace_urls(value)
+            # local fragment hrefs: `<use>` glyphs, `<textPath>`, `<mpath>` and
+            # gradients or patterns inheriting from another via `xlink:href`
+            for href_attrib in (f"{XLINK}href", "href"):
+                href = attrib.get(href_attrib)
+                if href is not None and href.startswith("#"):
+                    attrib[href_attrib] = f"#{prefix}-{href[1:]}"
 
         return svg
 
@@ -426,7 +453,7 @@ class SheetBuilder:
 
             if foreground is not None:
                 svg = self.parse_embedded_svg(foreground, {})
-                svg = self.ensure_drawing_unique_styles(svg, drawing_id)
+                svg = self.ensure_unique_ids(svg, drawing_id)
                 view.append(svg)
 
             if view_title is not None:
@@ -478,7 +505,9 @@ class SheetBuilder:
                     view_title = image
 
             if table is not None:
-                view.append(self.parse_embedded_svg(table, {}))
+                svg = self.parse_embedded_svg(table, {})
+                svg = self.ensure_unique_ids(svg, int(view.attrib["data-id"]))
+                view.append(svg)
 
             if view_title is not None:
                 path = self.get_href(table)
