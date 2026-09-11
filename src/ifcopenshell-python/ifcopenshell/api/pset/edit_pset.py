@@ -339,7 +339,7 @@ class Usecase:
             elif isinstance(value, (tuple, list)):
                 if not value:
                     continue
-                for pset_template in self.pset_template.HasPropertyTemplates:
+                for pset_template in self.pset_template.HasPropertyTemplates if self.pset_template else ():
                     if pset_template.Name != name:
                         continue
 
