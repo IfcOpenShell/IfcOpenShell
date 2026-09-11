@@ -323,6 +323,7 @@ class Document:
 @interface
 class Drawing:
     def activate_drawing(cls, camera): pass
+    def add_element_class(cls, element, name): pass
     def add_literal(cls, **attributes): pass
     def clear_annotation_relationships(cls, drawing): pass
     def copy_representation(cls, source, dest): pass
@@ -386,6 +387,7 @@ class Drawing:
     def get_drawing_group(cls, drawing): pass
     def get_drawing_references(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
+    def get_element_classes(cls, element): pass
     def get_group_drawing(cls, group): pass
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
@@ -414,20 +416,21 @@ class Drawing:
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def reload_representation(cls, obj, representation): pass
+    def remove_element_class(cls, element, name): pass
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_type_assign_type(cls, element=None, relating_type=None): pass
+    def sanitise_class_name(cls, name): pass
     def select_assigned_product(cls, drawing): pass
     def set_camera_name(cls, drawing, name): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
+    def set_element_classes(cls, element, classes): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
     def setup_shading_styles_path(cls, resource_path): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
-
-
 @interface
 class Duplicate:
     def get_decomposition_relationships(cls, objs): pass

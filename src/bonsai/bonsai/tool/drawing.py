@@ -2330,6 +2330,46 @@ class Drawing(bonsai.core.tool.Drawing):
         return [v_ for v in metadata_str.split(",") if (v_ := v.strip())]
 
     @classmethod
+    def get_element_classes(cls, element: ifcopenshell.entity_instance) -> list[str]:
+        classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+        if not isinstance(classes, str):
+            return []
+        return classes.split()
+
+    @classmethod
+    def set_element_classes(cls, element: ifcopenshell.entity_instance, classes: list[str]) -> None:
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            if not classes:
+                return
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Classes": " ".join(classes)})
+
+    @classmethod
+    def add_element_class(cls, element: ifcopenshell.entity_instance, name: str) -> None:
+        name = cls.sanitise_class_name(name)
+        if not name:
+            return
+        classes = cls.get_element_classes(element)
+        if name in classes:
+            return
+        cls.set_element_classes(element, classes + [name])
+
+    @classmethod
+    def remove_element_class(cls, element: ifcopenshell.entity_instance, name: str) -> None:
+        classes = cls.get_element_classes(element)
+        if name not in classes:
+            return
+        cls.set_element_classes(element, [c for c in classes if c != name])
+
+    @classmethod
+    def sanitise_class_name(cls, name: str) -> str:
+        """Strip characters that cannot appear in a CSS class name."""
+        name = re.sub(r"[^0-9a-zA-Z_-]+", "-", name.strip()).strip("-")
+        return re.sub(r"^[0-9-]+", "", name)
+
+    @classmethod
     def get_annotation_z_index(cls, drawing: ifcopenshell.entity_instance) -> float:
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "ZIndex") or 0
 
