@@ -486,40 +486,70 @@ class Parametric(bonsai.core.tool.Parametric):
 
     @classmethod
     def is_wall(cls, element: entity_instance) -> bool:
-        """A wall is editable by the parametric gizmo if it is an IfcWall with LAYER2 usage.
+        """A LAYER2 axis-driven element editable by the parametric wall gizmo.
 
-        Unlike doors/windows/stairs, walls do not carry a proprietary BBIM_Wall pset —
-        their parametric state lives in standard IFC (axis polyline, IfcMaterialLayerSetUsage,
-        IfcExtrudedAreaSolid). Any LAYER2 wall qualifies."""
-        if element is None or not element.is_a("IfcWall"):
+        IFC-class agnostic by design. The gizmos, edit mode and property panel
+        all operate on the standard-IFC parametric state — axis polyline,
+        ``IfcMaterialLayerSetUsage`` (LAYER2), ``IfcExtrudedAreaSolid`` — none of
+        which is exclusive to ``IfcWall``. So any element modelled this way
+        qualifies: typically an ``IfcWall``, but also vertical claddings / siding
+        (``IfcCovering``) that are drawn, edited and joined the same way. Unlike
+        doors / windows / stairs these carry no proprietary pset — their
+        parametric state lives entirely in standard IFC.
+
+        Gated on LAYER2 usage rather than entity type; LAYER3 elements (slabs)
+        and anything without vertical layered usage are excluded."""
+        if element is None:
             return False
         return tool.Model.get_usage_type(element) == "LAYER2"
 
     @classmethod
     def is_path_connectable_wall(cls, element: entity_instance) -> bool:
-        """An IfcWall that may participate in IfcRelConnectsPathElements joins —
-        either a LAYER2 parametric wall, or a fillet-corner wall whose body is
-        hand-built but whose axis still drives path connections.
+        """A LAYER2 axis-driven element (or fillet corner) whose axis can drive
+        ``IfcRelConnectsPathElements`` joins and underside clips.
 
-        Distinct from ``is_wall``: that predicate gates parametric edits that
-        would regenerate the body and flatten a curved fillet. Unjoin / join
-        gizmo polls and path-connection partner enumeration use this looser
-        predicate so fillet corners (which have no LAYER2 usage by spec) still
-        surface their join icons."""
-        if element is None or not element.is_a("IfcWall"):
+        IFC-class agnostic, like :meth:`is_wall` — path connection, unjoin,
+        extend-to-wall and extend-to-underside all read placement + axis +
+        layer set, never the entity type — so LAYER2 claddings / siding
+        (``IfcCovering``) join and clip the same way an ``IfcWall`` does.
+
+        Looser than :meth:`is_wall` in one respect: it also admits fillet-corner
+        walls, whose hand-built body carries no LAYER2 usage by spec but whose
+        axis still drives path connections. :meth:`is_wall` excludes them because
+        regenerating their body from the axis would flatten the curve."""
+        if element is None:
             return False
         if tool.Model.get_usage_type(element) == "LAYER2":
             return True
         return cls.is_fillet_corner_wall(element)
 
+    # Bonsai's class-agnostic parametric metadata (currently the fillet-corner
+    # flags IsFilletCorner / FilletRadius). Deliberately not on the entity-
+    # specific BBIM_Wall pset, so the same state can live on any LAYER2 element
+    # — a wall or a vertical cladding / siding (IfcCovering).
+    PARAMETRIC_PSET = "EPset_Parametric"
+    # Files authored before the move stored these flags on the wall-only pset.
+    LEGACY_PARAMETRIC_PSET = "BBIM_Wall"
+
     @classmethod
-    def is_fillet_corner_wall(cls, element: entity_instance) -> bool:
-        """``True`` if the wall carries the ``BBIM_Wall.IsFilletCorner`` flag,
-        marking it as a curved corner whose banana body is hand-built rather
-        than regenerated from the wall's axis + layer set."""
+    def get_parametric_prop(cls, element: entity_instance, name: str) -> Any:
+        """Read a Bonsai parametric flag from ``EPset_Parametric``, falling back
+        to the legacy ``BBIM_Wall`` pset for files authored before the fillet-
+        corner state was generalized off the wall-specific pset."""
         import ifcopenshell.util.element
 
-        return bool(ifcopenshell.util.element.get_pset(element, "BBIM_Wall", "IsFilletCorner"))
+        value = ifcopenshell.util.element.get_pset(element, cls.PARAMETRIC_PSET, name)
+        if value is None:
+            value = ifcopenshell.util.element.get_pset(element, cls.LEGACY_PARAMETRIC_PSET, name)
+        return value
+
+    @classmethod
+    def is_fillet_corner_wall(cls, element: entity_instance) -> bool:
+        """``True`` if the element carries the ``EPset_Parametric.IsFilletCorner``
+        flag (legacy: ``BBIM_Wall.IsFilletCorner``), marking it as a curved
+        corner whose banana body is hand-built rather than regenerated from the
+        axis + layer set. Class-agnostic — walls and LAYER2 siding alike."""
+        return bool(cls.get_parametric_prop(element, "IsFilletCorner"))
 
     @classmethod
     def is_pipe_segment(cls, element: entity_instance) -> bool:

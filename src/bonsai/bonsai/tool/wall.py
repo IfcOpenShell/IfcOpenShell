@@ -161,23 +161,26 @@ class Wall(bonsai.core.tool.Wall):
 
     @classmethod
     def validate_for_parametric_edit(cls, obj: bpy.types.Object) -> str | None:
-        """``None`` if the wall is parametrically editable, else a user-facing string naming
-        the specific gap so the user can fix the precise blocker."""
+        """``None`` if the element is parametrically editable, else a user-facing string
+        naming the specific gap so the user can fix the precise blocker.
+
+        IFC-class agnostic: the real requirement is AXIS2 layer usage + an extrusion
+        body, not ``IfcWall`` per se, so LAYER2 coverings/siding and other vertical
+        layered elements are editable the same way a wall is."""
         element = tool.Ifc.get_entity(obj)
         if not element:
             return "Object is not an IFC element."
-        if not element.is_a("IfcWall"):
-            return f"Object is an {element.is_a()}, not an IfcWall."
         if tool.Model.get_usage_type(element) != "LAYER2":
             return (
-                "Wall has no IfcMaterialLayerSetUsage with LayerSetDirection AXIS2 (required for parametric editing)."
+                "Element has no IfcMaterialLayerSetUsage with LayerSetDirection AXIS2 "
+                "(required for parametric editing)."
             )
         representation = tool.Geometry.get_body_representation(element)
         if not representation:
-            return "Wall has no Model/Body/MODEL_VIEW representation to drive parametric dimensions."
+            return "Element has no Model/Body/MODEL_VIEW representation to drive parametric dimensions."
         if not tool.Model.get_extrusion(representation):
             return (
-                "Wall body is not an IfcExtrudedAreaSolid "
+                "Element body is not an IfcExtrudedAreaSolid "
                 "(e.g. a brep mesh or boolean result without a base extrusion)."
             )
         return None
