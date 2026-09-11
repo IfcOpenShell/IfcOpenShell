@@ -41,7 +41,7 @@ def edit_named_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance,
         unit = ifcopenshell.api.unit.add_context_dependent_unit(model, name="BOXES")
 
         # Uh, crates? Boxes? Whatever.
-        ifcopenshell.api.unit.edit_named_unit(model, unit=unit, attibutes={"Name": "CRATES"})
+        ifcopenshell.api.unit.edit_named_unit(model, unit=unit, attributes={"Name": "CRATES"})
     """
     for name, value in attributes.items():
         if name == "Dimensions":

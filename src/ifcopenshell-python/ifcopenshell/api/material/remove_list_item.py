@@ -39,7 +39,7 @@ def remove_list_item(
 
         # Create a material list for aluminium windows.
         material_set = ifcopenshell.api.material.add_material_set(model,
-            name="Window", set_type="IfcMaterialMaterialList")
+            name="Window", set_type="IfcMaterialList")
 
         aluminium = ifcopenshell.api.material.add_material(model, name="AL01", category="aluminium")
         glass = ifcopenshell.api.material.add_material(model, name="GLZ01", category="glass")

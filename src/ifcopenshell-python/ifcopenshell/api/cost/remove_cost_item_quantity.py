@@ -40,7 +40,7 @@ def remove_cost_item_quantity(
         quantity = ifcopenshell.api.cost.add_cost_item_quantity(model,
             cost_item=item, ifc_class="IfcQuantityVolume")
         # Let's change our mind and delete it
-        ifcopenshell.api.cost.remove_cost_item(model,
+        ifcopenshell.api.cost.remove_cost_item_quantity(model,
             cost_item=item, physical_quantity=quantity)
     """
     if file.get_total_inverses(physical_quantity) == 1:
