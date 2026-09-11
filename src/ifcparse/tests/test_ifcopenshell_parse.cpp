@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <ifcparse/exception.h>
 #include <ifcparse/file.h>
+#include <ifcparse/dense_id_map.h>
 #include <ifcparse/parse.h>
 #include <cstdint>
 #include <sstream>
@@ -275,4 +276,183 @@ TEST_CASE("Batch deletion prunes surviving referencers and leaves no stale recor
         CHECK(file.instances_by_reference(point.id()).empty());
     }
     CHECK(file.instances_by_reference(doomed_referencer.id()).empty());
+}
+
+TEST_CASE("dense_id_map keeps dense names in a vector and sparse names in the overflow", "[ifcparse]") {
+    int a = 0, b = 0, c = 0, d = 0;
+    ifcopenshell::dense_id_map<int*> map;
+    CHECK(map.insert({1, &a}).second);
+    CHECK(map.insert({3, &b}).second);
+    CHECK_FALSE(map.insert({3, &c}).second);
+    // Far beyond the populated range: must not grow the vector to a billion slots.
+    CHECK(map.insert({1u << 30, &c}).second);
+    CHECK(map.insert({2, &d}).second);
+    CHECK(map.size() == 4);
+    CHECK(map.find(3)->second == &b);
+    CHECK(map.find(1u << 30)->second == &c);
+    CHECK(map.find(4) == map.end());
+    CHECK(map.find(5000) == map.end());
+
+    std::vector<uint32_t> visited;
+    for (auto it = map.begin(); it != map.end(); ++it) {
+        visited.push_back(it->first);
+    }
+    CHECK(visited == std::vector<uint32_t>{1, 2, 3, 1u << 30});
+
+    CHECK(map.erase(3) == 1);
+    CHECK(map.erase(3) == 0);
+    CHECK(map.erase(1u << 30) == 1);
+    CHECK(map.size() == 2);
+    CHECK(map.find(3) == map.end());
+    visited.clear();
+    for (const auto& entry : map) {
+        visited.push_back(entry.first);
+    }
+    CHECK(visited == std::vector<uint32_t>{1, 2});
+    CHECK(map.insert({3, &b}).second);
+    CHECK(map.find(3)->second == &b);
+}
+
+TEST_CASE("guid_map keeps GlobalIds inline and still accepts overlong keys", "[ifcparse]") {
+    int a = 0, b = 0, c = 0;
+    ifcopenshell::guid_map<int*> map;
+    const std::string g1 = "0YvctVUKr0kugbFTf53O9L", g2 = "1F$7lN9$r5MOA_lpAoNM52", overlong = "this-key-is-far-longer-than-a-guid";
+    CHECK(map.insert({g1, &a}).second);
+    CHECK_FALSE(map.insert({g1, &b}).second);
+    map[g2] = &b;
+    map[overlong] = &c;
+    CHECK(map.size() == 3);
+    CHECK(map.find(g1)->second == &a);
+    CHECK(map.find(g2)->second == &b);
+    CHECK(map.find(overlong)->second == &c);
+    CHECK(map.find("0YvctVUKr0kugbFTf53O9M") == map.end());
+    CHECK(map.find("") == map.end());
+    size_t visited = 0;
+    for (auto it = map.begin(); it != map.end(); ++it) {
+        CHECK(map.find(it->first)->second == it->second);
+        ++visited;
+    }
+    CHECK(visited == 3);
+    CHECK(map.erase(g1) == 1);
+    CHECK(map.erase(g1) == 0);
+    CHECK(map.erase(overlong) == 1);
+    CHECK(map.size() == 1);
+    CHECK(map.find(g1) == map.end());
+}
+
+namespace {
+const char* const reference_resolution_spf =
+    "ISO-10303-21;\n"
+    "HEADER;\n"
+    "FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');\n"
+    "FILE_NAME('','',(''),(''),'','','');\n"
+    "FILE_SCHEMA(('IFC4'));\n"
+    "ENDSEC;\n"
+    "DATA;\n"
+    "#1=IFCCARTESIANPOINT((0.,0.,0.));\n"
+    "#2=IFCCARTESIANPOINT((1.,0.,0.));\n"
+    "#3=IFCCARTESIANPOINT((0.,1.,0.));\n"
+    "#4=IFCPOLYLINE((#1,#2,#3));\n"
+    "#5=IFCTRIMMEDCURVE(#4,(IFCPARAMETERVALUE(0.),#1),(IFCPARAMETERVALUE(1.)),.T.,.PARAMETER.);\n"
+    "#6=IFCPROPERTYSINGLEVALUE('A',$,IFCLABEL('x'),$);\n"
+    "#7=IFCPROPERTYSET('0YvctVUKr0kugbFTf53O9L',$,'Pset',$,(#6,#999));\n"
+    "#8=IFCWALL('1F$7lN9$r5MOA_lpAoNM52',$,$,$,$,$,$,$,$);\n"
+    "#9=IFCRELDEFINESBYPROPERTIES('2F$7lN9$r5MOA_lpAoNM53',$,$,$,(#8),#7);\n"
+    "#10=IFCBSPLINESURFACEWITHKNOTS(1,1,((#1,#2),(#3,#999)),.UNSPECIFIED.,.F.,.F.,.U.,(2,2),(2,2),(0.,1.),(0.,1.),.UNSPECIFIED.);\n"
+    "#11=IFCRELAGGREGATES('3F$7lN9$r5MOA_lpAoNM54',$,$,$,#999,(#8));\n"
+    "ENDSEC;\n"
+    "END-ISO-10303-21;\n";
+}
+
+TEST_CASE("References are resolved in place: scalars, lists, nested lists, mixed selects and missing names", "[ifcparse]") {
+    std::string data(reference_resolution_spf);
+    ifcopenshell::file file(data.data(), (int)data.size());
+    REQUIRE(file.good());
+
+    const std::vector<express::base> points = file.instance_by_id(4).get_attribute_value(0);
+    REQUIRE(points.size() == 3);
+    CHECK(points[0].id() == 1);
+    CHECK(points[2].id() == 3);
+
+    // A select-typed list mixing an inline typed value with a reference.
+    const std::vector<express::base> trim1 = file.instance_by_id(5).get_attribute_value(1);
+    REQUIRE(trim1.size() == 2);
+    CHECK(trim1[0].declaration().name() == "IfcParameterValue");
+    CHECK(trim1[1].id() == 1);
+    const std::vector<express::base> trim2 = file.instance_by_id(5).get_attribute_value(2);
+    REQUIRE(trim2.size() == 1);
+    CHECK(trim2[0].declaration().name() == "IfcParameterValue");
+
+    // A missing name is dropped from a list and nulls a scalar.
+    const std::vector<express::base> properties = file.instance_by_id(7).get_attribute_value(4);
+    REQUIRE(properties.size() == 1);
+    CHECK(properties[0].id() == 6);
+    CHECK(file.instance_by_id(11).get_attribute_value(4).isNull());
+    const std::vector<express::base> related = file.instance_by_id(11).get_attribute_value(5);
+    REQUIRE(related.size() == 1);
+    CHECK(related[0].id() == 8);
+
+    const express::base definition = file.instance_by_id(9).get_attribute_value(5);
+    REQUIRE(definition);
+    CHECK(definition.id() == 7);
+
+    const std::vector<std::vector<express::base>> control_points = file.instance_by_id(10).get_attribute_value(2);
+    REQUIRE(control_points.size() == 2);
+    REQUIRE(control_points[0].size() == 2);
+    CHECK(control_points[0][1].id() == 2);
+    REQUIRE(control_points[1].size() == 1);
+    CHECK(control_points[1][0].id() == 3);
+
+    // Inverses were registered for every reference, resolved or not.
+    CHECK(file.instances_by_reference(1).size() == 3);
+    CHECK(file.instances_by_reference(8).size() == 2);
+}
+
+TEST_CASE("References to bypassed instances are dropped from slots and from mixed lists", "[ifcparse]") {
+    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_reference_resolution_test.ifc";
+    {
+        std::ofstream out(path);
+        out << reference_resolution_spf;
+    }
+    ifcopenshell::file file(ifcopenshell::uninitialized_tag{});
+    file.bypass_type("IfcCartesianPoint");
+    REQUIRE(file.initialize(path.string()));
+    std::filesystem::remove(path);
+
+    const std::vector<express::base> points = file.instance_by_id(4).get_attribute_value(0);
+    CHECK(points.empty());
+    const std::vector<express::base> trim1 = file.instance_by_id(5).get_attribute_value(1);
+    REQUIRE(trim1.size() == 1);
+    CHECK(trim1[0].declaration().name() == "IfcParameterValue");
+    const std::vector<std::vector<express::base>> control_points = file.instance_by_id(10).get_attribute_value(2);
+    REQUIRE(control_points.size() == 2);
+    CHECK(control_points[0].empty());
+    CHECK(control_points[1].empty());
+}
+
+TEST_CASE("dense_id_map finds names inserted before the vector grew past them", "[ifcparse]") {
+    // A Bimserver-style file: names start high and arrive in no particular
+    // order, so the first ones land in the overflow while the vector is small.
+    ifcopenshell::dense_id_map<int*> map;
+    std::vector<int> values(200000);
+    const uint32_t base = 3000000;
+    for (uint32_t i = 0; i < 200000; ++i) {
+        const uint32_t name = base + ((i * 7919u) % 200000u);
+        REQUIRE(map.insert({name, &values[i]}).second);
+    }
+    CHECK(map.size() == 200000);
+    for (uint32_t i = 0; i < 200000; ++i) {
+        const uint32_t name = base + ((i * 7919u) % 200000u);
+        REQUIRE(map.find(name) != map.end());
+        REQUIRE(map.find(name)->second == &values[i]);
+    }
+    size_t visited = 0;
+    for (const auto& entry : map) {
+        CHECK(entry.first >= base);
+        ++visited;
+    }
+    CHECK(visited == 200000);
+    CHECK(map.erase(base + 5) == 1);
+    CHECK(map.find(base + 5) == map.end());
+    CHECK(map.size() == 199999);
 }

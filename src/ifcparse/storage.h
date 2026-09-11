@@ -21,6 +21,7 @@ namespace rocksdb {
 #include "rocksdb_map_adapter.h"
 #include "rocksdb_set_view.h"
 #include "map_variant.h"
+#include "dense_id_map.h"
 #include "map_transformer.h"
 #include "set_to_map_transformer.h"
 #include "file_open_status.h"
@@ -569,7 +570,7 @@ namespace ifcopenshell {
             unresolved_references* references_to_resolve = nullptr;
 
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
-            typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
+            typedef dense_id_map<shared_pointer_type> entity_instance_by_name_storage;
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
             typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name;
             typedef std::map<std::string, express::base> entity_instance_by_guid;
