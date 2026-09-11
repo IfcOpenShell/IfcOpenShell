@@ -254,6 +254,33 @@ function(get_debug_variant NAME LIBRARY POSTFIX)
     set(${NAME} "${LIBRARY}" PARENT_SCOPE)
 endfunction()
 
+# When building specified config, cmake first tries to find target config by the exact match
+# (e.g. to find `-relwithdebinfo.cmake` dependency for RelWithDebInfo build),
+# but if it fails, it falls back to the first cmake config it can find, alphabetically.
+# If there's a Debug config, then it ends up pulling Debug build as the default.
+# Which is critical on Windows if dependency is using CRT - linking will fail due to a CRT mismatch.
+# To resolve this, we allow `RelWithDebInfo`, `MinSizeRel` to fallback to `Release`.
+#
+# Especially important on a multi-config generator (e.g. Visual Studio),
+# when cmake has to define targets for each possible config.
+# Without this fallback, user would need to build each dependency for each of 4 configs
+# to guarantee switching between them won't break.
+# And in some cases it's not even possible (e.g. OpenCOLLADA hardcodes only Release/Debug builds).
+#
+# Important: we're mixing up MinSizeRel to RelWithDebInfo targets and vice versa, because
+# by setting `MAP_IMPORTED_CONFIG_` we override the fallback, but multi-config builds
+# has to be able to find a way to build a target for each config, otherwise configuration would fail.
+function(avoid_debug_imported_config_fallback)
+    foreach(_target ${ARGN})
+        if(TARGET ${_target})
+            set_target_properties(${_target} PROPERTIES
+                MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE;MINSIZEREL"
+                MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE;RELWITHDEBINFO"
+            )
+        endif()
+    endforeach()
+endfunction()
+
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
     set(IFC_PARSE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse)
     set(${RESULT_NAME}

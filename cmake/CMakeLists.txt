@@ -326,22 +326,7 @@ if (WITH_ROCKSDB)
     else()
         message(FATAL_ERROR "RocksDB found but neither RocksDB::rocksdb nor RocksDB::rocksdb-shared target exists")
     endif()
-    # Our win/build-deps.py builds RocksDB separately per Debug/Release config into the
-    # same install prefix, so the imported target only ever has DEBUG and RELEASE listed in
-    # IMPORTED_CONFIGURATIONS. On a multi-config generator (Visual Studio), CMake maps any
-    # unmatched build config to the *first* entry of that list, which happens to be DEBUG
-    # (RocksDBTargets-debug.cmake sorts before RocksDBTargets-release.cmake). Without an
-    # explicit mapping, RelWithDebInfo and MinSizeRel builds would end up linking the
-    # /MDd-flavored rocksdb_d.lib into an /MD (NDEBUG) binary, causing a CRT/runtime-library
-    # mismatch that depends on nothing but that alphabetical ordering.
-    #
-    # Important: we're mixing up MinSizeRel to RelWithDebInfo targets and vice versa, because
-    # multi-config builds always define targets for each config and it has to be able to find a fallback,
-    # otherwise configuration would fail.
-    set_target_properties(${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET} PROPERTIES
-        MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE;MINSIZEREL"
-        MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE;RELWITHDEBINFO"
-    )
+    avoid_debug_imported_config_fallback(${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET})
     target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE ${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET})
 
     if (WITH_ZSTD)
