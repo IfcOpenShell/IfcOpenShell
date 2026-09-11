@@ -137,7 +137,8 @@ public:
 
     // The whole content as one contiguous buffer. Only readers whose
     // implementation holds the content contiguously provide this.
-    const char* data() const { return impl_->data(); }
+    template <typename I = Impl>
+    auto data() const -> decltype(std::declval<const I&>().data()) { return impl_->data(); }
     size_t remaining() const { return size() - cursor_; }
 
     char peek() const {
