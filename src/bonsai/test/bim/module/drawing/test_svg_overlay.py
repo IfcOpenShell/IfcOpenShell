@@ -60,6 +60,11 @@ class TestSvgOverlay(unittest.TestCase):
         self.assertEqual(len(result.strokes), 1)
         self.assertAlmostEqual(result.strokes[0].color[3], 0.1)
 
+    def test_inherit_opacity_keeps_descendants_visible(self):
+        result = drawing('<g stroke="red" opacity="0.5"><g opacity="inherit"><line x2="1"/></g></g>')
+        self.assertEqual(len(result.strokes), 1)
+        self.assertAlmostEqual(result.strokes[0].color[3], 0.5)
+
     def test_comments_selector_lists_and_unsupported_rules(self):
         result = drawing(
             '<line class="edge" x2="1"/>',

@@ -239,7 +239,10 @@ def parse_svg(source: str) -> Drawing:
         ):
             return
         try:
-            opacity = float(inherited.get("opacity", "1")) * float(winners.get("opacity", (None, "1"))[1])
+            local_opacity = winners.get("opacity", (None, "1"))[1]
+            if local_opacity == "inherit":
+                local_opacity = "1"
+            opacity = float(inherited.get("opacity", "1")) * float(local_opacity)
             style["opacity"] = str(opacity)
             if tag in ("svg", "g", "a"):
                 for child in element:
