@@ -18,6 +18,7 @@
 
 import math
 import os
+import re
 import shutil
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
@@ -840,11 +841,22 @@ class SvgWriter:
                 if display_data[current_marker_position]["add_symbol"]:
                     transform = "rotate({}, {}, {})".format(angle, *symbol_position_svg.xy)
                     symbol_id = display_data[current_marker_position]["symbol"]
-                    self.svg.add(self.svg.use(f"#{symbol_id}", insert=symbol_position_svg, transform=transform))
+                    self.svg.add(
+                        self.svg.use(
+                            f"#{symbol_id}",
+                            insert=symbol_position_svg,
+                            transform=transform,
+                            class_=self.get_symbol_class(symbol_id),
+                        )
+                    )
 
                 # marker circle and it's text
                 if display_data[current_marker_position]["add_circle"]:
-                    self.svg.add(self.svg.use("#section-tag", insert=symbol_position_svg))
+                    self.svg.add(
+                        self.svg.use(
+                            "#section-tag", insert=symbol_position_svg, class_=self.get_symbol_class("section-tag")
+                        )
+                    )
 
                     reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
                     text_position = symbol_position_svg
@@ -876,8 +888,17 @@ class SvgWriter:
 
         transform = "rotate({}, {}, {})".format(angle, *symbol_position_svg.xy)
 
-        self.svg.add(self.svg.use("#elevation-arrow", insert=symbol_position_svg, transform=transform))
-        self.svg.add(self.svg.use("#elevation-tag", insert=symbol_position_svg))
+        self.svg.add(
+            self.svg.use(
+                "#elevation-arrow",
+                insert=symbol_position_svg,
+                transform=transform,
+                class_=self.get_symbol_class("elevation-arrow"),
+            )
+        )
+        self.svg.add(
+            self.svg.use("#elevation-tag", insert=symbol_position_svg, class_=self.get_symbol_class("elevation-tag"))
+        )
 
         reference_id, sheet_id = self.get_reference_and_sheet_id_from_annotation(tool.Ifc.get_entity(obj))
         text_position = symbol_position_svg
@@ -995,6 +1016,9 @@ class SvgWriter:
                 if template_text_fields:
                     symbol_xml.attrib["transform"] = symbol_transform
                     symbol_xml.attrib.pop("id")
+                    symbol_class = self.get_symbol_class(symbol)
+                    existing_class = symbol_xml.attrib.get("class")
+                    symbol_xml.attrib["class"] = f"{symbol_class} {existing_class}" if existing_class else symbol_class
                     # NOTE: zip makes sure that we iterate over the shortest list
                     for field, text_literal in zip(template_text_fields, text_literals):
                         field.text = tool.Drawing.replace_text_literal_variables(
@@ -1135,8 +1159,13 @@ class SvgWriter:
         scale = 1.0 if not obj else obj.scale.x
         return f"translate({svg_position_str}) rotate({angle}) scale({scale})"
 
+    @staticmethod
+    def get_symbol_class(symbol_id: str) -> str:
+        """Sanitize a symbols.svg id/name into a valid CSS class token."""
+        return re.sub(r"\s+", "-", symbol_id.strip())
+
     def draw_symbol(self, symbol_id: str, symbol_transform: str) -> None:
-        self.svg.add(self.svg.use(f"#{symbol_id}", transform=symbol_transform))
+        self.svg.add(self.svg.use(f"#{symbol_id}", transform=symbol_transform, class_=self.get_symbol_class(symbol_id)))
 
     def draw_point_annotation(self, obj: bpy.types.Object, classes: list[str]) -> None:
         x_offset = self.raw_width / 2
