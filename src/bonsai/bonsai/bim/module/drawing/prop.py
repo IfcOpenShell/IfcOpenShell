@@ -543,6 +543,12 @@ class BIMCameraProperties(PropertyGroup):
         default=True,
         update=get_update_layer_callback("has_annotation", "HasAnnotation"),
     )
+    show_sheet_references: BoolProperty(
+        name="Show Sheet References",
+        description="Show the sheet reference below the drawing number in section and elevation markers",
+        default=True,
+        update=get_update_layer_callback("show_sheet_references", "ShowSheetReferences"),
+    )
     use_edge_classification: BoolProperty(
         name="Use Edge Classification",
         description="Classify projection edges into boundary/outline/sharp/crease/flush "
@@ -630,6 +636,7 @@ class BIMCameraProperties(PropertyGroup):
         has_underlay: bool
         has_linework: bool
         has_annotation: bool
+        show_sheet_references: bool
         target_view: TargetView
 
         representation: str
