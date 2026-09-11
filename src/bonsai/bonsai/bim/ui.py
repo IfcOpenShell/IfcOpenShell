@@ -295,6 +295,68 @@ assert _gizmo_pref_entry is not None
 del _gizmo_pref_entry
 
 
+def _apply_cross_select_pref() -> None:
+    """Timer callback: re-register Bonsai tools so the Cross Select toggle takes effect."""
+    tool.Blender.apply_cross_select_preference()
+    return None  # run once
+
+
+def _update_cross_select_enabled(self: "CrossSelectPreferences", context: bpy.types.Context) -> None:
+    # Re-registering tools mid property-update is unsafe, so defer to a one-shot timer.
+    if not bpy.app.background and not bpy.app.timers.is_registered(_apply_cross_select_pref):
+        bpy.app.timers.register(_apply_cross_select_pref, first_interval=0.0)
+
+
+class CrossSelectPreferences(bpy.types.PropertyGroup):
+    """CAD/Rhino-style box selection settings for Bonsai tools.
+
+    When enabled, every Bonsai workspace tool uses ``bim.cross_select`` instead of
+    Blender's native box/click selection: dragging the box left-to-right selects only
+    fully-enclosed elements (window), right-to-left selects anything touched (crossing).
+    """
+
+    enabled: BoolProperty(
+        name="Cross Select",
+        default=True,
+        description=(
+            "Use CAD/Rhino-style box selection in Bonsai tools.\n"
+            "Drag left to right to select only fully-enclosed elements (window).\n"
+            "Drag right to left to select anything the box touches (crossing).\n"
+            "Disable to use Blender's native box/click selection"
+        ),
+        update=_update_cross_select_enabled,
+    )
+    fully_color: bpy.props.FloatVectorProperty(
+        name="Window Match Color",
+        subtype="COLOR",
+        default=(0.2, 0.6, 1.0),  # blue
+        min=0.0,
+        max=1.0,
+        description="Box color when dragging left to right (fully-enclosed / window match)",
+    )
+    partial_color: bpy.props.FloatVectorProperty(
+        name="Crossing Match Color",
+        subtype="COLOR",
+        default=(1.0, 0.4, 0.1),  # orange
+        min=0.0,
+        max=1.0,
+        description="Box color when dragging right to left (partial / crossing match)",
+    )
+    line_width: bpy.props.IntProperty(
+        name="Line Width",
+        default=2,
+        min=0,
+        max=20,
+        description="Width of the selection box border",
+    )
+
+    if TYPE_CHECKING:
+        enabled: bool
+        fully_color: tuple[float, float, float]
+        partial_color: tuple[float, float, float]
+        line_width: int
+
+
 class DocPreferences(bpy.types.PropertyGroup):
     sheets_dir: StringProperty(
         default=os.path.join("sheets") + os.path.sep,
@@ -629,6 +691,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Code that will be evaluated to generate occurrence name for CUSTOM occurrence name style",
     )
     gizmos: bpy.props.PointerProperty(type=GizmoPreferences)
+    cross_select: bpy.props.PointerProperty(type=CrossSelectPreferences)
 
     def update_data_dir(self, context: bpy.types.Context) -> None:
         import bonsai.bim.schema
@@ -734,6 +797,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
         occurrence_name_function: str
         gizmos: GizmoPreferences
+        cross_select: CrossSelectPreferences
         data_dir: str
         cache_dir: str
         pset_dir: str
@@ -795,6 +859,18 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
                 "Gizmos Parameters",
                 self.draw_gizmo_parameters,
             )
+
+        layout.prop(self.cross_select, "enabled")
+        if self.cross_select.enabled:
+            box = layout.box()
+            box.label(text="Drag left to right: window (only fully-enclosed elements)", icon="FORWARD")
+            box.label(text="Drag right to left: crossing (anything the box touches)", icon="BACK")
+            row = box.row(align=True)
+            row.prop(self.cross_select, "fully_color", text="")
+            row.label(text="Window Match")
+            row.prop(self.cross_select, "partial_color", text="")
+            row.label(text="Crossing Match")
+            box.prop(self.cross_select, "line_width")
 
     def draw_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         """Render one enabled-toggle per parametric feature."""
