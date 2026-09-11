@@ -426,7 +426,7 @@ def get_element_value(element: ifcopenshell.entity_instance, query: str) -> Any:
 
 def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -> Any:
     value = element
-    for key in keys:
+    for i, key in enumerate(keys):
         if value is None:
             return
         if key == "type":
@@ -434,7 +434,22 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
         elif key in ("material", "mat"):
             value = ifcopenshell.util.element.get_material(value, should_skip_usage=True)
         elif key in ("materials", "mats"):
-            value = ifcopenshell.util.element.get_materials(value)
+            next_key = keys[i + 1] if i + 1 < len(keys) else None
+            if next_key == "Category":
+                # Category is defined on the material set item (IfcMaterialLayer,
+                # IfcMaterialProfile, IfcMaterialConstituent), not on the IfcMaterial
+                # it references, so get_materials() alone can never resolve it.
+                material_set = ifcopenshell.util.element.get_material(value, should_skip_usage=True)
+                if material_set is not None and material_set.is_a("IfcMaterialLayerSet"):
+                    value = list(material_set.MaterialLayers)
+                elif material_set is not None and material_set.is_a("IfcMaterialProfileSet"):
+                    value = list(material_set.MaterialProfiles)
+                elif material_set is not None and material_set.is_a("IfcMaterialConstituentSet"):
+                    value = list(material_set.MaterialConstituents)
+                else:
+                    value = ifcopenshell.util.element.get_materials(value)
+            else:
+                value = ifcopenshell.util.element.get_materials(value)
         elif key == "profiles":
             value = ifcopenshell.util.shape.get_profiles(value)
         elif key == "styles":

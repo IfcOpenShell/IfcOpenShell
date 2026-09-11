@@ -162,6 +162,47 @@ class TestGetElementValue(test.bootstrap.IFC4):
         # Provide shortform for convenience
         assert subject.get_element_value(element, "mat.i.Name") == ["L1", "L2"]
 
+    def test_selecting_material_set_item_category_using_mats_shortform(self):
+        # Feature test for #7000: Category is an attribute of the material set
+        # item (IfcMaterialConstituent, IfcMaterialLayer, IfcMaterialProfile),
+        # not of the IfcMaterial it references, so "mats.Category"/"materials.Category"
+        # must resolve it via the set item rather than the flattened material list.
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        material_set = ifcopenshell.api.material.add_material_set(
+            self.file, name="FOO", set_type="IfcMaterialConstituentSet"
+        )
+        material1 = ifcopenshell.api.material.add_material(self.file, name="CON01")
+        material2 = ifcopenshell.api.material.add_material(self.file, name="CON02")
+        constituent1 = ifcopenshell.api.material.add_constituent(
+            self.file, constituent_set=material_set, material=material1
+        )
+        constituent1.Category = "Structure"
+        constituent2 = ifcopenshell.api.material.add_constituent(
+            self.file, constituent_set=material_set, material=material2
+        )
+        constituent2.Category = "Insulation"
+        ifcopenshell.api.material.assign_material(self.file, products=[element], material=material_set)
+        assert subject.get_element_value(element, "mats.Category") == ["Structure", "Insulation"]
+        assert subject.get_element_value(element, "materials.Category") == ["Structure", "Insulation"]
+        # Unaffected: mats without .Category keeps resolving to the flattened
+        # IfcMaterial list, same as before this fix.
+        assert subject.get_element_value(element, "mats.Name") == ["CON01", "CON02"]
+
+    def test_selecting_material_layer_category_using_mats_shortform(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.material.add_material(self.file, name="CON01")
+        material_set = ifcopenshell.api.material.add_material_set(self.file, name="FOO", set_type="IfcMaterialLayerSet")
+        layer = ifcopenshell.api.material.add_layer(self.file, layer_set=material_set, material=material)
+        layer.Category = "Cladding"
+        ifcopenshell.api.material.assign_material(self.file, products=[element], material=material_set)
+        assert subject.get_element_value(element, "mats.Category") == ["Cladding"]
+
+    def test_selecting_a_single_materials_category_does_not_error(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.material.add_material(self.file, name="CON01")
+        ifcopenshell.api.material.assign_material(self.file, products=[element], material=material)
+        assert subject.get_element_value(element, "mats.Category") == [None]
+
     def test_selecting_a_query_that_fails_silently(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         assert subject.get_element_value(element, "material.item.Name.0") is None
