@@ -2733,11 +2733,15 @@ void ifcopenshell::impl::in_memory_file_storage::resolve_table_references(const 
 }
 
 
+// The retained source of a lazily loaded file: a paged reader with a
+// bounded cache, so the file is never held in memory as a whole.
 struct ifcopenshell::impl::in_memory_file_storage::lazy_source {
-    file_reader<full_buffer_impl> reader;
-    spf_lexer<file_reader<full_buffer_impl>> lexer;
+    static constexpr size_t page_size = 64 << 10;
+    static constexpr size_t pages = 64;
+    file_reader<paged_file_impl> reader;
+    spf_lexer<file_reader<paged_file_impl>> lexer;
     lazy_source(const std::string& path, ifcopenshell::logger& logger)
-        : reader(path), lexer(&reader, logger) {}
+        : reader(path, page_size, pages), lexer(&reader, logger) {}
 };
 
 namespace {
@@ -2764,7 +2768,7 @@ void ifcopenshell::impl::in_memory_file_storage::materialize(instance_data* data
     const auto* declaration = data->declaration();
     register_inverses_ = false;
     const size_t simple_type_instances_before = read_simple_type_instances.size();
-    auto storage = load_attributes<file_reader<full_buffer_impl>, in_memory_attribute_storage>(&lexer, (size_t)data->id(), declaration, declaration->as_entity(), -1);
+    auto storage = load_attributes<file_reader<paged_file_impl>, in_memory_attribute_storage>(&lexer, (size_t)data->id(), declaration, declaration->as_entity(), -1);
     register_inverses_ = true;
     data->storage_.emplace(std::move(storage));
     data->populate_derived_();
@@ -2779,15 +2783,325 @@ void ifcopenshell::impl::in_memory_file_storage::materialize(instance_data* data
 }
 
 namespace {
-// The scanner behind lazy loading. One pass over the DATA section tracking
-// only quote state, parenthesis depth, commas at depth one (the attribute
-// index) and #names; it records where each instance starts and every
-// reference it makes, and reads nothing else. Anything it does not expect
-// aborts the scan so the caller can fall back to the full parser.
-struct lazy_scan_error {
-    const char* reason;
-    size_t offset;
+
+// Matches a literal in a byte stream one byte at a time.
+class literal_matcher {
+    const char* literal_;
+    size_t length_;
+    size_t matched_ = 0;
+  public:
+    explicit literal_matcher(const char* literal)
+        : literal_(literal), length_(std::strlen(literal)) {}
+    // Returns true on the byte that completes the literal.
+    bool feed(char c) {
+        if (c == literal_[matched_]) {
+            if (++matched_ == length_) {
+                matched_ = 0;
+                return true;
+            }
+        } else {
+            matched_ = c == literal_[0] ? 1 : 0;
+        }
+        return false;
+    }
+    void reset() {
+        matched_ = 0;
+    }
 };
+
+// The scanner behind lazy loading. It consumes the file one byte at a time,
+// so it works over pages and needs no random access: a state machine that
+// tracks quote state, parenthesis depth, commas at depth one (the attribute
+// index) and #names, and records where each instance starts and every
+// reference it makes, reading nothing else. Anything it does not expect
+// stops the scan so the caller can fall back to the full parser.
+class lazy_index_scanner {
+  public:
+    struct instance {
+        uint32_t name;
+        uint64_t attributes_offset;  // just past the opening parenthesis
+        std::string keyword;
+        std::string guid;            // raw text of a first string attribute, if any
+        bool has_guid = false;
+    };
+    // Called with every finished instance and reference; the reference's
+    // instance is the one currently being scanned.
+    std::function<void(const instance&)> on_instance;
+    std::function<void(const instance& current, uint32_t referenced, int attribute)> on_reference;
+
+    const char* failure() const {
+        return failure_;
+    }
+    size_t failure_offset() const {
+        return failure_offset_;
+    }
+
+    void feed(const char* data, size_t length, size_t offset) {
+        for (size_t i = 0; i < length && failure_ == nullptr && !done_; ++i) {
+            feed_byte(data[i], offset + i);
+        }
+    }
+
+    void finish() {
+        if (failure_ == nullptr && !done_ && state_ != state::seek_data && state_ != state::between) {
+            fail("file ends inside an instance", last_offset_);
+        }
+    }
+
+  private:
+    enum class state {
+        seek_data,       // header: waiting for "\nDATA;"
+        between,         // whitespace, comment or the next instance
+        between_slash,   // saw '/', comment if '*' follows
+        comment,         // inside /* */
+        endsec,          // saw 'E' between instances: must spell ENDSEC
+        name,            // digits after '#'
+        equals,          // spaces, then '='
+        keyword_start,   // spaces before the keyword
+        keyword,         // keyword characters up to '('
+        attributes,      // inside the outer parentheses
+        attributes_slash,
+        attribute_comment,
+        reference,       // digits after '#' inside attributes
+        close,           // saw the closing parenthesis, expecting ';'
+    };
+    state state_ = state::seek_data;
+    state comment_return_ = state::between;
+    literal_matcher data_matcher_{"\nDATA;"};
+    literal_matcher comment_end_{"*/"};
+    std::string endsec_;
+    instance current_;
+    int depth_ = 0;
+    int attribute_ = 0;
+    bool in_string_ = false;
+    bool string_seen_quote_ = false;   // inside a string: previous byte was a quote
+    uint32_t reference_ = 0;
+    int guid_state_ = 0;               // 0 not started, 1 skipping spaces, 2 in string, 3 closed
+    bool done_ = false;
+    const char* failure_ = nullptr;
+    size_t failure_offset_ = 0;
+    size_t last_offset_ = 0;
+
+    void fail(const char* reason, size_t offset) {
+        failure_ = reason;
+        failure_offset_ = offset;
+    }
+
+    static bool is_space(char c) {
+        return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+    }
+    static bool is_digit(char c) {
+        return c >= '0' && c <= '9';
+    }
+    static bool is_keyword_char(char c) {
+        return (c >= 'A' && c <= 'Z') || is_digit(c) || c == '_';
+    }
+
+    void begin_instance() {
+        current_ = instance{};
+        depth_ = 1;
+        attribute_ = 0;
+        in_string_ = false;
+        string_seen_quote_ = false;
+        guid_state_ = 1;
+    }
+
+    void feed_byte(char c, size_t offset) {
+        last_offset_ = offset;
+        switch (state_) {
+        case state::seek_data:
+            if (data_matcher_.feed(c)) {
+                state_ = state::between;
+            }
+            break;
+        case state::between:
+            if (is_space(c)) {
+            } else if (c == '/') {
+                state_ = state::between_slash;
+            } else if (c == '#') {
+                current_.name = 0;
+                state_ = state::name;
+            } else if (c == 'E') {
+                endsec_ = "E";
+                state_ = state::endsec;
+            } else {
+                fail("instance does not start with #", offset);
+            }
+            break;
+        case state::between_slash:
+            if (c == '*') {
+                comment_end_.reset();
+                comment_return_ = state::between;
+                state_ = state::comment;
+            } else {
+                fail("unexpected / between instances", offset);
+            }
+            break;
+        case state::comment:
+            if (comment_end_.feed(c)) {
+                state_ = comment_return_;
+            }
+            break;
+        case state::endsec:
+            endsec_ += c;
+            if (endsec_ == "ENDSEC") {
+                done_ = true;
+            } else if (std::string_view("ENDSEC").substr(0, endsec_.size()) != endsec_) {
+                fail("unexpected keyword between instances", offset);
+            }
+            break;
+        case state::name:
+            if (is_digit(c)) {
+                current_.name = current_.name * 10 + (uint32_t)(c - '0');
+            } else if (c == ' ' || c == '=') {
+                state_ = c == '=' ? state::keyword_start : state::equals;
+            } else {
+                fail("bad instance name", offset);
+            }
+            break;
+        case state::equals:
+            if (c == '=') {
+                state_ = state::keyword_start;
+            } else if (c != ' ') {
+                fail("expected =", offset);
+            }
+            break;
+        case state::keyword_start:
+            if (is_keyword_char(c)) {
+                current_.keyword.assign(1, c);
+                state_ = state::keyword;
+            } else if (c != ' ') {
+                fail("expected TYPE(", offset);
+            }
+            break;
+        case state::keyword:
+            if (is_keyword_char(c)) {
+                current_.keyword += c;
+            } else if (c == '(') {
+                const std::string keyword = std::move(current_.keyword);
+                const uint32_t name = current_.name;
+                begin_instance();
+                current_.keyword = keyword;
+                current_.name = name;
+                current_.attributes_offset = offset + 1;
+                state_ = state::attributes;
+            } else {
+                fail("expected TYPE(", offset);
+            }
+            break;
+        case state::attributes:
+            feed_attribute_byte(c, offset);
+            break;
+        case state::attributes_slash:
+            if (c == '*') {
+                comment_end_.reset();
+                comment_return_ = state::attributes;
+                state_ = state::attribute_comment;
+            } else {
+                // A lone slash is not SPF syntax the full parser accepts either.
+                fail("unexpected / inside an instance", offset);
+            }
+            break;
+        case state::attribute_comment:
+            if (comment_end_.feed(c)) {
+                state_ = comment_return_;
+            }
+            break;
+        case state::reference:
+            if (is_digit(c)) {
+                reference_ = reference_ * 10 + (uint32_t)(c - '0');
+            } else {
+                if (on_reference) {
+                    on_reference(current_, reference_, attribute_);
+                }
+                state_ = state::attributes;
+                feed_attribute_byte(c, offset);
+            }
+            break;
+        case state::close:
+            if (c == ';') {
+                if (on_instance) {
+                    on_instance(current_);
+                }
+                state_ = state::between;
+            } else if (c != ' ') {
+                fail("expected ; after )", offset);
+            }
+            break;
+        }
+    }
+
+    void feed_attribute_byte(char c, size_t offset) {
+        if (in_string_) {
+            if (string_seen_quote_) {
+                string_seen_quote_ = false;
+                if (c == '\'') {
+                    // An escaped quote: still inside the string.
+                    if (guid_state_ == 2) {
+                        current_.guid += "''";
+                    }
+                    return;
+                }
+                // The previous quote closed the string.
+                in_string_ = false;
+                if (guid_state_ == 2) {
+                    guid_state_ = 3;
+                    current_.has_guid = true;
+                }
+                // fall through to handle c outside the string
+            } else if (c == '\'') {
+                string_seen_quote_ = true;
+                return;
+            } else {
+                if (guid_state_ == 2) {
+                    current_.guid += c;
+                }
+                return;
+            }
+        }
+        if (guid_state_ == 1) {
+            if (c == ' ') {
+                return;
+            }
+            guid_state_ = c == '\'' ? 2 : 3;
+            if (guid_state_ == 2) {
+                in_string_ = true;
+                return;
+            }
+        }
+        switch (c) {
+        case '\'':
+            in_string_ = true;
+            break;
+        case '(':
+            ++depth_;
+            break;
+        case ')':
+            if (--depth_ == 0) {
+                state_ = state::close;
+            }
+            break;
+        case ',':
+            if (depth_ == 1) {
+                ++attribute_;
+            }
+            break;
+        case '#':
+            reference_ = 0;
+            state_ = state::reference;
+            break;
+        case '/':
+            state_ = state::attributes_slash;
+            break;
+        case ';':
+            fail("; inside an instance", offset);
+            break;
+        default:
+            break;
+        }
+    }
+};
+
 }
 
 bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string& path, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass) {
@@ -2800,7 +3114,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     // The header, the schema and the bypass set, exactly as the full parse
     // derives them.
     {
-        instance_streamer<file_reader<full_buffer_impl>> streamer(&reader, file, logger_.get());
+        instance_streamer<file_reader<paged_file_impl>> streamer(&reader, file, logger_.get());
         schema = streamer.schema();
     }
     if (schema == nullptr) {
@@ -2830,202 +3144,85 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     resolve_references_in_place = true;
     references_to_resolve = &lazy_mixed_references_;
     lazy_ = true;
+    byref_excl_.reserve(reader.size() / 32);
 
-    const char* p = reader.data();
-    const size_t n = reader.size();
-    std::unordered_map<std::string_view, const ifcopenshell::declaration*> declarations;
-    byref_excl_.reserve(n / 32);
+    std::unordered_map<std::string, const ifcopenshell::declaration*> declarations;
+    // The declaration of the instance being scanned, or null while its
+    // references are to be ignored (unknown type, non-entity, bypassed);
+    // resolved once per instance, on its first reference or at its end.
+    const ifcopenshell::declaration* current_declaration = nullptr;
+    bool resolved = false;
+    uint32_t resolved_name = 0;
+    lazy_index_scanner scanner;
 
-    try {
-        const char* data_section = (const char*)memmem(p, n, "\nDATA;", 6);
-        if (data_section == nullptr) {
-            throw lazy_scan_error{"no DATA section", 0};
+    const auto resolve_type = [&](const lazy_index_scanner::instance& current) {
+        if (resolved && resolved_name == current.name) {
+            return;
         }
-        size_t i = (size_t)(data_section - p) + 6;
-        while (i < n) {
-            while (i < n && (p[i] == '\n' || p[i] == '\r' || p[i] == ' ' || p[i] == '\t')) {
-                ++i;
-            }
-            if (i >= n) {
-                break;
-            }
-            if (p[i] == '/' && i + 1 < n && p[i + 1] == '*') {
-                const char* end = (const char*)memmem(p + i, n - i, "*/", 2);
-                if (end == nullptr) {
-                    throw lazy_scan_error{"unterminated comment", i};
+        resolved = true;
+        resolved_name = current.name;
+        current_declaration = nullptr;
+        auto found = declarations.find(current.keyword);
+        const ifcopenshell::declaration* declaration = nullptr;
+        if (found == declarations.end()) {
+            try {
+                declaration = schema->declaration_by_name(current.keyword);
+                if (declaration->as_entity() == nullptr) {
+                    logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(current.attributes_offset));
+                    declaration = nullptr;
                 }
-                i = (size_t)(end - p) + 2;
-                continue;
+            } catch (const ifcopenshell::exception& e) {
+                logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(current.attributes_offset));
             }
-            if (p[i] == 'E') {
-                if (n - i >= 6 && memcmp(p + i, "ENDSEC", 6) == 0) {
-                    break;
-                }
-                throw lazy_scan_error{"unexpected keyword between instances", i};
-            }
-            if (p[i] != '#') {
-                throw lazy_scan_error{"instance does not start with #", i};
-            }
-            ++i;
-            if (i >= n || p[i] < '0' || p[i] > '9') {
-                throw lazy_scan_error{"bad instance name", i};
-            }
-            uint32_t name = 0;
-            while (i < n && p[i] >= '0' && p[i] <= '9') {
-                name = name * 10 + (uint32_t)(p[i++] - '0');
-            }
-            while (i < n && p[i] == ' ') {
-                ++i;
-            }
-            if (i >= n || p[i] != '=') {
-                throw lazy_scan_error{"expected =", i};
-            }
-            ++i;
-            while (i < n && p[i] == ' ') {
-                ++i;
-            }
-            const size_t keyword_start = i;
-            while (i < n && ((p[i] >= 'A' && p[i] <= 'Z') || (p[i] >= '0' && p[i] <= '9') || p[i] == '_')) {
-                ++i;
-            }
-            if (i >= n || p[i] != '(' || i == keyword_start) {
-                throw lazy_scan_error{"expected TYPE(", i};
-            }
-            const std::string_view keyword(p + keyword_start, i - keyword_start);
-            const size_t paren = i++;
-
-            // Resolve the type; unknown or non-entity types are logged and the
-            // instance skipped, as the full parser does.
-            const ifcopenshell::declaration* declaration = nullptr;
-            auto found = declarations.find(keyword);
-            if (found == declarations.end()) {
-                try {
-                    declaration = schema->declaration_by_name(std::string(keyword));
-                    if (declaration->as_entity() == nullptr) {
-                        logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(keyword_start));
-                        declaration = nullptr;
-                    }
-                } catch (const ifcopenshell::exception& e) {
-                    logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(keyword_start));
-                }
-                declarations.emplace(keyword, declaration);
-            } else {
-                declaration = found->second;
-            }
-            const bool bypassed = declaration != nullptr && bypassed_types[declaration->index_in_schema()];
-            const bool record = declaration != nullptr && !bypassed;
-            const uint16_t type_index = record ? (uint16_t)declaration->index_in_schema() : 0;
-
-            int depth = 1;
-            int attribute = 0;
-            bool in_string = false;
-            for (; i < n; ++i) {
-                const char c = p[i];
-                if (in_string) {
-                    if (c == '\'') {
-                        in_string = false;
-                    }
-                    continue;
-                }
-                if (c == '\'') {
-                    in_string = true;
-                } else if (c == '(') {
-                    ++depth;
-                } else if (c == ')') {
-                    if (--depth == 0) {
-                        break;
-                    }
-                } else if (c == ',') {
-                    if (depth == 1) {
-                        ++attribute;
-                    }
-                } else if (c == '#') {
-                    uint32_t referenced = 0;
-                    size_t j = i + 1;
-                    while (j < n && p[j] >= '0' && p[j] <= '9') {
-                        referenced = referenced * 10 + (uint32_t)(p[j++] - '0');
-                    }
-                    if (j == i + 1) {
-                        throw lazy_scan_error{"# not followed by an instance name", i};
-                    }
-                    if (record) {
-                        byref_excl_.add(referenced, name, type_index, attribute);
-                    }
-                    i = j - 1;
-                } else if (c == '/' && i + 1 < n && p[i + 1] == '*') {
-                    const char* end = (const char*)memmem(p + i, n - i, "*/", 2);
-                    if (end == nullptr) {
-                        throw lazy_scan_error{"unterminated comment", i};
-                    }
-                    i = (size_t)(end - p) + 1;
-                } else if (c == ';') {
-                    throw lazy_scan_error{"; inside an instance", i};
-                }
-            }
-            if (i >= n) {
-                throw lazy_scan_error{"unterminated instance", paren};
-            }
-            ++i;
-            while (i < n && p[i] == ' ') {
-                ++i;
-            }
-            if (i >= n || p[i] != ';') {
-                throw lazy_scan_error{"expected ; after )", i};
-            }
-            ++i;
-
-            if (bypassed) {
-                lazy_bypassed_.push_back(name);
-                continue;
-            }
-            if (!record) {
-                continue;
-            }
-            auto data = ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{});
-            data->lazy_offset_ = (uint64_t)paren + 1;
-            if (!byid_.insert({name, data}).second) {
-                logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Overwriting instance with name #" + std::to_string(name));
-                byid_.erase(name);
-                byid_.insert({name, data});
-            }
-            express::base instance(data);
-            bytype_excl_[declaration].push_back(instance);
-            max_id = (std::max)(max_id, (unsigned int)name);
-
-            if (declaration->is(*ifcroot)) {
-                // The GlobalId is the first attribute; read it without the lexer.
-                size_t g = paren + 1;
-                while (g < n && p[g] == ' ') {
-                    ++g;
-                }
-                if (g < n && p[g] == '\'') {
-                    size_t e = g + 1;
-                    bool escapes = false;
-                    while (e < n) {
-                        if (p[e] == '\'') {
-                            if (e + 1 < n && p[e + 1] == '\'') {
-                                escapes = true;
-                                e += 2;
-                                continue;
-                            }
-                            break;
-                        }
-                        escapes = escapes || p[e] == '\\';
-                        ++e;
-                    }
-                    std::string guid(p + g + 1, e - g - 1);
-                    if (escapes) {
-                        guid = ifcopenshell::decode_spf_string(guid);
-                    }
-                    if (byguid_.find(guid) != byguid_.end()) {
-                        logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
-                    }
-                    byguid_[guid] = instance;
-                }
-            }
+            declarations.emplace(current.keyword, declaration);
+        } else {
+            declaration = found->second;
         }
-    } catch (const lazy_scan_error& error) {
-        logger_.get().message(ifcopenshell::logger::LOG_NOTICE, std::string("Lazy loading not possible (") + error.reason + " at offset " + std::to_string(error.offset) + "), parsing the file in full");
+        if (declaration != nullptr && bypassed_types[declaration->index_in_schema()]) {
+            lazy_bypassed_.push_back(current.name);
+            return;
+        }
+        current_declaration = declaration;
+    };
+    scanner.on_reference = [&](const lazy_index_scanner::instance& current, uint32_t referenced, int attribute) {
+        resolve_type(current);
+        if (current_declaration != nullptr) {
+            byref_excl_.add(referenced, current.name, (uint16_t)current_declaration->index_in_schema(), attribute);
+        }
+    };
+    scanner.on_instance = [&](const lazy_index_scanner::instance& current) {
+        resolve_type(current);
+        resolved = false;
+        if (current_declaration == nullptr) {
+            return;
+        }
+        auto data = ifcopenshell::make_pointer_type<instance_data>(file, current_declaration, current.name, instance_data::lazy_tag{});
+        data->lazy_offset_ = current.attributes_offset;
+        if (!byid_.insert({current.name, data}).second) {
+            logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Overwriting instance with name #" + std::to_string(current.name));
+            byid_.erase(current.name);
+            byid_.insert({current.name, data});
+        }
+        express::base instance(data);
+        bytype_excl_[current_declaration].push_back(instance);
+        max_id = (std::max)(max_id, (unsigned int)current.name);
+        if (current.has_guid && current_declaration->is(*ifcroot)) {
+            const bool escapes = current.guid.find('\\') != std::string::npos || current.guid.find("''") != std::string::npos;
+            const std::string guid = escapes ? ifcopenshell::decode_spf_string(current.guid) : current.guid;
+            if (byguid_.find(guid) != byguid_.end()) {
+                logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
+            }
+            byguid_[guid] = instance;
+        }
+    };
+    // for_each_span hands the scanner one page at a time; it keeps its own
+    // state across them.
+    reader.for_each_span(0, reader.size(), [&](const char* data, size_t length, size_t offset) {
+        scanner.feed(data, length, offset);
+    });
+    scanner.finish();
+    if (scanner.failure() != nullptr) {
+        logger_.get().message(ifcopenshell::logger::LOG_NOTICE, std::string("Lazy loading not possible (") + scanner.failure() + " at offset " + std::to_string(scanner.failure_offset()) + "), parsing the file in full");
         return false;
     }
 
@@ -3035,13 +3232,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     return true;
 }
 
-
 namespace {
-
-template <typename Reader, typename = void>
-struct has_contiguous_data : std::false_type {};
-template <typename Reader>
-struct has_contiguous_data<Reader, std::void_t<decltype(std::declval<const Reader&>().data())>> : std::true_type {};
 
 // What one parser worker produces from its chunk of the DATA section.
 struct parse_worker_output {
@@ -3058,7 +3249,7 @@ struct parse_worker_output {
 template <typename Reader>
 void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopenshell::schema_definition* schema, const std::vector<char>& bypassed_types, parse_worker_output& out) {
     try {
-        Reader reader = source.clone();
+        Reader reader = source.reopen();
         reader.seek(begin);
         auto& storage = *out.storage;
         spf_lexer<Reader> lexer(&reader, storage.logger_.get());
@@ -3140,43 +3331,59 @@ void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopensh
 
 template <typename Reader>
 bool ifcopenshell::impl::in_memory_file_storage::read_instances_parallel(Reader* s, const ifcopenshell::schema_definition* schema, const std::set<std::string>& types_to_bypass, unsigned int& max_id, unsigned threads, std::vector<unsigned>& bypassed, unresolved_references& mixed_references, std::vector<shared_pointer_type>& instances) {
-    if constexpr (!has_contiguous_data<Reader>::value) {
+    if constexpr (std::is_same_v<Reader, file_reader<pushed_sequential_impl>>) {
         return false;
     } else {
-        const char* p = s->data();
         const size_t n = s->size();
         constexpr size_t min_bytes_per_thread = 2u << 20;
         threads = (unsigned)std::min<size_t>(threads, std::max<size_t>(1, n / min_bytes_per_thread));
         if (threads < 2) {
             return false;
         }
-        const char* data_section = (const char*)memmem(p, n, "\nDATA;", 6);
-        if (data_section == nullptr) {
-            return false;
-        }
-        const size_t data_begin = (size_t)(data_section - p) + 6;
-        const char* end_section = (const char*)memmem(p + data_begin, n - data_begin, "\nENDSEC", 7);
-        const size_t data_end = end_section ? (size_t)(end_section - p) : n;
-        // A comment could hide an instance boundary from the chunking below.
-        if (memmem(p + data_begin, data_end - data_begin, "/*", 2) != nullptr) {
-            return false;
-        }
 
-        // Chunk boundaries: a '#' at the start of a line at or after each
-        // nominal split point. Strings can't contain raw newlines, so that is
-        // always an instance boundary.
-        std::vector<size_t> bounds{data_begin};
-        for (unsigned k = 1; k < threads; ++k) {
-            size_t at = data_begin + (data_end - data_begin) * k / threads;
-            const char* newline = (const char*)memchr(p + at, '\n', data_end - at);
-            while (newline != nullptr && (size_t)(newline - p) + 1 < data_end && newline[1] != '#') {
-                const size_t next = (size_t)(newline - p) + 1;
-                newline = (const char*)memchr(p + next, '\n', data_end - next);
+        // One streaming pass over the bytes finds the DATA section, the
+        // instance boundaries nearest each nominal split point (a '#' that
+        // starts a line: strings can't contain raw newlines) and whether a
+        // comment could hide a boundary, without holding the file.
+        literal_matcher data_matcher("\nDATA;"), endsec_matcher("\nENDSEC"), comment_matcher("/*");
+        size_t data_begin = 0, data_end = 0;
+        bool comment = false, newline = false;
+        std::vector<size_t> bounds;
+        size_t next_split = 0;
+        s->for_each_span(0, n, [&](const char* data, size_t length, size_t offset) {
+            for (size_t i = 0; i < length; ++i) {
+                const char c = data[i];
+                const size_t at = offset + i;
+                if (data_begin == 0) {
+                    if (data_matcher.feed(c)) {
+                        data_begin = at + 1;
+                        bounds.push_back(data_begin);
+                        next_split = data_begin + (n - data_begin) / threads;
+                    }
+                    continue;
+                }
+                if (data_end != 0) {
+                    return;
+                }
+                if (endsec_matcher.feed(c)) {
+                    data_end = at + 1 - 7;
+                    return;
+                }
+                if (comment_matcher.feed(c)) {
+                    comment = true;
+                }
+                if (newline && c == '#' && at >= next_split && bounds.size() < threads) {
+                    bounds.push_back(at);
+                    next_split = data_begin + (n - data_begin) * bounds.size() / threads;
+                }
+                newline = c == '\n';
             }
-            const size_t boundary = newline == nullptr ? data_end : (size_t)(newline - p) + 1;
-            if (boundary > bounds.back()) {
-                bounds.push_back(boundary);
-            }
+        });
+        if (data_begin == 0 || comment) {
+            return false;
+        }
+        if (data_end == 0) {
+            data_end = n;
         }
         bounds.push_back(data_end);
         if (bounds.size() < 3) {
