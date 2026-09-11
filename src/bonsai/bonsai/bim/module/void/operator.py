@@ -157,6 +157,14 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                     should_add_representation=True,
                     context=body_context,
                 )
+            if element2:
+                opening_body_rep = ifcopenshell.util.representation.get_representation(element2, "Model", "Body")
+                if opening_body_rep is None:
+                    self.report(
+                        {"WARNING"},
+                        f"Opening '{element2.Name}' has no Body representation — void will not be cut. "
+                        f"Check its context in the IFC file (ContextIdentifier must be 'Body').",
+                    )
             ifcopenshell.api.feature.add_feature(tool.Ifc.get(), feature=element2, element=element1)
 
             if tool.Ifc.is_moved(obj2):
