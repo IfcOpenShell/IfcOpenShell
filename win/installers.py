@@ -265,8 +265,7 @@ def install_boost(
     build_deps_cache.add_entry("BOOST_INSTALL_DIR", str(dependency_install_dir))
 
     # NOTE Boost is fast to build with a limited set of libraries, so it's rebuilt by default.
-    # TODO: consider reuse_boost and release/debug installations.
-    if reuse_boost and is_already_installed(dependency_install_dir):
+    if reuse_boost and is_already_installed(dependency_install_dir, expected_build_cfg=build_cfg):
         return
 
     BOOST_ZIP = f"boost-{BOOST_VERSION}-b2-nodocs.7z"
@@ -334,6 +333,8 @@ def install_boost(
         f"--stagedir={dependency_install_dir}",
         cwd=dependency_dir,
     )
+
+    mark_installation(dependency_install_dir, build_cfg)
 
 
 def install_opencollada(
