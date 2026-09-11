@@ -639,14 +639,16 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                     else:
                         assert False, layer_set_direction
 
+                    half_mag = 0.25 / unit_scale
                     item = builder.extrude(
                         profile,
                         magnitude=0.5 / unit_scale,
+                        position=tuple(-Vector(z_axis) * half_mag),
                         position_x_axis=tuple(local_x),
                         position_z_axis=z_axis,
                     )
                 else:
-                    item = builder.extrude(curve, magnitude=0.5 / unit_scale)
+                    item = builder.extrude(curve, magnitude=0.5 / unit_scale, position=(0.0, 0.0, -0.25 / unit_scale))
 
             representation = builder.get_representation(ifc_context, [item])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
