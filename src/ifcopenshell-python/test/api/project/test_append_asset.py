@@ -647,6 +647,69 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert len(ifc_file.by_type("IfcTelecomAddress")) == 1
         assert len(ifc_file.by_type("IfcActorRole")) == 2
 
+    def test_a_relationship_shared_by_many_assets_is_not_rewalked_on_every_touch(self):
+        # A relationship (e.g. IfcRelAssociatesMaterial) can be shared by
+        # thousands of products. Appending N of those products one by one
+        # touches that same relationship N times. Regression for #9247: this
+        # used to re-walk the relationship's whole member tuple on every
+        # single touch, so cost scaled with touches * total members instead
+        # of just total members.
+        import importlib
+
+        # NOTE: can't `import ifcopenshell.api.project.append_asset as x`, since
+        # ifcopenshell.api.project's own __init__ rebinds the `append_asset`
+        # attribute to the `append_asset` function, shadowing the submodule.
+        append_asset_module = importlib.import_module("ifcopenshell.api.project.append_asset")
+
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        material = ifcopenshell.api.material.add_material(library, name="Material")
+        appended_products = [ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType") for _ in range(15)]
+        # Products that share the same relationship but are never appended in
+        # this batch, standing in for the vast majority of a huge shared
+        # relationship's members in the real-world model that reported #9247.
+        other_products = [ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType") for _ in range(200)]
+        for product in appended_products + other_products:
+            ifcopenshell.api.material.assign_material(library, products=[product], material=material)
+
+        rel = library.by_type("IfcRelAssociatesMaterial")[0]
+        assert len(rel.RelatedObjects) == len(appended_products) + len(other_products)
+
+        call_count = 0
+        original_is_another_asset = append_asset_module.Usecase.is_another_asset
+
+        def counting_is_another_asset(self, element):
+            nonlocal call_count
+            call_count += 1
+            return original_is_another_asset(self, element)
+
+        append_asset_module.Usecase.is_another_asset = counting_is_another_asset
+        reuse_identities = {}
+        try:
+            for product in appended_products:
+                ifcopenshell.api.project.append_asset(
+                    self.file, library=library, element=product, reuse_identities=reuse_identities
+                )
+        finally:
+            append_asset_module.Usecase.is_another_asset = original_is_another_asset
+
+        # Correctness: exactly one shared relationship in the destination, and
+        # its members are exactly the appended products, no more (the
+        # never-appended sharers of the material must not leak in) and no
+        # less (every appended product must be present, and only once).
+        result_rels = self.file.by_type("IfcRelAssociatesMaterial")
+        assert len(result_rels) == 1
+        appended_guids = [p.GlobalId for p in appended_products]
+        result_guids = [o.GlobalId for o in result_rels[0].RelatedObjects]
+        assert sorted(result_guids) == sorted(appended_guids)
+        assert len(result_guids) == len(set(result_guids)), "members must not be duplicated"
+
+        # Performance: a full re-walk on every touch would cost roughly
+        # touches * total_members. Assert we stay well under that.
+        touches = len(appended_products)
+        total_members = len(appended_products) + len(other_products)
+        naive_cost = touches * total_members
+        assert call_count < naive_cost // 2, (call_count, naive_cost)
+
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
     # NOTE: breaks in IFC2X3 since IfcProfileDef doesn't have "HasProperties" inverse in ifc2x3
