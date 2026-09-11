@@ -49,6 +49,12 @@ enum argument_type {
     Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,
     Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE,
 
+    // Parse-time only: an entity reference (#name) that has not been
+    // resolved to an instance yet. Never visible once a file is loaded.
+    Argument_UNRESOLVED_REFERENCE,
+    Argument_UNRESOLVED_REFERENCE_LIST,
+    Argument_UNRESOLVED_REFERENCE_LIST_LIST,
+
     Argument_UNKNOWN
 };
 

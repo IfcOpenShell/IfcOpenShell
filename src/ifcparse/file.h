@@ -126,6 +126,10 @@ private:
         return good_;
     }
 
+    void resolve_references_in_place(bool value) {
+        storage_.resolve_references_in_place = value;
+    }
+
     const ifcopenshell::unresolved_references& references() const {
         return references_to_resolve_;
     }
