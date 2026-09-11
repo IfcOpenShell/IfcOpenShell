@@ -56,21 +56,15 @@ if (%1)==() (
 call vs-cfg.cmd %GENERATOR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-:: If cached variables are still undefined,
-:: read them from the specific BuildDepsCache-XXX.txt.
-set "_test=0"
-if not defined OCC_INCLUDE_DIR set _test=1
-if not defined OCC_LIBRARY_DIR set _test=1
-if %_test% EQU 1 (
-	IF DEFINED VS_TOOLSET (
-		set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt"
-	) ELSE (
-		set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%.txt"
-	)
+:: Read the rest of the cached variables from the specific BuildDepsCache-XXX.txt.
+IF DEFINED VS_TOOLSET (
+	set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt"
+) ELSE (
+	set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%.txt"
+)
 
-	for /f "tokens=*" %%f in ('dir !BUILD_DEPS_CACHE_PATH! /o:-n /t:a /b') do (
-		for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
-	)
+for /f "tokens=*" %%f in ('dir !BUILD_DEPS_CACHE_PATH! /o:-n /t:a /b') do (
+	for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
 )
 
 :: As CMake options are typically of format -DSOMETHING:BOOL=ON or -DSOMETHING=1, i.e. they contain an equal sign,
@@ -135,9 +129,6 @@ echo   Arguments    = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_INSTALL_DIR       = %BOOST_INSTALL_DIR%
-:: OCC_INCLUDE_DIR / OCC_LIBRARY_DIR are legacy vars, they're not defined by build-deps.py anymore.
-echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
-echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
 echo    OCC_INSTALL_DIR         = %OCC_INSTALL_DIR%
 echo    OPENCOLLADA_INSTALL_DIR = %OPENCOLLADA_INSTALL_DIR%
 echo    LIBXML2_INCLUDE_DIR     = %LIBXML2_INCLUDE_DIR%
