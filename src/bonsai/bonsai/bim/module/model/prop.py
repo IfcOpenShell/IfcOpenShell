@@ -864,9 +864,11 @@ class BIMWindowProperties(PropertyGroup):
         update=window_type_prop_update,
     )
     overall_height: bpy.props.FloatProperty(
-        name="Overall Height", default=0.9, subtype="DISTANCE", update=update_window
+        name="Overall Height", default=0.9, min=0.001, subtype="DISTANCE", update=update_window
     )
-    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6, subtype="DISTANCE", update=update_window)
+    overall_width: bpy.props.FloatProperty(
+        name="Overall Width", default=0.6, min=0.001, subtype="DISTANCE", update=update_window
+    )
 
     # lining properties
     lining_depth: bpy.props.FloatProperty(
@@ -1216,14 +1218,14 @@ class BIMDoorProperties(PropertyGroup):
     overall_height: bpy.props.FloatProperty(
         name="Overall Height",
         default=2.0,
-        min=0,
+        min=0.001,
         subtype="DISTANCE",
         update=update_door,
     )
     overall_width: bpy.props.FloatProperty(
         name="Overall Width",
         default=0.9,
-        min=0,
+        min=0.001,
         subtype="DISTANCE",
         update=update_door,
     )
