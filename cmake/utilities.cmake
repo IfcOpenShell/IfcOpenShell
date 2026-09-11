@@ -271,6 +271,12 @@ endfunction()
 # by setting `MAP_IMPORTED_CONFIG_` we override the fallback, but multi-config builds
 # has to be able to find a way to build a target for each config, otherwise configuration would fail.
 function(avoid_debug_imported_config_fallback)
+    # Only needed on MSVC to avoid CRT mimsatch.
+    # On Unix it's usually okay to mix up Debug and Release configs and we shouldn't block it.
+    if(NOT MSVC)
+        return()
+    endif()
+
     foreach(_target ${ARGN})
         if(TARGET ${_target})
             set_target_properties(${_target} PROPERTIES
