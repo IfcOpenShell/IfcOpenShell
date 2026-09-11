@@ -209,6 +209,7 @@ void paged_file_impl::evict_() const {
     const size_t victim = lru_.back();
     lru_.pop_back();
     map_.erase(victim);
+    ++evictions_;
 }
 
 #ifdef USE_MMAP
