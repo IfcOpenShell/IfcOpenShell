@@ -46,18 +46,20 @@ class Usecase:
     def unassign_product_representation(
         self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
     ) -> None:
-        representations = list(product.Representation.Representations or [])
+        product_def = product.Representation
+        if not product_def:
+            return
+        representations = list(product_def.Representations or [])
         if representation not in representations:
             return
         representations.remove(representation)
         if not representations:
-            product_def = product.Representation
             # TODO: should somehow find matching shape aspect and remove it
             # even before the last representation is removed.
             self.process_shape_aspects(product_def)
             self.file.remove(product_def)
         else:
-            product.Representation.Representations = representations
+            product_def.Representations = representations
 
     def unassign_type_representation(self) -> None:
         matching_representation_map = None
