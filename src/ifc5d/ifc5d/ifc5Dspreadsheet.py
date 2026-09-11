@@ -147,7 +147,10 @@ class IfcDataGetter:
                 total_price = cost_value["applied_value"]
             else:
                 cost_category = "{}{}".format(category, " Cost")
-                cost_categories[cost_category] = cost_value["applied_value"]
+                # Multiple cost values can share a category (e.g. two uncategorised
+                # values both default to "General"). Accumulate them so the
+                # per-category column matches RateSubtotal, which sums every value.
+                cost_categories[cost_category] = cost_categories.get(cost_category, 0.0) + cost_value["applied_value"]
                 rate_subtotal += cost_value["applied_value"]
 
         data: CostItem = {

@@ -427,6 +427,10 @@ class IfcOpenShell(QtoCalculator):
                                 value = cls.get_weight(element, geometry, calculation_type)
                                 if value is None:
                                     continue
+                                # get_weight() returns kilograms (density is authored in
+                                # kg/m3 against an SI m3 geometry volume); the unit
+                                # converter's SI reference point for mass is grams.
+                                value = cls.unit_converter.convert(value * 1000, "IfcMassMeasure")
                             elif formula.startswith("get_opening_"):
                                 value = cls.get_opening_quantity(geometry, formula)
                                 value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
@@ -603,7 +607,11 @@ class IfcOpenShell(QtoCalculator):
             mass_per_length = ifcopenshell.util.element.get_pset(profile, "Pset_ProfileMechanical", "MassPerLength")
             if not isinstance(mass_per_length, float):
                 return None
-            mass += mass_per_length * item.Depth
+            # MassPerLength is authored in kg/m (SI); Depth is a raw number in the
+            # project's length unit (e.g. millimetres), so it must be scaled to SI
+            # metres before multiplying, matching the density-based branch which
+            # already works against an SI geometry volume.
+            mass += mass_per_length * item.Depth * cls.unit_scale
         return mass
 
     @staticmethod

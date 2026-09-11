@@ -22,6 +22,7 @@ import tempfile
 from pathlib import Path
 
 import ifcopenshell
+import ifcopenshell.api.cost
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.cost
@@ -188,3 +189,56 @@ class TestSerialiseCostQuantities:
         result = ifc5d.ifc5Dspreadsheet.IfcDataGetter.serialise_cost_quantities(ifc_file, cost_item)
 
         assert json.loads(result) == [["Complex ERROR: Only IfcPhysicalSimpleQuantity is supported", 0.0, ""]]
+
+
+class TestCostCategoryTotals:
+    def test_two_cost_values_sharing_a_category_are_summed_not_overwritten(self):
+        # Two cost values with no Category set both default to "General". The
+        # per-category "General Cost" column must sum both, matching
+        # RateSubtotal (which already sums every non-"*" cost value).
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+        ifcopenshell.api.unit.assign_unit(ifc_file)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(ifc_file, name="Sched")
+        item = ifcopenshell.api.cost.add_cost_item(ifc_file, cost_schedule=schedule)
+        item.Name = "Wall"
+
+        value1 = ifcopenshell.api.cost.add_cost_value(ifc_file, parent=item)
+        value1.AppliedValue = ifc_file.create_entity("IfcMonetaryMeasure", 100.0)
+        value2 = ifcopenshell.api.cost.add_cost_value(ifc_file, parent=item)
+        value2.AppliedValue = ifc_file.create_entity("IfcMonetaryMeasure", 250.0)
+
+        data = ifc5d.ifc5Dspreadsheet.IfcDataGetter.get_cost_items_data(ifc_file, item)[0]
+
+        assert data["RateSubtotal"] == pytest.approx(350.0)
+        assert data["cost_categories"]["General Cost"] == pytest.approx(350.0)
+
+
+class TestLocaleIndependentCostValueImport:
+    def test_category_cost_values_parse_with_plain_float_not_locale_atof(self, monkeypatch):
+        # Regression test: locale.atof() previously parsed the categories
+        # column, but our own exporter always writes period-decimal numbers
+        # regardless of the machine's locale (see ifc5Dspreadsheet.py), the
+        # same way the "Value"/"Quantity" columns already do with plain
+        # float(). On a comma-decimal locale (e.g. de_DE), locale.atof()
+        # silently multiplied every imported cost value by up to 1000x.
+        # Asserting locale.atof is never called keeps the test deterministic
+        # regardless of which locales happen to be installed on the runner.
+        import locale
+
+        def fail_if_called(*args, **kwargs):
+            raise AssertionError("locale.atof() must not be used to parse cost values")
+
+        monkeypatch.setattr(locale, "atof", fail_if_called)
+
+        importer = ifc5d.csv2ifc.Csv2Ifc(csv=None)
+        importer.has_categories = True
+        importer.has_rates = False
+        importer.has_formula = False
+        importer.categories = {"Material": 4}
+        importer.headers = {"Name": 0, "Unit": 1, "Identification": 2, "Description": 3, "Material Cost": 4}
+
+        row = ["Wall", "unit", "1", "", "1234.56"]
+        cost_data = importer.get_row_cost_data(row)
+
+        assert cost_data["CostValues"] == {"Material": 1234.56}

@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import csv
-import locale
 from pathlib import Path
 from typing import Optional, TypedDict, Union
 
@@ -165,7 +164,6 @@ class Csv2Ifc:
         self.headers = {}
 
         parents: dict[int, CostItem] = {}
-        locale.setlocale(locale.LC_ALL, "")  # set the system locale
 
         # TODO: 25-04-17 Deprecated 0 indices, should fully remove later.
         min_index = None
@@ -236,9 +234,13 @@ class Csv2Ifc:
             query = row[(self.headers["Query"])] if "Query" in self.headers else None
 
         if self.has_categories:
-            cost_values = {
-                col_name: locale.atof(row[col_i]) for col_name, col_i in self.categories.items() if row[col_i]
-            }
+            # Plain float(), not locale.atof(): our own exporter always writes
+            # period-decimal numbers regardless of the machine's locale (see
+            # ifc5Dspreadsheet.py), and the "Value"/"Quantity" columns below
+            # already parse with plain float() for the same reason. Using
+            # locale.atof() here silently corrupted every re-import on a
+            # comma-decimal locale (e.g. "1234.56" read back as 123456.0).
+            cost_values = {col_name: float(row[col_i]) for col_name, col_i in self.categories.items() if row[col_i]}
         else:
             assert "Value" in self.headers
             cost_values = row[self.headers["Value"]]
