@@ -164,6 +164,27 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           sudo cmake --build . --target install -j $(nproc)
 
+      # Build manifold to test the manifold geometry kernel
+      # (it's included by default in build-all).
+      - name: Build manifold
+        run: |
+          git clone https://github.com/elalish/manifold.git --branch v3.2.1 --depth 1
+          cd manifold
+          mkdir build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DMANIFOLD_PAR=OFF \
+            -DMANIFOLD_CROSS_SECTION=OFF \
+            -DMANIFOLD_PYBIND=OFF \
+            -DMANIFOLD_JSBIND=OFF \
+            -DMANIFOLD_CBIND=OFF \
+            -DMANIFOLD_TEST=OFF \
+            -DMANIFOLD_EXPORT=OFF \
+            -DMANIFOLD_DOWNLOADS=OFF
+          sudo cmake --build . --target install -j $(nproc)
+
       # Ubuntu has `swig` package, but we build it to match the version we use in the main build.
       # To avoid failing tests when checking stub generation.
       - name: build swig
@@ -197,6 +218,7 @@ jobs:
                "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
+               -DWITH_MANIFOLD=ON \
                -DBUILD_EXAMPLES=ON \
              ../cmake
           sudo make -j $(nproc)
