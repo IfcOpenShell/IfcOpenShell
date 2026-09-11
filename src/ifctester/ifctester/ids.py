@@ -181,6 +181,14 @@ class Ids:
 
 
 class Specification:
+    # Canonical facet order per the Schema/ids.xsd requirementsType sequence.
+    # A requirements clause may list its facets in any other order and still
+    # validate against the XSD, because the wrapping sequence itself carries
+    # maxOccurs="unbounded" (see buildingSMART/IDS#344). We still canonicalise
+    # so that reports do not vary with how a given .ids file happened to be
+    # written.
+    FACET_ORDER = ("entity", "partOf", "classification", "attribute", "property", "material")
+
     def __init__(
         self,
         name="Unnamed",
@@ -228,7 +236,7 @@ class Specification:
                 facet_type = facet_type[0].lower() + facet_type[1:]
                 facets.setdefault(facet_type, []).append(facet.asdict(clause_type))
             # Canonicalise ordering as per XSD requirements
-            for facet_type in ("entity", "partOf", "classification", "attribute", "property", "material"):
+            for facet_type in self.FACET_ORDER:
                 if facet_type in facets:
                     results[clause_type][facet_type] = facets[facet_type]
             if clause_type == "applicability":
@@ -255,8 +263,13 @@ class Specification:
 
     def parse_clause(self, clause):
         results = []
-        for name, facets in clause.items():
-            if name not in ["entity", "attribute", "classification", "partOf", "property", "material"]:
+        # Iterate in canonical order rather than clause.items() order: a
+        # requirements clause may list its facets in any document order and
+        # still validate against the XSD (buildingSMART/IDS#344), but
+        # downstream consumers (reports, asdict()) expect a stable order.
+        for name in self.FACET_ORDER:
+            facets = clause.get(name)
+            if facets is None:
                 continue
             if not isinstance(facets, list):
                 facets = [facets]
