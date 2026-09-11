@@ -151,6 +151,11 @@ echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.
 
+call cecho.cmd 0 12 "WARNING: run-cmake.bat is deprecated since 11 Sep 2026 and will be removed very shortly."
+call cecho.cmd 0 12 "Use `python run-cmake.py` instead. It's intended to be a drop-in replacement, so exactly the same args apply,"
+call cecho.cmd 0 12 "except CMake args now need to be passed after `"--`", e.g. `python run-cmake.py vs2022-x64 -- -DGLTF_SUPPORT=ON`."
+echo.
+
 set CMAKELISTS_DIR=..\cmake
 :: Delete CMakeCache.txt if command-line options were provided for this batch script.
 if not (%1)==() if exist CMakeCache.txt. del /Q CMakeCache.txt

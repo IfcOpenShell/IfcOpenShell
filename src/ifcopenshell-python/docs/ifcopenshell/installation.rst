@@ -226,7 +226,7 @@ C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
 
         cd IfcOpenShell\win
         python build-deps.py
-        run-cmake.bat
+        python run-cmake.py
 
 3. Open and build the solution file in Visual Studio:
 

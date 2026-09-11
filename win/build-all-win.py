@@ -226,8 +226,10 @@ def build() -> None:
         OLD_ADD_COMMIT_SHA = set_env("ADD_COMMIT_SHA", "ON")
         run(
             [
-                str(REPO_WIN / "run-cmake.bat"),
+                sys.executable,
+                str(REPO_WIN / "run-cmake.py"),
                 build_generator(),
+                "--",
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
                 "-DBUILD_EXAMPLES=OFF",

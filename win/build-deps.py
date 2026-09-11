@@ -116,14 +116,14 @@ def print_build_config(
     logger.info("  - Download and install Python.")
     logger.info("    Set to something other than TRUE if you wish to use an already installed version of Python.")
     logger.info(
-        "    But then you'll need to set PYTHONHOME env variable to your Python installation before running run-cmake.bat"
+        "    But then you'll need to set PYTHONHOME env variable to your Python installation before running run-cmake.py"
     )
     logger.info("    to your Python installation path.")
     logger.info(field(f"* IFCOS_INSTALL_QT6\t= {ifcos_install_qt6}"))
     logger.info("  - Download and install Qt6 using aqtinstall.")
     logger.info("    Set to something other than TRUE if you wish to use an already installed version of Qt6.")
     logger.info(
-        "    But then you'll need to set QT_DIR env variable to your Qt6 installation before running run-cmake.bat."
+        "    But then you'll need to set QT_DIR env variable to your Qt6 installation before running run-cmake.py."
     )
     logger.info(field(f"* IFCOS_NUM_BUILD_PROCS\t= {ifcos_num_build_procs}"))
     logger.info("  - How many MSBuild.exe processes may be run in parallel.")
@@ -212,7 +212,7 @@ def parse_args() -> Args:
         default=argparse.SUPPRESS,
         help=(
             "Download and install Python. If disabled, an already installed Python is used - "
-            "set the PYTHONHOME env variable to its installation path before running run-cmake.bat. "
+            "set the PYTHONHOME env variable to its installation path before running run-cmake.py. "
             "Also can be specified by using IFCOS_INSTALL_PYTHON env variable. "
             "(default: True)"
         ),
@@ -224,7 +224,7 @@ def parse_args() -> Args:
         default=argparse.SUPPRESS,
         help=(
             "Download and install Qt6 using aqtinstall. If disabled, an already installed Qt6 is used - "
-            "set the QT_DIR env variable to its installation path before running run-cmake.bat. "
+            "set the QT_DIR env variable to its installation path before running run-cmake.py. "
             "Also can be specified by using IFCOS_INSTALL_QT6 env variable. "
             "(default: True)"
         ),

@@ -99,6 +99,9 @@ def is_on_off(value: str | None, *, default: bool) -> bool:
     return default
 
 
+OFF_ON = ("OFF", "ON")
+
+
 BuildCfg = Literal["MinSizeRel", "Release", "RelWithDebInfo", "Debug"]
 DebugOrRelease = Literal["Debug", "Release"]
 
@@ -190,11 +193,23 @@ class BuildDepsCache:
         return entries
 
 
-def find_cached_gen_shorthand() -> str | None:
-    """Read GEN_SHORTHAND from the most recently modified BuildDepsCache-*.txt, if any."""
+def resolve_generator(generator: str | None) -> str:
+    """Return `generator` as-is, or fall back to the GEN_SHORTHAND from the most recently modified
+    BuildDepsCache-*.txt. Exits if neither is available.
+    """
+    if generator is not None:
+        return generator
+
     cache_files = sorted(SCRIPT_DIR.glob("BuildDepsCache-*.txt"), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not cache_files:
-        return None
-    cache_file = cache_files[0]
-    logger.info(f"Found {cache_file.name}, reading GEN_SHORTHAND from it.")
-    return BuildDepsCache.parse(cache_file).get("GEN_SHORTHAND")
+    cached_generator = None
+    if cache_files:
+        cache_file = cache_files[0]
+        logger.info(f"Found {cache_file.name}, reading GEN_SHORTHAND from it.")
+        cached_generator = BuildDepsCache.parse(cache_file).get("GEN_SHORTHAND")
+
+    if cached_generator is None:
+        logger.error(
+            "BuildDepsCache file does not exist and/or GEN_SHORTHAND missing from it. Run build-deps.py to create it."
+        )
+        sys.exit(1)
+    return cached_generator
