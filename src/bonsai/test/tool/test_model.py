@@ -32,6 +32,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from mathutils import Matrix
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -1044,3 +1045,41 @@ class TestGetSiblingOccurrenceCount(NewFile):
         ifcopenshell.api.type.assign_type(ifc, related_objects=occurrences, relating_type=wall_type)
 
         assert subject.get_sibling_occurrence_count(wall_type) == 2
+
+
+class TestConvertCurveToMesh(NewFile):
+    def test_closed_polyline_converts_to_closed_loop(self):
+        """A closed IfcPolyline must produce the full edge loop.
+
+        Before the fix (cls.edges[-1] = … overwrite) the closing edge
+        replaced the real last segment, leaving every loop open by one
+        edge — e.g. a quad got only 3 edges.
+        """
+        ifc = ifcopenshell.file()
+
+        # Closed quad: 4 unique points + closing repeat = 5 points
+        p0 = ifc.createIfcCartesianPoint((0.0, 0.0))
+        p1 = ifc.createIfcCartesianPoint((1.0, 0.0))
+        p2 = ifc.createIfcCartesianPoint((1.0, 1.0))
+        p3 = ifc.createIfcCartesianPoint((0.0, 1.0))
+        polyline = ifc.createIfcPolyline((p0, p1, p2, p3, p0))
+
+        subject.vertices = []
+        subject.edges = []
+        subject.arcs = []
+        subject.circles = []
+        subject.unit_scale = 1.0
+
+        subject.convert_curve_to_mesh(None, Matrix(), polyline)
+
+        assert len(subject.vertices) == 4, f"Expected 4 vertices, got {len(subject.vertices)}"
+        assert len(subject.edges) == 4, f"Expected 4 edges, got {len(subject.edges)}"
+
+        # Every vertex must appear in exactly 2 edges (closed loop)
+        from collections import defaultdict
+        counts = defaultdict(int)
+        for e in subject.edges:
+            counts[e[0]] += 1
+            counts[e[1]] += 1
+        for v_idx, cnt in counts.items():
+            assert cnt == 2, f"Vertex {v_idx} has {cnt} incident edges (expected 2)"
