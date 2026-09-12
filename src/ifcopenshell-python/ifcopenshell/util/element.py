@@ -2007,3 +2007,24 @@ def get_material_profiles(element: ifcopenshell.entity_instance) -> list[Priorit
         )
         for material_profile in material.MaterialProfiles
     ]
+
+
+def iter_top_connections(
+    element: ifcopenshell.entity_instance,
+) -> Generator[tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance], None, None]:
+    """Yield ``(connected_element, rel)`` tuples for every
+    ``IfcRelConnectsElements`` with ``Description == "TOP"`` connecting
+    to this element.
+
+    Walks ``element.ConnectedFrom`` because the connecting element (e.g. a
+    slab) is the relating side of the TOP relationship.
+
+    :param element: The IFC element (typically a wall).
+    :return: Generator of ``(connected_element, rel)`` tuples.
+    """
+    for rel in getattr(element, "ConnectedFrom", []) or ():
+        if not rel.is_a("IfcRelConnectsElements") or rel.Description != "TOP":
+            continue
+        connected = rel.RelatingElement
+        if connected is not None:
+            yield connected, rel
