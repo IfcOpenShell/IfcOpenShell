@@ -19,6 +19,7 @@
 # This file was modified with the assistance of an AI coding tool.
 
 import os
+import traceback
 import weakref
 from collections.abc import Callable
 from typing import Union
@@ -572,8 +573,21 @@ def _install_viewport_overlays() -> None:
         install_decorator_cache_handlers()
 
 
+def _run_load_post_step(name: str, step: Callable[[], None]) -> None:
+    """Run one ``load_post`` step in isolation.
+
+    Steps are independent UI/session setup. A failure in one (e.g. a stale
+    cache or a msgbus quirk) must not silently skip the steps after it -
+    notably the BIM workspace restore. See #9329."""
+    try:
+        step()
+    except Exception:
+        print(f"WARNING. load_post step '{name}' failed:")
+        traceback.print_exc()
+
+
 @persistent
 def load_post(scene):
-    _apply_save_file_invariants(scene)
-    _apply_user_preferences()
-    _install_viewport_overlays()
+    _run_load_post_step("apply_save_file_invariants", lambda: _apply_save_file_invariants(scene))
+    _run_load_post_step("apply_user_preferences", _apply_user_preferences)
+    _run_load_post_step("install_viewport_overlays", _install_viewport_overlays)
