@@ -830,3 +830,201 @@ def bisect_mesh_plane_vf(
             else:
                 segments.append(pts_xy)
     return segments
+
+
+def dissolve_faces(
+    verts: npt.NDArray[np.float64],
+    faces: npt.NDArray[np.int32],
+    edges: npt.NDArray[np.int32],
+    merge_coplanar: bool = False,
+    angle_tolerance: float = 0.017453292519943295,
+) -> list[list[int]]:
+    """Reconstruct polygonal faces from triangulated mesh data.
+
+    Uses the original (pre-triangulation) edges from ``get_edges`` to
+    identify which triangle edges are internal (to be merged) vs external
+    (ngon boundaries). Triangles connected by internal edges are grouped
+    into polygonal faces.
+
+    When ``merge_coplanar`` is True, a second pass merges adjacent ngons
+    whose face normals are parallel within ``angle_tolerance`` radians.
+    This mirrors ``bmesh.ops.dissolve_limit`` behavior where coplanar
+    faces sharing an edge are merged regardless of the original face
+    structure. This is needed when the IFC representation splits a single
+    planar face into multiple faces (e.g. an L-shaped top face split into
+    triangles + quads).
+
+    :param verts: (n, 3) array of vertices.
+    :param faces: (m, 3) array of triangle vertex indices.
+    :param edges: (e, 2) array of original (pre-triangulation) edge vertex
+        indices, as returned by :func:`get_edges`.
+    :param merge_coplanar: If True, merge adjacent coplanar ngons.
+    :param angle_tolerance: Angle in radians for coplanar merge (default 1°).
+    :return: List of polygonal faces, each as an ordered list of vertex indices
+        forming a closed polygon (last vertex connects back to first).
+    """
+    if len(faces) == 0:
+        return []
+    if len(edges) == 0:
+        return [list(f) for f in faces]
+
+    original_edges = {frozenset((int(e[0]), int(e[1]))) for e in edges}
+
+    tri_edges = []
+    for f in faces:
+        tri_edges.append(
+            (
+                frozenset((int(f[0]), int(f[1]))),
+                frozenset((int(f[1]), int(f[2]))),
+                frozenset((int(f[2]), int(f[0]))),
+            )
+        )
+
+    internal_edge_to_tris: dict[frozenset, list[int]] = {}
+    for tri_idx, edges_3 in enumerate(tri_edges):
+        for e in edges_3:
+            if e not in original_edges:
+                internal_edge_to_tris.setdefault(e, []).append(tri_idx)
+
+    parent = list(range(len(faces)))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(x, y):
+        px, py = find(x), find(y)
+        if px != py:
+            parent[px] = py
+
+    for tri_indices in internal_edge_to_tris.values():
+        if len(tri_indices) == 2:
+            union(tri_indices[0], tri_indices[1])
+
+    ngons: dict[int, list[int]] = {}
+    for tri_idx in range(len(faces)):
+        root = find(tri_idx)
+        ngons.setdefault(root, []).append(tri_idx)
+
+    if merge_coplanar:
+        _merge_coplanar_ngons(ngons, faces, verts, tri_edges, parent, find, union, angle_tolerance)
+
+    result = []
+    for tri_indices in ngons.values():
+        tri_edge_set = set()
+        edge_count: dict[frozenset, int] = {}
+        for tri_idx in tri_indices:
+            for e in tri_edges[tri_idx]:
+                tri_edge_set.add(e)
+                edge_count[e] = edge_count.get(e, 0) + 1
+
+        if merge_coplanar:
+            boundary_edges = [e for e in tri_edge_set if edge_count.get(e, 0) == 1]
+        else:
+            boundary_edges = [e for e in tri_edge_set if e in original_edges]
+
+        if not boundary_edges:
+            result.append(list(faces[tri_indices[0]]))
+            continue
+
+        edge_adjacency: dict[int, int] = {}
+        for e in boundary_edges:
+            v_list = list(e)
+            for tri_idx in tri_indices:
+                f = faces[tri_idx]
+                f_edges = [(int(f[0]), int(f[1])), (int(f[1]), int(f[2])), (int(f[2]), int(f[0]))]
+                for fe in f_edges:
+                    if frozenset(fe) == e:
+                        edge_adjacency[fe[0]] = fe[1]
+                        break
+                else:
+                    continue
+                break
+
+        if not edge_adjacency:
+            result.append(list(faces[tri_indices[0]]))
+            continue
+
+        start = next(iter(edge_adjacency))
+        polygon = [start]
+        current = edge_adjacency[start]
+        while current != start and current in edge_adjacency:
+            polygon.append(current)
+            current = edge_adjacency[current]
+
+        if len(polygon) >= 3:
+            result.append(polygon)
+        else:
+            result.append(list(faces[tri_indices[0]]))
+
+    return result
+
+
+def _merge_coplanar_ngons(
+    ngons: dict[int, list[int]],
+    faces: npt.NDArray[np.int32],
+    verts: npt.NDArray[np.float64],
+    tri_edges: list,
+    parent: list[int],
+    find,
+    union,
+    angle_tolerance: float,
+) -> None:
+    """Merge adjacent ngons whose face normals are parallel within tolerance.
+
+    Modifies ``ngons`` and ``parent`` in place.
+    """
+    from math import acos
+
+    # Compute normal for each ngon
+    ngon_normals: dict[int, np.ndarray] = {}
+    ngon_edge_to_ngons: dict[frozenset, list[int]] = {}
+    ngon_roots = list(ngons.keys())
+
+    for root in ngon_roots:
+        tri_indices = ngons[root]
+        f0 = faces[tri_indices[0]]
+        v0, v1, v2 = verts[f0[0]], verts[f0[1]], verts[f0[2]]
+        edge1 = v1 - v0
+        edge2 = v2 - v0
+        normal = np.cross(edge1, edge2)
+        norm = np.linalg.norm(normal)
+        if norm > 1e-8:
+            normal = normal / norm
+        ngon_normals[root] = normal
+
+        # Collect all edges of this ngon
+        ngon_edges = set()
+        for tri_idx in tri_indices:
+            for e in tri_edges[tri_idx]:
+                ngon_edges.add(e)
+        for e in ngon_edges:
+            ngon_edge_to_ngons.setdefault(e, []).append(root)
+
+    # Find shared edges between different ngons and check coplanarity
+    for edge, root_list in ngon_edge_to_ngons.items():
+        if len(root_list) != 2:
+            continue
+        root_a, root_b = root_list[0], root_list[1]
+        if root_a == root_b:
+            continue
+        # Check if already merged
+        ra, rb = find(root_a), find(root_b)
+        if ra == rb:
+            continue
+        # Compare normals
+        na, nb = ngon_normals[root_a], ngon_normals[root_b]
+        dot = max(min(float(np.dot(na, nb)), 1.0), -1.0)
+        angle = acos(dot)
+        if angle < angle_tolerance:
+            union(root_a, root_b)
+
+    # Rebuild ngons dict with merged groups
+    new_ngons: dict[int, list[int]] = {}
+    for root in ngon_roots:
+        new_root = find(root)
+        new_ngons.setdefault(new_root, []).extend(ngons[root])
+    ngons.clear()
+    ngons.update(new_ngons)

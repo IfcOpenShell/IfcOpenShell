@@ -17,3 +17,6 @@
 [submodule "src/svgfill/3rdparty/svgpp"]
 	path = src/svgfill/3rdparty/svgpp
 	url = https://github.com/svgpp/svgpp
+[submodule "src/ifcopenshell-python/test/IfcRelSpaceBoundary_TestFiles"]
+	path = src/ifcopenshell-python/test/IfcRelSpaceBoundary_TestFiles
+	url = https://github.com/CyrilWaechter/IfcRelSpaceBoundary_TestFiles
