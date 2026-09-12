@@ -39,6 +39,7 @@ from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix, Vector
 
 import bonsai.bim.import_ifc as import_ifc
+import bonsai.core.attribute as core
 import bonsai.core.geometry
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
@@ -420,6 +421,32 @@ class EditBoundaryAttributes(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.boundary.edit_attributes(tool.Ifc.get(), entity=boundary, **attributes)
         bpy.ops.bim.disable_editing_boundary()
         return {"FINISHED"}
+
+
+class CopyBoundaryAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_boundary_attribute_to_selection"
+    bl_label = "Copy Boundary Attribute To Selection"
+    bl_options = {"REGISTER", "UNDO"}
+    name: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        obj = tool.Blender.get_active_object()
+        assert obj
+        bprops = tool.Boundary.get_object_boundary_props(obj)
+        if self.name in EDITABLE_ATTRIBUTES:
+            blender_prop = EDITABLE_ATTRIBUTES[self.name]
+            blender_obj = getattr(bprops, blender_prop, None)
+            value = tool.Ifc.get_entity(blender_obj) if blender_obj else None
+        elif self.name == "PhysicalOrVirtualBoundary":
+            value = bprops.physical_or_virtual
+        elif self.name == "InternalOrExternalBoundary":
+            value = bprops.internal_or_external
+        else:
+            return
+        total = core.copy_attribute_to_selection(
+            tool.Ifc, tool.Blender, tool.Root, tool.Spatial, name=self.name, value=value
+        )
+        self.report({"INFO"}, f"Attribute was successfully copied to {total} elements.")
 
 
 class UpdateBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
