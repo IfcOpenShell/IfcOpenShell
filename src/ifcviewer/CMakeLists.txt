@@ -32,13 +32,21 @@ endif()
 # everywhere a 4x4 transform shows up. Header-only, works under Emscripten.
 find_package(Eigen3 REQUIRED)
 
-# wgpu-native — fetched as a pre-built binary release from upstream.
-# Under Emscripten this whole block is skipped; the web build links
-# against Dawn's webgpu.h via the emdawnwebgpu port instead. The
+# wgpu-native — fetched as a pre-built binary release from upstream, or
+# taken from a system package via pkg-config when WGPU_NATIVE_USE_SYSTEM
+# is set. Under Emscripten this whole block is skipped; the web build
+# links against Dawn's webgpu.h via the emdawnwebgpu port instead. The
 # `wgpu_native` link target is created as an INTERFACE in that branch
 # (see the end of this block) so consumers' target_link_libraries lines
 # work uniformly.
-if(NOT EMSCRIPTEN)
+option(WGPU_NATIVE_USE_SYSTEM "Link against a system-packaged wgpu-native instead of FetchContent-ing upstream's prebuilt binary release" OFF)
+if(NOT EMSCRIPTEN AND WGPU_NATIVE_USE_SYSTEM)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(WGPU_NATIVE REQUIRED IMPORTED_TARGET wgpu-native)
+
+    add_library(wgpu_native ALIAS PkgConfig::WGPU_NATIVE)
+
+elseif(NOT EMSCRIPTEN)
 # Pin the version with WGPU_NATIVE_VERSION; bump to pull a newer release.
 set(WGPU_NATIVE_VERSION "v29.0.0.0" CACHE STRING "wgpu-native release tag")
 
@@ -250,8 +258,15 @@ if(EMSCRIPTEN)
     target_sources(IfcViewerCore PRIVATE ${ZSTD_DEC_SRC})
     target_include_directories(IfcViewerCore PRIVATE ${ZSTD_DEC_DIR})
 else()
-    find_package(zstd CONFIG REQUIRED)
-    target_link_libraries(IfcViewerCore PUBLIC zstd::libzstd_static)
+    find_package(zstd CONFIG QUIET)
+    if(TARGET zstd::libzstd_static)
+        target_link_libraries(IfcViewerCore PUBLIC zstd::libzstd_static)
+    else()
+        # No zstd CONFIG package on this system — fall back to pkg-config.
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET libzstd)
+        target_link_libraries(IfcViewerCore PUBLIC PkgConfig::ZSTD)
+    endif()
 endif()
 install(TARGETS IfcViewerCore EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 
@@ -342,7 +357,12 @@ install(FILES ${IFCVIEWER_H_FILES}
 # INSTALL_RPATH is set to @executable_path/../Frameworks — together
 # they resolve at launch without depending on macdeployqt to follow
 # non-Qt @rpath references.
-if(WIN32)
+#
+# None of this applies with WGPU_NATIVE_USE_SYSTEM: the shared library
+# already lives on the system linker path, owned by its own package.
+if(WGPU_NATIVE_USE_SYSTEM)
+    # nothing to install; system package owns libwgpu_native
+elseif(WIN32)
     install(FILES "${wgpu_native_SOURCE_DIR}/lib/${_wgpu_runtime}" DESTINATION bin)
 elseif(APPLE AND BUILD_BONSAIVIEWER)
     install(FILES "${wgpu_native_SOURCE_DIR}/lib/${_wgpu_lib}"
