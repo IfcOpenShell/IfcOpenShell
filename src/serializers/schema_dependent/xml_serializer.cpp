@@ -785,6 +785,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 				auto ls = layerset.MaterialLayers();
 				for (auto& layer : ls) {
 					ptree subnode;
+					subnode.put("<xmlattr>.id", qualify_unrooted_instance(layer));
 					if (layer.Material()) {
                         subnode.put("<xmlattr>.Name", layer.Material());
 					}
@@ -794,6 +795,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
                 auto mats = matlist.Materials();
 				for (auto& list_material : mats) {
 					ptree subnode;
+					subnode.put("<xmlattr>.id", qualify_unrooted_instance(list_material));
                     format_entity_instance(log, mapping_, list_material, subnode, node);
 				}
 			}
