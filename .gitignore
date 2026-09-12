@@ -5,6 +5,7 @@
 /_installed-vs*-x*/
 /build/
 /build.log
+/build-fedora/
 /output/
 /src/examples/build/
 # ifctester docs output

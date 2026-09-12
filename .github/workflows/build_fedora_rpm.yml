@@ -1,0 +1,36 @@
+name: Build Fedora RPM
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v[0-9].[0-9].[0-9]*'
+
+jobs:
+  build_rpm:
+    runs-on: ubuntu-22.04
+    container: fedora:41
+
+    steps:
+      - name: Install git (for checkout + submodules)
+        run: dnf install -y git
+
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Mark workspace safe for git
+        run: git config --global --add safe.directory '*'
+
+      - name: Build RPM
+        run: ./fedora/build-rpm.sh
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ifcopenshell-fedora-rpm
+          path: |
+            build-fedora/assets/*.rpm
+            build-fedora/assets/*.tar.gz
+          retention-days: 30
