@@ -21,6 +21,10 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+#ifdef __EMSCRIPTEN__
+#include <dlfcn.h>
+#endif
+
 #include <algorithm>
 #include <stdexcept>
 
@@ -76,6 +80,22 @@ bool ifcopenshell::geom::kernels::load_kernel_plugin(kernel_registry& registry, 
 
 	const auto plugin_name = kernel_plugin_name(backend_id);
 	const auto basename = std::string(kernel_plugin_prefix) + plugin_name;
+
+#ifdef __EMSCRIPTEN__
+	using emscripten_register_fn = void (*)(kernel_registry*);
+	const auto emscripten_symbol = std::string("ifcopenshell_emscripten_register_kernel_") + plugin_name;
+	if (auto* register_ptr = dlsym(RTLD_DEFAULT, emscripten_symbol.c_str())) {
+		union {
+			void* ptr;
+			emscripten_register_fn fn;
+		} register_symbol;
+		register_symbol.ptr = register_ptr;
+		if (register_symbol.fn) {
+			register_symbol.fn(&registry);
+			return registry.has(backend_id);
+		}
+	}
+#endif
 
 	for (const auto& path : manager.discover_exact(basename)) {
 		auto module = manager.load(path);

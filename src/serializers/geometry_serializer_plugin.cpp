@@ -21,6 +21,10 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+#ifdef __EMSCRIPTEN__
+#include <dlfcn.h>
+#endif
+
 #include <mutex>
 #include <set>
 
@@ -224,6 +228,22 @@ bool ifcopenshell::serializers::load_geometry_serializer_plugin(geometry_seriali
 
 	ifcopenshell::plugin::manager manager;
 	add_geometry_serializer_search_paths(manager);
+
+#ifdef __EMSCRIPTEN__
+	using emscripten_register_fn = void (*)(geometry_serializer_registry*);
+	const auto emscripten_symbol = std::string("ifcopenshell_emscripten_register_geometry_serializer_") + format;
+	if (auto* register_ptr = dlsym(RTLD_DEFAULT, emscripten_symbol.c_str())) {
+		union {
+			void* ptr;
+			emscripten_register_fn fn;
+		} register_symbol;
+		register_symbol.ptr = register_ptr;
+		if (register_symbol.fn) {
+			register_symbol.fn(&registry);
+			return registry.entries_.find(geometry_serializer_key(extension)) != registry.entries_.end();
+		}
+	}
+#endif
 
 	for (const auto& path : manager.discover_exact(geometry_serializer_plugin_prefix(format))) {
 		ifcopenshell::plugin::module module;

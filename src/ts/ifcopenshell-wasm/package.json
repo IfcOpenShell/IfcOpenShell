@@ -1,0 +1,47 @@
+{
+  "name": "@ifcopenshell-js/wasm",
+  "version": "0.1.0",
+  "description": "IfcOpenShell WASM binaries and generated API glue for browser and Node",
+  "license": "LGPL-3.0-or-later",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "browser": "./browser.js",
+      "node": "./index.js",
+      "default": "./browser.js"
+    },
+    "./api": {
+      "types": "./api.d.ts",
+      "import": "./wasm/ifcopenshell_api.mjs",
+      "default": "./wasm/ifcopenshell_api.mjs"
+    },
+    "./wasm/*": "./wasm/*"
+  },
+  "files": [
+    "asset-manifest.js",
+    "api.d.ts",
+    "browser.js",
+    "index.js",
+    "index.d.ts",
+    "wasm/ifcopenshell_api.d.ts",
+    "wasm/ifcopenshell_api.mjs",
+    "wasm/ifcopenshell_plugins.json",
+    "wasm/ifcopenshell_wasm.mjs",
+    "wasm/ifcopenshell_wasm.node.mjs",
+    "wasm/*.wasm",
+    "wasm/plugins/*.wasm"
+  ],
+  "scripts": {
+    "stage": "node scripts/stage.mjs",
+    "prepack": "npm run stage"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

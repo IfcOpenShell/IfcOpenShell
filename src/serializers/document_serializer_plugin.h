@@ -67,6 +67,8 @@ public:
 	typedef std::function<std::shared_ptr<serializer>(const document_serializer_context&)> create_fn;
 
 	void bind(const document_serializer_info& info, create_fn create, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
+	bool has(const std::string& format) const;
+	bool has(const std::string& format, const std::string& schema_name) const;
 	const document_serializer_info* find(const std::string& format, const std::string& schema_name = std::string()) const;
 	std::shared_ptr<serializer> create(const std::string& format, const document_serializer_context& context) const;
 	std::vector<document_serializer_info> serializers() const;

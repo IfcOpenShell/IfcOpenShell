@@ -84,6 +84,7 @@ namespace geom {
 		class IFC_GEOM_API mapping_registry {
 		public:
 			void bind(const std::string& schema_name, mapping_fn fn, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
+			bool has(const std::string& schema_name) const;
 			abstract_mapping* construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
 		private:

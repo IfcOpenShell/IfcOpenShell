@@ -72,6 +72,273 @@ if(IFCOPENSHELL_IFCWRAP_STANDALONE)
     endif()
 endif()
 
+include(GNUInstallDirs)
+
+if(BUILD_IFCAPI)
+    if(WASM_BUILD AND NOT IFCAPI_REGENERATE_BINDINGS)
+        set(IFCAPI_REGENERATE_BINDINGS ON CACHE BOOL "Regenerate the low-level bindings during the build." FORCE)
+    endif()
+
+    if(WASM_BUILD)
+        set(IFCOPENSHELL_BINDINGS_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    else()
+        set(IFCOPENSHELL_BINDINGS_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/binding_generator/generated")
+    endif()
+    set(IFCOPENSHELL_BINDING_SPEC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/binding_generator/specs")
+    set(IFCOPENSHELL_BINDING_SPEC_MACROS "${IFCOPENSHELL_BINDING_SPEC_DIR}/cpp/spec_macros.h")
+    set(UNIFIED_CAPI_HEADER "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}/ifcopenshell_api.h")
+    set(UNIFIED_CAPI_CPP "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}/ifcopenshell_api.cpp")
+    set(UNIFIED_CAPI_INTERNAL_HEADER "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}/ifcopenshell_api_internal.hpp")
+    set(IFCOPENSHELL_BINDING_BYPRODUCTS
+        "${UNIFIED_CAPI_HEADER}"
+        "${UNIFIED_CAPI_CPP}"
+        "${UNIFIED_CAPI_INTERNAL_HEADER}"
+    )
+    set(IFCOPENSHELL_BINDING_TARGET_ARGS)
+    if(WASM_BUILD)
+        set(IFCOPENSHELL_WASM_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/wasm")
+        set(IFCOPENSHELL_WASM_API_MJS "${IFCOPENSHELL_WASM_OUTPUT_DIR}/ifcopenshell_api.mjs")
+        set(IFCOPENSHELL_WASM_D_TS "${IFCOPENSHELL_WASM_OUTPUT_DIR}/ifcopenshell_api.d.ts")
+        list(APPEND IFCOPENSHELL_BINDING_BYPRODUCTS
+            "${IFCOPENSHELL_WASM_API_MJS}"
+            "${IFCOPENSHELL_WASM_D_TS}"
+        )
+        list(APPEND IFCOPENSHELL_BINDING_TARGET_ARGS
+            --wasm-output-dir "${IFCOPENSHELL_WASM_OUTPUT_DIR}"
+        )
+    endif()
+    set(IFCOPENSHELL_BINDING_SPEC_DEPENDS
+        "${IFCOPENSHELL_BINDING_SPEC_DIR}/cpp/ifcparse.hpp"
+        "${IFCOPENSHELL_BINDING_SPEC_DIR}/cpp/ifcgeom.hpp"
+        "${IFCOPENSHELL_BINDING_SPEC_MACROS}"
+    )
+
+    if(IFCAPI_REGENERATE_BINDINGS)
+        if(DEFINED PYTHON_EXECUTABLE AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
+            set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
+        endif()
+        find_package(Python COMPONENTS Interpreter REQUIRED)
+        message(STATUS "Using Python interpreter for binding generation: ${Python_EXECUTABLE}")
+
+        execute_process(
+            COMMAND ${Python_EXECUTABLE} -c "import clang.cindex"
+            RESULT_VARIABLE IFCOPENSHELL_BINDGEN_PYTHON_DEPS_STATUS
+            OUTPUT_QUIET
+            ERROR_QUIET
+        )
+        if(NOT IFCOPENSHELL_BINDGEN_PYTHON_DEPS_STATUS EQUAL 0)
+            message(
+                FATAL_ERROR
+                "IFCAPI_REGENERATE_BINDINGS enabled, but the selected Python interpreter does not provide "
+                "the Clang Python bindings. From the repository root, install them "
+                "with '${Python_EXECUTABLE} -m pip install -e \".[bindgen]\"' or disable "
+                "IFCAPI_REGENERATE_BINDINGS."
+            )
+        endif()
+
+        set(IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS)
+        foreach(include_dir IN ITEMS
+            "${CMAKE_CURRENT_SOURCE_DIR}/.."
+            "${CMAKE_CURRENT_SOURCE_DIR}/../plugin"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcparse"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcparse/schemas"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/mapping"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../serializers"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../svgfill/src"
+        )
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS --discovery-include-dir "${include_dir}")
+        endforeach()
+        if(WITH_OPENCASCADE)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS
+                --discovery-include-dir "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/kernels/opencascade"
+            )
+        endif()
+        if(WITH_CGAL)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS
+                --discovery-include-dir "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/kernels/cgal"
+            )
+        endif()
+        if(WITH_MANIFOLD)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS
+                --discovery-include-dir "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/kernels/manifold"
+            )
+        endif()
+        list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS
+            --discovery-include-dir "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/kernels/passthrough"
+        )
+        foreach(include_dir IN LISTS
+            Boost_INCLUDE_DIRS
+            CGAL_INCLUDE_DIR
+            GMP_INCLUDE_DIR
+            MPFR_INCLUDE_DIR
+            OCC_INCLUDE_DIR
+            OpenCASCADE_INCLUDE_DIR
+            OpenCASCADE_INCLUDE_DIRS
+            EIGEN3_INCLUDE_DIR
+            Eigen3_INCLUDE_DIR
+            Eigen3_INCLUDE_DIRS
+        )
+            if(NOT "${include_dir}" STREQUAL "")
+                list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS --discovery-include-dir "${include_dir}")
+            endif()
+        endforeach()
+        if(OpenCASCADE_DIR)
+            get_filename_component(IFCOPENSHELL_BINDINGS_OPENCASCADE_PREFIX "${OpenCASCADE_DIR}/../../.." ABSOLUTE)
+            if(EXISTS "${IFCOPENSHELL_BINDINGS_OPENCASCADE_PREFIX}/include/opencascade")
+                list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS
+                    --discovery-include-dir "${IFCOPENSHELL_BINDINGS_OPENCASCADE_PREFIX}/include/opencascade"
+                )
+            endif()
+        endif()
+        if(Eigen3_DIR)
+            get_filename_component(IFCOPENSHELL_BINDINGS_EIGEN_PREFIX "${Eigen3_DIR}/../../.." ABSOLUTE)
+            if(EXISTS "${IFCOPENSHELL_BINDINGS_EIGEN_PREFIX}/include/eigen3")
+                list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS
+                    --discovery-include-dir "${IFCOPENSHELL_BINDINGS_EIGEN_PREFIX}/include/eigen3"
+                )
+            endif()
+        endif()
+
+        set(IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS)
+        foreach(define IN LISTS SCHEMA_DEFINITIONS)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS --discovery-define "${define}")
+        endforeach()
+        if(USE_MMAP)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS --discovery-define USE_MMAP)
+        endif()
+        if(WITH_CGAL)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS --discovery-define IFOPSH_WITH_CGAL)
+        endif()
+        if(WITH_OPENCASCADE)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS --discovery-define IFOPSH_WITH_OPENCASCADE)
+        endif()
+        if(WITH_MANIFOLD)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS --discovery-define IFOPSH_WITH_MANIFOLD)
+        endif()
+        if(WITH_ROCKSDB)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS --discovery-define IFOPSH_WITH_ROCKSDB)
+        endif()
+
+        file(
+            GLOB_RECURSE IFCOPENSHELL_BINDGEN_SOURCES
+            CONFIGURE_DEPENDS
+            "${CMAKE_CURRENT_SOURCE_DIR}/binding_generator/*.py"
+        )
+        list(FILTER IFCOPENSHELL_BINDGEN_SOURCES EXCLUDE REGEX "/generated/")
+        list(FILTER IFCOPENSHELL_BINDGEN_SOURCES EXCLUDE REGEX "/wrappergen/")
+        file(
+            GLOB_RECURSE IFCOPENSHELL_BINDGEN_HEADERS
+            CONFIGURE_DEPENDS
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcparse/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcparse/*.i"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/*.i"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../plugin/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../serializers/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../svgfill/*.h"
+        )
+
+        set(IFCOPENSHELL_BINDINGS_CODEGEN_STAMP "${CMAKE_CURRENT_BINARY_DIR}/ifcopenshell_bindings_codegen.stamp")
+        add_custom_command(
+            OUTPUT "${IFCOPENSHELL_BINDINGS_CODEGEN_STAMP}"
+            BYPRODUCTS ${IFCOPENSHELL_BINDING_BYPRODUCTS}
+            COMMAND
+                ${Python_EXECUTABLE} -m src.ifcwrap.binding_generator.generate
+                --spec-dir "${IFCOPENSHELL_BINDING_SPEC_DIR}"
+                --c-output-dir "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}"
+                ${IFCOPENSHELL_BINDING_TARGET_ARGS}
+                ${IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS}
+                ${IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS}
+            COMMAND ${CMAKE_COMMAND} -E touch "${IFCOPENSHELL_BINDINGS_CODEGEN_STAMP}"
+            DEPENDS
+                ${IFCOPENSHELL_BINDING_SPEC_DEPENDS}
+                ${IFCOPENSHELL_BINDGEN_SOURCES}
+                ${IFCOPENSHELL_BINDGEN_HEADERS}
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../.."
+            VERBATIM
+        )
+        add_custom_target(
+            ifcopenshell_bindings_codegen
+            DEPENDS "${IFCOPENSHELL_BINDINGS_CODEGEN_STAMP}"
+        )
+    endif()
+
+    if((EXISTS "${UNIFIED_CAPI_HEADER}" AND EXISTS "${UNIFIED_CAPI_CPP}") OR IFCAPI_REGENERATE_BINDINGS)
+        if(WASM_BUILD)
+            add_library(ifcopenshell_capi STATIC "${UNIFIED_CAPI_HEADER}" "${UNIFIED_CAPI_CPP}")
+        else()
+            add_library(ifcopenshell_capi SHARED "${UNIFIED_CAPI_HEADER}" "${UNIFIED_CAPI_CPP}")
+        endif()
+        if(TARGET ifcopenshell_bindings_codegen)
+            add_dependencies(ifcopenshell_capi ifcopenshell_bindings_codegen)
+        endif()
+        if((schema_libraries OR kernel_libraries OR mapping_libraries) AND NOT WASM_BUILD)
+            add_dependencies(ifcopenshell_capi ${schema_libraries} ${kernel_libraries} ${mapping_libraries})
+        endif()
+        target_link_libraries(ifcopenshell_capi PRIVATE IfcParse)
+        if(GLTF_SUPPORT)
+            target_compile_definitions(ifcopenshell_capi PRIVATE WITH_GLTF)
+            target_link_libraries(ifcopenshell_capi PRIVATE nlohmann_json::nlohmann_json)
+        endif()
+        if(TARGET IfcGeom)
+            target_link_libraries(ifcopenshell_capi PRIVATE IfcGeom)
+            if(NOT WASM_BUILD)
+                target_link_libraries(ifcopenshell_capi PRIVATE ${OpenCASCADE_LIBRARIES})
+            endif()
+        endif()
+        if(TARGET Serializers AND NOT WASM_BUILD)
+            target_link_libraries(ifcopenshell_capi PRIVATE Serializers)
+        endif()
+        if(TARGET geometry_serializer AND NOT WASM_BUILD)
+            target_link_libraries(ifcopenshell_capi PRIVATE geometry_serializer)
+        endif()
+        if(geometry_serializer_libraries AND NOT WASM_BUILD)
+            target_link_libraries(ifcopenshell_capi PRIVATE ${geometry_serializer_libraries})
+        endif()
+        if(document_serializer_libraries AND NOT WASM_BUILD)
+            target_link_libraries(ifcopenshell_capi PRIVATE ${document_serializer_libraries})
+        endif()
+        if(TARGET svgfill AND NOT WASM_BUILD)
+            target_link_libraries(ifcopenshell_capi PRIVATE svgfill)
+        endif()
+        if(TARGET IFCOPENSHELL_CGAL AND NOT WASM_BUILD)
+            target_link_libraries(ifcopenshell_capi PRIVATE IFCOPENSHELL_CGAL)
+        endif()
+        target_include_directories(
+            ifcopenshell_capi
+            PUBLIC "${IFCOPENSHELL_BINDINGS_GENERATED_DIR}"
+            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/.."
+            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ifcparse"
+            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../plugin"
+            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../serializers"
+            PRIVATE "${OCC_INCLUDE_DIR}"
+        )
+        if(BUILD_IFCGEOM)
+            target_include_directories(ifcopenshell_capi PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom")
+        endif()
+        set_target_properties(ifcopenshell_capi PROPERTIES
+            POSITION_INDEPENDENT_CODE ON
+        )
+        if(WIN32 AND NOT WASM_BUILD)
+            set_target_properties(ifcopenshell_capi PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        endif()
+
+        if(WASM_BUILD)
+            include(wasm.cmake)
+        else()
+            install(TARGETS ifcopenshell_capi)
+            install(FILES "${UNIFIED_CAPI_HEADER}" DESTINATION "${INCLUDEDIR}/ifcopenshell")
+        endif()
+    else()
+        message(FATAL_ERROR
+            "BUILD_IFCAPI requires generated bindings at ${UNIFIED_CAPI_HEADER}; "
+            "enable IFCAPI_REGENERATE_BINDINGS or generate the committed outputs first")
+    endif()
+
+endif()
+
+if(BUILD_IFCPYTHON)
 find_package(SWIG 4.1)
 if(NOT SWIG_FOUND)
     message(
@@ -79,9 +346,8 @@ if(NOT SWIG_FOUND)
         "BUILD_IFCPYTHON requires SWIG 4.1 or newer. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed. "
         "Found version '${SWIG_VERSION}' at '${SWIG_EXECUTABLE}'."
     )
-ENDIF()
-include(GNUInstallDirs)
-INCLUDE(${SWIG_USE_FILE})
+endif()
+include(${SWIG_USE_FILE})
 
 IF(NOT "${PYTHON_INCLUDE_DIR}" STREQUAL "")
     # Hint for FindPython where to find Python_INCLUDE_DIRS.
@@ -342,3 +608,4 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
 ELSE()
     MESSAGE(WARNING "No Python interpreter found, unable to install the Python wrapper")
 ENDIF()
+endif()

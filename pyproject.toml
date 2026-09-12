@@ -4,6 +4,11 @@ version = "0.0.0"
 # Don't provide requires-python explicitly
 # allowing pyprojects to set their own (e.g. bonsai and general ifcopenshell version differ).
 
+[project.optional-dependencies]
+bindgen = [
+    "clang==21.1.7",
+]
+
 [tool.black]
 line-length = 120
 extend-exclude = '''
