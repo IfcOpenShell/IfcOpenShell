@@ -70,3 +70,12 @@ def test_search_class():
 def test_get_properties():
     pr = client.get_properties(ifc4x3_uri, offset=0, limit=5)
     assert len(pr["properties"]) == 5
+
+
+def test_include_test_dictionaries_default_is_a_real_boolean():
+    # The default was the string "False", which is truthy, so bare calls
+    # silently sent IncludeTestDictionaries=true.
+    import inspect
+
+    default = inspect.signature(Client.get_dictionary).parameters["include_test_dictionaries"].default
+    assert default is False
