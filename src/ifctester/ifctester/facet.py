@@ -20,13 +20,15 @@ from __future__ import annotations
 
 import builtins
 import re
-from functools import lru_cache
+import warnings
+from functools import cache, lru_cache
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
 
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
+from elementpath.regex import RegexError
 from xmlschema.validators import identities
 
 if TYPE_CHECKING:
@@ -1008,6 +1010,43 @@ class Material(Facet):
         return MaterialResult(is_pass, reason)
 
 
+@cache
+def compile_xsd_pattern(pattern: str) -> re.Pattern:
+    """Compile a restriction pattern using strict XSD xs:pattern semantics."""
+    try:
+        return re.compile(
+            identities.translate_pattern(pattern, back_references=False, lazy_quantifiers=False, anchors=False)
+        )
+    except RegexError:
+        # Not expressible in strict XSD (e.g. back references), so keep the permissive translation.
+        return re.compile(identities.translate_pattern(pattern))
+
+
+@cache
+def get_pattern_portability_issues(pattern: str) -> tuple[str, ...]:
+    """List the non-XSD regex features a restriction pattern relies on."""
+    issues = []
+    try:
+        permissive = identities.translate_pattern(pattern)
+        literal_anchors = identities.translate_pattern(pattern, anchors=False)
+    except RegexError:
+        return ()
+    # With anchors=False the translation is wrapped as "^(...)$(?!\n\Z)".
+    prefix, suffix = "^(", ")$(?!\\n\\Z)"
+    if literal_anchors.startswith(prefix) and literal_anchors.endswith(suffix):
+        if literal_anchors[len(prefix) : -len(suffix)] != permissive:
+            issues.append("anchors")
+    try:
+        identities.translate_pattern(pattern, back_references=False)
+    except RegexError:
+        issues.append("back references")
+    try:
+        identities.translate_pattern(pattern, lazy_quantifiers=False)
+    except RegexError:
+        issues.append("lazy quantifiers")
+    return tuple(issues)
+
+
 class Restriction:
     def __init__(self, options=None, base="string"):
         self.base = base
@@ -1027,6 +1066,16 @@ class Restriction:
                 self.options[key] = value["@value"]
             else:
                 self.options[key] = [v["@value"] for v in value]
+        patterns = self.options.get("pattern")
+        if patterns is not None:
+            for pattern in patterns if isinstance(patterns, list) else [patterns]:
+                issues = get_pattern_portability_issues(pattern)
+                if issues:
+                    warnings.warn(
+                        f'Pattern "{pattern}" relies on regex features outside the XSD subset '
+                        f"({', '.join(issues)}) and will behave differently across IDS validators.",
+                        stacklevel=2,
+                    )
         return self
 
     def asdict(self) -> dict[str, Any]:
@@ -1064,7 +1113,7 @@ class Restriction:
                         return False
                     value = value if isinstance(value, list) else [value]
                     for pattern in value:
-                        if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
+                        if compile_xsd_pattern(pattern).fullmatch(other) is None:
                             return False
                 elif constraint == "length":
                     if len(str(other)) != int(value):
