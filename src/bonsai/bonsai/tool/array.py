@@ -34,6 +34,7 @@ from typing import TYPE_CHECKING, Any
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+from mathutils import Matrix, Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -43,6 +44,221 @@ if TYPE_CHECKING:
 
 
 class Array(bonsai.core.tool.Array):
+    # ``BBIM_Array.Data`` layers written before radial arrays existed carry no
+    # ``type`` key; ``LINEAR`` reproduces their behaviour byte-for-byte.
+    DEFAULT_ARRAY_TYPE = "LINEAR"
+    # Below this the rotation axis is treated as degenerate and the radial
+    # layer collapses to "every copy sits on the source".
+    MIN_AXIS_LENGTH = 1e-9
+
+    @classmethod
+    def child_matrix(cls, source_matrix: Matrix, layer: dict[str, Any], i: int, unit_scale: float) -> Matrix:
+        """World matrix for instance ``i`` of ``layer``, given the world matrix
+        of the instance it is copied from. ``i == 0`` is the source itself.
+
+        Single source of truth for array placement: both the regenerator
+        (``tool.Model._regenerate_array_body``) and the drag-time ghost preview
+        (``ArrayPreviewDecorator``) call this, so the preview cannot drift from
+        what Finish actually builds.
+
+        ``source_matrix`` is the *previous layer's* instance, not necessarily
+        the root parent — that is what makes stacked layers compose (a radial
+        layer over a linear one arrays a whole row about the pivot).
+
+        ``unit_scale`` converts the layer's stored distances (project units)
+        to Blender SI. Callers whose values are already SI pass ``1.0``."""
+        if layer.get("type", cls.DEFAULT_ARRAY_TYPE) == "RADIAL":
+            return cls._radial_child_matrix(source_matrix, layer, i, unit_scale)
+        return cls._linear_child_matrix(source_matrix, layer, i, unit_scale)
+
+    @classmethod
+    def step_divisor(cls, layer: dict[str, Any]) -> int:
+        """Number the per-instance step is divided by under ``DISTRIBUTE``.
+
+        ``DISTRIBUTE`` spreads ``count`` instances across a fixed total span, so
+        the step is the span over the number of *gaps*. A closed radial loop
+        (``full_circle``) has ``count`` gaps because the last instance's gap
+        wraps back onto the first; every other case has ``count - 1``."""
+        count = max(int(layer.get("count", 1)), 1)
+        if layer.get("type", cls.DEFAULT_ARRAY_TYPE) == "RADIAL" and cls.is_closed_loop(layer):
+            return count
+        return max(count - 1, 1)
+
+    @classmethod
+    def layer_from_props(cls, props, count: int | None = None, si_conversion: float = 1.0) -> dict:
+        """Build a ``BBIM_Array.Data`` layer dict from the draft edit props.
+
+        Distances are divided by ``si_conversion`` so the result is in project
+        units, matching what the pset stores. Callers that want SI out (the ghost
+        preview, which already holds SI props) pass ``si_conversion=1.0``.
+
+        ``angle`` is unit-scale-free: it is stored in radians, following the same
+        convention as ``BBIM_Roof``, and is deliberately *not* wrapped to one turn
+        so multi-turn sweeps (spiral stairs, helical ramps) survive the round-trip.
+
+        ``count`` overrides ``props.count`` for callers that have already clamped
+        it (the preview caps instances for GPU budget reasons)."""
+        return {
+            "count": props.count if count is None else count,
+            "type": props.array_type,
+            "method": props.method,
+            "x": props.x / si_conversion,
+            "y": props.y / si_conversion,
+            "z": props.z / si_conversion,
+            "angle": props.angle,
+            "rise": props.rise / si_conversion,
+            "rise_method": props.rise_method,
+            "axis": list(props.get_axis_vector()),
+            "center": [c / si_conversion for c in props.center],
+            "full_circle": props.full_circle,
+            "rotate_children": props.rotate_children,
+            "use_local_space": props.use_local_space,
+            "per_child_opening": props.per_child_opening,
+        }
+
+    @classmethod
+    def angle_gap_count(cls, layer: dict[str, Any]) -> int:
+        """Number of steps actually between instances — 0 for a lone instance.
+
+        Distinct from ``step_divisor``, which floors at 1 to keep the DISTRIBUTE
+        division safe. For display the honest count matters: a one-instance
+        layer spans nothing and should report nothing, not a phantom step."""
+        count = max(int(layer.get("count", 1)), 1)
+        if layer.get("type", cls.DEFAULT_ARRAY_TYPE) == "RADIAL" and cls.is_closed_loop(layer):
+            return count
+        return count - 1
+
+    @classmethod
+    def rise_gap_count(cls, layer: dict[str, Any]) -> int:
+        """Steps between instances for the climb. Never the closed-loop count —
+        a closed loop requires zero rise (see ``is_closed_loop``)."""
+        return max(int(layer.get("count", 1)), 1) - 1
+
+    @classmethod
+    def resolved_rise(cls, layer: dict[str, Any]) -> tuple[float, float]:
+        """``(per_copy, total)`` climb, however the layer happens to specify it.
+
+        Whichever of the two the user typed, the other is the one they need to
+        see: a spiral stair given as a floor-to-floor total still has to clear
+        a code-limited riser height, and that riser only exists as a derived
+        number. Returning both lets the panel show the half that was computed.
+
+        Units follow the layer's — project units in, project units out."""
+        rise = layer.get("rise", 0.0)
+        gaps = cls.rise_gap_count(layer)
+        if cls.rise_method(layer) == "DISTRIBUTE":
+            return (rise / gaps if gaps else 0.0), rise
+        return rise, rise * gaps
+
+    @classmethod
+    def resolved_angle(cls, layer: dict[str, Any]) -> tuple[float, float]:
+        """``(per_copy, total)`` sweep in radians, however it was specified.
+
+        The total is deliberately NOT wrapped: reporting 630 degrees rather
+        than 270 is the whole point of showing it, since the turn count is
+        exactly what a bare heading hides."""
+        angle = layer.get("angle", 0.0)
+        gaps = cls.angle_gap_count(layer)
+        if layer.get("method") == "DISTRIBUTE":
+            return (angle / gaps if gaps else 0.0), angle
+        return angle, angle * gaps
+
+    @classmethod
+    def rise_method(cls, layer: dict[str, Any]) -> str:
+        """Spacing method governing the helix climb, independent of the angle's.
+
+        Falls back to the layer's main ``method`` when unset, so a layer that
+        specifies only one method stays coherent.
+
+        The two are decoupled because a spiral stair is normally specified with
+        one quantity per-copy and the other as a total — "30 degrees a tread,
+        3 metres floor to floor", or "540 degrees total, 180mm risers". The
+        floor-to-floor height is fixed by the building while the tread angle is
+        a design choice (or vice versa), and forcing both quantities into the
+        same mode makes the common specification unstatable."""
+        return layer.get("rise_method") or layer.get("method", "OFFSET")
+
+    @classmethod
+    def rise_divisor(cls, layer: dict[str, Any]) -> int:
+        """Divisor for the climb under a DISTRIBUTE ``rise_method``.
+
+        Always the gap count, never the closed-loop ``count`` branch that
+        ``step_divisor`` can take: a closed loop requires ``rise == 0`` (see
+        ``is_closed_loop``), so no helix ever divides its climb by ``count``."""
+        return max(int(layer.get("count", 1)) - 1, 1)
+
+    @classmethod
+    def is_closed_loop(cls, layer: dict[str, Any]) -> bool:
+        """True when the radial sweep closes back onto its start, so the
+        endpoint instance would duplicate the first one and must be dropped.
+
+        A non-zero ``rise`` breaks the closure — the endpoint lands a full
+        climb above the start, not on top of it — so ``full_circle`` is ignored
+        for helices rather than silently dropping a real instance."""
+        if not layer.get("full_circle"):
+            return False
+        return not layer.get("rise", 0.0)
+
+    @classmethod
+    def _linear_child_matrix(cls, source_matrix: Matrix, layer: dict[str, Any], i: int, unit_scale: float) -> Matrix:
+        offset = Vector((layer.get("x", 0.0), layer.get("y", 0.0), layer.get("z", 0.0))) * unit_scale
+        if layer.get("method") == "DISTRIBUTE":
+            offset = offset / cls.step_divisor(layer)
+        offset = offset * i
+        matrix = source_matrix.copy()
+        if layer.get("use_local_space", True):
+            matrix.translation = source_matrix @ offset
+        else:
+            matrix.translation = source_matrix.translation + offset
+        return matrix
+
+    @classmethod
+    def _radial_child_matrix(cls, source_matrix: Matrix, layer: dict[str, Any], i: int, unit_scale: float) -> Matrix:
+        """Rotate instance ``i`` about ``center``/``axis``, optionally climbing
+        ``rise`` along the axis per step (helix: spiral stairs, ramps).
+
+        The cumulative angle ``step * i`` is fed straight into
+        ``Matrix.Rotation`` and is never wrapped, normalised, or round-tripped
+        through a quaternion/Euler. That is what lets a sweep exceed one full
+        turn: decomposing a rotation matrix would fold 630 degrees back to -90
+        and silently stack later instances onto earlier ones."""
+        angle = layer.get("angle", 0.0)
+        rise = layer.get("rise", 0.0) * unit_scale
+        # Angle and climb take their DISTRIBUTE decisions separately — see
+        # ``rise_method`` for why a stair usually needs one of each.
+        if layer.get("method") == "DISTRIBUTE":
+            angle = angle / cls.step_divisor(layer)
+        if cls.rise_method(layer) == "DISTRIBUTE":
+            rise = rise / cls.rise_divisor(layer)
+
+        axis = Vector(layer.get("axis", (0.0, 0.0, 1.0)))
+        center = Vector(layer.get("center", (0.0, 0.0, 0.0))) * unit_scale
+        # ``center``/``axis`` are stored relative to the source instance, exactly
+        # like the linear offsets — an absolute world pivot would stay behind
+        # when the parent moves, tearing the ring away from its own contents
+        # (children track the parent via the BBIM_Array CHILD_OF constraint).
+        if layer.get("use_local_space", True):
+            axis = source_matrix.to_3x3() @ axis
+            pivot = source_matrix @ center
+        else:
+            pivot = source_matrix.translation + center
+
+        if axis.length < cls.MIN_AXIS_LENGTH:
+            return source_matrix.copy()
+        axis = axis.normalized()
+
+        rotation = Matrix.Rotation(angle * i, 4, axis)
+        matrix = Matrix.Translation(pivot) @ rotation @ Matrix.Translation(-pivot) @ source_matrix
+        if not layer.get("rotate_children", True):
+            # Orbit the position but keep the source's orientation — upright
+            # copies around a pivot rather than a tangentially-turned ring.
+            oriented = source_matrix.copy()
+            oriented.translation = matrix.translation
+            matrix = oriented
+        if rise:
+            matrix.translation = matrix.translation + axis * (rise * i)
+        return matrix
+
     @classmethod
     def bake_children_transform(cls, parent_element: entity_instance, item: int) -> None:
         modifier_data = list(cls.get_modifiers_data(parent_element))[item]
