@@ -482,7 +482,11 @@ class SmartClashGroup(bpy.types.Operator):
 
         # execute the smart grouping
         save_path = bpy.path.ensure_ext(props.smart_grouped_clashes_path, ".json")
-        smart_grouped_clashes = ifc_clasher.smart_group_clashes(clash_sets, props.smart_clash_grouping_max_distance)
+        try:
+            smart_grouped_clashes = ifc_clasher.smart_group_clashes(clash_sets, props.smart_clash_grouping_max_distance)
+        except ImportError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
 
         # save smart_groups to json
         with open(save_path, "w") as f:
