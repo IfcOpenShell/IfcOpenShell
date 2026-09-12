@@ -183,8 +183,20 @@ def main() -> None:
     else:
         print("Copying compiled dependencies to the repo...")
         dest = REPO_PATH / "src" / "ifcopenshell-python" / "ifcopenshell"
-        for path in PACKAGE_PATH.glob("ifcopenshell/*_wrapper*"):
+        # Since 0.9.0 the wrapper is no longer self-contained: it sits next to runtime
+        # libraries such as ifcopenshell.parse.dll and the per-schema
+        # ifcopenshell_parse_schema_ifc*.dll, which are loaded by name at runtime rather
+        # than linked. A "*_wrapper*" glob never matched those, so they were left behind
+        # and the wrapper came up without them, surfacing much later as
+        # "RuntimeError: No schema named IFC4". Select on file type instead.
+        library_suffixes = (".dll", ".pyd", ".so", ".dylib")
+        for path in PACKAGE_PATH.glob("ifcopenshell/*"):
+            if not path.is_file():
+                continue
+            # Type stubs are checked into the repo, don't overwrite them.
             if path.suffix.lower() == ".pyi":
+                continue
+            if path.suffix.lower() not in library_suffixes and "_wrapper" not in path.name:
                 continue
             dest_ = dest / path.name
             print(f"Copying {path} -> {dest_}")
