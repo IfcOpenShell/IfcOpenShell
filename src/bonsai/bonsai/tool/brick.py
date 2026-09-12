@@ -31,7 +31,6 @@ import ifcopenshell.guid
 import ifcopenshell.util.brick
 import ifcopenshell.util.element
 import ifcopenshell.util.system
-from brickschema.persistent import Changeset
 
 import bonsai.core.brick
 import bonsai.core.tool
@@ -49,6 +48,7 @@ except:
 
 if TYPE_CHECKING:
     import brickschema
+    from brickschema.persistent import Changeset
     from rdflib import BNode, Literal, Namespace, URIRef
 
     from bonsai.bim.module.brick.prop import BIMBrickProperties
