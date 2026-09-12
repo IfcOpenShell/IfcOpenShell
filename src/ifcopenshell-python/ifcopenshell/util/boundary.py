@@ -261,7 +261,7 @@ def auto_generate_boundaries(
         )
         space_face_normal_world = space_matrix_3x3 @ space_face_normal_local
 
-        face_matrix = _face_matrix_from_verts(space_verts_l[:3])
+        face_matrix = _face_matrix_from_verts(space_verts_l)
         face_matrix_inv = np.linalg.inv(face_matrix)
         space_face_polygon = _verts_to_polygon(space_verts_l, face_matrix_inv, snap=1e-6)
         if not space_face_polygon.is_valid:
@@ -870,11 +870,29 @@ def _face_normal(verts: np.ndarray) -> Optional[np.ndarray]:
 
 
 def _face_matrix_from_verts(verts3: np.ndarray) -> np.ndarray:
-    """Build a 4x4 face-local coordinate matrix from 3 vertices."""
-    p1, p2, p3 = verts3[0], verts3[1], verts3[2]
-    z = sb.np_normal([p1, p2, p3])
-    x = sb.np_normalized(p2 - p1)
-    return ifcopenshell.util.placement.a2p(o=p1, z=z, x=x)
+    """Build a 4x4 face-local coordinate matrix from a polygon's vertices.
+
+    The first three vertices may be collinear in triangulated meshes, so the
+    normal is computed from the first non-degenerate triple and the X axis is
+    taken from the first non-degenerate edge.
+    """
+    p1 = np.asarray(verts3[0])
+
+    normal = _face_normal(verts3)
+    if normal is None:
+        raise ValueError("Cannot build face matrix from a degenerate polygon")
+
+    x = np.zeros(3)
+    for i in range(len(verts3) - 1):
+        edge = np.asarray(verts3[i + 1]) - np.asarray(verts3[i])
+        edge_norm = np.linalg.norm(edge)
+        if edge_norm > 1e-8:
+            x = edge / edge_norm
+            break
+    if np.linalg.norm(x) < 1e-8:
+        raise ValueError("Cannot find a non-degenerate edge for the face matrix")
+
+    return ifcopenshell.util.placement.a2p(o=p1, z=normal, x=x)
 
 
 def _verts_to_polygon(verts: np.ndarray, face_matrix_inv: np.ndarray, snap: float = 0) -> shapely.Polygon:
