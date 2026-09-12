@@ -19,6 +19,7 @@
 # This file was modified with the assistance of an AI coding tool.
 
 import json
+from math import radians
 from typing import ClassVar
 
 import bpy
@@ -119,14 +120,42 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add an array of the active object"
     bl_options = {"REGISTER", "UNDO"}
 
-    # Optional parameters — defaults preserve the existing UX (count=1, no offset)
-    # for the panel + script callers. The gizmo-driven path (see
+    # Optional parameters — defaults preserve the existing UX (count=1, no offset,
+    # linear) for the panel + script callers, so ``bpy.ops.bim.add_array()`` with
+    # no arguments behaves exactly as it always has. The gizmo-driven path (see
     # ``AddArrayFromFeatureEdit``) passes bbox-derived values so the new array
     # has a visible second instance and interactable offset gizmos out of the box.
     count: bpy.props.IntProperty(name="Count", default=1, min=1)
     x: bpy.props.FloatProperty(name="X Offset", default=0.0)
     y: bpy.props.FloatProperty(name="Y Offset", default=0.0)
     z: bpy.props.FloatProperty(name="Z Offset", default=0.0)
+    # Every radial property is SKIP_SAVE. Blender replays an operator's
+    # last-used values on the next *interactive* invocation, and the Array
+    # panel's "+" button calls this operator with no arguments at all — without
+    # SKIP_SAVE a single earlier radial add would make every subsequent "+"
+    # click silently produce a radial array. Explicitly-passed values from
+    # scripted callers are unaffected.
+    array_type: bpy.props.EnumProperty(
+        name="Type",
+        items=(("LINEAR", "Linear", "Offset copies along a line"), ("RADIAL", "Radial", "Sweep copies about a centre")),
+        default="LINEAR",
+        options={"SKIP_SAVE"},
+    )
+    # Radial-only. Distances are in project units (the pset's convention); the
+    # angle is in radians and is never wrapped, so sweeps past one full turn
+    # round-trip intact.
+    angle: bpy.props.FloatProperty(name="Angle", default=0.0, subtype="ANGLE", options={"SKIP_SAVE"})
+    rise: bpy.props.FloatProperty(name="Rise", default=0.0, options={"SKIP_SAVE"})
+    rise_method: bpy.props.EnumProperty(
+        name="Rise Mode",
+        items=(("OFFSET", "Per Copy", "Rise is per copy"), ("DISTRIBUTE", "Total", "Rise is the overall climb")),
+        default="OFFSET",
+        options={"SKIP_SAVE"},
+    )
+    axis: bpy.props.FloatVectorProperty(name="Axis", default=(0.0, 0.0, 1.0), size=3, options={"SKIP_SAVE"})
+    center: bpy.props.FloatVectorProperty(name="Centre", default=(0.0, 0.0, 0.0), size=3, options={"SKIP_SAVE"})
+    full_circle: bpy.props.BoolProperty(name="Full Circle", default=False, options={"SKIP_SAVE"})
+    rotate_children: bpy.props.BoolProperty(name="Rotate Copies", default=True, options={"SKIP_SAVE"})
 
     def _execute(self, context):
         assert (obj := context.active_object)
@@ -150,9 +179,17 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
         array = {
             "children": [],
             "count": self.count,
+            "type": self.array_type,
             "x": self.x,
             "y": self.y,
             "z": self.z,
+            "angle": self.angle,
+            "rise": self.rise,
+            "rise_method": self.rise_method,
+            "axis": list(self.axis),
+            "center": list(self.center),
+            "full_circle": self.full_circle,
+            "rotate_children": self.rotate_children,
             "use_local_space": True,
             "method": "OFFSET",
             "per_child_opening": True,
@@ -222,6 +259,34 @@ class _ArrayEditMixin(ParametricEditMixinBase):
         props.use_local_space = layer.get("use_local_space", True)
         props.method = layer.get("method", "OFFSET")
         props.per_child_opening = layer.get("per_child_opening", layer.get("mirror_to_host", True))
+        # Radial keys, all ``.get``-defaulted: layers written before radial
+        # arrays existed carry none of them and must hydrate as plain linear.
+        props.array_type = layer.get("type", "LINEAR")
+        props.angle = layer.get("angle", 0.0)
+        props.rise = layer.get("rise", 0.0) * si_conversion
+        # Absent ``rise_method`` inherits the layer's main method, matching
+        # ``tool.Array.rise_method``'s fallback so the panel shows what the
+        # regenerator will actually do.
+        props.rise_method = layer.get("rise_method") or layer.get("method", "OFFSET")
+        props.center = [c * si_conversion for c in layer.get("center", (0.0, 0.0, 0.0))]
+        props.full_circle = layer.get("full_circle", False)
+        props.rotate_children = layer.get("rotate_children", True)
+        cls._hydrate_axis_props(props, layer.get("axis", (0.0, 0.0, 1.0)))
+
+    # Axis vectors that round-trip to the named enum entries rather than CUSTOM,
+    # so a Z-axis array reopens showing "Z" instead of a raw (0, 0, 1) vector.
+    _CARDINAL_AXES = {(1.0, 0.0, 0.0): "X", (0.0, 1.0, 0.0): "Y", (0.0, 0.0, 1.0): "Z"}
+
+    @classmethod
+    def _hydrate_axis_props(cls, props, axis) -> None:
+        """Set ``props.axis``/``props.custom_axis`` from a stored axis vector.
+
+        The stored vector is always authoritative — ``custom_axis`` is set in
+        every branch so that switching the enum to Custom later starts from the
+        axis actually in use rather than a stale leftover."""
+        vector = tuple(float(c) for c in axis)
+        props.custom_axis = vector
+        props.axis = cls._CARDINAL_AXES.get(vector, "CUSTOM")
 
     @classmethod
     def _set_children_visibility(cls, element, hidden: bool) -> None:
@@ -298,13 +363,10 @@ class _ArrayEditMixin(ParametricEditMixinBase):
             props.editing_item_index = -1
             return
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        layers[item]["count"] = props.count
-        layers[item]["x"] = props.x / si_conversion
-        layers[item]["y"] = props.y / si_conversion
-        layers[item]["z"] = props.z / si_conversion
-        layers[item]["use_local_space"] = props.use_local_space
-        layers[item]["method"] = props.method
-        layers[item]["per_child_opening"] = props.per_child_opening
+        # Update in place rather than replacing the dict: ``children`` holds the
+        # layer's existing GUIDs and is owned by the regenerator below, not by
+        # the property round-trip.
+        layers[item].update(tool.Array.layer_from_props(props, si_conversion=si_conversion))
         # Note: ``tool.Model.regenerate_array`` below removes and re-adds the
         # BBIM_Array pset with the in-memory ``layers`` data ([tool/model.py:
         # 1163-1167](src/bonsai/bonsai/tool/model.py#L1163-L1167)), so an
@@ -748,6 +810,149 @@ class Input3DCursorZArray(bpy.types.Operator):
         return {"FINISHED"}
 
 
+# Floor for the seeded pivot distance, mirroring
+# ``AddArrayFromFeatureEdit.MIN_DEFAULT_OFFSET``: below this the copies of a
+# small element visually overlap the original and the array looks inert.
+MIN_RADIAL_CENTER_OFFSET = 0.3
+
+
+class Input3DCursorCenterArray(bpy.types.Operator):
+    """Pick the radial pivot — and optionally its axis — from the 3D cursor.
+
+    Sets all three centre components at once, unlike the per-axis offset
+    siblings above, because a pivot is only meaningful as a whole point.
+
+    The 3D cursor is already a fully-equipped picking tool the user knows
+    (``Shift+S`` snaps it to the selection, ``Shift+RMB`` places it with
+    snapping), so this inherits all of that without new UI vocabulary. The
+    cursor also carries an orientation, which ``Shift+RMB`` aligns to a
+    surface normal — taking the axis from it too makes "sweep about that
+    ramp's axis" a single click."""
+
+    bl_idname = "bim.input_cursor_center_array"
+    bl_label = "Get 3d Cursor Centre for Array"
+    bl_description = (
+        "Click: set the radial centre from the 3D cursor.\n"
+        "Shift+Click: also take the rotation axis from the 3D cursor's Z direction"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    # SKIP_SAVE: set from the Shift modifier in invoke(), so a remembered
+    # True would make a plain click keep hijacking the axis.
+    use_cursor_axis: bpy.props.BoolProperty(name="Use Cursor Axis", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.use_cursor_axis = event.shift
+        return self.execute(context)
+
+    def execute(self, context):
+        obj = context.active_object
+        if obj is None:
+            return {"CANCELLED"}
+        props = tool.Model.get_array_props(obj)
+        cursor = context.scene.cursor
+        # Mirrors the per-axis offset operators: local space measures in the
+        # object's own frame, world space measures world-aligned but still
+        # relative to the object — never an absolute point, so the pivot
+        # travels with the parent.
+        if props.use_local_space:
+            props.center = obj.matrix_world.inverted() @ cursor.matrix.translation
+        else:
+            props.center = cursor.matrix.translation - obj.matrix_world.translation
+        if self.use_cursor_axis:
+            axis = cursor.matrix.to_3x3().col[2]
+            if props.use_local_space:
+                axis = obj.matrix_world.to_3x3().inverted() @ axis
+            props.custom_axis = axis.normalized()
+            props.axis = "CUSTOM"
+        return {"FINISHED"}
+
+
+class CenterArrayOnSelected(bpy.types.Operator):
+    """Put the radial pivot on the other selected object's origin.
+
+    The commonest real-world pick by a wide margin — select the newel column
+    and a tread, click, and the sweep centres on the column — and it needs no
+    snapping machinery at all. Requires exactly one selected object besides
+    the active one so the target is never ambiguous."""
+
+    bl_idname = "bim.center_array_on_selected"
+    bl_label = "Centre Array on Selected"
+    bl_description = "Set the radial centre to the origin of the other selected object"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            cls.poll_message_set("No active object")
+            return False
+        others = [o for o in context.selected_objects if o != obj]
+        if len(others) != 1:
+            cls.poll_message_set("Select exactly one other object to centre on")
+            return False
+        return True
+
+    def execute(self, context):
+        obj = context.active_object
+        assert obj
+        target = next(o for o in context.selected_objects if o != obj)
+        props = tool.Model.get_array_props(obj)
+        if props.use_local_space:
+            props.center = obj.matrix_world.inverted() @ target.matrix_world.translation
+        else:
+            props.center = target.matrix_world.translation - obj.matrix_world.translation
+        return {"FINISHED"}
+
+
+class ToggleArrayType(bpy.types.Operator):
+    """Flip the array layer between LINEAR and RADIAL during an active edit.
+
+    Seeds a usable radial default on the first switch: a pivot sitting one
+    bounding-box width off the object's -X side. Without it the pivot would
+    sit on the object's own origin, every copy would spin in place on top of
+    the original, and the array would read as broken — the same failure the
+    linear path avoids with its bbox-derived offset.
+
+    No-op outside an active edit lifecycle, so the operator cannot bypass the
+    Finish commit by quietly mutating committed state."""
+
+    bl_idname = "bim.toggle_array_type"
+    bl_label = "Toggle Array Type"
+    bl_description = "Switch between a straight-line array and a radial sweep"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = _resolve_array_edit_props(context)
+        if props is None:
+            return {"CANCELLED"}
+        if props.array_type == "RADIAL":
+            props.array_type = "LINEAR"
+            return {"FINISHED"}
+        props.array_type = "RADIAL"
+        if props.angle == 0.0:
+            props.angle = radians(90)
+        if tuple(props.center) == (0.0, 0.0, 0.0):
+            props.center = seed_radial_center(context.active_object)
+        return {"FINISHED"}
+
+
+def seed_radial_center(obj: bpy.types.Object | None) -> Vector:
+    """A default pivot that produces a visibly open ring rather than copies
+    stacked on the original: one bounding-box width off the object's -X side,
+    at the bbox centre in Y and Z.
+
+    Falls back to ``MIN_RADIAL_CENTER_OFFSET`` along -X for objects with no
+    usable bounding box (Empties, point annotations), matching how
+    ``AddArrayFromFeatureEdit`` floors its linear offset for the same reason."""
+    if obj is None or not obj.bound_box:
+        return Vector((-MIN_RADIAL_CENTER_OFFSET, 0.0, 0.0))
+    bbox = tool.Blender.get_object_bounding_box(obj)
+    center = bbox["center"]
+    width = max(bbox["max_x"] - bbox["min_x"], MIN_RADIAL_CENTER_OFFSET)
+    return Vector((bbox["min_x"] - width, center.y, center.z))
+
+
 class AddArrayFromFeatureEdit(bpy.types.Operator, tool.Ifc.Operator):
     """Commit any in-progress feature edit and add an array with
     gizmo-friendly defaults (count=2, offset = bbox extent along the axis).
@@ -1049,6 +1254,12 @@ class AdjustArrayCount(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def _is_linear_layer(props) -> bool:
+    """Gizmo visibility predicate: True for linear layers, including drafts
+    hydrated from pre-radial pset data (``array_type`` defaults to LINEAR)."""
+    return getattr(props, "array_type", "LINEAR") == "LINEAR"
+
+
 class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     """Viewport gizmos for the array edit lifecycle (single-layer arrays only).
     Drag/+/- mutate draft props in place; commit happens at Finish."""
@@ -1112,6 +1323,12 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             scale=ICON_HELPER_SCALE,
         ),
         IconSlot(
+            name="array_type",
+            gizmo_idname="VIEW3D_GT_cycle",
+            operator="bim.toggle_array_type",
+            scale=ICON_HELPER_SCALE,
+        ),
+        IconSlot(
             name="delete",
             gizmo_idname="VIEW3D_GT_trash",
             operator="bim.remove_array_layer_from_edit",
@@ -1151,12 +1368,18 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         # centre). This pulls the three arrows apart visually and makes the
         # arrow tip land exactly where the next instance would appear — a
         # natural read of "drag this face out by N metres to space siblings".
+        # The three offset arrows are linear-only: a radial layer's spacing is
+        # governed by angle/centre/axis, which the arrows cannot express, so
+        # leaving them live would let a drag write an offset the rebuild
+        # ignores. Radial parameters are panel-edited for now — the angle and
+        # centre gizmos are the next step, not a prerequisite.
         DimensionGizmoConfig(
             attr_name="x",
             axis=(1, 0, 0),
             prop_name="X Offset",
             min_value=-1e6,
             matrix_position=lambda p: GizmoArrayEdition._axis_start(0),
+            visibility_condition=_is_linear_layer,
         ),
         DimensionGizmoConfig(
             attr_name="y",
@@ -1164,6 +1387,7 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             prop_name="Y Offset",
             min_value=-1e6,
             matrix_position=lambda p: GizmoArrayEdition._axis_start(1),
+            visibility_condition=_is_linear_layer,
         ),
         DimensionGizmoConfig(
             attr_name="z",
@@ -1171,6 +1395,7 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             prop_name="Z Offset",
             min_value=-1e6,
             matrix_position=lambda p: GizmoArrayEdition._axis_start(2),
+            visibility_condition=_is_linear_layer,
         ),
     ]
 
@@ -1552,23 +1777,17 @@ class ArrayPreviewDecorator(tool.Blender.ViewportDecorator):
     ) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
         """World-space (start, end) line segments for the bbox edges of
         every future instance (i = 1 … count-1; i = 0 is the parent itself).
-        props.x/y/z are SI — the edit-lifecycle Enable hydrates them via
-        si_conversion, so no unit_scale multiplier here."""
-        offset = Vector((props.x, props.y, props.z))
-        if props.method == "DISTRIBUTE":
-            divider = (count - 1) if count > 1 else 1
-            offset = offset / divider
 
+        Placement comes from ``tool.Array.child_matrix`` — the same function the
+        regenerator uses — so the ghosts cannot drift from what Finish builds.
+        The draft props are already SI (the edit-lifecycle Enable hydrates them
+        through si_conversion), hence ``unit_scale=1.0``."""
+        layer = tool.Array.layer_from_props(props, count)
         parent_mw = parent_obj.matrix_world
         parent_corners = [Vector(c) for c in parent_obj.bound_box]
         segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
         for i in range(1, count):
-            delta = offset * i
-            child_mw = parent_mw.copy()
-            if props.use_local_space:
-                child_mw.translation = parent_mw @ delta
-            else:
-                child_mw.translation = parent_mw.translation + delta
+            child_mw = tool.Array.child_matrix(parent_mw, layer, i, 1.0)
             world_corners = [child_mw @ corner for corner in parent_corners]
             for a, b in _BBOX_EDGES:
                 segments.append((tuple(world_corners[a]), tuple(world_corners[b])))
