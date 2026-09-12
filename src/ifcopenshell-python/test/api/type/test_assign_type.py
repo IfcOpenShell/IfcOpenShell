@@ -216,6 +216,24 @@ class TestAssignType(test.bootstrap.IFC4):
         with pytest.raises(TypeError):
             ifcopenshell.api.type.assign_type(self.file, related_objects=[opening], relating_type=any_type)
 
+    def test_concrete_subtype_of_allowed_occurrence_accepted(self):
+        """A concrete occurrence subtype of the abstract allowed occurrence
+        class (e.g. IfcFlowTerminal under IfcDistributionElement) must be
+        accepted, not rejected on exact class name match. See #9247."""
+        terminal = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowTerminal")
+        distribution_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDistributionElementType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[terminal], relating_type=distribution_type)
+        assert ifcopenshell.util.element.get_type(terminal) == distribution_type
+
+    def test_genuine_mismatch_of_unrelated_occurrence_still_raises(self):
+        """A concrete occurrence that is genuinely unrelated to the allowed
+        occurrence class hierarchy (e.g. IfcWall typed by an
+        IfcAirTerminalType) must still be rejected."""
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        air_terminal_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAirTerminalType")
+        with pytest.raises(TypeError, match=r"IfcAirTerminalType cannot type IfcWall"):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[wall], relating_type=air_terminal_type)
+
 
 class TestAssignTypeIFC2X3(test.bootstrap.IFC2X3, TestAssignType):
     pass

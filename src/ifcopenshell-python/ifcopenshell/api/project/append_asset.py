@@ -43,6 +43,20 @@ APPENDABLE_ASSET = Literal[
 ]
 APPENDABLE_ASSET_TYPES: tuple[APPENDABLE_ASSET, ...] = get_args(APPENDABLE_ASSET)
 MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
+DeferredRelationshipMembers = dict[int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]]
+DeferredLayerItems = dict[int, tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]]
+
+
+def is_reusable_name(name: Any) -> bool:
+    """Whether a name qualifies as a key for name-based deduplication.
+
+    Only a non-empty, non-blank string identifies an asset well enough to
+    reuse an existing one. An empty/blank string or ``None`` is not a real
+    name, so distinct blank-named assets (e.g. two different profiles both
+    named ``""``) must be appended as separate instances instead of collapsed
+    into one. See https://github.com/IfcOpenShell/IfcOpenShell/issues/8045.
+    """
+    return isinstance(name, str) and bool(name.strip())
 
 
 def append_asset(
@@ -51,6 +65,8 @@ def append_asset(
     element: ifcopenshell.entity_instance,
     reuse_identities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
     assume_asset_uniqueness_by_name: bool = True,
+    deferred_relationship_members: Optional[DeferredRelationshipMembers] = None,
+    deferred_layer_items: Optional[DeferredLayerItems] = None,
 ) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
@@ -77,6 +93,13 @@ def append_asset(
         to add just 1 asset or if added assets won't have any shared elements, then it can be left empty.
     :param assume_asset_uniqueness_by_name: If True, checks if elements (profiles, materials, styles)
         with the same name already exist in the project and reuses them instead of appending new ones.
+    :param deferred_relationship_members: Optional accumulator shared across
+        ``append_asset`` calls that collects relationship member lists. Pass it
+        to ``flush_deferred_relationship_members`` once all assets have been appended.
+    :param deferred_layer_items: Optional accumulator shared across ``append_asset``
+        calls that collects ``IfcPresentationLayerAssignment.AssignedItems`` instead
+        of re-assigning the growing item set on every call, which is O(n^2). Pass it
+        to ``flush_deferred_layer_items`` once all assets have been appended.
     :return: The appended element
 
     Example:
@@ -141,8 +164,93 @@ def append_asset(
         "element": element,
         "reuse_identities": {} if reuse_identities is None else reuse_identities,
         "assume_asset_uniqueness_by_name": assume_asset_uniqueness_by_name,
+        "deferred_relationship_members": deferred_relationship_members,
+        "deferred_layer_items": deferred_layer_items,
     }
     return usecase.execute()
+
+
+def flush_deferred_layer_items(
+    deferred_layer_items: DeferredLayerItems,
+) -> None:
+    """Assign presentation layer item sets deferred by ``append_asset``.
+
+    ``IfcPresentationLayerAssignment.AssignedItems`` is shared by every asset
+    drawn on that layer, so assigning it once per appended asset re-writes a set
+    that grows with the number of assets, which is O(n^2). With a shared
+    ``deferred_layer_items`` accumulator the items are collected in Python and
+    each layer's set is written a single time here. Call this once, after all
+    appends.
+
+    :param deferred_layer_items: The accumulator passed to ``append_asset``.
+    """
+    for layer, items in deferred_layer_items.values():
+        layer.AssignedItems = list(dict.fromkeys([*(layer.AssignedItems or ()), *items]))
+
+
+def flush_deferred_relationship_members(
+    file: ifcopenshell.file,
+    deferred_relationship_members: DeferredRelationshipMembers,
+    reuse_identities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
+) -> None:
+    """Assign relationship member lists deferred by ``append_asset``.
+
+    When ``append_asset`` is called with a shared ``deferred_relationship_members``
+    dict, relationships reached through whitelisted inverses (e.g.
+    ``IfcRelAssociatesMaterial``, ``IfcRelDefinesByProperties``) do not have their
+    list-valued member attributes re-scanned and re-assigned on every element
+    append. Doing that per element is O(n^2) because the member list grows.
+
+    This resolves every deferred relationship a single time instead. Members
+    that are ``IfcRoot`` subtypes (e.g. products, property sets) are kept if
+    and only if they were appended into ``file``, matched by ``GlobalId`` -
+    the same rule ``append_asset`` applies when it assigns the list eagerly.
+    Members that are not ``IfcRoot`` subtypes have no ``GlobalId``, so they are
+    matched by identity through ``reuse_identities`` instead. The only such
+    member today is ``IfcRelOverridesProperties.OverridingProperties``, whose
+    ``IfcProperty`` members ``append_asset`` always appends (they are not
+    optional assets that may have been excluded), so they are always resolved
+    if the same ``reuse_identities`` accumulator used during the appends is
+    passed here. Call this once, after all appends, on the file the assets
+    were appended into.
+
+    :param file: The file assets were appended into.
+    :param deferred_relationship_members: The accumulator passed to ``append_asset``.
+    :param reuse_identities: The ``reuse_identities`` accumulator passed to
+        ``append_asset``, used to resolve non-``IfcRoot`` members. Required to
+        avoid dropping them; safe to omit if none of the deferred
+        relationships have non-``IfcRoot`` list-valued members.
+    """
+    if not deferred_relationship_members:
+        return
+    appended_by_guid: dict[str, list[ifcopenshell.entity_instance]] = {}
+    for element in file.by_type("IfcRoot"):
+        appended_by_guid.setdefault(element.GlobalId, []).append(element)
+    reuse_identities = reuse_identities if reuse_identities is not None else {}
+    for source_rel, new_rel in deferred_relationship_members.values():
+        for index, attribute in enumerate(source_rel):
+            if not (
+                isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance)
+            ):
+                continue
+            members = list(new_rel[index] or ())
+            seen = {member.id() for member in members}
+            for member in attribute:
+                if member.is_a("IfcRoot"):
+                    mapped = next(
+                        (
+                            candidate
+                            for candidate in appended_by_guid.get(member.GlobalId, ())
+                            if candidate.is_a(member.is_a())
+                        ),
+                        None,
+                    )
+                else:
+                    mapped = reuse_identities.get(member.identity())
+                if mapped is not None and mapped.id() not in seen:
+                    seen.add(mapped.id())
+                    members.append(mapped)
+            new_rel[index] = members
 
 
 class SafeRemovalContext:
@@ -154,6 +262,7 @@ class SafeRemovalContext:
 
     file: ifcopenshell.file
     reuse_identities: dict[int, ifcopenshell.entity_instance]
+    new_reuse_identities: dict[int, set[int]]
 
     assume_asset_uniqueness_by_name: bool
     """If `False`, then all job is done by `file.add`
@@ -164,10 +273,18 @@ class SafeRemovalContext:
         ifc_file: ifcopenshell.file,
         reuse_identities: dict[int, ifcopenshell.entity_instance],
         assume_asset_uniqueness_by_name: bool,
+        new_reuse_identities: Optional[dict[int, set[int]]] = None,
     ):
         self.file = ifc_file
         self.reuse_identities = reuse_identities
         self.assume_asset_uniqueness_by_name = assume_asset_uniqueness_by_name
+        # Reverse index (new element id -> identity) of entries `reuse_identities`
+        # gained during the current `append_asset()` call. Lets `__exit__` find a
+        # removed element's identity in O(1) instead of scanning the whole
+        # `reuse_identities` dict, which otherwise grows with every past call
+        # sharing the same accumulator and makes each call O(n) regardless of how
+        # few elements it actually removes.
+        self.new_reuse_identities = {} if new_reuse_identities is None else new_reuse_identities
 
     def __enter__(self):
         if not self.assume_asset_uniqueness_by_name:
@@ -179,14 +296,21 @@ class SafeRemovalContext:
         if not self.assume_asset_uniqueness_by_name:
             return
 
-        # Collect identities.
-        removed_identities: dict[ifcopenshell.entity_instance, int] = {}
+        # Collect identities of removed elements that are tracked in
+        # `reuse_identities` so they can be purged below - otherwise the map
+        # could later hand back a freed entity.
+        #
+        # Not every removed element is necessarily tracked: `remove_deep2` only
+        # purges an element when all of its inverses are inside the deleted
+        # subgraph, so an untracked removed element cannot be referenced by any
+        # surviving `reuse_identities` value and simply needs no cleanup. This
+        # used to be a hard `assert len(removed_identities) == len(removed_elements)`
+        # that turned the benign untracked case into a crash (see #8666).
+        removed_identities: set[int] = set()
         assert self.file.to_delete is not None
         removed_elements = self.file.to_delete
-        for identity, element in self.reuse_identities.items():
-            if element in removed_elements:
-                removed_identities[element] = identity
-        assert len(removed_identities) == len(removed_elements)
+        for element in removed_elements:
+            removed_identities.update(self.new_reuse_identities.pop(element.id(), set()))
 
         # Actually remove elements.
         for element in self.file.to_delete:
@@ -195,8 +319,8 @@ class SafeRemovalContext:
         self.file.to_delete = None
 
         # Clean up dead identities.
-        for identity in removed_identities.values():
-            del self.reuse_identities[identity]
+        for identity in removed_identities:
+            self.reuse_identities.pop(identity, None)
 
 
 class Usecase:
@@ -211,13 +335,20 @@ class Usecase:
     reuse_identities: dict[int, ifcopenshell.entity_instance]
     """Mapping of old element ids to new elements, usually fiiled by ``file_add``."""
 
+    new_reuse_identities: dict[int, set[int]]
+    """Reverse index (new element id -> identities) of ``reuse_identities`` entries
+    added during this call. See ``SafeRemovalContext``."""
+
     def execute(self):
         # mapping of old element ids to new elements
         self.added_elements: dict[int, ifcopenshell.entity_instance] = {}
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings["reuse_identities"]
+        self.new_reuse_identities: dict[int, set[int]] = {}
         self.whitelisted_inverse_attributes = {}
         self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
         self.assume_asset_uniqueness_by_name = self.settings["assume_asset_uniqueness_by_name"]
+        self.deferred_relationship_members = self.settings["deferred_relationship_members"]
+        self.deferred_layer_items = self.settings["deferred_layer_items"]
 
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -238,11 +369,25 @@ class Usecase:
             self.target_class = "IfcPresentationStyle"
             return self.append_presentation_style()
 
-    def by_guid(self, guid: str) -> Union[ifcopenshell.entity_instance, None]:
+    def map_reuse_identity(self, identity: int, new: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """Record ``identity -> new`` in ``reuse_identities`` and index it by
+        ``new``'s id in ``new_reuse_identities`` so ``SafeRemovalContext`` can
+        find a removed element's identity directly. All writes to
+        ``reuse_identities`` must go through this method to keep the index
+        in sync."""
+        self.reuse_identities[identity] = new
+        self.new_reuse_identities.setdefault(new.id(), set()).add(identity)
+        return new
+
+    def by_guid(self, guid: str, ifc_class: Optional[str] = None) -> Union[ifcopenshell.entity_instance, None]:
         try:
-            return self.file.by_guid(guid)
+            existing = self.file.by_guid(guid)
         except RuntimeError:
             return None
+        # A GlobalId collision with an incompatible class is not the same asset.
+        if ifc_class is not None and not existing.is_a(ifc_class):
+            return None
+        return existing
 
     def material_sets_are_equal(self, set1: ifcopenshell.entity_instance, set2: ifcopenshell.entity_instance) -> bool:
         """Check if two material sets are structurally equivalent."""
@@ -311,19 +456,21 @@ class Usecase:
         if element.id() in self.added_elements:
             return self.added_elements[element.id()]
         if element.is_a("IfcRoot"):
-            return self.by_guid(element.GlobalId)
+            return self.by_guid(element.GlobalId, element.is_a())
         elif not self.assume_asset_uniqueness_by_name:
             return None
         elif element.is_a("IfcMaterial"):
             name = element.Name
+            if not is_reusable_name(name):
+                return None
             return next((e for e in self.file.by_type("IfcMaterial") if e.Name == name), None)
 
         elif element.is_a() in MATERIAL_SETS:
             ifc_class = element.is_a()
             name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
             material_set_name = getattr(element, name_attr)
-            if material_set_name is None:
-                return
+            if not is_reusable_name(material_set_name):
+                return None
             for candidate in self.file.by_type(ifc_class):
                 if getattr(candidate, name_attr) == material_set_name:
                     if self.material_sets_are_equal(element, candidate):
@@ -332,12 +479,12 @@ class Usecase:
 
         elif element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
-            if profile_name is None:
+            if not is_reusable_name(profile_name):
                 return None
             return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
         elif element.is_a("IfcPresentationStyle"):
             name = element.Name
-            if name is None:
+            if not is_reusable_name(name):
                 return None
             return next((e for e in self.file.by_type(element.is_a()) if e.Name == name), None)
 
@@ -398,8 +545,8 @@ class Usecase:
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
-            "IfcElement": ["HasOpenings"],
-            "IfcDistributionElement": ["IsNestedBy"],
+            "IfcElement": ["HasOpenings", "HasPorts"] if self.file.schema == "IFC2X3" else ["HasOpenings"],
+            "IfcDistributionElement": ["IsNestedBy", "HasPorts"],
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": [
                 "StyledByItem",
@@ -418,7 +565,9 @@ class Usecase:
             matrix = ifcopenshell.util.placement.get_local_placement(placement)
             matrix = ifcopenshell.util.geolocation.auto_local2global(self.settings["library"], matrix)
             matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
-            with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):
+            with SafeRemovalContext(
+                self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name, self.new_reuse_identities
+            ):
                 ifcopenshell.api.geometry.edit_object_placement(self.file, element, matrix, is_si=False)
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
@@ -429,6 +578,9 @@ class Usecase:
                 library=self.settings["library"],
                 element=element_type,
                 reuse_identities=self.reuse_identities,
+                assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
+                deferred_relationship_members=self.deferred_relationship_members,
+                deferred_layer_items=self.deferred_layer_items,
             )
             ifcopenshell.api.type.assign_type(
                 self.file,
@@ -459,6 +611,14 @@ class Usecase:
                 self.added_elements[subelement.id()] = existing_element
                 if not self.has_whitelisted_inverses(existing_element):
                     self.check_inverses(subelement)
+                # A material set matched as "existing" may have just been forward-copied
+                # by file_add (which only copies forward attributes, not inverses). In that
+                # case its member materials never had their inverse attributes transplanted
+                # (notably IfcMaterial.HasRepresentation, which carries the material's surface
+                # style). Descend into the set so each member material gets check_inverses.
+                # The has_whitelisted_inverses guard keeps genuinely-reused materials idempotent.
+                if subelement.is_a() in MATERIAL_SETS:
+                    subelement_queue.extend(self.settings["library"].traverse(subelement, max_levels=1)[1:])
             else:
                 self.added_elements[subelement.id()] = self.file_add(subelement)
                 self.check_inverses(subelement)
@@ -493,11 +653,15 @@ class Usecase:
                     attribute, attribute_class = attribute.split(".")
                 for inverse in getattr(element, attribute, []):
                     if attribute_class and inverse.is_a(attribute_class):
-                        self.add_inverse_element(inverse)
+                        self.add_inverse_element(inverse, element)
                     elif not attribute_class:
-                        self.add_inverse_element(inverse)
+                        self.add_inverse_element(inverse, element)
 
-    def add_inverse_element(self, element: ifcopenshell.entity_instance) -> None:
+    def add_inverse_element(
+        self,
+        element: ifcopenshell.entity_instance,
+        source: Union[ifcopenshell.entity_instance, None] = None,
+    ) -> None:
         """Add inverse element.
 
         Inverse elements are requiring different method than ``file_add``
@@ -506,6 +670,9 @@ class Usecase:
 
         E.g. a IfcRelAssociatesMaterial referencing products unrelated
         to the current asset.
+
+        ``source`` is the library element whose whitelisted inverse attribute
+        led here, used to extend a shared IfcPresentationLayerAssignment.
         """
         # For layer assignment we don't want to add it's items
         # to avoid adding representations / items that are not related to current append_asset.
@@ -521,14 +688,34 @@ class Usecase:
         # that now needs it's RelatingObjects to be extended by the current asset.
         existing_rel = None
         if (new := self.reuse_identities.get(element_identity)) is not None:
+            self.new_reuse_identities.setdefault(new.id(), set()).add(element_identity)
+            if skip_not_reused_entities_attr_i is not None:
+                # A layer is shared by every asset drawn on it, so revisiting it
+                # must add the item that reached it now. Returning here would keep
+                # only the items of the first asset that ever reached the layer.
+                self.extend_assigned_items(new, skip_not_reused_entities_attr_i, source)
+                return
             # Currently known cases requiring attributes reassignment are rels.
             if not new.is_a("IfcRelationship"):
                 return
-        elif element.is_a("IfcRelationship") and (existing_rel := self.by_guid(element.GlobalId)):
+        elif element.is_a("IfcRelationship") and (existing_rel := self.by_guid(element.GlobalId, element.is_a())):
             new = existing_rel
         else:
             new = self.file.create_entity(element.is_a())
-            self.reuse_identities[element_identity] = new
+            self.map_reuse_identity(element_identity, new)
+
+        # When a shared accumulator is provided, defer the list-valued member
+        # attributes of relationships (e.g. IfcRelAssociatesMaterial.RelatedObjects)
+        # instead of re-scanning and re-assigning the growing list on every element
+        # append (O(n^2)). flush_deferred_relationship_members assigns them once.
+        # Members that are not another asset are still pulled in, but only once.
+        defer_member_lists = False
+        if self.deferred_relationship_members is not None and new.is_a("IfcRelationship"):
+            if new.id() in self.deferred_relationship_members:
+                # Non-member attributes were set the first time; members deferred.
+                return
+            self.deferred_relationship_members[new.id()] = (element, new)
+            defer_member_lists = True
 
         for i, attribute in enumerate(element):
             new_attribute = None
@@ -545,17 +732,38 @@ class Usecase:
                 ):
                     new_attribute = self.add_element(attribute)
             elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
+                if defer_member_lists:
+                    for item in attribute:
+                        if self.is_another_asset(item):
+                            continue
+                        new_item = self.add_element(item)
+                        if not item.is_a("IfcRoot"):
+                            # Non-IfcRoot members (e.g. IfcProperty in
+                            # IfcRelOverridesProperties.OverridingProperties) have no
+                            # GlobalId, so flush_deferred_relationship_members cannot
+                            # match them that way. Record the mapping by identity so
+                            # it can resolve them instead of silently dropping them.
+                            if new_item is not None:
+                                self.map_reuse_identity(item.identity(), new_item)
+                    continue
                 new_attribute = []
                 for item in attribute:
                     if self.is_another_asset(item):
                         continue
                     if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
-                        identity = item.identity()
-                        if (item := self.reuse_identities.get(identity)) is None:
+                        reused = self.resolve_added(item)
+                        if reused is None:
                             continue
+                        item = reused
                     else:
                         item = self.add_element(item)
                     new_attribute.append(item)
+                if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
+                    if (deferred := self.deferred_layer_items) is not None:
+                        # Collect the items in Python and let flush_deferred_layer_items
+                        # write this layer's set once, instead of on every append.
+                        deferred[new.id()] = (new, new_attribute)
+                        continue
                 # If rel exists we need to make sure previously assigned elements are untouched
                 # e.g. not to assign a material or a pset from element.
                 if existing_rel:
@@ -566,11 +774,47 @@ class Usecase:
             if new_attribute is not None:
                 new[i] = new_attribute
 
+    def resolve_added(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the appended counterpart of a library element, if there is one."""
+        added = self.reuse_identities.get(element.identity())
+        if added is None:
+            # reuse_identities is only filled by file_add's per-attribute path,
+            # the native file.add fast path records added_elements.
+            added = self.added_elements.get(element.id())
+        return added
+
+    def extend_assigned_items(
+        self,
+        new: ifcopenshell.entity_instance,
+        attr_i: int,
+        source: Union[ifcopenshell.entity_instance, None],
+    ) -> None:
+        """Add ``source``'s appended counterpart to an already created layer assignment."""
+        if source is None:
+            return
+        item = self.resolve_added(source)
+        if item is None:
+            return
+        if (deferred := self.deferred_layer_items) is not None:
+            if (entry := deferred.get(new.id())) is not None:
+                entry[1].append(item)
+                return
+        # AssignedItems is the inverse of LayerAssignment(s), so the item itself
+        # tells us whether it is already on this layer without scanning the layer.
+        for inverse_attribute in ("LayerAssignments", "LayerAssignment"):
+            assignments = getattr(item, inverse_attribute, None)
+            if assignments is None:
+                continue
+            if new in assignments:
+                return
+            break
+        new[attr_i] = list(new[attr_i] or ()) + [item]
+
     def is_another_asset(self, element: ifcopenshell.entity_instance) -> bool:
         """Is IFC entity from inverse attribute is another asset to append that should be skipped."""
         if element == self.settings["element"]:
             return False
-        elif element.is_a("IfcRoot") and self.by_guid(element.GlobalId) is not None:
+        elif element.is_a("IfcRoot") and self.by_guid(element.GlobalId, element.is_a()) is not None:
             return False
         elif element.is_a("IfcDistributionPort"):
             return False
@@ -594,7 +838,9 @@ class Usecase:
             for inverse in self.file.get_inverse(added_context):
                 ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
 
-        with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):
+        with SafeRemovalContext(
+            self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name, self.new_reuse_identities
+        ):
             for added_context in added_contexts:
                 ifcopenshell.util.element.remove_deep2(self.file, added_context)
 
@@ -668,6 +914,7 @@ class Usecase:
         reuse_identities = self.reuse_identities
         element_identity = element.identity()
         if added_element := reuse_identities.get(element_identity):
+            self.new_reuse_identities.setdefault(added_element.id(), set()).add(element_identity)
             return added_element
 
         ifc_class = element.is_a()
@@ -699,7 +946,7 @@ class Usecase:
                     (e for e in ifc_file.by_type(ifc_class) if getattr(e, attr_name) == subelement_id), None
                 )
                 if existing_org is not None:
-                    reuse_identities[element_identity] = existing_org
+                    self.map_reuse_identity(element_identity, existing_org)
                     return existing_org
 
         # Check if element already exists.
@@ -708,37 +955,38 @@ class Usecase:
         # then it might create duplicated subelements.
         if element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
-            if profile_name is not None:
+            if is_reusable_name(profile_name):
                 existing_profile = next(
                     (e for e in ifc_file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None
                 )
                 if existing_profile is not None:
-                    reuse_identities[element_identity] = existing_profile
+                    self.map_reuse_identity(element_identity, existing_profile)
                     return existing_profile
 
         elif element.is_a("IfcMaterial"):
             material_name = element.Name
-            existing_material = next((e for e in ifc_file.by_type("IfcMaterial") if e.Name == material_name), None)
-            if existing_material is not None:
-                reuse_identities[element_identity] = existing_material
-                return existing_material
+            if is_reusable_name(material_name):
+                existing_material = next((e for e in ifc_file.by_type("IfcMaterial") if e.Name == material_name), None)
+                if existing_material is not None:
+                    self.map_reuse_identity(element_identity, existing_material)
+                    return existing_material
 
         elif ifc_class in MATERIAL_SETS:
             name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
             material_set_name = getattr(element, name_attr)
-            if material_set_name is not None:
+            if is_reusable_name(material_set_name):
                 for candidate in ifc_file.by_type(ifc_class):
                     if getattr(candidate, name_attr) == material_set_name:
                         if self.material_sets_are_equal(element, candidate):
-                            reuse_identities[element_identity] = candidate
+                            self.map_reuse_identity(element_identity, candidate)
                             return candidate
 
         elif element.is_a("IfcPresentationStyle"):
             style_name = element.Name
-            if style_name is not None:
+            if is_reusable_name(style_name):
                 existing_style = next((e for e in ifc_file.by_type(ifc_class) if e.Name == style_name), None)
                 if existing_style is not None:
-                    reuse_identities[element_identity] = existing_style
+                    self.map_reuse_identity(element_identity, existing_style)
                     return existing_style
 
         elif ifc_class == "IfcApplication":
@@ -748,19 +996,19 @@ class Usecase:
                     (e for e in ifc_file.by_type("IfcApplication") if e.ApplicationIdentifier == app_id), None
                 )
                 if existing_app is not None:
-                    reuse_identities[element_identity] = existing_app
+                    self.map_reuse_identity(element_identity, existing_app)
                     return existing_app
 
         elif ifc_class == "IfcOrganization":
             existing_org = get_existing_element_(element)
             if existing_org is not None:
-                reuse_identities[element_identity] = existing_org
+                self.map_reuse_identity(element_identity, existing_org)
                 return existing_org
 
         elif ifc_class == "IfcPerson":
             existing_person = get_existing_element_(element)
             if existing_person is not None:
-                reuse_identities[element_identity] = existing_person
+                self.map_reuse_identity(element_identity, existing_person)
                 return existing_person
 
         elif ifc_class == "IfcPersonAndOrganization":
@@ -769,14 +1017,17 @@ class Usecase:
             ):
                 for pao in ifc_file.by_type("IfcPersonAndOrganization"):
                     if pao.ThePerson == person and pao.TheOrganization == org:
-                        reuse_identities[element_identity] = pao
+                        self.map_reuse_identity(element_identity, pao)
                         return pao
 
         attrs: dict[int, Any] = {}
 
         # Utils method for the loop.
         def get_tuple_type(tuple_: tuple) -> type:
-            while isinstance(tuple_, tuple):
+            # Guard against empty (possibly nested) tuples, e.g. an aggregate
+            # attribute set to `()` or `((),)`, which would otherwise index
+            # into an empty tuple and raise IndexError (see #7261).
+            while isinstance(tuple_, tuple) and tuple_:
                 tuple_ = tuple_[0]
             return type(tuple_)
 
@@ -820,7 +1071,7 @@ class Usecase:
 
         # Adding entity at the end just to keep it consistent with `file.add`.
         new = ifc_file.create_entity(ifc_class)
-        reuse_identities[element_identity] = new
+        self.map_reuse_identity(element_identity, new)
         for attr_index, attr_value in attrs.items():
             new[attr_index] = attr_value
 
