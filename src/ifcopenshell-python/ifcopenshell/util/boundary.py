@@ -281,14 +281,27 @@ def auto_generate_boundaries(
         space_face_normals_world[space_ngon_idx] = space_face_normal_world
         covered_by_face[space_ngon_idx] = []
 
-        candidates = []
-        for element in building_elements:
-            if element.id() in all_filling_ids:
-                continue
-            if element.is_a() in ("IfcWall", "IfcColumn") and element.id() in matched_walls_and_columns:
-                continue
-            match = _match_element_to_space_face(
-                element,
+        surviving_candidates = _match_space_face_candidates(
+            building_elements,
+            shapes,
+            element_ngons,
+            space_matrix,
+            space_matrix_inv,
+            space_verts_l,
+            space_face_polygon,
+            face_matrix_inv,
+            space_face_normal_world,
+            all_filling_ids,
+            matched_walls_and_columns,
+        )
+
+        # A sloped roof/slab/wall face is not anti-parallel to the space face
+        # it bounds, so it fails the strict gate above and leaves the face
+        # uncovered. Run a relaxed matching pass as a fallback so that such
+        # faces still generate a boundary.
+        if not surviving_candidates:
+            surviving_candidates = _match_space_face_candidates(
+                building_elements,
                 shapes,
                 element_ngons,
                 space_matrix,
@@ -297,59 +310,10 @@ def auto_generate_boundaries(
                 space_face_polygon,
                 face_matrix_inv,
                 space_face_normal_world,
+                all_filling_ids,
+                matched_walls_and_columns,
+                relaxed=True,
             )
-            if match is None:
-                continue
-            dist_min, plane_offset_min, matching_polygons, matched_elem_normal = match
-
-            if len(matching_polygons) == 1:
-                gross_boundary_polygon = matching_polygons[0]
-            else:
-                gross_boundary_polygon = shapely.ops.unary_union(matching_polygons)
-                if type(gross_boundary_polygon) == shapely.GeometryCollection:
-                    for geom in gross_boundary_polygon.geoms:
-                        if type(geom) == shapely.Polygon:
-                            gross_boundary_polygon = geom
-                            break
-
-            if not (isinstance(gross_boundary_polygon, shapely.Polygon) and gross_boundary_polygon.is_valid):
-                continue
-            if gross_boundary_polygon.is_empty:
-                continue
-
-            candidates.append((element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal))
-
-        # A space face may be matched by several elements within the distance
-        # tolerance (e.g. a second wall layer or an element end cap). The
-        # element closest to the face is the actual bounding surface, so
-        # candidates are kept in order of increasing plane offset (ties broken
-        # by polygon area). A candidate whose polygon is entirely covered by
-        # the candidates already kept is redundant and is absorbed into the
-        # larger boundary. This includes coplanar candidates: e.g. wall end
-        # caps that are coplanar with the ceiling and fully covered by the
-        # slab above do not get their own boundary in the reference output.
-        surviving_candidates = []
-        kept_union = None
-        for element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal in sorted(
-            candidates, key=lambda c: (c[2] if c[2] is not None else float("inf"), -c[3].area)
-        ):
-            if kept_union is not None and gross_boundary_polygon.difference(kept_union).area < 1e-4:
-                continue
-            surviving_candidates.append(
-                (element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal)
-            )
-            kept_union = gross_boundary_polygon if kept_union is None else kept_union.union(gross_boundary_polygon)
-
-        # When a single element bounds the space face and its face is (nearly)
-        # coplanar with it, the boundary covers the full space face (1st level
-        # semantics) rather than the clipped intersection with the element
-        # face. This matches the reference output and avoids leaving corner
-        # slivers to be filled by an extra gap boundary.
-        if len(surviving_candidates) == 1:
-            element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal = surviving_candidates[0]
-            if plane_offset_min is not None and plane_offset_min <= FULL_FACE_OFFSET_TOL:
-                gross_boundary_polygon = space_face_polygon
-            surviving_candidates[0] = (element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal)
 
         for element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal in surviving_candidates:
             exterior_boundary_polygon = gross_boundary_polygon
@@ -466,6 +430,102 @@ def auto_generate_boundaries(
     return boundaries
 
 
+def _match_space_face_candidates(
+    building_elements,
+    shapes,
+    element_ngons,
+    space_matrix,
+    space_matrix_inv,
+    space_verts_l,
+    space_face_polygon,
+    face_matrix_inv,
+    space_face_normal_world,
+    all_filling_ids,
+    matched_walls_and_columns,
+    relaxed=False,
+):
+    """Match all building elements against one space face and select survivors.
+
+    When ``relaxed`` is True, sloped element faces that only roughly oppose
+    the space face are matched using a footprint-scaled distance tolerance.
+    Relaxed matches keep ``plane_offset_min`` as None so they sort last and
+    never trigger the single-candidate full-face substitution.
+    """
+    candidates = []
+    for element in building_elements:
+        if element.id() in all_filling_ids:
+            continue
+        if element.is_a() in ("IfcWall", "IfcColumn") and element.id() in matched_walls_and_columns:
+            continue
+        match = _match_element_to_space_face(
+            element,
+            shapes,
+            element_ngons,
+            space_matrix,
+            space_matrix_inv,
+            space_verts_l,
+            space_face_polygon,
+            face_matrix_inv,
+            space_face_normal_world,
+            relaxed=relaxed,
+        )
+        if match is None:
+            continue
+        dist_min, plane_offset_min, matching_polygons, matched_elem_normal = match
+
+        if len(matching_polygons) == 1:
+            gross_boundary_polygon = matching_polygons[0]
+        else:
+            gross_boundary_polygon = shapely.ops.unary_union(matching_polygons)
+            if type(gross_boundary_polygon) == shapely.GeometryCollection:
+                for geom in gross_boundary_polygon.geoms:
+                    if type(geom) == shapely.Polygon:
+                        gross_boundary_polygon = geom
+                        break
+
+        if not (isinstance(gross_boundary_polygon, shapely.Polygon) and gross_boundary_polygon.is_valid):
+            continue
+        if gross_boundary_polygon.is_empty:
+            continue
+
+        candidates.append((element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal))
+
+    # A space face may be matched by several elements within the distance
+    # tolerance (e.g. a second wall layer or an element end cap). The
+    # element closest to the face is the actual bounding surface, so
+    # candidates are kept in order of increasing plane offset (ties broken
+    # by polygon area). A candidate whose polygon is entirely covered by
+    # the candidates already kept is redundant and is absorbed into the
+    # larger boundary. This includes coplanar candidates: e.g. wall end
+    # caps that are coplanar with the ceiling and fully covered by the
+    # slab above do not get their own boundary in the reference output.
+    surviving_candidates = []
+    kept_union = None
+    for element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal in sorted(
+        candidates, key=lambda c: (c[2] if c[2] is not None else float("inf"), -c[3].area)
+    ):
+        if kept_union is not None and gross_boundary_polygon.difference(kept_union).area < 1e-4:
+            continue
+        surviving_candidates.append((element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal))
+        kept_union = gross_boundary_polygon if kept_union is None else kept_union.union(gross_boundary_polygon)
+
+    # When a single element bounds the space face and its face is (nearly)
+    # coplanar with it, the boundary covers the full space face (1st level
+    # semantics) rather than the clipped intersection with the element
+    # face. This matches the reference output and avoids leaving corner
+    # slivers to be filled by an extra gap boundary. It only applies to
+    # strict anti-parallel matches: a relaxed (sloped) face is not coplanar
+    # with the space face, so plane_offset_min is None and the substitution
+    # is skipped.
+    if not relaxed and len(surviving_candidates) == 1:
+        element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal = surviving_candidates[0]
+        if plane_offset_min is not None and plane_offset_min <= FULL_FACE_OFFSET_TOL:
+            gross_boundary_polygon = space_face_polygon
+        surviving_candidates[0] = (element, dist_min, plane_offset_min, gross_boundary_polygon, matched_elem_normal)
+
+    return surviving_candidates
+
+
 def _match_element_to_space_face(
     element,
     shapes,
@@ -476,6 +536,7 @@ def _match_element_to_space_face(
     space_face_polygon,
     face_matrix_inv,
     space_face_normal_world,
+    relaxed=False,
 ):
     """Match a building element's faces against a single space face.
 
@@ -520,11 +581,22 @@ def _match_element_to_space_face(
         is_parallel = _is_x(angle, 0, tolerance=2)
 
         if not (is_anti_parallel or (is_horizontal_face and is_parallel and is_valid_element)):
-            continue
+            if not relaxed or angle < 92:
+                continue
 
-        sv_in_elem = sb.np_apply_matrix(space_centroid[np.newaxis], element_matrix_inv @ space_matrix)[0]
-        dist = float(np.dot(sv_in_elem - elem_verts_l[0], elem_face_normal_local))
         dist_tol = 0.05 if is_horizontal_face else 0.5
+        if relaxed:
+            # A sloped face is not coplanar with the space face, so use the
+            # closest space face vertex and a tolerance scaled to the face
+            # footprint instead of the centroid-based strict tolerance.
+            bounds = space_face_polygon.bounds
+            diagonal = ((bounds[2] - bounds[0]) ** 2 + (bounds[3] - bounds[1]) ** 2) ** 0.5
+            dist_tol = max(0.5, 0.1 * diagonal)
+            space_verts_in_elem = sb.np_apply_matrix(space_verts_l, element_matrix_inv @ space_matrix)
+            dist = float(np.min(np.abs(np.dot(space_verts_in_elem - elem_verts_l[0], elem_face_normal_local))))
+        else:
+            sv_in_elem = sb.np_apply_matrix(space_centroid[np.newaxis], element_matrix_inv @ space_matrix)[0]
+            dist = float(np.dot(sv_in_elem - elem_verts_l[0], elem_face_normal_local))
         if abs(dist) > dist_tol:
             continue
 
@@ -560,10 +632,11 @@ def _match_element_to_space_face(
         matching_polygons.append(gross_boundary_polygon)
         matched_elem_normal = elem_face_normal_world
         dist_min = abs(dist) if dist_min is None else min(dist_min, abs(dist))
-        space_face_normal = _face_normal(space_verts_l)
-        if space_face_normal is not None:
-            plane_offset = abs(float(np.dot(space_face_normal, elem_verts_in_space[0] - space_verts_l[0])))
-            plane_offset_min = plane_offset if plane_offset_min is None else min(plane_offset_min, plane_offset)
+        if not relaxed:
+            space_face_normal = _face_normal(space_verts_l)
+            if space_face_normal is not None:
+                plane_offset = abs(float(np.dot(space_face_normal, elem_verts_in_space[0] - space_verts_l[0])))
+                plane_offset_min = plane_offset if plane_offset_min is None else min(plane_offset_min, plane_offset)
 
     if not matching_polygons:
         return None
