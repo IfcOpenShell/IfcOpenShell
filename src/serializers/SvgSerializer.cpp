@@ -108,6 +108,7 @@ bool SvgSerializer::ready() {
 	svg_use_edge_classification_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgUseEdgeClassification>().get();
 	svg_render_crease_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderCreaseEdges>().get();
 	svg_render_sharp_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderSharpEdges>().get();
+	svg_render_hidden_edges_ = geometry_settings().get<ifcopenshell::geometry::settings::SvgRenderHiddenEdges>().get();
 	return true;
 }
 
@@ -1486,7 +1487,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					if (storey) {
 						auto it = storey_hlr.find(storey);
 						if (it == storey_hlr.end()) {
-							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
+							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane, svg_render_hidden_edges_) }).first;
 						}
 						it->second.add(*compound_to_hlr, data.product);
 						for (auto& kv : classified_edge_buckets) {
@@ -2379,7 +2380,7 @@ void SvgSerializer::finalize() {
 
 			// @todo do we have always have pln here?
 			if (use_hlr && pln) {
-				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, *pln);
+				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, *pln, svg_render_hidden_edges_);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };
@@ -2591,6 +2592,19 @@ void SvgSerializer::doWriteHeader() {
 				"        }\n"
 				"        path {\n"
 				"            stroke-width: 0.3;\n"
+				"        }\n";
+		}
+
+		// Occluded linework (issue #6424). Emitted only when the setting is on, so default
+		// output is unchanged. Last, so a hidden edge carrying an edge class still reads hidden.
+		if (svg_render_hidden_edges_) {
+			svg_file.stream <<
+				"        path.hidden {\n"
+				"            stroke: #000000;\n"
+				"            stroke-width: 0.13px;\n"
+				"            stroke-opacity: 0.4;\n"
+				"            stroke-dasharray: 1.5 1.5;\n"
+				"            fill: none;\n"
 				"        }\n";
 		}
 

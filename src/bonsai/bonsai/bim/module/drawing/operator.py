@@ -1151,6 +1151,9 @@ class CreateDrawing(bpy.types.Operator):
                 if global_id not in elements_with_faces:
                     continue
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
+                    # Issue #6424: occluded linework doesn't bound a visible surface.
+                    if "hidden" in path.get("class", "").split():
+                        continue
                     start, end = [[float(o) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
                     if start == end:
                         continue
@@ -1409,6 +1412,8 @@ class CreateDrawing(bpy.types.Operator):
             self.svg_settings.set("svg-render-sharp-edges", self.cprops.render_sharp)
             self.svg_settings.set("svg-ridge-angle-min-degrees", self.cprops.ridge_angle_min_degrees)
             self.svg_settings.set("svg-emit-flush-edges", self.cprops.render_flush)
+            # Issue #6424: emit occluded linework instead of dropping it.
+            self.svg_settings.set("svg-render-hidden-edges", self.cprops.render_hidden)
         except Exception:
             # Backwards compatibility with older ifcopenshell builds that don't expose these keys.
             pass
@@ -1417,6 +1422,9 @@ class CreateDrawing(bpy.types.Operator):
         self.serialiser = ifcopenshell.geom.serializers.svg(
             self.svg_buffer, self.svg_settings, self.serialiser_settings
         )
+        # ready() is what latches the svg-* geometry settings into the serialiser. IfcConvert
+        # calls it before use; without it these settings are silently ignored.
+        self.serialiser.ready()
         self.serialiser.setWithoutStoreys(True)
         self.serialiser.setPolygonal(True)
         self.serialiser.setUseHlrPoly(True)

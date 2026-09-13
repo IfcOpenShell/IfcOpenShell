@@ -407,6 +407,12 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = true;
 			};
 
+			struct SvgRenderHiddenEdges : public SettingBase<SvgRenderHiddenEdges, bool> {
+				static constexpr const char* const name = "svg-render-hidden-edges";
+				static constexpr const char* const description = "Emit the occluded (hidden) portions of projected linework as additional paths carrying the 'hidden' CSS class, so elements that sit entirely behind others still appear on the drawing. Defaults to false.";
+				static constexpr bool defaultvalue = false;
+			};
+
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
 				static constexpr const char* const name = "keep-bounding-boxes";
 				static constexpr const char* const description =
@@ -689,7 +695,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, SvgRenderHiddenEdges, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }
