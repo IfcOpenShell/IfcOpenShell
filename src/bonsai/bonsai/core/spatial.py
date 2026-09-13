@@ -121,14 +121,12 @@ def select_container(
 
 
 def select_similar_container(
-    ifc: type[tool.Ifc],
     spatial: type[tool.Spatial],
-    obj: bpy.types.Object,
+    container: ifcopenshell.entity_instance,
     is_recursive: bool = True,
+    should_unhide: bool = False,
 ) -> None:
-    element = ifc.get_entity(obj)
-    if element:
-        spatial.select_products(spatial.get_decomposed_elements(spatial.get_container(element), is_recursive))
+    spatial.select_products(spatial.get_decomposed_elements(container, is_recursive), unhide=should_unhide)
 
 
 def select_product(spatial: type[tool.Spatial], product: ifcopenshell.entity_instance) -> None:

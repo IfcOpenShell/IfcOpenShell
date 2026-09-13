@@ -284,22 +284,33 @@ class SelectContainer(bpy.types.Operator):
 class SelectSimilarContainer(bpy.types.Operator):
     bl_idname = "bim.select_similar_container"
     bl_label = "Select Similar Container"
-    bl_description = "Recurvisevly selects all objects in the container.\n\nCtrl+click to select only one level deep"
+    bl_description = "Recursively selects all objects in the container.\n\nCtrl+click to select only one level deep\nAlt+click to also unhide hidden objects (viewport and local hide)"
     bl_options = {"REGISTER", "UNDO"}
 
+    container: bpy.props.IntProperty(default=0)
     is_recursive: bpy.props.BoolProperty(default=True)
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.ctrl:
             self.is_recursive = False
+        self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
+        if self.container:
+            container = tool.Ifc.get().by_id(self.container)
+        elif element := tool.Ifc.get_entity(context.active_object):
+            container = ifcopenshell.util.element.get_container(element)
+        else:
+            return {"CANCELLED"}
+        if not container:
+            return {"CANCELLED"}
         core.select_similar_container(
-            tool.Ifc,
             tool.Spatial,
-            obj=context.active_object,
+            container=container,
             is_recursive=self.is_recursive,
+            should_unhide=self.should_unhide,
         )
         self.is_recursive = True  # <-- forcibly reset
 
@@ -434,24 +445,29 @@ class SelectDecomposedElements(bpy.types.Operator):
     should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     container: bpy.props.IntProperty()
     is_recursive: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, operator):
         return (
             "Select the active item"
-            + "\nALT+CLICK to select all listed elements.\nCTRL + CLICK to select only one level deep"
+            + "\nSHIFT+CLICK to select all listed elements.\nCTRL+CLICK to select only one level deep"
+            + "\nALT+CLICK to also unhide hidden objects (viewport and local hide)"
         )
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE":
-            if event.alt:
+            if event.shift:
                 self.should_filter = False
             if event.ctrl:
                 self.is_recursive = False
+            self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
-        tool.Spatial.select_products(tool.Spatial.get_filtered_elements(self.should_filter, self.is_recursive))
+        tool.Spatial.select_products(
+            tool.Spatial.get_filtered_elements(self.should_filter, self.is_recursive), unhide=self.should_unhide
+        )
 
         # Make selected active element in list, the active object
         props = tool.Spatial.get_spatial_props()
@@ -534,6 +550,11 @@ class SetContainerVisibility(bpy.types.Operator):
             if obj := tool.Ifc.get_object(container):
                 if collection := tool.Blender.get_object_bim_props(obj).collection:
                     collection.hide_viewport = should_hide
+            if not should_hide:
+                for element in tool.Spatial.get_decomposed_elements(container, is_recursive=False):
+                    if element_obj := tool.Ifc.get_object(element):
+                        element_obj.hide_viewport = False
+                        element_obj.hide_set(False)
             if self.should_include_children:
                 queue.extend(ifcopenshell.util.element.get_parts(container))
         return {"FINISHED"}
