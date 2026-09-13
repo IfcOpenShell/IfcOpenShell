@@ -663,3 +663,15 @@ class TestAddAnnotation:
             relating_type="element_type",
             enable_editing=True,
         )
+
+
+class TestAddElementClass:
+    def test_run(self, drawing):
+        drawing.add_element_class("element", "dashed").should_be_called()
+        subject.add_element_class(drawing, element="element", name="dashed")
+
+
+class TestRemoveElementClass:
+    def test_run(self, drawing):
+        drawing.remove_element_class("element", "dashed").should_be_called()
+        subject.remove_element_class(drawing, element="element", name="dashed")

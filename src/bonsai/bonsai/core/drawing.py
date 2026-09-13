@@ -637,3 +637,11 @@ def activate_drawing_view(
     blender.activate_camera(camera)
     drawing_tool.isolate_camera_collection(camera)
     drawing_tool.activate_drawing(camera)
+
+
+def add_element_class(drawing: type[tool.Drawing], element: ifcopenshell.entity_instance, name: str) -> None:
+    drawing.add_element_class(element, name)
+
+
+def remove_element_class(drawing: type[tool.Drawing], element: ifcopenshell.entity_instance, name: str) -> None:
+    drawing.remove_element_class(element, name)

@@ -39,6 +39,7 @@ def refresh():
     ElementFiltersData.is_loaded = False
     AnnotationData.is_loaded = False
     DecoratorData.is_loaded = False
+    ElementClassesData.is_loaded = False
 
 
 class ProductAssignmentsData:
@@ -230,6 +231,32 @@ FONT_SIZES = {
     "header": 5.0,
     "title": 7.0,
 }
+
+# CSS classes shipped in default.css that may be assigned per element.
+# Custom stylesheets are free to define their own, so this is only a
+# convenience list for the UI, never a restriction.
+ELEMENT_CLASSES = {
+    "Line Weight": ("fine", "thin", "medium", "thick", "strong"),
+    "Line Style": ("dashed", "dotted", "dashdot", "hidden"),
+    "Fill": ("fill-none", "fill-white", "fill-light", "fill-grey", "fill-dark", "fill-solid"),
+}
+
+
+class ElementClassesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"classes": cls.classes()}
+        cls.is_loaded = True
+
+    @classmethod
+    def classes(cls) -> list[str]:
+        obj = bpy.context.active_object
+        if not obj or not (element := tool.Ifc.get_entity(obj)):
+            return []
+        return tool.Drawing.get_element_classes(element)
 
 
 class DecoratorData:
