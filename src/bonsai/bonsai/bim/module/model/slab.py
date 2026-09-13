@@ -930,12 +930,18 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             props.offset_type_horizontal = items[((index + 1) % size)]
             self.set_offset(context, self.relating_type)
 
-        custom_instructions = {"Choose Axis": {"icons": True, "keys": ["EVENT_X", "EVENT_Y"]}}
+        self.handle_rectangle_mode(context, event)
+
+        custom_instructions = {
+            "Choose Axis": {"icons": True, "keys": ["EVENT_X", "EVENT_Y"]},
+            "Rectangle": {"icons": True, "keys": ["EVENT_R"]},
+        }
 
         slab_config = [
             f"Direction: {props.direction_sense}",
             f"Offset Type: {props.offset_type_horizontal}",
             f"Offset Value: {tool.Polyline.format_input_ui_units(props.offset * self.unit_scale)}",
+            f"Rectangle: {'ON' if self.tool_state.rectangle_mode else 'OFF'}",
         ]
 
         self.handle_instructions(context, custom_instructions, slab_config)
@@ -946,18 +952,16 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         self.handle_snap_selection(context, event)
 
+        rectangle = self.handle_rectangle_drawing(context, event)
+        if rectangle is not None:
+            return rectangle
+
         if (
             not self.tool_state.is_input_on
             and event.value == "RELEASE"
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ):
-            self.create_slab_from_polyline(context)
-            context.workspace.status_text_set(text=None)
-            ProductDecorator.uninstall()
-            PolylineDecorator.uninstall()
-            tool.Polyline.clear_polyline()
-            tool.Blender.update_viewport()
-            return {"FINISHED"}
+            return self.finish(context)
 
         self.handle_keyboard_input(context, event)
         self.handle_inserting_polyline(context, event)
@@ -969,6 +973,15 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         return {"RUNNING_MODAL"}
 
+    def finish(self, context):
+        self.create_slab_from_polyline(context)
+        context.workspace.status_text_set(text=None)
+        ProductDecorator.uninstall()
+        PolylineDecorator.uninstall()
+        tool.Polyline.clear_polyline()
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
 
@@ -977,6 +990,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True
         self.tool_state.plane_method = "XY"
+        self.set_rectangle_mode(tool.Model.get_polyline_props().rectangle_mode)
         self.set_offset(context, self.relating_type)
         return {"RUNNING_MODAL"}
 

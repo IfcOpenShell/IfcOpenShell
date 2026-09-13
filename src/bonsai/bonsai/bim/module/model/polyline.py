@@ -26,7 +26,7 @@ import ifcopenshell.util.unit
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 
 
 class PolylineOperator:
@@ -354,6 +354,77 @@ class PolylineOperator:
             if event.value == "RELEASE" and event.type == "BACK_SPACE":
                 tool.Polyline.remove_last_polyline_point()
                 tool.Blender.update_viewport()
+
+    def get_polyline_points(self) -> Union[bpy.types.bpy_prop_collection, list]:
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        return polyline_data[0].polyline_points if polyline_data else []
+
+    def set_rectangle_mode(self, value: bool) -> None:
+        """Rectangle mode is stored in the scene so that it is kept between tool invocations."""
+        self.tool_state.rectangle_mode = value
+        tool.Model.get_polyline_props().rectangle_mode = value
+
+    def handle_rectangle_mode(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
+        """Toggle between drawing a free form polyline and drawing a rectangle from two opposite corners."""
+        if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type == "R" and not event.shift:
+            self.set_rectangle_mode(not self.tool_state.rectangle_mode)
+            # The points already inserted don't describe a rectangle, so the shape starts over.
+            tool.Polyline.clear_polyline()
+            PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+            tool.Blender.update_viewport()
+
+    def handle_rectangle_preview(
+        self, context: bpy.types.Context, event: bpy.types.Event, should_round: bool = False
+    ) -> None:
+        """Update the provisional rectangle corners based on the first corner and the current point."""
+        if should_round and self.snapping_points[0]["type"] not in {"Plane", "Axis"}:
+            should_round = False
+        tool.Polyline.update_rectangle_polyline(self.input_ui, self.tool_state, should_round=should_round)
+        tool.Blender.update_viewport()
+
+    def handle_rectangle_drawing(
+        self, context: bpy.types.Context, event: bpy.types.Event
+    ) -> Union[set[str], None]:
+        """Handle the modal events while the second corner of a rectangle is being picked.
+
+        Once the first corner is picked, the rectangle is fully defined by the current point,
+        so picking the second corner also finishes the shape, by calling the `finish` method
+        that the operator using this must implement. Returns None when the event should keep
+        being handled as a free form polyline instead.
+        """
+        if not self.tool_state.rectangle_mode or not len(self.get_polyline_points()):
+            return None
+
+        self.handle_rectangle_preview(context, event, should_round=not self.tool_state.is_input_on)
+
+        confirm_types = {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        if not self.tool_state.is_input_on:
+            confirm_types.add("LEFTMOUSE")
+
+        if event.value == "RELEASE" and event.type in confirm_types:
+            if self.tool_state.is_input_on:
+                if not self.recalculate_inputs(context):
+                    return {"RUNNING_MODAL"}
+                self.handle_rectangle_preview(context, event)
+            if not tool.Polyline.is_rectangle_valid():
+                self.report({"WARNING"}, "Cannot create a rectangle with a zero length side.")
+                return {"RUNNING_MODAL"}
+            return self.finish(context)
+
+        self.handle_keyboard_input(context, event)
+
+        # There is no point to remove, so the rectangle starts over
+        if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type == "BACK_SPACE":
+            tool.Polyline.clear_polyline()
+            tool.Blender.update_viewport()
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            ProductDecorator.uninstall()
+            return cancel
+
+        return {"RUNNING_MODAL"}
 
     def handle_snap_selection(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if not self.tool_state.is_input_on and event.value == "PRESS" and event.type == "M":
