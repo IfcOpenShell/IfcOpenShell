@@ -496,23 +496,11 @@ class BIM_PT_sheets(Panel):
             row3 = row.row(align=True)
             row3.alignment = "RIGHT"
 
-            op = row3.operator("bim.activate_drawing_from_sheet", icon="OUTLINER_OB_CAMERA", text="")
-
-            if active_sheet.reference_type == "DRAWING":
-                drawingnamesvg = active_sheet.name
-                drawingname = drawingnamesvg.split(".svg")[0]
-                ifc_file = tool.Ifc.get()
-                ifc_annotations = ifc_file.by_type("IfcAnnotation")
-                drawingid = None
-                for annotation in ifc_annotations:
-                    if annotation.ObjectType != "DRAWING":
-                        continue
-                    Annotation_Name = annotation.Name.replace(",", "")  # Remove commas
-                    if Annotation_Name == drawingname:
-                        drawingid = annotation.id()
-                        break
-                if drawingid is not None:
-                    op.drawing = drawingid
+            # The operator resolves the drawing from the active sheet item itself (in invoke), so we
+            # deliberately don't call get_drawing_from_sheet_reference() here: draw() runs on every
+            # redraw and that helper scans all IfcAnnotation entities, which noticeably lagged the
+            # Sheets panel on large models.
+            row3.operator("bim.activate_drawing_from_sheet", icon="OUTLINER_OB_CAMERA", text="")
 
             row3.separator(factor=0.5, type="SPACE")
 
