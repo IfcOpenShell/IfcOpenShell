@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, decorator, workspace
+from . import ui, prop, operator, decorator
 
 _last_active_ptr: int = 0
 _last_profile_alignment_id: int = 0  # tracks which alignment the profile was last built for
@@ -105,38 +105,21 @@ def _on_active_object_changed(scene, depsgraph):
 
 classes = (
     # Property groups (must be registered before classes that use them)
-    prop.AlignmentPI,
-    prop.AlignmentDisplayRow,
     prop.VerticalAlignmentItem,
     prop.CantAlignmentItem,
     prop.CivilAlignmentProperties,
     prop.PICurveMarkerProperties,
     # UILists and section-toggle operators
-    ui.ALIGN_UL_alignment_pis,
     ui.ALIGN_OT_toggle_h_segments,
     ui.ALIGN_OT_toggle_v_segments,
     ui.ALIGN_OT_toggle_cant_segments,
     operator.ImportAlignmentCSV,
-    # Operators - PI Management
-    operator.ALIGN_OT_add_pi,
-    operator.ALIGN_OT_remove_pi,
-    operator.ALIGN_OT_pick_pi_from_viewport,
-    operator.ALIGN_OT_recalculate_pis,
-    operator.ALIGN_OT_clear_pis,
-    # Operators - Creation
-    operator.ALIGN_OT_create_alignment_by_pis,
-    operator.ALIGN_OT_create_alignment_by_pi,
-    # Operators - Stationing
-    operator.ALIGN_OT_add_stationing_referent,
-    operator.ALIGN_OT_name_segments,
     # Operators - Vertical Profile Window
     operator.ALIGN_OT_show_vertical_profile,
     # Operators - Segment Selection
     operator.ALIGN_OT_select_h_segment,
     operator.ALIGN_OT_select_v_segment,
     operator.ALIGN_OT_select_cant_segment,
-    # Operators - PI Edit Mode
-    operator.ALIGN_OT_enter_pi_edit_mode,
     # Operators - Alignments tab authoring workflow (Add Element + interactive draw)
     operator.ALIGN_OT_add_alignment,
     operator.ALIGN_OT_remove_alignment,
@@ -147,10 +130,6 @@ classes = (
     operator.ALIGN_OT_apply_pi_curve,
     operator.ALIGN_OT_clear_pi_markers,
     operator.ALIGN_OT_draw_horizontal_alignment,
-    # UI Panels (appear in Properties sidebar under CIVIL tab)
-    ui.ALIGN_PT_alignment_creation,
-    ui.ALIGN_PT_pi_editor,
-    ui.ALIGN_PT_alignment_stationing,
     # UI Panels (appear in Properties sidebar under ALIGNMENTS tab)
     ui.ALIGN_PT_alignment_authoring,
     ui.ALIGN_PT_alignment_stationing_authoring,
@@ -163,12 +142,6 @@ def menu_func_import(self, context):
 
 
 def register():
-    if not bpy.app.background:
-        bpy.utils.register_tool(
-            workspace.AlignmentTool,
-            separator=True,
-            group=False,
-        )
     bpy.types.Scene.CivilAlignmentProperties = bpy.props.PointerProperty(type=prop.CivilAlignmentProperties)
     bpy.types.Object.bonsai_pi_curve_marker = bpy.props.PointerProperty(type=prop.PICurveMarkerProperties)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
@@ -195,8 +168,6 @@ def unregister():
             pass
     VerticalProfileDecorator.is_installed = False
     VerticalProfileDecorator.handlers = []
-    if not bpy.app.background:
-        bpy.utils.unregister_tool(workspace.AlignmentTool)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del bpy.types.Scene.CivilAlignmentProperties
     del bpy.types.Object.bonsai_pi_curve_marker
