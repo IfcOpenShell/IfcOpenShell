@@ -213,6 +213,7 @@ public:
     std::set<std::string> types_to_bypass_loading_;
 
   private:
+    bool lazy_loading_ = false;
     file_open_status good_ = file_open_status::SUCCESS;
     std::reference_wrapper<ifcopenshell::logger> logger_;
 
@@ -283,6 +284,12 @@ public:
     file(const uninitialized_tag& tag, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     bool initialize(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false);
+    // Index the file with one pass and parse each instance's attributes on
+    // first access instead of parsing everything up front. Set before
+    // initialize(). Falls back to the full parse if the index pass finds
+    // anything it does not handle.
+    void lazy_loading(bool value) { lazy_loading_ = value; }
+    bool lazy_loading() const { return lazy_loading_; }
 #ifdef USE_MMAP
     bool initialize(const std::string& path, bool use_mmap);
 #endif
