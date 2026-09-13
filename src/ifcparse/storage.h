@@ -623,6 +623,7 @@ namespace ifcopenshell {
             std::vector<unsigned> lazy_bypassed_;
             std::vector<std::pair<uint32_t, uint64_t>> lazy_offsets_;
             bool index_lazily(const std::string& path, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
+
             void materialize(instance_data* data);
 
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
