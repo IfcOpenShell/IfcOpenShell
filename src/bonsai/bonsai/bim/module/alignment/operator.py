@@ -187,10 +187,11 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     alignment_name: StringProperty(name="Name", default="Alignment")
-    start_station: FloatProperty(
+    start_station: StringProperty(
         name="Start Station",
-        description="Station value at the start of the alignment (distance along 0)",
-        default=0.0,
+        description="Station value at the start of the alignment (distance along 0). "
+        "Accepts a plain number or stationing notation, e.g. 10+00 or 1+000",
+        default="0",
     )
 
     @classmethod
@@ -202,7 +203,13 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         try:
-            alignment = core.create_alignment(tool.Ifc, tool.Alignment, self.alignment_name, self.start_station)
+            start_station = tool.Alignment.parse_station(self.start_station)
+        except ValueError as e:
+            self.report({"ERROR"}, f"Invalid start station: {e}")
+            return {"CANCELLED"}
+
+        try:
+            alignment = core.create_alignment(tool.Ifc, tool.Alignment, self.alignment_name, start_station)
         except ValueError as e:
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}
@@ -275,7 +282,11 @@ class ALIGN_OT_set_start_station(Operator, tool.Ifc.Operator):
     bl_description = "Change the alignment's start station"
     bl_options = {"REGISTER", "UNDO"}
 
-    station: FloatProperty(name="Start Station", default=0.0)
+    station: StringProperty(
+        name="Start Station",
+        description="Accepts a plain number or stationing notation, e.g. 10+00 or 1+000",
+        default="0",
+    )
 
     @classmethod
     def poll(cls, context):
@@ -288,23 +299,30 @@ class ALIGN_OT_set_start_station(Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         alignment = tool.Alignment.get_active_alignment()
-        self.station = ifcopenshell.api.alignment.get_alignment_start_station(tool.Ifc.get(), alignment) or 0.0
+        current = ifcopenshell.api.alignment.get_alignment_start_station(tool.Ifc.get(), alignment) or 0.0
+        self.station = tool.Alignment.format_station(current)
         return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):
+        try:
+            station = tool.Alignment.parse_station(self.station)
+        except ValueError as e:
+            self.report({"ERROR"}, f"Invalid station: {e}")
+            return {"CANCELLED"}
+
         alignment = tool.Alignment.get_active_alignment()
         start_referent = tool.Alignment.find_stationing_referent_at(alignment, 0.0)
         if start_referent is None:
             # No stationing at all yet (e.g. an alignment from before this
             # feature existed) -- add the start referent rather than error.
             start_referent = ifcopenshell.api.alignment.add_stationing_referent(
-                tool.Ifc.get(), tool.Alignment.format_station(self.station), alignment, 0.0, self.station
+                tool.Ifc.get(), tool.Alignment.format_station(station), alignment, 0.0, station
             )
         else:
-            tool.Alignment.set_stationing_referent_station(start_referent, self.station)
+            tool.Alignment.set_stationing_referent_station(start_referent, station)
         tool.Alignment.create_object_for_referent(start_referent)
         alignment_decorator.AlignmentSegmentDecorator.refresh()
-        self.report({"INFO"}, f"Start station set to {tool.Alignment.format_station(self.station)}")
+        self.report({"INFO"}, f"Start station set to {tool.Alignment.format_station(station)}")
         return {"FINISHED"}
 
 
@@ -327,17 +345,19 @@ class _StationEquationFields:
     distance_along: FloatProperty(
         name="Distance Along", description="Distance along the alignment where the equation applies", default=0.0
     )
-    station: FloatProperty(
+    station: StringProperty(
         name="Outgoing Station",
-        description="The station value immediately after this point",
-        default=0.0,
+        description="The station value immediately after this point. Accepts a plain "
+        "number or stationing notation, e.g. 10+00 or 1+000",
+        default="0",
         update=_on_station_equation_station_update,
     )
-    incoming_station: FloatProperty(
+    incoming_station: StringProperty(
         name="Incoming Station",
         description="The station value immediately before this point. Leave equal to Outgoing "
-        "Station (the default) for no gap/overlap",
-        default=0.0,
+        "Station (the default) for no gap/overlap. Accepts a plain number or stationing "
+        "notation, e.g. 10+00 or 1+000",
+        default="0",
     )
     reverse_direction: BoolProperty(
         name="Reverse Stationing Direction",
@@ -345,7 +365,7 @@ class _StationEquationFields:
         default=False,
     )
     # Bookkeeping only, for _on_station_equation_station_update — not shown, not saved.
-    station_snapshot: FloatProperty(options={"HIDDEN", "SKIP_SAVE"}, default=0.0)
+    station_snapshot: StringProperty(options={"HIDDEN", "SKIP_SAVE"}, default="0")
 
     def draw(self, context):
         layout = self.layout
@@ -354,9 +374,19 @@ class _StationEquationFields:
         layout.prop(self, "station")
         layout.prop(self, "reverse_direction")
 
-    @property
-    def _has_gap_or_overlap(self) -> bool:
-        return self.incoming_station != self.station
+    def _parse_stations(self):
+        """Parse the station/incoming_station text fields.
+
+        Returns (station, incoming_station, has_gap_or_overlap) — comparing
+        the parsed values rather than raw text so "1000" and "1+000" (the
+        same station, different notation) don't register as a gap.
+
+        Raises:
+            ValueError: If either field isn't a valid station.
+        """
+        station = tool.Alignment.parse_station(self.station)
+        incoming_station = tool.Alignment.parse_station(self.incoming_station)
+        return station, incoming_station, incoming_station != station
 
 
 class ALIGN_OT_add_station_equation(Operator, tool.Ifc.Operator, _StationEquationFields):
@@ -385,15 +415,21 @@ class ALIGN_OT_add_station_equation(Operator, tool.Ifc.Operator, _StationEquatio
         return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):
+        try:
+            station, incoming_station, has_gap_or_overlap = self._parse_stations()
+        except ValueError as e:
+            self.report({"ERROR"}, f"Invalid station: {e}")
+            return {"CANCELLED"}
+
         alignment = tool.Alignment.get_active_alignment()
-        name = tool.Alignment.format_station(self.station)
+        name = tool.Alignment.format_station(station)
         referent = ifcopenshell.api.alignment.add_stationing_referent(
             tool.Ifc.get(),
             name,
             alignment,
             self.distance_along,
-            self.station,
-            incoming_station=self.incoming_station if self._has_gap_or_overlap else None,
+            station,
+            incoming_station=incoming_station if has_gap_or_overlap else None,
             has_increasing_station=False if self.reverse_direction else None,
         )
         tool.Alignment.create_object_for_referent(referent)
@@ -433,9 +469,10 @@ class ALIGN_OT_edit_station_equation(Operator, tool.Ifc.Operator, _StationEquati
             return {"CANCELLED"}
 
         self.distance_along = _referent_distance_along(referent)
-        self.station = ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="Station") or 0.0
+        station_val = ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="Station") or 0.0
+        self.station = tool.Alignment.format_station(station_val)
         incoming = ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="IncomingStation")
-        self.incoming_station = incoming if incoming is not None else self.station
+        self.incoming_station = tool.Alignment.format_station(incoming if incoming is not None else station_val)
         self.reverse_direction = (
             ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="HasIncreasingStation") is False
         )
@@ -443,6 +480,12 @@ class ALIGN_OT_edit_station_equation(Operator, tool.Ifc.Operator, _StationEquati
         return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):
+        try:
+            station, incoming_station, has_gap_or_overlap = self._parse_stations()
+        except ValueError as e:
+            self.report({"ERROR"}, f"Invalid station: {e}")
+            return {"CANCELLED"}
+
         ifc = tool.Ifc.get()
         try:
             referent = ifc.by_id(self.referent_id)
@@ -463,14 +506,14 @@ class ALIGN_OT_edit_station_equation(Operator, tool.Ifc.Operator, _StationEquati
             bpy.data.objects.remove(obj, do_unlink=True)
         ifcopenshell.api.run("root.remove_product", ifc, product=referent)
 
-        name = tool.Alignment.format_station(self.station)
+        name = tool.Alignment.format_station(station)
         new_referent = ifcopenshell.api.alignment.add_stationing_referent(
             ifc,
             name,
             alignment,
             self.distance_along,
-            self.station,
-            incoming_station=self.incoming_station if self._has_gap_or_overlap else None,
+            station,
+            incoming_station=incoming_station if has_gap_or_overlap else None,
             has_increasing_station=False if self.reverse_direction else None,
         )
         tool.Alignment.create_object_for_referent(new_referent)
