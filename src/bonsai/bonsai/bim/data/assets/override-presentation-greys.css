@@ -1,0 +1,41 @@
+/*
+ * Bonsai - OpenBIM Blender Add-on
+ * Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+ *
+ * This file is part of Bonsai.
+ *
+ * Bonsai is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Bonsai is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY, without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * long with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * Starter override: softer greys for client-facing presentation drawings,
+ * with black reserved for the cut plane so it still reads as the "main"
+ * line. This is NOT a full stylesheet. Load it after default.css:
+ *   default.css, override-presentation-greys.css
+ * See docs/guides/drawings/styling.rst for the full guide.
+ */
+
+/* Keep cut lines black so the drawing still has a clear hierarchy. */
+.cut { stroke: black; }
+
+/* Grey out background/projection geometry so cut elements stand out. */
+.projection { stroke: #808080; }
+path.boundary { stroke: #808080; }
+path.crease { stroke: #a0a0a0; }
+path.sharp { stroke: #b0b0b0; }
+path.flush { stroke: #c8c8c8; }
+
+/* Grey dimension and grid linework instead of pure black. */
+.PredefinedType-DIMENSION { stroke: #606060; }
+.PredefinedType-GRID { stroke: #808080; }

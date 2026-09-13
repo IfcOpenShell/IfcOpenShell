@@ -48,6 +48,16 @@ Annotating Plan Layout
 Line Work
 =========
 
+Styling Drawings
+=================
+
+Every drawing Bonsai generates is styled by a CSS stylesheet, controlling
+line weights, colours, dash patterns, text sizes and material hatches.
+See :doc:`styling` for a full guide, including how to add your own styling
+on top of the built-in defaults without editing them directly, a full
+reference of the styling classes Bonsai understands, and ready-to-use
+starter stylesheets.
+
 Annotations & Tags
 ==================
 
@@ -117,3 +127,9 @@ After mastering these basics, you may want to explore:
 
 Remember, effective drawings are key to communicating your design intent.
 Take time to explore the various options and develop a consistent style for your project documentation.
+
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+
+   styling
