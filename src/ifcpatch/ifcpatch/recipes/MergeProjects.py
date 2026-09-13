@@ -28,6 +28,7 @@ import ifcopenshell.util.unit
 import numpy as np
 
 import ifcpatch
+from ifcpatch.recipes.MergeDuplicateContexts import Patcher as MergeDuplicateContexts
 from ifcpatch.recipes.SetFalseOrigin import Patcher as SetFalseOrigin
 
 
@@ -78,6 +79,16 @@ class Patcher(ifcpatch.BasePatcher):
                 assert isinstance(other, ifcopenshell.file)
 
             self.merge(other)
+
+        # reuse_existing_contexts() removes each merged-in context that
+        # duplicates an existing one, but its removal (remove_deep2 over an
+        # unordered set) is order-sensitive and, depending on the in-memory
+        # entity layout, can silently leave a matched context behind as an
+        # orphaned duplicate. That yields two equivalent contexts (e.g. two
+        # Model/Body/MODEL_VIEW), which is non-conformant and breaks lookups
+        # that resolve a context by attributes. Collapse any that slipped
+        # through so the merge output never contains duplicate contexts.
+        MergeDuplicateContexts(self.file, self.logger).patch()
 
     def merge(self, other: ifcopenshell.file) -> None:
         if (main_unit := self.get_unit_name(self.file)) != self.get_unit_name(other):
