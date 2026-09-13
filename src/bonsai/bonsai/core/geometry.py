@@ -150,7 +150,15 @@ def remove_representation(
     element_type = geometry.get_element_type(element)
     data = None
     data_removed_by_switch_representation = False
-    if element_type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
+    # Take the type-level branch only when the removal really is type-scoped: the
+    # object is the type itself, or the mapped rep is anchored to the type's
+    # RepresentationMaps. A mapped rep pointing at a *floating* map not owned by
+    # the type (typical of Revit imports) must be removed at the occurrence level
+    # instead -- the type branch would no-op and leave it unremovable.
+    if element_type and (
+        geometry.is_type_product(element)
+        or geometry.is_mapped_representation_of_type(representation, element_type)
+    ):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
         if data and geometry.has_data_users(data):
