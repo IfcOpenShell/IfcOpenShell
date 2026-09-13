@@ -1057,6 +1057,23 @@ class Alignment:
     @classmethod
     def get_active_alignment(cls) -> ifcopenshell.entity_instance | None:
         if obj := tool.Blender.get_active_object():
+            # PI curve marker empties (see PICurveMarkerProperties) are never
+            # IFC-linked — they're transient viewport helpers — so they need
+            # their own lookup via the alignment_id they were tagged with,
+            # rather than falling through to tool.Ifc.get_entity() below.
+            # Without this, selecting a marker to press Apply Curve leaves
+            # this returning None, and the Alignments tab's dropdown/segment
+            # table (which sync from this) revert to "select an alignment".
+            marker = obj.bonsai_pi_curve_marker
+            if marker.is_pi_marker:
+                ifc_file = tool.Ifc.get()
+                if not ifc_file:
+                    return None
+                try:
+                    alignment = ifc_file.by_id(marker.alignment_id)
+                except RuntimeError:
+                    return None
+                return cls._get_top_level_alignment(alignment) if alignment.is_a("IfcAlignment") else None
             element = tool.Ifc.get_entity(obj)
             if not element:
                 return None

@@ -39,14 +39,28 @@ def _on_vertical_visibility_update(self, context):
     VerticalProfileDecorator.tag_redraw()
 
 
+# Blender requires a dynamic EnumProperty callback to keep a reference to the
+# items it returns — the strings are read by the C/RNA layer after the Python
+# call returns, and if the list is only local to the function it can be
+# garbage-collected before that happens. Without this cache, the dropdown can
+# resolve its stored index against a stale/freed items list — e.g. right
+# after adding and drawing a new alignment — leaving the dropdown (and the
+# segment table, which reads its value) showing a different alignment than
+# the one actually active in the viewport. See bpy.props.EnumProperty docs.
+_alignment_enum_items_cache: list[tuple[str, str, str]] = []
+
+
 def _alignment_enum_items(self, context):
     """Dynamic items: all top-level IfcAlignment entities in the current file."""
     import bonsai.tool as tool
 
+    global _alignment_enum_items_cache
+
     items = [("0", "— select alignment —", "")]
     ifc_file = tool.Ifc.get()
     if not ifc_file:
-        return items
+        _alignment_enum_items_cache = items
+        return _alignment_enum_items_cache
     try:
         for a in ifc_file.by_type("IfcAlignment"):
             # Skip child alignments (used in multi-vertical template)
@@ -59,7 +73,8 @@ def _alignment_enum_items(self, context):
             items.append((str(a.id()), label, ""))
     except Exception:
         pass
-    return items
+    _alignment_enum_items_cache = items
+    return _alignment_enum_items_cache
 
 
 def _on_active_alignment_update(self, context):
