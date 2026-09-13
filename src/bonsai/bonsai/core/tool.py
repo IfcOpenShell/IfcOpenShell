@@ -1296,6 +1296,7 @@ class Alignment:
     def remove_layout_segment_objects(cls, h_layout): pass
     # Stationing
     def format_station(cls, station): pass
+    def parse_station(cls, text): pass
     # CSV import
     def create_alignment_from_csv(cls, filepath): pass
     def create_hierarchy_for_alignment(cls, alignment): pass
