@@ -5,7 +5,7 @@ FILE_NAME('EPset_Drawing.ifc','2020-01-01T00:00:00',$,$,'EPset_Drawing','EPset_D
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
-#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation/DRAWING',(#23,#22,#27,#24,#29,#30,#19,#12,#26,#9,#8,#7,#6,#4,#18,#11,#5,#20,#25,#14,#10,#17,#28,#16,#3,#21,#13,#15,#2,#31,#32,#33,#34,#35,#36,#37));
+#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation/DRAWING',(#23,#22,#27,#24,#29,#30,#19,#12,#26,#9,#8,#7,#6,#4,#18,#11,#5,#20,#25,#14,#10,#17,#28,#16,#3,#21,#13,#15,#2,#31,#32,#33,#34,#35,#36,#37,#38));
 #2=IFCSIMPLEPROPERTYTEMPLATE('23JavTMk98ZxXhrUEnjAcf',$,'TargetView','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #3=IFCSIMPLEPROPERTYTEMPLATE('1yVWUt5H9DAOuu0OaMMLpe',$,'Scale','The scale of this drawing represented as a numerator and denominator, such as 1/100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #4=IFCSIMPLEPROPERTYTEMPLATE('3gsuPBtU93b8f0gg1pjkq6',$,'HumanScale','The scale of this drawing in human readable format, such as 1:100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
@@ -42,5 +42,6 @@ DATA;
 #35=IFCSIMPLEPROPERTYTEMPLATE('3TZwsEjkr5WRDKcgrYzSIA',$,'RidgeAngleMinDegrees','Minimum convex dihedral deviation from flat, in degrees, for a projection edge to be classified as ''sharp'' rather than ''flush''.',.P_SINGLEVALUE.,'IfcReal',$,$,$,$,$,.READWRITE.);
 #36=IFCSIMPLEPROPERTYTEMPLATE('2Jua$lO754vgZOkBoHM2gA',$,'RenderFlush','Whether to render ''flush'' edges (dihedral deviation below both ridge/valley thresholds). Only relevant when UseEdgeClassification is enabled.',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 #37=IFCSIMPLEPROPERTYTEMPLATE('1zM9sia2L8RQDnWZxgUwlZ',$,'JoinClasses','Comma separated list of IFC classes whose cut linework will be joined together when they meet (e.g. mitred at a corner).\X2\000A\X0\Defaults to ''IfcWall,IfcSlab'' if not set. Override to also join other classes, such as ''IfcWall,IfcSlab,IfcCovering''.',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
+#38=IFCSIMPLEPROPERTYTEMPLATE('3cq2E6EmbAFBpQKXGuLIb9',$,'ShowSheetReferences','Whether section and elevation markers show the sheet reference below the drawing number.',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 ENDSEC;
 END-ISO-10303-21;

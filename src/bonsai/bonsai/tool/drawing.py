@@ -1081,6 +1081,7 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.has_underlay = False
         camera_props.has_linework = True
         camera_props.has_annotation = True
+        camera_props.show_sheet_references = True
         camera_props.target_view = "PLAN_VIEW"
         camera_props.is_nts = False
         camera_props.use_edge_classification = False
@@ -1116,6 +1117,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.has_linework = bool(pset["HasLinework"])
             if "HasAnnotation" in pset:
                 camera_props.has_annotation = bool(pset["HasAnnotation"])
+            if "ShowSheetReferences" in pset:
+                camera_props.show_sheet_references = bool(pset["ShowSheetReferences"])
             if "IsNTS" in pset:
                 camera_props.is_nts = bool(pset["IsNTS"])
             if "UseEdgeClassification" in pset:
@@ -2353,6 +2356,10 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def has_annotation(cls, drawing: ifcopenshell.entity_instance) -> bool:
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasAnnotation", False)
+
+    @classmethod
+    def show_sheet_references(cls, drawing: ifcopenshell.entity_instance) -> bool:
+        return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("ShowSheetReferences", True)
 
     @classmethod
     def get_drawing_elements(
