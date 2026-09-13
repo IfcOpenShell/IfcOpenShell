@@ -157,7 +157,10 @@ namespace ifcopenshell {
             Token_INT,
             Token_BOOL,
             Token_FLOAT,
-            Token_BINARY
+            Token_BINARY,
+            // A number, enumeration, binary or string the tokenizer policy
+            // passed over without decoding; only its position is known.
+            Token_LITERAL
         };
 
         size_t start_pos;
@@ -172,6 +175,9 @@ namespace ifcopenshell {
 
         token() : start_pos(0),
                   type(Token_NONE) {}
+
+        token(size_t start_position, token_type token_kind)
+            : start_pos(start_position), type(token_kind), value_int(0) {}
 
         token(size_t start_position, token_type token_kind, const std::string& string_value)
             : start_pos(start_position), type(token_kind), value_string(&string_value) {}

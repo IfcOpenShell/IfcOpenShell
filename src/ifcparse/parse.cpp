@@ -268,6 +268,7 @@ IFC_SWAR_INLINE uint32_t has_special_char(uint32_t x) {
 // Returns the offset of the current token and moves cursor to next
 //
 template <typename Reader>
+template <typename Policy>
 token spf_lexer<Reader>::next() {
 
     if (stream->eof()) {
@@ -278,6 +279,11 @@ token spf_lexer<Reader>::next() {
     char character = stream->read();
 
     if (character == '/' || character == ' ' || character == '\r' || character == '\n' || character == '\t') {
+        if (character == '/') {
+            // skip_comment() wants to see the slash itself, so a comment
+            // that follows the previous token without whitespace is skipped.
+            stream->seek(pos);
+        }
         while ((skip_whitespace() != 0U) || (skip_comment() != 0U)) {
         }
         if (stream->eof()) {
@@ -303,8 +309,14 @@ token spf_lexer<Reader>::next() {
 
     if (character == '\'') {
         // If a string is encountered defer processing to the character_decoder
-        str = *decoder_;
-        return token(pos, token::Token_STRING, str);
+        if constexpr (Policy::decode_strings) {
+            str = *decoder_;
+            return token(pos, token::Token_STRING, str);
+        } else {
+            decoder_->skip();
+            pop_pool_entry();
+            return token(pos, token::Token_STRING);
+        }
     } else {
         auto ttype = token::Token_NONE;
         if (character == '"' || character == '.') {
@@ -364,6 +376,26 @@ token spf_lexer<Reader>::next() {
             remaining -= 1;
         }
 
+        if constexpr (!Policy::decode_values) {
+            // Only names and keywords are read; everything else is a literal
+            // whose position is all the caller wants.
+            if (ttype == token::Token_IDENTIFIER) {
+                int int_val;
+                if (!parse_num_(str.c_str(), str.size(), int_val)) {
+                    throw invalid_token_exception(pos, str, "instance name");
+                }
+                pop_pool_entry();
+                return token(pos, ttype, (int64_t)int_val);
+            }
+            if (ttype == token::Token_NONE && !str.empty()) {
+                const char first = str.front();
+                if ((first >= 'A' && first <= 'Z') || (first >= 'a' && first <= 'z')) {
+                    return token(pos, token::Token_KEYWORD, str);
+                }
+            }
+            pop_pool_entry();
+            return token(pos, token::Token_LITERAL);
+        }
         if (ttype == token::Token_ENUMERATION && str.size() == 1 && (str[0] == 'T' || str[0] == 'F' || str[0] == 'U')) {
             pop_pool_entry();
             return token(pos, token::Token_BOOL, str[0]);
@@ -404,6 +436,17 @@ template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<pushed_sequenti
 #ifdef USE_MMAP
 template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<mmap_impl>>;
 #endif
+
+#define IFC_INSTANTIATE_LEXER_NEXT(Reader) \
+    template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::full_tokens>(); \
+    template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::index_tokens>();
+IFC_INSTANTIATE_LEXER_NEXT(file_reader<full_buffer_impl>)
+IFC_INSTANTIATE_LEXER_NEXT(file_reader<paged_file_impl>)
+IFC_INSTANTIATE_LEXER_NEXT(file_reader<pushed_sequential_impl>)
+#ifdef USE_MMAP
+IFC_INSTANTIATE_LEXER_NEXT(file_reader<mmap_impl>)
+#endif
+#undef IFC_INSTANTIATE_LEXER_NEXT
 
 bool token::is_operator() {
     return type == Token_OPERATOR;
