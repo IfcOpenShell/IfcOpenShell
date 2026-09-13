@@ -1705,6 +1705,7 @@ class CutDecorator:
         selected_vertices = []
         selected_edges = []
         fills = {}
+        selected_fills = []
         all_vertex_i_offset = 0
         selected_vertex_i_offset = 0
 
@@ -1742,7 +1743,10 @@ class CutDecorator:
                     all_vertex_i_offset += len(verts)
 
             for colour, element_fills in DecoratorData.fill_cache[element.id()].items():
-                fills.setdefault(colour, []).append(element_fills)
+                if obj.select_get():
+                    selected_fills.append(element_fills)
+                else:
+                    fills.setdefault(colour, []).append(element_fills)
 
         gpu.state.point_size_set(1)
         gpu.state.blend_set("ALPHA")
@@ -1765,6 +1769,10 @@ class CutDecorator:
                 for verts_tris in element_fills:
                     for verts, tris in verts_tris:
                         self.draw_batch("TRIS", verts, colour, tris)
+            # Highlight selected fills so a solid-fill annotation still shows a selection cue.
+            for verts_tris in selected_fills:
+                for verts, tris in verts_tris:
+                    self.draw_batch("TRIS", verts, selected_elements_color, tris)
 
         gpu.state.point_size_set(2)
         self.line_shader.uniform_float("lineWidth", 3.0)
