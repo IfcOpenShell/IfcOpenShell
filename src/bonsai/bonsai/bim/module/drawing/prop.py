@@ -236,6 +236,28 @@ def update_target_view_camera(self: "BIMCameraProperties", context: bpy.types.Co
     update_layer(self, context, "TargetView", self.target_view)
 
 
+def update_has_status_classes(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    assert context.scene
+    if not self.update_props:
+        return
+    if not context.scene.camera or context.scene.camera.data != self.id_data:
+        return
+    element = tool.Ifc.get_entity(context.scene.camera)
+    if not element:
+        return
+    query = tool.Drawing.STATUS_METADATA_QUERY
+    metadata = tool.Drawing.get_drawing_metadata(element)
+    if self.has_status_classes:
+        if query in metadata:
+            return
+        metadata.append(query)
+    else:
+        if query not in metadata:
+            return
+        metadata = [m for m in metadata if m != query]
+    update_layer(self, context, "Metadata", ", ".join(metadata))
+
+
 def update_layer(self: "BIMCameraProperties", context: bpy.types.Context, name: str, value: Any) -> None:
     assert context.scene
     if not self.update_props:
@@ -587,6 +609,14 @@ class BIMCameraProperties(PropertyGroup):
         default=False,
         update=get_update_layer_callback("render_flush", "RenderFlush"),
     )
+    has_status_classes: BoolProperty(
+        name="Status Classes",
+        description="Tag every drawn element with its phase/status (NEW, EXISTING, DEMOLISH, ...) "
+        "as an SVG class, so the stylesheet can hatch each phase differently.\n"
+        "Adds the '/Pset_.*Common/.Status' selector query to EPset_Drawing.Metadata",
+        default=False,
+        update=update_has_status_classes,
+    )
     target_view: EnumProperty(
         name="Target View",
         default="PLAN_VIEW",
@@ -630,6 +660,7 @@ class BIMCameraProperties(PropertyGroup):
         has_underlay: bool
         has_linework: bool
         has_annotation: bool
+        has_status_classes: bool
         target_view: TargetView
 
         representation: str
