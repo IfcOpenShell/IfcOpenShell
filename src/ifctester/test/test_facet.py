@@ -240,6 +240,23 @@ class TestEntity:
         wall3 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
         run("Restrictions an be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
 
+        restriction = Restriction(options={"enumeration": ["IFCWALL"]})
+        facet = Entity(name=restriction)
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        run(
+            "Restriction entity names do not crash on IFC2X3 fail path 1/2",
+            facet=facet,
+            inst=ifc.createIfcWall(),
+            expected=True,
+        )
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        run(
+            "Restriction entity names do not crash on IFC2X3 fail path 2/2",
+            facet=facet,
+            inst=ifc.createIfcColumn(),
+            expected=False,
+        )
+
     def test_ifc2x3_occurrence_type_mapping(self):
         set_facet("entity")
 
