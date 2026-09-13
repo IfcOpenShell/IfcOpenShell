@@ -303,12 +303,19 @@ class FilledOpeningGenerator:
                 new_matrix = voided_obj.matrix_world.copy()
                 point_on_base_axis = tool.Cad.point_on_edge(target, axis_base)
                 point_on_side_axis = tool.Cad.point_on_edge(target, axis_side)
+                # The filling faces the wall body from whichever face was
+                # clicked, so a NEGATIVE direction sense (body on the wall's
+                # local -Y) inverts which face needs the 180 degree turn.
+                flipped_wall = layers["direction_sense"] == "NEGATIVE"
                 if (point_on_base_axis - target).length <= (point_on_side_axis - target).length:
                     new_matrix.translation.x = point_on_base_axis.x
                     new_matrix.translation.y = point_on_base_axis.y
+                    rotate_filling = flipped_wall
                 else:
                     new_matrix.translation.x = point_on_side_axis.x
                     new_matrix.translation.y = point_on_side_axis.y
+                    rotate_filling = not flipped_wall
+                if rotate_filling:
                     new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
 
                 if should_set_z_level:
