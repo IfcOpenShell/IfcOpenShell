@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
 import pytest
 import bpy
 import ifcopenshell
@@ -51,12 +50,6 @@ requires_geometry_engine = pytest.mark.skipif(
 # Helpers
 # ---------------------------------------------------------------------------
 
-TOLERANCE = 1e-9
-
-
-def assert_close(actual: float, expected: float, tol: float = TOLERANCE) -> None:
-    assert abs(actual - expected) < tol, f"Expected {expected}, got {actual} (diff={abs(actual-expected):.2e})"
-
 
 class _FakeDesignParams:
     """Minimal stand-in for an IfcAlignmentHorizontalSegment or similar."""
@@ -75,220 +68,6 @@ class _FakeSegment:
 
     def __init__(self, design_params=None):
         self.DesignParameters = design_params
-
-
-# ---------------------------------------------------------------------------
-# calculate_pi_geometry
-# ---------------------------------------------------------------------------
-
-
-class TestCalculatePiGeometry(NewFile):
-    def test_returns_empty_result_for_empty_pi_list(self):
-        result = subject.calculate_pi_geometry([])
-        assert result.stations == []
-        assert result.total_length == 0.0
-
-    def test_returns_single_point_result_for_one_pi(self):
-        result = subject.calculate_pi_geometry([(50.0, 100.0)])
-        assert len(result.stations) == 1
-        assert result.total_length == 0.0
-
-    def test_calculates_length_between_two_points(self):
-        result = subject.calculate_pi_geometry([(0.0, 0.0), (100.0, 0.0)])
-        assert_close(result.total_length, 100.0)
-        assert_close(result.lengths[0], 100.0)
-
-    def test_calculates_due_east_direction(self):
-        result = subject.calculate_pi_geometry([(0.0, 0.0), (100.0, 0.0)])
-        assert_close(result.directions[0], 0.0)
-
-    def test_calculates_due_north_direction(self):
-        result = subject.calculate_pi_geometry([(0.0, 0.0), (0.0, 100.0)])
-        assert_close(result.directions[0], math.pi / 2)
-
-    def test_calculates_diagonal_length(self):
-        result = subject.calculate_pi_geometry([(0.0, 0.0), (3.0, 4.0)])
-        assert_close(result.total_length, 5.0)
-
-    def test_calculates_stations_for_three_pis(self):
-        pis = [(0.0, 0.0), (100.0, 0.0), (100.0, 100.0)]
-        result = subject.calculate_pi_geometry(pis)
-        assert_close(result.stations[0], 0.0)
-        assert_close(result.stations[1], 100.0)
-        assert_close(result.stations[2], 200.0)
-        assert_close(result.total_length, 200.0)
-
-    def test_applies_start_station_offset(self):
-        pis = [(0.0, 0.0), (100.0, 0.0)]
-        result = subject.calculate_pi_geometry(pis, start_station=1000.0)
-        assert_close(result.stations[0], 1000.0)
-        assert_close(result.stations[1], 1100.0)
-        assert_close(result.total_length, 100.0)
-
-    def test_last_pi_has_zero_length_and_direction(self):
-        result = subject.calculate_pi_geometry([(0.0, 0.0), (100.0, 0.0)])
-        assert_close(result.lengths[-1], 0.0)
-        assert_close(result.directions[-1], 0.0)
-
-
-# ---------------------------------------------------------------------------
-# calculate_tangent_length   T = R * tan(Δ/2)
-# ---------------------------------------------------------------------------
-
-
-class TestCalculateTangentLength(NewFile):
-    def test_returns_zero_for_zero_radius(self):
-        assert_close(subject.calculate_tangent_length(0.0, math.pi / 2), 0.0)
-
-    def test_returns_zero_for_zero_deflection(self):
-        assert_close(subject.calculate_tangent_length(300.0, 0.0), 0.0)
-
-    def test_calculates_tangent_for_30_degree_deflection(self):
-        deflection = math.radians(30)
-        expected = 300.0 * math.tan(deflection / 2)
-        assert_close(subject.calculate_tangent_length(300.0, deflection), expected)
-
-    def test_calculates_tangent_for_90_degree_deflection(self):
-        deflection = math.pi / 2
-        expected = 100.0 * math.tan(math.pi / 4)  # R * tan(45°) = R
-        assert_close(subject.calculate_tangent_length(100.0, deflection), expected)
-
-
-# ---------------------------------------------------------------------------
-# calculate_arc_length   L = R * Δ
-# ---------------------------------------------------------------------------
-
-
-class TestCalculateArcLength(NewFile):
-    def test_calculates_arc_for_90_degree_curve(self):
-        expected = 100.0 * math.pi / 2
-        assert_close(subject.calculate_arc_length(100.0, math.pi / 2), expected)
-
-    def test_calculates_arc_for_full_circle(self):
-        expected = 50.0 * 2 * math.pi
-        assert_close(subject.calculate_arc_length(50.0, 2 * math.pi), expected)
-
-    def test_zero_radius_yields_zero_length(self):
-        assert_close(subject.calculate_arc_length(0.0, math.pi / 2), 0.0)
-
-    def test_zero_deflection_yields_zero_length(self):
-        assert_close(subject.calculate_arc_length(100.0, 0.0), 0.0)
-
-
-# ---------------------------------------------------------------------------
-# deflection_angle_from_points
-# ---------------------------------------------------------------------------
-
-
-class TestDeflectionAngleFromPoints(NewFile):
-    def test_returns_zero_for_straight_alignment(self):
-        angle = subject.deflection_angle_from_points((0.0, 0.0), (100.0, 0.0), (200.0, 0.0))
-        assert_close(angle, 0.0)
-
-    def test_positive_for_90_degree_left_turn(self):
-        """Turning left (CCW) is a positive deflection."""
-        angle = subject.deflection_angle_from_points((0.0, 0.0), (100.0, 0.0), (100.0, 100.0))
-        assert_close(angle, math.pi / 2)
-
-    def test_negative_for_90_degree_right_turn(self):
-        """Turning right (CW) is a negative deflection."""
-        angle = subject.deflection_angle_from_points((0.0, 0.0), (100.0, 0.0), (100.0, -100.0))
-        assert_close(angle, -math.pi / 2)
-
-    def test_returns_pi_for_u_turn(self):
-        """180-degree turn."""
-        angle = subject.deflection_angle_from_points((0.0, 0.0), (100.0, 0.0), (0.0, 0.0))
-        assert_close(abs(angle), math.pi)
-
-    def test_normalises_angle_into_minus_pi_to_pi_range(self):
-        """Result must always be in (-π, π]."""
-        angle = subject.deflection_angle_from_points((0.0, 0.0), (100.0, 0.0), (50.0, -50.0))
-        assert -math.pi < angle <= math.pi
-
-
-# ---------------------------------------------------------------------------
-# arc_length_at_pi
-# ---------------------------------------------------------------------------
-
-
-class TestArcLengthAtPi(NewFile):
-    def test_returns_zero_for_zero_radius(self):
-        arc = subject.arc_length_at_pi((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), radius=0.0)
-        assert_close(arc, 0.0)
-
-    def test_returns_zero_for_negative_radius(self):
-        arc = subject.arc_length_at_pi((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), radius=-100.0)
-        assert_close(arc, 0.0)
-
-    def test_calculates_arc_for_90_degree_left_turn(self):
-        expected = 100.0 * math.pi / 2
-        arc = subject.arc_length_at_pi((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), radius=100.0)
-        assert_close(arc, expected)
-
-    def test_calculates_arc_for_90_degree_right_turn(self):
-        """Sign of deflection should not affect arc length."""
-        expected = 100.0 * math.pi / 2
-        arc = subject.arc_length_at_pi((0.0, 0.0), (100.0, 0.0), (100.0, -100.0), radius=100.0)
-        assert_close(arc, expected)
-
-
-# ---------------------------------------------------------------------------
-# tangent_length_at_pi
-# ---------------------------------------------------------------------------
-
-
-class TestTangentLengthAtPi(NewFile):
-    def test_returns_zero_for_zero_radius(self):
-        t = subject.tangent_length_at_pi((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), radius=0.0)
-        assert_close(t, 0.0)
-
-    def test_returns_zero_for_negative_radius(self):
-        t = subject.tangent_length_at_pi((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), radius=-100.0)
-        assert_close(t, 0.0)
-
-    def test_calculates_tangent_for_90_degree_left_turn(self):
-        expected = 100.0 * math.tan(math.pi / 4)  # R * tan(45°)
-        t = subject.tangent_length_at_pi((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), radius=100.0)
-        assert_close(t, expected)
-
-    def test_matches_calculate_tangent_length_for_same_geometry(self):
-        """tangent_length_at_pi must agree with calculate_tangent_length."""
-        deflection = abs(subject.deflection_angle_from_points((0.0, 0.0), (100.0, 0.0), (100.0, 100.0)))
-        expected = subject.calculate_tangent_length(300.0, deflection)
-        actual = subject.tangent_length_at_pi((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), radius=300.0)
-        assert_close(actual, expected)
-
-
-# ---------------------------------------------------------------------------
-# tangent_segment_length
-# ---------------------------------------------------------------------------
-
-
-class TestTangentSegmentLength(NewFile):
-    def test_returns_full_distance_with_no_tangents(self):
-        length = subject.tangent_segment_length((0.0, 0.0), (100.0, 0.0))
-        assert_close(length, 100.0)
-
-    def test_subtracts_start_tangent(self):
-        length = subject.tangent_segment_length((0.0, 0.0), (100.0, 0.0), start_tangent=20.0)
-        assert_close(length, 80.0)
-
-    def test_subtracts_end_tangent(self):
-        length = subject.tangent_segment_length((0.0, 0.0), (100.0, 0.0), end_tangent=30.0)
-        assert_close(length, 70.0)
-
-    def test_subtracts_both_tangents(self):
-        length = subject.tangent_segment_length((0.0, 0.0), (100.0, 0.0), start_tangent=20.0, end_tangent=30.0)
-        assert_close(length, 50.0)
-
-    def test_clamps_to_zero_when_tangents_exceed_full_distance(self):
-        length = subject.tangent_segment_length((0.0, 0.0), (100.0, 0.0), start_tangent=70.0, end_tangent=70.0)
-        assert_close(length, 0.0)
-
-    def test_works_on_diagonal_leg(self):
-        """3-4-5 triangle: full_length=5, minus tangents=2 → 3."""
-        length = subject.tangent_segment_length((0.0, 0.0), (3.0, 4.0), start_tangent=1.0, end_tangent=1.0)
-        assert_close(length, 3.0)
 
 
 # ---------------------------------------------------------------------------
@@ -336,69 +115,6 @@ class TestIsZeroLengthSegment(NewFile):
         dp = _FakeDesignParams("IfcAlignmentHorizontalSegment", segment_length=1e-7)
         seg = _FakeSegment(dp)
         assert subject.is_zero_length_segment(seg) is True
-
-
-# ---------------------------------------------------------------------------
-# layout_has_real_segments
-# ---------------------------------------------------------------------------
-
-
-class _FakeAlignmentSegment:
-    """Stand-in for IfcAlignmentSegment: is_a() returns True for IfcAlignmentSegment."""
-
-    def __init__(self, design_params=None):
-        self.DesignParameters = design_params
-
-    def is_a(self, ifc_class: str) -> bool:
-        return ifc_class == "IfcAlignmentSegment"
-
-
-class _FakeRelNests:
-    def __init__(self, related_objects):
-        self.RelatedObjects = related_objects
-
-
-class _FakeLayout:
-    def __init__(self, rels=None):
-        self.IsNestedBy = rels or []
-
-
-class TestLayoutHasRealSegments(NewFile):
-    def test_returns_false_for_layout_with_no_nested_relationships(self):
-        layout = _FakeLayout(rels=[])
-        assert subject.layout_has_real_segments(layout) is False
-
-    def test_returns_false_for_layout_with_empty_related_objects(self):
-        layout = _FakeLayout(rels=[_FakeRelNests(related_objects=[])])
-        assert subject.layout_has_real_segments(layout) is False
-
-    def test_returns_false_when_only_segment_is_zero_length_terminator(self):
-        dp = _FakeDesignParams("IfcAlignmentHorizontalSegment", segment_length=0.0)
-        terminator = _FakeAlignmentSegment(dp)
-        layout = _FakeLayout(rels=[_FakeRelNests([terminator])])
-        assert subject.layout_has_real_segments(layout) is False
-
-    def test_returns_true_when_one_real_segment_exists(self):
-        dp = _FakeDesignParams("IfcAlignmentHorizontalSegment", segment_length=100.0)
-        real_seg = _FakeAlignmentSegment(dp)
-        layout = _FakeLayout(rels=[_FakeRelNests([real_seg])])
-        assert subject.layout_has_real_segments(layout) is True
-
-    def test_returns_true_when_real_segment_follows_terminator(self):
-        dp_zero = _FakeDesignParams("IfcAlignmentHorizontalSegment", segment_length=0.0)
-        dp_real = _FakeDesignParams("IfcAlignmentHorizontalSegment", segment_length=50.0)
-        layout = _FakeLayout(rels=[_FakeRelNests([_FakeAlignmentSegment(dp_zero), _FakeAlignmentSegment(dp_real)])])
-        assert subject.layout_has_real_segments(layout) is True
-
-    def test_ignores_non_alignment_segment_objects(self):
-        """Non-IfcAlignmentSegment objects in RelatedObjects should be ignored."""
-
-        class _FakeOtherObject:
-            def is_a(self, ifc_class):
-                return False
-
-        layout = _FakeLayout(rels=[_FakeRelNests([_FakeOtherObject()])])
-        assert subject.layout_has_real_segments(layout) is False
 
 
 # ---------------------------------------------------------------------------
@@ -489,108 +205,6 @@ class TestGetHorizontalLayout(NewIfc4X3):
         )
         h_layout = subject.get_horizontal_layout(alignment)
         assert h_layout is None
-
-
-# ---------------------------------------------------------------------------
-# layout_by_pi_method (IFC + tool.Ifc integration)
-# ---------------------------------------------------------------------------
-
-
-@requires_geometry_engine
-class TestLayoutByPiMethod(NewIfc4X3):
-    """Tests for Alignment.layout_by_pi_method() — IFC segment creation."""
-
-    def test_creates_ifc_segments_for_straight_alignment(self):
-        ifc_file = tool.Ifc.get()
-        alignment = align_api.create(ifc_file, name="Straight")
-        h_layout = subject.get_horizontal_layout(alignment)
-
-        subject.layout_by_pi_method(h_layout, [(0.0, 0.0), (1000.0, 0.0)], [])
-
-        segments = align_api.get_layout_segments(h_layout)
-        real_segments = [s for s in segments if not subject.is_zero_length_segment(s)]
-        assert len(real_segments) >= 1  # At least one tangent
-
-    def test_creates_arc_segment_for_curve(self):
-        ifc_file = tool.Ifc.get()
-        alignment = align_api.create(ifc_file, name="Curve")
-        h_layout = subject.get_horizontal_layout(alignment)
-
-        subject.layout_by_pi_method(
-            h_layout, [(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], [300.0]
-        )
-
-        segments = align_api.get_layout_segments(h_layout)
-        real_segments = [s for s in segments if not subject.is_zero_length_segment(s)]
-        segment_types = [s.DesignParameters.PredefinedType for s in real_segments if s.DesignParameters]
-        assert "LINE" in segment_types
-        assert "CIRCULARARC" in segment_types
-
-
-# ---------------------------------------------------------------------------
-# back_calculate_pis_from_alignment (IFC + unit conversion)
-# ---------------------------------------------------------------------------
-
-
-@requires_geometry_engine
-class TestBackCalculatePisFromAlignment(NewIfc4X3):
-    """Tests for Alignment.back_calculate_pis_from_alignment() — PI recovery."""
-
-    def test_recovers_endpoints_from_straight_alignment(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (1000.0, 0.0)], radii=[]
-        )
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        assert len(pis) >= 2
-        assert pis[0]["pi_type"] == "ENDPOINT"
-        assert pis[-1]["pi_type"] == "ENDPOINT"
-        assert_close(pis[0]["e"], 0.0, tol=0.01)
-        assert_close(pis[0]["n"], 0.0, tol=0.01)
-        assert_close(pis[-1]["e"], 1000.0, tol=0.01)
-        assert_close(pis[-1]["n"], 0.0, tol=0.01)
-
-    def test_recovers_curve_pi_with_radius(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        # Should have 3 PIs: start endpoint, curve PI, end endpoint
-        assert len(pis) == 3
-        curve_pis = [p for p in pis if p["pi_type"] == "CURVE"]
-        assert len(curve_pis) == 1
-        assert_close(curve_pis[0]["e"], 500.0, tol=1.0)
-        assert_close(curve_pis[0]["n"], 0.0, tol=1.0)
-        assert curve_pis[0]["radius"] > 0
-
-    def test_raises_for_alignment_without_horizontal_layout(self):
-        ifc_file = tool.Ifc.get()
-        alignment = ifc_file.createIfcAlignment(
-            GlobalId=ifcopenshell.guid.new(), Name="Bare"
-        )
-        with pytest.raises(ValueError, match="no horizontal layout"):
-            subject.back_calculate_pis_from_alignment(alignment)
-
-    def test_raises_for_alignment_with_only_terminator(self):
-        ifc_file = tool.Ifc.get()
-        alignment = align_api.create(ifc_file, name="EmptyLayout")
-        # align_api.create() produces a horizontal layout with only a zero-length terminator
-        with pytest.raises(ValueError, match="no real segments"):
-            subject.back_calculate_pis_from_alignment(alignment)
-
-    def test_roundtrip_preserves_pi_positions(self):
-        """Create alignment from PIs, back-calculate, verify positions match."""
-        original_hpoints = [(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)]
-        original_radii = [300.0]
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=original_hpoints, radii=original_radii
-        )
-
-        recovered_pis = subject.back_calculate_pis_from_alignment(alignment)
-        assert len(recovered_pis) == len(original_hpoints)
-
-        for original, recovered in zip(original_hpoints, recovered_pis):
-            assert_close(recovered["e"], original[0], tol=1.0)
-            assert_close(recovered["n"], original[1], tol=1.0)
 
 
 # ---------------------------------------------------------------------------
@@ -705,149 +319,6 @@ class TestGetActiveAlignment(NewIfc4X3):
 
 
 # ---------------------------------------------------------------------------
-# PI Edit Empties
-# ---------------------------------------------------------------------------
-
-
-@requires_geometry_engine
-class TestCreatePiEditEmpties(NewIfc4X3):
-    """Tests for Alignment.create_pi_edit_empties()."""
-
-    def test_creates_empties_at_pi_positions(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
-        alignment_obj = subject.create_hierarchy_for_alignment(alignment)
-        bpy.context.view_layer.objects.active = alignment_obj
-
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        empties = subject.create_pi_edit_empties(alignment, pis)
-
-        assert len(empties) == len(pis)
-        for empty in empties:
-            assert empty.type == "EMPTY"
-            assert empty.get("civil_is_pi_empty") is True
-            assert empty.get("civil_alignment_id") == alignment.id()
-
-    def test_empties_are_parented_to_alignment_object(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0)], radii=[]
-        )
-        alignment_obj = subject.create_hierarchy_for_alignment(alignment)
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        empties = subject.create_pi_edit_empties(alignment, pis)
-        for empty in empties:
-            assert empty.parent == alignment_obj
-
-    def test_empties_have_sequential_pi_indices(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
-        alignment_obj = subject.create_hierarchy_for_alignment(alignment)
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        empties = subject.create_pi_edit_empties(alignment, pis)
-        indices = [e.get("civil_pi_index") for e in empties]
-        assert indices == list(range(len(pis)))
-
-
-@requires_geometry_engine
-class TestGetPiEditEmpties(NewIfc4X3):
-    """Tests for Alignment.get_pi_edit_empties()."""
-
-    def test_finds_empties_for_given_alignment_id(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0)], radii=[]
-        )
-        alignment_obj = subject.create_hierarchy_for_alignment(alignment)
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        subject.create_pi_edit_empties(alignment, pis)
-
-        found = subject.get_pi_edit_empties(alignment.id())
-        assert len(found) == len(pis)
-
-    def test_returns_empty_list_when_no_empties_exist(self):
-        found = subject.get_pi_edit_empties(99999)
-        assert found == []
-
-    def test_returns_sorted_by_pi_index(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
-        alignment_obj = subject.create_hierarchy_for_alignment(alignment)
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        subject.create_pi_edit_empties(alignment, pis)
-
-        found = subject.get_pi_edit_empties(alignment.id())
-        indices = [e.get("civil_pi_index") for e in found]
-        assert indices == sorted(indices)
-
-
-@requires_geometry_engine
-class TestRemovePiEditEmpties(NewIfc4X3):
-    """Tests for Alignment.remove_pi_edit_empties()."""
-
-    def test_removes_all_empties_for_alignment(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
-        alignment_obj = subject.create_hierarchy_for_alignment(alignment)
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        subject.create_pi_edit_empties(alignment, pis)
-
-        removed = subject.remove_pi_edit_empties(alignment.id())
-        assert removed == len(pis)
-        assert subject.get_pi_edit_empties(alignment.id()) == []
-
-    def test_returns_zero_when_no_empties_exist(self):
-        removed = subject.remove_pi_edit_empties(99999)
-        assert removed == 0
-
-
-@requires_geometry_engine
-class TestCollectPisFromEmpties(NewIfc4X3):
-    """Tests for Alignment.collect_pis_from_empties() — reading positions back."""
-
-    def test_roundtrip_positions_through_empties(self):
-        """Create empties from PIs, collect back, verify positions match."""
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
-        alignment_obj = subject.create_hierarchy_for_alignment(alignment)
-
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        subject.create_pi_edit_empties(alignment, pis)
-
-        # Force Blender to update transforms (empties are parented)
-        bpy.context.view_layer.update()
-
-        hpoints_back, radii_back = subject.collect_pis_from_empties(alignment.id())
-        assert len(hpoints_back) == len(pis)
-
-        # Positions should round-trip: empties created from pis, collected back
-        for pi, (back_e, back_n) in zip(pis, hpoints_back):
-            assert_close(back_e, pi["e"], tol=2.0)  # Generous tolerance for georef
-            assert_close(back_n, pi["n"], tol=2.0)
-
-    def test_collects_radii_for_interior_pis_only(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
-        alignment_obj = subject.create_hierarchy_for_alignment(alignment)
-        pis = subject.back_calculate_pis_from_alignment(alignment)
-        subject.create_pi_edit_empties(alignment, pis)
-
-        _, radii_back = subject.collect_pis_from_empties(alignment.id())
-        # Radii should have one entry (for the interior PI)
-        assert len(radii_back) == 1
-        assert radii_back[0] > 0
-
-    def test_returns_empty_when_fewer_than_two_empties(self):
-        hpoints, radii = subject.collect_pis_from_empties(99999)
-        assert hpoints == []
-        assert radii == []
-
-
-# ---------------------------------------------------------------------------
 # Remove alignment hierarchy
 # ---------------------------------------------------------------------------
 
@@ -924,6 +395,11 @@ class TestIfcSaveReloadRoundtrip(NewIfc4X3):
 
 
 @requires_geometry_engine
+def _has_real_segments(layout) -> bool:
+    """Whether ``layout`` has any segment beyond the zero-length terminator."""
+    return any(not subject.is_zero_length_segment(s) for s in align_api.get_layout_segments(layout))
+
+
 class TestClearLayoutSegments(NewFile):
     """The alignment API exposes no segment-clearing helper and its layout
     functions only append, so editing relies on tool.Alignment.clear_layout_segments.
@@ -948,9 +424,9 @@ class TestClearLayoutSegments(NewFile):
         align_api.layout_horizontal_alignment_by_pi_method(
             ifc, h, hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
         )
-        assert subject.layout_has_real_segments(h) is True
+        assert _has_real_segments(h) is True
         subject.clear_layout_segments(h)
-        assert subject.layout_has_real_segments(h) is False
+        assert _has_real_segments(h) is False
         assert len(align_api.get_layout_segments(h)) == 1  # terminator only
 
     def test_relayout_after_clear_has_no_doubling_or_orphans(self):
@@ -979,32 +455,9 @@ class TestClearLayoutSegments(NewFile):
         align_api.layout_vertical_alignment_by_pi_method(
             ifc, v, [(0.0, 100.0), (500.0, 110.0), (1000.0, 100.0)], [100.0]
         )
-        assert subject.layout_has_real_segments(v) is True
+        assert _has_real_segments(v) is True
         subject.clear_layout_segments(v)
-        assert subject.layout_has_real_segments(v) is False
-
-
-@requires_geometry_engine
-class TestSetLayoutSegmentsSelectable(NewIfc4X3):
-    """PI edit mode disables segment-curve selection so clicks hit the PI
-    empties; set_layout_segments_selectable toggles hide_select accordingly."""
-
-    def test_toggles_segment_hide_select(self):
-        ifc_file = tool.Ifc.get()
-        alignment = align_api.create(ifc_file, name="Sel", include_vertical=False)
-        h = align_api.get_horizontal_layout(alignment)
-        align_api.layout_horizontal_alignment_by_pi_method(
-            ifc_file, h, hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
-        subject.create_hierarchy_for_alignment(alignment)
-        segment_objects = [o for o in bpy.data.objects if "IfcAlignmentSegment" in o.name]
-        assert len(segment_objects) >= 1
-
-        subject.set_layout_segments_selectable(h, False)
-        assert all(o.hide_select for o in segment_objects)
-
-        subject.set_layout_segments_selectable(h, True)
-        assert all(not o.hide_select for o in segment_objects)
+        assert _has_real_segments(v) is False
 
 
 class TestFormatStation(NewFile):
