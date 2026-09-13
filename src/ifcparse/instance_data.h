@@ -90,6 +90,21 @@ namespace impl {
     };
 
     template <>
+    struct variant_type_name<ifcopenshell::instance_reference> {
+        static std::string get() { return "unresolved reference"; }
+    };
+
+    template <>
+    struct variant_type_name<std::vector<ifcopenshell::reference_or_simple_type>> {
+        static std::string get() { return "unresolved reference aggregate"; }
+    };
+
+    template <>
+    struct variant_type_name<std::vector<std::vector<ifcopenshell::reference_or_simple_type>>> {
+        static std::string get() { return "unresolved reference aggregate of aggregates"; }
+    };
+
+    template <>
     struct variant_type_name<int> {
         static std::string get() { return "int"; }
     };
@@ -214,7 +229,15 @@ typedef parameter_pack <
     // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
     std::vector<std::vector<double>>,
     // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
-    std::vector<std::vector<express::base>>>
+    std::vector<std::vector<express::base>>,
+    // PARSE-TIME ONLY: a reference, or an aggregate mixing references and
+    // inline typed values, exactly as the tokenizer produced it, held in
+    // the slot until every instance has been read and then replaced by the
+    // three forms above. Never present once a file is loaded. Their indices
+    // match the Argument_UNRESOLVED_* members of argument_type.
+    instance_reference,
+    std::vector<reference_or_simple_type>,
+    std::vector<std::vector<reference_or_simple_type>>>
 type_variant_parameter_pack;
 
 template<typename Pack>

@@ -5,6 +5,8 @@
 #include <ifcparse/file.h>
 #include <ifcparse/parse.h>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -341,4 +343,94 @@ TEST_CASE("The index token policy ends every token where the full policy does, w
     CHECK(lexer.next().as_string() == "it's");
     lexer.next();
     CHECK(lexer.next().as_string() == "a\xc2\xa7" "b");
+}
+
+namespace {
+const char* const reference_resolution_spf =
+    "ISO-10303-21;\n"
+    "HEADER;\n"
+    "FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');\n"
+    "FILE_NAME('','',(''),(''),'','','');\n"
+    "FILE_SCHEMA(('IFC4'));\n"
+    "ENDSEC;\n"
+    "DATA;\n"
+    "#1=IFCCARTESIANPOINT((0.,0.,0.));\n"
+    "#2=IFCCARTESIANPOINT((1.,0.,0.));\n"
+    "#3=IFCCARTESIANPOINT((0.,1.,0.));\n"
+    "#4=IFCPOLYLINE((#1,#2,#3));\n"
+    "#5=IFCTRIMMEDCURVE(#4,(IFCPARAMETERVALUE(0.),#1),(IFCPARAMETERVALUE(1.)),.T.,.PARAMETER.);\n"
+    "#6=IFCPROPERTYSINGLEVALUE('A',$,IFCLABEL('x'),$);\n"
+    "#7=IFCPROPERTYSET('0YvctVUKr0kugbFTf53O9L',$,'Pset',$,(#6,#999));\n"
+    "#8=IFCWALL('1F$7lN9$r5MOA_lpAoNM52',$,$,$,$,$,$,$,$);\n"
+    "#9=IFCRELDEFINESBYPROPERTIES('2F$7lN9$r5MOA_lpAoNM53',$,$,$,(#8),#7);\n"
+    "#10=IFCBSPLINESURFACEWITHKNOTS(1,1,((#1,#2),(#3,#999)),.UNSPECIFIED.,.F.,.F.,.U.,(2,2),(2,2),(0.,1.),(0.,1.),.UNSPECIFIED.);\n"
+    "#11=IFCRELAGGREGATES('3F$7lN9$r5MOA_lpAoNM54',$,$,$,#999,(#8));\n"
+    "ENDSEC;\n"
+    "END-ISO-10303-21;\n";
+}
+
+TEST_CASE("References are resolved in place: scalars, lists, nested lists, mixed selects and missing names", "[ifcparse]") {
+    std::string data(reference_resolution_spf);
+    ifcopenshell::file file(data.data(), (int)data.size());
+    REQUIRE(file.good());
+
+    const std::vector<express::base> points = file.instance_by_id(4).get_attribute_value(0);
+    REQUIRE(points.size() == 3);
+    CHECK(points[0].id() == 1);
+    CHECK(points[2].id() == 3);
+
+    // A select-typed list mixing an inline typed value with a reference.
+    const std::vector<express::base> trim1 = file.instance_by_id(5).get_attribute_value(1);
+    REQUIRE(trim1.size() == 2);
+    CHECK(trim1[0].declaration().name() == "IfcParameterValue");
+    CHECK(trim1[1].id() == 1);
+    const std::vector<express::base> trim2 = file.instance_by_id(5).get_attribute_value(2);
+    REQUIRE(trim2.size() == 1);
+    CHECK(trim2[0].declaration().name() == "IfcParameterValue");
+
+    // A missing name is dropped from a list and nulls a scalar.
+    const std::vector<express::base> properties = file.instance_by_id(7).get_attribute_value(4);
+    REQUIRE(properties.size() == 1);
+    CHECK(properties[0].id() == 6);
+    CHECK(file.instance_by_id(11).get_attribute_value(4).isNull());
+    const std::vector<express::base> related = file.instance_by_id(11).get_attribute_value(5);
+    REQUIRE(related.size() == 1);
+    CHECK(related[0].id() == 8);
+
+    const express::base definition = file.instance_by_id(9).get_attribute_value(5);
+    REQUIRE(definition);
+    CHECK(definition.id() == 7);
+
+    const std::vector<std::vector<express::base>> control_points = file.instance_by_id(10).get_attribute_value(2);
+    REQUIRE(control_points.size() == 2);
+    REQUIRE(control_points[0].size() == 2);
+    CHECK(control_points[0][1].id() == 2);
+    REQUIRE(control_points[1].size() == 1);
+    CHECK(control_points[1][0].id() == 3);
+
+    // Inverses were registered for every reference, resolved or not.
+    CHECK(file.instances_by_reference(1).size() == 3);
+    CHECK(file.instances_by_reference(8).size() == 2);
+}
+
+TEST_CASE("References to bypassed instances are dropped from slots and from mixed lists", "[ifcparse]") {
+    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_reference_resolution_test.ifc";
+    {
+        std::ofstream out(path);
+        out << reference_resolution_spf;
+    }
+    ifcopenshell::file file(ifcopenshell::uninitialized_tag{});
+    file.bypass_type("IfcCartesianPoint");
+    REQUIRE(file.initialize(path.string()));
+    std::filesystem::remove(path);
+
+    const std::vector<express::base> points = file.instance_by_id(4).get_attribute_value(0);
+    CHECK(points.empty());
+    const std::vector<express::base> trim1 = file.instance_by_id(5).get_attribute_value(1);
+    REQUIRE(trim1.size() == 1);
+    CHECK(trim1[0].declaration().name() == "IfcParameterValue");
+    const std::vector<std::vector<express::base>> control_points = file.instance_by_id(10).get_attribute_value(2);
+    REQUIRE(control_points.size() == 2);
+    CHECK(control_points[0].empty());
+    CHECK(control_points[1].empty());
 }

@@ -166,6 +166,9 @@ private:
     instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     void bypass_types(const std::set<std::string>& type_names);
+    void resolve_references_in_place(bool value) {
+        storage_.resolve_references_in_place = value;
+    }
 
     void yield_header_instances(bool enabled) { yield_header_instances_ = enabled; }
 

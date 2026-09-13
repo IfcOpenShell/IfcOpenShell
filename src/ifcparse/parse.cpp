@@ -953,23 +953,30 @@ void set_direct_attribute(
     in_memory_attribute_storage& storage,
     std::optional<size_t> instance_name,
     ifcopenshell::unresolved_references* references_to_resolve,
+    bool resolve_in_place,
     size_t attribute_index,
     int resolve_reference_index,
     const T& value
 ) {
-    if constexpr (std::is_same_v<std::decay_t<T>, ifcopenshell::reference_or_simple_type>) {
-        if (instance_name && references_to_resolve) {
-            references_to_resolve->push_back(std::make_pair(
-                ifcopenshell::mutable_attribute_value{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index},
-                value
-            ));
-        }
-    } else if constexpr (std::is_same_v<std::decay_t<T>, std::vector<ifcopenshell::reference_or_simple_type>>) {
-        if (instance_name && references_to_resolve) {
-            references_to_resolve->push_back({{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index}, value});
-        }
-    } else if constexpr (std::is_same_v<std::decay_t<T>, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>) {
-        if (instance_name && references_to_resolve) {
+    constexpr bool holds_references =
+        std::is_same_v<std::decay_t<T>, ifcopenshell::reference_or_simple_type> ||
+        std::is_same_v<std::decay_t<T>, std::vector<ifcopenshell::reference_or_simple_type>> ||
+        std::is_same_v<std::decay_t<T>, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>;
+    if constexpr (holds_references) {
+        // A diverted reference (resolve_reference_index != -1) belongs to a
+        // simple type instance nested in an attribute of the owner. In place
+        // it is written into that instance's own slot, so nothing is diverted.
+        if (resolve_in_place && instance_name) {
+            if constexpr (std::is_same_v<std::decay_t<T>, ifcopenshell::reference_or_simple_type>) {
+                if (const auto* reference = std::get_if<ifcopenshell::instance_reference>(&value)) {
+                    storage.set(attribute_index, *reference);
+                } else {
+                    storage.set(attribute_index, std::get<express::base>(value));
+                }
+            } else {
+                storage.set(attribute_index, value);
+            }
+        } else if (instance_name && references_to_resolve) {
             references_to_resolve->push_back({{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index}, value});
         }
     } else {
@@ -1090,7 +1097,7 @@ shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
                     auto aggregate = read_direct_aggregate(*this, tokens, entity_instance_name, entity, reference_attribute_index, aggregate_parameter_type(parameter_type), logger_.get());
                     std::visit([&](const auto& value) {
                         if constexpr (!std::is_same_v<std::decay_t<decltype(value)>, blank>) {
-                            set_direct_attribute(storage, entity_instance_name, references_to_resolve, attribute_index_within_data, attribute_index, value);
+                            set_direct_attribute(storage, entity_instance_name, references_to_resolve, resolve_references_in_place, attribute_index_within_data, attribute_index, value);
                         }
                     }, aggregate.storage);
                 } else {
@@ -1117,7 +1124,7 @@ shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
                 }
                 if (retain_value) {
                     dispatch_token_direct(next, declared_type(parameter_type), (int) attribute_index_within_data, logger_.get(), [&](const auto& value) {
-                        set_direct_attribute(storage, entity_instance_name, references_to_resolve, attribute_index_within_data, attribute_index, value);
+                        set_direct_attribute(storage, entity_instance_name, references_to_resolve, resolve_references_in_place, attribute_index_within_data, attribute_index, value);
                     });
                 }
             }
@@ -2451,6 +2458,71 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointe
 
 template class IFC_PARSE_API ifcopenshell::instance_streamer<file_reader<full_buffer_impl>>;
 
+void ifcopenshell::impl::in_memory_file_storage::resolve_instance_references(const shared_pointer_type& data, const std::vector<unsigned>& bypassed) {
+    if (!data->storage_) {
+        return;
+    }
+    auto& slots = *data->storage_;
+    const uint32_t owner = data->id();
+    // Looks the name up; false, with the error logged, if it is missing.
+    // A bypassed name is dropped silently, as the reference table does.
+    const auto resolve = [&](const instance_reference& reference, size_t attribute_index, express::base& result) {
+        if (std::binary_search(bypassed.begin(), bypassed.end(), (unsigned)reference.v)) {
+            return false;
+        }
+        auto it = byid_.find((uint32_t)reference.v);
+        if (it == byid_.end()) {
+            logger_.get().error("Instance reference #" + std::to_string(reference.v) + " used by instance #" + std::to_string(owner) + " at attribute index " + std::to_string(attribute_index) + " not found at offset " + std::to_string(reference.file_offset));
+            return false;
+        }
+        result = express::base(it->second);
+        return true;
+    };
+    // An aggregate element: the instance it names, or the inline typed
+    // value it already is.
+    const auto resolve_element = [&](const reference_or_simple_type& element, size_t attribute_index, std::vector<express::base>& into) {
+        if (const auto* reference = std::get_if<instance_reference>(&element)) {
+            express::base instance;
+            if (resolve(*reference, attribute_index, instance)) {
+                into.push_back(instance);
+            }
+        } else {
+            into.push_back(std::get<express::base>(element));
+        }
+    };
+    for (size_t i = 0; i < slots.size(); ++i) {
+        if (slots.template has<instance_reference>(i)) {
+            express::base instance;
+            if (resolve(slots.template get<instance_reference>(i), i, instance)) {
+                slots.set(i, instance);
+            } else {
+                slots.set(i, blank{});
+            }
+        } else if (slots.template has<std::vector<reference_or_simple_type>>(i)) {
+            const auto elements = std::move(slots.template get<std::vector<reference_or_simple_type>>(i));
+            std::vector<express::base> instances;
+            instances.reserve(elements.size());
+            for (const auto& element : elements) {
+                resolve_element(element, i, instances);
+            }
+            slots.set(i, std::move(instances));
+        } else if (slots.template has<std::vector<std::vector<reference_or_simple_type>>>(i)) {
+            const auto nested_elements = std::move(slots.template get<std::vector<std::vector<reference_or_simple_type>>>(i));
+            std::vector<std::vector<express::base>> nested;
+            nested.reserve(nested_elements.size());
+            for (const auto& elements : nested_elements) {
+                std::vector<express::base> instances;
+                instances.reserve(elements.size());
+                for (const auto& element : elements) {
+                    resolve_element(element, i, instances);
+                }
+                nested.push_back(std::move(instances));
+            }
+            slots.set(i, std::move(nested));
+        }
+    }
+}
+
 template <typename Reader>
 void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass) {
     schema = nullptr;
@@ -2497,6 +2569,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
 
     auto ifcroot_type_ = schema->declaration_by_name("IfcRoot");
     streamer.bypass_types(typed_to_bypass);
+    streamer.resolve_references_in_place(true);
 
     logger_.get().status("Scanning file...");
 
@@ -2553,6 +2626,16 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
 
     const auto& bypassed = streamer.bypassed_instances();
 
+    // The names left in the attribute slots, then those of the simple type
+    // instances read inline (a select such as IfcPropertySetDefinitionSet).
+    for (auto it = byid_.begin(); it != byid_.end(); ++it) {
+        resolve_instance_references(it->second, bypassed);
+    }
+    for (const auto& data : read_simple_type_instances) {
+        resolve_instance_references(data, bypassed);
+    }
+
+    // What was read with in-place storage off: the header entities.
     for (const auto& p : streamer.references()) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
