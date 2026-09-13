@@ -152,3 +152,62 @@ def test_station_as_string():
     _test_si_stations_millimeter()
     _test_us_stations()
     _test_custom_named_conversion_based_unit_stations()
+
+
+def _si_file(unit_type="foot"):
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")  # meter
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
+    return file
+
+
+def _us_file():
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
+    return file
+
+
+def test_station_from_string_plain_number():
+    file = _si_file()
+    assert sta.station_from_string(file, "1000") == 1000.0
+    assert sta.station_from_string(file, "1000.5") == 1000.5
+    assert sta.station_from_string(file, "-50") == -50.0
+
+
+def test_station_from_string_si_notation():
+    file = _si_file()
+    assert sta.station_from_string(file, "1+000") == 1000.0
+    assert sta.station_from_string(file, "1+000.000") == 1000.0
+    assert sta.station_from_string(file, "0+100.000") == 100.0
+    assert sta.station_from_string(file, "-0+100.000") == -100.0
+    assert sta.station_from_string(file, "123+456.789") == pytest.approx(123456.789)
+
+
+def test_station_from_string_us_notation():
+    file = _us_file()
+    assert sta.station_from_string(file, "10+00") == pytest.approx(1000.0)
+    assert sta.station_from_string(file, "1+00.00") == pytest.approx(100.0)
+    assert sta.station_from_string(file, "-1+00.00") == pytest.approx(-100.0)
+    assert sta.station_from_string(file, "1234+56.79") == pytest.approx(123456.79, abs=0.01)
+
+
+def test_station_from_string_round_trips_with_station_as_string():
+    for file in (_si_file(), _us_file()):
+        for value in (0.0, 100.0, 1000.0, 123456.789, -123456.789):
+            s = sta.station_as_string(file, value)
+            assert sta.station_from_string(file, s) == pytest.approx(value, abs=0.01)
+
+
+def test_station_from_string_raises_on_invalid_input():
+    file = _si_file()
+    with pytest.raises(ValueError):
+        sta.station_from_string(file, "not a number")
+    with pytest.raises(ValueError):
+        sta.station_from_string(file, "1+")
+    with pytest.raises(ValueError):
+        sta.station_from_string(file, "+1")
+    with pytest.raises(ValueError):
+        sta.station_from_string(file, "")

@@ -899,6 +899,27 @@ class Alignment:
         return ifcopenshell.util.alignment.station_as_string(ifc_file, float(station))
 
     @classmethod
+    def parse_station(cls, text: str) -> float:
+        """Parse a station typed by the user into a float (project units).
+
+        Accepts either a plain number (``"1000"``) or stationing notation —
+        the inverse of format_station() — such as ``"10+00"`` (Imperial) or
+        ``"1+000"`` (SI); either notation is accepted regardless of the
+        project's own unit system. Falls back to a plain float parse when no
+        IFC file is open (e.g. dialog previews before a project exists).
+
+        Raises:
+            ValueError: If ``text`` is neither a plain number nor valid
+                stationing notation.
+        """
+        import ifcopenshell.util.alignment
+
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            return float(text)
+        return ifcopenshell.util.alignment.station_from_string(ifc_file, text)
+
+    @classmethod
     def _remove_blender_object(cls, obj: bpy.types.Object) -> bool:
         """Safely remove a Blender object and its data.
 

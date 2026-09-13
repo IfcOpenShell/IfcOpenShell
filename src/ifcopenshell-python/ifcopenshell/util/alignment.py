@@ -109,3 +109,57 @@ def station_as_string(file: ifcopenshell.file, sta: float):
         station_string = "-" + station_string
 
     return station_string
+
+
+def station_from_string(file: ifcopenshell.file, s: str) -> float:
+    """
+    Parses a station value typed by a user, in either of two forms:
+
+    - A plain real number, e.g. "1000" or "1000.5" -- taken literally as the
+      station value, in project units.
+    - Stationing notation "V1+V2", the inverse of :func:`station_as_string`,
+      e.g. "10+00" (a project with Imperial units) or "1+000" (a project
+      with SI units). V1 is worth 100 display-feet (Imperial) or 1000
+      display-metres (SI) -- matching station_as_string()'s plus-separator
+      placement -- and V2 is added to that, before converting the result
+      from the format's display unit (foot for Imperial, metre for SI) back
+      to the file's actual project length unit.
+
+    :param file: the IFC file, used to resolve the project's LENGTHUNIT
+    :param s: the station string to parse
+    :return: the station, in project units
+    :raises ValueError: if ``s`` is neither a plain number nor valid
+        stationing notation
+    """
+    s = s.strip()
+    if not s:
+        raise ValueError("Station value is empty")
+
+    if "+" not in s:
+        return float(s)
+
+    is_negative = s.startswith("-")
+    body = s[1:] if is_negative else s
+    left, separator, right = body.partition("+")
+    if not separator or not left.strip() or not right.strip():
+        raise ValueError(f"Invalid stationing notation: {s!r}")
+
+    v1 = float(left)
+    v2 = float(right)
+
+    unit_type = ifcopenshell.util.unit.get_project_unit(file, "LENGTHUNIT")
+    project_unit_to_metres = ifcopenshell.util.unit.calculate_unit_scale(file)
+    if unit_type is not None and unit_type.is_a("IfcConversionBasedUnit"):
+        # Imperial: display value is in feet, plus-separator is worth 100.
+        shifter = 100.0
+        metres_per_display_unit = 0.3048
+    else:
+        # SI: display value is in metres, plus-separator is worth 1000.
+        shifter = 1000.0
+        metres_per_display_unit = 1.0
+
+    display_value = v1 * shifter + v2
+    if is_negative:
+        display_value = -display_value
+
+    return display_value * metres_per_display_unit / project_unit_to_metres
