@@ -47,6 +47,14 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #endif
 
+// The cursor accessors sit on the tokenizer's innermost loop, one call per
+// byte; left to the compiler's heuristics some of them end up as calls.
+#if defined(_MSC_VER)
+#define IFC_READER_INLINE __forceinline
+#else
+#define IFC_READER_INLINE inline __attribute__((always_inline))
+#endif
+
 namespace ifcopenshell {
 
 struct file_reader_page {
@@ -134,9 +142,9 @@ public:
     size_t tell() const { return cursor_; }
 
     size_t size() const { return impl_->size(); }
-    size_t remaining() const { return size() - cursor_; }
+    IFC_READER_INLINE size_t remaining() const { return size() - cursor_; }
 
-    char peek() const {
+    IFC_READER_INLINE char peek() const {
         if (cursor_ >= size()) {
             throw std::out_of_range("peek at EOF");
         }
@@ -146,7 +154,7 @@ public:
         return impl_->get(cursor_);
     }
 
-    uint64_t peek_u64() const {
+    IFC_READER_INLINE uint64_t peek_u64() const {
         if (remaining() < sizeof(uint64_t)) {
             throw std::out_of_range("peek_u64 at EOF");
         }
@@ -158,7 +166,7 @@ public:
         return impl_->get_u64(cursor_);
     }
 
-    uint32_t peek_u32() const {
+    IFC_READER_INLINE uint32_t peek_u32() const {
         if (remaining() < sizeof(uint32_t)) {
             throw std::out_of_range("peek_u32 at EOF");
         }
@@ -170,7 +178,7 @@ public:
         return impl_->get_u32(cursor_);
     }
 
-    void increment(size_t count = 1) {
+    IFC_READER_INLINE void increment(size_t count = 1) {
         if (cursor_ + count > size()) {
             throw std::out_of_range("increment past EOF");
         }
@@ -189,17 +197,17 @@ public:
         impl_->drop_pages(up_to_position);
     }
 
-    bool eof() const {
+    IFC_READER_INLINE bool eof() const {
         return cursor_ >= size();
     }
 
-    char read() {
+    IFC_READER_INLINE char read() {
         auto c = peek();
         increment(1);
         return c;
     }
 
-    char get(size_t position) const {
+    IFC_READER_INLINE char get(size_t position) const {
         if (const char* p = cached_(position, 1)) {
             return *p;
         }
@@ -221,11 +229,28 @@ private:
     // A pointer to `count` bytes at `position` if they lie in one page,
     // else nullptr. Always nullptr for a contiguous implementation, whose
     // get() is already direct.
-    const char* cached_(size_t position, size_t count) const {
+    IFC_READER_INLINE const char* cached_(size_t position, size_t count) const {
         if constexpr (std::is_same_v<Impl, paged_file_impl>) {
             if (cached_data_ != nullptr && position >= cached_begin_ && position + count <= cached_end_ && cached_evictions_ == impl_->evictions()) {
                 return cached_data_ + (position - cached_begin_);
             }
+            return cached_refresh_(position, count);
+        } else {
+            (void)position;
+            (void)count;
+            return nullptr;
+        }
+    }
+
+    // The slow half of cached_(): fetches the page and re-points the cache.
+    // Kept out of line so the check above inlines into every peek.
+#if defined(_MSC_VER)
+    __declspec(noinline)
+#else
+    __attribute__((noinline))
+#endif
+    const char* cached_refresh_(size_t position, size_t count) const {
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
             const size_t page_size = impl_->page_size();
             const size_t index = position / page_size;
             const auto page = impl_->page(index);
@@ -305,7 +330,7 @@ public:
     // Incremented whenever a page leaves the cache, so a pointer into a
     // page can be checked for validity cheaply.
     size_t evictions() const { return evictions_; }
-    size_t size() const;
+    size_t size() const { return file_size_; }
     char get(size_t position) const;
     uint32_t get_u32(size_t position) const;
     uint64_t get_u64(size_t position) const;

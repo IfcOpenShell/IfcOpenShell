@@ -179,6 +179,14 @@ bool parse_num_(const char* pStart, size_t size, T& val) {
 
 } // namespace
 
+// These helpers sit on the tokenizer's innermost loop; left to the
+// compiler's heuristics they end up as calls, one per eight bytes.
+#if defined(_MSC_VER)
+#define IFC_SWAR_INLINE __forceinline
+#else
+#define IFC_SWAR_INLINE inline __attribute__((always_inline))
+#endif
+
 namespace SWAR {
 constexpr uint32_t ONES32 = 0x01010101u;
 constexpr uint32_t HIGHS32 = 0x80808080u;
@@ -189,19 +197,19 @@ constexpr uint64_t splat(unsigned char c) {
     return ONES * c;
 }
 
-inline uint32_t has_zero_byte(uint32_t x) {
+IFC_SWAR_INLINE uint32_t has_zero_byte(uint32_t x) {
     return (x - ONES32) & ~x & HIGHS32;
 }
 
-inline uint64_t has_zero_byte(uint64_t x) {
+IFC_SWAR_INLINE uint64_t has_zero_byte(uint64_t x) {
     return (x - ONES) & ~x & HIGHS;
 }
 
-inline uint32_t eq_mask(uint32_t x, uint32_t c) {
+IFC_SWAR_INLINE uint32_t eq_mask(uint32_t x, uint32_t c) {
     return has_zero_byte(x ^ c);
 }
 
-inline uint64_t eq_mask(uint64_t x, uint64_t c) {
+IFC_SWAR_INLINE uint64_t eq_mask(uint64_t x, uint64_t c) {
     return has_zero_byte(x ^ c);
 }
 
@@ -223,7 +231,7 @@ constexpr uint64_t dot = splat('.');
 } // namespace chars
 
 template <bool IncludeDot = true>
-inline uint64_t has_special_char(uint64_t x) {
+IFC_SWAR_INLINE uint64_t has_special_char(uint64_t x) {
     return eq_mask(x, chars::lpar) |
            eq_mask(x, chars::rpar) |
            eq_mask(x, chars::eq) |
@@ -239,7 +247,7 @@ inline uint64_t has_special_char(uint64_t x) {
 }
 
 template <bool IncludeDot = true>
-inline uint32_t has_special_char(uint32_t x) {
+IFC_SWAR_INLINE uint32_t has_special_char(uint32_t x) {
     return eq_mask(x, static_cast<uint32_t>(chars::lpar)) |
            eq_mask(x, static_cast<uint32_t>(chars::rpar)) |
            eq_mask(x, static_cast<uint32_t>(chars::eq)) |
