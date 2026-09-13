@@ -65,6 +65,8 @@
 
 #define PERMISSIVE_FLOAT
 
+#include "swar.h"
+
 using namespace ifcopenshell;
 
 template <typename Reader>
@@ -139,6 +141,72 @@ std::string& spf_lexer<Reader>::get_temp_string() const {
     return (*stringpool_[slice])[offset];
 }
 
+template <typename Reader>
+const char* spf_lexer<Reader>::skip_string_(std::string* raw) const {
+    // Past the opening quote. The only way a quote appears inside an SPF
+    // string is doubled, so the string ends at the first quote that is not
+    // followed by another; \X escapes never contain one. Works span by
+    // span like scan_attributes(); a doubled quote split across two spans
+    // is the one case that goes through the cursor.
+    while (true) {
+        const auto span = stream->span();
+        const char* data = span.first;
+        const size_t length = span.second;
+        if (length == 0) {
+            return "file ends inside a string";
+        }
+        size_t i = 0;
+        while (i < length) {
+            while (i + 8 <= length) {
+                uint64_t x;
+                std::memcpy(&x, data + i, sizeof(x));
+                if (SWAR::eq_mask(x, SWAR::chars::apostrophe) != 0) {
+                    break;
+                }
+                i += 8;
+            }
+            if (i == length) {
+                break;
+            }
+            if (data[i] != '\'') {
+                ++i;
+                continue;
+            }
+            if (i + 1 < length) {
+                if (data[i + 1] != '\'') {
+                    if (raw != nullptr) {
+                        raw->append(data, i);
+                    }
+                    stream->increment(i + 1);
+                    return nullptr;
+                }
+                i += 2;
+                continue;
+            }
+            // The quote is the last byte of the span: look past it through
+            // the cursor.
+            if (raw != nullptr) {
+                raw->append(data, i);
+            }
+            stream->increment(i + 1);
+            if (!stream->eof() && stream->peek() == '\'') {
+                stream->increment();
+                if (raw != nullptr) {
+                    raw->append("''");
+                }
+                break;
+            }
+            return nullptr;
+        }
+        if (i == length) {
+            if (raw != nullptr) {
+                raw->append(data, length);
+            }
+            stream->increment(length);
+        }
+    }
+}
+
 namespace {
 
 #if defined(__APPLE__) || defined(__EMSCRIPTEN__)
@@ -184,83 +252,6 @@ bool parse_num_(const char* pStart, size_t size, T& val) {
 }
 
 } // namespace
-
-namespace SWAR {
-constexpr uint32_t ONES32 = 0x01010101u;
-constexpr uint32_t HIGHS32 = 0x80808080u;
-constexpr uint64_t ONES = 0x0101010101010101ull;
-constexpr uint64_t HIGHS = 0x8080808080808080ull;
-
-constexpr uint64_t splat(unsigned char c) {
-    return ONES * c;
-}
-
-inline uint32_t has_zero_byte(uint32_t x) {
-    return (x - ONES32) & ~x & HIGHS32;
-}
-
-inline uint64_t has_zero_byte(uint64_t x) {
-    return (x - ONES) & ~x & HIGHS;
-}
-
-inline uint32_t eq_mask(uint32_t x, uint32_t c) {
-    return has_zero_byte(x ^ c);
-}
-
-inline uint64_t eq_mask(uint64_t x, uint64_t c) {
-    return has_zero_byte(x ^ c);
-}
-
-namespace chars {
-constexpr uint64_t lpar = splat('(');
-constexpr uint64_t rpar = splat(')');
-constexpr uint64_t eq = splat('=');
-constexpr uint64_t comma = splat(',');
-constexpr uint64_t semi = splat(';');
-constexpr uint64_t slash = splat('/');
-
-constexpr uint64_t space = splat(' ');
-constexpr uint64_t cr = splat('\r');
-constexpr uint64_t lf = splat('\n');
-constexpr uint64_t tab = splat('\t');
-
-constexpr uint64_t quote = splat('"');
-constexpr uint64_t dot = splat('.');
-} // namespace chars
-
-template <bool IncludeDot = true>
-inline uint64_t has_special_char(uint64_t x) {
-    return eq_mask(x, chars::lpar) |
-           eq_mask(x, chars::rpar) |
-           eq_mask(x, chars::eq) |
-           eq_mask(x, chars::comma) |
-           eq_mask(x, chars::semi) |
-           eq_mask(x, chars::slash) |
-           eq_mask(x, chars::space) |
-           eq_mask(x, chars::cr) |
-           eq_mask(x, chars::lf) |
-           eq_mask(x, chars::tab) |
-           eq_mask(x, chars::quote) |
-           (IncludeDot ? eq_mask(x, chars::dot) : uint64_t{0});
-}
-
-template <bool IncludeDot = true>
-inline uint32_t has_special_char(uint32_t x) {
-    return eq_mask(x, static_cast<uint32_t>(chars::lpar)) |
-           eq_mask(x, static_cast<uint32_t>(chars::rpar)) |
-           eq_mask(x, static_cast<uint32_t>(chars::eq)) |
-           eq_mask(x, static_cast<uint32_t>(chars::comma)) |
-           eq_mask(x, static_cast<uint32_t>(chars::semi)) |
-           eq_mask(x, static_cast<uint32_t>(chars::slash)) |
-           eq_mask(x, static_cast<uint32_t>(chars::space)) |
-           eq_mask(x, static_cast<uint32_t>(chars::cr)) |
-           eq_mask(x, static_cast<uint32_t>(chars::lf)) |
-           eq_mask(x, static_cast<uint32_t>(chars::tab)) |
-           eq_mask(x, static_cast<uint32_t>(chars::quote)) |
-           (IncludeDot ? eq_mask(x, static_cast<uint32_t>(chars::dot)) : uint32_t{0});
-}
-
-}
 
 //
 // Returns the offset of the current token and moves cursor to next
@@ -2814,298 +2805,94 @@ class literal_matcher {
     }
 };
 
-// The scanner behind lazy loading. It consumes the file one byte at a time,
-// so it works over pages and needs no random access: a state machine that
-// tracks quote state, parenthesis depth, commas at depth one (the attribute
-// index) and #names, and records where each instance starts and every
-// reference it makes, reading nothing else. Anything it does not expect
-// stops the scan so the caller can fall back to the full parser.
-class lazy_index_scanner {
-  public:
-    struct instance {
-        uint32_t name;
-        uint64_t attributes_offset;  // just past the opening parenthesis
-        std::string keyword;
-        std::string guid;            // raw text of a first string attribute, if any
-        bool has_guid = false;
-    };
-    // Called with every finished instance and reference; the reference's
-    // instance is the one currently being scanned.
-    std::function<void(const instance&)> on_instance;
-    std::function<void(const instance& current, uint32_t referenced, int attribute)> on_reference;
-
-    const char* failure() const {
-        return failure_;
-    }
-    size_t failure_offset() const {
-        return failure_offset_;
-    }
-
-    void feed(const char* data, size_t length, size_t offset) {
-        for (size_t i = 0; i < length && failure_ == nullptr && !done_; ++i) {
-            feed_byte(data[i], offset + i);
+// Walks the instance headers "#name = KEYWORD(" from the cursor to `end` the
+// way instance_streamer::read_instance() does: the declaration is looked up
+// once per keyword, unknown and non-entity types are logged and skipped,
+// bypassed types are collected, and every other instance is handed to
+// `visit(name, declaration, keyword_offset)` with the lexer just past its
+// opening parenthesis. Stops at the ENDSEC that closes the DATA section, at
+// `end`, or when `visit` returns false. The cursor may start anywhere from
+// the end of the header on: a header ENDSEC and the DATA keyword are passed
+// over. Returns false when any other keyword stands where an instance should
+// start.
+template <typename Reader, typename Visit>
+bool for_each_instance_header(Reader& reader, spf_lexer<Reader>& lexer, size_t end, const ifcopenshell::schema_definition* schema, const std::vector<char>& bypassed_types, std::vector<unsigned>& bypassed, ifcopenshell::logger& log, Visit visit) {
+    std::unordered_map<std::string, const ifcopenshell::declaration*> declarations;
+    bool in_data = false;
+    while (true) {
+        while (!reader.eof()) {
+            const char c = reader.peek();
+            if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+                reader.increment();
+            } else {
+                break;
+            }
         }
-    }
-
-    void finish() {
-        if (failure_ == nullptr && !done_ && state_ != state::seek_data && state_ != state::between) {
-            fail("file ends inside an instance", last_offset_);
+        if (reader.eof() || reader.tell() >= end) {
+            return true;
         }
-    }
-
-  private:
-    enum class state {
-        seek_data,       // header: waiting for "\nDATA;"
-        between,         // whitespace, comment or the next instance
-        between_slash,   // saw '/', comment if '*' follows
-        comment,         // inside /* */
-        endsec,          // saw 'E' between instances: must spell ENDSEC
-        name,            // digits after '#'
-        equals,          // spaces, then '='
-        keyword_start,   // spaces before the keyword
-        keyword,         // keyword characters up to '('
-        attributes,      // inside the outer parentheses
-        attributes_slash,
-        attribute_comment,
-        reference,       // digits after '#' inside attributes
-        close,           // saw the closing parenthesis, expecting ';'
-    };
-    state state_ = state::seek_data;
-    state comment_return_ = state::between;
-    literal_matcher data_matcher_{"\nDATA;"};
-    literal_matcher comment_end_{"*/"};
-    std::string endsec_;
-    instance current_;
-    int depth_ = 0;
-    int attribute_ = 0;
-    bool in_string_ = false;
-    bool string_seen_quote_ = false;   // inside a string: previous byte was a quote
-    uint32_t reference_ = 0;
-    int guid_state_ = 0;               // 0 not started, 1 skipping spaces, 2 in string, 3 closed
-    bool done_ = false;
-    const char* failure_ = nullptr;
-    size_t failure_offset_ = 0;
-    size_t last_offset_ = 0;
-
-    void fail(const char* reason, size_t offset) {
-        failure_ = reason;
-        failure_offset_ = offset;
-    }
-
-    static bool is_space(char c) {
-        return c == ' ' || c == '\t' || c == '\r' || c == '\n';
-    }
-    static bool is_digit(char c) {
-        return c >= '0' && c <= '9';
-    }
-    static bool is_keyword_char(char c) {
-        return (c >= 'A' && c <= 'Z') || is_digit(c) || c == '_';
-    }
-
-    void begin_instance() {
-        current_ = instance{};
-        depth_ = 1;
-        attribute_ = 0;
-        in_string_ = false;
-        string_seen_quote_ = false;
-        guid_state_ = 1;
-    }
-
-    void feed_byte(char c, size_t offset) {
-        last_offset_ = offset;
-        switch (state_) {
-        case state::seek_data:
-            if (data_matcher_.feed(c)) {
-                state_ = state::between;
-            }
-            break;
-        case state::between:
-            if (is_space(c)) {
-            } else if (c == '/') {
-                state_ = state::between_slash;
-            } else if (c == '#') {
-                current_.name = 0;
-                state_ = state::name;
-            } else if (c == 'E') {
-                endsec_ = "E";
-                state_ = state::endsec;
-            } else {
-                fail("instance does not start with #", offset);
-            }
-            break;
-        case state::between_slash:
-            if (c == '*') {
-                comment_end_.reset();
-                comment_return_ = state::between;
-                state_ = state::comment;
-            } else {
-                fail("unexpected / between instances", offset);
-            }
-            break;
-        case state::comment:
-            if (comment_end_.feed(c)) {
-                state_ = comment_return_;
-            }
-            break;
-        case state::endsec:
-            endsec_ += c;
-            if (endsec_ == "ENDSEC") {
-                done_ = true;
-            } else if (std::string_view("ENDSEC").substr(0, endsec_.size()) != endsec_) {
-                fail("unexpected keyword between instances", offset);
-            }
-            break;
-        case state::name:
-            if (is_digit(c)) {
-                current_.name = current_.name * 10 + (uint32_t)(c - '0');
-            } else if (c == ' ' || c == '=') {
-                state_ = c == '=' ? state::keyword_start : state::equals;
-            } else {
-                fail("bad instance name", offset);
-            }
-            break;
-        case state::equals:
-            if (c == '=') {
-                state_ = state::keyword_start;
-            } else if (c != ' ') {
-                fail("expected =", offset);
-            }
-            break;
-        case state::keyword_start:
-            if (is_keyword_char(c)) {
-                current_.keyword.assign(1, c);
-                state_ = state::keyword;
-            } else if (c != ' ') {
-                fail("expected TYPE(", offset);
-            }
-            break;
-        case state::keyword:
-            if (is_keyword_char(c)) {
-                current_.keyword += c;
-            } else if (c == '(') {
-                const std::string keyword = std::move(current_.keyword);
-                const uint32_t name = current_.name;
-                begin_instance();
-                current_.keyword = keyword;
-                current_.name = name;
-                current_.attributes_offset = offset + 1;
-                state_ = state::attributes;
-            } else {
-                fail("expected TYPE(", offset);
-            }
-            break;
-        case state::attributes:
-            feed_attribute_byte(c, offset);
-            break;
-        case state::attributes_slash:
-            if (c == '*') {
-                comment_end_.reset();
-                comment_return_ = state::attributes;
-                state_ = state::attribute_comment;
-            } else {
-                // A lone slash is not SPF syntax the full parser accepts either.
-                fail("unexpected / inside an instance", offset);
-            }
-            break;
-        case state::attribute_comment:
-            if (comment_end_.feed(c)) {
-                state_ = comment_return_;
-            }
-            break;
-        case state::reference:
-            if (is_digit(c)) {
-                reference_ = reference_ * 10 + (uint32_t)(c - '0');
-            } else {
-                if (on_reference) {
-                    on_reference(current_, reference_, attribute_);
+        token first = lexer.next();
+        if (!first) {
+            return true;
+        }
+        if (first.is_keyword()) {
+            const std::string keyword = first.as_string();
+            if (keyword == "ENDSEC") {
+                if (in_data) {
+                    return true;
                 }
-                state_ = state::attributes;
-                feed_attribute_byte(c, offset);
+                // The header's: the DATA section follows.
+                in_data = true;
+                continue;
             }
-            break;
-        case state::close:
-            if (c == ';') {
-                if (on_instance) {
-                    on_instance(current_);
+            if (keyword == "DATA") {
+                in_data = true;
+                continue;
+            }
+            return false;
+        }
+        if (!first.is_identifier()) {
+            continue;
+        }
+        in_data = true;
+        const uint32_t name = (uint32_t)first.as_identifier();
+        if (!lexer.next().is_operator('=')) {
+            continue;
+        }
+        token keyword = lexer.next();
+        if (!keyword.is_keyword()) {
+            continue;
+        }
+        const ifcopenshell::declaration* declaration = nullptr;
+        const std::string keyword_text = keyword.as_string();
+        auto found = declarations.find(keyword_text);
+        if (found == declarations.end()) {
+            try {
+                declaration = schema->declaration_by_name(keyword_text);
+                if (declaration->as_entity() == nullptr) {
+                    log.message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(keyword.start_pos));
+                    declaration = nullptr;
                 }
-                state_ = state::between;
-            } else if (c != ' ') {
-                fail("expected ; after )", offset);
+            } catch (const exception& e) {
+                log.message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(keyword.start_pos));
             }
-            break;
+            declarations.emplace(keyword_text, declaration);
+        } else {
+            declaration = found->second;
+        }
+        if (declaration == nullptr) {
+            continue;
+        }
+        if (bypassed_types[declaration->index_in_schema()]) {
+            bypassed.push_back(name);
+            continue;
+        }
+        lexer.next();  // the opening parenthesis
+        if (!visit(name, declaration, (size_t)keyword.start_pos)) {
+            return true;
         }
     }
-
-    void feed_attribute_byte(char c, size_t offset) {
-        if (in_string_) {
-            if (string_seen_quote_) {
-                string_seen_quote_ = false;
-                if (c == '\'') {
-                    // An escaped quote: still inside the string.
-                    if (guid_state_ == 2) {
-                        current_.guid += "''";
-                    }
-                    return;
-                }
-                // The previous quote closed the string.
-                in_string_ = false;
-                if (guid_state_ == 2) {
-                    guid_state_ = 3;
-                    current_.has_guid = true;
-                }
-                // fall through to handle c outside the string
-            } else if (c == '\'') {
-                string_seen_quote_ = true;
-                return;
-            } else {
-                if (guid_state_ == 2) {
-                    current_.guid += c;
-                }
-                return;
-            }
-        }
-        if (guid_state_ == 1) {
-            if (c == ' ') {
-                return;
-            }
-            guid_state_ = c == '\'' ? 2 : 3;
-            if (guid_state_ == 2) {
-                in_string_ = true;
-                return;
-            }
-        }
-        switch (c) {
-        case '\'':
-            in_string_ = true;
-            break;
-        case '(':
-            ++depth_;
-            break;
-        case ')':
-            if (--depth_ == 0) {
-                state_ = state::close;
-            }
-            break;
-        case ',':
-            if (depth_ == 1) {
-                ++attribute_;
-            }
-            break;
-        case '#':
-            reference_ = 0;
-            state_ = state::reference;
-            break;
-        case '/':
-            state_ = state::attributes_slash;
-            break;
-        case ';':
-            fail("; inside an instance", offset);
-            break;
-        default:
-            break;
-        }
-    }
-};
+}
 
 }
 
@@ -3151,83 +2938,70 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     lazy_ = true;
     byref_excl_.reserve(reader.size() / 32);
 
-    std::unordered_map<std::string, const ifcopenshell::declaration*> declarations;
-    // The declaration of the instance being scanned, or null while its
-    // references are to be ignored (unknown type, non-entity, bypassed);
-    // resolved once per instance, on its first reference or at its end.
-    const ifcopenshell::declaration* current_declaration = nullptr;
-    bool resolved = false;
-    uint32_t resolved_name = 0;
-    lazy_index_scanner scanner;
+    // The sink the lexer's attribute scan reports into: every reference goes
+    // straight into the inverse index, and a first attribute that is a string
+    // is kept as the GlobalId candidate.
+    struct index_sink {
+        entities_by_ref& inverses;
+        uint32_t name = 0;
+        uint16_t type = 0;
+        std::string guid;
+        bool has_guid = false;
+        void reference(uint32_t referenced, int attribute) {
+            inverses.add(referenced, name, type, attribute);
+        }
+        void first_string(const std::string& raw) {
+            guid = raw;
+            has_guid = true;
+        }
+    } sink{byref_excl_};
 
-    const auto resolve_type = [&](const lazy_index_scanner::instance& current) {
-        if (resolved && resolved_name == current.name) {
-            return;
-        }
-        resolved = true;
-        resolved_name = current.name;
-        current_declaration = nullptr;
-        auto found = declarations.find(current.keyword);
-        const ifcopenshell::declaration* declaration = nullptr;
-        if (found == declarations.end()) {
-            try {
-                declaration = schema->declaration_by_name(current.keyword);
-                if (declaration->as_entity() == nullptr) {
-                    logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(current.attributes_offset));
-                    declaration = nullptr;
+    auto& lexer = lazy_source_->lexer;
+    const char* failure = nullptr;
+    size_t failure_offset = 0;
+    bool clean = false;
+    try {
+        clean = for_each_instance_header(reader, lexer, reader.size(), schema, bypassed_types, lazy_bypassed_, logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
+            sink.name = name;
+            sink.type = (uint16_t)declaration->index_in_schema();
+            sink.has_guid = false;
+            const size_t attributes_offset = reader.tell();
+            failure = lexer.scan_attributes(sink);
+            lexer.reset_pool();
+            if (failure != nullptr) {
+                failure_offset = reader.tell();
+                return false;
+            }
+            auto data = ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{});
+            data->lazy_offset_ = attributes_offset;
+            if (!byid_.insert({name, data}).second) {
+                logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Overwriting instance with name #" + std::to_string(name));
+                byid_.erase(name);
+                byid_.insert({name, data});
+            }
+            express::base instance(data);
+            bytype_excl_[declaration].push_back(instance);
+            max_id = (std::max)(max_id, (unsigned int)name);
+            if (sink.has_guid && declaration->is(*ifcroot)) {
+                const bool escapes = sink.guid.find('\\') != std::string::npos || sink.guid.find("''") != std::string::npos;
+                const std::string guid = escapes ? ifcopenshell::decode_spf_string(sink.guid) : sink.guid;
+                if (byguid_.find(guid) != byguid_.end()) {
+                    logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
                 }
-            } catch (const ifcopenshell::exception& e) {
-                logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(current.attributes_offset));
+                byguid_.insert_or_assign(guid, instance);
             }
-            declarations.emplace(current.keyword, declaration);
-        } else {
-            declaration = found->second;
-        }
-        if (declaration != nullptr && bypassed_types[declaration->index_in_schema()]) {
-            lazy_bypassed_.push_back(current.name);
-            return;
-        }
-        current_declaration = declaration;
-    };
-    scanner.on_reference = [&](const lazy_index_scanner::instance& current, uint32_t referenced, int attribute) {
-        resolve_type(current);
-        if (current_declaration != nullptr) {
-            byref_excl_.add(referenced, current.name, (uint16_t)current_declaration->index_in_schema(), attribute);
-        }
-    };
-    scanner.on_instance = [&](const lazy_index_scanner::instance& current) {
-        resolve_type(current);
-        resolved = false;
-        if (current_declaration == nullptr) {
-            return;
-        }
-        auto data = ifcopenshell::make_pointer_type<instance_data>(file, current_declaration, current.name, instance_data::lazy_tag{});
-        data->lazy_offset_ = current.attributes_offset;
-        if (!byid_.insert({current.name, data}).second) {
-            logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Overwriting instance with name #" + std::to_string(current.name));
-            byid_.erase(current.name);
-            byid_.insert({current.name, data});
-        }
-        express::base instance(data);
-        bytype_excl_[current_declaration].push_back(instance);
-        max_id = (std::max)(max_id, (unsigned int)current.name);
-        if (current.has_guid && current_declaration->is(*ifcroot)) {
-            const bool escapes = current.guid.find('\\') != std::string::npos || current.guid.find("''") != std::string::npos;
-            const std::string guid = escapes ? ifcopenshell::decode_spf_string(current.guid) : current.guid;
-            if (byguid_.find(guid) != byguid_.end()) {
-                logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
-            }
-            byguid_.insert_or_assign(guid, instance);
-        }
-    };
-    // for_each_span hands the scanner one page at a time; it keeps its own
-    // state across them.
-    reader.for_each_span(0, reader.size(), [&](const char* data, size_t length, size_t offset) {
-        scanner.feed(data, length, offset);
-    });
-    scanner.finish();
-    if (scanner.failure() != nullptr) {
-        logger_.get().message(ifcopenshell::logger::LOG_NOTICE, std::string("Lazy loading not possible (") + scanner.failure() + " at offset " + std::to_string(scanner.failure_offset()) + "), parsing the file in full");
+            return true;
+        });
+    } catch (const invalid_token_exception&) {
+        failure = "invalid token";
+        failure_offset = reader.tell();
+    }
+    if (failure == nullptr && !clean) {
+        failure = "unexpected keyword where an instance should start";
+        failure_offset = reader.tell();
+    }
+    if (failure != nullptr) {
+        logger_.get().message(ifcopenshell::logger::LOG_NOTICE, std::string("Lazy loading not possible (") + failure + " at offset " + std::to_string(failure_offset) + "), parsing the file in full");
         return false;
     }
 
@@ -3258,75 +3032,19 @@ void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopensh
         reader.seek(begin);
         auto& storage = *out.storage;
         spf_lexer<Reader> lexer(&reader, storage.logger_.get());
-        std::unordered_map<std::string, const ifcopenshell::declaration*> declarations;
-        while (true) {
-            while (!reader.eof()) {
-                const char c = reader.peek();
-                if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-                    reader.increment();
-                } else {
-                    break;
-                }
-            }
-            if (reader.eof() || reader.tell() >= end) {
-                break;
-            }
-            token first = lexer.next();
-            if (!first) {
-                break;
-            }
-            if (!first.is_identifier()) {
-                if (first.is_keyword()) {
-                    // ENDSEC, or a keyword where an instance should start: the
-                    // serial parser stops at the same point.
-                    break;
-                }
-                continue;
-            }
-            const uint32_t name = (uint32_t)first.as_identifier();
-            if (!lexer.next().is_operator('=')) {
-                continue;
-            }
-            token keyword = lexer.next();
-            if (!keyword.is_keyword()) {
-                continue;
-            }
-            const ifcopenshell::declaration* declaration = nullptr;
-            const std::string keyword_text = keyword.as_string();
-            auto found = declarations.find(keyword_text);
-            if (found == declarations.end()) {
-                try {
-                    declaration = schema->declaration_by_name(keyword_text);
-                    if (declaration->as_entity() == nullptr) {
-                        storage.logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(keyword.start_pos));
-                        declaration = nullptr;
-                    }
-                } catch (const exception& e) {
-                    storage.logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(keyword.start_pos));
-                }
-                declarations.emplace(keyword_text, declaration);
-            } else {
-                declaration = found->second;
-            }
-            if (declaration == nullptr) {
-                continue;
-            }
-            if (bypassed_types[declaration->index_in_schema()]) {
-                out.bypassed.push_back(name);
-                continue;
-            }
-            lexer.next();  // the opening parenthesis
+        for_each_instance_header(reader, lexer, end, schema, bypassed_types, out.bypassed, storage.logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
             try {
                 auto data = storage.load(&lexer, name, declaration, declaration->as_entity(), -1, true);
                 storage.try_read_semicolon(&lexer);
                 lexer.reset_pool();
                 out.instances.push_back(data);
+                return true;
             } catch (const invalid_token_exception& e) {
                 out.status = file_open_status::INVALID_SYNTAX;
                 storage.logger_.get().error(e);
-                break;
+                return false;
             }
-        }
+        });
     } catch (...) {
         out.error = std::current_exception();
     }

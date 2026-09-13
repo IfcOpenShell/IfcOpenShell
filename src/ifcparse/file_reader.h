@@ -180,6 +180,29 @@ public:
     }
     size_t remaining() const { return size() - cursor_; }
 
+    // The bytes at the cursor that are contiguous in memory, without moving
+    // it: the rest of the content for a contiguous implementation, the rest
+    // of the current page for the paged one. Empty at the end of the file.
+    // Code that scans bytes takes a span, works through it with a plain
+    // pointer and then increment()s past what it consumed, so it runs the
+    // same over pages as over a buffer.
+    std::pair<const char*, size_t> span() const {
+        if (cursor_ >= size()) {
+            return {nullptr, 0};
+        }
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            const size_t page_size = impl_->page_size();
+            const size_t index = cursor_ / page_size;
+            const auto page = impl_->page(index);
+            const size_t from = cursor_ - index * page_size;
+            return {page.first + from, page.second - from};
+        } else if constexpr (std::is_same_v<Impl, pushed_sequential_impl>) {
+            throw std::logic_error("A pushed sequential reader has no random access to byte ranges");
+        } else {
+            return {impl_->data() + cursor_, remaining()};
+        }
+    }
+
     char peek() const {
         if (cursor_ >= size()) {
             throw std::out_of_range("peek at EOF");

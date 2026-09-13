@@ -313,6 +313,52 @@ TEST_CASE("guid_map keeps GlobalIds inline and ignores keys of any other length"
 }
 
 namespace {
+struct scan_sink {
+    std::vector<std::pair<uint32_t, int>> references;
+    std::string first;
+    bool has_first = false;
+    void reference(uint32_t name, int attribute) {
+        references.push_back({name, attribute});
+    }
+    void first_string(const std::string& raw) {
+        first = raw;
+        has_first = true;
+    }
+};
+
+const char* scan_attributes_of(const std::string& text, scan_sink& sink) {
+    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> reader(text, ifcopenshell::caller_fed_tag{});
+    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> lexer(&reader);
+    return lexer.scan_attributes(sink);
+}
+}
+
+TEST_CASE("The lexer's attribute scan reports references with their attribute index and passes over everything else", "[ifcparse]") {
+    scan_sink sink;
+    // References inside strings, comments and binaries are not references;
+    // a doubled quote stays inside its string; nested lists keep the index
+    // of the top-level attribute they belong to.
+    const char* failure = scan_attributes_of(
+        "  /* #0 */ 'it''s #1, not a ref' , #2, 'a''b' ,\n(#3, (#4, IFCLABEL('#5')), #6), \"0A\", .T., 1.5E-3, $, *, #7 ) /* trailing */ ;#8=IFCWALL(", sink);
+    CHECK(failure == nullptr);
+    CHECK(sink.has_first);
+    CHECK(sink.first == "it''s #1, not a ref");
+    CHECK(sink.references == std::vector<std::pair<uint32_t, int>>{{2, 1}, {3, 3}, {4, 3}, {6, 3}, {7, 9}});
+
+    scan_sink no_string;
+    CHECK(scan_attributes_of("(0.,0.,0.));", no_string) == nullptr);
+    CHECK_FALSE(no_string.has_first);
+    CHECK(no_string.references.empty());
+
+    scan_sink malformed;
+    CHECK(scan_attributes_of("#1,#2;", malformed) != nullptr);
+    CHECK(scan_attributes_of("'unterminated", malformed) != nullptr);
+    CHECK(scan_attributes_of("#1,#2)", malformed) != nullptr);
+    CHECK(scan_attributes_of("#,#2);", malformed) != nullptr);
+    CHECK(scan_attributes_of("#1 / #2);", malformed) != nullptr);
+}
+
+namespace {
 const char* const reference_resolution_spf =
     "ISO-10303-21;\n"
     "HEADER;\n"
@@ -450,11 +496,11 @@ TEST_CASE("Lazy loading yields the same instances, attributes, inverses and Glob
     std::filesystem::remove(path);
 }
 
-TEST_CASE("Lazy loading falls back to the full parser on syntax the scanner does not handle", "[ifcparse]") {
+TEST_CASE("Lazy loading falls back to the full parser on syntax the index pass does not handle", "[ifcparse]") {
     const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_lazy_fallback_test.ifc";
     {
         std::ofstream out(path);
-        // A stray token between instances is legal for the full parser to complain about and skip, but the scanner gives up.
+        // A stray keyword between instances is something the full parser skips past, but the index pass gives up on.
         std::string spf(reference_resolution_spf);
         spf.replace(spf.find("#8=IFCWALL"), 0, "STRAY;\n");
         out << spf;
