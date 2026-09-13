@@ -1009,6 +1009,129 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
 # =============================================================================
 
 
+def _sync_profile_visibility_items(context, dec):
+    """(Re)populate the per-vertical/per-cant visibility filters for the profile window."""
+    props = context.scene.CivilAlignmentProperties
+    props.vertical_items.clear()
+    for v_id, v_label in dec.available_verticals:
+        item = props.vertical_items.add()
+        item.entity_id = v_id
+        item.label = v_label
+        item.is_visible = True
+
+    props.cant_items.clear()
+    for c_id, c_label in dec.available_cants:
+        item = props.cant_items.add()
+        item.entity_id = c_id
+        item.label = c_label
+        item.is_visible = True
+
+
+def _refresh_vertical_profile_view(context, alignment):
+    """Recompute and redraw the docked profile view after the vertical
+    alignment's geometry changed (drawn or curves applied), so its background
+    grid/curve reflects the new segments instead of stale/empty data.
+
+    A no-op if the profile view isn't currently open.
+    """
+    dec = alignment_decorator.VerticalProfileDecorator
+    if not dec.is_installed:
+        return
+    dec._compute_profile(alignment)
+    ve = context.scene.CivilAlignmentProperties.vertical_exaggeration
+    space = next((s for s in dec.profile_area.spaces if s.type == "VIEW_3D"), None)
+    if space is not None:
+        dec.fit_view(space, ve, area_width=dec.profile_area.width, area_height=dec.profile_area.height)
+    _sync_profile_visibility_items(context, dec)
+    dec.tag_redraw()
+
+
+def _open_vertical_profile(context, alignment):
+    """Open (or refresh) the docked vertical profile view for ``alignment``.
+
+    Shared by ALIGN_OT_show_vertical_profile (toggle button) and
+    ALIGN_OT_draw_vertical_alignment (which needs the profile view open
+    before it can start placing PIs in it). Returns the profile
+    ``bpy.types.Area``, or None if it couldn't be opened/refreshed.
+    """
+    import mathutils
+
+    dec = alignment_decorator.VerticalProfileDecorator
+
+    if dec.is_installed:
+        # Already open — just refresh the data (the active alignment may
+        # have changed) and re-fit the view.
+        dec._compute_profile(alignment)
+        ve = context.scene.CivilAlignmentProperties.vertical_exaggeration
+        space = next((s for s in dec.profile_area.spaces if s.type == "VIEW_3D"), None)
+        if space is not None:
+            dec.fit_view(space, ve, area_width=dec.profile_area.width, area_height=dec.profile_area.height)
+        _sync_profile_visibility_items(context, dec)
+        dec.profile_area.tag_redraw()
+        return dec.profile_area
+
+    dec._compute_profile(alignment)
+
+    # Find the 3D view area and its WINDOW region for the split call
+    area = context.area
+    if area is None or area.type != "VIEW_3D":
+        # Button pressed from a non-3D area — find the first 3D view
+        area = next((a for a in context.screen.areas if a.type == "VIEW_3D"), None)
+        if area is None:
+            return None
+    win_region = next((r for r in area.regions if r.type == "WINDOW"), None)
+    if win_region is None:
+        return None
+
+    # Split with a horizontal dividing line so the profile appears below the
+    # main 3D view.  factor=0.7 keeps 70% for the existing area (top) and
+    # gives 30% to the new profile area (bottom).
+    # direction="HORIZONTAL" = horizontal split line = top/bottom areas.
+    # Use as_pointer() (stable C address) rather than id() (Python wrapper ID,
+    # which can change after Blender reshuffles wrappers following area_close).
+    ptrs_before = {a.as_pointer() for a in context.screen.areas}
+    with context.temp_override(area=area, region=win_region):
+        bpy.ops.screen.area_split(direction="HORIZONTAL", factor=0.7)
+
+    new_areas = [a for a in context.screen.areas if a.as_pointer() not in ptrs_before]
+    if not new_areas:
+        return None
+
+    # Blender's area_split places the NEW area above the original area.
+    # The original area stays at the bottom — use it as the profile view.
+    profile_area = area
+
+    space = next((s for s in profile_area.spaces if s.type == "VIEW_3D"), None)
+    if space is None:
+        return None
+
+    # Front orthographic: 90° rotation around X so Z is elevation, X is distance
+    space.region_3d.view_perspective = "ORTHO"
+    space.region_3d.view_rotation = mathutils.Quaternion((0.7071068, 0.7071068, 0.0, 0.0))
+
+    ve = context.scene.CivilAlignmentProperties.vertical_exaggeration
+    dec.fit_view(space, ve, area_width=profile_area.width, area_height=profile_area.height)
+
+    space.overlay.show_floor = False
+    space.overlay.show_axis_x = False
+    space.overlay.show_axis_y = False
+    space.overlay.show_axis_z = False
+    space.show_gizmo = False
+
+    # Hide tool shelf and N-panel so they don't obscure the profile extents.
+    # Set directly on the space (absolute, not a toggle) so this works reliably
+    # regardless of the panel's current visibility state.
+    space.show_region_toolbar = False
+    space.show_region_ui = False
+
+    _sync_profile_visibility_items(context, dec)
+
+    dec.install(context, profile_area)
+    profile_area.tag_redraw()
+
+    return profile_area
+
+
 class ALIGN_OT_show_vertical_profile(Operator):
     """Toggle the docked vertical profile view below the active 3D viewport"""
 
@@ -1021,8 +1144,6 @@ class ALIGN_OT_show_vertical_profile(Operator):
     bl_options = {"REGISTER"}
 
     def execute(self, context):
-        import mathutils
-
         dec = alignment_decorator.VerticalProfileDecorator
 
         # --- Toggle off ---
@@ -1037,85 +1158,326 @@ class ALIGN_OT_show_vertical_profile(Operator):
             self.report({"WARNING"}, "No alignment selected")
             return {"CANCELLED"}
 
-        dec._compute_profile(alignment)
-        if not dec.segments_polylines:
-            self.report({"WARNING"}, "No vertical alignment data found for this alignment")
+        profile_area = _open_vertical_profile(context, alignment)
+        if profile_area is None:
+            self.report({"WARNING"}, "Could not open the vertical profile view")
             return {"CANCELLED"}
 
-        ve = context.scene.CivilAlignmentProperties.vertical_exaggeration
+        return {"FINISHED"}
 
-        # Find the 3D view area and its WINDOW region for the split call
-        area = context.area
-        if area.type != "VIEW_3D":
-            # Button pressed from a non-3D area — find the first 3D view
-            area = next((a for a in context.screen.areas if a.type == "VIEW_3D"), None)
-            if area is None:
-                self.report({"WARNING"}, "No 3D Viewport found")
-                return {"CANCELLED"}
-        win_region = next((r for r in area.regions if r.type == "WINDOW"), None)
-        if win_region is None:
+
+# =============================================================================
+# Vertical Alignment Drawing (draw-by-PI in the profile view)
+# =============================================================================
+
+
+def _generate_vertical_alignment_segments(context, alignment, vpoints, lengths):
+    """Build vertical alignment segments from PI points and per-PI curve lengths.
+
+    Mirrors _generate_alignment_segments() for the vertical layout. ``vpoints``
+    are (distance_along, elevation) pairs already in project length units —
+    unlike the horizontal case, no unit-scale/georeferencing conversion is
+    needed, because the profile view's world coordinates already are raw
+    project-unit distance/elevation values (see
+    VerticalProfileDecorator.screen_to_data). ``lengths`` has exactly
+    len(vpoints) - 2 entries, one per interior PI (0.0 = sharp grade break).
+    """
+    ifc = tool.Ifc.get()
+
+    v_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+    if v_layout is None:
+        v_layout = ifcopenshell.api.alignment.add_vertical_layout(ifc, alignment)
+
+    tool.Alignment.clear_layout_segments(v_layout)
+    tool.Alignment.safe_layout_vertical_by_pi_method(ifc, v_layout, vpoints, lengths)
+    ifcopenshell.api.alignment.create_representation(ifc, alignment)
+
+    tool.Alignment.refresh_alignment_representation_object(alignment)
+
+    n_curved = sum(1 for l in lengths if l)
+    return True, f"Drew vertical alignment with {len(vpoints)} PIs ({n_curved} curved)"
+
+
+def _sync_vertical_pi_markers(context, vpoints):
+    """(Re)populate props.vertical_pi_markers from the interior PIs of ``vpoints``.
+
+    Start/end are excluded — they're derived from the alignment's own
+    segments when applying curves (get_vertical_alignment_start_end_points),
+    same convention as the horizontal PI markers.
+    """
+    props = context.scene.CivilAlignmentProperties
+    props.vertical_pi_markers.clear()
+    for dist_along, elevation in vpoints[1:-1]:
+        item = props.vertical_pi_markers.add()
+        item.dist_along = dist_along
+        item.elevation = elevation
+        item.curve_type = "TANGENT"
+        item.curve_length = 100.0
+
+
+class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
+    """Draw the vertical alignment of the active IfcAlignment by PI, in the profile view.
+
+    Opens (or reuses) the docked vertical profile view, then click to place
+    each PI (grade break to grade break). A vertical alignment must span
+    exactly the horizontal's own distance-along range, so this is enforced
+    as you draw rather than left to be fixed up afterward: the first PI is
+    anchored to the start station (only its elevation follows the mouse),
+    and moving past the last station locks distance-along there too, so
+    overshooting the end and clicking places the final PI exactly on it.
+    PIs are also kept left-to-right — the mouse can't drag a candidate PI
+    behind the previous one.
+
+    RMB/Enter finishes and generates the vertical alignment with every PI a
+    sharp grade break; interior PIs are then listed in the panel below — set
+    a curve length and click Apply Vertical Curves to regenerate with
+    parabolic curves at those PIs. ESC cancels without creating anything.
+    Backspace removes the last PI.
+    """
+
+    bl_idname = "align.draw_vertical_alignment"
+    bl_label = "Draw Vertical Alignment"
+    bl_description = (
+        "Draw the vertical alignment by PI in the profile view, spanning the "
+        "horizontal's full station range. Click to place PIs, RMB/Enter to "
+        "generate it. ESC cancels."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment:
+            cls.poll_message_set("Add or select an alignment first")
+            return False
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        has_real_segments = h_layout and any(
+            not tool.Alignment.is_zero_length_segment(s)
+            for s in ifcopenshell.api.alignment.get_layout_segments(h_layout)
+        )
+        if not has_real_segments:
+            cls.poll_message_set("Draw the horizontal alignment first")
+            return False
+        return True
+
+    def __init__(self, *args, **kwargs):
+        Operator.__init__(self, *args, **kwargs)
+        self._points: list = []  # [(dist_along, elevation), ...] in project units
+        self._area_ptr = 0
+        self._alignment_id = 0
+
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment:
+            self.report({"ERROR"}, "Add or select an alignment first")
             return {"CANCELLED"}
 
-        # Split with a horizontal dividing line so the profile appears below the
-        # main 3D view.  factor=0.7 keeps 70% for the existing area (top) and
-        # gives 30% to the new profile area (bottom).
-        # direction="HORIZONTAL" = horizontal split line = top/bottom areas.
-        # Use as_pointer() (stable C address) rather than id() (Python wrapper ID,
-        # which can change after Blender reshuffles wrappers following area_close).
-        ptrs_before = {a.as_pointer() for a in context.screen.areas}
-        with context.temp_override(area=area, region=win_region):
-            bpy.ops.screen.area_split(direction="HORIZONTAL", factor=0.7)
-
-        new_areas = [a for a in context.screen.areas if a.as_pointer() not in ptrs_before]
-        if not new_areas:
-            self.report({"WARNING"}, "Could not split the viewport")
+        profile_area = _open_vertical_profile(context, alignment)
+        if profile_area is None:
+            self.report({"ERROR"}, "Could not open the vertical profile view")
             return {"CANCELLED"}
 
-        # Blender's area_split places the NEW area above the original area.
-        # The original area stays at the bottom — use it as the profile view.
-        profile_area = area
+        self._alignment_id = alignment.id()
+        self._points = []
+        self._area_ptr = profile_area.as_pointer()
 
-        space = next((s for s in profile_area.spaces if s.type == "VIEW_3D"), None)
-        if space is None:
+        alignment_decorator.VerticalDrawDecorator.install(context, self._points)
+        context.workspace.status_text_set(
+            text="Click: add PI    Backspace: remove last    Enter/RMB: finish    Esc: cancel"
+        )
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _locate_profile_view(self, context):
+        """Find the profile area's WINDOW region and RegionView3D, fresh on
+        every call, by matching the stable pointer captured at invoke time.
+
+        During a modal operator's event handling, context.area/region/
+        region_data do NOT reliably track wherever the mouse currently is
+        once it strays outside the area the operator was originally invoked
+        from — unlike draw handlers, which Blender calls per-area with
+        correct context (that's why the background grid draws fine here even
+        when clicks don't land). So this looks the area up explicitly via
+        context.screen.areas instead of trusting ambient context, and
+        event.mouse_x/mouse_y (absolute, always correct) get used in place
+        of event.mouse_region_x/y (relative to whatever context.region
+        happens to be, which is exactly the unreliable part).
+
+        Returns (area, region, rv3d), or None if the profile area is gone.
+        """
+        for area in context.screen.areas:
+            if area.as_pointer() != self._area_ptr:
+                continue
+            region = next((r for r in area.regions if r.type == "WINDOW"), None)
+            space = next((s for s in area.spaces if s.type == "VIEW_3D"), None)
+            if region is None or space is None:
+                return None
+            return area, region, space.region_3d
+        return None
+
+    def _constrain_point(self, dist_along: float, elevation: float) -> tuple:
+        """Clamp a candidate PI to the horizontal alignment's station range
+        and enforce left-to-right PI ordering.
+
+        The vertical alignment must span exactly the horizontal's own
+        distance-along range, so the very first PI is always anchored to its
+        start (dist_min) regardless of mouse position — only elevation is
+        free for it. Every later PI is free between the previous PI's
+        distance-along and the horizontal's end (dist_max); moving the mouse
+        past dist_max clamps distance-along there, so overshooting the end
+        and clicking places the final PI exactly at the last station.
+        """
+        dec = alignment_decorator.VerticalProfileDecorator
+        if not self._points:
+            return dec.dist_min, elevation
+        lower = self._points[-1][0]
+        upper = max(dec.dist_max, lower)
+        return min(max(dist_along, lower), upper), elevation
+
+    def _modal(self, context, event):
+        found = self._locate_profile_view(context)
+        if found is None:
+            # The profile view got closed out from under us.
+            context.workspace.status_text_set(text=None)
+            alignment_decorator.VerticalDrawDecorator.uninstall()
+            self.report({"WARNING"}, "Vertical profile view was closed")
+            return {"CANCELLED"}
+        area, region, rv3d = found
+
+        # event.mouse_x/y are absolute (window) coordinates — always correct,
+        # unlike mouse_region_x/y which is relative to context.region.
+        mx, my = event.mouse_x, event.mouse_y
+        over_profile = area.x <= mx < area.x + area.width and area.y <= my < area.y + area.height
+
+        if event.type == "MOUSEMOVE":
+            point = None
+            if over_profile:
+                raw = alignment_decorator.VerticalProfileDecorator.screen_to_data(
+                    region, rv3d, mx - region.x, my - region.y
+                )
+                if raw is not None:
+                    point = self._constrain_point(*raw)
+            alignment_decorator.VerticalDrawDecorator.update_mouse(point)
+            return {"PASS_THROUGH"}
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            return {"PASS_THROUGH"}
+
+        if event.type == "LEFTMOUSE" and event.value == "RELEASE":
+            if not over_profile:
+                return {"PASS_THROUGH"}
+            raw = alignment_decorator.VerticalProfileDecorator.screen_to_data(
+                region, rv3d, mx - region.x, my - region.y
+            )
+            if raw is not None:
+                self._points.append(self._constrain_point(*raw))
+                alignment_decorator.VerticalDrawDecorator.tag_redraw()
+            return {"RUNNING_MODAL"}
+
+        if event.type == "BACK_SPACE" and event.value == "RELEASE":
+            if self._points:
+                self._points.pop()
+                alignment_decorator.VerticalDrawDecorator.tag_redraw()
+            return {"RUNNING_MODAL"}
+
+        if event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
+            context.workspace.status_text_set(text=None)
+            alignment_decorator.VerticalDrawDecorator.uninstall()
+            self._finish(context)
+            return {"FINISHED"}
+
+        if event.type == "ESC" and event.value == "RELEASE":
+            context.workspace.status_text_set(text=None)
+            alignment_decorator.VerticalDrawDecorator.uninstall()
             return {"CANCELLED"}
 
-        # Front orthographic: 90° rotation around X so Z is elevation, X is distance
-        space.region_3d.view_perspective = "ORTHO"
-        space.region_3d.view_rotation = mathutils.Quaternion((0.7071068, 0.7071068, 0.0, 0.0))
+        return {"RUNNING_MODAL"}
 
-        dec.fit_view(space, ve, area_width=profile_area.width, area_height=profile_area.height)
+    def _finish(self, context):
+        if len(self._points) < 2:
+            self.report({"WARNING"}, "Need at least 2 PIs to draw a vertical alignment")
+            return
 
-        space.overlay.show_floor = False
-        space.overlay.show_axis_x = False
-        space.overlay.show_axis_y = False
-        space.overlay.show_axis_z = False
-        space.show_gizmo = False
+        try:
+            alignment = tool.Ifc.get().by_id(self._alignment_id)
+        except RuntimeError:
+            self.report({"ERROR"}, "Alignment no longer exists")
+            return
 
-        # Hide tool shelf and N-panel so they don't obscure the profile extents.
-        # Set directly on the space (absolute, not a toggle) so this works reliably
-        # regardless of the panel's current visibility state.
-        space.show_region_toolbar = False
-        space.show_region_ui = False
+        # Vertical PIs must be strictly ordered by distance-along — a profile
+        # is a function of distance-along, so out-of-order clicks (easy to do
+        # by accident) would otherwise fold the curve back on itself.
+        vpoints = sorted(self._points, key=lambda p: p[0])
+        lengths = [0.0] * (len(vpoints) - 2)
 
-        # Populate per-vertical and per-cant visibility filters (all visible by default)
-        props = context.scene.CivilAlignmentProperties
-        props.vertical_items.clear()
-        for v_id, v_label in dec.available_verticals:
-            item = props.vertical_items.add()
-            item.entity_id = v_id
-            item.label = v_label
-            item.is_visible = True
+        ok, message = _generate_vertical_alignment_segments(context, alignment, vpoints, lengths)
+        if ok:
+            _sync_vertical_pi_markers(context, vpoints)
+            _refresh_vertical_profile_view(context, alignment)
+        self.report({"INFO"} if ok else {"WARNING"}, message)
 
-        props.cant_items.clear()
-        for c_id, c_label in dec.available_cants:
-            item = props.cant_items.add()
-            item.entity_id = c_id
-            item.label = c_label
-            item.is_visible = True
 
-        dec.install(context, profile_area)
-        profile_area.tag_redraw()
+class ALIGN_OT_apply_vertical_pi_curve(Operator, tool.Ifc.Operator):
+    """Regenerate the vertical alignment using the PI list's curve settings"""
 
+    bl_idname = "align.apply_vertical_pi_curve"
+    bl_label = "Apply Vertical Curves"
+    bl_description = "Regenerate the vertical alignment using each PI's curve type/length"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        if not context.scene.CivilAlignmentProperties.vertical_pi_markers:
+            cls.poll_message_set("Draw a vertical alignment first")
+            return False
+        if not tool.Alignment.get_active_alignment():
+            cls.poll_message_set("Select the alignment first")
+            return False
+        return True
+
+    def _execute(self, context):
+        alignment = tool.Alignment.get_active_alignment()
+        try:
+            start, end = tool.Alignment.get_vertical_alignment_start_end_points(alignment)
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+
+        markers = list(context.scene.CivilAlignmentProperties.vertical_pi_markers)
+        vpoints = [start] + [(m.dist_along, m.elevation) for m in markers] + [end]
+        lengths = [m.curve_length if m.curve_type == "PARABOLIC" else 0.0 for m in markers]
+
+        ok, message = _generate_vertical_alignment_segments(context, alignment, vpoints, lengths)
+        if ok:
+            _refresh_vertical_profile_view(context, alignment)
+        self.report({"INFO"} if ok else {"WARNING"}, message)
+        return {"FINISHED"}
+
+
+class ALIGN_OT_clear_vertical_pi_markers(Operator):
+    """Clear the vertical PI list without changing the vertical alignment"""
+
+    bl_idname = "align.clear_vertical_pi_markers"
+    bl_label = "Clear Vertical PI List"
+    bl_description = "Clear the interior-PI list (does not affect the vertical alignment already drawn)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return bool(context.scene.CivilAlignmentProperties.vertical_pi_markers)
+
+    def execute(self, context):
+        context.scene.CivilAlignmentProperties.vertical_pi_markers.clear()
         return {"FINISHED"}
 
 

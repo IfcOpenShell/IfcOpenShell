@@ -28,7 +28,7 @@ import math
 import ifcopenshell.api.alignment
 import ifcopenshell.util.geolocation
 import bonsai.tool as tool
-from bpy.types import Panel, Operator
+from bpy.types import Panel, Operator, UIList
 from bpy.props import IntProperty, BoolProperty
 from .prop import _alignment_enum_items
 from .operator import _find_pi_markers, _resolve_alignment_id_for_markers, _is_interior_pi_marker
@@ -102,6 +102,28 @@ class ALIGN_OT_toggle_cant_segments(Operator):
         _C_EXPANDED[self.entity_id] = not _C_EXPANDED.get(self.entity_id, True)
         context.area.tag_redraw()
         return {"FINISHED"}
+
+
+class ALIGN_UL_vertical_pi_markers(UIList):
+    """UIList for the interior PIs of a just-drawn/edited vertical alignment.
+
+    One row per interior PI: distance along, elevation, curve type, and (when
+    curved) curve length — edited inline, applied all at once via
+    align.apply_vertical_pi_curve.
+    """
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type not in {"DEFAULT", "COMPACT"}:
+            return
+        row = layout.row(align=True)
+        row.label(text=str(index + 1))
+        row.label(text=f"{item.dist_along:.2f}")
+        row.label(text=f"{item.elevation:.3f}")
+        row.prop(item, "curve_type", text="")
+        if item.curve_type == "PARABOLIC":
+            row.prop(item, "curve_length", text="")
+        else:
+            row.label(text="")
 
 
 # =============================================================================
@@ -205,6 +227,61 @@ class ALIGN_PT_alignment_authoring(Panel):
 
             if markers_present:
                 box.operator("align.clear_pi_markers", icon="TRASH")
+
+
+class ALIGN_PT_vertical_alignment_authoring(Panel):
+    """Draw a vertical alignment by PI, in the docked profile view — Alignments tab.
+
+    Requires the horizontal alignment to already be drawn (a vertical
+    alignment is defined against the horizontal's distance-along range).
+    Opens the profile view if it isn't already open, then runs the same
+    draw-sharp-then-apply-curves workflow as the horizontal tool: draw all
+    PIs first, then set a curve length per interior PI and Apply.
+    """
+
+    bl_label = "Vertical Alignment"
+    bl_idname = "ALIGN_PT_vertical_alignment_authoring"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_alignments"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.should_show_panel(context, "ALIGNMENTS", cls.bl_idname):
+            return False
+        return is_ifc4x3()
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.CivilAlignmentProperties
+
+        col = layout.column(align=True)
+        col.operator("align.draw_vertical_alignment", icon="EYEDROPPER")
+
+        if props.vertical_pi_markers:
+            box = layout.box()
+            box.label(text="Vertical PIs", icon="ANIM_DATA")
+            header = box.row(align=True)
+            header.label(text="#")
+            header.label(text="Dist Along")
+            header.label(text="Elevation")
+            header.label(text="Curve")
+
+            box.template_list(
+                "ALIGN_UL_vertical_pi_markers",
+                "",
+                props,
+                "vertical_pi_markers",
+                props,
+                "active_vertical_pi_marker_index",
+                rows=4,
+            )
+
+            row = box.row(align=True)
+            row.operator("align.apply_vertical_pi_curve", icon="CHECKMARK")
+            row.operator("align.clear_vertical_pi_markers", text="", icon="TRASH")
 
 
 class ALIGN_PT_alignment_stationing_authoring(Panel):
