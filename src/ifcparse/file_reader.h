@@ -293,6 +293,23 @@ private:
             if (cached_data_ != nullptr && position >= cached_begin_ && position + count <= cached_end_ && cached_evictions_ == impl_->evictions()) {
                 return cached_data_ + (position - cached_begin_);
             }
+            return cached_refresh_(position, count);
+        } else {
+            (void)position;
+            (void)count;
+            return nullptr;
+        }
+    }
+
+    // The slow half of cached_(): fetches the page and re-points the cache.
+    // Kept out of line so the check above inlines into every peek.
+#if defined(_MSC_VER)
+    __declspec(noinline)
+#else
+    __attribute__((noinline))
+#endif
+    const char* cached_refresh_(size_t position, size_t count) const {
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
             const size_t page_size = impl_->page_size();
             const size_t index = position / page_size;
             const auto page = impl_->page(index);
@@ -373,7 +390,7 @@ public:
     // Incremented whenever a page leaves the cache, so a pointer into a
     // page can be checked for validity cheaply.
     size_t evictions() const { return evictions_; }
-    size_t size() const;
+    size_t size() const { return file_size_; }
     char get(size_t position) const;
     uint32_t get_u32(size_t position) const;
     uint64_t get_u64(size_t position) const;

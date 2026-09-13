@@ -109,8 +109,6 @@ paged_file_impl::~paged_file_impl() {
     fp_ = nullptr;
 }
 
-size_t paged_file_impl::size() const { return file_size_; }
-
 char paged_file_impl::get(size_t pos) const {
     if (pos >= file_size_) {
         throw std::out_of_range("get out of range");
