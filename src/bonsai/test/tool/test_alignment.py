@@ -491,3 +491,45 @@ class TestFormatStation(NewFile):
 
     def test_without_project_falls_back_to_plain_number(self):
         assert subject.format_station(1234.5) == "1234.50"
+
+
+class TestParseStation(NewFile):
+    """tool.Alignment.parse_station — the inverse of format_station()."""
+
+    def _make_file(self, length):
+        import ifcopenshell.api.root
+        import ifcopenshell.api.unit
+
+        ifc = ifcopenshell.file(schema="IFC4X3_ADD2")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc, length=length)
+        return ifc
+
+    def test_plain_number_is_taken_literally(self):
+        self._make_file(length={"is_metric": True, "raw": "METERS"})
+        assert subject.parse_station("1000") == 1000.0
+        assert subject.parse_station("1000.5") == 1000.5
+
+    def test_metric_stationing_notation(self):
+        self._make_file(length={"is_metric": True, "raw": "METERS"})
+        assert subject.parse_station("10+050.000") == 10050.0
+        assert subject.parse_station("1+000") == 1000.0
+
+    def test_imperial_stationing_notation(self):
+        self._make_file(length={"is_metric": False, "raw": "FEET"})
+        assert subject.parse_station("100+50.00") == 10050.0
+        assert subject.parse_station("10+00") == 1000.0
+
+    def test_round_trips_with_format_station(self):
+        self._make_file(length={"is_metric": True, "raw": "METERS"})
+        for value in (0.0, 100.0, 10050.0, -50.0):
+            assert subject.parse_station(subject.format_station(value)) == pytest.approx(value, abs=0.01)
+
+    def test_without_project_falls_back_to_plain_float_parse(self):
+        assert subject.parse_station("1234.5") == 1234.5
+
+    def test_raises_on_invalid_input(self):
+        self._make_file(length={"is_metric": True, "raw": "METERS"})
+        with pytest.raises(ValueError):
+            subject.parse_station("not a station")
