@@ -85,6 +85,7 @@ set_target_properties(
 
 target_link_libraries(
     ${targetName}
+    geometry_kernel_opencascade
     ${IFCOPENSHELL_LIBRARIES}
     ${OpenCASCADE_LIBRARIES}
     ${OPENSCENEGRAPH_LIBRARIES}

@@ -16,12 +16,14 @@ target_link_libraries(
         IfcParse
         Serializers
         ${kernel_libraries}
+        geometry_kernel_opencascade
         ${OpenCASCADE_LIBRARIES}
         ${Boost_LIBRARIES}
         ${HDF5_LIBRARIES}
         ${USD_LIBRARIES}
         ${CGAL_LIBRARIES}
         ${GLTF_LIBRARIES}
+        ${OPENCOLLADA_LIBRARIES}
 )
 
 install(TARGETS IfcConvert EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
