@@ -110,7 +110,7 @@ ENDIF()
 set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
+SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES} -fastproxy -fastdispatch)
 
 set_source_files_properties(IfcPython.i PROPERTIES CPLUSPLUS ON)
 # Rebuild on changes in other .i files.
