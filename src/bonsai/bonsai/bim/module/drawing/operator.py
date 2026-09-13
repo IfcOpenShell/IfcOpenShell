@@ -3951,6 +3951,46 @@ class SelectAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
         core.select_assigned_product(tool.Drawing, context)
 
 
+class SelectAssignedAnnotations(bpy.types.Operator):
+    bl_idname = "bim.select_assigned_annotations"
+    bl_label = "Select Assigned Annotations"
+    bl_description = (
+        "Select the annotations assigned to the selected elements.\n\n"
+        "Annotations belonging to drawings that aren't loaded can't be selected"
+    )
+
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded")
+            return False
+        objs = list(context.selected_objects)
+        if (active_obj := context.active_object) and active_obj not in objs:
+            objs.append(active_obj)
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if element and not element.is_a("IfcAnnotation"):
+                return True
+        cls.poll_message_set("No IFC elements selected")
+        return False
+
+    def execute(self, context):
+        total, selected = core.select_assigned_annotations(tool.Drawing, context)
+        if not total:
+            self.report({"INFO"}, "No annotations are assigned to the selected elements.")
+        elif selected < total:
+            self.report(
+                {"INFO"},
+                f"Selected {selected} of {total} assigned annotations, "
+                f"{total - selected} are in drawings that aren't loaded.",
+            )
+        else:
+            self.report({"INFO"}, f"Selected {selected} assigned annotation(s).")
+        return {"FINISHED"}
+
+
 class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_element_filter"
     bl_label = "Element Filter Mode"

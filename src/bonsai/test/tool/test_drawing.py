@@ -697,6 +697,30 @@ class TestGetAssignedProduct(NewFile):
         assert subject.get_assigned_product(label) == wall
 
 
+class TestGetAssignedAnnotations(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        other_wall = ifc.createIfcWall()
+        label = ifc.createIfcAnnotation()
+        dimension = ifc.createIfcAnnotation()
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=dimension)
+        assert subject.get_assigned_annotations(wall) == [label, dimension]
+        assert subject.get_assigned_annotations(other_wall) == []
+
+    def test_only_annotations_are_returned(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        label = ifc.createIfcAnnotation()
+        task = ifc.createIfcTask()
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=task)
+        assert subject.get_assigned_annotations(wall) == [label]
+
+
 class TestImportDrawings(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
