@@ -508,7 +508,7 @@ TEST_CASE("Lazy loading passes over a stray keyword like the full parser and fal
     CHECK(lazy.instance_by_id(8));
 }
 
-TEST_CASE("Parallel parsing yields the same instances, attributes, inverses and GlobalIds as serial parsing, comments in DATA included", "[ifcparse]") {
+TEST_CASE("Parallel and paged parsing yield the same instances, attributes, inverses and GlobalIds as serial in-memory parsing, comments in DATA included", "[ifcparse]") {
     // The fixture is small, so the threshold would keep it serial; write a
     // file big enough to be chunked by repeating its DATA section under new
     // names, with a comment and a string holding '/*' between the copies.
@@ -560,6 +560,16 @@ TEST_CASE("Parallel parsing yields the same instances, attributes, inverses and 
     ifcopenshell::file parallel(ifcopenshell::uninitialized_tag{});
     parallel.parse_threads(5);
     REQUIRE(parallel.initialize(path.string()));
+    // The same file through the paged reader, serially and with 5 workers,
+    // each with its own page cache.
+    ifcopenshell::file paged(ifcopenshell::uninitialized_tag{});
+    paged.paged_reading(true);
+    paged.parse_threads(1);
+    REQUIRE(paged.initialize(path.string()));
+    ifcopenshell::file paged_parallel(ifcopenshell::uninitialized_tag{});
+    paged_parallel.paged_reading(true);
+    paged_parallel.parse_threads(5);
+    REQUIRE(paged_parallel.initialize(path.string()));
     std::filesystem::remove(path);
 
     size_t count = 0;
@@ -573,6 +583,14 @@ TEST_CASE("Parallel parsing yields the same instances, attributes, inverses and 
         a.to_string(sa);
         b.to_string(sb);
         REQUIRE(sb.str() == sa.str());
+        for (ifcopenshell::file* other : {&paged, &paged_parallel}) {
+            const express::base c = other->instance_by_id((int)a.id());
+            REQUIRE(c);
+            std::ostringstream sc;
+            c.to_string(sc);
+            REQUIRE(sc.str() == sa.str());
+            REQUIRE(other->instances_by_reference((int)a.id()).size() == serial.instances_by_reference((int)a.id()).size());
+        }
         ++count;
     }
     size_t parallel_count = 0;

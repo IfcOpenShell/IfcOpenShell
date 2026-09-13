@@ -928,12 +928,19 @@ class file(file_mixin):
     def parse_threads(self, *args: int) -> int:
         """Get, or with an argument set, the number of threads ``initialize()`` parses instances with; 0 uses one per core (capped at 16) or honours ``IFCOPENSHELL_PARSE_THREADS``."""
         ...
+
     def effective_parse_threads(self) -> int:
         """The thread count ``initialize()`` will use given ``parse_threads()`` and the environment."""
         ...
+
+    def paged_reading(self, *args: bool) -> bool:
+        """Get, or with an argument set, whether ``initialize()`` reads the file through the paged reader instead of loading it whole. Set before ``initialize()``."""
+        ...
+
     def lazy_loading(self, *args: bool) -> bool:
         """Get, or with an argument set, whether ``initialize()`` indexes the file with one pass and parses each instance's attributes on first access. Set before ``initialize()``."""
         ...
+
     def get_inverse_indices_by_id(self, instance_id: int) -> tuple[int, ...]: ...
     def _get_inverse(self, e: entity_instance) -> tuple[entity_instance, ...]: ...
     def _get_inverse_indices(self, *args: Union[entity_instance, int]) -> tuple[int, ...]:
