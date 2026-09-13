@@ -64,6 +64,23 @@ def remove_material(
     return True
 
 
+def merge_materials(
+    ifc: type[tool.Ifc],
+    material_tool: type[tool.Material],
+    materials: list[ifcopenshell.entity_instance],
+    merge_into: ifcopenshell.entity_instance,
+) -> None:
+    """Merge redundant materials into `merge_into`.
+
+    Every reference to a material in `materials` (direct assignments, layers,
+    profiles, constituents, and material lists) is reassigned to
+    `merge_into`, and the now-redundant materials are removed.
+    """
+    ifc.run("material.merge_materials", materials=materials, merge_into=merge_into)
+    if material_tool.is_editing_materials():
+        material_tool.import_material_definitions(material_tool.get_active_material_type())
+
+
 def remove_material_set(
     ifc: type[tool.Ifc], material_tool: type[tool.Material], material: ifcopenshell.entity_instance
 ) -> None:
