@@ -380,6 +380,30 @@ class Alignment:
         return start, end
 
     @classmethod
+    def get_vertical_alignment_start_end_points(
+        cls, alignment: ifcopenshell.entity_instance
+    ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+        """The vertical alignment's start and end (distance_along, elevation) points.
+
+        Mirrors get_alignment_start_end_points() for the vertical layout: the
+        first real segment's (StartDistAlong, StartHeight) is the start. The
+        end is evaluated at the last real segment's own end — exact for both
+        CONSTANTGRADIENT and PARABOLICARC, since a parabola's average
+        gradient over its length is exactly (StartGradient + EndGradient) / 2.
+        """
+        v_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+        segments = list(ifcopenshell.api.alignment.get_layout_segments(v_layout)) if v_layout else []
+        real_segments = [s for s in segments if not cls.is_zero_length_segment(s)]
+        if not real_segments:
+            raise ValueError(f"Alignment #{alignment.id()} has no vertical segments yet")
+        first_dp = real_segments[0].DesignParameters
+        start = (first_dp.StartDistAlong, first_dp.StartHeight)
+        last_dp = real_segments[-1].DesignParameters
+        end_dist = last_dp.StartDistAlong + last_dp.HorizontalLength
+        end_elev = last_dp.StartHeight + 0.5 * (last_dp.StartGradient + last_dp.EndGradient) * last_dp.HorizontalLength
+        return start, (end_dist, end_elev)
+
+    @classmethod
     def remove_layout_and_child_layout_objects(cls, alignment: ifcopenshell.entity_instance) -> int:
         """Remove any layout/segment objects left from the old per-segment
         object pipeline (create_object_for_layout / create_objects_for_layout_segments)
@@ -1074,6 +1098,59 @@ class Alignment:
         align_api.layout_horizontal_alignment_by_pi_method(ifc_file, layout, hpoints, radii)
 
         return True
+
+    @classmethod
+    def safe_layout_vertical_by_pi_method(
+        cls, ifc_file: "ifcopenshell.file", layout: "ifcopenshell.entity_instance", vpoints: list, lengths: list
+    ) -> bool:
+        """Safely add segments to a vertical layout using the PI method.
+
+        Mirrors safe_layout_horizontal_by_pi_method — validates the layout has
+        a valid parent alignment before calling the IfcOpenShell API.
+
+        Args:
+            ifc_file: The IFC file
+            layout: The IfcAlignmentVertical layout
+            vpoints: List of (distance_along, elevation) pairs for PIs, including start/end
+            lengths: Horizontal length of the parabolic curve at each interior PI (0.0 = sharp)
+
+        Returns:
+            True if successful
+
+        Raises:
+            ValueError: If layout has no parent alignment
+        """
+        import ifcopenshell.api.alignment as align_api
+
+        alignment = cls.validate_layout_has_parent_alignment(layout)
+        if alignment is None:
+            raise ValueError(
+                f"Layout #{layout.id()} ({layout.is_a()}) has no parent IfcAlignment. "
+                "This may be an orphan layout from undo/redo. "
+                "Cannot add segments without a valid parent alignment."
+            )
+
+        align_api.layout_vertical_alignment_by_pi_method(ifc_file, layout, vpoints, lengths)
+
+        return True
+
+    @classmethod
+    def get_horizontal_alignment_length(cls, h_layout: "ifcopenshell.entity_instance") -> float:
+        """Total plan length of a horizontal layout's real (non-zero-length) segments.
+
+        Used to seed the vertical profile view's distance-along range before
+        any vertical layout exists yet — the vertical PI drawing tool needs a
+        sensible canvas width spanning the whole horizontal alignment.
+        """
+        import ifcopenshell.api.alignment as align_api
+
+        total = 0.0
+        for segment in align_api.get_layout_segments(h_layout) or []:
+            dp = segment.DesignParameters
+            if not dp:
+                continue
+            total += abs(getattr(dp, "SegmentLength", 0.0) or 0.0)
+        return total
 
     @classmethod
     def get_active_alignment(cls) -> ifcopenshell.entity_instance | None:

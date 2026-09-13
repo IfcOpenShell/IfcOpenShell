@@ -107,12 +107,14 @@ classes = (
     # Property groups (must be registered before classes that use them)
     prop.VerticalAlignmentItem,
     prop.CantAlignmentItem,
+    prop.VerticalPIMarker,
     prop.CivilAlignmentProperties,
     prop.PICurveMarkerProperties,
     # UILists and section-toggle operators
     ui.ALIGN_OT_toggle_h_segments,
     ui.ALIGN_OT_toggle_v_segments,
     ui.ALIGN_OT_toggle_cant_segments,
+    ui.ALIGN_UL_vertical_pi_markers,
     operator.ImportAlignmentCSV,
     # Operators - Vertical Profile Window
     operator.ALIGN_OT_show_vertical_profile,
@@ -130,8 +132,13 @@ classes = (
     operator.ALIGN_OT_apply_pi_curve,
     operator.ALIGN_OT_clear_pi_markers,
     operator.ALIGN_OT_draw_horizontal_alignment,
+    # Operators - Vertical alignment authoring (draw-by-PI in the profile view)
+    operator.ALIGN_OT_draw_vertical_alignment,
+    operator.ALIGN_OT_apply_vertical_pi_curve,
+    operator.ALIGN_OT_clear_vertical_pi_markers,
     # UI Panels (appear in Properties sidebar under ALIGNMENTS tab)
     ui.ALIGN_PT_alignment_authoring,
+    ui.ALIGN_PT_vertical_alignment_authoring,
     ui.ALIGN_PT_alignment_stationing_authoring,
     ui.ALIGN_PT_alignment_segments,
 )

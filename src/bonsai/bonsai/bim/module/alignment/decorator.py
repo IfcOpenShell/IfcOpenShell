@@ -34,6 +34,7 @@ import ifcopenshell.util.geolocation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import bonsai.tool as tool
+from typing import Optional, Tuple
 from bpy.types import SpaceView3D
 from bpy_extras.view3d_utils import location_3d_to_region_2d, region_2d_to_location_3d
 from gpu_extras.batch import batch_for_shader
@@ -1009,6 +1010,17 @@ class VerticalProfileDecorator:
             cls.dist_max = max(all_dists)
             cls.elev_min = min(all_elevs)
             cls.elev_max = max(all_elevs)
+        else:
+            # No vertical geometry yet — e.g. opening the profile view to draw
+            # the first one. Frame the canvas to the horizontal alignment's
+            # own length instead of leaving stale/default 0..1 bounds, so
+            # there's a sensible drawing surface to click PIs onto.
+            h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+            h_length = tool.Alignment.get_horizontal_alignment_length(h_layout) if h_layout else 0.0
+            cls.dist_min = 0.0
+            cls.dist_max = max(h_length, 1.0)
+            cls.elev_min = 0.0
+            cls.elev_max = max(h_length * 0.1, 10.0)
 
         # Collect cant data (plotted below the elevation profile)
         cls._collect_cant_data(alignment)
@@ -1235,6 +1247,51 @@ class VerticalProfileDecorator:
         e_span = max(cls._e_display_max - cls._e_display_min, 1e-10)
         t = (e - cls._e_display_min) / e_span
         return cls.elev_zone_bot + t * (cls.elev_zone_top - cls.elev_zone_bot)
+
+    @classmethod
+    def screen_to_data(
+        cls, region: "bpy.types.Region", rv3d: "bpy.types.RegionView3D", mouse_x: float, mouse_y: float
+    ) -> Optional[Tuple[float, float]]:
+        """Convert a region-relative mouse position to (distance_along, elevation).
+
+        ``region``/``rv3d`` must be looked up explicitly by the caller (e.g.
+        by matching profile_area_ptr against context.screen.areas) rather
+        than taken from context.region/context.region_data — during a modal
+        operator's event handling, those don't reliably track wherever the
+        mouse currently is when it's over an area *other than* the one the
+        operator was invoked from, unlike draw handlers (which Blender calls
+        per-area with correct context). Getting this wrong means every event
+        looks like it's outside the profile area, so clicks silently do
+        nothing — see ALIGN_OT_draw_vertical_alignment._locate_profile_view.
+
+        Inverse of the data -> world-Z mapping draw_3d uses for its grid/curve
+        (world X is distance-along directly; world Z goes through _ez's
+        normalized zone). Re-derives the zone bounds from the view's current
+        (possibly just panned/zoomed) visible Z span first, exactly like
+        draw_3d does every frame, so a click lands on the same point the
+        background grid shows under the cursor.
+
+        Returns None if there's no valid region/view to project against.
+        """
+        if not region or not rv3d:
+            return None
+
+        ref = (cls.dist_min, 0.0, (cls.elev_zone_bot + cls.elev_zone_top) * 0.5)
+        point = region_2d_to_location_3d(region, rv3d, (mouse_x, mouse_y), ref)
+        if point is None:
+            return None
+
+        bl = region_2d_to_location_3d(region, rv3d, (0, 0), ref)
+        tr = region_2d_to_location_3d(region, rv3d, (region.width, region.height), ref)
+        if bl is not None and tr is not None:
+            cls._recompute_zones((bl.z + tr.z) * 0.5, tr.z - bl.z)
+
+        span = cls.elev_zone_top - cls.elev_zone_bot
+        if abs(span) < 1e-9:
+            return None
+        t = (point.z - cls.elev_zone_bot) / span
+        elevation = cls._e_display_min + t * (cls._e_display_max - cls._e_display_min)
+        return point.x, elevation
 
     @classmethod
     def _cz2(cls, v: float) -> float:
@@ -1986,4 +2043,179 @@ class VerticalProfileDecorator:
                                 blf.draw(font_id, _fmt_cant(info["end_cant"]))
                             labeled_cant.add(e_key)
 
+        blf.disable(font_id, blf.SHADOW)
+
+
+class VerticalDrawDecorator:
+    """Live preview while ALIGN_OT_draw_vertical_alignment is running.
+
+    Draws the in-progress PI polyline and a rubber-band line to the mouse
+    cursor, using the exact same (dist_along, elevation) -> world-Z mapping
+    VerticalProfileDecorator._ez uses, so the preview lines up with the
+    profile grid/curve drawn underneath it by that decorator (which stays
+    installed and keeps drawing its own grid/background throughout).
+    """
+
+    is_installed: bool = False
+    handlers: list = []
+    points: list = []                    # shared reference to the operator's [(dist, elev), ...] list
+    mouse_data: Optional[Tuple[float, float]] = None  # (dist_along, elevation) under the cursor, or None
+
+    COLOR_LINE = (1.0, 0.9, 0.2, 1.0)
+    COLOR_RUBBER = (1.0, 0.9, 0.2, 0.5)
+    COLOR_HUD_TEXT = (1.0, 1.0, 1.0, 1.0)
+    LINE_WIDTH = 2.0
+
+    @classmethod
+    def install(cls, context, points: list) -> None:
+        if cls.is_installed:
+            cls.uninstall()
+        cls.points = points
+        cls.mouse_data = None
+        handler = cls()
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_3d, (context,), "WINDOW", "POST_VIEW"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_hud, (context,), "WINDOW", "POST_PIXEL"))
+        cls.is_installed = True
+
+    @classmethod
+    def uninstall(cls) -> None:
+        for handler in cls.handlers:
+            try:
+                SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except ValueError:
+                pass
+        cls.handlers = []
+        cls.is_installed = False
+        cls.points = []
+        cls.mouse_data = None
+
+    @classmethod
+    def tag_redraw(cls) -> None:
+        VerticalProfileDecorator.tag_redraw()
+
+    @classmethod
+    def update_mouse(cls, point: Optional[Tuple[float, float]]) -> None:
+        """Set the (dist_along, elevation) the preview/rubber-band should show.
+
+        Takes an already-resolved point rather than raw mouse coordinates —
+        the caller (ALIGN_OT_draw_vertical_alignment) is what knows about the
+        station-range clamp and left-to-right PI ordering constraints, so it
+        computes the constrained point before handing it here. Pass None to
+        hide the preview (e.g. the mouse left the profile area).
+        """
+        cls.mouse_data = point
+        cls.tag_redraw()
+
+    def _in_profile_area(self) -> bool:
+        try:
+            return (
+                bpy.context.area is not None
+                and bpy.context.area.as_pointer() == VerticalProfileDecorator.profile_area_ptr
+            )
+        except Exception:
+            return False
+
+    def draw_3d(self, context) -> None:
+        cls = self.__class__
+        if not self._in_profile_area():
+            return
+        if not cls.points and cls.mouse_data is None:
+            return
+
+        ez = VerticalProfileDecorator._ez
+        verts = [(d, 0.0, ez(e)) for d, e in cls.points]
+
+        region = bpy.context.region
+        if not region:
+            return
+
+        gpu.state.blend_set("ALPHA")
+        gpu.state.depth_test_set("NONE")
+        gpu.state.depth_mask_set(False)
+
+        shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        shader.bind()
+        shader.uniform_float("viewportSize", (region.width, region.height))
+        shader.uniform_float("lineWidth", self.LINE_WIDTH)
+
+        if len(verts) >= 2:
+            indices = [[i, i + 1] for i in range(len(verts) - 1)]
+            batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=indices)
+            shader.uniform_float("color", self.COLOR_LINE)
+            batch.draw(shader)
+
+        if verts and cls.mouse_data is not None:
+            rubber_end = (cls.mouse_data[0], 0.0, ez(cls.mouse_data[1]))
+            batch = batch_for_shader(shader, "LINES", {"pos": [verts[-1], rubber_end]}, indices=[[0, 1]])
+            shader.uniform_float("color", self.COLOR_RUBBER)
+            batch.draw(shader)
+
+        gpu.state.blend_set("NONE")
+        gpu.state.depth_test_set("NONE")
+        gpu.state.depth_mask_set(True)
+
+    def draw_hud(self, context) -> None:
+        cls = self.__class__
+        if not self._in_profile_area():
+            return
+        if cls.mouse_data is None:
+            return
+
+        region = context.region
+        rv3d = context.region_data
+        if not region:
+            return
+
+        dist_along, elevation = cls.mouse_data
+
+        # Crosshair at the candidate-PI position — the only visual feedback
+        # for the first PI (anchored to the start station) before anything
+        # has actually been placed yet, since the rubber-band line itself
+        # needs a previous point to draw from.
+        if rv3d is not None:
+            cursor_2d = location_3d_to_region_2d(
+                region, rv3d, (dist_along, 0.0, VerticalProfileDecorator._ez(elevation))
+            )
+            if cursor_2d is not None:
+                size = 6
+                shader2d = gpu.shader.from_builtin("UNIFORM_COLOR")
+                shader2d.bind()
+                shader2d.uniform_float("color", self.COLOR_RUBBER)
+                batch = batch_for_shader(
+                    shader2d,
+                    "LINES",
+                    {
+                        "pos": [
+                            (cursor_2d.x - size, cursor_2d.y),
+                            (cursor_2d.x + size, cursor_2d.y),
+                            (cursor_2d.x, cursor_2d.y - size),
+                            (cursor_2d.x, cursor_2d.y + size),
+                        ]
+                    },
+                )
+                batch.draw(shader2d)
+        lines = [
+            f"Dist Along: {dist_along:.2f}",
+            f"Elevation: {elevation:.3f}",
+        ]
+        if cls.points:
+            prev_d, prev_e = cls.points[-1]
+            dd = dist_along - prev_d
+            if abs(dd) > 1e-6:
+                grade = (elevation - prev_e) / dd * 100.0
+                lines.append(f"Grade: {grade:.2f}%")
+
+        font_id = 0
+        font_size = tool.Blender.scale_font_size(14)
+        blf.size(font_id, font_size)
+        blf.enable(font_id, blf.SHADOW)
+        blf.shadow(font_id, 6, 0, 0, 0, 1)
+        blf.color(font_id, *self.COLOR_HUD_TEXT)
+
+        margin = 20
+        line_height = font_size * 1.4
+        y = region.height - margin
+        for i, line in enumerate(lines):
+            blf.position(font_id, margin, y - i * line_height, 0)
+            blf.draw(font_id, line)
         blf.disable(font_id, blf.SHADOW)

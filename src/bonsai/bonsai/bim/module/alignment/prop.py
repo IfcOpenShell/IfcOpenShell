@@ -157,6 +157,33 @@ class CantAlignmentItem(PropertyGroup):
     )
 
 
+class VerticalPIMarker(PropertyGroup):
+    """One interior PI of a vertical alignment, for post-draw curve editing.
+
+    Unlike horizontal PI markers (real Blender Empties positioned at their
+    actual 3D location — see PICurveMarkerProperties), a vertical PI has no
+    meaningful position in real 3D space, only in the profile view's own
+    synthetic (distance-along, elevation) space. So instead of a scene
+    object, interior vertical PIs are tracked here as a plain list, edited
+    via a table in the panel (ALIGN_PT_alignment_authoring), and applied by
+    align.apply_vertical_pi_curve.
+    """
+
+    dist_along: FloatProperty(name="Distance Along", default=0.0, precision=2)
+    elevation: FloatProperty(name="Elevation", default=0.0, precision=3, unit="LENGTH")
+    curve_type: EnumProperty(
+        name="Curve Type",
+        items=[
+            ("TANGENT", "None (sharp PI)", "No curve — the two grades meet directly"),
+            ("PARABOLIC", "Parabolic", "A parabolic vertical curve"),
+        ],
+        default="TANGENT",
+    )
+    curve_length: FloatProperty(
+        name="Curve Length", description="Horizontal length of the parabolic curve", default=100.0, min=0.0001, unit="LENGTH"
+    )
+
+
 class CivilAlignmentProperties(PropertyGroup):
     """Properties for the alignment module"""
 
@@ -206,6 +233,10 @@ class CivilAlignmentProperties(PropertyGroup):
         description="Show BVC/PVI/EVC callout labels in the profile view",
         default=True,
     )
+
+    # Interior PIs of the most recently drawn/edited vertical alignment
+    vertical_pi_markers: CollectionProperty(type=VerticalPIMarker)
+    active_vertical_pi_marker_index: IntProperty(name="Active Vertical PI", default=0)
 
     # Per-vertical visibility filter for the profile window
     vertical_items: CollectionProperty(type=VerticalAlignmentItem)
