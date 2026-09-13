@@ -214,6 +214,7 @@ public:
 
   private:
     bool lazy_loading_ = false;
+    bool paged_reading_ = false;
     file_open_status good_ = file_open_status::SUCCESS;
     std::reference_wrapper<ifcopenshell::logger> logger_;
 
@@ -290,6 +291,12 @@ public:
     // anything it does not handle.
     void lazy_loading(bool value) { lazy_loading_ = value; }
     bool lazy_loading() const { return lazy_loading_; }
+    // Read the file through the paged reader (64 KB pages, 4 MB cache)
+    // instead of loading it into memory as a whole. Set before
+    // initialize(). Applies to the full parse; lazy loading always reads
+    // in pages.
+    void paged_reading(bool value) { paged_reading_ = value; }
+    bool paged_reading() const { return paged_reading_; }
 #ifdef USE_MMAP
     bool initialize(const std::string& path, bool use_mmap);
 #endif

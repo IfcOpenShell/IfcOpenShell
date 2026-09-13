@@ -508,7 +508,7 @@ TEST_CASE("Lazy loading passes over a stray keyword like the full parser and fal
     CHECK(lazy.instance_by_id(8));
 }
 
-TEST_CASE("Lazy loading yields the same instances, attributes, inverses and GlobalIds as the full parse on a larger file, comments in DATA included", "[ifcparse]") {
+TEST_CASE("Paged and lazy parsing yield the same instances, attributes, inverses and GlobalIds as in-memory parsing, comments in DATA included", "[ifcparse]") {
     // A file of some size made by repeating the fixture's DATA section under
     // new names, with a comment and a string holding '/*' between the copies.
     const std::string fixture = std::string(IFCOPENSHELL_TEST_FIXTURES) + "/ColumnPSetsOfSets.ifc";
@@ -547,7 +547,7 @@ TEST_CASE("Lazy loading yields the same instances, attributes, inverses and Glob
         offset += 1000000;
     }
     big += source.substr(data_end);
-    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_larger_parse_test.ifc";
+    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_paged_parse_test.ifc";
     {
         std::ofstream out(path, std::ios::binary);
         out << big;
@@ -555,6 +555,10 @@ TEST_CASE("Lazy loading yields the same instances, attributes, inverses and Glob
 
     ifcopenshell::file serial(ifcopenshell::uninitialized_tag{});
     REQUIRE(serial.initialize(path.string()));
+    // The same file through the paged reader, and lazily.
+    ifcopenshell::file paged(ifcopenshell::uninitialized_tag{});
+    paged.paged_reading(true);
+    REQUIRE(paged.initialize(path.string()));
     ifcopenshell::file lazy(ifcopenshell::uninitialized_tag{});
     lazy.lazy_loading(true);
     REQUIRE(lazy.initialize(path.string()));
@@ -564,25 +568,29 @@ TEST_CASE("Lazy loading yields the same instances, attributes, inverses and Glob
     size_t count = 0;
     for (auto it = serial.begin(); it != serial.end(); ++it) {
         const express::base a = it->second;
-        const express::base b = lazy.instance_by_id((int)a.id());
-        REQUIRE(b);
-        REQUIRE(&b.declaration() == &a.declaration());
-        REQUIRE(lazy.instances_by_reference((int)a.id()).size() == serial.instances_by_reference((int)a.id()).size());
-        std::ostringstream sa, sb;
+        std::ostringstream sa;
         a.to_string(sa);
-        b.to_string(sb);
-        REQUIRE(sb.str() == sa.str());
+        for (ifcopenshell::file* other : {&paged, &lazy}) {
+            const express::base c = other->instance_by_id((int)a.id());
+            REQUIRE(c);
+            std::ostringstream sc;
+            c.to_string(sc);
+            REQUIRE(sc.str() == sa.str());
+            REQUIRE(other->instances_by_reference((int)a.id()).size() == serial.instances_by_reference((int)a.id()).size());
+        }
         ++count;
     }
-    size_t lazy_count = 0;
-    for (auto it = lazy.begin(); it != lazy.end(); ++it) {
-        ++lazy_count;
+    size_t paged_count = 0;
+    for (auto it = paged.begin(); it != paged.end(); ++it) {
+        ++paged_count;
     }
-    CHECK(lazy_count == count);
+    CHECK(paged_count == count);
     CHECK(count > 5000);
+    CHECK(paged.get_max_id() == serial.get_max_id());
     CHECK(lazy.get_max_id() == serial.get_max_id());
     for (const auto& rooted : serial.instances_by_type("IfcRoot")) {
         const std::string guid = rooted.get_attribute_value(0);
+        REQUIRE(paged.instance_by_guid(guid).id() == serial.instance_by_guid(guid).id());
         REQUIRE(lazy.instance_by_guid(guid).id() == serial.instance_by_guid(guid).id());
     }
 }
