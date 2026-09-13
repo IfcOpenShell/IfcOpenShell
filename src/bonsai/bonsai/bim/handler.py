@@ -321,10 +321,12 @@ def loadIfcStore(scene: bpy.types.Scene) -> None:
     refresh_ui_data()
     if not tool.Ifc.get():
         tool.Autosave.cancel_timer()
+        tool.FileWatcher.cancel_timer()
         return
     tool.Ifc.schema()
     IfcStore.relink_all_objects()
     tool.Autosave.reset_timer()
+    tool.FileWatcher.reset_timer()
 
 
 @persistent
