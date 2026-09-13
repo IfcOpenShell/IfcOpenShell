@@ -1367,14 +1367,17 @@ class SvgWriter:
 
             def get_text():
                 radius = (points[-1].co - points[-2].co).length
-                radius = helper.format_distance(
-                    radius,
-                    precision=self.precision,
-                    decimal_places=self.decimal_places,
-                    custom_unit=dimension_data["custom_unit"],
-                )
-                text = f"R{radius}"
-                return text
+                units_to_format = dimension_data["custom_units"] if dimension_data["custom_units"] else [None]
+                parts = [
+                    helper.format_distance(
+                        radius,
+                        precision=self.precision,
+                        decimal_places=self.decimal_places,
+                        custom_unit=unit,
+                    )
+                    for unit in units_to_format
+                ]
+                return "R" + dimension_data["separator"].join(str(p) for p in parts)
 
             self.draw_dimension_text(
                 get_text, tag, dimension_data, text_position=text_position, class_str="RADIUS", box_alignment="center"
@@ -1504,7 +1507,8 @@ class SvgWriter:
                     text_prefix=dimension_data["text_prefix"],
                     text_suffix=dimension_data["text_suffix"],
                     fill_bg=dimension_data["fill_bg"],
-                    custom_unit=dimension_data["custom_unit"],
+                    custom_units=dimension_data["custom_units"],
+                    separator=dimension_data["separator"],
                 )
 
     def draw_dimension_annotations(self, obj: bpy.types.Object) -> None:
@@ -1530,7 +1534,8 @@ class SvgWriter:
                     text_prefix=dimension_data["text_prefix"],
                     text_suffix=dimension_data["text_suffix"],
                     fill_bg=dimension_data["fill_bg"],
-                    custom_unit=dimension_data["custom_unit"],
+                    custom_units=dimension_data["custom_units"],
+                    separator=dimension_data["separator"],
                 )
 
     def draw_measureit_arch_dimension_annotations(self) -> None:
@@ -1557,7 +1562,8 @@ class SvgWriter:
         text_prefix="",
         text_suffix="",
         fill_bg=False,
-        custom_unit=None,
+        custom_units=None,
+        separator=" / ",
     ) -> None:
         offset = Vector([self.raw_width, self.raw_height]) / 2
         v0 = self.project_point_onto_camera(v0_global)
@@ -1586,14 +1592,18 @@ class SvgWriter:
 
         if not show_description_only:
             dimension = (v1_global - v0_global).length
-            dimension = helper.format_distance(
-                dimension,
-                precision=self.precision,
-                decimal_places=self.decimal_places,
-                suppress_zero_inches=suppress_zero_inches,
-                custom_unit=custom_unit,
-            )
-            text = text_prefix + str(dimension) + text_suffix
+            units_to_format = custom_units if custom_units else [None]
+            parts = [
+                helper.format_distance(
+                    dimension,
+                    precision=self.precision,
+                    decimal_places=self.decimal_places,
+                    suppress_zero_inches=suppress_zero_inches,
+                    custom_unit=unit,
+                )
+                for unit in units_to_format
+            ]
+            text = text_prefix + separator.join(str(p) for p in parts) + text_suffix
         else:
             if not dimension_text:
                 return
