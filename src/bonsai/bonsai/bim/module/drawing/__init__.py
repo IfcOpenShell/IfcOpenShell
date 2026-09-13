@@ -126,6 +126,7 @@ classes = (
     ui.BIM_PT_sheets,
     ui.BIM_PT_drawings,
     ui.BIM_PT_camera,
+    ui.BIM_PT_edge_classification,
     ui.BIM_PT_element_filters,
     ui.BIM_PT_drawing_underlay,
     ui.BIM_PT_schedules,

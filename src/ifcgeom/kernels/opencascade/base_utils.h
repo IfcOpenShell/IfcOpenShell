@@ -82,6 +82,20 @@ namespace IfcGeom {
 		IFC_GEOMLIBRARY_API bool validate_shape(const TopoDS_Shape&);
 
 		IFC_GEOMLIBRARY_API TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance);
+
+		// Sewing + unify() only -- no validate_shape()/ShapeFix_Shape repair fallback. Use
+		// this instead of heal_for_linework() when the shape is intentionally NOT a closed
+		// solid (e.g. a halfspace-cut result: a compound of loose, possibly-trimmed faces
+		// with a genuine gap at the cut boundary, since 2D faces are being clipped, not
+		// solids) -- heal_for_linework()'s own repair fallback exists to force a shape
+		// closed/"valid", which is the wrong goal for a shape that's supposed to stay open.
+		IFC_GEOMLIBRARY_API TopoDS_Shape sew_and_unify_for_linework(const TopoDS_Shape& s, double tolerance);
+
+		// Sewing + unify(), for healing a single object's own shape before linework
+		// extraction (e.g. HLR). Must only ever be called on one object's shape at a time --
+		// never on a shape merged across distinct building elements -- since that would erase
+		// the object-boundary information cross-object edge classification depends on.
+		IFC_GEOMLIBRARY_API TopoDS_Shape heal_for_linework(const TopoDS_Shape& s, double tolerance);
 	}
 }
 
