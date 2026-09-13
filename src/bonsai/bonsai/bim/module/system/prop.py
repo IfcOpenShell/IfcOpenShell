@@ -83,6 +83,12 @@ class Zone(PropertyGroup):
         ifc_definition_id: int
 
 
+def update_active_group_index(self: "BIMSystemProperties", context: bpy.types.Context) -> None:
+    from bonsai.bim.module.pset.data import SystemPsetsData
+
+    SystemPsetsData.is_loaded = False
+
+
 def toggle_decorations(self: "BIMSystemProperties", context: bpy.types.Context) -> None:
     toggle = self.should_draw_decorations
     if toggle:
@@ -121,7 +127,7 @@ class BIMSystemProperties(PropertyGroup):
     expanded_groups_json: StringProperty(name="Expanded Systems JSON", default="[]")
     """See `expanded_groups_json`. We name it "groups" for compatibility with Group UI code."""
     # Named not as `active_system_index` to match `BIMGroupProperties`.
-    active_group_index: IntProperty(name="Active System Index")
+    active_group_index: IntProperty(name="Active System Index", update=update_active_group_index)
     active_system_id: IntProperty(name="Active System Id")
     edited_system_id: IntProperty(name="Edited System Id")
     system_class: EnumProperty(items=get_system_class, name="Class")

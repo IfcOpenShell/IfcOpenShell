@@ -44,6 +44,7 @@ def refresh():
     ProfilePsetsData.is_loaded = False
     WorkSchedulePsetsData.is_loaded = False
     ZonePsetsData.is_loaded = False
+    SystemPsetsData.is_loaded = False
     AddEditCustomPropertiesData.is_loaded = False
     PsetsGeneralData.is_loaded = False
 
@@ -331,6 +332,21 @@ class ZonePsetsData(Data):
         props = tool.System.get_zone_props()
         assert (active_zone := props.active_zone)
         ifc_definition_id = active_zone.ifc_definition_id
+        cls.data = {
+            "psets": (cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)),
+        }
+        cls.is_loaded = True
+
+
+class SystemPsetsData(Data):
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        props = tool.System.get_system_props()
+        assert (active_system := props.active_system_ui_item)
+        ifc_definition_id = active_system.ifc_definition_id
         cls.data = {
             "psets": (cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)),
         }

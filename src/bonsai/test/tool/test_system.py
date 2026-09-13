@@ -434,6 +434,30 @@ class TestSetActiveSystem(NewFile):
         assert props.edited_system_id == system.id()
 
 
+class TestActiveSystemPsetScoping(NewFile):
+    """The Systems UI's "System Property Sets" panel (#4931) reuses the generic
+    Pset editor scoped by obj_type="System" to whichever system row is selected
+    in the Systems UIList. Verify that scoping resolves to the right IfcSystem."""
+
+    def test_run(self):
+        import bonsai.tool.blender
+        import bonsai.tool.pset
+
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        system = ifcopenshell.api.system.add_system(ifc, ifc_class="IfcDistributionSystem")
+
+        props = tool.System.get_system_props()
+        item = props.systems.add()
+        item.ifc_definition_id = system.id()
+        item.ifc_class = system.is_a()
+        props.active_group_index = 0
+
+        assert props.active_system_ui_item.ifc_definition_id == system.id()
+        assert bonsai.tool.blender.Blender.get_obj_ifc_definition_id("", "System") == system.id()
+        assert bonsai.tool.pset.Pset.get_pset_props("", "System") == bpy.context.scene.SystemPsetProperties
+
+
 class TestFlowElementAndControls(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
