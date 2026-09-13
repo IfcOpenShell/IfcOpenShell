@@ -719,7 +719,11 @@ class CreateDrawing(bpy.types.Operator):
                 processed = set()
                 for elem in it:
                     processed.add(ifc.by_id(elem.id))
-                    self.serialiser.write(elem)
+                    try:
+                        self.serialiser.write(elem)
+                    except Exception as e:
+                        self.failed_linework_elements.append((elem.type, elem.guid, str(e)))
+                        continue
                     tree.add_element(elem)
                 drawing_elements -= processed
 
@@ -1024,7 +1028,6 @@ class CreateDrawing(bpy.types.Operator):
         cached_linework -= edited_guids
 
         bim_props = tool.Blender.get_bim_props()
-        prefs = tool.Blender.get_addon_preferences()
         # Map ifc_path → (ifc_file, link_matrix); main file has no link_matrix (None)
         files: dict[str, tuple[ifcopenshell.file, Optional[Matrix]]] = {bim_props.ifc_file: (tool.Ifc.get(), None)}
 
@@ -1037,57 +1040,36 @@ class CreateDrawing(bpy.types.Operator):
             files[link.filepath] = (self.get_linked_file(link), link_matrix)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
-        self.setup_serialiser(target_view)
 
-        tree = ifcopenshell.geom.tree()
-        tree.enable_face_styles(True)
+        self.failed_linework_elements: list[tuple[str, str, str]] = []
+        excluded_guids: set[str] = set()
 
-        # Accumulated across every file in the loop below (main model plus any
-        # linked models) so the SHAPELY fill pass after the loop covers all of
-        # them, not just whichever file happened to be processed last.
-        raycast_objs = set()
-        elements_with_faces = set()
-
-        for ifc_path, (ifc, link_matrix) in files.items():
-            # Don't use draw.main() just whilst we're prototyping and experimenting
-            # TODO: hash paths are never used
-            ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
-            ifc_cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
-
-            self.serialiser.setFile(ifc)
-            drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
-
-            if self.cprops.fill_mode == "SHAPELY":
-                for element in drawing_elements.copy():
-                    if element.is_a("IfcAnnotation"):
-                        continue
-                    obj = tool.Ifc.get_object(element)
-                    if obj and obj.type == "MESH" and len(obj.data.polygons):
-                        elements_with_faces.add(element.GlobalId)
-                        raycast_objs.add(obj)
-
-            # Get all representation contexts to see what we're dealing with.
-            # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
-            # A drawing prioritises a target view context first, followed by a model view context as a fallback.
-            # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
-            contexts = self.get_linework_contexts(ifc, target_view)
-            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
-            self.serialize_contexts_elements(
-                ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix
+        # A failed element corrupts the whole native buffer (#8049), so redo the pass
+        # from scratch on a fresh serialiser with failing elements excluded each time.
+        max_attempts = 8
+        for _ in range(max_attempts):
+            prior_failure_count = len(self.failed_linework_elements)
+            tree, raycast_objs, elements_with_faces, results = self.generate_linework_svg(
+                files, target_view, excluded_guids
+            )
+            new_failures = self.failed_linework_elements[prior_failure_count:]
+            if not new_failures:
+                break
+            excluded_guids.update(guid for _, guid, _ in new_failures if guid)
+        else:
+            self.report(
+                {"WARNING"},
+                f"Linework for '{self.drawing_name}' kept failing on new elements after {max_attempts} attempts; "
+                "using the last (possibly incomplete) result.",
             )
 
-            if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
-                with profile("Camera element"):
-                    # The camera must always be included, regardless of any include/exclude filters.
-                    geom_settings = ifcopenshell.geom.settings()
-                    geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
-                    it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
-                    for elem in it:
-                        self.serialiser.write(elem)
-
-        with profile("Finalizing"):
-            self.serialiser.finalize()
-        results = self.svg_buffer.get_value()
+        if self.failed_linework_elements:
+            skipped = "; ".join(f"{t} {g} ({e})" for t, g, e in self.failed_linework_elements)
+            self.report(
+                {"WARNING"},
+                f"{len(self.failed_linework_elements)} element(s) failed to serialize and were skipped "
+                f"from '{self.drawing_name}': {skipped}",
+            )
 
         root = etree.fromstring(results)
 
@@ -1395,6 +1377,74 @@ class CreateDrawing(bpy.types.Operator):
             svg.write(etree.tostring(root))
 
         return svg_path
+
+    def generate_linework_svg(
+        self,
+        files: dict[str, tuple[ifcopenshell.file, Optional[Matrix]]],
+        target_view: str,
+        excluded_guids: set[str],
+    ) -> tuple["ifcopenshell.geom.tree", set, set, bytes]:
+        """Run one full linework serialisation pass on a fresh serialiser, skipping `excluded_guids`."""
+        prefs = tool.Blender.get_addon_preferences()
+        self.setup_serialiser(target_view)
+
+        tree = ifcopenshell.geom.tree()
+        tree.enable_face_styles(True)
+
+        # Accumulated across every file in the loop below (main model plus any
+        # linked models) so the SHAPELY fill pass after the loop covers all of
+        # them, not just whichever file happened to be processed last.
+        raycast_objs = set()
+        elements_with_faces = set()
+
+        for ifc_path, (ifc, link_matrix) in files.items():
+            # Don't use draw.main() just whilst we're prototyping and experimenting
+            # TODO: hash paths are never used
+            ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
+            ifc_cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
+
+            self.serialiser.setFile(ifc)
+            drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
+            if excluded_guids:
+                drawing_elements = {e for e in drawing_elements if getattr(e, "GlobalId", None) not in excluded_guids}
+
+            if self.cprops.fill_mode == "SHAPELY":
+                for element in drawing_elements.copy():
+                    if element.is_a("IfcAnnotation"):
+                        continue
+                    obj = tool.Ifc.get_object(element)
+                    if obj and obj.type == "MESH" and len(obj.data.polygons):
+                        elements_with_faces.add(element.GlobalId)
+                        raycast_objs.add(obj)
+
+            # Get all representation contexts to see what we're dealing with.
+            # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
+            # A drawing prioritises a target view context first, followed by a model view context as a fallback.
+            # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
+            contexts = self.get_linework_contexts(ifc, target_view)
+            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
+            self.serialize_contexts_elements(
+                ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix
+            )
+
+            camera_excluded = self.camera_element.GlobalId in excluded_guids
+            if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements and not camera_excluded:
+                with profile("Camera element"):
+                    # The camera must always be included, regardless of any include/exclude filters.
+                    geom_settings = ifcopenshell.geom.settings()
+                    geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
+                    it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
+                    for elem in it:
+                        try:
+                            self.serialiser.write(elem)
+                        except Exception as e:
+                            self.failed_linework_elements.append((elem.type, elem.guid, str(e)))
+
+        with profile("Finalizing"):
+            self.serialiser.finalize()
+
+        results = self.svg_buffer.get_value()
+        return tree, raycast_objs, elements_with_faces, results
 
     def setup_serialiser(self, target_view):
         self.svg_settings = ifcopenshell.geom.settings()
