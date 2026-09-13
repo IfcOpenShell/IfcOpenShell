@@ -229,6 +229,56 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert self.file.by_type("IfcWallType")[0].HasAssociations[0].RelatingMaterial.HasRepresentation
         assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
 
+    def test_append_an_occurrence_keeps_styled_materials_reached_via_a_layer_set_usage(self):
+        # Regression: appending a wall occurrence whose material is a layer set
+        # reached through an IfcMaterialLayerSetUsage used to drop the member
+        # materials' styles (IfcMaterial.HasRepresentation). The layer set was
+        # forward-copied by file_add and then matched as "existing", so the
+        # traversal never descended into it to transplant the materials' inverses.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, context_type="Model")
+
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        context = ifcopenshell.api.context.add_context(library, context_type="Model")
+
+        wall_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        wall = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(library, related_objects=[wall], relating_type=wall_type)
+
+        material = ifcopenshell.api.material.add_material(library, name="Material")
+        style = ifcopenshell.api.style.add_style(library)
+        ifcopenshell.api.style.assign_material_style(library, material=material, style=style, context=context)
+
+        layer_set = ifcopenshell.api.material.add_material_set(library, set_type="IfcMaterialLayerSet")
+        layer = ifcopenshell.api.material.add_layer(library, layer_set=layer_set, material=material)
+        ifcopenshell.api.material.edit_layer(library, layer=layer, attributes={"LayerThickness": 0.1})
+        # The type carries the bare layer set; the occurrence wraps it in a usage.
+        ifcopenshell.api.material.assign_material(library, products=[wall_type], material=layer_set)
+        usage = library.create_entity(
+            "IfcMaterialLayerSetUsage",
+            ForLayerSet=layer_set,
+            LayerSetDirection="AXIS2",
+            DirectionSense="POSITIVE",
+            OffsetFromReferenceLine=0.0,
+        )
+        library.create_entity(
+            "IfcRelAssociatesMaterial",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[wall],
+            RelatingMaterial=usage,
+        )
+
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=wall)
+
+        new_material = self.file.by_type("IfcMaterial")[0]
+        assert new_material.HasRepresentation
+        assert len(self.file.by_type("IfcSurfaceStyle")) == 1
+        assert len(self.file.by_type("IfcMaterial")) == 1
+        # The style must belong to the appended material, not a stray copy.
+        styled_item = new_material.HasRepresentation[0].Representations[0].Items[0]
+        assert self.file.by_type("IfcSurfaceStyle")[0] in styled_item.Styles
+
     def test_append_a_material(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         material = ifcopenshell.api.material.add_material(library, name="Material")
