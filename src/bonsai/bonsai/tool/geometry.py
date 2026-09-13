@@ -2003,6 +2003,29 @@ class Geometry(bonsai.core.tool.Geometry):
         return styles
 
     @classmethod
+    def sync_shape_aspects_with_constituent_rename(
+        cls, constituent: ifcopenshell.entity_instance, old_name: Union[str, None]
+    ) -> None:
+        """Renames shape aspects paired with `constituent` through get_shape_aspect_styles.
+
+        get_shape_aspect_styles pairs an IfcShapeAspect to an
+        IfcMaterialConstituent purely by matching Name, so renaming the
+        constituent without also renaming its paired shape aspects silently
+        breaks that pairing and the per-item style is lost. Only shape
+        aspects of elements actually using the constituent's material set are
+        touched, so unrelated shape aspects that happen to share the old name
+        are left alone.
+        """
+        new_name = constituent.Name
+        if not old_name or old_name == new_name:
+            return
+        for material_set in constituent.ToMaterialConstituentSet:
+            for element in ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material_set):
+                for shape_aspect in ifcopenshell.util.element.get_shape_aspects(element, should_inherit=False):
+                    if shape_aspect.Name == old_name:
+                        shape_aspect.Name = new_name
+
+    @classmethod
     def delete_opening_object_placement(cls, placement: ifcopenshell.entity_instance) -> None:
         model = tool.Ifc.get()
         ifcopenshell.util.element.remove_deep2(model, placement)
