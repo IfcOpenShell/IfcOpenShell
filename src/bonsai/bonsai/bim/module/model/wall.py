@@ -442,6 +442,8 @@ class ExtendWallsToUnderside(_CommitWallDraftsFirstMixin, bpy.types.Operator, to
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            # IFC-class agnostic: any LAYER2 body (wall, covering, …) is
+            # extendable; everything else is treated as an underside target.
             if tool.Parametric.is_path_connectable_wall(element):
                 walls.append(obj)
             else:
@@ -3158,7 +3160,12 @@ def _apply_fillet_corner_geometry(
 
 
 def _resolve_two_walls(context: bpy.types.Context) -> tuple[bpy.types.Object, bpy.types.Object] | None:
-    """``(active, other)`` from a 2-wall selection, both LAYER2 with straight axes."""
+    """``(active, other)`` from a 2-element selection, both LAYER2 with straight axes.
+
+    IFC-class agnostic: the fillet only needs two straight LAYER2 bodies (the
+    corner it creates inherits the active element's type), so coverings / siding
+    fillet the same way walls do. The ``has_layer2_usage`` check below is the
+    real gate, not entity type."""
     selected = list(tool.Blender.get_selected_objects())
     if len(selected) != 2:
         return None
@@ -3170,7 +3177,7 @@ def _resolve_two_walls(context: bpy.types.Context) -> tuple[bpy.types.Object, bp
         return None
     for obj in (active, other):
         element = tool.Ifc.get_entity(obj)
-        if element is None or not element.is_a("IfcWall"):
+        if element is None:
             return None
         if not tool.Wall.has_layer2_usage(element):
             return None
@@ -3210,12 +3217,12 @@ def _pick_dominant_wall_material(
 
 
 def regenerate_fillet_corner_wall(element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
-    """Rebuild a fillet corner wall's banana body from ``BBIM_Wall.FilletRadius``
-    and its neighbours' current layer parameters."""
+    """Rebuild a fillet corner wall's banana body from
+    ``EPset_Parametric.FilletRadius`` and its neighbours' current layer parameters."""
     ifc_file = tool.Ifc.get()
     if ifc_file is None:
         return
-    radius_si = ifcopenshell.util.element.get_pset(element, "BBIM_Wall", "FilletRadius")
+    radius_si = tool.Parametric.get_parametric_prop(element, "FilletRadius")
     if not radius_si:
         return
 
@@ -3419,7 +3426,7 @@ class EnableWallFilletPreviewFromCorner(bpy.types.Operator):
             self.report({"ERROR"}, "Selection is not a fillet corner wall.")
             return {"CANCELLED"}
 
-        radius = ifcopenshell.util.element.get_pset(corner_elem, "BBIM_Wall", "FilletRadius")
+        radius = tool.Parametric.get_parametric_prop(corner_elem, "FilletRadius")
         if not radius:
             self.report({"ERROR"}, "Corner wall has no FilletRadius pset to re-edit.")
             return {"CANCELLED"}
@@ -3635,12 +3642,13 @@ class CreateWallFillet(bpy.types.Operator, tool.Ifc.Operator):
             Vector((chord_length_si / unit_scale, 0.0)),
         )
 
-        # Mark the corner wall BEFORE the downstream recalculate so
+        # Mark the corner BEFORE the downstream recalculate so
         # tool.Model.recreate_wall short-circuits and preserves the curved
         # geometry. The pset also gates the enable poll. FilletRadius is
         # stored alongside IsFilletCorner so the corner can be rebuilt later
-        # (neighbour move, layer-thickness edit, pen-icon re-edit).
-        pset = ifcopenshell.api.pset.add_pset(ifc_file, product=corner_elem, name="BBIM_Wall")
+        # (neighbour move, layer-thickness edit, pen-icon re-edit). Stored on
+        # the class-agnostic EPset_Parametric so LAYER2 siding corners work too.
+        pset = ifcopenshell.api.pset.add_pset(ifc_file, product=corner_elem, name=tool.Parametric.PARAMETRIC_PSET)
         ifcopenshell.api.pset.edit_pset(
             ifc_file,
             pset=pset,
@@ -4342,10 +4350,12 @@ class GizmoPairDisconnect(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixi
         if pair is None:
             return
         active, partner_obj, active_elem, partner_elem = pair
-        # Helper expects wall + slab regardless of which the user marked active.
-        if active_elem.is_a("IfcWall"):
+        # Helper expects the LAYER2 element + its underside target regardless of
+        # which the user marked active. Class-agnostic: the LAYER2 side may be a
+        # wall or a covering (siding), the target a slab/roof/etc.
+        if tool.Parametric.is_path_connectable_wall(active_elem):
             wall_obj, slab_obj = active, partner_obj
-        elif partner_elem.is_a("IfcWall"):
+        elif tool.Parametric.is_path_connectable_wall(partner_elem):
             wall_obj, slab_obj = partner_obj, active
         else:
             return
@@ -4651,7 +4661,7 @@ class GizmoWallFilletReedit(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         if len(selected) != 1:
             return False
         element = tool.Ifc.get_entity(active)
-        if element is None or not element.is_a("IfcWall"):
+        if element is None:
             return False
         # IsFilletCorner pset is the authoritative signal — the re-edit
         # operator separately verifies both neighbour connections exist and
@@ -4718,7 +4728,7 @@ class GizmoWallFilletToggleOpenings(bpy.types.GizmoGroup, _WallGeomCachedBillboa
         if len(list(tool.Blender.get_selected_objects())) != 1:
             return False
         element = tool.Ifc.get_entity(active)
-        if element is None or not element.is_a("IfcWall"):
+        if element is None:
             return False
         return tool.Parametric.is_fillet_corner_wall(element)
 
