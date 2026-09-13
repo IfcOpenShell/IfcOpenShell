@@ -294,3 +294,51 @@ TEST_CASE("Only a 22-character GlobalId is indexed", "[ifcparse]") {
     wall.set_attribute_value(0, std::string("1F$7lN9$r5MOA_lpAoNM52"));
     CHECK(file.instance_by_guid("1F$7lN9$r5MOA_lpAoNM52").id() == 2);
 }
+TEST_CASE("The index token policy ends every token where the full policy does, without decoding", "[ifcparse]") {
+    // Doubled quotes, a \S\' escape (an apostrophe as the page character,
+    // which a byte scan would take for the end of the string), a \X2\
+    // escape, a comment, binaries, enumerations, numbers and names.
+    const std::string data =
+        "#1=IFCWALL('it''s','a\\S\\'b','\\X2\\00E9\\X0\\c',/* #9 */ #2, \"0A\", .T., -1.5E-3, 42, $, *, (IFCLABEL('x'), #3));\n";
+    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> full_reader(data, ifcopenshell::caller_fed_tag{});
+    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> index_reader(data, ifcopenshell::caller_fed_tag{});
+    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> full(&full_reader), index(&index_reader);
+    size_t count = 0;
+    std::vector<unsigned> names;
+    while (true) {
+        ifcopenshell::token a = full.next(), b = index.next<ifcopenshell::index_tokens>();
+        REQUIRE((bool)a == (bool)b);
+        if (!a) {
+            break;
+        }
+        ++count;
+        CHECK(a.start_pos == b.start_pos);
+        CHECK(full_reader.tell() == index_reader.tell());
+        if (a.is_identifier()) {
+            REQUIRE(b.is_identifier());
+            CHECK(a.as_identifier() == b.as_identifier());
+            names.push_back(b.as_identifier());
+        } else if (a.is_keyword()) {
+            REQUIRE(b.is_keyword());
+            CHECK(a.as_string() == b.as_string());
+        } else if (a.is_operator()) {
+            REQUIRE(b.is_operator());
+            CHECK(a.value_char == b.value_char);
+        } else if (a.is_string()) {
+            CHECK(b.type == ifcopenshell::token::Token_STRING);
+        } else {
+            CHECK(b.type == ifcopenshell::token::Token_LITERAL);
+        }
+        full.reset_pool();
+        index.reset_pool();
+    }
+    CHECK(count == 34);
+    CHECK(names == std::vector<unsigned>{1, 2, 3});
+    // And the full policy decoded the escapes.
+    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> again(data, ifcopenshell::caller_fed_tag{});
+    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> lexer(&again);
+    lexer.next(); lexer.next(); lexer.next(); lexer.next();
+    CHECK(lexer.next().as_string() == "it's");
+    lexer.next();
+    CHECK(lexer.next().as_string() == "a\xc2\xa7" "b");
+}
