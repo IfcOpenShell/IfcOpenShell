@@ -1935,7 +1935,7 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
         }
         if (!indexed) {
             file_reader<full_buffer_impl> s(path);
-            std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
+                std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
         }
 
         if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
@@ -2542,6 +2542,112 @@ void ifcopenshell::impl::in_memory_file_storage::resolve_instance_references(con
     }
 }
 
+namespace {
+
+// Walks the instance headers "#name = KEYWORD(" from the cursor to `end`
+// the way instance_streamer::read_instance() does: the declaration is
+// looked up once per keyword, unknown and non-entity types are logged and
+// skipped, a bypassed instance is collected and its attribute list passed
+// over, and every other instance is handed to `visit(name, declaration,
+// keyword_offset)` with the lexer just past its opening parenthesis. Stops
+// at the ENDSEC that closes the DATA section, at `end`, or when `visit`
+// returns false; a header ENDSEC, the DATA keyword and a stray keyword are
+// passed over, as the serial reader passes over what it cannot match.
+template <typename Policy, typename Reader, typename Visit>
+void for_each_instance_header(Reader& reader, spf_lexer<Reader>& lexer, size_t end, const ifcopenshell::schema_definition* schema, const std::vector<char>& bypassed_types, std::vector<unsigned>& bypassed, ifcopenshell::logger& log, Visit visit) {
+    std::unordered_map<std::string, const ifcopenshell::declaration*> declarations;
+    bool in_data = false;
+    while (true) {
+        while (!reader.eof()) {
+            const char c = reader.peek();
+            if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+                reader.increment();
+            } else {
+                break;
+            }
+        }
+        if (reader.eof() || reader.tell() >= end) {
+            return;
+        }
+        token first = lexer.template next<Policy>();
+        if (!first) {
+            return;
+        }
+        if (first.is_keyword()) {
+            const std::string keyword = first.as_string();
+            lexer.reset_pool();
+            if (keyword == "ENDSEC") {
+                if (in_data) {
+                    return;
+                }
+                in_data = true;  // the header's: the DATA section follows
+            }
+            continue;
+        }
+        if (!first.is_identifier()) {
+            lexer.reset_pool();
+            continue;
+        }
+        in_data = true;
+        const uint32_t name = (uint32_t)first.as_identifier();
+        if (!lexer.template next<Policy>().is_operator('=')) {
+            continue;
+        }
+        token keyword = lexer.template next<Policy>();
+        if (!keyword.is_keyword()) {
+            lexer.reset_pool();
+            continue;
+        }
+        const ifcopenshell::declaration* declaration = nullptr;
+        const std::string keyword_text = keyword.as_string();
+        const size_t keyword_offset = keyword.start_pos;
+        lexer.reset_pool();
+        auto found = declarations.find(keyword_text);
+        if (found == declarations.end()) {
+            try {
+                declaration = schema->declaration_by_name(keyword_text);
+                if (declaration->as_entity() == nullptr) {
+                    log.message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(keyword_offset));
+                    declaration = nullptr;
+                }
+            } catch (const exception& e) {
+                log.message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(keyword_offset));
+            }
+            declarations.emplace(keyword_text, declaration);
+        } else {
+            declaration = found->second;
+        }
+        if (!lexer.template next<Policy>().is_operator('(')) {
+            continue;
+        }
+        if (declaration == nullptr || bypassed_types[declaration->index_in_schema()]) {
+            if (declaration != nullptr) {
+                bypassed.push_back(name);
+            }
+            // Pass over the attribute list, whatever it holds.
+            int depth = 1;
+            while (depth > 0) {
+                token t = lexer.template next<Policy>();
+                if (!t) {
+                    return;
+                }
+                if (t.is_operator('(')) {
+                    ++depth;
+                } else if (t.is_operator(')')) {
+                    --depth;
+                }
+                lexer.reset_pool();
+            }
+            continue;
+        }
+        if (!visit(name, declaration, keyword_offset)) {
+            return;
+        }
+    }
+}
+
+}
+
 struct ifcopenshell::impl::in_memory_file_storage::lazy_source {
     file_reader<paged_file_impl> reader;
     spf_lexer<file_reader<paged_file_impl>> lexer;
@@ -2633,73 +2739,17 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     byref_excl_.reserve(reader.size() / 32);
 
     // One pass over the DATA section with the tokenizer's index policy:
-    // the instance headers as tokens, then the attribute list as tokens
-    // with only the parentheses, commas and names looked at. Nothing is
-    // decoded. A keyword where an instance should start, or a token the
-    // tokenizer rejects, stops the index and the caller parses in full.
-    std::unordered_map<std::string, const ifcopenshell::declaration*> declarations;
+    // the instance headers through the shared loop, then the attribute list
+    // as tokens with only the parentheses, commas and names looked at.
+    // Nothing is decoded. A token the tokenizer rejects, or a structure the
+    // loop below does not expect, stops the index and the caller parses in
+    // full.
     const char* failure = nullptr;
     size_t failure_offset = 0;
-    bool in_data = false;
     try {
-        while (failure == nullptr) {
-            token first = lexer.next<index_tokens>();
-            if (!first) {
-                break;
-            }
-            if (first.is_keyword()) {
-                const std::string keyword = first.as_string();
-                if (keyword == "ENDSEC") {
-                    if (in_data) {
-                        break;
-                    }
-                    in_data = true;  // the header's; DATA follows
-                } else if (keyword != "DATA") {
-                    failure = "keyword where an instance should start";
-                    failure_offset = first.start_pos;
-                }
-                lexer.reset_pool();
-                continue;
-            }
-            if (!first.is_identifier()) {
-                continue;
-            }
-            in_data = true;
-            const uint32_t name = (uint32_t)first.as_identifier();
-            if (!lexer.next<index_tokens>().is_operator('=')) {
-                continue;
-            }
-            token keyword = lexer.next<index_tokens>();
-            if (!keyword.is_keyword()) {
-                continue;
-            }
-            const ifcopenshell::declaration* declaration = nullptr;
-            const std::string keyword_text = keyword.as_string();
-            lexer.reset_pool();
-            auto found = declarations.find(keyword_text);
-            if (found == declarations.end()) {
-                try {
-                    declaration = schema->declaration_by_name(keyword_text);
-                    if (declaration->as_entity() == nullptr) {
-                        logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(keyword.start_pos));
-                        declaration = nullptr;
-                    }
-                } catch (const exception& e) {
-                    logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(keyword.start_pos));
-                }
-                declarations.emplace(keyword_text, declaration);
-            } else {
-                declaration = found->second;
-            }
-            if (!lexer.next<index_tokens>().is_operator('(')) {
-                failure = "expected ( after the type";
-                failure_offset = keyword.start_pos;
-                break;
-            }
+        for_each_instance_header<index_tokens>(reader, lexer, reader.size(), schema, bypassed_types, lazy_bypassed_, logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
             const uint64_t attributes_offset = reader.tell();
-            const bool bypassed = declaration != nullptr && bypassed_types[declaration->index_in_schema()];
-            const bool indexed = declaration != nullptr && !bypassed;
-            const uint16_t type_index = indexed ? (uint16_t)declaration->index_in_schema() : 0;
+            const uint16_t type_index = (uint16_t)declaration->index_in_schema();
             int depth = 1;
             int attribute = 0;
             bool first_value = true;
@@ -2709,7 +2759,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                 if (!t) {
                     failure = "file ends inside an instance";
                     failure_offset = attributes_offset;
-                    break;
+                    return false;
                 }
                 if (t.is_operator()) {
                     if (t.value_char == '(') {
@@ -2721,12 +2771,10 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                     } else if (t.value_char == ';') {
                         failure = "; inside an instance";
                         failure_offset = t.start_pos;
-                        break;
+                        return false;
                     }
                 } else if (t.is_identifier()) {
-                    if (indexed) {
-                        byref_excl_.add((uint32_t)t.as_identifier(), name, type_index, attribute);
-                    }
+                    byref_excl_.add((uint32_t)t.as_identifier(), name, type_index, attribute);
                 } else if (t.type == token::Token_STRING && depth == 1 && attribute == 0 && first_value) {
                     guid_begin = t.start_pos + 1;
                     guid_end = reader.tell() - 1;
@@ -2736,19 +2784,10 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                 }
                 lexer.reset_pool();
             }
-            if (failure != nullptr) {
-                break;
-            }
             if (!lexer.next<index_tokens>().is_operator(';')) {
                 failure = "expected ; after )";
                 failure_offset = reader.tell();
-                break;
-            }
-            if (bypassed) {
-                lazy_bypassed_.push_back(name);
-            }
-            if (!indexed) {
-                continue;
+                return false;
             }
             auto data = ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{});
             if (!byid_.insert({name, data}).second) {
@@ -2777,7 +2816,8 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                     byguid_[key] = instance;
                 }
             }
-        }
+            return true;
+        });
     } catch (const invalid_token_exception&) {
         failure = "invalid token";
         failure_offset = reader.tell();
@@ -2844,6 +2884,9 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
 
     logger_.get().status("Scanning file...");
 
+    std::vector<unsigned> bypassed;
+    unresolved_references mixed_references;
+
     while (streamer) {
         auto inst = streamer.read_instance();
 
@@ -2886,16 +2929,16 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
 
     good_ = streamer.status();
     byref_excl_ = std::move(streamer.inverses());
-    byref_excl_.sort();
     read_simple_type_instances = streamer.steal_instances();
+    bypassed = streamer.bypassed_instances();
+    mixed_references = std::move(streamer.references());
+    byref_excl_.sort();
 
     logger_.get().status("\rDone scanning file   ");
 
     if (good_ != file_open_status::SUCCESS) {
         return;
     }
-
-    const auto& bypassed = streamer.bypassed_instances();
 
     // The names left in the attribute slots, then those of the simple type
     // instances read inline (a select such as IfcPropertySetDefinitionSet).
@@ -2907,7 +2950,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
     }
 
     // What was read with in-place storage off: the header entities.
-    for (const auto& p : streamer.references()) {
+    for (const auto& p : mixed_references) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
 

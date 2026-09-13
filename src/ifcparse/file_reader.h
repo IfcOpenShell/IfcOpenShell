@@ -278,6 +278,7 @@ public:
     full_buffer_impl(const std::string& content, const caller_fed_tag& tag);
 
     size_t size() const { return size_; }
+    const char* data() const { return buf_.data(); }
     char get(size_t position) const {
         if (position >= size_) {
             throw std::out_of_range("get out of range");
@@ -358,6 +359,7 @@ public:
     explicit mmap_impl(const std::string& path);
 
     size_t size() const { return size_; }
+    const char* data() const { return map_.data(); }
     char get(size_t position) const {
         if (position >= size_) {
             throw std::out_of_range("get out of range");
