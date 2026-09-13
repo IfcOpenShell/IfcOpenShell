@@ -454,6 +454,19 @@ namespace ifcopenshell {
             }
 
             // Finalizes bulk loading. Subsequent add() calls go to the delta.
+            // Takes over another index's records, e.g. one built by a parser
+            // worker. Both must still be in bulk-load mode (no delta).
+            void append(inverse_index&& other) {
+                if (base_.empty()) {
+                    base_ = std::move(other.base_);
+                } else {
+                    base_.insert(base_.end(), other.base_.begin(), other.base_.end());
+                }
+                sorted_ = false;
+                other.clear();
+                invalidate_materialized();
+            }
+
             void sort() const {
                 if (!sorted_) {
                     std::sort(base_.begin(), base_.end(), record_less);
@@ -602,6 +615,18 @@ namespace ifcopenshell {
             std::vector<unsigned> lazy_bypassed_;
             std::vector<std::pair<uint32_t, uint64_t>> lazy_offsets_;
             bool index_lazily(const std::string& path, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
+
+            // Number of threads read_from_stream() may use to parse instances;
+            // 1 parses serially. Set by file::initialize().
+            unsigned parse_threads = 1;
+
+            // Parses the DATA section with `threads` workers, each running the
+            // same per-instance reader over its own chunk, and merges the
+            // results in file order. Returns false, without side effects, when
+            // the file is too small to be worth it or no split points were
+            // found; the caller then parses serially.
+            template <typename Reader>
+            bool read_instances_parallel(Reader* stream, const ifcopenshell::schema_definition* schema, const std::set<std::string>& types_to_bypass, unsigned int& max_id, unsigned threads, std::vector<unsigned>& bypassed, unresolved_references& mixed_references, std::vector<shared_pointer_type>& instances);
             void materialize(instance_data* data);
 
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;

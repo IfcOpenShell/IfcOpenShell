@@ -483,13 +483,21 @@ TEST_CASE("Lazy loading yields the same instances, attributes, inverses and Glob
     std::filesystem::remove(path);
 }
 
-TEST_CASE("Lazy loading falls back to the full parser on syntax the index pass does not handle", "[ifcparse]") {
+TEST_CASE("Lazy loading passes over a stray keyword like the full parser and falls back on what the index pass rejects", "[ifcparse]") {
     const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_lazy_fallback_test.ifc";
     {
         std::ofstream out(path);
-        // A stray keyword between instances is something the full parser skips past, but the index pass gives up on.
+        // A stray keyword between instances: the shared header loop slides past it.
         std::string spf(reference_resolution_spf);
         spf.replace(spf.find("#8=IFCWALL"), 0, "STRAY;\n");
+        out << spf;
+    }
+    check_lazy_matches_strict(path.string());
+    {
+        std::ofstream out(path);
+        // A semicolon inside an attribute list is not something the index pass tracks; the full parser takes over.
+        std::string spf(reference_resolution_spf);
+        spf.replace(spf.find("(#1,#2,#3)"), 10, "(#1;#2,#3)");
         out << spf;
     }
     ifcopenshell::file lazy(ifcopenshell::uninitialized_tag{});
@@ -497,5 +505,85 @@ TEST_CASE("Lazy loading falls back to the full parser on syntax the index pass d
     lazy.initialize(path.string());
     std::filesystem::remove(path);
     CHECK_FALSE(lazy.lazy_loading());
-    CHECK(lazy.instance_by_id(4));
+    CHECK(lazy.instance_by_id(8));
+}
+
+TEST_CASE("Parallel parsing yields the same instances, attributes, inverses and GlobalIds as serial parsing, comments in DATA included", "[ifcparse]") {
+    // The fixture is small, so the threshold would keep it serial; write a
+    // file big enough to be chunked by repeating its DATA section under new
+    // names, with a comment and a string holding '/*' between the copies.
+    const std::string fixture = std::string(IFCOPENSHELL_TEST_FIXTURES) + "/ColumnPSetsOfSets.ifc";
+    std::string source;
+    {
+        std::ifstream in(fixture, std::ios::binary);
+        source.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+    }
+    const size_t data_begin = source.find("\nDATA;") + 6;
+    const size_t data_end = source.find("\nENDSEC", data_begin);
+    const std::string data = source.substr(data_begin, data_end - data_begin);
+    // Renumber "#N" to "#N+offset" per copy; every name and reference is offset consistently.
+    const auto renumber = [](const std::string& block, uint32_t offset) {
+        std::string out;
+        out.reserve(block.size() + block.size() / 4);
+        for (size_t i = 0; i < block.size(); ++i) {
+            if (block[i] == '#' && i + 1 < block.size() && isdigit((unsigned char)block[i + 1])) {
+                size_t j = i + 1;
+                uint32_t name = 0;
+                while (j < block.size() && isdigit((unsigned char)block[j])) {
+                    name = name * 10 + (uint32_t)(block[j++] - '0');
+                }
+                out += "#" + std::to_string(name + offset);
+                i = j - 1;
+            } else {
+                out += block[i];
+            }
+        }
+        return out;
+    };
+    std::string big = source.substr(0, data_begin);
+    uint32_t offset = 0;
+    while (big.size() < (12u << 20)) {
+        big += renumber(data, offset);
+        big += "\n/* a comment between instances\n#1=NOT AN INSTANCE\n*/\n#" + std::to_string(offset + 999999) + "=IFCLABEL('/* not a comment');\n";
+        offset += 1000000;
+    }
+    big += source.substr(data_end);
+    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_parallel_parse_test.ifc";
+    {
+        std::ofstream out(path, std::ios::binary);
+        out << big;
+    }
+
+    ifcopenshell::file serial(ifcopenshell::uninitialized_tag{});
+    serial.parse_threads(1);
+    REQUIRE(serial.initialize(path.string()));
+    ifcopenshell::file parallel(ifcopenshell::uninitialized_tag{});
+    parallel.parse_threads(5);
+    REQUIRE(parallel.initialize(path.string()));
+    std::filesystem::remove(path);
+
+    size_t count = 0;
+    for (auto it = serial.begin(); it != serial.end(); ++it) {
+        const express::base a = it->second;
+        const express::base b = parallel.instance_by_id((int)a.id());
+        REQUIRE(b);
+        REQUIRE(&b.declaration() == &a.declaration());
+        REQUIRE(parallel.instances_by_reference((int)a.id()).size() == serial.instances_by_reference((int)a.id()).size());
+        std::ostringstream sa, sb;
+        a.to_string(sa);
+        b.to_string(sb);
+        REQUIRE(sb.str() == sa.str());
+        ++count;
+    }
+    size_t parallel_count = 0;
+    for (auto it = parallel.begin(); it != parallel.end(); ++it) {
+        ++parallel_count;
+    }
+    CHECK(parallel_count == count);
+    CHECK(count > 5000);
+    CHECK(parallel.get_max_id() == serial.get_max_id());
+    for (const auto& rooted : serial.instances_by_type("IfcRoot")) {
+        const std::string guid = rooted.get_attribute_value(0);
+        REQUIRE(parallel.instance_by_guid(guid).id() == serial.instance_by_guid(guid).id());
+    }
 }
