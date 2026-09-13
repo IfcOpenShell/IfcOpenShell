@@ -2365,19 +2365,13 @@ class Blender(bonsai.core.tool.Blender):
     def sync_render_visibility(cls):
         # Doing bpy.ops.object.hide_render_clear_all() or
         # bpy.ops.object.isolate_type_render() is extremely slow.
-        # Hopefully this doesn't crash on Windows, it doesn't crash on Linux.
-        should_hides = [0 if obj.visible_get() else 1 for obj in bpy.data.objects]
-        should_hides = np.fromiter(should_hides, dtype=np.uint8, count=len(should_hides))
-        bpy.data.objects.foreach_set("hide_render", should_hides)
-        return  # Otherwise...
-        # for obj in bpy.data.objects:
-        #     if not obj.data:
-        #         continue
-        #     # For speed, check equality prior to change to prevent needless updates
-        #     if (is_visible := obj.visible_get()) and obj.hide_render is True:
-        #         obj.hide_render = False
-        #     elif not is_visible and obj.hide_render is False:
-        #         obj.hide_render = True
+        # Assign through RNA (not foreach_set) so the depsgraph gets tagged;
+        # equality check keeps it fast by writing only changed objects.
+        for obj in bpy.data.objects:
+            if (is_visible := obj.visible_get()) and obj.hide_render is True:
+                obj.hide_render = False
+            elif not is_visible and obj.hide_render is False:
+                obj.hide_render = True
 
     @classmethod
     def hide_objects(cls, objs):
