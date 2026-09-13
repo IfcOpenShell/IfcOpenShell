@@ -387,9 +387,12 @@ class CreateDrawing(bpy.types.Operator):
 
         active_drawing_id = tool.Blender.get_ifc_definition_id(context.scene.camera)
         original_drawing_id = None
+        original_cache_setting = self.props.should_use_underlay_cache
         if self.print_all:
             original_drawing_id = active_drawing_id
             drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
+            # Every drawing in the batch must be re-rendered, restored once the batch ends.
+            self.props.should_use_underlay_cache = False
         else:
             drawings_to_print = [active_drawing_id]
 
@@ -397,8 +400,6 @@ class CreateDrawing(bpy.types.Operator):
             self.drawing_index = drawing_i
             if self.print_all:
                 bpy.ops.bim.activate_drawing(drawing=drawing_id, should_view_from_camera=False)
-                original_cache_setting = self.props.should_use_underlay_cache
-                self.props.should_use_underlay_cache = False
 
                 # Force Blender to process all pending operations
                 for area in context.screen.areas:
@@ -490,6 +491,7 @@ class CreateDrawing(bpy.types.Operator):
             self.report({"INFO"}, f"{len(drawings_to_print)} drawings created...")
         if self.print_all:
             assert original_drawing_id is not None
+            self.props.should_use_underlay_cache = original_cache_setting
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
         return {"FINISHED"}
 
