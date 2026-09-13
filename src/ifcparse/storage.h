@@ -585,6 +585,25 @@ namespace ifcopenshell {
             // on; streaming consumers of references() leave it off.
             bool resolve_references_in_place = false;
 
+            // Lazy loading (index_lazily): the file was read once through the
+            // tokenizer's index policy to build the instance shells, the
+            // inverse index, the GlobalId map and the by-type lists, and each
+            // instance's attributes are parsed from the retained paged source
+            // the first time they are accessed (instance_data::ensure_loaded).
+            // The offset of each instance's attribute list lives here, not in
+            // the instance, so a full parse pays nothing for it. Inverses were
+            // registered by the index, so materialisation must not register
+            // them again. Materialising from several threads at once is not
+            // safe.
+            struct lazy_source;
+            bool lazy_ = false;
+            bool register_inverses_ = true;
+            std::unique_ptr<lazy_source, void (*)(lazy_source*)> lazy_source_{nullptr, nullptr};
+            std::vector<unsigned> lazy_bypassed_;
+            std::vector<std::pair<uint32_t, uint64_t>> lazy_offsets_;
+            bool index_lazily(const std::string& path, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
+            void materialize(instance_data* data);
+
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
             typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
@@ -658,6 +677,13 @@ namespace ifcopenshell {
             shared_pointer_type load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1, bool coerce_attribute_count = true);
             template <typename Reader>
             void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
+            // The attribute-reading half of load(): the tokens after the
+            // opening parenthesis into a fresh attribute array. Storage is
+            // always in_memory_attribute_storage; it is a template parameter
+            // only because that type is defined in a header that includes
+            // this one.
+            template <typename Reader, typename Storage>
+            Storage load_attributes(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1);
             // Replaces the names left in `data`'s attribute slots by in-place
             // reference storage with the instances they name; a name that is
             // missing or bypassed becomes null in a scalar and is dropped
