@@ -597,6 +597,14 @@ namespace ifcopenshell {
             const ifcopenshell::schema_definition* schema;
 
             unresolved_references* references_to_resolve = nullptr;
+            // When set, a reference read into an instance's attribute stays
+            // in the attribute slot as the instance_reference (or the
+            // reference_or_simple_type aggregate) the tokenizer produced,
+            // instead of being copied into references_to_resolve, and
+            // resolve_instance_references() replaces it with the instance
+            // once every instance has been read. read_from_stream() turns it
+            // on; streaming consumers of references() leave it off.
+            bool resolve_references_in_place = false;
 
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
             typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
@@ -671,6 +679,11 @@ namespace ifcopenshell {
             shared_pointer_type load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1, bool coerce_attribute_count = true);
             template <typename Reader>
             void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
+            // Replaces the names left in `data`'s attribute slots by in-place
+            // reference storage with the instances they name; a name that is
+            // missing or bypassed becomes null in a scalar and is dropped
+            // from an aggregate.
+            void resolve_instance_references(const shared_pointer_type& data, const std::vector<unsigned>& bypassed);
 
             void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
             void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
