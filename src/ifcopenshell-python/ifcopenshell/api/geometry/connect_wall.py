@@ -32,6 +32,7 @@ def connect_wall(
     wall1: ifcopenshell.entity_instance,
     wall2: ifcopenshell.entity_instance,
     is_atpath: bool = False,
+    invert: bool = False,
 ) -> Optional[ifcopenshell.entity_instance]:
     matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement))
     matrix2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
@@ -48,6 +49,9 @@ def connect_wall(
         return
 
     wall1_end = "ATEND" if x > midx else "ATSTART"
+    if invert:
+        # Flips which portion of wall1 is kept vs trimmed.
+        wall1_end = "ATSTART" if wall1_end == "ATEND" else "ATEND"
     if is_atpath:
         wall2_end = "ATPATH"
     elif abs(y - starty) < abs(y - endy):
