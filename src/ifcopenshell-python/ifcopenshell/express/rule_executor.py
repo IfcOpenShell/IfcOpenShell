@@ -101,6 +101,12 @@ def run(f: ifcopenshell.file, logger: Logger) -> None:
         current_dir_files = {fn.lower(): fn for fn in os.listdir(".")}
         schema_name = str(f.schema_identifier).split(" ")[-1].lower()
         schema_path = current_dir_files.get(schema_name + ".exp")
+        if schema_path is None:
+            ifcopenshell.settings.unpack_non_aggregate_inverses = orig
+            raise FileNotFoundError(
+                f"Couldn't find express rules for schema '{f.schema_identifier}': no precompiled rules and "
+                f"no '{schema_name}.exp' in the current folder '{os.getcwd()}'."
+            ) from e
         fn = schema_path[:-4] + ".py"
         if not os.path.exists(fn):
             subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
