@@ -197,6 +197,29 @@ class TestGetElementValue(test.bootstrap.IFC4):
         ifcopenshell.api.material.assign_material(self.file, products=[element], material=material_set)
         assert subject.get_element_value(element, "mats.Category") == ["Cladding"]
 
+    def test_material_category_falls_back_to_the_referenced_material(self):
+        # Real models often categorise the IfcMaterial rather than the set item
+        # (reported by @theoryshaw on #9044), so an unset item must not drop it.
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        material_set = ifcopenshell.api.material.add_material_set(self.file, name="FOO", set_type="IfcMaterialLayerSet")
+        plaster = ifcopenshell.api.material.add_material(self.file, name="Plaster")
+        brick = ifcopenshell.api.material.add_material(self.file, name="Brick")
+        brick.Category = "Brick"
+        ifcopenshell.api.material.add_layer(self.file, layer_set=material_set, material=plaster)
+        ifcopenshell.api.material.add_layer(self.file, layer_set=material_set, material=brick)
+        ifcopenshell.api.material.assign_material(self.file, products=[element], material=material_set)
+        assert subject.get_element_value(element, "mats.Category") == [None, "Brick"]
+
+    def test_material_set_item_category_wins_over_the_material(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        material_set = ifcopenshell.api.material.add_material_set(self.file, name="FOO", set_type="IfcMaterialLayerSet")
+        material = ifcopenshell.api.material.add_material(self.file, name="Brick")
+        material.Category = "FromMaterial"
+        layer = ifcopenshell.api.material.add_layer(self.file, layer_set=material_set, material=material)
+        layer.Category = "FromLayer"
+        ifcopenshell.api.material.assign_material(self.file, products=[element], material=material_set)
+        assert subject.get_element_value(element, "mats.Category") == ["FromLayer"]
+
     def test_selecting_a_single_materials_category_does_not_error(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.material.add_material(self.file, name="CON01")
