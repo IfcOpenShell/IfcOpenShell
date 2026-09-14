@@ -77,6 +77,37 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
             ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix_millimeters
         )
 
+    def test_reusing_the_same_matrix_object_for_multiple_elements_does_not_double_convert_units(self):
+        # Regression test: convert_matrix_to_si used to mutate the caller's
+        # matrix object in place. Reusing that same object across a second
+        # edit_object_placement() call (e.g. multiple elements sharing one
+        # IfcLocalPlacement) applied the unit scale a second time, silently
+        # writing a corrupted placement for every element after the first.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        matrix = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1000.0),
+                (0.0, 1.0, 0.0, 2000.0),
+                (0.0, 0.0, 1.0, 3000.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        matrix_before = matrix.copy()
+
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element1, matrix=matrix, is_si=False)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element2, matrix=matrix, is_si=False)
+
+        assert numpy.array_equal(matrix, matrix_before), "caller's matrix must not be mutated"
+        assert numpy.array_equal(
+            ifcopenshell.util.placement.get_local_placement(element1.ObjectPlacement), matrix_before
+        )
+        assert numpy.array_equal(
+            ifcopenshell.util.placement.get_local_placement(element2.ObjectPlacement), matrix_before
+        )
+
     def test_changing_an_object_placement(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
