@@ -59,10 +59,20 @@ IFC_PARSE_API std::string decode_spf_string(const std::string& value);
 struct full_tokens {
     static constexpr bool decode_strings = true;
     static constexpr bool decode_values = true;
+    static constexpr bool keep_keywords = true;
 };
 struct index_tokens {
     static constexpr bool decode_strings = false;
     static constexpr bool decode_values = false;
+    static constexpr bool keep_keywords = true;
+};
+/// Inside an attribute list the index only looks at operators and names, so
+/// a keyword (an inline typed value such as IFCLABEL), an enumeration or a
+/// binary comes back as Token_LITERAL without its text being copied.
+struct attribute_tokens {
+    static constexpr bool decode_strings = false;
+    static constexpr bool decode_values = false;
+    static constexpr bool keep_keywords = false;
 };
 
 /// A stream of tokens to be read from a file_reader.
