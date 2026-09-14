@@ -49,6 +49,16 @@ class TestAssignProduct(test.bootstrap.IFC4):
         ifcopenshell.api.drawing.assign_product(self.file, relating_product=axis, related_object=line)
         assert len(self.file.by_type("IfcRelAssignsToProduct")) == 1
 
+    def test_assigning_a_grid_axis_not_part_of_any_grid_does_not_crash(self):
+        # An orphaned IfcGridAxis (e.g. from a malformed or third party
+        # authored file) has no PartOfU/PartOfV/PartOfW, so there is no grid
+        # to assign the product to.
+        axis = self.file.createIfcGridAxis(AxisTag="A")
+        line = self.file.createIfcAnnotation()
+        result = ifcopenshell.api.drawing.assign_product(self.file, relating_product=axis, related_object=line)
+        assert result is None
+        assert len(self.file.by_type("IfcRelAssignsToProduct")) == 0
+
 
 class TestAssignProductIFC2X3(test.bootstrap.IFC2X3, TestAssignProduct):
     pass

@@ -34,4 +34,5 @@ def remove_structural_load_case(file: ifcopenshell.file, load_case: ifcopenshell
             ifcopenshell.util.element.remove_deep2(file, history)
     history = load_case.OwnerHistory
     file.remove(load_case)
-    ifcopenshell.util.element.remove_deep2(file, history)
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

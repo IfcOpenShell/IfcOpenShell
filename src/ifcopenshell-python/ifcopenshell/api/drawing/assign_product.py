@@ -66,6 +66,9 @@ def assign_product(
             if getattr(axis, attribute, None):
                 grid = getattr(axis, attribute)[0]
                 break
+        if grid is None:
+            # An orphaned grid axis that isn't part of any grid yet.
+            return None
         for rel in grid.ReferencedBy or []:
             if rel.Name == axis.AxisTag and related_object in rel.RelatedObjects:
                 return

@@ -32,7 +32,7 @@ def remove_structural_connection_condition(file: ifcopenshell.file, relation: if
     if relation.AppliedCondition:
         ifcopenshell.api.structural.remove_structural_boundary_condition(
             file,
-            connection=relation.RelatedStructuralConnection,
+            connection=relation,
         )
     history = relation.OwnerHistory
     file.remove(relation)
