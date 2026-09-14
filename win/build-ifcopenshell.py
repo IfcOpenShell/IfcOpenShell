@@ -23,7 +23,6 @@
 #
 import argparse
 import multiprocessing
-import os
 import sys
 from typing import NamedTuple, NoReturn
 
@@ -38,6 +37,7 @@ from common import (
     colorize,
     ensure_script_dir,
     logger,
+    resolve_cli_or_env,
     resolve_generator,
     run_streamed,
 )
@@ -127,8 +127,8 @@ def parse_args() -> Args:
 
     build_cfg = getattr(args, "build_cfg", None) or args.build_cfg_flag
 
-    num_build_procs = getattr(args, "num_build_procs", None) or int(
-        os.getenv("IFCOS_NUM_BUILD_PROCS") or multiprocessing.cpu_count()
+    num_build_procs = resolve_cli_or_env(
+        getattr(args, "num_build_procs", None), "IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count(), arg_type="int"
     )
 
     return Args(

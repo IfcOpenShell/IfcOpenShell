@@ -757,16 +757,10 @@ def install_qt6(
     build_deps_cache: BuildDepsCache,
     build_cfg: BuildCfg,
     ifcos_install_qt6: bool,
+    qt6_version: str,
     pythonhome: Path | None,
 ) -> None:
-    DEPENDENCY_NAME = "qt6"
-    QT6_VERSION = os.getenv("QT6_VERSION")
-    if QT6_VERSION:
-        logger.info(f"Using overridden QT6_VERSION: '{QT6_VERSION}'")
-    else:
-        QT6_VERSION = "6.8.3"
-
-    build_deps_cache.add_entry("QT6_VERSION", QT6_VERSION)
+    build_deps_cache.add_entry("QT6_VERSION", qt6_version)
 
     vs_toolset = vs_cfg_vars.vs_toolset
     QT6_MSVC_YEAR = VS_TOOLSET_TO_VS_VER[vs_toolset]
@@ -800,9 +794,9 @@ def install_qt6(
         )
         sys.exit(1)
 
-    DEPENDENCY_INSTALL_NAME = f"qt6-{QT6_VERSION}-{QT6_INSTALL_SUFFIX}"
+    DEPENDENCY_INSTALL_NAME = f"qt6-{qt6_version}-{QT6_INSTALL_SUFFIX}"
     QT6_AQT_OUTPUT_DIR = vs_cfg_vars.install_dir / DEPENDENCY_INSTALL_NAME
-    QT6_INSTALL_DIR = QT6_AQT_OUTPUT_DIR / QT6_VERSION / QT6_INSTALL_SUFFIX
+    QT6_INSTALL_DIR = QT6_AQT_OUTPUT_DIR / qt6_version / QT6_INSTALL_SUFFIX
     QT_DIR = QT6_INSTALL_DIR
 
     QT6_HOST_AQT_OUTPUT_DIR = None
@@ -810,8 +804,8 @@ def install_qt6(
     QT_HOST_PATH = None
     if QT6_CROSS_COMPILING:
         assert QT6_HOST_INSTALL_SUFFIX is not None
-        QT6_HOST_AQT_OUTPUT_DIR = vs_cfg_vars.install_dir / f"qt6-{QT6_VERSION}-{QT6_HOST_INSTALL_SUFFIX}"
-        QT6_HOST_INSTALL_DIR = QT6_HOST_AQT_OUTPUT_DIR / QT6_VERSION / QT6_HOST_INSTALL_SUFFIX
+        QT6_HOST_AQT_OUTPUT_DIR = vs_cfg_vars.install_dir / f"qt6-{qt6_version}-{QT6_HOST_INSTALL_SUFFIX}"
+        QT6_HOST_INSTALL_DIR = QT6_HOST_AQT_OUTPUT_DIR / qt6_version / QT6_HOST_INSTALL_SUFFIX
         QT_HOST_PATH = QT6_HOST_INSTALL_DIR
 
     QT6_CONFIG_DLL = "Qt6Cored.dll" if debug_or_release(build_cfg) == "Debug" else "Qt6Core.dll"
@@ -869,7 +863,7 @@ def install_qt6(
             "install-qt",
             "windows",
             "desktop",
-            QT6_VERSION,
+            qt6_version,
             arch,
             "-O",
             str(output_dir),
@@ -909,15 +903,13 @@ def install_qt6(
 
 
 def install_python(
-    vs_cfg_vars: VsCfgResult, ifcos_install_python: bool, build_deps_cache: BuildDepsCache, nuget_exe: Path
+    vs_cfg_vars: VsCfgResult,
+    ifcos_install_python: bool,
+    python_version: str,
+    build_deps_cache: BuildDepsCache,
+    nuget_exe: Path,
 ) -> Path | None:
     """Returns PYTHONHOME, or None if IFCOS_INSTALL_PYTHON is not set."""
-    PYTHON_VERSION = os.getenv("PYTHON_VERSION")
-    if PYTHON_VERSION:
-        logger.info(f"Using overridden PYTHON_VERSION: '{PYTHON_VERSION}'")
-    else:
-        PYTHON_VERSION = "3.11.7"
-
     if not ifcos_install_python:
         logger.info("IFCOS_INSTALL_PYTHON not 'TRUE', skipping installation of Python.")
         return None
@@ -925,14 +917,14 @@ def install_python(
     if not vs_cfg_vars.is_vs_platform("ARM64") and not vs_cfg_vars.is_vs_platform("x64"):
         # nuget doesn't support providing architecture for packages.
         logger.error("Automatic installation of Python for x86 builds is not supported,")
-        logger.error(f"please install Python {PYTHON_VERSION} manually and ensure that it is available in PATH.")
-        logger.error(f"https://www.python.org/ftp/python/{PYTHON_VERSION}/python-{PYTHON_VERSION}.exe")
+        logger.error(f"please install Python {python_version} manually and ensure that it is available in PATH.")
+        logger.error(f"https://www.python.org/ftp/python/{python_version}/python-{python_version}.exe")
         sys.exit(1)
 
     if vs_cfg_vars.is_vs_platform("ARM64"):
-        PYTHONHOME = vs_cfg_vars.deps_dir / f"pythonarm64.{PYTHON_VERSION}" / "tools"
+        PYTHONHOME = vs_cfg_vars.deps_dir / f"pythonarm64.{python_version}" / "tools"
     else:
-        PYTHONHOME = vs_cfg_vars.deps_dir / f"python.{PYTHON_VERSION}" / "tools"
+        PYTHONHOME = vs_cfg_vars.deps_dir / f"python.{python_version}" / "tools"
 
     build_deps_cache.add_entry("PYTHONHOME", str(PYTHONHOME))
 
@@ -946,7 +938,7 @@ def install_python(
         "install",
         nuget_package,
         "-Version",
-        PYTHON_VERSION,
+        python_version,
         "-OutputDirectory",
         str(vs_cfg_vars.deps_dir),
     )
