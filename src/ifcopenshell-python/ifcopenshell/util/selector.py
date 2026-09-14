@@ -424,9 +424,28 @@ def get_element_value(element: ifcopenshell.entity_instance, query: str) -> Any:
     return _get_element_value(element, keys)
 
 
+def _get_category_sources(element: ifcopenshell.entity_instance) -> Any:
+    """Entities that "mats.Category" reads from, set item first, else its material.
+
+    Category is defined on both the set item and the IfcMaterial it references.
+    """
+    material_set = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+    items = None
+    if material_set is not None:
+        if material_set.is_a("IfcMaterialLayerSet"):
+            items = material_set.MaterialLayers
+        elif material_set.is_a("IfcMaterialProfileSet"):
+            items = material_set.MaterialProfiles
+        elif material_set.is_a("IfcMaterialConstituentSet"):
+            items = material_set.MaterialConstituents
+    if items is None:
+        return ifcopenshell.util.element.get_materials(element)
+    return [item if item.Category is not None else (item.Material or item) for item in items]
+
+
 def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -> Any:
     value = element
-    for key in keys:
+    for i, key in enumerate(keys):
         if value is None:
             return
         if key == "type":
@@ -434,7 +453,11 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
         elif key in ("material", "mat"):
             value = ifcopenshell.util.element.get_material(value, should_skip_usage=True)
         elif key in ("materials", "mats"):
-            value = ifcopenshell.util.element.get_materials(value)
+            next_key = keys[i + 1] if i + 1 < len(keys) else None
+            if next_key == "Category":
+                value = _get_category_sources(value)
+            else:
+                value = ifcopenshell.util.element.get_materials(value)
         elif key == "profiles":
             value = ifcopenshell.util.shape.get_profiles(value)
         elif key == "styles":
