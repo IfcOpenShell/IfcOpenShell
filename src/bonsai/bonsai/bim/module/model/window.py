@@ -50,6 +50,17 @@ V_ = tool.Blender.V_
 _G = gizmo.BaseParametricGizmoGroup
 
 
+def has_shared_model_body(
+    occurrence: ifcopenshell.entity_instance, base_representation: ifcopenshell.entity_instance
+) -> bool:
+    """Whether the occurrence's Model/Body geometry resolves to the
+    representation the modifier just rebuilt (i.e. is not its own)."""
+    representation = ifcopenshell.util.representation.get_representation(occurrence, "Model", "Body", "MODEL_VIEW")
+    if representation is None:
+        return True
+    return tool.Geometry.resolve_mapped_representation(representation) == base_representation
+
+
 def update_window_modifier_representation(context: bpy.types.Context) -> None:
     obj = context.active_object
     assert obj
@@ -138,8 +149,12 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
         element.PartitioningType = props.window_type
 
     # occurrences attributes
+    # Mirror the geometry path above: an occurrence with its own Body
+    # representation keeps its own OverallWidth/OverallHeight too.
     occurrences = tool.Ifc.get_all_element_occurrences(element)
     for occurrence in occurrences:
+        if occurrence != element and not has_shared_model_body(occurrence, model_representation):
+            continue
         occurrence.OverallWidth = props.overall_width / si_conversion
         occurrence.OverallHeight = props.overall_height / si_conversion
 
