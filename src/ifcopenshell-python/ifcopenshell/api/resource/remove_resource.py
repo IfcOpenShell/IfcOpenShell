@@ -70,6 +70,12 @@ def remove_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_insta
                     )
             elif inverse.RelatedObjects == (resource,):
                 remove_consider_history(inverse)
+        elif inverse.is_a("IfcRelDeclares"):
+            related_definitions = set(inverse.RelatedDefinitions) - {settings["resource"]}
+            if related_definitions:
+                inverse.RelatedDefinitions = list(related_definitions)
+            else:
+                remove_consider_history(inverse)
     # Usage was added in IFC4.
     if usage := getattr(settings["resource"], "Usage", None):
         file.remove(usage)
