@@ -45,6 +45,15 @@ class Checker:
         self.newline = newline
         self.issues = 0
 
+    def set_newline_for_path(self, filepath: Path) -> None:
+        suffix = filepath.suffix.lower()
+        if suffix in (".bat", ".cmd"):
+            self.newline = CRLF
+        elif suffix == ".sh":
+            self.newline = LF
+        else:
+            self.newline = SYSTEM_LINE_SEPARATOR
+
     def report(self, label: str, issue: str) -> None:
         self.issues += 1
         print(f"{label}: {C.RED}{issue}{C.RESET}")
@@ -287,6 +296,9 @@ PATTERNS = (
     "*.cmake",
     "*/CMakeLists.txt",
     "*.yml",
+    "*.bat",
+    "*.cmd",
+    "*.sh",
 )
 
 REPO_ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
@@ -362,6 +374,7 @@ def main() -> int:
     for filepath in filepaths:
         if args.verbose:
             print(f"checking {filepath}")
+        checker.set_newline_for_path(filepath)
         checker.check_stray_cr(filepath, args.check)
         checker.check_line_endings_mismatch(filepath, args.check)
         checker.check_eof_newline(filepath, args.check)
