@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.style
 import test.bootstrap
 
@@ -26,6 +28,13 @@ class TestRemoveSurfaceStyleIFC2X3(test.bootstrap.IFC2X3):
         style = self.file.createIfcSurfaceStyleShading(SurfaceColour=self.file.createIfcColourRgb(None, 1, 1, 1))
         ifcopenshell.api.style.remove_surface_style(self.file, style=style)
         assert len(list(self.file)) == 0
+
+    def test_removing_the_last_item_of_a_surface_style_raises(self):
+        shading = self.file.createIfcSurfaceStyleShading(SurfaceColour=self.file.createIfcColourRgb(None, 1, 1, 1))
+        surface_style = self.file.createIfcSurfaceStyle(Side="BOTH", Styles=[shading])
+        with pytest.raises(ValueError):
+            ifcopenshell.api.style.remove_surface_style(self.file, style=shading)
+        assert surface_style.Styles == (shading,)
 
     def test_removing_a_texture_style(self):
         texture = self.file.createIfcImageTexture()

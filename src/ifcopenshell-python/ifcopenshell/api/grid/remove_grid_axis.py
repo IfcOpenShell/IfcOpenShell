@@ -22,7 +22,12 @@ import ifcopenshell.util.element
 def remove_grid_axis(file: ifcopenshell.file, axis: ifcopenshell.entity_instance) -> None:
     """Removes a grid axis from a grid
 
+    UAxes and VAxes must have at least one axis, so removing the last one
+    raises a ValueError instead of leaving the grid schema-invalid. WAxes is
+    optional, so removing the last W axis simply unsets it.
+
     :param axis: The IfcGridAxis you want to remove.
+    :raises ValueError: If axis is the last remaining U or V axis.
     :return: None
 
     Example:
@@ -41,6 +46,13 @@ def remove_grid_axis(file: ifcopenshell.file, axis: ifcopenshell.entity_instance
         # Let's remove it!
         ifcopenshell.api.grid.remove_grid_axis(model, axis=axis_2)
     """
+    grid = next(i for i in file.get_inverse(axis) if i.is_a("IfcGrid"))
+    for uvw_axes in ("UAxes", "VAxes"):
+        axes = getattr(grid, uvw_axes) or ()
+        if axis in axes and len(axes) == 1:
+            raise ValueError(f"Cannot remove the last axis in IfcGrid.{uvw_axes}, it is a mandatory attribute")
+
     axis_curve = axis.AxisCurve
     file.remove(axis)
-    ifcopenshell.util.element.remove_deep2(file, axis_curve)
+    if axis_curve:
+        ifcopenshell.util.element.remove_deep2(file, axis_curve)

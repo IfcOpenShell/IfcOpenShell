@@ -16,11 +16,29 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
 import ifcopenshell.api.grid
 import test.bootstrap
 
 
 class TestRemoveGridAxis(test.bootstrap.IFC4):
+    def test_removing_the_last_u_axis_raises(self):
+        grid = self.file.createIfcGrid()
+        axis = ifcopenshell.api.grid.create_grid_axis(self.file, axis_tag="A", uvw_axes="UAxes", grid=grid)
+        axis.AxisCurve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))])
+        with pytest.raises(ValueError):
+            ifcopenshell.api.grid.remove_grid_axis(self.file, axis=axis)
+        assert grid.UAxes == (axis,)
+
+    def test_removing_the_last_v_axis_raises(self):
+        grid = self.file.createIfcGrid()
+        axis = ifcopenshell.api.grid.create_grid_axis(self.file, axis_tag="1", uvw_axes="VAxes", grid=grid)
+        axis.AxisCurve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))])
+        with pytest.raises(ValueError):
+            ifcopenshell.api.grid.remove_grid_axis(self.file, axis=axis)
+        assert grid.VAxes == (axis,)
+
     def test_removing_an_axis_removes_its_curve(self):
         grid = self.file.createIfcGrid()
         axis = ifcopenshell.api.grid.create_grid_axis(
