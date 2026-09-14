@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import builtins
 import re
+import warnings
 from functools import lru_cache
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
@@ -1010,10 +1011,22 @@ class Material(Facet):
         return MaterialResult(is_pass, reason)
 
 
+# Not supported by IDS: buildingSMART/IDS developer-guide.md.
+UNSUPPORTED_RESTRICTIONS = frozenset({"totalDigits", "fractionDigits", "whiteSpace"})
+
+
 class Restriction:
     def __init__(self, options=None, base="string"):
         self.base = base
         self.options = options or {}
+        self._warn_unsupported()
+
+    def _warn_unsupported(self):
+        for constraint in sorted(UNSUPPORTED_RESTRICTIONS & self.options.keys()):
+            warnings.warn(
+                f"IDS does not support the '{constraint}' restriction; it is not "
+                "enforced and will be ignored during validation."
+            )
 
     def parse(self, ids_dict):
         if not ids_dict:
@@ -1029,6 +1042,7 @@ class Restriction:
                 self.options[key] = value["@value"]
             else:
                 self.options[key] = [v["@value"] for v in value]
+        self._warn_unsupported()
         return self
 
     def asdict(self) -> dict[str, Any]:
