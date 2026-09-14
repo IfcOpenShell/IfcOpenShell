@@ -39,6 +39,7 @@ from typing import (
 import bmesh
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
@@ -2244,6 +2245,39 @@ class Model(bonsai.core.tool.Model):
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         assert body
         cls.add_representation(obj, body)
+
+    @classmethod
+    def get_or_create_context(
+        cls,
+        context_type: ifcopenshell.util.representation.CONTEXT_TYPE,
+        context_identifier: ifcopenshell.util.representation.REPRESENTATION_IDENTIFIER,
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
+    ) -> ifcopenshell.entity_instance:
+        """Get a subcontext to author into, creating it if the file has none.
+
+        Externally authored IFCs often ship without the subcontexts Bonsai
+        authors into, and a representation cannot be created until they exist.
+        The parent context is created too if it is also missing.
+        """
+        ifc_file = tool.Ifc.get()
+        if context := ifcopenshell.util.representation.get_context(
+            ifc_file, context_type, context_identifier, target_view
+        ):
+            return context
+        parent = ifcopenshell.util.representation.get_context(ifc_file, context_type)
+        if not parent:
+            parent = ifcopenshell.api.context.add_context(ifc_file, context_type=context_type)
+        return ifcopenshell.api.context.add_context(
+            ifc_file,
+            context_type=context_type,
+            context_identifier=context_identifier,
+            target_view=target_view,
+            parent=parent,
+        )
+
+    @classmethod
+    def get_body_context(cls) -> ifcopenshell.entity_instance:
+        return cls.get_or_create_context("Model", "Body", "MODEL_VIEW")
 
     @classmethod
     def auto_detect_annotation_fill_area(cls, obj: bpy.types.Object, mesh: bpy.types.Mesh) -> dict | None:
