@@ -75,7 +75,7 @@ class WASMModule extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             this.pendingMessages.set(id, { resolve, reject });
-            
+
             worker.postMessage({
                 type,
                 payload,
@@ -86,7 +86,7 @@ class WASMModule extends EventEmitter {
 
     _handleWorkerMessage({ type, payload, id }: WorkerResponse) {
         const pendingMessage = this.pendingMessages.get(id);
-        
+
         if (!pendingMessage) {
             console.warn('[WASM] Received response for unknown message ID:', id);
             return;
