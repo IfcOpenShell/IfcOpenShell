@@ -28,9 +28,9 @@ documentation:
 
 .. code-block:: console
 
-    $ python -m ifccityjson -h
+    $ ifccityjson -h
 
-    usage: __main__.py [-h] -i INPUT [-o OUTPUT] [-n NAME] [--split-lod] [--no-split-lod] [--lod LOD]
+    usage: ifccityjson [-h] -i INPUT [-o OUTPUT] [-n NAME] [--split-lod] [--no-split-lod] [--lod LOD]
 
     options:
       -h, --help            show this help message and exit
@@ -47,7 +47,7 @@ The example file that could be used is example/3D_BAG_example.json
 
 .. code-block:: bash
 
-    python ifccityjson.py -i example/geometries.json -o output.ifc -n identificatie
+    ifccityjson -i example/geometries.json -o output.ifc -n identificatie
 
 The following geometries are implemented:
 
@@ -59,7 +59,7 @@ The following geometries are implemented:
 - [ ] "Solid": interior shell
 - [x] "MultiSolid"
 - [x] "CompositeSolid"
-- [ ] "GeometryInstance" 
+- [ ] "GeometryInstance"
 
 TODO:
 

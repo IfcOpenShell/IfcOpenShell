@@ -103,8 +103,8 @@ utility:
 
 .. code-block:: console
 
-    $ python -m ifccsv -h
-    usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE] [--concat CONCAT] [-q QUERY] [-a ATTRIBUTES [ATTRIBUTES ...]]
+    $ ifccsv -h
+    usage: ifccsv [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE] [--concat CONCAT] [-q QUERY] [-a ATTRIBUTES [ATTRIBUTES ...]]
                      [--headers HEADERS [HEADERS ...]] [--sort SORT [SORT ...]] [--order ORDER [ORDER ...]] [--export] [--import]
 
     Exports IFC data to and from CSV
@@ -138,7 +138,7 @@ utility:
                             Choose the sort order from ASC or DESC for each sorted attribute.
       --export              Export from IFC to the desired format.
       --import              Import from the autodetected format to IFC.
-    $ python -m ifccsv -i model.ifc -s out.csv -f csv -q IfcProduct -a "Name" "Description" --export
+    $ ifccsv -i model.ifc -s out.csv -f csv -q IfcProduct -a "Name" "Description" --export
     $ cat out.csv
 
 Here is a minimal example of how to use IfcCSV as a library:
